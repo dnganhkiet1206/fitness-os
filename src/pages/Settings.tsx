@@ -41,6 +41,7 @@ interface ProfileForm {
   sleep_target_hours: string;
   sleep_target_bedtime: string;
   sleep_target_waketime: string;
+  water_target_ml: string;
 }
 
 const Settings = () => {
@@ -58,6 +59,7 @@ const Settings = () => {
     activity_level: 'moderate', goal: 'maintain', tdee_target_kcal: '2200',
     macro_protein_g: '150', macro_carbs_g: '250', macro_fat_g: '70', macro_fiber_g: '30',
     sleep_target_hours: '8', sleep_target_bedtime: '23:00', sleep_target_waketime: '07:00',
+    water_target_ml: '2500',
   });
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'nutrition' | 'sleep' | 'supplements'>('profile');
@@ -84,6 +86,7 @@ const Settings = () => {
         sleep_target_hours: String(profile.sleep_target_hours ?? 8),
         sleep_target_bedtime: profile.sleep_target_bedtime || '23:00',
         sleep_target_waketime: profile.sleep_target_waketime || '07:00',
+        water_target_ml: String(profile.water_target_ml ?? 2500),
       });
     }
   }, [profile]);
@@ -115,6 +118,7 @@ const Settings = () => {
       sleep_target_hours: Number(form.sleep_target_hours),
       sleep_target_bedtime: form.sleep_target_bedtime,
       sleep_target_waketime: form.sleep_target_waketime,
+      water_target_ml: Number(form.water_target_ml),
     }).eq('user_id', user.id);
 
     if (error) {
@@ -332,6 +336,16 @@ const Settings = () => {
                     <span className="text-readiness-yellow">F: {Math.round((Number(form.macro_fat_g) * 9 / (Number(form.macro_protein_g) * 4 + Number(form.macro_carbs_g) * 4 + Number(form.macro_fat_g) * 9 || 1)) * 100)}%</span>
                     <span>Tổng: {Number(form.macro_protein_g) * 4 + Number(form.macro_carbs_g) * 4 + Number(form.macro_fat_g) * 9} kcal</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Water target */}
+              <div className="metric-card space-y-5 relative">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Mục Tiêu Nước Uống</h3>
+                <div className="space-y-2">
+                  <Label>Mục tiêu mỗi ngày (ml)</Label>
+                  <Input type="number" step="250" min="500" max="6000" value={form.water_target_ml} onChange={e => update('water_target_ml', e.target.value)} className="rounded-xl bg-background/50 text-2xl font-mono font-bold h-14" />
+                  <p className="text-xs text-muted-foreground">Khuyến nghị: 30-35ml × cân nặng (kg) = {Math.round(Number(form.weight_kg) * 33)}ml</p>
                 </div>
               </div>
             </motion.div>
