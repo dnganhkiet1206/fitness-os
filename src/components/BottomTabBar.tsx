@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { t } from '@/lib/i18n';
 import {
-  Pill, Moon, Droplets, Heart, BarChart3, Target, Medal, Swords, ShoppingCart, Sparkles, Settings
+  Pill, Moon, Droplets, Heart, BarChart3, Target, Medal, Swords, ShoppingCart, Sparkles, Settings, Footprints
 } from 'lucide-react';
 
 const spring = { type: 'spring' as const, stiffness: 500, damping: 35 };
@@ -36,6 +36,7 @@ export function BottomTabBar() {
     { title: i18n.navSleep, url: '/sleep', icon: Moon },
     { title: i18n.navWater, url: '/water', icon: Droplets },
     { title: i18n.navBiometrics, url: '/biometrics', icon: Heart },
+    { title: i18n.navSteps, url: '/steps', icon: Footprints },
     { title: i18n.navWeeklyReview, url: '/weekly-review', icon: BarChart3 },
     { title: i18n.navSmartGoals, url: '/smart-goals', icon: Target },
     { title: i18n.navAwards, url: '/awards', icon: Medal },

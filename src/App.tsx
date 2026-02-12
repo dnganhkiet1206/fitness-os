@@ -31,6 +31,7 @@ import Awards from "./pages/Awards";
 import Challenges from "./pages/Challenges";
 import Biometrics from "./pages/Biometrics";
 import Legal from "./pages/Legal";
+import Steps from "./pages/Steps";
 const queryClient = new QueryClient();
 
 // Tab order for directional transitions
@@ -106,6 +107,7 @@ function AnimatedRoutes() {
           <Route path="/awards" element={<Awards />} />
           <Route path="/challenges" element={<Challenges />} />
           <Route path="/biometrics" element={<Biometrics />} />
+          <Route path="/steps" element={<Steps />} />
           <Route path="/legal" element={<Legal />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

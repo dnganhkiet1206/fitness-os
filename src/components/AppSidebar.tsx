@@ -1,4 +1,4 @@
-import { Home, Utensils, Dumbbell, Pill, Moon, TrendingUp, Settings, Sparkles, Droplets, ShoppingCart, Target, BarChart3, Medal, Swords, Heart } from 'lucide-react';
+import { Home, Utensils, Dumbbell, Pill, Moon, TrendingUp, Settings, Sparkles, Droplets, ShoppingCart, Target, BarChart3, Medal, Swords, Heart, Footprints } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -40,6 +40,7 @@ export function AppSidebar() {
     { title: i18n.navSleep, url: '/sleep', icon: Moon },
     { title: i18n.navWater, url: '/water', icon: Droplets },
     { title: i18n.navBiometrics, url: '/biometrics', icon: Heart },
+    { title: i18n.navSteps, url: '/steps', icon: Footprints },
     { title: i18n.navProgress, url: '/progress', icon: TrendingUp },
   ];
 
