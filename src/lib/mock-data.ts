@@ -113,10 +113,10 @@ export const recentWorkouts: WorkoutSession[] = [
 ];
 
 export const activeNudges: HabitNudge[] = [
-  { id: 'n1', userId: 'u1', type: 'sleep', message: 'Bedtime in 30 min — wind down to hit your 8h target.', priority: 'high', enabled: true, frequencyCapPerDay: 1 },
-  { id: 'n2', userId: 'u1', type: 'protein', message: 'You\'re 47g short on protein. Add a high-protein snack.', priority: 'medium', enabled: true, frequencyCapPerDay: 2 },
-  { id: 'n3', userId: 'u1', type: 'hydration', message: 'High activity today — aim for 3L+ water.', priority: 'low', enabled: true, frequencyCapPerDay: 3 },
-  { id: 'n4', userId: 'u1', type: 'steps', message: 'Walk break — you\'ve been sitting for 90 min.', priority: 'medium', enabled: true, frequencyCapPerDay: 4 },
+  { id: 'n1', userId: 'u1', type: 'sleep', message: 'Còn 30 phút nữa là giờ ngủ — hãy thư giãn để đạt mục tiêu 8h.', priority: 'high', enabled: true, frequencyCapPerDay: 1 },
+  { id: 'n2', userId: 'u1', type: 'protein', message: 'Bạn còn thiếu 47g protein. Thêm bữa phụ giàu đạm nhé.', priority: 'medium', enabled: true, frequencyCapPerDay: 2 },
+  { id: 'n3', userId: 'u1', type: 'hydration', message: 'Hôm nay vận động nhiều — uống đủ 3L+ nước nhé.', priority: 'low', enabled: true, frequencyCapPerDay: 3 },
+  { id: 'n4', userId: 'u1', type: 'steps', message: 'Nghỉ đi bộ — bạn đã ngồi liên tục 90 phút rồi.', priority: 'medium', enabled: true, frequencyCapPerDay: 4 },
 ];
 
 export const connectedWearables: WearableSource[] = [

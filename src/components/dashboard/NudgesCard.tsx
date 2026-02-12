@@ -25,8 +25,8 @@ const NudgesCard = ({ nudges }: NudgesCardProps) => {
   return (
     <div className="metric-card space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Habit Nudges</h3>
-        <span className="text-[10px] text-muted-foreground">{active.length} active</span>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Nhắc Nhở Thói Quen</h3>
+        <span className="text-[10px] text-muted-foreground">{active.length} đang bật</span>
       </div>
 
       <div className="space-y-2">

@@ -20,7 +20,7 @@ const NutritionCard = ({ log, targets, calorieTarget }: NutritionCardProps) => {
 
   return (
     <div className="metric-card space-y-4">
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Nutrition</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Dinh Dưỡng</h3>
 
       {/* Calories */}
       <div className="space-y-1.5">

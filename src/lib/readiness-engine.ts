@@ -130,13 +130,13 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
     factors.push({
       name: 'HRV',
       score: hrvScore,
-      impact: hrvScore < 40 ? 'low' : hrvScore > 70 ? 'good' : 'moderate',
+      impact: hrvScore < 40 ? 'thấp' : hrvScore > 70 ? 'tốt' : 'trung bình',
     });
   }
   factors.push(
-    { name: 'Resting HR', score: rhrScore, impact: rhrScore < 40 ? 'elevated' : rhrScore > 70 ? 'good' : 'moderate' },
-    { name: 'Sleep', score: sleepScore, impact: sleepScore < 40 ? 'poor' : sleepScore > 70 ? 'good' : 'moderate' },
-    { name: 'Training Load', score: loadScore, impact: loadScore < 40 ? 'overloaded' : loadScore > 70 ? 'optimal' : 'moderate' },
+    { name: 'Nhịp tim nghỉ', score: rhrScore, impact: rhrScore < 40 ? 'cao' : rhrScore > 70 ? 'tốt' : 'trung bình' },
+    { name: 'Giấc ngủ', score: sleepScore, impact: sleepScore < 40 ? 'kém' : sleepScore > 70 ? 'tốt' : 'trung bình' },
+    { name: 'Tải tập', score: loadScore, impact: loadScore < 40 ? 'quá tải' : loadScore > 70 ? 'tối ưu' : 'trung bình' },
   );
 
   factors.sort((a, b) => a.score - b.score);
@@ -146,19 +146,19 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
   // Recommendation
   let recommendation: string;
   if (status === 'green' && acwr <= 1.2) {
-    recommendation = 'Train as planned — push top sets + backoff sets.';
+    recommendation = 'Tập theo kế hoạch — đẩy top set + backoff sets.';
   } else if (status === 'green') {
-    recommendation = 'Good to train. Monitor volume — ACWR slightly elevated.';
+    recommendation = 'Sẵn sàng tập. Theo dõi khối lượng — ACWR hơi cao.';
   } else if (status === 'yellow' && sleepScore < 50) {
-    recommendation = 'Keep intensity, cut total sets by 15%. Prioritize sleep tonight.';
+    recommendation = 'Giữ cường độ, giảm 15% tổng sets. Ưu tiên ngủ tối nay.';
   } else if (status === 'yellow') {
-    recommendation = 'Reduce volume 5–10%. Focus on technique and recovery.';
+    recommendation = 'Giảm volume 5–10%. Tập trung kỹ thuật và phục hồi.';
   } else if (status === 'red' && rhrScore < 40 && sleepScore < 40) {
-    recommendation = 'Rest day recommended. Light cardio 20–30 min max.';
+    recommendation = 'Nên nghỉ ngơi. Cardio nhẹ tối đa 20–30 phút.';
   } else if (status === 'red') {
-    recommendation = 'Active recovery only — zone 2 cardio, mobility, breathing.';
+    recommendation = 'Chỉ phục hồi tích cực — zone 2, mobility, thở.';
   } else {
-    recommendation = 'Listen to your body. Light activity if you feel up to it.';
+    recommendation = 'Lắng nghe cơ thể. Vận động nhẹ nếu cảm thấy ổn.';
   }
 
   return {

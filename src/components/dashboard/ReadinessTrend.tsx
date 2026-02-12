@@ -7,7 +7,7 @@ const ReadinessTrend = ({ trend }: ReadinessTrendProps) => {
 
   return (
     <div className="metric-card space-y-3">
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">7-Day Readiness</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sẵn Sàng 7 Ngày</h3>
       <div className="flex items-end justify-between gap-1.5 h-20">
         {trend.map((d, i) => {
           const h = (d.score / 100) * maxHeight;
