@@ -39,8 +39,9 @@ function getPlatform(): string {
 async function getNativePlugin(): Promise<any | null> {
   if (!isNativePlatform()) return null;
   try {
-    // @ts-ignore - module only available in native Capacitor builds
-    const mod = await import("@flomentumsolutions/capacitor-health-extended");
+    // Use a variable to prevent Vite from statically analyzing the import
+    const moduleId = '@flomentumsolutions/capacitor-health-extended';
+    const mod = await import(/* @vite-ignore */ moduleId);
     return mod.CapacitorHealth ?? null;
   } catch {
     console.warn('[HealthSync] Native plugin not available');
