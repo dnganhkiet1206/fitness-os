@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { fireCelebration } from '@/components/awards/AwardCelebration';
 
 export interface Award {
   id: string;
@@ -100,8 +101,18 @@ export function useGrantAward() {
       });
       // Ignore unique constraint violations (already earned)
       if (error && !error.message.includes('duplicate')) throw error;
+      // Return whether it was newly granted (no duplicate error)
+      return !error;
     },
-    onSuccess: () => {
+    onSuccess: (isNew, variables) => {
+      if (isNew) {
+        fireCelebration({
+          title: variables.title,
+          description: variables.description,
+          icon: variables.icon,
+          tier: variables.tier,
+        });
+      }
       qc.invalidateQueries({ queryKey: ['awards'] });
       qc.invalidateQueries({ queryKey: ['awards-recent'] });
     },

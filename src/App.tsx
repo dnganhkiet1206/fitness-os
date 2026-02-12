@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { AuthProvider } from "@/hooks/useAuth";
+import { AwardCelebrationOverlay } from "@/components/awards/AwardCelebration";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -78,6 +79,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <AwardCelebrationOverlay />
         <BrowserRouter>
           <AppLayout>
             <AnimatedRoutes />
