@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Activity, Wind, Droplets, Flame, Camera, PenLine, TrendingUp, TrendingDown, Minus, AlertCircle, Watch, Loader2 } from 'lucide-react';
+import { Heart, Activity, Wind, Droplets, Flame, Camera, PenLine, TrendingUp, TrendingDown, Minus, AlertCircle, Watch, Loader2, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBiometricHistory, useLatestBiometrics } from '@/hooks/useBiometrics';
 import { useHealthSync } from '@/hooks/useHealthSync';
@@ -281,6 +281,33 @@ export default function Biometrics() {
           <p className="text-xs text-muted-foreground/60">{i18n.biometricsNoDataMsg}</p>
         </motion.div>
       )}
+
+      {/* Health Safety Disclaimer */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...spring, delay: 0.35 }}
+        className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 space-y-3"
+      >
+        <div className="flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 text-destructive shrink-0" />
+          <h3 className="text-xs font-bold text-destructive">{i18n.biometricsDisclaimerTitle}</h3>
+        </div>
+        <div className="space-y-2 text-[11px] leading-relaxed text-muted-foreground">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-3 h-3 text-destructive/70 shrink-0 mt-0.5" />
+            <p>{i18n.biometricsDisclaimer1}</p>
+          </div>
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-3 h-3 text-destructive/70 shrink-0 mt-0.5" />
+            <p>{i18n.biometricsDisclaimer2}</p>
+          </div>
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-3 h-3 text-destructive/70 shrink-0 mt-0.5" />
+            <p>{i18n.biometricsDisclaimer3}</p>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
