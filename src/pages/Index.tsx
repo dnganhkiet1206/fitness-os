@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Plus, Camera } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import PullToRefresh from '@/components/PullToRefresh';
 import ScanFoodDialog from '@/components/logging/ScanFoodDialog';
 import type { ScannedFoodItem } from '@/components/logging/ScanFoodDialog';
 import { Navigate } from 'react-router-dom';
@@ -71,6 +73,11 @@ const Index = () => {
   const { lang } = useAppSettings();
   const i18n = t(lang);
   const [lastScan, setLastScan] = useState<ScannedFoodItem[] | null>(null);
+  const queryClient = useQueryClient();
+
+  const handleRefresh = useCallback(async () => {
+    await queryClient.invalidateQueries();
+  }, [queryClient]);
 
   const handleScannedFoods = (items: ScannedFoodItem[]) => {
     setLastScan(items);
@@ -210,7 +217,7 @@ const Index = () => {
   const sleepTargetHours = Number(profile?.sleep_target_hours) || 8;
 
   return (
-    <div className="min-h-screen bg-background">
+    <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-background">
       {/* Ambient glow background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
@@ -429,7 +436,7 @@ const Index = () => {
 
         <div className="h-8" />
       </motion.main>
-    </div>
+    </PullToRefresh>
   );
 };
 
