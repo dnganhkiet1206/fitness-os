@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { calcBMR, calcTDEE, calcTargetCalories, calcMacros, calcWaterTarget, calcAge } from '@/lib/fitness-calc';
-import { ChevronLeft, ChevronRight, Check, User, Target, Dumbbell, Moon, Utensils, Pill, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, User, Target, Dumbbell, Moon, Utensils, Pill, Sparkles, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSettings, t } from '@/hooks/useAppSettings';
 
@@ -75,6 +75,7 @@ const Onboarding = () => {
   const [dislikedFoods, setDislikedFoods] = useState('');
   const [selectedSupps, setSelectedSupps] = useState<Set<number>>(new Set());
   const [customSuppName, setCustomSuppName] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useState(() => {
     if (profile) {
@@ -445,6 +446,33 @@ const Onboarding = () => {
           </AnimatePresence>
         </div>
 
+        {step === 5 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 flex items-start gap-2.5 px-1"
+          >
+            <Checkbox
+              id="terms-accept"
+              checked={termsAccepted}
+              onCheckedChange={(c) => setTermsAccepted(c === true)}
+              className="mt-0.5"
+            />
+            <label htmlFor="terms-accept" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+              Tôi đã đọc và đồng ý với{' '}
+              <a href="/legal?tab=terms" target="_blank" rel="noopener noreferrer" className="text-primary underline inline-flex items-center gap-0.5">
+                Điều khoản sử dụng<ExternalLink className="w-3 h-3" />
+              </a>,{' '}
+              <a href="/legal?tab=privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline inline-flex items-center gap-0.5">
+                Chính sách quyền riêng tư<ExternalLink className="w-3 h-3" />
+              </a> và{' '}
+              <a href="/legal?tab=health" target="_blank" rel="noopener noreferrer" className="text-primary underline inline-flex items-center gap-0.5">
+                Tuyên bố về sức khoẻ<ExternalLink className="w-3 h-3" />
+              </a>.
+            </label>
+          </motion.div>
+        )}
+
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center justify-between mt-6 gap-3">
           <Button
             variant="ghost"
@@ -460,7 +488,7 @@ const Onboarding = () => {
               {i18n.onboardingNext} <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={handleFinish} disabled={saving} className="rounded-xl bg-primary">
+            <Button onClick={handleFinish} disabled={saving || !termsAccepted} className="rounded-xl bg-primary">
               {saving ? i18n.onboardingCompleting : <><Check className="w-4 h-4 mr-1" /> {i18n.onboardingDone}</>}
             </Button>
           )}
