@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import logoAscnd from '@/assets/logo-ascnd.png';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -85,9 +86,9 @@ const Auth = () => {
           transition={{ delay: 0.15, ...spring }}
           className="text-center"
         >
-          <h1 className="text-3xl font-bold tracking-tight">
-            <span className="text-gradient-green">ASC</span>
-            <span className="text-foreground">ND</span>
+          <img src={logoAscnd} alt="ASCND" className="w-16 h-16 mx-auto mb-3" />
+          <h1 className="text-3xl font-bold tracking-[0.15em] text-foreground">
+            ASCND
           </h1>
           <p className="text-sm text-muted-foreground mt-3">
             {isLogin ? i18n.authLoginSubtitle : i18n.authSignupSubtitle}
