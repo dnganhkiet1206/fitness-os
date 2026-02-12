@@ -828,6 +828,36 @@ export type Database = {
           },
         ]
       }
+      scan_history: {
+        Row: {
+          created_at: string
+          id: string
+          image_preview: string | null
+          items: Json
+          mode: string
+          scanned_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_preview?: string | null
+          items?: Json
+          mode?: string
+          scanned_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_preview?: string | null
+          items?: Json
+          mode?: string
+          scanned_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sleep_logs: {
         Row: {
           bedtime: string

@@ -9,7 +9,13 @@ import {
   Pill, Moon, Droplets, Heart, BarChart3, Target, Medal, Swords, ShoppingCart, Sparkles, Settings
 } from 'lucide-react';
 
-const spring = { type: 'spring' as const, stiffness: 400, damping: 30 };
+const spring = { type: 'spring' as const, stiffness: 500, damping: 35 };
+
+const haptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  if ('vibrate' in navigator) {
+    navigator.vibrate(style === 'light' ? 8 : style === 'medium' ? 15 : 25);
+  }
+};
 
 export function BottomTabBar() {
   const { lang } = useAppSettings();
@@ -52,33 +58,46 @@ export function BottomTabBar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               className="fixed inset-0 z-[90] bg-background/60 backdrop-blur-md"
-              onClick={() => setMoreOpen(false)}
+              onClick={() => { haptic('light'); setMoreOpen(false); }}
             />
             <motion.div
-              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              initial={{ opacity: 0, y: 60, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 40, scale: 0.95 }}
+              exit={{ opacity: 0, y: 60, scale: 0.9 }}
               transition={spring}
               className="fixed bottom-20 left-3 right-3 z-[95] rounded-3xl p-4 grid grid-cols-4 gap-3 border border-border/20"
               style={{
-                background: 'hsl(225 15% 10% / 0.95)',
+                background: 'hsl(var(--card) / 0.95)',
                 backdropFilter: 'blur(40px) saturate(1.8)',
                 boxShadow: '0 -8px 40px hsl(0 0% 0% / 0.4), 0 0 0 1px hsl(0 0% 100% / 0.05) inset',
               }}
             >
-              {moreItems.map((item) => {
+              {moreItems.map((item, idx) => {
                 const active = isActive(item.url);
                 return (
                   <motion.button
                     key={item.url}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => { navigate(item.url); setMoreOpen(false); }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.03, ...spring }}
+                    whileTap={{ scale: 0.85 }}
+                    onClick={() => {
+                      haptic('medium');
+                      navigate(item.url);
+                      setMoreOpen(false);
+                    }}
                     className={`flex flex-col items-center gap-1.5 p-2.5 rounded-2xl transition-colors ${
-                      active ? 'bg-primary/15' : 'hover:bg-secondary/40'
+                      active ? 'bg-primary/15' : 'active:bg-secondary/60'
                     }`}
                   >
-                    <item.icon className={`w-5 h-5 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      transition={spring}
+                    >
+                      <item.icon className={`w-5 h-5 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </motion.div>
                     <span className={`text-[10px] font-medium leading-tight text-center ${
                       active ? 'text-primary' : 'text-muted-foreground'
                     }`}>{item.title}</span>
@@ -95,7 +114,7 @@ export function BottomTabBar() {
         <div
           className="mx-3 mb-2 rounded-[28px] flex items-center justify-around px-2 py-1.5 border border-border/10"
           style={{
-            background: 'hsl(225 15% 8% / 0.92)',
+            background: 'hsl(var(--card) / 0.92)',
             backdropFilter: 'blur(40px) saturate(2)',
             WebkitBackdropFilter: 'blur(40px) saturate(2)',
             boxShadow: '0 4px 30px hsl(0 0% 0% / 0.5), 0 0 0 1px hsl(0 0% 100% / 0.04) inset',
@@ -108,34 +127,51 @@ export function BottomTabBar() {
                 key={tab.url}
                 to={tab.url}
                 end={tab.url === '/'}
+                onClick={() => haptic(active ? 'light' : 'medium')}
                 className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all relative"
                 activeClassName=""
               >
                 {active && (
                   <motion.div
                     layoutId="tab-bg"
-                    className="absolute inset-0 rounded-2xl bg-secondary/50"
+                    className="absolute inset-0 rounded-2xl bg-primary/10"
                     transition={spring}
                   />
                 )}
-                <tab.icon className={`w-5 h-5 relative z-10 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                <motion.div
+                  whileTap={{ scale: 0.75 }}
+                  transition={spring}
+                  className="relative z-10"
+                >
+                  <tab.icon className={`w-5 h-5 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                </motion.div>
                 <span className={`text-[10px] font-medium relative z-10 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>{tab.title}</span>
+                {/* Active dot indicator */}
+                {active && (
+                  <motion.div
+                    layoutId="tab-dot"
+                    className="absolute -top-0.5 w-1 h-1 rounded-full bg-primary"
+                    transition={spring}
+                  />
+                )}
               </NavLink>
             );
           })}
 
           {/* More button */}
           <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setMoreOpen(prev => !prev)}
-            className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all relative ${
-              moreOpen || isMoreActive ? '' : ''
-            }`}
+            whileTap={{ scale: 0.75 }}
+            transition={spring}
+            onClick={() => {
+              haptic('medium');
+              setMoreOpen(prev => !prev);
+            }}
+            className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all relative"
           >
             {(moreOpen || isMoreActive) && (
               <motion.div
                 layoutId="tab-bg"
-                className="absolute inset-0 rounded-2xl bg-secondary/50"
+                className="absolute inset-0 rounded-2xl bg-primary/10"
                 transition={spring}
               />
             )}
@@ -143,6 +179,13 @@ export function BottomTabBar() {
             <span className={`text-[10px] font-medium relative z-10 transition-colors ${moreOpen || isMoreActive ? 'text-primary' : 'text-muted-foreground'}`}>
               {lang === 'vi' ? 'Thêm' : 'More'}
             </span>
+            {(moreOpen || isMoreActive) && (
+              <motion.div
+                layoutId="tab-dot"
+                className="absolute -top-0.5 w-1 h-1 rounded-full bg-primary"
+                transition={spring}
+              />
+            )}
           </motion.button>
         </div>
       </div>
