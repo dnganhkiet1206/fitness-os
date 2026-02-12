@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Activity, Wind, Droplets, Flame, Camera, PenLine, TrendingUp, TrendingDown, Minus, AlertCircle, Watch, Loader2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Heart, Activity, Wind, Droplets, Flame, PenLine, TrendingUp, TrendingDown, Minus, AlertCircle, Watch, Loader2, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBiometricHistory, useLatestBiometrics } from '@/hooks/useBiometrics';
 import { useHealthSync } from '@/hooks/useHealthSync';
