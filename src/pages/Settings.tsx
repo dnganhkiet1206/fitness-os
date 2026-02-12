@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Target, Moon, Pill, Plus, Trash2, Save, Check, Download, Lock, Scale } from 'lucide-react';
+import { User, Target, Moon, Pill, Plus, Trash2, Save, Check, Download, Lock, Scale, Globe, Sun, Monitor } from 'lucide-react';
+import { useAppSettings, type ThemeMode } from '@/hooks/useAppSettings';
+import { LANGUAGES, CURRENCIES, type GroceryLang, type CurrencyCode } from '@/lib/grocery-i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useSupplements, useAddSupplement, useUpdateSupplement, useDeleteSupplement } from '@/hooks/useSupplements';
@@ -65,7 +67,8 @@ const Settings = () => {
     water_target_ml: '2500', units_weight: 'kg', units_height: 'cm',
   });
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'nutrition' | 'sleep' | 'supplements' | 'data'>('profile');
+  const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'nutrition' | 'sleep' | 'supplements' | 'data'>('general');
+  const appSettings = useAppSettings();
   const [newSup, setNewSup] = useState({ name: '', category: 'vitamin', dose_text: '', timing: 'morning', notes: '' });
   const [showAddSup, setShowAddSup] = useState(false);
 
@@ -213,6 +216,7 @@ const Settings = () => {
   };
 
   const tabs = [
+    { id: 'general' as const, label: 'Chung', icon: Globe },
     { id: 'profile' as const, label: 'Hồ Sơ', icon: User },
     { id: 'nutrition' as const, label: 'Dinh Dưỡng', icon: Target },
     { id: 'sleep' as const, label: 'Giấc Ngủ', icon: Moon },
@@ -266,6 +270,86 @@ const Settings = () => {
         </motion.div>
 
         <AnimatePresence mode="wait">
+          {activeTab === 'general' && (
+            <motion.div key="general" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ ...spring, duration: 0.4 }} className="space-y-5">
+              {/* Theme */}
+              <div className="metric-card space-y-5 relative">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Giao Diện</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {([
+                    { value: 'light' as ThemeMode, label: 'Sáng', icon: Sun },
+                    { value: 'dark' as ThemeMode, label: 'Tối', icon: Moon },
+                    { value: 'system' as ThemeMode, label: 'Hệ thống', icon: Monitor },
+                  ]).map(opt => (
+                    <motion.button
+                      key={opt.value}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96 }}
+                      transition={spring}
+                      onClick={() => appSettings.setTheme(opt.value)}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                        appSettings.theme === opt.value
+                          ? 'bg-primary/10 border-primary text-primary'
+                          : 'bg-secondary/30 border-border/40 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <opt.icon className="w-5 h-5" />
+                      <span className="text-xs font-medium">{opt.label}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Language */}
+              <div className="metric-card space-y-5 relative">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Ngôn Ngữ</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {LANGUAGES.map(l => (
+                    <motion.button
+                      key={l.code}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96 }}
+                      transition={spring}
+                      onClick={() => appSettings.setLang(l.code)}
+                      className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left ${
+                        appSettings.lang === l.code
+                          ? 'bg-primary/10 border-primary text-foreground'
+                          : 'bg-secondary/30 border-border/40 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <span className="text-lg">{l.flag}</span>
+                      <span className="text-sm font-medium">{l.label}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Currency */}
+              <div className="metric-card space-y-5 relative">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Tiền Tệ</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {CURRENCIES.map(c => (
+                    <motion.button
+                      key={c.code}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96 }}
+                      transition={spring}
+                      onClick={() => appSettings.setCurrency(c.code)}
+                      className={`flex items-center justify-center gap-1.5 p-3 rounded-xl border transition-all text-sm font-medium ${
+                        appSettings.currency === c.code
+                          ? 'bg-primary/10 border-primary text-foreground'
+                          : 'bg-secondary/30 border-border/40 text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <span className="text-base">{c.symbol}</span>
+                      <span>{c.code}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === 'profile' && (
             <motion.div key="profile" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ ...spring, duration: 0.4 }} className="space-y-5">
               <div className="metric-card space-y-5 relative">

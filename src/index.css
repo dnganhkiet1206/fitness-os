@@ -5,7 +5,8 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root,
+  .dark {
     --background: 225 15% 6%;
     --foreground: 220 15% 95%;
 
@@ -67,6 +68,72 @@
     --glass-bg: 225 15% 10% / 0.6;
     --glass-border: 220 15% 95% / 0.06;
     --glass-highlight: 220 15% 95% / 0.03;
+
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  }
+
+  .light {
+    --background: 210 20% 98%;
+    --foreground: 225 15% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 225 15% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 225 15% 10%;
+
+    --primary: 160 84% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 225 10% 30%;
+
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 8% 46%;
+
+    --accent: 220 14% 92%;
+    --accent-foreground: 225 15% 10%;
+
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 88%;
+    --input: 220 14% 88%;
+    --ring: 160 84% 36%;
+
+    --radius: 1rem;
+
+    --readiness-green: 160 84% 36%;
+    --readiness-yellow: 43 96% 48%;
+    --readiness-red: 0 84% 55%;
+    --readiness-green-glow: 160 84% 36% / 0.12;
+    --readiness-yellow-glow: 43 96% 48% / 0.12;
+    --readiness-red-glow: 0 84% 55% / 0.12;
+
+    --metric-blue: 217 91% 55%;
+    --metric-purple: 265 90% 60%;
+    --metric-cyan: 190 95% 42%;
+    --metric-orange: 25 95% 52%;
+
+    --chart-1: 160 84% 36%;
+    --chart-2: 217 91% 55%;
+    --chart-3: 43 96% 48%;
+    --chart-4: 265 90% 60%;
+    --chart-5: 0 84% 55%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 225 10% 30%;
+    --sidebar-primary: 160 84% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 94%;
+    --sidebar-accent-foreground: 225 15% 10%;
+    --sidebar-border: 220 14% 88%;
+    --sidebar-ring: 160 84% 36%;
+
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 225 15% 10% / 0.08;
+    --glass-highlight: 225 15% 10% / 0.03;
 
     --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', monospace;

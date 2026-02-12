@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AwardCelebrationOverlay } from "@/components/awards/AwardCelebration";
 import { AppLayout } from "@/components/AppLayout";
+import { AppSettingsProvider } from "@/hooks/useAppSettings";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -80,16 +81,18 @@ function AnimatedRoutes() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AwardCelebrationOverlay />
-        <BrowserRouter>
-          <AppLayout>
-            <AnimatedRoutes />
-          </AppLayout>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AppSettingsProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AwardCelebrationOverlay />
+          <BrowserRouter>
+            <AppLayout>
+              <AnimatedRoutes />
+            </AppLayout>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AppSettingsProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
