@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Flame, Dumbbell, Calendar, Target, Moon, Footprints, Beef, Medal, Sparkles } from 'lucide-react';
+import { Trophy, Flame, Dumbbell, Calendar, Target, Moon, Footprints, Beef, Medal, Sparkles, Share2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAwards, useCheckAwards, AWARD_DEFINITIONS, type Award } from '@/hooks/useAwards';
+import { ShareAwardCard } from '@/components/awards/ShareAwardCard';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
 
@@ -114,15 +115,26 @@ function AwardMedal({ award, index, earned }: { award: typeof AWARD_DEFINITIONS[
         <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{award.desc}</p>
       </div>
 
-      {/* Earned date */}
+      {/* Earned date + share */}
       {earned && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-[10px] text-muted-foreground font-mono"
-        >
-          {new Date(earned.earned_at).toLocaleDateString('vi-VN', { day: 'numeric', month: 'short', year: 'numeric' })}
-        </motion.p>
+        <div className="flex items-center gap-2">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-[10px] text-muted-foreground font-mono"
+          >
+            {new Date(earned.earned_at).toLocaleDateString('vi-VN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </motion.p>
+          <ShareAwardCard award={award} earned={earned}>
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-1 rounded-lg hover:bg-secondary/30 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </motion.button>
+          </ShareAwardCard>
+        </div>
       )}
     </motion.div>
   );
