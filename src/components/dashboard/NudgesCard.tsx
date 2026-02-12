@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import type { HabitNudge } from '@/lib/types';
 import { Moon, Droplets, Beef, Footprints, Heart } from 'lucide-react';
 
@@ -19,23 +20,28 @@ const priorityBorder: Record<string, string> = {
   low: 'border-l-primary',
 };
 
+const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
+
 const NudgesCard = ({ nudges }: NudgesCardProps) => {
   const active = nudges.filter(n => n.enabled);
 
   return (
-    <div className="metric-card space-y-3">
+    <div className="metric-card space-y-4 relative">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Nhắc Nhở Thói Quen</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Nhắc Nhở Thói Quen</h3>
         <span className="text-[10px] text-muted-foreground">{active.length} đang bật</span>
       </div>
 
-      <div className="space-y-2">
-        {active.map(nudge => {
+      <div className="space-y-2.5">
+        {active.map((nudge, i) => {
           const Icon = iconMap[nudge.type] || Heart;
           return (
-            <div
+            <motion.div
               key={nudge.id}
-              className={`flex items-start gap-2.5 bg-secondary/50 rounded-lg p-3 border-l-2 ${priorityBorder[nudge.priority]}`}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ ...spring, delay: i * 0.06 }}
+              className={`flex items-start gap-3 bg-secondary/30 rounded-xl p-3.5 border-l-2 ${priorityBorder[nudge.priority]}`}
             >
               <Icon className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
               <div>
@@ -44,7 +50,7 @@ const NudgesCard = ({ nudges }: NudgesCardProps) => {
                   Cap: {nudge.frequencyCapPerDay}x/day · {nudge.priority}
                 </p>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

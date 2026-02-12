@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import type { WorkoutSession } from '@/lib/types';
 import { Dumbbell, AlertTriangle, Trophy } from 'lucide-react';
 
@@ -5,6 +6,8 @@ interface TrainingCardProps {
   workouts: WorkoutSession[];
   acwr: number;
 }
+
+const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
 
 const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
   const latest = workouts[0];
@@ -18,20 +21,25 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
   const painFlags = latest.painFlags.filter(p => p.pain_0_10 > 0);
 
   return (
-    <div className="metric-card space-y-4">
+    <div className="metric-card space-y-5 relative">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tập Luyện</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Tập Luyện</h3>
         {hasPR && (
-          <div className="flex items-center gap-1 text-xs font-semibold text-readiness-yellow">
+          <motion.div
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={spring}
+            className="flex items-center gap-1 text-xs font-semibold text-readiness-yellow"
+          >
             <Trophy className="w-3.5 h-3.5" />
             PR!
-          </div>
+          </motion.div>
         )}
       </div>
 
       {/* Latest workout */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
           <Dumbbell className="w-5 h-5 text-primary" />
         </div>
         <div>
@@ -43,12 +51,12 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
       </div>
 
       {/* ACWR */}
-      <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-3">
+      <div className="flex items-center justify-between bg-secondary/30 rounded-xl p-4">
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Acute:Chronic Ratio</div>
+          <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Acute:Chronic Ratio</div>
           <div className={`text-2xl font-mono font-bold ${acwrColor}`}>{acwr}</div>
         </div>
-        <div className={`text-xs font-semibold px-2 py-1 rounded ${
+        <div className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${
           acwrColor === 'text-readiness-green' ? 'bg-readiness-green/10 text-readiness-green' :
           acwrColor === 'text-readiness-yellow' ? 'bg-readiness-yellow/10 text-readiness-yellow' :
           'bg-readiness-red/10 text-readiness-red'
@@ -64,7 +72,7 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
 
       {/* Pain flags */}
       {painFlags.length > 0 && (
-        <div className="flex items-center gap-2 text-xs text-readiness-yellow bg-readiness-yellow/10 rounded-lg px-3 py-2">
+        <div className="flex items-center gap-2 text-xs text-readiness-yellow bg-readiness-yellow/10 rounded-xl px-3 py-2.5">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
           <span>Đau: {painFlags.map(p => `${p.bodyPart} (${p.pain_0_10}/10)`).join(', ')}</span>
         </div>
