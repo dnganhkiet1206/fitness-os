@@ -39,10 +39,8 @@ function getPlatform(): string {
 async function getNativePlugin(): Promise<any | null> {
   if (!isNativePlatform()) return null;
   try {
-    // Dynamic import only on native — won't execute on web
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - module only available in native Capacitor builds
-    const mod = await (Function('return import("@flomentumsolutions/capacitor-health-extended")')());
+    const mod = await import("@flomentumsolutions/capacitor-health-extended");
     return mod.CapacitorHealth ?? null;
   } catch {
     console.warn('[HealthSync] Native plugin not available');
