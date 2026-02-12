@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { AuthProvider } from "@/hooks/useAuth";
+import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -21,6 +22,8 @@ import Progress from "./pages/Progress";
 import WeeklyReview from "./pages/WeeklyReview";
 import AiCoach from "./pages/AiCoach";
 import WaterTracking from "./pages/WaterTracking";
+import SmartGoals from "./pages/SmartGoals";
+import GroceryList from "./pages/GroceryList";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +62,8 @@ function AnimatedRoutes() {
           <Route path="/weekly-review" element={<WeeklyReview />} />
           <Route path="/ai-coach" element={<AiCoach />} />
           <Route path="/water" element={<WaterTracking />} />
+          <Route path="/smart-goals" element={<SmartGoals />} />
+          <Route path="/grocery" element={<GroceryList />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </motion.div>
@@ -73,7 +78,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AnimatedRoutes />
+          <AppLayout>
+            <AnimatedRoutes />
+          </AppLayout>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

@@ -1,4 +1,4 @@
-import { Camera, Settings, Plus, LogOut, Utensils, Pill, Dumbbell, Moon, TrendingUp, BarChart3, Sparkles, Droplets } from 'lucide-react';
+import { Camera, Plus } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
@@ -199,45 +199,6 @@ const Index = () => {
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.02]" style={{ background: 'radial-gradient(circle, hsl(217 91% 60%), transparent 70%)' }} />
       </div>
 
-      {/* Header */}
-      <motion.header
-        variants={slideDown}
-        initial="hidden"
-        animate="show"
-        className="sticky top-0 z-50 border-b border-border/50"
-        style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px) saturate(1.5)' }}
-      >
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold tracking-tight">
-              <span className="text-gradient-green">Fitness</span>
-              <span className="text-foreground"> OS</span>
-            </h1>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {[
-              { icon: Camera, action: undefined, dialog: true },
-              { icon: Settings, action: () => navigate('/settings') },
-              { icon: LogOut, action: signOut },
-            ].map(({ icon: Icon, action, dialog }, i) => {
-              const btn = (
-                <motion.button
-                  key={i}
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.92 }}
-                  transition={spring}
-                  onClick={action}
-                  className="w-9 h-9 rounded-xl bg-secondary/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                >
-                  <Icon className="w-4 h-4" />
-                </motion.button>
-              );
-              return dialog ? <LogBiometricsDialog key={i}>{btn}</LogBiometricsDialog> : btn;
-            })}
-          </div>
-        </div>
-      </motion.header>
-
       <motion.main
         variants={container}
         initial="hidden"
@@ -266,46 +227,6 @@ const Index = () => {
               </motion.div>
             </Dialog>
           ))}
-          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
-            <Button variant="outline" size="sm" onClick={() => navigate('/nutrition')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
-              <Utensils className="w-3 h-3 mr-1.5" />Dinh dưỡng
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
-            <Button variant="outline" size="sm" onClick={() => navigate('/supplements')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
-              <Pill className="w-3 h-3 mr-1.5" />Supplements
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
-            <Button variant="outline" size="sm" onClick={() => navigate('/workouts')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
-              <Dumbbell className="w-3 h-3 mr-1.5" />Workouts
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
-            <Button variant="outline" size="sm" onClick={() => navigate('/sleep')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
-              <Moon className="w-3 h-3 mr-1.5" />Giấc ngủ
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
-            <Button variant="outline" size="sm" onClick={() => navigate('/progress')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
-              <TrendingUp className="w-3 h-3 mr-1.5" />Tiến trình
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
-            <Button variant="outline" size="sm" onClick={() => navigate('/weekly-review')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
-              <BarChart3 className="w-3 h-3 mr-1.5" />Weekly Review
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
-            <Button variant="outline" size="sm" onClick={() => navigate('/water')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
-              <Droplets className="w-3 h-3 mr-1.5" />Nước uống
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
-            <Button variant="outline" size="sm" onClick={() => navigate('/ai-coach')} className="rounded-xl border-primary/30 bg-primary/10 hover:bg-primary/20 backdrop-blur-sm text-primary">
-              <Sparkles className="w-3 h-3 mr-1.5" />AI Coach
-            </Button>
-          </motion.div>
         </motion.div>
 
         {/* Main grid */}

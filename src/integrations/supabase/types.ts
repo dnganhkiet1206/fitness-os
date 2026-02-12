@@ -253,6 +253,7 @@ export type Database = {
           is_favorite: boolean | null
           kcal: number
           name: string
+          price_per_serving: number | null
           protein_g: number
           serving_g: number
           tags: string[] | null
@@ -269,6 +270,7 @@ export type Database = {
           is_favorite?: boolean | null
           kcal?: number
           name: string
+          price_per_serving?: number | null
           protein_g?: number
           serving_g?: number
           tags?: string[] | null
@@ -285,6 +287,7 @@ export type Database = {
           is_favorite?: boolean | null
           kcal?: number
           name?: string
+          price_per_serving?: number | null
           protein_g?: number
           serving_g?: number
           tags?: string[] | null
