@@ -680,6 +680,21 @@ interface Translations {
   scanFoodEstimated: string;
   scanFoodServing: string;
   scanFoodItems: string;
+
+  // Steps
+  stepsTitle: string;
+  stepsSubtitle: string;
+  stepsToday: string;
+  stepsGoal: string;
+  stepsAvg7d: string;
+  stepsWeekly: string;
+  stepsDaily: string;
+  stepsTrend: string;
+  stepsNoData: string;
+  stepsNoDataMsg: string;
+  stepsSyncApple: string;
+  stepsSyncing: string;
+  navSteps: string;
 }
 
 const vi: Translations = {
@@ -1299,6 +1314,20 @@ const vi: Translations = {
   scanFoodEstimated: 'Ước tính',
   scanFoodServing: 'khẩu phần',
   scanFoodItems: 'món',
+
+  stepsTitle: 'Bước chân',
+  stepsSubtitle: 'Theo dõi số bước hàng ngày từ Apple Watch',
+  stepsToday: 'Hôm nay',
+  stepsGoal: 'Mục tiêu',
+  stepsAvg7d: 'TB 7 ngày',
+  stepsWeekly: 'Tuần này',
+  stepsDaily: 'Theo ngày',
+  stepsTrend: 'Xu hướng',
+  stepsNoData: 'Chưa có dữ liệu bước chân',
+  stepsNoDataMsg: 'Đồng bộ từ Apple Watch hoặc nhập thủ công',
+  stepsSyncApple: 'Đồng bộ Apple Health',
+  stepsSyncing: 'Đang đồng bộ...',
+  navSteps: 'Bước chân',
 };
 
 const en: Translations = {
@@ -1918,6 +1947,20 @@ const en: Translations = {
   scanFoodEstimated: 'Estimated',
   scanFoodServing: 'serving',
   scanFoodItems: 'items',
+
+  stepsTitle: 'Steps',
+  stepsSubtitle: 'Track daily steps from Apple Watch',
+  stepsToday: 'Today',
+  stepsGoal: 'Goal',
+  stepsAvg7d: '7d avg',
+  stepsWeekly: 'This week',
+  stepsDaily: 'Daily',
+  stepsTrend: 'Trend',
+  stepsNoData: 'No step data yet',
+  stepsNoDataMsg: 'Sync from Apple Watch or enter manually',
+  stepsSyncApple: 'Sync Apple Health',
+  stepsSyncing: 'Syncing...',
+  navSteps: 'Steps',
 };
 
 const translations: Record<AppLang, Translations> = { vi, en };

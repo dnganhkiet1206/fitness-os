@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { isHealthAvailable, requestHealthPermissions, syncLatestBiometrics } from '@/lib/health-connect';
+import { isHealthAvailable, requestHealthPermissions, syncLatestBiometrics, syncStepCount } from '@/lib/health-connect';
 import { toast } from 'sonner';
 
 const AUTO_SYNC_KEY = 'health_last_auto_sync';
@@ -30,33 +30,60 @@ export function useHealthSync() {
       const granted = await requestHealthPermissions();
       if (!granted) throw new Error('Health permissions denied');
 
-      const data = await syncLatestBiometrics();
-      if (!data) throw new Error('No health data available');
+      const [data, steps] = await Promise.all([
+        syncLatestBiometrics(),
+        syncStepCount(),
+      ]);
 
-      const { error } = await supabase.from('biometric_samples').insert({
-        user_id: user.id,
-        hr_bpm: data.hr_bpm,
-        hrv_rmssd_ms: data.hrv_rmssd_ms,
-        spo2_pct: data.spo2_pct,
-        vo2max_mlkgmin: data.vo2max_mlkgmin,
-        resp_rate_rpm: data.resp_rate_rpm,
-        source: data.source,
-        date_time: data.date_time,
-        confidence: data.confidence,
-      });
+      if (!data && steps == null) throw new Error('No health data available');
 
-      if (error) throw error;
+      // Insert biometric samples if available
+      if (data) {
+        const { error } = await supabase.from('biometric_samples').insert({
+          user_id: user.id,
+          hr_bpm: data.hr_bpm,
+          hrv_rmssd_ms: data.hrv_rmssd_ms,
+          spo2_pct: data.spo2_pct,
+          vo2max_mlkgmin: data.vo2max_mlkgmin,
+          resp_rate_rpm: data.resp_rate_rpm,
+          source: data.source,
+          date_time: data.date_time,
+          confidence: data.confidence,
+        });
+        if (error) throw error;
+      }
+
+      // Update daily_logs with steps
+      if (steps != null) {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const { data: existing } = await supabase
+          .from('daily_logs')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('date', dateStr)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase.from('daily_logs').update({ steps }).eq('id', existing.id);
+        } else {
+          await supabase.from('daily_logs').insert({ user_id: user.id, date: dateStr, steps });
+        }
+      }
 
       // Mark auto-sync timestamp
       localStorage.setItem(AUTO_SYNC_KEY, Date.now().toString());
 
-      return data;
+      return { data, steps };
     },
-    onSuccess: (data) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['biometric-history'] });
       queryClient.invalidateQueries({ queryKey: ['biometric-latest'] });
-      const source = data.source === 'apple_health' ? 'Apple Health' : 'Health Connect';
-      toast.success(`Đồng bộ từ ${source} thành công!`);
+      queryClient.invalidateQueries({ queryKey: ['daily_log'] });
+      queryClient.invalidateQueries({ queryKey: ['steps-history'] });
+      const parts: string[] = [];
+      if (result.data) parts.push('biometrics');
+      if (result.steps != null) parts.push(`${result.steps} steps`);
+      toast.success(`Đồng bộ thành công: ${parts.join(', ')}!`);
     },
     onError: (err: Error) => {
       if (err.message === 'Health permissions denied') {

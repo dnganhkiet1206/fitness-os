@@ -83,6 +83,25 @@ async function queryLatest(plugin: any, sampleType: string): Promise<number | nu
   }
 }
 
+export async function syncStepCount(): Promise<number | null> {
+  const plugin = await getNativePlugin();
+  if (!plugin) return null;
+
+  try {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const result = await plugin.queryAggregated({
+      sampleType: 'stepCount',
+      startDate: startOfDay.toISOString(),
+      endDate: now.toISOString(),
+    });
+    return result?.value ?? null;
+  } catch {
+    console.warn('[HealthSync] Steps query failed');
+    return null;
+  }
+}
+
 export async function syncLatestBiometrics(): Promise<SyncedBiometrics | null> {
   const plugin = await getNativePlugin();
   if (!plugin) return null;
