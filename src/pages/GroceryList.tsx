@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Check, DollarSign, Beef, Plus, Trash2, X, Globe, Coins } from 'lucide-react';
+import { ShoppingCart, Check, DollarSign, Beef, Plus, Trash2, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,7 +11,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { type GroceryLang, type CurrencyCode, CURRENCIES, LANGUAGES, t, formatPrice } from '@/lib/grocery-i18n';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t, formatPrice, CURRENCIES } from '@/lib/grocery-i18n';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
 
@@ -31,19 +32,16 @@ const CHEAP_PROTEIN: { name: string; protein: string; cost: string }[] = [
 export default function GroceryList() {
   const { user, loading } = useAuth();
   const queryClient = useQueryClient();
+  const { lang, currency } = useAppSettings();
+  const i18n = t(lang);
+  const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? '';
+
   const [checkedMealItems, setCheckedMealItems] = useState<Set<string>>(new Set());
   const [newItemName, setNewItemName] = useState('');
   const [newItemQty, setNewItemQty] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('Khác');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [lang, setLang] = useState<GroceryLang>(() => (localStorage.getItem('grocery-lang') as GroceryLang) || 'vi');
-  const [currency, setCurrency] = useState<CurrencyCode>(() => (localStorage.getItem('grocery-currency') as CurrencyCode) || 'VND');
-
-  const i18n = t(lang);
-
-  const changeLang = (l: GroceryLang) => { setLang(l); localStorage.setItem('grocery-lang', l); };
-  const changeCurrency = (c: CurrencyCode) => { setCurrency(c); localStorage.setItem('grocery-currency', c); };
 
   // Fetch meal plan items
   const { data: mealPlanItems } = useQuery({
@@ -192,43 +190,10 @@ export default function GroceryList() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <ShoppingCart className="w-6 h-6 text-primary" /> {i18n.title}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">{i18n.subtitle}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Language selector */}
-            <Select value={lang} onValueChange={(v) => changeLang(v as GroceryLang)}>
-              <SelectTrigger className="rounded-lg bg-card/80 border-border/40 text-xs h-8 w-auto min-w-0 gap-1 px-2">
-                <Globe className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline"><SelectValue /></span>
-                <span className="sm:hidden">{LANGUAGES.find(l => l.code === lang)?.flag}</span>
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border z-50">
-                {LANGUAGES.map(l => (
-                  <SelectItem key={l.code} value={l.code}>
-                    <span className="flex items-center gap-2">{l.flag} {l.label}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {/* Currency selector */}
-            <Select value={currency} onValueChange={(v) => changeCurrency(v as CurrencyCode)}>
-              <SelectTrigger className="rounded-lg bg-card/80 border-border/40 text-xs h-8 w-auto min-w-0 gap-1 px-2">
-                <Coins className="w-3.5 h-3.5 shrink-0" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border z-50">
-                {CURRENCIES.map(c => (
-                  <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <ShoppingCart className="w-6 h-6 text-primary" /> {i18n.title}
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">{i18n.subtitle}</p>
       </motion.div>
 
       {/* Custom grocery list */}
@@ -275,7 +240,7 @@ export default function GroceryList() {
                     <Input
                       value={newItemPrice}
                       onChange={e => setNewItemPrice(e.target.value)}
-                      placeholder={`${i18n.price} (${CURRENCIES.find(c => c.code === currency)?.symbol})`}
+                      placeholder={`${i18n.price} (${currencySymbol})`}
                       type="number"
                       className="rounded-lg bg-background/60 text-sm w-28"
                     />
