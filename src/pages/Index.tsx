@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Camera } from 'lucide-react';
+import ScanFoodDialog from '@/components/logging/ScanFoodDialog';
+import type { ScannedFoodItem } from '@/components/logging/ScanFoodDialog';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
@@ -68,6 +70,11 @@ const Index = () => {
   const [awardsChecked, setAwardsChecked] = useState(false);
   const { lang } = useAppSettings();
   const i18n = t(lang);
+  const [lastScan, setLastScan] = useState<ScannedFoodItem[] | null>(null);
+
+  const handleScannedFoods = (items: ScannedFoodItem[]) => {
+    setLastScan(items);
+  };
 
   useEffect(() => {
     if (user && !awardsChecked) {
@@ -217,9 +224,18 @@ const Index = () => {
         className="relative max-w-5xl mx-auto px-4 py-8 space-y-6"
       >
         {/* Greeting */}
-        <motion.div variants={fadeUp}>
-          <p className="text-sm text-muted-foreground font-medium capitalize">{dateStr}</p>
-          <h2 className="text-3xl font-bold tracking-tight mt-1">{greeting}, <span className="text-gradient-green">{userName}</span></h2>
+        <motion.div variants={fadeUp} className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground font-medium capitalize">{dateStr}</p>
+            <h2 className="text-3xl font-bold tracking-tight mt-1">{greeting}, <span className="text-gradient-green">{userName}</span></h2>
+          </div>
+          <ScanFoodDialog onFoodsScanned={handleScannedFoods}>
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} transition={spring}>
+              <Button variant="outline" size="icon" className="rounded-2xl w-11 h-11 border-border/40 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl shadow-[0_1px_8px_hsl(225_15%_6%_/_0.3)]">
+                <Camera className="w-5 h-5" />
+              </Button>
+            </motion.div>
+          </ScanFoodDialog>
         </motion.div>
 
         {/* Quick log actions */}
@@ -239,6 +255,43 @@ const Index = () => {
             </Dialog>
           ))}
         </motion.div>
+
+        {/* Scan results card */}
+        <AnimatePresence>
+          {lastScan && lastScan.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={spring}
+              className="glass-card p-4 space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-primary" />
+                  {i18n.scanFoodTitle}
+                </h3>
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setLastScan(null)}>
+                  {i18n.close}
+                </Button>
+              </div>
+              {lastScan.map((item, idx) => (
+                <div key={idx} className="bg-secondary/30 rounded-xl p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{item.food_name}</p>
+                    <p className="text-xs text-muted-foreground">{item.serving_g}g</p>
+                  </div>
+                  <div className="flex gap-3 text-xs font-mono">
+                    <span className="font-bold">{Math.round(item.kcal)} kcal</span>
+                    <span className="text-muted-foreground">P{Math.round(item.protein_g)}</span>
+                    <span className="text-muted-foreground">C{Math.round(item.carbs_g)}</span>
+                    <span className="text-muted-foreground">F{Math.round(item.fat_g)}</span>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Main grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
