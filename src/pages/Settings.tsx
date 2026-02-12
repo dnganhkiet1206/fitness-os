@@ -59,7 +59,7 @@ const Settings = () => {
   const [page, setPage] = useState<Page>('main');
   const [newSup, setNewSup] = useState({ name: '', category: 'vitamin', dose_text: '', timing: 'morning', notes: '' });
   const [showAddSup, setShowAddSup] = useState(false);
-  const [pinEnabled, setPinEnabled] = useState(() => !!localStorage.getItem('app_pin'));
+  const [pinEnabled, setPinEnabled] = useState(() => !!localStorage.getItem('app_pin_hash'));
   const [pinInput, setPinInput] = useState('');
 
   useEffect(() => {
@@ -144,12 +144,20 @@ const Settings = () => {
     toast.success(`${i18n.settingsExported} ${format.toUpperCase()}!`);
   };
 
-  const handleSetPin = () => {
+  const hashPin = async (pin: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pin);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const handleSetPin = async () => {
     if (pinInput.length < 4) return toast.error(i18n.settingsPinMinLength);
-    localStorage.setItem('app_pin', pinInput); setPinEnabled(true); setPinInput('');
+    const hashed = await hashPin(pinInput);
+    localStorage.setItem('app_pin_hash', hashed); setPinEnabled(true); setPinInput('');
     toast.success(i18n.settingsPinDone);
   };
-  const handleRemovePin = () => { localStorage.removeItem('app_pin'); setPinEnabled(false); toast.info(i18n.settingsPinRemoved); };
+  const handleRemovePin = () => { localStorage.removeItem('app_pin_hash'); setPinEnabled(false); toast.info(i18n.settingsPinRemoved); };
   const handleSignOut = async () => { await supabase.auth.signOut(); navigate('/auth'); };
 
   const SettingsRow = ({ icon: Icon, label, targetPage, subtitle }: { icon: any; label: string; targetPage: Page; subtitle?: string }) => (
