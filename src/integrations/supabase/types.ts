@@ -14,7 +14,706 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      biometric_samples: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          date_time: string
+          hr_bpm: number | null
+          hrv_rmssd_ms: number | null
+          id: string
+          notes: string | null
+          resp_rate_rpm: number | null
+          source: string
+          spo2_pct: number | null
+          user_id: string
+          vo2max_mlkgmin: number | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          date_time?: string
+          hr_bpm?: number | null
+          hrv_rmssd_ms?: number | null
+          id?: string
+          notes?: string | null
+          resp_rate_rpm?: number | null
+          source?: string
+          spo2_pct?: number | null
+          user_id: string
+          vo2max_mlkgmin?: number | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          date_time?: string
+          hr_bpm?: number | null
+          hrv_rmssd_ms?: number | null
+          id?: string
+          notes?: string | null
+          resp_rate_rpm?: number | null
+          source?: string
+          spo2_pct?: number | null
+          user_id?: string
+          vo2max_mlkgmin?: number | null
+        }
+        Relationships: []
+      }
+      daily_logs: {
+        Row: {
+          active_kcal: number | null
+          active_minutes: number | null
+          acwr: number | null
+          carbs_g: number | null
+          created_at: string
+          date: string
+          fat_g: number | null
+          fiber_g: number | null
+          id: string
+          kcal: number | null
+          protein_g: number | null
+          readiness_explain: string | null
+          readiness_recommendation: string | null
+          readiness_score: number | null
+          readiness_status: string | null
+          sleep_duration_min: number | null
+          sleep_quality: number | null
+          steps: number | null
+          supplement_planned: number | null
+          supplement_taken: number | null
+          updated_at: string
+          user_id: string
+          volume_load: number | null
+          workout_count: number | null
+        }
+        Insert: {
+          active_kcal?: number | null
+          active_minutes?: number | null
+          acwr?: number | null
+          carbs_g?: number | null
+          created_at?: string
+          date: string
+          fat_g?: number | null
+          fiber_g?: number | null
+          id?: string
+          kcal?: number | null
+          protein_g?: number | null
+          readiness_explain?: string | null
+          readiness_recommendation?: string | null
+          readiness_score?: number | null
+          readiness_status?: string | null
+          sleep_duration_min?: number | null
+          sleep_quality?: number | null
+          steps?: number | null
+          supplement_planned?: number | null
+          supplement_taken?: number | null
+          updated_at?: string
+          user_id: string
+          volume_load?: number | null
+          workout_count?: number | null
+        }
+        Update: {
+          active_kcal?: number | null
+          active_minutes?: number | null
+          acwr?: number | null
+          carbs_g?: number | null
+          created_at?: string
+          date?: string
+          fat_g?: number | null
+          fiber_g?: number | null
+          id?: string
+          kcal?: number | null
+          protein_g?: number | null
+          readiness_explain?: string | null
+          readiness_recommendation?: string | null
+          readiness_score?: number | null
+          readiness_status?: string | null
+          sleep_duration_min?: number | null
+          sleep_quality?: number | null
+          steps?: number | null
+          supplement_planned?: number | null
+          supplement_taken?: number | null
+          updated_at?: string
+          user_id?: string
+          volume_load?: number | null
+          workout_count?: number | null
+        }
+        Relationships: []
+      }
+      exercises: {
+        Row: {
+          common_mistakes: string[] | null
+          created_at: string
+          equipment: string | null
+          form_cues: string[] | null
+          id: string
+          muscle_group: string
+          name: string
+          updated_at: string
+          user_id: string | null
+          video_url: string | null
+        }
+        Insert: {
+          common_mistakes?: string[] | null
+          created_at?: string
+          equipment?: string | null
+          form_cues?: string[] | null
+          id?: string
+          muscle_group?: string
+          name: string
+          updated_at?: string
+          user_id?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          common_mistakes?: string[] | null
+          created_at?: string
+          equipment?: string | null
+          form_cues?: string[] | null
+          id?: string
+          muscle_group?: string
+          name?: string
+          updated_at?: string
+          user_id?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      food_items: {
+        Row: {
+          brand: string | null
+          carbs_g: number
+          created_at: string
+          fat_g: number
+          fiber_g: number
+          id: string
+          kcal: number
+          name: string
+          protein_g: number
+          serving_g: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          brand?: string | null
+          carbs_g?: number
+          created_at?: string
+          fat_g?: number
+          fiber_g?: number
+          id?: string
+          kcal?: number
+          name: string
+          protein_g?: number
+          serving_g?: number
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          brand?: string | null
+          carbs_g?: number
+          created_at?: string
+          fat_g?: number
+          fiber_g?: number
+          id?: string
+          kcal?: number
+          name?: string
+          protein_g?: number
+          serving_g?: number
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      habit_nudges: {
+        Row: {
+          created_at: string
+          enabled: boolean | null
+          frequency_cap: number | null
+          id: string
+          message: string
+          priority: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean | null
+          frequency_cap?: number | null
+          id?: string
+          message?: string
+          priority?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean | null
+          frequency_cap?: number | null
+          id?: string
+          message?: string
+          priority?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      meal_entries: {
+        Row: {
+          created_at: string
+          date_time: string
+          id: string
+          meal_type: string
+          total_carbs_g: number
+          total_fat_g: number
+          total_fiber_g: number
+          total_kcal: number
+          total_protein_g: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_time?: string
+          id?: string
+          meal_type?: string
+          total_carbs_g?: number
+          total_fat_g?: number
+          total_fiber_g?: number
+          total_kcal?: number
+          total_protein_g?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_time?: string
+          id?: string
+          meal_type?: string
+          total_carbs_g?: number
+          total_fat_g?: number
+          total_fiber_g?: number
+          total_kcal?: number
+          total_protein_g?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      meal_entry_items: {
+        Row: {
+          carbs_g: number
+          created_at: string
+          fat_g: number
+          fiber_g: number
+          food_item_id: string | null
+          food_name: string
+          id: string
+          kcal: number
+          meal_entry_id: string
+          protein_g: number
+          servings: number
+        }
+        Insert: {
+          carbs_g?: number
+          created_at?: string
+          fat_g?: number
+          fiber_g?: number
+          food_item_id?: string | null
+          food_name?: string
+          id?: string
+          kcal?: number
+          meal_entry_id: string
+          protein_g?: number
+          servings?: number
+        }
+        Update: {
+          carbs_g?: number
+          created_at?: string
+          fat_g?: number
+          fiber_g?: number
+          food_item_id?: string | null
+          food_name?: string
+          id?: string
+          kcal?: number
+          meal_entry_id?: string
+          protein_g?: number
+          servings?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_entry_items_food_item_id_fkey"
+            columns: ["food_item_id"]
+            isOneToOne: false
+            referencedRelation: "food_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_entry_items_meal_entry_id_fkey"
+            columns: ["meal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "meal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          activity_level: string | null
+          created_at: string
+          dob: string | null
+          goal: string | null
+          height_cm: number | null
+          id: string
+          macro_carbs_g: number | null
+          macro_fat_g: number | null
+          macro_fiber_g: number | null
+          macro_protein_g: number | null
+          name: string
+          sex: string | null
+          sleep_target_bedtime: string | null
+          sleep_target_hours: number | null
+          sleep_target_waketime: string | null
+          tdee_target_kcal: number | null
+          units_height: string | null
+          units_weight: string | null
+          updated_at: string
+          user_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          activity_level?: string | null
+          created_at?: string
+          dob?: string | null
+          goal?: string | null
+          height_cm?: number | null
+          id?: string
+          macro_carbs_g?: number | null
+          macro_fat_g?: number | null
+          macro_fiber_g?: number | null
+          macro_protein_g?: number | null
+          name?: string
+          sex?: string | null
+          sleep_target_bedtime?: string | null
+          sleep_target_hours?: number | null
+          sleep_target_waketime?: string | null
+          tdee_target_kcal?: number | null
+          units_height?: string | null
+          units_weight?: string | null
+          updated_at?: string
+          user_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          activity_level?: string | null
+          created_at?: string
+          dob?: string | null
+          goal?: string | null
+          height_cm?: number | null
+          id?: string
+          macro_carbs_g?: number | null
+          macro_fat_g?: number | null
+          macro_fiber_g?: number | null
+          macro_protein_g?: number | null
+          name?: string
+          sex?: string | null
+          sleep_target_bedtime?: string | null
+          sleep_target_hours?: number | null
+          sleep_target_waketime?: string | null
+          tdee_target_kcal?: number | null
+          units_height?: string | null
+          units_weight?: string | null
+          updated_at?: string
+          user_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      sleep_logs: {
+        Row: {
+          bedtime: string
+          created_at: string
+          deep_min: number | null
+          id: string
+          light_min: number | null
+          quality: number | null
+          rem_min: number | null
+          updated_at: string
+          user_id: string
+          waketime: string
+        }
+        Insert: {
+          bedtime: string
+          created_at?: string
+          deep_min?: number | null
+          id?: string
+          light_min?: number | null
+          quality?: number | null
+          rem_min?: number | null
+          updated_at?: string
+          user_id: string
+          waketime: string
+        }
+        Update: {
+          bedtime?: string
+          created_at?: string
+          deep_min?: number | null
+          id?: string
+          light_min?: number | null
+          quality?: number | null
+          rem_min?: number | null
+          updated_at?: string
+          user_id?: string
+          waketime?: string
+        }
+        Relationships: []
+      }
+      supplement_intake_logs: {
+        Row: {
+          created_at: string
+          date_time: string
+          dose_override: string | null
+          id: string
+          supplement_id: string
+          taken: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_time?: string
+          dose_override?: string | null
+          id?: string
+          supplement_id: string
+          taken?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_time?: string
+          dose_override?: string | null
+          id?: string
+          supplement_id?: string
+          taken?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplement_intake_logs_supplement_id_fkey"
+            columns: ["supplement_id"]
+            isOneToOne: false
+            referencedRelation: "supplements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplements: {
+        Row: {
+          category: string | null
+          created_at: string
+          cycle_mode: string | null
+          cycle_off_weeks: number | null
+          cycle_on_weeks: number | null
+          dose_text: string | null
+          id: string
+          name: string
+          notes: string | null
+          timing: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          cycle_mode?: string | null
+          cycle_off_weeks?: number | null
+          cycle_on_weeks?: number | null
+          dose_text?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          timing?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          cycle_mode?: string | null
+          cycle_off_weeks?: number | null
+          cycle_on_weeks?: number | null
+          dose_text?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          timing?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wearable_sources: {
+        Row: {
+          connected: boolean | null
+          created_at: string
+          id: string
+          last_sync: string | null
+          provider: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          connected?: boolean | null
+          created_at?: string
+          id?: string
+          last_sync?: string | null
+          provider: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          connected?: boolean | null
+          created_at?: string
+          id?: string
+          last_sync?: string | null
+          provider?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      weekly_reviews: {
+        Row: {
+          avg_kcal: number | null
+          avg_protein_g: number | null
+          avg_sleep_min: number | null
+          created_at: string
+          id: string
+          insights: Json | null
+          readiness_avg: number | null
+          recommendations: Json | null
+          updated_at: string
+          user_id: string
+          week_start_date: string
+          workout_completion_pct: number | null
+        }
+        Insert: {
+          avg_kcal?: number | null
+          avg_protein_g?: number | null
+          avg_sleep_min?: number | null
+          created_at?: string
+          id?: string
+          insights?: Json | null
+          readiness_avg?: number | null
+          recommendations?: Json | null
+          updated_at?: string
+          user_id: string
+          week_start_date: string
+          workout_completion_pct?: number | null
+        }
+        Update: {
+          avg_kcal?: number | null
+          avg_protein_g?: number | null
+          avg_sleep_min?: number | null
+          created_at?: string
+          id?: string
+          insights?: Json | null
+          readiness_avg?: number | null
+          recommendations?: Json | null
+          updated_at?: string
+          user_id?: string
+          week_start_date?: string
+          workout_completion_pct?: number | null
+        }
+        Relationships: []
+      }
+      workout_sessions: {
+        Row: {
+          created_at: string
+          date_time: string
+          id: string
+          pain_flags: Json | null
+          pr_detected: boolean | null
+          session_rpe: number | null
+          sets: Json
+          template_id: string | null
+          template_name: string | null
+          updated_at: string
+          user_id: string
+          volume_load: number
+        }
+        Insert: {
+          created_at?: string
+          date_time?: string
+          id?: string
+          pain_flags?: Json | null
+          pr_detected?: boolean | null
+          session_rpe?: number | null
+          sets?: Json
+          template_id?: string | null
+          template_name?: string | null
+          updated_at?: string
+          user_id: string
+          volume_load?: number
+        }
+        Update: {
+          created_at?: string
+          date_time?: string
+          id?: string
+          pain_flags?: Json | null
+          pr_detected?: boolean | null
+          session_rpe?: number | null
+          sets?: Json
+          template_id?: string | null
+          template_name?: string | null
+          updated_at?: string
+          user_id?: string
+          volume_load?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sessions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "workout_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_templates: {
+        Row: {
+          created_at: string
+          exercises: Json
+          id: string
+          name: string
+          type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercises?: Json
+          id?: string
+          name: string
+          type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exercises?: Json
+          id?: string
+          name?: string
+          type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

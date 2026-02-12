@@ -1,4 +1,5 @@
-import { Camera, Settings } from 'lucide-react';
+import { Camera, Settings, Plus, LogOut } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
 import BiometricsCard from '@/components/dashboard/BiometricsCard';
 import NutritionCard from '@/components/dashboard/NutritionCard';
@@ -7,22 +8,144 @@ import TrainingCard from '@/components/dashboard/TrainingCard';
 import NudgesCard from '@/components/dashboard/NudgesCard';
 import ReadinessTrend from '@/components/dashboard/ReadinessTrend';
 import ActivityCard from '@/components/dashboard/ActivityCard';
-import {
-  mockUser,
-  todayReadiness,
-  todayBiometrics,
-  todayDailyLog,
-  todaySleep,
-  recentWorkouts,
-  activeNudges,
-  connectedWearables,
-  readinessTrend,
-} from '@/lib/mock-data';
+import EmptyState from '@/components/dashboard/EmptyState';
+import LogMealDialog from '@/components/logging/LogMealDialog';
+import LogWorkoutDialog from '@/components/logging/LogWorkoutDialog';
+import LogSleepDialog from '@/components/logging/LogSleepDialog';
+import LogBiometricsDialog from '@/components/logging/LogBiometricsDialog';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile, useDailyLog, useTodaySleep, useRecentWorkouts, useTodayBiometrics, useReadinessTrend, useNudges, useWearables } from '@/hooks/useTodayData';
+import { Button } from '@/components/ui/button';
+import type { ReadinessResult } from '@/lib/types';
 
 const Index = () => {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { data: dailyLog } = useDailyLog();
+  const { data: todaySleep } = useTodaySleep();
+  const { data: recentWorkouts } = useRecentWorkouts();
+  const { data: todayBio } = useTodayBiometrics();
+  const { data: readinessTrend } = useReadinessTrend();
+  const { data: nudges } = useNudges();
+  const { data: wearables } = useWearables();
+
+  if (authLoading || profileLoading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center"><div className="text-muted-foreground">Đang tải...</div></div>;
+  }
+  if (!user) return <Navigate to="/auth" replace />;
+
   const now = new Date();
   const greeting = now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
   const dateStr = now.toLocaleDateString('vi-VN', { weekday: 'long', month: 'long', day: 'numeric' });
+  const userName = profile?.name || user.email?.split('@')[0] || 'bạn';
+
+  // Build readiness result from daily_log
+  const readinessResult: ReadinessResult | null = dailyLog?.readiness_score != null ? {
+    score: Number(dailyLog.readiness_score),
+    status: (dailyLog.readiness_status as 'green' | 'yellow' | 'red') || 'yellow',
+    explain: dailyLog.readiness_explain || '',
+    recommendation: dailyLog.readiness_recommendation || '',
+    subscores: { rhr: 50, sleep: 50, load: 50 },
+    acwr: Number(dailyLog.acwr) || 0,
+  } : null;
+
+  // Build DailyLog-shaped object for cards
+  const dailyLogForCards = dailyLog ? {
+    id: dailyLog.id,
+    userId: dailyLog.user_id,
+    date: dailyLog.date,
+    nutritionSummary: {
+      kcal: Number(dailyLog.kcal),
+      protein_g: Number(dailyLog.protein_g),
+      carbs_g: Number(dailyLog.carbs_g),
+      fat_g: Number(dailyLog.fat_g),
+      fiber_g: Number(dailyLog.fiber_g),
+    },
+    activitySummary: {
+      steps: dailyLog.steps ?? 0,
+      active_minutes: dailyLog.active_minutes ?? 0,
+      active_kcal: Number(dailyLog.active_kcal) || 0,
+    },
+    sleepSummary: {
+      duration_min: dailyLog.sleep_duration_min ?? 0,
+      quality_1_10: Number(dailyLog.sleep_quality) || 0,
+    },
+    readiness: {
+      score_0_100: Number(dailyLog.readiness_score) || 0,
+      status: (dailyLog.readiness_status as 'green' | 'yellow' | 'red') || 'yellow',
+      explain: dailyLog.readiness_explain || '',
+    },
+  } : null;
+
+  // Build biometric sample for card
+  const biometricSample = todayBio ? {
+    id: todayBio.id,
+    userId: todayBio.user_id,
+    dateTime: todayBio.date_time,
+    source: todayBio.source as 'wearable' | 'camera_rppg' | 'manual',
+    metrics: {
+      hr_bpm: todayBio.hr_bpm ? Number(todayBio.hr_bpm) : undefined,
+      hrv_rmssd_ms: todayBio.hrv_rmssd_ms ? Number(todayBio.hrv_rmssd_ms) : undefined,
+      spo2_pct: todayBio.spo2_pct ? Number(todayBio.spo2_pct) : undefined,
+      vo2max_mlkgmin: todayBio.vo2max_mlkgmin ? Number(todayBio.vo2max_mlkgmin) : undefined,
+      resp_rate_rpm: todayBio.resp_rate_rpm ? Number(todayBio.resp_rate_rpm) : undefined,
+    },
+    confidence_0_1: Number(todayBio.confidence) || 0.7,
+  } : null;
+
+  // Build sleep log for card
+  const sleepForCard = todaySleep ? {
+    id: todaySleep.id,
+    userId: todaySleep.user_id,
+    bedtime: todaySleep.bedtime,
+    waketime: todaySleep.waketime,
+    quality_1_10: todaySleep.quality ?? 5,
+    sleepStages: {
+      light_min: todaySleep.light_min ?? 0,
+      deep_min: todaySleep.deep_min ?? 0,
+      rem_min: todaySleep.rem_min ?? 0,
+    },
+  } : null;
+
+  // Build workouts for card
+  const workoutsForCard = (recentWorkouts ?? []).map(w => ({
+    id: w.id,
+    userId: w.user_id,
+    dateTime: w.date_time,
+    templateName: w.template_name || undefined,
+    sessionRPE_1_10: w.session_rpe ?? 5,
+    painFlags: Array.isArray(w.pain_flags) ? (w.pain_flags as any[]) : [],
+    sets: Array.isArray(w.sets) ? (w.sets as any[]) : [],
+    computed: { volumeLoad: Number(w.volume_load), prDetected: w.pr_detected ?? false },
+  }));
+
+  // Build wearables for card
+  const wearablesForCard = (wearables ?? []).map(w => ({
+    id: w.id,
+    userId: w.user_id,
+    provider: w.provider as any,
+    connected: w.connected ?? false,
+    lastSync: w.last_sync || undefined,
+  }));
+
+  // Build nudges for card
+  const nudgesForCard = (nudges ?? []).map(n => ({
+    id: n.id,
+    userId: n.user_id,
+    type: n.type as any,
+    message: n.message,
+    priority: n.priority as any,
+    enabled: n.enabled ?? true,
+    frequencyCapPerDay: n.frequency_cap ?? 3,
+  }));
+
+  const macroTargets = {
+    protein_g: profile?.macro_protein_g ?? 150,
+    carbs_g: profile?.macro_carbs_g ?? 250,
+    fat_g: profile?.macro_fat_g ?? 70,
+  };
+  const calorieTarget = profile?.tdee_target_kcal ?? 2200;
+  const sleepTargetHours = Number(profile?.sleep_target_hours) || 8;
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,12 +158,17 @@ const Index = () => {
               <span className="text-foreground"> OS</span>
             </h1>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-              <Camera className="w-4 h-4" />
-            </button>
+          <div className="flex items-center gap-2">
+            <LogBiometricsDialog>
+              <button className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                <Camera className="w-4 h-4" />
+              </button>
+            </LogBiometricsDialog>
             <button className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
               <Settings className="w-4 h-4" />
+            </button>
+            <button onClick={signOut} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -50,23 +178,51 @@ const Index = () => {
         {/* Greeting */}
         <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>
           <p className="text-sm text-muted-foreground">{dateStr}</p>
-          <h2 className="text-2xl font-bold">{greeting}, {mockUser.name.split(' ')[0]}</h2>
+          <h2 className="text-2xl font-bold">{greeting}, {userName}</h2>
+        </div>
+
+        {/* Quick log actions */}
+        <div className="flex gap-2 flex-wrap animate-fade-up" style={{ animationDelay: '25ms' }}>
+          <LogMealDialog>
+            <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Ghi bữa ăn</Button>
+          </LogMealDialog>
+          <LogWorkoutDialog>
+            <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Ghi buổi tập</Button>
+          </LogWorkoutDialog>
+          <LogSleepDialog>
+            <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Ghi giấc ngủ</Button>
+          </LogSleepDialog>
+          <LogBiometricsDialog>
+            <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Nhập sinh trắc</Button>
+          </LogBiometricsDialog>
         </div>
 
         {/* Main grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Readiness – hero */}
           <div className="animate-fade-up lg:col-span-2" style={{ animationDelay: '50ms' }}>
-            <ReadinessGauge result={todayReadiness} />
+            {readinessResult ? (
+              <ReadinessGauge result={readinessResult} />
+            ) : (
+              <EmptyState title="Sẵn Sàng" message="Cần 3+ ngày dữ liệu để tính điểm sẵn sàng. Hãy ghi log giấc ngủ, sinh trắc và buổi tập." />
+            )}
           </div>
 
           {/* Right column */}
           <div className="lg:col-span-2 space-y-4">
             <div className="animate-fade-up" style={{ animationDelay: '100ms' }}>
-              <ReadinessTrend trend={readinessTrend} />
+              {readinessTrend && readinessTrend.length > 0 ? (
+                <ReadinessTrend trend={readinessTrend} />
+              ) : (
+                <EmptyState title="Xu Hướng" message="Chưa có dữ liệu xu hướng sẵn sàng." />
+              )}
             </div>
             <div className="animate-fade-up" style={{ animationDelay: '150ms' }}>
-              <ActivityCard log={todayDailyLog} />
+              {dailyLogForCards ? (
+                <ActivityCard log={dailyLogForCards} />
+              ) : (
+                <EmptyState title="Hoạt Động" message="Chưa có dữ liệu hoạt động hôm nay." />
+              )}
             </div>
           </div>
         </div>
@@ -74,31 +230,61 @@ const Index = () => {
         {/* Second row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="animate-fade-up" style={{ animationDelay: '200ms' }}>
-            <BiometricsCard sample={todayBiometrics} wearables={connectedWearables} />
+            {biometricSample ? (
+              <BiometricsCard sample={biometricSample} wearables={wearablesForCard} />
+            ) : (
+              <LogBiometricsDialog>
+                <div className="cursor-pointer">
+                  <EmptyState title="Sinh Trắc Học" message="Chưa có dữ liệu. Nhấn để nhập." actionLabel="Nhập sinh trắc" />
+                </div>
+              </LogBiometricsDialog>
+            )}
           </div>
           <div className="animate-fade-up" style={{ animationDelay: '250ms' }}>
-            <TrainingCard workouts={recentWorkouts} acwr={todayReadiness.acwr} />
+            {workoutsForCard.length > 0 ? (
+              <TrainingCard workouts={workoutsForCard} acwr={readinessResult?.acwr ?? 0} />
+            ) : (
+              <LogWorkoutDialog>
+                <div className="cursor-pointer">
+                  <EmptyState title="Tập Luyện" message="Chưa có buổi tập nào. Nhấn để ghi." actionLabel="Ghi buổi tập" />
+                </div>
+              </LogWorkoutDialog>
+            )}
           </div>
         </div>
 
         {/* Third row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="animate-fade-up" style={{ animationDelay: '300ms' }}>
-            <NutritionCard
-              log={todayDailyLog}
-              targets={mockUser.macro_targets}
-              calorieTarget={mockUser.tdee_target_kcal}
-            />
+            {dailyLogForCards && dailyLogForCards.nutritionSummary.kcal > 0 ? (
+              <NutritionCard log={dailyLogForCards} targets={macroTargets} calorieTarget={calorieTarget} />
+            ) : (
+              <LogMealDialog>
+                <div className="cursor-pointer">
+                  <EmptyState title="Dinh Dưỡng" message="Chưa ghi bữa ăn hôm nay. Nhấn để ghi." actionLabel="Ghi bữa ăn" />
+                </div>
+              </LogMealDialog>
+            )}
           </div>
           <div className="animate-fade-up" style={{ animationDelay: '350ms' }}>
-            <SleepCard sleep={todaySleep} targetHours={mockUser.sleep_targets.hours} />
+            {sleepForCard ? (
+              <SleepCard sleep={sleepForCard} targetHours={sleepTargetHours} />
+            ) : (
+              <LogSleepDialog>
+                <div className="cursor-pointer">
+                  <EmptyState title="Giấc Ngủ" message="Chưa ghi giấc ngủ. Nhấn để ghi." actionLabel="Ghi giấc ngủ" />
+                </div>
+              </LogSleepDialog>
+            )}
           </div>
         </div>
 
         {/* Nudges */}
-        <div className="animate-fade-up" style={{ animationDelay: '400ms' }}>
-          <NudgesCard nudges={activeNudges} />
-        </div>
+        {nudgesForCard.length > 0 && (
+          <div className="animate-fade-up" style={{ animationDelay: '400ms' }}>
+            <NudgesCard nudges={nudgesForCard} />
+          </div>
+        )}
 
         {/* Footer spacer */}
         <div className="h-8" />
