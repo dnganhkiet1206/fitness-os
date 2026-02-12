@@ -1,8 +1,9 @@
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Activity, Wind, Droplets, Flame, Camera, PenLine, TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
+import { Heart, Activity, Wind, Droplets, Flame, Camera, PenLine, TrendingUp, TrendingDown, Minus, AlertCircle, Watch, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBiometricHistory, useLatestBiometrics } from '@/hooks/useBiometrics';
+import { useHealthSync } from '@/hooks/useHealthSync';
 import CameraHRDialog from '@/components/biometrics/CameraHRDialog';
 import LogBiometricsDialog from '@/components/logging/LogBiometricsDialog';
 import { Button } from '@/components/ui/button';
@@ -149,6 +150,7 @@ export default function Biometrics() {
   const { user, loading } = useAuth();
   const { data: history, isLoading } = useBiometricHistory(14);
   const { data: latest } = useLatestBiometrics();
+  const { available: healthAvailable, checking: healthChecking, syncing, sync } = useHealthSync();
 
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
@@ -186,6 +188,18 @@ export default function Biometrics() {
             <PenLine className="w-3.5 h-3.5 mr-1.5" /> Nhập thủ công
           </Button>
         </LogBiometricsDialog>
+        {!healthChecking && healthAvailable && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl border-border/40 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl haptic-press"
+            onClick={sync}
+            disabled={syncing}
+          >
+            {syncing ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Watch className="w-3.5 h-3.5 mr-1.5" />}
+            {syncing ? 'Đang đồng bộ...' : 'Đồng bộ Wearable'}
+          </Button>
+        )}
       </motion.div>
 
       {/* Metrics grid */}
