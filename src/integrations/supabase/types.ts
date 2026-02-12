@@ -365,7 +365,10 @@ export type Database = {
       profiles: {
         Row: {
           activity_level: string | null
+          allergies: string[] | null
           created_at: string
+          dietary_preference: string | null
+          disliked_foods: string[] | null
           dob: string | null
           goal: string | null
           height_cm: number | null
@@ -375,20 +378,27 @@ export type Database = {
           macro_fiber_g: number | null
           macro_protein_g: number | null
           name: string
+          onboarding_completed: boolean | null
           sex: string | null
           sleep_target_bedtime: string | null
           sleep_target_hours: number | null
           sleep_target_waketime: string | null
           tdee_target_kcal: number | null
+          training_level: string | null
           units_height: string | null
           units_weight: string | null
           updated_at: string
           user_id: string
+          water_target_ml: number | null
           weight_kg: number | null
+          work_type: string | null
         }
         Insert: {
           activity_level?: string | null
+          allergies?: string[] | null
           created_at?: string
+          dietary_preference?: string | null
+          disliked_foods?: string[] | null
           dob?: string | null
           goal?: string | null
           height_cm?: number | null
@@ -398,20 +408,27 @@ export type Database = {
           macro_fiber_g?: number | null
           macro_protein_g?: number | null
           name?: string
+          onboarding_completed?: boolean | null
           sex?: string | null
           sleep_target_bedtime?: string | null
           sleep_target_hours?: number | null
           sleep_target_waketime?: string | null
           tdee_target_kcal?: number | null
+          training_level?: string | null
           units_height?: string | null
           units_weight?: string | null
           updated_at?: string
           user_id: string
+          water_target_ml?: number | null
           weight_kg?: number | null
+          work_type?: string | null
         }
         Update: {
           activity_level?: string | null
+          allergies?: string[] | null
           created_at?: string
+          dietary_preference?: string | null
+          disliked_foods?: string[] | null
           dob?: string | null
           goal?: string | null
           height_cm?: number | null
@@ -421,16 +438,20 @@ export type Database = {
           macro_fiber_g?: number | null
           macro_protein_g?: number | null
           name?: string
+          onboarding_completed?: boolean | null
           sex?: string | null
           sleep_target_bedtime?: string | null
           sleep_target_hours?: number | null
           sleep_target_waketime?: string | null
           tdee_target_kcal?: number | null
+          training_level?: string | null
           units_height?: string | null
           units_weight?: string | null
           updated_at?: string
           user_id?: string
+          water_target_ml?: number | null
           weight_kg?: number | null
+          work_type?: string | null
         }
         Relationships: []
       }
