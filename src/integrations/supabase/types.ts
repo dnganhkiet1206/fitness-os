@@ -924,6 +924,60 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_challenges: {
+        Row: {
+          challenge_key: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          current_value: number
+          description: string
+          icon: string
+          id: string
+          reward_tier: string
+          reward_title: string | null
+          target_value: number
+          title: string
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          challenge_key: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          description?: string
+          icon?: string
+          id?: string
+          reward_tier?: string
+          reward_title?: string | null
+          target_value?: number
+          title: string
+          updated_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          challenge_key?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          description?: string
+          icon?: string
+          id?: string
+          reward_tier?: string
+          reward_title?: string | null
+          target_value?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       weekly_reviews: {
         Row: {
           avg_kcal: number | null
