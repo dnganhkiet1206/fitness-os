@@ -86,8 +86,8 @@ const Auth = () => {
           className="text-center"
         >
           <h1 className="text-3xl font-bold tracking-tight">
-            <span className="text-gradient-green">Fitness</span>
-            <span className="text-foreground"> OS</span>
+            <span className="text-gradient-green">ASC</span>
+            <span className="text-foreground">ND</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-3">
             {isLogin ? i18n.authLoginSubtitle : i18n.authSignupSubtitle}
