@@ -237,10 +237,10 @@ const Settings = () => {
         variants={container}
         initial="hidden"
         animate="show"
-        className="relative max-w-3xl mx-auto px-4 py-8 space-y-6"
+        className="relative max-w-3xl mx-auto px-4 pt-6 pb-28 space-y-5"
       >
         <motion.div variants={fadeUp} className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold tracking-tight">{i18n.settingsTitle}</h2>
+          <h2 className="text-xl font-bold tracking-tight">{i18n.settingsTitle}</h2>
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} transition={spring}>
             <Button onClick={handleSave} disabled={saving} size="sm" className="rounded-xl gap-1.5">
               {saving ? <div className="w-3.5 h-3.5 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" /> : <Save className="w-3.5 h-3.5" />}
@@ -250,21 +250,20 @@ const Settings = () => {
         </motion.div>
 
         {/* Tabs */}
-        <motion.div variants={fadeUp} className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <motion.div variants={fadeUp} className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
           {tabs.map(tab => (
             <motion.button
               key={tab.id}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
+              whileTap={{ scale: 0.95 }}
               transition={spring}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/80'
+                  : 'bg-secondary/40 text-muted-foreground active:bg-secondary/80'
               }`}
             >
-              <tab.icon className="w-4 h-4" />
+              <tab.icon className="w-3.5 h-3.5" />
               {tab.label}
             </motion.button>
           ))}
@@ -618,11 +617,10 @@ const Settings = () => {
                           </div>
                         </div>
                         <motion.button
-                          whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           transition={spring}
                           onClick={() => { deleteSupplement.mutate(sup.id); toast.success(i18n.settingsSupDeleted); }}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive active:text-destructive hover:bg-destructive/10 active:bg-destructive/10 transition-colors shrink-0"
                         >
                           <Trash2 className="w-4 h-4" />
                         </motion.button>
@@ -695,7 +693,7 @@ const Settings = () => {
           )}
         </AnimatePresence>
 
-        <div className="h-8" />
+        <div className="h-4" />
       </motion.main>
     </div>
   );
