@@ -1,4 +1,4 @@
-import { Camera, Settings, Plus, LogOut, Utensils, Pill, Dumbbell, Moon, TrendingUp, BarChart3 } from 'lucide-react';
+import { Camera, Settings, Plus, LogOut, Utensils, Pill, Dumbbell, Moon, TrendingUp, BarChart3, Sparkles } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
@@ -294,6 +294,11 @@ const Index = () => {
           <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
             <Button variant="outline" size="sm" onClick={() => navigate('/weekly-review')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
               <BarChart3 className="w-3 h-3 mr-1.5" />Weekly Review
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/ai-coach')} className="rounded-xl border-primary/30 bg-primary/10 hover:bg-primary/20 backdrop-blur-sm text-primary">
+              <Sparkles className="w-3 h-3 mr-1.5" />AI Coach
             </Button>
           </motion.div>
         </motion.div>
