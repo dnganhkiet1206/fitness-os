@@ -1,4 +1,4 @@
-import { Home, Utensils, Dumbbell, Pill, Moon, TrendingUp, Settings, Sparkles, Droplets, ShoppingCart, Target, BarChart3 } from 'lucide-react';
+import { Home, Utensils, Dumbbell, Pill, Moon, TrendingUp, Settings, Sparkles, Droplets, ShoppingCart, Target, BarChart3, Medal } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { motion } from 'framer-motion';
 import {
@@ -27,6 +27,7 @@ const mainItems = [
 const analyticItems = [
   { title: 'Weekly Review', url: '/weekly-review', icon: BarChart3 },
   { title: 'Smart Goals', url: '/smart-goals', icon: Target },
+  { title: 'Huy Chương', url: '/awards', icon: Medal },
   { title: 'Grocery List', url: '/grocery', icon: ShoppingCart },
   { title: 'AI Coach', url: '/ai-coach', icon: Sparkles },
 ];

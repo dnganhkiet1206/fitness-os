@@ -24,7 +24,7 @@ import AiCoach from "./pages/AiCoach";
 import WaterTracking from "./pages/WaterTracking";
 import SmartGoals from "./pages/SmartGoals";
 import GroceryList from "./pages/GroceryList";
-
+import Awards from "./pages/Awards";
 const queryClient = new QueryClient();
 
 const pageTransition = {
@@ -64,6 +64,7 @@ function AnimatedRoutes() {
           <Route path="/water" element={<WaterTracking />} />
           <Route path="/smart-goals" element={<SmartGoals />} />
           <Route path="/grocery" element={<GroceryList />} />
+          <Route path="/awards" element={<Awards />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </motion.div>

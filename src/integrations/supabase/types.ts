@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      awards: {
+        Row: {
+          award_key: string
+          award_type: string
+          created_at: string
+          description: string
+          earned_at: string
+          icon: string
+          id: string
+          metadata: Json | null
+          tier: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          award_key: string
+          award_type: string
+          created_at?: string
+          description?: string
+          earned_at?: string
+          icon?: string
+          id?: string
+          metadata?: Json | null
+          tier?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          award_key?: string
+          award_type?: string
+          created_at?: string
+          description?: string
+          earned_at?: string
+          icon?: string
+          id?: string
+          metadata?: Json | null
+          tier?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       biometric_samples: {
         Row: {
           confidence: number | null

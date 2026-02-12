@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +12,7 @@ import ReadinessTrend from '@/components/dashboard/ReadinessTrend';
 import ActivityCard from '@/components/dashboard/ActivityCard';
 import EmptyState from '@/components/dashboard/EmptyState';
 import SupplementChecklist from '@/components/dashboard/SupplementChecklist';
+import RecentAwards from '@/components/dashboard/RecentAwards';
 import WeightCheckin from '@/components/dashboard/WeightCheckin';
 import WorkoutStatus from '@/components/dashboard/WorkoutStatus';
 import LogMealDialog from '@/components/logging/LogMealDialog';
@@ -20,6 +22,7 @@ import LogBiometricsDialog from '@/components/logging/LogBiometricsDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile, useDailyLog, useTodaySleep, useRecentWorkouts, useTodayBiometrics, useReadinessTrend, useNudges, useWearables } from '@/hooks/useTodayData';
 import { useTodaySupplementChecklist, useToggleSupplement, useTodayWeight, useLogWeight } from '@/hooks/useDashboardData';
+import { useCheckAwards } from '@/hooks/useAwards';
 import { Button } from '@/components/ui/button';
 import type { ReadinessResult } from '@/lib/types';
 
@@ -59,6 +62,15 @@ const Index = () => {
   const toggleSupplement = useToggleSupplement();
   const { data: todayWeight } = useTodayWeight();
   const logWeight = useLogWeight();
+  const { checkAndGrant } = useCheckAwards();
+  const [awardsChecked, setAwardsChecked] = useState(false);
+
+  useEffect(() => {
+    if (user && !awardsChecked) {
+      checkAndGrant();
+      setAwardsChecked(true);
+    }
+  }, [user, awardsChecked]);
 
   if (authLoading || profileLoading) {
     return (
@@ -338,6 +350,11 @@ const Index = () => {
             )}
           </motion.div>
         </div>
+
+        {/* Recent Awards */}
+        <motion.div variants={fadeUp}>
+          <RecentAwards />
+        </motion.div>
 
         {/* Nudges */}
         <AnimatePresence>
