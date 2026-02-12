@@ -333,7 +333,7 @@ export default function AiCoach() {
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-border/50 bg-background/80 backdrop-blur-xl">
+      <div className="shrink-0 border-t border-border/50 bg-background/80 backdrop-blur-xl pb-20">
         <div className="max-w-3xl mx-auto px-4 py-3">
           <form onSubmit={e => { e.preventDefault(); send(input); }} className="flex gap-2">
             <Input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}

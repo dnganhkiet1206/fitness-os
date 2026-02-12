@@ -85,9 +85,9 @@ export default function SleepInsights() {
         initial="hidden"
         animate="show"
         variants={{ show: { transition: { staggerChildren: 0.08 } } }}
-        className="max-w-4xl mx-auto px-4 py-8 space-y-6"
+        className="max-w-4xl mx-auto px-4 py-5 space-y-5"
       >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { label: i18n.sleepAvg, value: `${avgTotal.toFixed(1)}h`, sub: `${i18n.target} ${targetHours}h`, icon: Moon, good: avgTotal >= targetHours - 0.5 },
             { label: i18n.sleepAvgQuality, value: `${avgQuality.toFixed(1)}/10`, sub: avgQuality >= 7 ? i18n.sleepGood : i18n.sleepNeedsImprovement, icon: TrendingUp, good: avgQuality >= 7 },
@@ -99,7 +99,7 @@ export default function SleepInsights() {
                 <c.icon className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">{c.label}</span>
               </div>
-              <p className={`text-2xl font-mono font-bold ${c.good ? 'text-foreground' : 'text-destructive'}`}>{c.value}</p>
+              <p className={`text-xl font-mono font-bold ${c.good ? 'text-foreground' : 'text-destructive'}`}>{c.value}</p>
               <p className="text-[10px] text-muted-foreground">{c.sub}</p>
             </motion.div>
           ))}
@@ -108,7 +108,7 @@ export default function SleepInsights() {
         {chartData.length > 0 && (
           <motion.div variants={fadeUp} className="metric-card space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.sleepStages}</h3>
-            <ChartContainer config={chartConfig} className="h-[250px]">
+            <ChartContainer config={chartConfig} className="h-[200px] sm:h-[250px]">
               <BarChart data={chartData} barCategoryGap="20%">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(225 10% 14%)" />
                 <XAxis dataKey="day" tick={{ fill: 'hsl(220 8% 46%)', fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -130,7 +130,7 @@ export default function SleepInsights() {
         {chartData.length > 0 && (
           <motion.div variants={fadeUp} className="metric-card space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.sleepQualityTrend}</h3>
-            <ChartContainer config={chartConfig} className="h-[180px]">
+            <ChartContainer config={chartConfig} className="h-[150px] sm:h-[180px]">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(225 10% 14%)" />
                 <XAxis dataKey="day" tick={{ fill: 'hsl(220 8% 46%)', fontSize: 10 }} axisLine={false} tickLine={false} />

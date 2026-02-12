@@ -142,8 +142,8 @@ const WaterTracking = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        <h2 className="text-2xl font-bold tracking-tight">{i18n.waterTitle}</h2>
+      <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+        <h2 className="text-xl font-bold tracking-tight">{i18n.waterTitle}</h2>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>
           <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
             <CardContent className="pt-6 flex flex-col items-center gap-4">

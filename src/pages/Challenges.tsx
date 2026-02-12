@@ -129,16 +129,16 @@ export default function Challenges() {
   const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="text-center space-y-3">
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="text-center space-y-2">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ ...spring, delay: 0.2 }}
-          className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-metric-orange/20 to-readiness-yellow/20 flex items-center justify-center border border-metric-orange/20"
+          className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-metric-orange/20 to-readiness-yellow/20 flex items-center justify-center border border-metric-orange/20"
           style={{ boxShadow: '0 0 30px hsl(25 95% 58% / 0.15)' }}>
-          <Swords className="w-8 h-8 text-metric-orange" />
+          <Swords className="w-7 h-7 text-metric-orange" />
         </motion.div>
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">{i18n.challengesTitle}</h2>
-          <p className="text-sm text-muted-foreground mt-1">{weekLabel}</p>
+          <h2 className="text-xl font-bold tracking-tight">{i18n.challengesTitle}</h2>
+          <p className="text-xs text-muted-foreground mt-1">{weekLabel}</p>
         </div>
         <div className="flex items-center justify-center gap-6 text-sm">
           <div className="text-center">

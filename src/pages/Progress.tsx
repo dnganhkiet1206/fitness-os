@@ -132,7 +132,7 @@ export default function Progress() {
         </div>
       </motion.header>
 
-      <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-4xl mx-auto px-4 py-5 space-y-5">
         <Tabs defaultValue="weight" className="space-y-6">
           <TabsList className="bg-secondary/60">
             <TabsTrigger value="weight"><Scale className="w-3.5 h-3.5 mr-1.5" />{i18n.progressWeight}</TabsTrigger>
@@ -141,7 +141,7 @@ export default function Progress() {
           </TabsList>
 
           <TabsContent value="weight" className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-3">
               {[
                 { label: i18n.progressCurrent, value: currentWeight ? `${currentWeight}kg` : '—' },
                 { label: i18n.progressChange, value: weightDelta !== null ? `${weightDelta > 0 ? '+' : ''}${weightDelta.toFixed(1)}kg` : '—', good: weightDelta !== null && ((profile?.goal === 'bulk' && weightDelta > 0) || (profile?.goal === 'cut' && weightDelta < 0)) },
@@ -157,7 +157,7 @@ export default function Progress() {
             {weightData.length > 0 && (
               <motion.div variants={fadeUp} className="metric-card space-y-4">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.progressWeightChart}</h3>
-                <ChartContainer config={chartConfig} className="h-[250px]">
+                <ChartContainer config={chartConfig} className="h-[200px] sm:h-[250px]">
                   <AreaChart data={weightData}>
                     <defs>
                       <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">

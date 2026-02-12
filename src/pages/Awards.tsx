@@ -108,15 +108,15 @@ export default function Awards() {
   const tiers: ('platinum' | 'gold' | 'silver' | 'bronze')[] = ['platinum', 'gold', 'silver', 'bronze'];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="text-center space-y-4">
+    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="text-center space-y-3">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ ...spring, delay: 0.2 }}
-          className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-readiness-yellow/20 to-metric-orange/20 flex items-center justify-center border border-readiness-yellow/20"
+          className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-readiness-yellow/20 to-metric-orange/20 flex items-center justify-center border border-readiness-yellow/20"
           style={{ boxShadow: '0 0 30px hsl(43 96% 56% / 0.15)' }}>
-          <Medal className="w-10 h-10 text-readiness-yellow" />
+          <Medal className="w-8 h-8 text-readiness-yellow" />
         </motion.div>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">{i18n.awardsTitle}</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{i18n.awardsTitle}</h2>
           <p className="text-sm text-muted-foreground mt-1">
             {i18n.awardsEarned} <span className="font-mono font-bold text-foreground">{earnedCount}</span> / {totalCount} {i18n.awardsOf}
           </p>
