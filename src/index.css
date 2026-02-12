@@ -16,7 +16,7 @@
     --popover: 225 12% 9%;
     --popover-foreground: 220 15% 95%;
 
-    --primary: 173 80% 40%;
+    --primary: 174 32% 43%;
     --primary-foreground: 225 15% 6%;
 
     --secondary: 225 10% 13%;
@@ -33,15 +33,15 @@
 
     --border: 225 10% 14%;
     --input: 225 10% 14%;
-    --ring: 173 80% 40%;
+    --ring: 174 32% 43%;
 
     --radius: 1rem;
 
-    /* NeuroFit premium tokens */
-    --readiness-green: 173 80% 40%;
+    /* ASCND premium tokens */
+    --readiness-green: 174 32% 43%;
     --readiness-yellow: 43 96% 56%;
     --readiness-red: 0 84% 60%;
-    --readiness-green-glow: 173 80% 40% / 0.15;
+    --readiness-green-glow: 174 32% 43% / 0.15;
     --readiness-yellow-glow: 43 96% 56% / 0.15;
     --readiness-red-glow: 0 84% 60% / 0.15;
 
@@ -50,7 +50,7 @@
     --metric-cyan: 190 95% 50%;
     --metric-orange: 25 95% 58%;
 
-    --chart-1: 173 80% 40%;
+    --chart-1: 174 32% 43%;
     --chart-2: 217 91% 60%;
     --chart-3: 43 96% 56%;
     --chart-4: 265 90% 66%;
@@ -58,12 +58,12 @@
 
     --sidebar-background: 225 15% 6%;
     --sidebar-foreground: 220 10% 80%;
-    --sidebar-primary: 173 80% 40%;
+    --sidebar-primary: 174 32% 43%;
     --sidebar-primary-foreground: 225 15% 6%;
     --sidebar-accent: 225 10% 13%;
     --sidebar-accent-foreground: 220 15% 95%;
     --sidebar-border: 225 10% 14%;
-    --sidebar-ring: 173 80% 40%;
+    --sidebar-ring: 174 32% 43%;
 
     --glass-bg: 225 15% 10% / 0.6;
     --glass-border: 220 15% 95% / 0.06;
@@ -83,7 +83,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 225 15% 10%;
 
-    --primary: 173 80% 36%;
+    --primary: 174 30% 38%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 94%;
@@ -100,14 +100,14 @@
 
     --border: 220 14% 88%;
     --input: 220 14% 88%;
-    --ring: 173 80% 36%;
+    --ring: 174 30% 38%;
 
     --radius: 1rem;
 
-    --readiness-green: 173 80% 36%;
+    --readiness-green: 174 30% 38%;
     --readiness-yellow: 43 96% 48%;
     --readiness-red: 0 84% 55%;
-    --readiness-green-glow: 173 80% 36% / 0.12;
+    --readiness-green-glow: 174 30% 38% / 0.12;
     --readiness-yellow-glow: 43 96% 48% / 0.12;
     --readiness-red-glow: 0 84% 55% / 0.12;
 
@@ -116,7 +116,7 @@
     --metric-cyan: 190 95% 42%;
     --metric-orange: 25 95% 52%;
 
-    --chart-1: 173 80% 36%;
+    --chart-1: 174 30% 38%;
     --chart-2: 217 91% 55%;
     --chart-3: 43 96% 48%;
     --chart-4: 265 90% 60%;
@@ -124,12 +124,12 @@
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 225 10% 30%;
-    --sidebar-primary: 173 80% 36%;
+    --sidebar-primary: 174 30% 38%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 94%;
     --sidebar-accent-foreground: 225 15% 10%;
     --sidebar-border: 220 14% 88%;
-    --sidebar-ring: 173 80% 36%;
+    --sidebar-ring: 174 30% 38%;
 
     --glass-bg: 0 0% 100% / 0.7;
     --glass-border: 225 15% 10% / 0.08;
@@ -229,7 +229,7 @@
     pointer-events: none;
   }
   .metric-card:hover {
-    border-color: hsl(173 80% 40% / 0.15);
+    border-color: hsl(174 32% 43% / 0.15);
     box-shadow: 0 8px 32px hsl(225 15% 6% / 0.4);
   }
 

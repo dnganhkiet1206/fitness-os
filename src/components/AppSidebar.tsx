@@ -66,8 +66,8 @@ export function AppSidebar() {
           transition={{ duration: 0.5 }}
           className="text-lg font-bold tracking-tight"
         >
-          <span className="text-gradient-green">Neuro</span>
-          <span className="text-foreground">Fit</span>
+          <span className="text-gradient-green">ASC</span>
+          <span className="text-foreground">ND</span>
         </motion.h1>
       </SidebarHeader>
 
