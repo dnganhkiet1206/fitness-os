@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Camera, RotateCcw, Plus, Loader2, ScanBarcode, FileText, X, Zap, FlipHorizontal2, ImageIcon, Trash2, Minus, Clock } from 'lucide-react';
+import { Camera, RotateCcw, Plus, Loader2, ScanBarcode, FileText, X, Zap, FlipHorizontal2, ImageIcon, Trash2, Minus, Clock, Flashlight, FlashlightOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAppSettings } from '@/hooks/useAppSettings';
@@ -52,8 +52,11 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
   const [results, setResults] = useState<ScannedFoodItem[] | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [flashOn, setFlashOn] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<1 | 2>(1);
   const [history, setHistory] = useState<ScanHistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [barcodeScanActive, setBarcodeScanActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,10 +74,41 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
+      // Reset flash and zoom on new stream
+      setFlashOn(false);
+      setZoomLevel(1);
     } catch {
       toast.error(lang === 'vi' ? 'Không thể truy cập camera' : 'Cannot access camera');
     }
   }, [lang]);
+
+  const toggleFlash = useCallback(async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      const caps = track.getCapabilities?.() as any;
+      if (!caps?.torch) { toast.info(lang === 'vi' ? 'Thiết bị không hỗ trợ flash' : 'Flash not supported'); return; }
+      const next = !flashOn;
+      await track.applyConstraints({ advanced: [{ torch: next } as any] });
+      setFlashOn(next);
+      haptic('light');
+    } catch { toast.info(lang === 'vi' ? 'Không thể bật flash' : 'Cannot toggle flash'); }
+  }, [flashOn, lang]);
+
+  const toggleZoom = useCallback(async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      const caps = track.getCapabilities?.() as any;
+      const next = zoomLevel === 1 ? 2 : 1;
+      if (caps?.zoom) {
+        const maxZoom = Math.min(caps.zoom.max, next);
+        await track.applyConstraints({ advanced: [{ zoom: maxZoom } as any] });
+      }
+      setZoomLevel(next);
+      haptic('light');
+    } catch { /* zoom not supported, just update UI */ setZoomLevel(zoomLevel === 1 ? 2 : 1); }
+  }, [zoomLevel]);
 
   const stopCamera = useCallback(() => {
     if (autoScanTimerRef.current) {
@@ -85,10 +119,11 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
     streamRef.current = null;
   }, []);
 
-  // Auto-scan for barcode mode
+  // Auto-scan for barcode mode - completely silent, no UI blocking
   useEffect(() => {
-    if (!open || capturedImage || analyzing || viewMode !== 'camera') return;
+    if (!open || capturedImage || viewMode !== 'camera') return;
     if (scanMode === 'barcode') {
+      setBarcodeScanActive(true);
       autoScanTimerRef.current = setInterval(() => {
         if (isAnalyzingRef.current) return;
         const video = videoRef.current;
@@ -101,8 +136,9 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
         ctx.drawImage(video, 0, 0);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         silentAnalyze(dataUrl);
-      }, 2500);
+      }, 3000);
     } else {
+      setBarcodeScanActive(false);
       if (autoScanTimerRef.current) {
         clearInterval(autoScanTimerRef.current);
         autoScanTimerRef.current = null;
@@ -114,12 +150,13 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
         autoScanTimerRef.current = null;
       }
     };
-  }, [scanMode, open, capturedImage, analyzing, viewMode]);
+  }, [scanMode, open, capturedImage, viewMode]);
 
+  // Fully silent barcode analyze - NO overlay, NO setAnalyzing, camera stays live
   const silentAnalyze = async (dataUrl: string) => {
     if (isAnalyzingRef.current) return;
     isAnalyzingRef.current = true;
-    setAnalyzing(true);
+    // Do NOT call setAnalyzing(true) - keep camera unblocked
     try {
       const base64 = dataUrl.split(',')[1];
       const { data, error } = await supabase.functions.invoke('scan-food', {
@@ -127,17 +164,20 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
       });
       if (error) throw error;
       if (data?.items && data.items.length > 0) {
+        // Found product! Now show results
         setCapturedImage(dataUrl);
         setResults(data.items);
+        setBarcodeScanActive(false);
         stopCamera();
         haptic('heavy');
+        saveToHistory(data.items, 'barcode');
         toast.success(lang === 'vi' ? 'Đã nhận dạng sản phẩm!' : 'Product identified!');
       }
+      // If empty, silently keep scanning - user sees nothing
     } catch {
-      // Silent fail
+      // Silent fail, keep scanning
     } finally {
       isAnalyzingRef.current = false;
-      setAnalyzing(false);
     }
   };
 
@@ -358,7 +398,14 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
           {viewMode === 'camera' && (
             <>
               {!capturedImage ? (
-                <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-300"
+                  style={{ transform: `scale(${zoomLevel})` }}
+                />
               ) : (
                 <img src={capturedImage} alt="Captured" className="absolute inset-0 w-full h-full object-cover" />
               )}
@@ -372,6 +419,9 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
                   {modeConfig[scanMode].label}
                 </div>
                 <div className="flex gap-2">
+                  <button onClick={toggleFlash} className={`w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center ${flashOn ? 'bg-yellow-500/80' : 'bg-black/40'}`}>
+                    {flashOn ? <Flashlight className="w-5 h-5 text-black" /> : <FlashlightOff className="w-5 h-5 text-white" />}
+                  </button>
                   <button onClick={switchToHistory} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center">
                     <Clock className="w-5 h-5 text-white" />
                   </button>
@@ -383,27 +433,39 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
 
               {/* Scan overlay */}
               {!capturedImage && (
-                <div className="absolute inset-0 pointer-events-none z-[5]">
-                  <ScanOverlay mode={scanMode} isScanning={scanMode === 'barcode' && !analyzing} />
-                  <motion.div
-                    className="absolute left-[12%] right-[12%] h-[2px] rounded-full"
-                    style={{
-                      background: scanMode === 'barcode'
-                        ? 'linear-gradient(90deg, transparent, hsl(0 100% 60% / 0.9), transparent)'
-                        : 'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.8), transparent)',
-                      boxShadow: scanMode === 'barcode'
-                        ? '0 0 20px hsl(0 100% 60% / 0.6)'
-                        : '0 0 12px hsl(var(--primary) / 0.5)',
-                    }}
-                    animate={{ top: ['20%', '75%', '20%'] }}
-                    transition={{ duration: scanMode === 'barcode' ? 1.8 : 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                </div>
+                <>
+                  <div className="absolute inset-0 pointer-events-none z-[5]">
+                    <ScanOverlay mode={scanMode} isScanning={barcodeScanActive} />
+                    <motion.div
+                      className="absolute left-[12%] right-[12%] h-[2px] rounded-full"
+                      style={{
+                        background: scanMode === 'barcode'
+                          ? 'linear-gradient(90deg, transparent, hsl(0 100% 60% / 0.9), transparent)'
+                          : 'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.8), transparent)',
+                        boxShadow: scanMode === 'barcode'
+                          ? '0 0 20px hsl(0 100% 60% / 0.6)'
+                          : '0 0 12px hsl(var(--primary) / 0.5)',
+                      }}
+                      animate={{ top: ['20%', '75%', '20%'] }}
+                      transition={{ duration: scanMode === 'barcode' ? 1.8 : 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                  </div>
+
+                  {/* Zoom control */}
+                  <div className="absolute top-1/2 right-3 z-10">
+                    <button
+                      onClick={toggleZoom}
+                      className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white text-xs font-bold"
+                    >
+                      {zoomLevel}x
+                    </button>
+                  </div>
+                </>
               )}
 
-              {/* Analyzing overlay */}
+              {/* Analyzing overlay - only for food/label modes, NOT barcode */}
               <AnimatePresence>
-                {analyzing && (
+                {analyzing && scanMode !== 'barcode' && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -426,11 +488,7 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
                           <Loader2 className="w-8 h-8 animate-spin text-white" />
                         </div>
                       </div>
-                      <p className="text-sm font-medium text-white">
-                        {scanMode === 'barcode'
-                          ? (lang === 'vi' ? 'Đang tìm barcode...' : 'Scanning for barcode...')
-                          : T.scanFoodAnalyzing}
-                      </p>
+                      <p className="text-sm font-medium text-white">{T.scanFoodAnalyzing}</p>
                     </div>
                   </motion.div>
                 )}
