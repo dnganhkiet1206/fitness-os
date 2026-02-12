@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Send, Bot, User, Sparkles, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Send, Bot, User, Sparkles, Loader2, Plus, MessageSquare, Trash2, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -24,9 +25,12 @@ const QUICK_PROMPTS = [
 export default function AiCoach() {
   const navigate = useNavigate();
   const { user, session } = useAuth();
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [activeConvoId, setActiveConvoId] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -36,7 +40,72 @@ export default function AiCoach() {
     }
   }, [messages]);
 
+  // Fetch conversation list
+  const { data: conversations } = useQuery({
+    queryKey: ['ai-conversations', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ai_conversations')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
+  // Load messages when active conversation changes
+  useEffect(() => {
+    if (!activeConvoId) return;
+    (async () => {
+      const { data } = await supabase
+        .from('ai_messages')
+        .select('role, content')
+        .eq('conversation_id', activeConvoId)
+        .order('created_at', { ascending: true });
+      if (data) setMessages(data as Msg[]);
+    })();
+  }, [activeConvoId]);
+
+  // Create new conversation
+  const createConvo = useMutation({
+    mutationFn: async (title: string) => {
+      const { data, error } = await supabase
+        .from('ai_conversations')
+        .insert({ user_id: user!.id, title })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ai-conversations'] }),
+  });
+
+  // Delete conversation
+  const deleteConvo = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('ai_conversations').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ai-conversations'] });
+      if (activeConvoId) {
+        setActiveConvoId(null);
+        setMessages([]);
+      }
+    },
+  });
+
   if (!user) return <Navigate to="/auth" replace />;
+
+  const saveMessage = async (convoId: string, role: string, content: string) => {
+    await supabase.from('ai_messages').insert({
+      conversation_id: convoId,
+      role,
+      content,
+    });
+  };
 
   const send = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -46,9 +115,24 @@ export default function AiCoach() {
     setInput('');
     setIsLoading(true);
 
-    let assistantSoFar = '';
+    let convoId = activeConvoId;
 
     try {
+      // Create conversation if needed
+      if (!convoId) {
+        const convo = await createConvo.mutateAsync(text.trim().slice(0, 50));
+        convoId = convo.id;
+        setActiveConvoId(convoId);
+      }
+
+      // Save user message
+      await saveMessage(convoId, 'user', text.trim());
+
+      // Update conversation title & timestamp
+      await supabase.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', convoId);
+
+      let assistantSoFar = '';
+
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
@@ -107,6 +191,12 @@ export default function AiCoach() {
           }
         }
       }
+
+      // Save assistant message
+      if (assistantSoFar && convoId) {
+        await saveMessage(convoId, 'assistant', assistantSoFar);
+        queryClient.invalidateQueries({ queryKey: ['ai-conversations'] });
+      }
     } catch (e) {
       console.error(e);
       toast.error('Lỗi kết nối AI Coach');
@@ -114,6 +204,17 @@ export default function AiCoach() {
       setIsLoading(false);
       inputRef.current?.focus();
     }
+  };
+
+  const startNewChat = () => {
+    setActiveConvoId(null);
+    setMessages([]);
+    setShowHistory(false);
+  };
+
+  const loadConversation = (id: string) => {
+    setActiveConvoId(id);
+    setShowHistory(false);
   };
 
   return (
@@ -129,7 +230,7 @@ export default function AiCoach() {
           <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-xl">
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1">
             <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-primary" />
             </div>
@@ -138,8 +239,57 @@ export default function AiCoach() {
               <p className="text-[10px] text-muted-foreground">Dựa trên dữ liệu cá nhân của bạn</p>
             </div>
           </div>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" onClick={() => setShowHistory(!showHistory)} className="rounded-xl">
+              <History className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={startNewChat} className="rounded-xl">
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </motion.header>
+
+      {/* History sidebar */}
+      <AnimatePresence>
+        {showHistory && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="shrink-0 border-b border-border/50 bg-secondary/20 max-h-60 overflow-y-auto"
+          >
+            <div className="max-w-3xl mx-auto px-4 py-3 space-y-1">
+              <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold mb-2">Lịch sử trò chuyện</p>
+              {(!conversations || conversations.length === 0) ? (
+                <p className="text-xs text-muted-foreground py-4 text-center">Chưa có cuộc trò chuyện nào</p>
+              ) : (
+                conversations.map(c => (
+                  <div
+                    key={c.id}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-colors ${activeConvoId === c.id ? 'bg-primary/10' : 'hover:bg-secondary/40'}`}
+                    onClick={() => loadConversation(c.id)}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-xs truncate flex-1">{c.title}</span>
+                    <span className="text-[9px] text-muted-foreground shrink-0">
+                      {new Date(c.updated_at).toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-6 h-6 rounded-lg shrink-0 opacity-50 hover:opacity-100"
+                      onClick={(e) => { e.stopPropagation(); deleteConvo.mutate(c.id); }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
