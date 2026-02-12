@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { calcBMR, calcTDEE, calcTargetCalories, calcMacros, calcWaterTarget, calcAge } from '@/lib/fitness-calc';
 import { ChevronLeft, ChevronRight, Check, User, Target, Dumbbell, Moon, Utensils, Pill, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 30 };
 
@@ -25,9 +26,10 @@ const slideVariants = {
 };
 
 const STEP_ICONS = [User, Target, Dumbbell, Moon, Utensils, Pill];
-const STEP_TITLES = ['Thông tin cá nhân', 'Mục tiêu', 'Trình độ tập', 'Lịch sinh hoạt', 'Chế độ ăn', 'Thực phẩm bổ sung'];
 
-const COMMON_ALLERGIES = ['Sữa', 'Đậu phộng', 'Hạt cây', 'Trứng', 'Đậu nành', 'Lúa mì', 'Hải sản', 'Cá'];
+const COMMON_ALLERGIES_VI = ['Sữa', 'Đậu phộng', 'Hạt cây', 'Trứng', 'Đậu nành', 'Lúa mì', 'Hải sản', 'Cá'];
+const COMMON_ALLERGIES_EN = ['Dairy', 'Peanuts', 'Tree nuts', 'Eggs', 'Soy', 'Wheat', 'Shellfish', 'Fish'];
+
 const COMMON_SUPPLEMENTS = [
   { name: 'Whey Protein', category: 'protein', dose: '30g', timing: 'post-workout' },
   { name: 'Creatine Monohydrate', category: 'creatine', dose: '5g', timing: 'morning' },
@@ -47,40 +49,33 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const addSupplement = useAddSupplement();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
+
+  const STEP_TITLES = [i18n.onboardingStepPersonal, i18n.onboardingStepGoal, i18n.onboardingStepTraining, i18n.onboardingStepLifestyle, i18n.onboardingStepDiet, i18n.onboardingStepSupplements];
+  const COMMON_ALLERGIES = lang === 'vi' ? COMMON_ALLERGIES_VI : COMMON_ALLERGIES_EN;
 
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [saving, setSaving] = useState(false);
 
-  // Step 1: Info
   const [name, setName] = useState('');
   const [sex, setSex] = useState('male');
   const [dob, setDob] = useState('');
   const [heightCm, setHeightCm] = useState(170);
   const [weightKg, setWeightKg] = useState(70);
-
-  // Step 2: Goal
   const [goal, setGoal] = useState('maintain');
-
-  // Step 3: Training level
   const [trainingLevel, setTrainingLevel] = useState('intermediate');
   const [activityLevel, setActivityLevel] = useState('moderate');
-
-  // Step 4: Lifestyle
   const [wakeTime, setWakeTime] = useState('07:00');
   const [sleepTime, setSleepTime] = useState('23:00');
   const [workType, setWorkType] = useState('sedentary');
-
-  // Step 5: Dietary
   const [dietaryPreference, setDietaryPreference] = useState('omnivore');
   const [allergies, setAllergies] = useState<string[]>([]);
   const [dislikedFoods, setDislikedFoods] = useState('');
-
-  // Step 6: Supplements
   const [selectedSupps, setSelectedSupps] = useState<Set<number>>(new Set());
   const [customSuppName, setCustomSuppName] = useState('');
 
-  // Pre-fill from existing profile
   useState(() => {
     if (profile) {
       setName(profile.name || '');
@@ -102,7 +97,7 @@ const Onboarding = () => {
           <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center">
             <div className="w-4 h-4 rounded-full bg-primary animate-pulse" />
           </div>
-          <span className="text-sm text-muted-foreground">Đang tải...</span>
+          <span className="text-sm text-muted-foreground">{i18n.loading}</span>
         </motion.div>
       </div>
     );
@@ -111,7 +106,6 @@ const Onboarding = () => {
   if (!user) return <Navigate to="/auth" replace />;
   if (profile?.onboarding_completed) return <Navigate to="/" replace />;
 
-  // Calculations
   const age = dob ? calcAge(dob) : 25;
   const bmr = calcBMR(weightKg, heightCm, age, sex as 'male' | 'female' | 'other');
   const tdee = calcTDEE(bmr, activityLevel);
@@ -159,7 +153,6 @@ const Onboarding = () => {
 
       if (error) throw error;
 
-      // Add selected supplements
       for (const idx of selectedSupps) {
         const s = COMMON_SUPPLEMENTS[idx];
         await addSupplement.mutateAsync({
@@ -172,10 +165,10 @@ const Onboarding = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast.success('Thiết lập hoàn tất! 🎉');
+      toast.success(i18n.onboardingComplete);
       navigate('/');
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi lưu');
+      toast.error(err.message || i18n.error);
     } finally {
       setSaving(false);
     }
@@ -197,22 +190,19 @@ const Onboarding = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Ambient background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(217 91% 60%), transparent 70%)' }} />
       </div>
 
       <div className="relative max-w-lg mx-auto px-4 py-8 min-h-screen flex flex-col">
-        {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="text-center mb-8">
           <h1 className="text-2xl font-bold">
             <span className="text-gradient-green">Fitness</span> <span className="text-foreground">OS</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Thiết lập hồ sơ của bạn</p>
+          <p className="text-sm text-muted-foreground mt-1">{i18n.onboardingSetup}</p>
         </motion.div>
 
-        {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {STEP_TITLES.map((_, i) => (
             <motion.div
@@ -224,18 +214,16 @@ const Onboarding = () => {
           ))}
         </div>
 
-        {/* Step title */}
         <motion.div key={`title-${step}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mb-6">
           <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
             <StepIcon className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Bước {step + 1}/6</p>
+            <p className="text-xs text-muted-foreground">{i18n.onboardingStep} {step + 1}/6</p>
             <h2 className="text-lg font-semibold">{STEP_TITLES[step]}</h2>
           </div>
         </motion.div>
 
-        {/* Step content */}
         <div className="flex-1 relative">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
@@ -250,31 +238,31 @@ const Onboarding = () => {
               {step === 0 && (
                 <>
                   <div className="space-y-2">
-                    <Label>Tên</Label>
-                    <Input value={name} onChange={e => setName(e.target.value)} placeholder="Tên của bạn" />
+                    <Label>{i18n.settingsName}</Label>
+                    <Input value={name} onChange={e => setName(e.target.value)} placeholder={i18n.authYourName} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Giới tính</Label>
+                    <Label>{i18n.settingsSex}</Label>
                     <Select value={sex} onValueChange={setSex}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="male">Nam</SelectItem>
-                        <SelectItem value="female">Nữ</SelectItem>
-                        <SelectItem value="other">Khác</SelectItem>
+                        <SelectItem value="male">{i18n.settingsSexMale}</SelectItem>
+                        <SelectItem value="female">{i18n.settingsSexFemale}</SelectItem>
+                        <SelectItem value="other">{i18n.settingsSexOther}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Ngày sinh</Label>
+                    <Label>{i18n.settingsDob}</Label>
                     <Input type="date" value={dob} onChange={e => setDob(e.target.value)} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Chiều cao (cm)</Label>
+                      <Label>{i18n.settingsHeight} (cm)</Label>
                       <Input type="number" value={heightCm} onChange={e => setHeightCm(Number(e.target.value))} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Cân nặng (kg)</Label>
+                      <Label>{i18n.settingsWeight} (kg)</Label>
                       <Input type="number" value={weightKg} onChange={e => setWeightKg(Number(e.target.value))} />
                     </div>
                   </div>
@@ -283,14 +271,14 @@ const Onboarding = () => {
 
               {step === 1 && (
                 <div className="space-y-3">
-                  <Label>Mục tiêu của bạn</Label>
+                  <Label>{i18n.onboardingYourGoal}</Label>
                   {[
-                    { val: 'bulk', label: 'Tăng cân (Lean Bulk)', desc: 'Tăng cơ, surplus ~10%' },
-                    { val: 'cut', label: 'Giảm cân (Cut)', desc: 'Giảm mỡ, deficit ~20%' },
-                    { val: 'maintain', label: 'Duy trì (Maintain)', desc: 'Giữ cân nặng hiện tại' },
-                    { val: 'recomp', label: 'Tái cấu trúc (Recomp)', desc: 'Giảm mỡ + tăng cơ' },
-                    { val: 'strength', label: 'Sức mạnh (Strength)', desc: 'Tập trung tăng lực' },
-                    { val: 'endurance', label: 'Sức bền (Endurance)', desc: 'Cardio, chịu đựng' },
+                    { val: 'bulk', label: i18n.onboardingGoalBulk, desc: i18n.onboardingGoalBulkDesc },
+                    { val: 'cut', label: i18n.onboardingGoalCut, desc: i18n.onboardingGoalCutDesc },
+                    { val: 'maintain', label: i18n.onboardingGoalMaintain, desc: i18n.onboardingGoalMaintainDesc },
+                    { val: 'recomp', label: i18n.onboardingGoalRecomp, desc: i18n.onboardingGoalRecompDesc },
+                    { val: 'strength', label: i18n.onboardingGoalStrength, desc: i18n.onboardingGoalStrengthDesc },
+                    { val: 'endurance', label: i18n.onboardingGoalEndurance, desc: i18n.onboardingGoalEnduranceDesc },
                   ].map(g => (
                     <motion.button
                       key={g.val}
@@ -308,11 +296,11 @@ const Onboarding = () => {
               {step === 2 && (
                 <div className="space-y-5">
                   <div className="space-y-3">
-                    <Label>Trình độ tập luyện</Label>
+                    <Label>{i18n.onboardingTrainingLevel}</Label>
                     {[
-                      { val: 'beginner', label: 'Người mới', desc: '< 1 năm tập' },
-                      { val: 'intermediate', label: 'Trung cấp', desc: '1–3 năm tập' },
-                      { val: 'advanced', label: 'Nâng cao', desc: '3+ năm tập' },
+                      { val: 'beginner', label: i18n.onboardingBeginner, desc: i18n.onboardingBeginnerDesc },
+                      { val: 'intermediate', label: i18n.onboardingIntermediate, desc: i18n.onboardingIntermediateDesc },
+                      { val: 'advanced', label: i18n.onboardingAdvanced, desc: i18n.onboardingAdvancedDesc },
                     ].map(t => (
                       <motion.button
                         key={t.val}
@@ -326,15 +314,15 @@ const Onboarding = () => {
                     ))}
                   </div>
                   <div className="space-y-2">
-                    <Label>Mức độ vận động hàng ngày</Label>
+                    <Label>{i18n.onboardingDailyActivity}</Label>
                     <Select value={activityLevel} onValueChange={setActivityLevel}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sedentary">Ít vận động</SelectItem>
-                        <SelectItem value="light">Vận động nhẹ</SelectItem>
-                        <SelectItem value="moderate">Trung bình</SelectItem>
-                        <SelectItem value="high">Nhiều vận động</SelectItem>
-                        <SelectItem value="athlete">Vận động viên</SelectItem>
+                        <SelectItem value="sedentary">{i18n.activitySedentary}</SelectItem>
+                        <SelectItem value="light">{i18n.activityLight}</SelectItem>
+                        <SelectItem value="moderate">{i18n.activityModerate}</SelectItem>
+                        <SelectItem value="high">{i18n.activityHigh}</SelectItem>
+                        <SelectItem value="athlete">{i18n.activityAthlete}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -345,34 +333,33 @@ const Onboarding = () => {
                 <div className="space-y-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Giờ thức dậy</Label>
+                      <Label>{i18n.onboardingWakeTime}</Label>
                       <Input type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Giờ đi ngủ</Label>
+                      <Label>{i18n.onboardingSleepTime}</Label>
                       <Input type="time" value={sleepTime} onChange={e => setSleepTime(e.target.value)} />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Loại công việc</Label>
+                    <Label>{i18n.onboardingWorkType}</Label>
                     <Select value={workType} onValueChange={setWorkType}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sedentary">Ngồi nhiều (văn phòng)</SelectItem>
-                        <SelectItem value="active">Vận động (chân tay)</SelectItem>
+                        <SelectItem value="sedentary">{i18n.onboardingWorkSedentary}</SelectItem>
+                        <SelectItem value="active">{i18n.onboardingWorkActive}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  {/* Preview calc */}
                   <div className="mt-4 p-4 rounded-xl bg-secondary/30 border border-border/40 space-y-2">
                     <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-primary" /> Tính toán tự động
+                      <Sparkles className="w-3 h-3 text-primary" /> {i18n.onboardingAutoCalc}
                     </p>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div><span className="text-muted-foreground">BMR:</span> <span className="font-semibold">{bmr} kcal</span></div>
                       <div><span className="text-muted-foreground">TDEE:</span> <span className="font-semibold">{tdee} kcal</span></div>
-                      <div><span className="text-muted-foreground">Target:</span> <span className="font-semibold text-primary">{targetKcal} kcal</span></div>
-                      <div><span className="text-muted-foreground">Ngủ:</span> <span className="font-semibold">{sleepHours}h</span></div>
+                      <div><span className="text-muted-foreground">{i18n.target}:</span> <span className="font-semibold text-primary">{targetKcal} kcal</span></div>
+                      <div><span className="text-muted-foreground">{i18n.navSleep}:</span> <span className="font-semibold">{sleepHours}h</span></div>
                     </div>
                   </div>
                 </div>
@@ -381,11 +368,11 @@ const Onboarding = () => {
               {step === 4 && (
                 <div className="space-y-5">
                   <div className="space-y-3">
-                    <Label>Chế độ ăn</Label>
+                    <Label>{i18n.onboardingDiet}</Label>
                     {[
-                      { val: 'omnivore', label: 'Ăn tất cả' },
-                      { val: 'vegetarian', label: 'Ăn chay' },
-                      { val: 'halal', label: 'Halal' },
+                      { val: 'omnivore', label: i18n.onboardingDietOmnivore },
+                      { val: 'vegetarian', label: i18n.onboardingDietVegetarian },
+                      { val: 'halal', label: i18n.onboardingDietHalal },
                     ].map(d => (
                       <motion.button
                         key={d.val}
@@ -398,7 +385,7 @@ const Onboarding = () => {
                     ))}
                   </div>
                   <div className="space-y-2">
-                    <Label>Dị ứng thực phẩm</Label>
+                    <Label>{i18n.onboardingAllergies}</Label>
                     <div className="flex flex-wrap gap-2">
                       {COMMON_ALLERGIES.map(a => (
                         <Badge
@@ -413,15 +400,15 @@ const Onboarding = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Thực phẩm không thích (cách nhau bằng dấu phẩy)</Label>
-                    <Input value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder="VD: hành, mùi, nội tạng" />
+                    <Label>{i18n.onboardingDislikedFoods}</Label>
+                    <Input value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder={i18n.onboardingDislikedFoodsPlaceholder} />
                   </div>
                 </div>
               )}
 
               {step === 5 && (
                 <div className="space-y-5">
-                  <Label>Chọn supplement cho stack của bạn</Label>
+                  <Label>{i18n.onboardingSelectSupplements}</Label>
                   <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
                     {COMMON_SUPPLEMENTS.map((s, i) => (
                       <motion.div
@@ -439,17 +426,16 @@ const Onboarding = () => {
                     ))}
                   </div>
 
-                  {/* Macro summary */}
                   <div className="p-4 rounded-xl bg-secondary/30 border border-border/40 space-y-2">
                     <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-primary" /> Tóm tắt mục tiêu
+                      <Sparkles className="w-3 h-3 text-primary" /> {i18n.onboardingSummary}
                     </p>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div><span className="text-muted-foreground">Calories:</span> <span className="font-semibold text-primary">{targetKcal} kcal</span></div>
                       <div><span className="text-muted-foreground">Protein:</span> <span className="font-semibold">{macros.protein_g}g</span></div>
                       <div><span className="text-muted-foreground">Carbs:</span> <span className="font-semibold">{macros.carbs_g}g</span></div>
                       <div><span className="text-muted-foreground">Fat:</span> <span className="font-semibold">{macros.fat_g}g</span></div>
-                      <div><span className="text-muted-foreground">Nước:</span> <span className="font-semibold">{waterTarget}ml</span></div>
+                      <div><span className="text-muted-foreground">{i18n.navWater}:</span> <span className="font-semibold">{waterTarget}ml</span></div>
                       <div><span className="text-muted-foreground">Supps:</span> <span className="font-semibold">{selectedSupps.size}</span></div>
                     </div>
                   </div>
@@ -459,7 +445,6 @@ const Onboarding = () => {
           </AnimatePresence>
         </div>
 
-        {/* Navigation */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex items-center justify-between mt-6 gap-3">
           <Button
             variant="ghost"
@@ -467,16 +452,16 @@ const Onboarding = () => {
             disabled={step === 0}
             className="rounded-xl"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" /> Quay lại
+            <ChevronLeft className="w-4 h-4 mr-1" /> {i18n.onboardingPrev}
           </Button>
 
           {step < 5 ? (
             <Button onClick={goNext} className="rounded-xl">
-              Tiếp theo <ChevronRight className="w-4 h-4 ml-1" />
+              {i18n.onboardingNext} <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
             <Button onClick={handleFinish} disabled={saving} className="rounded-xl bg-primary">
-              {saving ? 'Đang lưu...' : <><Check className="w-4 h-4 mr-1" /> Hoàn tất</>}
+              {saving ? i18n.onboardingCompleting : <><Check className="w-4 h-4 mr-1" /> {i18n.onboardingDone}</>}
             </Button>
           )}
         </motion.div>

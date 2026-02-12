@@ -10,27 +10,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Plus, Search, Trash2, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
-
-const MEAL_TYPES = [
-  { value: 'breakfast', label: 'Bữa sáng' },
-  { value: 'lunch', label: 'Bữa trưa' },
-  { value: 'dinner', label: 'Bữa tối' },
-  { value: 'snack', label: 'Bữa phụ' },
-  { value: 'preworkout', label: 'Trước tập' },
-  { value: 'postworkout', label: 'Sau tập' },
-];
-
-const DAY_LABELS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+import { useAppSettings, t } from '@/hooks/useAppSettings';
 
 const MealPlan = () => {
   const { id } = useParams<{ id: string }>();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
   const { data: plans } = useMealPlans();
   const plan = plans?.find(p => p.id === id);
   const { data: items } = useMealPlanItems(id || null);
   const addItem = useAddMealPlanItem();
   const deleteItem = useDeleteMealPlanItem();
+
+  const MEAL_TYPES = [
+    { value: 'breakfast', label: i18n.mealBreakfast },
+    { value: 'lunch', label: i18n.mealLunch },
+    { value: 'dinner', label: i18n.mealDinner },
+    { value: 'snack', label: i18n.mealSnack },
+    { value: 'preworkout', label: i18n.mealPreWorkout },
+    { value: 'postworkout', label: i18n.mealPostWorkout },
+  ];
+
+  const DAY_LABELS = [i18n.dayMon, i18n.dayTue, i18n.dayWed, i18n.dayThu, i18n.dayFri, i18n.daySat, i18n.daySun];
 
   const [activeDay, setActiveDay] = useState(0);
   const [addingMeal, setAddingMeal] = useState(false);
@@ -60,13 +63,12 @@ const MealPlan = () => {
       });
       setSearch('');
       setAddingMeal(false);
-      toast.success('Đã thêm!');
+      toast.success(i18n.mealAdded);
     } catch (err: any) {
       toast.error(err.message);
     }
   };
 
-  // Shopping list: aggregate all items
   const allItems = items ?? [];
   const shoppingMap = new Map<string, { name: string; total_g: number; count: number }>();
   allItems.forEach(item => {
@@ -80,7 +82,6 @@ const MealPlan = () => {
     }
   });
 
-  // Day totals
   const dayTotals = dayItems.reduce((acc, i) => ({
     kcal: acc.kcal + Number(i.kcal), protein_g: acc.protein_g + Number(i.protein_g),
     carbs_g: acc.carbs_g + Number(i.carbs_g), fat_g: acc.fat_g + Number(i.fat_g),
@@ -97,8 +98,8 @@ const MealPlan = () => {
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate('/nutrition')} className="rounded-xl"><ArrowLeft className="w-4 h-4" /></Button>
           <div>
-            <h1 className="text-sm font-bold">{plan?.name || 'Meal Plan'}</h1>
-            <p className="text-[10px] text-muted-foreground">{plan?.meals_per_day} bữa/ngày · {plan?.goal}</p>
+            <h1 className="text-sm font-bold">{plan?.name || i18n.mealPlanTitle}</h1>
+            <p className="text-[10px] text-muted-foreground">{plan?.meals_per_day} {lang === 'vi' ? 'bữa/ngày' : 'meals/day'} · {plan?.goal}</p>
           </div>
         </div>
       </motion.header>
@@ -106,12 +107,11 @@ const MealPlan = () => {
       <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
         <Tabs defaultValue="plan">
           <TabsList className="grid grid-cols-2 w-full bg-secondary/40">
-            <TabsTrigger value="plan">Kế hoạch</TabsTrigger>
-            <TabsTrigger value="shopping"><ShoppingCart className="w-3.5 h-3.5 mr-1" />Đi chợ</TabsTrigger>
+            <TabsTrigger value="plan">{i18n.mealPlanPlan}</TabsTrigger>
+            <TabsTrigger value="shopping"><ShoppingCart className="w-3.5 h-3.5 mr-1" />{i18n.mealPlanShoppingList}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="plan" className="space-y-4 mt-4">
-            {/* Day selector */}
             <div className="flex gap-1.5 overflow-x-auto pb-1">
               {DAY_LABELS.map((label, i) => (
                 <button key={i} onClick={() => setActiveDay(i)}
@@ -121,7 +121,6 @@ const MealPlan = () => {
               ))}
             </div>
 
-            {/* Day totals */}
             <div className="glass-card p-3 grid grid-cols-4 gap-2 text-center text-sm">
               <div><span className="text-[10px] text-muted-foreground block">Kcal</span><span className="font-mono font-bold">{Math.round(dayTotals.kcal)}</span></div>
               <div><span className="text-[10px] text-muted-foreground block">Protein</span><span className="font-mono font-bold">{Math.round(dayTotals.protein_g)}g</span></div>
@@ -129,7 +128,6 @@ const MealPlan = () => {
               <div><span className="text-[10px] text-muted-foreground block">Fat</span><span className="font-mono font-bold">{Math.round(dayTotals.fat_g)}g</span></div>
             </div>
 
-            {/* Meals grouped by type */}
             {MEAL_TYPES.map(mt => {
               const mealItems = dayItems.filter(i => i.meal_type === mt.value);
               if (mealItems.length === 0) return null;
@@ -151,11 +149,10 @@ const MealPlan = () => {
               );
             })}
 
-            {/* Add food */}
             {addingMeal ? (
               <div className="glass-card p-4 space-y-3">
                 <div className="space-y-2">
-                  <Label>Loại bữa</Label>
+                  <Label>{i18n.mealType}</Label>
                   <Select value={mealType} onValueChange={setMealType}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>{MEAL_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
@@ -163,7 +160,7 @@ const MealPlan = () => {
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                  <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm thực phẩm..." className="pl-9" />
+                  <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={i18n.mealSearchFood} className="pl-9" />
                 </div>
                 {searchResults && searchResults.length > 0 && (
                   <div className="border border-border rounded-lg max-h-40 overflow-y-auto">
@@ -175,11 +172,11 @@ const MealPlan = () => {
                     ))}
                   </div>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => setAddingMeal(false)}>Hủy</Button>
+                <Button variant="ghost" size="sm" onClick={() => setAddingMeal(false)}>{i18n.cancel}</Button>
               </div>
             ) : (
               <Button variant="outline" size="sm" onClick={() => setAddingMeal(true)} className="rounded-xl w-full border-dashed">
-                <Plus className="w-3.5 h-3.5 mr-1.5" />Thêm món
+                <Plus className="w-3.5 h-3.5 mr-1.5" />{i18n.mealAddFood}
               </Button>
             )}
           </TabsContent>
@@ -189,13 +186,13 @@ const MealPlan = () => {
               Array.from(shoppingMap.values()).map((item, i) => (
                 <div key={i} className="glass-card p-3 flex items-center justify-between">
                   <p className="text-sm font-medium">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">{Math.round(item.total_g)}g × {item.count} lần</p>
+                  <p className="text-xs text-muted-foreground">{Math.round(item.total_g)}g × {item.count} {i18n.mealTimes}</p>
                 </div>
               ))
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <ShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Thêm món vào kế hoạch để có danh sách đi chợ</p>
+                <p className="text-sm">{i18n.mealShoppingEmpty}</p>
               </div>
             )}
           </TabsContent>
