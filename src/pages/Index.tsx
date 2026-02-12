@@ -1,4 +1,4 @@
-import { Camera, Settings, Plus, LogOut } from 'lucide-react';
+import { Camera, Settings, Plus, LogOut, Utensils } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
@@ -10,12 +10,16 @@ import NudgesCard from '@/components/dashboard/NudgesCard';
 import ReadinessTrend from '@/components/dashboard/ReadinessTrend';
 import ActivityCard from '@/components/dashboard/ActivityCard';
 import EmptyState from '@/components/dashboard/EmptyState';
+import SupplementChecklist from '@/components/dashboard/SupplementChecklist';
+import WeightCheckin from '@/components/dashboard/WeightCheckin';
+import WorkoutStatus from '@/components/dashboard/WorkoutStatus';
 import LogMealDialog from '@/components/logging/LogMealDialog';
 import LogWorkoutDialog from '@/components/logging/LogWorkoutDialog';
 import LogSleepDialog from '@/components/logging/LogSleepDialog';
 import LogBiometricsDialog from '@/components/logging/LogBiometricsDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile, useDailyLog, useTodaySleep, useRecentWorkouts, useTodayBiometrics, useReadinessTrend, useNudges, useWearables } from '@/hooks/useTodayData';
+import { useTodaySupplementChecklist, useToggleSupplement, useTodayWeight, useLogWeight } from '@/hooks/useDashboardData';
 import { Button } from '@/components/ui/button';
 import type { ReadinessResult } from '@/lib/types';
 
@@ -56,6 +60,10 @@ const Index = () => {
   const { data: readinessTrend } = useReadinessTrend();
   const { data: nudges } = useNudges();
   const { data: wearables } = useWearables();
+  const { data: supplementChecklist } = useTodaySupplementChecklist();
+  const toggleSupplement = useToggleSupplement();
+  const { data: todayWeight } = useTodayWeight();
+  const logWeight = useLogWeight();
 
   if (authLoading || profileLoading) {
     return (
@@ -258,6 +266,11 @@ const Index = () => {
               </motion.div>
             </Dialog>
           ))}
+          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/nutrition')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
+              <Utensils className="w-3 h-3 mr-1.5" />Dinh dưỡng
+            </Button>
+          </motion.div>
         </motion.div>
 
         {/* Main grid */}
@@ -336,6 +349,41 @@ const Index = () => {
                   <EmptyState title="Giấc Ngủ" message="Chưa ghi giấc ngủ. Nhấn để ghi." actionLabel="Ghi giấc ngủ" />
                 </div>
               </LogSleepDialog>
+            )}
+          </motion.div>
+        </div>
+
+        {/* Fourth row: Weight + Workout Status + Supplements */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <motion.div variants={fadeUp}>
+            <WeightCheckin
+              todayWeight={todayWeight?.weight_kg ? Number(todayWeight.weight_kg) : null}
+              profileWeight={profile?.weight_kg ? Number(profile.weight_kg) : null}
+              onLog={(w) => logWeight.mutate({ weight_kg: w })}
+              saving={logWeight.isPending}
+            />
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            <WorkoutStatus
+              planned={dailyLog?.workout_count ?? 0}
+              done={(recentWorkouts ?? []).filter(w => {
+                const d = new Date(w.date_time).toISOString().split('T')[0];
+                return d === new Date().toISOString().split('T')[0];
+              }).length}
+              todayWorkoutNames={(recentWorkouts ?? [])
+                .filter(w => new Date(w.date_time).toISOString().split('T')[0] === new Date().toISOString().split('T')[0])
+                .map(w => w.template_name || 'Workout')
+              }
+            />
+          </motion.div>
+          <motion.div variants={fadeUp}>
+            {supplementChecklist && supplementChecklist.length > 0 ? (
+              <SupplementChecklist
+                items={supplementChecklist}
+                onToggle={(id, taken) => toggleSupplement.mutate({ supplementId: id, taken })}
+              />
+            ) : (
+              <EmptyState title="Supplements" message="Thêm supplements trong Settings." />
             )}
           </motion.div>
         </div>
