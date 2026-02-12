@@ -27,6 +27,7 @@ import SmartGoals from "./pages/SmartGoals";
 import GroceryList from "./pages/GroceryList";
 import Awards from "./pages/Awards";
 import Challenges from "./pages/Challenges";
+import Biometrics from "./pages/Biometrics";
 const queryClient = new QueryClient();
 
 const pageTransition = {
@@ -68,6 +69,7 @@ function AnimatedRoutes() {
           <Route path="/grocery" element={<GroceryList />} />
           <Route path="/awards" element={<Awards />} />
           <Route path="/challenges" element={<Challenges />} />
+          <Route path="/biometrics" element={<Biometrics />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </motion.div>
