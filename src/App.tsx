@@ -20,6 +20,7 @@ import SleepInsights from "./pages/SleepInsights";
 import Progress from "./pages/Progress";
 import WeeklyReview from "./pages/WeeklyReview";
 import AiCoach from "./pages/AiCoach";
+import WaterTracking from "./pages/WaterTracking";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ function AnimatedRoutes() {
           <Route path="/progress" element={<Progress />} />
           <Route path="/weekly-review" element={<WeeklyReview />} />
           <Route path="/ai-coach" element={<AiCoach />} />
+          <Route path="/water" element={<WaterTracking />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </motion.div>
