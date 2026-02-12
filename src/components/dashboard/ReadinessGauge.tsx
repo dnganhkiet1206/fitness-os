@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { ReadinessResult } from '@/lib/types';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface ReadinessGaugeProps {
   result: ReadinessResult;
@@ -9,6 +11,8 @@ interface ReadinessGaugeProps {
 const spring = { type: 'spring' as const, stiffness: 200, damping: 26 };
 
 const ReadinessGauge = ({ result }: ReadinessGaugeProps) => {
+  const { lang } = useAppSettings();
+  const T = t(lang);
   const { score, status, explain, recommendation, subscores, acwr } = result;
 
   const gradientColors = status === 'green' 
@@ -19,7 +23,7 @@ const ReadinessGauge = ({ result }: ReadinessGaugeProps) => {
 
   const glowColor = status === 'green' ? 'hsl(160 84% 39% / 0.3)' : status === 'yellow' ? 'hsl(43 96% 56% / 0.3)' : 'hsl(0 84% 60% / 0.3)';
   const colorClass = status === 'green' ? 'readiness-green' : status === 'yellow' ? 'readiness-yellow' : 'readiness-red';
-  const statusLabel = status === 'green' ? 'TẬP LUYỆN' : status === 'yellow' ? 'VỪA PHẢI' : 'PHỤC HỒI';
+  const statusLabel = status === 'green' ? T.dcReadinessTrain : status === 'yellow' ? T.dcReadinessModerate : T.dcReadinessRecover;
   const bgStroke = 'hsl(225, 10%, 12%)';
 
   const radius = 52;
@@ -35,7 +39,6 @@ const ReadinessGauge = ({ result }: ReadinessGaugeProps) => {
 
   return (
     <div className="metric-card card-shimmer col-span-full lg:col-span-2 flex flex-col items-center gap-7 py-10 relative overflow-hidden">
-      {/* Ambient glow */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 40%, ${glowColor}, transparent 60%)` }} />
 
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground relative">
@@ -44,10 +47,9 @@ const ReadinessGauge = ({ result }: ReadinessGaugeProps) => {
           animate={{ scale: [1, 1.3, 1] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         />
-        Điểm Sẵn Sàng
+        {T.dcReadinessTitle}
       </div>
 
-      {/* Ring gauge - larger, more dramatic */}
       <div className="relative w-52 h-52">
         <svg className="w-52 h-52 -rotate-90" viewBox="0 0 120 120">
           <circle cx="60" cy="60" r={radius} fill="none" stroke={bgStroke} strokeWidth="6" />
@@ -99,7 +101,6 @@ const ReadinessGauge = ({ result }: ReadinessGaugeProps) => {
         </div>
       </div>
 
-      {/* Sub-scores as mini cards */}
       <motion.div
         className="flex gap-3 relative"
         initial={{ opacity: 0, y: 10 }}
@@ -118,7 +119,6 @@ const ReadinessGauge = ({ result }: ReadinessGaugeProps) => {
         </div>
       </motion.div>
 
-      {/* Explain + recommendation */}
       <motion.div
         className="w-full px-5 space-y-3 relative"
         initial={{ opacity: 0 }}

@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Scale, TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface Props {
   todayWeight: number | null;
@@ -14,6 +16,8 @@ interface Props {
 const spring = { type: 'spring' as const, stiffness: 300, damping: 25 };
 
 export default function WeightCheckin({ todayWeight, profileWeight, onLog, saving }: Props) {
+  const { lang } = useAppSettings();
+  const T = t(lang);
   const [weight, setWeight] = useState(todayWeight?.toString() || profileWeight?.toString() || '70');
   const [editing, setEditing] = useState(!todayWeight);
 
@@ -32,7 +36,7 @@ export default function WeightCheckin({ todayWeight, profileWeight, onLog, savin
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at top right, hsl(195 100% 50%), transparent 60%)' }} />
 
       <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 relative">
-        <Scale className="w-3.5 h-3.5" /> Cân Nặng
+        <Scale className="w-3.5 h-3.5" /> {T.dcWeightTitle}
       </h3>
 
       {todayWeight && !editing ? (
@@ -69,7 +73,7 @@ export default function WeightCheckin({ todayWeight, profileWeight, onLog, savin
           />
           <span className="text-sm text-muted-foreground">kg</span>
           <Button size="sm" onClick={handleSubmit} disabled={saving} className="rounded-xl haptic-press">
-            {saving ? '...' : 'Lưu'}
+            {saving ? '...' : T.save}
           </Button>
         </motion.div>
       )}

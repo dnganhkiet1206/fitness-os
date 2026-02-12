@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import type { BiometricSample, WearableSource } from '@/lib/types';
 import { Heart, Activity, Wind, Droplets, Wifi, WifiOff } from 'lucide-react';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface BiometricsCardProps {
   sample: BiometricSample;
@@ -10,6 +12,8 @@ interface BiometricsCardProps {
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
 
 const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
+  const { lang } = useAppSettings();
+  const T = t(lang);
   const m = sample.metrics;
   const confidence = Math.round(sample.confidence_0_1 * 100);
   const connectedDevice = wearables.find(w => w.connected);
@@ -24,11 +28,10 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
 
   return (
     <div className="metric-card card-shimmer space-y-5 relative overflow-hidden">
-      {/* Ambient glow */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at top left, hsl(0 100% 60%), transparent 50%)' }} />
 
       <div className="flex items-center justify-between relative">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Sinh Trắc Học</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{T.dcBioTitle}</h3>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {connectedDevice ? (
             <>
@@ -40,7 +43,7 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
           ) : (
             <>
               <WifiOff className="w-3 h-3 text-readiness-red" />
-              <span>Chưa kết nối</span>
+              <span>{T.dcBioNotConnected}</span>
             </>
           )}
         </div>
@@ -55,7 +58,6 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
             transition={{ ...spring, delay: 0.1 + i * 0.06 }}
             className="group relative bg-secondary/20 rounded-xl p-3.5 border border-border/20 hover:border-border/40 transition-all duration-300 overflow-hidden"
           >
-            {/* Hover gradient */}
             <div className={`absolute inset-0 bg-gradient-to-br ${metric.gradient} opacity-0 group-hover:opacity-[0.06] transition-opacity duration-300 rounded-xl`} />
             
             <div className="relative flex items-start gap-2.5">
@@ -74,7 +76,7 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
                 <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">
                   {metric.label}
                   {metric.estimated && (
-                    <span className="ml-1 text-readiness-yellow">est.</span>
+                    <span className="ml-1 text-readiness-yellow">{T.dcBioEstimate}</span>
                   )}
                 </div>
               </div>
@@ -84,10 +86,10 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
       </div>
 
       <div className="flex items-center gap-2 text-[10px] text-muted-foreground relative">
-        <span>Nguồn: {sample.source === 'camera_rppg' ? 'Camera rPPG' : sample.source}</span>
+        <span>{T.dcBioSource}: {sample.source === 'camera_rppg' ? 'Camera rPPG' : sample.source}</span>
         <span>·</span>
-        <span>Độ tin cậy: <span className="font-mono text-foreground">{confidence}%</span></span>
-        {sample.source === 'camera_rppg' && <span className="text-readiness-yellow">⚠ Dự phòng</span>}
+        <span>{T.dcBioConfidence}: <span className="font-mono text-foreground">{confidence}%</span></span>
+        {sample.source === 'camera_rppg' && <span className="text-readiness-yellow">⚠ {T.dcBioFallback}</span>}
       </div>
     </div>
   );

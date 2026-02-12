@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface ReadinessTrendProps {
   trend: { day: string; score: number; status: 'green' | 'yellow' | 'red' }[];
@@ -13,11 +15,13 @@ const statusGradient = {
 };
 
 const ReadinessTrend = ({ trend }: ReadinessTrendProps) => {
+  const { lang } = useAppSettings();
+  const T = t(lang);
   const maxHeight = 64;
 
   return (
     <div className="metric-card card-shimmer space-y-4 relative overflow-hidden">
-      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground relative">Sẵn Sàng 7 Ngày</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground relative">{T.dcReadinessTrend}</h3>
       <div className="flex items-end justify-between gap-2 h-24 relative">
         {trend.map((d, i) => {
           const h = (d.score / 100) * maxHeight;
