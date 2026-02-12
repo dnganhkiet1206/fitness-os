@@ -1,5 +1,5 @@
-import { Camera, Plus } from 'lucide-react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Plus } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
 import BiometricsCard from '@/components/dashboard/BiometricsCard';
@@ -44,14 +44,9 @@ const scaleReveal = {
   show: { opacity: 1, scale: 1, filter: 'blur(0px)', transition: { ...spring, duration: 0.7 } },
 };
 
-const slideDown = {
-  hidden: { opacity: 0, y: -20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' as const } },
-};
 
 const Index = () => {
-  const { user, loading: authLoading, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: dailyLog } = useDailyLog();
   const { data: todaySleep } = useTodaySleep();
