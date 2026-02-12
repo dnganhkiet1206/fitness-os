@@ -142,16 +142,8 @@ const WaterTracking = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b border-border/50" style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px)' }}>
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-xl">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-lg font-bold tracking-tight">Theo Dõi Nước Uống</h1>
-        </div>
-      </header>
-
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <h2 className="text-2xl font-bold tracking-tight">Theo Dõi Nước Uống</h2>
         {/* Circular progress */}
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>
           <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
