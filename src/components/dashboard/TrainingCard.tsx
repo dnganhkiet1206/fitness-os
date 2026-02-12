@@ -20,7 +20,7 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
   return (
     <div className="metric-card space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Training</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tập Luyện</h3>
         {hasPR && (
           <div className="flex items-center gap-1 text-xs font-semibold text-readiness-yellow">
             <Trophy className="w-3.5 h-3.5" />
@@ -59,14 +59,14 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
 
       {/* 7-day volume */}
       <div className="text-xs text-muted-foreground">
-        7-day volume: <span className="font-mono font-semibold text-foreground">{totalVolume.toLocaleString()}</span>
+        Khối lượng 7 ngày: <span className="font-mono font-semibold text-foreground">{totalVolume.toLocaleString()}</span>
       </div>
 
       {/* Pain flags */}
       {painFlags.length > 0 && (
         <div className="flex items-center gap-2 text-xs text-readiness-yellow bg-readiness-yellow/10 rounded-lg px-3 py-2">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-          <span>Pain: {painFlags.map(p => `${p.bodyPart} (${p.pain_0_10}/10)`).join(', ')}</span>
+          <span>Đau: {painFlags.map(p => `${p.bodyPart} (${p.pain_0_10}/10)`).join(', ')}</span>
         </div>
       )}
     </div>

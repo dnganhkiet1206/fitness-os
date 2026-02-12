@@ -25,11 +25,11 @@ const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
 
   return (
     <div className="metric-card space-y-4">
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sleep</h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Giấc Ngủ</h3>
 
       <div className="flex items-baseline gap-2">
         <span className="text-3xl font-mono font-bold">{hours}h {mins}m</span>
-        <span className="text-xs text-muted-foreground">/ {targetHours}h target</span>
+        <span className="text-xs text-muted-foreground">/ mục tiêu {targetHours}h</span>
       </div>
 
       {/* Progress bar */}
@@ -60,7 +60,7 @@ const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
           <span>{bedtime}</span>
         </div>
         <div className="text-xs font-mono text-muted-foreground">
-          Quality: {sleep.quality_1_10}/10
+          Chất lượng: {sleep.quality_1_10}/10
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Sunrise className="w-3 h-3" />

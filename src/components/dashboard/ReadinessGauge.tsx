@@ -11,7 +11,7 @@ const ReadinessGauge = ({ result }: ReadinessGaugeProps) => {
   const colorClass = status === 'green' ? 'text-readiness-green' : status === 'yellow' ? 'text-readiness-yellow' : 'text-readiness-red';
   const glowClass = status === 'green' ? 'glow-green' : status === 'yellow' ? 'glow-yellow' : 'glow-red';
   const strokeColor = status === 'green' ? 'hsl(142, 71%, 45%)' : status === 'yellow' ? 'hsl(45, 93%, 47%)' : 'hsl(0, 72%, 51%)';
-  const statusLabel = status === 'green' ? 'TRAIN' : status === 'yellow' ? 'MODERATE' : 'RECOVER';
+  const statusLabel = status === 'green' ? 'TẬP LUYỆN' : status === 'yellow' ? 'VỪA PHẢI' : 'PHỤC HỒI';
 
   const circumference = 2 * Math.PI * 45;
   const offset = useMemo(() => circumference - (score / 100) * circumference, [score, circumference]);
@@ -27,7 +27,7 @@ const ReadinessGauge = ({ result }: ReadinessGaugeProps) => {
     <div className="metric-card col-span-full lg:col-span-2 flex flex-col items-center gap-6 py-8">
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         <span className={`inline-block w-2 h-2 rounded-full ${status === 'green' ? 'bg-readiness-green' : status === 'yellow' ? 'bg-readiness-yellow' : 'bg-readiness-red'}`} />
-        Readiness Score
+        Điểm Sẵn Sàng
       </div>
 
       {/* Ring gauge */}

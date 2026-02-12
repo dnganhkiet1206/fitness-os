@@ -22,7 +22,7 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
   return (
     <div className="metric-card space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Biometrics</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sinh Trắc Học</h3>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {connectedDevice ? (
             <>
@@ -33,7 +33,7 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
           ) : (
             <>
               <WifiOff className="w-3 h-3 text-readiness-red" />
-              <span>No device</span>
+              <span>Chưa kết nối</span>
             </>
           )}
         </div>
@@ -60,10 +60,10 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
       </div>
 
       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-        <span>Source: {sample.source === 'camera_rppg' ? 'Camera rPPG' : sample.source}</span>
+        <span>Nguồn: {sample.source === 'camera_rppg' ? 'Camera rPPG' : sample.source}</span>
         <span>·</span>
-        <span>Confidence: {confidence}%</span>
-        {sample.source === 'camera_rppg' && <span className="text-readiness-yellow">⚠ Fallback</span>}
+        <span>Độ tin cậy: {confidence}%</span>
+        {sample.source === 'camera_rppg' && <span className="text-readiness-yellow">⚠ Dự phòng</span>}
       </div>
     </div>
   );
