@@ -650,9 +650,17 @@ const Settings = () => {
               transition={{ duration: 0.2 }}
               className="space-y-5"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold tracking-tight">{i18n.settingsTitle}</h2>
+              {/* Header with Avatar */}
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 border-2 border-primary/20 flex items-center justify-center shrink-0">
+                  <span className="text-xl font-bold text-primary">
+                    {(form.name || user.email || '?')[0].toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl font-bold tracking-tight">{form.name || user.email?.split('@')[0]}</h2>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                </div>
               </div>
 
               {/* Account */}

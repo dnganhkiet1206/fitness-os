@@ -7,6 +7,8 @@ import type { ScannedFoodItem } from '@/components/logging/ScanFoodDialog';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
+import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import BiometricsCard from '@/components/dashboard/BiometricsCard';
 import NutritionCard from '@/components/dashboard/NutritionCard';
 import SleepCard from '@/components/dashboard/SleepCard';
@@ -57,11 +59,11 @@ const scaleReveal = {
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
-  const { data: dailyLog } = useDailyLog();
-  const { data: todaySleep } = useTodaySleep();
-  const { data: recentWorkouts } = useRecentWorkouts();
-  const { data: todayBio } = useTodayBiometrics();
-  const { data: readinessTrend } = useReadinessTrend();
+  const { data: dailyLog, isLoading: dailyLogLoading } = useDailyLog();
+  const { data: todaySleep, isLoading: sleepLoading } = useTodaySleep();
+  const { data: recentWorkouts, isLoading: workoutsLoading } = useRecentWorkouts();
+  const { data: todayBio, isLoading: bioLoading } = useTodayBiometrics();
+  const { data: readinessTrend, isLoading: trendLoading } = useReadinessTrend();
   const { data: nudges } = useNudges();
   const { data: wearables } = useWearables();
   const { data: supplementChecklist } = useTodaySupplementChecklist();
@@ -91,24 +93,12 @@ const Index = () => {
   }, [user, awardsChecked]);
 
   if (authLoading || profileLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={spring}
-          className="flex flex-col items-center gap-3"
-        >
-          <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center">
-            <div className="w-4 h-4 rounded-full bg-primary animate-pulse" />
-          </div>
-          <span className="text-sm text-muted-foreground">{i18n.loading}</span>
-        </motion.div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
   if (!user) return <Navigate to="/auth" replace />;
   if (profile && !profile.onboarding_completed) return <Navigate to="/onboarding" replace />;
+
+  const dataLoading = dailyLogLoading || sleepLoading || workoutsLoading || bioLoading || trendLoading;
 
   const now = new Date();
   const greeting = now.getHours() < 12 ? i18n.goodMorning : now.getHours() < 18 ? i18n.goodAfternoon : i18n.goodEvening;
@@ -301,6 +291,15 @@ const Index = () => {
         </AnimatePresence>
 
         {/* Main grid */}
+        {dataLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+            <Skeleton className="h-52 rounded-2xl lg:col-span-2" />
+            <div className="lg:col-span-2 space-y-5">
+              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-24 rounded-2xl" />
+            </div>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
           <motion.div variants={scaleReveal} className="lg:col-span-2">
             {readinessResult ? (
@@ -327,6 +326,7 @@ const Index = () => {
             </motion.div>
           </div>
         </div>
+        )}
 
         {/* Second row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
