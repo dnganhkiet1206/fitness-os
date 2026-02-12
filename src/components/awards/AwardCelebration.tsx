@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { playAchievementSound } from '@/lib/achievement-sound';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Flame, Dumbbell, Calendar, Target, Moon, Footprints, Beef, X } from 'lucide-react';
 
@@ -78,6 +79,7 @@ export function AwardCelebrationOverlay() {
       setCurrent(queue[0]);
       setQueue(q => q.slice(1));
       setConfetti(generateConfetti(40));
+      playAchievementSound();
     }
   }, [current, queue]);
 
