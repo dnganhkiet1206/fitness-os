@@ -215,8 +215,8 @@ const Index = () => {
             { label: 'Nhập sinh trắc', Dialog: LogBiometricsDialog },
           ].map(({ label, Dialog }) => (
             <Dialog key={label}>
-              <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
-                <Button variant="outline" size="sm" className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
+              <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.94 }} transition={spring}>
+                <Button variant="outline" size="sm" className="rounded-xl border-border/40 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl haptic-press shadow-[0_1px_8px_hsl(225_15%_6%_/_0.3)]">
                   <Plus className="w-3 h-3 mr-1.5" />{label}
                 </Button>
               </motion.div>
