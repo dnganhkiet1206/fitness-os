@@ -1,4 +1,4 @@
-import { Home, Utensils, Dumbbell, Pill, Moon, TrendingUp, Settings, Sparkles, Droplets, ShoppingCart, Target, BarChart3, Medal, Swords } from 'lucide-react';
+import { Home, Utensils, Dumbbell, Pill, Moon, TrendingUp, Settings, Sparkles, Droplets, ShoppingCart, Target, BarChart3, Medal, Swords, Heart } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { motion } from 'framer-motion';
 import {
@@ -21,6 +21,7 @@ const mainItems = [
   { title: 'Supplements', url: '/supplements', icon: Pill },
   { title: 'Giấc ngủ', url: '/sleep', icon: Moon },
   { title: 'Nước uống', url: '/water', icon: Droplets },
+  { title: 'Sinh trắc học', url: '/biometrics', icon: Heart },
   { title: 'Tiến trình', url: '/progress', icon: TrendingUp },
 ];
 
