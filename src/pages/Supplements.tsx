@@ -11,29 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowLeft, Plus, Trash2, Pill, TrendingUp, Calendar, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
 const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { ...spring, duration: 0.5 } } };
 
-const CATEGORIES = [
-  { value: 'protein', label: 'Protein' },
-  { value: 'creatine', label: 'Creatine' },
-  { value: 'vitamin', label: 'Vitamin' },
-  { value: 'mineral', label: 'Khoáng chất' },
-  { value: 'nootropic', label: 'Nootropic' },
-  { value: 'other', label: 'Khác' },
-];
-
-const TIMINGS = [
-  { value: 'morning', label: 'Sáng' },
-  { value: 'pre-workout', label: 'Trước tập' },
-  { value: 'post-workout', label: 'Sau tập' },
-  { value: 'with meals', label: 'Cùng bữa ăn' },
-  { value: 'before bed', label: 'Trước ngủ' },
-];
-
 const Supplements = () => {
   const { user, loading } = useAuth();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
   const navigate = useNavigate();
   const { data: supplements } = useSupplements();
   const addSup = useAddSupplement();
@@ -41,6 +27,23 @@ const Supplements = () => {
   const deleteSup = useDeleteSupplement();
   const { data: adherence7d } = useSupplementAdherence(7);
   const { data: adherence30d } = useSupplementAdherence(30);
+
+  const CATEGORIES = [
+    { value: 'protein', label: i18n.supplementsCatProtein },
+    { value: 'creatine', label: i18n.supplementsCatCreatine },
+    { value: 'vitamin', label: i18n.supplementsCatVitamin },
+    { value: 'mineral', label: i18n.supplementsCatMineral },
+    { value: 'nootropic', label: i18n.supplementsCatNootropic },
+    { value: 'other', label: i18n.supplementsCatOther },
+  ];
+
+  const TIMINGS = [
+    { value: 'morning', label: i18n.supplementsTimMorning },
+    { value: 'pre-workout', label: i18n.supplementsTimPreWorkout },
+    { value: 'post-workout', label: i18n.supplementsTimPostWorkout },
+    { value: 'with meals', label: i18n.supplementsTimWithMeal },
+    { value: 'before bed', label: i18n.supplementsTimBeforeBed },
+  ];
 
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -56,14 +59,13 @@ const Supplements = () => {
     try {
       if (editId) {
         await updateSup.mutateAsync({ id: editId, name: form.name, category: form.category, dose_text: form.dose_text, timing: form.timing, notes: form.notes });
-        // Update cycle via direct call since hook doesn't include these fields
         const { error } = await (await import('@/integrations/supabase/client')).supabase
           .from('supplements').update({ cycle_mode: form.cycle_mode, cycle_on_weeks: form.cycle_on_weeks, cycle_off_weeks: form.cycle_off_weeks }).eq('id', editId);
         if (error) throw error;
-        toast.success('Đã cập nhật!');
+        toast.success(i18n.supplementsUpdated);
       } else {
         await addSup.mutateAsync(form);
-        toast.success('Đã thêm!');
+        toast.success(i18n.supplementsAdded);
       }
       setAddOpen(false);
       setEditId(null);
@@ -89,73 +91,70 @@ const Supplements = () => {
         className="sticky top-0 z-50 border-b border-border/50" style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px) saturate(1.5)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="rounded-xl"><ArrowLeft className="w-4 h-4" /></Button>
-          <h1 className="text-lg font-bold"><span className="text-gradient-green">Supplements</span></h1>
+          <h1 className="text-lg font-bold"><span className="text-gradient-green">{i18n.supplementsTitle}</span></h1>
         </div>
       </motion.header>
 
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }} className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-        {/* Adherence Stats */}
         <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4">
           <div className="metric-card text-center">
             <TrendingUp className="w-5 h-5 mx-auto text-primary mb-2" />
             <p className="text-3xl font-mono font-bold">{adherence7d?.rate ?? 0}%</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Tuần này</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{i18n.supplementsThisWeek}</p>
           </div>
           <div className="metric-card text-center">
             <Calendar className="w-5 h-5 mx-auto text-metric-purple mb-2" />
             <p className="text-3xl font-mono font-bold">{adherence30d?.rate ?? 0}%</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">30 ngày</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{i18n.supplements30Days}</p>
           </div>
         </motion.div>
 
-        {/* Add button */}
         <motion.div variants={fadeUp} className="flex justify-between items-center">
-          <h3 className="text-sm font-semibold">Stack của bạn ({supplements?.length ?? 0})</h3>
+          <h3 className="text-sm font-semibold">{i18n.supplementsYourStack} ({supplements?.length ?? 0})</h3>
           <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) { setEditId(null); resetForm(); } }}>
             <DialogTrigger asChild>
-              <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />Thêm</Button>
+              <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.add}</Button>
             </DialogTrigger>
             <DialogContent className="max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>{editId ? 'Sửa Supplement' : 'Thêm Supplement'}</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editId ? i18n.supplementsEditTitle : i18n.supplementsAddTitle}</DialogTitle></DialogHeader>
               <div className="space-y-4">
-                <div className="space-y-2"><Label>Tên</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="VD: Creatine" /></div>
+                <div className="space-y-2"><Label>{i18n.supplementsName}</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="VD: Creatine" /></div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Loại</Label>
+                    <Label>{i18n.supplementsCategory}</Label>
                     <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2"><Label>Liều lượng</Label><Input value={form.dose_text} onChange={e => setForm(f => ({ ...f, dose_text: e.target.value }))} placeholder="5g" /></div>
+                  <div className="space-y-2"><Label>{i18n.supplementsDose}</Label><Input value={form.dose_text} onChange={e => setForm(f => ({ ...f, dose_text: e.target.value }))} placeholder="5g" /></div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Thời điểm</Label>
+                  <Label>{i18n.supplementsTiming}</Label>
                   <Select value={form.timing} onValueChange={v => setForm(f => ({ ...f, timing: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>{TIMINGS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2"><Label>Ghi chú / Chống chỉ định</Label><Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="VD: Uống cùng bữa ăn" /></div>
+                <div className="space-y-2"><Label>{i18n.supplementsNotes}</Label><Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
 
-                {/* Cycle settings */}
                 <div className="border-t border-border/40 pt-4 space-y-3">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Chu kỳ (Cycle)</Label>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">{i18n.supplementsCycle}</Label>
                   <Select value={form.cycle_mode} onValueChange={v => setForm(f => ({ ...f, cycle_mode: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Không cycle</SelectItem>
-                      <SelectItem value="on_off">On/Off tuần</SelectItem>
+                      <SelectItem value="none">{i18n.supplementsNoCycle}</SelectItem>
+                      <SelectItem value="on_off">{i18n.supplementsOnOff}</SelectItem>
                     </SelectContent>
                   </Select>
                   {form.cycle_mode === 'on_off' && (
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label className="text-xs">Tuần ON</Label>
+                        <Label className="text-xs">{i18n.supplementsWeeksOn}</Label>
                         <Input type="number" value={form.cycle_on_weeks} onChange={e => setForm(f => ({ ...f, cycle_on_weeks: Number(e.target.value) }))} min={1} />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Tuần OFF</Label>
+                        <Label className="text-xs">{i18n.supplementsWeeksOff}</Label>
                         <Input type="number" value={form.cycle_off_weeks} onChange={e => setForm(f => ({ ...f, cycle_off_weeks: Number(e.target.value) }))} min={1} />
                       </div>
                     </div>
@@ -163,14 +162,13 @@ const Supplements = () => {
                 </div>
 
                 <Button onClick={handleSave} disabled={addSup.isPending || updateSup.isPending} className="w-full">
-                  {addSup.isPending || updateSup.isPending ? 'Đang lưu...' : editId ? 'Cập nhật' : 'Thêm'}
+                  {addSup.isPending || updateSup.isPending ? i18n.saving : editId ? i18n.save : i18n.add}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
         </motion.div>
 
-        {/* Supplement list */}
         {supplements && supplements.length > 0 ? (
           supplements.map(s => (
             <motion.div key={s.id} variants={fadeUp} className="glass-card p-4 space-y-2">
@@ -183,13 +181,13 @@ const Supplements = () => {
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{s.dose_text} · {TIMINGS.find(t => t.value === s.timing)?.label || s.timing}</p>
                   {s.cycle_mode === 'on_off' && (
-                    <p className="text-[10px] text-metric-purple mt-1">🔄 Cycle: {s.cycle_on_weeks} tuần ON / {s.cycle_off_weeks} tuần OFF</p>
+                    <p className="text-[10px] text-metric-purple mt-1">🔄 Cycle: {s.cycle_on_weeks} {i18n.supplementsWeeksOn} / {s.cycle_off_weeks} {i18n.supplementsWeeksOff}</p>
                   )}
                   {s.notes && <p className="text-[10px] text-muted-foreground mt-1">📝 {s.notes}</p>}
                 </div>
                 <div className="flex gap-1">
                   <Button variant="ghost" size="sm" onClick={() => startEdit(s)}><Edit className="w-3.5 h-3.5" /></Button>
-                  <Button variant="ghost" size="sm" onClick={() => { deleteSup.mutate(s.id); toast.success('Đã xóa'); }}><Trash2 className="w-3.5 h-3.5 text-muted-foreground" /></Button>
+                  <Button variant="ghost" size="sm" onClick={() => { deleteSup.mutate(s.id); toast.success(i18n.deleted); }}><Trash2 className="w-3.5 h-3.5 text-muted-foreground" /></Button>
                 </div>
               </div>
             </motion.div>
@@ -197,7 +195,7 @@ const Supplements = () => {
         ) : (
           <motion.div variants={fadeUp} className="text-center py-12 text-muted-foreground">
             <Pill className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Chưa có supplement nào</p>
+            <p className="text-sm">{i18n.supplementsNoItems}</p>
           </motion.div>
         )}
       </motion.main>

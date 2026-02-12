@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowLeft, Search, Star, Clock, Plus, Utensils, ShoppingCart, Trash2, Heart } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
 const fadeUp = {
@@ -22,6 +23,8 @@ const fadeUp = {
 const Nutrition = () => {
   const { user, loading: authLoading } = useAuth();
   const { data: profile } = useProfile();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const { data: searchResults } = useFoodSearch(search, search.length > 0);
@@ -43,7 +46,7 @@ const Nutrition = () => {
     if (!newPlanName.trim()) return;
     try {
       const result = await createPlan.mutateAsync({ name: newPlanName, goal: newPlanGoal, meals_per_day: newPlanMeals });
-      toast.success('Đã tạo meal plan!');
+      toast.success(i18n.nutritionCreated);
       setNewPlanOpen(false);
       setNewPlanName('');
       navigate(`/meal-plan/${result.id}`);
@@ -69,7 +72,7 @@ const Nutrition = () => {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h1 className="text-lg font-bold">
-            <span className="text-gradient-green">Dinh Dưỡng</span>
+            <span className="text-gradient-green">{i18n.nutritionTitle}</span>
           </h1>
         </div>
       </motion.header>
@@ -77,24 +80,22 @@ const Nutrition = () => {
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-3xl mx-auto px-4 py-6 space-y-6">
         <Tabs defaultValue="foods" className="w-full">
           <TabsList className="grid grid-cols-3 w-full bg-secondary/40">
-            <TabsTrigger value="foods"><Search className="w-3.5 h-3.5 mr-1.5" />Thực phẩm</TabsTrigger>
-            <TabsTrigger value="plans"><Utensils className="w-3.5 h-3.5 mr-1.5" />Meal Plan</TabsTrigger>
-            <TabsTrigger value="shopping"><ShoppingCart className="w-3.5 h-3.5 mr-1.5" />Đi chợ</TabsTrigger>
+            <TabsTrigger value="foods"><Search className="w-3.5 h-3.5 mr-1.5" />{i18n.nutritionFoods}</TabsTrigger>
+            <TabsTrigger value="plans"><Utensils className="w-3.5 h-3.5 mr-1.5" />{i18n.nutritionMealPlan}</TabsTrigger>
+            <TabsTrigger value="shopping"><ShoppingCart className="w-3.5 h-3.5 mr-1.5" />{i18n.nutritionShopping}</TabsTrigger>
           </TabsList>
 
-          {/* FOODS TAB */}
           <TabsContent value="foods" className="space-y-5 mt-4">
             <motion.div variants={fadeUp}>
               <div className="relative">
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm thực phẩm..." className="pl-9" />
+                <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={i18n.nutritionSearchFood} className="pl-9" />
               </div>
             </motion.div>
 
-            {/* Search results */}
             {search && searchResults && (
               <motion.div variants={fadeUp} className="space-y-2">
-                <p className="text-xs text-muted-foreground">{searchResults.length} kết quả</p>
+                <p className="text-xs text-muted-foreground">{searchResults.length} {i18n.nutritionResults}</p>
                 {searchResults.map(f => (
                   <div key={f.id} className="glass-card p-3 flex items-center justify-between">
                     <div>
@@ -109,11 +110,10 @@ const Nutrition = () => {
               </motion.div>
             )}
 
-            {/* Favorites */}
             {!search && favorites && favorites.length > 0 && (
               <motion.div variants={fadeUp} className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-1.5">
-                  <Star className="w-3.5 h-3.5" /> Yêu thích
+                  <Star className="w-3.5 h-3.5" /> {i18n.nutritionFavorites}
                 </h3>
                 {favorites.map(f => (
                   <div key={f.id} className="glass-card p-3 flex items-center justify-between">
@@ -129,11 +129,10 @@ const Nutrition = () => {
               </motion.div>
             )}
 
-            {/* Recent */}
             {!search && recent && recent.length > 0 && (
               <motion.div variants={fadeUp} className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> Gần đây
+                  <Clock className="w-3.5 h-3.5" /> {i18n.nutritionRecent}
                 </h3>
                 {recent.map((f, i) => (
                   <div key={i} className="glass-card p-3">
@@ -145,43 +144,42 @@ const Nutrition = () => {
             )}
           </TabsContent>
 
-          {/* MEAL PLANS TAB */}
           <TabsContent value="plans" className="space-y-5 mt-4">
             <motion.div variants={fadeUp} className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Meal Plans của bạn</h3>
+              <h3 className="text-sm font-semibold">{i18n.nutritionYourPlans}</h3>
               <Dialog open={newPlanOpen} onOpenChange={setNewPlanOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />Tạo mới</Button>
+                  <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.nutritionCreateNew}</Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>Tạo Meal Plan</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>{i18n.nutritionCreatePlan}</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Tên plan</Label>
+                      <Label>{i18n.nutritionPlanName}</Label>
                       <Input value={newPlanName} onChange={e => setNewPlanName(e.target.value)} placeholder="VD: Meal Prep Tuần 1" />
                     </div>
                     <div className="space-y-2">
-                      <Label>Mục tiêu</Label>
+                      <Label>{i18n.settingsGoal}</Label>
                       <Select value={newPlanGoal} onValueChange={setNewPlanGoal}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="bulk">Tăng cân</SelectItem>
-                          <SelectItem value="cut">Giảm cân</SelectItem>
-                          <SelectItem value="maintain">Duy trì</SelectItem>
+                          <SelectItem value="bulk">{i18n.goalBulk}</SelectItem>
+                          <SelectItem value="cut">{i18n.goalCut}</SelectItem>
+                          <SelectItem value="maintain">{i18n.goalMaintain}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Số bữa/ngày</Label>
+                      <Label>{i18n.nutritionMealsPerDay}</Label>
                       <Select value={String(newPlanMeals)} onValueChange={v => setNewPlanMeals(Number(v))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {[3, 4, 5, 6].map(n => <SelectItem key={n} value={String(n)}>{n} bữa</SelectItem>)}
+                          {[3, 4, 5, 6].map(n => <SelectItem key={n} value={String(n)}>{n} {i18n.nutritionMeals}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
                     <Button onClick={handleCreatePlan} disabled={createPlan.isPending} className="w-full">
-                      {createPlan.isPending ? 'Đang tạo...' : 'Tạo Plan'}
+                      {createPlan.isPending ? i18n.nutritionCreating : i18n.nutritionCreateBtn}
                     </Button>
                   </div>
                 </DialogContent>
@@ -193,9 +191,9 @@ const Nutrition = () => {
                 <motion.div key={plan.id} variants={fadeUp} className="glass-card p-4 flex items-center justify-between">
                   <div className="cursor-pointer flex-1" onClick={() => navigate(`/meal-plan/${plan.id}`)}>
                     <p className="font-medium text-sm">{plan.name}</p>
-                    <p className="text-xs text-muted-foreground">{plan.meals_per_day} bữa/ngày · {plan.goal}</p>
+                    <p className="text-xs text-muted-foreground">{plan.meals_per_day} {i18n.nutritionMeals}/{lang === 'vi' ? 'ngày' : 'day'} · {plan.goal}</p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => { deletePlan.mutate(plan.id); toast.success('Đã xóa'); }}>
+                  <Button variant="ghost" size="sm" onClick={() => { deletePlan.mutate(plan.id); toast.success(i18n.deleted); }}>
                     <Trash2 className="w-4 h-4 text-muted-foreground" />
                   </Button>
                 </motion.div>
@@ -203,17 +201,16 @@ const Nutrition = () => {
             ) : (
               <motion.div variants={fadeUp} className="text-center py-12 text-muted-foreground">
                 <Utensils className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Chưa có meal plan nào</p>
+                <p className="text-sm">{i18n.nutritionNoPlans}</p>
               </motion.div>
             )}
           </TabsContent>
 
-          {/* SHOPPING LIST TAB */}
           <TabsContent value="shopping" className="space-y-5 mt-4">
             <motion.div variants={fadeUp} className="text-center py-12 text-muted-foreground">
               <ShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Tạo meal plan trước để có danh sách đi chợ</p>
-              <p className="text-xs mt-1">Shopping list được tạo tự động từ meal plan của bạn</p>
+              <p className="text-sm">{i18n.nutritionShoppingEmpty}</p>
+              <p className="text-xs mt-1">{i18n.nutritionShoppingDesc}</p>
             </motion.div>
           </TabsContent>
         </Tabs>

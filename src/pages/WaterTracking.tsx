@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
 import { toast } from 'sonner';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
+import { getLocale } from '@/lib/i18n';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
 
@@ -31,6 +33,9 @@ function getLast7Days() {
 
 const WaterTracking = () => {
   const { user, loading } = useAuth();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
+  const locale = getLocale(lang);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const today = startOfDay(new Date());
@@ -38,7 +43,6 @@ const WaterTracking = () => {
     return localStorage.getItem('water_reminder') === 'true';
   });
 
-  // Fetch profile for water target
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
@@ -50,7 +54,6 @@ const WaterTracking = () => {
 
   const target = profile?.water_target_ml ?? 2500;
 
-  // Today's water logs
   const { data: todayLogs } = useQuery({
     queryKey: ['water-today', user?.id, today],
     queryFn: async () => {
@@ -65,7 +68,6 @@ const WaterTracking = () => {
     enabled: !!user,
   });
 
-  // Last 7 days aggregated
   const days7 = getLast7Days();
   const { data: weekData } = useQuery({
     queryKey: ['water-week', user?.id, days7[0]],
@@ -94,7 +96,7 @@ const WaterTracking = () => {
       queryClient.invalidateQueries({ queryKey: ['water-today'] });
       queryClient.invalidateQueries({ queryKey: ['water-week'] });
     },
-    onError: () => toast.error('Không thể ghi nhận'),
+    onError: () => toast.error(i18n.waterCantLog),
   });
 
   const removeLastGlass = useMutation({
@@ -110,16 +112,15 @@ const WaterTracking = () => {
     },
   });
 
-  // Reminder toggle
   const toggleReminder = () => {
     const next = !reminderOn;
     setReminderOn(next);
     localStorage.setItem('water_reminder', String(next));
     if (next && 'Notification' in window) {
       Notification.requestPermission();
-      toast.success('Nhắc uống nước mỗi giờ đã bật');
+      toast.success(i18n.waterReminderEnabled);
     } else {
-      toast.info('Đã tắt nhắc nhở');
+      toast.info(i18n.waterReminderDisabled);
     }
   };
 
@@ -130,10 +131,9 @@ const WaterTracking = () => {
   const pct = Math.min((todayTotal / target) * 100, 100);
   const glasses = Math.floor(todayTotal / GLASS_ML);
 
-  // Build weekly chart data
   const weekChart = days7.map(day => {
     const total = (weekData ?? []).filter(w => w.date === day).reduce((s, w) => s + w.amount_ml, 0);
-    const label = new Date(day + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'short' });
+    const label = new Date(day + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short' });
     return { day: label, ml: total, hit: total >= target };
   });
 
@@ -143,8 +143,7 @@ const WaterTracking = () => {
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        <h2 className="text-2xl font-bold tracking-tight">Theo Dõi Nước Uống</h2>
-        {/* Circular progress */}
+        <h2 className="text-2xl font-bold tracking-tight">{i18n.waterTitle}</h2>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>
           <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
             <CardContent className="pt-6 flex flex-col items-center gap-4">
@@ -170,12 +169,11 @@ const WaterTracking = () => {
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Target className="w-4 h-4" />
-                <span>{glasses} ly ({GLASS_ML}ml/ly)</span>
+                <span>{glasses} {i18n.waterGlasses} ({GLASS_ML}ml)</span>
                 <span>·</span>
-                <span>{Math.round(pct)}% mục tiêu</span>
+                <span>{Math.round(pct)}% {i18n.waterOfTarget}</span>
               </div>
 
-              {/* Action buttons */}
               <div className="flex items-center gap-3 mt-2">
                 <motion.div whileTap={{ scale: 0.9 }} transition={spring}>
                   <Button
@@ -212,20 +210,18 @@ const WaterTracking = () => {
                 </motion.div>
               </div>
 
-              {/* Reminder toggle */}
               <Button variant="ghost" size="sm" onClick={toggleReminder} className="mt-2 text-muted-foreground">
                 {reminderOn ? <Bell className="w-4 h-4 mr-1.5" /> : <BellOff className="w-4 h-4 mr-1.5" />}
-                {reminderOn ? 'Nhắc nhở đang bật' : 'Bật nhắc nhở mỗi giờ'}
+                {reminderOn ? i18n.waterReminderOn : i18n.waterReminderOff}
               </Button>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Weekly chart */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: 0.1 }}>
           <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Tuần Này</CardTitle>
+              <CardTitle className="text-base">{i18n.waterWeekChart}</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -233,7 +229,7 @@ const WaterTracking = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(225 10% 14%)" vertical={false} />
                   <XAxis dataKey="day" tick={{ fill: 'hsl(220 8% 46%)', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: 'hsl(220 8% 46%)', fontSize: 12 }} axisLine={false} tickLine={false} unit="ml" />
-                  <ReferenceLine y={target} stroke="hsl(160 84% 39%)" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `Mục tiêu`, fill: 'hsl(160 84% 39%)', fontSize: 11, position: 'right' }} />
+                  <ReferenceLine y={target} stroke="hsl(160 84% 39%)" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: i18n.waterTargetLabel, fill: 'hsl(160 84% 39%)', fontSize: 11, position: 'right' }} />
                   <Bar dataKey="ml" radius={[6, 6, 0, 0]}>
                     {weekChart.map((entry, i) => (
                       <Cell key={i} fill={entry.hit ? 'hsl(217 91% 60%)' : 'hsl(225 10% 20%)'} />
@@ -245,12 +241,11 @@ const WaterTracking = () => {
           </Card>
         </motion.div>
 
-        {/* Today's log */}
         {todayLogs && todayLogs.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: 0.2 }}>
             <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Hôm Nay ({todayLogs.length} lần)</CardTitle>
+                <CardTitle className="text-base">{i18n.waterTodayLog} ({todayLogs.length} {i18n.waterTimes})</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
@@ -259,7 +254,7 @@ const WaterTracking = () => {
                       <Droplets className="w-3 h-3 text-[hsl(var(--metric-blue))]" />
                       <span>{log.amount_ml}ml</span>
                       <span className="text-muted-foreground text-xs">
-                        {new Date(log.logged_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(log.logged_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
                   ))}
