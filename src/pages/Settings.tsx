@@ -717,6 +717,25 @@ const Settings = () => {
                 </div>
               </div>
 
+              {/* Legal */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground px-1 mb-2">Pháp lý</p>
+                <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden backdrop-blur-sm">
+                  <motion.button
+                    onClick={() => navigate('/legal')}
+                    className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left active:bg-secondary/40 transition-colors"
+                    whileTap={{ scale: 0.98 }}
+                    transition={spring}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center shrink-0">
+                      <Scale className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground flex-1">Chính sách & Điều khoản</span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+                  </motion.button>
+                </div>
+              </div>
+
               {/* Sign Out */}
               <div>
                 <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden backdrop-blur-sm">
