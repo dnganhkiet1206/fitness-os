@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import PullToRefresh from '@/components/PullToRefresh';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Area, AreaChart, ComposedChart, ReferenceLine } from 'recharts';
 import { toPng } from 'html-to-image';
@@ -50,6 +51,11 @@ export default function WeeklyReview() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [exporting, setExporting] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries();
+  };
 
   const weekStart = useMemo(() => {
     const ws = getWeekStart(new Date());
@@ -300,7 +306,7 @@ export default function WeeklyReview() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-background">
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -486,6 +492,6 @@ export default function WeeklyReview() {
 
         <div className="h-8" />
       </motion.main>
-    </div>
+    </PullToRefresh>
   );
 }

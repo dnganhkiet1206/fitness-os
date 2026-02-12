@@ -1,4 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import PullToRefresh from '@/components/PullToRefresh';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Scale, Ruler, Camera, Trash2, Plus, TrendingUp, TrendingDown } from 'lucide-react';
@@ -28,6 +30,10 @@ export default function Progress() {
   const i18n = t(lang);
   const locale = getLocale(lang);
   const { data: profile } = useProfile();
+  const queryClient = useQueryClient();
+  const handleRefresh = useCallback(async () => {
+    await queryClient.invalidateQueries();
+  }, [queryClient]);
   const { data: weightHistory } = useWeightHistoryExtended(90);
   const { data: measurements } = useBodyMeasurements();
   const upsertMeasurement = useUpsertBodyMeasurement();
@@ -118,7 +124,7 @@ export default function Progress() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-background">
       <motion.header
         initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
         className="sticky top-0 z-50 border-b border-border/50"
@@ -342,6 +348,6 @@ export default function Progress() {
 
         <div className="h-8" />
       </motion.main>
-    </div>
+    </PullToRefresh>
   );
 }
