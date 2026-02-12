@@ -59,6 +59,69 @@ export type Database = {
         }
         Relationships: []
       }
+      body_measurements: {
+        Row: {
+          bicep_left_cm: number | null
+          bicep_right_cm: number | null
+          body_fat_pct: number | null
+          calf_left_cm: number | null
+          calf_right_cm: number | null
+          chest_cm: number | null
+          created_at: string
+          date: string
+          hips_cm: number | null
+          id: string
+          neck_cm: number | null
+          notes: string | null
+          shoulders_cm: number | null
+          thigh_left_cm: number | null
+          thigh_right_cm: number | null
+          updated_at: string
+          user_id: string
+          waist_cm: number | null
+        }
+        Insert: {
+          bicep_left_cm?: number | null
+          bicep_right_cm?: number | null
+          body_fat_pct?: number | null
+          calf_left_cm?: number | null
+          calf_right_cm?: number | null
+          chest_cm?: number | null
+          created_at?: string
+          date: string
+          hips_cm?: number | null
+          id?: string
+          neck_cm?: number | null
+          notes?: string | null
+          shoulders_cm?: number | null
+          thigh_left_cm?: number | null
+          thigh_right_cm?: number | null
+          updated_at?: string
+          user_id: string
+          waist_cm?: number | null
+        }
+        Update: {
+          bicep_left_cm?: number | null
+          bicep_right_cm?: number | null
+          body_fat_pct?: number | null
+          calf_left_cm?: number | null
+          calf_right_cm?: number | null
+          chest_cm?: number | null
+          created_at?: string
+          date?: string
+          hips_cm?: number | null
+          id?: string
+          neck_cm?: number | null
+          notes?: string | null
+          shoulders_cm?: number | null
+          thigh_left_cm?: number | null
+          thigh_right_cm?: number | null
+          updated_at?: string
+          user_id?: string
+          waist_cm?: number | null
+        }
+        Relationships: []
+      }
       daily_logs: {
         Row: {
           active_kcal: number | null
@@ -554,6 +617,36 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_photos: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          photo_url: string
+          pose: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          photo_url: string
+          pose?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          photo_url?: string
+          pose?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       routine_days: {
         Row: {
           created_at: string
@@ -601,36 +694,42 @@ export type Database = {
       sleep_logs: {
         Row: {
           bedtime: string
+          caffeine_cutoff_time: string | null
           created_at: string
           deep_min: number | null
           id: string
           light_min: number | null
           quality: number | null
           rem_min: number | null
+          screen_off_time: string | null
           updated_at: string
           user_id: string
           waketime: string
         }
         Insert: {
           bedtime: string
+          caffeine_cutoff_time?: string | null
           created_at?: string
           deep_min?: number | null
           id?: string
           light_min?: number | null
           quality?: number | null
           rem_min?: number | null
+          screen_off_time?: string | null
           updated_at?: string
           user_id: string
           waketime: string
         }
         Update: {
           bedtime?: string
+          caffeine_cutoff_time?: string | null
           created_at?: string
           deep_min?: number | null
           id?: string
           light_min?: number | null
           quality?: number | null
           rem_min?: number | null
+          screen_off_time?: string | null
           updated_at?: string
           user_id?: string
           waketime?: string

@@ -23,6 +23,8 @@ export default function LogSleepDialog({ children }: { children: React.ReactNode
   const [deepMin, setDeepMin] = useState(0);
   const [remMin, setRemMin] = useState(0);
   const [lightMin, setLightMin] = useState(0);
+  const [caffeineCutoff, setCaffeineCutoff] = useState('');
+  const [screenOff, setScreenOff] = useState('');
 
   const handleSave = async () => {
     if (!user) return;
@@ -36,7 +38,9 @@ export default function LogSleepDialog({ children }: { children: React.ReactNode
         deep_min: deepMin,
         rem_min: remMin,
         light_min: lightMin,
-      });
+        caffeine_cutoff_time: caffeineCutoff ? new Date(caffeineCutoff).toISOString() : null,
+        screen_off_time: screenOff ? new Date(screenOff).toISOString() : null,
+      } as any);
 
       const dateStr = new Date().toISOString().split('T')[0];
       await recomputeDailyLog(user.id, dateStr);
@@ -84,6 +88,17 @@ export default function LogSleepDialog({ children }: { children: React.ReactNode
             <div className="space-y-1">
               <Label className="text-[10px]">Light (phút)</Label>
               <Input type="number" value={lightMin} onChange={e => setLightMin(Number(e.target.value))} min={0} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-[10px]">☕ Caffeine cutoff</Label>
+              <Input type="datetime-local" value={caffeineCutoff} onChange={e => setCaffeineCutoff(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px]">📱 Screen off</Label>
+              <Input type="datetime-local" value={screenOff} onChange={e => setScreenOff(e.target.value)} />
             </div>
           </div>
 
