@@ -11,6 +11,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Area, AreaChart, ComposedChart, ReferenceLine } from 'recharts';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
+import { getLocale } from '@/lib/i18n';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
 const fadeUp = {
@@ -27,19 +29,24 @@ function getWeekStart(date: Date): Date {
   return d;
 }
 
-function formatDateRange(start: Date): string {
+function formatDateRange(start: Date, locale: string): string {
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
-  return `${start.toLocaleDateString('vi-VN', opts)} — ${end.toLocaleDateString('vi-VN', opts)}`;
+  return `${start.toLocaleDateString(locale, opts)} — ${end.toLocaleDateString(locale, opts)}`;
 }
 
 const DAYS_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const DAYS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function WeeklyReview() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: profile } = useProfile();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
+  const locale = getLocale(lang);
+  const DAYS = lang === 'vi' ? DAYS_VI : DAYS_EN;
   const [weekOffset, setWeekOffset] = useState(0);
   const [exporting, setExporting] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
@@ -177,7 +184,7 @@ export default function WeeklyReview() {
   const prevTotalVolume = sum(pLogs.map(l => Number(l.volume_load) || 0));
 
   // Chart data - 7 days
-  const chartData = DAYS_VI.map((day, i) => {
+  const chartData = DAYS.map((day, i) => {
     const d = new Date(weekStart);
     d.setDate(d.getDate() + i);
     const dateStr = d.toISOString().split('T')[0];
@@ -265,7 +272,7 @@ export default function WeeklyReview() {
   const chartConfig = {
     kcal: { label: 'Calories', color: 'hsl(25 95% 58%)' },
     protein: { label: 'Protein (g)', color: 'hsl(160 84% 39%)' },
-    sleep_h: { label: 'Giấc ngủ (h)', color: 'hsl(265 90% 66%)' },
+    sleep_h: { label: i18n.weeklyReviewSleepChart + ' (h)', color: 'hsl(265 90% 66%)' },
     volume: { label: 'Volume Load', color: 'hsl(217 91% 60%)' },
     readiness: { label: 'Readiness', color: 'hsl(43 96% 56%)' },
   };
@@ -283,10 +290,10 @@ export default function WeeklyReview() {
       link.download = `weekly-review-${startStr}.png`;
       link.href = dataUrl;
       link.click();
-      toast.success('Đã xuất báo cáo!');
+      toast.success(i18n.weeklyReviewExported);
     } catch (e) {
       console.error(e);
-      toast.error('Không thể xuất báo cáo');
+      toast.error(i18n.error);
     } finally {
       setExporting(false);
     }
@@ -305,14 +312,14 @@ export default function WeeklyReview() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-xl">
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-lg font-bold">Weekly Review</h1>
+            <h1 className="text-lg font-bold">{i18n.weeklyReviewTitle}</h1>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => setWeekOffset(o => o - 1)} className="rounded-xl w-8 h-8">
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <span className="text-xs text-muted-foreground font-medium min-w-[140px] text-center">
-              {formatDateRange(weekStart)}
+              {formatDateRange(weekStart, locale)}
             </span>
             <Button variant="ghost" size="icon" onClick={() => setWeekOffset(o => Math.min(o + 1, 0))} disabled={weekOffset >= 0} className="rounded-xl w-8 h-8">
               <ChevronRight className="w-4 h-4" />
@@ -325,7 +332,7 @@ export default function WeeklyReview() {
               disabled={exporting || daysWithData === 0}
             >
               {exporting ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
-              Xuất báo cáo
+              {i18n.weeklyReviewExport}
             </Button>
           </div>
         </div>
@@ -341,11 +348,11 @@ export default function WeeklyReview() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {[
-            { icon: Flame, label: 'TB Calories', value: `${Math.round(avgKcal)}`, sub: `/${targets.kcal}`, prev: prevAvgKcal, curr: avgKcal },
-            { icon: Beef, label: 'TB Protein', value: `${Math.round(avgProtein)}g`, sub: `/${targets.protein}g`, prev: prevAvgProtein, curr: avgProtein },
-            { icon: Moon, label: 'TB Giấc ngủ', value: `${avgSleepH.toFixed(1)}h`, sub: `/${targets.sleepH}h`, prev: 0, curr: 0 },
-            { icon: Dumbbell, label: 'Volume', value: `${Math.round(totalVolume / 1000)}k`, sub: `${workoutCount} buổi`, prev: prevTotalVolume, curr: totalVolume },
-            { icon: Activity, label: 'Readiness', value: `${Math.round(avgReadiness)}`, sub: acwr ? `ACWR ${acwr}` : '—', prev: 0, curr: 0 },
+            { icon: Flame, label: i18n.weeklyReviewAvgCalories, value: `${Math.round(avgKcal)}`, sub: `/${targets.kcal}`, prev: prevAvgKcal, curr: avgKcal },
+            { icon: Beef, label: i18n.weeklyReviewAvgProtein, value: `${Math.round(avgProtein)}g`, sub: `/${targets.protein}g`, prev: prevAvgProtein, curr: avgProtein },
+            { icon: Moon, label: i18n.weeklyReviewAvgSleep, value: `${avgSleepH.toFixed(1)}h`, sub: `/${targets.sleepH}h`, prev: 0, curr: 0 },
+            { icon: Dumbbell, label: i18n.weeklyReviewVolume, value: `${Math.round(totalVolume / 1000)}k`, sub: `${workoutCount} ${i18n.weeklyReviewSessions}`, prev: prevTotalVolume, curr: totalVolume },
+            { icon: Activity, label: i18n.weeklyReviewReadiness, value: `${Math.round(avgReadiness)}`, sub: acwr ? `ACWR ${acwr}` : '—', prev: 0, curr: 0 },
           ].map((c, i) => (
             <motion.div key={i} variants={fadeUp} className="metric-card space-y-2">
               <div className="flex items-center justify-between">
@@ -364,7 +371,7 @@ export default function WeeklyReview() {
         {/* Calories + Protein chart */}
         {daysWithData > 0 && (
           <motion.div variants={fadeUp} className="metric-card space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Dinh Dưỡng Hàng Ngày</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.weeklyReviewDailyNutrition}</h3>
             <ChartContainer config={chartConfig} className="h-[220px]">
               <ComposedChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(225 10% 14%)" />
@@ -388,7 +395,7 @@ export default function WeeklyReview() {
         {daysWithData > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <motion.div variants={fadeUp} className="metric-card space-y-4">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Giấc Ngủ</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.weeklyReviewSleepChart}</h3>
               <ChartContainer config={chartConfig} className="h-[180px]">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(225 10% 14%)" />
@@ -419,7 +426,7 @@ export default function WeeklyReview() {
         {/* Readiness trend */}
         {daysWithData > 0 && (
           <motion.div variants={fadeUp} className="metric-card space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Readiness Trend</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.weeklyReviewReadinessChart} Trend</h3>
             <ChartContainer config={chartConfig} className="h-[160px]">
               <AreaChart data={chartData}>
                 <defs>
@@ -443,7 +450,7 @@ export default function WeeklyReview() {
         {/* Adaptive Training Recommendations */}
         {recommendations.length > 0 && (
           <motion.div variants={fadeUp} className="metric-card space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">🧠 Đề Xuất Adaptive Training</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.weeklyReviewRecommendations}</h3>
             <div className="space-y-3">
               {recommendations.map((r, i) => (
                 <div
@@ -471,8 +478,7 @@ export default function WeeklyReview() {
         {daysWithData === 0 && (
           <motion.div variants={fadeUp} className="metric-card text-center py-16">
             <Activity className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-            <p className="text-sm text-muted-foreground">Chưa có dữ liệu cho tuần này.</p>
-            <p className="text-xs text-muted-foreground mt-1">Ghi log từ dashboard để xem review.</p>
+            <p className="text-sm text-muted-foreground">{i18n.noData}</p>
           </motion.div>
         )}
 
