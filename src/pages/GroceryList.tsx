@@ -188,12 +188,12 @@ export default function GroceryList() {
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring}>
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <ShoppingCart className="w-6 h-6 text-primary" /> {i18n.title}
+        <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+          <ShoppingCart className="w-5 h-5 text-primary" /> {i18n.title}
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">{i18n.subtitle}</p>
+        <p className="text-xs text-muted-foreground mt-1">{i18n.subtitle}</p>
       </motion.div>
 
       {/* Custom grocery list */}

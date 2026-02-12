@@ -163,18 +163,18 @@ export default function Biometrics() {
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={spring}
         className="space-y-1"
       >
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Heart className="w-6 h-6 text-[hsl(350,89%,60%)]" />
+        <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+          <Heart className="w-5 h-5 text-[hsl(350,89%,60%)]" />
           {i18n.biometricsTitle}
         </h2>
-        <p className="text-sm text-muted-foreground">{i18n.biometricsSubtitle}</p>
+        <p className="text-xs text-muted-foreground">{i18n.biometricsSubtitle}</p>
       </motion.div>
 
       <motion.div
