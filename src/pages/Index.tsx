@@ -1,5 +1,5 @@
 import { Camera, Settings, Plus, LogOut } from 'lucide-react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
 import BiometricsCard from '@/components/dashboard/BiometricsCard';
@@ -47,6 +47,7 @@ const slideDown = {
 
 const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: dailyLog } = useDailyLog();
   const { data: todaySleep } = useTodaySleep();
@@ -207,7 +208,7 @@ const Index = () => {
           <div className="flex items-center gap-1.5">
             {[
               { icon: Camera, action: undefined, dialog: true },
-              { icon: Settings, action: undefined },
+              { icon: Settings, action: () => navigate('/settings') },
               { icon: LogOut, action: signOut },
             ].map(({ icon: Icon, action, dialog }, i) => {
               const btn = (
