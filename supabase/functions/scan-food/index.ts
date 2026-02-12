@@ -26,27 +26,63 @@ serve(async (req) => {
     }
 
     const modeInstructions: Record<string, string> = {
-      food: `Analyze the food image and identify all food items visible.
-For each food item, estimate realistic macronutrients based on typical serving sizes.`,
-      barcode: `This image contains a product barcode or QR code. Try to identify the product from any visible text, brand name, or packaging around the barcode.
-If you can identify the product, provide its nutritional information per serving.
-If you cannot identify the product from the barcode alone, analyze any visible food packaging or labels in the image.`,
-      label: `This image contains a food nutrition label / facts panel. Read the nutrition information from the label carefully.
-Extract the exact values shown on the label for calories, protein, carbs, fat, and fiber per serving.
-Also identify the serving size in grams. Use the exact values from the label, do not estimate.`,
+      food: `You are a professional nutrition analyst with expertise in food & beverage identification.
+Analyze the image and identify ALL food items AND beverages/drinks visible.
+
+IMPORTANT recognition rules:
+- Identify both solid foods AND liquid beverages (coffee, juice, smoothie, soda, milk tea, beer, wine, water with flavor, etc.)
+- For beverages: estimate volume in ml, then convert to equivalent grams for serving_g
+- For common drinks, use real nutritional data: e.g. Coca-Cola 330ml = 139 kcal, 35g carbs; black coffee ~5 kcal; orange juice 250ml = 112 kcal
+- Estimate portion size from visual cues (plate size, cup size, utensils for scale)
+- If you see a branded product, use the actual brand's nutritional data
+- Differentiate between diet/zero versions and regular versions of drinks
+- Consider cooking method impact on nutrition (fried vs steamed vs raw)
+- For Vietnamese foods, use common Vietnamese serving sizes and preparations
+- For mixed dishes (pho, bun bo, com tam), break down if clearly identifiable components are visible, or give total estimate`,
+
+      barcode: `You are a product identification specialist. This image may contain a barcode, QR code, or product packaging.
+
+CRITICAL barcode scanning rules:
+- Look for ANY barcode (EAN-13, UPC-A, QR code, Code 128) in the image
+- Read ALL visible text: brand name, product name, flavor, size/volume
+- If you can identify the product, provide REAL nutritional data from the actual product
+- Common products to recognize: Coca-Cola, Pepsi, Red Bull, Monster Energy, Starbucks drinks, Yakult, Vinamilk, TH True Milk, Aquafina, Lavie, Sting, Number 1, C2, Trà xanh 0 độ, Trà đào, etc.
+- For alcoholic beverages: beer, wine, spirits - provide accurate calorie content
+- If barcode is unreadable, analyze any visible packaging text/branding instead
+- Include the volume/weight from packaging in the serving_g field
+- If you absolutely cannot identify the product, return an empty items array - do NOT guess`,
+
+      label: `You are an OCR specialist for nutrition facts panels.
+
+CRITICAL label reading rules:
+- Read the EXACT values from the nutrition label - do NOT estimate or round
+- Find: Calories/Energy, Total Fat, Saturated Fat, Carbohydrates, Sugars, Protein, Fiber, Sodium
+- Convert Energy from kJ to kcal if needed (1 kcal = 4.184 kJ)
+- Identify the serving size exactly as stated (e.g. "per 100g", "per serving 30g", "per bottle 500ml")
+- If label shows "per 100g" AND "per serving", prefer "per serving" for practical use
+- For Vietnamese labels: "Năng lượng" = Energy, "Chất đạm" = Protein, "Chất béo" = Fat, "Carbohydrate" or "Tinh bột" = Carbs, "Chất xơ" = Fiber
+- Use the product name visible on the label for food_name
+- If values are listed as "<1g", use 0.5g as estimate`,
     };
 
-    const systemPrompt = `You are a nutrition analysis AI. ${modeInstructions[mode || 'food'] || modeInstructions.food}
+    const systemPrompt = `${modeInstructions[mode || 'food'] || modeInstructions.food}
 
 You MUST respond by calling the "analyze_food" function with the results.
 
-Guidelines:
-- Be specific about food names (e.g. "Grilled chicken breast" not just "chicken")
-- Estimate serving size in grams based on visual appearance
-- Use standard nutritional databases values for accuracy
+Additional guidelines:
+- Be specific about food/drink names (e.g. "Iced Caramel Latte" not just "coffee", "Phở bò tái" not just "pho")
+- Use standard nutritional databases (USDA, local databases) for accuracy
 - If multiple items are visible, list each separately
-- If no food is detected, return an empty items array
-- Language for food names: ${lang === "vi" ? "Vietnamese" : "English"}`;
+- If no food/drink is detected, return an empty items array
+- Language for food names: ${lang === "vi" ? "Vietnamese" : "English"}
+- ALWAYS include beverages/drinks - they count for nutrition tracking
+- Round values to 1 decimal place for precision`;
+
+    const userPromptByMode: Record<string, string> = {
+      food: "Analyze this image. Identify EVERY food item AND beverage visible. Provide accurate macronutrients per serving for each.",
+      barcode: "Scan this image for barcodes or product packaging. Identify the product and provide its real nutritional information per serving.",
+      label: "Read the nutrition facts label in this image. Extract the exact nutritional values shown.",
+    };
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -69,7 +105,7 @@ Guidelines:
                 },
                 {
                   type: "text",
-                  text: "Analyze this food image. Identify each food item and estimate its macronutrients per serving.",
+                  text: userPromptByMode[mode || 'food'] || userPromptByMode.food,
                 },
               ],
             },
@@ -80,7 +116,7 @@ Guidelines:
               function: {
                 name: "analyze_food",
                 description:
-                  "Return identified food items with estimated macronutrients",
+                  "Return identified food/beverage items with nutritional information",
                 parameters: {
                   type: "object",
                   properties: {
@@ -91,11 +127,11 @@ Guidelines:
                         properties: {
                           food_name: {
                             type: "string",
-                            description: "Name of the food item",
+                            description: "Name of the food or beverage item",
                           },
                           serving_g: {
                             type: "number",
-                            description: "Estimated serving size in grams",
+                            description: "Serving size in grams (for liquids, use ml equivalent in grams)",
                           },
                           kcal: {
                             type: "number",
