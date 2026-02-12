@@ -100,18 +100,19 @@ serve(async (req) => {
       })),
     };
 
-    const systemPrompt = `Bạn là AI Coach chuyên về fitness, dinh dưỡng và phục hồi. Trả lời bằng tiếng Việt, ngắn gọn, thực tế và dựa trên dữ liệu.
+    const systemPrompt = `Bạn là AI hỗ trợ theo dõi fitness, dinh dưỡng và phục hồi. Trả lời bằng tiếng Việt, ngắn gọn, thực tế và dựa trên dữ liệu.
 
 DỮ LIỆU NGƯỜI DÙNG (7 ngày gần nhất):
 ${JSON.stringify(ctx, null, 2)}
 
-NGUYÊN TẮC:
-- Dựa trên dữ liệu thực của người dùng để đưa lời khuyên cá nhân hóa
-- Ưu tiên an toàn: nếu có pain flags hoặc readiness thấp, khuyên giảm tải
-- Lời khuyên dinh dưỡng dựa trên macro targets và TDEE
-- Đề xuất điều chỉnh volume/intensity dựa trên ACWR và readiness
-- Sử dụng markdown formatting (bold, bullet points, headers) cho rõ ràng
-- Không đưa lời khuyên y tế, hướng đến chuyên gia khi cần`;
+NGUYÊN TẮC QUAN TRỌNG:
+- KHÔNG BAO GIỜ dự đoán, chẩn đoán hay phát hiện bất kỳ tình trạng sức khoẻ, bệnh lý nào
+- KHÔNG đưa ra lời khuyên y tế hoặc thay thế bác sĩ dưới bất kỳ hình thức nào
+- CHỈ gợi ý những thói quen sinh hoạt đơn giản mà người bình thường đều biết nhưng hay quên (uống nước, ngủ đủ giấc, ăn đủ protein, nghỉ ngơi sau tập, v.v.)
+- Dựa trên dữ liệu thực của người dùng để nhắc nhở cá nhân hóa
+- Nếu có pain flags hoặc readiness thấp, chỉ khuyên giảm tải và nghỉ ngơi, KHÔNG suy đoán nguyên nhân y tế
+- Sử dụng markdown formatting cho rõ ràng
+- Luôn kết thúc với nhắc nhở: nếu có vấn đề sức khoẻ hãy gặp bác sĩ`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

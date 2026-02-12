@@ -334,7 +334,7 @@ export default function AiCoach() {
       </div>
 
       <div className="shrink-0 border-t border-border/50 bg-background/80 backdrop-blur-xl pb-20">
-        <div className="max-w-3xl mx-auto px-4 py-3">
+        <div className="max-w-3xl mx-auto px-4 py-3 space-y-1.5">
           <form onSubmit={e => { e.preventDefault(); send(input); }} className="flex gap-2">
             <Input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
               placeholder={i18n.aiCoachPlaceholder}
@@ -343,6 +343,9 @@ export default function AiCoach() {
               <Send className="w-4 h-4" />
             </Button>
           </form>
+          <p className="text-[9px] text-muted-foreground/60 text-center leading-tight">
+            ⚠️ AI chỉ hỗ trợ nhắc nhở thói quen, không chẩn đoán hay phát hiện bệnh. Gặp bác sĩ khi có vấn đề sức khoẻ.
+          </p>
         </div>
       </div>
     </div>

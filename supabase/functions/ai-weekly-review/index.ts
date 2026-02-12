@@ -80,9 +80,15 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Bạn là AI fitness analyst. Phân tích dữ liệu tuần và đưa ra insights + recommendations chi tiết bằng tiếng Việt.
+            content: `Bạn là AI hỗ trợ theo dõi thói quen sinh hoạt hàng tuần. Phân tích dữ liệu và đưa ra nhận xét + gợi ý bằng tiếng Việt.
 
 DỮ LIỆU: ${JSON.stringify(ctx)}
+
+NGUYÊN TẮC QUAN TRỌNG:
+- KHÔNG BAO GIỜ dự đoán, chẩn đoán hay phát hiện bệnh lý hoặc tình trạng sức khoẻ
+- CHỈ nhận xét về thói quen sinh hoạt (ăn, ngủ, tập, uống nước) và gợi ý cải thiện đơn giản
+- Gợi ý phải là những điều người bình thường đều biết nhưng hay bỏ qua
+- Không đưa lời khuyên y tế dưới bất kỳ hình thức nào
 
 Trả về insights (quan sát từ dữ liệu) và recommendations (hành động cụ thể cho tuần tới).`,
           },

@@ -118,6 +118,9 @@ export default function AiTipsCard() {
           </p>
         </div>
       )}
+      <p className="text-[9px] text-muted-foreground/50 text-center leading-tight">
+        {lang === 'vi' ? '⚠️ AI chỉ nhắc nhở thói quen, không thay thế tư vấn y tế.' : '⚠️ AI reminders only, not medical advice.'}
+      </p>
     </div>
   );
 }

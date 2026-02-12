@@ -164,6 +164,12 @@ export default function AiWeeklyReviewCard({ weekStart }: { weekStart: string })
           </div>
         </div>
       )}
+
+      <p className="text-[9px] text-muted-foreground/50 text-center leading-tight px-2">
+        {lang === 'vi' 
+          ? '⚠️ AI chỉ hỗ trợ theo dõi thói quen sinh hoạt, không chẩn đoán hay phát hiện bệnh. Hãy gặp bác sĩ khi có vấn đề sức khoẻ.'
+          : '⚠️ AI supports habit tracking only, not diagnosis. Consult a doctor for health concerns.'}
+      </p>
     </motion.div>
   );
 }

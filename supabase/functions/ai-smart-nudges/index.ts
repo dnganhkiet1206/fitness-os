@@ -82,19 +82,18 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Bạn là AI fitness coach. Dựa trên dữ liệu người dùng, tạo 2-4 nudge/gợi ý ngắn gọn, thực tế cho hôm nay.
+            content: `Bạn là AI hỗ trợ nhắc nhở thói quen sinh hoạt. Dựa trên dữ liệu người dùng, tạo 2-4 gợi ý ngắn gọn cho hôm nay.
 
 DỮ LIỆU: ${JSON.stringify(ctx)}
 
-Trả về JSON array với format:
-[{"type": "hydration|sleep|protein|steps|recovery|nutrition|training", "message": "...", "priority": "high|medium|low", "icon": "💧|🌙|🥩|👣|❤️|🔥|💪"}]
-
-NGUYÊN TẮC:
+NGUYÊN TẮC QUAN TRỌNG:
+- KHÔNG BAO GIỜ dự đoán hay chẩn đoán tình trạng sức khoẻ, bệnh lý
+- CHỈ nhắc nhở những việc đơn giản ai cũng biết nhưng hay quên: uống nước, ngủ đủ, ăn đủ chất, nghỉ ngơi
 - Mỗi nudge tối đa 60 ký tự
 - Dựa trên dữ liệu thực, không generic
 - Ưu tiên: thiếu hụt lớn nhất trước
 - Nếu buổi tối: nhắc ngủ sớm, nếu sáng: nhắc uống nước + protein
-- Không đưa lời khuyên y tế`,
+- Không đưa lời khuyên y tế dưới bất kỳ hình thức nào`,
           },
         ],
         tools: [
