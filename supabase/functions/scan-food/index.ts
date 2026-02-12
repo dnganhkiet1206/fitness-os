@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { image_base64, lang } = await req.json();
+    const { image_base64, lang, mode } = await req.json();
     if (!image_base64) {
       return new Response(JSON.stringify({ error: "No image provided" }), {
         status: 400,
@@ -25,8 +25,18 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a nutrition analysis AI. Analyze the food image and identify all food items visible.
-For each food item, estimate realistic macronutrients based on typical serving sizes.
+    const modeInstructions: Record<string, string> = {
+      food: `Analyze the food image and identify all food items visible.
+For each food item, estimate realistic macronutrients based on typical serving sizes.`,
+      barcode: `This image contains a product barcode or QR code. Try to identify the product from any visible text, brand name, or packaging around the barcode.
+If you can identify the product, provide its nutritional information per serving.
+If you cannot identify the product from the barcode alone, analyze any visible food packaging or labels in the image.`,
+      label: `This image contains a food nutrition label / facts panel. Read the nutrition information from the label carefully.
+Extract the exact values shown on the label for calories, protein, carbs, fat, and fiber per serving.
+Also identify the serving size in grams. Use the exact values from the label, do not estimate.`,
+    };
+
+    const systemPrompt = `You are a nutrition analysis AI. ${modeInstructions[mode || 'food'] || modeInstructions.food}
 
 You MUST respond by calling the "analyze_food" function with the results.
 
