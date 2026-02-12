@@ -80,8 +80,41 @@ export default function Legal() {
                 <p>Chúng tôi có quyền tạm ngưng hoặc chấm dứt tài khoản nếu phát hiện vi phạm điều khoản. Bạn có thể xoá tài khoản bất kỳ lúc nào trong phần Cài đặt.</p>
               </Section>
 
-              <Section title="7. Thay đổi Điều khoản">
-                <p>Chúng tôi có thể cập nhật điều khoản. Các thay đổi quan trọng sẽ được thông báo qua ứng dụng ít nhất 14 ngày trước khi có hiệu lực.</p>
+              <Section title="7. Giới hạn Trách nhiệm (Limitation of Liability)">
+                <p>• TRONG MỌI TRƯỜNG HỢP, trách nhiệm tối đa của {APP_NAME} đối với bạn <strong>không vượt quá số tiền bạn đã thanh toán cho dịch vụ trong 12 tháng gần nhất</strong>, hoặc 500.000 VNĐ (tuỳ giá trị nào lớn hơn).</p>
+                <p>• Chúng tôi <strong>KHÔNG CHỊU TRÁCH NHIỆM</strong> đối với bất kỳ thiệt hại gián tiếp, ngẫu nhiên, đặc biệt, mang tính trừng phạt hoặc hệ quả nào, bao gồm nhưng không giới hạn: mất dữ liệu, mất lợi nhuận, tổn thương thể chất hoặc tinh thần.</p>
+                <p>• Ứng dụng được cung cấp theo nguyên tắc <strong>"NGUYÊN TRẠNG" (AS IS)</strong> và <strong>"NHƯ SẴN CÓ" (AS AVAILABLE)</strong>, không có bất kỳ bảo đảm nào, dù rõ ràng hay ngụ ý.</p>
+              </Section>
+
+              <Section title="8. Bồi thường (Indemnification)">
+                <p>Bạn đồng ý bồi thường, bảo vệ và giữ cho {APP_NAME}, các giám đốc, nhân viên và đối tác không bị tổn hại bởi bất kỳ khiếu nại, thiệt hại, chi phí (bao gồm phí luật sư) phát sinh từ:</p>
+                <p>• Việc bạn vi phạm các điều khoản này.</p>
+                <p>• Việc bạn sử dụng hoặc lạm dụng ứng dụng.</p>
+                <p>• Quyết định sức khoẻ dựa trên thông tin từ ứng dụng mà không tham khảo chuyên gia y tế.</p>
+                <p>• Nội dung hoặc dữ liệu bạn cung cấp cho ứng dụng.</p>
+              </Section>
+
+              <Section title="9. Bất khả kháng (Force Majeure)">
+                <p>Chúng tôi không chịu trách nhiệm cho bất kỳ sự chậm trễ hoặc gián đoạn dịch vụ nào do các sự kiện ngoài tầm kiểm soát hợp lý, bao gồm nhưng không giới hạn: thiên tai, chiến tranh, dịch bệnh, sự cố hạ tầng internet, tấn công mạng, thay đổi pháp luật hoặc quyết định của cơ quan có thẩm quyền.</p>
+              </Section>
+
+              <Section title="10. Luật Áp dụng & Giải quyết Tranh chấp">
+                <p>• Các điều khoản này được điều chỉnh bởi <strong>pháp luật nước Cộng hoà Xã hội Chủ nghĩa Việt Nam</strong>.</p>
+                <p>• Mọi tranh chấp phát sinh sẽ được giải quyết thông qua thương lượng thiện chí trong vòng <strong>30 ngày</strong>.</p>
+                <p>• Nếu không giải quyết được, tranh chấp sẽ được đưa ra <strong>Trung tâm Trọng tài Quốc tế Việt Nam (VIAC)</strong> theo quy tắc tố tụng trọng tài hiện hành.</p>
+                <p>• Ngôn ngữ trọng tài: Tiếng Việt. Địa điểm: TP. Hồ Chí Minh.</p>
+              </Section>
+
+              <Section title="11. Điều khoản Tách rời (Severability)">
+                <p>Nếu bất kỳ điều khoản nào trong thoả thuận này bị tuyên bố vô hiệu hoặc không thể thi hành bởi toà án hoặc cơ quan có thẩm quyền, các điều khoản còn lại vẫn có hiệu lực đầy đủ.</p>
+              </Section>
+
+              <Section title="12. Toàn bộ Thoả thuận">
+                <p>Các điều khoản này, cùng với Chính sách Quyền riêng tư, Tuyên bố Sức khoẻ và Chính sách Dữ liệu & AI, tạo thành <strong>toàn bộ thoả thuận</strong> giữa bạn và {APP_NAME}, thay thế mọi thoả thuận trước đó.</p>
+              </Section>
+
+              <Section title="13. Thay đổi Điều khoản">
+                <p>Chúng tôi có thể cập nhật điều khoản. Các thay đổi quan trọng sẽ được thông báo qua ứng dụng ít nhất 14 ngày trước khi có hiệu lực. Việc tiếp tục sử dụng sau ngày có hiệu lực đồng nghĩa với việc bạn chấp nhận các thay đổi.</p>
               </Section>
             </motion.div>
           </TabsContent>
