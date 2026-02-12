@@ -14,6 +14,7 @@ import NutritionCard from '@/components/dashboard/NutritionCard';
 import SleepCard from '@/components/dashboard/SleepCard';
 import TrainingCard from '@/components/dashboard/TrainingCard';
 import NudgesCard from '@/components/dashboard/NudgesCard';
+import AiTipsCard from '@/components/dashboard/AiTipsCard';
 import ReadinessTrend from '@/components/dashboard/ReadinessTrend';
 import ActivityCard from '@/components/dashboard/ActivityCard';
 import EmptyState from '@/components/dashboard/EmptyState';
@@ -414,6 +415,11 @@ const Index = () => {
             )}
           </motion.div>
         </div>
+
+        {/* AI Tips */}
+        <motion.div variants={fadeUp}>
+          <AiTipsCard />
+        </motion.div>
 
         {/* Recent Awards */}
         <motion.div variants={fadeUp}>

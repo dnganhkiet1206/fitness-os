@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.scan-food]
 verify_jwt = false
+
+[functions.ai-smart-nudges]
+verify_jwt = false
+
+[functions.ai-weekly-review]
+verify_jwt = false
+
+[functions.ai-meal-suggest]
+verify_jwt = false

@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowLeft, Search, Star, Clock, Plus, Utensils, ShoppingCart, Trash2, Heart } from 'lucide-react';
+import AiMealSuggestButton from '@/components/ai/AiMealSuggestButton';
 import { toast } from 'sonner';
 import { useAppSettings, t } from '@/hooks/useAppSettings';
 
@@ -86,11 +87,12 @@ const Nutrition = () => {
           </TabsList>
 
           <TabsContent value="foods" className="space-y-5 mt-4">
-            <motion.div variants={fadeUp}>
-              <div className="relative">
+            <motion.div variants={fadeUp} className="flex gap-2 items-center">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                 <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={i18n.nutritionSearchFood} className="pl-9" />
               </div>
+              <AiMealSuggestButton />
             </motion.div>
 
             {search && searchResults && (
