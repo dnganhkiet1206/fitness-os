@@ -187,6 +187,7 @@ export type Database = {
           fat_g: number
           fiber_g: number
           id: string
+          is_favorite: boolean | null
           kcal: number
           name: string
           protein_g: number
@@ -202,6 +203,7 @@ export type Database = {
           fat_g?: number
           fiber_g?: number
           id?: string
+          is_favorite?: boolean | null
           kcal?: number
           name: string
           protein_g?: number
@@ -217,6 +219,7 @@ export type Database = {
           fat_g?: number
           fiber_g?: number
           id?: string
+          is_favorite?: boolean | null
           kcal?: number
           name?: string
           protein_g?: number
@@ -361,6 +364,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      meal_plan_items: {
+        Row: {
+          carbs_g: number | null
+          created_at: string
+          day_index: number
+          fat_g: number | null
+          food_item_id: string | null
+          food_name: string
+          id: string
+          kcal: number | null
+          meal_plan_id: string
+          meal_type: string
+          protein_g: number | null
+          serving_g: number | null
+        }
+        Insert: {
+          carbs_g?: number | null
+          created_at?: string
+          day_index?: number
+          fat_g?: number | null
+          food_item_id?: string | null
+          food_name?: string
+          id?: string
+          kcal?: number | null
+          meal_plan_id: string
+          meal_type?: string
+          protein_g?: number | null
+          serving_g?: number | null
+        }
+        Update: {
+          carbs_g?: number | null
+          created_at?: string
+          day_index?: number
+          fat_g?: number | null
+          food_item_id?: string | null
+          food_name?: string
+          id?: string
+          kcal?: number | null
+          meal_plan_id?: string
+          meal_type?: string
+          protein_g?: number | null
+          serving_g?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_items_food_item_id_fkey"
+            columns: ["food_item_id"]
+            isOneToOne: false
+            referencedRelation: "food_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_items_meal_plan_id_fkey"
+            columns: ["meal_plan_id"]
+            isOneToOne: false
+            referencedRelation: "meal_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_plans: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          goal: string | null
+          id: string
+          meals_per_day: number | null
+          name: string
+          start_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          goal?: string | null
+          id?: string
+          meals_per_day?: number | null
+          name?: string
+          start_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          goal?: string | null
+          id?: string
+          meals_per_day?: number | null
+          name?: string
+          start_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -649,6 +748,33 @@ export type Database = {
           user_id?: string
           week_start_date?: string
           workout_completion_pct?: number | null
+        }
+        Relationships: []
+      }
+      weight_logs: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          user_id: string
+          weight_kg: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+          user_id: string
+          weight_kg: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          user_id?: string
+          weight_kg?: number
         }
         Relationships: []
       }

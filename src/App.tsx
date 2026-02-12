@@ -10,6 +10,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
+import Nutrition from "./pages/Nutrition";
+import MealPlan from "./pages/MealPlan";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +39,8 @@ function AnimatedRoutes() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/nutrition" element={<Nutrition />} />
+          <Route path="/meal-plan/:id" element={<MealPlan />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </motion.div>
