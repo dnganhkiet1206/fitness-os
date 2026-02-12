@@ -10,6 +10,8 @@ import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { useInvalidateToday } from '@/hooks/useTodayData';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface SetEntry {
   exerciseId: string;
@@ -21,6 +23,8 @@ interface SetEntry {
 
 export default function LogWorkoutDialog({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { lang } = useAppSettings();
+  const T = t(lang);
   const invalidate = useInvalidateToday();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -89,7 +93,7 @@ export default function LogWorkoutDialog({ children }: { children: React.ReactNo
       const dateStr = new Date().toISOString().split('T')[0];
       await recomputeDailyLog(user.id, dateStr);
       invalidate();
-      toast.success('Đã lưu buổi tập!');
+      toast.success(T.logWorkoutSaved);
       setOpen(false);
       setSets([]);
       setName('');
@@ -104,24 +108,24 @@ export default function LogWorkoutDialog({ children }: { children: React.ReactNo
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Ghi Buổi Tập</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{T.logWorkoutTitle}</DialogTitle></DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Tên buổi tập</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="VD: Push Day A" />
+            <Label>{T.logWorkoutName}</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder={T.logWorkoutNamePlaceholder} />
           </div>
 
           <div className="space-y-2">
-            <Label>Session RPE (1-10)</Label>
+            <Label>{T.logWorkoutSessionRPE}</Label>
             <Input type="number" value={sessionRpe} onChange={e => setSessionRpe(Number(e.target.value))} min={1} max={10} />
           </div>
 
           {/* Sets */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Sets</Label>
-              <Button variant="outline" size="sm" onClick={addSet}><Plus className="w-3 h-3 mr-1" />Thêm set</Button>
+              <Label>{T.logWorkoutSets}</Label>
+              <Button variant="outline" size="sm" onClick={addSet}><Plus className="w-3 h-3 mr-1" />{T.logWorkoutAddSet}</Button>
             </div>
             {sets.map((set, idx) => (
               <div key={idx} className="bg-secondary/30 rounded-lg p-3 space-y-2">
@@ -134,15 +138,15 @@ export default function LogWorkoutDialog({ children }: { children: React.ReactNo
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <div className="text-[10px] text-muted-foreground">Kg</div>
+                    <div className="text-[10px] text-muted-foreground">{T.logWorkoutKg}</div>
                     <Input type="number" value={set.weight} onChange={e => updateSet(idx, 'weight', Number(e.target.value))} className="h-8" />
                   </div>
                   <div>
-                    <div className="text-[10px] text-muted-foreground">Reps</div>
+                    <div className="text-[10px] text-muted-foreground">{T.logWorkoutReps}</div>
                     <Input type="number" value={set.reps} onChange={e => updateSet(idx, 'reps', Number(e.target.value))} className="h-8" />
                   </div>
                   <div>
-                    <div className="text-[10px] text-muted-foreground">RPE</div>
+                    <div className="text-[10px] text-muted-foreground">{T.logWorkoutRPE}</div>
                     <Input type="number" value={set.rpe} onChange={e => updateSet(idx, 'rpe', Number(e.target.value))} min={1} max={10} className="h-8" />
                   </div>
                 </div>
@@ -152,13 +156,13 @@ export default function LogWorkoutDialog({ children }: { children: React.ReactNo
 
           {sets.length > 0 && (
             <div className="bg-secondary/50 rounded-lg p-3 text-center">
-              <div className="text-[10px] text-muted-foreground uppercase">Volume Load</div>
+              <div className="text-[10px] text-muted-foreground uppercase">{T.logWorkoutVolumeLoad}</div>
               <div className="text-xl font-mono font-bold">{volumeLoad.toLocaleString()}</div>
             </div>
           )}
 
           <Button onClick={handleSave} disabled={saving || sets.length === 0} className="w-full">
-            {saving ? 'Đang lưu...' : 'Lưu buổi tập'}
+            {saving ? T.saving : T.logWorkoutSaveBtn}
           </Button>
         </div>
       </DialogContent>

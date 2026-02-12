@@ -4,13 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { useInvalidateToday } from '@/hooks/useTodayData';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface MealItem {
   food_item_id: string | null;
@@ -26,6 +28,8 @@ interface MealItem {
 
 export default function LogMealDialog({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { lang } = useAppSettings();
+  const T = t(lang);
   const invalidate = useInvalidateToday();
   const [open, setOpen] = useState(false);
   const [mealType, setMealType] = useState('lunch');
@@ -112,7 +116,7 @@ export default function LogMealDialog({ children }: { children: React.ReactNode 
       const dateStr = new Date().toISOString().split('T')[0];
       await recomputeDailyLog(user.id, dateStr);
       invalidate();
-      toast.success('Đã lưu bữa ăn!');
+      toast.success(T.logMealSaved);
       setOpen(false);
       setItems([]);
     } catch (err: any) {
@@ -123,37 +127,37 @@ export default function LogMealDialog({ children }: { children: React.ReactNode 
   };
 
   const mealTypes = [
-    { value: 'breakfast', label: 'Bữa sáng' },
-    { value: 'lunch', label: 'Bữa trưa' },
-    { value: 'dinner', label: 'Bữa tối' },
-    { value: 'snack', label: 'Bữa phụ' },
-    { value: 'preworkout', label: 'Trước tập' },
-    { value: 'postworkout', label: 'Sau tập' },
+    { value: 'breakfast', label: T.mealBreakfast },
+    { value: 'lunch', label: T.mealLunch },
+    { value: 'dinner', label: T.mealDinner },
+    { value: 'snack', label: T.mealSnack },
+    { value: 'preworkout', label: T.mealPreWorkout },
+    { value: 'postworkout', label: T.mealPostWorkout },
   ];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Ghi Bữa Ăn</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{T.logMealTitle}</DialogTitle></DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Loại bữa</Label>
+            <Label>{T.logMealType}</Label>
             <Select value={mealType} onValueChange={setMealType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {mealTypes.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                {mealTypes.map(mt => <SelectItem key={mt.value} value={mt.value}>{mt.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
           {/* Food search */}
           <div className="space-y-2">
-            <Label>Tìm thực phẩm</Label>
+            <Label>{T.logMealSearchFood}</Label>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm kiếm..." className="pl-8" />
+              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={T.logMealSearchPlaceholder} className="pl-8" />
             </div>
             {search && foodItems && foodItems.length > 0 && (
               <div className="border border-border rounded-lg max-h-40 overflow-y-auto">
@@ -171,13 +175,13 @@ export default function LogMealDialog({ children }: { children: React.ReactNode 
           {/* Added items */}
           {items.length > 0 && (
             <div className="space-y-2">
-              <Label>Đã thêm</Label>
+              <Label>{T.logMealAdded}</Label>
               {items.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2 bg-secondary/30 rounded-lg p-2">
                   <div className="flex-1 text-sm">{item.food_name}</div>
                   <Input type="number" value={item.servings} onChange={e => updateServings(idx, Number(e.target.value))}
                     className="w-16 h-8 text-center" min={0.1} step={0.5} />
-                  <span className="text-xs text-muted-foreground">phần</span>
+                  <span className="text-xs text-muted-foreground">{T.logMealServings}</span>
                   <button onClick={() => removeItem(idx)}><X className="w-4 h-4 text-muted-foreground" /></button>
                 </div>
               ))}
@@ -195,7 +199,7 @@ export default function LogMealDialog({ children }: { children: React.ReactNode 
           )}
 
           <Button onClick={handleSave} disabled={saving || items.length === 0} className="w-full">
-            {saving ? 'Đang lưu...' : 'Lưu bữa ăn'}
+            {saving ? T.saving : T.save}
           </Button>
         </div>
       </DialogContent>

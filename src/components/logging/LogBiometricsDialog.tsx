@@ -8,9 +8,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { toast } from 'sonner';
 import { useInvalidateToday } from '@/hooks/useTodayData';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 export default function LogBiometricsDialog({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { lang } = useAppSettings();
+  const T = t(lang);
   const invalidate = useInvalidateToday();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -38,7 +42,7 @@ export default function LogBiometricsDialog({ children }: { children: React.Reac
       const dateStr = new Date().toISOString().split('T')[0];
       await recomputeDailyLog(user.id, dateStr);
       invalidate();
-      toast.success('Đã lưu chỉ số sinh trắc!');
+      toast.success(T.logBioSaved);
       setOpen(false);
       setHrBpm(''); setHrvMs(''); setSpo2(''); setVo2max(''); setRespRate('');
     } catch (err: any) {
@@ -52,30 +56,30 @@ export default function LogBiometricsDialog({ children }: { children: React.Reac
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle>Nhập Chỉ Số Sinh Trắc</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{T.logBioTitle}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label>Nhịp tim nghỉ (bpm)</Label>
-            <Input type="number" value={hrBpm} onChange={e => setHrBpm(e.target.value)} placeholder="VD: 55" />
+            <Label>{T.logBioHR}</Label>
+            <Input type="number" value={hrBpm} onChange={e => setHrBpm(e.target.value)} placeholder="55" />
           </div>
           <div className="space-y-1">
-            <Label>HRV RMSSD (ms)</Label>
-            <Input type="number" value={hrvMs} onChange={e => setHrvMs(e.target.value)} placeholder="VD: 62" />
+            <Label>{T.logBioHRV}</Label>
+            <Input type="number" value={hrvMs} onChange={e => setHrvMs(e.target.value)} placeholder="62" />
           </div>
           <div className="space-y-1">
-            <Label>SpO₂ (%)</Label>
-            <Input type="number" value={spo2} onChange={e => setSpo2(e.target.value)} placeholder="VD: 97" />
+            <Label>{T.logBioSpO2}</Label>
+            <Input type="number" value={spo2} onChange={e => setSpo2(e.target.value)} placeholder="97" />
           </div>
           <div className="space-y-1">
-            <Label>VO₂max (ml/kg/min) — ước tính</Label>
-            <Input type="number" value={vo2max} onChange={e => setVo2max(e.target.value)} placeholder="VD: 44" />
+            <Label>{T.logBioVO2}</Label>
+            <Input type="number" value={vo2max} onChange={e => setVo2max(e.target.value)} placeholder="44" />
           </div>
           <div className="space-y-1">
-            <Label>Nhịp thở (rpm)</Label>
-            <Input type="number" value={respRate} onChange={e => setRespRate(e.target.value)} placeholder="VD: 14" />
+            <Label>{T.logBioResp}</Label>
+            <Input type="number" value={respRate} onChange={e => setRespRate(e.target.value)} placeholder="14" />
           </div>
           <Button onClick={handleSave} disabled={saving} className="w-full">
-            {saving ? 'Đang lưu...' : 'Lưu chỉ số'}
+            {saving ? T.saving : T.save}
           </Button>
         </div>
       </DialogContent>

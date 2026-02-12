@@ -420,6 +420,43 @@ interface Translations {
   logBioResp: string;
   logBioSaved: string;
 
+  // Log Meal Dialog
+  logMealTitle: string;
+  logMealType: string;
+  logMealSearchFood: string;
+  logMealSearchPlaceholder: string;
+  logMealAdded: string;
+  logMealServings: string;
+  logMealSaved: string;
+
+  // Log Workout Dialog
+  logWorkoutTitle: string;
+  logWorkoutName: string;
+  logWorkoutNamePlaceholder: string;
+  logWorkoutSessionRPE: string;
+  logWorkoutSets: string;
+  logWorkoutAddSet: string;
+  logWorkoutKg: string;
+  logWorkoutReps: string;
+  logWorkoutRPE: string;
+  logWorkoutVolumeLoad: string;
+  logWorkoutSaved: string;
+  logWorkoutSaveBtn: string;
+
+  // Log Sleep Dialog
+  logSleepTitle: string;
+  logSleepBedtime: string;
+  logSleepWaketime: string;
+  logSleepQuality: string;
+  logSleepDeep: string;
+  logSleepREM: string;
+  logSleepLight: string;
+  logSleepCaffeine: string;
+  logSleepScreen: string;
+  logSleepSaved: string;
+  logSleepSaveBtn: string;
+  logSleepMinutes: string;
+
   // Awards
   awardsTitle: string;
   awardsEarned: string;
@@ -963,6 +1000,40 @@ const vi: Translations = {
   logBioResp: 'Nhịp thở (rpm)',
   logBioSaved: 'Đã lưu chỉ số sinh trắc!',
 
+  logMealTitle: 'Ghi Bữa Ăn',
+  logMealType: 'Loại bữa',
+  logMealSearchFood: 'Tìm thực phẩm',
+  logMealSearchPlaceholder: 'Tìm kiếm...',
+  logMealAdded: 'Đã thêm',
+  logMealServings: 'phần',
+  logMealSaved: 'Đã lưu bữa ăn!',
+
+  logWorkoutTitle: 'Ghi Buổi Tập',
+  logWorkoutName: 'Tên buổi tập',
+  logWorkoutNamePlaceholder: 'VD: Push Day A',
+  logWorkoutSessionRPE: 'Session RPE (1-10)',
+  logWorkoutSets: 'Sets',
+  logWorkoutAddSet: 'Thêm set',
+  logWorkoutKg: 'Kg',
+  logWorkoutReps: 'Reps',
+  logWorkoutRPE: 'RPE',
+  logWorkoutVolumeLoad: 'Volume Load',
+  logWorkoutSaved: 'Đã lưu buổi tập!',
+  logWorkoutSaveBtn: 'Lưu buổi tập',
+
+  logSleepTitle: 'Ghi Giấc Ngủ',
+  logSleepBedtime: 'Giờ ngủ',
+  logSleepWaketime: 'Giờ dậy',
+  logSleepQuality: 'Chất lượng (1-10)',
+  logSleepDeep: 'Deep',
+  logSleepREM: 'REM',
+  logSleepLight: 'Light',
+  logSleepCaffeine: '☕ Caffeine cutoff',
+  logSleepScreen: '📱 Screen off',
+  logSleepSaved: 'Đã lưu giấc ngủ!',
+  logSleepSaveBtn: 'Lưu giấc ngủ',
+  logSleepMinutes: 'phút',
+
   awardsTitle: 'Huy Chương',
   awardsEarned: 'Đã đạt',
   awardsOf: 'huy chương',
@@ -1498,6 +1569,40 @@ const en: Translations = {
   logBioVO2: 'VO₂max (ml/kg/min) — estimate',
   logBioResp: 'Respiratory rate (rpm)',
   logBioSaved: 'Biometrics saved!',
+
+  logMealTitle: 'Log Meal',
+  logMealType: 'Meal type',
+  logMealSearchFood: 'Search food',
+  logMealSearchPlaceholder: 'Search...',
+  logMealAdded: 'Added',
+  logMealServings: 'servings',
+  logMealSaved: 'Meal saved!',
+
+  logWorkoutTitle: 'Log Workout',
+  logWorkoutName: 'Workout name',
+  logWorkoutNamePlaceholder: 'E.g. Push Day A',
+  logWorkoutSessionRPE: 'Session RPE (1-10)',
+  logWorkoutSets: 'Sets',
+  logWorkoutAddSet: 'Add set',
+  logWorkoutKg: 'Kg',
+  logWorkoutReps: 'Reps',
+  logWorkoutRPE: 'RPE',
+  logWorkoutVolumeLoad: 'Volume Load',
+  logWorkoutSaved: 'Workout saved!',
+  logWorkoutSaveBtn: 'Save workout',
+
+  logSleepTitle: 'Log Sleep',
+  logSleepBedtime: 'Bedtime',
+  logSleepWaketime: 'Wake time',
+  logSleepQuality: 'Quality (1-10)',
+  logSleepDeep: 'Deep',
+  logSleepREM: 'REM',
+  logSleepLight: 'Light',
+  logSleepCaffeine: '☕ Caffeine cutoff',
+  logSleepScreen: '📱 Screen off',
+  logSleepSaved: 'Sleep logged!',
+  logSleepSaveBtn: 'Save sleep',
+  logSleepMinutes: 'min',
 
   awardsTitle: 'Awards',
   awardsEarned: 'Earned',
