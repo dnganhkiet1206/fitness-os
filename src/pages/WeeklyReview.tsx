@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, TrendingUp, TrendingDown, Minus, Flame, Beef, Moon, Dumbbell, Activity, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
+import AiWeeklyReviewCard from '@/components/ai/AiWeeklyReviewCard';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useTodayData';
@@ -480,6 +481,13 @@ export default function WeeklyReview() {
                 </div>
               ))}
             </div>
+          </motion.div>
+        )}
+
+        {/* AI Weekly Review */}
+        {daysWithData > 0 && (
+          <motion.div variants={fadeUp}>
+            <AiWeeklyReviewCard weekStart={startStr} />
           </motion.div>
         )}
 
