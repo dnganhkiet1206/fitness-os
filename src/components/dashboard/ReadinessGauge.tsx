@@ -134,6 +134,28 @@ const ReadinessGauge = ({ result }: ReadinessGaugeProps) => {
           {recommendation}
         </div>
       </motion.div>
+
+      <motion.div
+        className="w-full px-5 relative"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1, duration: 0.4 }}
+      >
+        <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-readiness-green" />
+            <span>75–100 · {T.dcReadinessTrain}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-readiness-yellow" />
+            <span>50–74 · {T.dcReadinessModerate}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-readiness-red" />
+            <span>0–49 · {T.dcReadinessRecover}</span>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 };
