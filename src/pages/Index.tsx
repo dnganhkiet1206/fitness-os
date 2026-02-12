@@ -23,6 +23,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile, useDailyLog, useTodaySleep, useRecentWorkouts, useTodayBiometrics, useReadinessTrend, useNudges, useWearables } from '@/hooks/useTodayData';
 import { useTodaySupplementChecklist, useToggleSupplement, useTodayWeight, useLogWeight } from '@/hooks/useDashboardData';
 import { useCheckAwards } from '@/hooks/useAwards';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t, getLocale } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import type { ReadinessResult } from '@/lib/types';
 
@@ -64,6 +66,8 @@ const Index = () => {
   const logWeight = useLogWeight();
   const { checkAndGrant } = useCheckAwards();
   const [awardsChecked, setAwardsChecked] = useState(false);
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
 
   useEffect(() => {
     if (user && !awardsChecked) {
@@ -84,7 +88,7 @@ const Index = () => {
           <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center">
             <div className="w-4 h-4 rounded-full bg-primary animate-pulse" />
           </div>
-          <span className="text-sm text-muted-foreground">Đang tải...</span>
+          <span className="text-sm text-muted-foreground">{i18n.loading}</span>
         </motion.div>
       </div>
     );
@@ -93,9 +97,9 @@ const Index = () => {
   if (profile && !profile.onboarding_completed) return <Navigate to="/onboarding" replace />;
 
   const now = new Date();
-  const greeting = now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
-  const dateStr = now.toLocaleDateString('vi-VN', { weekday: 'long', month: 'long', day: 'numeric' });
-  const userName = profile?.name || user.email?.split('@')[0] || 'bạn';
+  const greeting = now.getHours() < 12 ? i18n.goodMorning : now.getHours() < 18 ? i18n.goodAfternoon : i18n.goodEvening;
+  const dateStr = now.toLocaleDateString(getLocale(lang), { weekday: 'long', month: 'long', day: 'numeric' });
+  const userName = profile?.name || user.email?.split('@')[0] || i18n.authYourName;
 
   const readinessResult: ReadinessResult | null = dailyLog?.readiness_score != null ? {
     score: Number(dailyLog.readiness_score),
@@ -214,17 +218,17 @@ const Index = () => {
       >
         {/* Greeting */}
         <motion.div variants={fadeUp}>
-          <p className="text-sm text-muted-foreground font-medium">{dateStr}</p>
+          <p className="text-sm text-muted-foreground font-medium capitalize">{dateStr}</p>
           <h2 className="text-3xl font-bold tracking-tight mt-1">{greeting}, <span className="text-gradient-green">{userName}</span></h2>
         </motion.div>
 
         {/* Quick log actions */}
         <motion.div variants={fadeUp} className="flex gap-2.5 flex-wrap">
           {[
-            { label: 'Ghi bữa ăn', Dialog: LogMealDialog },
-            { label: 'Ghi buổi tập', Dialog: LogWorkoutDialog },
-            { label: 'Ghi giấc ngủ', Dialog: LogSleepDialog },
-            { label: 'Nhập sinh trắc', Dialog: LogBiometricsDialog },
+            { label: i18n.dashLogMealAction, Dialog: LogMealDialog },
+            { label: i18n.dashLogWorkoutAction, Dialog: LogWorkoutDialog },
+            { label: i18n.dashLogSleepAction, Dialog: LogSleepDialog },
+            { label: i18n.dashEnterBiometrics, Dialog: LogBiometricsDialog },
           ].map(({ label, Dialog }) => (
             <Dialog key={label}>
               <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.94 }} transition={spring}>
@@ -242,7 +246,7 @@ const Index = () => {
             {readinessResult ? (
               <ReadinessGauge result={readinessResult} />
             ) : (
-              <EmptyState title="Sẵn Sàng" message="Cần 3+ ngày dữ liệu để tính điểm sẵn sàng. Hãy ghi log giấc ngủ, sinh trắc và buổi tập." />
+              <EmptyState title={i18n.dashReadiness} message={i18n.dashReadinessMsg} />
             )}
           </motion.div>
 
@@ -251,14 +255,14 @@ const Index = () => {
               {readinessTrend && readinessTrend.length > 0 ? (
                 <ReadinessTrend trend={readinessTrend} />
               ) : (
-                <EmptyState title="Xu Hướng" message="Chưa có dữ liệu xu hướng sẵn sàng." />
+                <EmptyState title={i18n.dashTrend} message={i18n.dashTrendMsg} />
               )}
             </motion.div>
             <motion.div variants={fadeUp}>
               {dailyLogForCards ? (
                 <ActivityCard log={dailyLogForCards} />
               ) : (
-                <EmptyState title="Hoạt Động" message="Chưa có dữ liệu hoạt động hôm nay." />
+                <EmptyState title={i18n.dashActivity} message={i18n.dashActivityMsg} />
               )}
             </motion.div>
           </div>
@@ -272,7 +276,7 @@ const Index = () => {
             ) : (
               <LogBiometricsDialog>
                 <div className="cursor-pointer">
-                  <EmptyState title="Sinh Trắc Học" message="Chưa có dữ liệu. Nhấn để nhập." actionLabel="Nhập sinh trắc" />
+                  <EmptyState title={i18n.dashBiometrics} message={i18n.dashBiometricsMsg} actionLabel={i18n.dashEnterBiometrics} />
                 </div>
               </LogBiometricsDialog>
             )}
@@ -283,7 +287,7 @@ const Index = () => {
             ) : (
               <LogWorkoutDialog>
                 <div className="cursor-pointer">
-                  <EmptyState title="Tập Luyện" message="Chưa có buổi tập nào. Nhấn để ghi." actionLabel="Ghi buổi tập" />
+                  <EmptyState title={i18n.dashTraining} message={i18n.dashTrainingMsg} actionLabel={i18n.dashLogWorkoutAction} />
                 </div>
               </LogWorkoutDialog>
             )}
@@ -298,7 +302,7 @@ const Index = () => {
             ) : (
               <LogMealDialog>
                 <div className="cursor-pointer">
-                  <EmptyState title="Dinh Dưỡng" message="Chưa ghi bữa ăn hôm nay. Nhấn để ghi." actionLabel="Ghi bữa ăn" />
+                  <EmptyState title={i18n.dashNutrition} message={i18n.dashNutritionMsg} actionLabel={i18n.dashLogMealAction} />
                 </div>
               </LogMealDialog>
             )}
@@ -309,7 +313,7 @@ const Index = () => {
             ) : (
               <LogSleepDialog>
                 <div className="cursor-pointer">
-                  <EmptyState title="Giấc Ngủ" message="Chưa ghi giấc ngủ. Nhấn để ghi." actionLabel="Ghi giấc ngủ" />
+                  <EmptyState title={i18n.dashSleep} message={i18n.dashSleepMsg} actionLabel={i18n.dashLogSleepAction} />
                 </div>
               </LogSleepDialog>
             )}
@@ -346,7 +350,7 @@ const Index = () => {
                 onToggle={(id, taken) => toggleSupplement.mutate({ supplementId: id, taken })}
               />
             ) : (
-              <EmptyState title="Supplements" message="Thêm supplements trong Settings." />
+              <EmptyState title={i18n.dashSupplements} message={i18n.dashSupplementsMsg} />
             )}
           </motion.div>
         </div>

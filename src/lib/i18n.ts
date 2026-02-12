@@ -1,34 +1,29 @@
-export type AppLang = 'vi' | 'en' | 'zh' | 'ja' | 'es';
-export type CurrencyCode = 'VND' | 'USD' | 'EUR' | 'CNY' | 'JPY' | 'GBP' | 'KRW';
+export type AppLang = 'vi' | 'en';
+export type CurrencyCode = 'VND' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
 export const CURRENCIES: { code: CurrencyCode; symbol: string; label: string }[] = [
   { code: 'VND', symbol: '₫', label: 'VND (₫)' },
   { code: 'USD', symbol: '$', label: 'USD ($)' },
   { code: 'EUR', symbol: '€', label: 'EUR (€)' },
   { code: 'GBP', symbol: '£', label: 'GBP (£)' },
-  { code: 'CNY', symbol: '¥', label: 'CNY (¥)' },
-  { code: 'JPY', symbol: '¥', label: 'JPY (¥)' },
   { code: 'KRW', symbol: '₩', label: 'KRW (₩)' },
 ];
 
 export const LANGUAGES: { code: AppLang; label: string; flag: string }[] = [
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
   { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'zh', label: '中文', flag: '🇨🇳' },
-  { code: 'ja', label: '日本語', flag: '🇯🇵' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
 ];
 
 export function formatPrice(value: number, currency: CurrencyCode): string {
   const cur = CURRENCIES.find(c => c.code === currency);
   if (!cur) return `${value}`;
   if (currency === 'VND') return `${Math.round(value).toLocaleString()}${cur.symbol}`;
-  if (currency === 'JPY' || currency === 'KRW') return `${cur.symbol}${Math.round(value).toLocaleString()}`;
+  if (currency === 'KRW') return `${cur.symbol}${Math.round(value).toLocaleString()}`;
   return `${cur.symbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function getLocale(lang: AppLang): string {
-  const map: Record<AppLang, string> = { vi: 'vi-VN', en: 'en-US', zh: 'zh-CN', ja: 'ja-JP', es: 'es-ES' };
+  const map: Record<AppLang, string> = { vi: 'vi-VN', en: 'en-US' };
   return map[lang];
 }
 
@@ -76,6 +71,7 @@ interface Translations {
   authHasAccount: string;
   authCheckEmail: string;
   authProcessing: string;
+  authYourName: string;
 
   // Sidebar / Nav
   navToday: string;
@@ -117,6 +113,23 @@ interface Translations {
   dashSleepMsg: string;
   dashSupplements: string;
   dashSupplementsMsg: string;
+  dashEnterBiometrics: string;
+  dashLogWorkoutAction: string;
+  dashLogMealAction: string;
+  dashLogSleepAction: string;
+
+  // Weight Checkin
+  weightTitle: string;
+  weightSave: string;
+  weightNotLogged: string;
+
+  // Workout Status
+  workoutStatusTitle: string;
+  workoutStatusDone: string;
+  workoutStatusNotYet: string;
+
+  // Supplement Checklist
+  supplementTodayTitle: string;
 
   // Settings
   settingsTitle: string;
@@ -167,6 +180,16 @@ interface Translations {
   settingsTotal: string;
   settingsSavedSuccess: string;
   settingsLogout: string;
+  settingsErrorSaving: string;
+  settingsPinMinLength: string;
+  settingsPinDone: string;
+  settingsPinRemoved: string;
+  settingsExported: string;
+  settingsSupNameEmpty: string;
+  settingsSupAdded: string;
+  settingsSupDeleted: string;
+  settingsNoSup: string;
+  settingsNoSupHint: string;
 
   // Activity levels
   activitySedentary: string;
@@ -221,6 +244,7 @@ interface Translations {
   mealShoppingEmpty: string;
   mealShoppingEmptyDesc: string;
   mealTimes: string;
+  mealAdded: string;
 
   // Supplements
   supplementsTitle: string;
@@ -305,6 +329,7 @@ interface Translations {
   workoutsExercisesAdded: string;
   workoutsVolume: string;
   workoutsCreated: string;
+  workoutsType: string;
 
   // Exercise Library
   exercisesTitle: string;
@@ -364,6 +389,7 @@ interface Translations {
   progressSaved: string;
   progressUploaded: string;
   progressSelectUpload: string;
+  progressNotes: string;
 
   // Biometrics
   biometricsTitle: string;
@@ -384,6 +410,15 @@ interface Translations {
   biometricsEstimate: string;
   biometricsHeartRate: string;
   biometricsBreathRate: string;
+
+  // Log Biometrics Dialog
+  logBioTitle: string;
+  logBioHR: string;
+  logBioHRV: string;
+  logBioSpO2: string;
+  logBioVO2: string;
+  logBioResp: string;
+  logBioSaved: string;
 
   // Awards
   awardsTitle: string;
@@ -495,6 +530,29 @@ interface Translations {
   onboardingComplete: string;
   onboardingCompleting: string;
   onboardingFinish: string;
+  onboardingGoalBulk: string;
+  onboardingGoalBulkDesc: string;
+  onboardingGoalCut: string;
+  onboardingGoalCutDesc: string;
+  onboardingGoalMaintain: string;
+  onboardingGoalMaintainDesc: string;
+  onboardingGoalRecomp: string;
+  onboardingGoalRecompDesc: string;
+  onboardingGoalStrength: string;
+  onboardingGoalStrengthDesc: string;
+  onboardingGoalEndurance: string;
+  onboardingGoalEnduranceDesc: string;
+  onboardingWakeTime: string;
+  onboardingSleepTime: string;
+  onboardingDietOmnivore: string;
+  onboardingDietVegetarian: string;
+  onboardingDietHalal: string;
+  onboardingDislikedFoodsPlaceholder: string;
+  onboardingSelectSupplements: string;
+  onboardingSummary: string;
+  onboardingPrev: string;
+  onboardingNext: string;
+  onboardingDone: string;
 
   // Muscle groups
   muscleChest: string;
@@ -522,6 +580,18 @@ interface Translations {
   measureCalfL: string;
   measureCalfR: string;
   measureBodyFat: string;
+
+  // Timing labels (for supplement checklist)
+  timingMorning: string;
+  timingPreWorkout: string;
+  timingPostWorkout: string;
+  timingBeforeBed: string;
+  timingWithMeals: string;
+
+  // Progress overload labels
+  progressionDouble: string;
+  progressionLinear: string;
+  progressionNone: string;
 }
 
 const vi: Translations = {
@@ -564,6 +634,7 @@ const vi: Translations = {
   authHasAccount: 'Đã có tài khoản?',
   authCheckEmail: 'Kiểm tra email để xác nhận tài khoản!',
   authProcessing: 'Đang xử lý...',
+  authYourName: 'Tên của bạn',
 
   navToday: 'Today',
   navNutrition: 'Dinh dưỡng',
@@ -603,6 +674,20 @@ const vi: Translations = {
   dashSleepMsg: 'Chưa ghi giấc ngủ. Nhấn để ghi.',
   dashSupplements: 'Supplements',
   dashSupplementsMsg: 'Thêm supplements trong Settings.',
+  dashEnterBiometrics: 'Nhập sinh trắc',
+  dashLogWorkoutAction: 'Ghi buổi tập',
+  dashLogMealAction: 'Ghi bữa ăn',
+  dashLogSleepAction: 'Ghi giấc ngủ',
+
+  weightTitle: 'Cân Nặng',
+  weightSave: 'Lưu',
+  weightNotLogged: 'Chưa ghi',
+
+  workoutStatusTitle: 'Buổi Tập Hôm Nay',
+  workoutStatusDone: 'Hoàn thành!',
+  workoutStatusNotYet: 'Chưa tập',
+
+  supplementTodayTitle: 'Supplement Hôm Nay',
 
   settingsTitle: 'Cài Đặt',
   settingsGeneral: 'Chung',
@@ -652,6 +737,16 @@ const vi: Translations = {
   settingsTotal: 'Tổng',
   settingsSavedSuccess: 'Đã lưu thành công!',
   settingsLogout: 'Đăng xuất',
+  settingsErrorSaving: 'Lỗi khi lưu',
+  settingsPinMinLength: 'PIN phải có ít nhất 4 ký tự',
+  settingsPinDone: 'Đã cài đặt PIN!',
+  settingsPinRemoved: 'Đã xóa PIN',
+  settingsExported: 'Đã xuất',
+  settingsSupNameEmpty: 'Tên supplement không được trống',
+  settingsSupAdded: 'Đã thêm supplement!',
+  settingsSupDeleted: 'Đã xóa supplement',
+  settingsNoSup: 'Chưa có supplement nào.',
+  settingsNoSupHint: 'Nhấn "Thêm" để bắt đầu.',
 
   activitySedentary: 'Ít vận động',
   activityLight: 'Nhẹ',
@@ -702,6 +797,7 @@ const vi: Translations = {
   mealShoppingEmpty: 'Thêm món vào kế hoạch để có danh sách đi chợ',
   mealShoppingEmptyDesc: 'Thêm món vào kế hoạch để có danh sách đi chợ',
   mealTimes: 'lần',
+  mealAdded: 'Đã thêm!',
 
   supplementsTitle: 'Supplements',
   supplementsThisWeek: 'Tuần này',
@@ -782,6 +878,7 @@ const vi: Translations = {
   workoutsExercisesAdded: 'Bài tập đã thêm',
   workoutsVolume: 'Volume',
   workoutsCreated: 'Đã tạo template!',
+  workoutsType: 'Loại',
 
   exercisesTitle: 'Bài Tập',
   exercisesAdd: 'Thêm bài tập',
@@ -837,6 +934,7 @@ const vi: Translations = {
   progressSaved: 'Đã lưu số đo!',
   progressUploaded: 'Đã tải ảnh!',
   progressSelectUpload: 'Chọn ảnh & Tải lên',
+  progressNotes: 'Ghi chú',
 
   biometricsTitle: 'Sinh Trắc Học',
   biometricsSubtitle: 'Theo dõi HR, HRV, SpO₂, VO₂max và nhịp thở',
@@ -856,6 +954,14 @@ const vi: Translations = {
   biometricsEstimate: 'ước tính',
   biometricsHeartRate: 'Nhịp Tim',
   biometricsBreathRate: 'Nhịp Thở',
+
+  logBioTitle: 'Nhập Chỉ Số Sinh Trắc',
+  logBioHR: 'Nhịp tim nghỉ (bpm)',
+  logBioHRV: 'HRV RMSSD (ms)',
+  logBioSpO2: 'SpO₂ (%)',
+  logBioVO2: 'VO₂max (ml/kg/min) — ước tính',
+  logBioResp: 'Nhịp thở (rpm)',
+  logBioSaved: 'Đã lưu chỉ số sinh trắc!',
 
   awardsTitle: 'Huy Chương',
   awardsEarned: 'Đã đạt',
@@ -964,6 +1070,29 @@ const vi: Translations = {
   onboardingComplete: 'Thiết lập hoàn tất! 🎉',
   onboardingCompleting: 'Đang hoàn tất...',
   onboardingFinish: 'Hoàn tất thiết lập',
+  onboardingGoalBulk: 'Tăng cân (Lean Bulk)',
+  onboardingGoalBulkDesc: 'Tăng cơ, surplus ~10%',
+  onboardingGoalCut: 'Giảm cân (Cut)',
+  onboardingGoalCutDesc: 'Giảm mỡ, deficit ~20%',
+  onboardingGoalMaintain: 'Duy trì (Maintain)',
+  onboardingGoalMaintainDesc: 'Giữ cân nặng hiện tại',
+  onboardingGoalRecomp: 'Tái cấu trúc (Recomp)',
+  onboardingGoalRecompDesc: 'Giảm mỡ + tăng cơ',
+  onboardingGoalStrength: 'Sức mạnh (Strength)',
+  onboardingGoalStrengthDesc: 'Tập trung tăng lực',
+  onboardingGoalEndurance: 'Sức bền (Endurance)',
+  onboardingGoalEnduranceDesc: 'Cardio, chịu đựng',
+  onboardingWakeTime: 'Giờ thức dậy',
+  onboardingSleepTime: 'Giờ đi ngủ',
+  onboardingDietOmnivore: 'Ăn tất cả',
+  onboardingDietVegetarian: 'Ăn chay',
+  onboardingDietHalal: 'Halal',
+  onboardingDislikedFoodsPlaceholder: 'VD: hành, mùi, nội tạng',
+  onboardingSelectSupplements: 'Chọn supplement cho stack của bạn',
+  onboardingSummary: 'Tóm tắt mục tiêu',
+  onboardingPrev: 'Quay lại',
+  onboardingNext: 'Tiếp theo',
+  onboardingDone: 'Hoàn tất',
 
   muscleChest: 'Ngực',
   muscleBack: 'Lưng',
@@ -989,6 +1118,16 @@ const vi: Translations = {
   measureCalfL: 'Bắp chân trái (cm)',
   measureCalfR: 'Bắp chân phải (cm)',
   measureBodyFat: 'Body fat (%)',
+
+  timingMorning: 'Sáng',
+  timingPreWorkout: 'Trước tập',
+  timingPostWorkout: 'Sau tập',
+  timingBeforeBed: 'Trước ngủ',
+  timingWithMeals: 'Cùng bữa ăn',
+
+  progressionDouble: 'Double progression (reps → weight)',
+  progressionLinear: 'Linear (tăng weight mỗi tuần)',
+  progressionNone: 'Không tự tăng',
 };
 
 const en: Translations = {
@@ -1031,6 +1170,7 @@ const en: Translations = {
   authHasAccount: 'Already have an account?',
   authCheckEmail: 'Check your email to confirm your account!',
   authProcessing: 'Processing...',
+  authYourName: 'Your name',
 
   navToday: 'Today',
   navNutrition: 'Nutrition',
@@ -1070,6 +1210,20 @@ const en: Translations = {
   dashSleepMsg: 'No sleep logged. Tap to log.',
   dashSupplements: 'Supplements',
   dashSupplementsMsg: 'Add supplements in Settings.',
+  dashEnterBiometrics: 'Enter biometrics',
+  dashLogWorkoutAction: 'Log workout',
+  dashLogMealAction: 'Log meal',
+  dashLogSleepAction: 'Log sleep',
+
+  weightTitle: 'Weight',
+  weightSave: 'Save',
+  weightNotLogged: 'Not logged',
+
+  workoutStatusTitle: "Today's Workouts",
+  workoutStatusDone: 'Complete!',
+  workoutStatusNotYet: 'Not started',
+
+  supplementTodayTitle: "Today's Supplements",
 
   settingsTitle: 'Settings',
   settingsGeneral: 'General',
@@ -1119,6 +1273,16 @@ const en: Translations = {
   settingsTotal: 'Total',
   settingsSavedSuccess: 'Saved successfully!',
   settingsLogout: 'Log out',
+  settingsErrorSaving: 'Error saving',
+  settingsPinMinLength: 'PIN must be at least 4 characters',
+  settingsPinDone: 'PIN set!',
+  settingsPinRemoved: 'PIN removed',
+  settingsExported: 'Exported',
+  settingsSupNameEmpty: 'Supplement name cannot be empty',
+  settingsSupAdded: 'Supplement added!',
+  settingsSupDeleted: 'Supplement deleted',
+  settingsNoSup: 'No supplements yet.',
+  settingsNoSupHint: 'Tap "Add" to start.',
 
   activitySedentary: 'Sedentary',
   activityLight: 'Light',
@@ -1169,6 +1333,7 @@ const en: Translations = {
   mealShoppingEmpty: 'Add food to plan to get a shopping list',
   mealShoppingEmptyDesc: 'Add food to plan to get a shopping list',
   mealTimes: 'times',
+  mealAdded: 'Added!',
 
   supplementsTitle: 'Supplements',
   supplementsThisWeek: 'This week',
@@ -1249,6 +1414,7 @@ const en: Translations = {
   workoutsExercisesAdded: 'Exercises added',
   workoutsVolume: 'Volume',
   workoutsCreated: 'Template created!',
+  workoutsType: 'Type',
 
   exercisesTitle: 'Exercises',
   exercisesAdd: 'Add exercise',
@@ -1304,6 +1470,7 @@ const en: Translations = {
   progressSaved: 'Measurements saved!',
   progressUploaded: 'Photo uploaded!',
   progressSelectUpload: 'Select photo & Upload',
+  progressNotes: 'Notes',
 
   biometricsTitle: 'Biometrics',
   biometricsSubtitle: 'Track HR, HRV, SpO₂, VO₂max and respiratory rate',
@@ -1323,6 +1490,14 @@ const en: Translations = {
   biometricsEstimate: 'estimate',
   biometricsHeartRate: 'Heart Rate',
   biometricsBreathRate: 'Breath Rate',
+
+  logBioTitle: 'Enter Biometrics',
+  logBioHR: 'Resting heart rate (bpm)',
+  logBioHRV: 'HRV RMSSD (ms)',
+  logBioSpO2: 'SpO₂ (%)',
+  logBioVO2: 'VO₂max (ml/kg/min) — estimate',
+  logBioResp: 'Respiratory rate (rpm)',
+  logBioSaved: 'Biometrics saved!',
 
   awardsTitle: 'Awards',
   awardsEarned: 'Earned',
@@ -1431,6 +1606,29 @@ const en: Translations = {
   onboardingComplete: 'Setup complete! 🎉',
   onboardingCompleting: 'Completing...',
   onboardingFinish: 'Complete setup',
+  onboardingGoalBulk: 'Lean Bulk',
+  onboardingGoalBulkDesc: 'Build muscle, surplus ~10%',
+  onboardingGoalCut: 'Cut',
+  onboardingGoalCutDesc: 'Lose fat, deficit ~20%',
+  onboardingGoalMaintain: 'Maintain',
+  onboardingGoalMaintainDesc: 'Keep current weight',
+  onboardingGoalRecomp: 'Body Recomp',
+  onboardingGoalRecompDesc: 'Lose fat + gain muscle',
+  onboardingGoalStrength: 'Strength',
+  onboardingGoalStrengthDesc: 'Focus on getting stronger',
+  onboardingGoalEndurance: 'Endurance',
+  onboardingGoalEnduranceDesc: 'Cardio, stamina',
+  onboardingWakeTime: 'Wake time',
+  onboardingSleepTime: 'Bedtime',
+  onboardingDietOmnivore: 'Omnivore',
+  onboardingDietVegetarian: 'Vegetarian',
+  onboardingDietHalal: 'Halal',
+  onboardingDislikedFoodsPlaceholder: 'e.g. onion, cilantro, organ meats',
+  onboardingSelectSupplements: 'Select supplements for your stack',
+  onboardingSummary: 'Goal summary',
+  onboardingPrev: 'Back',
+  onboardingNext: 'Next',
+  onboardingDone: 'Done',
 
   muscleChest: 'Chest',
   muscleBack: 'Back',
@@ -1456,304 +1654,19 @@ const en: Translations = {
   measureCalfL: 'Left calf (cm)',
   measureCalfR: 'Right calf (cm)',
   measureBodyFat: 'Body fat (%)',
+
+  timingMorning: 'Morning',
+  timingPreWorkout: 'Pre-workout',
+  timingPostWorkout: 'Post-workout',
+  timingBeforeBed: 'Before bed',
+  timingWithMeals: 'With meals',
+
+  progressionDouble: 'Double progression (reps → weight)',
+  progressionLinear: 'Linear (increase weight weekly)',
+  progressionNone: 'No auto-increase',
 };
 
-// Abbreviated translations for zh, ja, es - using the same structure
-const zh: Translations = {
-  ...en,
-  loading: '加载中...',
-  save: '保存',
-  saving: '保存中...',
-  cancel: '取消',
-  delete: '删除',
-  deleted: '已删除',
-  add: '添加',
-  edit: '编辑',
-  close: '关闭',
-  search: '搜索',
-  back: '返回',
-  next: '下一步',
-  previous: '上一步',
-  confirm: '确认',
-  error: '错误',
-  success: '成功',
-  noData: '暂无数据',
-  today: '今天',
-  thisWeek: '本周',
-  target: '目标',
-  all: '全部',
-  other: '其他',
-  settings: '设置',
-  goodMorning: '早上好',
-  goodAfternoon: '下午好',
-  goodEvening: '晚上好',
-  authLogin: '登录',
-  authSignup: '注册',
-  authEmail: '邮箱',
-  authPassword: '密码',
-  authName: '姓名',
-  authLoginSubtitle: '登录以继续',
-  authSignupSubtitle: '创建新账号',
-  authNoAccount: '没有账号？',
-  authHasAccount: '已有账号？',
-  authCheckEmail: '请检查邮箱确认账号！',
-  authProcessing: '处理中...',
-  navToday: '今日',
-  navNutrition: '营养',
-  navWorkouts: '训练',
-  navSupplements: '补充剂',
-  navSleep: '睡眠',
-  navWater: '饮水',
-  navBiometrics: '生物指标',
-  navProgress: '进展',
-  navWeeklyReview: '周回顾',
-  navSmartGoals: '智能目标',
-  navAwards: '勋章',
-  navChallenges: '挑战',
-  navGrocery: '购物清单',
-  navAiCoach: 'AI教练',
-  navSettings: '设置',
-  navMain: '主要',
-  navAnalytics: '分析',
-  dashLogMeal: '记录饮食',
-  dashLogWorkout: '记录训练',
-  dashLogSleep: '记录睡眠',
-  dashLogBiometrics: '输入指标',
-  settingsTitle: '设置',
-  settingsGeneral: '通用',
-  settingsProfile: '个人资料',
-  settingsTheme: '外观',
-  settingsThemeLight: '浅色',
-  settingsThemeDark: '深色',
-  settingsThemeSystem: '系统',
-  settingsLanguage: '语言',
-  settingsCurrency: '货币',
-  settingsSavedSuccess: '保存成功！',
-  settingsLogout: '退出',
-  groceryTitle: '购物 & 预算',
-  grocerySubtitle: '来自饮食计划和自定义清单的购物清单',
-  groceryShoppingList: '购物清单',
-  groceryBought: '已购买',
-  groceryAddProduct: '添加商品',
-  groceryClearBought: '清除已购',
-  groceryProductName: '商品名称',
-  groceryQuantity: '数量（如：2kg）',
-  groceryPrice: '价格',
-  groceryNoItems: '暂无商品。点击"添加商品"开始。',
-  groceryFromMealPlan: '来自饮食计划',
-  groceryTimesUsed: '次使用',
-  groceryCheapProtein: '廉价蛋白质列表',
-  groceryDeleted: '已删除',
-  groceryAddedToList: '已添加到列表',
-  groceryClearedBought: '已清除购买项目',
-  groceryNameRequired: '名称不能为空',
-  groceryCategories: {
-    'Thịt & Cá': '肉 & 鱼', 'Rau củ': '蔬菜', 'Trái cây': '水果',
-    'Sữa & Trứng': '乳制品 & 蛋', 'Gia vị': '调料', 'Đồ khô': '干货',
-    'Đồ uống': '饮料', 'Supplements': '补充剂', 'Khác': '其他',
-  },
-  waterTitle: '饮水追踪',
-  awardsTitle: '勋章',
-  challengesTitle: '每周挑战',
-};
-
-const ja: Translations = {
-  ...en,
-  loading: '読み込み中...',
-  save: '保存',
-  saving: '保存中...',
-  cancel: 'キャンセル',
-  delete: '削除',
-  deleted: '削除しました',
-  add: '追加',
-  edit: '編集',
-  close: '閉じる',
-  search: '検索',
-  back: '戻る',
-  next: '次へ',
-  previous: '前へ',
-  confirm: '確認',
-  error: 'エラー',
-  success: '成功',
-  noData: 'データなし',
-  today: '今日',
-  thisWeek: '今週',
-  target: '目標',
-  all: 'すべて',
-  other: 'その他',
-  settings: '設定',
-  goodMorning: 'おはようございます',
-  goodAfternoon: 'こんにちは',
-  goodEvening: 'こんばんは',
-  authLogin: 'ログイン',
-  authSignup: '新規登録',
-  authEmail: 'メール',
-  authPassword: 'パスワード',
-  authName: '名前',
-  authLoginSubtitle: 'ログインして続行',
-  authSignupSubtitle: '新しいアカウントを作成',
-  authNoAccount: 'アカウントをお持ちでない方',
-  authHasAccount: 'アカウントをお持ちの方',
-  authCheckEmail: 'メールを確認してアカウントを認証してください！',
-  authProcessing: '処理中...',
-  navToday: '今日',
-  navNutrition: '栄養',
-  navWorkouts: 'ワークアウト',
-  navSupplements: 'サプリメント',
-  navSleep: '睡眠',
-  navWater: '水分',
-  navBiometrics: '生体指標',
-  navProgress: '進捗',
-  navWeeklyReview: '週間レビュー',
-  navSmartGoals: 'スマートゴール',
-  navAwards: 'メダル',
-  navChallenges: 'チャレンジ',
-  navGrocery: '買い物リスト',
-  navAiCoach: 'AIコーチ',
-  navSettings: '設定',
-  navMain: 'メイン',
-  navAnalytics: '分析',
-  dashLogMeal: '食事を記録',
-  dashLogWorkout: 'ワークアウトを記録',
-  dashLogSleep: '睡眠を記録',
-  dashLogBiometrics: '指標を入力',
-  settingsTitle: '設定',
-  settingsGeneral: '一般',
-  settingsProfile: 'プロフィール',
-  settingsTheme: '外観',
-  settingsThemeLight: 'ライト',
-  settingsThemeDark: 'ダーク',
-  settingsThemeSystem: 'システム',
-  settingsLanguage: '言語',
-  settingsCurrency: '通貨',
-  settingsSavedSuccess: '保存しました！',
-  settingsLogout: 'ログアウト',
-  groceryTitle: '買い物 & 予算',
-  grocerySubtitle: '食事プランとカスタムリストからの買い物リスト',
-  groceryShoppingList: '買い物リスト',
-  groceryBought: '購入済み',
-  groceryAddProduct: '商品を追加',
-  groceryClearBought: '購入済みを削除',
-  groceryProductName: '商品名',
-  groceryQuantity: '数量（例：2kg）',
-  groceryPrice: '価格',
-  groceryNoItems: 'まだ商品がありません。「商品を追加」をタップして始めましょう。',
-  groceryFromMealPlan: '食事プランから',
-  groceryTimesUsed: '回使用',
-  groceryCheapProtein: '安いプロテインリスト',
-  groceryDeleted: '削除しました',
-  groceryAddedToList: 'リストに追加しました',
-  groceryClearedBought: '購入済みを削除しました',
-  groceryNameRequired: '名前は必須です',
-  groceryCategories: {
-    'Thịt & Cá': '肉 & 魚', 'Rau củ': '野菜', 'Trái cây': '果物',
-    'Sữa & Trứng': '乳製品 & 卵', 'Gia vị': '調味料', 'Đồ khô': '乾物',
-    'Đồ uống': '飲料', 'Supplements': 'サプリメント', 'Khác': 'その他',
-  },
-  waterTitle: '水分追跡',
-  awardsTitle: 'メダル',
-  challengesTitle: '週間チャレンジ',
-};
-
-const es: Translations = {
-  ...en,
-  loading: 'Cargando...',
-  save: 'Guardar',
-  saving: 'Guardando...',
-  cancel: 'Cancelar',
-  delete: 'Eliminar',
-  deleted: 'Eliminado',
-  add: 'Agregar',
-  edit: 'Editar',
-  close: 'Cerrar',
-  search: 'Buscar',
-  back: 'Volver',
-  next: 'Siguiente',
-  previous: 'Anterior',
-  confirm: 'Confirmar',
-  error: 'Error',
-  success: 'Éxito',
-  noData: 'Sin datos aún',
-  today: 'Hoy',
-  thisWeek: 'Esta semana',
-  target: 'Objetivo',
-  all: 'Todos',
-  other: 'Otro',
-  settings: 'Ajustes',
-  goodMorning: 'Buenos días',
-  goodAfternoon: 'Buenas tardes',
-  goodEvening: 'Buenas noches',
-  authLogin: 'Iniciar sesión',
-  authSignup: 'Registrarse',
-  authEmail: 'Correo',
-  authPassword: 'Contraseña',
-  authName: 'Nombre',
-  authLoginSubtitle: 'Inicia sesión para continuar',
-  authSignupSubtitle: 'Crea una nueva cuenta',
-  authNoAccount: '¿No tienes cuenta?',
-  authHasAccount: '¿Ya tienes cuenta?',
-  authCheckEmail: '¡Revisa tu correo para confirmar tu cuenta!',
-  authProcessing: 'Procesando...',
-  navToday: 'Hoy',
-  navNutrition: 'Nutrición',
-  navWorkouts: 'Entrenamientos',
-  navSupplements: 'Suplementos',
-  navSleep: 'Sueño',
-  navWater: 'Agua',
-  navBiometrics: 'Biométricas',
-  navProgress: 'Progreso',
-  navWeeklyReview: 'Revisión Semanal',
-  navSmartGoals: 'Metas Inteligentes',
-  navAwards: 'Medallas',
-  navChallenges: 'Desafíos',
-  navGrocery: 'Lista de Compras',
-  navAiCoach: 'Coach IA',
-  navSettings: 'Ajustes',
-  navMain: 'Principal',
-  navAnalytics: 'Análisis',
-  dashLogMeal: 'Registrar comida',
-  dashLogWorkout: 'Registrar entrenamiento',
-  dashLogSleep: 'Registrar sueño',
-  dashLogBiometrics: 'Ingresar biométricas',
-  settingsTitle: 'Ajustes',
-  settingsGeneral: 'General',
-  settingsProfile: 'Perfil',
-  settingsTheme: 'Apariencia',
-  settingsThemeLight: 'Claro',
-  settingsThemeDark: 'Oscuro',
-  settingsThemeSystem: 'Sistema',
-  settingsLanguage: 'Idioma',
-  settingsCurrency: 'Moneda',
-  settingsSavedSuccess: '¡Guardado con éxito!',
-  settingsLogout: 'Cerrar sesión',
-  groceryTitle: 'Compras & Presupuesto',
-  grocerySubtitle: 'Lista de compras del plan de comidas y lista personalizada',
-  groceryShoppingList: 'Lista de Compras',
-  groceryBought: 'comprados',
-  groceryAddProduct: 'Agregar producto',
-  groceryClearBought: 'Limpiar comprados',
-  groceryProductName: 'Nombre del producto',
-  groceryQuantity: 'Cant. (ej: 2kg)',
-  groceryPrice: 'Precio',
-  groceryNoItems: 'Sin productos aún. Toca "Agregar producto" para empezar.',
-  groceryFromMealPlan: 'Del Plan de Comidas',
-  groceryTimesUsed: 'veces usado',
-  groceryCheapProtein: 'Lista de Proteínas Baratas',
-  groceryDeleted: 'Eliminado',
-  groceryAddedToList: 'Agregado a la lista',
-  groceryClearedBought: 'Elementos comprados eliminados',
-  groceryNameRequired: 'El nombre es obligatorio',
-  groceryCategories: {
-    'Thịt & Cá': 'Carne & Pescado', 'Rau củ': 'Verduras', 'Trái cây': 'Frutas',
-    'Sữa & Trứng': 'Lácteos & Huevos', 'Gia vị': 'Especias', 'Đồ khô': 'Secos',
-    'Đồ uống': 'Bebidas', 'Supplements': 'Suplementos', 'Khác': 'Otros',
-  },
-  waterTitle: 'Seguimiento de Agua',
-  awardsTitle: 'Medallas',
-  challengesTitle: 'Desafíos Semanales',
-};
-
-const translations: Record<AppLang, Translations> = { vi, en, zh, ja, es };
+const translations: Record<AppLang, Translations> = { vi, en };
 
 export function useTranslation(lang: AppLang): Translations {
   return translations[lang];

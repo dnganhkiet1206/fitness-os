@@ -13,28 +13,33 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-
-const mainItems = [
-  { title: 'Today', url: '/', icon: Home },
-  { title: 'Dinh dưỡng', url: '/nutrition', icon: Utensils },
-  { title: 'Workouts', url: '/workouts', icon: Dumbbell },
-  { title: 'Supplements', url: '/supplements', icon: Pill },
-  { title: 'Giấc ngủ', url: '/sleep', icon: Moon },
-  { title: 'Nước uống', url: '/water', icon: Droplets },
-  { title: 'Sinh trắc học', url: '/biometrics', icon: Heart },
-  { title: 'Tiến trình', url: '/progress', icon: TrendingUp },
-];
-
-const analyticItems = [
-  { title: 'Weekly Review', url: '/weekly-review', icon: BarChart3 },
-  { title: 'Smart Goals', url: '/smart-goals', icon: Target },
-  { title: 'Huy Chương', url: '/awards', icon: Medal },
-  { title: 'Thử Thách', url: '/challenges', icon: Swords },
-  { title: 'Grocery List', url: '/grocery', icon: ShoppingCart },
-  { title: 'AI Coach', url: '/ai-coach', icon: Sparkles },
-];
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 export function AppSidebar() {
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
+
+  const mainItems = [
+    { title: i18n.navToday, url: '/', icon: Home },
+    { title: i18n.navNutrition, url: '/nutrition', icon: Utensils },
+    { title: i18n.navWorkouts, url: '/workouts', icon: Dumbbell },
+    { title: i18n.navSupplements, url: '/supplements', icon: Pill },
+    { title: i18n.navSleep, url: '/sleep', icon: Moon },
+    { title: i18n.navWater, url: '/water', icon: Droplets },
+    { title: i18n.navBiometrics, url: '/biometrics', icon: Heart },
+    { title: i18n.navProgress, url: '/progress', icon: TrendingUp },
+  ];
+
+  const analyticItems = [
+    { title: i18n.navWeeklyReview, url: '/weekly-review', icon: BarChart3 },
+    { title: i18n.navSmartGoals, url: '/smart-goals', icon: Target },
+    { title: i18n.navAwards, url: '/awards', icon: Medal },
+    { title: i18n.navChallenges, url: '/challenges', icon: Swords },
+    { title: i18n.navGrocery, url: '/grocery', icon: ShoppingCart },
+    { title: i18n.navAiCoach, url: '/ai-coach', icon: Sparkles },
+  ];
+
   return (
     <Sidebar className="border-r border-border/20" style={{
       background: 'hsl(225 15% 6% / 0.8)',
@@ -55,7 +60,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 px-4 mb-1">Main</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 px-4 mb-1">{i18n.navMain}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item, i) => (
@@ -78,7 +83,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 px-4 mb-1">Analytics</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 px-4 mb-1">{i18n.navAnalytics}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {analyticItems.map((item) => (
@@ -110,7 +115,7 @@ export function AppSidebar() {
                 activeClassName="bg-primary/10 text-primary font-medium"
               >
                 <Settings className="w-4 h-4" />
-                <span>Cài đặt</span>
+                <span>{i18n.navSettings}</span>
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

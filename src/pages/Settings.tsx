@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Target, Moon, Pill, Plus, Trash2, Save, Check, Download, Lock, Scale, Globe, Sun, Monitor } from 'lucide-react';
 import { useAppSettings, type ThemeMode } from '@/hooks/useAppSettings';
-import { LANGUAGES, CURRENCIES, type GroceryLang, type CurrencyCode } from '@/lib/grocery-i18n';
+import { LANGUAGES, CURRENCIES, t } from '@/lib/i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useSupplements, useAddSupplement, useUpdateSupplement, useDeleteSupplement } from '@/hooks/useSupplements';
@@ -58,6 +58,8 @@ const Settings = () => {
   const deleteSupplement = useDeleteSupplement();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const appSettings = useAppSettings();
+  const i18n = t(appSettings.lang);
 
   const [form, setForm] = useState<ProfileForm>({
     name: '', dob: '', sex: 'other', height_cm: '170', weight_kg: '70',
@@ -68,7 +70,6 @@ const Settings = () => {
   });
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'nutrition' | 'sleep' | 'supplements' | 'data'>('general');
-  const appSettings = useAppSettings();
   const [newSup, setNewSup] = useState({ name: '', category: 'vitamin', dose_text: '', timing: 'morning', notes: '' });
   const [showAddSup, setShowAddSup] = useState(false);
 
@@ -104,7 +105,7 @@ const Settings = () => {
   if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-muted-foreground">Đang tải...</motion.div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-muted-foreground">{i18n.loading}</motion.div>
       </div>
     );
   }
@@ -134,20 +135,20 @@ const Settings = () => {
     }).eq('user_id', user.id);
 
     if (error) {
-      toast.error('Lỗi khi lưu: ' + error.message);
+      toast.error(i18n.settingsErrorSaving + ': ' + error.message);
     } else {
-      toast.success('Đã lưu thành công!');
+      toast.success(i18n.settingsSavedSuccess);
       queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
     }
     setSaving(false);
   };
 
   const handleAddSupplement = async () => {
-    if (!newSup.name.trim()) return toast.error('Tên supplement không được trống');
+    if (!newSup.name.trim()) return toast.error(i18n.settingsSupNameEmpty);
     await addSupplement.mutateAsync(newSup);
     setNewSup({ name: '', category: 'vitamin', dose_text: '', timing: 'morning', notes: '' });
     setShowAddSup(false);
-    toast.success('Đã thêm supplement!');
+    toast.success(i18n.settingsSupAdded);
   };
 
   // Export functions
@@ -197,31 +198,31 @@ const Settings = () => {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`Đã xuất ${format.toUpperCase()}!`);
+    toast.success(`${i18n.settingsExported} ${format.toUpperCase()}!`);
   };
 
   // PIN management
   const handleSetPin = () => {
-    if (pinInput.length < 4) return toast.error('PIN phải có ít nhất 4 ký tự');
+    if (pinInput.length < 4) return toast.error(i18n.settingsPinMinLength);
     localStorage.setItem('app_pin', pinInput);
     setPinEnabled(true);
     setPinInput('');
-    toast.success('Đã cài đặt PIN!');
+    toast.success(i18n.settingsPinDone);
   };
 
   const handleRemovePin = () => {
     localStorage.removeItem('app_pin');
     setPinEnabled(false);
-    toast.info('Đã xóa PIN');
+    toast.info(i18n.settingsPinRemoved);
   };
 
   const tabs = [
-    { id: 'general' as const, label: 'Chung', icon: Globe },
-    { id: 'profile' as const, label: 'Hồ Sơ', icon: User },
-    { id: 'nutrition' as const, label: 'Dinh Dưỡng', icon: Target },
-    { id: 'sleep' as const, label: 'Giấc Ngủ', icon: Moon },
-    { id: 'supplements' as const, label: 'Supplements', icon: Pill },
-    { id: 'data' as const, label: 'Dữ Liệu', icon: Download },
+    { id: 'general' as const, label: i18n.settingsGeneral, icon: Globe },
+    { id: 'profile' as const, label: i18n.settingsProfile, icon: User },
+    { id: 'nutrition' as const, label: i18n.settingsNutrition, icon: Target },
+    { id: 'sleep' as const, label: i18n.settingsSleep, icon: Moon },
+    { id: 'supplements' as const, label: i18n.settingsSupplements, icon: Pill },
+    { id: 'data' as const, label: i18n.settingsData, icon: Download },
   ];
 
   const update = (key: keyof ProfileForm, val: string) => setForm(f => ({ ...f, [key]: val }));
@@ -239,11 +240,11 @@ const Settings = () => {
         className="relative max-w-3xl mx-auto px-4 py-8 space-y-6"
       >
         <motion.div variants={fadeUp} className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold tracking-tight">Cài Đặt</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{i18n.settingsTitle}</h2>
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} transition={spring}>
             <Button onClick={handleSave} disabled={saving} size="sm" className="rounded-xl gap-1.5">
               {saving ? <div className="w-3.5 h-3.5 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              {saving ? 'Đang lưu...' : 'Lưu'}
+              {saving ? i18n.saving : i18n.save}
             </Button>
           </motion.div>
         </motion.div>
@@ -274,12 +275,12 @@ const Settings = () => {
             <motion.div key="general" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ ...spring, duration: 0.4 }} className="space-y-5">
               {/* Theme */}
               <div className="metric-card space-y-5 relative">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Giao Diện</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsTheme}</h3>
                 <div className="grid grid-cols-3 gap-3">
                   {([
-                    { value: 'light' as ThemeMode, label: 'Sáng', icon: Sun },
-                    { value: 'dark' as ThemeMode, label: 'Tối', icon: Moon },
-                    { value: 'system' as ThemeMode, label: 'Hệ thống', icon: Monitor },
+                    { value: 'light' as ThemeMode, label: i18n.settingsThemeLight, icon: Sun },
+                    { value: 'dark' as ThemeMode, label: i18n.settingsThemeDark, icon: Moon },
+                    { value: 'system' as ThemeMode, label: i18n.settingsThemeSystem, icon: Monitor },
                   ]).map(opt => (
                     <motion.button
                       key={opt.value}
@@ -302,7 +303,7 @@ const Settings = () => {
 
               {/* Language */}
               <div className="metric-card space-y-5 relative">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Ngôn Ngữ</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsLanguage}</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {LANGUAGES.map(l => (
                     <motion.button
@@ -326,7 +327,7 @@ const Settings = () => {
 
               {/* Currency */}
               <div className="metric-card space-y-5 relative">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Tiền Tệ</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsCurrency}</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {CURRENCIES.map(c => (
                     <motion.button
@@ -353,59 +354,59 @@ const Settings = () => {
           {activeTab === 'profile' && (
             <motion.div key="profile" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ ...spring, duration: 0.4 }} className="space-y-5">
               <div className="metric-card space-y-5 relative">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Thông Tin Cá Nhân</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsPersonalInfo}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Tên</Label>
+                    <Label>{i18n.settingsName}</Label>
                     <Input value={form.name} onChange={e => update('name', e.target.value)} className="rounded-xl bg-background/50" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Ngày sinh</Label>
+                    <Label>{i18n.settingsDob}</Label>
                     <Input type="date" value={form.dob} onChange={e => update('dob', e.target.value)} className="rounded-xl bg-background/50" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Giới tính</Label>
+                    <Label>{i18n.settingsSex}</Label>
                     <Select value={form.sex} onValueChange={v => update('sex', v)}>
                       <SelectTrigger className="rounded-xl bg-background/50"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="male">Nam</SelectItem>
-                        <SelectItem value="female">Nữ</SelectItem>
-                        <SelectItem value="other">Khác</SelectItem>
+                        <SelectItem value="male">{i18n.settingsSexMale}</SelectItem>
+                        <SelectItem value="female">{i18n.settingsSexFemale}</SelectItem>
+                        <SelectItem value="other">{i18n.settingsSexOther}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Chiều cao ({form.units_height})</Label>
+                    <Label>{i18n.settingsHeight} ({form.units_height})</Label>
                     <Input type="number" value={form.height_cm} onChange={e => update('height_cm', e.target.value)} className="rounded-xl bg-background/50" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Cân nặng ({form.units_weight})</Label>
+                    <Label>{i18n.settingsWeight} ({form.units_weight})</Label>
                     <Input type="number" value={form.weight_kg} onChange={e => update('weight_kg', e.target.value)} className="rounded-xl bg-background/50" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Mức hoạt động</Label>
+                    <Label>{i18n.settingsActivityLevel}</Label>
                     <Select value={form.activity_level} onValueChange={v => update('activity_level', v)}>
                       <SelectTrigger className="rounded-xl bg-background/50"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sedentary">Ít vận động</SelectItem>
-                        <SelectItem value="light">Nhẹ</SelectItem>
-                        <SelectItem value="moderate">Trung bình</SelectItem>
-                        <SelectItem value="high">Cao</SelectItem>
-                        <SelectItem value="athlete">Vận động viên</SelectItem>
+                        <SelectItem value="sedentary">{i18n.activitySedentary}</SelectItem>
+                        <SelectItem value="light">{i18n.activityLight}</SelectItem>
+                        <SelectItem value="moderate">{i18n.activityModerate}</SelectItem>
+                        <SelectItem value="high">{i18n.activityHigh}</SelectItem>
+                        <SelectItem value="athlete">{i18n.activityAthlete}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2 sm:col-span-2">
-                    <Label>Mục tiêu</Label>
+                    <Label>{i18n.settingsGoal}</Label>
                     <Select value={form.goal} onValueChange={v => update('goal', v)}>
                       <SelectTrigger className="rounded-xl bg-background/50"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="bulk">Tăng cân</SelectItem>
-                        <SelectItem value="cut">Giảm cân</SelectItem>
-                        <SelectItem value="maintain">Duy trì</SelectItem>
-                        <SelectItem value="recomp">Recomp</SelectItem>
-                        <SelectItem value="strength">Tăng sức mạnh</SelectItem>
-                        <SelectItem value="endurance">Tăng sức bền</SelectItem>
+                        <SelectItem value="bulk">{i18n.goalBulk}</SelectItem>
+                        <SelectItem value="cut">{i18n.goalCut}</SelectItem>
+                        <SelectItem value="maintain">{i18n.goalMaintain}</SelectItem>
+                        <SelectItem value="recomp">{i18n.goalRecomp}</SelectItem>
+                        <SelectItem value="strength">{i18n.goalStrength}</SelectItem>
+                        <SelectItem value="endurance">{i18n.goalEndurance}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -414,10 +415,10 @@ const Settings = () => {
 
               {/* Units */}
               <div className="metric-card space-y-5 relative">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Đơn Vị</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsUnits}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Cân nặng</Label>
+                    <Label>{i18n.settingsWeight}</Label>
                     <Select value={form.units_weight} onValueChange={v => update('units_weight', v)}>
                       <SelectTrigger className="rounded-xl bg-background/50"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -427,7 +428,7 @@ const Settings = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Chiều cao</Label>
+                    <Label>{i18n.settingsHeight}</Label>
                     <Select value={form.units_height} onValueChange={v => update('units_height', v)}>
                       <SelectTrigger className="rounded-xl bg-background/50"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -444,9 +445,9 @@ const Settings = () => {
           {activeTab === 'nutrition' && (
             <motion.div key="nutrition" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ ...spring, duration: 0.4 }} className="space-y-5">
               <div className="metric-card space-y-5 relative">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Mục Tiêu Calories & Macros</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsCaloriesMacros}</h3>
                 <div className="space-y-2">
-                  <Label>TDEE Target (kcal/ngày)</Label>
+                  <Label>TDEE Target (kcal)</Label>
                   <Input type="number" value={form.tdee_target_kcal} onChange={e => update('tdee_target_kcal', e.target.value)} className="rounded-xl bg-background/50 text-2xl font-mono font-bold h-14" />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -463,7 +464,7 @@ const Settings = () => {
                   ))}
                 </div>
                 <div className="bg-secondary/30 rounded-xl p-4">
-                  <p className="text-xs text-muted-foreground mb-3">Phân bổ Macros</p>
+                  <p className="text-xs text-muted-foreground mb-3">{i18n.settingsMacroDistribution}</p>
                   <div className="flex h-3 rounded-full overflow-hidden">
                     {(() => {
                       const p = Number(form.macro_protein_g) * 4;
@@ -483,17 +484,17 @@ const Settings = () => {
                     <span className="text-readiness-green">P: {Math.round((Number(form.macro_protein_g) * 4 / (Number(form.macro_protein_g) * 4 + Number(form.macro_carbs_g) * 4 + Number(form.macro_fat_g) * 9 || 1)) * 100)}%</span>
                     <span className="text-metric-blue">C: {Math.round((Number(form.macro_carbs_g) * 4 / (Number(form.macro_protein_g) * 4 + Number(form.macro_carbs_g) * 4 + Number(form.macro_fat_g) * 9 || 1)) * 100)}%</span>
                     <span className="text-readiness-yellow">F: {Math.round((Number(form.macro_fat_g) * 9 / (Number(form.macro_protein_g) * 4 + Number(form.macro_carbs_g) * 4 + Number(form.macro_fat_g) * 9 || 1)) * 100)}%</span>
-                    <span>Tổng: {Number(form.macro_protein_g) * 4 + Number(form.macro_carbs_g) * 4 + Number(form.macro_fat_g) * 9} kcal</span>
+                    <span>{i18n.settingsTotal}: {Number(form.macro_protein_g) * 4 + Number(form.macro_carbs_g) * 4 + Number(form.macro_fat_g) * 9} kcal</span>
                   </div>
                 </div>
               </div>
 
               <div className="metric-card space-y-5 relative">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Mục Tiêu Nước Uống</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsWaterTarget}</h3>
                 <div className="space-y-2">
-                  <Label>Mục tiêu mỗi ngày (ml)</Label>
+                  <Label>{i18n.target} (ml)</Label>
                   <Input type="number" step="250" min="500" max="6000" value={form.water_target_ml} onChange={e => update('water_target_ml', e.target.value)} className="rounded-xl bg-background/50 text-2xl font-mono font-bold h-14" />
-                  <p className="text-xs text-muted-foreground">Khuyến nghị: 30-35ml × cân nặng ({form.units_weight}) = {Math.round(Number(form.weight_kg) * 33)}ml</p>
+                  <p className="text-xs text-muted-foreground">{i18n.settingsWaterRecommend} = {Math.round(Number(form.weight_kg) * 33)}ml</p>
                 </div>
               </div>
             </motion.div>
@@ -502,25 +503,25 @@ const Settings = () => {
           {activeTab === 'sleep' && (
             <motion.div key="sleep" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ ...spring, duration: 0.4 }} className="space-y-5">
               <div className="metric-card space-y-5 relative">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Mục Tiêu Giấc Ngủ</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsSleepTarget}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label>Số giờ mục tiêu</Label>
+                    <Label>{i18n.settingsSleepHours}</Label>
                     <Input type="number" step="0.5" min="4" max="12" value={form.sleep_target_hours} onChange={e => update('sleep_target_hours', e.target.value)} className="rounded-xl bg-background/50 font-mono text-xl font-bold h-14" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Giờ đi ngủ</Label>
+                    <Label>{i18n.settingsBedtime}</Label>
                     <Input type="time" value={form.sleep_target_bedtime} onChange={e => update('sleep_target_bedtime', e.target.value)} className="rounded-xl bg-background/50 font-mono" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Giờ thức dậy</Label>
+                    <Label>{i18n.settingsWakeTime}</Label>
                     <Input type="time" value={form.sleep_target_waketime} onChange={e => update('sleep_target_waketime', e.target.value)} className="rounded-xl bg-background/50 font-mono" />
                   </div>
                 </div>
                 <div className="bg-secondary/30 rounded-xl p-4 flex items-center gap-3">
                   <Moon className="w-5 h-5 text-metric-purple" />
                   <p className="text-sm text-muted-foreground">
-                    Mục tiêu: <span className="text-foreground font-semibold">{form.sleep_target_bedtime}</span> → <span className="text-foreground font-semibold">{form.sleep_target_waketime}</span> ({form.sleep_target_hours}h)
+                    {i18n.settingsSleepGoalSummary}: <span className="text-foreground font-semibold">{form.sleep_target_bedtime}</span> → <span className="text-foreground font-semibold">{form.sleep_target_waketime}</span> ({form.sleep_target_hours}h)
                   </p>
                 </div>
               </div>
@@ -531,10 +532,10 @@ const Settings = () => {
             <motion.div key="supplements" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ ...spring, duration: 0.4 }} className="space-y-5">
               <div className="metric-card space-y-5 relative">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Supplement Stack</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsSupplementStack}</h3>
                   <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} transition={spring}>
                     <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setShowAddSup(!showAddSup)}>
-                      <Plus className="w-3 h-3 mr-1.5" />Thêm
+                      <Plus className="w-3 h-3 mr-1.5" />{i18n.add}
                     </Button>
                   </motion.div>
                 </div>
@@ -545,46 +546,46 @@ const Settings = () => {
                       <div className="bg-secondary/30 rounded-xl p-4 space-y-3">
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
-                            <Label className="text-xs">Tên</Label>
+                            <Label className="text-xs">{i18n.supplementsName}</Label>
                             <Input value={newSup.name} onChange={e => setNewSup(s => ({ ...s, name: e.target.value }))} placeholder="VD: Creatine" className="rounded-xl bg-background/50 h-9 text-sm" />
                           </div>
                           <div className="space-y-1.5">
-                            <Label className="text-xs">Liều</Label>
+                            <Label className="text-xs">{i18n.supplementsDose}</Label>
                             <Input value={newSup.dose_text} onChange={e => setNewSup(s => ({ ...s, dose_text: e.target.value }))} placeholder="VD: 5g/ngày" className="rounded-xl bg-background/50 h-9 text-sm" />
                           </div>
                           <div className="space-y-1.5">
-                            <Label className="text-xs">Loại</Label>
+                            <Label className="text-xs">{i18n.supplementsCategory}</Label>
                             <Select value={newSup.category} onValueChange={v => setNewSup(s => ({ ...s, category: v }))}>
                               <SelectTrigger className="rounded-xl bg-background/50 h-9 text-sm"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="vitamin">Vitamin</SelectItem>
-                                <SelectItem value="mineral">Khoáng chất</SelectItem>
-                                <SelectItem value="performance">Hiệu suất</SelectItem>
-                                <SelectItem value="recovery">Phục hồi</SelectItem>
-                                <SelectItem value="health">Sức khỏe</SelectItem>
-                                <SelectItem value="other">Khác</SelectItem>
+                                <SelectItem value="vitamin">{i18n.supplementsCatVitamin}</SelectItem>
+                                <SelectItem value="mineral">{i18n.supplementsCatMineral}</SelectItem>
+                                <SelectItem value="performance">{i18n.supplementsCatPerformance}</SelectItem>
+                                <SelectItem value="recovery">{i18n.supplementsCatRecovery}</SelectItem>
+                                <SelectItem value="health">{i18n.supplementsCatHealth}</SelectItem>
+                                <SelectItem value="other">{i18n.supplementsCatOther}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                           <div className="space-y-1.5">
-                            <Label className="text-xs">Thời điểm</Label>
+                            <Label className="text-xs">{i18n.supplementsTiming}</Label>
                             <Select value={newSup.timing} onValueChange={v => setNewSup(s => ({ ...s, timing: v }))}>
                               <SelectTrigger className="rounded-xl bg-background/50 h-9 text-sm"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="morning">Sáng</SelectItem>
-                                <SelectItem value="pre_workout">Trước tập</SelectItem>
-                                <SelectItem value="post_workout">Sau tập</SelectItem>
-                                <SelectItem value="evening">Tối</SelectItem>
-                                <SelectItem value="with_meal">Cùng bữa ăn</SelectItem>
+                                <SelectItem value="morning">{i18n.supplementsTimMorning}</SelectItem>
+                                <SelectItem value="pre_workout">{i18n.supplementsTimPreWorkout}</SelectItem>
+                                <SelectItem value="post_workout">{i18n.supplementsTimPostWorkout}</SelectItem>
+                                <SelectItem value="evening">{i18n.supplementsTimEvening}</SelectItem>
+                                <SelectItem value="with_meal">{i18n.supplementsTimWithMeal}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" className="rounded-xl" onClick={handleAddSupplement} disabled={addSupplement.isPending}>
-                            <Check className="w-3 h-3 mr-1" />Thêm
+                            <Check className="w-3 h-3 mr-1" />{i18n.add}
                           </Button>
-                          <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setShowAddSup(false)}>Hủy</Button>
+                          <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setShowAddSup(false)}>{i18n.cancel}</Button>
                         </div>
                       </div>
                     </motion.div>
@@ -592,7 +593,7 @@ const Settings = () => {
                 </AnimatePresence>
 
                 {suppLoading ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Đang tải...</p>
+                  <p className="text-sm text-muted-foreground text-center py-6">{i18n.loading}</p>
                 ) : supplements && supplements.length > 0 ? (
                   <div className="space-y-2.5">
                     {supplements.map((sup, i) => (
@@ -620,7 +621,7 @@ const Settings = () => {
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           transition={spring}
-                          onClick={() => { deleteSupplement.mutate(sup.id); toast.success('Đã xóa supplement'); }}
+                          onClick={() => { deleteSupplement.mutate(sup.id); toast.success(i18n.settingsSupDeleted); }}
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -633,8 +634,8 @@ const Settings = () => {
                     <div className="w-10 h-10 rounded-2xl bg-secondary/60 flex items-center justify-center mx-auto mb-3">
                       <Pill className="w-5 h-5 text-muted-foreground/50" />
                     </div>
-                    <p className="text-sm text-muted-foreground">Chưa có supplement nào.</p>
-                    <p className="text-xs text-muted-foreground">Nhấn "Thêm" để bắt đầu.</p>
+                    <p className="text-sm text-muted-foreground">{i18n.settingsNoSup}</p>
+                    <p className="text-xs text-muted-foreground">{i18n.settingsNoSupHint}</p>
                   </div>
                 )}
               </div>
@@ -645,8 +646,8 @@ const Settings = () => {
             <motion.div key="data" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ ...spring, duration: 0.4 }} className="space-y-5">
               {/* Export */}
               <div className="metric-card space-y-5 relative">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Xuất Dữ Liệu</h3>
-                <p className="text-sm text-muted-foreground">Tải xuống toàn bộ dữ liệu cân nặng, dinh dưỡng, tập luyện, giấc ngủ.</p>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsExportData}</h3>
+                <p className="text-sm text-muted-foreground">{i18n.settingsExportDesc}</p>
                 <div className="flex gap-3">
                   <Button variant="outline" className="rounded-xl flex-1" onClick={() => exportData('json')}>
                     <Download className="w-4 h-4 mr-2" />Export JSON
@@ -659,32 +660,32 @@ const Settings = () => {
 
               {/* PIN Lock */}
               <div className="metric-card space-y-5 relative">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Privacy Lock</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.settingsPrivacyLock}</h3>
                 {pinEnabled ? (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 bg-primary/10 rounded-xl p-4">
                       <Lock className="w-5 h-5 text-primary" />
                       <div className="flex-1">
-                        <p className="text-sm font-medium">PIN đã được cài đặt</p>
-                        <p className="text-xs text-muted-foreground">Ứng dụng sẽ yêu cầu PIN khi mở lại</p>
+                        <p className="text-sm font-medium">{i18n.settingsPinSet}</p>
+                        <p className="text-xs text-muted-foreground">{i18n.settingsPinSetDesc}</p>
                       </div>
                     </div>
-                    <Button variant="destructive" size="sm" className="rounded-xl" onClick={handleRemovePin}>Xóa PIN</Button>
+                    <Button variant="destructive" size="sm" className="rounded-xl" onClick={handleRemovePin}>{i18n.settingsPinRemove}</Button>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">Cài đặt PIN để bảo vệ dữ liệu cá nhân.</p>
+                    <p className="text-sm text-muted-foreground">{i18n.settingsPinSetupDesc}</p>
                     <div className="flex gap-2">
                       <Input
                         type="password"
-                        placeholder="Nhập PIN (≥4 ký tự)"
+                        placeholder={i18n.settingsPinPlaceholder}
                         value={pinInput}
                         onChange={e => setPinInput(e.target.value)}
                         className="rounded-xl bg-background/50 flex-1"
                         maxLength={8}
                       />
                       <Button size="sm" className="rounded-xl" onClick={handleSetPin}>
-                        <Lock className="w-3 h-3 mr-1" />Cài đặt
+                        <Lock className="w-3 h-3 mr-1" />{i18n.settingsPinInstall}
                       </Button>
                     </div>
                   </div>
