@@ -6,26 +6,45 @@ interface ReadinessTrendProps {
 
 const spring = { type: 'spring' as const, stiffness: 200, damping: 24 };
 
+const statusGradient = {
+  green: ['hsl(160, 84%, 39%)', 'hsl(120, 100%, 45%)'],
+  yellow: ['hsl(43, 96%, 56%)', 'hsl(25, 95%, 58%)'],
+  red: ['hsl(0, 84%, 60%)', 'hsl(340, 100%, 55%)'],
+};
+
 const ReadinessTrend = ({ trend }: ReadinessTrendProps) => {
-  const maxHeight = 60;
+  const maxHeight = 64;
 
   return (
-    <div className="metric-card space-y-4 relative">
-      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Sẵn Sàng 7 Ngày</h3>
-      <div className="flex items-end justify-between gap-2 h-20">
+    <div className="metric-card card-shimmer space-y-4 relative overflow-hidden">
+      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground relative">Sẵn Sàng 7 Ngày</h3>
+      <div className="flex items-end justify-between gap-2 h-24 relative">
         {trend.map((d, i) => {
           const h = (d.score / 100) * maxHeight;
-          const color = d.status === 'green' ? 'bg-readiness-green' : d.status === 'yellow' ? 'bg-readiness-yellow' : 'bg-readiness-red';
           const isToday = i === trend.length - 1;
+          const [c1, c2] = statusGradient[d.status];
           return (
             <div key={d.day} className="flex flex-col items-center gap-1.5 flex-1">
-              <span className="text-[10px] font-mono text-muted-foreground">{d.score}</span>
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 + i * 0.06 }}
+                className={`text-[10px] font-mono ${isToday ? 'text-foreground font-bold' : 'text-muted-foreground'}`}
+              >
+                {d.score}
+              </motion.span>
               <motion.div
-                className={`w-full rounded-lg ${color} ${isToday ? 'opacity-100' : 'opacity-50'}`}
+                className="w-full rounded-lg relative overflow-hidden"
+                style={{ opacity: isToday ? 1 : 0.6 }}
                 initial={{ height: 0 }}
                 animate={{ height: h }}
                 transition={{ ...spring, delay: 0.2 + i * 0.06 }}
-              />
+              >
+                <div className="absolute inset-0 rounded-lg" style={{ background: `linear-gradient(to top, ${c1}, ${c2})` }} />
+                {isToday && (
+                  <div className="absolute inset-0 rounded-lg" style={{ boxShadow: `0 0 12px ${c1.replace(')', ' / 0.4)')}`, }} />
+                )}
+              </motion.div>
               <span className={`text-[10px] ${isToday ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
                 {d.day}
               </span>

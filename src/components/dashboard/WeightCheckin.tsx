@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Scale, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Scale, TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -28,39 +28,47 @@ export default function WeightCheckin({ todayWeight, profileWeight, onLog, savin
   };
 
   return (
-    <div className="metric-card space-y-3">
-      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+    <div className="metric-card card-shimmer space-y-3 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at top right, hsl(195 100% 50%), transparent 60%)' }} />
+
+      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 relative">
         <Scale className="w-3.5 h-3.5" /> Cân Nặng
       </h3>
 
       {todayWeight && !editing ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={spring} className="flex items-center justify-between">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={spring} className="flex items-center justify-between relative">
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-mono font-bold">{todayWeight}</span>
             <span className="text-sm text-muted-foreground">kg</span>
           </div>
           <div className="flex items-center gap-2">
             {diff !== null && (
-              <div className={`flex items-center gap-1 text-xs font-mono ${diff > 0 ? 'text-readiness-red' : diff < 0 ? 'text-readiness-green' : 'text-muted-foreground'}`}>
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={`flex items-center gap-1 text-xs font-mono px-2 py-1 rounded-lg ${diff > 0 ? 'text-readiness-red bg-readiness-red/10' : diff < 0 ? 'text-readiness-green bg-readiness-green/10' : 'text-muted-foreground bg-secondary/30'}`}
+              >
                 <TrendIcon className="w-3 h-3" />
-                {diff > 0 ? '+' : ''}{diff.toFixed(1)} kg
-              </div>
+                {diff > 0 ? '+' : ''}{diff.toFixed(1)}
+              </motion.div>
             )}
-            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setEditing(true)}>Sửa</Button>
+            <Button variant="ghost" size="sm" className="text-xs rounded-xl haptic-press" onClick={() => setEditing(true)}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
         </motion.div>
       ) : (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={spring} className="flex items-center gap-2">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={spring} className="flex items-center gap-2 relative">
           <Input
             type="number"
             value={weight}
             onChange={e => setWeight(e.target.value)}
             step={0.1}
-            className="w-28 font-mono"
+            className="w-28 font-mono rounded-xl"
             placeholder="70.0"
           />
           <span className="text-sm text-muted-foreground">kg</span>
-          <Button size="sm" onClick={handleSubmit} disabled={saving} className="rounded-xl">
+          <Button size="sm" onClick={handleSubmit} disabled={saving} className="rounded-xl haptic-press">
             {saving ? '...' : 'Lưu'}
           </Button>
         </motion.div>
