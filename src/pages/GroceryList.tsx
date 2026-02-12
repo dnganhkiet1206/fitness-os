@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Check, DollarSign, Beef, Plus, Trash2, X } from 'lucide-react';
+import { ShoppingCart, Check, DollarSign, Beef, Plus, Trash2, X, Globe, Coins } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { type GroceryLang, type CurrencyCode, CURRENCIES, LANGUAGES, t, formatPrice } from '@/lib/grocery-i18n';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
 
@@ -36,6 +37,13 @@ export default function GroceryList() {
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('Khác');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [lang, setLang] = useState<GroceryLang>(() => (localStorage.getItem('grocery-lang') as GroceryLang) || 'vi');
+  const [currency, setCurrency] = useState<CurrencyCode>(() => (localStorage.getItem('grocery-currency') as CurrencyCode) || 'VND');
+
+  const i18n = t(lang);
+
+  const changeLang = (l: GroceryLang) => { setLang(l); localStorage.setItem('grocery-lang', l); };
+  const changeCurrency = (c: CurrencyCode) => { setCurrency(c); localStorage.setItem('grocery-currency', c); };
 
   // Fetch meal plan items
   const { data: mealPlanItems } = useQuery({
@@ -75,7 +83,7 @@ export default function GroceryList() {
   // Add custom item
   const addItem = useMutation({
     mutationFn: async () => {
-      if (!newItemName.trim()) throw new Error('Tên không được trống');
+      if (!newItemName.trim()) throw new Error(i18n.nameRequired);
       const priceVal = newItemPrice.trim() ? parseFloat(newItemPrice) : null;
       const { error } = await supabase.from('grocery_items').insert({
         user_id: user!.id,
@@ -92,7 +100,7 @@ export default function GroceryList() {
       setNewItemQty('');
       setNewItemPrice('');
       setShowAddForm(false);
-      toast.success('Đã thêm vào danh sách');
+      toast.success(i18n.addedToList);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -114,7 +122,7 @@ export default function GroceryList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grocery-custom'] });
-      toast.success('Đã xóa');
+      toast.success(i18n.deleted);
     },
   });
 
@@ -130,7 +138,7 @@ export default function GroceryList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grocery-custom'] });
-      toast.success('Đã xóa các mục đã mua');
+      toast.success(i18n.clearedBought);
     },
   });
 
@@ -176,16 +184,51 @@ export default function GroceryList() {
     });
   };
 
+  const catLabel = (cat: string) => i18n.categories[cat] || cat;
+
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring}>
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <ShoppingCart className="w-6 h-6 text-primary" /> Grocery & Budget
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">Danh sách mua sắm từ meal plan & danh sách tùy chỉnh</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <ShoppingCart className="w-6 h-6 text-primary" /> {i18n.title}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">{i18n.subtitle}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Language selector */}
+            <Select value={lang} onValueChange={(v) => changeLang(v as GroceryLang)}>
+              <SelectTrigger className="rounded-lg bg-card/80 border-border/40 text-xs h-8 w-auto min-w-0 gap-1 px-2">
+                <Globe className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline"><SelectValue /></span>
+                <span className="sm:hidden">{LANGUAGES.find(l => l.code === lang)?.flag}</span>
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border z-50">
+                {LANGUAGES.map(l => (
+                  <SelectItem key={l.code} value={l.code}>
+                    <span className="flex items-center gap-2">{l.flag} {l.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* Currency selector */}
+            <Select value={currency} onValueChange={(v) => changeCurrency(v as CurrencyCode)}>
+              <SelectTrigger className="rounded-lg bg-card/80 border-border/40 text-xs h-8 w-auto min-w-0 gap-1 px-2">
+                <Coins className="w-3.5 h-3.5 shrink-0" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border z-50">
+                {CURRENCIES.map(c => (
+                  <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </motion.div>
 
       {/* Custom grocery list */}
@@ -193,13 +236,13 @@ export default function GroceryList() {
         <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Check className="w-4 h-4" /> Danh Sách Mua Sắm
+              <Check className="w-4 h-4" /> {i18n.shoppingList}
               <span className="text-xs text-muted-foreground font-normal ml-auto flex items-center gap-2">
-                {checkedCount}/{totalCustom} đã mua
+                {checkedCount}/{totalCustom} {i18n.bought}
                 {totalPrice > 0 && (
                   <span className="text-primary font-medium">
-                    {checkedPrice > 0 && <>{Math.round(checkedPrice).toLocaleString()}đ / </>}
-                    {Math.round(totalPrice).toLocaleString()}đ
+                    {checkedPrice > 0 && <>{formatPrice(checkedPrice, currency)} / </>}
+                    {formatPrice(totalPrice, currency)}
                   </span>
                 )}
               </span>
@@ -219,37 +262,37 @@ export default function GroceryList() {
                     <Input
                       value={newItemName}
                       onChange={e => setNewItemName(e.target.value)}
-                      placeholder="Tên sản phẩm"
+                      placeholder={i18n.productName}
                       className="rounded-lg bg-background/60 text-sm flex-1"
                       autoFocus
                     />
                     <Input
                       value={newItemQty}
                       onChange={e => setNewItemQty(e.target.value)}
-                      placeholder="SL (vd: 2kg)"
+                      placeholder={i18n.quantity}
                       className="rounded-lg bg-background/60 text-sm w-24"
                     />
                     <Input
                       value={newItemPrice}
                       onChange={e => setNewItemPrice(e.target.value)}
-                      placeholder="Giá (đ)"
+                      placeholder={`${i18n.price} (${CURRENCIES.find(c => c.code === currency)?.symbol})`}
                       type="number"
-                      className="rounded-lg bg-background/60 text-sm w-24"
+                      className="rounded-lg bg-background/60 text-sm w-28"
                     />
                   </div>
                   <div className="flex gap-2 items-center">
                     <Select value={newItemCategory} onValueChange={setNewItemCategory}>
                       <SelectTrigger className="rounded-lg bg-background/60 text-sm flex-1 h-9">
-                        <SelectValue />
+                        <SelectValue>{catLabel(newItemCategory)}</SelectValue>
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-popover border-border z-50">
                         {CATEGORIES.map(c => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                          <SelectItem key={c} value={c}>{catLabel(c)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <Button size="sm" className="rounded-lg" onClick={() => addItem.mutate()} disabled={addItem.isPending}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Thêm
+                      <Plus className="w-3.5 h-3.5 mr-1" /> {i18n.add}
                     </Button>
                     <Button size="sm" variant="ghost" className="rounded-lg" onClick={() => setShowAddForm(false)}>
                       <X className="w-3.5 h-3.5" />
@@ -264,7 +307,7 @@ export default function GroceryList() {
                     className="rounded-xl border-dashed border-border/60 text-xs flex-1"
                     onClick={() => setShowAddForm(true)}
                   >
-                    <Plus className="w-3.5 h-3.5 mr-1" /> Thêm sản phẩm
+                    <Plus className="w-3.5 h-3.5 mr-1" /> {i18n.addProduct}
                   </Button>
                   {checkedCount > 0 && (
                     <Button
@@ -273,7 +316,7 @@ export default function GroceryList() {
                       className="rounded-xl text-xs text-destructive"
                       onClick={() => clearChecked.mutate()}
                     >
-                      <Trash2 className="w-3.5 h-3.5 mr-1" /> Xóa đã mua
+                      <Trash2 className="w-3.5 h-3.5 mr-1" /> {i18n.clearBought}
                     </Button>
                   )}
                 </div>
@@ -284,7 +327,7 @@ export default function GroceryList() {
             {Object.keys(groupedCustom).length > 0 ? (
               Object.entries(groupedCustom).map(([cat, items]) => (
                 <div key={cat}>
-                  <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold mb-1.5 mt-3">{cat}</p>
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold mb-1.5 mt-3">{catLabel(cat)}</p>
                   <div className="space-y-1">
                     {items.map(item => (
                       <motion.div
@@ -298,7 +341,7 @@ export default function GroceryList() {
                           <p className={`text-sm font-medium ${item.checked ? 'line-through text-muted-foreground' : ''}`}>{item.name}</p>
                           <div className="flex items-center gap-2">
                             {item.quantity && <span className="text-xs text-muted-foreground">{item.quantity}</span>}
-                            {item.price && <span className="text-xs text-primary font-medium">{Math.round(Number(item.price)).toLocaleString()}đ</span>}
+                            {item.price && <span className="text-xs text-primary font-medium">{formatPrice(Number(item.price), currency)}</span>}
                           </div>
                         </div>
                         <Button
@@ -316,7 +359,7 @@ export default function GroceryList() {
               ))
             ) : (
               <div className="text-center py-6">
-                <p className="text-xs text-muted-foreground">Chưa có sản phẩm. Nhấn "Thêm sản phẩm" để bắt đầu.</p>
+                <p className="text-xs text-muted-foreground">{i18n.noItems}</p>
               </div>
             )}
           </CardContent>
@@ -329,9 +372,9 @@ export default function GroceryList() {
           <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4" /> Từ Meal Plan
+                <ShoppingCart className="w-4 h-4" /> {i18n.fromMealPlan}
                 <span className="text-xs text-muted-foreground font-normal ml-auto">
-                  {checkedMealItems.size}/{groceryFromPlan.length} đã mua
+                  {checkedMealItems.size}/{groceryFromPlan.length} {i18n.bought}
                 </span>
               </CardTitle>
             </CardHeader>
@@ -347,7 +390,7 @@ export default function GroceryList() {
                     <Checkbox checked={checkedMealItems.has(item.name)} className="pointer-events-none" />
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-medium ${checkedMealItems.has(item.name) ? 'line-through text-muted-foreground' : ''}`}>{item.name}</p>
-                      <p className="text-xs text-muted-foreground">{Math.round(item.totalG)}g · {item.count} lần dùng</p>
+                      <p className="text-xs text-muted-foreground">{Math.round(item.totalG)}g · {item.count} {i18n.timesUsed}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -362,7 +405,7 @@ export default function GroceryList() {
         <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Beef className="w-4 h-4 text-primary" /> Cheap Protein List
+              <Beef className="w-4 h-4 text-primary" /> {i18n.cheapProtein}
             </CardTitle>
           </CardHeader>
           <CardContent>
