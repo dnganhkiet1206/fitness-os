@@ -7,12 +7,14 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSettings, t } from '@/hooks/useAppSettings';
+import { LANGUAGES } from '@/lib/i18n';
+import { Globe } from 'lucide-react';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
 
 const Auth = () => {
   const { user, loading, signIn, signUp } = useAuth();
-  const { lang } = useAppSettings();
+  const { lang, setLang } = useAppSettings();
   const i18n = t(lang);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -45,6 +47,20 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Language selector */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5">
+        <Globe className="w-4 h-4 text-muted-foreground" />
+        {LANGUAGES.map((l) => (
+          <button
+            key={l.code}
+            onClick={() => setLang(l.code)}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${lang === l.code ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'}`}
+          >
+            {l.flag} {l.code.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[20%] left-[30%] w-[40%] h-[40%] rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
       </div>
