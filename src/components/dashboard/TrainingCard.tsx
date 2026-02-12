@@ -96,6 +96,29 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
         {T.dcTraining7dVolume}: <span className="font-mono font-semibold text-foreground">{totalVolume.toLocaleString()}</span>
       </div>
 
+      <div className="flex items-center justify-center gap-3 flex-wrap text-[10px] text-muted-foreground relative">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-readiness-red" />
+          <span>&lt;0.65 Detraining</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-readiness-yellow" />
+          <span>0.65–0.8 Low</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-readiness-green" />
+          <span>0.8–1.3 Optimal</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-readiness-yellow" />
+          <span>1.3–1.6 Elevated</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-readiness-red" />
+          <span>&gt;1.6 Spike</span>
+        </div>
+      </div>
+
       {painFlags.length > 0 && (
         <motion.div 
           initial={{ opacity: 0 }}
