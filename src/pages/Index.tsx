@@ -1,5 +1,6 @@
 import { Camera, Settings, Plus, LogOut } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
 import BiometricsCard from '@/components/dashboard/BiometricsCard';
 import NutritionCard from '@/components/dashboard/NutritionCard';
@@ -39,7 +40,6 @@ const Index = () => {
   const dateStr = now.toLocaleDateString('vi-VN', { weekday: 'long', month: 'long', day: 'numeric' });
   const userName = profile?.name || user.email?.split('@')[0] || 'bạn';
 
-  // Build readiness result from daily_log
   const readinessResult: ReadinessResult | null = dailyLog?.readiness_score != null ? {
     score: Number(dailyLog.readiness_score),
     status: (dailyLog.readiness_status as 'green' | 'yellow' | 'red') || 'yellow',
@@ -49,7 +49,6 @@ const Index = () => {
     acwr: Number(dailyLog.acwr) || 0,
   } : null;
 
-  // Build DailyLog-shaped object for cards
   const dailyLogForCards = dailyLog ? {
     id: dailyLog.id,
     userId: dailyLog.user_id,
@@ -77,7 +76,6 @@ const Index = () => {
     },
   } : null;
 
-  // Build biometric sample for card
   const biometricSample = todayBio ? {
     id: todayBio.id,
     userId: todayBio.user_id,
@@ -93,7 +91,6 @@ const Index = () => {
     confidence_0_1: Number(todayBio.confidence) || 0.7,
   } : null;
 
-  // Build sleep log for card
   const sleepForCard = todaySleep ? {
     id: todaySleep.id,
     userId: todaySleep.user_id,
@@ -107,7 +104,6 @@ const Index = () => {
     },
   } : null;
 
-  // Build workouts for card
   const workoutsForCard = (recentWorkouts ?? []).map(w => ({
     id: w.id,
     userId: w.user_id,
@@ -119,7 +115,6 @@ const Index = () => {
     computed: { volumeLoad: Number(w.volume_load), prDetected: w.pr_detected ?? false },
   }));
 
-  // Build wearables for card
   const wearablesForCard = (wearables ?? []).map(w => ({
     id: w.id,
     userId: w.user_id,
@@ -128,7 +123,6 @@ const Index = () => {
     lastSync: w.last_sync || undefined,
   }));
 
-  // Build nudges for card
   const nudgesForCard = (nudges ?? []).map(n => ({
     id: n.id,
     userId: n.user_id,
@@ -147,10 +141,30 @@ const Index = () => {
   const calorieTarget = profile?.tdee_target_kcal ?? 2200;
   const sleepTargetHours = Number(profile?.sleep_target_hours) || 8;
 
+  const stagger = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.07 } },
+  };
+
+  const fadeUp = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' as const } },
+  };
+
+  const scaleIn = {
+    hidden: { opacity: 0, scale: 0.92 },
+    show: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: 'easeOut' as const } },
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+      <motion.header
+        initial={{ y: -40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border"
+      >
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold tracking-tight">
@@ -160,76 +174,87 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-2">
             <LogBiometricsDialog>
-              <button className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                 <Camera className="w-4 h-4" />
-              </button>
+              </motion.button>
             </LogBiometricsDialog>
-            <button className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
               <Settings className="w-4 h-4" />
-            </button>
-            <button onClick={signOut} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            </motion.button>
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} onClick={signOut} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
               <LogOut className="w-4 h-4" />
-            </button>
+            </motion.button>
           </div>
         </div>
-      </header>
+      </motion.header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      <motion.main
+        variants={stagger}
+        initial="hidden"
+        animate="show"
+        className="max-w-5xl mx-auto px-4 py-6 space-y-6"
+      >
         {/* Greeting */}
-        <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>
+        <motion.div variants={fadeUp}>
           <p className="text-sm text-muted-foreground">{dateStr}</p>
           <h2 className="text-2xl font-bold">{greeting}, {userName}</h2>
-        </div>
+        </motion.div>
 
         {/* Quick log actions */}
-        <div className="flex gap-2 flex-wrap animate-fade-up" style={{ animationDelay: '25ms' }}>
+        <motion.div variants={fadeUp} className="flex gap-2 flex-wrap">
           <LogMealDialog>
-            <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Ghi bữa ăn</Button>
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+              <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Ghi bữa ăn</Button>
+            </motion.div>
           </LogMealDialog>
           <LogWorkoutDialog>
-            <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Ghi buổi tập</Button>
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+              <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Ghi buổi tập</Button>
+            </motion.div>
           </LogWorkoutDialog>
           <LogSleepDialog>
-            <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Ghi giấc ngủ</Button>
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+              <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Ghi giấc ngủ</Button>
+            </motion.div>
           </LogSleepDialog>
           <LogBiometricsDialog>
-            <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Nhập sinh trắc</Button>
+            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+              <Button variant="outline" size="sm"><Plus className="w-3 h-3 mr-1" />Nhập sinh trắc</Button>
+            </motion.div>
           </LogBiometricsDialog>
-        </div>
+        </motion.div>
 
         {/* Main grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Readiness – hero */}
-          <div className="animate-fade-up lg:col-span-2" style={{ animationDelay: '50ms' }}>
+          <motion.div variants={scaleIn} className="lg:col-span-2">
             {readinessResult ? (
               <ReadinessGauge result={readinessResult} />
             ) : (
               <EmptyState title="Sẵn Sàng" message="Cần 3+ ngày dữ liệu để tính điểm sẵn sàng. Hãy ghi log giấc ngủ, sinh trắc và buổi tập." />
             )}
-          </div>
+          </motion.div>
 
-          {/* Right column */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="animate-fade-up" style={{ animationDelay: '100ms' }}>
+            <motion.div variants={fadeUp}>
               {readinessTrend && readinessTrend.length > 0 ? (
                 <ReadinessTrend trend={readinessTrend} />
               ) : (
                 <EmptyState title="Xu Hướng" message="Chưa có dữ liệu xu hướng sẵn sàng." />
               )}
-            </div>
-            <div className="animate-fade-up" style={{ animationDelay: '150ms' }}>
+            </motion.div>
+            <motion.div variants={fadeUp}>
               {dailyLogForCards ? (
                 <ActivityCard log={dailyLogForCards} />
               ) : (
                 <EmptyState title="Hoạt Động" message="Chưa có dữ liệu hoạt động hôm nay." />
               )}
-            </div>
+            </motion.div>
           </div>
         </div>
 
         {/* Second row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="animate-fade-up" style={{ animationDelay: '200ms' }}>
+          <motion.div variants={fadeUp} whileHover={{ y: -2, transition: { duration: 0.2 } }}>
             {biometricSample ? (
               <BiometricsCard sample={biometricSample} wearables={wearablesForCard} />
             ) : (
@@ -239,8 +264,8 @@ const Index = () => {
                 </div>
               </LogBiometricsDialog>
             )}
-          </div>
-          <div className="animate-fade-up" style={{ animationDelay: '250ms' }}>
+          </motion.div>
+          <motion.div variants={fadeUp} whileHover={{ y: -2, transition: { duration: 0.2 } }}>
             {workoutsForCard.length > 0 ? (
               <TrainingCard workouts={workoutsForCard} acwr={readinessResult?.acwr ?? 0} />
             ) : (
@@ -250,12 +275,12 @@ const Index = () => {
                 </div>
               </LogWorkoutDialog>
             )}
-          </div>
+          </motion.div>
         </div>
 
         {/* Third row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="animate-fade-up" style={{ animationDelay: '300ms' }}>
+          <motion.div variants={fadeUp} whileHover={{ y: -2, transition: { duration: 0.2 } }}>
             {dailyLogForCards && dailyLogForCards.nutritionSummary.kcal > 0 ? (
               <NutritionCard log={dailyLogForCards} targets={macroTargets} calorieTarget={calorieTarget} />
             ) : (
@@ -265,8 +290,8 @@ const Index = () => {
                 </div>
               </LogMealDialog>
             )}
-          </div>
-          <div className="animate-fade-up" style={{ animationDelay: '350ms' }}>
+          </motion.div>
+          <motion.div variants={fadeUp} whileHover={{ y: -2, transition: { duration: 0.2 } }}>
             {sleepForCard ? (
               <SleepCard sleep={sleepForCard} targetHours={sleepTargetHours} />
             ) : (
@@ -276,19 +301,25 @@ const Index = () => {
                 </div>
               </LogSleepDialog>
             )}
-          </div>
+          </motion.div>
         </div>
 
         {/* Nudges */}
-        {nudgesForCard.length > 0 && (
-          <div className="animate-fade-up" style={{ animationDelay: '400ms' }}>
-            <NudgesCard nudges={nudgesForCard} />
-          </div>
-        )}
+        <AnimatePresence>
+          {nudgesForCard.length > 0 && (
+            <motion.div
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              exit={{ opacity: 0, y: 10 }}
+            >
+              <NudgesCard nudges={nudgesForCard} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Footer spacer */}
         <div className="h-8" />
-      </main>
+      </motion.main>
     </div>
   );
 };
