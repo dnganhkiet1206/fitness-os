@@ -11,13 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ArrowLeft, Plus, Trash2, Dumbbell, Search, Video, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
 
 const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 30, duration: 0.5 } } };
 
-const MUSCLE_GROUPS = ['Ngực', 'Lưng', 'Vai', 'Tay trước', 'Tay sau', 'Chân trước', 'Chân sau', 'Mông', 'Bụng', 'Toàn thân', 'Cardio'];
-
 const ExerciseLibrary = () => {
   const { user, loading } = useAuth();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
   const navigate = useNavigate();
   const { data: exercises } = useExercises();
   const addEx = useAddExercise();
@@ -25,7 +26,10 @@ const ExerciseLibrary = () => {
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('all');
   const [addOpen, setAddOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', muscle_group: 'Ngực', equipment: '', form_cues: '', common_mistakes: '', video_url: '' });
+
+  const MUSCLE_GROUPS = [i18n.muscleChest, i18n.muscleBack, i18n.muscleShoulders, i18n.muscleBiceps, i18n.muscleTriceps, i18n.muscleQuads, i18n.muscleHamstrings, i18n.muscleGlutes, i18n.muscleAbs, i18n.muscleFullBody, i18n.muscleCardio];
+
+  const [form, setForm] = useState({ name: '', muscle_group: MUSCLE_GROUPS[0], equipment: '', form_cues: '', common_mistakes: '', video_url: '' });
 
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
@@ -37,7 +41,7 @@ const ExerciseLibrary = () => {
   });
 
   const grouped = filtered.reduce<Record<string, typeof filtered>>((acc, e) => {
-    const g = e.muscle_group || 'Khác';
+    const g = e.muscle_group || i18n.other;
     (acc[g] = acc[g] || []).push(e);
     return acc;
   }, {});
@@ -53,9 +57,9 @@ const ExerciseLibrary = () => {
         common_mistakes: form.common_mistakes ? form.common_mistakes.split('\n').filter(Boolean) : undefined,
         video_url: form.video_url || undefined,
       });
-      toast.success('Đã thêm bài tập!');
+      toast.success(i18n.exercisesAdded);
       setAddOpen(false);
-      setForm({ name: '', muscle_group: 'Ngực', equipment: '', form_cues: '', common_mistakes: '', video_url: '' });
+      setForm({ name: '', muscle_group: MUSCLE_GROUPS[0], equipment: '', form_cues: '', common_mistakes: '', video_url: '' });
     } catch (err: any) { toast.error(err.message); }
   };
 
@@ -69,56 +73,53 @@ const ExerciseLibrary = () => {
         className="sticky top-0 z-50 border-b border-border/50" style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px) saturate(1.5)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="rounded-xl"><ArrowLeft className="w-4 h-4" /></Button>
-          <h1 className="text-lg font-bold"><span className="text-gradient-green">Bài Tập</span></h1>
+          <h1 className="text-lg font-bold"><span className="text-gradient-green">{i18n.exercisesTitle}</span></h1>
         </div>
       </motion.header>
 
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }} className="max-w-3xl mx-auto px-4 py-6 space-y-5">
-        {/* Search + Filter */}
         <motion.div variants={fadeUp} className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm bài tập..." className="pl-9" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={i18n.exercisesSearch} className="pl-9" />
           </div>
           <Select value={filterGroup} onValueChange={setFilterGroup}>
             <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="all">{i18n.all}</SelectItem>
               {MUSCLE_GROUPS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
           </Select>
         </motion.div>
 
-        {/* Add */}
         <motion.div variants={fadeUp}>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />Thêm bài tập</Button>
+              <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.exercisesAdd}</Button>
             </DialogTrigger>
             <DialogContent className="max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Thêm Bài Tập</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{i18n.exercisesAddTitle}</DialogTitle></DialogHeader>
               <div className="space-y-4">
-                <div className="space-y-2"><Label>Tên</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="VD: Bench Press" /></div>
+                <div className="space-y-2"><Label>{i18n.exercisesName}</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="VD: Bench Press" /></div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Nhóm cơ</Label>
+                    <Label>{i18n.exercisesMuscleGroup}</Label>
                     <Select value={form.muscle_group} onValueChange={v => setForm(f => ({ ...f, muscle_group: v }))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{MUSCLE_GROUPS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2"><Label>Dụng cụ</Label><Input value={form.equipment} onChange={e => setForm(f => ({ ...f, equipment: e.target.value }))} placeholder="Barbell" /></div>
+                  <div className="space-y-2"><Label>{i18n.exercisesEquipment}</Label><Input value={form.equipment} onChange={e => setForm(f => ({ ...f, equipment: e.target.value }))} placeholder="Barbell" /></div>
                 </div>
-                <div className="space-y-2"><Label>Form cues (mỗi dòng 1 cue)</Label><textarea value={form.form_cues} onChange={e => setForm(f => ({ ...f, form_cues: e.target.value }))} placeholder="Giữ lưng thẳng&#10;Hít thở đúng&#10;Kiểm soát negative" className="w-full h-24 rounded-xl bg-secondary/40 border border-border/50 p-3 text-sm resize-none" /></div>
-                <div className="space-y-2"><Label>Lỗi thường gặp (mỗi dòng 1 lỗi)</Label><textarea value={form.common_mistakes} onChange={e => setForm(f => ({ ...f, common_mistakes: e.target.value }))} placeholder="Bounce bar off chest&#10;Flare elbows too wide" className="w-full h-20 rounded-xl bg-secondary/40 border border-border/50 p-3 text-sm resize-none" /></div>
-                <div className="space-y-2"><Label>Video URL (tùy chọn)</Label><Input value={form.video_url} onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))} placeholder="https://..." /></div>
-                <Button onClick={handleAdd} disabled={addEx.isPending} className="w-full">{addEx.isPending ? 'Đang thêm...' : 'Thêm bài tập'}</Button>
+                <div className="space-y-2"><Label>{i18n.exercisesFormCues}</Label><textarea value={form.form_cues} onChange={e => setForm(f => ({ ...f, form_cues: e.target.value }))} className="w-full h-24 rounded-xl bg-secondary/40 border border-border/50 p-3 text-sm resize-none" /></div>
+                <div className="space-y-2"><Label>{i18n.exercisesCommonMistakes}</Label><textarea value={form.common_mistakes} onChange={e => setForm(f => ({ ...f, common_mistakes: e.target.value }))} className="w-full h-20 rounded-xl bg-secondary/40 border border-border/50 p-3 text-sm resize-none" /></div>
+                <div className="space-y-2"><Label>{i18n.exercisesVideoUrl}</Label><Input value={form.video_url} onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))} placeholder="https://..." /></div>
+                <Button onClick={handleAdd} disabled={addEx.isPending} className="w-full">{addEx.isPending ? i18n.exercisesAdding : i18n.exercisesAddBtn}</Button>
               </div>
             </DialogContent>
           </Dialog>
         </motion.div>
 
-        {/* Exercise list */}
         <Accordion type="multiple" className="space-y-3">
           {Object.entries(grouped).map(([group, exs]) => (
             <motion.div key={group} variants={fadeUp}>
@@ -145,7 +146,7 @@ const ExerciseLibrary = () => {
                             </a>
                           )}
                           {ex.user_id && (
-                            <Button variant="ghost" size="sm" onClick={() => { deleteEx.mutate(ex.id); toast.success('Đã xóa'); }}>
+                            <Button variant="ghost" size="sm" onClick={() => { deleteEx.mutate(ex.id); toast.success(i18n.deleted); }}>
                               <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
                             </Button>
                           )}
@@ -161,7 +162,7 @@ const ExerciseLibrary = () => {
                       )}
                       {ex.common_mistakes && ex.common_mistakes.length > 0 && (
                         <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-readiness-yellow" />Lỗi thường gặp</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-readiness-yellow" />{i18n.exercisesCommonMistakes}</p>
                           <ul className="text-xs text-muted-foreground space-y-0.5 pl-4">
                             {ex.common_mistakes.map((m, i) => <li key={i} className="list-disc">{m}</li>)}
                           </ul>
@@ -178,7 +179,7 @@ const ExerciseLibrary = () => {
         {filtered.length === 0 && (
           <motion.div variants={fadeUp} className="text-center py-12 text-muted-foreground">
             <Dumbbell className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Không tìm thấy bài tập</p>
+            <p className="text-sm">{i18n.exercisesNotFound}</p>
           </motion.div>
         )}
       </motion.main>

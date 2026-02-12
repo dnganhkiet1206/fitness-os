@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowLeft, Plus, Trash2, Search, Dumbbell, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
 
 const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 30, duration: 0.5 } } };
 
@@ -36,6 +37,8 @@ const TYPES = [
 
 const WorkoutBuilder = () => {
   const { user, loading } = useAuth();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
   const navigate = useNavigate();
   const { data: templates } = useWorkoutTemplates();
   const { data: exercises } = useExercises();
@@ -77,7 +80,7 @@ const WorkoutBuilder = () => {
     if (!tName.trim() || tExercises.length === 0) return;
     try {
       await addTemplate.mutateAsync({ name: tName, type: tType, exercises: tExercises });
-      toast.success('Đã tạo template!');
+      toast.success(i18n.workoutsCreated);
       setCreateOpen(false);
       setTName('');
       setTType('custom');
@@ -100,7 +103,7 @@ const WorkoutBuilder = () => {
         className="sticky top-0 z-50 border-b border-border/50" style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px) saturate(1.5)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="rounded-xl"><ArrowLeft className="w-4 h-4" /></Button>
-          <h1 className="text-lg font-bold"><span className="text-gradient-green">Workout Builder</span></h1>
+          <h1 className="text-lg font-bold"><span className="text-gradient-green">{i18n.workoutsTitle}</span></h1>
         </div>
       </motion.header>
 
@@ -109,19 +112,19 @@ const WorkoutBuilder = () => {
           <h3 className="text-sm font-semibold">Templates ({templates?.length ?? 0})</h3>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="rounded-xl" onClick={() => navigate('/exercises')}>
-              <Dumbbell className="w-3.5 h-3.5 mr-1" />Bài tập
+              <Dumbbell className="w-3.5 h-3.5 mr-1" />{i18n.workoutsExercises}
             </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />Tạo mới</Button>
+                <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.workoutsCreateNew}</Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Tạo Workout Template</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>{i18n.workoutsCreateTemplate}</DialogTitle></DialogHeader>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2"><Label>Tên</Label><Input value={tName} onChange={e => setTName(e.target.value)} placeholder="Push Day A" /></div>
+                    <div className="space-y-2"><Label>{i18n.supplementsName}</Label><Input value={tName} onChange={e => setTName(e.target.value)} placeholder="Push Day A" /></div>
                     <div className="space-y-2">
-                      <Label>Loại</Label>
+                      <Label>{i18n.workoutsType}</Label>
                       <Select value={tType} onValueChange={setTType}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>{TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
@@ -129,12 +132,11 @@ const WorkoutBuilder = () => {
                     </div>
                   </div>
 
-                  {/* Search exercises to add */}
                   <div className="space-y-2">
-                    <Label>Thêm bài tập</Label>
+                    <Label>{i18n.workoutsAddExercise}</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                      <Input value={searchEx} onChange={e => setSearchEx(e.target.value)} placeholder="Tìm bài tập..." className="pl-9" />
+                      <Input value={searchEx} onChange={e => setSearchEx(e.target.value)} placeholder={i18n.exercisesSearch} className="pl-9" />
                     </div>
                     {searchEx && filteredExercises.length > 0 && (
                       <div className="border border-border rounded-lg max-h-32 overflow-y-auto">
@@ -147,10 +149,9 @@ const WorkoutBuilder = () => {
                     )}
                   </div>
 
-                  {/* Added exercises */}
                   {tExercises.length > 0 && (
                     <div className="space-y-3">
-                      <Label>Bài tập đã thêm ({tExercises.length})</Label>
+                      <Label>{i18n.workoutsExercisesAdded} ({tExercises.length})</Label>
                       {tExercises.map((ex, idx) => (
                         <div key={idx} className="p-3 rounded-xl bg-secondary/20 border border-border/30 space-y-2">
                           <div className="flex items-center justify-between">
@@ -169,9 +170,9 @@ const WorkoutBuilder = () => {
                             <Select value={ex.progressionRule || 'double'} onValueChange={v => updateEx(idx, 'progressionRule', v)}>
                               <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="double">Double progression (reps → weight)</SelectItem>
-                                <SelectItem value="linear">Linear (tăng weight mỗi tuần)</SelectItem>
-                                <SelectItem value="none">Không tự tăng</SelectItem>
+                                <SelectItem value="double">{i18n.progressionDouble}</SelectItem>
+                                <SelectItem value="linear">{i18n.progressionLinear}</SelectItem>
+                                <SelectItem value="none">{i18n.progressionNone}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -181,7 +182,7 @@ const WorkoutBuilder = () => {
                   )}
 
                   <Button onClick={handleCreate} disabled={addTemplate.isPending || !tName.trim() || tExercises.length === 0} className="w-full">
-                    {addTemplate.isPending ? 'Đang tạo...' : 'Tạo Template'}
+                    {addTemplate.isPending ? i18n.workoutsCreating : i18n.workoutsCreateBtn}
                   </Button>
                 </div>
               </DialogContent>
@@ -189,7 +190,6 @@ const WorkoutBuilder = () => {
           </div>
         </motion.div>
 
-        {/* Template list */}
         {templates && templates.length > 0 ? (
           templates.map(t => {
             const exs = Array.isArray(t.exercises) ? t.exercises as any[] : [];
@@ -202,11 +202,11 @@ const WorkoutBuilder = () => {
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">{t.type}</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {exs.length} bài tập · Volume: {totalVolume(exs).toLocaleString()} kg
+                    {exs.length} {i18n.workoutsExercises} · {i18n.workoutsVolume}: {totalVolume(exs).toLocaleString()} kg
                   </p>
                 </div>
                 <div className="flex gap-1 items-center">
-                  <Button variant="ghost" size="sm" onClick={() => { deleteTemplate.mutate(t.id); toast.success('Đã xóa'); }}>
+                  <Button variant="ghost" size="sm" onClick={() => { deleteTemplate.mutate(t.id); toast.success(i18n.deleted); }}>
                     <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
                   </Button>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -217,14 +217,13 @@ const WorkoutBuilder = () => {
         ) : (
           <motion.div variants={fadeUp} className="text-center py-12 text-muted-foreground">
             <Dumbbell className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Chưa có template nào</p>
+            <p className="text-sm">{i18n.workoutsNoTemplates}</p>
           </motion.div>
         )}
 
-        {/* Quick link to routine */}
         <motion.div variants={fadeUp}>
           <Button variant="outline" className="w-full rounded-xl" onClick={() => navigate('/routine')}>
-            📅 Lịch tập tuần <ChevronRight className="w-4 h-4 ml-1" />
+            {i18n.workoutsWeeklyPlan} <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </motion.div>
       </motion.main>

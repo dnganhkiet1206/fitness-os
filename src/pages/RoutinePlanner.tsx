@@ -8,17 +8,20 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Dumbbell, Moon, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
 
 const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 30, duration: 0.5 } } };
 
-const DAY_LABELS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-
 const RoutinePlanner = () => {
   const { user, loading } = useAuth();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
   const navigate = useNavigate();
   const { data: routineDays } = useRoutineDays();
   const { data: templates } = useWorkoutTemplates();
   const upsertDay = useUpsertRoutineDay();
+
+  const DAY_LABELS = [i18n.dayMon, i18n.dayTue, i18n.dayWed, i18n.dayThu, i18n.dayFri, i18n.daySat, i18n.daySun];
 
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
@@ -27,20 +30,15 @@ const RoutinePlanner = () => {
 
   const handleAssign = async (dayOfWeek: number, templateId: string | null) => {
     try {
-      await upsertDay.mutateAsync({
-        day_of_week: dayOfWeek,
-        template_id: templateId,
-        is_rest: !templateId,
-      });
-      toast.success('Đã cập nhật!');
+      await upsertDay.mutateAsync({ day_of_week: dayOfWeek, template_id: templateId, is_rest: !templateId });
+      toast.success(i18n.routineUpdated);
     } catch (err: any) { toast.error(err.message); }
   };
 
   const handleDeload = async (dayOfWeek: number, isDeload: boolean) => {
     try {
       await upsertDay.mutateAsync({
-        day_of_week: dayOfWeek,
-        is_deload: isDeload,
+        day_of_week: dayOfWeek, is_deload: isDeload,
         template_id: dayMap.get(dayOfWeek)?.template_id || null,
         is_rest: dayMap.get(dayOfWeek)?.is_rest || false,
       });
@@ -57,13 +55,13 @@ const RoutinePlanner = () => {
         className="sticky top-0 z-50 border-b border-border/50" style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px) saturate(1.5)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate('/workouts')} className="rounded-xl"><ArrowLeft className="w-4 h-4" /></Button>
-          <h1 className="text-lg font-bold"><span className="text-gradient-green">Lịch Tập Tuần</span></h1>
+          <h1 className="text-lg font-bold"><span className="text-gradient-green">{i18n.routineTitle}</span></h1>
         </div>
       </motion.header>
 
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         <motion.div variants={fadeUp} className="text-xs text-muted-foreground">
-          Gán workout template cho từng ngày trong tuần. Bật deload để giảm tải.
+          {i18n.routineDesc}
         </motion.div>
 
         {DAY_LABELS.map((label, i) => {
@@ -79,23 +77,20 @@ const RoutinePlanner = () => {
                 <div className="flex items-center gap-2">
                   {isRest ? <Moon className="w-4 h-4 text-muted-foreground" /> : <Dumbbell className="w-4 h-4 text-primary" />}
                   <span className="font-semibold text-sm">{label}</span>
-                  {isDeload && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-readiness-yellow/20 text-readiness-yellow">Deload</span>}
+                  {isDeload && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-readiness-yellow/20 text-readiness-yellow">{i18n.routineDeload}</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label className="text-[10px] text-muted-foreground">Deload</Label>
+                  <Label className="text-[10px] text-muted-foreground">{i18n.routineDeload}</Label>
                   <Switch checked={isDeload} onCheckedChange={(v) => handleDeload(i, v)} disabled={isRest} />
                 </div>
               </div>
 
-              <Select
-                value={day?.template_id || 'rest'}
-                onValueChange={v => handleAssign(i, v === 'rest' ? null : v)}
-              >
+              <Select value={day?.template_id || 'rest'} onValueChange={v => handleAssign(i, v === 'rest' ? null : v)}>
                 <SelectTrigger className="text-sm">
-                  <SelectValue placeholder="Chọn workout..." />
+                  <SelectValue placeholder={i18n.routineChooseWorkout} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="rest"><Moon className="w-3.5 h-3.5 inline mr-1.5" />Nghỉ ngơi</SelectItem>
+                  <SelectItem value="rest"><Moon className="w-3.5 h-3.5 inline mr-1.5" />{i18n.routineRest}</SelectItem>
                   {(templates ?? []).map(t => (
                     <SelectItem key={t.id} value={t.id}>
                       <Dumbbell className="w-3.5 h-3.5 inline mr-1.5" />{t.name}
@@ -112,7 +107,7 @@ const RoutinePlanner = () => {
 
         <motion.div variants={fadeUp} className="pt-4">
           <Button variant="outline" className="w-full rounded-xl" onClick={() => navigate('/workouts')}>
-            <RefreshCw className="w-4 h-4 mr-1.5" /> Quản lý Templates
+            <RefreshCw className="w-4 h-4 mr-1.5" /> {i18n.routineManageTemplates}
           </Button>
         </motion.div>
       </motion.main>

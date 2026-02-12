@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { CalendarCheck, CheckCircle2, Clock, Sparkles } from 'lucide-react';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
 
 interface Props {
   planned: number;
@@ -10,6 +11,8 @@ interface Props {
 const spring = { type: 'spring' as const, stiffness: 300, damping: 25 };
 
 export default function WorkoutStatus({ planned, done, todayWorkoutNames }: Props) {
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
   const allDone = planned > 0 && done >= planned;
   const pct = planned > 0 ? Math.min((done / planned) * 100, 100) : 0;
 
@@ -18,7 +21,7 @@ export default function WorkoutStatus({ planned, done, todayWorkoutNames }: Prop
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at center, hsl(120 100% 45%), transparent 60%)' }} />
 
       <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 relative">
-        <CalendarCheck className="w-3.5 h-3.5" /> Buổi Tập Hôm Nay
+        <CalendarCheck className="w-3.5 h-3.5" /> {i18n.workoutStatusTitle}
       </h3>
 
       <div className="flex items-center gap-4 relative">
@@ -43,16 +46,15 @@ export default function WorkoutStatus({ planned, done, todayWorkoutNames }: Prop
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <Sparkles className="w-3 h-3" />
-            Hoàn thành!
+            {i18n.workoutStatusDone}
           </motion.div>
         ) : done === 0 && planned > 0 ? (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock className="w-3.5 h-3.5" /> Chưa tập
+            <Clock className="w-3.5 h-3.5" /> {i18n.workoutStatusNotYet}
           </div>
         ) : null}
       </div>
 
-      {/* Progress bar */}
       {planned > 0 && (
         <div className="h-1.5 rounded-full bg-secondary/30 overflow-hidden relative">
           <motion.div

@@ -8,11 +8,14 @@ import CameraHRDialog from '@/components/biometrics/CameraHRDialog';
 import LogBiometricsDialog from '@/components/logging/LogBiometricsDialog';
 import { Button } from '@/components/ui/button';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid } from 'recharts';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
+import { getLocale } from '@/lib/i18n';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
 
 interface MetricConfig {
   key: string;
+  labelKey: 'biometricsHeartRate' | 'biometricsBreathRate';
   label: string;
   unit: string;
   icon: React.ElementType;
@@ -22,33 +25,35 @@ interface MetricConfig {
   extract: (s: any) => number | null;
 }
 
-const METRICS: MetricConfig[] = [
-  {
-    key: 'hr', label: 'Nhịp Tim', unit: 'bpm', icon: Heart,
-    color: 'hsl(350, 89%, 60%)', gradient: 'from-[hsl(350,89%,60%)] to-[hsl(350,89%,40%)]',
-    normalRange: [50, 100], extract: s => s.hr_bpm,
-  },
-  {
-    key: 'hrv', label: 'HRV', unit: 'ms', icon: Activity,
-    color: 'hsl(160, 84%, 39%)', gradient: 'from-[hsl(160,84%,39%)] to-[hsl(160,84%,25%)]',
-    normalRange: [20, 100], extract: s => s.hrv_rmssd_ms,
-  },
-  {
-    key: 'spo2', label: 'SpO₂', unit: '%', icon: Droplets,
-    color: 'hsl(217, 91%, 60%)', gradient: 'from-[hsl(217,91%,60%)] to-[hsl(217,91%,40%)]',
-    normalRange: [95, 100], extract: s => s.spo2_pct,
-  },
-  {
-    key: 'vo2max', label: 'VO₂max', unit: 'ml/kg/min', icon: Flame,
-    color: 'hsl(25, 95%, 58%)', gradient: 'from-[hsl(25,95%,58%)] to-[hsl(25,95%,40%)]',
-    normalRange: [30, 60], extract: s => s.vo2max_mlkgmin,
-  },
-  {
-    key: 'resp', label: 'Nhịp Thở', unit: 'rpm', icon: Wind,
-    color: 'hsl(265, 90%, 66%)', gradient: 'from-[hsl(265,90%,66%)] to-[hsl(265,90%,46%)]',
-    normalRange: [12, 20], extract: s => s.resp_rate_rpm,
-  },
-];
+function getMetrics(i18n: ReturnType<typeof t>): MetricConfig[] {
+  return [
+    {
+      key: 'hr', labelKey: 'biometricsHeartRate', label: i18n.biometricsHeartRate, unit: 'bpm', icon: Heart,
+      color: 'hsl(350, 89%, 60%)', gradient: 'from-[hsl(350,89%,60%)] to-[hsl(350,89%,40%)]',
+      normalRange: [50, 100], extract: s => s.hr_bpm,
+    },
+    {
+      key: 'hrv', labelKey: 'biometricsHeartRate', label: 'HRV', unit: 'ms', icon: Activity,
+      color: 'hsl(160, 84%, 39%)', gradient: 'from-[hsl(160,84%,39%)] to-[hsl(160,84%,25%)]',
+      normalRange: [20, 100], extract: s => s.hrv_rmssd_ms,
+    },
+    {
+      key: 'spo2', labelKey: 'biometricsHeartRate', label: 'SpO₂', unit: '%', icon: Droplets,
+      color: 'hsl(217, 91%, 60%)', gradient: 'from-[hsl(217,91%,60%)] to-[hsl(217,91%,40%)]',
+      normalRange: [95, 100], extract: s => s.spo2_pct,
+    },
+    {
+      key: 'vo2max', labelKey: 'biometricsHeartRate', label: 'VO₂max', unit: 'ml/kg/min', icon: Flame,
+      color: 'hsl(25, 95%, 58%)', gradient: 'from-[hsl(25,95%,58%)] to-[hsl(25,95%,40%)]',
+      normalRange: [30, 60], extract: s => s.vo2max_mlkgmin,
+    },
+    {
+      key: 'resp', labelKey: 'biometricsBreathRate', label: i18n.biometricsBreathRate, unit: 'rpm', icon: Wind,
+      color: 'hsl(265, 90%, 66%)', gradient: 'from-[hsl(265,90%,66%)] to-[hsl(265,90%,46%)]',
+      normalRange: [12, 20], extract: s => s.resp_rate_rpm,
+    },
+  ];
+}
 
 function getStatus(value: number, range: [number, number]): 'good' | 'warn' | 'bad' {
   if (value >= range[0] && value <= range[1]) return 'good';
@@ -76,13 +81,13 @@ function TrendIcon({ data, extractor }: { data: any[]; extractor: (s: any) => nu
     : <TrendingDown className="w-3 h-3 text-readiness-red" />;
 }
 
-function MetricCard({ metric, latest, history, index }: { metric: MetricConfig; latest: any; history: any[]; index: number }) {
+function MetricCard({ metric, latest, history, index, i18n, locale }: { metric: MetricConfig; latest: any; history: any[]; index: number; i18n: ReturnType<typeof t>; locale: string }) {
   const Icon = metric.icon;
   const value = latest ? metric.extract(latest) : null;
   const status = value != null ? getStatus(value, metric.normalRange) : null;
 
   const chartData = history
-    .map(s => ({ date: new Date(s.date_time).toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' }), value: metric.extract(s) }))
+    .map(s => ({ date: new Date(s.date_time).toLocaleDateString(locale, { day: 'numeric', month: 'short' }), value: metric.extract(s) }))
     .filter(d => d.value != null);
 
   return (
@@ -108,14 +113,13 @@ function MetricCard({ metric, latest, history, index }: { metric: MetricConfig; 
                 {status && <StatusDot status={status} />}
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground">Chưa có dữ liệu</span>
+              <span className="text-xs text-muted-foreground">{i18n.noData}</span>
             )}
           </div>
         </div>
         <TrendIcon data={history} extractor={metric.extract} />
       </div>
 
-      {/* Mini chart */}
       {chartData.length > 1 && (
         <div className="h-16 -mx-2">
           <ResponsiveContainer width="100%" height="100%">
@@ -132,13 +136,12 @@ function MetricCard({ metric, latest, history, index }: { metric: MetricConfig; 
         </div>
       )}
 
-      {/* Source label */}
       {latest && (
         <div className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
           <AlertCircle className="w-2.5 h-2.5" />
           <span>
-            {latest.source === 'camera_rppg' ? 'Camera rPPG · ước tính' : latest.source === 'wearable' ? 'Thiết bị đeo' : 'Nhập thủ công'}
-            {latest.confidence != null && ` · ${Math.round(latest.confidence * 100)}% tin cậy`}
+            {latest.source === 'camera_rppg' ? i18n.biometricsSourceCamera : latest.source === 'wearable' ? i18n.biometricsSourceWearable : i18n.biometricsSourceManual}
+            {latest.confidence != null && ` · ${Math.round(latest.confidence * 100)}% ${i18n.biometricsConfidence}`}
           </span>
         </div>
       )}
@@ -148,16 +151,19 @@ function MetricCard({ metric, latest, history, index }: { metric: MetricConfig; 
 
 export default function Biometrics() {
   const { user, loading } = useAuth();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
+  const locale = getLocale(lang);
   const { data: history, isLoading } = useBiometricHistory(14);
   const { data: latest } = useLatestBiometrics();
   const { available: healthAvailable, checking: healthChecking, syncing, sync } = useHealthSync();
+  const METRICS = getMetrics(i18n);
 
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -166,12 +172,11 @@ export default function Biometrics() {
       >
         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Heart className="w-6 h-6 text-[hsl(350,89%,60%)]" />
-          Sinh Trắc Học
+          {i18n.biometricsTitle}
         </h2>
-        <p className="text-sm text-muted-foreground">Theo dõi HR, HRV, SpO₂, VO₂max và nhịp thở</p>
+        <p className="text-sm text-muted-foreground">{i18n.biometricsSubtitle}</p>
       </motion.div>
 
-      {/* Action buttons */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -180,12 +185,12 @@ export default function Biometrics() {
       >
         <CameraHRDialog>
           <Button variant="outline" size="sm" className="rounded-xl border-border/40 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl haptic-press">
-            <Camera className="w-3.5 h-3.5 mr-1.5" /> Đo qua Camera
+            <Camera className="w-3.5 h-3.5 mr-1.5" /> {i18n.biometricsCameraHR}
           </Button>
         </CameraHRDialog>
         <LogBiometricsDialog>
           <Button variant="outline" size="sm" className="rounded-xl border-border/40 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl haptic-press">
-            <PenLine className="w-3.5 h-3.5 mr-1.5" /> Nhập thủ công
+            <PenLine className="w-3.5 h-3.5 mr-1.5" /> {i18n.biometricsManual}
           </Button>
         </LogBiometricsDialog>
         {!healthChecking && healthAvailable && (
@@ -197,12 +202,11 @@ export default function Biometrics() {
             disabled={syncing}
           >
             {syncing ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Watch className="w-3.5 h-3.5 mr-1.5" />}
-            {syncing ? 'Đang đồng bộ...' : 'Đồng bộ Wearable'}
+            {syncing ? i18n.biometricsSyncing : i18n.biometricsSyncWearable}
           </Button>
         )}
       </motion.div>
 
-      {/* Metrics grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -212,12 +216,11 @@ export default function Biometrics() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {METRICS.map((m, i) => (
-            <MetricCard key={m.key} metric={m} latest={latest} history={history ?? []} index={i} />
+            <MetricCard key={m.key} metric={m} latest={latest} history={history ?? []} index={i} i18n={i18n} locale={locale} />
           ))}
         </div>
       )}
 
-      {/* History table */}
       {history && history.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -225,26 +228,26 @@ export default function Biometrics() {
           transition={{ ...spring, delay: 0.3 }}
           className="metric-card overflow-hidden"
         >
-          <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">Lịch Sử Gần Đây</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">{i18n.biometricsRecentHistory}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-border/20">
-                  <th className="text-left py-2 text-muted-foreground font-medium">Thời gian</th>
+                  <th className="text-left py-2 text-muted-foreground font-medium">{i18n.biometricsTime}</th>
                   <th className="text-right py-2 text-muted-foreground font-medium">HR</th>
                   <th className="text-right py-2 text-muted-foreground font-medium">HRV</th>
                   <th className="text-right py-2 text-muted-foreground font-medium">SpO₂</th>
                   <th className="text-right py-2 text-muted-foreground font-medium">VO₂</th>
-                  <th className="text-right py-2 text-muted-foreground font-medium">Nguồn</th>
+                  <th className="text-right py-2 text-muted-foreground font-medium">{i18n.biometricsSource}</th>
                 </tr>
               </thead>
               <tbody>
                 {[...history].reverse().slice(0, 10).map(s => (
                   <tr key={s.id} className="border-b border-border/10">
                     <td className="py-2 font-mono text-muted-foreground">
-                      {new Date(s.date_time).toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })}
+                      {new Date(s.date_time).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
                       {' '}
-                      {new Date(s.date_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(s.date_time).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td className="text-right py-2 font-mono">{s.hr_bpm ?? '—'}</td>
                     <td className="text-right py-2 font-mono">{s.hrv_rmssd_ms ?? '—'}</td>
@@ -267,7 +270,6 @@ export default function Biometrics() {
         </motion.div>
       )}
 
-      {/* Empty state */}
       {(!history || history.length === 0) && !isLoading && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -275,8 +277,8 @@ export default function Biometrics() {
           className="text-center py-12 space-y-3"
         >
           <Heart className="w-12 h-12 mx-auto text-muted-foreground/20" />
-          <p className="text-sm text-muted-foreground">Chưa có dữ liệu sinh trắc học</p>
-          <p className="text-xs text-muted-foreground/60">Dùng Camera hoặc nhập thủ công để bắt đầu theo dõi</p>
+          <p className="text-sm text-muted-foreground">{i18n.biometricsNoData}</p>
+          <p className="text-xs text-muted-foreground/60">{i18n.biometricsNoDataMsg}</p>
         </motion.div>
       )}
     </div>

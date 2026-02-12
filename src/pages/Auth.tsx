@@ -6,11 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppSettings, t } from '@/hooks/useAppSettings';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
 
 const Auth = () => {
   const { user, loading, signIn, signUp } = useAuth();
+  const { lang } = useAppSettings();
+  const i18n = t(lang);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +23,7 @@ const Auth = () => {
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-muted-foreground">
-        Đang tải...
+        {i18n.loading}
       </motion.div>
     </div>
   );
@@ -35,14 +38,13 @@ const Auth = () => {
     } else {
       const { error } = await signUp(email, password, name);
       if (error) toast.error(error.message);
-      else toast.success('Kiểm tra email để xác nhận tài khoản!');
+      else toast.success(i18n.authCheckEmail);
     }
     setSubmitting(false);
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
-      {/* Ambient background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[20%] left-[30%] w-[40%] h-[40%] rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
       </div>
@@ -64,7 +66,7 @@ const Auth = () => {
             <span className="text-foreground"> OS</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-3">
-            {isLogin ? 'Đăng nhập để tiếp tục' : 'Tạo tài khoản mới'}
+            {isLogin ? i18n.authLoginSubtitle : i18n.authSignupSubtitle}
           </p>
         </motion.div>
 
@@ -84,30 +86,30 @@ const Auth = () => {
                 transition={{ ...spring, duration: 0.3 }}
                 className="space-y-2 overflow-hidden"
               >
-                <Label htmlFor="name">Tên</Label>
-                <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Tên của bạn" required={!isLogin} className="rounded-xl bg-background/50" />
+                <Label htmlFor="name">{i18n.authName}</Label>
+                <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder={i18n.authYourName} required={!isLogin} className="rounded-xl bg-background/50" />
               </motion.div>
             )}
           </AnimatePresence>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{i18n.authEmail}</Label>
             <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required className="rounded-xl bg-background/50" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Mật khẩu</Label>
+            <Label htmlFor="password">{i18n.authPassword}</Label>
             <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="rounded-xl bg-background/50" />
           </div>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={spring}>
             <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={submitting}>
-              {submitting ? 'Đang xử lý...' : isLogin ? 'Đăng nhập' : 'Đăng ký'}
+              {submitting ? i18n.authProcessing : isLogin ? i18n.authLogin : i18n.authSignup}
             </Button>
           </motion.div>
         </motion.form>
 
         <p className="text-center text-sm text-muted-foreground">
-          {isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}{' '}
+          {isLogin ? i18n.authNoAccount : i18n.authHasAccount}{' '}
           <button onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline font-semibold transition-colors">
-            {isLogin ? 'Đăng ký' : 'Đăng nhập'}
+            {isLogin ? i18n.authSignup : i18n.authLogin}
           </button>
         </p>
       </motion.div>
