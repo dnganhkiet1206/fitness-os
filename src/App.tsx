@@ -18,6 +18,7 @@ import WorkoutBuilder from "./pages/WorkoutBuilder";
 import RoutinePlanner from "./pages/RoutinePlanner";
 import SleepInsights from "./pages/SleepInsights";
 import Progress from "./pages/Progress";
+import WeeklyReview from "./pages/WeeklyReview";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ function AnimatedRoutes() {
           <Route path="/routine" element={<RoutinePlanner />} />
           <Route path="/sleep" element={<SleepInsights />} />
           <Route path="/progress" element={<Progress />} />
+          <Route path="/weekly-review" element={<WeeklyReview />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </motion.div>
