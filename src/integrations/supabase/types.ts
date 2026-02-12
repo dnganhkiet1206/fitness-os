@@ -554,6 +554,50 @@ export type Database = {
         }
         Relationships: []
       }
+      routine_days: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          id: string
+          is_deload: boolean | null
+          is_rest: boolean | null
+          notes: string | null
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          id?: string
+          is_deload?: boolean | null
+          is_rest?: boolean | null
+          notes?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          is_deload?: boolean | null
+          is_rest?: boolean | null
+          notes?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_days_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "workout_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sleep_logs: {
         Row: {
           bedtime: string
@@ -638,6 +682,7 @@ export type Database = {
           cycle_mode: string | null
           cycle_off_weeks: number | null
           cycle_on_weeks: number | null
+          cycle_start_date: string | null
           dose_text: string | null
           id: string
           name: string
@@ -652,6 +697,7 @@ export type Database = {
           cycle_mode?: string | null
           cycle_off_weeks?: number | null
           cycle_on_weeks?: number | null
+          cycle_start_date?: string | null
           dose_text?: string | null
           id?: string
           name: string
@@ -666,6 +712,7 @@ export type Database = {
           cycle_mode?: string | null
           cycle_off_weeks?: number | null
           cycle_on_weeks?: number | null
+          cycle_start_date?: string | null
           dose_text?: string | null
           id?: string
           name?: string
