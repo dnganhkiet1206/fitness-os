@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,66 +6,70 @@
 
 @layer base {
   :root {
-    --background: 220 20% 7%;
-    --foreground: 210 20% 92%;
+    --background: 225 15% 6%;
+    --foreground: 220 15% 95%;
 
-    --card: 220 18% 10%;
-    --card-foreground: 210 20% 92%;
+    --card: 225 12% 9%;
+    --card-foreground: 220 15% 95%;
 
-    --popover: 220 18% 10%;
-    --popover-foreground: 210 20% 92%;
+    --popover: 225 12% 9%;
+    --popover-foreground: 220 15% 95%;
 
-    --primary: 142 71% 45%;
-    --primary-foreground: 220 20% 7%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 225 15% 6%;
 
-    --secondary: 220 16% 16%;
-    --secondary-foreground: 210 20% 85%;
+    --secondary: 225 10% 13%;
+    --secondary-foreground: 220 10% 80%;
 
-    --muted: 220 14% 14%;
-    --muted-foreground: 215 12% 50%;
+    --muted: 225 10% 12%;
+    --muted-foreground: 220 8% 46%;
 
-    --accent: 220 16% 18%;
-    --accent-foreground: 210 20% 92%;
+    --accent: 225 10% 15%;
+    --accent-foreground: 220 15% 95%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 14% 16%;
-    --input: 220 14% 16%;
-    --ring: 142 71% 45%;
+    --border: 225 10% 14%;
+    --input: 225 10% 14%;
+    --ring: 160 84% 39%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    /* Fitness OS custom tokens */
-    --readiness-green: 142 71% 45%;
-    --readiness-yellow: 45 93% 47%;
-    --readiness-red: 0 72% 51%;
-    --readiness-green-glow: 142 71% 45% / 0.2;
-    --readiness-yellow-glow: 45 93% 47% / 0.2;
-    --readiness-red-glow: 0 72% 51% / 0.2;
+    /* Fitness OS premium tokens */
+    --readiness-green: 160 84% 39%;
+    --readiness-yellow: 43 96% 56%;
+    --readiness-red: 0 84% 60%;
+    --readiness-green-glow: 160 84% 39% / 0.15;
+    --readiness-yellow-glow: 43 96% 56% / 0.15;
+    --readiness-red-glow: 0 84% 60% / 0.15;
 
-    --metric-blue: 210 100% 56%;
-    --metric-purple: 270 70% 60%;
-    --metric-cyan: 185 80% 50%;
-    --metric-orange: 25 95% 53%;
+    --metric-blue: 217 91% 60%;
+    --metric-purple: 265 90% 66%;
+    --metric-cyan: 190 95% 50%;
+    --metric-orange: 25 95% 58%;
 
-    --chart-1: 142 71% 45%;
-    --chart-2: 210 100% 56%;
-    --chart-3: 45 93% 47%;
-    --chart-4: 270 70% 60%;
-    --chart-5: 0 72% 51%;
+    --chart-1: 160 84% 39%;
+    --chart-2: 217 91% 60%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 265 90% 66%;
+    --chart-5: 0 84% 60%;
 
-    --sidebar-background: 220 20% 7%;
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 142 71% 45%;
-    --sidebar-primary-foreground: 220 20% 7%;
-    --sidebar-accent: 220 16% 14%;
-    --sidebar-accent-foreground: 210 20% 92%;
-    --sidebar-border: 220 14% 16%;
-    --sidebar-ring: 142 71% 45%;
+    --sidebar-background: 225 15% 6%;
+    --sidebar-foreground: 220 10% 80%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 225 15% 6%;
+    --sidebar-accent: 225 10% 13%;
+    --sidebar-accent-foreground: 220 15% 95%;
+    --sidebar-border: 225 10% 14%;
+    --sidebar-ring: 160 84% 39%;
 
-    --font-display: 'Inter', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --glass-bg: 225 15% 10% / 0.6;
+    --glass-border: 220 15% 95% / 0.06;
+    --glass-highlight: 220 15% 95% / 0.03;
+
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
   }
 }
 
@@ -75,8 +79,11 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
     font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
   .font-mono {
@@ -105,24 +112,62 @@
   }
 
   .glow-green {
-    box-shadow: 0 0 30px hsl(var(--readiness-green-glow)), 0 0 60px hsl(var(--readiness-green-glow));
+    box-shadow: 0 0 40px hsl(var(--readiness-green-glow)), 0 0 80px hsl(var(--readiness-green-glow));
   }
   .glow-yellow {
-    box-shadow: 0 0 30px hsl(var(--readiness-yellow-glow)), 0 0 60px hsl(var(--readiness-yellow-glow));
+    box-shadow: 0 0 40px hsl(var(--readiness-yellow-glow)), 0 0 80px hsl(var(--readiness-yellow-glow));
   }
   .glow-red {
-    box-shadow: 0 0 30px hsl(var(--readiness-red-glow)), 0 0 60px hsl(var(--readiness-red-glow));
+    box-shadow: 0 0 40px hsl(var(--readiness-red-glow)), 0 0 80px hsl(var(--readiness-red-glow));
+  }
+
+  .glass-card {
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid hsl(var(--glass-border));
+    border-radius: var(--radius);
+  }
+
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--glass-highlight)) 0%,
+      transparent 50%
+    );
+    pointer-events: none;
   }
 
   .metric-card {
-    @apply bg-card rounded-xl border border-border p-4 transition-all duration-200;
+    @apply relative rounded-2xl p-5 transition-all duration-300;
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid hsl(var(--glass-border));
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      160deg,
+      hsl(var(--glass-highlight)) 0%,
+      transparent 40%
+    );
+    pointer-events: none;
   }
   .metric-card:hover {
-    @apply border-primary/30;
+    border-color: hsl(160 84% 39% / 0.15);
+    box-shadow: 0 8px 32px hsl(225 15% 6% / 0.4);
   }
 
   .score-ring {
-    transition: stroke-dashoffset 1s ease-out;
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .animate-pulse-slow {
@@ -130,9 +175,26 @@
   }
 
   .text-gradient-green {
-    background: linear-gradient(135deg, hsl(var(--readiness-green)), hsl(185 80% 50%));
+    background: linear-gradient(135deg, hsl(var(--readiness-green)), hsl(190 95% 50%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .text-gradient-hero {
+    background: linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--muted-foreground)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .progress-bar {
+    @apply h-1.5 rounded-full overflow-hidden;
+    background: hsl(var(--glass-border));
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full;
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }

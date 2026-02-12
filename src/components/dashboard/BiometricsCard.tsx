@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import type { BiometricSample, WearableSource } from '@/lib/types';
 import { Heart, Activity, Wind, Droplets, Wifi, WifiOff } from 'lucide-react';
 
@@ -5,6 +6,8 @@ interface BiometricsCardProps {
   sample: BiometricSample;
   wearables: WearableSource[];
 }
+
+const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
 
 const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
   const m = sample.metrics;
@@ -20,15 +23,14 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
   ];
 
   return (
-    <div className="metric-card space-y-4">
+    <div className="metric-card space-y-5 relative">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sinh Trắc Học</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Sinh Trắc Học</h3>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {connectedDevice ? (
             <>
               <Wifi className="w-3 h-3 text-readiness-green" />
               <span className="capitalize">{connectedDevice.provider.replace('_', ' ')}</span>
-              <span className="text-muted-foreground/60">· {connectedDevice.lastSync}</span>
             </>
           ) : (
             <>
@@ -40,22 +42,28 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {metrics.filter(m => m.value !== undefined).map(metric => (
-          <div key={metric.label} className="flex items-start gap-2 bg-secondary/50 rounded-lg p-3">
+        {metrics.filter(m => m.value !== undefined).map((metric, i) => (
+          <motion.div
+            key={metric.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.1 + i * 0.06 }}
+            className="flex items-start gap-2.5 bg-secondary/30 rounded-xl p-3.5"
+          >
             <metric.icon className={`w-4 h-4 mt-0.5 ${metric.color} shrink-0`} />
             <div className="min-w-0">
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-mono font-bold text-foreground">{metric.value}</span>
                 <span className="text-[10px] text-muted-foreground">{metric.unit}</span>
               </div>
-              <div className="text-[10px] text-muted-foreground leading-tight">
+              <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">
                 {metric.label}
                 {metric.estimated && (
                   <span className="ml-1 text-readiness-yellow">est.</span>
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 

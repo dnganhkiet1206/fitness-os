@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import type { SleepLog } from '@/lib/types';
 import { Moon, Sunrise } from 'lucide-react';
 
@@ -24,8 +25,8 @@ const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
   const waketime = new Date(sleep.waketime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
   return (
-    <div className="metric-card space-y-4">
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Giấc Ngủ</h3>
+    <div className="metric-card space-y-5 relative">
+      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Giấc Ngủ</h3>
 
       <div className="flex items-baseline gap-2">
         <span className="text-3xl font-mono font-bold">{hours}h {mins}m</span>
@@ -33,16 +34,27 @@ const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-        <div className="h-full bg-metric-purple rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+      <div className="progress-bar">
+        <motion.div
+          className="progress-fill bg-metric-purple"
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+        />
       </div>
 
       {/* Sleep stages */}
       {stages.length > 0 && (
         <>
-          <div className="flex h-3 rounded-full overflow-hidden">
-            {stages.map(s => (
-              <div key={s.label} className={`${s.color} transition-all duration-700`} style={{ width: `${s.pct}%` }} />
+          <div className="flex h-3 rounded-full overflow-hidden bg-secondary/30">
+            {stages.map((s, i) => (
+              <motion.div
+                key={s.label}
+                className={s.color}
+                initial={{ width: 0 }}
+                animate={{ width: `${s.pct}%` }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.3 + i * 0.1 }}
+              />
             ))}
           </div>
           <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -54,16 +66,16 @@ const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
       )}
 
       {/* Times + quality */}
-      <div className="flex items-center justify-between pt-1 border-t border-border">
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Moon className="w-3 h-3" />
+      <div className="flex items-center justify-between pt-2 border-t border-border/50">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Moon className="w-3.5 h-3.5" />
           <span>{bedtime}</span>
         </div>
         <div className="text-xs font-mono text-muted-foreground">
-          Chất lượng: {sleep.quality_1_10}/10
+          Chất lượng: <span className="text-foreground font-semibold">{sleep.quality_1_10}/10</span>
         </div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Sunrise className="w-3 h-3" />
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Sunrise className="w-3.5 h-3.5" />
           <span>{waketime}</span>
         </div>
       </div>
