@@ -1,28 +1,12 @@
 /**
- * Health Data Integration Service
+ * Health Data Integration Service (Web-compatible)
  * 
- * Abstracts Apple HealthKit (iOS) and Google Health Connect (Android)
- * using the @flomentumsolutions/capacitor-health-extended plugin.
+ * Provides wearable sync abstraction. On native (Capacitor) it uses
+ * Apple HealthKit / Health Connect. On web it's a no-op placeholder
+ * that returns unavailable — the sync button won't show on web.
  * 
- * On web, this module is a no-op and returns mock availability = false.
+ * Auto-sync: When available, syncs latest data on app open.
  */
-
-import { Capacitor } from '@capacitor/core';
-
-// Plugin types (loaded dynamically on native)
-interface HealthSample {
-  value: number;
-  startDate: string;
-  endDate: string;
-  sourceName?: string;
-}
-
-interface HealthPlugin {
-  isAvailable(): Promise<{ available: boolean }>;
-  requestAuthorization(opts: { read: string[] }): Promise<void>;
-  queryHeartRate(opts: { startDate: string; endDate: string }): Promise<{ data: HealthSample[] }>;
-  queryLatestSample(opts: { sampleType: string }): Promise<{ value: number | null; startDate: string | null }>;
-}
 
 export interface SyncedBiometrics {
   hr_bpm: number | null;
@@ -35,34 +19,39 @@ export interface SyncedBiometrics {
   confidence: number;
 }
 
-const HEALTH_PERMISSIONS = [
-  'heartRate',
-  'heartRateVariabilitySDNN',
-  'oxygenSaturation',
-  'vo2Max',
-  'respiratoryRate',
-];
-
-let _plugin: HealthPlugin | null = null;
-
-async function getPlugin(): Promise<HealthPlugin | null> {
-  if (!Capacitor.isNativePlatform()) return null;
-  if (_plugin) return _plugin;
-
+function isNativePlatform(): boolean {
   try {
-    // Dynamic import – only resolves on native builds with the plugin installed
-    // @ts-ignore - plugin only available in native builds
-    const mod = await import(/* @vite-ignore */ '@flomentumsolutions/capacitor-health-extended');
-    _plugin = mod.CapacitorHealth as unknown as HealthPlugin;
-    return _plugin;
+    // Check if Capacitor native bridge is available
+    return !!(window as any)?.Capacitor?.isNativePlatform?.();
   } catch {
-    console.warn('[HealthConnect] Plugin not available');
+    return false;
+  }
+}
+
+function getPlatform(): string {
+  try {
+    return (window as any)?.Capacitor?.getPlatform?.() ?? 'web';
+  } catch {
+    return 'web';
+  }
+}
+
+async function getNativePlugin(): Promise<any | null> {
+  if (!isNativePlatform()) return null;
+  try {
+    // Dynamic import only on native — won't execute on web
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - module only available in native Capacitor builds
+    const mod = await (Function('return import("@flomentumsolutions/capacitor-health-extended")')());
+    return mod.CapacitorHealth ?? null;
+  } catch {
+    console.warn('[HealthSync] Native plugin not available');
     return null;
   }
 }
 
 export async function isHealthAvailable(): Promise<boolean> {
-  const plugin = await getPlugin();
+  const plugin = await getNativePlugin();
   if (!plugin) return false;
   try {
     const { available } = await plugin.isAvailable();
@@ -73,18 +62,20 @@ export async function isHealthAvailable(): Promise<boolean> {
 }
 
 export async function requestHealthPermissions(): Promise<boolean> {
-  const plugin = await getPlugin();
+  const plugin = await getNativePlugin();
   if (!plugin) return false;
   try {
-    await plugin.requestAuthorization({ read: HEALTH_PERMISSIONS });
+    await plugin.requestAuthorization({
+      read: ['heartRate', 'heartRateVariabilitySDNN', 'oxygenSaturation', 'vo2Max', 'respiratoryRate'],
+    });
     return true;
   } catch (e) {
-    console.error('[HealthConnect] Permission denied', e);
+    console.error('[HealthSync] Permission denied', e);
     return false;
   }
 }
 
-async function queryLatest(plugin: HealthPlugin, sampleType: string): Promise<number | null> {
+async function queryLatest(plugin: any, sampleType: string): Promise<number | null> {
   try {
     const result = await plugin.queryLatestSample({ sampleType });
     return result.value;
@@ -94,7 +85,7 @@ async function queryLatest(plugin: HealthPlugin, sampleType: string): Promise<nu
 }
 
 export async function syncLatestBiometrics(): Promise<SyncedBiometrics | null> {
-  const plugin = await getPlugin();
+  const plugin = await getNativePlugin();
   if (!plugin) return null;
 
   const [hr, hrv, spo2, vo2, resp] = await Promise.all([
@@ -105,21 +96,19 @@ export async function syncLatestBiometrics(): Promise<SyncedBiometrics | null> {
     queryLatest(plugin, 'respiratoryRate'),
   ]);
 
-  // If no data at all, return null
   if (hr == null && hrv == null && spo2 == null && vo2 == null && resp == null) {
     return null;
   }
 
-  const platform = Capacitor.getPlatform();
-  const sourceName = platform === 'ios' ? 'apple_health' : 'health_connect';
+  const platform = getPlatform();
 
   return {
     hr_bpm: hr,
     hrv_rmssd_ms: hrv,
-    spo2_pct: spo2 != null ? spo2 * 100 : null, // HealthKit returns 0-1
+    spo2_pct: spo2 != null ? spo2 * 100 : null,
     vo2max_mlkgmin: vo2,
     resp_rate_rpm: resp,
-    source: sourceName,
+    source: platform === 'ios' ? 'apple_health' : 'health_connect',
     date_time: new Date().toISOString(),
     confidence: 0.95,
   };
