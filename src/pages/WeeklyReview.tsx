@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, Flame, Beef, Moon, Dumbbell, Activity, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, Flame, Beef, Moon, Dumbbell, Activity, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useTodayData';
@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Area, AreaChart, ComposedChart, ReferenceLine } from 'recharts';
+import { toPng } from 'html-to-image';
+import { toast } from 'sonner';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
 const fadeUp = {
@@ -39,6 +41,8 @@ export default function WeeklyReview() {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const [weekOffset, setWeekOffset] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const weekStart = useMemo(() => {
     const ws = getWeekStart(new Date());
@@ -266,6 +270,28 @@ export default function WeeklyReview() {
     readiness: { label: 'Readiness', color: 'hsl(43 96% 56%)' },
   };
 
+  const exportReport = async () => {
+    if (!reportRef.current) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toPng(reportRef.current, {
+        backgroundColor: '#0a0b0f',
+        pixelRatio: 2,
+        style: { padding: '24px' },
+      });
+      const link = document.createElement('a');
+      link.download = `weekly-review-${startStr}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success('Đã xuất báo cáo!');
+    } catch (e) {
+      console.error(e);
+      toast.error('Không thể xuất báo cáo');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <motion.header
@@ -291,11 +317,22 @@ export default function WeeklyReview() {
             <Button variant="ghost" size="icon" onClick={() => setWeekOffset(o => Math.min(o + 1, 0))} disabled={weekOffset >= 0} className="rounded-xl w-8 h-8">
               <ChevronRight className="w-4 h-4" />
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl text-xs ml-2"
+              onClick={exportReport}
+              disabled={exporting || daysWithData === 0}
+            >
+              {exporting ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
+              Xuất báo cáo
+            </Button>
           </div>
         </div>
       </motion.header>
 
       <motion.main
+        ref={reportRef}
         initial="hidden"
         animate="show"
         variants={{ show: { transition: { staggerChildren: 0.06 } } }}
