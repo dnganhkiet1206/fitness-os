@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRef } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AwardCelebrationOverlay } from "@/components/awards/AwardCelebration";
 import { AppLayout } from "@/components/AppLayout";
@@ -31,23 +32,56 @@ import Challenges from "./pages/Challenges";
 import Biometrics from "./pages/Biometrics";
 const queryClient = new QueryClient();
 
-const pageTransition = {
-  initial: { opacity: 0, scale: 0.98, filter: "blur(8px)" },
-  animate: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.4, ease: "easeOut" as const } },
-  exit: { opacity: 0, scale: 0.98, filter: "blur(8px)", transition: { duration: 0.25, ease: "easeIn" as const } },
-};
+// Tab order for directional transitions
+const TAB_ORDER = ['/', '/nutrition', '/workouts', '/progress'];
+
+function getTabIndex(path: string): number {
+  const idx = TAB_ORDER.indexOf(path);
+  return idx >= 0 ? idx : TAB_ORDER.length; // "more" pages get highest index
+}
 
 function AnimatedRoutes() {
   const location = useLocation();
+  const prevPath = useRef(location.pathname);
+  const direction = useRef(0);
+
+  if (prevPath.current !== location.pathname) {
+    const prevIdx = getTabIndex(prevPath.current);
+    const currIdx = getTabIndex(location.pathname);
+    direction.current = currIdx > prevIdx ? 1 : currIdx < prevIdx ? -1 : 0;
+    prevPath.current = location.pathname;
+  }
+
+  const dir = direction.current;
+
+  const variants = {
+    initial: {
+      opacity: 0,
+      x: dir === 0 ? 0 : dir > 0 ? 60 : -60,
+      filter: "blur(4px)",
+    },
+    animate: {
+      opacity: 1,
+      x: 0,
+      filter: "blur(0px)",
+      transition: { type: "spring" as const, stiffness: 380, damping: 36, mass: 0.8 },
+    },
+    exit: {
+      opacity: 0,
+      x: dir === 0 ? 0 : dir > 0 ? -40 : 40,
+      filter: "blur(4px)",
+      transition: { duration: 0.18, ease: "easeIn" as const },
+    },
+  };
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={location.pathname}
+        variants={variants}
         initial="initial"
         animate="animate"
         exit="exit"
-        variants={pageTransition}
         className="min-h-screen"
       >
         <Routes location={location}>
