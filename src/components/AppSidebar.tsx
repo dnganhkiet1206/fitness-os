@@ -1,5 +1,6 @@
 import { Home, Utensils, Dumbbell, Pill, Moon, TrendingUp, Settings, Sparkles, Droplets, ShoppingCart, Target, BarChart3, Medal, Swords, Heart } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Sidebar,
@@ -12,13 +13,24 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { t } from '@/lib/i18n';
+import { useEffect } from 'react';
 
 export function AppSidebar() {
   const { lang } = useAppSettings();
   const i18n = t(lang);
+  const location = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  // Auto-close sidebar on mobile when navigating
+  useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [location.pathname, isMobile, setOpenMobile]);
 
   const mainItems = [
     { title: i18n.navToday, url: '/', icon: Home },
