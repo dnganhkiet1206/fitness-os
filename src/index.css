@@ -346,4 +346,9 @@
   .haptic-press:active {
     transform: scale(0.96);
   }
+
+  /* Safe area for bottom tab bar */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
