@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface ActivityRingsProps {
   move: { current: number; target: number };
@@ -7,13 +9,16 @@ interface ActivityRingsProps {
   size?: number;
 }
 
-const RING_CONFIG = [
-  { key: 'move', label: 'Vận Động', unit: 'kcal', colors: ['hsl(0, 100%, 60%)', 'hsl(340, 100%, 55%)'], shadow: 'hsl(0 100% 50% / 0.4)' },
-  { key: 'exercise', label: 'Tập Luyện', unit: 'phút', colors: ['hsl(120, 100%, 45%)', 'hsl(160, 100%, 40%)'], shadow: 'hsl(140 100% 45% / 0.4)' },
-  { key: 'stand', label: 'Bước Chân', unit: 'bước', colors: ['hsl(195, 100%, 50%)', 'hsl(210, 100%, 55%)'], shadow: 'hsl(200 100% 50% / 0.4)' },
-];
-
 export default function ActivityRings({ move, exercise, stand, size = 180 }: ActivityRingsProps) {
+  const { lang } = useAppSettings();
+  const T = t(lang);
+
+  const RING_CONFIG = [
+    { key: 'move', label: T.dcActivityMove, unit: T.dcActivityKcal, colors: ['hsl(0, 100%, 60%)', 'hsl(340, 100%, 55%)'], shadow: 'hsl(0 100% 50% / 0.4)' },
+    { key: 'exercise', label: T.dcActivityExercise, unit: T.dcActivityMin, colors: ['hsl(120, 100%, 45%)', 'hsl(160, 100%, 40%)'], shadow: 'hsl(140 100% 45% / 0.4)' },
+    { key: 'stand', label: T.dcActivitySteps, unit: T.dcActivityStepsUnit, colors: ['hsl(195, 100%, 50%)', 'hsl(210, 100%, 55%)'], shadow: 'hsl(200 100% 50% / 0.4)' },
+  ];
+
   const data = [move, exercise, stand];
   const center = size / 2;
   const strokeWidth = size * 0.065;
@@ -31,7 +36,6 @@ export default function ActivityRings({ move, exercise, stand, size = 180 }: Act
 
             return (
               <g key={ring.key}>
-                {/* Background ring */}
                 <circle
                   cx={center}
                   cy={center}
@@ -41,7 +45,6 @@ export default function ActivityRings({ move, exercise, stand, size = 180 }: Act
                   strokeWidth={strokeWidth}
                   strokeLinecap="round"
                 />
-                {/* Active ring */}
                 <defs>
                   <linearGradient id={`grad-${ring.key}`} x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor={ring.colors[0]} />
@@ -72,7 +75,6 @@ export default function ActivityRings({ move, exercise, stand, size = 180 }: Act
                   animate={{ strokeDashoffset: offset }}
                   transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.3 + i * 0.15 }}
                 />
-                {/* End cap glow dot */}
                 {pct > 0.05 && (
                   <motion.circle
                     cx={center}

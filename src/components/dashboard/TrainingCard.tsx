@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import type { WorkoutSession } from '@/lib/types';
 import { Dumbbell, AlertTriangle, Trophy, Zap } from 'lucide-react';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface TrainingCardProps {
   workouts: WorkoutSession[];
@@ -10,6 +12,8 @@ interface TrainingCardProps {
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
 
 const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
+  const { lang } = useAppSettings();
+  const T = t(lang);
   const latest = workouts[0];
   if (!latest) return null;
 
@@ -23,11 +27,10 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
 
   return (
     <div className="metric-card card-shimmer space-y-5 relative overflow-hidden">
-      {/* Ambient glow */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at bottom right, hsl(160 84% 39%), transparent 60%)' }} />
 
       <div className="flex items-center justify-between relative">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Tập Luyện</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{T.dcTrainingTitle}</h3>
         {hasPR && (
           <motion.div
             initial={{ scale: 0, rotate: -20 }}
@@ -41,7 +44,6 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
         )}
       </div>
 
-      {/* Latest workout with icon */}
       <motion.div 
         initial={{ opacity: 0, x: -12 }}
         animate={{ opacity: 1, x: 0 }}
@@ -59,7 +61,6 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
         </div>
       </motion.div>
 
-      {/* ACWR with gauge bar */}
       <div className="bg-secondary/20 rounded-xl p-4 space-y-3 border border-border/20 relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -75,9 +76,7 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
           </span>
         </div>
         <div className={`text-3xl font-mono font-bold ${acwrColor}`}>{acwr}</div>
-        {/* ACWR visual bar */}
         <div className="relative h-2 rounded-full bg-secondary/40 overflow-hidden">
-          {/* Optimal zone indicator */}
           <div className="absolute top-0 bottom-0 bg-readiness-green/10 rounded-full" style={{ left: '40%', right: '35%' }} />
           <motion.div
             className="absolute top-0 bottom-0 w-1.5 rounded-full bg-foreground"
@@ -93,12 +92,10 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
         </div>
       </div>
 
-      {/* 7-day volume */}
       <div className="text-xs text-muted-foreground relative">
-        Khối lượng 7 ngày: <span className="font-mono font-semibold text-foreground">{totalVolume.toLocaleString()}</span>
+        {T.dcTraining7dVolume}: <span className="font-mono font-semibold text-foreground">{totalVolume.toLocaleString()}</span>
       </div>
 
-      {/* Pain flags */}
       {painFlags.length > 0 && (
         <motion.div 
           initial={{ opacity: 0 }}
@@ -106,7 +103,7 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
           className="flex items-center gap-2 text-xs text-readiness-yellow bg-readiness-yellow/10 rounded-xl px-3 py-2.5 border border-readiness-yellow/20"
         >
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-          <span>Đau: {painFlags.map(p => `${p.bodyPart} (${p.pain_0_10}/10)`).join(', ')}</span>
+          <span>{T.dcTrainingPain}: {painFlags.map(p => `${p.bodyPart} (${p.pain_0_10}/10)`).join(', ')}</span>
         </motion.div>
       )}
     </div>

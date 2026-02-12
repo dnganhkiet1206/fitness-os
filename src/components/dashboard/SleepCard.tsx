@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import type { SleepLog } from '@/lib/types';
 import { Moon, Sunrise, Star } from 'lucide-react';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface SleepCardProps {
   sleep: SleepLog;
@@ -10,6 +12,9 @@ interface SleepCardProps {
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
 
 const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
+  const { lang } = useAppSettings();
+  const T = t(lang);
+
   const totalMin = sleep.sleepStages
     ? sleep.sleepStages.light_min + sleep.sleepStages.deep_min + sleep.sleepStages.rem_min
     : 0;
@@ -26,20 +31,17 @@ const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
   const bedtime = new Date(sleep.bedtime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
   const waketime = new Date(sleep.waketime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-  // Circular sleep progress
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const sleepOffset = circumference - (pct / 100) * circumference;
 
   return (
     <div className="metric-card card-shimmer space-y-5 relative overflow-hidden">
-      {/* Ambient purple glow */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ background: 'radial-gradient(ellipse at top right, hsl(265 90% 66%), transparent 60%)' }} />
 
-      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground relative">Giấc Ngủ</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground relative">{T.dcSleepTitle}</h3>
 
       <div className="relative flex items-center gap-6">
-        {/* Sleep ring */}
         <div className="relative shrink-0">
           <svg width="100" height="100" viewBox="0 0 100 100" className="-rotate-90">
             <circle cx="50" cy="50" r={radius} fill="none" stroke="hsl(225 10% 12%)" strokeWidth="6" />
@@ -85,10 +87,10 @@ const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
         </div>
 
         <div className="flex-1 space-y-2">
-          <p className="text-xs text-muted-foreground">Mục tiêu: <span className="font-mono text-foreground">{targetHours}h</span></p>
+          <p className="text-xs text-muted-foreground">{T.dcSleepTarget}: <span className="font-mono text-foreground">{targetHours}h</span></p>
           <div className="flex items-center gap-1.5">
             <Star className="w-3 h-3 text-readiness-yellow" />
-            <span className="text-xs text-muted-foreground">Chất lượng:</span>
+            <span className="text-xs text-muted-foreground">{T.dcSleepQuality}:</span>
             <span className="text-sm font-mono font-bold text-foreground">{sleep.quality_1_10}/10</span>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
@@ -105,7 +107,6 @@ const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
         </div>
       </div>
 
-      {/* Sleep stages bar */}
       {stages.length > 0 && (
         <div className="space-y-3">
           <div className="flex h-3 rounded-full overflow-hidden bg-secondary/30">

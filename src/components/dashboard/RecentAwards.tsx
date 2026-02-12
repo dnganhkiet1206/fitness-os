@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Flame, Dumbbell, Calendar, Target, Moon, Footprints, Beef, ChevronRight } from 'lucide-react';
 import { useRecentAwards, type Award } from '@/hooks/useAwards';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t, getLocale } from '@/lib/i18n';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
 
@@ -33,6 +35,9 @@ const TIER_GLOW: Record<string, string> = {
 export default function RecentAwards() {
   const { data: awards } = useRecentAwards(3);
   const navigate = useNavigate();
+  const { lang } = useAppSettings();
+  const T = t(lang);
+  const locale = getLocale(lang);
 
   if (!awards || awards.length === 0) return null;
 
@@ -42,7 +47,7 @@ export default function RecentAwards() {
 
       <div className="flex items-center justify-between relative">
         <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-          <Trophy className="w-3.5 h-3.5 text-readiness-yellow" /> Huy Chương Gần Đây
+          <Trophy className="w-3.5 h-3.5 text-readiness-yellow" /> {T.dcRecentAwards}
         </h3>
         <motion.button
           whileHover={{ x: 2 }}
@@ -50,7 +55,7 @@ export default function RecentAwards() {
           onClick={() => navigate('/awards')}
           className="text-xs text-primary flex items-center gap-0.5 haptic-press"
         >
-          Tất cả <ChevronRight className="w-3 h-3" />
+          {T.dcViewAll} <ChevronRight className="w-3 h-3" />
         </motion.button>
       </div>
 
@@ -75,7 +80,7 @@ export default function RecentAwards() {
               </div>
               <p className="text-[11px] font-semibold text-center leading-tight">{award.title}</p>
               <p className="text-[9px] text-muted-foreground font-mono">
-                {new Date(award.earned_at).toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })}
+                {new Date(award.earned_at).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
               </p>
             </motion.div>
           );

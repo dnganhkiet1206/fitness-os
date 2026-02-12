@@ -629,6 +629,41 @@ interface Translations {
   progressionDouble: string;
   progressionLinear: string;
   progressionNone: string;
+
+  // Dashboard components
+  dcActivity: string;
+  dcActivityMove: string;
+  dcActivityExercise: string;
+  dcActivitySteps: string;
+  dcActivityKcal: string;
+  dcActivityMin: string;
+  dcActivityStepsUnit: string;
+  dcNutritionTitle: string;
+  dcNutritionTarget: string;
+  dcNutritionRemaining: string;
+  dcSleepTitle: string;
+  dcSleepTarget: string;
+  dcSleepQuality: string;
+  dcBioTitle: string;
+  dcBioNotConnected: string;
+  dcBioSource: string;
+  dcBioConfidence: string;
+  dcBioFallback: string;
+  dcBioEstimate: string;
+  dcReadinessTitle: string;
+  dcReadinessTrain: string;
+  dcReadinessModerate: string;
+  dcReadinessRecover: string;
+  dcReadinessTrend: string;
+  dcNudgesTitle: string;
+  dcNudgesActive: string;
+  dcTrainingTitle: string;
+  dcTraining7dVolume: string;
+  dcTrainingPain: string;
+  dcRecentAwards: string;
+  dcViewAll: string;
+  dcSupplementToday: string;
+  dcWeightTitle: string;
 }
 
 const vi: Translations = {
@@ -1199,6 +1234,40 @@ const vi: Translations = {
   progressionDouble: 'Double progression (reps → weight)',
   progressionLinear: 'Linear (tăng weight mỗi tuần)',
   progressionNone: 'Không tự tăng',
+
+  dcActivity: 'Hoạt Động',
+  dcActivityMove: 'Vận Động',
+  dcActivityExercise: 'Tập Luyện',
+  dcActivitySteps: 'Bước Chân',
+  dcActivityKcal: 'kcal',
+  dcActivityMin: 'phút',
+  dcActivityStepsUnit: 'bước',
+  dcNutritionTitle: 'Dinh Dưỡng',
+  dcNutritionTarget: 'Mục tiêu',
+  dcNutritionRemaining: 'Còn lại',
+  dcSleepTitle: 'Giấc Ngủ',
+  dcSleepTarget: 'Mục tiêu',
+  dcSleepQuality: 'Chất lượng',
+  dcBioTitle: 'Sinh Trắc Học',
+  dcBioNotConnected: 'Chưa kết nối',
+  dcBioSource: 'Nguồn',
+  dcBioConfidence: 'Độ tin cậy',
+  dcBioFallback: 'Dự phòng',
+  dcBioEstimate: 'ước tính',
+  dcReadinessTitle: 'Điểm Sẵn Sàng',
+  dcReadinessTrain: 'TẬP LUYỆN',
+  dcReadinessModerate: 'VỪA PHẢI',
+  dcReadinessRecover: 'PHỤC HỒI',
+  dcReadinessTrend: 'Sẵn Sàng 7 Ngày',
+  dcNudgesTitle: 'Nhắc Nhở Thói Quen',
+  dcNudgesActive: 'đang bật',
+  dcTrainingTitle: 'Tập Luyện',
+  dcTraining7dVolume: 'Khối lượng 7 ngày',
+  dcTrainingPain: 'Đau',
+  dcRecentAwards: 'Huy Chương Gần Đây',
+  dcViewAll: 'Tất cả',
+  dcSupplementToday: 'Supplement Hôm Nay',
+  dcWeightTitle: 'Cân Nặng',
 };
 
 const en: Translations = {
@@ -1769,6 +1838,40 @@ const en: Translations = {
   progressionDouble: 'Double progression (reps → weight)',
   progressionLinear: 'Linear (increase weight weekly)',
   progressionNone: 'No auto-increase',
+
+  dcActivity: 'Activity',
+  dcActivityMove: 'Move',
+  dcActivityExercise: 'Exercise',
+  dcActivitySteps: 'Steps',
+  dcActivityKcal: 'kcal',
+  dcActivityMin: 'min',
+  dcActivityStepsUnit: 'steps',
+  dcNutritionTitle: 'Nutrition',
+  dcNutritionTarget: 'Target',
+  dcNutritionRemaining: 'Remaining',
+  dcSleepTitle: 'Sleep',
+  dcSleepTarget: 'Target',
+  dcSleepQuality: 'Quality',
+  dcBioTitle: 'Biometrics',
+  dcBioNotConnected: 'Not connected',
+  dcBioSource: 'Source',
+  dcBioConfidence: 'Confidence',
+  dcBioFallback: 'Fallback',
+  dcBioEstimate: 'est.',
+  dcReadinessTitle: 'Readiness Score',
+  dcReadinessTrain: 'TRAIN',
+  dcReadinessModerate: 'MODERATE',
+  dcReadinessRecover: 'RECOVER',
+  dcReadinessTrend: '7-Day Readiness',
+  dcNudgesTitle: 'Habit Nudges',
+  dcNudgesActive: 'active',
+  dcTrainingTitle: 'Training',
+  dcTraining7dVolume: '7-day volume',
+  dcTrainingPain: 'Pain',
+  dcRecentAwards: 'Recent Awards',
+  dcViewAll: 'View all',
+  dcSupplementToday: 'Supplements Today',
+  dcWeightTitle: 'Weight',
 };
 
 const translations: Record<AppLang, Translations> = { vi, en };

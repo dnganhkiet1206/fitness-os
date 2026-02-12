@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import type { HabitNudge } from '@/lib/types';
 import { Moon, Droplets, Beef, Footprints, Heart } from 'lucide-react';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface NudgesCardProps {
   nudges: HabitNudge[];
@@ -23,13 +25,15 @@ const priorityGradient: Record<string, string> = {
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
 
 const NudgesCard = ({ nudges }: NudgesCardProps) => {
+  const { lang } = useAppSettings();
+  const T = t(lang);
   const active = nudges.filter(n => n.enabled);
 
   return (
     <div className="metric-card card-shimmer space-y-4 relative overflow-hidden">
       <div className="flex items-center justify-between relative">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Nhắc Nhở Thói Quen</h3>
-        <span className="text-[10px] text-muted-foreground font-mono">{active.length} đang bật</span>
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{T.dcNudgesTitle}</h3>
+        <span className="text-[10px] text-muted-foreground font-mono">{active.length} {T.dcNudgesActive}</span>
       </div>
 
       <div className="space-y-2.5 relative">
@@ -44,7 +48,6 @@ const NudgesCard = ({ nudges }: NudgesCardProps) => {
               transition={{ ...spring, delay: i * 0.06 }}
               className="flex items-start gap-3 bg-secondary/15 rounded-xl p-3.5 border border-border/20 relative overflow-hidden"
             >
-              {/* Gradient left accent */}
               <div className={`absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b ${gradient}`} />
               
               <Icon className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0 ml-2" />

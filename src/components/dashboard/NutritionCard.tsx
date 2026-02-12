@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import type { DailyLog } from '@/lib/types';
 import { Flame, Beef, Wheat, Droplets as Fat } from 'lucide-react';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface NutritionCardProps {
   log: DailyLog;
@@ -11,6 +13,8 @@ interface NutritionCardProps {
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30 };
 
 const NutritionCard = ({ log, targets, calorieTarget }: NutritionCardProps) => {
+  const { lang } = useAppSettings();
+  const T = t(lang);
   const n = log.nutritionSummary;
 
   const macros = [
@@ -21,20 +25,17 @@ const NutritionCard = ({ log, targets, calorieTarget }: NutritionCardProps) => {
 
   const calPct = Math.min((n.kcal / calorieTarget) * 100, 100);
 
-  // Circular progress for calories
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const calOffset = circumference - (calPct / 100) * circumference;
 
   return (
     <div className="metric-card card-shimmer space-y-5 relative overflow-hidden">
-      {/* Subtle gradient overlay */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at bottom left, hsl(25 95% 58%), transparent 60%)' }} />
 
-      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground relative">Dinh Dưỡng</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground relative">{T.dcNutritionTitle}</h3>
 
       <div className="relative flex items-center gap-6">
-        {/* Calorie ring */}
         <div className="relative shrink-0">
           <svg width="100" height="100" viewBox="0 0 100 100" className="-rotate-90">
             <circle cx="50" cy="50" r={radius} fill="none" stroke="hsl(225 10% 12%)" strokeWidth="6" />
@@ -80,10 +81,9 @@ const NutritionCard = ({ log, targets, calorieTarget }: NutritionCardProps) => {
           </div>
         </div>
 
-        {/* Target info */}
         <div className="flex-1 space-y-1">
-          <p className="text-xs text-muted-foreground">Mục tiêu: <span className="font-mono text-foreground">{calorieTarget.toLocaleString()}</span> kcal</p>
-          <p className="text-xs text-muted-foreground">Còn lại: <span className="font-mono text-foreground">{Math.max(calorieTarget - n.kcal, 0).toLocaleString()}</span> kcal</p>
+          <p className="text-xs text-muted-foreground">{T.dcNutritionTarget}: <span className="font-mono text-foreground">{calorieTarget.toLocaleString()}</span> kcal</p>
+          <p className="text-xs text-muted-foreground">{T.dcNutritionRemaining}: <span className="font-mono text-foreground">{Math.max(calorieTarget - n.kcal, 0).toLocaleString()}</span> kcal</p>
           <div className="flex items-center gap-1.5 mt-2">
             <span className={`text-xs font-semibold ${calPct >= 90 ? 'text-readiness-green' : calPct >= 50 ? 'text-readiness-yellow' : 'text-muted-foreground'}`}>
               {Math.round(calPct)}%
@@ -100,7 +100,6 @@ const NutritionCard = ({ log, targets, calorieTarget }: NutritionCardProps) => {
         </div>
       </div>
 
-      {/* Macros with mini ring indicators */}
       <div className="grid grid-cols-3 gap-3">
         {macros.map((m, i) => {
           const pct = Math.min((m.current / m.target) * 100, 100);

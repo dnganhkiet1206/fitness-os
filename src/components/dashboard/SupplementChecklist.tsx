@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { Pill, Check } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { t } from '@/lib/i18n';
 
 interface SupplementItem {
   id: string;
@@ -18,21 +20,23 @@ interface Props {
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 25 };
 
-const timingLabels: Record<string, string> = {
-  morning: 'Sáng',
-  'pre-workout': 'Trước tập',
-  'post-workout': 'Sau tập',
-  'before bed': 'Trước ngủ',
-  'with meals': 'Cùng bữa ăn',
-};
-
 export default function SupplementChecklist({ items, onToggle }: Props) {
+  const { lang } = useAppSettings();
+  const T = t(lang);
+
+  const timingLabels: Record<string, string> = {
+    morning: T.timingMorning,
+    'pre-workout': T.timingPreWorkout,
+    'post-workout': T.timingPostWorkout,
+    'before bed': T.timingBeforeBed,
+    'with meals': T.timingWithMeals,
+  };
+
   if (items.length === 0) return null;
 
   const taken = items.filter(i => i.taken).length;
   const pct = Math.round((taken / items.length) * 100);
 
-  // Ring progress
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (pct / 100) * circumference;
@@ -43,7 +47,7 @@ export default function SupplementChecklist({ items, onToggle }: Props) {
 
       <div className="flex items-center justify-between relative">
         <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-          <Pill className="w-3.5 h-3.5" /> Supplement Hôm Nay
+          <Pill className="w-3.5 h-3.5" /> {T.dcSupplementToday}
         </h3>
         <div className="flex items-center gap-2">
           <svg width="44" height="44" viewBox="0 0 48 48" className="-rotate-90">
