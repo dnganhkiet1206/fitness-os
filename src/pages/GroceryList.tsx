@@ -33,6 +33,7 @@ export default function GroceryList() {
   const [checkedMealItems, setCheckedMealItems] = useState<Set<string>>(new Set());
   const [newItemName, setNewItemName] = useState('');
   const [newItemQty, setNewItemQty] = useState('');
+  const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('Khác');
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -75,11 +76,13 @@ export default function GroceryList() {
   const addItem = useMutation({
     mutationFn: async () => {
       if (!newItemName.trim()) throw new Error('Tên không được trống');
+      const priceVal = newItemPrice.trim() ? parseFloat(newItemPrice) : null;
       const { error } = await supabase.from('grocery_items').insert({
         user_id: user!.id,
         name: newItemName.trim(),
         quantity: newItemQty.trim(),
         category: newItemCategory,
+        price: priceVal,
       });
       if (error) throw error;
     },
@@ -87,6 +90,7 @@ export default function GroceryList() {
       queryClient.invalidateQueries({ queryKey: ['grocery-custom'] });
       setNewItemName('');
       setNewItemQty('');
+      setNewItemPrice('');
       setShowAddForm(false);
       toast.success('Đã thêm vào danh sách');
     },
@@ -160,6 +164,8 @@ export default function GroceryList() {
 
   const checkedCount = customItems?.filter(i => i.checked).length ?? 0;
   const totalCustom = customItems?.length ?? 0;
+  const totalPrice = customItems?.reduce((sum, i) => sum + (Number(i.price) || 0), 0) ?? 0;
+  const checkedPrice = customItems?.filter(i => i.checked).reduce((sum, i) => sum + (Number(i.price) || 0), 0) ?? 0;
 
   const toggleMealCheck = (name: string) => {
     setCheckedMealItems(prev => {
@@ -188,8 +194,14 @@ export default function GroceryList() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Check className="w-4 h-4" /> Danh Sách Mua Sắm
-              <span className="text-xs text-muted-foreground font-normal ml-auto">
+              <span className="text-xs text-muted-foreground font-normal ml-auto flex items-center gap-2">
                 {checkedCount}/{totalCustom} đã mua
+                {totalPrice > 0 && (
+                  <span className="text-primary font-medium">
+                    {checkedPrice > 0 && <>{Math.round(checkedPrice).toLocaleString()}đ / </>}
+                    {Math.round(totalPrice).toLocaleString()}đ
+                  </span>
+                )}
               </span>
             </CardTitle>
           </CardHeader>
@@ -215,6 +227,13 @@ export default function GroceryList() {
                       value={newItemQty}
                       onChange={e => setNewItemQty(e.target.value)}
                       placeholder="SL (vd: 2kg)"
+                      className="rounded-lg bg-background/60 text-sm w-24"
+                    />
+                    <Input
+                      value={newItemPrice}
+                      onChange={e => setNewItemPrice(e.target.value)}
+                      placeholder="Giá (đ)"
+                      type="number"
                       className="rounded-lg bg-background/60 text-sm w-24"
                     />
                   </div>
@@ -277,7 +296,10 @@ export default function GroceryList() {
                         <Checkbox checked={item.checked ?? false} className="pointer-events-none" />
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm font-medium ${item.checked ? 'line-through text-muted-foreground' : ''}`}>{item.name}</p>
-                          {item.quantity && <p className="text-xs text-muted-foreground">{item.quantity}</p>}
+                          <div className="flex items-center gap-2">
+                            {item.quantity && <span className="text-xs text-muted-foreground">{item.quantity}</span>}
+                            {item.price && <span className="text-xs text-primary font-medium">{Math.round(Number(item.price)).toLocaleString()}đ</span>}
+                          </div>
                         </div>
                         <Button
                           variant="ghost"
