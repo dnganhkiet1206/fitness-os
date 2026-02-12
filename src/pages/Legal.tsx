@@ -6,7 +6,7 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 30 };
 const EFFECTIVE_DATE = '2026-02-12';
-const APP_NAME = 'NeuroFit';
+const APP_NAME = 'ASCND';
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="mb-6">
