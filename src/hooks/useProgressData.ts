@@ -79,7 +79,20 @@ export function useProgressPhotos() {
         .order('date', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data ?? [];
+
+      // Generate signed URLs for each photo (1-hour expiration)
+      const photosWithUrls = await Promise.all(
+        (data ?? []).map(async (photo) => {
+          const path = photo.photo_url;
+          // If it's already a full URL (legacy), keep it; otherwise create signed URL
+          if (path.startsWith('http')) return photo;
+          const { data: signedData } = await supabase.storage
+            .from('progress-photos')
+            .createSignedUrl(path, 3600);
+          return { ...photo, photo_url: signedData?.signedUrl || path };
+        })
+      );
+      return photosWithUrls;
     },
   });
 }
@@ -98,12 +111,11 @@ export function useUploadProgressPhoto() {
         .upload(path, file);
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from('progress-photos').getPublicUrl(path);
-
+      // Store just the path, not the full URL (bucket is now private)
       const { error } = await supabase.from('progress_photos').insert({
         user_id: user!.id,
         date: dateStr,
-        photo_url: urlData.publicUrl,
+        photo_url: path,
         pose,
         notes: notes || '',
       });
@@ -117,10 +129,14 @@ export function useDeleteProgressPhoto() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, photo_url }: { id: string; photo_url: string }) => {
-      // Extract path from URL
-      const urlParts = photo_url.split('/progress-photos/');
-      if (urlParts[1]) {
-        await supabase.storage.from('progress-photos').remove([urlParts[1]]);
+      // Determine the storage path — handle both legacy full URLs and path-only values
+      let storagePath = photo_url;
+      if (photo_url.startsWith('http')) {
+        const urlParts = photo_url.split('/progress-photos/');
+        storagePath = urlParts[1] || '';
+      }
+      if (storagePath) {
+        await supabase.storage.from('progress-photos').remove([storagePath]);
       }
       const { error } = await supabase.from('progress_photos').delete().eq('id', id);
       if (error) throw error;
