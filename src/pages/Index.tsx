@@ -1,4 +1,4 @@
-import { Camera, Settings, Plus, LogOut, Utensils } from 'lucide-react';
+import { Camera, Settings, Plus, LogOut, Utensils, Pill, Dumbbell } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
@@ -269,6 +269,16 @@ const Index = () => {
           <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
             <Button variant="outline" size="sm" onClick={() => navigate('/nutrition')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
               <Utensils className="w-3 h-3 mr-1.5" />Dinh dưỡng
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/supplements')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
+              <Pill className="w-3 h-3 mr-1.5" />Supplements
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }} transition={spring}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/workouts')} className="rounded-xl border-border/60 bg-secondary/40 hover:bg-secondary/80 backdrop-blur-sm">
+              <Dumbbell className="w-3 h-3 mr-1.5" />Workouts
             </Button>
           </motion.div>
         </motion.div>

@@ -12,6 +12,10 @@ import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
 import Nutrition from "./pages/Nutrition";
 import MealPlan from "./pages/MealPlan";
+import Supplements from "./pages/Supplements";
+import ExerciseLibrary from "./pages/ExerciseLibrary";
+import WorkoutBuilder from "./pages/WorkoutBuilder";
+import RoutinePlanner from "./pages/RoutinePlanner";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +45,10 @@ function AnimatedRoutes() {
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/nutrition" element={<Nutrition />} />
           <Route path="/meal-plan/:id" element={<MealPlan />} />
+          <Route path="/supplements" element={<Supplements />} />
+          <Route path="/exercises" element={<ExerciseLibrary />} />
+          <Route path="/workouts" element={<WorkoutBuilder />} />
+          <Route path="/routine" element={<RoutinePlanner />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </motion.div>
