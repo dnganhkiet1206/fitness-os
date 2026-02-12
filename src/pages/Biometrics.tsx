@@ -4,7 +4,7 @@ import { Heart, Activity, Wind, Droplets, Flame, Camera, PenLine, TrendingUp, Tr
 import { useAuth } from '@/hooks/useAuth';
 import { useBiometricHistory, useLatestBiometrics } from '@/hooks/useBiometrics';
 import { useHealthSync } from '@/hooks/useHealthSync';
-import CameraHRDialog from '@/components/biometrics/CameraHRDialog';
+
 import LogBiometricsDialog from '@/components/logging/LogBiometricsDialog';
 import { Button } from '@/components/ui/button';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid } from 'recharts';
@@ -183,11 +183,7 @@ export default function Biometrics() {
         transition={{ ...spring, delay: 0.1 }}
         className="flex gap-2 flex-wrap"
       >
-        <CameraHRDialog>
-          <Button variant="outline" size="sm" className="rounded-xl border-border/40 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl haptic-press">
-            <Camera className="w-3.5 h-3.5 mr-1.5" /> {i18n.biometricsCameraHR}
-          </Button>
-        </CameraHRDialog>
+        
         <LogBiometricsDialog>
           <Button variant="outline" size="sm" className="rounded-xl border-border/40 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl haptic-press">
             <PenLine className="w-3.5 h-3.5 mr-1.5" /> {i18n.biometricsManual}
