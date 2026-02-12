@@ -2,3 +2,6 @@ project_id = "drqgonxrtmomgrftelih"
 
 [functions.ai-coach]
 verify_jwt = false
+
+[functions.scan-food]
+verify_jwt = false

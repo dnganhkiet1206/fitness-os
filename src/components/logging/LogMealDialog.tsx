@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, X } from 'lucide-react';
+import { Search, X, Camera } from 'lucide-react';
+import ScanFoodDialog, { type ScannedFoodItem } from './ScanFoodDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
@@ -61,6 +62,21 @@ export default function LogMealDialog({ children }: { children: React.ReactNode 
       serving_g: Number(food.serving_g),
     }]);
     setSearch('');
+  };
+
+  const handleScannedFoods = (scannedItems: ScannedFoodItem[]) => {
+    const newItems: MealItem[] = scannedItems.map(item => ({
+      food_item_id: null,
+      food_name: item.food_name,
+      servings: 1,
+      kcal: item.kcal,
+      protein_g: item.protein_g,
+      carbs_g: item.carbs_g,
+      fat_g: item.fat_g,
+      fiber_g: item.fiber_g,
+      serving_g: item.serving_g,
+    }));
+    setItems(prev => [...prev, ...newItems]);
   };
 
   const updateServings = (idx: number, servings: number) => {
@@ -154,7 +170,15 @@ export default function LogMealDialog({ children }: { children: React.ReactNode 
 
           {/* Food search */}
           <div className="space-y-2">
-            <Label>{T.logMealSearchFood}</Label>
+            <div className="flex items-center justify-between">
+              <Label>{T.logMealSearchFood}</Label>
+              <ScanFoodDialog onFoodsScanned={handleScannedFoods}>
+                <Button variant="outline" size="sm" className="rounded-xl gap-1.5 h-7 text-xs">
+                  <Camera className="w-3.5 h-3.5" />
+                  {T.scanFoodTitle}
+                </Button>
+              </ScanFoodDialog>
+            </div>
             <div className="relative">
               <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
               <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={T.logMealSearchPlaceholder} className="pl-8" />

@@ -664,6 +664,18 @@ interface Translations {
   dcViewAll: string;
   dcSupplementToday: string;
   dcWeightTitle: string;
+
+  // Food Scan
+  scanFoodTitle: string;
+  scanFoodCapture: string;
+  scanFoodAnalyzing: string;
+  scanFoodRetake: string;
+  scanFoodAddToMeal: string;
+  scanFoodNoFood: string;
+  scanFoodError: string;
+  scanFoodEstimated: string;
+  scanFoodServing: string;
+  scanFoodItems: string;
 }
 
 const vi: Translations = {
@@ -1268,6 +1280,17 @@ const vi: Translations = {
   dcViewAll: 'Tất cả',
   dcSupplementToday: 'Supplement Hôm Nay',
   dcWeightTitle: 'Cân Nặng',
+
+  scanFoodTitle: 'Quét Thực Phẩm',
+  scanFoodCapture: 'Chụp ảnh',
+  scanFoodAnalyzing: 'Đang phân tích...',
+  scanFoodRetake: 'Chụp lại',
+  scanFoodAddToMeal: 'Thêm vào bữa ăn',
+  scanFoodNoFood: 'Không nhận diện được thực phẩm',
+  scanFoodError: 'Lỗi phân tích ảnh',
+  scanFoodEstimated: 'Ước tính',
+  scanFoodServing: 'khẩu phần',
+  scanFoodItems: 'món',
 };
 
 const en: Translations = {
@@ -1872,6 +1895,17 @@ const en: Translations = {
   dcViewAll: 'View all',
   dcSupplementToday: 'Supplements Today',
   dcWeightTitle: 'Weight',
+
+  scanFoodTitle: 'Scan Food',
+  scanFoodCapture: 'Capture',
+  scanFoodAnalyzing: 'Analyzing...',
+  scanFoodRetake: 'Retake',
+  scanFoodAddToMeal: 'Add to meal',
+  scanFoodNoFood: 'No food detected',
+  scanFoodError: 'Error analyzing image',
+  scanFoodEstimated: 'Estimated',
+  scanFoodServing: 'serving',
+  scanFoodItems: 'items',
 };
 
 const translations: Record<AppLang, Translations> = { vi, en };
