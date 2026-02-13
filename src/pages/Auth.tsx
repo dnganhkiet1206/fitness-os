@@ -86,7 +86,7 @@ const Auth = () => {
           transition={{ delay: 0.15, ...spring }}
           className="text-center"
         >
-          <h1 className="text-3xl font-bold tracking-[0.15em] text-foreground">
+          <h1 className="text-3xl font-bold tracking-[0.15em] text-gradient-green">
             ASCND
           </h1>
           <p className="text-sm text-muted-foreground mt-3">
