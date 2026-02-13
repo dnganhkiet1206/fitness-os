@@ -509,8 +509,8 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
               )}
 
               {/* Bottom controls */}
-              <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12 pb-6 px-4">
-                <div className="flex justify-center gap-2 mb-5">
+              <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12 pb-8 px-4" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
+                <div className="flex justify-center gap-2 mb-4">
                   {(Object.keys(modeConfig) as ScanMode[]).map((mode) => {
                     const { icon: Icon, label } = modeConfig[mode];
                     const active = scanMode === mode;
@@ -518,7 +518,7 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
                       <button
                         key={mode}
                         onClick={() => handleModeChange(mode)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+                        className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold transition-all ${
                           active ? 'bg-white text-black shadow-lg scale-105' : 'bg-white/15 text-white/70 backdrop-blur-sm'
                         }`}
                       >

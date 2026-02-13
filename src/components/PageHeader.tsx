@@ -27,7 +27,8 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
         WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
       }}
     >
-      <div className="max-w-4xl mx-auto px-4 pt-safe py-3 flex items-center gap-2.5">
+      <div className="pt-safe">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2.5">
         <motion.button
           onClick={() => navigate(backTo)}
           whileTap={{ scale: 0.82 }}
@@ -41,6 +42,7 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
           {gradient ? <span className="text-gradient-green">{title}</span> : title}
         </h1>
         {children}
+        </div>
       </div>
     </motion.header>
   );
