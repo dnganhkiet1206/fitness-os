@@ -142,7 +142,7 @@ const WaterTracking = () => {
   const strokeDashoffset = circumference - (pct / 100) * circumference;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <PageHeader title={i18n.waterTitle} />
       <main className="max-w-3xl mx-auto px-4 py-5 space-y-5">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>

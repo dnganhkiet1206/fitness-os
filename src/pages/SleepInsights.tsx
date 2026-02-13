@@ -67,7 +67,7 @@ export default function SleepInsights() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <PageHeader title={i18n.sleepTitle} />
 
       <motion.main

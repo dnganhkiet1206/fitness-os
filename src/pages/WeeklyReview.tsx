@@ -308,7 +308,7 @@ export default function WeeklyReview() {
   };
 
   return (
-    <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-background">
+    <PullToRefresh onRefresh={handleRefresh} className="bg-background">
       <PageHeader title={i18n.weeklyReviewTitle}>
         <Button variant="outline" size="sm" className="rounded-xl text-[10px] h-7 px-2" onClick={exportReport} disabled={exporting || daysWithData === 0}>
           {exporting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}

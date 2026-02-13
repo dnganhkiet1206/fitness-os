@@ -35,7 +35,7 @@ const Auth = () => {
   }, [searchParams]);
 
   if (loading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="bg-background flex items-center justify-center" style={{ height: '100dvh' }}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-muted-foreground">
         {i18n.loading}
       </motion.div>
@@ -104,7 +104,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="bg-background flex items-center justify-center px-4 relative overflow-hidden" style={{ height: '100dvh' }}>
       {/* Language selector */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5">
         <Globe className="w-4 h-4 text-muted-foreground" />

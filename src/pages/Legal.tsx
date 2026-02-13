@@ -445,7 +445,7 @@ export default function Legal() {
   const l = lang === 'en' ? i.en : i.vi;
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="bg-background pb-24">
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/30">
         <div className="flex items-center gap-3 px-4 py-3">
           <motion.button onClick={() => navigate(-1)} whileTap={{ scale: 0.9 }} transition={spring}>

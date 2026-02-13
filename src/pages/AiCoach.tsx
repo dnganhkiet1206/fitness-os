@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Sparkles, Loader2, Plus, MessageSquare, Trash2, History } from 'lucide-react';
-import PageHeader from '@/components/PageHeader';
+import { Send, Bot, User, Sparkles, Loader2, Plus, MessageSquare, Trash2, History, ChevronLeft } from 'lucide-react';
+// PageHeader not used - AI Coach has custom header
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
@@ -206,17 +206,41 @@ export default function AiCoach() {
   };
 
   return (
-    <div className="bg-background flex flex-col" style={{ position: 'fixed', inset: 0, height: '100dvh' }}>
-      <PageHeader title={i18n.aiCoachTitle} sticky={false}>
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon" onClick={() => setShowHistory(!showHistory)} className="rounded-xl">
-            <History className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={startNewChat} className="rounded-xl">
-            <Plus className="w-4 h-4" />
-          </Button>
+    <div className="flex flex-col bg-background" style={{ height: '100dvh' }}>
+      {/* Header - not sticky since we manage our own layout */}
+      <div className="shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div
+          className="h-[44px] flex items-center px-1 border-b"
+          style={{
+            background: 'hsl(var(--background) / 0.72)',
+            backdropFilter: 'blur(20px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
+            borderColor: 'hsl(var(--border) / 0.6)',
+          }}
+        >
+          <motion.button
+            onClick={() => navigate('/')}
+            whileTap={{ scale: 0.88 }}
+            className="flex items-center gap-0 px-2 h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"
+          >
+            <ChevronLeft className="w-[22px] h-[22px] -mr-0.5" strokeWidth={2.5} />
+            <span className="text-[17px] font-normal">Back</span>
+          </motion.button>
+          <h1 className="text-[17px] font-semibold tracking-tight flex-1 min-w-0 text-center -ml-16">
+            {i18n.aiCoachTitle}
+          </h1>
+          <div className="flex items-center gap-0.5 pr-2 shrink-0">
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" onClick={() => setShowHistory(!showHistory)} className="rounded-xl">
+                <History className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={startNewChat} className="rounded-xl">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </div>
-      </PageHeader>
+      </div>
 
       <AnimatePresence>
         {showHistory && (
@@ -258,7 +282,8 @@ export default function AiCoach() {
         )}
       </AnimatePresence>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain">
+      {/* Messages - only scrollable area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain scroll-container">
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
           {messages.length === 0 && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16 space-y-6">
@@ -312,17 +337,20 @@ export default function AiCoach() {
               </div>
             </motion.div>
           )}
+
+          {/* Bottom spacer for input area */}
+          <div className="h-4" />
         </div>
       </div>
 
-      {/* Fixed chat input */}
+      {/* Fixed chat input - above bottom tab bar */}
       <div
         className="shrink-0 border-t border-border/50"
         style={{
           background: 'hsl(var(--background) / 0.95)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)',
         }}
       >
         <div className="max-w-3xl mx-auto px-4 py-2.5 space-y-1">

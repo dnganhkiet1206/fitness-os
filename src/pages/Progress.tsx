@@ -125,7 +125,7 @@ export default function Progress() {
   ];
 
   return (
-    <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-background">
+    <PullToRefresh onRefresh={handleRefresh} className="bg-background">
       <PageHeader title={i18n.progressTitle} />
 
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-4xl mx-auto px-4 py-5 space-y-5">
