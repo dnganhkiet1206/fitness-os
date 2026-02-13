@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, Flame, Beef, Moon, Dumbbell, Activity, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Flame, Beef, Moon, Dumbbell, Activity, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import AiWeeklyReviewCard from '@/components/ai/AiWeeklyReviewCard';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -308,44 +309,23 @@ export default function WeeklyReview() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-background">
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-50 border-b border-border/50"
-        style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px) saturate(1.5)' }}
-      >
-        <div className="max-w-4xl mx-auto px-4 py-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-xl w-8 h-8">
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-              <h1 className="text-base font-bold">{i18n.weeklyReviewTitle}</h1>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-xl text-[10px] h-7 px-2"
-              onClick={exportReport}
-              disabled={exporting || daysWithData === 0}
-            >
-              {exporting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
-              {i18n.weeklyReviewExport}
-            </Button>
-          </div>
-          <div className="flex items-center justify-center gap-1 mt-1.5">
-            <Button variant="ghost" size="icon" onClick={() => setWeekOffset(o => o - 1)} className="rounded-xl w-7 h-7">
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </Button>
-            <span className="text-[11px] text-muted-foreground font-medium min-w-[130px] text-center">
-              {formatDateRange(weekStart, locale)}
-            </span>
-            <Button variant="ghost" size="icon" onClick={() => setWeekOffset(o => Math.min(o + 1, 0))} disabled={weekOffset >= 0} className="rounded-xl w-7 h-7">
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </div>
-      </motion.header>
+      <PageHeader title={i18n.weeklyReviewTitle}>
+        <Button variant="outline" size="sm" className="rounded-xl text-[10px] h-7 px-2" onClick={exportReport} disabled={exporting || daysWithData === 0}>
+          {exporting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
+          {i18n.weeklyReviewExport}
+        </Button>
+      </PageHeader>
+      <div className="flex items-center justify-center gap-1 py-2 border-b border-border/30">
+        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(o => o - 1)} className="rounded-xl w-7 h-7">
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </Button>
+        <span className="text-[11px] text-muted-foreground font-medium min-w-[130px] text-center">
+          {formatDateRange(weekStart, locale)}
+        </span>
+        <Button variant="ghost" size="icon" onClick={() => setWeekOffset(o => Math.min(o + 1, 0))} disabled={weekOffset >= 0} className="rounded-xl w-7 h-7">
+          <ChevronRight className="w-3.5 h-3.5" />
+        </Button>
+      </div>
 
       <motion.main
         ref={reportRef}

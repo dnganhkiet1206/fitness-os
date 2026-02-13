@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import PageHeader from '@/components/PageHeader';
 import { motion } from 'framer-motion';
 import { Trophy, Flame, Dumbbell, Calendar, Target, Moon, Footprints, Beef, Droplets, Swords, Check, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -129,7 +130,9 @@ export default function Challenges() {
   const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="min-h-screen bg-background">
+      <PageHeader title={i18n.challengesTitle} />
+    <div className="max-w-2xl mx-auto px-4 py-5 space-y-5">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="text-center space-y-2">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ ...spring, delay: 0.2 }}
           className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-metric-orange/20 to-readiness-yellow/20 flex items-center justify-center border border-metric-orange/20"
@@ -170,6 +173,7 @@ export default function Challenges() {
           {updateProgress.isPending ? i18n.challengesUpdating : i18n.challengesUpdateProgress}
         </button>
       </motion.div>
+    </div>
     </div>
   );
 }

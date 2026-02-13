@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import PageHeader from '@/components/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Flame, Dumbbell, Calendar, Target, Moon, Footprints, Beef, Medal, Sparkles, Share2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -108,7 +109,9 @@ export default function Awards() {
   const tiers: ('platinum' | 'gold' | 'silver' | 'bronze')[] = ['platinum', 'gold', 'silver', 'bronze'];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <div className="min-h-screen bg-background">
+      <PageHeader title={i18n.awardsTitle} />
+    <div className="max-w-4xl mx-auto px-4 py-5 space-y-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="text-center space-y-3">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ ...spring, delay: 0.2 }}
           className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-readiness-yellow/20 to-metric-orange/20 flex items-center justify-center border border-readiness-yellow/20"
@@ -167,6 +170,7 @@ export default function Awards() {
           </motion.div>
         );
       })}
+    </div>
     </div>
   );
 }

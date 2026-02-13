@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
+import PageHeader from '@/components/PageHeader';
 import { motion } from 'framer-motion';
 import { Target, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2, Flame } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -127,13 +128,9 @@ export default function SmartGoals() {
   const mealLabels = [i18n.mealBreakfast, i18n.mealLunch, i18n.mealSnack, i18n.mealDinner];
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring}>
-        <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-          <Target className="w-5 h-5 text-primary" /> {i18n.smartGoalsTitle}
-        </h2>
-        <p className="text-xs text-muted-foreground mt-1">{i18n.smartGoalsSubtitle}</p>
-      </motion.div>
+    <div className="min-h-screen bg-background">
+      <PageHeader title={i18n.smartGoalsTitle} />
+    <div className="max-w-3xl mx-auto px-4 py-5 space-y-5">
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: 0.1 }}>
         <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
@@ -265,6 +262,7 @@ export default function SmartGoals() {
           </CardContent>
         </Card>
       </motion.div>
+    </div>
     </div>
   );
 }

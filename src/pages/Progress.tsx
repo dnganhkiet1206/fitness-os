@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import PullToRefresh from '@/components/PullToRefresh';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Scale, Ruler, Camera, Trash2, Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import { Scale, Ruler, Camera, Trash2, Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -125,18 +126,7 @@ export default function Progress() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-background">
-      <motion.header
-        initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-50 border-b border-border/50"
-        style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px) saturate(1.5)' }}
-      >
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-xl">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <h1 className="text-lg font-bold">{i18n.progressTitle}</h1>
-        </div>
-      </motion.header>
+      <PageHeader title={i18n.progressTitle} />
 
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-4xl mx-auto px-4 py-5 space-y-5">
         <Tabs defaultValue="weight" className="space-y-6">

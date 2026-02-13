@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import PageHeader from '@/components/PageHeader';
 import {
   User, Target, Moon, Pill, Plus, Trash2, Save, Check, Download,
   Lock, Scale, Globe, Sun, Monitor, ChevronRight, ChevronLeft, LogOut, Droplets,
@@ -646,6 +647,8 @@ const Settings = () => {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
       </div>
+
+      <PageHeader title={i18n.navSettings || 'Settings'} />
 
       <div className="relative max-w-lg mx-auto px-4 pt-6 pb-28">
         <AnimatePresence mode="wait">
