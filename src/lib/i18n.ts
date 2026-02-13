@@ -187,6 +187,24 @@ interface Translations {
   settingsTotal: string;
   settingsSavedSuccess: string;
   settingsLogout: string;
+  settingsChangePassword: string;
+  settingsCurrentPassword: string;
+  settingsNewPassword: string;
+  settingsConfirmPassword: string;
+  settingsPasswordChanged: string;
+  settingsPasswordMismatch: string;
+  settings2FA: string;
+  settings2FADesc: string;
+  settings2FAEnabled: string;
+  settings2FADisabled: string;
+  settings2FASetup: string;
+  settings2FAEnterCode: string;
+  settings2FAVerify: string;
+  settings2FARemove: string;
+  settings2FARemoved: string;
+  settings2FAVerified: string;
+  settings2FAScanQR: string;
+  settings2FABackupHint: string;
   settingsErrorSaving: string;
   settingsPinMinLength: string;
   settingsPinDone: string;
@@ -854,6 +872,24 @@ const vi: Translations = {
   settingsTotal: 'Tổng',
   settingsSavedSuccess: 'Đã lưu thành công!',
   settingsLogout: 'Đăng xuất',
+  settingsChangePassword: 'Đổi mật khẩu',
+  settingsCurrentPassword: 'Mật khẩu hiện tại',
+  settingsNewPassword: 'Mật khẩu mới',
+  settingsConfirmPassword: 'Xác nhận mật khẩu mới',
+  settingsPasswordChanged: 'Đổi mật khẩu thành công!',
+  settingsPasswordMismatch: 'Mật khẩu xác nhận không khớp',
+  settings2FA: 'Xác thực 2 yếu tố',
+  settings2FADesc: 'Bảo vệ tài khoản bằng ứng dụng xác thực (Google Authenticator, Authy...)',
+  settings2FAEnabled: 'Đã bật',
+  settings2FADisabled: 'Chưa bật',
+  settings2FASetup: 'Thiết lập 2FA',
+  settings2FAEnterCode: 'Nhập mã 6 số từ ứng dụng xác thực',
+  settings2FAVerify: 'Xác nhận',
+  settings2FARemove: 'Tắt 2FA',
+  settings2FARemoved: 'Đã tắt xác thực 2 yếu tố',
+  settings2FAVerified: 'Xác thực 2 yếu tố đã được bật!',
+  settings2FAScanQR: 'Quét mã QR bằng ứng dụng xác thực',
+  settings2FABackupHint: 'Lưu mã dự phòng ở nơi an toàn',
   settingsErrorSaving: 'Lỗi khi lưu',
   settingsPinMinLength: 'PIN phải có ít nhất 4 ký tự',
   settingsPinDone: 'Đã cài đặt PIN!',
@@ -1494,6 +1530,24 @@ const en: Translations = {
   settingsTotal: 'Total',
   settingsSavedSuccess: 'Saved successfully!',
   settingsLogout: 'Log out',
+  settingsChangePassword: 'Change password',
+  settingsCurrentPassword: 'Current password',
+  settingsNewPassword: 'New password',
+  settingsConfirmPassword: 'Confirm new password',
+  settingsPasswordChanged: 'Password changed successfully!',
+  settingsPasswordMismatch: 'Passwords do not match',
+  settings2FA: 'Two-Factor Authentication',
+  settings2FADesc: 'Protect your account with an authenticator app (Google Authenticator, Authy...)',
+  settings2FAEnabled: 'Enabled',
+  settings2FADisabled: 'Not enabled',
+  settings2FASetup: 'Set up 2FA',
+  settings2FAEnterCode: 'Enter the 6-digit code from your authenticator app',
+  settings2FAVerify: 'Verify',
+  settings2FARemove: 'Disable 2FA',
+  settings2FARemoved: 'Two-factor authentication disabled',
+  settings2FAVerified: 'Two-factor authentication enabled!',
+  settings2FAScanQR: 'Scan QR code with your authenticator app',
+  settings2FABackupHint: 'Save the backup code somewhere safe',
   settingsErrorSaving: 'Error saving',
   settingsPinMinLength: 'PIN must be at least 4 characters',
   settingsPinDone: 'PIN set!',

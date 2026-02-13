@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageHeader from '@/components/PageHeader';
 import {
   User, Target, Moon, Pill, Plus, Trash2, Save, Check, Download,
   Lock, Scale, Globe, Sun, Monitor, ChevronRight, ChevronLeft, LogOut, Droplets,
-  Utensils, Languages, Palette, DollarSign, Ruler, BedDouble
+  Utensils, Languages, Palette, DollarSign, Ruler, BedDouble, KeyRound, ShieldCheck
 } from 'lucide-react';
 import { useAppSettings, type ThemeMode } from '@/hooks/useAppSettings';
 import { LANGUAGES, CURRENCIES, t } from '@/lib/i18n';
@@ -36,7 +36,7 @@ interface ProfileForm {
   water_target_ml: string; units_weight: string; units_height: string;
 }
 
-type Page = 'main' | 'profile' | 'units' | 'theme' | 'language' | 'currency' | 'nutrition' | 'sleep' | 'water' | 'supplements' | 'export' | 'pin';
+type Page = 'main' | 'profile' | 'units' | 'theme' | 'language' | 'currency' | 'nutrition' | 'sleep' | 'water' | 'supplements' | 'export' | 'pin' | 'password' | 'twofactor';
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
@@ -63,6 +63,19 @@ const Settings = () => {
   const [pinEnabled, setPinEnabled] = useState(() => !!localStorage.getItem('app_pin_hash'));
   const [pinInput, setPinInput] = useState('');
 
+  // Change password state
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [changingPw, setChangingPw] = useState(false);
+
+  // 2FA state
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaQrCode, setMfaQrCode] = useState<string | null>(null);
+  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+  const [mfaVerifyCode, setMfaVerifyCode] = useState('');
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaLoading, setMfaLoading] = useState(false);
+
   useEffect(() => {
     if (profile) {
       setForm({
@@ -80,6 +93,17 @@ const Settings = () => {
       });
     }
   }, [profile]);
+
+  // Check MFA status on mount
+  useEffect(() => {
+    const checkMFA = async () => {
+      const { data } = await supabase.auth.mfa.listFactors();
+      const totp = data?.totp?.find(f => f.status === 'verified');
+      setMfaEnabled(!!totp);
+      if (totp) setMfaFactorId(totp.id);
+    };
+    if (user) checkMFA();
+  }, [user]);
 
   if (authLoading || profileLoading) {
     return (
@@ -160,6 +184,69 @@ const Settings = () => {
   };
   const handleRemovePin = () => { localStorage.removeItem('app_pin_hash'); setPinEnabled(false); toast.info(i18n.settingsPinRemoved); };
   const handleSignOut = async () => { await supabase.auth.signOut(); navigate('/auth'); };
+
+
+  const handleChangePassword = async () => {
+    if (newPw !== confirmPw) return toast.error(i18n.settingsPasswordMismatch);
+    if (newPw.length < 6) return toast.error(i18n.settingsPinMinLength);
+    setChangingPw(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPw });
+      if (error) toast.error(error.message);
+      else { toast.success(i18n.settingsPasswordChanged); setNewPw(''); setConfirmPw(''); }
+    } catch (e: any) {
+      toast.error(e?.message || 'Error');
+    }
+    setChangingPw(false);
+  };
+
+  const handleEnroll2FA = async () => {
+    setMfaLoading(true);
+    try {
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'ASCND App' });
+      if (error) { toast.error(error.message); setMfaLoading(false); return; }
+      setMfaFactorId(data.id);
+      setMfaQrCode(data.totp.qr_code);
+      setMfaSecret(data.totp.secret);
+    } catch (e: any) {
+      toast.error(e?.message || 'Error enrolling 2FA');
+    }
+    setMfaLoading(false);
+  };
+
+  const handleVerify2FA = async () => {
+    if (!mfaFactorId || mfaVerifyCode.length !== 6) return;
+    setMfaLoading(true);
+    try {
+      const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+      if (challengeErr) { toast.error(challengeErr.message); setMfaLoading(false); return; }
+      const { error: verifyErr } = await supabase.auth.mfa.verify({ factorId: mfaFactorId, challengeId: challenge.id, code: mfaVerifyCode });
+      if (verifyErr) { toast.error(verifyErr.message); setMfaLoading(false); return; }
+      setMfaEnabled(true);
+      setMfaQrCode(null);
+      setMfaSecret(null);
+      setMfaVerifyCode('');
+      toast.success(i18n.settings2FAVerified);
+    } catch (e: any) {
+      toast.error(e?.message || 'Verification failed');
+    }
+    setMfaLoading(false);
+  };
+
+  const handleRemove2FA = async () => {
+    if (!mfaFactorId) return;
+    setMfaLoading(true);
+    try {
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+      if (error) { toast.error(error.message); setMfaLoading(false); return; }
+      setMfaEnabled(false);
+      setMfaFactorId(null);
+      toast.success(i18n.settings2FARemoved);
+    } catch (e: any) {
+      toast.error(e?.message || 'Error');
+    }
+    setMfaLoading(false);
+  };
 
   const SettingsRow = ({ icon: Icon, label, targetPage, subtitle }: { icon: any; label: string; targetPage: Page; subtitle?: string }) => (
     <motion.button
@@ -637,6 +724,97 @@ const Settings = () => {
           </motion.div>
         );
 
+      case 'password':
+        return (
+          <motion.div key="password" {...slideIn} className="space-y-4">
+            <div className="flex items-center gap-3 mb-5">
+              <motion.button onClick={() => setPage('main')} whileTap={{ scale: 0.9 }} transition={spring} className="w-9 h-9 rounded-xl bg-secondary/50 flex items-center justify-center active:bg-secondary/80 transition-colors">
+                <ChevronLeft className="w-5 h-5 text-foreground" />
+              </motion.button>
+              <h2 className="text-lg font-bold tracking-tight">{i18n.settingsChangePassword}</h2>
+            </div>
+            <div className="rounded-2xl bg-card/60 border border-border/30 p-4 space-y-4 backdrop-blur-sm">
+              <div className="space-y-1.5">
+                <Label className="text-xs">{i18n.settingsNewPassword}</Label>
+                <Input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="••••••••" minLength={6} className="rounded-xl bg-background/50 h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{i18n.settingsConfirmPassword}</Label>
+                <Input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="••••••••" minLength={6} className="rounded-xl bg-background/50 h-10" />
+              </div>
+              <Button className="rounded-xl w-full h-11 font-semibold" onClick={handleChangePassword} disabled={changingPw || !newPw || !confirmPw}>
+                {changingPw ? <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" /> : <KeyRound className="w-4 h-4 mr-2" />}
+                {changingPw ? i18n.authProcessing : i18n.settingsChangePassword}
+              </Button>
+            </div>
+          </motion.div>
+        );
+
+      case 'twofactor':
+        return (
+          <motion.div key="twofactor" {...slideIn} className="space-y-4">
+            <div className="flex items-center gap-3 mb-5">
+              <motion.button onClick={() => { setPage('main'); setMfaQrCode(null); setMfaSecret(null); setMfaVerifyCode(''); }} whileTap={{ scale: 0.9 }} transition={spring} className="w-9 h-9 rounded-xl bg-secondary/50 flex items-center justify-center active:bg-secondary/80 transition-colors">
+                <ChevronLeft className="w-5 h-5 text-foreground" />
+              </motion.button>
+              <h2 className="text-lg font-bold tracking-tight">{i18n.settings2FA}</h2>
+            </div>
+            <div className="rounded-2xl bg-card/60 border border-border/30 p-4 space-y-4 backdrop-blur-sm">
+              {mfaEnabled ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 bg-primary/10 rounded-xl p-4">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{i18n.settings2FA}</p>
+                      <p className="text-xs text-muted-foreground">{i18n.settings2FAEnabled}</p>
+                    </div>
+                  </div>
+                  <Button variant="destructive" className="rounded-xl w-full" onClick={handleRemove2FA} disabled={mfaLoading}>
+                    {i18n.settings2FARemove}
+                  </Button>
+                </div>
+              ) : mfaQrCode ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">{i18n.settings2FAScanQR}</p>
+                  <div className="flex justify-center p-4 bg-white rounded-xl">
+                    <img src={mfaQrCode} alt="2FA QR Code" className="w-48 h-48" />
+                  </div>
+                  {mfaSecret && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">{i18n.settings2FABackupHint}</p>
+                      <code className="block text-xs bg-secondary/50 rounded-lg p-2.5 font-mono break-all select-all">{mfaSecret}</code>
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{i18n.settings2FAEnterCode}</Label>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={mfaVerifyCode}
+                      onChange={e => setMfaVerifyCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="000000"
+                      className="rounded-xl bg-background/50 h-12 text-center text-2xl font-mono tracking-[0.5em]"
+                    />
+                  </div>
+                  <Button className="rounded-xl w-full h-11 font-semibold" onClick={handleVerify2FA} disabled={mfaLoading || mfaVerifyCode.length !== 6}>
+                    {mfaLoading ? <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
+                    {i18n.settings2FAVerify}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">{i18n.settings2FADesc}</p>
+                  <Button className="rounded-xl w-full h-11 font-semibold" onClick={handleEnroll2FA} disabled={mfaLoading}>
+                    {mfaLoading ? <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
+                    {i18n.settings2FASetup}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        );
+
       default:
         return null;
     }
@@ -714,6 +892,10 @@ const Settings = () => {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground px-1 mb-2">{i18n.settingsData}</p>
                 <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden backdrop-blur-sm">
+                  <SettingsRow icon={KeyRound} label={i18n.settingsChangePassword} targetPage="password" />
+                  <Divider />
+                  <SettingsRow icon={ShieldCheck} label={i18n.settings2FA} targetPage="twofactor" subtitle={mfaEnabled ? i18n.settings2FAEnabled : i18n.settings2FADisabled} />
+                  <Divider />
                   <SettingsRow icon={Download} label={i18n.settingsExportData} targetPage="export" />
                   <Divider />
                   <SettingsRow icon={Lock} label={i18n.settingsPrivacyLock} targetPage="pin" subtitle={pinEnabled ? i18n.settingsPinSet : undefined} />
