@@ -38,21 +38,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  if (!user) return <div className="pt-safe">{children}</div>;
+  if (!user) return <div className="pt-safe" style={{ height: '100dvh', overflow: 'hidden' }}>{children}</div>;
 
   const isKeyboardOpen = keyboardHeight > 0;
   const shouldHideBar = isKeyboardOpen || forceHidden;
 
   return (
     <BottomBarContext.Provider value={{ hideBottomBar: () => setForceHidden(true), showBottomBar: () => setForceHidden(false) }}>
-      <div className="min-h-screen w-full no-select scroll-container">
+      <div className="w-full no-select" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <main
-          className="pt-safe pb-20 keyboard-aware"
-          style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : undefined}
+          className="flex-1 overflow-y-auto scroll-container keyboard-aware"
+          style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : { paddingBottom: 80 }}
         >
           {children}
         </main>
-        {/* Use visibility instead of display:none to keep animations working */}
         <div style={shouldHideBar ? { visibility: 'hidden', pointerEvents: 'none' } : undefined}>
           <BottomTabBar autoHide={autoHide} />
         </div>
