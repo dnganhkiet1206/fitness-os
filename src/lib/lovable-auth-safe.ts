@@ -2,6 +2,7 @@
  * Safe wrapper around @lovable.dev/cloud-auth-js
  * Falls back to direct Supabase OAuth when running outside Lovable Cloud
  * Uses native Apple Sign In on iOS via Capacitor plugin
+ * Uses Capacitor Browser for Google OAuth on native platforms
  */
 
 import { supabase } from '@/integrations/supabase/client';
@@ -104,6 +105,101 @@ async function nativeAppleSignIn(): Promise<SignInResult> {
   }
 }
 
+/**
+ * Native OAuth using Capacitor Browser plugin
+ * Opens the OAuth URL in an external browser, then listens for the redirect back
+ */
+async function nativeOAuthWithBrowser(provider: "google" | "apple", redirectTo: string): Promise<SignInResult> {
+  try {
+    const { Browser } = await import('@capacitor/browser');
+    const { App } = await import('@capacitor/app');
+
+    // Get the OAuth URL without auto-redirecting
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+      },
+    });
+
+    if (error) {
+      return { error: error as Error };
+    }
+
+    if (!data?.url) {
+      return { error: new Error('No OAuth URL received') };
+    }
+
+    // Listen for the app being opened back via deep link
+    return new Promise<SignInResult>((resolve) => {
+      let resolved = false;
+      let listenerHandle: any = null;
+
+      const handleAppUrlOpen = async (event: { url: string }) => {
+        if (resolved) return;
+
+        // Check if this is our OAuth callback
+        if (event.url.startsWith(redirectTo)) {
+          resolved = true;
+          listenerHandle?.remove();
+
+          try {
+            await Browser.close();
+          } catch {
+            // Browser might already be closed
+          }
+
+          // Extract tokens from the URL hash/query
+          const url = new URL(event.url);
+          const hashParams = new URLSearchParams(url.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+
+          if (accessToken && refreshToken) {
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (sessionError) {
+              resolve({ error: sessionError as Error });
+            } else {
+              resolve({ tokens: sessionData });
+            }
+          } else {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              resolve({ tokens: session });
+            } else {
+              resolve({ error: new Error('No tokens received from OAuth callback') });
+            }
+          }
+        }
+      };
+
+      // Set up the deep link listener
+      App.addListener('appUrlOpen', handleAppUrlOpen).then(handle => {
+        listenerHandle = handle;
+      });
+
+      // Open the OAuth URL in external browser
+      Browser.open({ url: data.url, windowName: '_self' });
+
+      // Timeout after 5 minutes
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          listenerHandle?.remove();
+          resolve({ error: new Error('OAuth sign-in timed out') });
+        }
+      }, 5 * 60 * 1000);
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e : new Error(String(e)) };
+  }
+}
+
 export const lovableSafe = {
   auth: {
     signInWithOAuth: async (provider: "google" | "apple", opts?: SignInOptions): Promise<SignInResult> => {
@@ -112,6 +208,12 @@ export const lovableSafe = {
       // Native iOS: use native Apple Sign In for best UX
       if (isNative && provider === 'apple' && getNativePlatform() === 'ios') {
         return nativeAppleSignIn();
+      }
+
+      // Native platforms: use Capacitor Browser for OAuth (avoids WebView 404 issues)
+      if (isNative) {
+        const redirectTo = opts?.redirect_uri || window.location.origin;
+        return nativeOAuthWithBrowser(provider, redirectTo);
       }
 
       // On Lovable Cloud domains, use the managed auth bridge
@@ -142,7 +244,7 @@ export const lovableSafe = {
         }
       }
 
-      // Standalone / Capacitor / custom domain: use direct Supabase OAuth
+      // Standalone web: use direct Supabase OAuth
       try {
         const redirectTo = opts?.redirect_uri || window.location.origin;
 
