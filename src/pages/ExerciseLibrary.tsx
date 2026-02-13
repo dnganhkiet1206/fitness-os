@@ -65,7 +65,7 @@ const ExerciseLibrary = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(217 91% 60%), transparent 70%)' }} />
       </div>

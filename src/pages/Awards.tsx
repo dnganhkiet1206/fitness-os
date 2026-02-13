@@ -109,7 +109,7 @@ export default function Awards() {
   const tiers: ('platinum' | 'gold' | 'silver' | 'bronze')[] = ['platinum', 'gold', 'silver', 'bronze'];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <PageHeader title={i18n.awardsTitle} />
     <div className="max-w-4xl mx-auto px-4 py-5 space-y-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="text-center space-y-3">

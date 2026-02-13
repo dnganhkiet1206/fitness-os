@@ -130,7 +130,7 @@ export default function Challenges() {
   const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <PageHeader title={i18n.challengesTitle} />
     <div className="max-w-2xl mx-auto px-4 py-5 space-y-5">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="text-center space-y-2">

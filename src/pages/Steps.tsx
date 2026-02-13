@@ -48,7 +48,7 @@ export default function Steps() {
   }));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <PageHeader title={i18n.stepsTitle} />
       <div className="max-w-4xl mx-auto px-4 py-5 space-y-5">
 

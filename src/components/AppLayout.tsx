@@ -13,6 +13,9 @@ export const useBottomBar = () => useContext(BottomBarContext);
 // Pages where bottom bar should NOT auto-hide on scroll
 const NO_AUTOHIDE_ROUTES = ['/ai-coach'];
 
+// Pages that manage their own layout (bypass main scroll)
+const CUSTOM_LAYOUT_ROUTES = ['/ai-coach'];
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
@@ -20,6 +23,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [forceHidden, setForceHidden] = useState(false);
 
   const autoHide = !NO_AUTOHIDE_ROUTES.includes(location.pathname);
+  const isCustomLayout = CUSTOM_LAYOUT_ROUTES.includes(location.pathname);
 
   useEffect(() => {
     const handleResize = () => {
@@ -46,12 +50,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <BottomBarContext.Provider value={{ hideBottomBar: () => setForceHidden(true), showBottomBar: () => setForceHidden(false) }}>
       <div className="w-full no-select" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <main
-          className="flex-1 overflow-y-auto scroll-container keyboard-aware"
-          style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : { paddingBottom: 80 }}
-        >
-          {children}
-        </main>
+        {isCustomLayout ? (
+          <div className="flex-1 overflow-hidden relative">
+            {children}
+          </div>
+        ) : (
+          <main
+            className="flex-1 overflow-y-auto scroll-container"
+            style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : { paddingBottom: 72 }}
+          >
+            {children}
+          </main>
+        )}
         <div style={shouldHideBar ? { visibility: 'hidden', pointerEvents: 'none' } : undefined}>
           <BottomTabBar autoHide={autoHide} />
         </div>

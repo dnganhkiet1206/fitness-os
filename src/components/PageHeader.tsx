@@ -17,7 +17,7 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
 
   return (
     <>
-      {sticky && <div className="shrink-0" style={{ height: 'calc(env(safe-area-inset-top, 0px) + 52px)' }} />}
+      {sticky && <div className="shrink-0" style={{ height: 'calc(env(safe-area-inset-top, 0px) + 44px)' }} />}
       <header
         className={`${sticky ? 'fixed top-0 left-0 right-0 z-50' : ''}`}
         style={{
@@ -28,12 +28,12 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
           borderBottom: '0.5px solid hsl(var(--border) / 0.6)',
         }}
       >
-        <div className="max-w-4xl mx-auto px-1 h-[52px] flex items-center">
+        <div className="max-w-4xl mx-auto px-1 h-[44px] flex items-center">
           <motion.button
             onClick={() => navigate(backTo)}
             whileTap={{ scale: 0.88 }}
             transition={spring}
-            className="flex items-center gap-0 px-2 h-[52px] text-primary active:opacity-60 transition-opacity shrink-0"
+            className="flex items-center gap-0 px-2 h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"
           >
             <ChevronLeft className="w-[22px] h-[22px] -mr-0.5" strokeWidth={2.5} />
             <span className="text-[17px] font-normal">Back</span>

@@ -60,7 +60,7 @@ export default function PullToRefresh({ onRefresh, children, className = '' }: P
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-auto ${className}`}
+      className={`relative ${className}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

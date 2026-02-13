@@ -189,7 +189,7 @@ export default function GroceryList() {
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <PageHeader title={i18n.title} />
     <div className="max-w-3xl mx-auto px-4 py-5 space-y-5">
 

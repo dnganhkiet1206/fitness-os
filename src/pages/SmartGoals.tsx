@@ -128,7 +128,7 @@ export default function SmartGoals() {
   const mealLabels = [i18n.mealBreakfast, i18n.mealLunch, i18n.mealSnack, i18n.mealDinner];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <PageHeader title={i18n.smartGoalsTitle} />
     <div className="max-w-3xl mx-auto px-4 py-5 space-y-5">
 

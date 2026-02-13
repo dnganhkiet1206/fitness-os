@@ -209,7 +209,7 @@ const Index = () => {
   const sleepTargetHours = Number(profile?.sleep_target_hours) || 8;
 
   return (
-    <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-background">
+    <PullToRefresh onRefresh={handleRefresh} className="bg-background">
       {/* Ambient glow background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
