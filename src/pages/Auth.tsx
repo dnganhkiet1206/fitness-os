@@ -86,9 +86,6 @@ const Auth = () => {
           transition={{ delay: 0.15, ...spring }}
           className="text-center"
         >
-          <div className="w-20 h-20 mx-auto mb-4 rounded-[22px] bg-card/80 backdrop-blur-xl border border-border/50 flex items-center justify-center shadow-[0_8px_30px_hsl(225_15%_6%/0.3),0_0_0_0.5px_hsl(220_15%_95%/0.06)_inset]">
-            <img src={logoAscnd} alt="ASCND" className="w-11 h-11" />
-          </div>
           <h1 className="text-3xl font-bold tracking-[0.15em] text-foreground">
             ASCND
           </h1>
