@@ -220,13 +220,13 @@ const Index = () => {
         variants={container}
         initial="hidden"
         animate="show"
-        className="relative max-w-5xl mx-auto px-4 py-5 space-y-5"
+        className="relative max-w-5xl mx-auto px-4 py-4 space-y-4"
       >
         {/* Greeting */}
         <motion.div variants={fadeUp} className="flex items-start justify-between">
           <div>
-            <p className="text-sm text-muted-foreground font-medium capitalize">{dateStr}</p>
-            <h2 className="text-2xl font-bold tracking-tight mt-1">{greeting}, <span className="text-gradient-green">{userName}</span></h2>
+            <p className="text-[13px] text-muted-foreground font-medium capitalize">{dateStr}</p>
+            <h2 className="text-[22px] font-bold tracking-tight mt-0.5">{greeting}, <span className="text-gradient-green">{userName}</span></h2>
           </div>
           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} transition={spring}>
             <Button variant="outline" size="icon" className="rounded-2xl w-11 h-11 border-border/40 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl shadow-[0_1px_8px_hsl(225_15%_6%_/_0.3)]" onClick={() => navigate('/settings')}>

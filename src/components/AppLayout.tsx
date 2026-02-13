@@ -47,7 +47,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <BottomBarContext.Provider value={{ hideBottomBar: () => setForceHidden(true), showBottomBar: () => setForceHidden(false) }}>
       <div className="min-h-screen w-full no-select scroll-container">
         <main
-          className="pt-safe pb-24 keyboard-aware"
+          className="pt-safe pb-20 keyboard-aware"
           style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : undefined}
         >
           {children}

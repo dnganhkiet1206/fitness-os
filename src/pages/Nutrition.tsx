@@ -188,18 +188,18 @@ const Nutrition = () => {
                 </motion.div>
               ))
             ) : (
-              <motion.div variants={fadeUp} className="text-center py-12 text-muted-foreground">
-                <Utensils className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">{i18n.nutritionNoPlans}</p>
+              <motion.div variants={fadeUp} className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                <Utensils className="w-12 h-12 mb-4 opacity-20" />
+                <p className="text-sm font-medium">{i18n.nutritionNoPlans}</p>
               </motion.div>
             )}
           </TabsContent>
 
           <TabsContent value="shopping" className="space-y-5 mt-4">
-            <motion.div variants={fadeUp} className="text-center py-12 text-muted-foreground">
-              <ShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">{i18n.nutritionShoppingEmpty}</p>
-              <p className="text-xs mt-1">{i18n.nutritionShoppingDesc}</p>
+            <motion.div variants={fadeUp} className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <ShoppingCart className="w-12 h-12 mb-4 opacity-20" />
+              <p className="text-sm font-medium">{i18n.nutritionShoppingEmpty}</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">{i18n.nutritionShoppingDesc}</p>
             </motion.div>
           </TabsContent>
         </Tabs>
