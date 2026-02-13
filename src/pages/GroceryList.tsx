@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
+import PageHeader from '@/components/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, Check, DollarSign, Beef, Plus, Trash2, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -188,13 +189,9 @@ export default function GroceryList() {
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring}>
-        <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-          <ShoppingCart className="w-5 h-5 text-primary" /> {i18n.title}
-        </h2>
-        <p className="text-xs text-muted-foreground mt-1">{i18n.subtitle}</p>
-      </motion.div>
+    <div className="min-h-screen bg-background">
+      <PageHeader title={i18n.title} />
+    <div className="max-w-3xl mx-auto px-4 py-5 space-y-5">
 
       {/* Custom grocery list */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: 0.05 }}>
@@ -390,6 +387,7 @@ export default function GroceryList() {
           </CardContent>
         </Card>
       </motion.div>
+    </div>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Moon, Sunrise, Coffee, Smartphone, TrendingUp, TrendingDown } from 'lucide-react';
+import { Moon, Sunrise, Coffee, Smartphone, TrendingUp, TrendingDown } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { useSleepHistory } from '@/hooks/useProgressData';
 import { useProfile } from '@/hooks/useTodayData';
@@ -67,19 +68,7 @@ export default function SleepInsights() {
 
   return (
     <div className="min-h-screen bg-background">
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-50 border-b border-border/50"
-        style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px) saturate(1.5)' }}
-      >
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-xl">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <h1 className="text-lg font-bold">{i18n.sleepTitle}</h1>
-        </div>
-      </motion.header>
+      <PageHeader title={i18n.sleepTitle} />
 
       <motion.main
         initial="hidden"

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Droplets, Plus, Minus, Bell, BellOff, Target } from 'lucide-react';
+import { Droplets, Plus, Minus, Bell, BellOff, Target } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
@@ -142,8 +143,8 @@ const WaterTracking = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
-        <h2 className="text-xl font-bold tracking-tight">{i18n.waterTitle}</h2>
+      <PageHeader title={i18n.waterTitle} />
+      <main className="max-w-3xl mx-auto px-4 py-5 space-y-5">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>
           <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
             <CardContent className="pt-6 flex flex-col items-center gap-4">

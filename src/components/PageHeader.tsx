@@ -1,0 +1,47 @@
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ChevronLeft } from 'lucide-react';
+
+const spring = { type: 'spring' as const, stiffness: 400, damping: 34, mass: 0.8 };
+
+interface PageHeaderProps {
+  title: string;
+  backTo?: string;
+  gradient?: boolean;
+  children?: React.ReactNode;
+  sticky?: boolean;
+}
+
+export default function PageHeader({ title, backTo = '/', gradient = false, children, sticky = true }: PageHeaderProps) {
+  const navigate = useNavigate();
+
+  return (
+    <motion.header
+      initial={{ opacity: 0, y: -16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...spring, duration: 0.5 }}
+      className={`${sticky ? 'sticky top-0 z-50' : ''} border-b border-border/40`}
+      style={{
+        background: 'hsl(var(--card) / 0.85)',
+        backdropFilter: 'blur(28px) saturate(1.6)',
+        WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+      }}
+    >
+      <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2.5">
+        <motion.button
+          onClick={() => navigate(backTo)}
+          whileTap={{ scale: 0.82 }}
+          whileHover={{ scale: 1.06 }}
+          transition={spring}
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-foreground active:bg-secondary/60 transition-colors shrink-0"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </motion.button>
+        <h1 className="text-lg font-bold tracking-tight flex-1 min-w-0">
+          {gradient ? <span className="text-gradient-green">{title}</span> : title}
+        </h1>
+        {children}
+      </div>
+    </motion.header>
+  );
+}

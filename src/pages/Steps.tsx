@@ -1,4 +1,5 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import PageHeader from '@/components/PageHeader';
 import { motion } from 'framer-motion';
 import { Footprints, Watch, Loader2, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,15 +48,9 @@ export default function Steps() {
   }));
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="space-y-1">
-        <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-          <Footprints className="w-5 h-5 text-primary" />
-          {i18n.stepsTitle}
-        </h2>
-        <p className="text-xs text-muted-foreground">{i18n.stepsSubtitle}</p>
-      </motion.div>
+    <div className="min-h-screen bg-background">
+      <PageHeader title={i18n.stepsTitle} />
+      <div className="max-w-4xl mx-auto px-4 py-5 space-y-5">
 
       {/* Sync button */}
       {!healthChecking && healthAvailable && (
@@ -184,6 +179,7 @@ export default function Steps() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }

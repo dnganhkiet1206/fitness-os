@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import PageHeader from '@/components/PageHeader';
 import { Heart, Activity, Wind, Droplets, Flame, PenLine, TrendingUp, TrendingDown, Minus, AlertCircle, Watch, Loader2, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useBiometricHistory, useLatestBiometrics } from '@/hooks/useBiometrics';
@@ -163,19 +164,9 @@ export default function Biometrics() {
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={spring}
-        className="space-y-1"
-      >
-        <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-          <Heart className="w-5 h-5 text-[hsl(350,89%,60%)]" />
-          {i18n.biometricsTitle}
-        </h2>
-        <p className="text-xs text-muted-foreground">{i18n.biometricsSubtitle}</p>
-      </motion.div>
+    <div className="min-h-screen bg-background">
+      <PageHeader title={i18n.biometricsTitle} />
+    <div className="max-w-4xl mx-auto px-4 py-5 space-y-5">
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -304,6 +295,7 @@ export default function Biometrics() {
           </div>
         </div>
       </motion.div>
+    </div>
     </div>
   );
 }

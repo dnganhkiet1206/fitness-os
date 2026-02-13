@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkoutTemplates, useAddWorkoutTemplate, useDeleteWorkoutTemplate, useExercises } from '@/hooks/useWorkoutData';
 import { Button } from '@/components/ui/button';
@@ -99,13 +100,7 @@ const WorkoutBuilder = () => {
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
       </div>
 
-      <motion.header initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-        className="sticky top-0 z-50 border-b border-border/50" style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px) saturate(1.5)' }}>
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="rounded-xl"><ArrowLeft className="w-4 h-4" /></Button>
-          <h1 className="text-lg font-bold"><span className="text-gradient-green">{i18n.workoutsTitle}</span></h1>
-        </div>
-      </motion.header>
+      <PageHeader title={i18n.workoutsTitle} gradient />
 
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }} className="max-w-3xl mx-auto px-4 py-6 space-y-5">
         <motion.div variants={fadeUp} className="flex justify-between items-center">

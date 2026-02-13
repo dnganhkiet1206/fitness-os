@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, Bot, User, Sparkles, Loader2, Plus, MessageSquare, Trash2, History } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Loader2, Plus, MessageSquare, Trash2, History } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
@@ -206,35 +207,16 @@ export default function AiCoach() {
 
   return (
     <div className="h-screen bg-background flex flex-col">
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="shrink-0 border-b border-border/50"
-        style={{ background: 'hsl(225 15% 6% / 0.7)', backdropFilter: 'blur(24px) saturate(1.5)' }}
-      >
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-xl">
-            <ArrowLeft className="w-4 h-4" />
+      <PageHeader title={i18n.aiCoachTitle} sticky>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" onClick={() => setShowHistory(!showHistory)} className="rounded-xl">
+            <History className="w-4 h-4" />
           </Button>
-          <div className="flex items-center gap-2 flex-1">
-            <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-sm font-bold">{i18n.aiCoachTitle}</h1>
-              <p className="text-[10px] text-muted-foreground">{i18n.aiCoachSubtitle}</p>
-            </div>
-          </div>
-          <div className="flex gap-1">
-            <Button variant="ghost" size="icon" onClick={() => setShowHistory(!showHistory)} className="rounded-xl">
-              <History className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={startNewChat} className="rounded-xl">
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
+          <Button variant="ghost" size="icon" onClick={startNewChat} className="rounded-xl">
+            <Plus className="w-4 h-4" />
+          </Button>
         </div>
-      </motion.header>
+      </PageHeader>
 
       <AnimatePresence>
         {showHistory && (
