@@ -32,14 +32,14 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
   useEffect(() => {
     if (!autoHide) { setVisible(true); return; }
 
-    const threshold = 12;
+    const threshold = 16;
     const handleScroll = () => {
       const currentY = window.scrollY;
       const delta = currentY - lastScrollY.current;
 
       if (moreOpen) { lastScrollY.current = currentY; return; }
 
-      if (delta > threshold && currentY > 60) {
+      if (delta > threshold && currentY > 80) {
         setVisible(false);
       } else if (delta < -threshold || currentY < 30) {
         setVisible(true);
@@ -48,7 +48,7 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
 
       // Auto-show after scroll stops
       if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-      scrollTimeout.current = setTimeout(() => setVisible(true), 1200);
+      scrollTimeout.current = setTimeout(() => setVisible(true), 800);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });

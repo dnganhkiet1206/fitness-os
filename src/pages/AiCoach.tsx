@@ -206,8 +206,8 @@ export default function AiCoach() {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col">
-      <PageHeader title={i18n.aiCoachTitle} sticky>
+    <div className="fixed inset-0 bg-background flex flex-col">
+      <PageHeader title={i18n.aiCoachTitle} sticky={false}>
         <div className="flex gap-1">
           <Button variant="ghost" size="icon" onClick={() => setShowHistory(!showHistory)} className="rounded-xl">
             <History className="w-4 h-4" />
@@ -258,7 +258,7 @@ export default function AiCoach() {
         )}
       </AnimatePresence>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain">
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
           {messages.length === 0 && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16 space-y-6">
@@ -315,9 +315,15 @@ export default function AiCoach() {
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-border/50 bg-background/80 backdrop-blur-xl"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
-        <div className="max-w-3xl mx-auto px-4 py-3 space-y-1.5">
+      {/* Fixed input above bottom tab bar - never moves */}
+      <div className="shrink-0 border-t border-border/50"
+        style={{
+          background: 'hsl(var(--background) / 0.95)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          paddingBottom: 80,
+        }}>
+        <div className="max-w-3xl mx-auto px-4 py-2.5 space-y-1">
           <form onSubmit={e => { e.preventDefault(); send(input); }} className="flex gap-2">
             <Input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
               placeholder={i18n.aiCoachPlaceholder}
