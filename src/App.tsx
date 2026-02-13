@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
+import SwipeBack from "@/components/SwipeBack";
 import { AwardCelebrationOverlay } from "@/components/awards/AwardCelebration";
 import { AppLayout } from "@/components/AppLayout";
 import { AppSettingsProvider } from "@/hooks/useAppSettings";
@@ -86,31 +87,33 @@ function AnimatedRoutes() {
         exit="exit"
         className="min-h-screen"
       >
-        <Routes location={location}>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/nutrition" element={<Nutrition />} />
-          <Route path="/meal-plan/:id" element={<MealPlan />} />
-          <Route path="/supplements" element={<Supplements />} />
-          <Route path="/exercises" element={<ExerciseLibrary />} />
-          <Route path="/workouts" element={<WorkoutBuilder />} />
-          <Route path="/routine" element={<RoutinePlanner />} />
-          <Route path="/sleep" element={<SleepInsights />} />
-          <Route path="/progress" element={<Progress />} />
-          <Route path="/weekly-review" element={<WeeklyReview />} />
-          <Route path="/ai-coach" element={<AiCoach />} />
-          <Route path="/water" element={<WaterTracking />} />
-          <Route path="/smart-goals" element={<SmartGoals />} />
-          <Route path="/grocery" element={<GroceryList />} />
-          <Route path="/awards" element={<Awards />} />
-          <Route path="/challenges" element={<Challenges />} />
-          <Route path="/biometrics" element={<Biometrics />} />
-          <Route path="/steps" element={<Steps />} />
-          <Route path="/legal" element={<Legal />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <SwipeBack>
+          <Routes location={location}>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/nutrition" element={<Nutrition />} />
+            <Route path="/meal-plan/:id" element={<MealPlan />} />
+            <Route path="/supplements" element={<Supplements />} />
+            <Route path="/exercises" element={<ExerciseLibrary />} />
+            <Route path="/workouts" element={<WorkoutBuilder />} />
+            <Route path="/routine" element={<RoutinePlanner />} />
+            <Route path="/sleep" element={<SleepInsights />} />
+            <Route path="/progress" element={<Progress />} />
+            <Route path="/weekly-review" element={<WeeklyReview />} />
+            <Route path="/ai-coach" element={<AiCoach />} />
+            <Route path="/water" element={<WaterTracking />} />
+            <Route path="/smart-goals" element={<SmartGoals />} />
+            <Route path="/grocery" element={<GroceryList />} />
+            <Route path="/awards" element={<Awards />} />
+            <Route path="/challenges" element={<Challenges />} />
+            <Route path="/biometrics" element={<Biometrics />} />
+            <Route path="/steps" element={<Steps />} />
+            <Route path="/legal" element={<Legal />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </SwipeBack>
       </motion.div>
     </AnimatePresence>
   );
