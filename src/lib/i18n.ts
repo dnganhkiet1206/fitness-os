@@ -72,6 +72,13 @@ interface Translations {
   authCheckEmail: string;
   authProcessing: string;
   authYourName: string;
+  authForgotPassword: string;
+  authResetPassword: string;
+  authResetSent: string;
+  authBackToLogin: string;
+  authNewPassword: string;
+  authUpdatePassword: string;
+  authPasswordUpdated: string;
 
   // Sidebar / Nav
   navToday: string;
@@ -738,6 +745,13 @@ const vi: Translations = {
   authCheckEmail: 'Kiểm tra email để xác nhận tài khoản!',
   authProcessing: 'Đang xử lý...',
   authYourName: 'Tên của bạn',
+  authForgotPassword: 'Quên mật khẩu?',
+  authResetPassword: 'Đặt lại mật khẩu',
+  authResetSent: 'Kiểm tra email để đặt lại mật khẩu!',
+  authBackToLogin: 'Quay lại đăng nhập',
+  authNewPassword: 'Mật khẩu mới',
+  authUpdatePassword: 'Cập nhật mật khẩu',
+  authPasswordUpdated: 'Mật khẩu đã được cập nhật!',
 
   navToday: 'Today',
   navNutrition: 'Dinh dưỡng',
@@ -1371,6 +1385,13 @@ const en: Translations = {
   authCheckEmail: 'Check your email to confirm your account!',
   authProcessing: 'Processing...',
   authYourName: 'Your name',
+  authForgotPassword: 'Forgot password?',
+  authResetPassword: 'Reset password',
+  authResetSent: 'Check your email to reset your password!',
+  authBackToLogin: 'Back to login',
+  authNewPassword: 'New password',
+  authUpdatePassword: 'Update password',
+  authPasswordUpdated: 'Password updated successfully!',
 
   navToday: 'Today',
   navNutrition: 'Nutrition',
