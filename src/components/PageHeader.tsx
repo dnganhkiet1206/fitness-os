@@ -17,8 +17,8 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
 
   return (
     <>
-      {/* Spacer to prevent content from hiding behind fixed header */}
-      {sticky && <div className="h-14" />}
+      {/* Spacer to prevent content from hiding behind fixed header (includes safe-area) */}
+      {sticky && <div className="h-14 pt-safe" />}
       <motion.header
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
