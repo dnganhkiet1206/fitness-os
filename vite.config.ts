@@ -20,7 +20,9 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     rollupOptions: {
-      external: ["@flomentumsolutions/capacitor-health-extended"],
+      external: [
+        "@flomentumsolutions/capacitor-health-extended",
+      ],
     },
   },
 }));
