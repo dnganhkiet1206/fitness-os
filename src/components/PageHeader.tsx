@@ -25,9 +25,10 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
         transition={{ ...spring, duration: 0.5 }}
         className={`${sticky ? 'fixed top-0 left-0 right-0 z-50' : ''} border-b border-border/40`}
         style={{
-          background: 'hsl(var(--card) / 0.85)',
-          backdropFilter: 'blur(28px) saturate(1.6)',
-          WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+          background: 'hsl(var(--card) / 0.55)',
+          backdropFilter: 'blur(40px) saturate(1.8)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+          boxShadow: '0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 4px 20px hsl(0 0% 0% / 0.15)',
         }}
       >
         <div className="pt-safe">
