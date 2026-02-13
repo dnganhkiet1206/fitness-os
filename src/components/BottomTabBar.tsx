@@ -1,8 +1,8 @@
 import { Home, Utensils, Dumbbell, TrendingUp, LayoutGrid } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useRef } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { t } from '@/lib/i18n';
 import ScanFoodDialog from '@/components/logging/ScanFoodDialog';
@@ -24,6 +24,40 @@ export function BottomTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const scrollTimeout = useRef<ReturnType<typeof setTimeout>>();
+
+  // Smart scroll-aware hide/show
+  useEffect(() => {
+    const threshold = 12;
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const delta = currentY - lastScrollY.current;
+
+      if (moreOpen) { lastScrollY.current = currentY; return; }
+
+      if (delta > threshold && currentY > 60) {
+        setVisible(false);
+      } else if (delta < -threshold || currentY < 30) {
+        setVisible(true);
+      }
+      lastScrollY.current = currentY;
+
+      // Auto-show after scroll stops
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+      scrollTimeout.current = setTimeout(() => setVisible(true), 1200);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    };
+  }, [moreOpen]);
+
+  // Always show on route change
+  useEffect(() => { setVisible(true); }, [location.pathname]);
 
   const tabs = [
     { title: i18n.navToday, url: '/', icon: Home },
@@ -119,7 +153,15 @@ export function BottomTabBar() {
       </AnimatePresence>
 
       {/* Bottom tab bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-[80] pb-safe pl-safe pr-safe">
+      <motion.div
+        className="fixed bottom-0 left-0 right-0 z-[80] pb-safe pl-safe pr-safe"
+        initial={false}
+        animate={{
+          y: visible || moreOpen ? 0 : 100,
+          opacity: visible || moreOpen ? 1 : 0,
+        }}
+        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+      >
         <div
           className="mx-3 mb-2 rounded-[28px] flex items-center justify-around px-2 py-1.5 border border-border/10"
           style={{
@@ -155,7 +197,6 @@ export function BottomTabBar() {
                   <tab.icon className={`w-5 h-5 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`} />
                 </motion.div>
                 <span className={`text-[10px] font-medium relative z-10 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>{tab.title}</span>
-                {/* Active dot indicator */}
                 {active && (
                   <motion.div
                     layoutId="tab-dot"
@@ -197,7 +238,7 @@ export function BottomTabBar() {
             )}
           </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Scan Food Dialog triggered from More menu */}
       <ScanFoodDialog onFoodsScanned={() => {}}>
