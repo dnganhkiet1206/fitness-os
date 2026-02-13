@@ -165,12 +165,12 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
         transition={{ type: 'spring', stiffness: 400, damping: 32 }}
       >
         <div
-          className="mx-3 mb-2 rounded-[28px] flex items-center justify-around px-2 py-1.5 border border-border/10"
+          className="mx-2 mb-1.5 rounded-[22px] flex items-center justify-around px-1 py-1 border border-border/10"
           style={{
-            background: 'hsl(var(--card) / 0.92)',
-            backdropFilter: 'blur(40px) saturate(2)',
-            WebkitBackdropFilter: 'blur(40px) saturate(2)',
-            boxShadow: '0 4px 30px hsl(0 0% 0% / 0.5), 0 0 0 1px hsl(0 0% 100% / 0.04) inset',
+            background: 'hsl(var(--background) / 0.88)',
+            backdropFilter: 'blur(24px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
+            boxShadow: '0 2px 20px hsl(0 0% 0% / 0.35)',
           }}
         >
           {tabs.map((tab) => {
@@ -181,7 +181,7 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
                 to={tab.url}
                 end={tab.url === '/'}
                 onClick={() => haptic(active ? 'light' : 'medium')}
-                className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all relative touch-target"
+                className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-2xl transition-all relative touch-target"
                 activeClassName=""
               >
                 {active && (
@@ -218,7 +218,7 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
               haptic('medium');
               setMoreOpen(prev => !prev);
             }}
-            className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all relative touch-target"
+            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-2xl transition-all relative touch-target"
           >
             {(moreOpen || isMoreActive) && (
               <motion.div

@@ -17,31 +17,34 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
 
   return (
     <>
-      {/* Spacer to prevent content from hiding behind fixed header */}
+      {/* Apple-standard 44px nav bar + safe area */}
       {sticky && <div style={{ height: 'calc(env(safe-area-inset-top, 0px) + 44px)' }} />}
       <header
-        className={`${sticky ? 'fixed top-0 left-0 right-0 z-50' : ''} border-b border-border/40`}
+        className={`${sticky ? 'fixed top-0 left-0 right-0 z-50' : ''}`}
         style={{
-          background: 'hsl(var(--card) / 0.55)',
-          backdropFilter: 'blur(40px) saturate(1.8)',
-          WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
-          boxShadow: '0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 4px 20px hsl(0 0% 0% / 0.15)',
+          background: 'hsl(var(--background) / 0.72)',
+          backdropFilter: 'blur(20px) saturate(1.8)',
+          WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
+          borderBottom: '0.5px solid hsl(var(--border) / 0.6)',
         }}
       >
         <div className="pt-safe">
-          <div className="max-w-4xl mx-auto px-4 h-11 flex items-center gap-2.5">
+          <div className="max-w-4xl mx-auto px-1 h-[44px] flex items-center">
             <motion.button
               onClick={() => navigate(backTo)}
-              whileTap={{ scale: 0.82 }}
+              whileTap={{ scale: 0.88 }}
               transition={spring}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-foreground active:bg-secondary/60 transition-colors shrink-0 touch-target"
+              className="flex items-center gap-0 px-2 h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-[22px] h-[22px] -mr-0.5" strokeWidth={2.5} />
+              <span className="text-[17px] font-normal">Back</span>
             </motion.button>
-            <h1 className="text-lg font-bold tracking-tight flex-1 min-w-0">
+            <h1 className="text-[17px] font-semibold tracking-tight flex-1 min-w-0 text-center -ml-16">
               {gradient ? <span className="text-gradient-green">{title}</span> : title}
             </h1>
-            {children}
+            <div className="flex items-center gap-0.5 pr-2 shrink-0">
+              {children}
+            </div>
           </div>
         </div>
       </header>
