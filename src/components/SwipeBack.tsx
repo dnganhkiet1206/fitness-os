@@ -17,7 +17,11 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
 
   // All hooks MUST be called before any conditional return
   const overlayOpacity = useTransform(x, [0, SCREEN_WIDTH * 0.5], [0, 0.15]);
-  const edgeOpacity = useTransform(x, [0, 30, THRESHOLD], [0, 0.6, 1]);
+  const edgeOpacity = useTransform(x, [0, 20, THRESHOLD * 0.6, THRESHOLD], [0, 0.3, 0.7, 1]);
+  const edgeWidth = useTransform(x, [0, THRESHOLD * 0.5, THRESHOLD], [3, 4, 6]);
+  const edgeBlur = useTransform(x, [0, THRESHOLD * 0.6, THRESHOLD], [0, 4, 10]);
+  const edgeScaleY = useTransform(x, [0, THRESHOLD], [0.7, 1]);
+  const edgeFilter = useTransform(edgeBlur, v => `blur(${v}px)`);
 
   const canSwipe = !NO_SWIPE_PAGES.includes(location.pathname);
 
@@ -71,10 +75,14 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative overflow-hidden">
       <motion.div
-        className="fixed left-0 top-0 bottom-0 w-[3px] z-[9999] rounded-r-full pointer-events-none"
+        className="fixed left-0 top-[10%] bottom-[10%] z-[9999] rounded-r-full pointer-events-none"
         style={{
           opacity: edgeOpacity,
-          background: 'linear-gradient(180deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.2))',
+          width: edgeWidth,
+          scaleY: edgeScaleY,
+          filter: edgeFilter,
+          background: 'linear-gradient(180deg, hsl(var(--primary) / 0.8), hsl(var(--primary) / 0.3), hsl(var(--primary) / 0.8))',
+          boxShadow: '0 0 12px hsl(var(--primary) / 0.4)',
         }}
       />
       <motion.div
