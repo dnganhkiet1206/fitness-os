@@ -190,10 +190,11 @@
 
   .glass-card {
     background: hsl(var(--glass-bg));
-    backdrop-filter: blur(20px) saturate(1.4);
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(28px) saturate(1.6);
+    -webkit-backdrop-filter: blur(28px) saturate(1.6);
     border: 1px solid hsl(var(--glass-border));
     border-radius: var(--radius);
+    box-shadow: 0 1px 0 hsl(var(--glass-highlight)) inset, 0 2px 12px hsl(0 0% 0% / 0.1);
   }
 
   .glass-card::before {
@@ -212,9 +213,10 @@
   .metric-card {
     @apply relative rounded-2xl p-5 transition-all duration-300;
     background: hsl(var(--glass-bg));
-    backdrop-filter: blur(20px) saturate(1.4);
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(28px) saturate(1.6);
+    -webkit-backdrop-filter: blur(28px) saturate(1.6);
     border: 1px solid hsl(var(--glass-border));
+    box-shadow: 0 1px 0 hsl(var(--glass-highlight)) inset, 0 2px 12px hsl(0 0% 0% / 0.1);
   }
   .metric-card::before {
     content: '';
