@@ -1,4 +1,4 @@
-// Fitness OS – Mock Data for Dashboard
+// ASCND – Mock Data for Dashboard
 import type {
   UserProfile, DailyLog, BiometricSample, WorkoutSession,
   SleepLog, HabitNudge, WearableSource,

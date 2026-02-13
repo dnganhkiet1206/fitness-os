@@ -1,4 +1,4 @@
-// Fitness OS – Readiness & Recovery Engine
+// ASCND – Readiness & Recovery Engine
 // Evidence-inspired pseudo-formula using HRV (RMSSD), RHR, sleep, training load
 
 import type { ReadinessInput, ReadinessResult } from './types';
