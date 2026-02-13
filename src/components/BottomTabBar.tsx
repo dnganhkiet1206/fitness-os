@@ -18,7 +18,7 @@ const haptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
   }
 };
 
-export function BottomTabBar() {
+export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
   const { lang } = useAppSettings();
   const i18n = t(lang);
   const location = useLocation();
@@ -28,8 +28,10 @@ export function BottomTabBar() {
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout>>();
 
-  // Smart scroll-aware hide/show
+  // Smart scroll-aware hide/show (disabled when autoHide is false)
   useEffect(() => {
+    if (!autoHide) { setVisible(true); return; }
+
     const threshold = 12;
     const handleScroll = () => {
       const currentY = window.scrollY;
@@ -54,7 +56,7 @@ export function BottomTabBar() {
       window.removeEventListener('scroll', handleScroll);
       if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
     };
-  }, [moreOpen]);
+  }, [moreOpen, autoHide]);
 
   // Always show on route change
   useEffect(() => { setVisible(true); }, [location.pathname]);

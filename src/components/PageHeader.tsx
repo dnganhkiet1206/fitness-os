@@ -18,11 +18,8 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
   return (
     <>
       {/* Spacer to prevent content from hiding behind fixed header (includes safe-area) */}
-      {sticky && <div className="h-14 pt-safe" />}
-      <motion.header
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...spring, duration: 0.5 }}
+      {sticky && <div className="h-[calc(env(safe-area-inset-top)+48px)]" />}
+      <header
         className={`${sticky ? 'fixed top-0 left-0 right-0 z-50' : ''} border-b border-border/40`}
         style={{
           background: 'hsl(var(--card) / 0.55)',
@@ -32,13 +29,12 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
         }}
       >
         <div className="pt-safe">
-          <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-2.5">
+          <div className="max-w-4xl mx-auto px-4 py-1.5 flex items-center gap-2.5">
             <motion.button
               onClick={() => navigate(backTo)}
               whileTap={{ scale: 0.82 }}
-              whileHover={{ scale: 1.06 }}
               transition={spring}
-              className="w-11 h-11 rounded-xl flex items-center justify-center text-foreground active:bg-secondary/60 transition-colors shrink-0 touch-target"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-foreground active:bg-secondary/60 transition-colors shrink-0 touch-target"
             >
               <ChevronLeft className="w-5 h-5" />
             </motion.button>
@@ -48,7 +44,7 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
             {children}
           </div>
         </div>
-      </motion.header>
+      </header>
     </>
   );
 }
