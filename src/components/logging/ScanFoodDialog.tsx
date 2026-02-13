@@ -8,6 +8,7 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 import { t } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
+import { useBottomBar } from '@/components/AppLayout';
 
 export interface ScannedFoodItem {
   food_name: string;
@@ -44,6 +45,7 @@ const haptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
 export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDialogProps) {
   const { lang } = useAppSettings();
   const T = t(lang);
+  const { hideBottomBar, showBottomBar } = useBottomBar();
   const [open, setOpen] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>('food');
   const [viewMode, setViewMode] = useState<ViewMode>('camera');
@@ -209,6 +211,7 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
   const handleOpen = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen) {
+      hideBottomBar();
       setCapturedImage(null);
       setResults(null);
       setAnalyzing(false);
@@ -218,6 +221,7 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
       setTimeout(() => startCamera(facingMode), 300);
     } else {
       stopCamera();
+      showBottomBar();
     }
   };
 
@@ -496,7 +500,7 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
 
               {/* Mode hint */}
               {!capturedImage && !analyzing && (
-                <div className="absolute bottom-32 left-0 right-0 z-10 text-center">
+                <div className="absolute bottom-44 left-0 right-0 z-10 text-center">
                   <motion.span
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -509,8 +513,8 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
               )}
 
               {/* Bottom controls */}
-              <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12 pb-8 px-4" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
-                <div className="flex justify-center gap-2 mb-4">
+              <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-16 pb-6 px-4" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}>
+                <div className="flex justify-center gap-3 mb-5">
                   {(Object.keys(modeConfig) as ScanMode[]).map((mode) => {
                     const { icon: Icon, label } = modeConfig[mode];
                     const active = scanMode === mode;

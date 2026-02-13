@@ -1,13 +1,21 @@
 import { useAuth } from '@/hooks/useAuth';
 import { BottomTabBar } from '@/components/BottomTabBar';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, createContext, useContext } from 'react';
+
+// Context to control bottom bar visibility from child components
+const BottomBarContext = createContext<{
+  hideBottomBar: () => void;
+  showBottomBar: () => void;
+}>({ hideBottomBar: () => {}, showBottomBar: () => {} });
+
+export const useBottomBar = () => useContext(BottomBarContext);
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [forceHidden, setForceHidden] = useState(false);
 
   useEffect(() => {
-    // Handle virtual keyboard on Capacitor/iOS
     const handleResize = () => {
       if (window.visualViewport) {
         const diff = window.innerHeight - window.visualViewport.height;
@@ -27,16 +35,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   if (!user) return <div className="pt-safe">{children}</div>;
 
   const isKeyboardOpen = keyboardHeight > 0;
+  const shouldHideBar = isKeyboardOpen || forceHidden;
 
   return (
-    <div className="min-h-screen w-full no-select scroll-container">
-      <main
-        className="pt-safe pb-24 keyboard-aware"
-        style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : undefined}
-      >
-        {children}
-      </main>
-      {!isKeyboardOpen && <BottomTabBar />}
-    </div>
+    <BottomBarContext.Provider value={{ hideBottomBar: () => setForceHidden(true), showBottomBar: () => setForceHidden(false) }}>
+      <div className="min-h-screen w-full no-select scroll-container">
+        <main
+          className="pt-safe pb-24 keyboard-aware"
+          style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : undefined}
+        >
+          {children}
+        </main>
+        {!shouldHideBar && <BottomTabBar />}
+      </div>
+    </BottomBarContext.Provider>
   );
 }
