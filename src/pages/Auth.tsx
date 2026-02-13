@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSettings, t } from '@/hooks/useAppSettings';
 import { LANGUAGES } from '@/lib/i18n';
 import { Globe } from 'lucide-react';
-import { lovable } from '@/integrations/lovable/index';
+import { lovableSafe } from '@/lib/lovable-auth-safe';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
 
@@ -48,10 +48,14 @@ const Auth = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (error) toast.error(error.message);
+    try {
+      const { error } = await lovableSafe.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (error) toast.error(error.message);
+    } catch (e: any) {
+      toast.error(e?.message || 'Google sign-in failed');
+    }
   };
 
   return (

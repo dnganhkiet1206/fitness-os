@@ -10,6 +10,7 @@ import SwipeBack from "@/components/SwipeBack";
 import { AwardCelebrationOverlay } from "@/components/awards/AwardCelebration";
 import { AppLayout } from "@/components/AppLayout";
 import { AppSettingsProvider } from "@/hooks/useAppSettings";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -120,22 +121,24 @@ function AnimatedRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <AppSettingsProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AwardCelebrationOverlay />
-          <BrowserRouter>
-            <AppLayout>
-              <AnimatedRoutes />
-            </AppLayout>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AppSettingsProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppSettingsProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <AwardCelebrationOverlay />
+            <BrowserRouter>
+              <AppLayout>
+                <AnimatedRoutes />
+              </AppLayout>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AppSettingsProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
