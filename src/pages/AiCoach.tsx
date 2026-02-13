@@ -206,7 +206,7 @@ export default function AiCoach() {
   };
 
   return (
-    <div className="fixed inset-0 bg-background flex flex-col">
+    <div className="bg-background flex flex-col" style={{ position: 'fixed', inset: 0, height: '100dvh' }}>
       <PageHeader title={i18n.aiCoachTitle} sticky={false}>
         <div className="flex gap-1">
           <Button variant="ghost" size="icon" onClick={() => setShowHistory(!showHistory)} className="rounded-xl">
@@ -315,14 +315,16 @@ export default function AiCoach() {
         </div>
       </div>
 
-      {/* Fixed input above bottom tab bar - never moves */}
-      <div className="shrink-0 border-t border-border/50"
+      {/* Fixed chat input */}
+      <div
+        className="shrink-0 border-t border-border/50"
         style={{
           background: 'hsl(var(--background) / 0.95)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          paddingBottom: 80,
-        }}>
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)',
+        }}
+      >
         <div className="max-w-3xl mx-auto px-4 py-2.5 space-y-1">
           <form onSubmit={e => { e.preventDefault(); send(input); }} className="flex gap-2">
             <Input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
