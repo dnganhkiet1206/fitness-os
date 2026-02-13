@@ -27,8 +27,8 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
         WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
       }}
     >
-      <div className="pt-safe">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2.5">
+      <div>
+        <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-2.5">
         <motion.button
           onClick={() => navigate(backTo)}
           whileTap={{ scale: 0.82 }}
