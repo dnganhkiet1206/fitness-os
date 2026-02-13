@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { useEffect, useState, createContext, useContext } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const BottomBarContext = createContext<{
   hideBottomBar: () => void;
@@ -9,10 +10,16 @@ const BottomBarContext = createContext<{
 
 export const useBottomBar = () => useContext(BottomBarContext);
 
+// Pages where bottom bar should NOT auto-hide on scroll
+const NO_AUTOHIDE_ROUTES = ['/ai-coach'];
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const location = useLocation();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [forceHidden, setForceHidden] = useState(false);
+
+  const autoHide = !NO_AUTOHIDE_ROUTES.includes(location.pathname);
 
   useEffect(() => {
     const handleResize = () => {
@@ -45,9 +52,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         >
           {children}
         </main>
-        {/* Always render so ScanFoodDialog stays mounted; hide visually with CSS */}
-        <div style={shouldHideBar ? { display: 'none' } : undefined}>
-          <BottomTabBar />
+        {/* Use visibility instead of display:none to keep animations working */}
+        <div style={shouldHideBar ? { visibility: 'hidden', pointerEvents: 'none' } : undefined}>
+          <BottomTabBar autoHide={autoHide} />
         </div>
       </div>
     </BottomBarContext.Provider>
