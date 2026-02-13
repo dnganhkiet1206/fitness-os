@@ -2,11 +2,12 @@ import { Home, Utensils, Dumbbell, TrendingUp, LayoutGrid } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { t } from '@/lib/i18n';
+import ScanFoodDialog from '@/components/logging/ScanFoodDialog';
 import {
-  Pill, Moon, Droplets, Heart, BarChart3, Target, Medal, Swords, ShoppingCart, Sparkles, Settings, Footprints
+  Pill, Moon, Droplets, Heart, BarChart3, Target, Medal, Swords, ShoppingCart, Sparkles, Footprints, Camera
 } from 'lucide-react';
 
 const spring = { type: 'spring' as const, stiffness: 500, damping: 35 };
@@ -32,6 +33,7 @@ export function BottomTabBar() {
   ];
 
   const moreItems = [
+    { title: i18n.scanFoodTitle || (lang === 'vi' ? 'Quét thực phẩm' : 'Scan Food'), url: '__scan__', icon: Camera },
     { title: i18n.navSupplements, url: '/supplements', icon: Pill },
     { title: i18n.navSleep, url: '/sleep', icon: Moon },
     { title: i18n.navWater, url: '/water', icon: Droplets },
@@ -43,11 +45,12 @@ export function BottomTabBar() {
     { title: i18n.navChallenges, url: '/challenges', icon: Swords },
     { title: i18n.navGrocery, url: '/grocery', icon: ShoppingCart },
     { title: i18n.navAiCoach, url: '/ai-coach', icon: Sparkles },
-    { title: i18n.navSettings, url: '/settings', icon: Settings },
   ];
 
-  const isMoreActive = moreItems.some(item => location.pathname === item.url);
-  const isActive = (url: string) => url === '/' ? location.pathname === '/' : location.pathname.startsWith(url);
+  const scanTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const isMoreActive = moreItems.some(item => item.url !== '__scan__' && location.pathname === item.url);
+  const isActive = (url: string) => url === '__scan__' ? false : url === '/' ? location.pathname === '/' : location.pathname.startsWith(url);
 
   return (
     <>
@@ -86,8 +89,13 @@ export function BottomTabBar() {
                     whileTap={{ scale: 0.85 }}
                     onClick={() => {
                       haptic('medium');
-                      navigate(item.url);
-                      setMoreOpen(false);
+                      if (item.url === '__scan__') {
+                        setMoreOpen(false);
+                        setTimeout(() => scanTriggerRef.current?.click(), 200);
+                      } else {
+                        navigate(item.url);
+                        setMoreOpen(false);
+                      }
                     }}
                     className={`flex flex-col items-center gap-1.5 p-2.5 rounded-2xl transition-colors ${
                       active ? 'bg-primary/15' : 'active:bg-secondary/60'
@@ -190,6 +198,11 @@ export function BottomTabBar() {
           </motion.button>
         </div>
       </div>
+
+      {/* Scan Food Dialog triggered from More menu */}
+      <ScanFoodDialog onFoodsScanned={() => {}}>
+        <button ref={scanTriggerRef} className="hidden" />
+      </ScanFoodDialog>
     </>
   );
 }
