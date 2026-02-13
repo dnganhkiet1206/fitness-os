@@ -51,6 +51,8 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
       }
       const shouldNavigate = info.offset.x > THRESHOLD || info.velocity.x > 600;
       if (shouldNavigate) {
+        // Haptic feedback
+        if (navigator.vibrate) navigator.vibrate(12);
         animate(x, SCREEN_WIDTH, {
           type: 'spring', stiffness: 300, damping: 30,
           onComplete: () => { navigate(-1); requestAnimationFrame(() => x.set(0)); },
