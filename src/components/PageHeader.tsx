@@ -27,13 +27,13 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
         WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
       }}
     >
-      <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2.5">
+      <div className="max-w-4xl mx-auto px-4 pt-safe py-3 flex items-center gap-2.5">
         <motion.button
           onClick={() => navigate(backTo)}
           whileTap={{ scale: 0.82 }}
           whileHover={{ scale: 1.06 }}
           transition={spring}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-foreground active:bg-secondary/60 transition-colors shrink-0"
+          className="w-11 h-11 rounded-xl flex items-center justify-center text-foreground active:bg-secondary/60 transition-colors shrink-0 touch-target"
         >
           <ChevronLeft className="w-5 h-5" />
         </motion.button>
