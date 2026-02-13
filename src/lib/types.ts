@@ -1,4 +1,4 @@
-// Fitness OS – Core Types
+// ASCND – Core Types
 
 export interface UserProfile {
   id: string;

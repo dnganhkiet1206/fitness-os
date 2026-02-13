@@ -1,4 +1,4 @@
-// Fitness calculation utilities
+// ASCND – Fitness calculation utilities
 
 /** Mifflin-St Jeor BMR */
 export function calcBMR(weight_kg: number, height_cm: number, age: number, sex: 'male' | 'female' | 'other'): number {
