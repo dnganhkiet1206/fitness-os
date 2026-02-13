@@ -258,7 +258,7 @@ export default function AiCoach() {
         )}
       </AnimatePresence>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto pb-32">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
           {messages.length === 0 && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16 space-y-6">
@@ -315,7 +315,7 @@ export default function AiCoach() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/80 backdrop-blur-xl pb-safe">
+      <div className="shrink-0 border-t border-border/50 bg-background/80 backdrop-blur-xl pb-24">
         <div className="max-w-3xl mx-auto px-4 py-3 space-y-1.5">
           <form onSubmit={e => { e.preventDefault(); send(input); }} className="flex gap-2">
             <Input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}

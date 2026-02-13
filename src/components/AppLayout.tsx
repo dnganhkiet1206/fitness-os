@@ -2,7 +2,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { useEffect, useState, createContext, useContext } from 'react';
 
-// Context to control bottom bar visibility from child components
 const BottomBarContext = createContext<{
   hideBottomBar: () => void;
   showBottomBar: () => void;
@@ -46,7 +45,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         >
           {children}
         </main>
-        {!shouldHideBar && <BottomTabBar />}
+        {/* Always render so ScanFoodDialog stays mounted; hide visually with CSS */}
+        <div style={shouldHideBar ? { display: 'none' } : undefined}>
+          <BottomTabBar />
+        </div>
       </div>
     </BottomBarContext.Provider>
   );
