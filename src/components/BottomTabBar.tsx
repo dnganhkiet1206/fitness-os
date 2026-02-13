@@ -97,7 +97,7 @@ export function BottomTabBar() {
                         setMoreOpen(false);
                       }
                     }}
-                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-2xl transition-colors ${
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-colors touch-target ${
                       active ? 'bg-primary/15' : 'active:bg-secondary/60'
                     }`}
                   >
@@ -119,9 +119,9 @@ export function BottomTabBar() {
       </AnimatePresence>
 
       {/* Bottom tab bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-[80] pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 z-[80] pb-safe pl-safe pr-safe">
         <div
-          className="mx-3 mb-2 rounded-[28px] flex items-center justify-around px-2 py-1.5 border border-border/10"
+          className="mx-3 mb-2 rounded-[28px] flex items-center justify-around px-2 py-2 border border-border/10"
           style={{
             background: 'hsl(var(--card) / 0.92)',
             backdropFilter: 'blur(40px) saturate(2)',
@@ -137,7 +137,7 @@ export function BottomTabBar() {
                 to={tab.url}
                 end={tab.url === '/'}
                 onClick={() => haptic(active ? 'light' : 'medium')}
-                className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all relative"
+                className="flex flex-col items-center gap-0.5 px-4 py-2.5 rounded-2xl transition-all relative touch-target"
                 activeClassName=""
               >
                 {active && (
@@ -175,7 +175,7 @@ export function BottomTabBar() {
               haptic('medium');
               setMoreOpen(prev => !prev);
             }}
-            className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all relative"
+            className="flex flex-col items-center gap-0.5 px-4 py-2.5 rounded-2xl transition-all relative touch-target"
           >
             {(moreOpen || isMoreActive) && (
               <motion.div
