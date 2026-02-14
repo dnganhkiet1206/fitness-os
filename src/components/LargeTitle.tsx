@@ -57,7 +57,7 @@ export default function LargeTitle({ title, children }: LargeTitleProps) {
 
       {/* Large title — visible at top */}
       <div
-        className="px-4 pt-1 pb-2 max-w-4xl mx-auto"
+        className="px-4 pt-0 pb-1 max-w-4xl mx-auto"
         style={{
           opacity: largeTitleOpacity,
           transform: `scale(${largeTitleScale}) translateY(${largeTitleY}px)`,
@@ -65,7 +65,7 @@ export default function LargeTitle({ title, children }: LargeTitleProps) {
           pointerEvents: largeTitleOpacity < 0.1 ? 'none' : 'auto',
         }}
       >
-        <h1 className="text-[34px] font-bold tracking-tight leading-tight">{title}</h1>
+        <h1 className="text-[26px] font-bold tracking-tight leading-snug">{title}</h1>
       </div>
     </>
   );
