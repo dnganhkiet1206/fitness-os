@@ -102,8 +102,9 @@ const WaterTracking = () => {
 
   const removeLastGlass = useMutation({
     mutationFn: async () => {
-      if (!todayLogs || todayLogs.length === 0) return;
-      const last = todayLogs[todayLogs.length - 1];
+      const logs = Array.isArray(todayLogs) ? todayLogs : [];
+      if (logs.length === 0) return;
+      const last = logs[logs.length - 1];
       const { error } = await supabase.from('water_logs').delete().eq('id', last.id);
       if (error) throw error;
     },
@@ -128,12 +129,14 @@ const WaterTracking = () => {
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
 
-  const todayTotal = (todayLogs ?? []).reduce((s, l) => s + l.amount_ml, 0);
+  const safeTodayLogs = Array.isArray(todayLogs) ? todayLogs : [];
+  const safeWeekData = Array.isArray(weekData) ? weekData : [];
+  const todayTotal = safeTodayLogs.reduce((s, l) => s + l.amount_ml, 0);
   const pct = Math.min((todayTotal / target) * 100, 100);
   const glasses = Math.floor(todayTotal / GLASS_ML);
 
   const weekChart = days7.map(day => {
-    const total = (weekData ?? []).filter(w => w.date === day).reduce((s, w) => s + w.amount_ml, 0);
+    const total = safeWeekData.filter(w => w.date === day).reduce((s, w) => s + w.amount_ml, 0);
     const label = new Date(day + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short' });
     return { day: label, ml: total, hit: total >= target };
   });
@@ -182,7 +185,7 @@ const WaterTracking = () => {
                     size="icon"
                     className="rounded-full w-12 h-12 border-border/60"
                     onClick={() => removeLastGlass.mutate()}
-                    disabled={!todayLogs || todayLogs.length === 0}
+                    disabled={safeTodayLogs.length === 0}
                   >
                     <Minus className="w-5 h-5" />
                   </Button>
@@ -242,15 +245,15 @@ const WaterTracking = () => {
           </Card>
         </motion.div>
 
-        {todayLogs && todayLogs.length > 0 && (
+        {safeTodayLogs.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: 0.2 }}>
             <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">{i18n.waterTodayLog} ({todayLogs.length} {i18n.waterTimes})</CardTitle>
+                <CardTitle className="text-base">{i18n.waterTodayLog} ({safeTodayLogs.length} {i18n.waterTimes})</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {todayLogs.map((log, i) => (
+                  {safeTodayLogs.map((log, i) => (
                     <div key={log.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/60 text-sm">
                       <Droplets className="w-3 h-3 text-[hsl(var(--metric-blue))]" />
                       <span>{log.amount_ml}ml</span>
