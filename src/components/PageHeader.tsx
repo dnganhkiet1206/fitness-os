@@ -35,7 +35,7 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
             transition={spring}
             className="flex items-center justify-center w-[44px] h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"
           >
-            <ChevronLeft className="w-[22px] h-[22px]" strokeWidth={2.5} />
+            <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={2} />
           </motion.button>
           <h1 className="text-[17px] font-semibold tracking-tight flex-1 min-w-0 text-center -ml-[44px]">
             {gradient ? <span className="text-gradient-gold">{title}</span> : title}
