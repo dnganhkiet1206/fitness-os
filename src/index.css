@@ -7,47 +7,47 @@
 @layer base {
   :root,
   .dark {
-    --background: 230 18% 4%;
-    --foreground: 40 10% 92%;
+    --background: 240 10% 3%;
+    --foreground: 0 0% 93%;
 
-    --card: 230 14% 7%;
-    --card-foreground: 40 10% 92%;
+    --card: 240 8% 6%;
+    --card-foreground: 0 0% 93%;
 
-    --popover: 230 14% 7%;
-    --popover-foreground: 40 10% 92%;
+    --popover: 240 8% 6%;
+    --popover-foreground: 0 0% 93%;
 
-    --primary: 38 92% 50%;
-    --primary-foreground: 230 18% 4%;
+    --primary: 220 14% 70%;
+    --primary-foreground: 240 10% 3%;
 
-    --secondary: 230 10% 11%;
-    --secondary-foreground: 40 8% 72%;
+    --secondary: 240 6% 10%;
+    --secondary-foreground: 0 0% 60%;
 
-    --muted: 230 10% 10%;
-    --muted-foreground: 40 6% 44%;
+    --muted: 240 6% 9%;
+    --muted-foreground: 0 0% 42%;
 
-    --accent: 230 10% 13%;
-    --accent-foreground: 40 10% 92%;
+    --accent: 240 6% 12%;
+    --accent-foreground: 0 0% 93%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 230 10% 12%;
-    --input: 230 10% 12%;
-    --ring: 38 92% 50%;
+    --border: 240 6% 11%;
+    --input: 240 6% 11%;
+    --ring: 220 14% 70%;
 
     --radius: 1rem;
 
-    /* ASCND premium tokens */
-    --gold: 38 92% 50%;
-    --gold-light: 42 90% 62%;
-    --gold-glow: 38 92% 50% / 0.15;
-    --champagne: 35 40% 78%;
+    /* Premium silver tokens */
+    --gold: 220 14% 70%;
+    --gold-light: 220 10% 80%;
+    --gold-glow: 220 14% 70% / 0.12;
+    --champagne: 220 8% 65%;
 
     --readiness-green: 160 70% 42%;
-    --readiness-yellow: 38 92% 50%;
+    --readiness-yellow: 45 80% 55%;
     --readiness-red: 0 72% 51%;
     --readiness-green-glow: 160 70% 42% / 0.15;
-    --readiness-yellow-glow: 38 92% 50% / 0.15;
+    --readiness-yellow-glow: 45 80% 55% / 0.15;
     --readiness-red-glow: 0 72% 51% / 0.15;
 
     --metric-blue: 215 80% 58%;
@@ -55,70 +55,70 @@
     --metric-cyan: 188 80% 48%;
     --metric-orange: 25 88% 55%;
 
-    --chart-1: 38 92% 50%;
+    --chart-1: 220 14% 70%;
     --chart-2: 215 80% 58%;
     --chart-3: 160 70% 42%;
     --chart-4: 265 70% 60%;
     --chart-5: 0 72% 51%;
 
-    --sidebar-background: 230 18% 4%;
-    --sidebar-foreground: 40 8% 72%;
-    --sidebar-primary: 38 92% 50%;
-    --sidebar-primary-foreground: 230 18% 4%;
-    --sidebar-accent: 230 10% 11%;
-    --sidebar-accent-foreground: 40 10% 92%;
-    --sidebar-border: 230 10% 12%;
-    --sidebar-ring: 38 92% 50%;
+    --sidebar-background: 240 10% 3%;
+    --sidebar-foreground: 0 0% 60%;
+    --sidebar-primary: 220 14% 70%;
+    --sidebar-primary-foreground: 240 10% 3%;
+    --sidebar-accent: 240 6% 10%;
+    --sidebar-accent-foreground: 0 0% 93%;
+    --sidebar-border: 240 6% 11%;
+    --sidebar-ring: 220 14% 70%;
 
-    --glass-bg: 230 18% 6% / 0.7;
-    --glass-border: 38 92% 50% / 0.06;
-    --glass-highlight: 38 60% 70% / 0.04;
+    --glass-bg: 240 10% 5% / 0.7;
+    --glass-border: 0 0% 100% / 0.06;
+    --glass-highlight: 0 0% 100% / 0.03;
 
     --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
   }
 
   .light {
-    --background: 40 20% 97%;
-    --foreground: 230 18% 8%;
+    --background: 0 0% 96%;
+    --foreground: 240 10% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 230 18% 8%;
+    --card-foreground: 240 10% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 230 18% 8%;
+    --popover-foreground: 240 10% 8%;
 
-    --primary: 38 85% 45%;
+    --primary: 240 6% 25%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 38 14% 92%;
-    --secondary-foreground: 230 10% 30%;
+    --secondary: 240 4% 92%;
+    --secondary-foreground: 240 6% 30%;
 
-    --muted: 38 14% 92%;
-    --muted-foreground: 230 8% 46%;
+    --muted: 240 4% 92%;
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 38 14% 90%;
-    --accent-foreground: 230 18% 8%;
+    --accent: 240 4% 90%;
+    --accent-foreground: 240 10% 8%;
 
     --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 38 14% 86%;
-    --input: 38 14% 86%;
-    --ring: 38 85% 45%;
+    --border: 240 4% 86%;
+    --input: 240 4% 86%;
+    --ring: 240 6% 25%;
 
     --radius: 1rem;
 
-    --gold: 38 85% 45%;
-    --gold-light: 42 80% 58%;
-    --gold-glow: 38 85% 45% / 0.12;
-    --champagne: 35 35% 65%;
+    --gold: 240 6% 25%;
+    --gold-light: 240 4% 40%;
+    --gold-glow: 240 6% 25% / 0.1;
+    --champagne: 240 4% 50%;
 
     --readiness-green: 160 65% 38%;
-    --readiness-yellow: 38 85% 45%;
+    --readiness-yellow: 45 80% 50%;
     --readiness-red: 0 72% 48%;
     --readiness-green-glow: 160 65% 38% / 0.12;
-    --readiness-yellow-glow: 38 85% 45% / 0.12;
+    --readiness-yellow-glow: 45 80% 50% / 0.12;
     --readiness-red-glow: 0 72% 48% / 0.12;
 
     --metric-blue: 215 80% 52%;
@@ -126,24 +126,24 @@
     --metric-cyan: 188 80% 40%;
     --metric-orange: 25 88% 50%;
 
-    --chart-1: 38 85% 45%;
+    --chart-1: 240 6% 25%;
     --chart-2: 215 80% 52%;
     --chart-3: 160 65% 38%;
     --chart-4: 265 70% 55%;
     --chart-5: 0 72% 48%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 230 10% 30%;
-    --sidebar-primary: 38 85% 45%;
+    --sidebar-foreground: 240 6% 30%;
+    --sidebar-primary: 240 6% 25%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 38 14% 92%;
-    --sidebar-accent-foreground: 230 18% 8%;
-    --sidebar-border: 38 14% 86%;
-    --sidebar-ring: 38 85% 45%;
+    --sidebar-accent: 240 4% 92%;
+    --sidebar-accent-foreground: 240 10% 8%;
+    --sidebar-border: 240 4% 86%;
+    --sidebar-ring: 240 6% 25%;
 
     --glass-bg: 0 0% 100% / 0.7;
-    --glass-border: 230 18% 8% / 0.08;
-    --glass-highlight: 38 60% 50% / 0.04;
+    --glass-border: 240 10% 8% / 0.08;
+    --glass-highlight: 0 0% 100% / 0.04;
 
     --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
@@ -232,7 +232,7 @@
     border-radius: inherit;
     background: linear-gradient(
       145deg,
-      hsl(38 60% 50% / 0.03) 0%,
+      hsl(0 0% 100% / 0.02) 0%,
       transparent 50%
     );
     pointer-events: none;
@@ -253,13 +253,13 @@
     border-radius: inherit;
     background: linear-gradient(
       160deg,
-      hsl(38 60% 50% / 0.03) 0%,
+      hsl(0 0% 100% / 0.02) 0%,
       transparent 40%
     );
     pointer-events: none;
   }
   .metric-card:hover {
-    border-color: hsl(38 92% 50% / 0.12);
+    border-color: hsl(0 0% 100% / 0.1);
     box-shadow: 0 8px 32px hsl(0 0% 0% / 0.4);
   }
 
@@ -272,14 +272,14 @@
   }
 
   .text-gradient-gold {
-    background: linear-gradient(135deg, hsl(var(--gold)), hsl(var(--gold-light)));
+    background: linear-gradient(135deg, hsl(0 0% 95%), hsl(0 0% 65%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .text-gradient-green {
-    background: linear-gradient(135deg, hsl(var(--gold)), hsl(var(--champagne)));
+    background: linear-gradient(135deg, hsl(0 0% 90%), hsl(0 0% 65%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -316,9 +316,9 @@
     background: linear-gradient(
       105deg,
       transparent 40%,
-      hsl(38 60% 50% / 0.02) 45%,
-      hsl(38 60% 50% / 0.04) 50%,
-      hsl(38 60% 50% / 0.02) 55%,
+      hsl(0 0% 100% / 0.015) 45%,
+      hsl(0 0% 100% / 0.03) 50%,
+      hsl(0 0% 100% / 0.015) 55%,
       transparent 60%
     );
     animation: shimmer 6s ease-in-out infinite;
@@ -328,12 +328,12 @@
   /* Premium vibrancy card */
   .vibrancy-card {
     @apply relative rounded-2xl p-5 overflow-hidden;
-    background: hsl(230 14% 7% / 0.85);
+    background: hsl(240 8% 6% / 0.85);
     backdrop-filter: blur(40px) saturate(1.8);
     -webkit-backdrop-filter: blur(40px) saturate(1.8);
-    border: 1px solid hsl(38 60% 50% / 0.08);
+    border: 1px solid hsl(0 0% 100% / 0.06);
     box-shadow: 
-      0 0 0 0.5px hsl(38 60% 50% / 0.05) inset,
+      0 0 0 0.5px hsl(0 0% 100% / 0.04) inset,
       0 4px 24px hsl(0 0% 0% / 0.4),
       0 1px 3px hsl(0 0% 0% / 0.3);
   }
@@ -345,7 +345,7 @@
     border-radius: inherit;
     background: linear-gradient(
       170deg,
-      hsl(38 60% 50% / 0.04) 0%,
+      hsl(0 0% 100% / 0.03) 0%,
       transparent 30%
     );
     pointer-events: none;
