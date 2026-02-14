@@ -31,12 +31,14 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
   const scrollTimeout = useRef<ReturnType<typeof setTimeout>>();
   const scanTriggerRef = useRef<HTMLButtonElement>(null);
 
-  // Scroll-aware hide/show
+  // Scroll-aware hide/show — listen on .scroll-container instead of window
   useEffect(() => {
     if (!autoHide) { setVisible(true); return; }
+    const scroller = document.querySelector('.scroll-container') as HTMLElement | null;
+    if (!scroller) { setVisible(true); return; }
     const threshold = 16;
     const handleScroll = () => {
-      const currentY = window.scrollY;
+      const currentY = scroller.scrollTop;
       const delta = currentY - lastScrollY.current;
       if (aiOpen) { lastScrollY.current = currentY; return; }
       if (delta > threshold && currentY > 80) setVisible(false);
@@ -45,9 +47,9 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
       if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
       scrollTimeout.current = setTimeout(() => setVisible(true), 800);
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    scroller.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      scroller.removeEventListener('scroll', handleScroll);
       if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
     };
   }, [aiOpen, autoHide]);

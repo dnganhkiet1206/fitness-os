@@ -4,7 +4,7 @@ import PullToRefresh from '@/components/PullToRefresh';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Scale, Ruler, Camera, Trash2, Plus, TrendingUp, TrendingDown } from 'lucide-react';
-import PageHeader from '@/components/PageHeader';
+import LargeTitle from '@/components/LargeTitle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -126,7 +126,7 @@ export default function Progress() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh} className="bg-background">
-      <PageHeader title={i18n.progressTitle} />
+      <LargeTitle title={i18n.progressTitle} />
 
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-4xl mx-auto px-4 py-5 space-y-5">
         <Tabs defaultValue="weight" className="space-y-6">

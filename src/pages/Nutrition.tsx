@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import PageHeader from '@/components/PageHeader';
+import LargeTitle from '@/components/LargeTitle';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useFoodSearch, useFavoriteFoods, useRecentFoods, useToggleFavoriteFood, useMealPlans, useCreateMealPlan, useDeleteMealPlan } from '@/hooks/useDashboardData';
@@ -63,7 +63,7 @@ const Nutrition = () => {
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(38 92% 50%), transparent 70%)' }} />
       </div>
 
-      <PageHeader title={i18n.nutritionTitle} gradient />
+      <LargeTitle title={i18n.nutritionTitle} />
 
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-3xl mx-auto px-4 py-6 space-y-6">
         <Tabs defaultValue="foods" className="w-full">
