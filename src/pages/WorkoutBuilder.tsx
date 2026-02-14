@@ -100,8 +100,6 @@ const WorkoutBuilder = () => {
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
       </div>
 
-      <LargeTitle title={i18n.workoutsTitle} />
-
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }} className="max-w-3xl mx-auto px-4 py-3 space-y-5">
         <motion.div variants={fadeUp} className="flex justify-between items-center">
           <h3 className="text-sm font-semibold">Templates ({templates?.length ?? 0})</h3>

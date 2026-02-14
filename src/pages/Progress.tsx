@@ -126,8 +126,6 @@ export default function Progress() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh} className="bg-background">
-      <LargeTitle title={i18n.progressTitle} />
-
       <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }} className="max-w-4xl mx-auto px-4 py-3 space-y-3">
         <Tabs defaultValue="weight" className="space-y-4">
           <TabsList className="bg-secondary/60">
