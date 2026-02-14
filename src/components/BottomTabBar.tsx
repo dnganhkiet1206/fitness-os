@@ -1,4 +1,4 @@
-import { Home, Utensils, Dumbbell, TrendingUp, Sparkles, Camera, Heart, Moon, X } from 'lucide-react';
+import { Home, Utensils, Dumbbell, TrendingUp, Sparkles, Camera, Heart, Moon, Droplets, Footprints, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
@@ -18,6 +18,8 @@ const AI_ITEMS = [
   { key: 'coach', icon: Sparkles, label: { en: 'AI Coach', vi: 'AI Coach' }, url: '/ai-coach' },
   { key: 'bio', icon: Heart, label: { en: 'Biometrics', vi: 'Sinh trắc học' }, url: '/biometrics' },
   { key: 'sleep', icon: Moon, label: { en: 'Sleep', vi: 'Giấc ngủ' }, url: '/sleep' },
+  { key: 'water', icon: Droplets, label: { en: 'Water', vi: 'Nước uống' }, url: '/water' },
+  { key: 'steps', icon: Footprints, label: { en: 'Steps', vi: 'Bước đi' }, url: '/steps' },
 ] as const;
 
 export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
@@ -87,7 +89,7 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
               className="fixed bottom-24 left-4 right-4 z-[95]"
             >
               <div
-                className="rounded-3xl p-5 grid grid-cols-2 gap-3"
+                className="rounded-3xl p-5 grid grid-cols-3 gap-3"
                 style={{
                   background: 'hsl(240 8% 8% / 0.95)',
                   backdropFilter: 'blur(40px) saturate(1.8)',
