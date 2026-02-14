@@ -26,7 +26,8 @@ export default function WaterWidget() {
         .eq('user_id', user!.id)
         .eq('date', dateStr);
       if (error) throw error;
-      return (data ?? []).reduce((s, r) => s + r.amount_ml, 0);
+      const arr = Array.isArray(data) ? data : [];
+      return arr.reduce((s: number, r: any) => s + (r.amount_ml || 0), 0);
     },
   });
 
