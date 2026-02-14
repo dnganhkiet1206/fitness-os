@@ -22,10 +22,11 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
         className={`${sticky ? 'fixed top-0 left-0 right-0 z-50' : ''}`}
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: 'hsl(var(--background) / 0.72)',
-          backdropFilter: 'blur(20px) saturate(1.8)',
-          WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
-          borderBottom: '0.5px solid hsl(var(--border) / 0.6)',
+          background: 'hsl(var(--glass-bg))',
+          backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
+          WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
+          borderBottom: '0.5px solid hsl(var(--glass-border))',
+          boxShadow: 'var(--glass-inner-shadow), var(--glass-shadow)',
         }}
       >
         <div className="max-w-4xl mx-auto px-1 h-[44px] flex items-center">

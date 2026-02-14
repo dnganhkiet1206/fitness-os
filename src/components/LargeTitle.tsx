@@ -31,15 +31,16 @@ export default function LargeTitle({ title, children }: LargeTitleProps) {
 
   return (
     <>
-      {/* Inline title bar — appears on scroll */}
+      {/* iOS 26 Liquid Glass inline title bar */}
       <div
         className="sticky top-0 z-40 shrink-0"
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: `hsl(var(--background) / ${0.72 + progress * 0.2})`,
-          backdropFilter: 'blur(20px) saturate(1.8)',
-          WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
-          borderBottom: `0.5px solid hsl(var(--border) / ${barBorder})`,
+          background: `hsl(var(--glass-bg))`,
+          backdropFilter: `blur(var(--glass-blur)) saturate(var(--glass-saturate))`,
+          WebkitBackdropFilter: `blur(var(--glass-blur)) saturate(var(--glass-saturate))`,
+          borderBottom: `0.5px solid hsl(var(--glass-border) / ${barBorder})`,
+          boxShadow: progress > 0.9 ? 'var(--glass-shadow)' : 'none',
         }}
       >
         <div className="max-w-4xl mx-auto px-4 h-[44px] flex items-center justify-center relative">
