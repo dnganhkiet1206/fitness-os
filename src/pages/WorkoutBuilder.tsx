@@ -102,7 +102,7 @@ const WorkoutBuilder = () => {
 
       <LargeTitle title={i18n.workoutsTitle} />
 
-      <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }} className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+      <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }} className="max-w-3xl mx-auto px-4 py-3 space-y-5">
         <motion.div variants={fadeUp} className="flex justify-between items-center">
           <h3 className="text-sm font-semibold">Templates ({templates?.length ?? 0})</h3>
           <div className="flex gap-2">
