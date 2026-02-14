@@ -64,7 +64,7 @@ const WaterTracking = () => {
         .eq('user_id', user!.id)
         .eq('date', today)
         .order('logged_at', { ascending: true });
-      return data ?? [];
+      return Array.isArray(data) ? data : [];
     },
     enabled: !!user,
   });
@@ -79,7 +79,7 @@ const WaterTracking = () => {
         .eq('user_id', user!.id)
         .gte('date', days7[0])
         .lte('date', days7[6]);
-      return data ?? [];
+      return Array.isArray(data) ? data : [];
     },
     enabled: !!user,
   });
