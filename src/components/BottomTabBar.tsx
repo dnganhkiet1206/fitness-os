@@ -1,64 +1,57 @@
-import { Home, Utensils, Dumbbell, TrendingUp, LayoutGrid } from 'lucide-react';
+import { Home, Utensils, Dumbbell, TrendingUp, Sparkles, Camera, Heart, Moon, X } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { t } from '@/lib/i18n';
 import ScanFoodDialog from '@/components/logging/ScanFoodDialog';
-import {
-  Pill, Moon, Droplets, Heart, BarChart3, Target, Medal, Swords, ShoppingCart, Sparkles, Footprints, Camera
-} from 'lucide-react';
 
 const spring = { type: 'spring' as const, stiffness: 500, damping: 35 };
 
-const haptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
-  if ('vibrate' in navigator) {
-    navigator.vibrate(style === 'light' ? 8 : style === 'medium' ? 15 : 25);
-  }
+const haptic = (style: 'light' | 'medium' = 'light') => {
+  if ('vibrate' in navigator) navigator.vibrate(style === 'light' ? 8 : 15);
 };
+
+const AI_ITEMS = [
+  { key: 'scan', icon: Camera, label: { en: 'Scan Food', vi: 'Quét thực phẩm' }, url: '__scan__' },
+  { key: 'coach', icon: Sparkles, label: { en: 'AI Coach', vi: 'AI Coach' }, url: '/ai-coach' },
+  { key: 'bio', icon: Heart, label: { en: 'Biometrics', vi: 'Sinh trắc học' }, url: '/biometrics' },
+  { key: 'sleep', icon: Moon, label: { en: 'Sleep', vi: 'Giấc ngủ' }, url: '/sleep' },
+] as const;
 
 export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
   const { lang } = useAppSettings();
   const i18n = t(lang);
   const location = useLocation();
   const navigate = useNavigate();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const scanTriggerRef = useRef<HTMLButtonElement>(null);
 
-  // Smart scroll-aware hide/show (disabled when autoHide is false)
+  // Scroll-aware hide/show
   useEffect(() => {
     if (!autoHide) { setVisible(true); return; }
-
     const threshold = 16;
     const handleScroll = () => {
       const currentY = window.scrollY;
       const delta = currentY - lastScrollY.current;
-
-      if (moreOpen) { lastScrollY.current = currentY; return; }
-
-      if (delta > threshold && currentY > 80) {
-        setVisible(false);
-      } else if (delta < -threshold || currentY < 30) {
-        setVisible(true);
-      }
+      if (aiOpen) { lastScrollY.current = currentY; return; }
+      if (delta > threshold && currentY > 80) setVisible(false);
+      else if (delta < -threshold || currentY < 30) setVisible(true);
       lastScrollY.current = currentY;
-
-      // Auto-show after scroll stops
       if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
       scrollTimeout.current = setTimeout(() => setVisible(true), 800);
     };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
     };
-  }, [moreOpen, autoHide]);
+  }, [aiOpen, autoHide]);
 
-  // Always show on route change
   useEffect(() => { setVisible(true); }, [location.pathname]);
 
   const tabs = [
@@ -68,112 +61,92 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
     { title: i18n.navProgress, url: '/progress', icon: TrendingUp },
   ];
 
-  const moreItems = [
-    { title: i18n.scanFoodTitle || (lang === 'vi' ? 'Quét thực phẩm' : 'Scan Food'), url: '__scan__', icon: Camera },
-    { title: i18n.navSupplements, url: '/supplements', icon: Pill },
-    { title: i18n.navSleep, url: '/sleep', icon: Moon },
-    { title: i18n.navWater, url: '/water', icon: Droplets },
-    { title: i18n.navBiometrics, url: '/biometrics', icon: Heart },
-    { title: i18n.navSteps, url: '/steps', icon: Footprints },
-    { title: i18n.navWeeklyReview, url: '/weekly-review', icon: BarChart3 },
-    { title: i18n.navSmartGoals, url: '/smart-goals', icon: Target },
-    { title: i18n.navAwards, url: '/awards', icon: Medal },
-    { title: i18n.navChallenges, url: '/challenges', icon: Swords },
-    { title: i18n.navGrocery, url: '/grocery', icon: ShoppingCart },
-    { title: i18n.navAiCoach, url: '/ai-coach', icon: Sparkles },
-  ];
-
-  const scanTriggerRef = useRef<HTMLButtonElement>(null);
-
-  const isMoreActive = moreItems.some(item => item.url !== '__scan__' && location.pathname === item.url);
-  const isActive = (url: string) => url === '__scan__' ? false : url === '/' ? location.pathname === '/' : location.pathname.startsWith(url);
+  const isActive = (url: string) => url === '/' ? location.pathname === '/' : location.pathname.startsWith(url);
 
   return (
     <>
-      {/* More menu overlay */}
+      {/* AI Quick Actions Overlay */}
       <AnimatePresence>
-        {moreOpen && (
+        {aiOpen && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[90] bg-background/60 backdrop-blur-md"
-              onClick={() => { haptic('light'); setMoreOpen(false); }}
+              className="fixed inset-0 z-[90] bg-background/70 backdrop-blur-xl"
+              onClick={() => { haptic(); setAiOpen(false); }}
             />
             <motion.div
-              initial={{ opacity: 0, y: 60, scale: 0.9 }}
+              initial={{ opacity: 0, y: 40, scale: 0.92 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 60, scale: 0.9 }}
+              exit={{ opacity: 0, y: 40, scale: 0.92 }}
               transition={spring}
-              className="fixed bottom-20 left-3 right-3 z-[95] rounded-3xl p-4 grid grid-cols-4 gap-3 border border-border/20"
-              style={{
-                background: 'hsl(var(--card) / 0.95)',
-                backdropFilter: 'blur(40px) saturate(1.8)',
-                boxShadow: '0 -8px 40px hsl(0 0% 0% / 0.4), 0 0 0 1px hsl(0 0% 100% / 0.05) inset',
-              }}
+              className="fixed bottom-24 left-4 right-4 z-[95]"
             >
-              {moreItems.map((item, idx) => {
-                const active = isActive(item.url);
-                return (
+              <div
+                className="rounded-3xl p-5 grid grid-cols-2 gap-3"
+                style={{
+                  background: 'hsl(240 8% 8% / 0.95)',
+                  backdropFilter: 'blur(40px) saturate(1.8)',
+                  border: '1px solid hsl(0 0% 100% / 0.08)',
+                  boxShadow: '0 -8px 40px hsl(0 0% 0% / 0.5), 0 0 0 1px hsl(0 0% 100% / 0.03) inset',
+                }}
+              >
+                {AI_ITEMS.map((item, idx) => (
                   <motion.button
-                    key={item.url}
-                    initial={{ opacity: 0, y: 20 }}
+                    key={item.key}
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.03, ...spring }}
-                    whileTap={{ scale: 0.85 }}
+                    transition={{ delay: idx * 0.05, ...spring }}
+                    whileTap={{ scale: 0.92 }}
                     onClick={() => {
                       haptic('medium');
                       if (item.url === '__scan__') {
-                        setMoreOpen(false);
+                        setAiOpen(false);
                         setTimeout(() => scanTriggerRef.current?.click(), 200);
                       } else {
                         navigate(item.url);
-                        setMoreOpen(false);
+                        setAiOpen(false);
                       }
                     }}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-colors touch-target ${
-                      active ? 'bg-primary/15' : 'active:bg-secondary/60'
-                    }`}
+                    className="flex flex-col items-center gap-2.5 p-4 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors touch-target"
                   >
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      transition={spring}
-                    >
-                      <item.icon className={`w-5 h-5 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
-                    </motion.div>
-                    <span className={`text-[10px] font-medium leading-tight text-center ${
-                      active ? 'text-primary' : 'text-muted-foreground'
-                    }`}>{item.title}</span>
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{
+                      background: 'hsl(0 0% 100% / 0.06)',
+                      boxShadow: '0 2px 8px hsl(0 0% 0% / 0.3)',
+                    }}>
+                      <item.icon className="w-5 h-5 text-foreground/80" />
+                    </div>
+                    <span className="text-[11px] font-medium text-foreground/70">
+                      {lang === 'vi' ? item.label.vi : item.label.en}
+                    </span>
                   </motion.button>
-                );
-              })}
+                ))}
+              </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* Bottom tab bar */}
+      {/* Bottom Tab Bar */}
       <motion.div
         className="fixed bottom-0 left-0 right-0 z-[80] pb-safe pl-safe pr-safe"
         initial={false}
-        animate={{
-          y: visible || moreOpen ? 0 : 100,
-          opacity: visible || moreOpen ? 1 : 0,
-        }}
+        animate={{ y: visible || aiOpen ? 0 : 100, opacity: visible || aiOpen ? 1 : 0 }}
         transition={{ type: 'spring', stiffness: 400, damping: 32 }}
       >
         <div
           className="mx-2 mb-1.5 rounded-[22px] flex items-center justify-around px-1 py-1 border border-border/10"
           style={{
-            background: 'hsl(var(--background) / 0.88)',
+            background: 'hsl(var(--background) / 0.92)',
             backdropFilter: 'blur(24px) saturate(1.8)',
             WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
-            boxShadow: '0 2px 20px hsl(0 0% 0% / 0.35)',
+            boxShadow: '0 2px 20px hsl(0 0% 0% / 0.4)',
           }}
         >
-          {tabs.map((tab) => {
+          {/* First 2 tabs */}
+          {tabs.slice(0, 2).map((tab) => {
             const active = isActive(tab.url);
             return (
               <NavLink
@@ -185,64 +158,73 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
                 activeClassName=""
               >
                 {active && (
-                  <motion.div
-                    layoutId="tab-bg"
-                    className="absolute inset-0 rounded-2xl bg-primary/10"
-                    transition={spring}
-                  />
+                  <motion.div layoutId="tab-bg" className="absolute inset-0 rounded-2xl bg-primary/8" transition={spring} />
                 )}
-                <motion.div
-                  whileTap={{ scale: 0.75 }}
-                  transition={spring}
-                  className="relative z-10"
-                >
-                  <tab.icon className={`w-5 h-5 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                <motion.div whileTap={{ scale: 0.75 }} transition={spring} className="relative z-10">
+                  <tab.icon className={`w-5 h-5 transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`} />
                 </motion.div>
-                <span className={`text-[10px] font-medium relative z-10 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>{tab.title}</span>
-                {active && (
-                  <motion.div
-                    layoutId="tab-dot"
-                    className="absolute -top-0.5 w-1 h-1 rounded-full bg-primary"
-                    transition={spring}
-                  />
-                )}
+                <span className={`text-[10px] font-medium relative z-10 transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{tab.title}</span>
               </NavLink>
             );
           })}
 
-          {/* More button */}
+          {/* Center AI Button */}
           <motion.button
-            whileTap={{ scale: 0.75 }}
+            whileTap={{ scale: 0.8 }}
             transition={spring}
-            onClick={() => {
-              haptic('medium');
-              setMoreOpen(prev => !prev);
-            }}
-            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-2xl transition-all relative touch-target"
+            onClick={() => { haptic('medium'); setAiOpen(prev => !prev); }}
+            className="relative flex items-center justify-center -mt-4 touch-target"
           >
-            {(moreOpen || isMoreActive) && (
-              <motion.div
-                layoutId="tab-bg"
-                className="absolute inset-0 rounded-2xl bg-primary/10"
-                transition={spring}
-              />
-            )}
-            <LayoutGrid className={`w-5 h-5 relative z-10 transition-colors ${moreOpen || isMoreActive ? 'text-primary' : 'text-muted-foreground'}`} />
-            <span className={`text-[10px] font-medium relative z-10 transition-colors ${moreOpen || isMoreActive ? 'text-primary' : 'text-muted-foreground'}`}>
-              {lang === 'vi' ? 'Thêm' : 'More'}
-            </span>
-            {(moreOpen || isMoreActive) && (
-              <motion.div
-                layoutId="tab-dot"
-                className="absolute -top-0.5 w-1 h-1 rounded-full bg-primary"
-                transition={spring}
-              />
-            )}
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all"
+              style={{
+                background: aiOpen
+                  ? 'linear-gradient(135deg, hsl(0 0% 30%), hsl(0 0% 20%))'
+                  : 'linear-gradient(135deg, hsl(0 0% 18%), hsl(0 0% 10%))',
+                border: '1px solid hsl(0 0% 100% / 0.1)',
+                boxShadow: '0 4px 16px hsl(0 0% 0% / 0.5), 0 0 0 1px hsl(0 0% 100% / 0.04) inset',
+              }}
+            >
+              <AnimatePresence mode="wait">
+                {aiOpen ? (
+                  <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                    <X className="w-5 h-5 text-foreground/80" />
+                  </motion.div>
+                ) : (
+                  <motion.div key="ai" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                    <Sparkles className="w-5 h-5 text-foreground/80" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.button>
+
+          {/* Last 2 tabs */}
+          {tabs.slice(2).map((tab) => {
+            const active = isActive(tab.url);
+            return (
+              <NavLink
+                key={tab.url}
+                to={tab.url}
+                end={tab.url === '/'}
+                onClick={() => haptic(active ? 'light' : 'medium')}
+                className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-2xl transition-all relative touch-target"
+                activeClassName=""
+              >
+                {active && (
+                  <motion.div layoutId="tab-bg" className="absolute inset-0 rounded-2xl bg-primary/8" transition={spring} />
+                )}
+                <motion.div whileTap={{ scale: 0.75 }} transition={spring} className="relative z-10">
+                  <tab.icon className={`w-5 h-5 transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`} />
+                </motion.div>
+                <span className={`text-[10px] font-medium relative z-10 transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{tab.title}</span>
+              </NavLink>
+            );
+          })}
         </div>
       </motion.div>
 
-      {/* Scan Food Dialog triggered from More menu */}
+      {/* Hidden Scan trigger */}
       <ScanFoodDialog onFoodsScanned={() => {}}>
         <button ref={scanTriggerRef} className="hidden" />
       </ScanFoodDialog>
