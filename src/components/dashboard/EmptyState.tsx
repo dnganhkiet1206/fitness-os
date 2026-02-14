@@ -23,7 +23,7 @@ export default function EmptyState({ title, message, actionLabel, onAction }: Em
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">{title}</h3>
       <p className="text-[13px] text-muted-foreground/80 max-w-[220px] leading-relaxed">{message}</p>
       {actionLabel && onAction && (
-        <Button variant="outline" size="sm" onClick={onAction} className="rounded-full mt-1 haptic-press border-border/40 text-xs h-8 px-4">
+        <Button variant="outline" size="sm" onClick={onAction} className="rounded-full mt-1 haptic-press border-gold/15 text-xs h-8 px-4 hover:bg-gold/5">
           <Plus className="w-3 h-3 mr-1" />
           {actionLabel}
         </Button>

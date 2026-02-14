@@ -18,9 +18,9 @@ const NutritionCard = ({ log, targets, calorieTarget }: NutritionCardProps) => {
   const n = log.nutritionSummary;
 
   const macros = [
-    { label: 'Protein', current: n.protein_g, target: targets.protein_g, unit: 'g', icon: Beef, gradient: 'from-[hsl(160,84%,39%)] to-[hsl(190,95%,50%)]', color: 'text-readiness-green' },
-    { label: 'Carbs', current: n.carbs_g, target: targets.carbs_g, unit: 'g', icon: Wheat, gradient: 'from-[hsl(217,91%,60%)] to-[hsl(265,90%,66%)]', color: 'text-metric-blue' },
-    { label: 'Fat', current: n.fat_g, target: targets.fat_g, unit: 'g', icon: Fat, gradient: 'from-[hsl(43,96%,56%)] to-[hsl(25,95%,58%)]', color: 'text-readiness-yellow' },
+    { label: 'Protein', current: n.protein_g, target: targets.protein_g, unit: 'g', icon: Beef, gradient: 'from-[hsl(38,92%,50%)] to-[hsl(42,90%,62%)]', color: 'text-gold' },
+    { label: 'Carbs', current: n.carbs_g, target: targets.carbs_g, unit: 'g', icon: Wheat, gradient: 'from-[hsl(215,80%,58%)] to-[hsl(265,70%,60%)]', color: 'text-metric-blue' },
+    { label: 'Fat', current: n.fat_g, target: targets.fat_g, unit: 'g', icon: Fat, gradient: 'from-[hsl(25,88%,55%)] to-[hsl(0,72%,51%)]', color: 'text-metric-orange' },
   ];
 
   const calPct = Math.min((n.kcal / calorieTarget) * 100, 100);
@@ -31,22 +31,22 @@ const NutritionCard = ({ log, targets, calorieTarget }: NutritionCardProps) => {
 
   return (
     <div className="metric-card card-shimmer space-y-5 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at bottom left, hsl(25 95% 58%), transparent 60%)' }} />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ background: 'radial-gradient(ellipse at bottom left, hsl(38 92% 50%), transparent 60%)' }} />
 
       <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground relative">{T.dcNutritionTitle}</h3>
 
       <div className="relative flex items-center gap-6">
         <div className="relative shrink-0">
           <svg width="100" height="100" viewBox="0 0 100 100" className="-rotate-90">
-            <circle cx="50" cy="50" r={radius} fill="none" stroke="hsl(225 10% 12%)" strokeWidth="6" />
+            <circle cx="50" cy="50" r={radius} fill="none" stroke="hsl(230 10% 10%)" strokeWidth="6" />
             <defs>
               <linearGradient id="cal-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="hsl(25, 95%, 58%)" />
-                <stop offset="100%" stopColor="hsl(0, 100%, 60%)" />
+                <stop offset="0%" stopColor="hsl(38, 92%, 50%)" />
+                <stop offset="100%" stopColor="hsl(25, 88%, 55%)" />
               </linearGradient>
               <filter id="cal-glow">
                 <feGaussianBlur stdDeviation="2.5" result="blur" />
-                <feFlood floodColor="hsl(25 95% 58% / 0.4)" result="color" />
+                <feFlood floodColor="hsl(38 92% 50% / 0.35)" result="color" />
                 <feComposite in2="blur" operator="in" />
                 <feMerge>
                   <feMergeNode />

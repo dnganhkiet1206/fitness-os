@@ -210,10 +210,10 @@ const Index = () => {
 
   return (
     <PullToRefresh onRefresh={handleRefresh} className="bg-background">
-      {/* Ambient glow background */}
+      {/* Ambient glow background — luxury gold */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.02]" style={{ background: 'radial-gradient(circle, hsl(217 91% 60%), transparent 70%)' }} />
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, hsl(38 92% 50%), transparent 70%)' }} />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.02]" style={{ background: 'radial-gradient(circle, hsl(25 80% 45%), transparent 70%)' }} />
       </div>
 
       <motion.main
@@ -226,10 +226,10 @@ const Index = () => {
         <motion.div variants={fadeUp} className="flex items-start justify-between">
           <div>
             <p className="text-[13px] text-muted-foreground font-medium capitalize">{dateStr}</p>
-            <h2 className="text-[22px] font-bold tracking-tight mt-0.5">{greeting}, <span className="text-gradient-green">{userName}</span></h2>
+            <h2 className="text-[22px] font-bold tracking-tight mt-0.5">{greeting}, <span className="text-gradient-gold">{userName}</span></h2>
           </div>
           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} transition={spring}>
-            <Button variant="outline" size="icon" className="rounded-2xl w-11 h-11 border-border/40 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl shadow-[0_1px_8px_hsl(225_15%_6%_/_0.3)]" onClick={() => navigate('/settings')}>
+            <Button variant="outline" size="icon" className="rounded-2xl w-11 h-11 border-gold/10 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl shadow-[0_2px_12px_hsl(0_0%_0%_/_0.4)]" onClick={() => navigate('/settings')}>
               <Settings className="w-5 h-5" />
             </Button>
           </motion.div>
@@ -245,7 +245,7 @@ const Index = () => {
           ].map(({ label, Dialog }) => (
             <Dialog key={label}>
               <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.94 }} transition={spring}>
-                <Button variant="outline" size="sm" className="rounded-xl border-border/40 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl haptic-press shadow-[0_1px_8px_hsl(225_15%_6%_/_0.3)]">
+                <Button variant="outline" size="sm" className="rounded-xl border-gold/10 bg-secondary/20 hover:bg-gold/5 backdrop-blur-xl haptic-press shadow-[0_2px_12px_hsl(0_0%_0%_/_0.3)]">
                   <Plus className="w-3 h-3 mr-1.5" />{label}
                 </Button>
               </motion.div>

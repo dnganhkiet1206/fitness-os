@@ -72,6 +72,10 @@ export default {
           cyan: "hsl(var(--metric-cyan))",
           orange: "hsl(var(--metric-orange))",
         },
+        gold: {
+          DEFAULT: "hsl(var(--gold))",
+          light: "hsl(var(--gold-light))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

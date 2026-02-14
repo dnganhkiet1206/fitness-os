@@ -9,9 +9,9 @@ interface ReadinessTrendProps {
 const spring = { type: 'spring' as const, stiffness: 200, damping: 24 };
 
 const statusGradient = {
-  green: ['hsl(160, 84%, 39%)', 'hsl(120, 100%, 45%)'],
-  yellow: ['hsl(43, 96%, 56%)', 'hsl(25, 95%, 58%)'],
-  red: ['hsl(0, 84%, 60%)', 'hsl(340, 100%, 55%)'],
+  green: ['hsl(160, 70%, 42%)', 'hsl(140, 80%, 45%)'],
+  yellow: ['hsl(38, 92%, 50%)', 'hsl(42, 90%, 62%)'],
+  red: ['hsl(0, 72%, 51%)', 'hsl(340, 80%, 50%)'],
 };
 
 const ReadinessTrend = ({ trend }: ReadinessTrendProps) => {
