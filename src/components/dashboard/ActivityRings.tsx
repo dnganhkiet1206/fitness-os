@@ -14,9 +14,9 @@ export default function ActivityRings({ move, exercise, stand, size = 180 }: Act
   const T = t(lang);
 
   const RING_CONFIG = [
-    { key: 'move', label: T.dcActivityMove, unit: T.dcActivityKcal, colors: ['hsl(0, 100%, 60%)', 'hsl(340, 100%, 55%)'], shadow: 'hsl(0 100% 50% / 0.4)' },
-    { key: 'exercise', label: T.dcActivityExercise, unit: T.dcActivityMin, colors: ['hsl(120, 100%, 45%)', 'hsl(160, 100%, 40%)'], shadow: 'hsl(140 100% 45% / 0.4)' },
-    { key: 'stand', label: T.dcActivitySteps, unit: T.dcActivityStepsUnit, colors: ['hsl(195, 100%, 50%)', 'hsl(210, 100%, 55%)'], shadow: 'hsl(200 100% 50% / 0.4)' },
+    { key: 'move', label: T.dcActivityMove, unit: T.dcActivityKcal, colors: ['hsl(38, 92%, 50%)', 'hsl(25, 88%, 55%)'], shadow: 'hsl(38 92% 50% / 0.35)' },
+    { key: 'exercise', label: T.dcActivityExercise, unit: T.dcActivityMin, colors: ['hsl(160, 70%, 42%)', 'hsl(140, 80%, 45%)'], shadow: 'hsl(160 70% 42% / 0.35)' },
+    { key: 'stand', label: T.dcActivitySteps, unit: T.dcActivityStepsUnit, colors: ['hsl(215, 80%, 58%)', 'hsl(188, 80%, 48%)'], shadow: 'hsl(215 80% 58% / 0.35)' },
   ];
 
   const data = [move, exercise, stand];
@@ -41,7 +41,7 @@ export default function ActivityRings({ move, exercise, stand, size = 180 }: Act
                   cy={center}
                   r={radius}
                   fill="none"
-                  stroke="hsl(225 10% 12%)"
+                  stroke="hsl(230 10% 10%)"
                   strokeWidth={strokeWidth}
                   strokeLinecap="round"
                 />

@@ -39,7 +39,7 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
             <span className="text-[17px] font-normal">Back</span>
           </motion.button>
           <h1 className="text-[17px] font-semibold tracking-tight flex-1 min-w-0 text-center -ml-16">
-            {gradient ? <span className="text-gradient-green">{title}</span> : title}
+            {gradient ? <span className="text-gradient-gold">{title}</span> : title}
           </h1>
           <div className="flex items-center gap-0.5 pr-2 shrink-0">
             {children}

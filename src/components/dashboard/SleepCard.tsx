@@ -23,9 +23,9 @@ const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
   const pct = Math.min((totalMin / (targetHours * 60)) * 100, 100);
 
   const stages = sleep.sleepStages ? [
-    { label: 'Deep', min: sleep.sleepStages.deep_min, color: 'hsl(265, 90%, 66%)', pct: (sleep.sleepStages.deep_min / totalMin) * 100 },
-    { label: 'REM', min: sleep.sleepStages.rem_min, color: 'hsl(190, 95%, 50%)', pct: (sleep.sleepStages.rem_min / totalMin) * 100 },
-    { label: 'Light', min: sleep.sleepStages.light_min, color: 'hsl(220, 10%, 35%)', pct: (sleep.sleepStages.light_min / totalMin) * 100 },
+    { label: 'Deep', min: sleep.sleepStages.deep_min, color: 'hsl(265, 70%, 60%)', pct: (sleep.sleepStages.deep_min / totalMin) * 100 },
+    { label: 'REM', min: sleep.sleepStages.rem_min, color: 'hsl(188, 80%, 48%)', pct: (sleep.sleepStages.rem_min / totalMin) * 100 },
+    { label: 'Light', min: sleep.sleepStages.light_min, color: 'hsl(230, 10%, 28%)', pct: (sleep.sleepStages.light_min / totalMin) * 100 },
   ] : [];
 
   const bedtime = new Date(sleep.bedtime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -37,22 +37,22 @@ const SleepCard = ({ sleep, targetHours }: SleepCardProps) => {
 
   return (
     <div className="metric-card card-shimmer space-y-5 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ background: 'radial-gradient(ellipse at top right, hsl(265 90% 66%), transparent 60%)' }} />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ background: 'radial-gradient(ellipse at top right, hsl(265 70% 60%), transparent 60%)' }} />
 
       <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground relative">{T.dcSleepTitle}</h3>
 
       <div className="relative flex items-center gap-6">
         <div className="relative shrink-0">
           <svg width="100" height="100" viewBox="0 0 100 100" className="-rotate-90">
-            <circle cx="50" cy="50" r={radius} fill="none" stroke="hsl(225 10% 12%)" strokeWidth="6" />
+            <circle cx="50" cy="50" r={radius} fill="none" stroke="hsl(230 10% 10%)" strokeWidth="6" />
             <defs>
               <linearGradient id="sleep-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="hsl(265, 90%, 66%)" />
-                <stop offset="100%" stopColor="hsl(190, 95%, 50%)" />
+                <stop offset="0%" stopColor="hsl(265, 70%, 60%)" />
+                <stop offset="100%" stopColor="hsl(188, 80%, 48%)" />
               </linearGradient>
               <filter id="sleep-glow">
                 <feGaussianBlur stdDeviation="2.5" result="blur" />
-                <feFlood floodColor="hsl(265 90% 66% / 0.35)" result="color" />
+                <feFlood floodColor="hsl(265 70% 60% / 0.3)" result="color" />
                 <feComposite in2="blur" operator="in" />
                 <feMerge>
                   <feMergeNode />

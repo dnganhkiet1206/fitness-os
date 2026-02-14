@@ -27,7 +27,7 @@ const TrainingCard = ({ workouts, acwr }: TrainingCardProps) => {
 
   return (
     <div className="metric-card card-shimmer space-y-5 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at bottom right, hsl(160 84% 39%), transparent 60%)' }} />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at bottom right, hsl(38 92% 50%), transparent 60%)' }} />
 
       <div className="flex items-center justify-between relative">
         <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{T.dcTrainingTitle}</h3>

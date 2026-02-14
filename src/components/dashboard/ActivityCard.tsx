@@ -15,7 +15,7 @@ const ActivityCard = ({ log }: ActivityCardProps) => {
 
   return (
     <div className="metric-card relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ background: 'radial-gradient(ellipse at top right, hsl(0 100% 60%), transparent 60%)' }} />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ background: 'radial-gradient(ellipse at top right, hsl(38 92% 50%), transparent 60%)' }} />
       
       <div className="relative space-y-4">
         <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{T.dcActivity}</h3>

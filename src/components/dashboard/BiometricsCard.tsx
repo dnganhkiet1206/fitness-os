@@ -19,16 +19,16 @@ const BiometricsCard = ({ sample, wearables }: BiometricsCardProps) => {
   const connectedDevice = wearables.find(w => w.connected);
 
   const metrics = [
-    { label: 'Heart Rate', value: m.hr_bpm, unit: 'bpm', icon: Heart, gradient: 'from-[hsl(0,100%,60%)] to-[hsl(340,100%,55%)]', iconColor: 'text-destructive' },
-    { label: 'HRV', value: m.hrv_rmssd_ms, unit: 'ms', icon: Activity, gradient: 'from-[hsl(160,84%,39%)] to-[hsl(120,100%,45%)]', iconColor: 'text-readiness-green' },
-    { label: 'SpO₂', value: m.spo2_pct, unit: '%', icon: Droplets, gradient: 'from-[hsl(217,91%,60%)] to-[hsl(195,100%,50%)]', iconColor: 'text-metric-blue' },
-    { label: 'VO₂max', value: m.vo2max_mlkgmin, unit: 'ml/kg/min', icon: Wind, gradient: 'from-[hsl(190,95%,50%)] to-[hsl(160,84%,39%)]', iconColor: 'text-metric-cyan', estimated: true },
-    { label: 'Resp Rate', value: m.resp_rate_rpm, unit: 'rpm', icon: Wind, gradient: 'from-[hsl(265,90%,66%)] to-[hsl(217,91%,60%)]', iconColor: 'text-metric-purple' },
+    { label: 'Heart Rate', value: m.hr_bpm, unit: 'bpm', icon: Heart, gradient: 'from-[hsl(0,72%,51%)] to-[hsl(340,80%,50%)]', iconColor: 'text-destructive' },
+    { label: 'HRV', value: m.hrv_rmssd_ms, unit: 'ms', icon: Activity, gradient: 'from-[hsl(38,92%,50%)] to-[hsl(42,90%,62%)]', iconColor: 'text-gold' },
+    { label: 'SpO₂', value: m.spo2_pct, unit: '%', icon: Droplets, gradient: 'from-[hsl(215,80%,58%)] to-[hsl(188,80%,48%)]', iconColor: 'text-metric-blue' },
+    { label: 'VO₂max', value: m.vo2max_mlkgmin, unit: 'ml/kg/min', icon: Wind, gradient: 'from-[hsl(188,80%,48%)] to-[hsl(160,70%,42%)]', iconColor: 'text-metric-cyan', estimated: true },
+    { label: 'Resp Rate', value: m.resp_rate_rpm, unit: 'rpm', icon: Wind, gradient: 'from-[hsl(265,70%,60%)] to-[hsl(215,80%,58%)]', iconColor: 'text-metric-purple' },
   ];
 
   return (
     <div className="metric-card card-shimmer space-y-5 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at top left, hsl(0 100% 60%), transparent 50%)' }} />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at top left, hsl(38 92% 50%), transparent 50%)' }} />
 
       <div className="flex items-center justify-between relative">
         <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{T.dcBioTitle}</h3>

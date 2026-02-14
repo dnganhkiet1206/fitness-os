@@ -16,15 +16,15 @@ const ReadinessGauge = ({ result }: ReadinessGaugeProps) => {
   const { score, status, explain, recommendation, subscores, acwr } = result;
 
   const gradientColors = status === 'green' 
-    ? ['hsl(160, 84%, 39%)', 'hsl(120, 100%, 45%)']
+    ? ['hsl(160, 70%, 42%)', 'hsl(140, 80%, 45%)']
     : status === 'yellow'
-    ? ['hsl(43, 96%, 56%)', 'hsl(25, 95%, 58%)']
-    : ['hsl(0, 84%, 60%)', 'hsl(340, 100%, 55%)'];
+    ? ['hsl(38, 92%, 50%)', 'hsl(42, 90%, 62%)']
+    : ['hsl(0, 72%, 51%)', 'hsl(340, 80%, 50%)'];
 
-  const glowColor = status === 'green' ? 'hsl(160 84% 39% / 0.3)' : status === 'yellow' ? 'hsl(43 96% 56% / 0.3)' : 'hsl(0 84% 60% / 0.3)';
+  const glowColor = status === 'green' ? 'hsl(160 70% 42% / 0.3)' : status === 'yellow' ? 'hsl(38 92% 50% / 0.3)' : 'hsl(0 72% 51% / 0.3)';
   const colorClass = status === 'green' ? 'readiness-green' : status === 'yellow' ? 'readiness-yellow' : 'readiness-red';
   const statusLabel = status === 'green' ? T.dcReadinessTrain : status === 'yellow' ? T.dcReadinessModerate : T.dcReadinessRecover;
-  const bgStroke = 'hsl(225, 10%, 12%)';
+  const bgStroke = 'hsl(230, 10%, 10%)';
 
   const radius = 52;
   const circumference = 2 * Math.PI * radius;
