@@ -128,32 +128,32 @@ export default function Progress() {
     <PullToRefresh onRefresh={handleRefresh} className="bg-background">
       <LargeTitle title={i18n.progressTitle} />
 
-      <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-4xl mx-auto px-4 py-5 space-y-5">
-        <Tabs defaultValue="weight" className="space-y-6">
+      <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }} className="max-w-4xl mx-auto px-4 py-3 space-y-3">
+        <Tabs defaultValue="weight" className="space-y-4">
           <TabsList className="bg-secondary/60">
             <TabsTrigger value="weight"><Scale className="w-3.5 h-3.5 mr-1.5" />{i18n.progressWeight}</TabsTrigger>
             <TabsTrigger value="measurements"><Ruler className="w-3.5 h-3.5 mr-1.5" />{i18n.progressMeasurements}</TabsTrigger>
             <TabsTrigger value="photos"><Camera className="w-3.5 h-3.5 mr-1.5" />{i18n.progressPhotos}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="weight" className="space-y-6">
-            <div className="grid grid-cols-3 gap-3">
+          <TabsContent value="weight" className="space-y-4">
+            <div className="grid grid-cols-3 gap-2">
               {[
                 { label: i18n.progressCurrent, value: currentWeight ? `${currentWeight}kg` : '—' },
                 { label: i18n.progressChange, value: weightDelta !== null ? `${weightDelta > 0 ? '+' : ''}${weightDelta.toFixed(1)}kg` : '—', good: weightDelta !== null && ((profile?.goal === 'bulk' && weightDelta > 0) || (profile?.goal === 'cut' && weightDelta < 0)) },
                 { label: i18n.progressRecords, value: `${weightData.length}` },
               ].map((c, i) => (
-                <motion.div key={i} variants={fadeUp} className="metric-card text-center space-y-1">
-                  <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">{c.label}</p>
-                  <p className={`text-xl font-mono font-bold ${(c as any).good === false ? 'text-destructive' : ''}`}>{c.value}</p>
+                <motion.div key={i} variants={fadeUp} className="metric-card text-center space-y-0.5 p-3">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground">{c.label}</p>
+                  <p className={`text-lg font-mono font-bold ${(c as any).good === false ? 'text-destructive' : ''}`}>{c.value}</p>
                 </motion.div>
               ))}
             </div>
 
             {weightData.length > 0 && (
-              <motion.div variants={fadeUp} className="metric-card space-y-4">
+              <motion.div variants={fadeUp} className="metric-card space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.progressWeightChart}</h3>
-                <ChartContainer config={chartConfig} className="h-[200px] sm:h-[250px]">
+                <ChartContainer config={chartConfig} className="h-[180px] sm:h-[220px]">
                   <AreaChart data={weightData}>
                     <defs>
                       <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
@@ -172,7 +172,7 @@ export default function Progress() {
             )}
           </TabsContent>
 
-          <TabsContent value="measurements" className="space-y-6">
+          <TabsContent value="measurements" className="space-y-4">
             <motion.div variants={fadeUp} className="flex justify-end">
               <Dialog open={measureDialog} onOpenChange={setMeasureDialog}>
                 <DialogTrigger asChild>
@@ -200,9 +200,9 @@ export default function Progress() {
             </motion.div>
 
             {measureData.length > 0 && (
-              <motion.div variants={fadeUp} className="metric-card space-y-4">
+              <motion.div variants={fadeUp} className="metric-card space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.progressMeasurementTrend}</h3>
-                <ChartContainer config={chartConfig} className="h-[250px]">
+                <ChartContainer config={chartConfig} className="h-[200px]">
                   <LineChart data={measureData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(225 10% 14%)" />
                     <XAxis dataKey="date" tick={{ fill: 'hsl(220 8% 46%)', fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -263,14 +263,14 @@ export default function Progress() {
             )}
 
             {(measurements ?? []).length === 0 && (
-              <motion.div variants={fadeUp} className="metric-card text-center py-12">
+              <motion.div variants={fadeUp} className="metric-card text-center py-8">
                 <Ruler className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">{i18n.progressNoMeasurements}</p>
               </motion.div>
             )}
           </TabsContent>
 
-          <TabsContent value="photos" className="space-y-6">
+          <TabsContent value="photos" className="space-y-4">
             <motion.div variants={fadeUp} className="flex justify-end">
               <Dialog open={photoDialog} onOpenChange={setPhotoDialog}>
                 <DialogTrigger asChild>
@@ -305,7 +305,7 @@ export default function Progress() {
             </motion.div>
 
             {(photos ?? []).length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {(photos ?? []).map(p => (
                   <motion.div key={p.id} variants={fadeUp} className="metric-card p-0 overflow-hidden group">
                     <div className="aspect-[3/4] relative">
@@ -328,7 +328,7 @@ export default function Progress() {
                 ))}
               </div>
             ) : (
-              <motion.div variants={fadeUp} className="metric-card text-center py-12">
+              <motion.div variants={fadeUp} className="metric-card text-center py-8">
                 <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">{i18n.progressNoPhotos}</p>
               </motion.div>
