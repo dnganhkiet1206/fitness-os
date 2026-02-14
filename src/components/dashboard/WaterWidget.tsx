@@ -7,7 +7,7 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 import { t } from '@/lib/i18n';
 import { useNavigate } from 'react-router-dom';
 
-export default function WaterWidget() {
+export default function WaterWidget() { // v2 fix
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const { lang } = useAppSettings();
