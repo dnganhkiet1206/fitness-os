@@ -42,14 +42,14 @@ export default function LargeTitle({ title, children }: LargeTitleProps) {
           borderBottom: `0.5px solid hsl(var(--border) / ${barBorder})`,
         }}
       >
-        <div className="max-w-4xl mx-auto px-4 h-[44px] flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 h-[44px] flex items-center justify-center relative">
           <h1
-            className="text-[17px] font-semibold tracking-tight transition-opacity duration-150"
+            className="text-[17px] font-semibold tracking-tight transition-opacity duration-150 text-center"
             style={{ opacity: inlineOpacity }}
           >
             {title}
           </h1>
-          <div className="flex items-center gap-1">
+          <div className="absolute right-4 flex items-center gap-1">
             {children}
           </div>
         </div>
