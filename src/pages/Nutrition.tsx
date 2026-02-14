@@ -65,7 +65,7 @@ const Nutrition = () => {
 
       <LargeTitle title={i18n.nutritionTitle} />
 
-      <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+      <motion.main initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.08 } } }} className="max-w-3xl mx-auto px-4 py-3 space-y-6">
         <Tabs defaultValue="foods" className="w-full">
           <TabsList className="grid grid-cols-3 w-full bg-secondary/40">
             <TabsTrigger value="foods"><Search className="w-3.5 h-3.5 mr-1.5" />{i18n.nutritionFoods}</TabsTrigger>
