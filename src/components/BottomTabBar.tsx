@@ -1,5 +1,4 @@
 import { Home, Utensils, Dumbbell, TrendingUp, Sparkles, Camera, Heart, Moon, X } from 'lucide-react';
-import { NavLink } from '@/components/NavLink';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
@@ -7,7 +6,8 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 import { t } from '@/lib/i18n';
 import ScanFoodDialog from '@/components/logging/ScanFoodDialog';
 
-const spring = { type: 'spring' as const, stiffness: 500, damping: 35 };
+const spring = { type: 'spring' as const, stiffness: 400, damping: 30 };
+const liquidSpring = { type: 'spring' as const, stiffness: 350, damping: 28 };
 
 const haptic = (style: 'light' | 'medium' = 'light') => {
   if ('vibrate' in navigator) navigator.vibrate(style === 'light' ? 8 : 15);
@@ -31,7 +31,7 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
   const scrollTimeout = useRef<ReturnType<typeof setTimeout>>();
   const scanTriggerRef = useRef<HTMLButtonElement>(null);
 
-  // Scroll-aware hide/show — listen on .scroll-container instead of window
+  // Scroll-aware hide/show
   useEffect(() => {
     if (!autoHide) { setVisible(true); return; }
     const scroller = document.querySelector('.scroll-container') as HTMLElement | null;
@@ -131,7 +131,7 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
         )}
       </AnimatePresence>
 
-      {/* Bottom Tab Bar */}
+      {/* iOS 26 Liquid Glass Tab Bar */}
       <motion.div
         className="fixed bottom-0 left-0 right-0 z-[80] pb-safe pl-safe pr-safe"
         initial={false}
@@ -139,90 +139,77 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
         transition={{ type: 'spring', stiffness: 400, damping: 32 }}
       >
         <div
-          className="mx-2 mb-1.5 rounded-[22px] flex items-center justify-around px-1 py-1 border border-border/10"
+          className="mx-auto mb-2 flex items-center justify-center gap-1 px-1.5 py-1.5"
           style={{
-            background: 'hsl(var(--background) / 0.92)',
-            backdropFilter: 'blur(24px) saturate(1.8)',
-            WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
-            boxShadow: '0 2px 20px hsl(0 0% 0% / 0.4)',
+            width: 'fit-content',
+            borderRadius: '28px',
+            background: 'hsl(var(--background) / 0.55)',
+            backdropFilter: 'blur(40px) saturate(2)',
+            WebkitBackdropFilter: 'blur(40px) saturate(2)',
+            border: '0.5px solid hsl(0 0% 100% / 0.15)',
+            boxShadow: '0 8px 32px hsl(0 0% 0% / 0.35), 0 0 0 0.5px hsl(0 0% 100% / 0.05) inset, 0 1px 0 hsl(0 0% 100% / 0.06) inset',
           }}
         >
           {/* First 2 tabs */}
-          {tabs.slice(0, 2).map((tab) => {
-            const active = isActive(tab.url);
-            return (
-              <NavLink
-                key={tab.url}
-                to={tab.url}
-                end={tab.url === '/'}
-                onClick={() => haptic(active ? 'light' : 'medium')}
-                className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-2xl transition-all relative touch-target"
-                activeClassName=""
-              >
-                {active && (
-                  <motion.div layoutId="tab-bg" className="absolute inset-0 rounded-2xl bg-primary/8" transition={spring} />
-                )}
-                <motion.div whileTap={{ scale: 0.75 }} transition={spring} className="relative z-10">
-                  <tab.icon className={`w-5 h-5 transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`} />
-                </motion.div>
-                <span className={`text-[10px] font-medium relative z-10 transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{tab.title}</span>
-              </NavLink>
-            );
-          })}
+          {tabs.slice(0, 2).map((tab) => (
+            <LiquidTab
+              key={tab.url}
+              icon={tab.icon}
+              label={tab.title}
+              active={isActive(tab.url)}
+              onClick={() => {
+                haptic(isActive(tab.url) ? 'light' : 'medium');
+                navigate(tab.url);
+              }}
+            />
+          ))}
 
           {/* Center AI Button */}
           <motion.button
-            whileTap={{ scale: 0.8 }}
+            whileTap={{ scale: 0.85 }}
             transition={spring}
             onClick={() => { haptic('medium'); setAiOpen(prev => !prev); }}
-            className="relative flex items-center justify-center -mt-4 touch-target"
+            className="relative flex items-center justify-center mx-0.5"
           >
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all"
-              style={{
+            <motion.div
+              className="w-11 h-11 rounded-full flex items-center justify-center"
+              animate={{
                 background: aiOpen
-                  ? 'linear-gradient(135deg, hsl(0 0% 30%), hsl(0 0% 20%))'
-                  : 'linear-gradient(135deg, hsl(0 0% 18%), hsl(0 0% 10%))',
-                border: '1px solid hsl(0 0% 100% / 0.1)',
-                boxShadow: '0 4px 16px hsl(0 0% 0% / 0.5), 0 0 0 1px hsl(0 0% 100% / 0.04) inset',
+                  ? 'linear-gradient(135deg, hsl(0 0% 100% / 0.2), hsl(0 0% 100% / 0.08))'
+                  : 'linear-gradient(135deg, hsl(0 0% 100% / 0.12), hsl(0 0% 100% / 0.04))',
+              }}
+              style={{
+                border: '0.5px solid hsl(0 0% 100% / 0.15)',
+                boxShadow: '0 2px 12px hsl(0 0% 0% / 0.3), 0 0 0 0.5px hsl(0 0% 100% / 0.05) inset',
               }}
             >
               <AnimatePresence mode="wait">
                 {aiOpen ? (
                   <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                    <X className="w-5 h-5 text-foreground/80" />
+                    <X className="w-[18px] h-[18px] text-foreground/90" />
                   </motion.div>
                 ) : (
                   <motion.div key="ai" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                    <Sparkles className="w-5 h-5 text-foreground/80" />
+                    <Sparkles className="w-[18px] h-[18px] text-foreground/90" />
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
           </motion.button>
 
           {/* Last 2 tabs */}
-          {tabs.slice(2).map((tab) => {
-            const active = isActive(tab.url);
-            return (
-              <NavLink
-                key={tab.url}
-                to={tab.url}
-                end={tab.url === '/'}
-                onClick={() => haptic(active ? 'light' : 'medium')}
-                className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-2xl transition-all relative touch-target"
-                activeClassName=""
-              >
-                {active && (
-                  <motion.div layoutId="tab-bg" className="absolute inset-0 rounded-2xl bg-primary/8" transition={spring} />
-                )}
-                <motion.div whileTap={{ scale: 0.75 }} transition={spring} className="relative z-10">
-                  <tab.icon className={`w-5 h-5 transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`} />
-                </motion.div>
-                <span className={`text-[10px] font-medium relative z-10 transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{tab.title}</span>
-              </NavLink>
-            );
-          })}
+          {tabs.slice(2).map((tab) => (
+            <LiquidTab
+              key={tab.url}
+              icon={tab.icon}
+              label={tab.title}
+              active={isActive(tab.url)}
+              onClick={() => {
+                haptic(isActive(tab.url) ? 'light' : 'medium');
+                navigate(tab.url);
+              }}
+            />
+          ))}
         </div>
       </motion.div>
 
@@ -231,5 +218,68 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
         <button ref={scanTriggerRef} className="hidden" />
       </ScanFoodDialog>
     </>
+  );
+}
+
+/* Liquid Glass Tab — expands to pill with label when active, icon-only when inactive */
+function LiquidTab({ icon: Icon, label, active, onClick }: {
+  icon: React.ElementType;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <motion.button
+      onClick={onClick}
+      className="relative flex items-center justify-center touch-target overflow-hidden"
+      whileTap={{ scale: 0.9 }}
+      transition={spring}
+    >
+      <motion.div
+        className="flex items-center gap-1.5 relative z-10"
+        animate={{
+          paddingLeft: active ? 14 : 12,
+          paddingRight: active ? 16 : 12,
+          paddingTop: 8,
+          paddingBottom: 8,
+        }}
+        transition={liquidSpring}
+      >
+        {/* Liquid glass pill background for active state */}
+        <AnimatePresence>
+          {active && (
+            <motion.div
+              layoutId="liquid-pill"
+              className="absolute inset-0 rounded-full"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={liquidSpring}
+              style={{
+                background: 'linear-gradient(135deg, hsl(0 0% 100% / 0.18), hsl(0 0% 100% / 0.06))',
+                border: '0.5px solid hsl(0 0% 100% / 0.2)',
+                boxShadow: '0 2px 8px hsl(0 0% 0% / 0.2), 0 0 0 0.5px hsl(0 0% 100% / 0.08) inset',
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        <Icon className={`w-[20px] h-[20px] relative z-10 transition-colors duration-200 ${active ? 'text-foreground' : 'text-muted-foreground'}`} />
+
+        <AnimatePresence>
+          {active && (
+            <motion.span
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: 'auto' }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={liquidSpring}
+              className="text-[13px] font-semibold text-foreground relative z-10 whitespace-nowrap overflow-hidden"
+            >
+              {label}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.button>
   );
 }
