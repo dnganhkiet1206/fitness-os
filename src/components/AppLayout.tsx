@@ -49,7 +49,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <BottomBarContext.Provider value={{ hideBottomBar: () => setForceHidden(true), showBottomBar: () => setForceHidden(false) }}>
-      <div className="w-full no-select" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="w-full no-select no-bounce" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'fixed', inset: 0 }}>
+        {/* iOS Status Bar area background */}
+        <div className="status-bar-bg bg-background/80" style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }} />
+        
         {isCustomLayout ? (
           <div className="flex-1 overflow-hidden relative">
             {children}

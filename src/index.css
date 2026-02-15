@@ -174,14 +174,23 @@
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     overflow: hidden;
+    position: fixed;
+    inset: 0;
     height: 100%;
     height: 100dvh;
+    width: 100%;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    /* Prevent iOS bounce on html/body */
+    touch-action: pan-y;
   }
 
   #root {
     height: 100%;
     height: 100dvh;
     overflow: hidden;
+    position: fixed;
+    inset: 0;
   }
 
   .font-mono {
@@ -380,5 +389,35 @@
   .scroll-container {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
+    will-change: scroll-position;
+    /* Smooth momentum scrolling on iOS */
+    scroll-behavior: smooth;
+  }
+
+  /* iOS native-like active states */
+  .ios-pressable {
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.12s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.12s ease;
+  }
+  .ios-pressable:active {
+    transform: scale(0.97);
+    opacity: 0.85;
+  }
+
+  /* Prevent rubber-band on non-scrollable areas */
+  .no-bounce {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+  }
+
+  /* iOS status bar area background */
+  .status-bar-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    z-index: 9999;
+    pointer-events: none;
   }
 }
