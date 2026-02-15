@@ -177,7 +177,7 @@ const Auth = () => {
                 className="space-y-2 overflow-hidden"
               >
                 <Label htmlFor="name">{i18n.authName}</Label>
-                <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder={i18n.authYourName} required className="rounded-xl bg-background/50" />
+                <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder={i18n.authYourName} required autoComplete="name" className="rounded-xl bg-background/50" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -186,7 +186,7 @@ const Auth = () => {
           {mode !== 'recovery' && (
             <div className="space-y-2">
               <Label htmlFor="email">{i18n.authEmail}</Label>
-              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required className="rounded-xl bg-background/50" />
+              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" required autoComplete="email" className="rounded-xl bg-background/50" />
             </div>
           )}
 
@@ -205,7 +205,7 @@ const Auth = () => {
                   </button>
                 )}
               </div>
-              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} className="rounded-xl bg-background/50" />
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} autoComplete={mode === 'recovery' ? 'new-password' : mode === 'signup' ? 'new-password' : 'current-password'} className="rounded-xl bg-background/50" />
             </div>
           )}
 
