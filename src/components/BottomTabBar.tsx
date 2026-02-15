@@ -9,9 +9,7 @@ import ScanFoodDialog from '@/components/logging/ScanFoodDialog';
 const spring = { type: 'spring' as const, stiffness: 400, damping: 30 };
 const liquidSpring = { type: 'spring' as const, stiffness: 350, damping: 28 };
 
-const haptic = (style: 'light' | 'medium' = 'light') => {
-  if ('vibrate' in navigator) navigator.vibrate(style === 'light' ? 8 : 15);
-};
+import { haptic } from '@/lib/haptics';
 
 const AI_ITEMS = [
   { key: 'scan', icon: Camera, label: { en: 'Scan Food', vi: 'Quét thực phẩm' }, url: '__scan__' },

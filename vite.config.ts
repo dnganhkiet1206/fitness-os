@@ -22,6 +22,8 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       external: [
         "@flomentumsolutions/capacitor-health-extended",
+        "@capacitor/haptics",
+        "@capacitor/status-bar",
       ],
     },
   },
