@@ -106,7 +106,7 @@ const Auth = () => {
   return (
     <div className="bg-background flex items-center justify-center px-4 relative overflow-hidden" style={{ height: '100dvh' }}>
       {/* Language selector */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5">
+      <div className="absolute top-4 pt-safe right-4 z-20 flex items-center gap-1.5">
         <Globe className="w-4 h-4 text-muted-foreground" />
         {LANGUAGES.map((l) => (
           <button
