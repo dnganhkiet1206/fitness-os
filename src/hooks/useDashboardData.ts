@@ -192,6 +192,55 @@ export function useToggleFavoriteFood() {
   });
 }
 
+export function useCreateFoodItem() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (item: {
+      name: string; brand?: string; serving_g: number;
+      kcal: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number;
+    }) => {
+      const { error } = await supabase.from('food_items').insert({ ...item, user_id: user!.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['food_search'] });
+      qc.invalidateQueries({ queryKey: ['favorite_foods'] });
+    },
+  });
+}
+
+export function useUpdateFoodItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...item }: {
+      id: string; name: string; brand?: string; serving_g: number;
+      kcal: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number;
+    }) => {
+      const { error } = await supabase.from('food_items').update(item).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['food_search'] });
+      qc.invalidateQueries({ queryKey: ['favorite_foods'] });
+    },
+  });
+}
+
+export function useDeleteFoodItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('food_items').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['food_search'] });
+      qc.invalidateQueries({ queryKey: ['favorite_foods'] });
+    },
+  });
+}
+
 // ---- Meal Plans ----
 export function useMealPlans() {
   const { user } = useAuth();

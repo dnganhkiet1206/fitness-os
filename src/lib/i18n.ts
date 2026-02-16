@@ -706,6 +706,25 @@ interface Translations {
   scanFoodServing: string;
   scanFoodItems: string;
 
+  // Food Item CRUD
+  foodAddTitle: string;
+  foodEditTitle: string;
+  foodName: string;
+  foodNamePlaceholder: string;
+  foodBrand: string;
+  foodBrandPlaceholder: string;
+  foodServing: string;
+  foodCalories: string;
+  foodAutoCalc: string;
+  foodProtein: string;
+  foodCarbs: string;
+  foodFat: string;
+  foodFiber: string;
+  foodAdded: string;
+  foodUpdated: string;
+  foodDeleted: string;
+  foodAddCustom: string;
+
   // Steps
   stepsTitle: string;
   stepsSubtitle: string;
@@ -1365,6 +1384,24 @@ const vi: Translations = {
   scanFoodServing: 'khẩu phần',
   scanFoodItems: 'món',
 
+  foodAddTitle: 'Thêm Thực Phẩm',
+  foodEditTitle: 'Chỉnh Sửa Thực Phẩm',
+  foodName: 'Tên thực phẩm',
+  foodNamePlaceholder: 'VD: Ức gà, Cơm trắng...',
+  foodBrand: 'Thương hiệu',
+  foodBrandPlaceholder: 'VD: CP, Vinamilk...',
+  foodServing: 'Khẩu phần',
+  foodCalories: 'Calories',
+  foodAutoCalc: 'Tự tính',
+  foodProtein: 'Protein',
+  foodCarbs: 'Carbs',
+  foodFat: 'Fat',
+  foodFiber: 'Chất xơ',
+  foodAdded: 'Đã thêm thực phẩm!',
+  foodUpdated: 'Đã cập nhật!',
+  foodDeleted: 'Đã xóa thực phẩm!',
+  foodAddCustom: 'Thêm thực phẩm',
+
   stepsTitle: 'Bước chân',
   stepsSubtitle: 'Theo dõi số bước hàng ngày từ Apple Watch',
   stepsToday: 'Hôm nay',
@@ -2022,6 +2059,24 @@ const en: Translations = {
   scanFoodEstimated: 'Estimated',
   scanFoodServing: 'serving',
   scanFoodItems: 'items',
+
+  foodAddTitle: 'Add Food Item',
+  foodEditTitle: 'Edit Food Item',
+  foodName: 'Food name',
+  foodNamePlaceholder: 'e.g. Chicken breast, Rice...',
+  foodBrand: 'Brand',
+  foodBrandPlaceholder: 'e.g. Kirkland, Optimum...',
+  foodServing: 'Serving size',
+  foodCalories: 'Calories',
+  foodAutoCalc: 'Auto-calc',
+  foodProtein: 'Protein',
+  foodCarbs: 'Carbs',
+  foodFat: 'Fat',
+  foodFiber: 'Fiber',
+  foodAdded: 'Food item added!',
+  foodUpdated: 'Food item updated!',
+  foodDeleted: 'Food item deleted!',
+  foodAddCustom: 'Add food',
 
   stepsTitle: 'Steps',
   stepsSubtitle: 'Track daily steps from Apple Watch',
