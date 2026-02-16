@@ -1,5 +1,6 @@
 import { Footprints } from 'lucide-react';
 import { useTodaySteps } from '@/hooks/useStepsData';
+import { getStepsGoal } from '@/hooks/useStepsGoal';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,7 +8,7 @@ export default function StepsWidget() {
   const { lang } = useAppSettings();
   const navigate = useNavigate();
   const { data: steps } = useTodaySteps();
-  const target = 10000;
+  const target = getStepsGoal();
   const current = steps ?? 0;
   const pct = Math.min(100, Math.round((current / target) * 100));
 
