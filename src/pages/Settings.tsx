@@ -5,7 +5,7 @@ import PageHeader from '@/components/PageHeader';
 import {
   User, Target, Moon, Pill, Plus, Trash2, Save, Check, Download,
   Lock, Scale, Globe, Sun, Monitor, ChevronRight, ChevronLeft, LogOut, Droplets,
-  Utensils, Languages, Palette, DollarSign, Ruler, BedDouble, KeyRound, ShieldCheck
+  Utensils, Languages, Palette, DollarSign, Ruler, BedDouble, KeyRound, ShieldCheck, Footprints
 } from 'lucide-react';
 import { useAppSettings, type ThemeMode } from '@/hooks/useAppSettings';
 import { LANGUAGES, CURRENCIES, t } from '@/lib/i18n';
@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useSupplements, useAddSupplement, useDeleteSupplement } from '@/hooks/useSupplements';
 import { supabase } from '@/integrations/supabase/client';
+import { useStepsGoal } from '@/hooks/useStepsGoal';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +37,7 @@ interface ProfileForm {
   water_target_ml: string; units_weight: string; units_height: string;
 }
 
-type Page = 'main' | 'profile' | 'units' | 'theme' | 'language' | 'currency' | 'nutrition' | 'sleep' | 'water' | 'supplements' | 'export' | 'pin' | 'password' | 'twofactor';
+type Page = 'main' | 'profile' | 'units' | 'theme' | 'language' | 'currency' | 'nutrition' | 'sleep' | 'water' | 'supplements' | 'export' | 'pin' | 'password' | 'twofactor' | 'steps';
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
@@ -48,6 +49,7 @@ const Settings = () => {
   const navigate = useNavigate();
   const appSettings = useAppSettings();
   const i18n = t(appSettings.lang);
+  const { goal: stepsGoal, setGoal: setStepsGoal } = useStepsGoal();
 
   const [form, setForm] = useState<ProfileForm>({
     name: '', dob: '', sex: 'other', height_cm: '170', weight_kg: '70',
@@ -815,6 +817,53 @@ const Settings = () => {
           </motion.div>
         );
 
+      case 'steps':
+        return (
+          <motion.div key="steps" {...slideIn} className="space-y-4">
+            <div className="flex items-center gap-3 mb-5">
+              <motion.button onClick={() => setPage('main')} whileTap={{ scale: 0.9 }} transition={spring} className="w-9 h-9 rounded-xl bg-secondary/50 flex items-center justify-center active:bg-secondary/80 transition-colors">
+                <ChevronLeft className="w-5 h-5 text-foreground" />
+              </motion.button>
+              <h2 className="text-lg font-bold tracking-tight">{i18n.stepsGoal}</h2>
+            </div>
+            <div className="rounded-2xl bg-card/60 border border-border/30 p-4 space-y-4 backdrop-blur-sm">
+              <div className="space-y-1.5">
+                <Label className="text-xs">{appSettings.lang === 'vi' ? 'Mục tiêu bước đi hàng ngày' : 'Daily step goal'}</Label>
+                <Input
+                  type="number"
+                  step="500"
+                  min="1000"
+                  max="50000"
+                  value={String(stepsGoal)}
+                  onChange={e => setStepsGoal(Number(e.target.value))}
+                  className="rounded-xl bg-background/50 font-mono text-2xl font-bold h-14"
+                />
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {[5000, 8000, 10000, 15000].map(v => (
+                  <motion.button
+                    key={v}
+                    whileTap={{ scale: 0.95 }}
+                    transition={spring}
+                    onClick={() => setStepsGoal(v)}
+                    className={`p-2.5 rounded-xl border text-xs font-mono font-semibold transition-all ${
+                      stepsGoal === v ? 'bg-primary/10 border-primary text-primary' : 'bg-secondary/20 border-border/30 text-muted-foreground'
+                    }`}
+                  >
+                    {v.toLocaleString()}
+                  </motion.button>
+                ))}
+              </div>
+              <div className="bg-secondary/30 rounded-xl p-4 flex items-center gap-3">
+                <Footprints className="w-5 h-5 text-green-400" />
+                <p className="text-sm text-muted-foreground">
+                  {appSettings.lang === 'vi' ? `Mục tiêu: ${stepsGoal.toLocaleString()} bước/ngày` : `Goal: ${stepsGoal.toLocaleString()} steps/day`}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        );
+
       default:
         return null;
     }
@@ -826,7 +875,7 @@ const Settings = () => {
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
       </div>
 
-      <PageHeader title={i18n.navSettings || 'Settings'} />
+      <PageHeader title={i18n.navSettings || 'Settings'} showBack={false} />
 
       <div className="relative max-w-lg mx-auto px-4 pt-6 pb-28">
         <AnimatePresence mode="wait">
@@ -885,6 +934,8 @@ const Settings = () => {
                   <SettingsRow icon={Droplets} label={i18n.settingsWaterTarget} targetPage="water" subtitle={`${form.water_target_ml} ml`} />
                   <Divider />
                   <SettingsRow icon={Pill} label={i18n.settingsSupplements} targetPage="supplements" subtitle={supplements ? `${supplements.length} items` : ''} />
+                  <Divider />
+                  <SettingsRow icon={Footprints} label={i18n.stepsGoal} targetPage="steps" subtitle={`${stepsGoal.toLocaleString()} ${appSettings.lang === 'vi' ? 'bước' : 'steps'}`} />
                 </div>
               </div>
 

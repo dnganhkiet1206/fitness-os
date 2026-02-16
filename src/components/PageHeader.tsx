@@ -10,9 +10,10 @@ interface PageHeaderProps {
   gradient?: boolean;
   children?: React.ReactNode;
   sticky?: boolean;
+  showBack?: boolean;
 }
 
-export default function PageHeader({ title, backTo = '/', gradient = false, children, sticky = true }: PageHeaderProps) {
+export default function PageHeader({ title, backTo = '/', gradient = false, children, sticky = true, showBack = true }: PageHeaderProps) {
   const navigate = useNavigate();
 
   return (
@@ -30,14 +31,18 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
         }}
       >
         <div className="max-w-4xl mx-auto px-1 h-[44px] flex items-center">
-          <motion.button
-            onClick={() => navigate(backTo)}
-            whileTap={{ scale: 0.88 }}
-            transition={spring}
-            className="flex items-center justify-center w-[44px] h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"
-          >
-            <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={2} />
-          </motion.button>
+          {showBack ? (
+            <motion.button
+              onClick={() => navigate(backTo)}
+              whileTap={{ scale: 0.88 }}
+              transition={spring}
+              className="flex items-center justify-center w-[44px] h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"
+            >
+              <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={2} />
+            </motion.button>
+          ) : (
+            <div className="w-[44px] h-[44px] shrink-0" />
+          )}
           <h1 className="text-[17px] font-semibold tracking-tight flex-1 min-w-0 text-center -ml-[44px]">
             {gradient ? <span className="text-gradient-gold">{title}</span> : title}
           </h1>

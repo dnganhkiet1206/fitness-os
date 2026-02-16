@@ -5,6 +5,7 @@ import { Footprints, Watch, Loader2, TrendingUp, TrendingDown, Minus, Target } f
 import { useAuth } from '@/hooks/useAuth';
 import { useStepsHistory, useTodaySteps } from '@/hooks/useStepsData';
 import { useHealthSync } from '@/hooks/useHealthSync';
+import { getStepsGoal } from '@/hooks/useStepsGoal';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n';
@@ -12,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Area, AreaChart, Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid } from 'recharts';
 
 const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
-const DAILY_GOAL = 10000;
 
 export default function Steps() {
   const { user, loading } = useAuth();
@@ -26,6 +26,7 @@ export default function Steps() {
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
 
+  const DAILY_GOAL = getStepsGoal();
   const steps = todaySteps ?? 0;
   const pct = Math.min(100, Math.round((steps / DAILY_GOAL) * 100));
 
