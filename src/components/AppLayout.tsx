@@ -59,7 +59,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         ) : (
           <main
-            className="flex-1 overflow-y-auto scroll-container pt-safe"
+            className="flex-1 overflow-y-auto scroll-container"
             style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : { paddingBottom: 72 }}
           >
             {children}
