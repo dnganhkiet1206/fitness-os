@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import PageHeader from '@/components/PageHeader';
+// PageHeader removed – Settings uses inline header
 import {
   User, Target, Moon, Pill, Plus, Trash2, Save, Check, Download,
   Lock, Scale, Globe, Sun, Monitor, ChevronRight, ChevronLeft, LogOut, Droplets,
@@ -817,52 +817,7 @@ const Settings = () => {
           </motion.div>
         );
 
-      case 'steps':
-        return (
-          <motion.div key="steps" {...slideIn} className="space-y-4">
-            <div className="flex items-center gap-3 mb-5">
-              <motion.button onClick={() => setPage('main')} whileTap={{ scale: 0.9 }} transition={spring} className="w-9 h-9 rounded-xl bg-secondary/50 flex items-center justify-center active:bg-secondary/80 transition-colors">
-                <ChevronLeft className="w-5 h-5 text-foreground" />
-              </motion.button>
-              <h2 className="text-lg font-bold tracking-tight">{i18n.stepsGoal}</h2>
-            </div>
-            <div className="rounded-2xl bg-card/60 border border-border/30 p-4 space-y-4 backdrop-blur-sm">
-              <div className="space-y-1.5">
-                <Label className="text-xs">{appSettings.lang === 'vi' ? 'Mục tiêu bước đi hàng ngày' : 'Daily step goal'}</Label>
-                <Input
-                  type="number"
-                  step="500"
-                  min="1000"
-                  max="50000"
-                  value={String(stepsGoal)}
-                  onChange={e => setStepsGoal(Number(e.target.value))}
-                  className="rounded-xl bg-background/50 font-mono text-2xl font-bold h-14"
-                />
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {[5000, 8000, 10000, 15000].map(v => (
-                  <motion.button
-                    key={v}
-                    whileTap={{ scale: 0.95 }}
-                    transition={spring}
-                    onClick={() => setStepsGoal(v)}
-                    className={`p-2.5 rounded-xl border text-xs font-mono font-semibold transition-all ${
-                      stepsGoal === v ? 'bg-primary/10 border-primary text-primary' : 'bg-secondary/20 border-border/30 text-muted-foreground'
-                    }`}
-                  >
-                    {v.toLocaleString()}
-                  </motion.button>
-                ))}
-              </div>
-              <div className="bg-secondary/30 rounded-xl p-4 flex items-center gap-3">
-                <Footprints className="w-5 h-5 text-green-400" />
-                <p className="text-sm text-muted-foreground">
-                  {appSettings.lang === 'vi' ? `Mục tiêu: ${stepsGoal.toLocaleString()} bước/ngày` : `Goal: ${stepsGoal.toLocaleString()} steps/day`}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        );
+
 
       default:
         return null;
@@ -874,8 +829,6 @@ const Settings = () => {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
       </div>
-
-      <PageHeader title={i18n.navSettings || 'Settings'} showBack={false} />
 
       <div className="relative max-w-lg mx-auto px-4 pt-6 pb-28">
         <AnimatePresence mode="wait">
@@ -935,7 +888,30 @@ const Settings = () => {
                   <Divider />
                   <SettingsRow icon={Pill} label={i18n.settingsSupplements} targetPage="supplements" subtitle={supplements ? `${supplements.length} items` : ''} />
                   <Divider />
-                  <SettingsRow icon={Footprints} label={i18n.stepsGoal} targetPage="steps" subtitle={`${stepsGoal.toLocaleString()} ${appSettings.lang === 'vi' ? 'bước' : 'steps'}`} />
+                  {/* Inline steps goal editor */}
+                  <div className="px-4 py-3.5">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center shrink-0">
+                        <Footprints className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-foreground">{appSettings.lang === 'vi' ? 'Mục tiêu bước đi' : 'Daily step goal'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setStepsGoal(Math.max(1000, stepsGoal - 500))}
+                          className="w-7 h-7 rounded-lg bg-secondary/50 flex items-center justify-center text-muted-foreground active:bg-secondary/80 text-sm font-bold"
+                        >−</motion.button>
+                        <span className="text-sm font-bold font-mono w-14 text-center">{stepsGoal.toLocaleString()}</span>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setStepsGoal(Math.min(50000, stepsGoal + 500))}
+                          className="w-7 h-7 rounded-lg bg-secondary/50 flex items-center justify-center text-muted-foreground active:bg-secondary/80 text-sm font-bold"
+                        >+</motion.button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
