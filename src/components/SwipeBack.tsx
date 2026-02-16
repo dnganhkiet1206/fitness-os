@@ -14,8 +14,8 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
   const x = useMotionValue(0);
   const isDragging = useRef(false);
   const startedFromEdge = useRef(false);
+  const startX = useRef(0);
 
-  // All hooks MUST be called before any conditional return
   const overlayOpacity = useTransform(x, [0, SCREEN_WIDTH * 0.5], [0, 0.15]);
   const edgeOpacity = useTransform(x, [0, 20, THRESHOLD * 0.6, THRESHOLD], [0, 0.3, 0.7, 1]);
   const edgeWidth = useTransform(x, [0, THRESHOLD * 0.5, THRESHOLD], [3, 4, 6]);
@@ -29,33 +29,31 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
     x.set(0);
   }, [location.pathname, x]);
 
-  const handleDragStart = useCallback(
-    (_: any, info: { point: { x: number } }) => {
-      startedFromEdge.current = canSwipe && info.point.x <= EDGE_WIDTH;
-    },
-    [canSwipe]
-  );
+  // Manual pointer-based edge swipe (avoids framer-motion drag interfering with child clicks)
+  useEffect(() => {
+    if (!canSwipe) return;
 
-  const handleDrag = useCallback(
-    (_: any, info: { offset: { x: number } }) => {
-      if (!startedFromEdge.current) { x.set(0); return; }
-      x.set(Math.max(0, info.offset.x));
-      isDragging.current = info.offset.x > 4;
-    },
-    [x]
-  );
-
-  const handleDragEnd = useCallback(
-    (_: any, info: { offset: { x: number }; velocity: { x: number } }) => {
-      if (!startedFromEdge.current) {
-        animate(x, 0, { type: 'spring', stiffness: 400, damping: 40 });
+    const handlePointerDown = (e: PointerEvent) => {
+      if (e.clientX <= EDGE_WIDTH) {
+        startedFromEdge.current = true;
+        startX.current = e.clientX;
         isDragging.current = false;
-        startedFromEdge.current = false;
-        return;
       }
-      const shouldNavigate = info.offset.x > THRESHOLD || info.velocity.x > 600;
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!startedFromEdge.current) return;
+      const dx = Math.max(0, e.clientX - startX.current);
+      if (dx > 4) isDragging.current = true;
+      x.set(dx);
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      if (!startedFromEdge.current) return;
+      const dx = e.clientX - startX.current;
+      const shouldNavigate = dx > THRESHOLD || (isDragging.current && dx > THRESHOLD * 0.5);
+
       if (shouldNavigate) {
-        // Haptic feedback
         if (navigator.vibrate) navigator.vibrate(12);
         animate(x, SCREEN_WIDTH, {
           type: 'spring', stiffness: 300, damping: 30,
@@ -64,16 +62,37 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
       } else {
         animate(x, 0, { type: 'spring', stiffness: 400, damping: 40 });
       }
-      isDragging.current = false;
+
       startedFromEdge.current = false;
-    },
-    [navigate, x]
-  );
+      isDragging.current = false;
+    };
+
+    const handlePointerCancel = () => {
+      if (startedFromEdge.current) {
+        animate(x, 0, { type: 'spring', stiffness: 400, damping: 40 });
+        startedFromEdge.current = false;
+        isDragging.current = false;
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, { passive: true });
+    document.addEventListener('pointermove', handlePointerMove, { passive: true });
+    document.addEventListener('pointerup', handlePointerUp, { passive: true });
+    document.addEventListener('pointercancel', handlePointerCancel, { passive: true });
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerCancel);
+    };
+  }, [canSwipe, navigate, x]);
 
   if (!canSwipe) return <>{children}</>;
 
   return (
     <div className="relative overflow-hidden">
+      {/* Edge glow indicator */}
       <motion.div
         className="fixed left-0 top-[10%] bottom-[10%] z-[9999] rounded-r-full pointer-events-none"
         style={{
@@ -85,20 +104,14 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
           boxShadow: '0 0 12px hsl(var(--primary) / 0.4)',
         }}
       />
+      {/* Dim overlay during swipe */}
       <motion.div
         className="fixed inset-0 bg-black pointer-events-none z-[99]"
         style={{ opacity: overlayOpacity }}
       />
+      {/* Content — NO drag prop, so child buttons work normally */}
       <motion.div
         style={{ x }}
-        drag="x"
-        dragDirectionLock
-        dragConstraints={{ left: 0, right: SCREEN_WIDTH }}
-        dragElastic={0}
-        dragMomentum={false}
-        onDragStart={handleDragStart}
-        onDrag={handleDrag}
-        onDragEnd={handleDragEnd}
         className="relative z-[100] min-h-screen bg-background"
       >
         {children}

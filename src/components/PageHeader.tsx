@@ -17,40 +17,37 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
   const navigate = useNavigate();
 
   return (
-    <>
-      {sticky && <div className="shrink-0" style={{ height: 'calc(env(safe-area-inset-top, 0px) + 44px)' }} />}
-      <header
-        className={`${sticky ? 'fixed top-0 left-0 right-0 z-50' : ''}`}
-        style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: 'hsl(var(--glass-bg))',
-          backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
-          WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
-          borderBottom: '0.5px solid hsl(var(--glass-border))',
-          boxShadow: 'var(--glass-inner-shadow), var(--glass-shadow)',
-        }}
-      >
-        <div className="max-w-4xl mx-auto px-1 h-[44px] flex items-center">
-          {showBack ? (
-            <motion.button
-              onClick={() => navigate(backTo)}
-              whileTap={{ scale: 0.88 }}
-              transition={spring}
-              className="flex items-center justify-center w-[44px] h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"
-            >
-              <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={2} />
-            </motion.button>
-          ) : (
-            <div className="w-[44px] h-[44px] shrink-0" />
-          )}
-          <h1 className="text-[17px] font-semibold tracking-tight flex-1 min-w-0 text-center -ml-[44px]">
-            {gradient ? <span className="text-gradient-gold">{title}</span> : title}
-          </h1>
-          <div className="flex items-center gap-0.5 pr-2 shrink-0">
-            {children}
-          </div>
+    <header
+      className={`${sticky ? 'sticky top-0 z-50' : ''}`}
+      style={{
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        background: 'hsl(var(--glass-bg))',
+        backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
+        WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
+        borderBottom: '0.5px solid hsl(var(--glass-border))',
+        boxShadow: 'var(--glass-inner-shadow), var(--glass-shadow)',
+      }}
+    >
+      <div className="max-w-4xl mx-auto px-1 h-[44px] flex items-center">
+        {showBack ? (
+          <motion.button
+            onClick={() => navigate(backTo)}
+            whileTap={{ scale: 0.88 }}
+            transition={spring}
+            className="flex items-center justify-center w-[44px] h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"
+          >
+            <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={2} />
+          </motion.button>
+        ) : (
+          <div className="w-[44px] h-[44px] shrink-0" />
+        )}
+        <h1 className="text-[17px] font-semibold tracking-tight flex-1 min-w-0 text-center -ml-[44px]">
+          {gradient ? <span className="text-gradient-gold">{title}</span> : title}
+        </h1>
+        <div className="flex items-center gap-0.5 pr-2 shrink-0">
+          {children}
         </div>
-      </header>
-    </>
+      </div>
+    </header>
   );
 }
