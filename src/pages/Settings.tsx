@@ -830,7 +830,7 @@ const Settings = () => {
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
       </div>
 
-      <div className="relative max-w-lg mx-auto px-4 pt-6 pb-28">
+      <div className="relative max-w-lg mx-auto px-4 pt-safe pb-28" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}>
         <AnimatePresence mode="wait">
           {page === 'main' ? (
             <motion.div
