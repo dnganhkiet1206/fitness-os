@@ -118,8 +118,10 @@ const WaterTracking = () => {
     const next = !reminderOn;
     setReminderOn(next);
     localStorage.setItem('water_reminder', String(next));
-    if (next && 'Notification' in window) {
-      Notification.requestPermission();
+    if (next) {
+      if ('Notification' in window) {
+        Notification.requestPermission();
+      }
       toast.success(i18n.waterReminderEnabled);
     } else {
       toast.info(i18n.waterReminderDisabled);
