@@ -178,7 +178,7 @@ export default function Progress() {
                 <DialogTrigger asChild>
                   <Button size="sm" className="rounded-xl"><Plus className="w-3 h-3 mr-1.5" />{i18n.progressAddMeasurement}</Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-sm max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-sm max-h-[80vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
                   <DialogHeader><DialogTitle>{i18n.progressAddMeasurement}</DialogTitle></DialogHeader>
                   <div className="space-y-3">
                     <div className="space-y-1">
@@ -276,7 +276,7 @@ export default function Progress() {
                 <DialogTrigger asChild>
                   <Button size="sm" className="rounded-xl"><Camera className="w-3 h-3 mr-1.5" />{i18n.progressUploadPhoto}</Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-sm">
+                <DialogContent className="max-w-sm" onInteractOutside={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
                   <DialogHeader><DialogTitle>{i18n.progressUploadPhoto}</DialogTitle></DialogHeader>
                   <div className="space-y-3">
                     <div className="space-y-1">
