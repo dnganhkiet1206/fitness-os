@@ -221,12 +221,11 @@ export default function AiCoach() {
           <motion.button
             onClick={() => navigate('/')}
             whileTap={{ scale: 0.88 }}
-            className="flex items-center gap-0 px-2 h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"
+            className="flex items-center justify-center w-[44px] h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"
           >
-            <ChevronLeft className="w-[22px] h-[22px] -mr-0.5" strokeWidth={2.5} />
-            <span className="text-[17px] font-normal">Back</span>
+            <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={2} />
           </motion.button>
-          <h1 className="text-[17px] font-semibold tracking-tight flex-1 min-w-0 text-center -ml-16">
+          <h1 className="text-[17px] font-semibold tracking-tight flex-1 min-w-0 text-center -ml-[44px]">
             {i18n.aiCoachTitle}
           </h1>
           <div className="flex items-center gap-0.5 pr-2 shrink-0">
