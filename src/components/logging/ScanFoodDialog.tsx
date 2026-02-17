@@ -121,16 +121,93 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
     streamRef.current = null;
   }, []);
 
-  // Auto-scan for barcode mode - completely silent, no UI blocking
+  // Lookup barcode from Open Food Facts
+  const lookupBarcode = async (code: string): Promise<ScannedFoodItem[] | null> => {
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      if (json.status !== 1 || !json.product) return null;
+      const p = json.product;
+      const n = p.nutriments || {};
+      const servingG = p.serving_quantity ? Number(p.serving_quantity) : (p.product_quantity ? Number(p.product_quantity) : 100);
+      const name = (lang === 'vi' ? p.product_name_vi : null) || p.product_name || p.product_name_en || code;
+      const factor = servingG / 100;
+      return [{
+        food_name: name,
+        serving_g: servingG,
+        kcal: Math.round((n['energy-kcal_100g'] || n['energy-kcal'] || 0) * factor * 10) / 10,
+        protein_g: Math.round((n.proteins_100g || 0) * factor * 10) / 10,
+        carbs_g: Math.round((n.carbohydrates_100g || 0) * factor * 10) / 10,
+        fat_g: Math.round((n.fat_100g || 0) * factor * 10) / 10,
+        fiber_g: Math.round((n.fiber_100g || 0) * factor * 10) / 10,
+      }];
+    } catch {
+      return null;
+    }
+  };
+
+  // Auto-scan for barcode mode using native BarcodeDetector API + Open Food Facts
   useEffect(() => {
     if (!open || capturedImage || viewMode !== 'camera') return;
     if (scanMode === 'barcode') {
       setBarcodeScanActive(true);
-      autoScanTimerRef.current = setInterval(() => {
+
+      const hasBarcodeDetector = 'BarcodeDetector' in window;
+      let detector: any = null;
+      if (hasBarcodeDetector) {
+        try {
+          detector = new (window as any).BarcodeDetector({
+            formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code', 'data_matrix'],
+          });
+        } catch { /* fallback to AI */ }
+      }
+
+      autoScanTimerRef.current = setInterval(async () => {
         if (isAnalyzingRef.current) return;
         const video = videoRef.current;
+        if (!video || video.readyState < 2) return;
+
+        // Try native BarcodeDetector first
+        if (detector) {
+          try {
+            const barcodes = await detector.detect(video);
+            if (barcodes.length > 0) {
+              const code = barcodes[0].rawValue;
+              if (!code) return;
+              isAnalyzingRef.current = true;
+              const canvas = canvasRef.current;
+              if (canvas) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d')?.drawImage(video, 0, 0);
+              }
+              const dataUrl = canvas ? canvasRef.current!.toDataURL('image/jpeg', 0.85) : '';
+
+              const items = await lookupBarcode(code);
+              if (items && items.length > 0) {
+                setCapturedImage(dataUrl);
+                setResults(items);
+                setBarcodeScanActive(false);
+                stopCamera();
+                haptic('heavy');
+                saveToHistory(items, 'barcode');
+                toast.success(lang === 'vi' ? `Đã nhận dạng: ${code}` : `Found: ${code}`);
+                isAnalyzingRef.current = false;
+                return;
+              } else {
+                // Not in Open Food Facts → fallback to AI
+                if (dataUrl) await silentAnalyze(dataUrl);
+              }
+              isAnalyzingRef.current = false;
+              return;
+            }
+          } catch { /* fallback below */ }
+        }
+
+        // Fallback: send frame to AI
         const canvas = canvasRef.current;
-        if (!video || !canvas || video.readyState < 2) return;
+        if (!canvas) return;
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
@@ -138,7 +215,7 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
         ctx.drawImage(video, 0, 0);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         silentAnalyze(dataUrl);
-      }, 3000);
+      }, detector ? 500 : 3000);
     } else {
       setBarcodeScanActive(false);
       if (autoScanTimerRef.current) {
@@ -154,11 +231,10 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
     };
   }, [scanMode, open, capturedImage, viewMode]);
 
-  // Fully silent barcode analyze - NO overlay, NO setAnalyzing, camera stays live
+  // Fully silent barcode analyze via AI fallback
   const silentAnalyze = async (dataUrl: string) => {
     if (isAnalyzingRef.current) return;
     isAnalyzingRef.current = true;
-    // Do NOT call setAnalyzing(true) - keep camera unblocked
     try {
       const base64 = dataUrl.split(',')[1];
       const { data, error } = await supabase.functions.invoke('scan-food', {
@@ -166,7 +242,6 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
       });
       if (error) throw error;
       if (data?.items && data.items.length > 0) {
-        // Found product! Now show results
         setCapturedImage(dataUrl);
         setResults(data.items);
         setBarcodeScanActive(false);
@@ -175,9 +250,8 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
         saveToHistory(data.items, 'barcode');
         toast.success(lang === 'vi' ? 'Đã nhận dạng sản phẩm!' : 'Product identified!');
       }
-      // If empty, silently keep scanning - user sees nothing
     } catch {
-      // Silent fail, keep scanning
+      // Silent fail
     } finally {
       isAnalyzingRef.current = false;
     }
