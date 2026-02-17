@@ -91,7 +91,7 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
                 value={form.name}
                 onChange={e => set('name', e.target.value)}
                 placeholder={T.foodNamePlaceholder}
-                className="rounded-xl bg-secondary/30 border-border/20 h-11"
+                className="rounded-xl bg-secondary border border-border h-11"
               />
             </div>
             <div className="space-y-1.5">
@@ -100,7 +100,7 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
                 value={form.brand}
                 onChange={e => set('brand', e.target.value)}
                 placeholder={T.foodBrandPlaceholder}
-                className="rounded-xl bg-secondary/30 border-border/20 h-11"
+                className="rounded-xl bg-secondary border border-border h-11"
               />
             </div>
           </div>
@@ -113,7 +113,7 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
                 type="number"
                 value={numVal(form.serving_g)}
                 onChange={e => set('serving_g', e.target.value === '' ? '' as any : Number(e.target.value))}
-                className="rounded-xl bg-secondary/30 border-border/20 h-11 w-24 text-center font-mono"
+                className="rounded-xl bg-secondary border border-border h-11 w-24 text-center font-mono"
                 min={1}
               />
               <span className="text-sm text-muted-foreground">g</span>
@@ -133,7 +133,7 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
                   type="number"
                   value={numVal(form.kcal)}
                   onChange={e => set('kcal', e.target.value === '' ? '' as any : Number(e.target.value))}
-                  className="rounded-xl bg-secondary/30 border-border/20 h-11 w-24 text-center font-mono text-lg font-bold"
+                  className="rounded-xl bg-secondary border border-border h-11 w-24 text-center font-mono text-lg font-bold"
                   min={0}
                 />
                 <span className="text-xs text-muted-foreground">kcal</span>
@@ -206,7 +206,7 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
                 type="number"
                 value={numVal(form.fiber_g)}
                 onChange={e => set('fiber_g', e.target.value === '' ? '' as any : Number(e.target.value))}
-                className="rounded-xl bg-secondary/40 border-border/20 h-8 w-16 text-center font-mono text-sm"
+                className="rounded-xl bg-secondary border border-border h-8 w-16 text-center font-mono text-sm"
                 min={0}
               />
               <span className="text-xs text-muted-foreground">g</span>
@@ -249,7 +249,7 @@ function MacroInput({
   gradient: string;
 }) {
   return (
-    <div className="bg-secondary/30 rounded-xl p-2.5 space-y-1.5 border border-border/10">
+    <div className="bg-secondary/50 rounded-xl p-2.5 space-y-1.5 border border-border/50">
       <div className="flex items-center gap-1">
         {icon}
         <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</span>
@@ -258,7 +258,7 @@ function MacroInput({
         type="number"
         value={value === 0 ? '' : value}
         onChange={e => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
-        className="rounded-lg bg-transparent border-0 h-8 text-center font-mono text-base font-bold p-0 focus-visible:ring-0"
+        className="rounded-lg bg-secondary border border-border h-8 text-center font-mono text-base font-bold p-0 focus-visible:ring-1"
         min={0}
       />
       <div className="flex items-center justify-between">
