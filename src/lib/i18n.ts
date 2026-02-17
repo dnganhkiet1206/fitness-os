@@ -684,6 +684,10 @@ interface Translations {
   dcReadinessModerate: string;
   dcReadinessRecover: string;
   dcReadinessTrend: string;
+  dcReadinessTrendDesc: string;
+  dcReadinessAvg: string;
+  dcReadinessBest: string;
+  dcReadinessWorst: string;
   dcNudgesTitle: string;
   dcNudgesActive: string;
   dcTrainingTitle: string;
@@ -1363,6 +1367,10 @@ const vi: Translations = {
   dcReadinessModerate: 'VỪA PHẢI',
   dcReadinessRecover: 'PHỤC HỒI',
   dcReadinessTrend: 'Sẵn Sàng 7 Ngày',
+  dcReadinessTrendDesc: 'Mức độ sẵn sàng tập luyện của bạn trong tuần qua',
+  dcReadinessAvg: 'TB',
+  dcReadinessBest: 'Cao nhất',
+  dcReadinessWorst: 'Thấp nhất',
   dcNudgesTitle: 'Nhắc Nhở Thói Quen',
   dcNudgesActive: 'đang bật',
   dcTrainingTitle: 'Tập Luyện',
@@ -2039,6 +2047,10 @@ const en: Translations = {
   dcReadinessModerate: 'MODERATE',
   dcReadinessRecover: 'RECOVER',
   dcReadinessTrend: '7-Day Readiness',
+  dcReadinessTrendDesc: 'Your training readiness over the past week',
+  dcReadinessAvg: 'AVG',
+  dcReadinessBest: 'Best',
+  dcReadinessWorst: 'Worst',
   dcNudgesTitle: 'Habit Nudges',
   dcNudgesActive: 'active',
   dcTrainingTitle: 'Training',
