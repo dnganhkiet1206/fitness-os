@@ -126,10 +126,24 @@ const ExerciseLibrary = () => {
             <motion.div key={group} variants={fadeUp}>
               <AccordionItem value={group} className="glass-card border-none">
                 <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-1">
                     <Dumbbell className="w-4 h-4 text-primary" />
                     <span className="font-semibold text-sm">{group}</span>
                     <span className="text-[10px] text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded-full">{exs.length}</span>
+                    {editing && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-auto mr-2 h-7 px-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          exs.forEach(ex => deleteEx.mutate(ex.id));
+                          toast.success(lang === 'vi' ? `Đã xoá nhóm ${group}` : `Deleted group ${group}`);
+                        }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4 space-y-3">
