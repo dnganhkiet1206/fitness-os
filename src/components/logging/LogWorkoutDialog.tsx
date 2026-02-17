@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogDescription, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Dumbbell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
@@ -65,6 +66,7 @@ export default function LogWorkoutDialog({ children }: { children: React.ReactNo
 
   const removeSet = (idx: number) => setSets(prev => prev.filter((_, i) => i !== idx));
 
+  const numVal = (v: number) => v === 0 ? '' : v;
   const volumeLoad = sets.reduce((s, set) => s + set.weight * set.reps, 0);
 
   const handleSave = async () => {
@@ -107,61 +109,93 @@ export default function LogWorkoutDialog({ children }: { children: React.ReactNo
   return (
     <ResponsiveDialog open={open} onOpenChange={setOpen}>
       <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
-      <ResponsiveDialogContent className="max-w-md">
-        <ResponsiveDialogHeader><ResponsiveDialogTitle>{T.logWorkoutTitle}</ResponsiveDialogTitle></ResponsiveDialogHeader>
+      <ResponsiveDialogContent className="max-w-md rounded-3xl border-border/30">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="text-lg font-bold">{T.logWorkoutTitle}</ResponsiveDialogTitle>
+        </ResponsiveDialogHeader>
+        <ResponsiveDialogDescription className="sr-only">{T.logWorkoutTitle}</ResponsiveDialogDescription>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>{T.logWorkoutName}</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder={T.logWorkoutNamePlaceholder} />
+        <div className="space-y-5">
+          {/* Workout name */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider">{T.logWorkoutName}</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder={T.logWorkoutNamePlaceholder} className="rounded-xl h-11" />
           </div>
 
-          <div className="space-y-2">
-            <Label>{T.logWorkoutSessionRPE}</Label>
-            <Input type="number" value={sessionRpe} onChange={e => setSessionRpe(Number(e.target.value))} min={1} max={10} />
+          {/* Session RPE */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider">{T.logWorkoutSessionRPE}</Label>
+            <Input type="number" value={sessionRpe} onChange={e => setSessionRpe(Number(e.target.value))} min={1} max={10} className="rounded-xl h-11 w-20 text-center font-mono" />
           </div>
 
           {/* Sets */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>{T.logWorkoutSets}</Label>
-              <Button variant="outline" size="sm" onClick={addSet}><Plus className="w-3 h-3 mr-1" />{T.logWorkoutAddSet}</Button>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">{T.logWorkoutSets}</Label>
+              <Button variant="outline" size="sm" onClick={addSet} className="rounded-xl gap-1.5 h-7 text-xs border-border/30">
+                <Plus className="w-3 h-3" />{T.logWorkoutAddSet}
+              </Button>
             </div>
-            {sets.map((set, idx) => (
-              <div key={idx} className="bg-secondary/30 rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <select value={set.exerciseId} onChange={e => updateSet(idx, 'exerciseId', e.target.value)}
-                    className="flex-1 bg-secondary rounded-md px-2 py-1 text-sm border border-border">
-                    {exercises?.map(ex => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
-                  </select>
-                  <button onClick={() => removeSet(idx)}><Trash2 className="w-4 h-4 text-muted-foreground" /></button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <div className="text-[10px] text-muted-foreground">{T.logWorkoutKg}</div>
-                    <Input type="number" value={set.weight} onChange={e => updateSet(idx, 'weight', Number(e.target.value))} className="h-8" />
+
+            <AnimatePresence>
+              {sets.map((set, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -20, height: 0 }}
+                  className="bg-secondary/20 rounded-2xl p-3 space-y-2.5 border border-border/30"
+                >
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={set.exerciseId}
+                      onChange={e => updateSet(idx, 'exerciseId', e.target.value)}
+                      className="flex-1 bg-secondary rounded-xl px-3 py-2 text-sm border border-border h-10"
+                    >
+                      {exercises?.map(ex => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
+                    </select>
+                    <motion.button whileTap={{ scale: 0.8 }} onClick={() => removeSet(idx)} className="p-2 rounded-full hover:bg-destructive/10 transition-colors">
+                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive transition-colors" />
+                    </motion.button>
                   </div>
-                  <div>
-                    <div className="text-[10px] text-muted-foreground">{T.logWorkoutReps}</div>
-                    <Input type="number" value={set.reps} onChange={e => updateSet(idx, 'reps', Number(e.target.value))} className="h-8" />
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{T.logWorkoutKg}</span>
+                      <Input type="number" value={numVal(set.weight)} onChange={e => updateSet(idx, 'weight', e.target.value === '' ? 0 : Number(e.target.value))} className="rounded-xl h-9 text-center font-mono" />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{T.logWorkoutReps}</span>
+                      <Input type="number" value={numVal(set.reps)} onChange={e => updateSet(idx, 'reps', e.target.value === '' ? 0 : Number(e.target.value))} className="rounded-xl h-9 text-center font-mono" />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{T.logWorkoutRPE}</span>
+                      <Input type="number" value={set.rpe} onChange={e => updateSet(idx, 'rpe', Number(e.target.value))} min={1} max={10} className="rounded-xl h-9 text-center font-mono" />
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-[10px] text-muted-foreground">{T.logWorkoutRPE}</div>
-                    <Input type="number" value={set.rpe} onChange={e => updateSet(idx, 'rpe', Number(e.target.value))} min={1} max={10} className="h-8" />
-                  </div>
-                </div>
-              </div>
-            ))}
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
 
-          {sets.length > 0 && (
-            <div className="bg-secondary/50 rounded-lg p-3 text-center">
-              <div className="text-[10px] text-muted-foreground uppercase">{T.logWorkoutVolumeLoad}</div>
-              <div className="text-xl font-mono font-bold">{volumeLoad.toLocaleString()}</div>
-            </div>
-          )}
+          {/* Volume load summary */}
+          <AnimatePresence>
+            {sets.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-secondary/20 rounded-2xl p-4 border border-border/30 text-center"
+              >
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Dumbbell className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{T.logWorkoutVolumeLoad}</span>
+                </div>
+                <div className="text-2xl font-mono font-bold">{volumeLoad.toLocaleString()}</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <Button onClick={handleSave} disabled={saving || sets.length === 0} className="w-full">
+          <Button onClick={handleSave} disabled={saving || sets.length === 0} className="w-full rounded-xl h-11 font-semibold">
             {saving ? T.saving : T.logWorkoutSaveBtn}
           </Button>
         </div>
