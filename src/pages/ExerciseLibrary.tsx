@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Plus, Trash2, Dumbbell, Search, Video, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Dumbbell, Search, Video, AlertTriangle, CheckCircle2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSettings, t } from '@/hooks/useAppSettings';
 
@@ -27,6 +27,7 @@ const ExerciseLibrary = () => {
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('all');
   const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const MUSCLE_GROUPS = [i18n.muscleChest, i18n.muscleBack, i18n.muscleShoulders, i18n.muscleBiceps, i18n.muscleTriceps, i18n.muscleQuads, i18n.muscleHamstrings, i18n.muscleGlutes, i18n.muscleAbs, i18n.muscleFullBody, i18n.muscleCardio];
 
@@ -88,7 +89,7 @@ const ExerciseLibrary = () => {
           </Select>
         </motion.div>
 
-        <motion.div variants={fadeUp}>
+        <motion.div variants={fadeUp} className="flex gap-2">
           <ResponsiveDialog open={addOpen} onOpenChange={setAddOpen}>
             <ResponsiveDialogTrigger asChild>
               <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.exercisesAdd}</Button>
@@ -114,6 +115,10 @@ const ExerciseLibrary = () => {
               </div>
             </ResponsiveDialogContent>
           </ResponsiveDialog>
+          <Button size="sm" variant={editing ? "default" : "outline"} className="rounded-xl" onClick={() => setEditing(e => !e)}>
+            <Pencil className="w-3.5 h-3.5 mr-1" />
+            {editing ? (lang === 'vi' ? 'Xong' : 'Done') : (lang === 'vi' ? 'Chỉnh sửa' : 'Edit')}
+          </Button>
         </motion.div>
 
         <Accordion type="multiple" className="space-y-3">
@@ -141,9 +146,11 @@ const ExerciseLibrary = () => {
                               <Button variant="ghost" size="sm"><Video className="w-3.5 h-3.5 text-metric-blue" /></Button>
                             </a>
                           )}
-                          <Button variant="ghost" size="sm" onClick={() => { deleteEx.mutate(ex.id); toast.success(i18n.deleted); }}>
-                            <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                          </Button>
+                          {editing && (
+                            <Button variant="ghost" size="sm" onClick={() => { deleteEx.mutate(ex.id); toast.success(i18n.deleted); }}>
+                              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                       {ex.form_cues && ex.form_cues.length > 0 && (
