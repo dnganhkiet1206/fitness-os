@@ -113,7 +113,7 @@ const WorkoutBuilder = () => {
               <ResponsiveDialogTrigger asChild>
                 <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.workoutsCreateNew}</Button>
               </ResponsiveDialogTrigger>
-              <ResponsiveDialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <ResponsiveDialogContent className="max-w-lg">
                 <ResponsiveDialogHeader><ResponsiveDialogTitle>{i18n.workoutsCreateTemplate}</ResponsiveDialogTitle></ResponsiveDialogHeader>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">

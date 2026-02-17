@@ -107,7 +107,7 @@ export default function LogWorkoutDialog({ children }: { children: React.ReactNo
   return (
     <ResponsiveDialog open={open} onOpenChange={setOpen}>
       <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
-      <ResponsiveDialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+      <ResponsiveDialogContent className="max-w-md">
         <ResponsiveDialogHeader><ResponsiveDialogTitle>{T.logWorkoutTitle}</ResponsiveDialogTitle></ResponsiveDialogHeader>
 
         <div className="space-y-4">

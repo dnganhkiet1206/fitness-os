@@ -45,7 +45,7 @@ function ResponsiveDialogContent({ children, className }: { children: React.Reac
   if (isMobile) {
     return (
       <DrawerContent className={className}>
-        <div className="overflow-y-auto max-h-[82vh] px-4 pb-8">
+        <div className="overflow-y-auto max-h-[92vh] px-4 pb-8 overscroll-contain">
           {children}
         </div>
       </DrawerContent>

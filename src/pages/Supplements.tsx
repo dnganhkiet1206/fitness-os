@@ -110,7 +110,7 @@ const Supplements = () => {
             <ResponsiveDialogTrigger asChild>
               <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.add}</Button>
             </ResponsiveDialogTrigger>
-            <ResponsiveDialogContent className="max-h-[85vh] overflow-y-auto">
+            <ResponsiveDialogContent>
               <ResponsiveDialogHeader><ResponsiveDialogTitle>{editId ? i18n.supplementsEditTitle : i18n.supplementsAddTitle}</ResponsiveDialogTitle></ResponsiveDialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2"><Label>{i18n.supplementsName}</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="VD: Creatine" /></div>
