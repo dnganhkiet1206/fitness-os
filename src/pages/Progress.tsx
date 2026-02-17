@@ -150,6 +150,91 @@ export default function Progress() {
               ))}
             </div>
 
+            {/* BMI Card */}
+            {(() => {
+              const heightM = profile?.height_cm ? Number(profile.height_cm) / 100 : null;
+              const bmi = currentWeight && heightM && heightM > 0 ? currentWeight / (heightM * heightM) : null;
+              const getBmiCategory = (v: number) => {
+                if (v < 18.5) return { label: lang === 'vi' ? 'Thiếu cân' : 'Underweight', color: 'hsl(217 91% 60%)', bg: 'hsl(217 91% 60% / 0.1)' };
+                if (v < 25) return { label: lang === 'vi' ? 'Bình thường' : 'Normal', color: 'hsl(160 84% 39%)', bg: 'hsl(160 84% 39% / 0.1)' };
+                if (v < 30) return { label: lang === 'vi' ? 'Thừa cân' : 'Overweight', color: 'hsl(43 96% 56%)', bg: 'hsl(43 96% 56% / 0.1)' };
+                return { label: lang === 'vi' ? 'Béo phì' : 'Obese', color: 'hsl(0 84% 60%)', bg: 'hsl(0 84% 60% / 0.1)' };
+              };
+              const cat = bmi ? getBmiCategory(bmi) : null;
+              // Position on scale (15–40 range)
+              const pct = bmi ? Math.max(0, Math.min(100, ((bmi - 15) / 25) * 100)) : 0;
+
+              return (
+                <motion.div variants={fadeUp} className="metric-card space-y-4 relative overflow-hidden">
+                  <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ background: 'radial-gradient(ellipse at bottom right, hsl(160 84% 39%), transparent 60%)' }} />
+                  
+                  <div className="flex items-center justify-between relative">
+                    <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                      {lang === 'vi' ? 'Chỉ số BMI' : 'BMI Index'}
+                    </h3>
+                    {cat && (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ color: cat.color, background: cat.bg }}>
+                        {cat.label}
+                      </span>
+                    )}
+                  </div>
+
+                  {bmi ? (
+                    <div className="relative space-y-3">
+                      {/* Big number */}
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-mono font-bold tracking-tight" style={{ color: cat?.color }}>
+                          {bmi.toFixed(1)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">kg/m²</span>
+                      </div>
+
+                      {/* Scale bar */}
+                      <div className="space-y-1.5">
+                        <div className="relative h-2 rounded-full overflow-hidden bg-secondary/40">
+                          <div className="absolute inset-0 flex">
+                            <div className="flex-1 bg-[hsl(217_91%_60%/0.4)]" />
+                            <div className="flex-[2.6] bg-[hsl(160_84%_39%/0.4)]" />
+                            <div className="flex-[2] bg-[hsl(43_96%_56%/0.4)]" />
+                            <div className="flex-[4] bg-[hsl(0_84%_60%/0.3)]" />
+                          </div>
+                          {/* Indicator */}
+                          <motion.div
+                            initial={{ left: '0%' }}
+                            animate={{ left: `${pct}%` }}
+                            transition={{ type: 'spring', stiffness: 200, damping: 25, delay: 0.3 }}
+                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full border-2 border-background shadow-lg"
+                            style={{ background: cat?.color }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[9px] text-muted-foreground font-mono">
+                          <span>15</span>
+                          <span>18.5</span>
+                          <span>25</span>
+                          <span>30</span>
+                          <span>40</span>
+                        </div>
+                      </div>
+
+                      {/* Info row */}
+                      <div className="flex gap-3 text-[10px] text-muted-foreground pt-1">
+                        <span>{lang === 'vi' ? 'Cân nặng' : 'Weight'}: <span className="font-mono text-foreground">{currentWeight}kg</span></span>
+                        <span>·</span>
+                        <span>{lang === 'vi' ? 'Chiều cao' : 'Height'}: <span className="font-mono text-foreground">{profile?.height_cm}cm</span></span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <Scale className="w-7 h-7 text-muted-foreground mx-auto mb-2 opacity-40" />
+                      <p className="text-xs text-muted-foreground">
+                        {lang === 'vi' ? 'Cần cân nặng và chiều cao để tính BMI' : 'Weight & height needed to calculate BMI'}
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })()}
+
             {weightData.length > 0 && (
               <motion.div variants={fadeUp} className="metric-card space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{i18n.progressWeightChart}</h3>
