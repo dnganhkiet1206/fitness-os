@@ -195,8 +195,8 @@ const Index = () => {
     <PullToRefresh onRefresh={handleRefresh} className="bg-background">
       {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(220 20% 50%), transparent 70%)' }} />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.02]" style={{ background: 'radial-gradient(circle, hsl(260 30% 40%), transparent 70%)' }} />
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.02]" style={{ background: 'radial-gradient(circle, hsl(var(--muted)), transparent 70%)' }} />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.015]" style={{ background: 'radial-gradient(circle, hsl(var(--muted)), transparent 70%)' }} />
       </div>
 
       <motion.main variants={container} initial="hidden" animate="show" className="relative max-w-5xl mx-auto px-4 pt-safe py-4 space-y-4">
