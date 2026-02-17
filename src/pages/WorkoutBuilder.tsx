@@ -24,15 +24,33 @@ interface TemplateExercise {
   rpe?: number;
   restSeconds?: number;
   progressionRule?: string;
+  tempo?: string;
+  superset?: string;
+  notes?: string;
 }
 
 const TYPES = [
   { value: 'push', label: 'Push' },
   { value: 'pull', label: 'Pull' },
   { value: 'legs', label: 'Legs' },
-  { value: 'upper', label: 'Upper' },
-  { value: 'lower', label: 'Lower' },
+  { value: 'upper', label: 'Upper Body' },
+  { value: 'lower', label: 'Lower Body' },
   { value: 'full_body', label: 'Full Body' },
+  { value: 'chest_triceps', label: 'Chest & Triceps' },
+  { value: 'back_biceps', label: 'Back & Biceps' },
+  { value: 'shoulders_arms', label: 'Shoulders & Arms' },
+  { value: 'chest_back', label: 'Chest & Back' },
+  { value: 'arms', label: 'Arms' },
+  { value: 'core', label: 'Core / Abs' },
+  { value: 'glutes', label: 'Glutes & Hamstrings' },
+  { value: 'ppl_push', label: 'PPL - Push' },
+  { value: 'ppl_pull', label: 'PPL - Pull' },
+  { value: 'ppl_legs', label: 'PPL - Legs' },
+  { value: 'strength', label: 'Strength' },
+  { value: 'hypertrophy', label: 'Hypertrophy' },
+  { value: 'power', label: 'Power' },
+  { value: 'cardio', label: 'Cardio / HIIT' },
+  { value: 'mobility', label: 'Mobility / Recovery' },
   { value: 'custom', label: 'Custom' },
 ];
 
@@ -67,6 +85,9 @@ const WorkoutBuilder = () => {
       rpe: 7,
       restSeconds: 90,
       progressionRule: 'double',
+      tempo: '',
+      superset: '',
+      notes: '',
     }]);
     setSearchEx('');
   };
@@ -185,16 +206,29 @@ const WorkoutBuilder = () => {
                             <div><Label className="text-[10px]">RPE</Label><Input type="number" value={ex.rpe} onChange={e => updateEx(idx, 'rpe', Number(e.target.value))} min={1} max={10} className="h-8 text-xs" /></div>
                             <div><Label className="text-[10px]">Rest(s)</Label><Input type="number" value={ex.restSeconds} onChange={e => updateEx(idx, 'restSeconds', Number(e.target.value))} min={0} step={15} className="h-8 text-xs" /></div>
                           </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-[10px]">Progressive Overload</Label>
+                              <Select value={ex.progressionRule || 'double'} onValueChange={v => updateEx(idx, 'progressionRule', v)}>
+                                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="double">{i18n.progressionDouble}</SelectItem>
+                                  <SelectItem value="linear">{i18n.progressionLinear}</SelectItem>
+                                  <SelectItem value="rpe_based">RPE Auto-regulate</SelectItem>
+                                  <SelectItem value="wave">Wave Loading</SelectItem>
+                                  <SelectItem value="deload_cycle">Deload Cycle</SelectItem>
+                                  <SelectItem value="none">{i18n.progressionNone}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">Tempo (e.g. 3-1-2-0)</Label>
+                              <Input value={ex.tempo || ''} onChange={e => updateEx(idx, 'tempo', e.target.value)} placeholder="3-1-2-0" className="h-8 text-xs" />
+                            </div>
+                          </div>
                           <div>
-                            <Label className="text-[10px]">Progressive Overload</Label>
-                            <Select value={ex.progressionRule || 'double'} onValueChange={v => updateEx(idx, 'progressionRule', v)}>
-                              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="double">{i18n.progressionDouble}</SelectItem>
-                                <SelectItem value="linear">{i18n.progressionLinear}</SelectItem>
-                                <SelectItem value="none">{i18n.progressionNone}</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Label className="text-[10px]">Notes</Label>
+                            <Input value={ex.notes || ''} onChange={e => updateEx(idx, 'notes', e.target.value)} placeholder="Drop set, pause rep, etc." className="h-8 text-xs" />
                           </div>
                         </div>
                       ))}
