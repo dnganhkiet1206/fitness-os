@@ -61,8 +61,10 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
   }, [open, initialData]);
 
   const set = (key: keyof FoodFormData, value: string | number) => {
-    setForm(prev => ({ ...prev, [key]: value }));
+    setForm(prev => ({ ...prev, [key]: value === '' ? 0 : value }));
   };
+
+  const numVal = (v: number) => v === 0 ? '' : v;
 
   // Auto-calc kcal from macros
   const calcKcal = Math.round(form.protein_g * 4 + form.carbs_g * 4 + form.fat_g * 9);
@@ -109,8 +111,8 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
             <div className="flex items-center gap-2">
               <Input
                 type="number"
-                value={form.serving_g}
-                onChange={e => set('serving_g', Number(e.target.value))}
+                value={numVal(form.serving_g)}
+                onChange={e => set('serving_g', e.target.value === '' ? '' as any : Number(e.target.value))}
                 className="rounded-xl bg-secondary/30 border-border/20 h-11 w-24 text-center font-mono"
                 min={1}
               />
@@ -129,8 +131,8 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
               <div className="flex items-baseline gap-1">
                 <Input
                   type="number"
-                  value={form.kcal}
-                  onChange={e => set('kcal', Number(e.target.value))}
+                  value={numVal(form.kcal)}
+                  onChange={e => set('kcal', e.target.value === '' ? '' as any : Number(e.target.value))}
                   className="rounded-xl bg-secondary/30 border-border/20 h-11 w-24 text-center font-mono text-lg font-bold"
                   min={0}
                 />
@@ -202,8 +204,8 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
               <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{T.foodFiber}</Label>
               <Input
                 type="number"
-                value={form.fiber_g}
-                onChange={e => set('fiber_g', Number(e.target.value))}
+                value={numVal(form.fiber_g)}
+                onChange={e => set('fiber_g', e.target.value === '' ? '' as any : Number(e.target.value))}
                 className="rounded-xl bg-secondary/40 border-border/20 h-8 w-16 text-center font-mono text-sm"
                 min={0}
               />
@@ -254,8 +256,8 @@ function MacroInput({
       </div>
       <Input
         type="number"
-        value={value}
-        onChange={e => onChange(Number(e.target.value))}
+        value={value === 0 ? '' : value}
+        onChange={e => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
         className="rounded-lg bg-transparent border-0 h-8 text-center font-mono text-base font-bold p-0 focus-visible:ring-0"
         min={0}
       />
