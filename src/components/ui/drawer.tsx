@@ -18,7 +18,11 @@ const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/80", className)} {...props} />
+  <DrawerPrimitive.Overlay
+    ref={ref}
+    className={cn("fixed inset-0 z-50 bg-black/40 backdrop-blur-sm", className)}
+    {...props}
+  />
 ));
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
 
@@ -31,12 +35,22 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[20px] border-t border-x overflow-hidden",
         className,
       )}
+      style={{
+        background: 'hsl(var(--glass-bg))',
+        backdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
+        WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
+        borderColor: 'hsl(var(--glass-border))',
+        boxShadow: 'var(--glass-inner-shadow), 0 -8px 40px hsl(0 0% 0% / 0.35)',
+      }}
       {...props}
     >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+      {/* iOS-style drag handle */}
+      <div className="flex justify-center pt-3 pb-1">
+        <div className="h-[5px] w-[36px] rounded-full bg-foreground/20" />
+      </div>
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>

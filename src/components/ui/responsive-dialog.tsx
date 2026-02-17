@@ -1,4 +1,5 @@
 import * as React from "react";
+import { X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
@@ -44,7 +45,7 @@ function ResponsiveDialogContent({ children, className }: { children: React.Reac
   if (isMobile) {
     return (
       <DrawerContent className={className}>
-        <div className="overflow-y-auto max-h-[85vh] px-4 pb-6">
+        <div className="overflow-y-auto max-h-[82vh] px-4 pb-8">
           {children}
         </div>
       </DrawerContent>
@@ -53,9 +54,20 @@ function ResponsiveDialogContent({ children, className }: { children: React.Reac
   return <DialogContent className={className}>{children}</DialogContent>;
 }
 
-function ResponsiveDialogHeader({ children, className }: { children: React.ReactNode; className?: string }) {
+function ResponsiveDialogHeader({ children, className, onClose }: { children: React.ReactNode; className?: string; onClose?: () => void }) {
   const isMobile = useIsMobile();
-  if (isMobile) return <DrawerHeader className={className}>{children}</DrawerHeader>;
+  if (isMobile) {
+    return (
+      <div className="flex items-center justify-between px-0 pt-1 pb-3">
+        <DrawerHeader className={`flex-1 p-0 text-left ${className ?? ''}`}>{children}</DrawerHeader>
+        <DrawerClose asChild>
+          <button className="flex items-center justify-center w-8 h-8 rounded-full bg-secondary/60 text-muted-foreground hover:text-foreground active:scale-90 transition-all shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </DrawerClose>
+      </div>
+    );
+  }
   return <DialogHeader className={className}>{children}</DialogHeader>;
 }
 
