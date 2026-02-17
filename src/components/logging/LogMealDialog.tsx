@@ -154,7 +154,7 @@ export default function LogMealDialog({ children }: { children: React.ReactNode 
   return (
     <ResponsiveDialog open={open} onOpenChange={setOpen}>
       <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
-      <ResponsiveDialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+      <ResponsiveDialogContent className="max-w-md">
         <ResponsiveDialogHeader><ResponsiveDialogTitle>{T.logMealTitle}</ResponsiveDialogTitle></ResponsiveDialogHeader>
 
         <div className="space-y-4">

@@ -73,7 +73,7 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-3xl border-border/30">
+      <ResponsiveDialogContent className="max-w-md rounded-3xl border-border/30">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle className="text-lg font-bold">
             {isEdit ? T.foodEditTitle : T.foodAddTitle}
