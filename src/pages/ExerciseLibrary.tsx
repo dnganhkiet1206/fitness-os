@@ -64,20 +64,6 @@ const ExerciseLibrary = () => {
     } catch (err: any) { toast.error(err.message); }
   };
 
-  // Quick-add: duplicate exercise as user's own
-  const handleQuickAdd = async (ex: any) => {
-    try {
-      await addEx.mutateAsync({
-        name: ex.name,
-        muscle_group: ex.muscle_group,
-        equipment: ex.equipment || undefined,
-        form_cues: ex.form_cues?.length ? ex.form_cues : undefined,
-        common_mistakes: ex.common_mistakes?.length ? ex.common_mistakes : undefined,
-        video_url: ex.video_url || undefined,
-      });
-      toast.success(lang === 'vi' ? `Đã thêm ${ex.name}` : `Added ${ex.name}`);
-    } catch (err: any) { toast.error(err.message); }
-  };
 
   return (
     <div className="bg-background">
@@ -150,23 +136,14 @@ const ExerciseLibrary = () => {
                           {ex.equipment && <p className="text-[10px] text-muted-foreground">{ex.equipment}</p>}
                         </div>
                         <div className="flex gap-1 items-center shrink-0">
-                          <motion.button
-                            whileTap={{ scale: 0.85 }}
-                            onClick={() => handleQuickAdd(ex)}
-                            className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary active:bg-primary/20 transition-colors"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </motion.button>
                           {ex.video_url && (
                             <a href={ex.video_url} target="_blank" rel="noopener noreferrer">
                               <Button variant="ghost" size="sm"><Video className="w-3.5 h-3.5 text-metric-blue" /></Button>
                             </a>
                           )}
-                          {ex.user_id && (
-                            <Button variant="ghost" size="sm" onClick={() => { deleteEx.mutate(ex.id); toast.success(i18n.deleted); }}>
-                              <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                            </Button>
-                          )}
+                          <Button variant="ghost" size="sm" onClick={() => { deleteEx.mutate(ex.id); toast.success(i18n.deleted); }}>
+                            <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                          </Button>
                         </div>
                       </div>
                       {ex.form_cues && ex.form_cues.length > 0 && (
