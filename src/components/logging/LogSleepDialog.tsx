@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogDescription, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,6 +63,7 @@ export default function LogSleepDialog({ children }: { children: React.ReactNode
       <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
       <ResponsiveDialogContent className="max-w-sm">
         <ResponsiveDialogHeader><ResponsiveDialogTitle>{T.logSleepTitle}</ResponsiveDialogTitle></ResponsiveDialogHeader>
+        <ResponsiveDialogDescription className="sr-only">{T.logSleepTitle}</ResponsiveDialogDescription>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
