@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { ArrowLeft, Plus, Trash2, Search, Dumbbell, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSettings, t } from '@/hooks/useAppSettings';
@@ -109,12 +109,12 @@ const WorkoutBuilder = () => {
             <Button variant="outline" size="sm" className="rounded-xl" onClick={() => navigate('/exercises')}>
               <Dumbbell className="w-3.5 h-3.5 mr-1" />{i18n.workoutsExercises}
             </Button>
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
+            <ResponsiveDialog open={createOpen} onOpenChange={setCreateOpen}>
+              <ResponsiveDialogTrigger asChild>
                 <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.workoutsCreateNew}</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>{i18n.workoutsCreateTemplate}</DialogTitle></DialogHeader>
+              </ResponsiveDialogTrigger>
+              <ResponsiveDialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <ResponsiveDialogHeader><ResponsiveDialogTitle>{i18n.workoutsCreateTemplate}</ResponsiveDialogTitle></ResponsiveDialogHeader>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2"><Label>{i18n.supplementsName}</Label><Input value={tName} onChange={e => setTName(e.target.value)} placeholder="Push Day A" /></div>
@@ -205,8 +205,8 @@ const WorkoutBuilder = () => {
                     {addTemplate.isPending ? i18n.workoutsCreating : i18n.workoutsCreateBtn}
                   </Button>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </ResponsiveDialogContent>
+            </ResponsiveDialog>
           </div>
         </motion.div>
 

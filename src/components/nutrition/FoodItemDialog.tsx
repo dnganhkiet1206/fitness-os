@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle } from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -72,13 +72,13 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
   const fatPct = totalMacroG > 0 ? 100 - proteinPct - carbsPct : 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-3xl border-border/30">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold">
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialogContent className="max-w-md max-h-[85vh] overflow-y-auto rounded-3xl border-border/30">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="text-lg font-bold">
             {isEdit ? T.foodEditTitle : T.foodAddTitle}
-          </DialogTitle>
-        </DialogHeader>
+          </ResponsiveDialogTitle>
+        </ResponsiveDialogHeader>
 
         <div className="space-y-5">
           {/* Name & Brand */}
@@ -231,8 +231,8 @@ export default function FoodItemDialog({ open, onOpenChange, initialData, onSave
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
 

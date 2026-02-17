@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ArrowLeft, Plus, Trash2, Dumbbell, Search, Video, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -88,12 +88,12 @@ const ExerciseLibrary = () => {
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <Dialog open={addOpen} onOpenChange={setAddOpen}>
-            <DialogTrigger asChild>
+          <ResponsiveDialog open={addOpen} onOpenChange={setAddOpen}>
+            <ResponsiveDialogTrigger asChild>
               <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.exercisesAdd}</Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>{i18n.exercisesAddTitle}</DialogTitle></DialogHeader>
+            </ResponsiveDialogTrigger>
+            <ResponsiveDialogContent className="max-h-[85vh] overflow-y-auto">
+              <ResponsiveDialogHeader><ResponsiveDialogTitle>{i18n.exercisesAddTitle}</ResponsiveDialogTitle></ResponsiveDialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2"><Label>{i18n.exercisesName}</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="VD: Bench Press" /></div>
                 <div className="grid grid-cols-2 gap-3">
@@ -111,8 +111,8 @@ const ExerciseLibrary = () => {
                 <div className="space-y-2"><Label>{i18n.exercisesVideoUrl}</Label><Input value={form.video_url} onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))} placeholder="https://..." /></div>
                 <Button onClick={handleAdd} disabled={addEx.isPending} className="w-full">{addEx.isPending ? i18n.exercisesAdding : i18n.exercisesAddBtn}</Button>
               </div>
-            </DialogContent>
-          </Dialog>
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
         </motion.div>
 
         <Accordion type="multiple" className="space-y-3">

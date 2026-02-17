@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { ArrowLeft, Plus, Trash2, Pill, TrendingUp, Calendar, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSettings, t } from '@/hooks/useAppSettings';
@@ -106,12 +106,12 @@ const Supplements = () => {
 
         <motion.div variants={fadeUp} className="flex justify-between items-center">
           <h3 className="text-sm font-semibold">{i18n.supplementsYourStack} ({supplements?.length ?? 0})</h3>
-          <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) { setEditId(null); resetForm(); } }}>
-            <DialogTrigger asChild>
+          <ResponsiveDialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) { setEditId(null); resetForm(); } }}>
+            <ResponsiveDialogTrigger asChild>
               <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.add}</Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>{editId ? i18n.supplementsEditTitle : i18n.supplementsAddTitle}</DialogTitle></DialogHeader>
+            </ResponsiveDialogTrigger>
+            <ResponsiveDialogContent className="max-h-[85vh] overflow-y-auto">
+              <ResponsiveDialogHeader><ResponsiveDialogTitle>{editId ? i18n.supplementsEditTitle : i18n.supplementsAddTitle}</ResponsiveDialogTitle></ResponsiveDialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2"><Label>{i18n.supplementsName}</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="VD: Creatine" /></div>
                 <div className="grid grid-cols-2 gap-3">
@@ -160,8 +160,8 @@ const Supplements = () => {
                   {addSup.isPending || updateSup.isPending ? i18n.saving : editId ? i18n.save : i18n.add}
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
         </motion.div>
 
         {supplements && supplements.length > 0 ? (

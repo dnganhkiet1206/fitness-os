@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -53,10 +53,10 @@ export default function LogBiometricsDialog({ children }: { children: React.Reac
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle>{T.logBioTitle}</DialogTitle></DialogHeader>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
+      <ResponsiveDialogContent className="max-w-sm">
+        <ResponsiveDialogHeader><ResponsiveDialogTitle>{T.logBioTitle}</ResponsiveDialogTitle></ResponsiveDialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
             <Label>{T.logBioHR}</Label>
@@ -82,7 +82,7 @@ export default function LogBiometricsDialog({ children }: { children: React.Reac
             {saving ? T.saving : T.save}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
