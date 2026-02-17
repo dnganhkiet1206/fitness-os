@@ -574,7 +574,7 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
 
               {/* Mode hint */}
               {!capturedImage && !analyzing && (
-                <div className="absolute bottom-44 left-0 right-0 z-10 text-center">
+                <div className={`absolute ${scanMode === 'barcode' ? 'bottom-28' : 'bottom-44'} left-0 right-0 z-10 text-center`}>
                   <motion.span
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -583,6 +583,31 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
                   >
                     {modeConfig[scanMode].hint}
                   </motion.span>
+                </div>
+              )}
+
+              {/* Barcode scanning status indicator */}
+              {scanMode === 'barcode' && !capturedImage && barcodeScanActive && (
+                <div className="absolute bottom-36 left-0 right-0 z-10 flex justify-center">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full"
+                    style={{
+                      background: 'hsl(0 0% 0% / 0.5)',
+                      backdropFilter: 'blur(20px)',
+                      border: '0.5px solid hsl(0 0% 100% / 0.15)',
+                    }}
+                  >
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-green-400"
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 1.2, repeat: Infinity }}
+                    />
+                    <span className="text-[11px] font-medium text-white/80">
+                      {lang === 'vi' ? 'Đang quét...' : 'Scanning...'}
+                    </span>
+                  </motion.div>
                 </div>
               )}
 
@@ -608,25 +633,28 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
                 </div>
 
                 {!capturedImage ? (
-                  <div className="flex items-center justify-center gap-6">
-                    <button onClick={() => fileInputRef.current?.click()} className="w-12 h-12 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center">
-                      <ImageIcon className="w-5 h-5 text-white" />
-                    </button>
-                    {scanMode !== 'barcode' ? (
+                  scanMode === 'barcode' ? (
+                    /* Barcode mode: no capture button, just gallery */
+                    <div className="flex items-center justify-center">
+                      <button onClick={() => fileInputRef.current?.click()} className="w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center" style={{
+                        background: 'hsl(0 0% 100% / 0.12)',
+                        border: '0.5px solid hsl(0 0% 100% / 0.2)',
+                      }}>
+                        <ImageIcon className="w-5 h-5 text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    /* Food/Label mode: full capture controls */
+                    <div className="flex items-center justify-center gap-6">
+                      <button onClick={() => fileInputRef.current?.click()} className="w-12 h-12 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center">
+                        <ImageIcon className="w-5 h-5 text-white" />
+                      </button>
                       <button onClick={captureAndAnalyze} className="w-[72px] h-[72px] rounded-full border-4 border-white flex items-center justify-center active:scale-90 transition-transform">
                         <div className="w-[58px] h-[58px] rounded-full bg-white" />
                       </button>
-                    ) : (
-                      <div className="w-[72px] h-[72px] rounded-full border-4 border-destructive/60 flex items-center justify-center">
-                        <motion.div
-                          className="w-[58px] h-[58px] rounded-full bg-destructive/80"
-                          animate={{ scale: [1, 0.9, 1], opacity: [1, 0.7, 1] }}
-                          transition={{ duration: 1.5, repeat: Infinity }}
-                        />
-                      </div>
-                    )}
-                    <div className="w-12 h-12" />
-                  </div>
+                      <div className="w-12 h-12" />
+                    </div>
+                  )
                 ) : !analyzing ? (
                   <Button variant="outline" onClick={retake} className="w-full rounded-2xl h-11 bg-white/10 border-white/20 text-white hover:bg-white/20">
                     <RotateCcw className="w-4 h-4 mr-2" />
