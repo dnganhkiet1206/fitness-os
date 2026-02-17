@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { useExercises, useAddExercise, useDeleteExercise } from '@/hooks/useWorkoutData';
@@ -14,7 +14,8 @@ import { Plus, Trash2, Dumbbell, Search, Video, AlertTriangle, CheckCircle2, Pen
 import { toast } from 'sonner';
 import { useAppSettings, t } from '@/hooks/useAppSettings';
 
-const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 30, duration: 0.5 } } };
+const spring = { type: 'spring' as const, stiffness: 500, damping: 35 };
+const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { ...spring, duration: 0.5 } } };
 
 const ExerciseLibrary = () => {
   const { user, loading } = useAuth();
@@ -65,7 +66,6 @@ const ExerciseLibrary = () => {
     } catch (err: any) { toast.error(err.message); }
   };
 
-
   return (
     <div className="bg-background">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -115,81 +115,135 @@ const ExerciseLibrary = () => {
               </div>
             </ResponsiveDialogContent>
           </ResponsiveDialog>
-          <Button size="sm" variant={editing ? "default" : "outline"} className="rounded-xl" onClick={() => setEditing(e => !e)}>
-            <Pencil className="w-3.5 h-3.5 mr-1" />
-            {editing ? (lang === 'vi' ? 'Xong' : 'Done') : (lang === 'vi' ? 'Chỉnh sửa' : 'Edit')}
-          </Button>
+          <motion.div layout transition={spring}>
+            <Button size="sm" variant={editing ? "default" : "outline"} className="rounded-xl" onClick={() => setEditing(e => !e)}>
+              <motion.span
+                key={editing ? 'done' : 'edit'}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                {editing ? (lang === 'vi' ? 'Xong' : 'Done') : (lang === 'vi' ? 'Chỉnh sửa' : 'Edit')}
+              </motion.span>
+            </Button>
+          </motion.div>
         </motion.div>
 
-        <Accordion type="multiple" className="space-y-3">
-          {Object.entries(grouped).map(([group, exs]) => (
-            <motion.div key={group} variants={fadeUp}>
-              <AccordionItem value={group} className="glass-card border-none">
-                <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <div className="flex items-center gap-2 flex-1">
-                    <Dumbbell className="w-4 h-4 text-primary" />
-                    <span className="font-semibold text-sm">{group}</span>
-                    <span className="text-[10px] text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded-full">{exs.length}</span>
-                    {editing && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="ml-auto mr-2 h-7 px-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          exs.forEach(ex => deleteEx.mutate(ex.id));
-                          toast.success(lang === 'vi' ? `Đã xoá nhóm ${group}` : `Deleted group ${group}`);
-                        }}
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4 space-y-3">
-                  {exs.map(ex => (
-                    <div key={ex.id} className="p-3 rounded-xl bg-secondary/20 border border-border/30 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{ex.name}</p>
-                          {ex.equipment && <p className="text-[10px] text-muted-foreground">{ex.equipment}</p>}
-                        </div>
-                        <div className="flex gap-1 items-center shrink-0">
-                          {ex.video_url && (
-                            <a href={ex.video_url} target="_blank" rel="noopener noreferrer">
-                              <Button variant="ghost" size="sm"><Video className="w-3.5 h-3.5 text-metric-blue" /></Button>
-                            </a>
-                          )}
+        <LayoutGroup>
+          <Accordion type="multiple" className="space-y-3">
+            <AnimatePresence mode="popLayout">
+              {Object.entries(grouped).map(([group, exs]) => (
+                <motion.div
+                  key={group}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10, transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] } }}
+                  transition={spring}
+                >
+                  <AccordionItem value={group} className="glass-card border-none">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex items-center gap-2 flex-1">
+                        <Dumbbell className="w-4 h-4 text-primary" />
+                        <span className="font-semibold text-sm">{group}</span>
+                        <span className="text-[10px] text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded-full">{exs.length}</span>
+                        <AnimatePresence>
                           {editing && (
-                            <Button variant="ghost" size="sm" onClick={() => { deleteEx.mutate(ex.id); toast.success(i18n.deleted); }}>
-                              <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                            </Button>
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.5, x: -8 }}
+                              animate={{ opacity: 1, scale: 1, x: 0 }}
+                              exit={{ opacity: 0, scale: 0.5, x: -8 }}
+                              transition={{ ...spring, duration: 0.2 }}
+                              className="ml-auto mr-2"
+                            >
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 hover:bg-destructive/10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  exs.forEach(ex => deleteEx.mutate(ex.id));
+                                  toast.success(lang === 'vi' ? `Đã xoá nhóm ${group}` : `Deleted group ${group}`);
+                                }}
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                              </Button>
+                            </motion.div>
                           )}
-                        </div>
+                        </AnimatePresence>
                       </div>
-                      {ex.form_cues && ex.form_cues.length > 0 && (
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-readiness-green" />Form cues</p>
-                          <ul className="text-xs text-muted-foreground space-y-0.5 pl-4">
-                            {ex.form_cues.map((c, i) => <li key={i} className="list-disc">{c}</li>)}
-                          </ul>
-                        </div>
-                      )}
-                      {ex.common_mistakes && ex.common_mistakes.length > 0 && (
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-readiness-yellow" />{i18n.exercisesCommonMistakes}</p>
-                          <ul className="text-xs text-muted-foreground space-y-0.5 pl-4">
-                            {ex.common_mistakes.map((m, i) => <li key={i} className="list-disc">{m}</li>)}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-            </motion.div>
-          ))}
-        </Accordion>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4 space-y-3">
+                      <AnimatePresence mode="popLayout">
+                        {exs.map(ex => (
+                          <motion.div
+                            key={ex.id}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -60, scale: 0.95, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }}
+                            transition={spring}
+                            className="p-3 rounded-xl bg-secondary/20 border border-border/30 space-y-2 overflow-hidden"
+                          >
+                            <div className="flex items-center justify-between">
+                              <AnimatePresence>
+                                {editing && (
+                                  <motion.div
+                                    initial={{ opacity: 0, width: 0, marginRight: 0 }}
+                                    animate={{ opacity: 1, width: 28, marginRight: 8 }}
+                                    exit={{ opacity: 0, width: 0, marginRight: 0 }}
+                                    transition={{ ...spring, duration: 0.25 }}
+                                    className="shrink-0 overflow-hidden"
+                                  >
+                                    <motion.button
+                                      whileTap={{ scale: 0.8 }}
+                                      onClick={() => { deleteEx.mutate(ex.id); toast.success(i18n.deleted); }}
+                                      className="flex items-center justify-center w-7 h-7 rounded-full bg-destructive/10 text-destructive"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </motion.button>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm">{ex.name}</p>
+                                {ex.equipment && <p className="text-[10px] text-muted-foreground">{ex.equipment}</p>}
+                              </div>
+                              <div className="flex gap-1 items-center shrink-0">
+                                {ex.video_url && (
+                                  <a href={ex.video_url} target="_blank" rel="noopener noreferrer">
+                                    <Button variant="ghost" size="sm"><Video className="w-3.5 h-3.5 text-metric-blue" /></Button>
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            {ex.form_cues && ex.form_cues.length > 0 && (
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-readiness-green" />Form cues</p>
+                                <ul className="text-xs text-muted-foreground space-y-0.5 pl-4">
+                                  {ex.form_cues.map((c, i) => <li key={i} className="list-disc">{c}</li>)}
+                                </ul>
+                              </div>
+                            )}
+                            {ex.common_mistakes && ex.common_mistakes.length > 0 && (
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-readiness-yellow" />{i18n.exercisesCommonMistakes}</p>
+                                <ul className="text-xs text-muted-foreground space-y-0.5 pl-4">
+                                  {ex.common_mistakes.map((m, i) => <li key={i} className="list-disc">{m}</li>)}
+                                </ul>
+                              </div>
+                            )}
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </AccordionContent>
+                  </AccordionItem>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </Accordion>
+        </LayoutGroup>
 
         {filtered.length === 0 && (
           <motion.div variants={fadeUp} className="text-center py-12 text-muted-foreground">
