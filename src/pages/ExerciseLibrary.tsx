@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PageHeader from '@/components/PageHeader';
@@ -10,11 +10,47 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ArrowLeft, Plus, Trash2, Dumbbell, Search, Video, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Dumbbell, Search, Video, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSettings, t } from '@/hooks/useAppSettings';
 
 const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 30, duration: 0.5 } } };
+
+// Common gym exercises for quick-add
+const PRESET_EXERCISES = [
+  { name: 'Bench Press', muscle_group: 'Chest', equipment: 'Barbell', form_cues: ['Retract scapula', 'Feet flat on floor', 'Bar path: nipple line'] },
+  { name: 'Incline Bench Press', muscle_group: 'Chest', equipment: 'Barbell', form_cues: ['30-45° angle', 'Controlled eccentric'] },
+  { name: 'Dumbbell Fly', muscle_group: 'Chest', equipment: 'Dumbbell', form_cues: ['Slight elbow bend', 'Squeeze at top'] },
+  { name: 'Cable Crossover', muscle_group: 'Chest', equipment: 'Cable', form_cues: ['Step forward', 'Cross hands at bottom'] },
+  { name: 'Squat', muscle_group: 'Legs', equipment: 'Barbell', form_cues: ['Break at hips first', 'Knees track toes', 'Below parallel'] },
+  { name: 'Leg Press', muscle_group: 'Legs', equipment: 'Machine', form_cues: ['Full ROM', 'Don\'t lock knees'] },
+  { name: 'Romanian Deadlift', muscle_group: 'Hamstrings', equipment: 'Barbell', form_cues: ['Hinge at hips', 'Slight knee bend', 'Feel hamstring stretch'] },
+  { name: 'Leg Curl', muscle_group: 'Hamstrings', equipment: 'Machine', form_cues: ['Control the negative', 'Full contraction'] },
+  { name: 'Leg Extension', muscle_group: 'Quads', equipment: 'Machine', form_cues: ['Squeeze at top', 'Controlled tempo'] },
+  { name: 'Bulgarian Split Squat', muscle_group: 'Legs', equipment: 'Dumbbell', form_cues: ['Rear foot elevated', 'Upright torso'] },
+  { name: 'Deadlift', muscle_group: 'Back', equipment: 'Barbell', form_cues: ['Neutral spine', 'Drive through heels', 'Lock out hips'] },
+  { name: 'Barbell Row', muscle_group: 'Back', equipment: 'Barbell', form_cues: ['45° torso angle', 'Pull to navel', 'Squeeze lats'] },
+  { name: 'Lat Pulldown', muscle_group: 'Back', equipment: 'Cable', form_cues: ['Wide grip', 'Pull to upper chest', 'Lean slightly back'] },
+  { name: 'Seated Cable Row', muscle_group: 'Back', equipment: 'Cable', form_cues: ['Chest up', 'Squeeze shoulder blades'] },
+  { name: 'Pull Up', muscle_group: 'Back', equipment: 'Bodyweight', form_cues: ['Full hang at bottom', 'Chin over bar'] },
+  { name: 'Overhead Press', muscle_group: 'Shoulders', equipment: 'Barbell', form_cues: ['Brace core', 'Press straight up', 'Full lockout'] },
+  { name: 'Lateral Raise', muscle_group: 'Shoulders', equipment: 'Dumbbell', form_cues: ['Slight bend in elbow', 'Lead with elbows', 'Control descent'] },
+  { name: 'Face Pull', muscle_group: 'Shoulders', equipment: 'Cable', form_cues: ['High rope attachment', 'Pull to face', 'External rotate'] },
+  { name: 'Rear Delt Fly', muscle_group: 'Shoulders', equipment: 'Dumbbell', form_cues: ['Bent over', 'Squeeze rear delts'] },
+  { name: 'Barbell Curl', muscle_group: 'Biceps', equipment: 'Barbell', form_cues: ['No swinging', 'Full ROM', 'Squeeze at top'] },
+  { name: 'Hammer Curl', muscle_group: 'Biceps', equipment: 'Dumbbell', form_cues: ['Neutral grip', 'No momentum'] },
+  { name: 'Preacher Curl', muscle_group: 'Biceps', equipment: 'EZ Bar', form_cues: ['Full extension', 'Controlled negative'] },
+  { name: 'Tricep Pushdown', muscle_group: 'Triceps', equipment: 'Cable', form_cues: ['Elbows locked at sides', 'Full extension'] },
+  { name: 'Skull Crusher', muscle_group: 'Triceps', equipment: 'EZ Bar', form_cues: ['Lower to forehead', 'Elbows in'] },
+  { name: 'Overhead Tricep Extension', muscle_group: 'Triceps', equipment: 'Cable', form_cues: ['Full stretch', 'Lock out at top'] },
+  { name: 'Hip Thrust', muscle_group: 'Glutes', equipment: 'Barbell', form_cues: ['Back on bench', 'Squeeze glutes at top', 'Chin tucked'] },
+  { name: 'Calf Raise', muscle_group: 'Calves', equipment: 'Machine', form_cues: ['Full stretch at bottom', 'Pause at top'] },
+  { name: 'Hanging Leg Raise', muscle_group: 'Abs', equipment: 'Bodyweight', form_cues: ['No swinging', 'Curl pelvis up'] },
+  { name: 'Cable Crunch', muscle_group: 'Abs', equipment: 'Cable', form_cues: ['Hinge at waist', 'Squeeze abs'] },
+  { name: 'Plank', muscle_group: 'Abs', equipment: 'Bodyweight', form_cues: ['Straight line', 'Brace core', 'Don\'t sag hips'] },
+  { name: 'Shrug', muscle_group: 'Traps', equipment: 'Barbell', form_cues: ['Straight up', 'Hold at top'] },
+  { name: 'Dip', muscle_group: 'Chest', equipment: 'Bodyweight', form_cues: ['Lean forward for chest', 'Upright for triceps', 'Full ROM'] },
+];
 
 const ExerciseLibrary = () => {
   const { user, loading } = useAuth();
@@ -27,6 +63,7 @@ const ExerciseLibrary = () => {
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('all');
   const [addOpen, setAddOpen] = useState(false);
+  const [quickSearch, setQuickSearch] = useState('');
 
   const MUSCLE_GROUPS = [i18n.muscleChest, i18n.muscleBack, i18n.muscleShoulders, i18n.muscleBiceps, i18n.muscleTriceps, i18n.muscleQuads, i18n.muscleHamstrings, i18n.muscleGlutes, i18n.muscleAbs, i18n.muscleFullBody, i18n.muscleCardio];
 
@@ -34,6 +71,28 @@ const ExerciseLibrary = () => {
 
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
+
+  const existingNames = new Set((exercises ?? []).map(e => e.name.toLowerCase()));
+
+  // Filter presets not already in library
+  const availablePresets = PRESET_EXERCISES.filter(p => !existingNames.has(p.name.toLowerCase()));
+  const filteredPresets = quickSearch 
+    ? availablePresets.filter(p => p.name.toLowerCase().includes(quickSearch.toLowerCase()) || p.muscle_group.toLowerCase().includes(quickSearch.toLowerCase()))
+    : availablePresets;
+
+  const handleQuickAdd = async (preset: typeof PRESET_EXERCISES[0]) => {
+    try {
+      await addEx.mutateAsync({
+        name: preset.name,
+        muscle_group: preset.muscle_group,
+        equipment: preset.equipment,
+        form_cues: preset.form_cues,
+      });
+      toast.success(lang === 'vi' ? `Đã thêm ${preset.name}` : `Added ${preset.name}`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
 
   const filtered = (exercises ?? []).filter(e => {
     if (search && !e.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -64,6 +123,12 @@ const ExerciseLibrary = () => {
     } catch (err: any) { toast.error(err.message); }
   };
 
+  // Group presets by muscle for organized display
+  const presetsByMuscle = filteredPresets.reduce<Record<string, typeof PRESET_EXERCISES>>((acc, p) => {
+    (acc[p.muscle_group] = acc[p.muscle_group] || []).push(p);
+    return acc;
+  }, {});
+
   return (
     <div className="bg-background">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -87,7 +152,7 @@ const ExerciseLibrary = () => {
           </Select>
         </motion.div>
 
-        <motion.div variants={fadeUp}>
+        <motion.div variants={fadeUp} className="flex gap-2">
           <ResponsiveDialog open={addOpen} onOpenChange={setAddOpen}>
             <ResponsiveDialogTrigger asChild>
               <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.exercisesAdd}</Button>
@@ -114,6 +179,55 @@ const ExerciseLibrary = () => {
             </ResponsiveDialogContent>
           </ResponsiveDialog>
         </motion.div>
+
+        {/* Quick-add preset exercises */}
+        {availablePresets.length > 0 && (
+          <motion.div variants={fadeUp} className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {lang === 'vi' ? '⚡ Thêm nhanh bài tập chuẩn Gym' : '⚡ Quick-Add Gym Exercises'}
+              </p>
+              <span className="text-[10px] text-muted-foreground">{availablePresets.length} {lang === 'vi' ? 'bài' : 'available'}</span>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input 
+                value={quickSearch} 
+                onChange={e => setQuickSearch(e.target.value)} 
+                placeholder={lang === 'vi' ? 'Tìm bài tập...' : 'Search presets...'} 
+                className="pl-8 h-8 text-xs rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-2 max-h-[280px] overflow-y-auto overscroll-contain rounded-2xl">
+              {Object.entries(presetsByMuscle).map(([muscle, presets]) => (
+                <div key={muscle}>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 px-1">{muscle}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {presets.map(p => (
+                      <motion.button
+                        key={p.name}
+                        whileTap={{ scale: 0.92 }}
+                        onClick={() => handleQuickAdd(p)}
+                        disabled={addEx.isPending}
+                        className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1.5 rounded-full bg-secondary/50 border border-border/40 text-xs font-medium text-foreground/80 hover:bg-secondary/80 active:bg-secondary transition-colors disabled:opacity-50"
+                      >
+                        <span className="truncate max-w-[140px]">{p.name}</span>
+                        <span className="flex items-center justify-center w-4.5 h-4.5 rounded-full bg-primary/10 text-primary">
+                          <Plus className="w-2.5 h-2.5" />
+                        </span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {filteredPresets.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-3">{lang === 'vi' ? 'Không tìm thấy' : 'No presets found'}</p>
+              )}
+            </div>
+          </motion.div>
+        )}
 
         <Accordion type="multiple" className="space-y-3">
           {Object.entries(grouped).map(([group, exs]) => (
