@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import LargeTitle from '@/components/LargeTitle';
 import { useAuth } from '@/hooks/useAuth';
-import { useWorkoutTemplates, useAddWorkoutTemplate, useDeleteWorkoutTemplate, useExercises } from '@/hooks/useWorkoutData';
+import { useWorkoutTemplates, useAddWorkoutTemplate, useDeleteWorkoutTemplate, useExercises, useAddExercise } from '@/hooks/useWorkoutData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
-import { ArrowLeft, Plus, Trash2, Search, Dumbbell, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Search, Dumbbell, ChevronRight, PlusCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppSettings, t } from '@/hooks/useAppSettings';
 
@@ -54,6 +54,10 @@ const TYPES = [
   { value: 'custom', label: 'Custom' },
 ];
 
+const MUSCLE_GROUPS_EN = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Quads', 'Hamstrings', 'Glutes', 'Abs', 'Full Body', 'Cardio', 'Calves', 'Forearms', 'Traps'];
+
+const EQUIPMENT_OPTIONS = ['Barbell', 'Dumbbell', 'Cable', 'Machine', 'Smith Machine', 'Bodyweight', 'Kettlebell', 'Resistance Band', 'EZ Bar', 'Trap Bar', 'Other'];
+
 const WorkoutBuilder = () => {
   const { user, loading } = useAuth();
   const { lang } = useAppSettings();
@@ -63,12 +67,19 @@ const WorkoutBuilder = () => {
   const { data: exercises } = useExercises();
   const addTemplate = useAddWorkoutTemplate();
   const deleteTemplate = useDeleteWorkoutTemplate();
+  const addExercise = useAddExercise();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [tName, setTName] = useState('');
   const [tType, setTType] = useState('custom');
   const [tExercises, setTExercises] = useState<TemplateExercise[]>([]);
   const [searchEx, setSearchEx] = useState('');
+  
+  // Inline custom exercise creation
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customMuscle, setCustomMuscle] = useState('Chest');
+  const [customEquipment, setCustomEquipment] = useState('Barbell');
 
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
@@ -90,6 +101,26 @@ const WorkoutBuilder = () => {
       notes: '',
     }]);
     setSearchEx('');
+  };
+
+  const handleCreateCustomExercise = async () => {
+    if (!customName.trim()) return;
+    try {
+      const result = await addExercise.mutateAsync({
+        name: customName.trim(),
+        muscle_group: customMuscle,
+        equipment: customEquipment,
+      });
+      // After creating, find it in the refreshed list and add to template
+      // We use a temporary ID approach since mutation invalidates the query
+      const tempEx = { id: 'temp-' + Date.now(), name: customName.trim() };
+      addExToTemplate(tempEx);
+      toast.success(lang === 'vi' ? 'Đã tạo bài tập mới' : 'Exercise created');
+      setCustomName('');
+      setShowCustomForm(false);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   const updateEx = (idx: number, field: string, value: any) => {
@@ -130,7 +161,7 @@ const WorkoutBuilder = () => {
             <Button variant="outline" size="sm" className="rounded-xl" onClick={() => navigate('/exercises')}>
               <Dumbbell className="w-3.5 h-3.5 mr-1" />{i18n.workoutsExercises}
             </Button>
-            <ResponsiveDialog open={createOpen} onOpenChange={setCreateOpen}>
+            <ResponsiveDialog open={createOpen} onOpenChange={(v) => { setCreateOpen(v); if (!v) setShowCustomForm(false); }}>
               <ResponsiveDialogTrigger asChild>
                 <Button size="sm" className="rounded-xl"><Plus className="w-3.5 h-3.5 mr-1" />{i18n.workoutsCreateNew}</Button>
               </ResponsiveDialogTrigger>
@@ -149,23 +180,114 @@ const WorkoutBuilder = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <Label>{i18n.workoutsAddExercise}</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>{i18n.workoutsAddExercise}</Label>
+                      <motion.button
+                        whileTap={{ scale: 0.92 }}
+                        onClick={() => setShowCustomForm(!showCustomForm)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-primary bg-primary/10 border border-primary/20 active:bg-primary/20 transition-colors"
+                      >
+                        {showCustomForm ? <X className="w-3 h-3" /> : <PlusCircle className="w-3 h-3" />}
+                        {showCustomForm 
+                          ? (lang === 'vi' ? 'Đóng' : 'Cancel') 
+                          : (lang === 'vi' ? 'Tạo bài tập mới' : 'Create Exercise')
+                        }
+                      </motion.button>
+                    </div>
+
+                    {/* Inline custom exercise form */}
+                    <AnimatePresence>
+                      {showCustomForm && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-3 rounded-2xl border border-primary/20 bg-primary/5 space-y-3">
+                            <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">
+                              {lang === 'vi' ? '✦ Tạo bài tập của bạn' : '✦ Create Your Exercise'}
+                            </p>
+                            <Input 
+                              value={customName} 
+                              onChange={e => setCustomName(e.target.value)} 
+                              placeholder={lang === 'vi' ? 'Tên bài tập (VD: Incline DB Press)' : 'Exercise name (e.g. Incline DB Press)'} 
+                              className="h-9 text-sm"
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-[10px]">{lang === 'vi' ? 'Nhóm cơ' : 'Muscle Group'}</Label>
+                                <Select value={customMuscle} onValueChange={setCustomMuscle}>
+                                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {MUSCLE_GROUPS_EN.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">{lang === 'vi' ? 'Dụng cụ' : 'Equipment'}</Label>
+                                <Select value={customEquipment} onValueChange={setCustomEquipment}>
+                                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {EQUIPMENT_OPTIONS.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <Button 
+                              onClick={handleCreateCustomExercise} 
+                              disabled={!customName.trim() || addExercise.isPending} 
+                              size="sm" 
+                              className="w-full rounded-xl"
+                            >
+                              <PlusCircle className="w-3.5 h-3.5 mr-1.5" />
+                              {addExercise.isPending 
+                                ? (lang === 'vi' ? 'Đang tạo...' : 'Creating...') 
+                                : (lang === 'vi' ? 'Tạo & thêm vào template' : 'Create & Add to Template')
+                              }
+                            </Button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Search existing exercises */}
                     <div className="relative">
                       <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                       <Input value={searchEx} onChange={e => setSearchEx(e.target.value)} placeholder={i18n.exercisesSearch} className="pl-9" />
                     </div>
                     {searchEx && filteredExercises.length > 0 && (
-                      <div className="border border-border rounded-lg max-h-32 overflow-y-auto">
+                      <div className="border border-border rounded-xl max-h-36 overflow-y-auto">
                         {filteredExercises.map(e => (
-                          <button key={e.id} onClick={() => addExToTemplate(e)} className="w-full text-left px-3 py-2 hover:bg-secondary/50 text-sm">
-                            {e.name} <span className="text-muted-foreground text-xs">({e.muscle_group})</span>
+                          <button key={e.id} onClick={() => addExToTemplate(e)} className="w-full text-left px-3 py-2.5 hover:bg-secondary/50 active:bg-secondary/80 text-sm flex items-center justify-between transition-colors">
+                            <div>
+                              <span className="font-medium">{e.name}</span>
+                              <span className="text-muted-foreground text-xs ml-1.5">({e.muscle_group})</span>
+                            </div>
+                            {e.equipment && <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full bg-secondary/60">{e.equipment}</span>}
                           </button>
                         ))}
                       </div>
                     )}
+                    {searchEx && filteredExercises.length === 0 && (
+                      <div className="text-center py-4 space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          {lang === 'vi' ? 'Không tìm thấy bài tập' : 'No exercises found'}
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="rounded-xl text-xs"
+                          onClick={() => { setCustomName(searchEx); setShowCustomForm(true); setSearchEx(''); }}
+                        >
+                          <PlusCircle className="w-3 h-3 mr-1" />
+                          {lang === 'vi' ? `Tạo "${searchEx}" mới` : `Create "${searchEx}"`}
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Quick-add suggestion chips */}
-                    {!searchEx && (exercises ?? []).length > 0 && (
+                    {!searchEx && !showCustomForm && (exercises ?? []).length > 0 && (
                       <div className="space-y-1.5">
                         <p className="text-[11px] text-muted-foreground font-medium">{lang === 'vi' ? 'Gợi ý' : 'Suggestions'}</p>
                         <div className="flex flex-wrap gap-1.5">
@@ -194,7 +316,7 @@ const WorkoutBuilder = () => {
                     <div className="space-y-3">
                       <Label>{i18n.workoutsExercisesAdded} ({tExercises.length})</Label>
                       {tExercises.map((ex, idx) => (
-                        <div key={idx} className="p-3 rounded-xl bg-secondary/20 border border-border/30 space-y-2">
+                        <div key={idx} className="p-3 rounded-2xl bg-secondary/20 border border-border/30 space-y-2">
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium">{ex.exerciseName}</p>
                             <Button variant="ghost" size="sm" onClick={() => removeEx(idx)}><Trash2 className="w-3.5 h-3.5" /></Button>
