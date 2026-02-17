@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -105,10 +105,10 @@ export default function LogWorkoutDialog({ children }: { children: React.ReactNo
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{T.logWorkoutTitle}</DialogTitle></DialogHeader>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
+      <ResponsiveDialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <ResponsiveDialogHeader><ResponsiveDialogTitle>{T.logWorkoutTitle}</ResponsiveDialogTitle></ResponsiveDialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
@@ -165,7 +165,7 @@ export default function LogWorkoutDialog({ children }: { children: React.ReactNo
             {saving ? T.saving : T.logWorkoutSaveBtn}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

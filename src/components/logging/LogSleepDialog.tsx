@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,10 +59,10 @@ export default function LogSleepDialog({ children }: { children: React.ReactNode
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle>{T.logSleepTitle}</DialogTitle></DialogHeader>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
+      <ResponsiveDialogContent className="max-w-sm">
+        <ResponsiveDialogHeader><ResponsiveDialogTitle>{T.logSleepTitle}</ResponsiveDialogTitle></ResponsiveDialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -110,7 +110,7 @@ export default function LogSleepDialog({ children }: { children: React.ReactNode
             {saving ? T.saving : T.logSleepSaveBtn}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

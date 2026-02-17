@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Heart, X, Check, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from '@/components/ui/responsive-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
@@ -190,16 +190,16 @@ export default function CameraHRDialog({ children }: { children: React.ReactNode
   const progress = elapsed / MEASURE_DURATION;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-sm p-0 overflow-hidden bg-card border-border/30">
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogTrigger asChild>{children}</ResponsiveDialogTrigger>
+      <ResponsiveDialogContent className="max-w-sm p-0 overflow-hidden bg-card border-border/30">
         <div className="p-5 space-y-4">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle className="flex items-center gap-2">
               <Camera className="w-4 h-4 text-primary" />
               Đo Nhịp Tim qua Camera
-            </DialogTitle>
-          </DialogHeader>
+            </ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
 
           {/* Video feed */}
           <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-black">
@@ -310,7 +310,7 @@ export default function CameraHRDialog({ children }: { children: React.ReactNode
             )}
           </AnimatePresence>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
