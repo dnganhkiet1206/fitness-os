@@ -127,7 +127,7 @@ const WorkoutBuilder = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label>{i18n.workoutsAddExercise}</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
@@ -140,6 +140,31 @@ const WorkoutBuilder = () => {
                             {e.name} <span className="text-muted-foreground text-xs">({e.muscle_group})</span>
                           </button>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Quick-add suggestion chips */}
+                    {!searchEx && (exercises ?? []).length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] text-muted-foreground font-medium">{lang === 'vi' ? 'Gợi ý' : 'Suggestions'}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(exercises ?? [])
+                            .filter(e => !tExercises.some(te => te.exerciseId === e.id))
+                            .slice(0, 12)
+                            .map(e => (
+                              <motion.button
+                                key={e.id}
+                                whileTap={{ scale: 0.92 }}
+                                onClick={() => addExToTemplate(e)}
+                                className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full bg-secondary/50 border border-border/40 text-xs font-medium text-foreground/80 hover:bg-secondary/80 active:bg-secondary transition-colors"
+                              >
+                                <span className="truncate max-w-[120px]">{e.name}</span>
+                                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary">
+                                  <Plus className="w-2.5 h-2.5" />
+                                </span>
+                              </motion.button>
+                            ))}
+                        </div>
                       </div>
                     )}
                   </div>
