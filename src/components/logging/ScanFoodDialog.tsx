@@ -59,12 +59,15 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
   const [history, setHistory] = useState<ScanHistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [barcodeScanActive, setBarcodeScanActive] = useState(false);
+  const [detectedCode, setDetectedCode] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoScanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isAnalyzingRef = useRef(false);
+  const html5QrScannerRef = useRef<any>(null);
+  const barcodeContainerRef = useRef<HTMLDivElement>(null);
 
   const startCamera = useCallback(async (facing: 'environment' | 'user' = 'environment') => {
     stopCamera();
@@ -121,6 +124,21 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
     streamRef.current = null;
   }, []);
 
+  const stopBarcodeScanner = useCallback(async () => {
+    if (html5QrScannerRef.current) {
+      try {
+        const state = html5QrScannerRef.current.getState?.();
+        if (state === 2) { // SCANNING
+          await html5QrScannerRef.current.stop();
+        }
+      } catch { /* ignore */ }
+      try {
+        html5QrScannerRef.current.clear();
+      } catch { /* ignore */ }
+      html5QrScannerRef.current = null;
+    }
+  }, []);
+
   // Lookup barcode from Open Food Facts
   const lookupBarcode = async (code: string): Promise<ScannedFoodItem[] | null> => {
     try {
@@ -147,115 +165,95 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
     }
   };
 
-  // Auto-scan for barcode mode using native BarcodeDetector API + Open Food Facts
-  useEffect(() => {
-    if (!open || capturedImage || viewMode !== 'camera') return;
-    if (scanMode === 'barcode') {
+  // Start html5-qrcode barcode scanner
+  const startBarcodeScanner = useCallback(async () => {
+    await stopBarcodeScanner();
+    const container = barcodeContainerRef.current;
+    if (!container) return;
+
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const scanner = new Html5Qrcode(container.id, { verbose: false });
+      html5QrScannerRef.current = scanner;
       setBarcodeScanActive(true);
+      setDetectedCode(null);
 
-      const hasBarcodeDetector = 'BarcodeDetector' in window;
-      let detector: any = null;
-      if (hasBarcodeDetector) {
-        try {
-          detector = new (window as any).BarcodeDetector({
-            formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code', 'data_matrix'],
-          });
-        } catch { /* fallback to AI */ }
-      }
+      await scanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 15,
+          qrbox: { width: 280, height: 160 },
+          aspectRatio: 1.7778,
+          disableFlip: false,
+        },
+        async (decodedText: string) => {
+          if (isAnalyzingRef.current) return;
+          isAnalyzingRef.current = true;
+          haptic('heavy');
+          setDetectedCode(decodedText);
 
-      autoScanTimerRef.current = setInterval(async () => {
-        if (isAnalyzingRef.current) return;
-        const video = videoRef.current;
-        if (!video || video.readyState < 2) return;
-
-        // Try native BarcodeDetector first
-        if (detector) {
-          try {
-            const barcodes = await detector.detect(video);
-            if (barcodes.length > 0) {
-              const code = barcodes[0].rawValue;
-              if (!code) return;
-              isAnalyzingRef.current = true;
-              const canvas = canvasRef.current;
-              if (canvas) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d')?.drawImage(video, 0, 0);
+          // Try Open Food Facts first
+          const items = await lookupBarcode(decodedText);
+          if (items && items.length > 0) {
+            setResults(items);
+            setBarcodeScanActive(false);
+            await stopBarcodeScanner();
+            saveToHistory(items, 'barcode');
+            toast.success(lang === 'vi' ? `Đã nhận dạng: ${decodedText}` : `Found: ${decodedText}`);
+          } else {
+            // Fallback to AI with captured frame
+            setAnalyzing(true);
+            try {
+              const videoEl = container.querySelector('video');
+              if (videoEl) {
+                const canvas = document.createElement('canvas');
+                canvas.width = videoEl.videoWidth || 640;
+                canvas.height = videoEl.videoHeight || 480;
+                canvas.getContext('2d')?.drawImage(videoEl, 0, 0);
+                const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+                const { data, error } = await supabase.functions.invoke('scan-food', {
+                  body: { image_base64: base64, lang, mode: 'barcode' },
+                });
+                if (!error && data?.items?.length > 0) {
+                  setResults(data.items);
+                  setBarcodeScanActive(false);
+                  await stopBarcodeScanner();
+                  saveToHistory(data.items, 'barcode');
+                  toast.success(lang === 'vi' ? 'Đã nhận dạng sản phẩm!' : 'Product identified!');
+                } else {
+                  toast.info(lang === 'vi' ? `Không tìm thấy sản phẩm: ${decodedText}` : `Product not found: ${decodedText}`);
+                }
               }
-              const dataUrl = canvas ? canvasRef.current!.toDataURL('image/jpeg', 0.85) : '';
-
-              const items = await lookupBarcode(code);
-              if (items && items.length > 0) {
-                setCapturedImage(dataUrl);
-                setResults(items);
-                setBarcodeScanActive(false);
-                stopCamera();
-                haptic('heavy');
-                saveToHistory(items, 'barcode');
-                toast.success(lang === 'vi' ? `Đã nhận dạng: ${code}` : `Found: ${code}`);
-                isAnalyzingRef.current = false;
-                return;
-              } else {
-                // Not in Open Food Facts → fallback to AI
-                if (dataUrl) await silentAnalyze(dataUrl);
-              }
-              isAnalyzingRef.current = false;
-              return;
+            } catch {
+              toast.error(lang === 'vi' ? 'Lỗi tra cứu sản phẩm' : 'Product lookup failed');
+            } finally {
+              setAnalyzing(false);
             }
-          } catch { /* fallback below */ }
-        }
+          }
+          isAnalyzingRef.current = false;
+        },
+        () => { /* scan miss - ignore */ }
+      );
+    } catch (err) {
+      console.error('html5-qrcode start error:', err);
+      toast.error(lang === 'vi' ? 'Không thể khởi động scanner' : 'Cannot start scanner');
+    }
+  }, [lang, stopBarcodeScanner]);
 
-        // Fallback: send frame to AI
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.drawImage(video, 0, 0);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-        silentAnalyze(dataUrl);
-      }, detector ? 500 : 3000);
-    } else {
-      setBarcodeScanActive(false);
-      if (autoScanTimerRef.current) {
-        clearInterval(autoScanTimerRef.current);
-        autoScanTimerRef.current = null;
-      }
+  // Start/stop barcode scanner based on mode
+  useEffect(() => {
+    if (!open || viewMode !== 'camera') return;
+    if (scanMode === 'barcode' && !capturedImage && !results) {
+      // Stop normal camera, use html5-qrcode instead
+      stopCamera();
+      setTimeout(() => startBarcodeScanner(), 300);
     }
     return () => {
-      if (autoScanTimerRef.current) {
-        clearInterval(autoScanTimerRef.current);
-        autoScanTimerRef.current = null;
+      if (scanMode === 'barcode') {
+        stopBarcodeScanner();
       }
     };
-  }, [scanMode, open, capturedImage, viewMode]);
-
-  // Fully silent barcode analyze via AI fallback
-  const silentAnalyze = async (dataUrl: string) => {
-    if (isAnalyzingRef.current) return;
-    isAnalyzingRef.current = true;
-    try {
-      const base64 = dataUrl.split(',')[1];
-      const { data, error } = await supabase.functions.invoke('scan-food', {
-        body: { image_base64: base64, lang, mode: 'barcode' },
-      });
-      if (error) throw error;
-      if (data?.items && data.items.length > 0) {
-        setCapturedImage(dataUrl);
-        setResults(data.items);
-        setBarcodeScanActive(false);
-        stopCamera();
-        haptic('heavy');
-        saveToHistory(data.items, 'barcode');
-        toast.success(lang === 'vi' ? 'Đã nhận dạng sản phẩm!' : 'Product identified!');
-      }
-    } catch {
-      // Silent fail
-    } finally {
-      isAnalyzingRef.current = false;
-    }
-  };
+  }, [scanMode, open, viewMode]);
 
   const fetchHistory = async () => {
     setLoadingHistory(true);
@@ -291,10 +289,14 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
       setAnalyzing(false);
       setEditingIdx(null);
       setViewMode('camera');
+      setDetectedCode(null);
       isAnalyzingRef.current = false;
-      setTimeout(() => startCamera(facingMode), 300);
+      if (scanMode !== 'barcode') {
+        setTimeout(() => startCamera(facingMode), 300);
+      }
     } else {
       stopCamera();
+      stopBarcodeScanner();
       showBottomBar();
     }
   };
@@ -362,8 +364,13 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
     setResults(null);
     setAnalyzing(false);
     setEditingIdx(null);
+    setDetectedCode(null);
     isAnalyzingRef.current = false;
-    startCamera(facingMode);
+    if (scanMode === 'barcode') {
+      startBarcodeScanner();
+    } else {
+      startCamera(facingMode);
+    }
   };
 
   const flipCamera = () => {
@@ -419,14 +426,25 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
 
   const handleModeChange = (mode: ScanMode) => {
     haptic('light');
+    if (mode === 'barcode') {
+      stopCamera();
+    } else if (scanMode === 'barcode') {
+      stopBarcodeScanner();
+      setTimeout(() => startCamera(facingMode), 200);
+    }
     setScanMode(mode);
-    if (capturedImage) retake();
+    setCapturedImage(null);
+    setResults(null);
+    setDetectedCode(null);
+    setEditingIdx(null);
+    isAnalyzingRef.current = false;
   };
 
   const switchToHistory = () => {
     haptic('light');
     setViewMode('history');
     stopCamera();
+    stopBarcodeScanner();
     fetchHistory();
   };
 
@@ -475,7 +493,35 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
           {/* === CAMERA VIEW === */}
           {viewMode === 'camera' && (
             <>
-              {!capturedImage ? (
+              {/* Barcode mode: html5-qrcode scanner container */}
+              {scanMode === 'barcode' && !results ? (
+                <>
+                  <div
+                    id="barcode-scanner-container"
+                    ref={barcodeContainerRef}
+                    className="absolute inset-0 w-full h-full bg-black [&>video]:!object-cover [&>video]:!w-full [&>video]:!h-full"
+                    style={{ minHeight: '100%' }}
+                  />
+                  {/* Detected code indicator */}
+                  {detectedCode && analyzing && (
+                    <div className="absolute top-20 left-0 right-0 z-20 flex justify-center">
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-2xl"
+                        style={{
+                          background: 'hsl(0 0% 0% / 0.6)',
+                          backdropFilter: 'blur(20px)',
+                          border: '0.5px solid hsl(0 0% 100% / 0.2)',
+                        }}
+                      >
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span className="text-xs text-white font-medium">{detectedCode}</span>
+                      </motion.div>
+                    </div>
+                  )}
+                </>
+              ) : !capturedImage ? (
                 <video
                   ref={videoRef}
                   autoPlay
@@ -509,23 +555,19 @@ export default function ScanFoodDialog({ children, onFoodsScanned }: ScanFoodDia
                 </div>
               </div>
 
-              {/* Scan overlay */}
-              {!capturedImage && (
+              {/* Scan overlay - only for food/label modes */}
+              {!capturedImage && scanMode !== 'barcode' && (
                 <>
                   <div className="absolute inset-0 pointer-events-none z-[5]">
                     <ScanOverlay mode={scanMode} isScanning={barcodeScanActive} />
                     <motion.div
                       className="absolute left-[12%] right-[12%] h-[2px] rounded-full"
                       style={{
-                        background: scanMode === 'barcode'
-                          ? 'linear-gradient(90deg, transparent, hsl(0 100% 60% / 0.9), transparent)'
-                          : 'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.8), transparent)',
-                        boxShadow: scanMode === 'barcode'
-                          ? '0 0 20px hsl(0 100% 60% / 0.6)'
-                          : '0 0 12px hsl(var(--primary) / 0.5)',
+                        background: 'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.8), transparent)',
+                        boxShadow: '0 0 12px hsl(var(--primary) / 0.5)',
                       }}
                       animate={{ top: ['20%', '75%', '20%'] }}
-                      transition={{ duration: scanMode === 'barcode' ? 1.8 : 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                      transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                     />
                   </div>
 
