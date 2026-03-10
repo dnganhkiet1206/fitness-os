@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => ({
         "@capacitor/core",
         "@capacitor/app",
         "@capacitor/browser",
+        "@capacitor/keyboard",
         "@capacitor-community/apple-sign-in",
       ],
     },
