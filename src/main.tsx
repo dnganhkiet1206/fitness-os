@@ -13,9 +13,13 @@ window.addEventListener("error", (event) => {
 });
 
 // iOS native: configure native plugins when running in Capacitor
-(async () => {
-  try {
-    if ((window as any)?.Capacitor?.isNativePlatform?.()) {
+const isNative = !!(window as Record<string, unknown>)?.Capacitor &&
+  typeof ((window as Record<string, unknown>).Capacitor as Record<string, unknown>)?.isNativePlatform === 'function' &&
+  ((window as Record<string, unknown>).Capacitor as { isNativePlatform: () => boolean }).isNativePlatform();
+
+if (isNative) {
+  (async () => {
+    try {
       // Configure Status Bar
       const { StatusBar, Style } = await import(/* @vite-ignore */ '@capacitor/status-bar');
       await StatusBar.setStyle({ style: Style.Dark });
@@ -24,8 +28,8 @@ window.addEventListener("error", (event) => {
       // Configure Keyboard plugin for smooth iOS keyboard handling
       try {
         const { Keyboard } = await import(/* @vite-ignore */ '@capacitor/keyboard');
-        Keyboard.setAccessoryBarVisible({ isVisible: true });
-        Keyboard.setScroll({ isDisabled: false });
+        await Keyboard.setAccessoryBarVisible({ isVisible: true });
+        await Keyboard.setScroll({ isDisabled: false });
       } catch {
         // Keyboard plugin not available
       }
@@ -57,11 +61,11 @@ window.addEventListener("error", (event) => {
       } catch {
         // App plugin not available
       }
+    } catch {
+      // Not on native or plugin unavailable
     }
-  } catch {
-    // Not on native or plugin unavailable
-  }
-})();
+  })();
+}
 
 // Prevent iOS overscroll/bounce on root
 document.addEventListener('touchmove', (e) => {
@@ -72,4 +76,21 @@ document.addEventListener('touchmove', (e) => {
   }
 }, { passive: false });
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Render the app
+const root = createRoot(document.getElementById("root")!);
+root.render(<App />);
+
+// Hide splash screen after first render (Capacitor SplashScreen launchAutoHide=false)
+if (isNative) {
+  // Wait for first paint + a small buffer so the UI is visible before hiding splash
+  requestAnimationFrame(() => {
+    setTimeout(async () => {
+      try {
+        const { SplashScreen } = await import(/* @vite-ignore */ '@capacitor/splash-screen');
+        await SplashScreen.hide({ fadeOutDuration: 300 });
+      } catch {
+        // SplashScreen plugin not available
+      }
+    }, 100);
+  });
+}

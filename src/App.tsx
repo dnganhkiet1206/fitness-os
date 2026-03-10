@@ -4,36 +4,50 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRef } from "react";
+import { useRef, lazy, Suspense } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
 import SwipeBack from "@/components/SwipeBack";
 import { AwardCelebrationOverlay } from "@/components/awards/AwardCelebration";
 import { AppLayout } from "@/components/AppLayout";
 import { AppSettingsProvider } from "@/hooks/useAppSettings";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+// Critical pages loaded eagerly (landing + auth)
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import Settings from "./pages/Settings";
-import Onboarding from "./pages/Onboarding";
-import Nutrition from "./pages/Nutrition";
-import MealPlan from "./pages/MealPlan";
-import Supplements from "./pages/Supplements";
-import ExerciseLibrary from "./pages/ExerciseLibrary";
-import WorkoutBuilder from "./pages/WorkoutBuilder";
-import RoutinePlanner from "./pages/RoutinePlanner";
-import SleepInsights from "./pages/SleepInsights";
-import Progress from "./pages/Progress";
-import WeeklyReview from "./pages/WeeklyReview";
-import AiCoach from "./pages/AiCoach";
-import WaterTracking from "./pages/WaterTracking";
-import SmartGoals from "./pages/SmartGoals";
-import GroceryList from "./pages/GroceryList";
-import Awards from "./pages/Awards";
-import Challenges from "./pages/Challenges";
-import Biometrics from "./pages/Biometrics";
-import Legal from "./pages/Legal";
-import Steps from "./pages/Steps";
+
+// Lazy-loaded pages — each becomes a separate chunk for faster initial load
+const Settings = lazy(() => import("./pages/Settings"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Nutrition = lazy(() => import("./pages/Nutrition"));
+const MealPlan = lazy(() => import("./pages/MealPlan"));
+const Supplements = lazy(() => import("./pages/Supplements"));
+const ExerciseLibrary = lazy(() => import("./pages/ExerciseLibrary"));
+const WorkoutBuilder = lazy(() => import("./pages/WorkoutBuilder"));
+const RoutinePlanner = lazy(() => import("./pages/RoutinePlanner"));
+const SleepInsights = lazy(() => import("./pages/SleepInsights"));
+const Progress = lazy(() => import("./pages/Progress"));
+const WeeklyReview = lazy(() => import("./pages/WeeklyReview"));
+const AiCoach = lazy(() => import("./pages/AiCoach"));
+const WaterTracking = lazy(() => import("./pages/WaterTracking"));
+const SmartGoals = lazy(() => import("./pages/SmartGoals"));
+const GroceryList = lazy(() => import("./pages/GroceryList"));
+const Awards = lazy(() => import("./pages/Awards"));
+const Challenges = lazy(() => import("./pages/Challenges"));
+const Biometrics = lazy(() => import("./pages/Biometrics"));
+const Legal = lazy(() => import("./pages/Legal"));
+const Steps = lazy(() => import("./pages/Steps"));
+
+// Loading fallback — matches app background for seamless transition
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center w-full" style={{ minHeight: '60vh' }}>
+      <div className="w-8 h-8 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin" />
+    </div>
+  );
+}
+
 const queryClient = new QueryClient();
 
 // Tab order for directional transitions
@@ -58,23 +72,27 @@ function AnimatedRoutes() {
 
   const dir = direction.current;
 
+  // Optimized for 120Hz ProMotion displays — GPU-accelerated transforms only
   const variants = {
     initial: {
       opacity: 0,
       x: dir === 0 ? 0 : dir > 0 ? 60 : -60,
-      filter: "blur(4px)",
     },
     animate: {
       opacity: 1,
       x: 0,
-      filter: "blur(0px)",
-      transition: { type: "spring" as const, stiffness: 380, damping: 36, mass: 0.8 },
+      transition: {
+        type: "spring" as const,
+        stiffness: 400,
+        damping: 38,
+        mass: 0.7,
+        // Faster spring = snappier feel on 120Hz
+      },
     },
     exit: {
       opacity: 0,
       x: dir === 0 ? 0 : dir > 0 ? -40 : 40,
-      filter: "blur(4px)",
-      transition: { duration: 0.18, ease: "easeIn" as const },
+      transition: { duration: 0.15, ease: "easeIn" as const },
     },
   };
 
@@ -87,33 +105,36 @@ function AnimatedRoutes() {
         animate="animate"
         exit="exit"
         className="w-full"
+        style={{ willChange: 'transform, opacity', transform: 'translateZ(0)' }}
       >
         <SwipeBack>
-          <Routes location={location}>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/nutrition" element={<Nutrition />} />
-            <Route path="/meal-plan/:id" element={<MealPlan />} />
-            <Route path="/supplements" element={<Supplements />} />
-            <Route path="/exercises" element={<ExerciseLibrary />} />
-            <Route path="/workouts" element={<WorkoutBuilder />} />
-            <Route path="/routine" element={<RoutinePlanner />} />
-            <Route path="/sleep" element={<SleepInsights />} />
-            <Route path="/progress" element={<Progress />} />
-            <Route path="/weekly-review" element={<WeeklyReview />} />
-            <Route path="/ai-coach" element={<AiCoach />} />
-            <Route path="/water" element={<WaterTracking />} />
-            <Route path="/smart-goals" element={<SmartGoals />} />
-            <Route path="/grocery" element={<GroceryList />} />
-            <Route path="/awards" element={<Awards />} />
-            <Route path="/challenges" element={<Challenges />} />
-            <Route path="/biometrics" element={<Biometrics />} />
-            <Route path="/steps" element={<Steps />} />
-            <Route path="/legal" element={<Legal />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes location={location}>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/nutrition" element={<Nutrition />} />
+              <Route path="/meal-plan/:id" element={<MealPlan />} />
+              <Route path="/supplements" element={<Supplements />} />
+              <Route path="/exercises" element={<ExerciseLibrary />} />
+              <Route path="/workouts" element={<WorkoutBuilder />} />
+              <Route path="/routine" element={<RoutinePlanner />} />
+              <Route path="/sleep" element={<SleepInsights />} />
+              <Route path="/progress" element={<Progress />} />
+              <Route path="/weekly-review" element={<WeeklyReview />} />
+              <Route path="/ai-coach" element={<AiCoach />} />
+              <Route path="/water" element={<WaterTracking />} />
+              <Route path="/smart-goals" element={<SmartGoals />} />
+              <Route path="/grocery" element={<GroceryList />} />
+              <Route path="/awards" element={<Awards />} />
+              <Route path="/challenges" element={<Challenges />} />
+              <Route path="/biometrics" element={<Biometrics />} />
+              <Route path="/steps" element={<Steps />} />
+              <Route path="/legal" element={<Legal />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </SwipeBack>
       </motion.div>
     </AnimatePresence>

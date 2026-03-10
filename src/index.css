@@ -237,7 +237,7 @@
     box-shadow: 0 0 30px hsl(var(--gold-glow)), 0 0 60px hsl(var(--gold-glow));
   }
 
-  /* iOS 26 Liquid Glass card */
+  /* iOS 26 Liquid Glass card — GPU-composited layer */
   .glass-card {
     background: hsl(var(--glass-bg));
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -247,6 +247,9 @@
     box-shadow: var(--glass-inner-shadow), var(--glass-shadow);
     position: relative;
     overflow: hidden;
+    /* Promote to GPU layer for smooth 120Hz compositing */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
 
   .glass-card::before {
@@ -390,8 +393,9 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
     will-change: scroll-position;
-    /* Smooth momentum scrolling on iOS */
-    scroll-behavior: smooth;
+    /* GPU-accelerated scrolling layer */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
 
   /* iOS native-like active states */
