@@ -11,6 +11,12 @@ const config: CapacitorConfig = {
     backgroundColor: '#080809',
     allowsLinkPreview: false,
     scrollEnabled: false,
+    // Limiter le nombre de web frames pour iOS perf
+    limitsNavigationsToAppBoundDomains: true,
+  },
+  server: {
+    // Allow WKWebView to cache assets aggressively for offline + speed
+    allowNavigation: ['drqgonxrtmomgrftelih.supabase.co'],
   },
   plugins: {
     Keyboard: {
@@ -22,13 +28,16 @@ const config: CapacitorConfig = {
       overlaysWebView: true,
     },
     SplashScreen: {
-      launchAutoHide: true,
-      launchShowDuration: 500,
+      // Keep splash visible until app is fully rendered, then fade out
+      launchAutoHide: false,
+      launchShowDuration: 0,
       backgroundColor: '#080809',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
+      // Smooth fade for premium feel
+      launchFadeOutDuration: 300,
     },
   },
   // For development with hot-reload, uncomment the server block below:
