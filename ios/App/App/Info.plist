@@ -63,11 +63,21 @@
 	<string>ASCND reads your health data (heart rate, HRV, SpO2, steps, VO2 max) to provide personalized fitness insights and track your progress.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>ASCND writes workout and activity data to Apple Health to keep your health profile up to date.</string>
-	<!-- App Transport Security for Supabase -->
+	<!-- App Transport Security — scoped to Supabase domain only -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>supabase.co</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+			</dict>
+		</dict>
 	</dict>
 	<!-- Status bar style -->
 	<key>UIStatusBarStyle</key>
