@@ -41,11 +41,12 @@ window.addEventListener("error", (event) => {
             if (params) {
               window.location.hash = params;
             }
-          }
-          // Handle deep links to internal routes
-          const path = url.pathname;
-          if (path && path !== '/') {
-            window.location.pathname = path;
+          } else {
+            // Handle deep links to internal routes
+            const path = url.pathname;
+            if (path && path !== '/') {
+              window.location.pathname = path;
+            }
           }
         });
 
