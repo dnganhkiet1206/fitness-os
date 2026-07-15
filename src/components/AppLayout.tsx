@@ -2,6 +2,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { useEffect, useState, createContext, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
+import { NO_AUTOHIDE_ROUTES, CUSTOM_LAYOUT_ROUTES, NO_TAB_BAR_ROUTES } from '@/lib/route-config';
 
 const BottomBarContext = createContext<{
   hideBottomBar: () => void;
@@ -10,23 +11,14 @@ const BottomBarContext = createContext<{
 
 export const useBottomBar = () => useContext(BottomBarContext);
 
-// Pages where bottom bar should NOT auto-hide on scroll
-const NO_AUTOHIDE_ROUTES = ['/ai-coach'];
-
-// Pages that manage their own layout (bypass main scroll)
-const CUSTOM_LAYOUT_ROUTES = ['/ai-coach'];
-
-// Full-screen flows where the tab bar has no business showing
-const NO_TAB_BAR_ROUTES = ['/onboarding'];
-
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [forceHidden, setForceHidden] = useState(false);
 
-  const autoHide = !NO_AUTOHIDE_ROUTES.includes(location.pathname);
-  const isCustomLayout = CUSTOM_LAYOUT_ROUTES.includes(location.pathname);
+  const autoHide = !NO_AUTOHIDE_ROUTES.has(location.pathname);
+  const isCustomLayout = CUSTOM_LAYOUT_ROUTES.has(location.pathname);
 
   useEffect(() => {
     const handleResize = () => {
@@ -45,13 +37,35 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Expose keyboard height as a CSS variable so self-managed layouts
+  // (chat, sheets) can shrink themselves above the keyboard.
+  useEffect(() => {
+    document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
+  }, [keyboardHeight]);
+
+  // With Keyboard resize:'none', WebKit won't reflow the page for the
+  // keyboard — nudge the focused field into view inside its scroller.
+  useEffect(() => {
+    const onFocusIn = (e: FocusEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (!el?.matches?.('input, textarea, select, [contenteditable]')) return;
+      window.setTimeout(() => {
+        if (document.activeElement === el) {
+          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      }, 350);
+    };
+    document.addEventListener('focusin', onFocusIn);
+    return () => document.removeEventListener('focusin', onFocusIn);
+  }, []);
+
   // No pt-safe here: full-screen pages (Auth, Onboarding) size themselves to
   // 100dvh and pad for the safe area internally — outer padding would push
   // them past the viewport and clip the bottom by the notch height.
   if (!user) return <div style={{ height: '100dvh', overflow: 'hidden' }}>{children}</div>;
 
   const isKeyboardOpen = keyboardHeight > 0;
-  const shouldHideBar = isKeyboardOpen || forceHidden || NO_TAB_BAR_ROUTES.includes(location.pathname);
+  const shouldHideBar = isKeyboardOpen || forceHidden || NO_TAB_BAR_ROUTES.has(location.pathname);
 
   return (
     <BottomBarContext.Provider value={{ hideBottomBar: () => setForceHidden(true), showBottomBar: () => setForceHidden(false) }}>
@@ -59,18 +73,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* iOS Status Bar area background */}
         <div className="status-bar-bg bg-background/80" style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }} />
         
-        {isCustomLayout ? (
-          <div className="flex-1 overflow-hidden relative">
-            {children}
-          </div>
-        ) : (
-          <main
-            className="flex-1 overflow-hidden"
-            style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : undefined}
-          >
-            {children}
-          </main>
-        )}
+        <main
+          className={`flex-1 overflow-hidden ${isCustomLayout ? 'relative' : ''}`}
+          // Custom-layout pages size themselves via --keyboard-height instead
+          style={!isCustomLayout && isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : undefined}
+        >
+          {children}
+        </main>
         <div style={shouldHideBar ? { visibility: 'hidden', pointerEvents: 'none' } : undefined}>
           <BottomTabBar autoHide={autoHide} />
         </div>

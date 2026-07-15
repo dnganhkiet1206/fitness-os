@@ -79,8 +79,16 @@ function hasScrollableAncestor(el: HTMLElement | null): boolean {
   return false;
 }
 
+// The scrollable ancestor can't change mid-gesture, so resolve it once per
+// touch instead of forcing style/layout reads on every touchmove frame.
+let touchCanScroll = false;
+
+document.addEventListener('touchstart', (e) => {
+  touchCanScroll = hasScrollableAncestor(e.target as HTMLElement);
+}, { passive: true });
+
 document.addEventListener('touchmove', (e) => {
-  if (!hasScrollableAncestor(e.target as HTMLElement)) {
+  if (!touchCanScroll) {
     e.preventDefault();
   }
 }, { passive: false });

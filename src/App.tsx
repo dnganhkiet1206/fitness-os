@@ -6,6 +6,12 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from "re
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, lazy, Suspense } from "react";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import {
+  TAB_ROUTES,
+  CUSTOM_LAYOUT_ROUTES,
+  NO_TAB_BAR_ROUTES,
+  TAB_BAR_CLEARANCE_PX,
+} from "@/lib/route-config";
 import SwipeBack from "@/components/SwipeBack";
 import { AwardCelebrationOverlay } from "@/components/awards/AwardCelebration";
 import { AppLayout } from "@/components/AppLayout";
@@ -50,16 +56,6 @@ function PageLoader() {
 
 const queryClient = new QueryClient();
 
-// Root tab destinations — switching between them cross-fades (like native
-// UITabBarController); everything else animates as an iOS push/pop.
-const TAB_ROUTES = new Set(['/', '/nutrition', '/workouts', '/progress']);
-
-// Routes that own their full layout (internal scrolling, keyboard handling)
-const CUSTOM_LAYOUT_ROUTES = new Set(['/ai-coach']);
-
-// Routes without the floating tab bar — no bottom clearance needed
-const NO_TAB_BAR_ROUTES = new Set(['/onboarding']);
-
 type TransitionKind = 'fade' | 'push' | 'pop';
 
 // iOS-style page transitions — GPU-accelerated transforms only
@@ -89,16 +85,19 @@ function AnimatedRoutes() {
 
   if (prevPath.current !== location.pathname) {
     const bothTabs = TAB_ROUTES.has(prevPath.current) && TAB_ROUTES.has(location.pathname);
-    kindRef.current = bothTabs ? 'fade' : navigationType === 'POP' ? 'pop' : 'push';
+    // PUSH slides forward, POP slides back; REPLACE (redirects, back-fallback
+    // on deep links) has no direction — cross-fade it.
+    kindRef.current = bothTabs || navigationType === 'REPLACE'
+      ? 'fade'
+      : navigationType === 'POP' ? 'pop' : 'push';
     prevPath.current = location.pathname;
   }
 
   const kind = kindRef.current;
   const isCustomLayout = CUSTOM_LAYOUT_ROUTES.has(location.pathname);
-  // Clearance so the last content rows aren't hidden behind the floating
-  // tab bar (bar ≈56px + 8px margin + home-indicator inset).
+  // Clearance so the last content rows aren't hidden behind the floating tab bar.
   const bottomClearance = user && !isCustomLayout && !NO_TAB_BAR_ROUTES.has(location.pathname)
-    ? 'calc(env(safe-area-inset-bottom, 0px) + 84px)'
+    ? `calc(env(safe-area-inset-bottom, 0px) + ${TAB_BAR_CLEARANCE_PX}px)`
     : undefined;
 
   return (
@@ -110,10 +109,17 @@ function AnimatedRoutes() {
         initial="initial"
         animate="animate"
         exit="exit"
-        // Each route gets its own scroll container: scroll position resets on
-        // navigation and the exiting screen keeps its own scroll state.
-        className="h-full w-full overflow-y-auto scroll-container"
-        style={{ paddingBottom: bottomClearance, willChange: 'transform, opacity', transform: 'translateZ(0)' }}
+        // Each regular route gets its own scroll container: scroll position
+        // resets on navigation and the exiting screen keeps its scroll state.
+        // Custom-layout routes (chat) own their scrolling — wrapping them in a
+        // second scroller would let keyboard focus drag the whole page.
+        className={
+          isCustomLayout
+            ? "h-full w-full overflow-hidden"
+            : "h-full w-full overflow-y-auto scroll-container"
+        }
+        data-route-scroller={isCustomLayout ? undefined : true}
+        style={{ paddingBottom: bottomClearance }}
       >
         <SwipeBack>
           <Suspense fallback={<PageLoader />}>

@@ -37,7 +37,9 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
     const threshold = 16;
     const handleScroll = (e: Event) => {
       const target = e.target as HTMLElement | null;
-      if (!target?.classList?.contains('scroll-container')) return;
+      // Only the page's route scroller drives auto-hide — nested scrollers
+      // (chat lists, sheets) would corrupt the shared lastScrollY delta.
+      if (!(target instanceof HTMLElement) || target.dataset.routeScroller === undefined) return;
       const currentY = target.scrollTop;
       const delta = currentY - lastScrollY.current;
       if (aiOpen) { lastScrollY.current = currentY; return; }

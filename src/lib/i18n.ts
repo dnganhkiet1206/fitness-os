@@ -743,6 +743,9 @@ interface Translations {
   stepsSyncApple: string;
   stepsSyncing: string;
   navSteps: string;
+  notFoundTitle: string;
+  notFoundBody: string;
+  notFoundHome: string;
 }
 
 const vi: Translations = {
@@ -1423,6 +1426,9 @@ const vi: Translations = {
   stepsSyncApple: 'Đồng bộ Apple Health',
   stepsSyncing: 'Đang đồng bộ...',
   navSteps: 'Bước chân',
+  notFoundTitle: 'Không tìm thấy trang',
+  notFoundBody: 'Trang bạn tìm không tồn tại hoặc đã được di chuyển.',
+  notFoundHome: 'Về trang chính',
 };
 
 const en: Translations = {
@@ -2103,6 +2109,9 @@ const en: Translations = {
   stepsSyncApple: 'Sync Apple Health',
   stepsSyncing: 'Syncing...',
   navSteps: 'Steps',
+  notFoundTitle: 'Page not found',
+  notFoundBody: "The page you're looking for doesn't exist or has moved.",
+  notFoundHome: 'Back to Home',
 };
 
 const translations: Record<AppLang, Translations> = { vi, en };

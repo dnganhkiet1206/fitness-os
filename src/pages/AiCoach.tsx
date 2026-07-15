@@ -206,7 +206,10 @@ export default function AiCoach() {
   };
 
   return (
-    <div className="flex flex-col bg-background" style={{ height: '100dvh' }}>
+    <div
+      className="flex flex-col bg-background"
+      style={{ height: 'calc(100dvh - var(--keyboard-height, 0px))' }}
+    >
       {/* Header - not sticky since we manage our own layout */}
       <div className="shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div

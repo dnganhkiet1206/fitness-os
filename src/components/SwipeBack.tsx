@@ -2,12 +2,11 @@ import { useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { haptic } from '@/lib/haptics';
+import { NO_SWIPE_ROUTES } from '@/lib/route-config';
 
 const EDGE_WIDTH = 28;
 const THRESHOLD = 80;
 const SCREEN_WIDTH = typeof window !== 'undefined' ? window.innerWidth : 375;
-
-const NO_SWIPE_PAGES = ['/', '/auth', '/onboarding'];
 
 export default function SwipeBack({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -24,7 +23,7 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
   const edgeScaleY = useTransform(x, [0, THRESHOLD], [0.7, 1]);
   const edgeFilter = useTransform(edgeBlur, v => `blur(${v}px)`);
 
-  const canSwipe = !NO_SWIPE_PAGES.includes(location.pathname);
+  const canSwipe = !NO_SWIPE_ROUTES.has(location.pathname);
 
   useEffect(() => {
     x.set(0);
