@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { haptic } from '@/lib/haptics';
 
 const EDGE_WIDTH = 28;
 const THRESHOLD = 80;
@@ -54,7 +55,7 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
       const shouldNavigate = dx > THRESHOLD || (isDragging.current && dx > THRESHOLD * 0.5);
 
       if (shouldNavigate) {
-        if (navigator.vibrate) navigator.vibrate(12);
+        haptic('medium');
         animate(x, SCREEN_WIDTH, {
           type: 'spring', stiffness: 300, damping: 30,
           onComplete: () => { navigate(-1); requestAnimationFrame(() => x.set(0)); },

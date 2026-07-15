@@ -68,7 +68,7 @@ function getNativePlatform(): string {
  */
 async function nativeAppleSignIn(): Promise<SignInResult> {
   try {
-    const { SignInWithApple } = await import(/* @vite-ignore */ '@capacitor-community/apple-sign-in');
+    const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
 
     const nonce = crypto.randomUUID();
 
@@ -111,8 +111,8 @@ async function nativeAppleSignIn(): Promise<SignInResult> {
  */
 async function nativeOAuthWithBrowser(provider: "google" | "apple", redirectTo: string): Promise<SignInResult> {
   try {
-    const { Browser } = await import(/* @vite-ignore */ '@capacitor/browser');
-    const { App } = await import(/* @vite-ignore */ '@capacitor/app');
+    const { Browser } = await import('@capacitor/browser');
+    const { App } = await import('@capacitor/app');
 
     // Get the OAuth URL without auto-redirecting
     const { data, error } = await supabase.auth.signInWithOAuth({

@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { Capacitor } from "@capacitor/core";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -13,21 +14,19 @@ window.addEventListener("error", (event) => {
 });
 
 // iOS native: configure native plugins when running in Capacitor
-const isNative = !!(window as Record<string, unknown>)?.Capacitor &&
-  typeof ((window as Record<string, unknown>).Capacitor as Record<string, unknown>)?.isNativePlatform === 'function' &&
-  ((window as Record<string, unknown>).Capacitor as { isNativePlatform: () => boolean }).isNativePlatform();
+const isNative = Capacitor.isNativePlatform();
 
 if (isNative) {
   (async () => {
     try {
       // Configure Status Bar
-      const { StatusBar, Style } = await import(/* @vite-ignore */ '@capacitor/status-bar');
+      const { StatusBar, Style } = await import('@capacitor/status-bar');
       await StatusBar.setStyle({ style: Style.Dark });
       await StatusBar.setOverlaysWebView({ overlay: true });
 
       // Configure Keyboard plugin for smooth iOS keyboard handling
       try {
-        const { Keyboard } = await import(/* @vite-ignore */ '@capacitor/keyboard');
+        const { Keyboard } = await import('@capacitor/keyboard');
         await Keyboard.setAccessoryBarVisible({ isVisible: true });
         await Keyboard.setScroll({ isDisabled: false });
       } catch {
@@ -36,7 +35,7 @@ if (isNative) {
 
       // Listen for deep links (Supabase auth callbacks, etc.)
       try {
-        const { App: CapApp } = await import(/* @vite-ignore */ '@capacitor/app');
+        const { App: CapApp } = await import('@capacitor/app');
         CapApp.addListener('appUrlOpen', (data) => {
           const url = new URL(data.url);
           // Handle Supabase auth redirect
@@ -86,7 +85,7 @@ if (isNative) {
   requestAnimationFrame(() => {
     setTimeout(async () => {
       try {
-        const { SplashScreen } = await import(/* @vite-ignore */ '@capacitor/splash-screen');
+        const { SplashScreen } = await import('@capacitor/splash-screen');
         await SplashScreen.hide({ fadeOutDuration: 300 });
       } catch {
         // SplashScreen plugin not available

@@ -24,17 +24,6 @@ export default defineConfig(({ mode }) => ({
     // Enable CSS code splitting for lazy-loaded routes
     cssCodeSplit: true,
     rollupOptions: {
-      external: [
-        "@flomentumsolutions/capacitor-health-extended",
-        "@capacitor/haptics",
-        "@capacitor/status-bar",
-        "@capacitor/core",
-        "@capacitor/app",
-        "@capacitor/browser",
-        "@capacitor/keyboard",
-        "@capacitor/splash-screen",
-        "@capacitor-community/apple-sign-in",
-      ],
       output: {
         // Manual chunks for optimal caching and parallel loading
         manualChunks: {
