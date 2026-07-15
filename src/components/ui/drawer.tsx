@@ -44,6 +44,9 @@ const DrawerContent = React.forwardRef<
         WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(var(--glass-saturate))',
         borderColor: 'hsl(var(--glass-border))',
         boxShadow: 'var(--glass-inner-shadow), 0 -8px 40px hsl(0 0% 0% / 0.35)',
+        // Lift the sheet above the iOS keyboard (AppLayout maintains the var)
+        bottom: 'var(--keyboard-height, 0px)',
+        maxHeight: 'calc(94dvh - var(--keyboard-height, 0px))',
       }}
       {...props}
     >
