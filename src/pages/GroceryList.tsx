@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import PageLoader from '@/components/PageLoader';
 import { Navigate } from 'react-router-dom';
 import PageHeader from '@/components/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -185,7 +186,7 @@ export default function GroceryList() {
 
   const catLabel = (cat: string) => i18n.categories[cat] || cat;
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   return (

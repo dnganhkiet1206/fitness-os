@@ -17,6 +17,7 @@ import { AwardCelebrationOverlay } from "@/components/awards/AwardCelebration";
 import { AppLayout } from "@/components/AppLayout";
 import { AppSettingsProvider } from "@/hooks/useAppSettings";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import PageLoader from "@/components/PageLoader";
 
 // Critical pages loaded eagerly (landing + auth)
 import Index from "./pages/Index";
@@ -44,15 +45,6 @@ const Challenges = lazy(() => import("./pages/Challenges"));
 const Biometrics = lazy(() => import("./pages/Biometrics"));
 const Legal = lazy(() => import("./pages/Legal"));
 const Steps = lazy(() => import("./pages/Steps"));
-
-// Loading fallback — matches app background for seamless transition
-function PageLoader() {
-  return (
-    <div className="flex items-center justify-center w-full" style={{ minHeight: '60vh' }}>
-      <div className="w-8 h-8 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin" />
-    </div>
-  );
-}
 
 const queryClient = new QueryClient();
 

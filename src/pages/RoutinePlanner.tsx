@@ -1,4 +1,5 @@
 import { Navigate, useNavigate } from 'react-router-dom';
+import PageLoader from '@/components/PageLoader';
 import { motion } from 'framer-motion';
 import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,7 +25,7 @@ const RoutinePlanner = () => {
 
   const DAY_LABELS = [i18n.dayMon, i18n.dayTue, i18n.dayWed, i18n.dayThu, i18n.dayFri, i18n.daySat, i18n.daySun];
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const dayMap = new Map((routineDays ?? []).map(d => [d.day_of_week, d]));

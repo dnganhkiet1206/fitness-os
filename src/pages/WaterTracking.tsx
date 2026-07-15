@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PageLoader from '@/components/PageLoader';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Droplets, Plus, Minus, Bell, BellOff, Target } from 'lucide-react';
@@ -128,7 +129,7 @@ const WaterTracking = () => {
     }
   };
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const safeTodayLogs = Array.isArray(todayLogs) ? todayLogs : [];

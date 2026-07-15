@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import PageLoader from '@/components/PageLoader';
 import { Navigate } from 'react-router-dom';
 import PageHeader from '@/components/PageHeader';
 import { motion } from 'framer-motion';
@@ -117,7 +118,7 @@ export default function SmartGoals() {
     return { target, perMeal, mealsPerDay, lowDays, totalDays: dailyLogs.length };
   }, [dailyLogs, profile]);
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const goalLabel: Record<string, string> = {

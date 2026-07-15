@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageLoader from '@/components/PageLoader';
 import { Navigate } from 'react-router-dom';
 import PageHeader from '@/components/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -98,7 +99,7 @@ export default function Awards() {
     }
   }, [awards, checked]);
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const earnedMap = new Map((awards ?? []).map(a => [a.award_key, a]));

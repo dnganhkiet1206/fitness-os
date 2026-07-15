@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom';
+import PageLoader from '@/components/PageLoader';
 import { motion } from 'framer-motion';
 import PageHeader from '@/components/PageHeader';
 import { Heart, Activity, Wind, Droplets, Flame, PenLine, TrendingUp, TrendingDown, Minus, AlertCircle, Watch, Loader2, AlertTriangle, ShieldAlert } from 'lucide-react';
@@ -160,7 +161,7 @@ export default function Biometrics() {
   const { available: healthAvailable, checking: healthChecking, syncing, sync } = useHealthSync();
   const METRICS = getMetrics(i18n);
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   return (

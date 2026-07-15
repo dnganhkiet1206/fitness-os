@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageLoader from '@/components/PageLoader';
 import { Navigate } from 'react-router-dom';
 import PageHeader from '@/components/PageHeader';
 import { motion } from 'framer-motion';
@@ -113,7 +114,7 @@ export default function Challenges() {
     }
   }, [user, initialized, challenges]);
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const weekStart = getWeekStart();

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PageLoader from '@/components/PageLoader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PageHeader from '@/components/PageHeader';
@@ -50,7 +51,7 @@ const Supplements = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', category: 'other', dose_text: '', timing: 'morning', notes: '', cycle_mode: 'none', cycle_on_weeks: 4, cycle_off_weeks: 1 });
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const resetForm = () => setForm({ name: '', category: 'other', dose_text: '', timing: 'morning', notes: '', cycle_mode: 'none', cycle_on_weeks: 4, cycle_off_weeks: 1 });

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PageLoader from '@/components/PageLoader';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PageHeader from '@/components/PageHeader';
@@ -42,7 +43,7 @@ const MealPlan = () => {
   const [search, setSearch] = useState('');
   const { data: searchResults } = useFoodSearch(search, search.length > 1);
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const dayItems = items?.filter(i => i.day_index === activeDay) ?? [];

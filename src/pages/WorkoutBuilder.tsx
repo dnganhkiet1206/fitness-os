@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PageLoader from '@/components/PageLoader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import LargeTitle from '@/components/LargeTitle';
@@ -81,7 +82,7 @@ const WorkoutBuilder = () => {
   const [customMuscle, setCustomMuscle] = useState('Chest');
   const [customEquipment, setCustomEquipment] = useState('Barbell');
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const filteredExercises = (exercises ?? []).filter(e => !searchEx || e.name.toLowerCase().includes(searchEx.toLowerCase())).slice(0, 15);

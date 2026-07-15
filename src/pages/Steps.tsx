@@ -1,4 +1,5 @@
 import { Navigate, useNavigate } from 'react-router-dom';
+import PageLoader from '@/components/PageLoader';
 import PageHeader from '@/components/PageHeader';
 import { motion } from 'framer-motion';
 import { Footprints, Watch, Loader2, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react';
@@ -23,7 +24,7 @@ export default function Steps() {
   const { data: todaySteps } = useTodaySteps();
   const { available: healthAvailable, checking: healthChecking, syncing, sync } = useHealthSync();
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const DAILY_GOAL = getStepsGoal();

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PageLoader from '@/components/PageLoader';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import PageHeader from '@/components/PageHeader';
@@ -34,7 +35,7 @@ const ExerciseLibrary = () => {
 
   const [form, setForm] = useState({ name: '', muscle_group: MUSCLE_GROUPS[0], equipment: '', form_cues: '', common_mistakes: '', video_url: '' });
 
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const filtered = (exercises ?? []).filter(e => {
