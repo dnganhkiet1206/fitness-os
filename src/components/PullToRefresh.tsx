@@ -24,8 +24,9 @@ export default function PullToRefresh({ onRefresh, children, className = '' }: P
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (refreshing) return;
-    const el = containerRef.current;
-    if (el && el.scrollTop <= 0) {
+    // Only arm the pull when the page's actual scroll container is at the top
+    const scroller = containerRef.current?.closest('.scroll-container');
+    if ((scroller?.scrollTop ?? 0) <= 0) {
       startY.current = e.touches[0].clientY;
       pulling.current = true;
     }

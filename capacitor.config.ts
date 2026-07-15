@@ -5,7 +5,10 @@ const config: CapacitorConfig = {
   appName: 'ASCND',
   webDir: 'dist',
   ios: {
-    contentInset: 'automatic',
+    // Safe areas are handled in CSS via env(safe-area-inset-*).
+    // 'automatic' would ADD a native inset on top of that, shifting the
+    // whole layout down on notch/Dynamic Island devices.
+    contentInset: 'never',
     preferredContentMode: 'mobile',
     scheme: 'ASCND',
     backgroundColor: '#080809',
@@ -20,8 +23,10 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
-      resize: 'body',
-      resizeOnFullScreen: true,
+      // The app compensates for the keyboard itself via visualViewport
+      // (AppLayout). 'body' would also inject an inline height on <body>,
+      // fighting the fixed 100dvh layout.
+      resize: 'none',
     },
     StatusBar: {
       style: 'DARK',

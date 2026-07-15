@@ -66,11 +66,21 @@ if (isNative) {
   })();
 }
 
-// Prevent iOS overscroll/bounce on root
+// Prevent iOS overscroll/bounce on the root, while allowing touch scrolling
+// inside ANY genuinely scrollable element (pages, dialogs, sheets, chat).
+function hasScrollableAncestor(el: HTMLElement | null): boolean {
+  while (el && el !== document.body) {
+    if (el.scrollHeight > el.clientHeight + 1) {
+      const { overflowY } = getComputedStyle(el);
+      if (overflowY === 'auto' || overflowY === 'scroll') return true;
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
+
 document.addEventListener('touchmove', (e) => {
-  const target = e.target as HTMLElement;
-  const scrollable = target.closest('.scroll-container');
-  if (!scrollable) {
+  if (!hasScrollableAncestor(e.target as HTMLElement)) {
     e.preventDefault();
   }
 }, { passive: false });

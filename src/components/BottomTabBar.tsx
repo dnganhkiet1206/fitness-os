@@ -29,14 +29,16 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
   const scrollTimeout = useRef<ReturnType<typeof setTimeout>>();
   const scanTriggerRef = useRef<HTMLButtonElement>(null);
 
-  // Scroll-aware hide/show
+  // Scroll-aware hide/show. Scroll containers are per-route (they remount on
+  // navigation), so listen on document in the capture phase instead of
+  // binding to one element.
   useEffect(() => {
     if (!autoHide) { setVisible(true); return; }
-    const scroller = document.querySelector('.scroll-container') as HTMLElement | null;
-    if (!scroller) { setVisible(true); return; }
     const threshold = 16;
-    const handleScroll = () => {
-      const currentY = scroller.scrollTop;
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.classList?.contains('scroll-container')) return;
+      const currentY = target.scrollTop;
       const delta = currentY - lastScrollY.current;
       if (aiOpen) { lastScrollY.current = currentY; return; }
       if (delta > threshold && currentY > 80) setVisible(false);
@@ -45,14 +47,14 @@ export function BottomTabBar({ autoHide = true }: { autoHide?: boolean }) {
       if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
       scrollTimeout.current = setTimeout(() => setVisible(true), 800);
     };
-    scroller.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
     return () => {
-      scroller.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('scroll', handleScroll, { capture: true });
       if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
     };
   }, [aiOpen, autoHide]);
 
-  useEffect(() => { setVisible(true); }, [location.pathname]);
+  useEffect(() => { setVisible(true); lastScrollY.current = 0; }, [location.pathname]);
 
   const tabs = [
     { title: i18n.navToday, url: '/', icon: Home },

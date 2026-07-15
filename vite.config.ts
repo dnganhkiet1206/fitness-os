@@ -28,7 +28,10 @@ export default defineConfig(({ mode }) => ({
         // Manual chunks for optimal caching and parallel loading
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-ui': ['framer-motion', '@tanstack/react-query', 'recharts'],
+          // recharts is intentionally NOT pinned here: only lazy-loaded pages
+          // use it, so Rollup splits it into an async chunk that isn't part
+          // of app startup.
+          'vendor-ui': ['framer-motion', '@tanstack/react-query'],
           'vendor-radix': [
             '@radix-ui/react-dialog',
             '@radix-ui/react-popover',

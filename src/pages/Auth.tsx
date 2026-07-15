@@ -104,7 +104,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="bg-background flex items-center justify-center px-4 pt-safe relative overflow-hidden" style={{ height: '100dvh' }}>
+    <div className="bg-background flex justify-center px-4 pt-safe relative overflow-y-auto overscroll-contain" style={{ height: '100dvh' }}>
       {/* Language selector */}
       <div className="absolute top-4 pt-safe right-4 z-20 flex items-center gap-1.5">
         <Globe className="w-4 h-4 text-muted-foreground" />
@@ -127,7 +127,7 @@ const Auth = () => {
         initial={{ opacity: 0, y: 40, filter: 'blur(12px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         transition={{ ...spring, duration: 0.7 }}
-        className="w-full max-w-sm space-y-8 relative z-10"
+        className="w-full max-w-sm space-y-8 relative z-10 my-auto py-8"
       >
         <motion.div
           initial={{ opacity: 0, y: -10 }}

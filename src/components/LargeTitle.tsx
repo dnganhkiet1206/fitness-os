@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface LargeTitleProps {
   title: string;
@@ -11,10 +11,12 @@ interface LargeTitleProps {
  */
 export default function LargeTitle({ title, children }: LargeTitleProps) {
   const [scrollY, setScrollY] = useState(0);
+  const barRef = useRef<HTMLDivElement>(null);
   const threshold = 44;
 
   useEffect(() => {
-    const scroller = document.querySelector('.scroll-container');
+    // Bind to this page's own scroll container (scrollers are per-route)
+    const scroller = barRef.current?.closest('.scroll-container');
     if (!scroller) return;
     const handler = () => setScrollY(scroller.scrollTop);
     scroller.addEventListener('scroll', handler, { passive: true });
@@ -33,6 +35,7 @@ export default function LargeTitle({ title, children }: LargeTitleProps) {
     <>
       {/* Inline collapsed title bar — transparent, blends with page */}
       <div
+        ref={barRef}
         className="sticky top-0 z-40 shrink-0"
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',

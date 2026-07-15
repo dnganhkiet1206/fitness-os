@@ -16,6 +16,9 @@ const NO_AUTOHIDE_ROUTES = ['/ai-coach'];
 // Pages that manage their own layout (bypass main scroll)
 const CUSTOM_LAYOUT_ROUTES = ['/ai-coach'];
 
+// Full-screen flows where the tab bar has no business showing
+const NO_TAB_BAR_ROUTES = ['/onboarding'];
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
@@ -42,10 +45,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  if (!user) return <div className="pt-safe" style={{ height: '100dvh', overflow: 'hidden' }}>{children}</div>;
+  // No pt-safe here: full-screen pages (Auth, Onboarding) size themselves to
+  // 100dvh and pad for the safe area internally — outer padding would push
+  // them past the viewport and clip the bottom by the notch height.
+  if (!user) return <div style={{ height: '100dvh', overflow: 'hidden' }}>{children}</div>;
 
   const isKeyboardOpen = keyboardHeight > 0;
-  const shouldHideBar = isKeyboardOpen || forceHidden;
+  const shouldHideBar = isKeyboardOpen || forceHidden || NO_TAB_BAR_ROUTES.includes(location.pathname);
 
   return (
     <BottomBarContext.Provider value={{ hideBottomBar: () => setForceHidden(true), showBottomBar: () => setForceHidden(false) }}>
@@ -59,8 +65,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         ) : (
           <main
-            className="flex-1 overflow-y-auto scroll-container"
-            style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : { paddingBottom: 72 }}
+            className="flex-1 overflow-hidden"
+            style={isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : undefined}
           >
             {children}
           </main>

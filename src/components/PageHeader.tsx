@@ -16,6 +16,14 @@ interface PageHeaderProps {
 export default function PageHeader({ title, backTo = '/', gradient = false, children, sticky = true, showBack = true }: PageHeaderProps) {
   const navigate = useNavigate();
 
+  const goBack = () => {
+    // Real history pop gets the iOS pop transition; fall back to backTo when
+    // this page was the entry point (deep link, reload).
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate(backTo, { replace: true });
+  };
+
   return (
     <header
       className={`${sticky ? 'sticky top-0 z-50' : ''}`}
@@ -31,7 +39,7 @@ export default function PageHeader({ title, backTo = '/', gradient = false, chil
       <div className="max-w-4xl mx-auto px-1 h-[44px] flex items-center">
         {showBack ? (
           <motion.button
-            onClick={() => navigate(backTo)}
+            onClick={goBack}
             whileTap={{ scale: 0.88 }}
             transition={spring}
             className="flex items-center justify-center w-[44px] h-[44px] text-primary active:opacity-60 transition-opacity shrink-0"

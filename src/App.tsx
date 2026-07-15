@@ -2,10 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, lazy, Suspense } from "react";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import SwipeBack from "@/components/SwipeBack";
 import { AwardCelebrationOverlay } from "@/components/awards/AwardCelebration";
 import { AppLayout } from "@/components/AppLayout";
@@ -50,62 +50,70 @@ function PageLoader() {
 
 const queryClient = new QueryClient();
 
-// Tab order for directional transitions
-const TAB_ORDER = ['/', '/nutrition', '/workouts', '/progress'];
+// Root tab destinations — switching between them cross-fades (like native
+// UITabBarController); everything else animates as an iOS push/pop.
+const TAB_ROUTES = new Set(['/', '/nutrition', '/workouts', '/progress']);
 
-function getTabIndex(path: string): number {
-  const idx = TAB_ORDER.indexOf(path);
-  return idx >= 0 ? idx : TAB_ORDER.length; // "more" pages get highest index
-}
+// Routes that own their full layout (internal scrolling, keyboard handling)
+const CUSTOM_LAYOUT_ROUTES = new Set(['/ai-coach']);
+
+// Routes without the floating tab bar — no bottom clearance needed
+const NO_TAB_BAR_ROUTES = new Set(['/onboarding']);
+
+type TransitionKind = 'fade' | 'push' | 'pop';
+
+// iOS-style page transitions — GPU-accelerated transforms only
+const pageVariants = {
+  initial: (kind: TransitionKind) => ({
+    opacity: 0,
+    x: kind === 'push' ? 56 : kind === 'pop' ? -32 : 0,
+  }),
+  animate: {
+    opacity: 1,
+    x: 0,
+    transition: { type: "spring" as const, stiffness: 420, damping: 40, mass: 0.8 },
+  },
+  exit: (kind: TransitionKind) => ({
+    opacity: 0,
+    x: kind === 'push' ? -32 : kind === 'pop' ? 56 : 0,
+    transition: { duration: 0.14, ease: "easeIn" as const },
+  }),
+};
 
 function AnimatedRoutes() {
   const location = useLocation();
+  const navigationType = useNavigationType();
+  const { user } = useAuth();
   const prevPath = useRef(location.pathname);
-  const direction = useRef(0);
+  const kindRef = useRef<TransitionKind>('fade');
 
   if (prevPath.current !== location.pathname) {
-    const prevIdx = getTabIndex(prevPath.current);
-    const currIdx = getTabIndex(location.pathname);
-    direction.current = currIdx > prevIdx ? 1 : currIdx < prevIdx ? -1 : 0;
+    const bothTabs = TAB_ROUTES.has(prevPath.current) && TAB_ROUTES.has(location.pathname);
+    kindRef.current = bothTabs ? 'fade' : navigationType === 'POP' ? 'pop' : 'push';
     prevPath.current = location.pathname;
   }
 
-  const dir = direction.current;
-
-  // Optimized for 120Hz ProMotion displays — GPU-accelerated transforms only
-  const variants = {
-    initial: {
-      opacity: 0,
-      x: dir === 0 ? 0 : dir > 0 ? 60 : -60,
-    },
-    animate: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        type: "spring" as const,
-        stiffness: 400,
-        damping: 38,
-        mass: 0.7,
-        // Faster spring = snappier feel on 120Hz
-      },
-    },
-    exit: {
-      opacity: 0,
-      x: dir === 0 ? 0 : dir > 0 ? -40 : 40,
-      transition: { duration: 0.15, ease: "easeIn" as const },
-    },
-  };
+  const kind = kindRef.current;
+  const isCustomLayout = CUSTOM_LAYOUT_ROUTES.has(location.pathname);
+  // Clearance so the last content rows aren't hidden behind the floating
+  // tab bar (bar ≈56px + 8px margin + home-indicator inset).
+  const bottomClearance = user && !isCustomLayout && !NO_TAB_BAR_ROUTES.has(location.pathname)
+    ? 'calc(env(safe-area-inset-bottom, 0px) + 84px)'
+    : undefined;
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="wait" initial={false} custom={kind}>
       <motion.div
         key={location.pathname}
-        variants={variants}
+        custom={kind}
+        variants={pageVariants}
         initial="initial"
         animate="animate"
         exit="exit"
-        className="w-full"
-        style={{ willChange: 'transform, opacity', transform: 'translateZ(0)' }}
+        // Each route gets its own scroll container: scroll position resets on
+        // navigation and the exiting screen keeps its own scroll state.
+        className="h-full w-full overflow-y-auto scroll-container"
+        style={{ paddingBottom: bottomClearance, willChange: 'transform, opacity', transform: 'translateZ(0)' }}
       >
         <SwipeBack>
           <Suspense fallback={<PageLoader />}>

@@ -199,7 +199,13 @@ const Index = () => {
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.015]" style={{ background: 'radial-gradient(circle, hsl(var(--muted)), transparent 70%)' }} />
       </div>
 
-      <motion.main variants={container} initial="hidden" animate="show" className="relative max-w-5xl mx-auto px-4 pt-safe py-4 space-y-4">
+      <motion.main
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="relative max-w-5xl mx-auto px-4 pb-4 space-y-4"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+      >
         {/* Greeting + Edit */}
         <motion.div variants={fadeUp} className="flex items-start justify-between">
           <div>

@@ -93,7 +93,7 @@ const Onboarding = () => {
 
   if (authLoading || profileLoading) {
     return (
-      <div className="bg-background flex items-center justify-center" style={{ height: '100dvh' }}>
+      <div className="bg-background flex items-center justify-center" style={{ minHeight: '100dvh' }}>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center">
             <div className="w-4 h-4 rounded-full bg-primary animate-pulse" />
@@ -190,13 +190,20 @@ const Onboarding = () => {
   const StepIcon = STEP_ICONS[step];
 
   return (
-    <div className="bg-background relative overflow-hidden" style={{ height: '100dvh' }}>
+    <div className="bg-background relative">
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, hsl(160 84% 39%), transparent 70%)' }} />
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, hsl(217 91% 60%), transparent 70%)' }} />
       </div>
 
-      <div className="relative max-w-lg mx-auto px-4 py-8 h-full flex flex-col overflow-y-auto">
+      <div
+        className="relative max-w-lg mx-auto px-4 flex flex-col"
+        style={{
+          minHeight: '100dvh',
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 24px)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)',
+        }}
+      >
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="text-center mb-8">
           <h1 className="text-2xl font-bold">
             <span className="text-gradient-green">Fitness</span> <span className="text-foreground">OS</span>
