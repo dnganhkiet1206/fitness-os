@@ -1,4 +1,6 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { ReadinessRing } from '@/components/ascnd/readiness-ring';
@@ -49,7 +51,21 @@ export default function TodayScreen() {
         : '—';
 
   return (
-    <Screen title={greeting(profile?.name)} eyebrow={todayLabel()}>
+    <Screen
+      title={greeting(profile?.name)}
+      eyebrow={todayLabel()}
+      headerRight={
+        <Pressable
+          hitSlop={8}
+          style={({ pressed }) => [styles.gear, pressed && styles.pressed]}
+          onPress={() => router.push('/settings')}>
+          {Platform.OS === 'ios' ? (
+            <SymbolView name="gearshape.fill" size={20} tintColor={colors.mutedForeground} />
+          ) : (
+            <Text style={styles.gearFallback}>⚙︎</Text>
+          )}
+        </Pressable>
+      }>
       <GlassCard>
         <Text style={styles.cardTitle}>Readiness</Text>
         <Text style={styles.cardHint}>
@@ -119,6 +135,19 @@ const styles = StyleSheet.create({
   },
   ringWrap: {
     marginVertical: spacing.lg,
+  },
+  gear: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  gearFallback: {
+    fontSize: 16,
+    color: colors.mutedForeground,
   },
   syncButton: {
     height: 44,

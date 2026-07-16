@@ -9,13 +9,15 @@ interface ScreenProps extends ViewProps {
   title: string;
   /** Optional line above the title (date, context) */
   eyebrow?: string;
+  /** Optional accessory rendered on the right of the large title */
+  headerRight?: React.ReactNode;
 }
 
 /**
  * Standard scrollable page scaffold: dark surface, safe-area aware,
  * large title, clearance for the native tab bar.
  */
-export function Screen({ title, eyebrow, children, style, ...props }: ScreenProps) {
+export function Screen({ title, eyebrow, headerRight, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
   return (
     <ScrollView
@@ -28,8 +30,11 @@ export function Screen({ title, eyebrow, children, style, ...props }: ScreenProp
       contentInsetAdjustmentBehavior="never"
       {...props}>
       <View style={styles.header}>
-        {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.headerText}>
+          {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+          <Text style={styles.title}>{title}</Text>
+        </View>
+        {headerRight}
       </View>
       {children}
     </ScrollView>
@@ -47,6 +52,13 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  headerText: {
+    flex: 1,
     gap: 2,
   },
   eyebrow: {

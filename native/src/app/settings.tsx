@@ -1,0 +1,89 @@
+import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { GlassCard } from '@/components/ascnd/glass-card';
+import { Screen } from '@/components/ascnd/screen';
+import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useAuth } from '@/hooks/use-auth';
+import { useProfile } from '@/hooks/useTodayData';
+
+export default function SettingsScreen() {
+  const { user, signOut } = useAuth();
+  const { data: profile } = useProfile();
+
+  const confirmSignOut = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await signOut();
+          router.dismissAll();
+        },
+      },
+    ]);
+  };
+
+  return (
+    <Screen title="Settings">
+      <GlassCard>
+        <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
+        <Text style={styles.cardHint}>{user?.email}</Text>
+        <View style={styles.divider} />
+        <Row label="Daily target" value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
+        <Row label="Goal" value={profile?.goal ?? '—'} />
+        <Row label="Training level" value={profile?.training_level ?? '—'} />
+      </GlassCard>
+
+      <GlassCard>
+        <Text style={styles.cardTitle}>About</Text>
+        <Row label="Version" value="1.0.0 (native)" />
+        <Row label="Backend" value="Supabase" />
+      </GlassCard>
+
+      <Pressable
+        style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
+        onPress={confirmSignOut}>
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </Pressable>
+    </Screen>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.row}>
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={styles.rowValue}>{value}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  cardTitle: { ...type.headline, color: colors.foreground },
+  cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginVertical: spacing.md,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  rowLabel: { ...type.body, color: colors.mutedForeground },
+  rowValue: { ...type.body, color: colors.foreground, fontWeight: '600', textTransform: 'capitalize' },
+  signOut: {
+    height: 50,
+    borderRadius: radius.full,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signOutText: { ...type.headline, color: colors.destructive },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+});
