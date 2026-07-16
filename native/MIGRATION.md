@@ -30,14 +30,26 @@ repo vẫn chạy bình thường trong lúc migrate.
 - ✅ Today dashboard nối dữ liệu thật: greeting theo tên, readiness score
   + màu trạng thái, kcal/target, steps, sleep.
 
+## Đã port thêm (đợt 3–4)
+
+- ✅ Router tái cấu trúc: Stack gốc + nhóm `(tabs)`; **formSheet native**
+  (detents, grabber hệ thống) cho `/log-meal` và `/log-workout`.
+- ✅ Readiness ring động (SVG + Reanimated trên UI thread).
+- ✅ Nutrition sống: kcal/target, macro, danh sách bữa, Log Meal ghi
+  `meal_entries` + `recomputeDailyLog` (chung logic với web).
+- ✅ Workouts sống: thống kê tuần, lịch sử buổi tập, Log Workout (RPE
+  chips + volume) nuôi ngược vào readiness.
+- ✅ Progress sống: chart cân nặng 30 ngày (SVG LineChart tự viết) +
+  dải cột readiness 14 ngày theo màu trạng thái.
+
 ## Thứ tự port tiếp theo
 
-1. Readiness ring đẹp bằng Reanimated/Skia (hiện là vòng tròn tĩnh).
-2. Logging sheets (formsheet native của expo-router / `presentation:
-   'formSheet'`).
-3. Nutrition / Workouts / Progress (charts: victory-native XL / Skia).
-4. HealthKit qua `@kingstinct/react-native-healthkit` hoặc module Expo.
-5. Onboarding flow + màn đuôi dài (Legal, Awards, …) — hoặc tạm nhúng WebView.
+1. HealthKit qua `@kingstinct/react-native-healthkit` hoặc module Expo
+   (steps, HR, HRV, sleep tự động).
+2. Set-by-set workout builder (hiện là quick log RPE + volume).
+3. Food search / barcode scan trong Log Meal (port food_items search).
+4. Onboarding flow + Settings.
+5. Màn đuôi dài (Legal, Awards, Challenges, …) — hoặc tạm nhúng WebView.
 
 ## Chạy
 
