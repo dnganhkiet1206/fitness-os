@@ -48,6 +48,16 @@ function Gate() {
           contentStyle: { backgroundColor: colors.card },
         }}
       />
+      <Stack.Screen
+        name="log-workout"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.55, 1.0],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+          contentStyle: { backgroundColor: colors.card },
+        }}
+      />
     </Stack>
   );
 }
