@@ -1,9 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { ReadinessRing } from '@/components/ascnd/readiness-ring';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
+import { useHealthSync } from '@/hooks/use-health-sync';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 
 function greeting(name?: string | null): string {
@@ -30,6 +31,7 @@ export default function TodayScreen() {
   const { data: profile } = useProfile();
   const { data: log } = useDailyLog();
   const { data: sleep } = useTodaySleep();
+  const { available: healthAvailable, sync: healthSync } = useHealthSync();
 
   const readinessScore = log?.readiness_score != null ? Math.round(Number(log.readiness_score)) : null;
   const readinessColor = READINESS_COLOR[log?.readiness_status ?? ''] ?? colors.secondary;
@@ -71,6 +73,19 @@ export default function TodayScreen() {
         </GlassCard>
       </View>
 
+      {healthAvailable && (
+        <Pressable
+          style={({ pressed }) => [styles.syncButton, pressed && styles.pressed]}
+          disabled={healthSync.isPending}
+          onPress={() => healthSync.mutate()}>
+          {healthSync.isPending ? (
+            <ActivityIndicator color={colors.foreground} size="small" />
+          ) : (
+            <Text style={styles.syncText}>♥ Sync Apple Health</Text>
+          )}
+        </Pressable>
+      )}
+
       <GlassCard>
         <Text style={styles.cardTitle}>Sleep</Text>
         <Text style={styles.cardHint}>Last night</Text>
@@ -104,5 +119,21 @@ const styles = StyleSheet.create({
   },
   ringWrap: {
     marginVertical: spacing.lg,
+  },
+  syncButton: {
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  syncText: {
+    ...type.footnote,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  pressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
 });
