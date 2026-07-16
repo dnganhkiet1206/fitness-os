@@ -1,7 +1,7 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -35,10 +35,43 @@ export default function LogMealSheet() {
   const invalidate = useInvalidateToday();
   const [mealType, setMealType] = useState<MealType>('lunch');
   const [name, setName] = useState('');
+  const [foodItemId, setFoodItemId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [debounced, setDebounced] = useState('');
   const [kcal, setKcal] = useState('');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const { data: foods } = useQuery({
+    queryKey: ['food_items_search', debounced],
+    enabled: debounced.length >= 2,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('food_items')
+        .select('id, name, brand, kcal, protein_g, carbs_g, fat_g')
+        .ilike('name', `%${debounced}%`)
+        .order('name')
+        .limit(6);
+      return data ?? [];
+    },
+  });
+
+  const pickFood = (f: NonNullable<typeof foods>[number]) => {
+    Haptics.selectionAsync();
+    setFoodItemId(f.id);
+    setName(f.name);
+    setKcal(String(Math.round(Number(f.kcal))));
+    setProtein(String(Math.round(Number(f.protein_g))));
+    setCarbs(String(Math.round(Number(f.carbs_g))));
+    setFat(String(Math.round(Number(f.fat_g))));
+    setSearch('');
+  };
 
   const save = useMutation({
     mutationFn: async () => {
@@ -66,7 +99,7 @@ export default function LogMealSheet() {
       if (name.trim()) {
         await supabase.from('meal_entry_items').insert({
           meal_entry_id: entry.id,
-          food_item_id: null,
+          food_item_id: foodItemId,
           food_name: name.trim(),
           servings: 1,
           kcal: kcalN,
@@ -116,10 +149,35 @@ export default function LogMealSheet() {
 
         <TextInput
           style={styles.input}
+          placeholder="Search foods…"
+          placeholderTextColor={colors.mutedForeground}
+          value={search}
+          onChangeText={setSearch}
+          autoCorrect={false}
+        />
+        {foods && foods.length > 0 && (
+          <View style={styles.results}>
+            {foods.map((f) => (
+              <Pressable key={f.id} style={styles.resultRow} onPress={() => pickFood(f)}>
+                <View style={styles.resultInfo}>
+                  <Text style={styles.resultName} numberOfLines={1}>{f.name}</Text>
+                  {f.brand ? <Text style={styles.resultBrand} numberOfLines={1}>{f.brand}</Text> : null}
+                </View>
+                <Text style={styles.resultKcal}>{Math.round(Number(f.kcal))} kcal</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        <TextInput
+          style={styles.input}
           placeholder="What did you eat? (optional)"
           placeholderTextColor={colors.mutedForeground}
           value={name}
-          onChangeText={setName}
+          onChangeText={(t) => {
+            setName(t);
+            setFoodItemId(null);
+          }}
         />
         <TextInput
           style={styles.input}
@@ -250,4 +308,23 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
+  results: {
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    overflow: 'hidden',
+  },
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    gap: spacing.sm,
+  },
+  resultInfo: { flex: 1, minWidth: 0 },
+  resultName: { ...type.body, color: colors.foreground },
+  resultBrand: { ...type.caption, color: colors.mutedForeground },
+  resultKcal: { ...type.footnote, color: colors.mutedForeground },
 });
