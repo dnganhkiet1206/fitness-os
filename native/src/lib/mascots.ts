@@ -14,6 +14,8 @@ export interface MascotDef {
   id: string;
   emoji: string;
   name: string;
+  /** Aura/glow color that sells the character's depth */
+  accent: string;
   /** Personality line shown in the picker */
   tagline: Record<AppLang, string>;
   /** Unlock requirement; undefined = free */
@@ -29,6 +31,7 @@ export interface MascotDef {
 export const MASCOTS: MascotDef[] = [
   {
     id: 'koa',
+    accent: '#8fb3a4',
     emoji: '🐨',
     name: 'Koa',
     tagline: {
@@ -38,6 +41,7 @@ export const MASCOTS: MascotDef[] = [
   },
   {
     id: 'blaze',
+    accent: '#e6a23d',
     emoji: '🦁',
     name: 'Blaze',
     tagline: {
@@ -52,6 +56,7 @@ export const MASCOTS: MascotDef[] = [
   },
   {
     id: 'swift',
+    accent: '#e0763d',
     emoji: '🦊',
     name: 'Swift',
     tagline: {
@@ -66,6 +71,7 @@ export const MASCOTS: MascotDef[] = [
   },
   {
     id: 'titan',
+    accent: '#7d8ba1',
     emoji: '🦍',
     name: 'Titan',
     tagline: {
@@ -80,6 +86,7 @@ export const MASCOTS: MascotDef[] = [
   },
   {
     id: 'drago',
+    accent: '#5fb56f',
     emoji: '🐉',
     name: 'Drago',
     tagline: {
@@ -90,6 +97,7 @@ export const MASCOTS: MascotDef[] = [
   },
   {
     id: 'nova',
+    accent: '#b07de0',
     emoji: '🦄',
     name: 'Nova',
     tagline: {
