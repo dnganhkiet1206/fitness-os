@@ -159,6 +159,27 @@ export function useWearables() {
   });
 }
 
+/** Recent nights for the Sleep Insights screen (deep/REM/light breakdown) */
+export function useSleepHistory(days = 7) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['sleep_history', user?.id, days],
+    enabled: !!user,
+    queryFn: async () => {
+      const from = new Date();
+      from.setDate(from.getDate() - days);
+      const { data, error } = await supabase
+        .from('sleep_logs')
+        .select('*')
+        .eq('user_id', user!.id)
+        .gte('waketime', from.toISOString())
+        .order('waketime', { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useInvalidateToday() {
   const queryClient = useQueryClient();
   const { user } = useAuth();

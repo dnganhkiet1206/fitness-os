@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -128,21 +129,25 @@ export default function TodayScreen() {
         </Pressable>
       )}
 
-      <GlassCard>
-        <View style={styles.cardHeaderRow}>
-          <View>
-            <Text style={styles.cardTitle}>{i18n.nSleep}</Text>
-            <Text style={styles.cardHint}>{i18n.nLastNight}</Text>
-          </View>
-          <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.miniBtn, pressed && styles.pressed]}
-            onPress={() => router.push('/log-sleep')}>
-            <Text style={styles.miniBtnText}>{i18n.nLogShort}</Text>
-          </Pressable>
-        </View>
-        <Text style={styles.metric}>{sleepLabel}</Text>
-      </GlassCard>
+      <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/sleep-insights'); }}>
+        {({ pressed }) => (
+          <GlassCard style={pressed ? styles.cardPressedDim : undefined}>
+            <View style={styles.cardHeaderRow}>
+              <View>
+                <Text style={styles.cardTitle}>{i18n.nSleep}</Text>
+                <Text style={styles.cardHint}>{i18n.nLastNight}</Text>
+              </View>
+              <Pressable
+                hitSlop={8}
+                style={({ pressed: p }) => [styles.miniBtn, p && styles.pressed]}
+                onPress={() => router.push('/log-sleep')}>
+                <Text style={styles.miniBtnText}>{i18n.nLogShort}</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.metric}>{sleepLabel}</Text>
+          </GlassCard>
+        )}
+      </Pressable>
 
       <GlassCard>
         <View style={styles.cardHeaderRow}>
@@ -221,6 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  cardPressedDim: { opacity: 0.8 },
   miniBtn: {
     height: 32,
     paddingHorizontal: spacing.md,
