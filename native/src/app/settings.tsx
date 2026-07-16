@@ -75,7 +75,16 @@ export default function SettingsScreen() {
                     selected && styles.mascotChipSelected,
                     !m.unlocked && styles.mascotChipLocked,
                   ]}>
-                  <Text style={styles.mascotEmoji}>{m.unlocked ? m.emoji : '🔒'}</Text>
+                  <View style={styles.mascotFace}>
+                    <Text style={[styles.mascotEmoji, !m.unlocked && styles.mascotEmojiLocked]}>
+                      {m.emoji}
+                    </Text>
+                    {!m.unlocked && (
+                      <View style={styles.mascotLockBadge}>
+                        <Text style={styles.mascotLockIcon}>🔒</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={styles.mascotName}>{m.name}</Text>
                   <Text style={styles.mascotMeta} numberOfLines={2}>
                     {m.pro
@@ -171,8 +180,26 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.primary,
   },
-  mascotChipLocked: { opacity: 0.55 },
+  mascotChipLocked: { opacity: 0.7 },
+  mascotFace: { width: 44, height: 40, alignItems: 'center', justifyContent: 'center' },
   mascotEmoji: { fontSize: 30 },
+  // Gacha teaser: the face stays visible but ghosted, so players see
+  // exactly which character they are working toward
+  mascotEmojiLocked: { opacity: 0.35 },
+  mascotLockBadge: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mascotLockIcon: { fontSize: 9 },
   mascotName: { ...type.footnote, fontWeight: '600', color: colors.foreground },
   mascotMeta: {
     ...type.caption,
