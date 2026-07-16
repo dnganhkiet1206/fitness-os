@@ -95,6 +95,16 @@ function Gate() {
           contentStyle: { backgroundColor: colors.card },
         }}
       />
+      <Stack.Screen
+        name="log-biometrics"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.7, 1.0],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+          contentStyle: { backgroundColor: colors.card },
+        }}
+      />
     </Stack>
     {/* RN Modal renders above everything, incl. native form sheets */}
     <MascotUnlockCelebration />

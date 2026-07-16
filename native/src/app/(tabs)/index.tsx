@@ -93,15 +93,24 @@ export default function TodayScreen() {
       }>
       <Mascot />
 
-      <GlassCard>
-        <Text style={styles.cardTitle}>{i18n.nReadiness}</Text>
-        <Text style={styles.cardHint}>
-          {log?.readiness_recommendation ?? i18n.nReadinessHint}
-        </Text>
-        <View style={styles.ringWrap}>
-          <ReadinessRing score={readinessScore} color={readinessColor} />
-        </View>
-      </GlassCard>
+      <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/biometrics'); }}>
+        {({ pressed }) => (
+          <GlassCard style={pressed ? styles.cardPressedDim : undefined}>
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.readinessHeadInfo}>
+                <Text style={styles.cardTitle}>{i18n.nReadiness}</Text>
+                <Text style={styles.cardHint}>
+                  {log?.readiness_recommendation ?? i18n.nReadinessHint}
+                </Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </View>
+            <View style={styles.ringWrap}>
+              <ReadinessRing score={readinessScore} color={readinessColor} />
+            </View>
+          </GlassCard>
+        )}
+      </Pressable>
 
       <View style={styles.row}>
         <GlassCard style={styles.half}>
@@ -227,6 +236,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   cardPressedDim: { opacity: 0.8 },
+  readinessHeadInfo: { flex: 1, minWidth: 0 },
+  chevron: { fontSize: 22, color: colors.mutedForeground },
   miniBtn: {
     height: 32,
     paddingHorizontal: spacing.md,
