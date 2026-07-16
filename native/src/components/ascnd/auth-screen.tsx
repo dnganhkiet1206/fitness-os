@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 
@@ -22,6 +23,7 @@ type Mode = 'signin' | 'signup';
 export function AuthScreen() {
   const { signIn, signUp, signInWithApple } = useAuth();
   const insets = useSafeAreaInsets();
+  const i18n = useI18n();
   const [mode, setMode] = useState<Mode>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -55,7 +57,7 @@ export function AuthScreen() {
         <View style={styles.hero}>
           <Text style={styles.brand}>ASCND</Text>
           <Text style={styles.subtitle}>
-            {mode === 'signin' ? 'Sign in to continue' : 'Create your account'}
+            {mode === 'signin' ? i18n.nSignInSubtitle : i18n.nSignUpSubtitle}
           </Text>
         </View>
 
@@ -63,7 +65,7 @@ export function AuthScreen() {
           {mode === 'signup' && (
             <TextInput
               style={styles.input}
-              placeholder="Name"
+              placeholder={i18n.nYourName}
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="words"
               value={name}
@@ -72,7 +74,7 @@ export function AuthScreen() {
           )}
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder={i18n.nEmail}
             placeholderTextColor={colors.mutedForeground}
             autoCapitalize="none"
             autoComplete="email"
@@ -82,7 +84,7 @@ export function AuthScreen() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Password"
+            placeholder={i18n.nPassword}
             placeholderTextColor={colors.mutedForeground}
             secureTextEntry
             value={password}
@@ -97,7 +99,7 @@ export function AuthScreen() {
               <ActivityIndicator color={colors.primaryForeground} />
             ) : (
               <Text style={styles.primaryButtonText}>
-                {mode === 'signin' ? 'Sign In' : 'Sign Up'}
+                {mode === 'signin' ? i18n.nSignIn : i18n.nSignUp}
               </Text>
             )}
           </Pressable>
@@ -114,9 +116,9 @@ export function AuthScreen() {
 
           <Pressable onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
             <Text style={styles.switchText}>
-              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+              {mode === 'signin' ? i18n.nNoAccount : i18n.nHaveAccount}
               <Text style={styles.switchAction}>
-                {mode === 'signin' ? 'Sign Up' : 'Sign In'}
+                {mode === 'signin' ? i18n.nSignUp : i18n.nSignIn}
               </Text>
             </Text>
           </Pressable>

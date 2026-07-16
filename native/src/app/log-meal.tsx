@@ -16,24 +16,27 @@ import {
 } from 'react-native';
 
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { consumePendingScan } from '@/lib/scan-bridge';
 
-const MEAL_TYPES = [
-  { key: 'breakfast', label: 'Breakfast' },
-  { key: 'lunch', label: 'Lunch' },
-  { key: 'dinner', label: 'Dinner' },
-  { key: 'snack', label: 'Snack' },
-] as const;
+const MEAL_KEYS = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
 
-type MealType = (typeof MEAL_TYPES)[number]['key'];
+type MealType = (typeof MEAL_KEYS)[number];
 
 export default function LogMealSheet() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
+  const i18n = useI18n();
+  const MEAL_TYPES = [
+    { key: 'breakfast', label: i18n.nBreakfast },
+    { key: 'lunch', label: i18n.nLunch },
+    { key: 'dinner', label: i18n.nDinner },
+    { key: 'snack', label: i18n.nSnack },
+  ] as const;
   const [mealType, setMealType] = useState<MealType>('lunch');
   const [name, setName] = useState('');
   const [foodItemId, setFoodItemId] = useState<string | null>(null);
@@ -145,7 +148,7 @@ export default function LogMealSheet() {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Log Meal</Text>
+        <Text style={styles.title}>{i18n.nLogMealTitle}</Text>
 
         <View style={styles.chips}>
           {MEAL_TYPES.map(({ key, label }) => (
@@ -166,7 +169,7 @@ export default function LogMealSheet() {
         <View style={styles.searchRow}>
           <TextInput
             style={[styles.input, styles.searchInput]}
-            placeholder="Search foods…"
+            placeholder={i18n.nSearchFoods}
             placeholderTextColor={colors.mutedForeground}
             value={search}
             onChangeText={setSearch}
@@ -197,7 +200,7 @@ export default function LogMealSheet() {
 
         <TextInput
           style={styles.input}
-          placeholder="What did you eat? (optional)"
+          placeholder={i18n.nWhatDidYouEat}
           placeholderTextColor={colors.mutedForeground}
           value={name}
           onChangeText={(t) => {
@@ -207,7 +210,7 @@ export default function LogMealSheet() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Calories (kcal)"
+          placeholder={i18n.nCalories}
           placeholderTextColor={colors.mutedForeground}
           keyboardType="number-pad"
           value={kcal}
@@ -216,7 +219,7 @@ export default function LogMealSheet() {
         <View style={styles.row}>
           <TextInput
             style={[styles.input, styles.third]}
-            placeholder="Protein g"
+            placeholder={i18n.nProteinG}
             placeholderTextColor={colors.mutedForeground}
             keyboardType="number-pad"
             value={protein}
@@ -224,7 +227,7 @@ export default function LogMealSheet() {
           />
           <TextInput
             style={[styles.input, styles.third]}
-            placeholder="Carbs g"
+            placeholder={i18n.nCarbsG}
             placeholderTextColor={colors.mutedForeground}
             keyboardType="number-pad"
             value={carbs}
@@ -232,7 +235,7 @@ export default function LogMealSheet() {
           />
           <TextInput
             style={[styles.input, styles.third]}
-            placeholder="Fat g"
+            placeholder={i18n.nFatG}
             placeholderTextColor={colors.mutedForeground}
             keyboardType="number-pad"
             value={fat}
@@ -251,7 +254,7 @@ export default function LogMealSheet() {
           {save.isPending ? (
             <ActivityIndicator color={colors.primaryForeground} />
           ) : (
-            <Text style={styles.saveText}>Save Meal</Text>
+            <Text style={styles.saveText}>{i18n.nSaveMeal}</Text>
           )}
         </Pressable>
       </ScrollView>

@@ -5,6 +5,7 @@ import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useReadinessHistory, useWeightHistory } from '@/hooks/use-fitness-data';
+import { useI18n } from '@/hooks/use-app-settings';
 
 const STATUS_COLOR = {
   green: colors.readinessGreen,
@@ -15,20 +16,21 @@ const STATUS_COLOR = {
 export default function ProgressScreen() {
   const { data: weight } = useWeightHistory(30);
   const { data: readiness } = useReadinessHistory(14);
+  const i18n = useI18n();
 
   return (
-    <Screen title="Progress">
+    <Screen title={i18n.navProgress}>
       <GlassCard>
-        <Text style={styles.cardTitle}>Weight</Text>
-        <Text style={styles.cardHint}>Last 30 days</Text>
+        <Text style={styles.cardTitle}>{i18n.nWeight}</Text>
+        <Text style={styles.cardHint}>{i18n.nLast30d}</Text>
         <View style={styles.chart}>
-          <LineChart points={weight ?? []} color={colors.metricBlue} unit="kg" />
+          <LineChart points={weight ?? []} color={colors.metricBlue} unit="kg" emptyLabel={i18n.nNotEnoughData} />
         </View>
       </GlassCard>
 
       <GlassCard>
-        <Text style={styles.cardTitle}>Readiness</Text>
-        <Text style={styles.cardHint}>Last 14 days</Text>
+        <Text style={styles.cardTitle}>{i18n.nReadiness}</Text>
+        <Text style={styles.cardHint}>{i18n.nLast14d}</Text>
         {readiness && readiness.length > 0 ? (
           <View style={styles.bars}>
             {readiness.map((d) => (
@@ -47,7 +49,7 @@ export default function ProgressScreen() {
           </View>
         ) : (
           <View style={styles.emptyBars}>
-            <Text style={styles.cardHint}>Log sleep and training to build your trend</Text>
+            <Text style={styles.cardHint}>{i18n.nBuildTrendHint}</Text>
           </View>
         )}
       </GlassCard>

@@ -17,10 +17,10 @@ export default function SettingsScreen() {
 
   const confirmSignOut = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(i18n.nSignOut, i18n.nSignOutConfirm, [
+      { text: i18n.nCancel, style: 'cancel' },
       {
-        text: 'Sign Out',
+        text: i18n.nSignOut,
         style: 'destructive',
         onPress: async () => {
           await signOut();
@@ -36,9 +36,9 @@ export default function SettingsScreen() {
         <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
         <Text style={styles.cardHint}>{user?.email}</Text>
         <View style={styles.divider} />
-        <Row label="Daily target" value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
-        <Row label="Goal" value={profile?.goal ?? '—'} />
-        <Row label="Training level" value={profile?.training_level ?? '—'} />
+        <Row label={i18n.nDailyTarget} value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
+        <Row label={i18n.nGoal} value={profile?.goal ?? '—'} />
+        <Row label={i18n.nTrainingLevel} value={profile?.training_level ?? '—'} />
       </GlassCard>
 
       <GlassCard>
@@ -61,15 +61,15 @@ export default function SettingsScreen() {
       </GlassCard>
 
       <GlassCard>
-        <Text style={styles.cardTitle}>About</Text>
-        <Row label="Version" value="1.0.0 (native)" />
+        <Text style={styles.cardTitle}>{i18n.nAbout}</Text>
+        <Row label={i18n.nVersion} value="1.0.0 (native)" />
         <Row label="Backend" value="Supabase" />
       </GlassCard>
 
       <Pressable
         style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
         onPress={confirmSignOut}>
-        <Text style={styles.signOutText}>Sign Out</Text>
+        <Text style={styles.signOutText}>{i18n.nSignOut}</Text>
       </Pressable>
     </Screen>
   );

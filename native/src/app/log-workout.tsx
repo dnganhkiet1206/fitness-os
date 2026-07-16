@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,6 +35,7 @@ const EMPTY_SET: SetRow = { exerciseName: '', weight: '', reps: '' };
 export default function LogWorkoutSheet() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
+  const i18n = useI18n();
   const [name, setName] = useState('');
   const [rpe, setRpe] = useState<number>(7);
   const [sets, setSets] = useState<SetRow[]>([{ ...EMPTY_SET }]);
@@ -98,23 +100,23 @@ export default function LogWorkoutSheet() {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Log Workout</Text>
+        <Text style={styles.title}>{i18n.nLogWorkoutTitle}</Text>
 
         <TextInput
           style={styles.input}
-          placeholder="Workout name (e.g. Push Day)"
+          placeholder={i18n.nWorkoutName}
           placeholderTextColor={colors.mutedForeground}
           value={name}
           onChangeText={setName}
         />
 
-        <Text style={styles.sectionLabel}>Sets</Text>
+        <Text style={styles.sectionLabel}>{i18n.nSets}</Text>
         {sets.map((s, idx) => (
           <View key={idx} style={styles.setRow}>
             <Text style={styles.setIndex}>{idx + 1}</Text>
             <TextInput
               style={[styles.input, styles.setName]}
-              placeholder="Exercise"
+              placeholder={i18n.nExercise}
               placeholderTextColor={colors.mutedForeground}
               value={s.exerciseName}
               onChangeText={(v) => updateSet(idx, 'exerciseName', v)}
@@ -129,7 +131,7 @@ export default function LogWorkoutSheet() {
             />
             <TextInput
               style={[styles.input, styles.setNum]}
-              placeholder="reps"
+              placeholder={i18n.nReps}
               placeholderTextColor={colors.mutedForeground}
               keyboardType="number-pad"
               value={s.reps}
@@ -142,17 +144,17 @@ export default function LogWorkoutSheet() {
         ))}
 
         <Pressable style={({ pressed }) => [styles.addSet, pressed && styles.pressed]} onPress={addSet}>
-          <Text style={styles.addSetText}>＋ Add set</Text>
+          <Text style={styles.addSetText}>{i18n.nAddSet}</Text>
         </Pressable>
 
         <View style={styles.summaryRow}>
-          <Text style={styles.sectionLabel}>Volume</Text>
+          <Text style={styles.sectionLabel}>{i18n.nVolume}</Text>
           <Text style={styles.volume}>
             {volumeLoad > 0 ? `${Math.round(volumeLoad).toLocaleString()} kg` : '—'}
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel}>Session effort (RPE)</Text>
+        <Text style={styles.sectionLabel}>{i18n.nRpe}</Text>
         <View style={styles.chips}>
           {RPE_VALUES.map((v) => (
             <Pressable
@@ -178,7 +180,7 @@ export default function LogWorkoutSheet() {
           {save.isPending ? (
             <ActivityIndicator color={colors.primaryForeground} />
           ) : (
-            <Text style={styles.saveText}>Save Workout</Text>
+            <Text style={styles.saveText}>{i18n.nSaveWorkout}</Text>
           )}
         </Pressable>
       </ScrollView>

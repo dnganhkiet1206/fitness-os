@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { fetch as expoFetch } from 'expo/fetch';
 import { router } from 'expo-router';
@@ -17,6 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -35,7 +37,41 @@ export default function AiCoachScreen() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const convoIdRef = useRef<string | null>(null);
+  const i18n = useI18n();
+
+  const { data: conversations } = useQuery({
+    queryKey: ['ai_conversations', session?.user.id],
+    enabled: !!session?.user.id && showHistory,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ai_conversations')
+        .select('id, title, updated_at')
+        .eq('user_id', session!.user.id)
+        .order('updated_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const loadConversation = async (id: string) => {
+    Haptics.selectionAsync();
+    setShowHistory(false);
+    const { data } = await supabase
+      .from('ai_messages')
+      .select('role, content')
+      .eq('conversation_id', id)
+      .order('created_at', { ascending: true });
+    convoIdRef.current = id;
+    setMessages(
+      (data ?? [])
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+    );
+    scrollToEnd();
+  };
 
   const scrollToEnd = () => {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
@@ -157,11 +193,37 @@ export default function AiCoachScreen() {
         <Pressable hitSlop={8} style={styles.headerBtn} onPress={() => router.back()}>
           <Text style={styles.headerBtnText}>‹</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>AI Coach</Text>
-        <Pressable hitSlop={8} style={styles.headerBtn} onPress={newChat}>
-          <Text style={styles.headerBtnPlus}>＋</Text>
-        </Pressable>
+        <Text style={styles.headerTitle}>{i18n.aiCoachTitle}</Text>
+        <View style={styles.headerRight}>
+          <Pressable hitSlop={8} style={styles.headerBtn} onPress={() => { Haptics.selectionAsync(); setShowHistory((v) => !v); }}>
+            <Text style={styles.headerBtnPlus}>🕘</Text>
+          </Pressable>
+          <Pressable hitSlop={8} style={styles.headerBtn} onPress={newChat}>
+            <Text style={styles.headerBtnPlus}>＋</Text>
+          </Pressable>
+        </View>
       </View>
+
+      {/* History panel */}
+      {showHistory && (
+        <View style={styles.historyPanel}>
+          {conversations && conversations.length > 0 ? (
+            conversations.map((c) => (
+              <Pressable
+                key={c.id}
+                style={({ pressed }) => [styles.historyRow, pressed && { opacity: 0.7 }]}
+                onPress={() => loadConversation(c.id)}>
+                <Text style={styles.historyTitle} numberOfLines={1}>{c.title ?? '—'}</Text>
+                <Text style={styles.historyDate}>
+                  {new Date(c.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </Text>
+              </Pressable>
+            ))
+          ) : (
+            <Text style={styles.historyEmpty}>{i18n.nNoHistory}</Text>
+          )}
+        </View>
+      )}
 
       {/* Messages */}
       <ScrollView
@@ -171,10 +233,8 @@ export default function AiCoachScreen() {
         keyboardShouldPersistTaps="handled">
         {messages.length === 0 && (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Ask your coach</Text>
-            <Text style={styles.emptyHint}>
-              Training, nutrition, recovery — answers use your real data
-            </Text>
+            <Text style={styles.emptyTitle}>{i18n.nAskCoach}</Text>
+            <Text style={styles.emptyHint}>{i18n.nAskCoachHint}</Text>
           </View>
         )}
         {messages.map((m, i) => (
@@ -197,7 +257,7 @@ export default function AiCoachScreen() {
       <View style={[styles.composer, { paddingBottom: insets.bottom + spacing.sm }]}>
         <TextInput
           style={styles.composerInput}
-          placeholder="Message your coach…"
+          placeholder={i18n.nMessageCoach}
           placeholderTextColor={colors.mutedForeground}
           value={input}
           onChangeText={setInput}
@@ -239,6 +299,30 @@ const styles = StyleSheet.create({
   headerBtnText: { fontSize: 28, color: colors.primary, marginTop: -4 },
   headerBtnPlus: { fontSize: 20, color: colors.primary },
   headerTitle: { ...type.headline, color: colors.foreground },
+  headerRight: { flexDirection: 'row' },
+  historyPanel: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
+    paddingVertical: spacing.xs,
+    maxHeight: 320,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  historyTitle: { ...type.body, color: colors.foreground, flex: 1 },
+  historyDate: { ...type.caption, color: colors.mutedForeground },
+  historyEmpty: {
+    ...type.footnote,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
   list: { flex: 1 },
   listContent: { padding: spacing.md, gap: spacing.sm },
   empty: { alignItems: 'center', marginTop: spacing.xl * 2, gap: spacing.sm },

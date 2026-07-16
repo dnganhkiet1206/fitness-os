@@ -6,6 +6,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings } from '@/hooks/use-app-settings';
 import { setPendingScan } from '@/lib/scan-bridge';
 
 /** Open Food Facts lookup — same source and per-serving math as the web app */
@@ -35,6 +37,8 @@ async function lookupBarcode(code: string, lang: string) {
 export default function ScanBarcodeScreen() {
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
+  const i18n = useI18n();
+  const { lang } = useAppSettings();
   const [status, setStatus] = useState<'scanning' | 'looking-up' | 'not-found'>('scanning');
   const lockedRef = useRef(false);
 
@@ -43,7 +47,7 @@ export default function ScanBarcodeScreen() {
     lockedRef.current = true;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setStatus('looking-up');
-    const food = await lookupBarcode(data, 'vi').catch(() => null);
+    const food = await lookupBarcode(data, lang).catch(() => null);
     if (food) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setPendingScan(food);
@@ -63,13 +67,13 @@ export default function ScanBarcodeScreen() {
   if (!permission.granted) {
     return (
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
-        <Text style={styles.permTitle}>Camera access needed</Text>
-        <Text style={styles.permHint}>ASCND scans barcodes to log packaged foods instantly</Text>
+        <Text style={styles.permTitle}>{i18n.nCameraNeeded}</Text>
+        <Text style={styles.permHint}>{i18n.nCameraHint}</Text>
         <Pressable style={({ pressed }) => [styles.permBtn, pressed && styles.pressed]} onPress={requestPermission}>
-          <Text style={styles.permBtnText}>Allow Camera</Text>
+          <Text style={styles.permBtnText}>{i18n.nAllowCamera}</Text>
         </Pressable>
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Text style={styles.cancelText}>{i18n.nCancel}</Text>
         </Pressable>
       </View>
     );
@@ -89,10 +93,10 @@ export default function ScanBarcodeScreen() {
         <View style={styles.frame} />
         <Text style={styles.hint}>
           {status === 'looking-up'
-            ? 'Looking up product…'
+            ? i18n.nLookingUp
             : status === 'not-found'
-              ? 'Product not found — try again'
-              : 'Point at a barcode'}
+              ? i18n.nNotFound
+              : i18n.nPointBarcode}
         </Text>
         {status === 'looking-up' && <ActivityIndicator color="#fff" style={{ marginTop: spacing.sm }} />}
       </View>

@@ -6,9 +6,11 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
+import { useI18n } from '@/hooks/use-app-settings';
 
 export default function WorkoutsScreen() {
   const { data: sessions } = useWorkoutSessions(14);
+  const i18n = useI18n();
 
   const now = new Date();
   const weekStart = new Date(now);
@@ -19,17 +21,17 @@ export default function WorkoutsScreen() {
   const weekVolume = thisWeek.reduce((sum, s) => sum + Number(s.volume_load || 0), 0);
 
   return (
-    <Screen title="Workouts">
+    <Screen title={i18n.navWorkouts}>
       <View style={styles.row}>
         <GlassCard style={styles.half}>
-          <Text style={styles.cardTitle}>This week</Text>
+          <Text style={styles.cardTitle}>{i18n.nThisWeek}</Text>
           <Text style={styles.metric}>{thisWeek.length}</Text>
-          <Text style={styles.cardHint}>sessions</Text>
+          <Text style={styles.cardHint}>{i18n.nSessions}</Text>
         </GlassCard>
         <GlassCard style={styles.half}>
-          <Text style={styles.cardTitle}>Volume</Text>
+          <Text style={styles.cardTitle}>{i18n.nVolume}</Text>
           <Text style={styles.metric}>{weekVolume > 0 ? weekVolume.toLocaleString() : '—'}</Text>
-          <Text style={styles.cardHint}>kg lifted</Text>
+          <Text style={styles.cardHint}>{i18n.nKgLifted}</Text>
         </GlassCard>
       </View>
 
@@ -39,7 +41,7 @@ export default function WorkoutsScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/log-workout');
         }}>
-        <Text style={styles.logButtonText}>＋ Log Workout</Text>
+        <Text style={styles.logButtonText}>{i18n.nLogWorkoutBtn}</Text>
       </Pressable>
 
       {sessions && sessions.length > 0 ? (
@@ -69,8 +71,8 @@ export default function WorkoutsScreen() {
         ))
       ) : (
         <GlassCard>
-          <Text style={styles.cardTitle}>No workouts yet</Text>
-          <Text style={styles.cardHint}>Log your first session — readiness adapts to your training load</Text>
+          <Text style={styles.cardTitle}>{i18n.nNoWorkouts}</Text>
+          <Text style={styles.cardHint}>{i18n.nNoWorkoutsHint}</Text>
         </GlassCard>
       )}
     </Screen>

@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +34,7 @@ function withDate(time: Date, dayOffset: number): Date {
 export default function LogSleepSheet() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
+  const i18n = useI18n();
   const [bedtime, setBedtime] = useState(new Date(2000, 0, 1, 23, 0));
   const [waketime, setWaketime] = useState(new Date(2000, 0, 1, 7, 0));
   const [quality, setQuality] = useState<number>(4);
@@ -63,11 +65,11 @@ export default function LogSleepSheet() {
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Log Sleep</Text>
+      <Text style={styles.title}>{i18n.nLogSleepTitle}</Text>
 
       <View style={styles.rowFields}>
         <View style={styles.halfField}>
-          <Text style={styles.fieldLabel}>Bedtime</Text>
+          <Text style={styles.fieldLabel}>{i18n.nBedtime}</Text>
           <View style={styles.pickerWrap}>
             <DateTimePicker
               value={bedtime}
@@ -79,7 +81,7 @@ export default function LogSleepSheet() {
           </View>
         </View>
         <View style={styles.halfField}>
-          <Text style={styles.fieldLabel}>Wake up</Text>
+          <Text style={styles.fieldLabel}>{i18n.nWakeUp}</Text>
           <View style={styles.pickerWrap}>
             <DateTimePicker
               value={waketime}
@@ -93,13 +95,13 @@ export default function LogSleepSheet() {
       </View>
 
       <View style={styles.durationRow}>
-        <Text style={styles.fieldLabel}>Duration</Text>
+        <Text style={styles.fieldLabel}>{i18n.nDuration}</Text>
         <Text style={styles.duration}>
           {Math.floor(durationMin / 60)}h {String(durationMin % 60).padStart(2, '0')}m
         </Text>
       </View>
 
-      <Text style={styles.fieldLabel}>How did you sleep?</Text>
+      <Text style={styles.fieldLabel}>{i18n.nHowSleep}</Text>
       <View style={styles.chips}>
         {QUALITY.map((q, i) => (
           <Pressable
@@ -125,7 +127,7 @@ export default function LogSleepSheet() {
         {save.isPending ? (
           <ActivityIndicator color={colors.primaryForeground} />
         ) : (
-          <Text style={styles.saveText}>Save Sleep</Text>
+          <Text style={styles.saveText}>{i18n.nSaveSleep}</Text>
         )}
       </Pressable>
     </ScrollView>

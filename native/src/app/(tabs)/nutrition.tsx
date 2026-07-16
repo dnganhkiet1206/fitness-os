@@ -6,34 +6,37 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useDailyLog, useProfile, useTodayMeals } from '@/hooks/useTodayData';
+import { useI18n } from '@/hooks/use-app-settings';
 
-const MEAL_LABEL: Record<string, string> = {
-  breakfast: 'Breakfast',
-  lunch: 'Lunch',
-  dinner: 'Dinner',
-  snack: 'Snack',
-};
+
 
 export default function NutritionScreen() {
   const { data: meals } = useTodayMeals();
   const { data: log } = useDailyLog();
   const { data: profile } = useProfile();
+  const i18n = useI18n();
+  const MEAL_LABEL: Record<string, string> = {
+    breakfast: i18n.nBreakfast,
+    lunch: i18n.nLunch,
+    dinner: i18n.nDinner,
+    snack: i18n.nSnack,
+  };
 
   const kcal = log?.kcal != null ? Math.round(Number(log.kcal)) : 0;
   const target = profile?.tdee_target_kcal != null ? Math.round(Number(profile.tdee_target_kcal)) : null;
 
   return (
-    <Screen title="Nutrition">
+    <Screen title={i18n.navNutrition}>
       <GlassCard>
-        <Text style={styles.cardTitle}>Today</Text>
+        <Text style={styles.cardTitle}>{i18n.nToday}</Text>
         <Text style={styles.bigMetric}>
           {kcal.toLocaleString()}
           {target != null && <Text style={styles.metricUnit}> / {target.toLocaleString()} kcal</Text>}
         </Text>
         <View style={styles.macroRow}>
-          <Macro label="Protein" value={log?.protein_g} color={colors.metricBlue} />
-          <Macro label="Carbs" value={log?.carbs_g} color={colors.metricOrange} />
-          <Macro label="Fat" value={log?.fat_g} color={colors.metricPurple} />
+          <Macro label={i18n.nProtein} value={log?.protein_g} color={colors.metricBlue} />
+          <Macro label={i18n.nCarbs} value={log?.carbs_g} color={colors.metricOrange} />
+          <Macro label={i18n.nFat} value={log?.fat_g} color={colors.metricPurple} />
         </View>
       </GlassCard>
 
@@ -43,7 +46,7 @@ export default function NutritionScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/log-meal');
         }}>
-        <Text style={styles.logButtonText}>＋ Log Meal</Text>
+        <Text style={styles.logButtonText}>{i18n.nLogMealBtn}</Text>
       </Pressable>
 
       {meals && meals.length > 0 ? (
@@ -65,8 +68,8 @@ export default function NutritionScreen() {
         ))
       ) : (
         <GlassCard>
-          <Text style={styles.cardTitle}>No meals yet</Text>
-          <Text style={styles.cardHint}>Log your first meal of the day above</Text>
+          <Text style={styles.cardTitle}>{i18n.nNoMeals}</Text>
+          <Text style={styles.cardHint}>{i18n.nNoMealsHint}</Text>
         </GlassCard>
       )}
     </Screen>

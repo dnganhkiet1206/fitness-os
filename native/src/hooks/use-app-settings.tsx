@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { t, type AppLang } from '@/lib/i18n';
+import { nativeStrings } from '@/lib/native-strings';
 
 const LANG_KEY = 'ascnd_lang';
 
@@ -31,8 +32,8 @@ export function useAppSettings() {
   return useContext(SettingsContext);
 }
 
-/** Convenience: current translation table */
+/** Convenience: ported web dictionary merged with native-only strings */
 export function useI18n() {
   const { lang } = useAppSettings();
-  return t(lang);
+  return { ...t(lang), ...nativeStrings[lang] };
 }

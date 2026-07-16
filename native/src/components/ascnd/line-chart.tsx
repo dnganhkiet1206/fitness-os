@@ -15,20 +15,21 @@ interface LineChartProps {
   height?: number;
   /** Unit suffix for min/max labels (e.g. "kg") */
   unit?: string;
+  emptyLabel?: string;
 }
 
 /**
  * Minimal smooth line chart (SVG): gradient fill, end-point dot, min/max
  * labels. Deliberately dependency-free — enough for trend surfaces.
  */
-export function LineChart({ points, color = colors.primary, height = 140, unit = '' }: LineChartProps) {
+export function LineChart({ points, color = colors.primary, height = 140, unit = '', emptyLabel = 'Not enough data yet' }: LineChartProps) {
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
   if (points.length < 2) {
     return (
       <View style={[styles.empty, { height }]} onLayout={onLayout}>
-        <Text style={styles.emptyText}>Not enough data yet</Text>
+        <Text style={styles.emptyText}>{emptyLabel}</Text>
       </View>
     );
   }

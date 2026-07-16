@@ -6,13 +6,14 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { ReadinessRing } from '@/components/ascnd/readiness-ring';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
+import { useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { useAddWater, useTodayWater } from '@/hooks/use-water';
 
-function greeting(name?: string | null): string {
+function greeting(name: string | null | undefined, i18n: { nGoodMorning: string; nGoodAfternoon: string; nGoodEvening: string }): string {
   const h = new Date().getHours();
-  const base = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  const base = h < 12 ? i18n.nGoodMorning : h < 18 ? i18n.nGoodAfternoon : i18n.nGoodEvening;
   return name ? `${base}, ${name.split(' ')[0]}` : base;
 }
 
@@ -36,6 +37,7 @@ export default function TodayScreen() {
   const { data: sleep } = useTodaySleep();
   const { available: healthAvailable, sync: healthSync } = useHealthSync();
   const { data: waterMl } = useTodayWater();
+  const i18n = useI18n();
   const addWater = useAddWater();
 
   const readinessScore = log?.readiness_score != null ? Math.round(Number(log.readiness_score)) : null;
@@ -50,12 +52,12 @@ export default function TodayScreen() {
     sleepMin != null
       ? `${Math.floor(sleepMin / 60)}h ${String(sleepMin % 60).padStart(2, '0')}m`
       : sleep?.quality != null
-        ? `Quality ${sleep.quality}/5`
+        ? `${i18n.nQuality} ${sleep.quality}/5`
         : '—';
 
   return (
     <Screen
-      title={greeting(profile?.name)}
+      title={greeting(profile?.name, i18n)}
       eyebrow={todayLabel()}
       headerRight={
         <View style={styles.headerButtons}>
@@ -82,9 +84,9 @@ export default function TodayScreen() {
         </View>
       }>
       <GlassCard>
-        <Text style={styles.cardTitle}>Readiness</Text>
+        <Text style={styles.cardTitle}>{i18n.nReadiness}</Text>
         <Text style={styles.cardHint}>
-          {log?.readiness_recommendation ?? 'Log sleep and training to get your score'}
+          {log?.readiness_recommendation ?? i18n.nReadinessHint}
         </Text>
         <View style={styles.ringWrap}>
           <ReadinessRing score={readinessScore} color={readinessColor} />
@@ -93,14 +95,14 @@ export default function TodayScreen() {
 
       <View style={styles.row}>
         <GlassCard style={styles.half}>
-          <Text style={styles.cardTitle}>Activity</Text>
+          <Text style={styles.cardTitle}>{i18n.nActivity}</Text>
           <Text style={styles.metric}>{steps != null ? steps.toLocaleString() : '—'}</Text>
-          <Text style={styles.cardHint}>steps</Text>
+          <Text style={styles.cardHint}>{i18n.nSteps}</Text>
         </GlassCard>
         <GlassCard style={styles.half}>
-          <Text style={styles.cardTitle}>Nutrition</Text>
+          <Text style={styles.cardTitle}>{i18n.navNutrition}</Text>
           <Text style={styles.metric}>{kcal != null ? kcal.toLocaleString() : '—'}</Text>
-          <Text style={styles.cardHint}>{kcalTarget != null ? `of ${kcalTarget.toLocaleString()} kcal` : 'kcal today'}</Text>
+          <Text style={styles.cardHint}>{kcalTarget != null ? i18n.nOfTarget.replace('{x}', `${kcalTarget.toLocaleString()} kcal`) : i18n.nKcalToday}</Text>
         </GlassCard>
       </View>
 
@@ -112,7 +114,7 @@ export default function TodayScreen() {
           {healthSync.isPending ? (
             <ActivityIndicator color={colors.foreground} size="small" />
           ) : (
-            <Text style={styles.syncText}>♥ Sync Apple Health</Text>
+            <Text style={styles.syncText}>{i18n.nSyncHealth}</Text>
           )}
         </Pressable>
       )}
@@ -120,14 +122,14 @@ export default function TodayScreen() {
       <GlassCard>
         <View style={styles.cardHeaderRow}>
           <View>
-            <Text style={styles.cardTitle}>Sleep</Text>
-            <Text style={styles.cardHint}>Last night</Text>
+            <Text style={styles.cardTitle}>{i18n.nSleep}</Text>
+            <Text style={styles.cardHint}>{i18n.nLastNight}</Text>
           </View>
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.miniBtn, pressed && styles.pressed]}
             onPress={() => router.push('/log-sleep')}>
-            <Text style={styles.miniBtnText}>＋ Log</Text>
+            <Text style={styles.miniBtnText}>{i18n.nLogShort}</Text>
           </Pressable>
         </View>
         <Text style={styles.metric}>{sleepLabel}</Text>
@@ -136,11 +138,11 @@ export default function TodayScreen() {
       <GlassCard>
         <View style={styles.cardHeaderRow}>
           <View>
-            <Text style={styles.cardTitle}>Water</Text>
+            <Text style={styles.cardTitle}>{i18n.nWater}</Text>
             <Text style={styles.cardHint}>
               {profile?.water_target_ml != null
-                ? `of ${(Number(profile.water_target_ml) / 1000).toFixed(1)}L target`
-                : 'stay hydrated'}
+                ? i18n.nOfTarget.replace('{x}', `${(Number(profile.water_target_ml) / 1000).toFixed(1)}L`)
+                : i18n.nStayHydrated}
             </Text>
           </View>
           <View style={styles.waterButtons}>
