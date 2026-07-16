@@ -31,6 +31,8 @@ async function lookupBarcode(code: string, lang: string) {
     protein_g: Math.round((n.proteins_100g || 0) * factor),
     carbs_g: Math.round((n.carbohydrates_100g || 0) * factor),
     fat_g: Math.round((n.fat_100g || 0) * factor),
+    fiber_g: Math.round((n.fiber_100g || 0) * factor),
+    serving_g: servingG,
   };
 }
 

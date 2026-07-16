@@ -36,6 +36,10 @@ const en = {
   nLunch: 'Lunch',
   nDinner: 'Dinner',
   nSnack: 'Snack',
+  nPreWorkout: 'Pre-workout',
+  nPostWorkout: 'Post-workout',
+  nFavorites: 'Favorites',
+  nRecent: 'Recent',
 
   // Workouts
   nThisWeek: 'This week',
@@ -125,6 +129,15 @@ const en = {
   // Library screens
   nSupplements: 'Supplements',
   nTakenToday: 'taken today',
+  nWeightTitle: 'Weight check-in',
+  nLogWeight: 'Log',
+  nAllSupplementsDone: 'All done for today 🎉',
+  nReadinessTrend: 'Readiness trend',
+  nSmartTips: 'Smart tips',
+  nTipsHint: 'AI insights from your recent data',
+  nTipsLoading: 'Reading your trends…',
+  nTipsRefresh: 'Refresh',
+  nTipsEmpty: 'Log more to unlock tips',
   nNoSupplements: 'No supplements yet',
   nNoSupplementsHint: 'Add your stack in the web app — the checklist syncs here',
   nExercises: 'Exercise Library',
@@ -168,6 +181,34 @@ const en = {
   nPointBarcode: 'Point at a barcode',
   nLookingUp: 'Looking up product…',
   nNotFound: 'Product not found — try again',
+
+  // AI food scan
+  nScanFood: 'Scan food',
+  nAiScanTitle: 'AI Food Scan',
+  nScanModeFood: 'Dish',
+  nScanModeLabel: 'Label',
+  nScanFoodHint: 'Point at your meal and tap the shutter',
+  nScanLabelHint: 'Frame the nutrition facts panel',
+  nAnalyzing: 'Analyzing…',
+  nScanNoFood: 'No food detected — try again',
+  nScanRetake: 'Retake',
+  nScanAdd: 'Add {n} items',
+  nScanAddOne: 'Add 1 item',
+  nRetake: 'Retake',
+  nScanError: 'Scan failed — try again',
+
+  // Meal builder
+  nMealItems: 'Items',
+  nMealNoItems: 'Search, scan, or add a food to start',
+  nNutritionTotal: 'Nutrition total',
+  nServings: 'Servings',
+  nAiSuggest: 'AI suggest',
+  nAiSuggestTitle: 'AI Meal Ideas',
+  nAiSuggestHint: 'Based on your remaining macros today',
+  nAiThinking: 'Cooking up ideas…',
+  nAddThis: 'Add',
+  nPrepTime: '{n} min',
+  nAiNoIdeas: 'No suggestions right now — try later',
 };
 
 const vi: typeof en = {
@@ -199,6 +240,10 @@ const vi: typeof en = {
   nLunch: 'Bữa trưa',
   nDinner: 'Bữa tối',
   nSnack: 'Ăn vặt',
+  nPreWorkout: 'Trước tập',
+  nPostWorkout: 'Sau tập',
+  nFavorites: 'Yêu thích',
+  nRecent: 'Gần đây',
 
   nThisWeek: 'Tuần này',
   nSessions: 'buổi tập',
@@ -278,6 +323,15 @@ const vi: typeof en = {
 
   nSupplements: 'Thực phẩm bổ sung',
   nTakenToday: 'đã uống hôm nay',
+  nWeightTitle: 'Ghi cân nặng',
+  nLogWeight: 'Ghi',
+  nAllSupplementsDone: 'Hôm nay uống đủ rồi 🎉',
+  nReadinessTrend: 'Xu hướng sẵn sàng',
+  nSmartTips: 'Gợi ý thông minh',
+  nTipsHint: 'AI phân tích từ dữ liệu gần đây của bạn',
+  nTipsLoading: 'Đang đọc xu hướng…',
+  nTipsRefresh: 'Làm mới',
+  nTipsEmpty: 'Ghi thêm để mở khoá gợi ý',
   nNoSupplements: 'Chưa có supplement nào',
   nNoSupplementsHint: 'Thêm stack của bạn trên bản web — checklist sẽ đồng bộ về đây',
   nExercises: 'Thư viện bài tập',
@@ -319,6 +373,34 @@ const vi: typeof en = {
   nPointBarcode: 'Hướng camera vào mã vạch',
   nLookingUp: 'Đang tra cứu sản phẩm…',
   nNotFound: 'Không tìm thấy — thử lại',
+
+  // AI food scan
+  nScanFood: 'Quét món ăn',
+  nAiScanTitle: 'Quét món bằng AI',
+  nScanModeFood: 'Món ăn',
+  nScanModeLabel: 'Nhãn',
+  nScanFoodHint: 'Hướng vào bữa ăn rồi nhấn chụp',
+  nScanLabelHint: 'Đưa bảng thành phần dinh dưỡng vào khung',
+  nAnalyzing: 'Đang phân tích…',
+  nScanNoFood: 'Không nhận ra món ăn — thử lại',
+  nScanRetake: 'Chụp lại',
+  nScanAdd: 'Thêm {n} món',
+  nScanAddOne: 'Thêm 1 món',
+  nRetake: 'Chụp lại',
+  nScanError: 'Quét thất bại — thử lại',
+
+  // Meal builder
+  nMealItems: 'Các món',
+  nMealNoItems: 'Tìm, quét hoặc thêm món để bắt đầu',
+  nNutritionTotal: 'Tổng dinh dưỡng',
+  nServings: 'Khẩu phần',
+  nAiSuggest: 'AI gợi ý',
+  nAiSuggestTitle: 'AI gợi ý bữa ăn',
+  nAiSuggestHint: 'Dựa trên lượng macro còn lại hôm nay',
+  nAiThinking: 'Đang nghĩ món…',
+  nAddThis: 'Thêm',
+  nPrepTime: '{n} phút',
+  nAiNoIdeas: 'Chưa có gợi ý — thử lại sau',
 };
 
 export const nativeStrings: Record<AppLang, typeof en> = { vi, en };

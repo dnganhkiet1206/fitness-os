@@ -6,6 +6,12 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessRing } from '@/components/ascnd/readiness-ring';
 import { Screen } from '@/components/ascnd/screen';
+import {
+  ReadinessTrendCard,
+  SmartTipsCard,
+  SupplementChecklistCard,
+  WeightCheckinCard,
+} from '@/components/ascnd/today-widgets';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
@@ -173,6 +179,14 @@ export default function TodayScreen() {
           </View>
         </View>
       </GlassCard>
+
+      <WeightCheckinCard profileWeight={profile?.weight_kg != null ? Number(profile.weight_kg) : null} />
+
+      <SupplementChecklistCard />
+
+      <ReadinessTrendCard />
+
+      <SmartTipsCard />
     </Screen>
   );
 }

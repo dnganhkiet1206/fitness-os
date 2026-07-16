@@ -72,6 +72,10 @@ function Gate() {
         options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: '#000' } }}
       />
       <Stack.Screen
+        name="scan-food"
+        options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: '#000' } }}
+      />
+      <Stack.Screen
         name="log-workout"
         options={{
           presentation: 'formSheet',

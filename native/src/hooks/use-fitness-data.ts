@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './use-auth';
@@ -7,6 +7,48 @@ function daysAgoISO(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
   return d.toISOString();
+}
+
+function todayISO(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+/** Today's weight entry, if any — powers the Weight Check-in widget */
+export function useTodayWeight() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['weight_log', user?.id, todayISO()],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('weight_logs')
+        .select('weight_kg')
+        .eq('user_id', user!.id)
+        .eq('date', todayISO())
+        .maybeSingle();
+      return data ? Number(data.weight_kg) : null;
+    },
+  });
+}
+
+export function useLogWeight() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (weight_kg: number) => {
+      const { error } = await supabase
+        .from('weight_logs')
+        .upsert(
+          { user_id: user!.id, date: todayISO(), weight_kg, notes: '' },
+          { onConflict: 'user_id,date' },
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['weight_log', user?.id] });
+      qc.invalidateQueries({ queryKey: ['weight_history', user?.id] });
+    },
+  });
 }
 
 export function useWorkoutSessions(days = 14) {
