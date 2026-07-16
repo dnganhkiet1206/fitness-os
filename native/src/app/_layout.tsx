@@ -56,6 +56,16 @@ function Gate() {
         }}
       />
       <Stack.Screen
+        name="log-sleep"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.62, 1.0],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+          contentStyle: { backgroundColor: colors.card },
+        }}
+      />
+      <Stack.Screen
         name="scan-barcode"
         options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: '#000' } }}
       />

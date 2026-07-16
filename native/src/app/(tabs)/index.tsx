@@ -8,6 +8,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
+import { useAddWater, useTodayWater } from '@/hooks/use-water';
 
 function greeting(name?: string | null): string {
   const h = new Date().getHours();
@@ -34,6 +35,8 @@ export default function TodayScreen() {
   const { data: log } = useDailyLog();
   const { data: sleep } = useTodaySleep();
   const { available: healthAvailable, sync: healthSync } = useHealthSync();
+  const { data: waterMl } = useTodayWater();
+  const addWater = useAddWater();
 
   const readinessScore = log?.readiness_score != null ? Math.round(Number(log.readiness_score)) : null;
   const readinessColor = READINESS_COLOR[log?.readiness_status ?? ''] ?? colors.secondary;
@@ -115,9 +118,55 @@ export default function TodayScreen() {
       )}
 
       <GlassCard>
-        <Text style={styles.cardTitle}>Sleep</Text>
-        <Text style={styles.cardHint}>Last night</Text>
+        <View style={styles.cardHeaderRow}>
+          <View>
+            <Text style={styles.cardTitle}>Sleep</Text>
+            <Text style={styles.cardHint}>Last night</Text>
+          </View>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.miniBtn, pressed && styles.pressed]}
+            onPress={() => router.push('/log-sleep')}>
+            <Text style={styles.miniBtnText}>＋ Log</Text>
+          </Pressable>
+        </View>
         <Text style={styles.metric}>{sleepLabel}</Text>
+      </GlassCard>
+
+      <GlassCard>
+        <View style={styles.cardHeaderRow}>
+          <View>
+            <Text style={styles.cardTitle}>Water</Text>
+            <Text style={styles.cardHint}>
+              {profile?.water_target_ml != null
+                ? `of ${(Number(profile.water_target_ml) / 1000).toFixed(1)}L target`
+                : 'stay hydrated'}
+            </Text>
+          </View>
+          <View style={styles.waterButtons}>
+            {[250, 500].map((ml) => (
+              <Pressable
+                key={ml}
+                style={({ pressed }) => [styles.miniBtn, pressed && styles.pressed]}
+                onPress={() => addWater.mutate(ml)}>
+                <Text style={styles.miniBtnText}>＋{ml}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+        <View style={styles.waterRow}>
+          <Text style={styles.metric}>{((waterMl ?? 0) / 1000).toFixed(1)}L</Text>
+          <View style={styles.waterBarTrack}>
+            <View
+              style={[
+                styles.waterBarFill,
+                {
+                  width: `${Math.min(100, ((waterMl ?? 0) / (Number(profile?.water_target_ml) || 2500)) * 100)}%`,
+                },
+              ]}
+            />
+          </View>
+        </View>
       </GlassCard>
     </Screen>
   );
@@ -147,6 +196,39 @@ const styles = StyleSheet.create({
   },
   ringWrap: {
     marginVertical: spacing.lg,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  miniBtn: {
+    height: 32,
+    paddingHorizontal: spacing.md,
+    borderRadius: 16,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miniBtnText: { ...type.caption, fontWeight: '600', color: colors.foreground },
+  waterButtons: { flexDirection: 'row', gap: spacing.sm },
+  waterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  waterBarTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.secondary,
+    overflow: 'hidden',
+  },
+  waterBarFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: colors.metricCyan,
   },
   headerButtons: {
     flexDirection: 'row',
