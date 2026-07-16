@@ -42,6 +42,59 @@ export function useAddWater() {
     onSuccess: () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       queryClient.invalidateQueries({ queryKey: ['today_water', user?.id, dateStr] });
+      queryClient.invalidateQueries({ queryKey: ['water_week', user?.id] });
+    },
+  });
+}
+
+/** Today's individual water entries — the detail list on the Water screen */
+export function useTodayWaterLogs() {
+  const { user } = useAuth();
+  const dateStr = today();
+  return useQuery({
+    queryKey: ['today_water_logs', user?.id, dateStr],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('water_logs')
+        .select('id, amount_ml, logged_at')
+        .eq('user_id', user!.id)
+        .eq('date', dateStr)
+        .order('logged_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/** Daily water totals over the last 7 days for the trend chart */
+export function useWaterWeek() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['water_week', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const from = new Date();
+      from.setDate(from.getDate() - 6);
+      const fromStr = from.toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('water_logs')
+        .select('date, amount_ml')
+        .eq('user_id', user!.id)
+        .gte('date', fromStr);
+      if (error) throw error;
+      const byDate = new Map<string, number>();
+      for (const r of data ?? []) {
+        byDate.set(r.date, (byDate.get(r.date) ?? 0) + Number(r.amount_ml));
+      }
+      const days: { date: string; total: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        days.push({ date: key, total: byDate.get(key) ?? 0 });
+      }
+      return days;
     },
   });
 }

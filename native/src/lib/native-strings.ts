@@ -199,6 +199,16 @@ const en = {
   nRetake: 'Retake',
   nScanError: 'Scan failed — try again',
 
+  // Water & Steps detail
+  nWaterTitle: 'Hydration',
+  nStepsTitle: 'Steps',
+  nLast7Days: 'Last 7 days',
+  nDailyAvg: 'Daily average',
+  nTodayTotal: 'Today',
+  nTodayLogs: 'Today’s log',
+  nStepsGoal: 'Goal {x}',
+  nQuickAdd: 'Quick add',
+
   // Progress photos
   nPhotoFront: 'Front',
   nPhotoSide: 'Side',
@@ -401,6 +411,16 @@ const vi: typeof en = {
   nScanAddOne: 'Thêm 1 món',
   nRetake: 'Chụp lại',
   nScanError: 'Quét thất bại — thử lại',
+
+  // Water & Steps detail
+  nWaterTitle: 'Nước uống',
+  nStepsTitle: 'Bước chân',
+  nLast7Days: '7 ngày qua',
+  nDailyAvg: 'Trung bình ngày',
+  nTodayTotal: 'Hôm nay',
+  nTodayLogs: 'Nhật ký hôm nay',
+  nStepsGoal: 'Mục tiêu {x}',
+  nQuickAdd: 'Thêm nhanh',
 
   // Progress photos
   nPhotoFront: 'Trước',

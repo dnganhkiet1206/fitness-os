@@ -113,11 +113,15 @@ export default function TodayScreen() {
       </Pressable>
 
       <View style={styles.row}>
-        <GlassCard style={styles.half}>
-          <Text style={styles.cardTitle}>{i18n.nActivity}</Text>
-          <Text style={styles.metric}>{steps != null ? steps.toLocaleString() : '—'}</Text>
-          <Text style={styles.cardHint}>{i18n.nSteps}</Text>
-        </GlassCard>
+        <Pressable style={styles.half} onPress={() => { Haptics.selectionAsync(); router.push('/steps'); }}>
+          {({ pressed }) => (
+            <GlassCard style={pressed ? styles.cardPressedDim : undefined}>
+              <Text style={styles.cardTitle}>{i18n.nActivity}</Text>
+              <Text style={styles.metric}>{steps != null ? steps.toLocaleString() : '—'}</Text>
+              <Text style={styles.cardHint}>{i18n.nSteps}</Text>
+            </GlassCard>
+          )}
+        </Pressable>
         <GlassCard style={styles.half}>
           <Text style={styles.cardTitle}>{i18n.navNutrition}</Text>
           <Text style={styles.metric}>{kcal != null ? kcal.toLocaleString() : '—'}</Text>
@@ -160,14 +164,14 @@ export default function TodayScreen() {
 
       <GlassCard>
         <View style={styles.cardHeaderRow}>
-          <View>
-            <Text style={styles.cardTitle}>{i18n.nWater}</Text>
+          <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/water'); }}>
+            <Text style={styles.cardTitle}>{i18n.nWater} ›</Text>
             <Text style={styles.cardHint}>
               {profile?.water_target_ml != null
                 ? i18n.nOfTarget.replace('{x}', `${(Number(profile.water_target_ml) / 1000).toFixed(1)}L`)
                 : i18n.nStayHydrated}
             </Text>
-          </View>
+          </Pressable>
           <View style={styles.waterButtons}>
             {[250, 500].map((ml) => (
               <Pressable

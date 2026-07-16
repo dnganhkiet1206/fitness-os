@@ -87,6 +87,25 @@ export function useWeightHistory(days = 30) {
   });
 }
 
+/** Daily step counts over N days (from daily_logs) for the Steps screen */
+export function useStepsHistory(days = 14) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['steps_history', user?.id, days],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('daily_logs')
+        .select('date, steps')
+        .eq('user_id', user!.id)
+        .gte('date', daysAgoISO(days).split('T')[0])
+        .order('date', { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map((d) => ({ date: d.date as string, steps: Number(d.steps) || 0 }));
+    },
+  });
+}
+
 export function useReadinessHistory(days = 14) {
   const { user } = useAuth();
   return useQuery({
