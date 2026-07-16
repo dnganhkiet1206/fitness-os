@@ -19,18 +19,25 @@ repo vẫn chạy bình thường trong lúc migrate.
   và `src/integrations/supabase/` (client dùng AsyncStorage).
 - React Query provider ở root layout.
 
+## Đã port thêm (đợt 2)
+
+- ✅ Auth: `use-auth.tsx` (email/password + **Apple Sign-In** qua
+  `expo-apple-authentication` với nonce SHA-256 + Supabase
+  `signInWithIdToken`), màn `AuthScreen` native, gate ở root layout
+  (splash giữ đến khi biết trạng thái đăng nhập).
+- ✅ Data hooks: `useTodayData.ts` port nguyên vẹn (profile, daily log,
+  sleep, workouts, biometrics, readiness trend, nudges).
+- ✅ Today dashboard nối dữ liệu thật: greeting theo tên, readiness score
+  + màu trạng thái, kcal/target, steps, sleep.
+
 ## Thứ tự port tiếp theo
 
-1. Auth (Apple Sign-In qua `expo-apple-authentication` + Supabase
-   `signInWithIdToken`; key đọc từ `EXPO_PUBLIC_SUPABASE_KEY`).
-2. Hooks dữ liệu (`useTodayData`, `useDashboardData`, …) — logic React Query
-   giữ nguyên, chỉ bỏ phần DOM.
-3. Dashboard Today thật (readiness ring bằng Reanimated/Skia).
-4. Logging sheets (formsheet native của expo-router / `presentation:
+1. Readiness ring đẹp bằng Reanimated/Skia (hiện là vòng tròn tĩnh).
+2. Logging sheets (formsheet native của expo-router / `presentation:
    'formSheet'`).
-5. Nutrition / Workouts / Progress (charts: victory-native XL / Skia).
-6. HealthKit qua `@kingstinct/react-native-healthkit` hoặc module Expo.
-7. Màn đuôi dài (Legal, Awards, …) — port sau cùng, hoặc tạm nhúng WebView.
+3. Nutrition / Workouts / Progress (charts: victory-native XL / Skia).
+4. HealthKit qua `@kingstinct/react-native-healthkit` hoặc module Expo.
+5. Onboarding flow + màn đuôi dài (Legal, Awards, …) — hoặc tạm nhúng WebView.
 
 ## Chạy
 
