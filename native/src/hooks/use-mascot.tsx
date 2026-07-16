@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -34,29 +34,58 @@ export function useUnlockStats() {
   });
 }
 
+// Module-level store so every mounted instance (Today's mascot, the
+// Settings picker, the unlock celebration) sees changes immediately —
+// per-component useState copies would go stale across screens.
+let settingsState = { enabled: true, selectedId: DEFAULT_MASCOT_ID };
+const settingsListeners = new Set<() => void>();
+let settingsHydrated = false;
+
+function patchSettings(patch: Partial<typeof settingsState>) {
+  settingsState = { ...settingsState, ...patch };
+  settingsListeners.forEach((l) => l());
+}
+
+async function hydrateSettings() {
+  if (settingsHydrated) return;
+  settingsHydrated = true;
+  try {
+    const [e, s] = await Promise.all([
+      AsyncStorage.getItem(ENABLED_KEY),
+      AsyncStorage.getItem(SELECTED_KEY),
+    ]);
+    patchSettings({
+      enabled: e != null ? e === '1' : true,
+      selectedId: s || DEFAULT_MASCOT_ID,
+    });
+  } catch {
+    // keep defaults
+  }
+}
+
 export function useMascotSettings() {
-  const [enabled, setEnabledState] = useState(true);
-  const [selectedId, setSelectedIdState] = useState(DEFAULT_MASCOT_ID);
+  const snap = useSyncExternalStore(
+    (cb) => {
+      settingsListeners.add(cb);
+      return () => settingsListeners.delete(cb);
+    },
+    () => settingsState,
+  );
 
   useEffect(() => {
-    AsyncStorage.getItem(ENABLED_KEY).then((v) => {
-      if (v != null) setEnabledState(v === '1');
-    });
-    AsyncStorage.getItem(SELECTED_KEY).then((v) => {
-      if (v) setSelectedIdState(v);
-    });
+    hydrateSettings();
   }, []);
 
   const setEnabled = (v: boolean) => {
-    setEnabledState(v);
+    patchSettings({ enabled: v });
     AsyncStorage.setItem(ENABLED_KEY, v ? '1' : '0').catch(() => {});
   };
   const setSelectedId = (id: string) => {
-    setSelectedIdState(id);
+    patchSettings({ selectedId: id });
     AsyncStorage.setItem(SELECTED_KEY, id).catch(() => {});
   };
 
-  return { enabled, setEnabled, selectedId, setSelectedId };
+  return { ...snap, setEnabled, setSelectedId };
 }
 
 /**

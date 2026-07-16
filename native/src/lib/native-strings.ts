@@ -157,6 +157,9 @@ const en = {
   nMascotLocked: 'Locked',
   nMascotPro: 'PRO · coming soon',
   nMascotUnlockedBadge: 'Unlocked',
+  nMascotUnlockedTitle: 'New companion unlocked!',
+  nMascotUse: 'Use now',
+  nMascotLater: 'Later',
 
   // Scanner
   nCameraNeeded: 'Camera access needed',
@@ -306,6 +309,9 @@ const vi: typeof en = {
   nMascotLocked: 'Chưa mở khoá',
   nMascotPro: 'PRO · sắp ra mắt',
   nMascotUnlockedBadge: 'Đã mở khoá',
+  nMascotUnlockedTitle: 'Mở khoá nhân vật mới!',
+  nMascotUse: 'Dùng ngay',
+  nMascotLater: 'Để sau',
 
   nCameraNeeded: 'Cần quyền camera',
   nCameraHint: 'ASCND quét mã vạch để ghi thực phẩm đóng gói tức thì',

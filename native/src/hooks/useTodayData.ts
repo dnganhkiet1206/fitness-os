@@ -172,6 +172,9 @@ export function useInvalidateToday() {
     queryClient.invalidateQueries({ queryKey: ['nudges', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['today_meals', user?.id, dateStr] });
     queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+    // Lifetime workout/meal counters — drives mascot unlocks, so a fresh
+    // log can pop the unlock celebration right away
+    queryClient.invalidateQueries({ queryKey: ['mascot_unlock_stats', user?.id] });
   };
 }
 
