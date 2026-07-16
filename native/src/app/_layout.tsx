@@ -4,8 +4,10 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
 import { AuthScreen } from '@/components/ascnd/auth-screen';
+import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { colors } from '@/constants/ascnd';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
+import { useProfile } from '@/hooks/useTodayData';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,13 +28,17 @@ const ascndTheme = {
 
 function Gate() {
   const { user, loading } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+
+  const ready = !loading && (!user || !profileLoading);
 
   useEffect(() => {
-    if (!loading) SplashScreen.hideAsync();
-  }, [loading]);
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
 
-  if (loading) return null; // splash stays up
+  if (!ready) return null; // splash stays up
   if (!user) return <AuthScreen />;
+  if (profile && !profile.onboarding_completed) return <OnboardingFlow />;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
