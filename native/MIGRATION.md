@@ -42,14 +42,24 @@ repo vẫn chạy bình thường trong lúc migrate.
 - ✅ Progress sống: chart cân nặng 30 ngày (SVG LineChart tự viết) +
   dải cột readiness 14 ngày theo màu trạng thái.
 
+## Đã port thêm (đợt 5–8)
+
+- ✅ **HealthKit**: steps/HR/HRV/SpO2/resp qua @kingstinct v14 (Nitro),
+  ghi biometric_samples + daily_logs.steps như web; cần dev build.
+- ✅ **Settings + Sign Out** (gear trên Today), profile summary.
+- ✅ **Log Workout set-by-set**: volume tự tính, sets JSON tương thích web.
+- ✅ **Food search** trong Log Meal (ilike food_items, tự điền macro).
+- ✅ **Onboarding 4 bước** (BMR→TDEE→macro→sleep, gate ở root).
+- ✅ **AI Coach**: chat streaming SSE qua expo/fetch, dùng chung edge
+  function + bảng ai_conversations/ai_messages với web.
+
 ## Thứ tự port tiếp theo
 
-1. HealthKit qua `@kingstinct/react-native-healthkit` hoặc module Expo
-   (steps, HR, HRV, sleep tự động).
-2. Set-by-set workout builder (hiện là quick log RPE + volume).
-3. Food search / barcode scan trong Log Meal (port food_items search).
-4. Onboarding flow + Settings.
-5. Màn đuôi dài (Legal, Awards, Challenges, …) — hoặc tạm nhúng WebView.
+1. Barcode scan trong Log Meal (expo-camera).
+2. Song ngữ vi/en (i18n đã port, cần setting + nối UI).
+3. Lịch sử hội thoại AI Coach.
+4. Màn đuôi dài (Water, Sleep insights, Awards, Challenges, Legal…).
+5. TestFlight: icon, splash, EAS build.
 
 ## Chạy
 
