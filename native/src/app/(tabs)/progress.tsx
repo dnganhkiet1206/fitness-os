@@ -1,4 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import * as Haptics from 'expo-haptics';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { LineChart } from '@/components/ascnd/line-chart';
@@ -19,7 +22,32 @@ export default function ProgressScreen() {
   const i18n = useI18n();
 
   return (
-    <Screen title={i18n.navProgress}>
+    <Screen
+      title={i18n.navProgress}
+      headerRight={
+        <View style={styles.headerButtons}>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/challenges'); }}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="target" size={20} tintColor={colors.mutedForeground} />
+            ) : (
+              <Text style={styles.iconFallback}>◎</Text>
+            )}
+          </Pressable>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/awards'); }}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="trophy.fill" size={19} tintColor={colors.mutedForeground} />
+            ) : (
+              <Text style={styles.iconFallback}>🏆</Text>
+            )}
+          </Pressable>
+        </View>
+      }>
       <GlassCard>
         <Text style={styles.cardTitle}>{i18n.nWeight}</Text>
         <Text style={styles.cardHint}>{i18n.nLast30d}</Text>
@@ -58,6 +86,18 @@ export default function ProgressScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerButtons: { flexDirection: 'row', gap: spacing.sm },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  iconFallback: { fontSize: 14, color: colors.mutedForeground },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
   chart: { marginTop: spacing.md },

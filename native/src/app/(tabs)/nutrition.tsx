@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Screen } from '@/components/ascnd/screen';
@@ -26,7 +27,23 @@ export default function NutritionScreen() {
   const target = profile?.tdee_target_kcal != null ? Math.round(Number(profile.tdee_target_kcal)) : null;
 
   return (
-    <Screen title={i18n.navNutrition}>
+    <Screen
+      title={i18n.navNutrition}
+      headerRight={
+        <Pressable
+          hitSlop={8}
+          style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/grocery');
+          }}>
+          {Platform.OS === 'ios' ? (
+            <SymbolView name="cart.fill" size={18} tintColor={colors.mutedForeground} />
+          ) : (
+            <Text style={styles.iconFallback}>🛒</Text>
+          )}
+        </Pressable>
+      }>
       <GlassCard>
         <Text style={styles.cardTitle}>{i18n.nToday}</Text>
         <Text style={styles.bigMetric}>
@@ -87,6 +104,16 @@ function Macro({ label, value, color }: { label: string; value: unknown; color: 
 }
 
 const styles = StyleSheet.create({
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  iconFallback: { fontSize: 14, color: colors.mutedForeground },
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
   bigMetric: { ...type.largeTitle, color: colors.foreground, marginTop: spacing.sm },

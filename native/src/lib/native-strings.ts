@@ -109,6 +109,19 @@ const en = {
   nHistory: 'History',
   nNoHistory: 'No conversations yet',
 
+  // Extras
+  nAwards: 'Awards',
+  nNoAwards: 'No awards yet',
+  nNoAwardsHint: 'Keep logging — achievements unlock automatically',
+  nChallenges: 'Challenges',
+  nNoChallenges: 'No challenges this week',
+  nNoChallengesHint: 'Weekly challenges appear when you start logging',
+  nCompleted: 'Completed',
+  nGrocery: 'Grocery List',
+  nAddItem: 'Add an item…',
+  nNoGrocery: 'List is empty',
+  nNoGroceryHint: 'Add ingredients you need to buy',
+
   // Scanner
   nCameraNeeded: 'Camera access needed',
   nCameraHint: 'ASCND scans barcodes to log packaged foods instantly',
@@ -211,6 +224,18 @@ const vi: typeof en = {
   nMessageCoach: 'Nhắn cho coach…',
   nHistory: 'Lịch sử',
   nNoHistory: 'Chưa có hội thoại nào',
+
+  nAwards: 'Thành tích',
+  nNoAwards: 'Chưa có thành tích nào',
+  nNoAwardsHint: 'Cứ ghi chép đều — thành tích sẽ tự mở khoá',
+  nChallenges: 'Thử thách',
+  nNoChallenges: 'Tuần này chưa có thử thách',
+  nNoChallengesHint: 'Thử thách tuần xuất hiện khi bạn bắt đầu ghi chép',
+  nCompleted: 'Hoàn thành',
+  nGrocery: 'Đi chợ',
+  nAddItem: 'Thêm món cần mua…',
+  nNoGrocery: 'Danh sách trống',
+  nNoGroceryHint: 'Thêm nguyên liệu bạn cần mua',
 
   nCameraNeeded: 'Cần quyền camera',
   nCameraHint: 'ASCND quét mã vạch để ghi thực phẩm đóng gói tức thì',
