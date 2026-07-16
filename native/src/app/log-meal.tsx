@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,6 +20,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { consumePendingScan } from '@/lib/scan-bridge';
 
 const MEAL_TYPES = [
   { key: 'breakfast', label: 'Breakfast' },
@@ -47,6 +48,21 @@ export default function LogMealSheet() {
     const t = setTimeout(() => setDebounced(search.trim()), 250);
     return () => clearTimeout(t);
   }, [search]);
+
+  // Barcode scanner hands results back through the scan bridge
+  useFocusEffect(
+    useCallback(() => {
+      const scanned = consumePendingScan();
+      if (scanned) {
+        setName(scanned.food_name);
+        setKcal(String(scanned.kcal));
+        setProtein(String(scanned.protein_g));
+        setCarbs(String(scanned.carbs_g));
+        setFat(String(scanned.fat_g));
+        setFoodItemId(null);
+      }
+    }, []),
+  );
 
   const { data: foods } = useQuery({
     queryKey: ['food_items_search', debounced],
@@ -147,14 +163,24 @@ export default function LogMealSheet() {
           ))}
         </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Search foods…"
-          placeholderTextColor={colors.mutedForeground}
-          value={search}
-          onChangeText={setSearch}
-          autoCorrect={false}
-        />
+        <View style={styles.searchRow}>
+          <TextInput
+            style={[styles.input, styles.searchInput]}
+            placeholder="Search foods…"
+            placeholderTextColor={colors.mutedForeground}
+            value={search}
+            onChangeText={setSearch}
+            autoCorrect={false}
+          />
+          <Pressable
+            style={({ pressed }) => [styles.scanBtn, pressed && styles.pressed]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/scan-barcode');
+            }}>
+            <Text style={styles.scanIcon}>▥</Text>
+          </Pressable>
+        </View>
         {foods && foods.length > 0 && (
           <View style={styles.results}>
             {foods.map((f) => (
@@ -308,6 +334,19 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
+  searchRow: { flexDirection: 'row', gap: spacing.sm },
+  searchInput: { flex: 1 },
+  scanBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanIcon: { fontSize: 20, color: colors.foreground },
   results: {
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,

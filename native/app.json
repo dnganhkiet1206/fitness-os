@@ -42,6 +42,12 @@
           "NSHealthUpdateUsageDescription": false,
           "background": false
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ASCND uses the camera to scan food barcodes for quick logging."
+        }
       ]
     ],
     "experiments": {

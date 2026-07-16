@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { AuthScreen } from '@/components/ascnd/auth-screen';
 import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { colors } from '@/constants/ascnd';
+import { AppSettingsProvider } from '@/hooks/use-app-settings';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 
@@ -55,6 +56,10 @@ function Gate() {
         }}
       />
       <Stack.Screen
+        name="scan-barcode"
+        options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: '#000' } }}
+      />
+      <Stack.Screen
         name="log-workout"
         options={{
           presentation: 'formSheet',
@@ -71,11 +76,13 @@ function Gate() {
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
+      <AppSettingsProvider>
       <AuthProvider>
         <ThemeProvider value={ascndTheme}>
           <Gate />
         </ThemeProvider>
       </AuthProvider>
+      </AppSettingsProvider>
     </QueryClientProvider>
   );
 }

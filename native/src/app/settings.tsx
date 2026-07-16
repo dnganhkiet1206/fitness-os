@@ -5,12 +5,15 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
+  const { lang, setLang } = useAppSettings();
+  const i18n = useI18n();
 
   const confirmSignOut = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -28,7 +31,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <Screen title="Settings">
+    <Screen title={i18n.settingsTitle}>
       <GlassCard>
         <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
         <Text style={styles.cardHint}>{user?.email}</Text>
@@ -36,6 +39,25 @@ export default function SettingsScreen() {
         <Row label="Daily target" value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
         <Row label="Goal" value={profile?.goal ?? '—'} />
         <Row label="Training level" value={profile?.training_level ?? '—'} />
+      </GlassCard>
+
+      <GlassCard>
+        <Text style={styles.cardTitle}>Language / Ngôn ngữ</Text>
+        <View style={styles.langRow}>
+          {(['vi', 'en'] as const).map((l) => (
+            <Pressable
+              key={l}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setLang(l);
+              }}
+              style={[styles.langChip, lang === l && styles.langChipActive]}>
+              <Text style={[styles.langText, lang === l && styles.langTextActive]}>
+                {l === 'vi' ? 'Tiếng Việt' : 'English'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </GlassCard>
 
       <GlassCard>
@@ -77,6 +99,18 @@ const styles = StyleSheet.create({
   },
   rowLabel: { ...type.body, color: colors.mutedForeground },
   rowValue: { ...type.body, color: colors.foreground, fontWeight: '600', textTransform: 'capitalize' },
+  langRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  langChip: {
+    flex: 1,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langChipActive: { backgroundColor: colors.primary },
+  langText: { ...type.footnote, fontWeight: '600', color: colors.secondaryForeground },
+  langTextActive: { color: colors.primaryForeground },
   signOut: {
     height: 50,
     borderRadius: radius.full,
