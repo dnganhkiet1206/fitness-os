@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Screen } from '@/components/ascnd/screen';
@@ -21,7 +22,32 @@ export default function WorkoutsScreen() {
   const weekVolume = thisWeek.reduce((sum, s) => sum + Number(s.volume_load || 0), 0);
 
   return (
-    <Screen title={i18n.navWorkouts}>
+    <Screen
+      title={i18n.navWorkouts}
+      headerRight={
+        <View style={styles.headerButtons}>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/routine'); }}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="calendar" size={19} tintColor={colors.mutedForeground} />
+            ) : (
+              <Text style={styles.iconFallback}>📅</Text>
+            )}
+          </Pressable>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/exercises'); }}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="books.vertical.fill" size={18} tintColor={colors.mutedForeground} />
+            ) : (
+              <Text style={styles.iconFallback}>📚</Text>
+            )}
+          </Pressable>
+        </View>
+      }>
       <View style={styles.row}>
         <GlassCard style={styles.half}>
           <Text style={styles.cardTitle}>{i18n.nThisWeek}</Text>
@@ -80,6 +106,17 @@ export default function WorkoutsScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerButtons: { flexDirection: 'row', gap: spacing.sm },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  iconFallback: { fontSize: 14, color: colors.mutedForeground },
   row: { flexDirection: 'row', gap: spacing.md },
   half: { flex: 1 },
   cardTitle: { ...type.headline, color: colors.foreground },

@@ -30,19 +30,38 @@ export default function NutritionScreen() {
     <Screen
       title={i18n.navNutrition}
       headerRight={
-        <Pressable
-          hitSlop={8}
-          style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            router.push('/grocery');
-          }}>
-          {Platform.OS === 'ios' ? (
-            <SymbolView name="cart.fill" size={18} tintColor={colors.mutedForeground} />
-          ) : (
-            <Text style={styles.iconFallback}>🛒</Text>
-          )}
-        </Pressable>
+        <View style={styles.headerButtons}>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/supplements'); }}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="pills.fill" size={18} tintColor={colors.mutedForeground} />
+            ) : (
+              <Text style={styles.iconFallback}>💊</Text>
+            )}
+          </Pressable>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/meal-plans'); }}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="list.bullet.rectangle" size={18} tintColor={colors.mutedForeground} />
+            ) : (
+              <Text style={styles.iconFallback}>📋</Text>
+            )}
+          </Pressable>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/grocery'); }}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="cart.fill" size={18} tintColor={colors.mutedForeground} />
+            ) : (
+              <Text style={styles.iconFallback}>🛒</Text>
+            )}
+          </Pressable>
+        </View>
       }>
       <GlassCard>
         <Text style={styles.cardTitle}>{i18n.nToday}</Text>
@@ -104,6 +123,7 @@ function Macro({ label, value, color }: { label: string; value: unknown; color: 
 }
 
 const styles = StyleSheet.create({
+  headerButtons: { flexDirection: 'row', gap: spacing.sm },
   iconBtn: {
     width: 36,
     height: 36,
