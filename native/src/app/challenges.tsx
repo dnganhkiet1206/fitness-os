@@ -1,6 +1,8 @@
+import { Check, Target } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -20,12 +22,14 @@ export default function ChallengesScreen() {
           return (
             <GlassCard key={c.id}>
               <View style={styles.headerRow}>
-                <Text style={styles.icon}>{c.icon ?? '🎯'}</Text>
+                <View style={styles.iconWrap}>
+                  <Icon icon={Target} size={20} color={colors.primary} />
+                </View>
                 <View style={styles.info}>
                   <Text style={styles.title}>{c.title}</Text>
                   {c.description ? <Text style={styles.hint}>{c.description}</Text> : null}
                 </View>
-                {c.completed && <Text style={styles.done}>✓</Text>}
+                {c.completed && <Icon icon={Check} size={18} color={colors.readinessGreen} strokeWidth={3} />}
               </View>
               <View style={styles.progressTrack}>
                 <View
@@ -54,7 +58,7 @@ export default function ChallengesScreen() {
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  icon: { fontSize: 28 },
+  iconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, minWidth: 0, gap: 2 },
   title: { ...type.headline, color: colors.foreground },
   hint: { ...type.footnote, color: colors.mutedForeground },

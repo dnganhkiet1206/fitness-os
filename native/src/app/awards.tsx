@@ -1,6 +1,8 @@
+import { Trophy } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -23,7 +25,7 @@ export default function AwardsScreen() {
           <GlassCard key={a.id} style={styles.card}>
             <View style={styles.row}>
               <View style={[styles.iconWrap, { borderColor: TIER_COLOR[a.tier ?? ''] ?? colors.border }]}>
-                <Text style={styles.icon}>{a.icon ?? '🏆'}</Text>
+                <Icon icon={Trophy} size={22} color={TIER_COLOR[a.tier ?? ''] ?? colors.mutedForeground} />
               </View>
               <View style={styles.info}>
                 <Text style={styles.title}>{a.title}</Text>

@@ -1,6 +1,8 @@
+import { Check } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -31,7 +33,7 @@ export default function SupplementsScreen() {
               <GlassCard style={styles.itemCard}>
                 <View style={styles.row}>
                   <View style={[styles.checkbox, s.taken && styles.checkboxOn]}>
-                    {s.taken && <Text style={styles.checkmark}>✓</Text>}
+                    {s.taken && <Icon icon={Check} size={15} color="#fff" strokeWidth={3} />}
                   </View>
                   <View style={styles.info}>
                     <Text style={[styles.title, s.taken && styles.muted]}>{s.name}</Text>

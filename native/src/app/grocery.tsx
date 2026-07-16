@@ -1,3 +1,4 @@
+import { Check, Plus, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -10,6 +11,7 @@ import {
 } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -45,7 +47,7 @@ export default function GroceryScreen() {
             style={({ pressed }) => [styles.addBtn, !draft.trim() && styles.disabled, pressed && styles.pressed]}
             disabled={!draft.trim()}
             onPress={submit}>
-            <Text style={styles.addBtnText}>＋</Text>
+            <Icon icon={Plus} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
           </Pressable>
         </View>
 
@@ -57,14 +59,14 @@ export default function GroceryScreen() {
               <GlassCard style={styles.itemCard}>
                 <View style={styles.itemRow}>
                   <View style={[styles.checkbox, it.checked && styles.checkboxOn]}>
-                    {it.checked && <Text style={styles.checkmark}>✓</Text>}
+                    {it.checked && <Icon icon={Check} size={13} color="#fff" strokeWidth={3} />}
                   </View>
                   <Text style={[styles.itemName, it.checked && styles.itemChecked]} numberOfLines={1}>
                     {it.name}
                     {it.quantity ? <Text style={styles.qty}>  ×{it.quantity}</Text> : null}
                   </Text>
                   <Pressable hitSlop={10} onPress={() => remove.mutate(it.id)}>
-                    <Text style={styles.remove}>✕</Text>
+                    <Icon icon={X} size={15} color={colors.mutedForeground} />
                   </Pressable>
                 </View>
               </GlassCard>

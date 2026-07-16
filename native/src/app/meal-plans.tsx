@@ -1,8 +1,10 @@
 import * as Haptics from 'expo-haptics';
+import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -41,7 +43,7 @@ export default function MealPlansScreen() {
                         .join(' · ')}
                     </Text>
                   </View>
-                  <Text style={styles.chevron}>{openId === p.id ? '▾' : '▸'}</Text>
+                  <Icon icon={openId === p.id ? ChevronDown : ChevronRight} size={20} color={colors.mutedForeground} />
                 </View>
               </GlassCard>
             </Pressable>

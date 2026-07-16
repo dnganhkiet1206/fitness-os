@@ -1,9 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import { Check, Sparkles } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -121,7 +123,7 @@ export function SupplementChecklistCard() {
               style={styles.suppRow}
               onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
               <View style={[styles.checkbox, s.taken && styles.checkboxOn]}>
-                {s.taken && <Text style={styles.checkmark}>✓</Text>}
+                {s.taken && <Icon icon={Check} size={15} color="#fff" strokeWidth={3} />}
               </View>
               <View style={styles.suppInfo}>
                 <Text style={[styles.suppName, s.taken && styles.suppNameDone]} numberOfLines={1}>
@@ -195,7 +197,10 @@ export function SmartTipsCard() {
     <GlassCard>
       <View style={styles.cardHeaderRow}>
         <View style={styles.tipsTitleWrap}>
-          <Text style={styles.cardTitle}>✦ {i18n.nSmartTips}</Text>
+          <View style={styles.tipsTitleRow}>
+            <Icon icon={Sparkles} size={16} color={colors.primary} />
+            <Text style={styles.cardTitle}>{i18n.nSmartTips}</Text>
+          </View>
           <Text style={styles.cardHint}>{i18n.nTipsHint}</Text>
         </View>
         {tapped && !nudges.isPending && (
@@ -298,6 +303,7 @@ const styles = StyleSheet.create({
 
   // Smart tips
   tipsTitleWrap: { flex: 1, minWidth: 0 },
+  tipsTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   refreshText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
   tipsBtn: {
     marginTop: spacing.md,

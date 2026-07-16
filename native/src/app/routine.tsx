@@ -1,8 +1,10 @@
 import * as Haptics from 'expo-haptics';
+import { ChevronDown, Dumbbell, Moon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -68,7 +70,7 @@ export default function RoutineScreen() {
                 <Text style={[styles.assignText, !isRest && styles.assignTextActive]} numberOfLines={1}>
                   {isRest ? i18n.nRest : name ?? i18n.nChooseWorkout}
                 </Text>
-                <Text style={styles.assignChevron}>⌄</Text>
+                <Icon icon={ChevronDown} size={14} color={colors.mutedForeground} />
               </Pressable>
             </View>
 
@@ -100,14 +102,20 @@ export default function RoutineScreen() {
             <Pressable
               style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
               onPress={() => picking !== null && assign(picking, null)}>
-              <Text style={styles.pickerRest}>🌙 {i18n.nRest}</Text>
+              <View style={styles.pickerRowInner}>
+                <Icon icon={Moon} size={16} color={colors.mutedForeground} />
+                <Text style={styles.pickerRest}>{i18n.nRest}</Text>
+              </View>
             </Pressable>
             {(templates ?? []).map((t) => (
               <Pressable
                 key={t.id}
                 style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
                 onPress={() => picking !== null && assign(picking, t.id)}>
-                <Text style={styles.pickerName}>🏋 {t.name}</Text>
+                <View style={styles.pickerRowInner}>
+                  <Icon icon={Dumbbell} size={16} color={colors.primary} />
+                  <Text style={styles.pickerName}>{t.name}</Text>
+                </View>
                 {t.type ? <Text style={styles.pickerType}>{t.type}</Text> : null}
               </Pressable>
             ))}
@@ -184,6 +192,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   pickerRowPressed: { backgroundColor: colors.secondary },
+  pickerRowInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
   pickerRest: { ...type.body, color: colors.mutedForeground },
   pickerName: { ...type.body, color: colors.foreground, flex: 1 },
   pickerType: { ...type.caption, color: colors.mutedForeground, textTransform: 'capitalize' },

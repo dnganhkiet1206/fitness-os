@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { Plus, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,6 +16,7 @@ import {
   View,
 } from 'react-native';
 
+import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -138,12 +140,13 @@ export default function LogWorkoutSheet() {
               onChangeText={(v) => updateSet(idx, 'reps', v)}
             />
             <Pressable hitSlop={8} onPress={() => removeSet(idx)} style={styles.removeSet}>
-              <Text style={styles.removeText}>✕</Text>
+              <Icon icon={X} size={14} color={colors.mutedForeground} />
             </Pressable>
           </View>
         ))}
 
         <Pressable style={({ pressed }) => [styles.addSet, pressed && styles.pressed]} onPress={addSet}>
+          <Icon icon={Plus} size={15} color={colors.foreground} strokeWidth={2.5} />
           <Text style={styles.addSetText}>{i18n.nAddSet}</Text>
         </Pressable>
 
@@ -223,6 +226,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+    flexDirection: 'row',
+    gap: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { SymbolView } from 'expo-symbols';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChevronRight, Droplets, Heart, Plus, Settings, Sparkles } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessRing } from '@/components/ascnd/readiness-ring';
 import { Screen } from '@/components/ascnd/screen';
@@ -73,21 +74,13 @@ export default function TodayScreen() {
             hitSlop={8}
             style={({ pressed }) => [styles.gear, pressed && styles.pressed]}
             onPress={() => router.push('/ai-coach')}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="sparkles" size={20} tintColor={colors.primary} />
-            ) : (
-              <Text style={styles.gearFallback}>✦</Text>
-            )}
+            <Icon icon={Sparkles} size={20} color={colors.primary} />
           </Pressable>
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.gear, pressed && styles.pressed]}
             onPress={() => router.push('/settings')}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="gearshape.fill" size={20} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.gearFallback}>⚙︎</Text>
-            )}
+            <Icon icon={Settings} size={20} color={colors.mutedForeground} />
           </Pressable>
         </View>
       }>
@@ -103,7 +96,7 @@ export default function TodayScreen() {
                   {log?.readiness_recommendation ?? i18n.nReadinessHint}
                 </Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
             </View>
             <View style={styles.ringWrap}>
               <ReadinessRing score={readinessScore} color={readinessColor} />
@@ -137,7 +130,10 @@ export default function TodayScreen() {
           {healthSync.isPending ? (
             <ActivityIndicator color={colors.foreground} size="small" />
           ) : (
-            <Text style={styles.syncText}>{i18n.nSyncHealth}</Text>
+            <>
+              <Icon icon={Heart} size={16} color={colors.readinessRed} />
+              <Text style={styles.syncText}>{i18n.nSyncHealth}</Text>
+            </>
           )}
         </Pressable>
       )}
@@ -165,7 +161,11 @@ export default function TodayScreen() {
       <GlassCard>
         <View style={styles.cardHeaderRow}>
           <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/water'); }}>
-            <Text style={styles.cardTitle}>{i18n.nWater} ›</Text>
+            <View style={styles.titleWithIcon}>
+              <Icon icon={Droplets} size={17} color={colors.metricBlue} />
+              <Text style={styles.cardTitle}>{i18n.nWater}</Text>
+              <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+            </View>
             <Text style={styles.cardHint}>
               {profile?.water_target_ml != null
                 ? i18n.nOfTarget.replace('{x}', `${(Number(profile.water_target_ml) / 1000).toFixed(1)}L`)
@@ -176,9 +176,10 @@ export default function TodayScreen() {
             {[250, 500].map((ml) => (
               <Pressable
                 key={ml}
-                style={({ pressed }) => [styles.miniBtn, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.miniBtn, styles.miniBtnRow, pressed && styles.pressed]}
                 onPress={() => addWater.mutate(ml)}>
-                <Text style={styles.miniBtnText}>＋{ml}</Text>
+                <Icon icon={Plus} size={13} color={colors.foreground} strokeWidth={2.5} />
+                <Text style={styles.miniBtnText}>{ml}</Text>
               </Pressable>
             ))}
           </View>
@@ -241,7 +242,8 @@ const styles = StyleSheet.create({
   },
   cardPressedDim: { opacity: 0.8 },
   readinessHeadInfo: { flex: 1, minWidth: 0 },
-  chevron: { fontSize: 22, color: colors.mutedForeground },
+  titleWithIcon: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  miniBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   miniBtn: {
     height: 32,
     paddingHorizontal: spacing.md,
@@ -283,14 +285,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  gearFallback: {
-    fontSize: 16,
-    color: colors.mutedForeground,
-  },
   syncButton: {
     height: 44,
     borderRadius: 22,
     backgroundColor: colors.secondary,
+    flexDirection: 'row',
+    gap: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },

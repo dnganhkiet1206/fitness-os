@@ -1,9 +1,11 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { Plus } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -66,7 +68,7 @@ export default function BiometricsScreen() {
             Haptics.selectionAsync();
             router.push('/log-biometrics');
           }}>
-          <Text style={styles.logBtnText}>＋</Text>
+          <Icon icon={Plus} size={22} color={colors.primary} />
         </Pressable>
       }>
       {!hasAny ? (

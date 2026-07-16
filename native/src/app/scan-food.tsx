@@ -1,6 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
@@ -141,7 +143,7 @@ export default function ScanFoodScreen() {
           style={[styles.closeBtn, { top: insets.top + spacing.sm }]}
           hitSlop={8}
           onPress={() => router.back()}>
-          <Text style={styles.closeText}>✕</Text>
+          <Icon icon={X} size={18} color="#fff" />
         </Pressable>
 
         {phase === 'analyzing' ? (
@@ -178,7 +180,7 @@ export default function ScanFoodScreen() {
                           Haptics.selectionAsync();
                           setItems((prev) => prev.filter((_, i) => i !== idx));
                         }}>
-                        <Text style={styles.removeIcon}>✕</Text>
+                        <Icon icon={X} size={15} color={colors.mutedForeground} />
                       </Pressable>
                     </View>
                   ))}
@@ -221,7 +223,7 @@ export default function ScanFoodScreen() {
         style={[styles.closeBtn, { top: insets.top + spacing.sm }]}
         hitSlop={8}
         onPress={() => router.back()}>
-        <Text style={styles.closeText}>✕</Text>
+        <Icon icon={X} size={18} color="#fff" />
       </Pressable>
 
       {/* Mode toggle */}

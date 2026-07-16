@@ -1,8 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { Dumbbell, Plus, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -46,13 +48,13 @@ export default function TemplatesScreen() {
             Haptics.selectionAsync();
             router.push('/workout-builder');
           }}>
-          <Text style={styles.addBtnText}>＋</Text>
+          <Icon icon={Plus} size={22} color={colors.primary} />
         </Pressable>
       }>
       {!templates || templates.length === 0 ? (
         <GlassCard>
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>🏋️</Text>
+            <Icon icon={Dumbbell} size={40} color={colors.mutedForeground} />
             <Text style={styles.emptyText}>{i18n.workoutsNoTemplates}</Text>
             <Pressable
               style={({ pressed }) => [styles.emptyBtn, pressed && styles.pressed]}
@@ -82,7 +84,7 @@ export default function TemplatesScreen() {
                   </Text>
                 </View>
                 <Pressable hitSlop={8} onPress={() => confirmDelete(t.id)}>
-                  <Text style={styles.deleteIcon}>🗑</Text>
+                  <Icon icon={Trash2} size={18} color={colors.mutedForeground} />
                 </Pressable>
               </View>
             </GlassCard>

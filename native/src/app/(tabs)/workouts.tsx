@@ -1,9 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Calendar, Layers, Library, Plus } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
@@ -30,31 +31,19 @@ export default function WorkoutsScreen() {
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/templates'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="square.stack.3d.up.fill" size={19} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>▤</Text>
-            )}
+            <Icon icon={Layers} size={19} color={colors.mutedForeground} />
           </Pressable>
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/routine'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="calendar" size={19} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>📅</Text>
-            )}
+            <Icon icon={Calendar} size={19} color={colors.mutedForeground} />
           </Pressable>
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/exercises'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="books.vertical.fill" size={18} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>📚</Text>
-            )}
+            <Icon icon={Library} size={18} color={colors.mutedForeground} />
           </Pressable>
         </View>
       }>
@@ -77,6 +66,7 @@ export default function WorkoutsScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/log-workout');
         }}>
+        <Icon icon={Plus} size={18} color={colors.primaryForeground} strokeWidth={2.5} />
         <Text style={styles.logButtonText}>{i18n.nLogWorkoutBtn}</Text>
       </Pressable>
 
@@ -126,7 +116,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  iconFallback: { fontSize: 14, color: colors.mutedForeground },
   row: { flexDirection: 'row', gap: spacing.md },
   half: { flex: 1 },
   cardTitle: { ...type.headline, color: colors.foreground },
@@ -136,8 +125,10 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
   },
   logButtonText: { ...type.headline, color: colors.primaryForeground },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },

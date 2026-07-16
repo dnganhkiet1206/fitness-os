@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -13,6 +14,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useMascot } from '@/hooks/use-mascot';
 
@@ -172,7 +174,7 @@ export function Mascot() {
           pointerEvents={bubbleVisible ? 'auto' : 'none'}>
           <Text style={styles.bubbleText}>{message}</Text>
           <Pressable hitSlop={10} onPress={() => setBubbleVisible(false)} style={styles.bubbleClose}>
-            <Text style={styles.bubbleCloseText}>✕</Text>
+            <Icon icon={X} size={11} color={colors.mutedForeground} />
           </Pressable>
         </Animated.View>
       )}

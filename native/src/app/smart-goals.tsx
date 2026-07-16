@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { Flame } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -150,7 +152,10 @@ export default function SmartGoalsScreen() {
 
             {analysis.twoWeekDeviation && analysis.calorieAdjustment !== 0 && (
               <View style={styles.suggestion}>
-                <Text style={styles.suggestionTitle}>🔥 {i18n.smartGoalsCalorieSuggestion}</Text>
+                <View style={styles.suggestionTitleRow}>
+                  <Icon icon={Flame} size={15} color={colors.readinessYellow} />
+                  <Text style={styles.suggestionTitle}>{i18n.smartGoalsCalorieSuggestion}</Text>
+                </View>
                 <Text style={styles.suggestionValue}>
                   {analysis.calorieAdjustment > 0 ? '+' : ''}{analysis.calorieAdjustment} kcal/{day}
                 </Text>
@@ -230,6 +235,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(230,185,61,0.25)',
     gap: 2,
   },
+  suggestionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   suggestionTitle: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
   suggestionValue: { ...type.title, color: colors.readinessYellow, fontVariant: ['tabular-nums'], marginTop: 2 },
   suggestionDetail: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },

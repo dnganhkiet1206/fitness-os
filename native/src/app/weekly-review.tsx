@@ -1,8 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import { Sparkles } from 'lucide-react-native';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -65,7 +67,10 @@ export default function WeeklyReviewScreen() {
     <Screen title={i18n.nWeeklyReview}>
       {!a ? (
         <GlassCard>
-          <Text style={styles.title}>✦ {i18n.nAiAnalysis}</Text>
+          <View style={styles.titleRow}>
+            <Icon icon={Sparkles} size={17} color={colors.primary} />
+            <Text style={styles.title}>{i18n.nAiAnalysis}</Text>
+          </View>
           <Text style={styles.hint}>{i18n.nWeeklyReviewHint}</Text>
           <Pressable
             style={({ pressed }) => [styles.cta, analyze.isPending && styles.disabled, pressed && styles.pressed]}
@@ -119,6 +124,7 @@ export default function WeeklyReviewScreen() {
 
 const styles = StyleSheet.create({
   title: { ...type.headline, color: colors.foreground },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   hint: { ...type.footnote, color: colors.mutedForeground, marginTop: 4, lineHeight: 18 },
   cta: {
     height: 48,

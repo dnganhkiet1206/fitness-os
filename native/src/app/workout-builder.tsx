@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { Plus, Trash2, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
@@ -131,7 +133,8 @@ export default function WorkoutBuilderSheet() {
               Haptics.selectionAsync();
               setShowCustom((s) => !s);
             }}>
-            <Text style={styles.customToggleText}>{showCustom ? `✕ ${i18n.nCancel}` : `＋ ${i18n.nCreateExercise}`}</Text>
+            <Icon icon={showCustom ? X : Plus} size={13} color={colors.primary} strokeWidth={2.5} />
+            <Text style={styles.customToggleText}>{showCustom ? i18n.nCancel : i18n.nCreateExercise}</Text>
           </Pressable>
         </View>
 
@@ -197,7 +200,10 @@ export default function WorkoutBuilderSheet() {
               style={styles.noResults}
               onPress={() => { setCName(search); setShowCustom(true); setSearch(''); }}>
               <Text style={styles.noResultsText}>{i18n.nNoExercisesFound}</Text>
-              <Text style={styles.noResultsCta}>＋ {i18n.nCreateExercise}</Text>
+              <View style={styles.noResultsCtaRow}>
+                <Icon icon={Plus} size={13} color={colors.primary} strokeWidth={2.5} />
+                <Text style={styles.noResultsCta}>{i18n.nCreateExercise}</Text>
+              </View>
             </Pressable>
           )
         )}
@@ -210,7 +216,7 @@ export default function WorkoutBuilderSheet() {
               {suggestions.map((e) => (
                 <Pressable key={e.id} style={({ pressed }) => [styles.suggestChip, pressed && styles.pressed]} onPress={() => addEx(e)}>
                   <Text style={styles.suggestText} numberOfLines={1}>{e.name}</Text>
-                  <Text style={styles.suggestPlus}>＋</Text>
+                  <Icon icon={Plus} size={14} color={colors.primary} />
                 </Pressable>
               ))}
             </View>
@@ -226,7 +232,7 @@ export default function WorkoutBuilderSheet() {
                 <View style={styles.exHead}>
                   <Text style={styles.exName} numberOfLines={1}>{ex.exerciseName}</Text>
                   <Pressable hitSlop={8} onPress={() => removeEx(idx)}>
-                    <Text style={styles.exRemove}>🗑</Text>
+                    <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
                   </Pressable>
                 </View>
                 <View style={styles.exFields}>
@@ -292,7 +298,8 @@ const styles = StyleSheet.create({
   chipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '600' },
-  customToggle: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full, backgroundColor: 'rgba(168,178,196,0.12)' },
+  customToggle: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full, backgroundColor: 'rgba(168,178,196,0.12)' },
+  noResultsCtaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   customToggleText: { ...type.caption, color: colors.primary, fontWeight: '600' },
   customForm: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.primary, backgroundColor: colors.background },
   miniLabel: { ...type.caption, color: colors.mutedForeground },

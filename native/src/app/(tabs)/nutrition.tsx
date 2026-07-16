@@ -1,9 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ClipboardList, Pill, Plus, ShoppingCart } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useDailyLog, useProfile, useTodayMeals } from '@/hooks/useTodayData';
@@ -35,31 +36,19 @@ export default function NutritionScreen() {
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/supplements'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="pills.fill" size={18} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>💊</Text>
-            )}
+            <Icon icon={Pill} size={18} color={colors.mutedForeground} />
           </Pressable>
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/meal-plans'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="list.bullet.rectangle" size={18} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>📋</Text>
-            )}
+            <Icon icon={ClipboardList} size={18} color={colors.mutedForeground} />
           </Pressable>
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/grocery'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="cart.fill" size={18} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>🛒</Text>
-            )}
+            <Icon icon={ShoppingCart} size={18} color={colors.mutedForeground} />
           </Pressable>
         </View>
       }>
@@ -82,6 +71,7 @@ export default function NutritionScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/log-meal');
         }}>
+        <Icon icon={Plus} size={18} color={colors.primaryForeground} strokeWidth={2.5} />
         <Text style={styles.logButtonText}>{i18n.nLogMealBtn}</Text>
       </Pressable>
 
@@ -133,7 +123,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  iconFallback: { fontSize: 14, color: colors.mutedForeground },
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
   bigMetric: { ...type.largeTitle, color: colors.foreground, marginTop: spacing.sm },
@@ -150,8 +139,10 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
   },
   logButtonText: { ...type.headline, color: colors.primaryForeground },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },

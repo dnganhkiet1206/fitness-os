@@ -1,5 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
+import { Camera, Plus, X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -55,7 +57,7 @@ export default function ProgressPhotosScreen() {
             Haptics.selectionAsync();
             setCapturing(true);
           }}>
-          <Text style={styles.addBtnText}>＋</Text>
+          <Icon icon={Plus} size={22} color={colors.primary} />
         </Pressable>
       }>
       {upload.isPending && (
@@ -70,7 +72,7 @@ export default function ProgressPhotosScreen() {
       {!photos || photos.length === 0 ? (
         <GlassCard>
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>📸</Text>
+            <Icon icon={Camera} size={40} color={colors.mutedForeground} />
             <Text style={styles.emptyText}>{i18n.progressNoPhotos}</Text>
             <Pressable
               style={({ pressed }) => [styles.emptyBtn, pressed && styles.pressed]}
@@ -168,7 +170,7 @@ function CaptureView({
     <View style={styles.captureRoot}>
       <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" />
       <Pressable style={[styles.closeBtn, { top: insets.top + spacing.sm }]} hitSlop={8} onPress={onClose}>
-        <Text style={styles.closeText}>✕</Text>
+        <Icon icon={X} size={16} color="#fff" />
       </Pressable>
 
       <View style={[styles.poseRow, { top: insets.top + spacing.sm }]}>

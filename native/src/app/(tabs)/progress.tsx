@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import * as Haptics from 'expo-haptics';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Camera, Medal, Sparkles, Swords, Target } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
@@ -30,51 +31,31 @@ export default function ProgressScreen() {
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/weekly-review'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="sparkles.rectangle.stack" size={18} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>✦</Text>
-            )}
+            <Icon icon={Sparkles} size={18} color={colors.mutedForeground} />
           </Pressable>
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/progress-photos'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="camera.fill" size={18} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>📷</Text>
-            )}
+            <Icon icon={Camera} size={18} color={colors.mutedForeground} />
           </Pressable>
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/smart-goals'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="brain.head.profile" size={19} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>◈</Text>
-            )}
+            <Icon icon={Target} size={18} color={colors.mutedForeground} />
           </Pressable>
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/challenges'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="target" size={20} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>◎</Text>
-            )}
+            <Icon icon={Swords} size={18} color={colors.mutedForeground} />
           </Pressable>
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/awards'); }}>
-            {Platform.OS === 'ios' ? (
-              <SymbolView name="trophy.fill" size={19} tintColor={colors.mutedForeground} />
-            ) : (
-              <Text style={styles.iconFallback}>🏆</Text>
-            )}
+            <Icon icon={Medal} size={18} color={colors.mutedForeground} />
           </Pressable>
         </View>
       }>
@@ -126,7 +107,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  iconFallback: { fontSize: 14, color: colors.mutedForeground },
   pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },

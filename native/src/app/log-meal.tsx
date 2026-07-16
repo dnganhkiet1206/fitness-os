@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
+import { Camera, ChevronDown, ChevronRight, Clock, Minus, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,6 +16,7 @@ import {
   View,
 } from 'react-native';
 
+import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -317,7 +319,7 @@ export default function LogMealSheet() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/scan-food');
             }}>
-            <Text style={styles.iconGlyph}>📷</Text>
+            <Icon icon={Camera} size={20} color={colors.foreground} />
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
@@ -325,7 +327,7 @@ export default function LogMealSheet() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/scan-barcode');
             }}>
-            <Text style={styles.iconGlyph}>▥</Text>
+            <Icon icon={ScanBarcode} size={20} color={colors.foreground} />
           </Pressable>
         </View>
 
@@ -354,7 +356,7 @@ export default function LogMealSheet() {
                   Haptics.selectionAsync();
                   addItem(q);
                 }}>
-                <Text style={styles.quickGlyph}>{q.fav ? '★' : '↻'}</Text>
+                <Icon icon={q.fav ? Star : Clock} size={12} color={colors.primary} />
                 <Text style={styles.quickName} numberOfLines={1}>{q.food_name}</Text>
                 <Text style={styles.quickKcal}>{q.kcal}</Text>
               </Pressable>
@@ -366,12 +368,12 @@ export default function LogMealSheet() {
         <Pressable
           style={({ pressed }) => [styles.aiToggle, aiOpen && styles.aiToggleActive, pressed && styles.pressed]}
           onPress={openAi}>
-          <Text style={styles.aiToggleIcon}>✦</Text>
+          <Icon icon={Sparkles} size={18} color={colors.primary} />
           <View style={styles.aiToggleInfo}>
             <Text style={styles.aiToggleTitle}>{i18n.nAiSuggestTitle}</Text>
             <Text style={styles.aiToggleHint}>{i18n.nAiSuggestHint}</Text>
           </View>
-          <Text style={styles.aiChevron}>{aiOpen ? '⌄' : '›'}</Text>
+          <Icon icon={aiOpen ? ChevronDown : ChevronRight} size={20} color={colors.mutedForeground} />
         </Pressable>
 
         {aiOpen && (
@@ -396,7 +398,7 @@ export default function LogMealSheet() {
                   <Pressable
                     style={({ pressed }) => [styles.addChip, pressed && styles.pressed]}
                     onPress={() => addSuggestion(s)}>
-                    <Text style={styles.addChipText}>＋</Text>
+                    <Icon icon={Plus} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
                   </Pressable>
                 </View>
               ))
@@ -420,15 +422,15 @@ export default function LogMealSheet() {
                 </View>
                 <View style={styles.stepper}>
                   <Pressable hitSlop={6} style={styles.stepBtn} onPress={() => updateServings(idx, -0.5)}>
-                    <Text style={styles.stepGlyph}>−</Text>
+                    <Icon icon={Minus} size={16} color={colors.foreground} />
                   </Pressable>
                   <Text style={styles.stepValue}>{it.servings}</Text>
                   <Pressable hitSlop={6} style={styles.stepBtn} onPress={() => updateServings(idx, 0.5)}>
-                    <Text style={styles.stepGlyph}>＋</Text>
+                    <Icon icon={Plus} size={16} color={colors.foreground} />
                   </Pressable>
                 </View>
                 <Pressable hitSlop={8} onPress={() => removeItem(idx)}>
-                  <Text style={styles.removeIcon}>✕</Text>
+                  <Icon icon={X} size={15} color={colors.mutedForeground} />
                 </Pressable>
               </View>
             ))}

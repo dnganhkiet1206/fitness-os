@@ -1,7 +1,9 @@
 import * as Haptics from 'expo-haptics';
+import { Plus } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -50,7 +52,8 @@ export default function WaterScreen() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 addWater.mutate(ml);
               }}>
-              <Text style={styles.quickText}>＋{ml}</Text>
+              <Icon icon={Plus} size={14} color={colors.foreground} strokeWidth={2.5} />
+              <Text style={styles.quickText}>{ml}</Text>
             </Pressable>
           ))}
         </View>
@@ -106,7 +109,7 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: 5, backgroundColor: colors.metricBlue },
   quickLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '600', marginTop: spacing.md },
   quickRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  quickBtn: { flex: 1, height: 46, borderRadius: radius.md, backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  quickBtn: { flex: 1, height: 46, borderRadius: radius.md, backgroundColor: colors.secondary, flexDirection: 'row', gap: 2, alignItems: 'center', justifyContent: 'center' },
   quickText: { ...type.headline, color: colors.foreground },
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, height: 130, marginTop: spacing.md },
   barCol: { flex: 1, alignItems: 'center', gap: 6 },

@@ -1,10 +1,12 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAppSettings } from '@/hooks/use-app-settings';
@@ -106,7 +108,7 @@ export default function ScanBarcodeScreen() {
         style={[styles.closeBtn, { top: insets.top + spacing.sm }]}
         hitSlop={8}
         onPress={() => router.back()}>
-        <Text style={styles.closeText}>✕</Text>
+        <Icon icon={X} size={16} color="#fff" />
       </Pressable>
     </View>
   );

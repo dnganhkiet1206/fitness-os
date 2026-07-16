@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { fetch as expoFetch } from 'expo/fetch';
 import { router } from 'expo-router';
+import { ArrowUp, ChevronLeft, History, Plus } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -17,6 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -191,15 +193,15 @@ export default function AiCoachScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <Pressable hitSlop={8} style={styles.headerBtn} onPress={() => router.back()}>
-          <Text style={styles.headerBtnText}>‹</Text>
+          <Icon icon={ChevronLeft} size={24} color={colors.foreground} />
         </Pressable>
         <Text style={styles.headerTitle}>{i18n.aiCoachTitle}</Text>
         <View style={styles.headerRight}>
           <Pressable hitSlop={8} style={styles.headerBtn} onPress={() => { Haptics.selectionAsync(); setShowHistory((v) => !v); }}>
-            <Text style={styles.headerBtnPlus}>🕘</Text>
+            <Icon icon={History} size={19} color={colors.foreground} />
           </Pressable>
           <Pressable hitSlop={8} style={styles.headerBtn} onPress={newChat}>
-            <Text style={styles.headerBtnPlus}>＋</Text>
+            <Icon icon={Plus} size={20} color={colors.foreground} />
           </Pressable>
         </View>
       </View>
@@ -272,7 +274,7 @@ export default function AiCoachScreen() {
           ]}
           disabled={!input.trim() || isLoading}
           onPress={send}>
-          <Text style={styles.sendText}>↑</Text>
+          <Icon icon={ArrowUp} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
         </Pressable>
       </View>
     </KeyboardAvoidingView>

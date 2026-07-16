@@ -1,9 +1,11 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { ChevronRight, Lock, Upload } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -78,7 +80,7 @@ export default function SettingsScreen() {
                 <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
                 <Text style={styles.cardHint}>{user?.email}</Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
             </View>
             <View style={styles.divider} />
             <Row label={i18n.nDailyTarget} value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
@@ -126,7 +128,7 @@ export default function SettingsScreen() {
                     </Text>
                     {!m.unlocked && (
                       <View style={styles.mascotLockBadge}>
-                        <Text style={styles.mascotLockIcon}>🔒</Text>
+                        <Icon icon={Lock} size={9} color={colors.mutedForeground} />
                       </View>
                     )}
                   </View>
@@ -197,7 +199,7 @@ export default function SettingsScreen() {
               {exporting ? (
                 <ActivityIndicator color={colors.primary} size="small" />
               ) : (
-                <Text style={styles.chevron}>↗</Text>
+                <Icon icon={Upload} size={18} color={colors.mutedForeground} />
               )}
             </View>
           </GlassCard>
@@ -219,7 +221,7 @@ export default function SettingsScreen() {
           <GlassCard style={pressed ? styles.cardPressed : undefined}>
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardTitle}>{i18n.nLegal}</Text>
-              <Text style={styles.chevron}>›</Text>
+              <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
             </View>
           </GlassCard>
         )}
