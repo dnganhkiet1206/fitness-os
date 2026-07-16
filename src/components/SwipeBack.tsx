@@ -25,10 +25,6 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
 
   const canSwipe = !NO_SWIPE_ROUTES.has(location.pathname);
 
-  useEffect(() => {
-    x.set(0);
-  }, [location.pathname, x]);
-
   // Manual pointer-based edge swipe (avoids framer-motion drag interfering with child clicks)
   useEffect(() => {
     if (!canSwipe) return;
@@ -54,11 +50,11 @@ export default function SwipeBack({ children }: { children: React.ReactNode }) {
       const shouldNavigate = dx > THRESHOLD || (isDragging.current && dx > THRESHOLD * 0.5);
 
       if (shouldNavigate) {
+        // Hand off to the route pop transition: it carries the screen off from
+        // the dragged position (each route has its own SwipeBack instance, so
+        // x needs no reset — the incoming screen starts fresh at 0).
         haptic('medium');
-        animate(x, SCREEN_WIDTH, {
-          type: 'spring', stiffness: 300, damping: 30,
-          onComplete: () => { navigate(-1); requestAnimationFrame(() => x.set(0)); },
-        });
+        navigate(-1);
       } else {
         animate(x, 0, { type: 'spring', stiffness: 400, damping: 40 });
       }

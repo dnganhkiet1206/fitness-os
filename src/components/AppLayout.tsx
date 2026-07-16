@@ -62,7 +62,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   // No pt-safe here: full-screen pages (Auth, Onboarding) size themselves to
   // 100dvh and pad for the safe area internally — outer padding would push
   // them past the viewport and clip the bottom by the notch height.
-  if (!user) return <div style={{ height: '100dvh', overflow: 'hidden' }}>{children}</div>;
+  if (!user) return <div className="relative" style={{ height: '100dvh', overflow: 'hidden' }}>{children}</div>;
 
   const isKeyboardOpen = keyboardHeight > 0;
   const shouldHideBar = isKeyboardOpen || forceHidden || NO_TAB_BAR_ROUTES.has(location.pathname);
@@ -76,7 +76,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="status-bar-bg bg-background/80" style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }} />
         
         <main
-          className={`flex-1 overflow-hidden ${isCustomLayout ? 'relative' : ''}`}
+          className="flex-1 overflow-hidden relative"
           // Custom-layout pages size themselves via --keyboard-height instead
           style={!isCustomLayout && isKeyboardOpen ? { paddingBottom: keyboardHeight + 8 } : undefined}
         >

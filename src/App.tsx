@@ -50,21 +50,29 @@ const queryClient = new QueryClient();
 
 type TransitionKind = 'fade' | 'push' | 'pop';
 
-// iOS-style page transitions — GPU-accelerated transforms only
+const navSpring = { type: "spring" as const, stiffness: 360, damping: 38, mass: 0.9 };
+
+// UINavigationController-style transitions: both screens animate at once.
+// push — new screen slides in from the right ON TOP (z2) while the old one
+// parallaxes back to -25% underneath; pop — the old screen slides off to the
+// right on top while the previous one returns from -25%. Tab switches and
+// REPLACE navigations cross-fade.
 const pageVariants = {
   initial: (kind: TransitionKind) => ({
-    opacity: 0,
-    x: kind === 'push' ? 56 : kind === 'pop' ? -32 : 0,
+    x: kind === 'push' ? '100%' : kind === 'pop' ? '-25%' : 0,
+    opacity: kind === 'fade' ? 0 : 1,
+    zIndex: kind === 'pop' ? 1 : 2,
   }),
   animate: {
-    opacity: 1,
     x: 0,
-    transition: { type: "spring" as const, stiffness: 420, damping: 40, mass: 0.8 },
+    opacity: 1,
+    transition: navSpring,
   },
   exit: (kind: TransitionKind) => ({
-    opacity: 0,
-    x: kind === 'push' ? -32 : kind === 'pop' ? 56 : 0,
-    transition: { duration: 0.14, ease: "easeIn" as const },
+    x: kind === 'push' ? '-25%' : kind === 'pop' ? '100%' : 0,
+    opacity: kind === 'fade' ? 0 : 1,
+    zIndex: kind === 'pop' ? 2 : 1,
+    transition: kind === 'fade' ? { duration: 0.15 } : navSpring,
   }),
 };
 
@@ -93,7 +101,9 @@ function AnimatedRoutes() {
     : undefined;
 
   return (
-    <AnimatePresence mode="wait" initial={false} custom={kind}>
+    // popLayout pops the exiting screen out of layout (absolute) so both
+    // screens animate simultaneously like a native navigation stack.
+    <AnimatePresence mode="popLayout" initial={false} custom={kind}>
       <motion.div
         key={location.pathname}
         custom={kind}
@@ -105,10 +115,11 @@ function AnimatedRoutes() {
         // resets on navigation and the exiting screen keeps its scroll state.
         // Custom-layout routes (chat) own their scrolling — wrapping them in a
         // second scroller would let keyboard focus drag the whole page.
+        // bg-background keeps screens opaque while they overlap mid-transition.
         className={
           isCustomLayout
-            ? "h-full w-full overflow-hidden"
-            : "h-full w-full overflow-y-auto scroll-container"
+            ? "h-full w-full overflow-hidden bg-background"
+            : "h-full w-full overflow-y-auto scroll-container bg-background"
         }
         data-route-scroller={isCustomLayout ? undefined : true}
         style={{ paddingBottom: bottomClearance }}
