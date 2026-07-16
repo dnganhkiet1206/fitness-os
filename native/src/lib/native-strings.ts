@@ -199,6 +199,15 @@ const en = {
   nRetake: 'Retake',
   nScanError: 'Scan failed — try again',
 
+  // Progress photos
+  nPhotoFront: 'Front',
+  nPhotoSide: 'Side',
+  nPhotoBack: 'Back',
+  nPhotoUploading: 'Uploading…',
+  nPhotoDelete: 'Delete photo?',
+  nPhotoAdd: 'Add progress photo',
+  nPhotoCapture: 'Capture',
+
   // Meal builder
   nMealItems: 'Items',
   nMealNoItems: 'Search, scan, or add a food to start',
@@ -392,6 +401,15 @@ const vi: typeof en = {
   nScanAddOne: 'Thêm 1 món',
   nRetake: 'Chụp lại',
   nScanError: 'Quét thất bại — thử lại',
+
+  // Progress photos
+  nPhotoFront: 'Trước',
+  nPhotoSide: 'Nghiêng',
+  nPhotoBack: 'Sau',
+  nPhotoUploading: 'Đang tải lên…',
+  nPhotoDelete: 'Xoá ảnh?',
+  nPhotoAdd: 'Thêm ảnh tiến trình',
+  nPhotoCapture: 'Chụp',
 
   // Meal builder
   nMealItems: 'Các món',
