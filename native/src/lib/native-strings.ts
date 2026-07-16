@@ -199,6 +199,8 @@ const en = {
   nRetake: 'Retake',
   nScanError: 'Scan failed — try again',
 
+  nLegal: 'Policies & Legal',
+
   // Water & Steps detail
   nWaterTitle: 'Hydration',
   nStepsTitle: 'Steps',
@@ -411,6 +413,8 @@ const vi: typeof en = {
   nScanAddOne: 'Thêm 1 món',
   nRetake: 'Chụp lại',
   nScanError: 'Quét thất bại — thử lại',
+
+  nLegal: 'Chính sách & Pháp lý',
 
   // Water & Steps detail
   nWaterTitle: 'Nước uống',

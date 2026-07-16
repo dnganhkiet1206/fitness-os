@@ -211,6 +211,21 @@ export default function SettingsScreen() {
       </GlassCard>
 
       <Pressable
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push('/legal');
+        }}>
+        {({ pressed }) => (
+          <GlassCard style={pressed ? styles.cardPressed : undefined}>
+            <View style={styles.cardHeaderRow}>
+              <Text style={styles.cardTitle}>{i18n.nLegal}</Text>
+              <Text style={styles.chevron}>›</Text>
+            </View>
+          </GlassCard>
+        )}
+      </Pressable>
+
+      <Pressable
         style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
         onPress={confirmSignOut}>
         <Text style={styles.signOutText}>{i18n.nSignOut}</Text>
