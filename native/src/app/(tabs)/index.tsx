@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessRing } from '@/components/ascnd/readiness-ring';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
@@ -83,6 +84,8 @@ export default function TodayScreen() {
           </Pressable>
         </View>
       }>
+      <Mascot />
+
       <GlassCard>
         <Text style={styles.cardTitle}>{i18n.nReadiness}</Text>
         <Text style={styles.cardHint}>

@@ -145,6 +145,19 @@ const en = {
   nAnalyzeWeek: 'Analyze with AI',
   nWeekScore: 'Week score',
 
+  // Mascot
+  nMascotTitle: 'Companion',
+  nMascotToggleHint: 'Your companion nudges you based on today\u2019s data',
+  nMascotSleep: 'Morning! How did you sleep? Log it so I can compute your readiness 😴',
+  nMascotMeal: 'No meals logged yet today — fuel up and log it! 🍽',
+  nMascotWater: 'Hydration check — you\u2019re under half your water target 💧',
+  nMascotWorkout: 'Great window for a workout right now. Ready when you are 💪',
+  nMascotPraise: 'You\u2019re crushing it today. Keep the streak alive! 🔥',
+  nMascotHello: 'I\u2019m watching your stats — log something and I\u2019ll cheer you on!',
+  nMascotLocked: 'Locked',
+  nMascotPro: 'PRO · coming soon',
+  nMascotUnlockedBadge: 'Unlocked',
+
   // Scanner
   nCameraNeeded: 'Camera access needed',
   nCameraHint: 'ASCND scans barcodes to log packaged foods instantly',
@@ -281,6 +294,18 @@ const vi: typeof en = {
   nWeeklyReviewHint: 'Để AI phân tích tuần của bạn và đưa gợi ý cho tuần tới',
   nAnalyzeWeek: 'Phân tích với AI',
   nWeekScore: 'Điểm tuần',
+
+  nMascotTitle: 'Bạn đồng hành',
+  nMascotToggleHint: 'Linh vật sẽ nhắc bạn dựa trên dữ liệu hôm nay',
+  nMascotSleep: 'Chào buổi sáng! Đêm qua ngủ sao rồi? Ghi lại để mình tính điểm sẵn sàng nhé 😴',
+  nMascotMeal: 'Hôm nay chưa ghi bữa nào — nạp năng lượng rồi ghi lại nha! 🍽',
+  nMascotWater: 'Kiểm tra nước nè — bạn mới uống chưa được nửa mục tiêu 💧',
+  nMascotWorkout: 'Giờ này tập là đẹp đó. Sẵn sàng chưa? 💪',
+  nMascotPraise: 'Hôm nay bạn làm tốt lắm. Giữ vững phong độ nha! 🔥',
+  nMascotHello: 'Mình đang theo dõi chỉ số của bạn — ghi gì đó đi, mình cổ vũ!',
+  nMascotLocked: 'Chưa mở khoá',
+  nMascotPro: 'PRO · sắp ra mắt',
+  nMascotUnlockedBadge: 'Đã mở khoá',
 
   nCameraNeeded: 'Cần quyền camera',
   nCameraHint: 'ASCND quét mã vạch để ghi thực phẩm đóng gói tức thì',
