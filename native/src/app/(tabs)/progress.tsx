@@ -39,6 +39,16 @@ export default function ProgressScreen() {
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/smart-goals'); }}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="brain.head.profile" size={19} tintColor={colors.mutedForeground} />
+            ) : (
+              <Text style={styles.iconFallback}>◈</Text>
+            )}
+          </Pressable>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/challenges'); }}>
             {Platform.OS === 'ios' ? (
               <SymbolView name="target" size={20} tintColor={colors.mutedForeground} />
