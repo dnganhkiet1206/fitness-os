@@ -200,6 +200,16 @@ const en = {
   nScanError: 'Scan failed — try again',
 
   nLegal: 'Policies & Legal',
+  nTemplates: 'Templates',
+  nTemplateName: 'Template name',
+  nCreateExercise: 'New exercise',
+  nMuscleGroup: 'Muscle group',
+  nEquipment: 'Equipment',
+  nExerciseName: 'Exercise name',
+  nNoExercisesFound: 'No exercises found',
+  nSuggestions: 'Suggestions',
+  nRestSec: 'Rest',
+  nDeleteTemplate: 'Delete template?',
 
   // Water & Steps detail
   nWaterTitle: 'Hydration',
@@ -415,6 +425,16 @@ const vi: typeof en = {
   nScanError: 'Quét thất bại — thử lại',
 
   nLegal: 'Chính sách & Pháp lý',
+  nTemplates: 'Mẫu buổi tập',
+  nTemplateName: 'Tên mẫu',
+  nCreateExercise: 'Bài tập mới',
+  nMuscleGroup: 'Nhóm cơ',
+  nEquipment: 'Dụng cụ',
+  nExerciseName: 'Tên bài tập',
+  nNoExercisesFound: 'Không tìm thấy bài tập',
+  nSuggestions: 'Gợi ý',
+  nRestSec: 'Nghỉ',
+  nDeleteTemplate: 'Xoá mẫu này?',
 
   // Water & Steps detail
   nWaterTitle: 'Nước uống',

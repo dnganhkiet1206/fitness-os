@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
 
 const today = () => new Date().toISOString().split('T')[0];
@@ -80,6 +81,76 @@ export function useExercises() {
   });
 }
 
+export function useAddExercise() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ex: { name: string; muscle_group: string; equipment?: string }) => {
+      const { data, error } = await supabase
+        .from('exercises')
+        .insert({ ...ex, user_id: user!.id })
+        .select('id, name, muscle_group, equipment')
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      Haptics.selectionAsync();
+      queryClient.invalidateQueries({ queryKey: ['exercises', user?.id] });
+    },
+  });
+}
+
+export interface TemplateExercise {
+  exerciseId: string;
+  exerciseName: string;
+  sets: number;
+  reps: number;
+  weight: number;
+  rpe?: number;
+  restSeconds?: number;
+}
+
+export function useAddWorkoutTemplate() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tpl: { name: string; type: string; exercises: TemplateExercise[] }) => {
+      const { error } = await supabase.from('workout_templates').insert({
+        user_id: user!.id,
+        name: tpl.name,
+        type: tpl.type || 'custom',
+        exercises: tpl.exercises as unknown as Json,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      queryClient.invalidateQueries({ queryKey: ['workout_templates', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['workout_template_names', user?.id] });
+    },
+  });
+}
+
+export function useDeleteWorkoutTemplate() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('workout_templates')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workout_templates', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['workout_template_names', user?.id] });
+    },
+  });
+}
+
 export function useRoutineDays() {
   const { user } = useAuth();
   return useQuery({
@@ -122,7 +193,7 @@ export function useWorkoutTemplates() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workout_templates')
-        .select('id, name, type')
+        .select('id, name, type, exercises')
         .eq('user_id', user!.id)
         .order('name');
       if (error) throw error;

@@ -29,6 +29,16 @@ export default function WorkoutsScreen() {
           <Pressable
             hitSlop={8}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/templates'); }}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="square.stack.3d.up.fill" size={19} tintColor={colors.mutedForeground} />
+            ) : (
+              <Text style={styles.iconFallback}>▤</Text>
+            )}
+          </Pressable>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => { Haptics.selectionAsync(); router.push('/routine'); }}>
             {Platform.OS === 'ios' ? (
               <SymbolView name="calendar" size={19} tintColor={colors.mutedForeground} />
