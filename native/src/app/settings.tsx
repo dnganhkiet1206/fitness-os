@@ -93,6 +93,28 @@ export default function SettingsScreen() {
                         ? m.tagline[lang]
                         : m.unlock?.label[lang] ?? i18n.nMascotLocked}
                   </Text>
+                  {!m.unlocked && m.unlock && (
+                    <View style={styles.mascotProgress}>
+                      <View style={styles.mascotProgressTrack}>
+                        <View
+                          style={[
+                            styles.mascotProgressFill,
+                            {
+                              backgroundColor: m.accent,
+                              width: `${Math.min(
+                                (mascot.unlockStats[m.unlock.kind] / m.unlock.count) * 100,
+                                100,
+                              )}%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.mascotProgressText}>
+                        {Math.min(mascot.unlockStats[m.unlock.kind], m.unlock.count)}/
+                        {m.unlock.count}
+                      </Text>
+                    </View>
+                  )}
                 </Pressable>
               );
             })}
@@ -200,6 +222,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   mascotLockIcon: { fontSize: 9 },
+  mascotProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'stretch',
+    marginTop: 2,
+  },
+  mascotProgressTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.background,
+    overflow: 'hidden',
+  },
+  mascotProgressFill: { height: '100%', borderRadius: 2 },
+  mascotProgressText: {
+    fontSize: 10,
+    fontVariant: ['tabular-nums'],
+    color: colors.mutedForeground,
+  },
   mascotName: { ...type.footnote, fontWeight: '600', color: colors.foreground },
   mascotMeta: {
     ...type.caption,
