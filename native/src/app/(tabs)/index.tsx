@@ -55,16 +55,28 @@ export default function TodayScreen() {
       title={greeting(profile?.name)}
       eyebrow={todayLabel()}
       headerRight={
-        <Pressable
-          hitSlop={8}
-          style={({ pressed }) => [styles.gear, pressed && styles.pressed]}
-          onPress={() => router.push('/settings')}>
-          {Platform.OS === 'ios' ? (
-            <SymbolView name="gearshape.fill" size={20} tintColor={colors.mutedForeground} />
-          ) : (
-            <Text style={styles.gearFallback}>⚙︎</Text>
-          )}
-        </Pressable>
+        <View style={styles.headerButtons}>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.gear, pressed && styles.pressed]}
+            onPress={() => router.push('/ai-coach')}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="sparkles" size={20} tintColor={colors.primary} />
+            ) : (
+              <Text style={styles.gearFallback}>✦</Text>
+            )}
+          </Pressable>
+          <Pressable
+            hitSlop={8}
+            style={({ pressed }) => [styles.gear, pressed && styles.pressed]}
+            onPress={() => router.push('/settings')}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="gearshape.fill" size={20} tintColor={colors.mutedForeground} />
+            ) : (
+              <Text style={styles.gearFallback}>⚙︎</Text>
+            )}
+          </Pressable>
+        </View>
       }>
       <GlassCard>
         <Text style={styles.cardTitle}>Readiness</Text>
@@ -135,6 +147,10 @@ const styles = StyleSheet.create({
   },
   ringWrap: {
     marginVertical: spacing.lg,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   gear: {
     width: 36,
