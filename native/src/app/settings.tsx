@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Screen } from '@/components/ascnd/screen';
@@ -9,6 +10,9 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascot } from '@/hooks/use-mascot';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
+import { supabase } from '@/integrations/supabase/client';
+
+const EXPORT_TABLES = ['weight_logs', 'daily_logs', 'meal_entries', 'workout_sessions', 'sleep_logs'] as const;
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
@@ -16,6 +20,34 @@ export default function SettingsScreen() {
   const { lang, setLang } = useAppSettings();
   const i18n = useI18n();
   const mascot = useMascot();
+  const [exporting, setExporting] = useState(false);
+
+  const exportData = async () => {
+    if (!user || exporting) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setExporting(true);
+    try {
+      const all: Record<string, unknown[]> = {};
+      for (const table of EXPORT_TABLES) {
+        const { data } = await supabase
+          .from(table)
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(500);
+        all[table] = data ?? [];
+      }
+      const json = JSON.stringify(all, null, 2);
+      await Share.share({
+        title: `ASCND export ${new Date().toISOString().split('T')[0]}`,
+        message: json,
+      });
+    } catch (e) {
+      Alert.alert('ASCND', e instanceof Error ? e.message : 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const confirmSignOut = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -34,14 +66,27 @@ export default function SettingsScreen() {
 
   return (
     <Screen title={i18n.settingsTitle}>
-      <GlassCard>
-        <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
-        <Text style={styles.cardHint}>{user?.email}</Text>
-        <View style={styles.divider} />
-        <Row label={i18n.nDailyTarget} value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
-        <Row label={i18n.nGoal} value={profile?.goal ?? '—'} />
-        <Row label={i18n.nTrainingLevel} value={profile?.training_level ?? '—'} />
-      </GlassCard>
+      <Pressable
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push('/edit-profile');
+        }}>
+        {({ pressed }) => (
+          <GlassCard style={pressed ? styles.cardPressed : undefined}>
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.cardHeaderInfo}>
+                <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
+                <Text style={styles.cardHint}>{user?.email}</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </View>
+            <View style={styles.divider} />
+            <Row label={i18n.nDailyTarget} value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
+            <Row label={i18n.nGoal} value={profile?.goal ?? '—'} />
+            <Row label={i18n.nTrainingLevel} value={profile?.training_level ?? '—'} />
+          </GlassCard>
+        )}
+      </Pressable>
 
       <GlassCard>
         <View style={styles.toggleRow}>
@@ -141,6 +186,24 @@ export default function SettingsScreen() {
         </View>
       </GlassCard>
 
+      <Pressable onPress={exportData} disabled={exporting}>
+        {({ pressed }) => (
+          <GlassCard style={pressed ? styles.cardPressed : undefined}>
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.cardHeaderInfo}>
+                <Text style={styles.cardTitle}>{i18n.settingsExportData}</Text>
+                <Text style={styles.cardHint}>{i18n.settingsExportDesc}</Text>
+              </View>
+              {exporting ? (
+                <ActivityIndicator color={colors.primary} size="small" />
+              ) : (
+                <Text style={styles.chevron}>↗</Text>
+              )}
+            </View>
+          </GlassCard>
+        )}
+      </Pressable>
+
       <GlassCard>
         <Text style={styles.cardTitle}>{i18n.nAbout}</Text>
         <Row label={i18n.nVersion} value="1.0.0 (native)" />
@@ -168,6 +231,10 @@ function Row({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
+  cardPressed: { opacity: 0.75 },
+  cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  cardHeaderInfo: { flex: 1, minWidth: 0 },
+  chevron: { fontSize: 22, color: colors.mutedForeground },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,

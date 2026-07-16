@@ -113,6 +113,47 @@ export function useWorkoutTemplateNames() {
   });
 }
 
+/** Full workout templates for the routine planner picker */
+export function useWorkoutTemplates() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['workout_templates', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('workout_templates')
+        .select('id, name, type')
+        .eq('user_id', user!.id)
+        .order('name');
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/** Assign / clear a routine day — same upsert contract as the web app */
+export function useUpsertRoutineDay() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (day: {
+      day_of_week: number;
+      template_id?: string | null;
+      is_rest?: boolean;
+      is_deload?: boolean;
+    }) => {
+      const { error } = await supabase
+        .from('routine_days')
+        .upsert({ user_id: user!.id, ...day }, { onConflict: 'user_id,day_of_week' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      Haptics.selectionAsync();
+      queryClient.invalidateQueries({ queryKey: ['routine_days', user?.id] });
+    },
+  });
+}
+
 export function useMealPlans() {
   const { user } = useAuth();
   return useQuery({

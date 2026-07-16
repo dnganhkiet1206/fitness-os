@@ -85,6 +85,16 @@ function Gate() {
           contentStyle: { backgroundColor: colors.card },
         }}
       />
+      <Stack.Screen
+        name="edit-profile"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: [1.0],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+          contentStyle: { backgroundColor: colors.card },
+        }}
+      />
     </Stack>
     {/* RN Modal renders above everything, incl. native form sheets */}
     <MascotUnlockCelebration />
