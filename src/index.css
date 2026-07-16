@@ -425,14 +425,15 @@
     -webkit-overflow-scrolling: auto;
   }
 
-  /* iOS status bar area background */
+  /* iOS status bar area background — above page content, below overlays
+     (modals/sheets must not show a frosted band across their top) */
   .status-bar-bg {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     height: env(safe-area-inset-top, 0px);
-    z-index: 9999;
+    z-index: 60;
     pointer-events: none;
   }
 }

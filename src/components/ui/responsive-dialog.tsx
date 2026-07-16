@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { haptic } from "@/lib/haptics";
 
 /**
  * On phones this renders a native-feeling bottom sheet (vaul: drag handle,
@@ -37,9 +38,13 @@ interface ResponsiveDialogProps {
 function ResponsiveDialog({ open, onOpenChange, children }: ResponsiveDialogProps) {
   const isMobile = useIsMobile();
   const Root = isMobile ? Drawer : Dialog;
+  const handleOpenChange = (next: boolean) => {
+    if (isMobile) haptic('light');
+    onOpenChange?.(next);
+  };
   return (
     <SheetContext.Provider value={isMobile}>
-      <Root open={open} onOpenChange={onOpenChange}>{children}</Root>
+      <Root open={open} onOpenChange={handleOpenChange}>{children}</Root>
     </SheetContext.Provider>
   );
 }

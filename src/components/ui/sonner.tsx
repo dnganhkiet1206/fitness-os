@@ -10,6 +10,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      // iOS-style banner: drop in from under the Dynamic Island
+      position="top-center"
+      offset="calc(env(safe-area-inset-top, 0px) + 12px)"
+      mobileOffset="calc(env(safe-area-inset-top, 0px) + 12px)"
       toastOptions={{
         classNames: {
           toast:

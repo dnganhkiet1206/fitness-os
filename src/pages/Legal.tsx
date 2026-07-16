@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
-import { ChevronLeft, Shield, FileText, Scale, Heart, AlertTriangle } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Shield, FileText, Scale, Heart, AlertTriangle } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import PageHeader from '@/components/PageHeader';
 import { useAppSettings } from '@/hooks/useAppSettings';
 
-const spring = { type: 'spring' as const, stiffness: 300, damping: 30 };
 const EFFECTIVE_DATE = '2026-02-12';
 const APP_NAME = 'ASCND';
 
@@ -437,7 +437,6 @@ const P = ({ html }: { html: string }) => (
 );
 
 export default function Legal() {
-  const navigate = useNavigate();
   const location = useLocation();
   const { lang } = useAppSettings();
   const params = new URLSearchParams(location.search);
@@ -446,14 +445,7 @@ export default function Legal() {
 
   return (
     <div className="bg-background pb-24">
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/30 pt-safe">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <motion.button onClick={() => navigate(-1)} whileTap={{ scale: 0.9 }} transition={spring}>
-            <ChevronLeft className="w-5 h-5 text-foreground" />
-          </motion.button>
-          <h1 className="text-base font-semibold text-foreground">{l.pageTitle}</h1>
-        </div>
-      </div>
+      <PageHeader title={l.pageTitle} />
 
       <div className="px-4 pt-4">
         <Tabs defaultValue={defaultTab} className="w-full">
