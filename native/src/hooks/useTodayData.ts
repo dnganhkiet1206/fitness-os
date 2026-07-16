@@ -170,5 +170,28 @@ export function useInvalidateToday() {
     queryClient.invalidateQueries({ queryKey: ['today_bio', user?.id, dateStr] });
     queryClient.invalidateQueries({ queryKey: ['readiness_trend', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['nudges', user?.id] });
+    queryClient.invalidateQueries({ queryKey: ['today_meals', user?.id, dateStr] });
+    queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
   };
+}
+
+// Native-only addition: today's meal entries for the Nutrition tab
+export function useTodayMeals() {
+  const { user } = useAuth();
+  const dateStr = today();
+  return useQuery({
+    queryKey: ['today_meals', user?.id, dateStr],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('meal_entries')
+        .select('*')
+        .eq('user_id', user!.id)
+        .gte('date_time', `${dateStr}T00:00:00`)
+        .lt('date_time', `${dateStr}T23:59:59.999`)
+        .order('date_time', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 }

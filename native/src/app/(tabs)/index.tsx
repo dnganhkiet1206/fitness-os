@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { ReadinessRing } from '@/components/ascnd/readiness-ring';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
@@ -52,10 +53,8 @@ export default function TodayScreen() {
         <Text style={styles.cardHint}>
           {log?.readiness_recommendation ?? 'Log sleep and training to get your score'}
         </Text>
-        <View style={[styles.ring, { borderColor: readinessScore != null ? readinessColor : colors.secondary }]}>
-          <Text style={[styles.ringValue, readinessScore != null && { color: colors.foreground }]}>
-            {readinessScore ?? '—'}
-          </Text>
+        <View style={styles.ringWrap}>
+          <ReadinessRing score={readinessScore} color={readinessColor} />
         </View>
       </GlassCard>
 
@@ -103,19 +102,7 @@ const styles = StyleSheet.create({
     color: colors.foreground,
     marginTop: spacing.sm,
   },
-  ring: {
-    alignSelf: 'center',
+  ringWrap: {
     marginVertical: spacing.lg,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringValue: {
-    fontSize: 40,
-    fontWeight: '700',
-    color: colors.mutedForeground,
   },
 });

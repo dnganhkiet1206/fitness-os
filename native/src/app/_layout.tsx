@@ -1,9 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DarkTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
-import AppTabs from '@/components/app-tabs';
 import { AuthScreen } from '@/components/ascnd/auth-screen';
 import { colors } from '@/constants/ascnd';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
@@ -34,7 +33,23 @@ function Gate() {
 
   if (loading) return null; // splash stays up
   if (!user) return <AuthScreen />;
-  return <AppTabs />;
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen
+        name="log-meal"
+        options={{
+          // Native iOS form sheet with detents + grabber
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.6, 1.0],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+          contentStyle: { backgroundColor: colors.card },
+        }}
+      />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {
