@@ -14,8 +14,9 @@ const config: CapacitorConfig = {
     backgroundColor: '#080809',
     allowsLinkPreview: false,
     scrollEnabled: false,
-    // Limiter le nombre de web frames pour iOS perf
-    limitsNavigationsToAppBoundDomains: true,
+    // NOTE: never enable limitsNavigationsToAppBoundDomains without also
+    // declaring WKAppBoundDomains in Info.plist — with zero bound domains
+    // WebKit blocks ALL fetch/XHR from the webview ("Load failed").
   },
   server: {
     // Allow WKWebView to cache assets aggressively for offline + speed
