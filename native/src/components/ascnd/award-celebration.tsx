@@ -66,11 +66,13 @@ export function fireCelebration(award: CelebrationAward) {
   listeners.forEach((fn) => fn(award));
 }
 
+let seq = 0;
+
 export function AwardCelebrationOverlay() {
-  const [queue, setQueue] = useState<CelebrationAward[]>([]);
+  const [queue, setQueue] = useState<(CelebrationAward & { _id: number })[]>([]);
 
   useEffect(() => {
-    const handler: Listener = (award) => setQueue((q) => [...q, award]);
+    const handler: Listener = (award) => setQueue((q) => [...q, { ...award, _id: ++seq }]);
     listeners.push(handler);
     return () => {
       const idx = listeners.indexOf(handler);
@@ -82,7 +84,7 @@ export function AwardCelebrationOverlay() {
   if (!current) return null;
   return (
     <CelebrationModal
-      key={`${current.title}-${queue.length}`}
+      key={current._id}
       award={current}
       onClose={() => setQueue((q) => q.slice(1))}
     />
