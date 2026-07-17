@@ -9,10 +9,11 @@ code.
 - **Localized gamification data** — award/challenge names, descriptions
   and rewards render from stable keys in `src/lib/gamification-i18n.ts`,
   in the user's language. DB stores the English canonical string.
-- **Unit conversion** — kg/lbs and cm/in throughout weight/height
-  surfaces, driven by `profile.units_weight` / `units_height`
-  (`src/lib/units.ts`, `src/hooks/use-units.ts`). Body metrics stay
-  stored in metric.
+- **Unit conversion** — kg/lbs, cm/in and ml/fl-oz across weight,
+  height, body-measurement and water surfaces. Weight/height follow
+  `profile.units_weight` / `units_height`; water volume follows an
+  on-device `use-volume-unit` preference (no DB column). Helpers in
+  `src/lib/units.ts`; body metrics stay stored in metric/ml.
 - **Local calendar dates** — "today" and week boundaries use the device
   timezone (`src/lib/local-date.ts`), correct in every timezone.
 - **AI in the user's language** — edge functions (`ai-coach`,
