@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Bell, ChevronRight, Lock, Upload } from 'lucide-react-native';
+import { Bell, ChevronRight, KeyRound, Lock, Upload } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -235,6 +235,25 @@ export default function SettingsScreen() {
           />
         </View>
       </GlassCard>
+
+      {/* Change password */}
+      <Pressable
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push('/change-password');
+        }}>
+        {({ pressed }) => (
+          <GlassCard style={pressed ? styles.cardPressed : undefined}>
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.cardHeaderLeft}>
+                <Icon icon={KeyRound} size={18} color={colors.mutedForeground} />
+                <Text style={styles.cardTitle}>{i18n.settingsChangePassword}</Text>
+              </View>
+              <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+            </View>
+          </GlassCard>
+        )}
+      </Pressable>
 
       <Pressable onPress={exportData} disabled={exporting}>
         {({ pressed }) => (

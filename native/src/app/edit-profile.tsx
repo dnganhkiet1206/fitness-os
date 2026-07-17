@@ -35,6 +35,7 @@ type Form = {
   macro_carbs_g: string;
   macro_fat_g: string;
   water_target_ml: string;
+  sleep_target_hours: string;
   units_weight: string;
   units_height: string;
 };
@@ -43,7 +44,7 @@ const EMPTY: Form = {
   name: '', dob: '', sex: 'male', activity_level: 'moderate',
   height_cm: '175', weight_kg: '70', goal: 'maintain', tdee_target_kcal: '2200',
   macro_protein_g: '150', macro_carbs_g: '250', macro_fat_g: '70',
-  water_target_ml: '2500', units_weight: 'kg', units_height: 'cm',
+  water_target_ml: '2500', sleep_target_hours: '8', units_weight: 'kg', units_height: 'cm',
 };
 
 export default function EditProfileSheet() {
@@ -69,6 +70,7 @@ export default function EditProfileSheet() {
       macro_carbs_g: String(profile.macro_carbs_g ?? 250),
       macro_fat_g: String(profile.macro_fat_g ?? 70),
       water_target_ml: String(profile.water_target_ml ?? 2500),
+      sleep_target_hours: String(profile.sleep_target_hours ?? 8),
       units_weight: profile.units_weight ?? 'kg',
       units_height: profile.units_height ?? 'cm',
     });
@@ -94,6 +96,7 @@ export default function EditProfileSheet() {
           macro_carbs_g: Number(form.macro_carbs_g) || null,
           macro_fat_g: Number(form.macro_fat_g) || null,
           water_target_ml: Number(form.water_target_ml) || null,
+          sleep_target_hours: Number(form.sleep_target_hours) || null,
           units_weight: form.units_weight,
           units_height: form.units_height,
         })
@@ -254,15 +257,25 @@ export default function EditProfileSheet() {
           </Field>
         </View>
 
-        {/* Water target */}
-        <Field label={`${i18n.settingsWaterTarget} (ml)`}>
-          <TextInput
-            style={styles.input}
-            keyboardType="number-pad"
-            value={form.water_target_ml}
-            onChangeText={(v) => set('water_target_ml', v)}
-          />
-        </Field>
+        {/* Water + sleep targets */}
+        <View style={styles.row}>
+          <Field label={`${i18n.settingsWaterTarget} (ml)`} style={styles.half}>
+            <TextInput
+              style={styles.input}
+              keyboardType="number-pad"
+              value={form.water_target_ml}
+              onChangeText={(v) => set('water_target_ml', v)}
+            />
+          </Field>
+          <Field label={`${i18n.settingsSleepHours} (h)`} style={styles.half}>
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              value={form.sleep_target_hours}
+              onChangeText={(v) => set('sleep_target_hours', v)}
+            />
+          </Field>
+        </View>
       </ScrollView>
     </View>
   );
