@@ -1,127 +1,157 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { ChevronRight, Droplets, Heart, Plus, Settings, Sparkles } from 'lucide-react-native';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Plus, Settings, Sparkles, Heart } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ActivityRingsCard } from '@/components/ascnd/activity-rings';
+import {
+  NutritionCard,
+  SleepCard,
+  StepsWidget,
+  WaterWidget,
+} from '@/components/ascnd/dashboard-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Mascot } from '@/components/ascnd/mascot';
-import { ReadinessRing } from '@/components/ascnd/readiness-ring';
-import { Screen } from '@/components/ascnd/screen';
+import { ReadinessGauge } from '@/components/ascnd/readiness-gauge';
 import {
   ReadinessTrendCard,
   SmartTipsCard,
   SupplementChecklistCard,
   WeightCheckinCard,
 } from '@/components/ascnd/today-widgets';
-import { colors, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { BottomTabInset } from '@/constants/expo-template-theme';
+import { colors, radius, spacing } from '@/constants/ascnd';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
-import { useAddWater, useTodayWater } from '@/hooks/use-water';
+import { useTodayWater } from '@/hooks/use-water';
+import { getLocale } from '@/lib/i18n';
 
-function greeting(name: string | null | undefined, i18n: { nGoodMorning: string; nGoodAfternoon: string; nGoodEvening: string }): string {
-  const h = new Date().getHours();
-  const base = h < 12 ? i18n.nGoodMorning : h < 18 ? i18n.nGoodAfternoon : i18n.nGoodEvening;
-  return name ? `${base}, ${name.split(' ')[0]}` : base;
+/** Section header — web WidgetGroupSection: emoji icon + semibold title */
+function GroupHeader({ icon, title }: { icon: string; title: string }) {
+  return (
+    <View style={styles.groupHeader}>
+      <Text style={styles.groupIcon}>{icon}</Text>
+      <Text style={styles.groupTitle}>{title}</Text>
+    </View>
+  );
 }
-
-function todayLabel(): string {
-  return new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
-const READINESS_COLOR: Record<string, string> = {
-  green: colors.readinessGreen,
-  yellow: colors.readinessYellow,
-  red: colors.readinessRed,
-};
 
 export default function TodayScreen() {
+  const insets = useSafeAreaInsets();
   const { data: profile } = useProfile();
-  const { data: log } = useDailyLog();
+  const { data: dailyLog } = useDailyLog();
   const { data: sleep } = useTodaySleep();
-  const { available: healthAvailable, sync: healthSync } = useHealthSync();
   const { data: waterMl } = useTodayWater();
+  const { available: healthAvailable, sync: healthSync } = useHealthSync();
+  const { lang } = useAppSettings();
   const i18n = useI18n();
-  const addWater = useAddWater();
 
-  const readinessScore = log?.readiness_score != null ? Math.round(Number(log.readiness_score)) : null;
-  const readinessColor = READINESS_COLOR[log?.readiness_status ?? ''] ?? colors.secondary;
+  const now = new Date();
+  const greeting =
+    now.getHours() < 12 ? i18n.goodMorning : now.getHours() < 18 ? i18n.goodAfternoon : i18n.goodEvening;
+  const dateStr = now.toLocaleDateString(getLocale(lang), { weekday: 'long', month: 'long', day: 'numeric' });
+  const userName = profile?.name || i18n.authYourName;
 
-  const kcal = log?.kcal != null ? Math.round(Number(log.kcal)) : null;
-  const kcalTarget = profile?.tdee_target_kcal != null ? Math.round(Number(profile.tdee_target_kcal)) : null;
-  const steps = log?.steps != null ? Number(log.steps) : null;
+  // Readiness (same mapping as web Index)
+  const readinessScore = dailyLog?.readiness_score != null ? Math.round(Number(dailyLog.readiness_score)) : null;
+  const readinessStatus = (dailyLog?.readiness_status as 'green' | 'yellow' | 'red') || 'yellow';
 
-  const sleepMin = log?.sleep_duration_min != null ? Number(log.sleep_duration_min) : null;
-  const sleepLabel =
-    sleepMin != null
-      ? `${Math.floor(sleepMin / 60)}h ${String(sleepMin % 60).padStart(2, '0')}m`
-      : sleep?.quality != null
-        ? `${i18n.nQuality} ${sleep.quality}/5`
-        : '—';
+  // Activity rings (web ActivityCard: move kcal/600, exercise min/30, steps/10000)
+  const activeKcal = Number(dailyLog?.active_kcal) || 0;
+  const activeMin = dailyLog?.active_minutes ?? 0;
+  const steps = dailyLog?.steps ?? 0;
+
+  // Nutrition
+  const kcal = Math.round(Number(dailyLog?.kcal) || 0);
+  const calorieTarget = Math.round(Number(profile?.tdee_target_kcal) || 2200);
+  const macroTargets = {
+    protein: Number(profile?.macro_protein_g) || 150,
+    carbs: Number(profile?.macro_carbs_g) || 250,
+    fat: Number(profile?.macro_fat_g) || 70,
+  };
+
+  // Sleep
+  const stages = sleep
+    ? { deep: sleep.deep_min ?? 0, rem: sleep.rem_min ?? 0, light: sleep.light_min ?? 0 }
+    : null;
+  const stageSum = stages ? stages.deep + stages.rem + stages.light : 0;
+  const sleepTotalMin = stageSum > 0 ? stageSum : Number(dailyLog?.sleep_duration_min) || 0;
+  const sleepTargetHours = Number(profile?.sleep_target_hours) || 8;
+
+  const waterTarget = Number(profile?.water_target_ml) || 2500;
+
+  const quickActions = [
+    { label: i18n.dashLogMealAction, route: '/log-meal' as const },
+    { label: i18n.dashLogWorkoutAction, route: '/log-workout' as const },
+    { label: i18n.dashLogSleepAction, route: '/log-sleep' as const },
+    { label: i18n.dashEnterBiometrics, route: '/log-biometrics' as const },
+  ];
+
+  const groupTitles = {
+    health: lang === 'vi' ? 'Sức khỏe' : 'Health',
+    nutrition: lang === 'vi' ? 'Dinh dưỡng' : 'Nutrition',
+    fitness: lang === 'vi' ? 'Tập luyện' : 'Fitness',
+    insights: lang === 'vi' ? 'Phân tích' : 'Insights',
+  };
 
   return (
-    <Screen
-      title={greeting(profile?.name, i18n)}
-      eyebrow={todayLabel()}
-      headerRight={
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + 12, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
+      ]}
+      contentInsetAdjustmentBehavior="never">
+      {/* Greeting + actions (web Index header) */}
+      <View style={styles.headerRow}>
+        <View style={styles.headerText}>
+          <Text style={styles.dateLine}>{dateStr}</Text>
+          <Text style={styles.greeting}>
+            {greeting}, <Text style={styles.greetingName}>{userName}</Text>
+          </Text>
+        </View>
         <View style={styles.headerButtons}>
           <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.gear, pressed && styles.pressed]}
-            onPress={() => router.push('/ai-coach')}>
-            <Icon icon={Sparkles} size={20} color={colors.primary} />
+            style={({ pressed }) => [styles.squareBtn, pressed && styles.pressed]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/ai-coach');
+            }}>
+            <Icon icon={Sparkles} size={20} color="rgba(237,237,237,0.7)" />
           </Pressable>
           <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.gear, pressed && styles.pressed]}
-            onPress={() => router.push('/settings')}>
-            <Icon icon={Settings} size={20} color={colors.mutedForeground} />
+            style={({ pressed }) => [styles.squareBtn, pressed && styles.pressed]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/settings');
+            }}>
+            <Icon icon={Settings} size={20} color="rgba(237,237,237,0.7)" />
           </Pressable>
         </View>
-      }>
-      <Mascot />
-
-      <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/biometrics'); }}>
-        {({ pressed }) => (
-          <GlassCard style={pressed ? styles.cardPressedDim : undefined}>
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.readinessHeadInfo}>
-                <Text style={styles.cardTitle}>{i18n.nReadiness}</Text>
-                <Text style={styles.cardHint}>
-                  {log?.readiness_recommendation ?? i18n.nReadinessHint}
-                </Text>
-              </View>
-              <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
-            </View>
-            <View style={styles.ringWrap}>
-              <ReadinessRing score={readinessScore} color={readinessColor} />
-            </View>
-          </GlassCard>
-        )}
-      </Pressable>
-
-      <View style={styles.row}>
-        <Pressable style={styles.half} onPress={() => { Haptics.selectionAsync(); router.push('/steps'); }}>
-          {({ pressed }) => (
-            <GlassCard style={pressed ? styles.cardPressedDim : undefined}>
-              <Text style={styles.cardTitle}>{i18n.nActivity}</Text>
-              <Text style={styles.metric}>{steps != null ? steps.toLocaleString() : '—'}</Text>
-              <Text style={styles.cardHint}>{i18n.nSteps}</Text>
-            </GlassCard>
-          )}
-        </Pressable>
-        <GlassCard style={styles.half}>
-          <Text style={styles.cardTitle}>{i18n.navNutrition}</Text>
-          <Text style={styles.metric}>{kcal != null ? kcal.toLocaleString() : '—'}</Text>
-          <Text style={styles.cardHint}>{kcalTarget != null ? i18n.nOfTarget.replace('{x}', `${kcalTarget.toLocaleString()} kcal`) : i18n.nKcalToday}</Text>
-        </GlassCard>
       </View>
 
+      <Mascot />
+
+      {/* Quick log actions (web chips row) */}
+      <View style={styles.quickRow}>
+        {quickActions.map((a) => (
+          <Pressable
+            key={a.route}
+            style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(a.route);
+            }}>
+            <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
+            <Text style={styles.quickChipText}>{a.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* HealthKit sync (native-only necessity, styled as a quick chip row) */}
       {healthAvailable && (
         <Pressable
           style={({ pressed }) => [styles.syncButton, pressed && styles.pressed]}
@@ -131,177 +161,161 @@ export default function TodayScreen() {
             <ActivityIndicator color={colors.foreground} size="small" />
           ) : (
             <>
-              <Icon icon={Heart} size={16} color={colors.readinessRed} />
+              <Icon icon={Heart} size={14} color={colors.readinessRed} />
               <Text style={styles.syncText}>{i18n.nSyncHealth}</Text>
             </>
           )}
         </Pressable>
       )}
 
-      <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/sleep-insights'); }}>
-        {({ pressed }) => (
-          <GlassCard style={pressed ? styles.cardPressedDim : undefined}>
-            <View style={styles.cardHeaderRow}>
-              <View>
-                <Text style={styles.cardTitle}>{i18n.nSleep}</Text>
-                <Text style={styles.cardHint}>{i18n.nLastNight}</Text>
-              </View>
-              <Pressable
-                hitSlop={8}
-                style={({ pressed: p }) => [styles.miniBtn, p && styles.pressed]}
-                onPress={() => router.push('/log-sleep')}>
-                <Text style={styles.miniBtnText}>{i18n.nLogShort}</Text>
-              </Pressable>
-            </View>
-            <Text style={styles.metric}>{sleepLabel}</Text>
-          </GlassCard>
-        )}
-      </Pressable>
+      {/* Hero widgets: Readiness + Activity (web heroWidgets) */}
+      {readinessScore != null ? (
+        <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/biometrics'); }}>
+          <ReadinessGauge
+            score={readinessScore}
+            status={readinessStatus}
+            explain={dailyLog?.readiness_explain}
+            recommendation={dailyLog?.readiness_recommendation}
+            acwr={dailyLog?.acwr != null ? Number(dailyLog.acwr) : null}
+          />
+        </Pressable>
+      ) : (
+        <GlassCard style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>{i18n.dashReadiness}</Text>
+          <Text style={styles.emptyMsg}>{i18n.dashReadinessMsg}</Text>
+        </GlassCard>
+      )}
 
-      <GlassCard>
-        <View style={styles.cardHeaderRow}>
-          <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/water'); }}>
-            <View style={styles.titleWithIcon}>
-              <Icon icon={Droplets} size={17} color={colors.metricBlue} />
-              <Text style={styles.cardTitle}>{i18n.nWater}</Text>
-              <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-            </View>
-            <Text style={styles.cardHint}>
-              {profile?.water_target_ml != null
-                ? i18n.nOfTarget.replace('{x}', `${(Number(profile.water_target_ml) / 1000).toFixed(1)}L`)
-                : i18n.nStayHydrated}
-            </Text>
-          </Pressable>
-          <View style={styles.waterButtons}>
-            {[250, 500].map((ml) => (
-              <Pressable
-                key={ml}
-                style={({ pressed }) => [styles.miniBtn, styles.miniBtnRow, pressed && styles.pressed]}
-                onPress={() => addWater.mutate(ml)}>
-                <Icon icon={Plus} size={13} color={colors.foreground} strokeWidth={2.5} />
-                <Text style={styles.miniBtnText}>{ml}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-        <View style={styles.waterRow}>
-          <Text style={styles.metric}>{((waterMl ?? 0) / 1000).toFixed(1)}L</Text>
-          <View style={styles.waterBarTrack}>
-            <View
-              style={[
-                styles.waterBarFill,
-                {
-                  width: `${Math.min(100, ((waterMl ?? 0) / (Number(profile?.water_target_ml) || 2500)) * 100)}%`,
-                },
-              ]}
+      <ActivityRingsCard
+        move={{ current: Math.round(activeKcal), target: 600 }}
+        exercise={{ current: activeMin, target: 30 }}
+        stand={{ current: steps, target: 10000 }}
+      />
+
+      {/* ❤️ Health */}
+      <View style={styles.group}>
+        <GroupHeader icon="❤️" title={groupTitles.health} />
+        {sleepTotalMin > 0 ? (
+          <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/sleep-insights'); }}>
+            <SleepCard
+              totalMin={sleepTotalMin}
+              targetHours={sleepTargetHours}
+              quality={sleep?.quality != null ? Number(sleep.quality) : null}
+              bedtime={sleep?.bedtime}
+              waketime={sleep?.waketime}
+              stages={stages}
             />
-          </View>
-        </View>
-      </GlassCard>
+          </Pressable>
+        ) : (
+          <Pressable onPress={() => router.push('/log-sleep')}>
+            <GlassCard style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>{i18n.dashSleep}</Text>
+              <Text style={styles.emptyMsg}>{i18n.dashSleepMsg}</Text>
+            </GlassCard>
+          </Pressable>
+        )}
+        <StepsWidget steps={steps} target={10000} labels={{ title: lang === 'vi' ? 'Bước đi' : 'Steps' }} />
+      </View>
 
-      <WeightCheckinCard profileWeight={profile?.weight_kg != null ? Number(profile.weight_kg) : null} />
+      {/* 🍎 Nutrition */}
+      <View style={styles.group}>
+        <GroupHeader icon="🍎" title={groupTitles.nutrition} />
+        {kcal > 0 ? (
+          <NutritionCard
+            kcal={kcal}
+            calorieTarget={calorieTarget}
+            protein={{ current: Number(dailyLog?.protein_g) || 0, target: macroTargets.protein }}
+            carbs={{ current: Number(dailyLog?.carbs_g) || 0, target: macroTargets.carbs }}
+            fat={{ current: Number(dailyLog?.fat_g) || 0, target: macroTargets.fat }}
+          />
+        ) : (
+          <Pressable onPress={() => router.push('/log-meal')}>
+            <GlassCard style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>{i18n.dashNutrition}</Text>
+              <Text style={styles.emptyMsg}>{i18n.dashNutritionMsg}</Text>
+            </GlassCard>
+          </Pressable>
+        )}
+        <WaterWidget ml={waterMl ?? 0} targetMl={waterTarget} labels={{ title: lang === 'vi' ? 'Nước uống' : 'Water' }} />
+        <SupplementChecklistCard />
+      </View>
 
-      <SupplementChecklistCard />
+      {/* 💪 Fitness */}
+      <View style={styles.group}>
+        <GroupHeader icon="💪" title={groupTitles.fitness} />
+        <WeightCheckinCard profileWeight={profile?.weight_kg != null ? Number(profile.weight_kg) : null} />
+      </View>
 
-      <ReadinessTrendCard />
-
-      <SmartTipsCard />
-    </Screen>
+      {/* ✨ Insights */}
+      <View style={styles.group}>
+        <GroupHeader icon="✨" title={groupTitles.insights} />
+        <ReadinessTrendCard />
+        <SmartTipsCard />
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  half: {
-    flex: 1,
-  },
-  cardTitle: {
-    ...type.headline,
-    color: colors.foreground,
-  },
-  cardHint: {
-    ...type.footnote,
-    color: colors.mutedForeground,
-    marginTop: 2,
-  },
-  metric: {
-    ...type.largeTitle,
-    ...type.mono,
-    color: colors.foreground,
-    marginTop: spacing.sm,
-  },
-  ringWrap: {
-    marginVertical: spacing.lg,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  cardPressedDim: { opacity: 0.8 },
-  readinessHeadInfo: { flex: 1, minWidth: 0 },
-  titleWithIcon: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  miniBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  miniBtn: {
-    height: 32,
-    paddingHorizontal: spacing.md,
-    borderRadius: 16,
-    backgroundColor: colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  miniBtnText: { ...type.caption, fontWeight: '600', color: colors.foreground },
-  waterButtons: { flexDirection: 'row', gap: spacing.sm },
-  waterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-  },
-  waterBarTrack: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.secondary,
-    overflow: 'hidden',
-  },
-  waterBarFill: {
-    height: '100%',
-    borderRadius: 4,
-    backgroundColor: colors.metricCyan,
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  gear: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  syncButton: {
+  root: { flex: 1, backgroundColor: colors.background },
+  content: { paddingHorizontal: spacing.md, gap: spacing.md },
+
+  // Header (web: date 13px muted / greeting 22px bold, name silver)
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
+  headerText: { flex: 1, minWidth: 0 },
+  dateLine: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground, textTransform: 'capitalize' },
+  greeting: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, color: colors.foreground, marginTop: 2 },
+  greetingName: { color: colors.primary },
+  headerButtons: { flexDirection: 'row', gap: spacing.sm },
+  squareBtn: {
+    width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.secondary,
-    flexDirection: 'row',
-    gap: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(43,43,49,0.3)',
+    backgroundColor: 'rgba(24,24,27,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  syncText: {
-    ...type.footnote,
-    fontWeight: '600',
-    color: colors.foreground,
+
+  // Quick chips (web: rounded-xl bordered secondary/20)
+  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  quickChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: spacing.md - 2,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(43,43,49,0.3)',
+    backgroundColor: 'rgba(24,24,27,0.2)',
   },
-  pressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
+  quickChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
+
+  syncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    height: 36,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(43,43,49,0.3)',
+    backgroundColor: 'rgba(24,24,27,0.2)',
   },
+  syncText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
+
+  // Groups (web WidgetGroupSection)
+  group: { gap: spacing.sm + 4, marginTop: spacing.xs },
+  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: 4 },
+  groupIcon: { fontSize: 16 },
+  groupTitle: { fontSize: 14, fontWeight: '600', color: 'rgba(237,237,237,0.8)' },
+
+  // Empty states (web EmptyState)
+  emptyCard: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
+  emptyTitle: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.7, color: colors.mutedForeground },
+  emptyMsg: { fontSize: 13, color: 'rgba(107,107,107,0.8)', textAlign: 'center', maxWidth: 220, lineHeight: 19 },
+
+  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

@@ -240,7 +240,14 @@ export function SmartTipsCard() {
 }
 
 const styles = StyleSheet.create({
-  cardTitle: { ...type.headline, color: colors.foreground },
+  // Web dashboard micro-title: 12px semibold uppercase, wide tracking
+  cardTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 2.4,
+    color: colors.mutedForeground,
+  },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
   cardHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
