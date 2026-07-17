@@ -38,7 +38,7 @@ export default function TemplatesScreen() {
   };
 
   return (
-    <Screen
+    <Screen back
       title={i18n.nTemplates}
       headerRight={
         <Pressable

@@ -58,7 +58,7 @@ export default function BiometricsScreen() {
   const hasAny = (history ?? []).length > 0;
 
   return (
-    <Screen
+    <Screen back
       title={i18n.biometricsTitle}
       headerRight={
         <Pressable

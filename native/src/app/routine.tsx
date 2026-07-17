@@ -43,7 +43,7 @@ export default function RoutineScreen() {
   };
 
   return (
-    <Screen title={i18n.nRoutine}>
+    <Screen back title={i18n.nRoutine}>
       <Text style={styles.hint}>{i18n.nRoutineHint}</Text>
 
       {dayNames.map((label, idx) => {

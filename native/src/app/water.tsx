@@ -27,7 +27,7 @@ export default function WaterScreen() {
   const maxWeek = Math.max(target, ...(week ?? []).map((d) => d.total));
 
   return (
-    <Screen title={i18n.nWaterTitle}>
+    <Screen back title={i18n.nWaterTitle}>
       {/* Today ring/summary */}
       <GlassCard>
         <View style={styles.summaryRow}>

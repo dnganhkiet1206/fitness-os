@@ -106,6 +106,25 @@ export function useStepsHistory(days = 14) {
   });
 }
 
+/** Latest body-measurement row (web Progress → Measurements tab) */
+export function useLatestMeasurement() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['body_measurements_latest', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('body_measurements')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
+}
+
 export function useReadinessHistory(days = 14) {
   const { user } = useAuth();
   return useQuery({

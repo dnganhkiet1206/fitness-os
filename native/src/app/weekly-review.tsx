@@ -64,7 +64,7 @@ export default function WeeklyReviewScreen() {
   const a = analyze.data;
 
   return (
-    <Screen title={i18n.nWeeklyReview}>
+    <Screen back title={i18n.nWeeklyReview}>
       {!a ? (
         <GlassCard>
           <View style={styles.titleRow}>

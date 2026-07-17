@@ -24,7 +24,7 @@ export default function LegalScreen() {
   const doc: LegalDoc = legal[tab];
 
   return (
-    <Screen title={legal.pageTitle}>
+    <Screen back title={legal.pageTitle}>
       <View style={styles.tabBar}>
         {tabs.map((t) => (
           <Pressable

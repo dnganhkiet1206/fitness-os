@@ -25,7 +25,7 @@ export default function ExercisesScreen() {
   }, [exercises, search]);
 
   return (
-    <Screen title={i18n.nExercises}>
+    <Screen back title={i18n.nExercises}>
       <TextInput
         style={styles.search}
         placeholder={i18n.nSearchExercises}

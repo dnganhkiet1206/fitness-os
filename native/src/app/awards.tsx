@@ -19,7 +19,7 @@ export default function AwardsScreen() {
   const i18n = useI18n();
 
   return (
-    <Screen title={i18n.nAwards}>
+    <Screen back title={i18n.nAwards}>
       {awards && awards.length > 0 ? (
         awards.map((a) => (
           <GlassCard key={a.id} style={styles.card}>

@@ -92,7 +92,7 @@ export default function SleepInsightsScreen() {
   const maxH = Math.max(8, ...nights.map((n) => n.total_h));
 
   return (
-    <Screen title={i18n.sleepTitle}>
+    <Screen back title={i18n.sleepTitle}>
       {!stats ? (
         <GlassCard>
           <View style={styles.empty}>

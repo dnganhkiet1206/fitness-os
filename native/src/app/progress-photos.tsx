@@ -47,7 +47,7 @@ export default function ProgressPhotosScreen() {
   };
 
   return (
-    <Screen
+    <Screen back
       title={i18n.progressPhotos}
       headerRight={
         <Pressable

@@ -1,97 +1,220 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Camera, Medal, Sparkles, Swords, Target } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Camera, Medal, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
+import { useState } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, spacing, type } from '@/constants/ascnd';
-import { useReadinessHistory, useWeightHistory } from '@/hooks/use-fitness-data';
-import { useI18n } from '@/hooks/use-app-settings';
+import { colors, radius, spacing } from '@/constants/ascnd';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { useLatestMeasurement, useWeightHistory } from '@/hooks/use-fitness-data';
+import { useProgressPhotos } from '@/hooks/use-progress-photos';
+import { useProfile } from '@/hooks/useTodayData';
 
-const STATUS_COLOR = {
-  green: colors.readinessGreen,
-  yellow: colors.readinessYellow,
-  red: colors.readinessRed,
-} as const;
+type Tab = 'weight' | 'measurements' | 'photos';
+
+/** BMI category — same thresholds/colours as the web Progress page */
+function bmiCategory(v: number, vi: boolean) {
+  if (v < 18.5) return { label: vi ? 'Thiếu cân' : 'Underweight', color: colors.metricBlue };
+  if (v < 25) return { label: vi ? 'Bình thường' : 'Normal', color: colors.readinessGreen };
+  if (v < 30) return { label: vi ? 'Thừa cân' : 'Overweight', color: colors.readinessYellow };
+  return { label: vi ? 'Béo phì' : 'Obese', color: colors.readinessRed };
+}
 
 export default function ProgressScreen() {
-  const { data: weight } = useWeightHistory(30);
-  const { data: readiness } = useReadinessHistory(14);
   const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
+  const [tab, setTab] = useState<Tab>('weight');
+
+  const { data: profile } = useProfile();
+  const { data: weight } = useWeightHistory(90);
+  const { data: photos } = useProgressPhotos();
+  const { data: measurement } = useLatestMeasurement();
+
+  const weightData = weight ?? [];
+  const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].value : null;
+  const startWeight = weightData.length > 0 ? weightData[0].value : null;
+  const weightDelta = currentWeight != null && startWeight != null ? currentWeight - startWeight : null;
+  const deltaGood =
+    weightDelta != null &&
+    ((profile?.goal === 'bulk' && weightDelta > 0) || (profile?.goal === 'cut' && weightDelta < 0));
+
+  const heightM = profile?.height_cm ? Number(profile.height_cm) / 100 : null;
+  const bmi = currentWeight != null && heightM ? currentWeight / (heightM * heightM) : null;
+  const cat = bmi != null ? bmiCategory(bmi, vi) : null;
+  const bmiPct = bmi != null ? Math.max(0, Math.min(100, ((bmi - 15) / 25) * 100)) : 0;
+
+  const tabs: { key: Tab; label: string; icon: typeof Scale }[] = [
+    { key: 'weight', label: i18n.progressWeight, icon: Scale },
+    { key: 'measurements', label: i18n.progressMeasurements, icon: Ruler },
+    { key: 'photos', label: i18n.progressPhotos, icon: Camera },
+  ];
+
+  const MEASURES: { k: string; l: string }[] = [
+    { k: 'neck', l: i18n.measureNeck }, { k: 'shoulders', l: i18n.measureShoulders },
+    { k: 'chest', l: i18n.measureChest }, { k: 'waist', l: i18n.measureWaist },
+    { k: 'hips', l: i18n.measureHips }, { k: 'bicep_l', l: i18n.measureBicepL },
+    { k: 'bicep_r', l: i18n.measureBicepR }, { k: 'thigh_l', l: i18n.measureThighL },
+    { k: 'thigh_r', l: i18n.measureThighR }, { k: 'calf_l', l: i18n.measureCalfL },
+    { k: 'calf_r', l: i18n.measureCalfR }, { k: 'bf', l: i18n.measureBodyFat },
+  ];
 
   return (
     <Screen
-      title={i18n.navProgress}
+      title={i18n.progressTitle}
       headerRight={
         <View style={styles.headerButtons}>
-          <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            onPress={() => { Haptics.selectionAsync(); router.push('/weekly-review'); }}>
-            <Icon icon={Sparkles} size={18} color={colors.mutedForeground} />
-          </Pressable>
-          <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            onPress={() => { Haptics.selectionAsync(); router.push('/progress-photos'); }}>
-            <Icon icon={Camera} size={18} color={colors.mutedForeground} />
-          </Pressable>
-          <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            onPress={() => { Haptics.selectionAsync(); router.push('/smart-goals'); }}>
-            <Icon icon={Target} size={18} color={colors.mutedForeground} />
-          </Pressable>
-          <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            onPress={() => { Haptics.selectionAsync(); router.push('/challenges'); }}>
-            <Icon icon={Swords} size={18} color={colors.mutedForeground} />
-          </Pressable>
-          <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            onPress={() => { Haptics.selectionAsync(); router.push('/awards'); }}>
-            <Icon icon={Medal} size={18} color={colors.mutedForeground} />
-          </Pressable>
+          {[
+            { icon: Sparkles, route: '/weekly-review' as const },
+            { icon: Target, route: '/smart-goals' as const },
+            { icon: Swords, route: '/challenges' as const },
+            { icon: Medal, route: '/awards' as const },
+          ].map((b) => (
+            <Pressable
+              key={b.route}
+              hitSlop={8}
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+              onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>
+              <Icon icon={b.icon} size={17} color={colors.mutedForeground} />
+            </Pressable>
+          ))}
         </View>
       }>
-      <GlassCard>
-        <Text style={styles.cardTitle}>{i18n.nWeight}</Text>
-        <Text style={styles.cardHint}>{i18n.nLast30d}</Text>
-        <View style={styles.chart}>
-          <LineChart points={weight ?? []} color={colors.metricBlue} unit="kg" emptyLabel={i18n.nNotEnoughData} />
-        </View>
-      </GlassCard>
+      {/* Segmented tabs (web TabsList) */}
+      <View style={styles.tabBar}>
+        {tabs.map((t) => (
+          <Pressable
+            key={t.key}
+            style={[styles.tab, tab === t.key && styles.tabActive]}
+            onPress={() => { Haptics.selectionAsync(); setTab(t.key); }}>
+            <Icon icon={t.icon} size={13} color={tab === t.key ? colors.foreground : colors.mutedForeground} />
+            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
+          </Pressable>
+        ))}
+      </View>
 
-      <GlassCard>
-        <Text style={styles.cardTitle}>{i18n.nReadiness}</Text>
-        <Text style={styles.cardHint}>{i18n.nLast14d}</Text>
-        {readiness && readiness.length > 0 ? (
-          <View style={styles.bars}>
-            {readiness.map((d) => (
-              <View key={d.date} style={styles.barSlot}>
-                <View
-                  style={[
-                    styles.bar,
-                    {
-                      height: `${Math.max(8, d.value)}%`,
-                      backgroundColor: STATUS_COLOR[d.status] ?? colors.readinessYellow,
-                    },
-                  ]}
-                />
-              </View>
+      {tab === 'weight' && (
+        <>
+          {/* Stat tiles: current / change / records */}
+          <View style={styles.tileRow}>
+            {[
+              { label: i18n.progressCurrent, value: currentWeight != null ? `${currentWeight}kg` : '—', color: colors.foreground },
+              {
+                label: i18n.progressChange,
+                value: weightDelta != null ? `${weightDelta > 0 ? '+' : ''}${weightDelta.toFixed(1)}kg` : '—',
+                color: weightDelta == null ? colors.foreground : deltaGood ? colors.readinessGreen : colors.foreground,
+              },
+              { label: i18n.progressRecords, value: `${weightData.length}`, color: colors.foreground },
+            ].map((c) => (
+              <GlassCard key={c.label} style={styles.tile}>
+                <Text style={styles.tileLabel}>{c.label}</Text>
+                <Text style={[styles.tileValue, { color: c.color }]}>{c.value}</Text>
+              </GlassCard>
             ))}
           </View>
-        ) : (
-          <View style={styles.emptyBars}>
-            <Text style={styles.cardHint}>{i18n.nBuildTrendHint}</Text>
-          </View>
-        )}
-      </GlassCard>
+
+          {/* BMI card (web layout: badge, big mono number, 4-zone scale) */}
+          <GlassCard style={styles.bmiCard}>
+            <View style={styles.bmiHead}>
+              <Text style={styles.microTitle}>{vi ? 'Chỉ số BMI' : 'BMI Index'}</Text>
+              {cat && (
+                <View style={[styles.bmiBadge, { backgroundColor: `${cat.color}1a` }]}>
+                  <Text style={[styles.bmiBadgeText, { color: cat.color }]}>{cat.label}</Text>
+                </View>
+              )}
+            </View>
+            {bmi != null && cat ? (
+              <>
+                <View style={styles.bmiValueRow}>
+                  <Text style={[styles.bmiValue, { color: cat.color }]}>{bmi.toFixed(1)}</Text>
+                  <Text style={styles.bmiUnit}>kg/m²</Text>
+                </View>
+                <View>
+                  <View style={styles.bmiScale}>
+                    <View style={[styles.bmiSeg, { flex: 1, backgroundColor: 'rgba(62,134,234,0.4)' }]} />
+                    <View style={[styles.bmiSeg, { flex: 2.6, backgroundColor: 'rgba(32,182,132,0.4)' }]} />
+                    <View style={[styles.bmiSeg, { flex: 2, backgroundColor: 'rgba(232,186,48,0.4)' }]} />
+                    <View style={[styles.bmiSeg, { flex: 4, backgroundColor: 'rgba(220,40,40,0.3)' }]} />
+                    <View style={[styles.bmiDot, { left: `${bmiPct}%`, backgroundColor: cat.color }]} />
+                  </View>
+                  <View style={styles.bmiTicks}>
+                    {['15', '18.5', '25', '30', '40'].map((tick) => (
+                      <Text key={tick} style={styles.bmiTick}>{tick}</Text>
+                    ))}
+                  </View>
+                </View>
+                <Text style={styles.bmiInfo}>
+                  {vi ? 'Cân nặng' : 'Weight'}: <Text style={styles.bmiInfoStrong}>{currentWeight}kg</Text>
+                  {'  ·  '}
+                  {vi ? 'Chiều cao' : 'Height'}: <Text style={styles.bmiInfoStrong}>{profile?.height_cm}cm</Text>
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.emptyText}>
+                {vi ? 'Cần cân nặng và chiều cao để tính BMI' : 'Weight & height needed to calculate BMI'}
+              </Text>
+            )}
+          </GlassCard>
+
+          {/* Weight chart */}
+          <GlassCard style={styles.chartCard}>
+            <Text style={styles.microTitle}>{i18n.progressWeightChart}</Text>
+            <LineChart points={weightData} color={colors.readinessGreen} height={180} unit="kg" emptyLabel={i18n.nNotEnoughData} />
+          </GlassCard>
+        </>
+      )}
+
+      {tab === 'measurements' && (
+        <GlassCard style={styles.chartCard}>
+          <Text style={styles.microTitle}>{i18n.progressMeasurements}</Text>
+          {measurement ? (
+            <View style={styles.measureGrid}>
+              {MEASURES.map((m) => {
+                const raw = (measurement as Record<string, unknown>)[m.k];
+                const val = raw != null ? Number(raw) : null;
+                return (
+                  <View key={m.k} style={styles.measureCell}>
+                    <Text style={styles.measureLabel} numberOfLines={1}>{m.l}</Text>
+                    <Text style={styles.measureValue}>{val != null && val > 0 ? val : '—'}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <Text style={styles.emptyText}>
+              {vi ? 'Chưa có số đo — ghi số đo trên bản web, dữ liệu đồng bộ về đây' : 'No measurements yet — log them on the web app; they sync here'}
+            </Text>
+          )}
+        </GlassCard>
+      )}
+
+      {tab === 'photos' && (
+        <>
+          <Pressable
+            style={({ pressed }) => [styles.photoCta, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/progress-photos'); }}>
+            <Icon icon={Camera} size={14} color={colors.primaryForeground} />
+            <Text style={styles.photoCtaText}>{i18n.nPhotoAdd}</Text>
+          </Pressable>
+          {photos && photos.length > 0 ? (
+            <View style={styles.photoGrid}>
+              {photos.slice(0, 12).map((p) => (
+                <View key={p.id} style={styles.photoCell}>
+                  <Image source={{ uri: p.signedUrl }} style={styles.photo} />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <GlassCard style={styles.chartCard}>
+              <Text style={styles.emptyText}>{i18n.progressNoPhotos}</Text>
+            </GlassCard>
+          )}
+        </>
+      )}
     </Screen>
   );
 }
@@ -99,30 +222,105 @@ export default function ProgressScreen() {
 const styles = StyleSheet.create({
   headerButtons: { flexDirection: 'row', gap: spacing.sm },
   iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
   pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
-  cardTitle: { ...type.headline, color: colors.foreground },
-  cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
-  chart: { marginTop: spacing.md },
-  bars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 4,
-    height: 120,
-    marginTop: spacing.md,
+
+  microTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 2.4,
+    color: colors.mutedForeground,
   },
-  barSlot: { flex: 1, height: '100%', justifyContent: 'flex-end' },
-  bar: { borderRadius: 4, width: '100%' },
-  emptyBars: {
-    height: 120,
+
+  // Segmented tabs (web TabsList bg-secondary/60)
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(24,24,27,0.6)',
+    borderRadius: radius.sm,
+    padding: 3,
+    gap: 3,
+  },
+  tab: {
+    flex: 1,
+    height: 34,
+    borderRadius: radius.sm - 3,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 5,
   },
+  tabActive: { backgroundColor: colors.accent },
+  tabText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
+  tabTextActive: { color: colors.foreground },
+
+  // Stat tiles
+  tileRow: { flexDirection: 'row', gap: spacing.sm },
+  tile: { flex: 1, alignItems: 'center', gap: 3, padding: spacing.sm + 4 },
+  tileLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.4, color: colors.mutedForeground },
+  tileValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
+
+  // BMI card
+  bmiCard: { gap: spacing.md },
+  bmiHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  bmiBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
+  bmiBadgeText: { fontSize: 10, fontWeight: '500' },
+  bmiValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  bmiValue: { fontSize: 36, fontFamily: 'Menlo', fontWeight: '700', letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
+  bmiUnit: { fontSize: 12, color: colors.mutedForeground },
+  bmiScale: { height: 8, borderRadius: 4, flexDirection: 'row', overflow: 'visible', backgroundColor: 'rgba(24,24,27,0.4)' },
+  bmiSeg: { height: '100%' },
+  bmiDot: {
+    position: 'absolute',
+    top: -3,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginLeft: -7,
+    borderWidth: 2,
+    borderColor: colors.background,
+  },
+  bmiTicks: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
+  bmiTick: { fontSize: 9, fontFamily: 'Menlo', color: colors.mutedForeground },
+  bmiInfo: { fontSize: 10, color: colors.mutedForeground },
+  bmiInfoStrong: { fontFamily: 'Menlo', color: colors.foreground },
+
+  chartCard: { gap: spacing.md },
+  emptyText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.md, lineHeight: 18 },
+
+  // Measurements
+  measureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  measureCell: {
+    width: '31%',
+    backgroundColor: 'rgba(24,24,27,0.2)',
+    borderRadius: radius.sm,
+    padding: spacing.sm + 2,
+    gap: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(43,43,49,0.2)',
+  },
+  measureLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.8, color: colors.mutedForeground },
+  measureValue: { fontSize: 15, fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
+
+  // Photos
+  photoCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 40,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+  },
+  photoCtaText: { fontSize: 13, fontWeight: '600', color: colors.primaryForeground },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  photoCell: { width: '31.5%', borderRadius: radius.sm, overflow: 'hidden' },
+  photo: { width: '100%', aspectRatio: 0.8, backgroundColor: colors.secondary },
 });

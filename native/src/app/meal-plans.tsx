@@ -24,7 +24,7 @@ export default function MealPlansScreen() {
   }, {});
 
   return (
-    <Screen title={i18n.nMealPlans}>
+    <Screen back title={i18n.nMealPlans}>
       {plans && plans.length > 0 ? (
         plans.map((p) => (
           <View key={p.id} style={styles.planBlock}>

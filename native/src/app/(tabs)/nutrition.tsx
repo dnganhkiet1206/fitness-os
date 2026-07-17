@@ -1,156 +1,284 @@
+import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ClipboardList, Pill, Plus, ShoppingCart } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ClipboardList, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useDailyLog, useProfile, useTodayMeals } from '@/hooks/useTodayData';
+import { colors, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
+import { useFavoriteFoods, useRecentFoods, useToggleFavoriteFood, type FoodItemRow } from '@/hooks/use-nutrition';
+import { supabase } from '@/integrations/supabase/client';
 
+type Tab = 'foods' | 'plans';
 
-
+/**
+ * Nutrition tab — faithful port of the web /nutrition page: Foods |
+ * Meal Plans segments; Foods = search + favorites (star toggle) +
+ * recent foods with kcal.
+ */
 export default function NutritionScreen() {
-  const { data: meals } = useTodayMeals();
-  const { data: log } = useDailyLog();
-  const { data: profile } = useProfile();
   const i18n = useI18n();
-  const MEAL_LABEL: Record<string, string> = {
-    breakfast: i18n.nBreakfast,
-    lunch: i18n.nLunch,
-    dinner: i18n.nDinner,
-    snack: i18n.nSnack,
-  };
+  const [tab, setTab] = useState<Tab>('foods');
+  const [search, setSearch] = useState('');
+  const [debounced, setDebounced] = useState('');
 
-  const kcal = log?.kcal != null ? Math.round(Number(log.kcal)) : 0;
-  const target = profile?.tdee_target_kcal != null ? Math.round(Number(profile.tdee_target_kcal)) : null;
+  const { data: favorites } = useFavoriteFoods();
+  const { data: recents } = useRecentFoods();
+  const toggleFav = useToggleFavoriteFood();
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const { data: results } = useQuery({
+    queryKey: ['nutrition_food_search', debounced],
+    enabled: debounced.length >= 2,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('food_items')
+        .select('id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
+        .ilike('name', `%${debounced}%`)
+        .order('is_favorite', { ascending: false })
+        .order('name')
+        .limit(20);
+      return (data ?? []) as FoodItemRow[];
+    },
+  });
+
+  const FoodRow = ({ f }: { f: FoodItemRow }) => (
+    <View style={styles.foodRow}>
+      <View style={styles.foodInfo}>
+        <Text style={styles.foodName} numberOfLines={1}>
+          {f.name}
+          {f.brand ? <Text style={styles.foodBrand}>  ({f.brand})</Text> : null}
+        </Text>
+        <Text style={styles.foodMacros}>
+          {Math.round(Number(f.kcal))} kcal · P{Math.round(Number(f.protein_g))} · C{Math.round(Number(f.carbs_g))} · F{Math.round(Number(f.fat_g))}
+        </Text>
+      </View>
+      <Pressable
+        hitSlop={10}
+        onPress={() => {
+          Haptics.selectionAsync();
+          toggleFav.mutate({ id: f.id, is_favorite: !f.is_favorite });
+        }}>
+        <Icon
+          icon={Star}
+          size={16}
+          color={f.is_favorite ? colors.readinessYellow : colors.mutedForeground}
+          strokeWidth={f.is_favorite ? 2.5 : 2}
+        />
+      </Pressable>
+    </View>
+  );
 
   return (
     <Screen
-      title={i18n.navNutrition}
+      title={i18n.nutritionTitle}
       headerRight={
         <View style={styles.headerButtons}>
-          <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            onPress={() => { Haptics.selectionAsync(); router.push('/supplements'); }}>
-            <Icon icon={Pill} size={18} color={colors.mutedForeground} />
-          </Pressable>
-          <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            onPress={() => { Haptics.selectionAsync(); router.push('/meal-plans'); }}>
-            <Icon icon={ClipboardList} size={18} color={colors.mutedForeground} />
-          </Pressable>
-          <Pressable
-            hitSlop={8}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            onPress={() => { Haptics.selectionAsync(); router.push('/grocery'); }}>
-            <Icon icon={ShoppingCart} size={18} color={colors.mutedForeground} />
-          </Pressable>
+          {[
+            { icon: Pill, route: '/supplements' as const },
+            { icon: ShoppingCart, route: '/grocery' as const },
+          ].map((b) => (
+            <Pressable
+              key={b.route}
+              hitSlop={8}
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+              onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>
+              <Icon icon={b.icon} size={17} color={colors.mutedForeground} />
+            </Pressable>
+          ))}
         </View>
       }>
-      <GlassCard>
-        <Text style={styles.cardTitle}>{i18n.nToday}</Text>
-        <Text style={styles.bigMetric}>
-          {kcal.toLocaleString()}
-          {target != null && <Text style={styles.metricUnit}> / {target.toLocaleString()} kcal</Text>}
-        </Text>
-        <View style={styles.macroRow}>
-          <Macro label={i18n.nProtein} value={log?.protein_g} color={colors.metricBlue} />
-          <Macro label={i18n.nCarbs} value={log?.carbs_g} color={colors.metricOrange} />
-          <Macro label={i18n.nFat} value={log?.fat_g} color={colors.metricPurple} />
-        </View>
-      </GlassCard>
+      {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
+      <View style={styles.tabBar}>
+        {[
+          { key: 'foods' as const, label: i18n.nutritionFoods, icon: Search },
+          { key: 'plans' as const, label: i18n.nutritionMealPlan, icon: Utensils },
+        ].map((t) => (
+          <Pressable
+            key={t.key}
+            style={[styles.tab, tab === t.key && styles.tabActive]}
+            onPress={() => { Haptics.selectionAsync(); setTab(t.key); }}>
+            <Icon icon={t.icon} size={13} color={tab === t.key ? colors.foreground : colors.mutedForeground} />
+            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
+          </Pressable>
+        ))}
+      </View>
 
+      {/* Log meal quick chip (native entry) */}
       <Pressable
-        style={({ pressed }) => [styles.logButton, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.logChip, pressed && styles.pressed]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/log-meal');
         }}>
-        <Icon icon={Plus} size={18} color={colors.primaryForeground} strokeWidth={2.5} />
-        <Text style={styles.logButtonText}>{i18n.nLogMealBtn}</Text>
+        <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
+        <Text style={styles.logChipText}>{i18n.nLogMealBtn}</Text>
       </Pressable>
 
-      {meals && meals.length > 0 ? (
-        meals.map((m) => (
-          <GlassCard key={m.id} style={styles.mealCard}>
-            <View style={styles.mealRow}>
-              <View>
-                <Text style={styles.cardTitle}>{MEAL_LABEL[m.meal_type] ?? m.meal_type}</Text>
-                <Text style={styles.cardHint}>
-                  {new Date(m.date_time).toLocaleTimeString(undefined, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </Text>
-              </View>
-              <Text style={styles.mealKcal}>{Math.round(Number(m.total_kcal))} kcal</Text>
-            </View>
-          </GlassCard>
-        ))
+      {tab === 'foods' ? (
+        <>
+          {/* Search */}
+          <View style={styles.searchWrap}>
+            <Icon icon={Search} size={15} color={colors.mutedForeground} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={i18n.nutritionSearchFood}
+              placeholderTextColor={colors.mutedForeground}
+              value={search}
+              onChangeText={setSearch}
+              autoCorrect={false}
+            />
+          </View>
+
+          {debounced.length >= 2 && results && (
+            <GlassCard style={styles.listCard}>
+              {results.length > 0 ? (
+                results.map((f) => <FoodRow key={f.id} f={f} />)
+              ) : (
+                <Text style={styles.emptyText}>{i18n.nNoExercisesFound}</Text>
+              )}
+            </GlassCard>
+          )}
+
+          {/* Favorites */}
+          {debounced.length < 2 && (
+            <>
+              <GlassCard style={styles.listCard}>
+                <View style={styles.sectionHead}>
+                  <Icon icon={Star} size={13} color={colors.readinessYellow} />
+                  <Text style={styles.microTitle}>{i18n.nutritionFavorites}</Text>
+                </View>
+                {favorites && favorites.length > 0 ? (
+                  favorites.map((f) => <FoodRow key={f.id} f={f} />)
+                ) : (
+                  <Text style={styles.emptyText}>—</Text>
+                )}
+              </GlassCard>
+
+              {/* Recent */}
+              <GlassCard style={styles.listCard}>
+                <View style={styles.sectionHead}>
+                  <Icon icon={ClipboardList} size={13} color={colors.mutedForeground} />
+                  <Text style={styles.microTitle}>{i18n.nutritionRecent}</Text>
+                </View>
+                {recents && recents.length > 0 ? (
+                  recents.map((r, i) => (
+                    <View key={i} style={styles.foodRow}>
+                      <View style={styles.foodInfo}>
+                        <Text style={styles.foodName} numberOfLines={1}>{r.food_name}</Text>
+                        <Text style={styles.foodMacros}>
+                          {r.kcal} kcal · P{r.protein_g} · C{r.carbs_g} · F{r.fat_g}
+                        </Text>
+                      </View>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.emptyText}>—</Text>
+                )}
+              </GlassCard>
+            </>
+          )}
+        </>
       ) : (
-        <GlassCard>
-          <Text style={styles.cardTitle}>{i18n.nNoMeals}</Text>
-          <Text style={styles.cardHint}>{i18n.nNoMealsHint}</Text>
-        </GlassCard>
+        <Pressable
+          onPress={() => { Haptics.selectionAsync(); router.push('/meal-plans'); }}>
+          {({ pressed }) => (
+            <GlassCard style={[styles.listCard, pressed && styles.pressedDim]}>
+              <View style={styles.sectionHead}>
+                <Icon icon={Utensils} size={13} color={colors.mutedForeground} />
+                <Text style={styles.microTitle}>{i18n.nutritionMealPlan}</Text>
+              </View>
+              <Text style={styles.emptyText}>{i18n.nMealPlans} →</Text>
+            </GlassCard>
+          )}
+        </Pressable>
       )}
     </Screen>
-  );
-}
-
-function Macro({ label, value, color }: { label: string; value: unknown; color: string }) {
-  return (
-    <View style={styles.macro}>
-      <View style={[styles.macroDot, { backgroundColor: color }]} />
-      <Text style={styles.macroValue}>{value != null ? `${Math.round(Number(value))}g` : '—'}</Text>
-      <Text style={styles.cardHint}>{label}</Text>
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
   headerButtons: { flexDirection: 'row', gap: spacing.sm },
   iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
-  cardTitle: { ...type.headline, color: colors.foreground },
-  cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
-  bigMetric: { ...type.largeTitle, ...type.mono, color: colors.foreground, marginTop: spacing.sm },
-  metricUnit: { ...type.footnote, color: colors.mutedForeground },
-  macroRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
+  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
+  pressedDim: { opacity: 0.8 },
+
+  microTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 2.4,
+    color: colors.mutedForeground,
   },
-  macro: { alignItems: 'center', gap: 2, flex: 1 },
-  macroDot: { width: 8, height: 8, borderRadius: 4 },
-  macroValue: { ...type.headline, color: colors.foreground },
-  logButton: {
-    height: 50,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
+
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(24,24,27,0.6)',
+    borderRadius: radius.sm,
+    padding: 3,
+    gap: 3,
+  },
+  tab: {
+    flex: 1,
+    height: 34,
+    borderRadius: radius.sm - 3,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: 5,
   },
-  logButtonText: { ...type.headline, color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
-  mealCard: { paddingVertical: spacing.md },
-  mealRow: {
+  tabActive: { backgroundColor: colors.accent },
+  tabText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
+  tabTextActive: { color: colors.foreground },
+
+  logChip: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 36,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(43,43,49,0.3)',
+    backgroundColor: 'rgba(24,24,27,0.2)',
   },
-  mealKcal: { ...type.headline, color: colors.foreground },
+  logChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
+
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    height: 44,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(24,24,27,0.3)',
+    paddingHorizontal: spacing.md - 4,
+  },
+  searchInput: { flex: 1, color: colors.foreground, fontSize: 15, height: '100%' },
+
+  listCard: { gap: spacing.sm + 2 },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  foodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
+  foodInfo: { flex: 1, minWidth: 0, gap: 2 },
+  foodName: { fontSize: 14, fontWeight: '500', color: colors.foreground },
+  foodBrand: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
+  foodMacros: { fontSize: 11, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  emptyText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.sm },
 });

@@ -16,7 +16,7 @@ export default function SupplementsScreen() {
   const takenCount = (supplements ?? []).filter((s) => s.taken).length;
 
   return (
-    <Screen title={i18n.nSupplements}>
+    <Screen back title={i18n.nSupplements}>
       {supplements && supplements.length > 0 ? (
         <>
           <GlassCard>

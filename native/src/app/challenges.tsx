@@ -13,7 +13,7 @@ export default function ChallengesScreen() {
   const i18n = useI18n();
 
   return (
-    <Screen title={i18n.nChallenges}>
+    <Screen back title={i18n.nChallenges}>
       {challenges && challenges.length > 0 ? (
         challenges.map((c) => {
           const target = Number(c.target_value) || 1;
