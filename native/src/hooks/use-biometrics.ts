@@ -52,6 +52,7 @@ export function useLogBiometrics() {
       const { error } = await supabase.from('biometric_samples').insert({
         user_id: user!.id,
         source: 'manual',
+        confidence: 0.7,
         hr_bpm: values.hr_bpm ?? null,
         hrv_rmssd_ms: values.hrv_rmssd_ms ?? null,
         spo2_pct: values.spo2_pct ?? null,

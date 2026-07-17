@@ -42,6 +42,37 @@ export function useAddWater() {
     onSuccess: () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       queryClient.invalidateQueries({ queryKey: ['today_water', user?.id, dateStr] });
+      queryClient.invalidateQueries({ queryKey: ['today_water_logs', user?.id, dateStr] });
+      queryClient.invalidateQueries({ queryKey: ['water_week', user?.id] });
+    },
+  });
+}
+
+/** Undo the most recent water entry today (web: minus button) */
+export function useRemoveLastWater() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const dateStr = today();
+  return useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('Not signed in');
+      const { data: last, error: findError } = await supabase
+        .from('water_logs')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('date', dateStr)
+        .order('logged_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (findError) throw findError;
+      if (!last) return;
+      const { error } = await supabase.from('water_logs').delete().eq('id', last.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      queryClient.invalidateQueries({ queryKey: ['today_water', user?.id, dateStr] });
+      queryClient.invalidateQueries({ queryKey: ['today_water_logs', user?.id, dateStr] });
       queryClient.invalidateQueries({ queryKey: ['water_week', user?.id] });
     },
   });

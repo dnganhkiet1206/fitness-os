@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface FoodItemRow {
   id: string;
+  user_id?: string | null;
   name: string;
   brand: string | null;
   kcal: number;
@@ -25,7 +26,7 @@ export function useFavoriteFoods() {
     queryFn: async () => {
       const { data } = await supabase
         .from('food_items')
-        .select('id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
+        .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
         .eq('is_favorite', true)
         .order('name')
         .limit(50);
@@ -78,6 +79,75 @@ export function useRecentFoods() {
       }
       return out;
     },
+  });
+}
+
+export interface FoodFormData {
+  name: string;
+  brand: string;
+  serving_g: number;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+}
+
+function invalidateFoodQueries(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ['favorite_foods'] });
+  qc.invalidateQueries({ queryKey: ['nutrition_food_search'] });
+  qc.invalidateQueries({ queryKey: ['food_items_search'] });
+  qc.invalidateQueries({ queryKey: ['food_item'] });
+}
+
+/** Single food row for the editor sheet (edit mode) */
+export function useFoodItem(id: string | null) {
+  return useQuery({
+    queryKey: ['food_item', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('food_items')
+        .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
+        .eq('id', id!)
+        .single();
+      if (error) throw error;
+      return data as FoodItemRow;
+    },
+  });
+}
+
+export function useCreateFoodItem() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (item: FoodFormData) => {
+      const { error } = await supabase.from('food_items').insert({ ...item, user_id: user!.id });
+      if (error) throw error;
+    },
+    onSuccess: () => invalidateFoodQueries(qc),
+  });
+}
+
+export function useUpdateFoodItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...item }: FoodFormData & { id: string }) => {
+      const { error } = await supabase.from('food_items').update(item).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => invalidateFoodQueries(qc),
+  });
+}
+
+export function useDeleteFoodItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('food_items').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => invalidateFoodQueries(qc),
   });
 }
 

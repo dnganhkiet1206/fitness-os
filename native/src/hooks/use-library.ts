@@ -242,6 +242,44 @@ export function useMealPlans() {
   });
 }
 
+export function useCreateMealPlan() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (plan: { name: string; goal: string; meals_per_day: number }) => {
+      const { data, error } = await supabase
+        .from('meal_plans')
+        .insert({ user_id: user!.id, ...plan })
+        .select('id')
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      queryClient.invalidateQueries({ queryKey: ['meal_plans', user?.id] });
+    },
+  });
+}
+
+export function useDeleteMealPlan() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('meal_plans')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meal_plans', user?.id] });
+    },
+  });
+}
+
 export function useMealPlanItems(planId: string | null) {
   return useQuery({
     queryKey: ['meal_plan_items', planId],

@@ -10,17 +10,19 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 
-const QUALITY = [1, 2, 3, 4, 5] as const;
+// Emoji picks map onto the web's 1–10 quality scale (SleepCard shows "x/10")
+const QUALITY = [2, 4, 6, 8, 10] as const;
 const QUALITY_EMOJI = ['😫', '😕', '😐', '🙂', '😴'];
 
 /** Bedtime after noon belongs to yesterday; waketime is always today. */
@@ -35,9 +37,13 @@ export default function LogSleepSheet() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const [bedtime, setBedtime] = useState(new Date(2000, 0, 1, 23, 0));
   const [waketime, setWaketime] = useState(new Date(2000, 0, 1, 7, 0));
-  const [quality, setQuality] = useState<number>(4);
+  const [quality, setQuality] = useState<number>(8);
+  const [deepMin, setDeepMin] = useState('');
+  const [remMin, setRemMin] = useState('');
+  const [lightMin, setLightMin] = useState('');
 
   const bedDate = withDate(bedtime, bedtime.getHours() >= 12 ? -1 : 0);
   const wakeDate = withDate(waketime, 0);
@@ -51,6 +57,9 @@ export default function LogSleepSheet() {
         bedtime: bedDate.toISOString(),
         waketime: wakeDate.toISOString(),
         quality,
+        deep_min: Number(deepMin) || 0,
+        rem_min: Number(remMin) || 0,
+        light_min: Number(lightMin) || 0,
       });
       if (error) throw error;
       await recomputeDailyLog(user.id, new Date().toISOString().split('T')[0]);
@@ -99,6 +108,29 @@ export default function LogSleepSheet() {
         <Text style={styles.duration}>
           {Math.floor(durationMin / 60)}h {String(durationMin % 60).padStart(2, '0')}m
         </Text>
+      </View>
+
+      {/* Sleep stages (web: deep / REM / light minutes) */}
+      <Text style={styles.fieldLabel}>{lang === 'vi' ? 'Giai đoạn giấc ngủ' : 'Sleep Stages'}</Text>
+      <View style={styles.stagesRow}>
+        {[
+          { label: i18n.logSleepDeep, value: deepMin, set: setDeepMin },
+          { label: i18n.logSleepREM, value: remMin, set: setRemMin },
+          { label: i18n.logSleepLight, value: lightMin, set: setLightMin },
+        ].map((s) => (
+          <View key={s.label} style={styles.stageCell}>
+            <Text style={styles.stageLabel}>{s.label}</Text>
+            <TextInput
+              style={styles.stageInput}
+              keyboardType="number-pad"
+              placeholder="0"
+              placeholderTextColor={colors.mutedForeground}
+              value={s.value}
+              onChangeText={s.set}
+            />
+            <Text style={styles.stageUnit}>{i18n.logSleepMinutes}</Text>
+          </View>
+        ))}
       </View>
 
       <Text style={styles.fieldLabel}>{i18n.nHowSleep}</Text>
@@ -155,6 +187,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   duration: { ...type.headline, color: colors.foreground },
+  stagesRow: { flexDirection: 'row', gap: spacing.sm },
+  stageCell: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    padding: spacing.sm + 2,
+    alignItems: 'center',
+    gap: 4,
+  },
+  stageLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.8 },
+  stageInput: {
+    ...type.headline,
+    color: colors.foreground,
+    textAlign: 'center',
+    minWidth: 56,
+    paddingVertical: 2,
+    fontVariant: ['tabular-nums'],
+  },
+  stageUnit: { ...type.caption, color: colors.mutedForeground },
   chips: { flexDirection: 'row', gap: spacing.sm },
   chip: {
     flex: 1,

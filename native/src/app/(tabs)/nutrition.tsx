@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ClipboardList, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
+import { ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -10,6 +10,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
+import { useAuth } from '@/hooks/use-auth';
 import { useFavoriteFoods, useRecentFoods, useToggleFavoriteFood, type FoodItemRow } from '@/hooks/use-nutrition';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,6 +23,7 @@ type Tab = 'foods' | 'plans';
  */
 export default function NutritionScreen() {
   const i18n = useI18n();
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('foods');
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -41,7 +43,7 @@ export default function NutritionScreen() {
     queryFn: async () => {
       const { data } = await supabase
         .from('food_items')
-        .select('id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
+        .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
         .ilike('name', `%${debounced}%`)
         .order('is_favorite', { ascending: false })
         .order('name')
@@ -61,6 +63,17 @@ export default function NutritionScreen() {
           {Math.round(Number(f.kcal))} kcal · P{Math.round(Number(f.protein_g))} · C{Math.round(Number(f.carbs_g))} · F{Math.round(Number(f.fat_g))}
         </Text>
       </View>
+      {/* Own foods are editable (web: pencil when user_id matches) */}
+      {f.user_id === user?.id && (
+        <Pressable
+          hitSlop={10}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push({ pathname: '/food-editor', params: { id: f.id } });
+          }}>
+          <Icon icon={Pencil} size={15} color={colors.mutedForeground} />
+        </Pressable>
+      )}
       <Pressable
         hitSlop={10}
         onPress={() => {
@@ -125,17 +138,28 @@ export default function NutritionScreen() {
 
       {tab === 'foods' ? (
         <>
-          {/* Search */}
-          <View style={styles.searchWrap}>
-            <Icon icon={Search} size={15} color={colors.mutedForeground} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={i18n.nutritionSearchFood}
-              placeholderTextColor={colors.mutedForeground}
-              value={search}
-              onChangeText={setSearch}
-              autoCorrect={false}
-            />
+          {/* Search + add custom food (web: search flex-1 + Add button) */}
+          <View style={styles.searchRow}>
+            <View style={styles.searchWrap}>
+              <Icon icon={Search} size={15} color={colors.mutedForeground} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={i18n.nutritionSearchFood}
+                placeholderTextColor={colors.mutedForeground}
+                value={search}
+                onChangeText={setSearch}
+                autoCorrect={false}
+              />
+            </View>
+            <Pressable
+              style={({ pressed }) => [styles.addFoodBtn, pressed && styles.pressed]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/food-editor');
+              }}>
+              <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
+              <Text style={styles.addFoodText}>{i18n.foodAddCustom}</Text>
+            </Pressable>
           </View>
 
           {debounced.length >= 2 && results && (
@@ -260,7 +284,9 @@ const styles = StyleSheet.create({
   },
   logChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
 
+  searchRow: { flexDirection: 'row', gap: spacing.sm },
   searchWrap: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -271,6 +297,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(24,24,27,0.3)',
     paddingHorizontal: spacing.md - 4,
   },
+  addFoodBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    height: 44,
+    paddingHorizontal: spacing.md - 2,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+  },
+  addFoodText: { fontSize: 12, fontWeight: '600', color: colors.primaryForeground },
   searchInput: { flex: 1, color: colors.foreground, fontSize: 15, height: '100%' },
 
   listCard: { gap: spacing.sm + 2 },

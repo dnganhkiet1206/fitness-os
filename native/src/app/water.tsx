@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { Plus } from 'lucide-react-native';
+import { Minus, Plus } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -8,7 +8,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useProfile } from '@/hooks/useTodayData';
-import { useAddWater, useTodayWater, useTodayWaterLogs, useWaterWeek } from '@/hooks/use-water';
+import { useAddWater, useRemoveLastWater, useTodayWater, useTodayWaterLogs, useWaterWeek } from '@/hooks/use-water';
 
 const QUICK = [250, 500, 750];
 
@@ -20,6 +20,7 @@ export default function WaterScreen() {
   const { data: logs } = useTodayWaterLogs();
   const { data: week } = useWaterWeek();
   const addWater = useAddWater();
+  const removeLast = useRemoveLastWater();
 
   const target = Number(profile?.water_target_ml) || 2500;
   const todayMl = total ?? 0;
@@ -44,6 +45,17 @@ export default function WaterScreen() {
         </View>
         <Text style={styles.quickLabel}>{i18n.nQuickAdd}</Text>
         <View style={styles.quickRow}>
+          {/* Undo last entry (web: minus button) */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.undoBtn,
+              (!logs || logs.length === 0) && styles.undoDisabled,
+              pressed && styles.pressed,
+            ]}
+            disabled={!logs || logs.length === 0 || removeLast.isPending}
+            onPress={() => removeLast.mutate()}>
+            <Icon icon={Minus} size={16} color={colors.foreground} strokeWidth={2.5} />
+          </Pressable>
           {QUICK.map((ml) => (
             <Pressable
               key={ml}
@@ -110,6 +122,16 @@ const styles = StyleSheet.create({
   quickLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '600', marginTop: spacing.md },
   quickRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   quickBtn: { flex: 1, height: 46, borderRadius: radius.md, backgroundColor: colors.secondary, flexDirection: 'row', gap: 2, alignItems: 'center', justifyContent: 'center' },
+  undoBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  undoDisabled: { opacity: 0.35 },
   quickText: { ...type.headline, color: colors.foreground },
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, height: 130, marginTop: spacing.md },
   barCol: { flex: 1, alignItems: 'center', gap: 6 },

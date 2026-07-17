@@ -20,6 +20,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { useExercises } from '@/hooks/use-library';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
@@ -27,12 +28,13 @@ import { recomputeDailyLog } from '@/lib/daily-log-service';
 const RPE_VALUES = [6, 7, 8, 9, 10] as const;
 
 interface SetRow {
+  exerciseId: string;
   exerciseName: string;
   weight: string; // kept as text for input friendliness
   reps: string;
 }
 
-const EMPTY_SET: SetRow = { exerciseName: '', weight: '', reps: '' };
+const EMPTY_SET: SetRow = { exerciseId: '', exerciseName: '', weight: '', reps: '' };
 
 export default function LogWorkoutSheet() {
   const { user } = useAuth();
@@ -41,9 +43,32 @@ export default function LogWorkoutSheet() {
   const [name, setName] = useState('');
   const [rpe, setRpe] = useState<number>(7);
   const [sets, setSets] = useState<SetRow[]>([{ ...EMPTY_SET }]);
+  const [focusedRow, setFocusedRow] = useState<number | null>(null);
+  const { data: exercises } = useExercises();
 
   const updateSet = (idx: number, field: keyof SetRow, value: string) => {
-    setSets((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)));
+    setSets((prev) =>
+      prev.map((s, i) => {
+        if (i !== idx) return s;
+        // Manual typing invalidates a previously picked library exercise
+        if (field === 'exerciseName') return { ...s, exerciseName: value, exerciseId: '' };
+        return { ...s, [field]: value };
+      }),
+    );
+  };
+
+  const pickExercise = (idx: number, ex: { id: string; name: string }) => {
+    Haptics.selectionAsync();
+    setSets((prev) => prev.map((s, i) => (i === idx ? { ...s, exerciseId: ex.id, exerciseName: ex.name } : s)));
+    setFocusedRow(null);
+  };
+
+  // Library suggestions for the focused exercise-name input (web: select from exercises)
+  const suggestionsFor = (idx: number) => {
+    if (focusedRow !== idx || !exercises || exercises.length === 0) return [];
+    const q = sets[idx]?.exerciseName.trim().toLowerCase() ?? '';
+    const pool = q.length === 0 ? exercises : exercises.filter((e) => e.name.toLowerCase().includes(q));
+    return pool.filter((e) => e.name.toLowerCase() !== q).slice(0, 5);
   };
 
   const addSet = () => {
@@ -51,7 +76,15 @@ export default function LogWorkoutSheet() {
     setSets((prev) => {
       const last = prev[prev.length - 1];
       // Duplicate the previous exercise/weight — the common next-set case
-      return [...prev, { exerciseName: last?.exerciseName ?? '', weight: last?.weight ?? '', reps: '' }];
+      return [
+        ...prev,
+        {
+          exerciseId: last?.exerciseId ?? '',
+          exerciseName: last?.exerciseName ?? '',
+          weight: last?.weight ?? '',
+          reps: '',
+        },
+      ];
     });
   };
 
@@ -67,7 +100,7 @@ export default function LogWorkoutSheet() {
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
       const setsJson = validSets.map((s, i) => ({
-        exerciseId: '',
+        exerciseId: s.exerciseId,
         exerciseName: s.exerciseName.trim() || 'Exercise',
         setIndex: i + 1,
         weight: Number(s.weight),
@@ -113,37 +146,57 @@ export default function LogWorkoutSheet() {
         />
 
         <Text style={styles.sectionLabel}>{i18n.nSets}</Text>
-        {sets.map((s, idx) => (
-          <View key={idx} style={styles.setRow}>
-            <Text style={styles.setIndex}>{idx + 1}</Text>
-            <TextInput
-              style={[styles.input, styles.setName]}
-              placeholder={i18n.nExercise}
-              placeholderTextColor={colors.mutedForeground}
-              value={s.exerciseName}
-              onChangeText={(v) => updateSet(idx, 'exerciseName', v)}
-            />
-            <TextInput
-              style={[styles.input, styles.setNum]}
-              placeholder="kg"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="decimal-pad"
-              value={s.weight}
-              onChangeText={(v) => updateSet(idx, 'weight', v)}
-            />
-            <TextInput
-              style={[styles.input, styles.setNum]}
-              placeholder={i18n.nReps}
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="number-pad"
-              value={s.reps}
-              onChangeText={(v) => updateSet(idx, 'reps', v)}
-            />
-            <Pressable hitSlop={8} onPress={() => removeSet(idx)} style={styles.removeSet}>
-              <Icon icon={X} size={14} color={colors.mutedForeground} />
-            </Pressable>
-          </View>
-        ))}
+        {sets.map((s, idx) => {
+          const suggestions = suggestionsFor(idx);
+          return (
+            <View key={idx}>
+              <View style={styles.setRow}>
+                <Text style={styles.setIndex}>{idx + 1}</Text>
+                <TextInput
+                  style={[styles.input, styles.setName]}
+                  placeholder={i18n.nExercise}
+                  placeholderTextColor={colors.mutedForeground}
+                  value={s.exerciseName}
+                  onChangeText={(v) => updateSet(idx, 'exerciseName', v)}
+                  onFocus={() => setFocusedRow(idx)}
+                  onBlur={() => setTimeout(() => setFocusedRow((cur) => (cur === idx ? null : cur)), 150)}
+                />
+                <TextInput
+                  style={[styles.input, styles.setNum]}
+                  placeholder="kg"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="decimal-pad"
+                  value={s.weight}
+                  onChangeText={(v) => updateSet(idx, 'weight', v)}
+                />
+                <TextInput
+                  style={[styles.input, styles.setNum]}
+                  placeholder={i18n.nReps}
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="number-pad"
+                  value={s.reps}
+                  onChangeText={(v) => updateSet(idx, 'reps', v)}
+                />
+                <Pressable hitSlop={8} onPress={() => removeSet(idx)} style={styles.removeSet}>
+                  <Icon icon={X} size={14} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+              {/* Library suggestions for the focused row (web: exercise dropdown) */}
+              {suggestions.length > 0 && (
+                <View style={styles.suggestRow}>
+                  {suggestions.map((ex) => (
+                    <Pressable
+                      key={ex.id}
+                      style={({ pressed }) => [styles.suggestChip, pressed && styles.pressed]}
+                      onPress={() => pickExercise(idx, ex)}>
+                      <Text style={styles.suggestText} numberOfLines={1}>{ex.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
 
         <Pressable style={({ pressed }) => [styles.addSet, pressed && styles.pressed]} onPress={addSet}>
           <Icon icon={Plus} size={15} color={colors.foreground} strokeWidth={2.5} />
@@ -220,6 +273,21 @@ const styles = StyleSheet.create({
   setName: { flex: 1, paddingHorizontal: spacing.sm, height: 44 },
   setNum: { width: 64, paddingHorizontal: spacing.sm, height: 44, textAlign: 'center' },
   removeSet: { width: 24, alignItems: 'center' },
+  suggestRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+    marginLeft: 24,
+  },
+  suggestChip: {
+    maxWidth: 180,
+    paddingHorizontal: spacing.md - 2,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.secondary,
+  },
+  suggestText: { ...type.caption, color: colors.foreground },
   removeText: { color: colors.mutedForeground, fontSize: 14 },
   addSet: {
     height: 44,
