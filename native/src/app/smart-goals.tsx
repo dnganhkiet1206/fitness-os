@@ -14,7 +14,7 @@ import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
-import { displayWeight, weightLabel } from '@/lib/units';
+import { convertWeight, displayWeight, weightLabel } from '@/lib/units';
 
 function weekDates(weeksAgo: number) {
   const now = new Date();
@@ -145,10 +145,10 @@ export default function SmartGoalsScreen() {
             <View style={[styles.callout, analysis.onTrack ? styles.calloutGood : styles.calloutBad]}>
               <Text style={styles.calloutValue}>
                 {analysis.weeklyChange > 0 ? '+' : ''}
-                {displayWeight(analysis.weeklyChange, wUnit).toFixed(2)} {wl}/{week}
+                {convertWeight(analysis.weeklyChange, wUnit).toFixed(2)} {wl}/{week}
               </Text>
               <Text style={styles.calloutTarget}>
-                {i18n.target}: {analysis.targetMin > 0 ? '+' : ''}{displayWeight(analysis.targetMin, wUnit)} — {analysis.targetMax > 0 ? '+' : ''}{displayWeight(analysis.targetMax, wUnit)} {wl}/{week}
+                {i18n.target}: {analysis.targetMin > 0 ? '+' : ''}{convertWeight(analysis.targetMin, wUnit).toFixed(2)} — {analysis.targetMax > 0 ? '+' : ''}{convertWeight(analysis.targetMax, wUnit).toFixed(2)} {wl}/{week}
               </Text>
               <Text style={[styles.calloutStatus, { color: analysis.onTrack ? colors.readinessGreen : colors.readinessRed }]}>
                 {analysis.onTrack ? i18n.smartGoalsOnTrack : i18n.smartGoalsOffTrack}

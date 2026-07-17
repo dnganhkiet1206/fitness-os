@@ -24,10 +24,14 @@ export function inToCm(inches: number): number {
   return inches * CM_PER_IN;
 }
 
-/** Weight in the display unit, rounded to 1 decimal */
+/** Weight converted to the display unit, unrounded (caller formats) */
+export function convertWeight(kg: number, unit: WeightUnit): number {
+  return unit === 'lbs' ? kgToLbs(kg) : kg;
+}
+
+/** Weight in the display unit, rounded to 1 decimal (for whole-body weights) */
 export function displayWeight(kg: number, unit: WeightUnit): number {
-  const v = unit === 'lbs' ? kgToLbs(kg) : kg;
-  return Math.round(v * 10) / 10;
+  return Math.round(convertWeight(kg, unit) * 10) / 10;
 }
 
 /** Parse a value typed in the display unit back to kg for storage */
