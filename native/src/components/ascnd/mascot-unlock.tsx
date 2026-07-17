@@ -30,9 +30,13 @@ const SEEN_KEY = 'ascnd_mascot_seen_unlocked';
 
 export function MascotUnlockCelebration() {
   const { data: stats } = useUnlockStats();
+  const { enabled } = useMascotSettings();
   const [queue, setQueue] = useState<MascotDef[]>([]);
 
   useEffect(() => {
+    // Respect the Settings toggle: no companion celebrations when mascots
+    // are turned off (the seen-set is still advanced below so re-enabling
+    // later doesn't replay every unlock earned while off).
     if (!stats) return;
     let cancelled = false;
     (async () => {
@@ -47,7 +51,10 @@ export function MascotUnlockCelebration() {
         const seen: string[] = JSON.parse(raw);
         const fresh = unlockedIds.filter((id) => !seen.includes(id));
         if (fresh.length === 0 || cancelled) return;
+        // Advance the seen-set even when disabled so toggling back on
+        // later doesn't replay every unlock earned while it was off
         await AsyncStorage.setItem(SEEN_KEY, JSON.stringify([...seen, ...fresh]));
+        if (!enabled) return;
         setQueue((q) => [
           ...q,
           ...fresh
@@ -61,7 +68,7 @@ export function MascotUnlockCelebration() {
     return () => {
       cancelled = true;
     };
-  }, [stats]);
+  }, [stats, enabled]);
 
   const current = queue[0];
   if (!current) return null;
