@@ -11,7 +11,9 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
+import { useUnits } from '@/hooks/use-units';
 import { supabase } from '@/integrations/supabase/client';
+import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 
 const READINESS_COLOR: Record<string, string> = {
   green: colors.readinessGreen,
@@ -22,23 +24,28 @@ const READINESS_COLOR: Record<string, string> = {
 /** Weight check-in — shows today's weight vs profile, or an inline logger */
 export function WeightCheckinCard({ profileWeight }: { profileWeight: number | null }) {
   const i18n = useI18n();
+  const { weight: wUnit } = useUnits();
   const { data: todayWeight } = useTodayWeight();
   const logWeight = useLogWeight();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState('');
 
-  useEffect(() => {
-    setValue(todayWeight?.toString() ?? profileWeight?.toString() ?? '');
-  }, [todayWeight, profileWeight]);
+  // Stored values are kg; show + accept entry in the user's unit
+  const todayDisp = todayWeight != null ? displayWeight(todayWeight, wUnit) : null;
+  const profileDisp = profileWeight != null ? displayWeight(profileWeight, wUnit) : null;
 
-  const diff = todayWeight != null && profileWeight != null ? todayWeight - profileWeight : null;
+  useEffect(() => {
+    setValue(todayDisp?.toString() ?? profileDisp?.toString() ?? '');
+  }, [todayDisp, profileDisp]);
+
+  const diff = todayDisp != null && profileDisp != null ? todayDisp - profileDisp : null;
   const showLogger = editing || todayWeight == null;
 
   const submit = () => {
     const val = parseFloat(value);
     if (isNaN(val) || val <= 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    logWeight.mutate(val, { onSuccess: () => setEditing(false) });
+    logWeight.mutate(weightToKg(val, wUnit), { onSuccess: () => setEditing(false) });
   };
 
   return (
@@ -54,7 +61,7 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
             placeholder="70.0"
             placeholderTextColor={colors.mutedForeground}
           />
-          <Text style={styles.weightUnit}>kg</Text>
+          <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
           <Pressable
             style={({ pressed }) => [styles.weightBtn, pressed && styles.pressed]}
             onPress={submit}
@@ -69,8 +76,8 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
       ) : (
         <Pressable style={styles.weightDisplay} onPress={() => setEditing(true)}>
           <View style={styles.weightValueRow}>
-            <Text style={styles.weightValue}>{todayWeight}</Text>
-            <Text style={styles.weightUnit}>kg</Text>
+            <Text style={styles.weightValue}>{todayDisp}</Text>
+            <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
           </View>
           {diff != null && Math.abs(diff) >= 0.05 && (
             <View

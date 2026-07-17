@@ -10,7 +10,9 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
+import { useUnits } from '@/hooks/use-units';
 import { getLocale } from '@/lib/i18n';
+import { displayWeight, weightLabel } from '@/lib/units';
 
 interface TplExercise {
   sets?: number;
@@ -34,6 +36,8 @@ function volume(exercises: unknown): number {
 export default function WorkoutsScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
+  const { weight: wUnit } = useUnits();
+  const wl = weightLabel(wUnit);
   const vi = lang === 'vi';
   const { data: templates } = useWorkoutTemplates();
   const { data: sessions } = useWorkoutSessions(14);
@@ -106,7 +110,7 @@ export default function WorkoutsScreen() {
                     ) : null}
                   </View>
                   <Text style={styles.tplMeta}>
-                    {exs.length} {i18n.workoutsExercises} · {i18n.workoutsVolume}: {volume(exs).toLocaleString()} kg
+                    {exs.length} {i18n.workoutsExercises} · {i18n.workoutsVolume}: {Math.round(displayWeight(volume(exs), wUnit)).toLocaleString()} {wl}
                   </Text>
                 </View>
                 <View style={styles.tplActions}>
@@ -142,7 +146,7 @@ export default function WorkoutsScreen() {
                     {new Date(s.date_time).toLocaleDateString(getLocale(lang), {
                       weekday: 'short', day: 'numeric', month: 'short',
                     })}
-                    {s.volume_load != null ? `  ·  ${Math.round(Number(s.volume_load)).toLocaleString()} kg` : ''}
+                    {s.volume_load != null ? `  ·  ${Math.round(displayWeight(Number(s.volume_load), wUnit)).toLocaleString()} ${wl}` : ''}
                   </Text>
                 </View>
                 {s.session_rpe != null && (

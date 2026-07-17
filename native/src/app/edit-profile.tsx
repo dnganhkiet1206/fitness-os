@@ -22,6 +22,14 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
+import {
+  displayHeight,
+  displayWeight,
+  heightToCm,
+  weightToKg,
+  type HeightUnit,
+  type WeightUnit,
+} from '@/lib/units';
 
 type Form = {
   name: string;
@@ -67,9 +75,16 @@ export default function EditProfileSheet() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Form>(EMPTY);
   const [showDob, setShowDob] = useState(false);
+  // Display strings for the weight/height fields (form keeps metric)
+  const [wDisp, setWDisp] = useState('');
+  const [hDisp, setHDisp] = useState('');
 
   useEffect(() => {
     if (!profile) return;
+    const uW: WeightUnit = profile.units_weight === 'lbs' ? 'lbs' : 'kg';
+    const uH: HeightUnit = profile.units_height === 'in' ? 'in' : 'cm';
+    setWDisp(String(displayWeight(Number(profile.weight_kg ?? 70), uW)));
+    setHDisp(String(displayHeight(Number(profile.height_cm ?? 175), uH)));
     setForm({
       name: profile.name ?? '',
       dob: profile.dob ?? '',
@@ -201,40 +216,56 @@ export default function EditProfileSheet() {
           <Segmented options={sexes} value={form.sex} onChange={(v) => set('sex', v)} />
         </Field>
 
-        {/* Height + Weight */}
+        {/* Height + Weight (entered in the user's display units) */}
         <View style={styles.row}>
           <Field label={`${i18n.settingsHeight} (${form.units_height})`} style={styles.half}>
             <TextInput
               style={styles.input}
               keyboardType="decimal-pad"
-              value={form.height_cm}
-              onChangeText={(v) => set('height_cm', v)}
+              value={hDisp}
+              onChangeText={(v) => {
+                setHDisp(v);
+                const n = parseFloat(v);
+                set('height_cm', v && !isNaN(n) ? String(Math.round(heightToCm(n, form.units_height as HeightUnit))) : '');
+              }}
             />
           </Field>
           <Field label={`${i18n.settingsWeight} (${form.units_weight})`} style={styles.half}>
             <TextInput
               style={styles.input}
               keyboardType="decimal-pad"
-              value={form.weight_kg}
-              onChangeText={(v) => set('weight_kg', v)}
+              value={wDisp}
+              onChangeText={(v) => {
+                setWDisp(v);
+                const n = parseFloat(v);
+                set('weight_kg', v && !isNaN(n) ? String(Math.round(weightToKg(n, form.units_weight as WeightUnit) * 10) / 10) : '');
+              }}
             />
           </Field>
         </View>
 
-        {/* Units */}
+        {/* Units — flipping converts the field in place */}
         <View style={styles.row}>
           <Field label={i18n.settingsWeight} style={styles.half}>
             <Segmented
               options={[{ key: 'kg', label: 'kg' }, { key: 'lbs', label: 'lbs' }]}
               value={form.units_weight}
-              onChange={(v) => set('units_weight', v)}
+              onChange={(v) => {
+                const kg = Number(form.weight_kg) || 0;
+                set('units_weight', v);
+                setWDisp(kg ? String(displayWeight(kg, v as WeightUnit)) : '');
+              }}
             />
           </Field>
           <Field label={i18n.settingsHeight} style={styles.half}>
             <Segmented
               options={[{ key: 'cm', label: 'cm' }, { key: 'in', label: 'in' }]}
               value={form.units_height}
-              onChange={(v) => set('units_height', v)}
+              onChange={(v) => {
+                const cm = Number(form.height_cm) || 0;
+                set('units_height', v);
+                setHDisp(cm ? String(displayHeight(cm, v as HeightUnit)) : '');
+              }}
             />
           </Field>
         </View>

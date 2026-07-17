@@ -30,8 +30,10 @@ import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useNudges, useRecentWorkouts, useTodayBiometrics, useWearables } from '@/hooks/useTodayData';
 import { useRecentAwards } from '@/hooks/use-extras';
+import { useUnits } from '@/hooks/use-units';
 import { awardText } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
+import { displayWeight, weightLabel } from '@/lib/units';
 
 function MicroTitle({ icon, children, color }: { icon?: LucideIcon; children: React.ReactNode; color?: string }) {
   return (
@@ -108,6 +110,7 @@ interface PainFlag {
 
 export function TrainingCard({ acwr }: { acwr: number | null }) {
   const i18n = useI18n();
+  const { weight: wUnit } = useUnits();
   const { data: workouts } = useRecentWorkouts();
 
   const latest = (workouts ?? [])[0];
@@ -146,7 +149,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
         <View style={styles.latestInfo}>
           <Text style={styles.latestName} numberOfLines={1}>{latest.template_name || 'Workout'}</Text>
           <Text style={styles.latestMeta}>
-            RPE {Number(latest.session_rpe ?? 0)}/10 · {sets.length} sets · {Number(latest.volume_load || 0).toLocaleString()} vol
+            RPE {Number(latest.session_rpe ?? 0)}/10 · {sets.length} sets · {Math.round(displayWeight(Number(latest.volume_load || 0), wUnit)).toLocaleString()} {weightLabel(wUnit)}
           </Text>
         </View>
       </View>
@@ -177,7 +180,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
       )}
 
       <Text style={styles.volumeLine}>
-        {i18n.dcTraining7dVolume}: <Text style={styles.volumeValue}>{totalVolume.toLocaleString()}</Text>
+        {i18n.dcTraining7dVolume}: <Text style={styles.volumeValue}>{Math.round(displayWeight(totalVolume, wUnit)).toLocaleString()} {weightLabel(wUnit)}</Text>
       </Text>
 
       {painFlags.length > 0 && (

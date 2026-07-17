@@ -12,8 +12,10 @@ import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBodyMeasurements, useWeightHistory } from '@/hooks/use-fitness-data';
 import { useProgressPhotos } from '@/hooks/use-progress-photos';
+import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
 import { getLocale } from '@/lib/i18n';
+import { displayWeight, weightLabel } from '@/lib/units';
 
 type Tab = 'weight' | 'measurements' | 'photos';
 
@@ -36,7 +38,10 @@ export default function ProgressScreen() {
   const { data: photos } = useProgressPhotos();
   const { data: measurements } = useBodyMeasurements();
 
-  const weightData = weight ?? [];
+  const { weight: wUnit } = useUnits();
+  const wl = weightLabel(wUnit);
+  // Stored kg; chart + tiles show the user's unit (BMI stays metric)
+  const weightData = (weight ?? []).map((d) => ({ ...d, value: displayWeight(d.value, wUnit) }));
   const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].value : null;
   const startWeight = weightData.length > 0 ? weightData[0].value : null;
   const weightDelta = currentWeight != null && startWeight != null ? currentWeight - startWeight : null;
@@ -44,8 +49,9 @@ export default function ProgressScreen() {
     weightDelta != null &&
     ((profile?.goal === 'bulk' && weightDelta > 0) || (profile?.goal === 'cut' && weightDelta < 0));
 
+  const currentKg = (weight ?? []).length > 0 ? (weight ?? [])[(weight ?? []).length - 1].value : null;
   const heightM = profile?.height_cm ? Number(profile.height_cm) / 100 : null;
-  const bmi = currentWeight != null && heightM ? currentWeight / (heightM * heightM) : null;
+  const bmi = currentKg != null && heightM ? currentKg / (heightM * heightM) : null;
   const cat = bmi != null ? bmiCategory(bmi, vi) : null;
   const bmiPct = bmi != null ? Math.max(0, Math.min(100, ((bmi - 15) / 25) * 100)) : 0;
 
@@ -129,10 +135,10 @@ export default function ProgressScreen() {
           {/* Stat tiles: current / change / records */}
           <View style={styles.tileRow}>
             {[
-              { label: i18n.progressCurrent, value: currentWeight != null ? `${currentWeight}kg` : '—', color: colors.foreground },
+              { label: i18n.progressCurrent, value: currentWeight != null ? `${currentWeight}${wl}` : '—', color: colors.foreground },
               {
                 label: i18n.progressChange,
-                value: weightDelta != null ? `${weightDelta > 0 ? '+' : ''}${weightDelta.toFixed(1)}kg` : '—',
+                value: weightDelta != null ? `${weightDelta > 0 ? '+' : ''}${weightDelta.toFixed(1)}${wl}` : '—',
                 color: weightDelta == null ? colors.foreground : deltaGood ? colors.readinessGreen : colors.foreground,
               },
               { label: i18n.progressRecords, value: `${weightData.length}`, color: colors.foreground },
@@ -190,7 +196,7 @@ export default function ProgressScreen() {
           {/* Weight chart */}
           <GlassCard style={styles.chartCard}>
             <Text style={styles.microTitle}>{i18n.progressWeightChart}</Text>
-            <LineChart points={weightData} color={colors.readinessGreen} height={180} unit="kg" emptyLabel={i18n.nNotEnoughData} />
+            <LineChart points={weightData} color={colors.readinessGreen} height={180} unit={wl} emptyLabel={i18n.nNotEnoughData} />
           </GlassCard>
         </>
       )}

@@ -21,10 +21,12 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useExercises } from '@/hooks/use-library';
+import { useUnits } from '@/hooks/use-units';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
+import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 
 const RPE_VALUES = [6, 7, 8, 9, 10] as const;
 
@@ -42,6 +44,8 @@ export default function LogWorkoutSheet() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
   const i18n = useI18n();
+  const { weight: wUnit } = useUnits();
+  const wl = weightLabel(wUnit);
   const [name, setName] = useState('');
   const [rpe, setRpe] = useState<number>(7);
   const [sets, setSets] = useState<SetRow[]>([{ ...EMPTY_SET }]);
@@ -97,7 +101,11 @@ export default function LogWorkoutSheet() {
   };
 
   const validSets = sets.filter((s) => Number(s.weight) > 0 && Number(s.reps) > 0);
-  const volumeLoad = validSets.reduce((sum, s) => sum + Number(s.weight) * Number(s.reps), 0);
+  // Inputs are in the user's unit; volume load is stored in kg
+  const volumeLoad = validSets.reduce(
+    (sum, s) => sum + weightToKg(Number(s.weight), wUnit) * Number(s.reps),
+    0,
+  );
 
   const save = useMutation({
     mutationFn: async () => {
@@ -108,7 +116,7 @@ export default function LogWorkoutSheet() {
           exerciseId: s.exerciseId,
           exerciseName: s.exerciseName.trim() || 'Exercise',
           setIndex: i + 1,
-          weight: Number(s.weight),
+          weight: Math.round(weightToKg(Number(s.weight), wUnit) * 100) / 100,
           reps: Number(s.reps),
           rpe: setRpe >= 1 && setRpe <= 10 ? setRpe : null,
         };
@@ -169,7 +177,7 @@ export default function LogWorkoutSheet() {
                 />
                 <TextInput
                   style={[styles.input, styles.setNum]}
-                  placeholder="kg"
+                  placeholder={wl}
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="decimal-pad"
                   value={s.weight}
@@ -221,7 +229,7 @@ export default function LogWorkoutSheet() {
         <View style={styles.summaryRow}>
           <Text style={styles.sectionLabel}>{i18n.nVolume}</Text>
           <Text style={styles.volume}>
-            {volumeLoad > 0 ? `${Math.round(volumeLoad).toLocaleString()} kg` : '—'}
+            {volumeLoad > 0 ? `${Math.round(displayWeight(volumeLoad, wUnit)).toLocaleString()} ${wl}` : '—'}
           </Text>
         </View>
 

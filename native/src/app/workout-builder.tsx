@@ -24,6 +24,8 @@ import {
   useExercises,
   type TemplateExercise,
 } from '@/hooks/use-library';
+import { useUnits } from '@/hooks/use-units';
+import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/units';
 
 const TYPES = ['push', 'pull', 'legs', 'upper', 'lower', 'full_body', 'strength', 'hypertrophy', 'cardio', 'custom'];
 const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Quads', 'Hamstrings', 'Glutes', 'Abs', 'Full Body', 'Cardio'];
@@ -31,6 +33,7 @@ const EQUIPMENT = ['Barbell', 'Dumbbell', 'Cable', 'Machine', 'Bodyweight', 'Ket
 
 export default function WorkoutBuilderSheet() {
   const i18n = useI18n();
+  const { weight: wUnit } = useUnits();
   const { data: exercises } = useExercises();
   const addExercise = useAddExercise();
   const addTemplate = useAddWorkoutTemplate();
@@ -238,7 +241,7 @@ export default function WorkoutBuilderSheet() {
                 <View style={styles.exFields}>
                   <NumField label={i18n.nSets} value={ex.sets} onChange={(v) => updateEx(idx, 'sets', v)} />
                   <NumField label={i18n.nReps} value={ex.reps} onChange={(v) => updateEx(idx, 'reps', v)} />
-                  <NumField label="kg" value={ex.weight} onChange={(v) => updateEx(idx, 'weight', v)} />
+                  <WeightField kg={ex.weight} unit={wUnit} onChangeKg={(v) => updateEx(idx, 'weight', v)} />
                   <NumField label="RPE" value={ex.rpe ?? 7} onChange={(v) => updateEx(idx, 'rpe', v)} />
                   <NumField label={i18n.nRestSec} value={ex.restSeconds ?? 90} onChange={(v) => updateEx(idx, 'restSeconds', v)} />
                 </View>
@@ -271,6 +274,38 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
         keyboardType="number-pad"
         value={String(value)}
         onChangeText={(t) => onChange(Number(t) || 0)}
+        selectTextOnFocus
+      />
+    </View>
+  );
+}
+
+/**
+ * Weight field for a planned set. Displays/accepts the user's unit while
+ * storing kg — keeps its own display string so kg↔lb rounding doesn't
+ * jitter mid-edit.
+ */
+function WeightField({
+  kg,
+  unit,
+  onChangeKg,
+}: {
+  kg: number;
+  unit: WeightUnit;
+  onChangeKg: (v: number) => void;
+}) {
+  const [str, setStr] = useState(() => (kg ? String(displayWeight(kg, unit)) : '0'));
+  return (
+    <View style={styles.numField}>
+      <Text style={styles.numLabel}>{weightLabel(unit)}</Text>
+      <TextInput
+        style={styles.numInput}
+        keyboardType="decimal-pad"
+        value={str}
+        onChangeText={(t) => {
+          setStr(t);
+          onChangeKg(Math.round(weightToKg(Number(t) || 0, unit) * 100) / 100);
+        }}
         selectTextOnFocus
       />
     </View>

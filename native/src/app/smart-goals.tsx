@@ -10,9 +10,11 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
+import { displayWeight, weightLabel } from '@/lib/units';
 
 function weekDates(weeksAgo: number) {
   const now = new Date();
@@ -33,6 +35,8 @@ export default function SmartGoalsScreen() {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const { lang } = useAppSettings();
+  const { weight: wUnit } = useUnits();
+  const wl = weightLabel(wUnit);
   const i18n = useI18n();
 
   const { data: weightLogs } = useQuery({
@@ -133,18 +137,18 @@ export default function SmartGoalsScreen() {
           <>
             <View style={styles.chart}>
               <LineChart
-                points={analysis.valid.map((w) => ({ date: w.week, value: Math.round(w.value * 10) / 10 }))}
+                points={analysis.valid.map((w) => ({ date: w.week, value: displayWeight(w.value, wUnit) }))}
                 color={colors.readinessGreen}
-                unit="kg"
+                unit={wl}
               />
             </View>
             <View style={[styles.callout, analysis.onTrack ? styles.calloutGood : styles.calloutBad]}>
               <Text style={styles.calloutValue}>
                 {analysis.weeklyChange > 0 ? '+' : ''}
-                {analysis.weeklyChange.toFixed(2)} kg/{week}
+                {displayWeight(analysis.weeklyChange, wUnit).toFixed(2)} {wl}/{week}
               </Text>
               <Text style={styles.calloutTarget}>
-                {i18n.target}: {analysis.targetMin > 0 ? '+' : ''}{analysis.targetMin} — {analysis.targetMax > 0 ? '+' : ''}{analysis.targetMax} kg/{week}
+                {i18n.target}: {analysis.targetMin > 0 ? '+' : ''}{displayWeight(analysis.targetMin, wUnit)} — {analysis.targetMax > 0 ? '+' : ''}{displayWeight(analysis.targetMax, wUnit)} {wl}/{week}
               </Text>
               <Text style={[styles.calloutStatus, { color: analysis.onTrack ? colors.readinessGreen : colors.readinessRed }]}>
                 {analysis.onTrack ? i18n.smartGoalsOnTrack : i18n.smartGoalsOffTrack}
