@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -16,6 +16,7 @@ import Animated, {
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascotSettings, useUnlockStats } from '@/hooks/use-mascot';
+import { enqueueMascot } from '@/lib/celebration-queue';
 import { isUnlocked, MASCOTS, type MascotDef } from '@/lib/mascots';
 
 /**
@@ -31,7 +32,6 @@ const SEEN_KEY = 'ascnd_mascot_seen_unlocked';
 export function MascotUnlockCelebration() {
   const { data: stats } = useUnlockStats();
   const { enabled } = useMascotSettings();
-  const [queue, setQueue] = useState<MascotDef[]>([]);
 
   useEffect(() => {
     // Respect the Settings toggle: no companion celebrations when mascots
@@ -55,12 +55,9 @@ export function MascotUnlockCelebration() {
         // later doesn't replay every unlock earned while it was off
         await AsyncStorage.setItem(SEEN_KEY, JSON.stringify([...seen, ...fresh]));
         if (!enabled) return;
-        setQueue((q) => [
-          ...q,
-          ...fresh
-            .filter((id) => !q.some((m) => m.id === id))
-            .map((id) => MASCOTS.find((m) => m.id === id)!),
-        ]);
+        // Feed the shared celebration queue so mascot unlocks and award
+        // medals play one at a time instead of stacking
+        fresh.forEach((id) => enqueueMascot(id));
       } catch {
         // storage hiccup — skip, never block the app
       }
@@ -70,15 +67,8 @@ export function MascotUnlockCelebration() {
     };
   }, [stats, enabled]);
 
-  const current = queue[0];
-  if (!current) return null;
-  return (
-    <CelebrationModal
-      key={current.id}
-      mascot={current}
-      onClose={() => setQueue((q) => q.slice(1))}
-    />
-  );
+  // Detection only — the shared CelebrationHost renders the modal
+  return null;
 }
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -131,7 +121,7 @@ function ConfettiPiece({ progress, piece }: { progress: SharedValue<number>; pie
   );
 }
 
-function CelebrationModal({ mascot, onClose }: { mascot: MascotDef; onClose: () => void }) {
+export function MascotCelebrationModal({ mascot, onClose }: { mascot: MascotDef; onClose: () => void }) {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { setSelectedId } = useMascotSettings();

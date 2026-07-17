@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
 import { AuthScreen } from '@/components/ascnd/auth-screen';
-import { AwardCelebrationOverlay } from '@/components/ascnd/award-celebration';
+import { CelebrationHost } from '@/components/ascnd/celebration-host';
 import { MascotUnlockCelebration } from '@/components/ascnd/mascot-unlock';
 import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { colors } from '@/constants/ascnd';
@@ -92,9 +92,10 @@ function Gate() {
         />
       ))}
     </Stack>
-    {/* RN Modal renders above everything, incl. native modals */}
+    {/* Detector (enqueues mascot unlocks) + shared host that shows one
+        celebration at a time — award medals and mascot unlocks queue up */}
     <MascotUnlockCelebration />
-    <AwardCelebrationOverlay />
+    <CelebrationHost />
     </>
   );
 }

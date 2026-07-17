@@ -11,7 +11,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -27,6 +27,7 @@ import Animated, {
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
+import { enqueueAward } from '@/lib/celebration-queue';
 
 /**
  * Global award celebration — port of the web AwardCelebrationOverlay.
@@ -60,36 +61,9 @@ export interface CelebrationAward {
   tier: string;
 }
 
-type Listener = (award: CelebrationAward) => void;
-const listeners: Listener[] = [];
-
+/** Queue an award medal celebration (shown by the shared CelebrationHost) */
 export function fireCelebration(award: CelebrationAward) {
-  listeners.forEach((fn) => fn(award));
-}
-
-let seq = 0;
-
-export function AwardCelebrationOverlay() {
-  const [queue, setQueue] = useState<(CelebrationAward & { _id: number })[]>([]);
-
-  useEffect(() => {
-    const handler: Listener = (award) => setQueue((q) => [...q, { ...award, _id: ++seq }]);
-    listeners.push(handler);
-    return () => {
-      const idx = listeners.indexOf(handler);
-      if (idx > -1) listeners.splice(idx, 1);
-    };
-  }, []);
-
-  const current = queue[0];
-  if (!current) return null;
-  return (
-    <CelebrationModal
-      key={current._id}
-      award={current}
-      onClose={() => setQueue((q) => q.slice(1))}
-    />
-  );
+  enqueueAward(award);
 }
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -142,7 +116,7 @@ function ConfettiPiece({ progress, piece }: { progress: SharedValue<number>; pie
   );
 }
 
-function CelebrationModal({ award, onClose }: { award: CelebrationAward; onClose: () => void }) {
+export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAward; onClose: () => void }) {
   const { lang } = useAppSettings();
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
   const AwardIcon = ICON_MAP[award.icon] ?? Trophy;
