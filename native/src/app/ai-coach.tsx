@@ -1,8 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { fetch as expoFetch } from 'expo/fetch';
 import { router } from 'expo-router';
-import { ArrowUp, ChevronLeft, History, Plus } from 'lucide-react-native';
+import {
+  ArrowUp,
+  Bot,
+  ChevronLeft,
+  History,
+  MessageSquare,
+  Plus,
+  Trash2,
+  User,
+} from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,8 +28,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
+import { MarkdownLite } from '@/components/ascnd/markdown-lite';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -42,6 +52,10 @@ export default function AiCoachScreen() {
   const [showHistory, setShowHistory] = useState(false);
   const convoIdRef = useRef<string | null>(null);
   const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const queryClient = useQueryClient();
+
+  const QUICK_PROMPTS = [i18n.aiCoachPrompt1, i18n.aiCoachPrompt2, i18n.aiCoachPrompt3, i18n.aiCoachPrompt4];
 
   const { data: conversations } = useQuery({
     queryKey: ['ai_conversations', session?.user.id],
@@ -55,6 +69,20 @@ export default function AiCoachScreen() {
         .limit(20);
       if (error) throw error;
       return data ?? [];
+    },
+  });
+
+  const deleteConvo = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('ai_conversations').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['ai_conversations'] });
+      if (convoIdRef.current === id) {
+        convoIdRef.current = null;
+        setMessages([]);
+      }
     },
   });
 
@@ -83,8 +111,8 @@ export default function AiCoachScreen() {
     await supabase.from('ai_messages').insert({ conversation_id: conversationId, role, content });
   };
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (prompt?: string) => {
+    const text = (prompt ?? input).trim();
     if (!text || isLoading) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -209,21 +237,41 @@ export default function AiCoachScreen() {
       {/* History panel */}
       {showHistory && (
         <View style={styles.historyPanel}>
-          {conversations && conversations.length > 0 ? (
-            conversations.map((c) => (
-              <Pressable
-                key={c.id}
-                style={({ pressed }) => [styles.historyRow, pressed && { opacity: 0.7 }]}
-                onPress={() => loadConversation(c.id)}>
-                <Text style={styles.historyTitle} numberOfLines={1}>{c.title ?? '—'}</Text>
-                <Text style={styles.historyDate}>
-                  {new Date(c.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </Text>
-              </Pressable>
-            ))
-          ) : (
-            <Text style={styles.historyEmpty}>{i18n.nNoHistory}</Text>
-          )}
+          <Text style={styles.historyHeader}>{i18n.aiCoachHistory}</Text>
+          <ScrollView style={styles.historyScroll}>
+            {conversations && conversations.length > 0 ? (
+              conversations.map((c) => (
+                <Pressable
+                  key={c.id}
+                  style={({ pressed }) => [
+                    styles.historyRow,
+                    convoIdRef.current === c.id && styles.historyRowActive,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                  onPress={() => loadConversation(c.id)}>
+                  <Icon icon={MessageSquare} size={14} color={colors.mutedForeground} />
+                  <Text style={styles.historyTitle} numberOfLines={1}>{c.title ?? '—'}</Text>
+                  <Text style={styles.historyDate}>
+                    {new Date(c.updated_at).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                  <Pressable
+                    hitSlop={8}
+                    style={({ pressed }) => [styles.historyDelete, pressed && { opacity: 0.6 }]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      deleteConvo.mutate(c.id);
+                    }}>
+                    <Icon icon={Trash2} size={13} color={colors.mutedForeground} />
+                  </Pressable>
+                </Pressable>
+              ))
+            ) : (
+              <Text style={styles.historyEmpty}>{i18n.aiCoachNoHistory}</Text>
+            )}
+          </ScrollView>
         </View>
       )}
 
@@ -235,47 +283,87 @@ export default function AiCoachScreen() {
         keyboardShouldPersistTaps="handled">
         {messages.length === 0 && (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{i18n.nAskCoach}</Text>
-            <Text style={styles.emptyHint}>{i18n.nAskCoachHint}</Text>
+            <View style={styles.emptyIcon}>
+              <Icon icon={Bot} size={32} color={colors.primary} />
+            </View>
+            <Text style={styles.emptyTitle}>{i18n.aiCoachHello}</Text>
+            <Text style={styles.emptyHint}>{i18n.aiCoachIntro}</Text>
+            <View style={styles.prompts}>
+              {QUICK_PROMPTS.map((p) => (
+                <Pressable
+                  key={p}
+                  style={({ pressed }) => [styles.promptChip, pressed && styles.pressed]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    send(p);
+                  }}>
+                  <Text style={styles.promptText}>{p}</Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
         )}
         {messages.map((m, i) => (
-          <View
-            key={i}
-            style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAI]}>
-            <Text style={m.role === 'user' ? styles.bubbleUserText : styles.bubbleAIText}>
-              {m.content}
-            </Text>
+          <View key={i} style={[styles.msgRow, m.role === 'user' && styles.msgRowUser]}>
+            {m.role === 'assistant' && (
+              <View style={[styles.avatar, styles.avatarAI]}>
+                <Icon icon={Bot} size={14} color={colors.primary} />
+              </View>
+            )}
+            <View style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAI]}>
+              {m.role === 'assistant' ? (
+                <MarkdownLite text={m.content} />
+              ) : (
+                <Text style={styles.bubbleUserText}>{m.content}</Text>
+              )}
+            </View>
+            {m.role === 'user' && (
+              <View style={[styles.avatar, styles.avatarUser]}>
+                <Icon icon={User} size={14} color={colors.mutedForeground} />
+              </View>
+            )}
           </View>
         ))}
         {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-          <View style={[styles.bubble, styles.bubbleAI]}>
-            <ActivityIndicator size="small" color={colors.mutedForeground} />
+          <View style={styles.msgRow}>
+            <View style={[styles.avatar, styles.avatarAI]}>
+              <Icon icon={Bot} size={14} color={colors.primary} />
+            </View>
+            <View style={[styles.bubble, styles.bubbleAI]}>
+              <ActivityIndicator size="small" color={colors.mutedForeground} />
+            </View>
           </View>
         )}
       </ScrollView>
 
       {/* Composer */}
-      <View style={[styles.composer, { paddingBottom: insets.bottom + spacing.sm }]}>
-        <TextInput
-          style={styles.composerInput}
-          placeholder={i18n.nMessageCoach}
-          placeholderTextColor={colors.mutedForeground}
-          value={input}
-          onChangeText={setInput}
-          multiline
-          onSubmitEditing={send}
-        />
-        <Pressable
-          style={({ pressed }) => [
-            styles.sendBtn,
-            (!input.trim() || isLoading) && styles.sendDisabled,
-            pressed && styles.pressed,
-          ]}
-          disabled={!input.trim() || isLoading}
-          onPress={send}>
-          <Icon icon={ArrowUp} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
-        </Pressable>
+      <View style={[styles.composerWrap, { paddingBottom: insets.bottom + spacing.xs }]}>
+        <View style={styles.composer}>
+          <TextInput
+            style={styles.composerInput}
+            placeholder={i18n.aiCoachPlaceholder}
+            placeholderTextColor={colors.mutedForeground}
+            value={input}
+            onChangeText={setInput}
+            multiline
+            onSubmitEditing={() => send()}
+          />
+          <Pressable
+            style={({ pressed }) => [
+              styles.sendBtn,
+              (!input.trim() || isLoading) && styles.sendDisabled,
+              pressed && styles.pressed,
+            ]}
+            disabled={!input.trim() || isLoading}
+            onPress={() => send()}>
+            <Icon icon={ArrowUp} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
+          </Pressable>
+        </View>
+        <Text style={styles.disclaimer}>
+          {lang === 'vi'
+            ? '⚠️ AI chỉ hỗ trợ nhắc nhở thói quen, không chẩn đoán hay phát hiện bệnh. Gặp bác sĩ khi có vấn đề sức khoẻ.'
+            : '⚠️ AI supports habit reminders only — it does not diagnose or detect illness. See a doctor for health concerns.'}
+        </Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -309,16 +397,34 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     maxHeight: 320,
   },
+  historyHeader: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    color: colors.mutedForeground,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  historyScroll: { maxHeight: 272 },
   historyRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
   },
-  historyTitle: { ...type.body, color: colors.foreground, flex: 1 },
+  historyRowActive: { backgroundColor: 'rgba(168,175,189,0.1)' },
+  historyTitle: { ...type.footnote, color: colors.foreground, flex: 1 },
   historyDate: { ...type.caption, color: colors.mutedForeground },
+  historyDelete: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   historyEmpty: {
     ...type.footnote,
     color: colors.mutedForeground,
@@ -326,37 +432,74 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   list: { flex: 1 },
-  listContent: { padding: spacing.md, gap: spacing.sm },
-  empty: { alignItems: 'center', marginTop: spacing.xl * 2, gap: spacing.sm },
+  listContent: { padding: spacing.md, gap: spacing.sm + 4 },
+  empty: { alignItems: 'center', marginTop: spacing.xl * 2, gap: spacing.sm, paddingHorizontal: spacing.md },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(168,175,189,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
   emptyTitle: { ...type.title, color: colors.foreground },
-  emptyHint: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
+  emptyHint: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', lineHeight: 19 },
+  prompts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  promptChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(24,24,27,0.4)',
+  },
+  promptText: { ...type.caption, fontSize: 12, color: colors.foreground },
+  msgRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  msgRowUser: { justifyContent: 'flex-end' },
+  avatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  avatarAI: { backgroundColor: 'rgba(168,175,189,0.2)' },
+  avatarUser: { backgroundColor: 'rgba(24,24,27,0.6)' },
   bubble: {
-    maxWidth: '85%',
+    maxWidth: '78%',
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
   },
   bubbleUser: {
-    alignSelf: 'flex-end',
     backgroundColor: colors.primary,
   },
   bubbleAI: {
-    alignSelf: 'flex-start',
     backgroundColor: colors.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
   bubbleUserText: { ...type.body, color: colors.primaryForeground },
-  bubbleAIText: { ...type.body, color: colors.foreground, lineHeight: 21 },
+  composerWrap: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+    gap: 6,
+  },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
   },
   composerInput: {
     flex: 1,
@@ -380,6 +523,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendDisabled: { opacity: 0.35 },
-  sendText: { fontSize: 20, fontWeight: '700', color: colors.primaryForeground },
+  disclaimer: {
+    fontSize: 9,
+    lineHeight: 12,
+    color: 'rgba(140,140,150,0.6)',
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+  },
   pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
 });
