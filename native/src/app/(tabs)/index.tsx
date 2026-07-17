@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {
   Check,
@@ -97,13 +97,21 @@ export default function TodayScreen() {
 
   // Auto-grant awards once per session (web Index does this on mount)
   const { checkAndGrant, ready: awardsReady } = useCheckAwards();
-  const awardsChecked = useRef(false);
-  useEffect(() => {
-    if (awardsReady && !awardsChecked.current) {
-      awardsChecked.current = true;
-      checkAndGrant();
-    }
-  }, [awardsReady, checkAndGrant]);
+  // Re-check awards every time Today regains focus (e.g. after closing a
+  // log sheet), not just on first mount — Today stays mounted across the
+  // log flow, so a milestone earned mid-session would otherwise not fire
+  // its celebration until a remount. The grant engine is duplicate-safe
+  // and only celebrates fresh grants, so re-running on focus is safe.
+  const awardCheckInFlight = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!awardsReady || awardCheckInFlight.current) return;
+      awardCheckInFlight.current = true;
+      checkAndGrant().finally(() => {
+        awardCheckInFlight.current = false;
+      });
+    }, [awardsReady, checkAndGrant]),
+  );
 
   const now = new Date();
   const greeting =

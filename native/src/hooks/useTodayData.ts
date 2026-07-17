@@ -103,30 +103,6 @@ export function useTodayBiometrics() {
   });
 }
 
-export function useReadinessTrend() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ['readiness_trend', user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const { data, error } = await supabase
-        .from('daily_logs')
-        .select('date, readiness_score, readiness_status')
-        .eq('user_id', user!.id)
-        .gte('date', localDateStr(sevenDaysAgo))
-        .order('date', { ascending: true });
-      if (error) throw error;
-      return (data ?? []).map(d => ({
-        day: new Date(d.date).toLocaleDateString('vi-VN', { weekday: 'short' }),
-        score: Number(d.readiness_score) || 0,
-        status: (d.readiness_status as 'green' | 'yellow' | 'red') || 'yellow',
-      }));
-    },
-  });
-}
-
 export function useNudges() {
   const { user } = useAuth();
   return useQuery({
@@ -191,7 +167,10 @@ export function useInvalidateToday() {
     queryClient.invalidateQueries({ queryKey: ['recent_workouts', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['workout_sessions', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['today_bio', user?.id, dateStr] });
-    queryClient.invalidateQueries({ queryKey: ['readiness_trend', user?.id] });
+    // ReadinessTrendCard on Today reads useReadinessHistory (readiness_history);
+    // readiness_trend is a legacy key with no live consumer — invalidate the
+    // one the UI actually uses so the trend refreshes after a fresh log.
+    queryClient.invalidateQueries({ queryKey: ['readiness_history', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['nudges', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['today_meals', user?.id, dateStr] });
     queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
