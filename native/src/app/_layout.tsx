@@ -46,24 +46,20 @@ function Gate() {
     <>
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
+      {/* Input sheets use the standard iOS pageSheet modal (swipe down to
+          dismiss) — native formSheet detents render blank content on this
+          RN/react-native-screens combo (new-arch bug), so avoid them. */}
       <Stack.Screen
         name="log-meal"
         options={{
-          // Native iOS form sheet with detents + grabber
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.6, 1.0],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
+          presentation: 'modal',
           contentStyle: { backgroundColor: colors.card },
         }}
       />
       <Stack.Screen
         name="log-sleep"
         options={{
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.62, 1.0],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
+          presentation: 'modal',
           contentStyle: { backgroundColor: colors.card },
         }}
       />
@@ -75,68 +71,27 @@ function Gate() {
         name="scan-food"
         options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: '#000' } }}
       />
-      <Stack.Screen
-        name="log-workout"
-        options={{
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.55, 1.0],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
-          contentStyle: { backgroundColor: colors.card },
-        }}
-      />
-      <Stack.Screen
-        name="edit-profile"
-        options={{
-          presentation: 'formSheet',
-          sheetAllowedDetents: [1.0],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
-          contentStyle: { backgroundColor: colors.card },
-        }}
-      />
-      <Stack.Screen
-        name="log-biometrics"
-        options={{
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.7, 1.0],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
-          contentStyle: { backgroundColor: colors.card },
-        }}
-      />
-      <Stack.Screen
-        name="food-editor"
-        options={{
-          presentation: 'formSheet',
-          sheetAllowedDetents: [1.0],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
-          contentStyle: { backgroundColor: colors.card },
-        }}
-      />
-      <Stack.Screen
-        name="log-measurement"
-        options={{
-          presentation: 'formSheet',
-          sheetAllowedDetents: [1.0],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
-          contentStyle: { backgroundColor: colors.card },
-        }}
-      />
-      <Stack.Screen
-        name="workout-builder"
-        options={{
-          presentation: 'formSheet',
-          sheetAllowedDetents: [1.0],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
-          contentStyle: { backgroundColor: colors.card },
-        }}
-      />
+      {(
+        [
+          'log-workout',
+          'edit-profile',
+          'log-biometrics',
+          'food-editor',
+          'log-measurement',
+          'workout-builder',
+        ] as const
+      ).map((name) => (
+        <Stack.Screen
+          key={name}
+          name={name}
+          options={{
+            presentation: 'modal',
+            contentStyle: { backgroundColor: colors.card },
+          }}
+        />
+      ))}
     </Stack>
-    {/* RN Modal renders above everything, incl. native form sheets */}
+    {/* RN Modal renders above everything, incl. native modals */}
     <MascotUnlockCelebration />
     </>
   );
