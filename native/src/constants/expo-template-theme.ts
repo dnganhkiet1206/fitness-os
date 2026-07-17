@@ -61,5 +61,6 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+// Clearance for the floating liquid-glass pill bar (56pt pill + 8 margin)
+export const BottomTabInset = Platform.select({ ios: 72, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
