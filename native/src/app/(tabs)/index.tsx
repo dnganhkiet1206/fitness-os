@@ -1,7 +1,9 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Plus, Settings, Sparkles, Heart } from 'lucide-react-native';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActivityRingsCard } from '@/components/ascnd/activity-rings';
@@ -21,6 +23,14 @@ import {
   SupplementChecklistCard,
   WeightCheckinCard,
 } from '@/components/ascnd/today-widgets';
+import {
+  BiometricsCard,
+  NudgesCard,
+  RecentAwardsCard,
+  TrainingCard,
+  WorkoutStatusCard,
+} from '@/components/ascnd/today-widgets-2';
+import { useCheckAwards } from '@/hooks/use-extras';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -48,6 +58,25 @@ export default function TodayScreen() {
   const { available: healthAvailable, sync: healthSync } = useHealthSync();
   const { lang } = useAppSettings();
   const i18n = useI18n();
+  const queryClient = useQueryClient();
+
+  // Pull-to-refresh (web PullToRefresh: invalidate everything)
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries();
+    setRefreshing(false);
+  }, [queryClient]);
+
+  // Auto-grant awards once per session (web Index does this on mount)
+  const { checkAndGrant, ready: awardsReady } = useCheckAwards();
+  const awardsChecked = useRef(false);
+  useEffect(() => {
+    if (awardsReady && !awardsChecked.current) {
+      awardsChecked.current = true;
+      checkAndGrant();
+    }
+  }, [awardsReady, checkAndGrant]);
 
   const now = new Date();
   const greeting =
@@ -104,6 +133,9 @@ export default function TodayScreen() {
         styles.content,
         { paddingTop: insets.top + 12, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
       ]}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.mutedForeground} />
+      }
       contentInsetAdjustmentBehavior="never">
       {/* Greeting + actions (web Index header) */}
       <View style={styles.headerRow}>
@@ -192,9 +224,10 @@ export default function TodayScreen() {
         stand={{ current: steps, target: 10000 }}
       />
 
-      {/* ❤️ Health */}
+      {/* ❤️ Health (web order: biometrics, sleep, steps) */}
       <View style={styles.group}>
         <GroupHeader icon="❤️" title={groupTitles.health} />
+        <BiometricsCard />
         {sleepTotalMin > 0 ? (
           <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/sleep-insights'); }}>
             <SleepCard
@@ -240,17 +273,21 @@ export default function TodayScreen() {
         <SupplementChecklistCard />
       </View>
 
-      {/* 💪 Fitness */}
+      {/* 💪 Fitness (web order: training, workout-status, weight) */}
       <View style={styles.group}>
         <GroupHeader icon="💪" title={groupTitles.fitness} />
+        <TrainingCard acwr={dailyLog?.acwr != null ? Number(dailyLog.acwr) : null} />
+        <WorkoutStatusCard planned={dailyLog?.workout_count ?? 0} />
         <WeightCheckinCard profileWeight={profile?.weight_kg != null ? Number(profile.weight_kg) : null} />
       </View>
 
-      {/* ✨ Insights */}
+      {/* ✨ Insights (web order: readiness-trend, ai-tips, awards, nudges) */}
       <View style={styles.group}>
         <GroupHeader icon="✨" title={groupTitles.insights} />
         <ReadinessTrendCard />
         <SmartTipsCard />
+        <RecentAwardsCard />
+        <NudgesCard />
       </View>
     </ScrollView>
   );
