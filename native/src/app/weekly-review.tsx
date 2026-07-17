@@ -28,6 +28,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr, localDayRangeISO } from '@/lib/local-date';
 
 interface AIInsight {
   category: string;
@@ -137,8 +138,8 @@ export default function WeeklyReviewScreen() {
     we.setDate(we.getDate() + 7);
     return we;
   }, [weekStart]);
-  const startStr = weekStart.toISOString().split('T')[0];
-  const endStr = weekEnd.toISOString().split('T')[0];
+  const startStr = localDateStr(weekStart);
+  const endStr = localDateStr(weekEnd);
 
   const rangeLabel = `${weekStart.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} – ${new Date(
     weekEnd.getTime() - 86400000,
@@ -167,8 +168,8 @@ export default function WeeklyReviewScreen() {
         .from('workout_sessions')
         .select('id, date_time, pain_flags')
         .eq('user_id', user!.id)
-        .gte('date_time', startStr)
-        .lt('date_time', endStr);
+        .gte('date_time', localDayRangeISO(startStr).start)
+        .lt('date_time', localDayRangeISO(endStr).start);
       return data ?? [];
     },
   });
@@ -181,8 +182,8 @@ export default function WeeklyReviewScreen() {
         .from('sleep_logs')
         .select('waketime, deep_min, rem_min, light_min')
         .eq('user_id', user!.id)
-        .gte('waketime', startStr)
-        .lt('waketime', endStr);
+        .gte('waketime', localDayRangeISO(startStr).start)
+        .lt('waketime', localDayRangeISO(endStr).start);
       return data ?? [];
     },
   });
@@ -197,7 +198,7 @@ export default function WeeklyReviewScreen() {
         .from('daily_logs')
         .select('kcal, protein_g, volume_load')
         .eq('user_id', user!.id)
-        .gte('date', prevStart.toISOString().split('T')[0])
+        .gte('date', localDateStr(prevStart))
         .lt('date', startStr);
       return data ?? [];
     },
@@ -213,7 +214,7 @@ export default function WeeklyReviewScreen() {
         .from('daily_logs')
         .select('volume_load')
         .eq('user_id', user!.id)
-        .gte('date', d.toISOString().split('T')[0])
+        .gte('date', localDateStr(d))
         .lt('date', endStr);
       return data ?? [];
     },
@@ -263,10 +264,10 @@ export default function WeeklyReviewScreen() {
   const chartData = DAYS.map((day, i) => {
     const d = new Date(weekStart);
     d.setDate(d.getDate() + i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = localDateStr(d);
     const log = logs.find((l) => l.date === dateStr);
     const sleep = (sleepLogs ?? []).find(
-      (s) => new Date(s.waketime).toISOString().split('T')[0] === dateStr,
+      (s) => localDateStr(new Date(s.waketime)) === dateStr,
     );
     const sleepMin = sleep ? (sleep.deep_min ?? 0) + (sleep.rem_min ?? 0) + (sleep.light_min ?? 0) : 0;
     return {

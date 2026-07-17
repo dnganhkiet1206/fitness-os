@@ -47,6 +47,7 @@ import {
   calcWaterTarget,
 } from '@/lib/fitness-calc';
 import { getLegal, type LegalDoc } from '@/lib/legal-content';
+import { localDateStr } from '@/lib/local-date';
 
 const TOTAL_STEPS = 6;
 const STEP_ICONS: LucideIcon[] = [User, Target, Dumbbell, Moon, Utensils, Pill];
@@ -119,7 +120,7 @@ export function OnboardingFlow() {
   // Live targets (web auto-calc box)
   const w = Number(weightKg) || 70;
   const h = Number(heightCm) || 170;
-  const age = calcAge(dob.toISOString().split('T')[0]);
+  const age = calcAge(localDateStr(dob));
   const bmr = calcBMR(w, h, age, sex as 'male' | 'female' | 'other');
   const tdee = calcTDEE(bmr, activityLevel);
   const targetKcal = calcTargetCalories(tdee, goal);
@@ -152,7 +153,7 @@ export function OnboardingFlow() {
           user_id: user.id,
           name: name.trim() || 'Athlete',
           sex,
-          dob: dob.toISOString().split('T')[0],
+          dob: localDateStr(dob),
           height_cm: h,
           weight_kg: w,
           goal,

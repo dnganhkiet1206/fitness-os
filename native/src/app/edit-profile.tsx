@@ -21,6 +21,7 @@ import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 
 type Form = {
   name: string;
@@ -189,7 +190,7 @@ export default function EditProfileSheet() {
               maximumDate={new Date()}
               themeVariant="dark"
               onChange={(_, d) => {
-                if (d) set('dob', d.toISOString().split('T')[0]);
+                if (d) set('dob', localDateStr(d));
               }}
             />
           )}

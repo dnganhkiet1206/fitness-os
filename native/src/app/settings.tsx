@@ -13,6 +13,7 @@ import { useMascot } from '@/hooks/use-mascot';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 
 const EXPORT_TABLES = ['weight_logs', 'daily_logs', 'meal_entries', 'workout_sessions', 'sleep_logs'] as const;
 
@@ -41,7 +42,7 @@ export default function SettingsScreen() {
       }
       const json = JSON.stringify(all, null, 2);
       await Share.share({
-        title: `ASCND export ${new Date().toISOString().split('T')[0]}`,
+        title: `ASCND export ${localDateStr()}`,
         message: json,
       });
     } catch (e) {

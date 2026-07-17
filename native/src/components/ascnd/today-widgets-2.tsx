@@ -30,6 +30,7 @@ import { colors, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useNudges, useRecentWorkouts, useTodayBiometrics, useWearables } from '@/hooks/useTodayData';
 import { useRecentAwards } from '@/hooks/use-extras';
+import { localDateStr } from '@/lib/local-date';
 
 function MicroTitle({ icon, children, color }: { icon?: LucideIcon; children: React.ReactNode; color?: string }) {
   return (
@@ -196,9 +197,9 @@ export function WorkoutStatusCard({ planned }: { planned: number }) {
   const i18n = useI18n();
   const { data: workouts } = useRecentWorkouts();
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localDateStr();
   const todays = (workouts ?? []).filter(
-    (w) => new Date(w.date_time).toISOString().split('T')[0] === todayStr,
+    (w) => localDateStr(new Date(w.date_time)) === todayStr,
   );
   const done = todays.length;
   const allDone = planned > 0 && done >= planned;

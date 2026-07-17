@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { localDateStr } from '@/lib/local-date';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useUpsertBodyMeasurement, type BodyMeasurementInput } from '@/hooks/use-fitness-data';
 
@@ -53,7 +54,7 @@ export default function LogMeasurementSheet() {
 
   const save = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const payload: BodyMeasurementInput = { date: date.toISOString().split('T')[0] };
+    const payload: BodyMeasurementInput = { date: localDateStr(date) };
     for (const { key } of FIELDS) {
       const v = fields[key]?.trim();
       if (v && !isNaN(Number(v))) payload[key] = Number(v);

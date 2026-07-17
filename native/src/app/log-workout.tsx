@@ -24,6 +24,7 @@ import { useExercises } from '@/hooks/use-library';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { localDateStr } from '@/lib/local-date';
 
 const RPE_VALUES = [6, 7, 8, 9, 10] as const;
 
@@ -123,7 +124,7 @@ export default function LogWorkoutSheet() {
         pr_detected: false,
       });
       if (error) throw error;
-      await recomputeDailyLog(user.id, new Date().toISOString().split('T')[0]);
+      await recomputeDailyLog(user.id, localDateStr());
     },
     onSuccess: () => {
       invalidate();

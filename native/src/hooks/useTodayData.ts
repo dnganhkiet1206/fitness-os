@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => localDateStr();
 
 export function useProfile() {
   const { user } = useAuth();
@@ -114,7 +115,7 @@ export function useReadinessTrend() {
         .from('daily_logs')
         .select('date, readiness_score, readiness_status')
         .eq('user_id', user!.id)
-        .gte('date', sevenDaysAgo.toISOString().split('T')[0])
+        .gte('date', localDateStr(sevenDaysAgo))
         .order('date', { ascending: true });
       if (error) throw error;
       return (data ?? []).map(d => ({

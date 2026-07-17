@@ -2,9 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => localDateStr();
 
 export function useTodayWater() {
   const { user } = useAuth();
@@ -107,7 +108,7 @@ export function useWaterWeek() {
     queryFn: async () => {
       const from = new Date();
       from.setDate(from.getDate() - 6);
-      const fromStr = from.toISOString().split('T')[0];
+      const fromStr = localDateStr(from);
       const { data, error } = await supabase
         .from('water_logs')
         .select('date, amount_ml')
@@ -122,7 +123,7 @@ export function useWaterWeek() {
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const key = d.toISOString().split('T')[0];
+        const key = localDateStr(d);
         days.push({ date: key, total: byDate.get(key) ?? 0 });
       }
       return days;

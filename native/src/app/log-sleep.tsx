@@ -20,6 +20,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { localDateStr } from '@/lib/local-date';
 
 // Emoji picks map onto the web's 1–10 quality scale (SleepCard shows "x/10")
 const QUALITY = [2, 4, 6, 8, 10] as const;
@@ -62,7 +63,7 @@ export default function LogSleepSheet() {
         light_min: Number(lightMin) || 0,
       });
       if (error) throw error;
-      await recomputeDailyLog(user.id, new Date().toISOString().split('T')[0]);
+      await recomputeDailyLog(user.id, localDateStr());
     },
     onSuccess: () => {
       invalidate();

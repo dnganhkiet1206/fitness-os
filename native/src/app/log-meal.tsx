@@ -24,6 +24,7 @@ import { useFavoriteFoods, useRecentFoods } from '@/hooks/use-nutrition';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { localDateStr } from '@/lib/local-date';
 import { consumePendingScan } from '@/lib/scan-bridge';
 
 const MEAL_KEYS = ['breakfast', 'lunch', 'dinner', 'snack', 'preworkout', 'postworkout'] as const;
@@ -310,7 +311,7 @@ export default function LogMealSheet() {
         fiber_g: Math.round(it.fiber_g * it.servings),
       }));
       await supabase.from('meal_entry_items').insert(rows);
-      await recomputeDailyLog(user.id, new Date().toISOString().split('T')[0]);
+      await recomputeDailyLog(user.id, localDateStr());
     },
     onSuccess: () => {
       invalidate();

@@ -1,15 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
+import { localDayRangeISO } from './local-date';
 import { computeReadiness } from './readiness-engine';
 import type { ReadinessInput } from './types';
 
 export async function recomputeDailyLog(userId: string, date: string) {
+  // Local-day window as UTC instants for timestamptz columns
+  const day = localDayRangeISO(date);
   // 1. Nutrition from meal_entries
   const { data: meals } = await supabase
     .from('meal_entries')
     .select('total_kcal, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g')
     .eq('user_id', userId)
-    .gte('date_time', `${date}T00:00:00`)
-    .lt('date_time', `${date}T23:59:59.999`);
+    .gte('date_time', day.start)
+    .lt('date_time', day.end);
 
   const kcal = meals?.reduce((s, m) => s + Number(m.total_kcal), 0) ?? 0;
   const protein_g = meals?.reduce((s, m) => s + Number(m.total_protein_g), 0) ?? 0;
@@ -22,8 +25,8 @@ export async function recomputeDailyLog(userId: string, date: string) {
     .from('workout_sessions')
     .select('volume_load')
     .eq('user_id', userId)
-    .gte('date_time', `${date}T00:00:00`)
-    .lt('date_time', `${date}T23:59:59.999`);
+    .gte('date_time', day.start)
+    .lt('date_time', day.end);
 
   const workout_count = workouts?.length ?? 0;
   const volume_load = workouts?.reduce((s, w) => s + Number(w.volume_load), 0) ?? 0;
@@ -33,8 +36,8 @@ export async function recomputeDailyLog(userId: string, date: string) {
     .from('sleep_logs')
     .select('bedtime, waketime, quality, light_min, deep_min, rem_min')
     .eq('user_id', userId)
-    .gte('waketime', `${date}T00:00:00`)
-    .lt('waketime', `${date}T23:59:59.999`)
+    .gte('waketime', day.start)
+    .lt('waketime', day.end)
     .limit(1)
     .order('waketime', { ascending: false });
 
@@ -60,8 +63,8 @@ export async function recomputeDailyLog(userId: string, date: string) {
     .select('id')
     .eq('user_id', userId)
     .eq('taken', true)
-    .gte('date_time', `${date}T00:00:00`)
-    .lt('date_time', `${date}T23:59:59.999`);
+    .gte('date_time', day.start)
+    .lt('date_time', day.end);
   const supplement_taken = intakes?.length ?? 0;
 
   // 5. Readiness computation
@@ -76,8 +79,8 @@ export async function recomputeDailyLog(userId: string, date: string) {
     .from('biometric_samples')
     .select('hr_bpm, hrv_rmssd_ms')
     .eq('user_id', userId)
-    .gte('date_time', `${date}T00:00:00`)
-    .lt('date_time', `${date}T23:59:59.999`)
+    .gte('date_time', day.start)
+    .lt('date_time', day.end)
     .order('date_time', { ascending: false })
     .limit(1);
 

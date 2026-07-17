@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 
 import { fireCelebration } from '@/components/ascnd/award-celebration';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr, localDayRangeISO } from '@/lib/local-date';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
 
@@ -105,10 +106,10 @@ export function useCheckAwards() {
 
       if (logs && logs.length > 0) {
         let streak = 1;
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = localDateStr();
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yStr = yesterday.toISOString().split('T')[0];
+        const yStr = localDateStr(yesterday);
         const dates = logs.map((l) => l.date);
         if (dates[0] === todayStr || dates[0] === yStr) {
           for (let i = 1; i < dates.length; i++) {
@@ -168,7 +169,7 @@ export function useCheckAwards() {
         .from('daily_logs')
         .select('steps')
         .eq('user_id', user.id)
-        .eq('date', new Date().toISOString().split('T')[0])
+        .eq('date', localDateStr())
         .maybeSingle();
       if (todayLog && (todayLog.steps ?? 0) >= 10000 && !earned.has('steps_10k')) {
         await grant(byKey('steps_10k'), { steps: todayLog.steps });
@@ -193,7 +194,7 @@ function getWeekStart(): string {
   const day = now.getDay();
   const diff = now.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(now.setDate(diff));
-  return monday.toISOString().split('T')[0];
+  return localDateStr(monday);
 }
 
 export function useWeeklyChallenges() {
@@ -296,7 +297,7 @@ export function useUpdateChallengeProgress() {
 
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
-      const weekEndStr = weekEnd.toISOString().split('T')[0];
+      const weekEndStr = localDateStr(weekEnd);
 
       for (const ch of challenges) {
         let newValue = 0;
@@ -306,8 +307,8 @@ export function useUpdateChallengeProgress() {
             .from('workout_sessions')
             .select('id', { count: 'exact', head: true })
             .eq('user_id', user.id)
-            .gte('date_time', weekStart)
-            .lt('date_time', weekEndStr);
+            .gte('date_time', localDayRangeISO(weekStart).start)
+            .lt('date_time', localDayRangeISO(weekEndStr).start);
           newValue = count ?? 0;
         } else if (ch.challenge_key === 'log_7') {
           const { data: logs } = await supabase

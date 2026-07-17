@@ -12,6 +12,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 
 function weekDates(weeksAgo: number) {
   const now = new Date();
@@ -19,7 +20,7 @@ function weekDates(weeksAgo: number) {
   start.setDate(start.getDate() - start.getDay() + 1 - weeksAgo * 7);
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
-  return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+  return { start: localDateStr(start), end: localDateStr(end) };
 }
 
 function weekAvg(logs: { date: string; weight_kg: number }[], start: string, end: string) {
@@ -44,7 +45,7 @@ export default function SmartGoalsScreen() {
         .from('weight_logs')
         .select('date, weight_kg')
         .eq('user_id', user!.id)
-        .gte('date', from.toISOString().split('T')[0])
+        .gte('date', localDateStr(from))
         .order('date', { ascending: true });
       return (data ?? []).map((d) => ({ date: d.date as string, weight_kg: Number(d.weight_kg) }));
     },
@@ -60,7 +61,7 @@ export default function SmartGoalsScreen() {
         .from('daily_logs')
         .select('date, kcal, protein_g')
         .eq('user_id', user!.id)
-        .gte('date', from.toISOString().split('T')[0])
+        .gte('date', localDateStr(from))
         .order('date', { ascending: true });
       return data ?? [];
     },

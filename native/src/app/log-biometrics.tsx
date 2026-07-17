@@ -19,6 +19,7 @@ import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogBiometrics } from '@/hooks/use-biometrics';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { localDateStr } from '@/lib/local-date';
 
 export default function LogBiometricsSheet() {
   const i18n = useI18n();
@@ -47,7 +48,7 @@ export default function LogBiometricsSheet() {
       {
         onSuccess: async () => {
           // Fresh HRV/RHR feeds the readiness engine (web parity)
-          if (user) await recomputeDailyLog(user.id, new Date().toISOString().split('T')[0]);
+          if (user) await recomputeDailyLog(user.id, localDateStr());
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           router.back();
         },

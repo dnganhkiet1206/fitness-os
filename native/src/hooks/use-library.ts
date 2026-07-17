@@ -2,10 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr, localDayRangeISO } from '@/lib/local-date';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => localDateStr();
 
 /** Supplements with today's taken state (same shape as the web checklist) */
 export function useSupplementChecklist() {
@@ -24,8 +25,8 @@ export function useSupplementChecklist() {
         .from('supplement_intake_logs')
         .select('supplement_id, taken')
         .eq('user_id', user!.id)
-        .gte('date_time', `${dateStr}T00:00:00`)
-        .lt('date_time', `${dateStr}T23:59:59.999`);
+        .gte('date_time', localDayRangeISO(dateStr).start)
+        .lt('date_time', localDayRangeISO(dateStr).end);
       const takenIds = new Set((intakes ?? []).filter((i) => i.taken).map((i) => i.supplement_id));
       return (supplements ?? []).map((s) => ({ ...s, taken: takenIds.has(s.id) }));
     },
@@ -51,8 +52,8 @@ export function useToggleSupplement() {
           .delete()
           .eq('user_id', user!.id)
           .eq('supplement_id', supplementId)
-          .gte('date_time', `${dateStr}T00:00:00`)
-          .lt('date_time', `${dateStr}T23:59:59.999`);
+          .gte('date_time', localDayRangeISO(dateStr).start)
+          .lt('date_time', localDayRangeISO(dateStr).end);
         if (error) throw error;
       }
     },

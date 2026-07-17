@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 
 const BUCKET = 'progress-photos';
 
@@ -66,7 +67,7 @@ export function useUploadProgressPhoto() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ base64, pose, notes }: { base64: string; pose: string; notes?: string }) => {
-      const dateStr = new Date().toISOString().split('T')[0];
+      const dateStr = localDateStr();
       const path = `${user!.id}/${dateStr}-${pose}-${Date.now()}.jpg`;
       const bytes = base64ToBytes(base64);
       const { error: upErr } = await supabase.storage

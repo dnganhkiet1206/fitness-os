@@ -10,6 +10,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useStepsHistory } from '@/hooks/use-fitness-data';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
+import { localDateStr } from '@/lib/local-date';
 
 export default function StepsScreen() {
   const i18n = useI18n();
@@ -22,7 +23,7 @@ export default function StepsScreen() {
     const last7 = h.slice(-7);
     // Match today's row by date — the last row is yesterday when today
     // has no log yet (web uses a dedicated date-matched query)
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = localDateStr();
     const today = h.find((d) => d.date === todayStr)?.steps ?? 0;
     const avg = last7.length > 0 ? Math.round(last7.reduce((s, d) => s + d.steps, 0) / last7.length) : 0;
     const recent3 = h.slice(-3).map((d) => d.steps);

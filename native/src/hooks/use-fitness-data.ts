@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
 
 function daysAgoISO(days: number): string {
@@ -10,7 +11,7 @@ function daysAgoISO(days: number): string {
 }
 
 function todayISO(): string {
-  return new Date().toISOString().split('T')[0];
+  return localDateStr();
 }
 
 /** Today's weight entry, if any — powers the Weight Check-in widget */

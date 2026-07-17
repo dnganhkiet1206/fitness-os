@@ -12,6 +12,7 @@ import {
   requestHealthPermissions,
 } from '@/lib/health';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { localDateStr } from '@/lib/local-date';
 
 /**
  * Pulls today's steps + latest biometrics from Apple Health and writes
@@ -49,7 +50,7 @@ export function useHealthSync() {
       }
 
       if (steps != null) {
-        const dateStr = new Date().toISOString().split('T')[0];
+        const dateStr = localDateStr();
         const { data: existing } = await supabase
           .from('daily_logs')
           .select('id')
@@ -64,7 +65,7 @@ export function useHealthSync() {
       }
 
       // New HRV/RHR should flow into today's readiness score (web parity)
-      if (bio) await recomputeDailyLog(user.id, new Date().toISOString().split('T')[0]);
+      if (bio) await recomputeDailyLog(user.id, localDateStr());
 
       return { steps, bio };
     },
