@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ascnd/icon';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, glass, spacing, type } from '@/constants/ascnd';
+import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
 interface ScreenProps extends ViewProps {
   title: string;
@@ -67,6 +68,8 @@ export function Screen({ title, eyebrow, headerRight, back, children, style, ...
         style,
       ]}
       contentInsetAdjustmentBehavior="never"
+      onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}
+      scrollEventThrottle={16}
       {...props}>
       <View style={styles.header}>
         <View style={styles.headerText}>

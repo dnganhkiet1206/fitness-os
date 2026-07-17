@@ -15,12 +15,21 @@ import {
 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, LinearTransition, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  SlideInDown,
+  SlideOutDown,
+  interpolate,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { resetTabBar, tabBarVisible } from '@/lib/tab-bar-visibility';
 
 const TAB_ICONS: Record<string, LucideIcon> = {
   index: Home,
@@ -58,8 +67,17 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   const go = (routeName: string, index: number) => {
     const active = state.index === index;
     Haptics.impactAsync(active ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
-    if (!active) navigation.navigate(routeName);
+    if (!active) {
+      resetTabBar();
+      navigation.navigate(routeName);
+    }
   };
+
+  // Scroll-aware hide/show (web autoHide behavior)
+  const hideStyle = useAnimatedStyle(() => ({
+    opacity: tabBarVisible.value,
+    transform: [{ translateY: interpolate(tabBarVisible.value, [0, 1], [100, 0]) }],
+  }));
 
   const renderTab = (routeName: string) => {
     const index = state.routes.findIndex((r: { name: string }) => r.name === routeName);
@@ -94,7 +112,9 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
 
   return (
     <>
-      <View style={[styles.wrap, { paddingBottom: insets.bottom + 8 }]} pointerEvents="box-none">
+      <Animated.View
+        style={[styles.wrap, { paddingBottom: insets.bottom + 8 }, hideStyle]}
+        pointerEvents="box-none">
         <View style={styles.pill}>
           {renderTab('index')}
           {renderTab('nutrition')}
@@ -112,7 +132,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
           {renderTab('workouts')}
           {renderTab('progress')}
         </View>
-      </View>
+      </Animated.View>
 
       {/* AI quick-actions overlay (web: dim blur backdrop + 2×2 panel) */}
       <Modal visible={aiOpen} transparent animationType="none" onRequestClose={() => setAiOpen(false)}>

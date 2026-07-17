@@ -1,4 +1,6 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Haptics from 'expo-haptics';
+import { ArrowLeft, Globe } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,25 +16,56 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useI18n } from '@/hooks/use-app-settings';
+import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { supabase } from '@/integrations/supabase/client';
 
-type Mode = 'signin' | 'signup';
+type Mode = 'signin' | 'signup' | 'forgot';
 
+/**
+ * Auth — mirrors the web Auth page: language switcher top-right, glowing
+ * ASCND wordmark, glass-card form, and the forgot-password flow.
+ */
 export function AuthScreen() {
   const { signIn, signUp, signInWithApple } = useAuth();
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
+  const { lang, setLang } = useAppSettings();
   const [mode, setMode] = useState<Mode>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const subtitle =
+    mode === 'signin'
+      ? i18n.nSignInSubtitle
+      : mode === 'signup'
+        ? i18n.nSignUpSubtitle
+        : lang === 'vi'
+          ? 'Nhập email để nhận link đặt lại mật khẩu'
+          : 'Enter your email to receive a reset link';
+
   const submit = async () => {
-    if (!email || !password) return;
+    if (!email) return;
     setBusy(true);
+    if (mode === 'forgot') {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      setBusy(false);
+      Haptics.notificationAsync(
+        error ? Haptics.NotificationFeedbackType.Error : Haptics.NotificationFeedbackType.Success,
+      );
+      Alert.alert('ASCND', error ? error.message : i18n.authResetSent);
+      if (!error) setMode('signin');
+      return;
+    }
+    if (!password) {
+      setBusy(false);
+      return;
+    }
     const { error } =
       mode === 'signin' ? await signIn(email, password) : await signUp(email, password, name);
     setBusy(false);
@@ -48,6 +81,24 @@ export function AuthScreen() {
     <KeyboardAvoidingView
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Language selector (web top-right) */}
+      <View style={[styles.langRow, { top: insets.top + spacing.sm }]}>
+        <Icon icon={Globe} size={15} color={colors.mutedForeground} />
+        {(['vi', 'en'] as const).map((l) => (
+          <Pressable
+            key={l}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setLang(l);
+            }}
+            style={[styles.langChip, lang === l && styles.langChipActive]}>
+            <Text style={[styles.langText, lang === l && styles.langTextActive]}>
+              {l.toUpperCase()}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -56,12 +107,18 @@ export function AuthScreen() {
         keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
           <Text style={styles.brand}>ASCND</Text>
-          <Text style={styles.subtitle}>
-            {mode === 'signin' ? i18n.nSignInSubtitle : i18n.nSignUpSubtitle}
-          </Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
 
-        <View style={styles.form}>
+        {mode === 'forgot' && (
+          <Pressable style={styles.backRow} onPress={() => setMode('signin')}>
+            <Icon icon={ArrowLeft} size={15} color={colors.mutedForeground} />
+            <Text style={styles.backText}>{i18n.authBackToLogin}</Text>
+          </Pressable>
+        )}
+
+        {/* Form card (web metric-card) */}
+        <GlassCard style={styles.form}>
           {mode === 'signup' && (
             <TextInput
               style={styles.input}
@@ -82,14 +139,22 @@ export function AuthScreen() {
             value={email}
             onChangeText={setEmail}
           />
-          <TextInput
-            style={styles.input}
-            placeholder={i18n.nPassword}
-            placeholderTextColor={colors.mutedForeground}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+          {mode !== 'forgot' && (
+            <TextInput
+              style={styles.input}
+              placeholder={i18n.nPassword}
+              placeholderTextColor={colors.mutedForeground}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+          )}
+
+          {mode === 'signin' && (
+            <Pressable onPress={() => setMode('forgot')} hitSlop={6}>
+              <Text style={styles.forgotText}>{i18n.authForgotPassword}</Text>
+            </Pressable>
+          )}
 
           <Pressable
             style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
@@ -99,12 +164,12 @@ export function AuthScreen() {
               <ActivityIndicator color={colors.primaryForeground} />
             ) : (
               <Text style={styles.primaryButtonText}>
-                {mode === 'signin' ? i18n.nSignIn : i18n.nSignUp}
+                {mode === 'signin' ? i18n.nSignIn : mode === 'signup' ? i18n.nSignUp : i18n.authResetPassword}
               </Text>
             )}
           </Pressable>
 
-          {Platform.OS === 'ios' && (
+          {Platform.OS === 'ios' && mode !== 'forgot' && (
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
@@ -114,15 +179,17 @@ export function AuthScreen() {
             />
           )}
 
-          <Pressable onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
-            <Text style={styles.switchText}>
-              {mode === 'signin' ? i18n.nNoAccount : i18n.nHaveAccount}
-              <Text style={styles.switchAction}>
-                {mode === 'signin' ? i18n.nSignUp : i18n.nSignIn}
+          {mode !== 'forgot' && (
+            <Pressable onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
+              <Text style={styles.switchText}>
+                {mode === 'signin' ? i18n.nNoAccount : i18n.nHaveAccount}
+                <Text style={styles.switchAction}>
+                  {mode === 'signin' ? i18n.nSignUp : i18n.nSignIn}
+                </Text>
               </Text>
-            </Text>
-          </Pressable>
-        </View>
+            </Pressable>
+          )}
+        </GlassCard>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -133,6 +200,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  langRow: {
+    position: 'absolute',
+    right: spacing.md,
+    zIndex: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  langChip: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 4,
+    borderRadius: radius.sm - 4,
+  },
+  langChipActive: { backgroundColor: 'rgba(168,175,189,0.15)' },
+  langText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
+  langTextActive: { color: colors.primary },
   content: {
     flexGrow: 1,
     paddingHorizontal: spacing.lg,
@@ -141,18 +224,25 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.sm + 4,
   },
+  // Web wordmark: green gradient + glow, wide tracking
   brand: {
-    fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: 6,
-    color: colors.foreground,
+    fontSize: 30,
+    fontWeight: '700',
+    letterSpacing: 4.5,
+    color: colors.readinessGreen,
+    textShadowColor: 'rgba(32,182,132,0.4)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
   },
   subtitle: {
     ...type.body,
     color: colors.mutedForeground,
+    textAlign: 'center',
   },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 },
+  backText: { ...type.footnote, color: colors.mutedForeground },
   form: {
     gap: spacing.sm + 4,
   },
@@ -161,10 +251,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    backgroundColor: colors.card,
+    backgroundColor: 'rgba(7,7,8,0.5)',
     paddingHorizontal: spacing.md,
     color: colors.foreground,
     fontSize: 16,
+  },
+  forgotText: {
+    ...type.footnote,
+    color: colors.mutedForeground,
+    textAlign: 'right',
   },
   primaryButton: {
     height: 48,

@@ -38,6 +38,7 @@ import { useHealthSync } from '@/hooks/use-health-sync';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
 import { getLocale } from '@/lib/i18n';
+import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
 /** Section header — web WidgetGroupSection: emoji icon + semibold title */
 function GroupHeader({ icon, title }: { icon: string; title: string }) {
@@ -136,6 +137,8 @@ export default function TodayScreen() {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.mutedForeground} />
       }
+      onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}
+      scrollEventThrottle={16}
       contentInsetAdjustmentBehavior="never">
       {/* Greeting + actions (web Index header) */}
       <View style={styles.headerRow}>
