@@ -1,14 +1,16 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ChevronRight, Dumbbell, Plus, Trash2 } from 'lucide-react-native';
+import { ChevronRight, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
+import { getLocale } from '@/lib/i18n';
 
 interface TplExercise {
   sets?: number;
@@ -31,7 +33,10 @@ function volume(exercises: unknown): number {
  */
 export default function WorkoutsScreen() {
   const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
   const { data: templates } = useWorkoutTemplates();
+  const { data: sessions } = useWorkoutSessions(14);
   const del = useDeleteWorkoutTemplate();
 
   const confirmDelete = (id: string) => {
@@ -122,6 +127,36 @@ export default function WorkoutsScreen() {
         </View>
       )}
 
+      {/* Logged sessions (last 14 days) — proof that saved logs landed */}
+      {sessions && sessions.length > 0 && (
+        <View style={styles.sessionsWrap}>
+          <Text style={styles.sectionLabel}>
+            {vi ? 'Buổi tập gần đây' : 'Recent sessions'} ({sessions.length})
+          </Text>
+          <GlassCard style={styles.sessionsCard}>
+            {sessions.map((s, i) => (
+              <View key={s.id} style={[styles.sessionRow, i > 0 && styles.sessionBorder]}>
+                <View style={styles.sessionInfo}>
+                  <Text style={styles.sessionName} numberOfLines={1}>{s.template_name || 'Workout'}</Text>
+                  <Text style={styles.sessionMeta}>
+                    {new Date(s.date_time).toLocaleDateString(getLocale(lang), {
+                      weekday: 'short', day: 'numeric', month: 'short',
+                    })}
+                    {s.volume_load != null ? `  ·  ${Math.round(Number(s.volume_load)).toLocaleString()} kg` : ''}
+                  </Text>
+                </View>
+                {s.session_rpe != null && (
+                  <View style={styles.rpeBadge}>
+                    <Icon icon={Flame} size={11} color={colors.metricOrange} />
+                    <Text style={styles.rpeText}>RPE {s.session_rpe}</Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </GlassCard>
+        </View>
+      )}
+
       {/* Weekly plan link (web bottom button) */}
       <Pressable
         style={({ pressed }) => [styles.weeklyBtn, pressed && styles.pressed]}
@@ -197,6 +232,28 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: spacing.xl * 2, gap: spacing.sm },
   emptyTitle: { ...type.body, fontWeight: '500', color: colors.mutedForeground },
   emptyHint: { fontSize: 12, color: 'rgba(107,107,107,0.6)' },
+  sessionsWrap: { gap: spacing.sm },
+  sessionsCard: { paddingVertical: 4 },
+  sessionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm + 4,
+  },
+  sessionBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  sessionInfo: { flex: 1, minWidth: 0, gap: 2 },
+  sessionName: { fontSize: 14, fontWeight: '500', color: colors.foreground },
+  sessionMeta: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'], textTransform: 'capitalize' },
+  rpeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(241,123,39,0.12)',
+  },
+  rpeText: { fontSize: 10, fontWeight: '600', color: colors.metricOrange, fontVariant: ['tabular-nums'] },
   weeklyBtn: {
     flexDirection: 'row',
     alignItems: 'center',

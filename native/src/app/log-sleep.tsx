@@ -76,38 +76,35 @@ export default function LogSleepSheet() {
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{i18n.nLogSleepTitle}</Text>
 
-      <View style={styles.rowFields}>
-        <View style={styles.halfField}>
-          <Text style={styles.fieldLabel}>{i18n.nBedtime}</Text>
-          <View style={styles.pickerWrap}>
-            <DateTimePicker
-              value={bedtime}
-              mode="time"
-              display="spinner"
-              themeVariant="dark"
-              onChange={(_, d) => d && setBedtime(d)}
-            />
-          </View>
+      {/* Bed/wake times — compact pickers in settings-style rows (the old
+          half-width spinners clipped horizontally) */}
+      <View style={styles.timeCard}>
+        <View style={styles.timeRow}>
+          <Text style={styles.timeLabel}>{i18n.nBedtime}</Text>
+          <DateTimePicker
+            value={bedtime}
+            mode="time"
+            display="compact"
+            themeVariant="dark"
+            onChange={(_, d) => d && setBedtime(d)}
+          />
         </View>
-        <View style={styles.halfField}>
-          <Text style={styles.fieldLabel}>{i18n.nWakeUp}</Text>
-          <View style={styles.pickerWrap}>
-            <DateTimePicker
-              value={waketime}
-              mode="time"
-              display="spinner"
-              themeVariant="dark"
-              onChange={(_, d) => d && setWaketime(d)}
-            />
-          </View>
+        <View style={[styles.timeRow, styles.timeRowBorder]}>
+          <Text style={styles.timeLabel}>{i18n.nWakeUp}</Text>
+          <DateTimePicker
+            value={waketime}
+            mode="time"
+            display="compact"
+            themeVariant="dark"
+            onChange={(_, d) => d && setWaketime(d)}
+          />
         </View>
-      </View>
-
-      <View style={styles.durationRow}>
-        <Text style={styles.fieldLabel}>{i18n.nDuration}</Text>
-        <Text style={styles.duration}>
-          {Math.floor(durationMin / 60)}h {String(durationMin % 60).padStart(2, '0')}m
-        </Text>
+        <View style={[styles.timeRow, styles.timeRowBorder]}>
+          <Text style={styles.timeLabel}>{i18n.nDuration}</Text>
+          <Text style={styles.duration}>
+            {Math.floor(durationMin / 60)}h {String(durationMin % 60).padStart(2, '0')}m
+          </Text>
+        </View>
       </View>
 
       {/* Sleep stages (web: deep / REM / light minutes) */}
@@ -171,21 +168,22 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md },
   title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
   fieldLabel: { ...type.footnote, color: colors.mutedForeground },
-  rowFields: { flexDirection: 'row', gap: spacing.md },
-  halfField: { flex: 1, gap: spacing.sm },
-  pickerWrap: {
+  timeCard: {
     borderRadius: radius.md,
     backgroundColor: colors.background,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    overflow: 'hidden',
-    alignItems: 'center',
+    paddingHorizontal: spacing.md,
   },
-  durationRow: {
+  timeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 52,
+    paddingVertical: spacing.xs,
   },
+  timeRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  timeLabel: { ...type.body, color: colors.foreground },
   duration: { ...type.headline, color: colors.foreground },
   stagesRow: { flexDirection: 'row', gap: spacing.sm },
   stageCell: {

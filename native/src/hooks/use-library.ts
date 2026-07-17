@@ -70,13 +70,29 @@ export function useExercises() {
     queryKey: ['exercises', user?.id],
     enabled: !!user,
     queryFn: async () => {
+      // Seed exercises have user_id NULL and are visible to everyone (web parity)
       const { data, error } = await supabase
         .from('exercises')
-        .select('id, name, muscle_group, equipment')
-        .eq('user_id', user!.id)
+        .select('id, user_id, name, muscle_group, equipment')
+        .or(`user_id.is.null,user_id.eq.${user!.id}`)
+        .order('muscle_group')
         .order('name');
       if (error) throw error;
       return data ?? [];
+    },
+  });
+}
+
+export function useDeleteExercise() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('exercises').delete().eq('id', id).eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exercises', user?.id] });
     },
   });
 }

@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
-import { Camera, ChevronDown, ChevronRight, Clock, Minus, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
+import { Camera, ChevronDown, ChevronRight, Clock, Minus, PencilLine, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -67,12 +67,25 @@ export default function LogMealSheet() {
     { key: 'postworkout', label: i18n.nPostWorkout },
   ] as const;
 
+  const vi = lang === 'vi';
   const [mealType, setMealType] = useState<MealType>('lunch');
   const [items, setItems] = useState<MealItem[]>([]);
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   const [aiOpen, setAiOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
+
+  // Custom food entry — user types their own dish + macros
+  const [customOpen, setCustomOpen] = useState(false);
+  const [cName, setCName] = useState('');
+  const [cKcal, setCKcal] = useState('');
+  const [cProtein, setCProtein] = useState('');
+  const [cCarbs, setCCarbs] = useState('');
+  const [cFat, setCFat] = useState('');
+
+  // Per-item macro editing (draft applied on Done)
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [draft, setDraft] = useState({ kcal: '', protein: '', carbs: '', fat: '' });
 
   const { data: favorites } = useFavoriteFoods();
   const { data: recents } = useRecentFoods();
@@ -151,6 +164,60 @@ export default function LogMealSheet() {
   const removeItem = (idx: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setItems((prev) => prev.filter((_, i) => i !== idx));
+    setEditingIdx(null);
+  };
+
+  const num = (v: string) => Number(v) || 0;
+  const canAddCustom = cName.trim().length > 0 && (num(cKcal) > 0 || num(cProtein) + num(cCarbs) + num(cFat) > 0);
+
+  const addCustom = () => {
+    if (!canAddCustom) return;
+    Haptics.selectionAsync();
+    const kcalVal = num(cKcal) > 0 ? num(cKcal) : Math.round(num(cProtein) * 4 + num(cCarbs) * 4 + num(cFat) * 9);
+    addItem({
+      food_item_id: null,
+      food_name: cName.trim(),
+      kcal: kcalVal,
+      protein_g: num(cProtein),
+      carbs_g: num(cCarbs),
+      fat_g: num(cFat),
+      fiber_g: 0,
+      serving_g: 0,
+    });
+    setCName('');
+    setCKcal('');
+    setCProtein('');
+    setCCarbs('');
+    setCFat('');
+  };
+
+  const openEdit = (idx: number) => {
+    Haptics.selectionAsync();
+    if (editingIdx === idx) {
+      setEditingIdx(null);
+      return;
+    }
+    const it = items[idx];
+    setDraft({
+      kcal: String(it.kcal || ''),
+      protein: String(it.protein_g || ''),
+      carbs: String(it.carbs_g || ''),
+      fat: String(it.fat_g || ''),
+    });
+    setEditingIdx(idx);
+  };
+
+  const applyEdit = () => {
+    if (editingIdx == null) return;
+    Haptics.selectionAsync();
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === editingIdx
+          ? { ...it, kcal: num(draft.kcal), protein_g: num(draft.protein), carbs_g: num(draft.carbs), fat_g: num(draft.fat) }
+          : it,
+      ),
+    );
+    setEditingIdx(null);
   };
 
   const totals = items.reduce(
@@ -406,6 +473,53 @@ export default function LogMealSheet() {
           </View>
         )}
 
+        {/* Custom food entry — type your own dish + macros */}
+        <Pressable
+          style={({ pressed }) => [styles.aiToggle, customOpen && styles.aiToggleActive, pressed && styles.pressed]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setCustomOpen((v) => !v);
+          }}>
+          <Icon icon={PencilLine} size={18} color={colors.primary} />
+          <View style={styles.aiToggleInfo}>
+            <Text style={styles.aiToggleTitle}>{vi ? 'Tự nhập món ăn' : 'Custom food'}</Text>
+            <Text style={styles.aiToggleHint}>
+              {vi ? 'Nhập tên món và macro của riêng bạn' : 'Type your own dish with its macros'}
+            </Text>
+          </View>
+          <Icon icon={customOpen ? ChevronDown : ChevronRight} size={20} color={colors.mutedForeground} />
+        </Pressable>
+
+        {customOpen && (
+          <View style={styles.customPanel}>
+            <TextInput
+              style={styles.input}
+              placeholder={vi ? 'Tên món (VD: Cơm gà nhà làm)' : 'Dish name (e.g. Homemade chicken rice)'}
+              placeholderTextColor={colors.mutedForeground}
+              value={cName}
+              onChangeText={setCName}
+            />
+            <View style={styles.macroInputRow}>
+              <MacroInput label="kcal" value={cKcal} onChange={setCKcal} />
+              <MacroInput label={`${i18n.nProtein} (g)`} value={cProtein} onChange={setCProtein} />
+              <MacroInput label={`${i18n.nCarbs} (g)`} value={cCarbs} onChange={setCCarbs} />
+              <MacroInput label={`${i18n.nFat} (g)`} value={cFat} onChange={setCFat} />
+            </View>
+            <Text style={styles.customHint}>
+              {vi
+                ? 'Bỏ trống kcal sẽ tự tính từ macro (P×4 + C×4 + F×9)'
+                : 'Leave kcal empty to auto-calc from macros (P×4 + C×4 + F×9)'}
+            </Text>
+            <Pressable
+              style={({ pressed }) => [styles.customAddBtn, !canAddCustom && styles.customAddDisabled, pressed && canAddCustom && styles.pressed]}
+              disabled={!canAddCustom}
+              onPress={addCustom}>
+              <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
+              <Text style={styles.customAddText}>{vi ? 'Thêm vào bữa' : 'Add to meal'}</Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Added items */}
         {items.length === 0 ? (
           <Text style={styles.emptyHint}>{i18n.nMealNoItems}</Text>
@@ -413,25 +527,46 @@ export default function LogMealSheet() {
           <View style={styles.itemsWrap}>
             <Text style={styles.sectionLabel}>{i18n.nMealItems}</Text>
             {items.map((it, idx) => (
-              <View key={`${it.food_name}-${idx}`} style={styles.itemRow}>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName} numberOfLines={1}>{it.food_name}</Text>
-                  <Text style={styles.itemMacros}>
-                    {Math.round(it.kcal * it.servings)} kcal · P{Math.round(it.protein_g * it.servings)} · C{Math.round(it.carbs_g * it.servings)} · F{Math.round(it.fat_g * it.servings)}
-                  </Text>
-                </View>
-                <View style={styles.stepper}>
-                  <Pressable hitSlop={6} style={styles.stepBtn} onPress={() => updateServings(idx, -0.5)}>
-                    <Icon icon={Minus} size={16} color={colors.foreground} />
+              <View key={`${it.food_name}-${idx}`}>
+                <View style={styles.itemRow}>
+                  {/* Tap the info area to edit this item's macros */}
+                  <Pressable style={styles.itemInfo} onPress={() => openEdit(idx)}>
+                    <Text style={styles.itemName} numberOfLines={1}>{it.food_name}</Text>
+                    <Text style={styles.itemMacros}>
+                      {Math.round(it.kcal * it.servings)} kcal · P{Math.round(it.protein_g * it.servings)} · C{Math.round(it.carbs_g * it.servings)} · F{Math.round(it.fat_g * it.servings)}
+                    </Text>
                   </Pressable>
-                  <Text style={styles.stepValue}>{it.servings}</Text>
-                  <Pressable hitSlop={6} style={styles.stepBtn} onPress={() => updateServings(idx, 0.5)}>
-                    <Icon icon={Plus} size={16} color={colors.foreground} />
+                  <View style={styles.stepper}>
+                    <Pressable hitSlop={6} style={styles.stepBtn} onPress={() => updateServings(idx, -0.5)}>
+                      <Icon icon={Minus} size={16} color={colors.foreground} />
+                    </Pressable>
+                    <Text style={styles.stepValue}>{it.servings}</Text>
+                    <Pressable hitSlop={6} style={styles.stepBtn} onPress={() => updateServings(idx, 0.5)}>
+                      <Icon icon={Plus} size={16} color={colors.foreground} />
+                    </Pressable>
+                  </View>
+                  <Pressable hitSlop={8} onPress={() => removeItem(idx)}>
+                    <Icon icon={X} size={15} color={colors.mutedForeground} />
                   </Pressable>
                 </View>
-                <Pressable hitSlop={8} onPress={() => removeItem(idx)}>
-                  <Icon icon={X} size={15} color={colors.mutedForeground} />
-                </Pressable>
+                {editingIdx === idx && (
+                  <View style={styles.editPanel}>
+                    <Text style={styles.editHint}>
+                      {vi ? 'Macro cho 1 khẩu phần' : 'Macros per serving'}
+                    </Text>
+                    <View style={styles.macroInputRow}>
+                      <MacroInput label="kcal" value={draft.kcal} onChange={(v) => setDraft((d) => ({ ...d, kcal: v }))} />
+                      <MacroInput label={`${i18n.nProtein} (g)`} value={draft.protein} onChange={(v) => setDraft((d) => ({ ...d, protein: v }))} />
+                      <MacroInput label={`${i18n.nCarbs} (g)`} value={draft.carbs} onChange={(v) => setDraft((d) => ({ ...d, carbs: v }))} />
+                      <MacroInput label={`${i18n.nFat} (g)`} value={draft.fat} onChange={(v) => setDraft((d) => ({ ...d, fat: v }))} />
+                    </View>
+                    <Pressable
+                      style={({ pressed }) => [styles.customAddBtn, pressed && styles.pressed]}
+                      onPress={applyEdit}>
+                      <Text style={styles.customAddText}>{vi ? 'Xong' : 'Done'}</Text>
+                    </Pressable>
+                  </View>
+                )}
               </View>
             ))}
           </View>
@@ -475,6 +610,22 @@ export default function LogMealSheet() {
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+function MacroInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <View style={styles.macroInputCell}>
+      <Text style={styles.macroInputLabel} numberOfLines={1}>{label}</Text>
+      <TextInput
+        style={styles.macroInputField}
+        keyboardType="number-pad"
+        placeholder="0"
+        placeholderTextColor={colors.mutedForeground}
+        value={value}
+        onChangeText={onChange}
+      />
+    </View>
   );
 }
 
@@ -600,6 +751,45 @@ const styles = StyleSheet.create({
   },
   addChipText: { fontSize: 22, color: colors.primaryForeground, lineHeight: 26 },
   emptyHint: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.lg },
+
+  // Custom food entry + per-item macro editing
+  customPanel: { gap: spacing.sm },
+  macroInputRow: { flexDirection: 'row', gap: spacing.sm },
+  macroInputCell: { flex: 1, gap: 4 },
+  macroInputLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, color: colors.mutedForeground },
+  macroInputField: {
+    height: 40,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    textAlign: 'center',
+    color: colors.foreground,
+    fontSize: 15,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+    paddingVertical: 0,
+  },
+  customHint: { ...type.caption, color: colors.mutedForeground },
+  customAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    height: 42,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+  },
+  customAddDisabled: { opacity: 0.4 },
+  customAddText: { ...type.footnote, fontWeight: '600', color: colors.primaryForeground },
+  editPanel: {
+    gap: spacing.sm,
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginTop: 4,
+  },
+  editHint: { ...type.caption, color: colors.mutedForeground },
   itemsWrap: { gap: spacing.sm },
   sectionLabel: {
     ...type.caption,

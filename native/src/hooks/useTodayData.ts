@@ -188,6 +188,7 @@ export function useInvalidateToday() {
     queryClient.invalidateQueries({ queryKey: ['daily_log', user?.id, dateStr] });
     queryClient.invalidateQueries({ queryKey: ['today_sleep', user?.id, dateStr] });
     queryClient.invalidateQueries({ queryKey: ['recent_workouts', user?.id] });
+    queryClient.invalidateQueries({ queryKey: ['workout_sessions', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['today_bio', user?.id, dateStr] });
     queryClient.invalidateQueries({ queryKey: ['readiness_trend', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['nudges', user?.id] });
