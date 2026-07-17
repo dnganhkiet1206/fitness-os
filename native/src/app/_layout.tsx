@@ -3,11 +3,13 @@ import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
+import { AppLockGate } from '@/components/ascnd/app-lock-gate';
 import { AuthScreen } from '@/components/ascnd/auth-screen';
 import { MascotUnlockCelebration } from '@/components/ascnd/mascot-unlock';
 import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { colors } from '@/constants/ascnd';
-import { AppSettingsProvider } from '@/hooks/use-app-settings';
+import { AppLockProvider } from '@/hooks/use-app-lock';
+import { AppSettingsProvider, useI18n } from '@/hooks/use-app-settings';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 
@@ -97,13 +99,24 @@ function Gate() {
   );
 }
 
+/** Wraps the app in the biometric lock gate (needs i18n for the prompt). */
+function LockedApp() {
+  const i18n = useI18n();
+  return (
+    <AppLockProvider prompt={i18n.nLockPrompt}>
+      <Gate />
+      <AppLockGate />
+    </AppLockProvider>
+  );
+}
+
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppSettingsProvider>
       <AuthProvider>
         <ThemeProvider value={ascndTheme}>
-          <Gate />
+          <LockedApp />
         </ThemeProvider>
       </AuthProvider>
       </AppSettingsProvider>

@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ChevronRight, Lock, Upload } from 'lucide-react-native';
+import { Bell, ChevronRight, Lock, Upload } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -8,6 +8,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useAppLock } from '@/hooks/use-app-lock';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascot } from '@/hooks/use-mascot';
 import { useAuth } from '@/hooks/use-auth';
@@ -22,6 +23,7 @@ export default function SettingsScreen() {
   const { lang, setLang } = useAppSettings();
   const i18n = useI18n();
   const mascot = useMascot();
+  const lock = useAppLock();
   const [exporting, setExporting] = useState(false);
 
   const exportData = async () => {
@@ -188,6 +190,52 @@ export default function SettingsScreen() {
         </View>
       </GlassCard>
 
+      {/* Reminders — local notifications */}
+      <Pressable
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push('/reminders');
+        }}>
+        {({ pressed }) => (
+          <GlassCard style={pressed ? styles.cardPressed : undefined}>
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.cardHeaderLeft}>
+                <Icon icon={Bell} size={18} color={colors.mutedForeground} />
+                <View style={styles.cardHeaderInfo}>
+                  <Text style={styles.cardTitle}>{i18n.nRemindersTitle}</Text>
+                  <Text style={styles.cardHint}>{i18n.nRemindersDesc}</Text>
+                </View>
+              </View>
+              <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+            </View>
+          </GlassCard>
+        )}
+      </Pressable>
+
+      {/* App lock — Face ID */}
+      <GlassCard>
+        <View style={styles.toggleRow}>
+          <View style={styles.cardHeaderLeft}>
+            <Icon icon={Lock} size={18} color={colors.mutedForeground} />
+            <View style={styles.toggleInfo}>
+              <Text style={styles.cardTitle}>{i18n.nLockTitle}</Text>
+              <Text style={styles.cardHint}>
+                {lock.available ? i18n.nLockDesc : i18n.nLockUnavailable}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={lock.enabled}
+            disabled={!lock.available}
+            onValueChange={(v) => {
+              Haptics.selectionAsync();
+              lock.setEnabled(v);
+            }}
+            trackColor={{ true: colors.readinessGreen, false: colors.secondary }}
+          />
+        </View>
+      </GlassCard>
+
       <Pressable onPress={exportData} disabled={exporting}>
         {({ pressed }) => (
           <GlassCard style={pressed ? styles.cardPressed : undefined}>
@@ -250,6 +298,7 @@ const styles = StyleSheet.create({
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
   cardPressed: { opacity: 0.75 },
   cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  cardHeaderLeft: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardHeaderInfo: { flex: 1, minWidth: 0 },
   chevron: { fontSize: 22, color: colors.mutedForeground },
   divider: {

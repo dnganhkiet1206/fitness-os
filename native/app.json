@@ -48,7 +48,14 @@
         {
           "cameraPermission": "ASCND uses the camera to scan food barcodes for quick logging."
         }
-      ]
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "ASCND uses Face ID to lock your health data behind biometric authentication."
+        }
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

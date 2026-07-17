@@ -242,6 +242,32 @@ const en = {
   nAddThis: 'Add',
   nPrepTime: '{n} min',
   nAiNoIdeas: 'No suggestions right now — try later',
+
+  // Reminders (local notifications)
+  nRemindersTitle: 'Reminders',
+  nRemindersDesc: 'Daily nudges to keep your streak',
+  nRemindersEnable: 'Allow notifications',
+  nRemindersDenied: 'Notifications are off. Enable them in iOS Settings › ASCND.',
+  nReminderWater: 'Drink water',
+  nReminderWaterBody: 'Time for a glass of water 💧',
+  nReminderSupplements: 'Supplements',
+  nReminderSupplementsBody: 'Take your supplements 💊',
+  nReminderBedtime: 'Wind down',
+  nReminderBedtimeBody: 'Bedtime soon — start winding down 😴',
+  nReminderWeighIn: 'Morning weigh-in',
+  nReminderWeighInBody: 'Log your weight before breakfast ⚖️',
+  nReminderWorkout: 'Train today',
+  nReminderWorkoutBody: 'Your plan has a session scheduled 💪',
+  nReminderTime: 'Time',
+  nReminderEveryHours: 'Every {n}h',
+
+  // App lock (Face ID / biometrics)
+  nLockTitle: 'App Lock',
+  nLockDesc: 'Require Face ID to open ASCND',
+  nLockUnavailable: 'Biometric lock is unavailable on this device',
+  nLockPrompt: 'Unlock ASCND',
+  nLockLocked: 'ASCND is locked',
+  nLockUnlock: 'Unlock',
 };
 
 const vi: typeof en = {
@@ -467,6 +493,32 @@ const vi: typeof en = {
   nAddThis: 'Thêm',
   nPrepTime: '{n} phút',
   nAiNoIdeas: 'Chưa có gợi ý — thử lại sau',
+
+  // Reminders (local notifications)
+  nRemindersTitle: 'Nhắc nhở',
+  nRemindersDesc: 'Nhắc mỗi ngày để giữ chuỗi thói quen',
+  nRemindersEnable: 'Cho phép thông báo',
+  nRemindersDenied: 'Thông báo đang tắt. Bật trong Cài đặt iOS › ASCND.',
+  nReminderWater: 'Uống nước',
+  nReminderWaterBody: 'Đến giờ uống một cốc nước rồi 💧',
+  nReminderSupplements: 'Thực phẩm bổ sung',
+  nReminderSupplementsBody: 'Nhớ uống thực phẩm bổ sung 💊',
+  nReminderBedtime: 'Chuẩn bị ngủ',
+  nReminderBedtimeBody: 'Sắp đến giờ ngủ — thư giãn thôi 😴',
+  nReminderWeighIn: 'Cân buổi sáng',
+  nReminderWeighInBody: 'Ghi cân nặng trước bữa sáng ⚖️',
+  nReminderWorkout: 'Tập hôm nay',
+  nReminderWorkoutBody: 'Lịch của bạn có buổi tập hôm nay 💪',
+  nReminderTime: 'Giờ',
+  nReminderEveryHours: 'Mỗi {n} giờ',
+
+  // App lock (Face ID / sinh trắc)
+  nLockTitle: 'Khoá ứng dụng',
+  nLockDesc: 'Yêu cầu Face ID để mở ASCND',
+  nLockUnavailable: 'Thiết bị không hỗ trợ khoá sinh trắc',
+  nLockPrompt: 'Mở khoá ASCND',
+  nLockLocked: 'ASCND đang khoá',
+  nLockUnlock: 'Mở khoá',
 };
 
 export const nativeStrings: Record<AppLang, typeof en> = { vi, en };
