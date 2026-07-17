@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { supabase } from '@/integrations/supabase/client';
+import { clearPersistedCache } from '@/lib/query-client';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -92,6 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // Drop cached data so the next account doesn't briefly see this one's
+    await clearPersistedCache();
   };
 
   const resetPassword = async (email: string) => {

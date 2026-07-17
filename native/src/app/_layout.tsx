@@ -1,21 +1,21 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useEffect } from 'react';
 
 import { AppLockGate } from '@/components/ascnd/app-lock-gate';
 import { AuthScreen } from '@/components/ascnd/auth-screen';
 import { MascotUnlockCelebration } from '@/components/ascnd/mascot-unlock';
+import { OfflineBanner } from '@/components/ascnd/offline-banner';
 import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { colors } from '@/constants/ascnd';
 import { AppLockProvider } from '@/hooks/use-app-lock';
 import { AppSettingsProvider, useI18n } from '@/hooks/use-app-settings';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
+import { asyncStoragePersister, CACHE_BUSTER, queryClient } from '@/lib/query-client';
 
 SplashScreen.preventAutoHideAsync();
-
-const queryClient = new QueryClient();
 
 // ASCND is dark-first (matches the shipped Capacitor app)
 const ascndTheme = {
@@ -105,6 +105,7 @@ function LockedApp() {
   return (
     <AppLockProvider prompt={i18n.nLockPrompt}>
       <Gate />
+      <OfflineBanner />
       <AppLockGate />
     </AppLockProvider>
   );
@@ -112,7 +113,9 @@ function LockedApp() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister: asyncStoragePersister, maxAge: 1000 * 60 * 60 * 24, buster: CACHE_BUSTER }}>
       <AppSettingsProvider>
       <AuthProvider>
         <ThemeProvider value={ascndTheme}>
@@ -120,6 +123,6 @@ export default function RootLayout() {
         </ThemeProvider>
       </AuthProvider>
       </AppSettingsProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

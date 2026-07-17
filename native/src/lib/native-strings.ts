@@ -261,6 +261,9 @@ const en = {
   nReminderTime: 'Time',
   nReminderEveryHours: 'Every {n}h',
 
+  // Offline
+  nOffline: 'Offline — showing saved data',
+
   // App lock (Face ID / biometrics)
   nLockTitle: 'App Lock',
   nLockDesc: 'Require Face ID to open ASCND',
@@ -511,6 +514,9 @@ const vi: typeof en = {
   nReminderWorkoutBody: 'Lịch của bạn có buổi tập hôm nay 💪',
   nReminderTime: 'Giờ',
   nReminderEveryHours: 'Mỗi {n} giờ',
+
+  // Offline
+  nOffline: 'Ngoại tuyến — đang hiển thị dữ liệu đã lưu',
 
   // App lock (Face ID / sinh trắc)
   nLockTitle: 'Khoá ứng dụng',
