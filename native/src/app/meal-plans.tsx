@@ -1,6 +1,7 @@
+import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react-native';
-import { useState } from 'react';
+import { ChevronDown, ChevronRight, Plus, Search, Trash2, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -8,18 +9,96 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useCreateMealPlan, useDeleteMealPlan, useMealPlanItems, useMealPlans } from '@/hooks/use-library';
+import {
+  useAddMealPlanItem,
+  useCreateMealPlan,
+  useDeleteMealPlan,
+  useDeleteMealPlanItem,
+  useMealPlanItems,
+  useMealPlans,
+} from '@/hooks/use-library';
+import { supabase } from '@/integrations/supabase/client';
 
 const MEALS_PER_DAY = [3, 4, 5, 6];
+const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
 
 export default function MealPlansScreen() {
   const { data: plans } = useMealPlans();
   const createPlan = useCreateMealPlan();
   const deletePlan = useDeleteMealPlan();
+  const addItem = useAddMealPlanItem();
+  const deleteItem = useDeleteMealPlanItem();
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const [openId, setOpenId] = useState<string | null>(null);
   const { data: items } = useMealPlanItems(openId);
+
+  // Add-food panel (per open plan): day + meal type + food search
+  const [addOpen, setAddOpen] = useState(false);
+  const [addDay, setAddDay] = useState(0);
+  const [addMeal, setAddMeal] = useState<string>('breakfast');
+  const [foodQuery, setFoodQuery] = useState('');
+  const [foodDebounced, setFoodDebounced] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setFoodDebounced(foodQuery.trim()), 250);
+    return () => clearTimeout(t);
+  }, [foodQuery]);
+
+  const { data: foodResults } = useQuery({
+    queryKey: ['mealplan_food_search', foodDebounced],
+    enabled: foodDebounced.length >= 2,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('food_items')
+        .select('id, name, kcal, protein_g, carbs_g, fat_g, serving_g')
+        .ilike('name', `%${foodDebounced}%`)
+        .order('name')
+        .limit(15);
+      return data ?? [];
+    },
+  });
+
+  const mealLabel = (m: string) =>
+    ({
+      breakfast: i18n.nBreakfast,
+      lunch: i18n.nLunch,
+      dinner: i18n.nDinner,
+      snack: i18n.nSnack,
+    })[m] ?? m;
+
+  const addFood = (f: {
+    id: string;
+    name: string;
+    kcal: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    serving_g: number;
+  }) => {
+    if (!openId) return;
+    addItem.mutate(
+      {
+        meal_plan_id: openId,
+        day_index: addDay,
+        meal_type: addMeal,
+        food_name: f.name,
+        serving_g: Number(f.serving_g) || 100,
+        kcal: Math.round(Number(f.kcal) || 0),
+        protein_g: Math.round(Number(f.protein_g) || 0),
+        carbs_g: Math.round(Number(f.carbs_g) || 0),
+        fat_g: Math.round(Number(f.fat_g) || 0),
+        food_item_id: f.id,
+      },
+      {
+        onSuccess: () => {
+          setFoodQuery('');
+          setFoodDebounced('');
+        },
+        onError: (e: Error) => Alert.alert('ASCND', e.message),
+      },
+    );
+  };
 
   // Create form (web: "Create Meal Plan" dialog — name / goal / meals per day)
   const [creating, setCreating] = useState(false);
@@ -153,7 +232,11 @@ export default function MealPlansScreen() {
             <Pressable
               onPress={() => {
                 Haptics.selectionAsync();
-                setOpenId(openId === p.id ? null : p.id);
+                const next = openId === p.id ? null : p.id;
+                setOpenId(next);
+                setAddOpen(false);
+                setFoodQuery('');
+                setFoodDebounced('');
               }}>
               <GlassCard>
                 <View style={styles.planRow}>
@@ -173,18 +256,98 @@ export default function MealPlansScreen() {
               </GlassCard>
             </Pressable>
 
-            {openId === p.id &&
-              Object.entries(groupedItems).map(([day, dayItems]) => (
-                <GlassCard key={day} style={styles.dayCard}>
-                  <Text style={styles.dayTitle}>{dayLabel(Number(day))}</Text>
-                  {(dayItems ?? []).map((it) => (
-                    <View key={it.id} style={styles.itemRow}>
-                      <Text style={styles.itemName} numberOfLines={1}>{it.food_name}</Text>
-                      <Text style={styles.itemKcal}>{Math.round(Number(it.kcal))} kcal</Text>
+            {openId === p.id && (
+              <>
+                {Object.entries(groupedItems).map(([day, dayItems]) => (
+                  <GlassCard key={day} style={styles.dayCard}>
+                    <Text style={styles.dayTitle}>{dayLabel(Number(day))}</Text>
+                    {(dayItems ?? []).map((it) => (
+                      <View key={it.id} style={styles.itemRow}>
+                        <Text style={styles.itemName} numberOfLines={1}>
+                          {it.meal_type ? `${mealLabel(it.meal_type)} · ` : ''}{it.food_name}
+                        </Text>
+                        <Text style={styles.itemKcal}>{Math.round(Number(it.kcal))} kcal</Text>
+                        <Pressable
+                          hitSlop={8}
+                          onPress={() => deleteItem.mutate({ id: it.id, planId: p.id })}>
+                          <Icon icon={X} size={14} color={colors.mutedForeground} />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </GlassCard>
+                ))}
+
+                {/* Add-food panel (web: food search + day/meal type) */}
+                <GlassCard style={styles.dayCard}>
+                  {!addOpen ? (
+                    <Pressable
+                      style={({ pressed }) => [styles.addFoodBtn, pressed && styles.pressed]}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setAddOpen(true);
+                      }}>
+                      <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+                      <Text style={styles.addFoodText}>{lang === 'vi' ? 'Thêm món' : 'Add food'}</Text>
+                    </Pressable>
+                  ) : (
+                    <View style={styles.addPanel}>
+                      {/* Day chips (7-day plan) */}
+                      <View style={styles.chipRow}>
+                        {[0, 1, 2, 3, 4, 5, 6].map((d) => (
+                          <Pressable
+                            key={d}
+                            style={[styles.miniChip, addDay === d && styles.chipActive]}
+                            onPress={() => { Haptics.selectionAsync(); setAddDay(d); }}>
+                            <Text style={[styles.miniChipText, addDay === d && styles.chipTextActive]}>
+                              {dayLabel(d)}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                      {/* Meal type chips */}
+                      <View style={styles.chipRow}>
+                        {MEAL_TYPES.map((m) => (
+                          <Pressable
+                            key={m}
+                            style={[styles.miniChip, addMeal === m && styles.chipActive]}
+                            onPress={() => { Haptics.selectionAsync(); setAddMeal(m); }}>
+                            <Text style={[styles.miniChipText, addMeal === m && styles.chipTextActive]}>
+                              {mealLabel(m)}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                      {/* Food search */}
+                      <View style={styles.searchWrap}>
+                        <Icon icon={Search} size={14} color={colors.mutedForeground} />
+                        <TextInput
+                          style={styles.searchInput}
+                          placeholder={i18n.nutritionSearchFood}
+                          placeholderTextColor={colors.mutedForeground}
+                          value={foodQuery}
+                          onChangeText={setFoodQuery}
+                          autoCorrect={false}
+                        />
+                        <Pressable hitSlop={8} onPress={() => { Haptics.selectionAsync(); setAddOpen(false); setFoodQuery(''); }}>
+                          <Icon icon={X} size={15} color={colors.mutedForeground} />
+                        </Pressable>
+                      </View>
+                      {foodDebounced.length >= 2 &&
+                        (foodResults ?? []).map((f) => (
+                          <Pressable
+                            key={f.id}
+                            style={({ pressed }) => [styles.resultRow, pressed && styles.pressedDim]}
+                            onPress={() => addFood(f)}>
+                            <Text style={styles.resultName} numberOfLines={1}>{f.name}</Text>
+                            <Text style={styles.resultKcal}>{Math.round(Number(f.kcal))} kcal</Text>
+                            <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+                          </Pressable>
+                        ))}
                     </View>
-                  ))}
+                  )}
                 </GlassCard>
-              ))}
+              </>
+            )}
           </View>
         ))
       ) : (
@@ -261,4 +424,38 @@ const styles = StyleSheet.create({
   itemName: { ...type.body, color: colors.foreground, flex: 1 },
   itemKcal: { ...type.footnote, color: colors.mutedForeground },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
+  pressedDim: { opacity: 0.6 },
+
+  addFoodBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 4 },
+  addFoodText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  addPanel: { gap: spacing.sm },
+  miniChip: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.secondary,
+  },
+  miniChipText: { fontSize: 11, color: colors.secondaryForeground },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    height: 42,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
+  },
+  searchInput: { flex: 1, color: colors.foreground, fontSize: 15 },
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(43,43,49,0.4)',
+  },
+  resultName: { ...type.footnote, color: colors.foreground, flex: 1 },
+  resultKcal: { ...type.caption, color: colors.mutedForeground },
 });

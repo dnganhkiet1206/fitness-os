@@ -313,3 +313,44 @@ export function useMealPlanItems(planId: string | null) {
     },
   });
 }
+
+export interface MealPlanItemInput {
+  meal_plan_id: string;
+  day_index: number;
+  meal_type: string;
+  food_name: string;
+  serving_g: number;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  food_item_id?: string | null;
+}
+
+/** Add a food to a meal plan (port of the web useAddMealPlanItem) */
+export function useAddMealPlanItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (item: MealPlanItemInput) => {
+      const { error } = await supabase.from('meal_plan_items').insert(item);
+      if (error) throw error;
+    },
+    onSuccess: (_data, item) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      queryClient.invalidateQueries({ queryKey: ['meal_plan_items', item.meal_plan_id] });
+    },
+  });
+}
+
+export function useDeleteMealPlanItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string; planId: string }) => {
+      const { error } = await supabase.from('meal_plan_items').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, { planId }) => {
+      queryClient.invalidateQueries({ queryKey: ['meal_plan_items', planId] });
+    },
+  });
+}

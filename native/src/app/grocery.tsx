@@ -1,4 +1,6 @@
-import { Check, Plus, X } from 'lucide-react-native';
+import { useQuery } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
+import { Check, Plus, UtensilsCrossed, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -14,14 +16,42 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { useAuth } from '@/hooks/use-auth';
 import { useGroceryItems, useGroceryMutations } from '@/hooks/use-extras';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function GroceryScreen() {
+  const { user } = useAuth();
   const { data: items } = useGroceryItems();
   const { add, toggle, remove } = useGroceryMutations();
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const [draft, setDraft] = useState('');
+
+  // Ingredients from the latest meal plan (web: "shopping list from meal plan")
+  const { data: planFoods } = useQuery({
+    queryKey: ['grocery_meal_plan', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: plans } = await supabase
+        .from('meal_plans')
+        .select('id')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (!plans || plans.length === 0) return [];
+      const { data: rows } = await supabase
+        .from('meal_plan_items')
+        .select('food_name')
+        .eq('meal_plan_id', plans[0].id);
+      // Unique food names not already on the grocery list
+      return [...new Set((rows ?? []).map((r) => r.food_name).filter(Boolean))];
+    },
+  });
+
+  const existingNames = new Set((items ?? []).map((i) => i.name.toLowerCase()));
+  const planSuggestions = (planFoods ?? []).filter((n) => !existingNames.has(n.toLowerCase()));
 
   const submit = () => {
     const name = draft.trim();
@@ -50,6 +80,32 @@ export default function GroceryScreen() {
             <Icon icon={Plus} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
           </Pressable>
         </View>
+
+        {/* From your meal plan — tap + to add to the list */}
+        {planSuggestions.length > 0 && (
+          <GlassCard style={styles.planCard}>
+            <View style={styles.planHead}>
+              <Icon icon={UtensilsCrossed} size={13} color={colors.primary} />
+              <Text style={styles.planTitle}>
+                {lang === 'vi' ? 'Từ meal plan của bạn' : 'From your meal plan'}
+              </Text>
+            </View>
+            <View style={styles.planChips}>
+              {planSuggestions.map((name) => (
+                <Pressable
+                  key={name}
+                  style={({ pressed }) => [styles.planChip, pressed && styles.pressed]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    add.mutate(name);
+                  }}>
+                  <Text style={styles.planChipText} numberOfLines={1}>{name}</Text>
+                  <Icon icon={Plus} size={12} color={colors.primary} strokeWidth={2.5} />
+                </Pressable>
+              ))}
+            </View>
+          </GlassCard>
+        )}
 
         {items && items.length > 0 ? (
           items.map((it) => (
@@ -130,4 +186,29 @@ const styles = StyleSheet.create({
   remove: { color: colors.mutedForeground, fontSize: 15 },
   emptyTitle: { ...type.headline, color: colors.foreground },
   emptyHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
+
+  planCard: { gap: spacing.sm },
+  planHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  planTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1.4,
+    color: colors.mutedForeground,
+  },
+  planChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  planChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    maxWidth: '100%',
+    paddingLeft: spacing.sm + 2,
+    paddingRight: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(168,175,189,0.3)',
+    backgroundColor: 'rgba(168,175,189,0.06)',
+  },
+  planChipText: { fontSize: 12, color: colors.foreground, flexShrink: 1 },
 });
