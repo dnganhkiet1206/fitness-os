@@ -1,18 +1,21 @@
+import * as Haptics from 'expo-haptics';
+import { Minus, Plus } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useStepsHistory } from '@/hooks/use-fitness-data';
-
-const GOAL = 10000;
+import { useStepsGoal } from '@/hooks/use-steps-goal';
 
 export default function StepsScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { data: history } = useStepsHistory(14);
+  const { goal: GOAL, setGoal } = useStepsGoal();
 
   const stats = useMemo(() => {
     const h = history ?? [];
@@ -42,6 +45,28 @@ export default function StepsScreen() {
         </View>
         <View style={styles.barTrack}>
           <View style={[styles.barFill, { width: `${pct}%` }]} />
+        </View>
+        {/* Goal stepper (web Settings inline editor, ±500) */}
+        <View style={styles.goalRow}>
+          <Pressable
+            hitSlop={6}
+            style={({ pressed }) => [styles.goalBtn, pressed && styles.pressed]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setGoal(GOAL - 500);
+            }}>
+            <Icon icon={Minus} size={14} color={colors.foreground} />
+          </Pressable>
+          <Text style={styles.goalValue}>{GOAL.toLocaleString()}</Text>
+          <Pressable
+            hitSlop={6}
+            style={({ pressed }) => [styles.goalBtn, pressed && styles.pressed]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setGoal(GOAL + 500);
+            }}>
+            <Icon icon={Plus} size={14} color={colors.foreground} />
+          </Pressable>
         </View>
       </GlassCard>
 
@@ -88,6 +113,25 @@ const styles = StyleSheet.create({
   pct: { ...type.title, color: colors.primary, fontVariant: ['tabular-nums'] },
   barTrack: { height: 10, borderRadius: 5, backgroundColor: colors.background, overflow: 'hidden', marginTop: spacing.md },
   barFill: { height: '100%', borderRadius: 5, backgroundColor: colors.primary },
+  goalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  goalBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  goalValue: { ...type.mono, fontSize: 15, fontWeight: '700', color: colors.foreground, minWidth: 64, textAlign: 'center' },
+  pressed: { opacity: 0.8, transform: [{ scale: 0.92 }] },
   statRow: { flexDirection: 'row', gap: spacing.sm },
   statCard: { flex: 1, gap: 2 },
   statValue: { ...type.title, ...type.mono, color: colors.foreground },

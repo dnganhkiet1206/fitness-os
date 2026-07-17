@@ -37,6 +37,9 @@ type Form = {
   water_target_ml: string;
   units_weight: string;
   units_height: string;
+  sleep_target_hours: string;
+  sleep_target_bedtime: string;
+  sleep_target_waketime: string;
 };
 
 const EMPTY: Form = {
@@ -44,7 +47,17 @@ const EMPTY: Form = {
   height_cm: '175', weight_kg: '70', goal: 'maintain', tdee_target_kcal: '2200',
   macro_protein_g: '150', macro_carbs_g: '250', macro_fat_g: '70',
   water_target_ml: '2500', units_weight: 'kg', units_height: 'cm',
+  sleep_target_hours: '8', sleep_target_bedtime: '23:00', sleep_target_waketime: '07:00',
 };
+
+/** "HH:MM[:SS]" → Date for the time spinner */
+function timeToDate(t: string): Date {
+  const [h, m] = t.split(':').map(Number);
+  return new Date(2000, 0, 1, h || 0, m || 0);
+}
+function dateToTime(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 export default function EditProfileSheet() {
   const { user } = useAuth();
@@ -71,6 +84,9 @@ export default function EditProfileSheet() {
       water_target_ml: String(profile.water_target_ml ?? 2500),
       units_weight: profile.units_weight ?? 'kg',
       units_height: profile.units_height ?? 'cm',
+      sleep_target_hours: String(profile.sleep_target_hours ?? 8),
+      sleep_target_bedtime: (profile.sleep_target_bedtime ?? '23:00').slice(0, 5),
+      sleep_target_waketime: (profile.sleep_target_waketime ?? '07:00').slice(0, 5),
     });
   }, [profile]);
 
@@ -96,6 +112,9 @@ export default function EditProfileSheet() {
           water_target_ml: Number(form.water_target_ml) || null,
           units_weight: form.units_weight,
           units_height: form.units_height,
+          sleep_target_hours: Number(form.sleep_target_hours) || null,
+          sleep_target_bedtime: form.sleep_target_bedtime,
+          sleep_target_waketime: form.sleep_target_waketime,
         })
         .eq('user_id', user.id);
       if (error) throw error;
@@ -263,6 +282,46 @@ export default function EditProfileSheet() {
             onChangeText={(v) => set('water_target_ml', v)}
           />
         </Field>
+
+        <View style={styles.divider} />
+
+        {/* Sleep targets (web Settings sleep page) */}
+        <Field label={`${i18n.settingsSleepTarget} — ${i18n.settingsSleepHours}`}>
+          <TextInput
+            style={styles.input}
+            keyboardType="decimal-pad"
+            value={form.sleep_target_hours}
+            onChangeText={(v) => set('sleep_target_hours', v)}
+          />
+        </Field>
+        <View style={styles.row}>
+          <Field label={i18n.settingsBedtime} style={styles.half}>
+            <View style={styles.pickerWrap}>
+              <DateTimePicker
+                value={timeToDate(form.sleep_target_bedtime)}
+                mode="time"
+                display="compact"
+                themeVariant="dark"
+                onChange={(_, d) => {
+                  if (d) set('sleep_target_bedtime', dateToTime(d));
+                }}
+              />
+            </View>
+          </Field>
+          <Field label={i18n.settingsWakeTime} style={styles.half}>
+            <View style={styles.pickerWrap}>
+              <DateTimePicker
+                value={timeToDate(form.sleep_target_waketime)}
+                mode="time"
+                display="compact"
+                themeVariant="dark"
+                onChange={(_, d) => {
+                  if (d) set('sleep_target_waketime', dateToTime(d));
+                }}
+              />
+            </View>
+          </Field>
+        </View>
       </ScrollView>
     </View>
   );
@@ -346,6 +405,7 @@ const styles = StyleSheet.create({
   half: { flex: 1 },
   third: { flex: 1 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.xs },
+  pickerWrap: { alignItems: 'flex-start' },
   segmented: {
     flexDirection: 'row',
     backgroundColor: colors.secondary,

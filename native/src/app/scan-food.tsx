@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
@@ -46,6 +46,7 @@ function normalize(items: RawItem[]): ScannedFood[] {
 }
 
 export default function ScanFoodScreen() {
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const i18n = useI18n();
@@ -110,7 +111,13 @@ export default function ScanFoodScreen() {
   const confirm = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setPendingScan(items);
-    router.back();
+    // Opened from the tab-bar AI panel there's no meal sheet behind us —
+    // route into it so the scanned items don't sit parked in the bridge
+    if (from === 'ai') {
+      router.replace('/log-meal');
+    } else {
+      router.back();
+    }
   };
 
   if (!permission) return <View style={styles.root} />;

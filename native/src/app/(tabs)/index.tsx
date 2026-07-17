@@ -57,6 +57,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
+import { useStepsGoal } from '@/hooks/use-steps-goal';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { getLocale } from '@/lib/i18n';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
@@ -83,6 +84,7 @@ export default function TodayScreen() {
   const queryClient = useQueryClient();
   const { config, editMode, setEditMode, moveWidget, moveGroup, removeGroup, addGroup, resetConfig } =
     useWidgetConfig();
+  const { goal: stepsGoal } = useStepsGoal();
   const [newGroupName, setNewGroupName] = useState('');
 
   // Pull-to-refresh (web PullToRefresh: invalidate everything)
@@ -169,7 +171,7 @@ export default function TodayScreen() {
           <ActivityRingsCard
             move={{ current: Math.round(activeKcal), target: 600 }}
             exercise={{ current: activeMin, target: 30 }}
-            stand={{ current: steps, target: 10000 }}
+            stand={{ current: steps, target: stepsGoal }}
           />
         );
       case 'biometrics':
@@ -195,7 +197,7 @@ export default function TodayScreen() {
           </Pressable>
         );
       case 'steps':
-        return <StepsWidget steps={steps} target={10000} labels={{ title: lang === 'vi' ? 'Bước đi' : 'Steps' }} />;
+        return <StepsWidget steps={steps} target={stepsGoal} labels={{ title: lang === 'vi' ? 'Bước đi' : 'Steps' }} />;
       case 'nutrition':
         return kcal > 0 ? (
           <NutritionCard
