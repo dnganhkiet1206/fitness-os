@@ -6,7 +6,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { LineChart } from '@/components/ascnd/line-chart';
+import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -75,6 +75,19 @@ export default function ProgressScreen() {
     { k: 'bicep_left_cm', l: shortLabel(i18n.measureBicepL) },
     { k: 'thigh_left_cm', l: shortLabel(i18n.measureThighL) },
     { k: 'body_fat_pct', l: 'BF%' },
+  ];
+
+  // Web measurement-trend chart: 4 lines on a shared scale, same colours
+  const seriesOf = (k: string) =>
+    (measurements ?? []).map((row) => {
+      const raw = (row as Record<string, unknown>)[k];
+      return raw != null ? Number(raw) : null;
+    });
+  const trendSeries = [
+    { label: i18n.measureWaist, color: colors.readinessYellow, values: seriesOf('waist_cm') },
+    { label: i18n.measureChest, color: colors.metricBlue, values: seriesOf('chest_cm') },
+    { label: i18n.measureBicepL, color: colors.metricPurple, values: seriesOf('bicep_left_cm') },
+    { label: i18n.measureThighL, color: colors.metricCyan, values: seriesOf('thigh_left_cm') },
   ];
 
   return (
@@ -191,6 +204,14 @@ export default function ProgressScreen() {
             <Icon icon={Plus} size={13} color={colors.primaryForeground} strokeWidth={2.5} />
             <Text style={styles.addBtnText}>{i18n.progressAddMeasurement}</Text>
           </Pressable>
+
+          {/* Web: multi-line measurement trend (waist / chest / bicep / thigh) */}
+          {(measurements ?? []).length > 0 && (
+            <GlassCard style={styles.chartCard}>
+              <Text style={styles.microTitle}>{i18n.progressMeasurementTrend}</Text>
+              <MultiLineChart series={trendSeries} height={200} emptyLabel={i18n.nNotEnoughData} />
+            </GlassCard>
+          )}
 
           {measurement ? (
             <GlassCard style={styles.chartCard}>
