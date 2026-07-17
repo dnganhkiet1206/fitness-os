@@ -156,7 +156,7 @@ export default function AiCoachScreen() {
           Authorization: `Bearer ${session?.access_token}`,
           apikey: ANON_KEY,
         },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: newMessages, lang }),
       });
 
       if (!resp.ok || !resp.body) {

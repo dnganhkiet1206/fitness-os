@@ -35,8 +35,10 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const today = new Date().toISOString().split("T")[0];
-    const threeDaysAgo = new Date();
+    const { lang = "vi", date } = await req.json().catch(() => ({}));
+    // Prefer the client's local calendar date; fall back to server UTC
+    const today = date ?? new Date().toISOString().split("T")[0];
+    const threeDaysAgo = new Date(`${today}T00:00:00Z`);
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
     const daysAgo3 = threeDaysAgo.toISOString().split("T")[0];
 
@@ -82,7 +84,20 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Bạn là AI hỗ trợ nhắc nhở thói quen sinh hoạt. Dựa trên dữ liệu người dùng, tạo 2-4 gợi ý ngắn gọn cho hôm nay.
+            content: lang === "en"
+              ? `You are an AI habit-reminder assistant. Based on the user's data, create 2-4 short nudges for today.
+
+DATA: ${JSON.stringify(ctx)}
+
+IMPORTANT PRINCIPLES:
+- NEVER predict or diagnose any health condition or illness
+- ONLY remind about simple things everyone knows but forgets: drink water, sleep enough, eat enough, rest
+- Each nudge max 60 characters
+- Base it on real data, not generic
+- Prioritize: biggest shortfall first
+- If evening: remind to sleep early; if morning: remind water + protein
+- Do not give medical advice in any form. All text in English.`
+              : `Bạn là AI hỗ trợ nhắc nhở thói quen sinh hoạt. Dựa trên dữ liệu người dùng, tạo 2-4 gợi ý ngắn gọn cho hôm nay.
 
 DỮ LIỆU: ${JSON.stringify(ctx)}
 

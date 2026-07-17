@@ -37,7 +37,7 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { messages } = await req.json();
+    const { messages, lang = "vi" } = await req.json();
     const today = new Date().toISOString().split("T")[0];
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -100,7 +100,21 @@ serve(async (req) => {
       })),
     };
 
-    const systemPrompt = `Bạn là AI hỗ trợ theo dõi fitness, dinh dưỡng và phục hồi. Trả lời bằng tiếng Việt, ngắn gọn, thực tế và dựa trên dữ liệu.
+    const systemPrompt = lang === "en"
+      ? `You are an AI assistant for fitness, nutrition and recovery tracking. Reply in English, concise, practical and grounded in the data.
+
+USER DATA (last 7 days):
+${JSON.stringify(ctx, null, 2)}
+
+IMPORTANT PRINCIPLES:
+- NEVER predict, diagnose or detect any health condition or illness
+- NEVER give medical advice or act as a substitute for a doctor in any way
+- ONLY suggest simple lifestyle habits that ordinary people know but forget (drink water, sleep enough, eat enough protein, rest after training, etc.)
+- Use the user's real data for personalized reminders
+- If there are pain flags or low readiness, only advise reducing load and resting — do NOT speculate on medical causes
+- Use markdown formatting for clarity
+- Always end with a reminder: see a doctor if you have any health concerns`
+      : `Bạn là AI hỗ trợ theo dõi fitness, dinh dưỡng và phục hồi. Trả lời bằng tiếng Việt, ngắn gọn, thực tế và dựa trên dữ liệu.
 
 DỮ LIỆU NGƯỜI DÙNG (7 ngày gần nhất):
 ${JSON.stringify(ctx, null, 2)}

@@ -8,6 +8,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 
 interface MealSuggestion {
   name: string;
@@ -38,7 +39,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
     setLoading(true);
     try {
       const resp = await supabase.functions.invoke('ai-meal-suggest', {
-        body: { meal_type: mealType || 'any' },
+        body: { meal_type: mealType || 'any', lang, date: localDateStr() },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (resp.error) throw resp.error;

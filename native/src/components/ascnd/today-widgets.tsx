@@ -8,11 +8,12 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 
 const READINESS_COLOR: Record<string, string> = {
@@ -180,6 +181,7 @@ const PRIORITY_COLOR: Record<string, string> = {
 /** AI smart tips — nudges generated from recent data via edge function */
 export function SmartTipsCard() {
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const [tapped, setTapped] = useState(false);
 
   const nudges = useMutation({
@@ -187,6 +189,7 @@ export function SmartTipsCard() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       const { data, error } = await supabase.functions.invoke('ai-smart-nudges', {
+        body: { lang, date: localDateStr() },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (error) throw error;

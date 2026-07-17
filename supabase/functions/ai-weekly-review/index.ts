@@ -35,7 +35,7 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { week_start } = await req.json();
+    const { week_start, lang = "vi" } = await req.json();
 
     const weekEnd = new Date(week_start);
     weekEnd.setDate(weekEnd.getDate() + 6);
@@ -80,7 +80,19 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Bạn là AI hỗ trợ theo dõi thói quen sinh hoạt hàng tuần. Phân tích dữ liệu và đưa ra nhận xét + gợi ý bằng tiếng Việt.
+            content: lang === "en"
+              ? `You are an AI assistant for weekly lifestyle-habit tracking. Analyze the data and give observations + suggestions in English.
+
+DATA: ${JSON.stringify(ctx)}
+
+IMPORTANT PRINCIPLES:
+- NEVER predict, diagnose or detect any illness or health condition
+- ONLY comment on lifestyle habits (eating, sleeping, training, hydration) and suggest simple improvements
+- Suggestions must be things ordinary people know but often skip
+- Do not give medical advice in any form
+
+Return insights (observations from the data) and recommendations (concrete actions for next week). All text in English.`
+              : `Bạn là AI hỗ trợ theo dõi thói quen sinh hoạt hàng tuần. Phân tích dữ liệu và đưa ra nhận xét + gợi ý bằng tiếng Việt.
 
 DỮ LIỆU: ${JSON.stringify(ctx)}
 

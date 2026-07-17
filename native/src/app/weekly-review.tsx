@@ -223,7 +223,7 @@ export default function WeeklyReviewScreen() {
   const analyze = useMutation({
     mutationFn: async () => {
       const resp = await supabase.functions.invoke('ai-weekly-review', {
-        body: { week_start: startStr },
+        body: { week_start: startStr, lang },
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       if (resp.error) throw new Error(resp.error.message ?? 'Analysis failed');

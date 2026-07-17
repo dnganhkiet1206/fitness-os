@@ -35,8 +35,9 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { meal_type } = await req.json();
-    const today = new Date().toISOString().split("T")[0];
+    const { meal_type, lang = "vi", date } = await req.json();
+    // Prefer the client's local calendar date; fall back to server UTC
+    const today = date ?? new Date().toISOString().split("T")[0];
 
     const [profileRes, dailyLogRes, favFoodsRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
@@ -77,7 +78,18 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Bạn là AI dinh dưỡng. Gợi ý 3 bữa ăn phù hợp với macros còn lại và sở thích người dùng. Trả lời bằng tiếng Việt.
+            content: lang === "en"
+              ? `You are a nutrition AI. Suggest 3 meals that fit the remaining macros and the user's preferences. Reply in English.
+
+DATA: ${JSON.stringify(ctx)}
+
+PRINCIPLES:
+- Compute accurate macros for each suggestion
+- Prefer favorite foods when they fit
+- Avoid allergies and disliked foods
+- Fit the time of day
+- Realistic, easy-to-cook suggestions. All names/descriptions in English.`
+              : `Bạn là AI dinh dưỡng. Gợi ý 3 bữa ăn phù hợp với macros còn lại và sở thích người dùng. Trả lời bằng tiếng Việt.
 
 DỮ LIỆU: ${JSON.stringify(ctx)}
 
