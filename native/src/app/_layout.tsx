@@ -106,6 +106,16 @@ function Gate() {
         }}
       />
       <Stack.Screen
+        name="log-measurement"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: [1.0],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+          contentStyle: { backgroundColor: colors.card },
+        }}
+      />
+      <Stack.Screen
         name="workout-builder"
         options={{
           presentation: 'formSheet',

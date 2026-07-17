@@ -106,21 +106,54 @@ export function useStepsHistory(days = 14) {
   });
 }
 
-/** Latest body-measurement row (web Progress → Measurements tab) */
-export function useLatestMeasurement() {
+/** Full measurement history (web Progress → Measurements tab) */
+export function useBodyMeasurements() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ['body_measurements_latest', user?.id],
+    queryKey: ['body_measurements', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('body_measurements')
         .select('*')
         .eq('user_id', user!.id)
-        .order('date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
+        .order('date', { ascending: true })
+        .limit(90);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export interface BodyMeasurementInput {
+  date: string;
+  neck_cm?: number | null;
+  shoulders_cm?: number | null;
+  chest_cm?: number | null;
+  waist_cm?: number | null;
+  hips_cm?: number | null;
+  bicep_left_cm?: number | null;
+  bicep_right_cm?: number | null;
+  thigh_left_cm?: number | null;
+  thigh_right_cm?: number | null;
+  calf_left_cm?: number | null;
+  calf_right_cm?: number | null;
+  body_fat_pct?: number | null;
+  notes?: string;
+}
+
+export function useUpsertBodyMeasurement() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (m: BodyMeasurementInput) => {
+      const { error } = await supabase
+        .from('body_measurements')
+        .upsert({ user_id: user!.id, ...m }, { onConflict: 'user_id,date' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['body_measurements', user?.id] });
     },
   });
 }

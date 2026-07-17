@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Camera, Medal, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
+import { Camera, Medal, Plus, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -10,9 +10,10 @@ import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useLatestMeasurement, useWeightHistory } from '@/hooks/use-fitness-data';
+import { useBodyMeasurements, useWeightHistory } from '@/hooks/use-fitness-data';
 import { useProgressPhotos } from '@/hooks/use-progress-photos';
 import { useProfile } from '@/hooks/useTodayData';
+import { getLocale } from '@/lib/i18n';
 
 type Tab = 'weight' | 'measurements' | 'photos';
 
@@ -33,7 +34,7 @@ export default function ProgressScreen() {
   const { data: profile } = useProfile();
   const { data: weight } = useWeightHistory(90);
   const { data: photos } = useProgressPhotos();
-  const { data: measurement } = useLatestMeasurement();
+  const { data: measurements } = useBodyMeasurements();
 
   const weightData = weight ?? [];
   const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].value : null;
@@ -54,13 +55,26 @@ export default function ProgressScreen() {
     { key: 'photos', label: i18n.progressPhotos, icon: Camera },
   ];
 
+  // Real body_measurements column names (the old short keys never matched a column)
   const MEASURES: { k: string; l: string }[] = [
-    { k: 'neck', l: i18n.measureNeck }, { k: 'shoulders', l: i18n.measureShoulders },
-    { k: 'chest', l: i18n.measureChest }, { k: 'waist', l: i18n.measureWaist },
-    { k: 'hips', l: i18n.measureHips }, { k: 'bicep_l', l: i18n.measureBicepL },
-    { k: 'bicep_r', l: i18n.measureBicepR }, { k: 'thigh_l', l: i18n.measureThighL },
-    { k: 'thigh_r', l: i18n.measureThighR }, { k: 'calf_l', l: i18n.measureCalfL },
-    { k: 'calf_r', l: i18n.measureCalfR }, { k: 'bf', l: i18n.measureBodyFat },
+    { k: 'neck_cm', l: i18n.measureNeck }, { k: 'shoulders_cm', l: i18n.measureShoulders },
+    { k: 'chest_cm', l: i18n.measureChest }, { k: 'waist_cm', l: i18n.measureWaist },
+    { k: 'hips_cm', l: i18n.measureHips }, { k: 'bicep_left_cm', l: i18n.measureBicepL },
+    { k: 'bicep_right_cm', l: i18n.measureBicepR }, { k: 'thigh_left_cm', l: i18n.measureThighL },
+    { k: 'thigh_right_cm', l: i18n.measureThighR }, { k: 'calf_left_cm', l: i18n.measureCalfL },
+    { k: 'calf_right_cm', l: i18n.measureCalfR }, { k: 'body_fat_pct', l: i18n.measureBodyFat },
+  ];
+
+  const measurement = measurements && measurements.length > 0 ? measurements[measurements.length - 1] : null;
+  // Web history table: last 10 entries, newest first
+  const historyRows = (measurements ?? []).slice(-10).reverse();
+  const shortLabel = (l: string) => l.replace(/\s*\(.*\)$/, '');
+  const HISTORY_COLS: { k: string; l: string }[] = [
+    { k: 'waist_cm', l: shortLabel(i18n.measureWaist) },
+    { k: 'chest_cm', l: shortLabel(i18n.measureChest) },
+    { k: 'bicep_left_cm', l: shortLabel(i18n.measureBicepL) },
+    { k: 'thigh_left_cm', l: shortLabel(i18n.measureThighL) },
+    { k: 'body_fat_pct', l: 'BF%' },
   ];
 
   return (
@@ -169,27 +183,67 @@ export default function ProgressScreen() {
       )}
 
       {tab === 'measurements' && (
-        <GlassCard style={styles.chartCard}>
-          <Text style={styles.microTitle}>{i18n.progressMeasurements}</Text>
+        <>
+          {/* Web: right-aligned "Add measurement" button opening the input dialog */}
+          <Pressable
+            style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+            onPress={() => { Haptics.selectionAsync(); router.push('/log-measurement'); }}>
+            <Icon icon={Plus} size={13} color={colors.primaryForeground} strokeWidth={2.5} />
+            <Text style={styles.addBtnText}>{i18n.progressAddMeasurement}</Text>
+          </Pressable>
+
           {measurement ? (
-            <View style={styles.measureGrid}>
-              {MEASURES.map((m) => {
-                const raw = (measurement as Record<string, unknown>)[m.k];
-                const val = raw != null ? Number(raw) : null;
-                return (
-                  <View key={m.k} style={styles.measureCell}>
-                    <Text style={styles.measureLabel} numberOfLines={1}>{m.l}</Text>
-                    <Text style={styles.measureValue}>{val != null && val > 0 ? val : '—'}</Text>
-                  </View>
-                );
-              })}
-            </View>
+            <GlassCard style={styles.chartCard}>
+              <Text style={styles.microTitle}>{i18n.progressMeasurements}</Text>
+              <View style={styles.measureGrid}>
+                {MEASURES.map((m) => {
+                  const raw = (measurement as Record<string, unknown>)[m.k];
+                  const val = raw != null ? Number(raw) : null;
+                  return (
+                    <View key={m.k} style={styles.measureCell}>
+                      <Text style={styles.measureLabel} numberOfLines={1}>{m.l}</Text>
+                      <Text style={styles.measureValue}>{val != null && val > 0 ? val : '—'}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </GlassCard>
           ) : (
-            <Text style={styles.emptyText}>
-              {vi ? 'Chưa có số đo — ghi số đo trên bản web, dữ liệu đồng bộ về đây' : 'No measurements yet — log them on the web app; they sync here'}
-            </Text>
+            <GlassCard style={styles.chartCard}>
+              <Text style={styles.emptyText}>{i18n.progressNoMeasurements}</Text>
+            </GlassCard>
           )}
-        </GlassCard>
+
+          {/* Web: measurement history table (last 10, newest first) */}
+          {historyRows.length > 0 && (
+            <GlassCard style={styles.chartCard}>
+              <Text style={styles.microTitle}>{i18n.progressMeasurementHistory}</Text>
+              <View>
+                <View style={[styles.historyRow, styles.historyHead]}>
+                  <Text style={[styles.historyHeadText, styles.historyDateCol]}>{i18n.progressDate}</Text>
+                  {HISTORY_COLS.map((c) => (
+                    <Text key={c.k} style={[styles.historyHeadText, styles.historyCol]} numberOfLines={1}>{c.l}</Text>
+                  ))}
+                </View>
+                {historyRows.map((row) => (
+                  <View key={row.id} style={styles.historyRow}>
+                    <Text style={[styles.historyDate, styles.historyDateCol]}>
+                      {new Date(row.date).toLocaleDateString(getLocale(lang), { day: 'numeric', month: 'short' })}
+                    </Text>
+                    {HISTORY_COLS.map((c) => {
+                      const raw = (row as Record<string, unknown>)[c.k];
+                      return (
+                        <Text key={c.k} style={[styles.historyValue, styles.historyCol]}>
+                          {raw != null ? Number(raw) : '—'}
+                        </Text>
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
+            </GlassCard>
+          )}
+        </>
       )}
 
       {tab === 'photos' && (
@@ -308,6 +362,34 @@ const styles = StyleSheet.create({
   },
   measureLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.8, color: colors.mutedForeground },
   measureValue: { fontSize: 15, fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
+
+  // Measurements: add button (web: size-sm rounded-xl, right-aligned)
+  addBtn: {
+    alignSelf: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+  },
+  addBtnText: { fontSize: 12, fontWeight: '600', color: colors.primaryForeground },
+
+  // Measurement history table
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(43,43,49,0.3)',
+  },
+  historyHead: { paddingVertical: 8 },
+  historyHeadText: { fontSize: 10, fontWeight: '500', color: colors.mutedForeground, textAlign: 'right' },
+  historyDateCol: { flex: 1.3, textAlign: 'left' },
+  historyCol: { flex: 1 },
+  historyDate: { fontSize: 11, color: colors.mutedForeground },
+  historyValue: { fontSize: 11, fontFamily: 'Menlo', color: colors.foreground, textAlign: 'right', fontVariant: ['tabular-nums'] },
 
   // Photos
   photoCta: {
