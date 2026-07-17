@@ -1,4 +1,5 @@
 import { Check, Target } from 'lucide-react-native';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -6,11 +7,30 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
-import { useWeeklyChallenges } from '@/hooks/use-extras';
+import {
+  useInitWeeklyChallenges,
+  useUpdateChallengeProgress,
+  useWeeklyChallenges,
+} from '@/hooks/use-extras';
 
 export default function ChallengesScreen() {
   const { data: challenges } = useWeeklyChallenges();
+  const initChallenges = useInitWeeklyChallenges();
+  const updateProgress = useUpdateChallengeProgress();
+  const initializedRef = useRef(false);
   const i18n = useI18n();
+
+  // Web flow: seed this week's challenges if empty, then refresh progress
+  useEffect(() => {
+    if (initializedRef.current || challenges === undefined) return;
+    initializedRef.current = true;
+    if (challenges.length === 0) {
+      initChallenges.mutate(undefined, { onSuccess: () => updateProgress.mutate() });
+    } else {
+      updateProgress.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [challenges]);
 
   return (
     <Screen back title={i18n.nChallenges}>

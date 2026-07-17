@@ -5,6 +5,7 @@ import { ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
@@ -161,6 +162,9 @@ export default function NutritionScreen() {
               <Text style={styles.addFoodText}>{i18n.foodAddCustom}</Text>
             </Pressable>
           </View>
+
+          {/* AI meal suggestions (web AiMealSuggestButton) */}
+          <AiMealSuggest />
 
           {debounced.length >= 2 && results && (
             <GlassCard style={styles.listCard}>
