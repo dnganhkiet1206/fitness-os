@@ -295,34 +295,55 @@ export default function WeeklyReviewScreen() {
     return flags.filter((f) => f.pain_0_10 >= 5);
   });
 
-  // Adaptive training recommendations (web rules, verbatim)
+  // Adaptive training recommendations (web rules) — localized per lang
+  const L = (vi: string, en: string) => (lang === 'vi' ? vi : en);
   const recommendations: { kind: 'success' | 'warning' | 'info'; text: string }[] = [];
   if (acwr > 1.5) {
-    recommendations.push({ kind: 'warning', text: `ACWR cao (${acwr}). Giảm 15-20% volume tuần tới để tránh chấn thương.` });
+    recommendations.push({ kind: 'warning', text: L(
+      `ACWR cao (${acwr}). Giảm 15-20% volume tuần tới để tránh chấn thương.`,
+      `ACWR high (${acwr}). Cut volume 15-20% next week to avoid injury.`) });
   } else if (acwr > 1.3) {
-    recommendations.push({ kind: 'warning', text: `ACWR hơi cao (${acwr}). Giảm 5-10% volume hoặc bớt 1-2 sets/bài tập.` });
+    recommendations.push({ kind: 'warning', text: L(
+      `ACWR hơi cao (${acwr}). Giảm 5-10% volume hoặc bớt 1-2 sets/bài tập.`,
+      `ACWR slightly high (${acwr}). Cut 5-10% volume or drop 1-2 sets per exercise.`) });
   } else if (acwr < 0.6 && load7d > 0) {
-    recommendations.push({ kind: 'info', text: `ACWR thấp (${acwr}). Có thể tăng 10-15% volume dần dần.` });
+    recommendations.push({ kind: 'info', text: L(
+      `ACWR thấp (${acwr}). Có thể tăng 10-15% volume dần dần.`,
+      `ACWR low (${acwr}). You can add 10-15% volume gradually.`) });
   } else if (acwr >= 0.8 && acwr <= 1.3) {
-    recommendations.push({ kind: 'success', text: `ACWR tối ưu (${acwr}). Giữ nguyên hoặc tăng nhẹ 5% volume.` });
+    recommendations.push({ kind: 'success', text: L(
+      `ACWR tối ưu (${acwr}). Giữ nguyên hoặc tăng nhẹ 5% volume.`,
+      `ACWR optimal (${acwr}). Hold steady or bump volume ~5%.`) });
   }
   if (avgReadiness < 50 && daysWithData >= 3) {
-    recommendations.push({ kind: 'warning', text: 'Readiness trung bình thấp. Cân nhắc tuần deload: giảm 40-50% volume, giữ cường độ.' });
+    recommendations.push({ kind: 'warning', text: L(
+      'Readiness trung bình thấp. Cân nhắc tuần deload: giảm 40-50% volume, giữ cường độ.',
+      'Low average readiness. Consider a deload week: cut volume 40-50%, keep intensity.') });
   } else if (avgReadiness >= 75) {
-    recommendations.push({ kind: 'success', text: 'Phục hồi tốt! Có thể đẩy progressive overload: +2.5kg hoặc +1 rep mỗi bài chính.' });
+    recommendations.push({ kind: 'success', text: L(
+      'Phục hồi tốt! Có thể đẩy progressive overload: +2.5kg hoặc +1 rep mỗi bài chính.',
+      'Great recovery! Push progressive overload: +2.5kg or +1 rep on your main lifts.') });
   }
   if (avgSleepH < targets.sleepH - 1) {
-    recommendations.push({ kind: 'warning', text: `Thiếu ngủ (${avgSleepH.toFixed(1)}h vs ${targets.sleepH}h). Ưu tiên ngủ trước khi tăng volume.` });
+    recommendations.push({ kind: 'warning', text: L(
+      `Thiếu ngủ (${avgSleepH.toFixed(1)}h vs ${targets.sleepH}h). Ưu tiên ngủ trước khi tăng volume.`,
+      `Sleep debt (${avgSleepH.toFixed(1)}h vs ${targets.sleepH}h). Prioritize sleep before adding volume.`) });
   }
   if (avgProtein < targets.protein * 0.8 && daysWithData >= 3) {
-    recommendations.push({ kind: 'info', text: `Protein thấp (${Math.round(avgProtein)}g vs ${targets.protein}g). Tăng protein để hỗ trợ phục hồi.` });
+    recommendations.push({ kind: 'info', text: L(
+      `Protein thấp (${Math.round(avgProtein)}g vs ${targets.protein}g). Tăng protein để hỗ trợ phục hồi.`,
+      `Low protein (${Math.round(avgProtein)}g vs ${targets.protein}g). Increase protein to support recovery.`) });
   }
   if (painFlags.length > 0) {
     const parts = [...new Set(painFlags.map((f) => f.bodyPart))].join(', ');
-    recommendations.push({ kind: 'warning', text: `Có cảnh báo đau: ${parts}. Tránh bài tập trực tiếp vùng này hoặc giảm tải.` });
+    recommendations.push({ kind: 'warning', text: L(
+      `Có cảnh báo đau: ${parts}. Tránh bài tập trực tiếp vùng này hoặc giảm tải.`,
+      `Pain flagged: ${parts}. Avoid direct work on these areas or reduce load.`) });
   }
   if (totalVolume > prevTotalVolume * 1.15 && prevTotalVolume > 0) {
-    recommendations.push({ kind: 'info', text: `Volume tăng ${Math.round((totalVolume / prevTotalVolume - 1) * 100)}% so với tuần trước. Theo dõi phục hồi.` });
+    recommendations.push({ kind: 'info', text: L(
+      `Volume tăng ${Math.round((totalVolume / prevTotalVolume - 1) * 100)}% so với tuần trước. Theo dõi phục hồi.`,
+      `Volume up ${Math.round((totalVolume / prevTotalVolume - 1) * 100)}% vs last week. Watch your recovery.`) });
   }
 
   const delta = (curr: number, prev: number) => (prev ? Math.round(((curr - prev) / prev) * 100) : null);

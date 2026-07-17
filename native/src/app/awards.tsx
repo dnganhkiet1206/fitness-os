@@ -22,6 +22,8 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AWARD_DEFINITIONS, useAwards, useCheckAwards } from '@/hooks/use-extras';
+import { awardText } from '@/lib/gamification-i18n';
+import type { AppLang } from '@/lib/i18n';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   flame: Flame,
@@ -54,14 +56,17 @@ function MedalCard({
   award,
   earned,
   locale,
+  lang,
 }: {
   award: AwardDef;
   earned: EarnedAward | undefined;
   locale: string;
+  lang: AppLang;
 }) {
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
   const AwardIcon = ICON_MAP[award.icon] ?? Trophy;
   const isEarned = !!earned;
+  const { title, desc } = awardText(award.key, lang);
   const R = 30;
   const C = 2 * Math.PI * R;
 
@@ -69,7 +74,7 @@ function MedalCard({
     Haptics.selectionAsync();
     try {
       await Share.share({
-        message: `🏅 ${award.title} — ${award.desc}! #ASCND`,
+        message: `🏅 ${title} — ${desc}! #ASCND`,
       });
     } catch {
       // user cancelled
@@ -112,10 +117,10 @@ function MedalCard({
       </View>
 
       <Text style={[styles.medalTitle, !isEarned && styles.medalTitleLocked]} numberOfLines={1}>
-        {award.title}
+        {title}
       </Text>
       <Text style={styles.medalDesc} numberOfLines={2}>
-        {award.desc}
+        {desc}
       </Text>
 
       {earned && (
@@ -221,6 +226,7 @@ export default function AwardsScreen() {
                   award={award}
                   earned={earnedMap.get(award.key)}
                   locale={locale}
+                  lang={lang}
                 />
               ))}
             </View>

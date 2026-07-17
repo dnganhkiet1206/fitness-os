@@ -61,10 +61,10 @@ const COMMON_SUPPLEMENTS = [
   { name: 'Vitamin D3', category: 'vitamin', dose: '2000 IU', timing: 'morning' },
   { name: 'Omega-3 Fish Oil', category: 'other', dose: '1000mg', timing: 'with meals' },
   { name: 'Magnesium', category: 'mineral', dose: '400mg', timing: 'before bed' },
-  { name: 'ZMA', category: 'mineral', dose: '1 viên', timing: 'before bed' },
+  { name: 'ZMA', category: 'mineral', dose: '1 tablet', timing: 'before bed' },
   { name: 'Caffeine', category: 'other', dose: '200mg', timing: 'pre-workout' },
   { name: 'BCAA', category: 'protein', dose: '5g', timing: 'pre-workout' },
-  { name: 'Multivitamin', category: 'vitamin', dose: '1 viên', timing: 'morning' },
+  { name: 'Multivitamin', category: 'vitamin', dose: '1 tablet', timing: 'morning' },
   { name: 'Ashwagandha', category: 'nootropic', dose: '600mg', timing: 'morning' },
 ];
 

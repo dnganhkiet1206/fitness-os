@@ -6,12 +6,13 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
   useInitWeeklyChallenges,
   useUpdateChallengeProgress,
   useWeeklyChallenges,
 } from '@/hooks/use-extras';
+import { challengeText } from '@/lib/gamification-i18n';
 
 export default function ChallengesScreen() {
   const { data: challenges } = useWeeklyChallenges();
@@ -19,6 +20,7 @@ export default function ChallengesScreen() {
   const updateProgress = useUpdateChallengeProgress();
   const initializedRef = useRef(false);
   const i18n = useI18n();
+  const { lang } = useAppSettings();
 
   // Web flow: seed this week's challenges if empty, then refresh progress
   useEffect(() => {
@@ -39,6 +41,7 @@ export default function ChallengesScreen() {
           const target = Number(c.target_value) || 1;
           const current = Math.min(Number(c.current_value) || 0, target);
           const pct = Math.round((current / target) * 100);
+          const { title, desc } = challengeText(c.challenge_key, lang, { title: c.title, desc: c.description });
           return (
             <GlassCard key={c.id}>
               <View style={styles.headerRow}>
@@ -46,8 +49,8 @@ export default function ChallengesScreen() {
                   <Icon icon={Target} size={20} color={colors.primary} />
                 </View>
                 <View style={styles.info}>
-                  <Text style={styles.title}>{c.title}</Text>
-                  {c.description ? <Text style={styles.hint}>{c.description}</Text> : null}
+                  <Text style={styles.title}>{title}</Text>
+                  {desc ? <Text style={styles.hint}>{desc}</Text> : null}
                 </View>
                 {c.completed && <Icon icon={Check} size={18} color={colors.readinessGreen} strokeWidth={3} />}
               </View>

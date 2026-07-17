@@ -26,6 +26,7 @@ import Animated, {
 
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useAppSettings } from '@/hooks/use-app-settings';
 
 /**
  * Global award celebration — port of the web AwardCelebrationOverlay.
@@ -142,8 +143,10 @@ function ConfettiPiece({ progress, piece }: { progress: SharedValue<number>; pie
 }
 
 function CelebrationModal({ award, onClose }: { award: CelebrationAward; onClose: () => void }) {
+  const { lang } = useAppSettings();
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
   const AwardIcon = ICON_MAP[award.icon] ?? Trophy;
+  const kicker = lang === 'vi' ? 'Huy Chương Mới!' : 'New Award!';
 
   const backdrop = useSharedValue(0);
   const pop = useSharedValue(0);
@@ -201,7 +204,7 @@ function CelebrationModal({ award, onClose }: { award: CelebrationAward; onClose
             <Icon icon={AwardIcon} size={36} color="#fff" />
           </Animated.View>
 
-          <Text style={styles.kicker}>Huy Chương Mới!</Text>
+          <Text style={styles.kicker}>{kicker}</Text>
           <Text style={styles.title}>{award.title}</Text>
           <Text style={styles.desc}>{award.description}</Text>
           <View style={[styles.tierBadge, { backgroundColor: tier.color }]}>

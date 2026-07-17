@@ -2,7 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { fireCelebration } from '@/components/ascnd/award-celebration';
+import { useAppSettings } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
+import { AWARD_TEXT, CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr, localDayRangeISO } from '@/lib/local-date';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
@@ -32,7 +34,7 @@ export function useRecentAwards(limit = 3) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('awards')
-        .select('id, title, description, icon, tier, earned_at')
+        .select('id, award_key, title, description, icon, tier, earned_at')
         .eq('user_id', user!.id)
         .order('earned_at', { ascending: false })
         .limit(limit);
@@ -42,19 +44,23 @@ export function useRecentAwards(limit = 3) {
   });
 }
 
-/** Award catalog — verbatim from the web useAwards.ts */
+/**
+ * Award catalog — structure/thresholds only. Display text lives in
+ * gamification-i18n (AWARD_TEXT) keyed by `key`; the English string is
+ * written to the DB as the canonical/history value.
+ */
 export const AWARD_DEFINITIONS = [
-  { key: 'streak_3', type: 'streak', title: 'Khởi Đầu 🔥', desc: 'Ghi log 3 ngày liên tiếp', icon: 'flame', tier: 'bronze', requirement: 3 },
-  { key: 'streak_7', type: 'streak', title: 'Tuần Vàng', desc: 'Ghi log 7 ngày liên tiếp', icon: 'flame', tier: 'silver', requirement: 7 },
-  { key: 'streak_14', type: 'streak', title: 'Kiên Trì', desc: 'Ghi log 14 ngày liên tiếp', icon: 'flame', tier: 'gold', requirement: 14 },
-  { key: 'streak_30', type: 'streak', title: 'Thép Đã Tôi', desc: 'Ghi log 30 ngày liên tiếp', icon: 'flame', tier: 'platinum', requirement: 30 },
-  { key: 'first_workout', type: 'first_workout', title: 'Bước Đầu', desc: 'Hoàn thành buổi tập đầu tiên', icon: 'dumbbell', tier: 'bronze' },
-  { key: 'workouts_10', type: 'volume_milestone', title: '10 Buổi Tập', desc: 'Hoàn thành 10 buổi tập', icon: 'dumbbell', tier: 'silver', requirement: 10 },
-  { key: 'workouts_50', type: 'volume_milestone', title: '50 Buổi Tập', desc: 'Hoàn thành 50 buổi tập', icon: 'dumbbell', tier: 'gold', requirement: 50 },
-  { key: 'workouts_100', type: 'volume_milestone', title: 'Centurion', desc: 'Hoàn thành 100 buổi tập', icon: 'dumbbell', tier: 'platinum', requirement: 100 },
-  { key: 'first_pr', type: 'pr', title: 'Kỷ Lục Mới!', desc: 'Đạt PR đầu tiên', icon: 'trophy', tier: 'silver' },
-  { key: 'pr_5', type: 'pr', title: '5x PR', desc: 'Đạt 5 PR', icon: 'trophy', tier: 'gold', requirement: 5 },
-  { key: 'steps_10k', type: 'steps_goal', title: '10K Steps', desc: 'Đạt 10,000 bước trong 1 ngày', icon: 'footprints', tier: 'bronze' },
+  { key: 'streak_3', type: 'streak', icon: 'flame', tier: 'bronze', requirement: 3 },
+  { key: 'streak_7', type: 'streak', icon: 'flame', tier: 'silver', requirement: 7 },
+  { key: 'streak_14', type: 'streak', icon: 'flame', tier: 'gold', requirement: 14 },
+  { key: 'streak_30', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 30 },
+  { key: 'first_workout', type: 'first_workout', icon: 'dumbbell', tier: 'bronze' },
+  { key: 'workouts_10', type: 'volume_milestone', icon: 'dumbbell', tier: 'silver', requirement: 10 },
+  { key: 'workouts_50', type: 'volume_milestone', icon: 'dumbbell', tier: 'gold', requirement: 50 },
+  { key: 'workouts_100', type: 'volume_milestone', icon: 'dumbbell', tier: 'platinum', requirement: 100 },
+  { key: 'first_pr', type: 'pr', icon: 'trophy', tier: 'silver' },
+  { key: 'pr_5', type: 'pr', icon: 'trophy', tier: 'gold', requirement: 5 },
+  { key: 'steps_10k', type: 'steps_goal', icon: 'footprints', tier: 'bronze' },
 ] as const;
 
 type AwardDef = (typeof AWARD_DEFINITIONS)[number];
@@ -66,16 +72,19 @@ type AwardDef = (typeof AWARD_DEFINITIONS)[number];
  */
 export function useCheckAwards() {
   const { user } = useAuth();
+  const { lang } = useAppSettings();
   const queryClient = useQueryClient();
   const { data: existingAwards } = useAwards();
 
   const grant = async (def: AwardDef, metadata: Record<string, unknown> = {}) => {
+    const text = AWARD_TEXT[def.key];
     const { error } = await supabase.from('awards').insert({
       user_id: user!.id,
       award_type: def.type,
       award_key: def.key,
-      title: def.title,
-      description: def.desc,
+      // English is the canonical/history value; native renders by key
+      title: text.title.en,
+      description: text.desc.en,
       icon: def.icon,
       tier: def.tier,
       metadata: metadata as Json,
@@ -84,8 +93,13 @@ export function useCheckAwards() {
     if (error && !error.message.includes('duplicate')) throw error;
     if (!error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // Web fires the global confetti overlay on every fresh grant
-      fireCelebration({ title: def.title, description: def.desc, icon: def.icon, tier: def.tier });
+      // Fire the confetti overlay in the user's language
+      fireCelebration({
+        title: text.title[lang],
+        description: text.desc[lang],
+        icon: def.icon,
+        tier: def.tier,
+      });
     }
   };
 
@@ -206,7 +220,7 @@ export function useWeeklyChallenges() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('weekly_challenges')
-        .select('id, title, description, icon, current_value, target_value, completed')
+        .select('id, challenge_key, title, description, icon, current_value, target_value, completed')
         .eq('user_id', user!.id)
         .eq('week_start', weekStart)
         .order('created_at');
@@ -216,16 +230,20 @@ export function useWeeklyChallenges() {
   });
 }
 
-/** Challenge templates that rotate weekly — verbatim from the web hook */
+/**
+ * Challenge rotation — structure/thresholds only. Display text lives in
+ * gamification-i18n (CHALLENGE_TEXT) keyed by `key`; English strings are
+ * written to the DB as canonical/history values.
+ */
 const CHALLENGE_POOL = [
-  { key: 'workouts_5', title: '5 Buổi Tập', desc: 'Hoàn thành 5 buổi tập trong tuần', icon: 'dumbbell', target: 5, reward: 'Chiến Binh Tuần', tier: 'silver' },
-  { key: 'workouts_3', title: '3 Buổi Tập', desc: 'Hoàn thành 3 buổi tập trong tuần', icon: 'dumbbell', target: 3, reward: 'Bước Đầu Tuần', tier: 'bronze' },
-  { key: 'protein_7', title: 'Protein 7/7', desc: 'Đạt mục tiêu protein 7 ngày', icon: 'beef', target: 7, reward: 'Protein Master', tier: 'gold' },
-  { key: 'steps_50k', title: '50K Bước', desc: 'Đi 50,000 bước trong tuần', icon: 'footprints', target: 50000, reward: 'Chân Thép', tier: 'silver' },
-  { key: 'sleep_7', title: 'Ngủ Đủ 7/7', desc: 'Ngủ đủ giấc 7 ngày liên tiếp', icon: 'moon', target: 7, reward: 'Giấc Ngủ Vàng', tier: 'silver' },
-  { key: 'log_7', title: 'Log 7/7', desc: 'Ghi log đầy đủ 7 ngày trong tuần', icon: 'target', target: 7, reward: 'Kỷ Luật Sắt', tier: 'gold' },
-  { key: 'calories_5', title: 'Đúng Calo 5/7', desc: 'Đạt mục tiêu calories 5 ngày', icon: 'target', target: 5, reward: 'Ăn Chuẩn', tier: 'silver' },
-  { key: 'water_7', title: 'Uống Đủ Nước 7/7', desc: 'Đạt mục tiêu nước 7 ngày', icon: 'droplets', target: 7, reward: 'Hydro Pro', tier: 'silver' },
+  { key: 'workouts_5', icon: 'dumbbell', target: 5, tier: 'silver' },
+  { key: 'workouts_3', icon: 'dumbbell', target: 3, tier: 'bronze' },
+  { key: 'protein_7', icon: 'beef', target: 7, tier: 'gold' },
+  { key: 'steps_50k', icon: 'footprints', target: 50000, tier: 'silver' },
+  { key: 'sleep_7', icon: 'moon', target: 7, tier: 'silver' },
+  { key: 'log_7', icon: 'target', target: 7, tier: 'gold' },
+  { key: 'calories_5', icon: 'target', target: 5, tier: 'silver' },
+  { key: 'water_7', icon: 'droplets', target: 7, tier: 'silver' },
 ];
 
 /** Pick 3 challenges for a given week (deterministic, same as web) */
@@ -258,18 +276,22 @@ export function useInitWeeklyChallenges() {
         .eq('week_start', weekStart);
       if ((count ?? 0) > 0) return;
 
-      const rows = pickChallengesForWeek(weekStart).map((c) => ({
-        user_id: user.id,
-        week_start: weekStart,
-        challenge_key: c.key,
-        title: c.title,
-        description: c.desc,
-        icon: c.icon,
-        target_value: c.target,
-        current_value: 0,
-        reward_title: c.reward,
-        reward_tier: c.tier,
-      }));
+      const rows = pickChallengesForWeek(weekStart).map((c) => {
+        const t = CHALLENGE_TEXT[c.key];
+        return {
+          user_id: user.id,
+          week_start: weekStart,
+          challenge_key: c.key,
+          // English canonical for the shared DB; native renders by key
+          title: t.title.en,
+          description: t.desc.en,
+          icon: c.icon,
+          target_value: c.target,
+          current_value: 0,
+          reward_title: t.reward.en,
+          reward_tier: c.tier,
+        };
+      });
       const { error } = await supabase.from('weekly_challenges').insert(rows);
       if (error) throw error;
     },
@@ -280,6 +302,7 @@ export function useInitWeeklyChallenges() {
 /** Recompute challenge progress from this week's logs (port of the web hook) */
 export function useUpdateChallengeProgress() {
   const { user } = useAuth();
+  const { lang } = useAppSettings();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -375,9 +398,13 @@ export function useUpdateChallengeProgress() {
           .eq('id', ch.id);
 
         if (isCompleted && ch.reward_title) {
+          const t = CHALLENGE_TEXT[ch.challenge_key];
+          const rewardTitle = t ? t.reward[lang] : ch.reward_title;
+          const challengeTitle = t ? t.title[lang] : ch.title;
+          const doneLabel = lang === 'vi' ? 'Hoàn thành thử thách' : 'Challenge complete';
           fireCelebration({
-            title: ch.reward_title,
-            description: `Challenge hoàn thành: ${ch.title}`,
+            title: rewardTitle,
+            description: `${doneLabel}: ${challengeTitle}`,
             icon: ch.icon ?? 'trophy',
             tier: ch.reward_tier ?? 'bronze',
           });

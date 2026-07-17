@@ -27,9 +27,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useNudges, useRecentWorkouts, useTodayBiometrics, useWearables } from '@/hooks/useTodayData';
 import { useRecentAwards } from '@/hooks/use-extras';
+import { awardText } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 
 function MicroTitle({ icon, children, color }: { icon?: LucideIcon; children: React.ReactNode; color?: string }) {
@@ -319,6 +320,7 @@ const TIER_COLOR: Record<string, string> = {
 
 export function RecentAwardsCard() {
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const { data: awards } = useRecentAwards(3);
 
   if (!awards || awards.length === 0) return null;
@@ -339,14 +341,15 @@ export function RecentAwardsCard() {
         {awards.map((a) => {
           const AIcon = AWARD_ICON[a.icon ?? ''] ?? Trophy;
           const tint = TIER_COLOR[a.tier ?? ''] ?? colors.mutedForeground;
+          const { title, desc } = awardText(a.award_key, lang, { title: a.title, desc: a.description });
           return (
             <View key={a.id} style={styles.awardRow}>
               <View style={[styles.awardIcon, { borderColor: `${tint}55`, backgroundColor: `${tint}14` }]}>
                 <Icon icon={AIcon} size={17} color={tint} />
               </View>
               <View style={styles.awardInfo}>
-                <Text style={styles.awardTitle} numberOfLines={1}>{a.title}</Text>
-                {a.description ? <Text style={styles.awardDesc} numberOfLines={1}>{a.description}</Text> : null}
+                <Text style={styles.awardTitle} numberOfLines={1}>{title}</Text>
+                {desc ? <Text style={styles.awardDesc} numberOfLines={1}>{desc}</Text> : null}
               </View>
               <Text style={[styles.awardTier, { color: tint }]}>{a.tier}</Text>
             </View>
