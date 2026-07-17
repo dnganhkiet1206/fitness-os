@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   half: { flex: 1 },
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
-  metric: { ...type.largeTitle, color: colors.foreground, marginTop: spacing.sm },
+  metric: { ...type.largeTitle, ...type.mono, color: colors.foreground, marginTop: spacing.sm },
   logButton: {
     height: 50,
     borderRadius: radius.full,

@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
-  bigMetric: { ...type.largeTitle, color: colors.foreground, marginTop: spacing.sm },
+  bigMetric: { ...type.largeTitle, ...type.mono, color: colors.foreground, marginTop: spacing.sm },
   metricUnit: { ...type.footnote, color: colors.mutedForeground },
   macroRow: {
     flexDirection: 'row',

@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   weightValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
-  weightValue: { ...type.largeTitle, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  weightValue: { ...type.largeTitle, ...type.mono, color: colors.foreground },
   diffPill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 4, borderRadius: radius.full },
   diffText: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
 

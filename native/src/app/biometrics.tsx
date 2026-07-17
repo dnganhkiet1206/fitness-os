@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   metricLabel: { ...type.headline, color: colors.foreground },
   metricValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  metricValue: { ...type.title, fontVariant: ['tabular-nums'] },
+  metricValue: { ...type.title, ...type.mono },
   metricUnit: { ...type.footnote, color: colors.mutedForeground },
   chart: { marginTop: spacing.sm },
   disclaimer: { ...type.caption, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs, lineHeight: 16 },

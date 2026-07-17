@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm,
   },
-  totalKcal: { ...type.largeTitle, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  totalKcal: { ...type.largeTitle, ...type.mono, color: colors.foreground },
   totalKcalUnit: { ...type.body, color: colors.mutedForeground },
   macroBar: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden' },
   macroSeg: { height: '100%' },

@@ -229,6 +229,7 @@ const styles = StyleSheet.create({
   },
   metric: {
     ...type.largeTitle,
+    ...type.mono,
     color: colors.foreground,
     marginTop: spacing.sm,
   },

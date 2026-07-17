@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.md,
-    gap: spacing.md,
+    gap: spacing.stack,
   },
   header: {
     marginBottom: spacing.xs,

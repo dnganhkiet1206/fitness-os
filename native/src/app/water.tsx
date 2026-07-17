@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  bigValue: { ...type.largeTitle, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  bigValue: { ...type.largeTitle, ...type.mono, color: colors.foreground },
   pct: { ...type.title, color: colors.metricBlue, fontVariant: ['tabular-nums'] },
   barTrack: { height: 10, borderRadius: 5, backgroundColor: colors.background, overflow: 'hidden', marginTop: spacing.md },
   barFill: { height: '100%', borderRadius: 5, backgroundColor: colors.metricBlue },

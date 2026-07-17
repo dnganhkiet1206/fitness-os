@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   emptyMsg: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   statCard: { width: '47.5%', alignItems: 'flex-start', gap: 2 },
-  statValue: { ...type.title, fontVariant: ['tabular-nums'] },
+  statValue: { ...type.title, ...type.mono },
   statLabel: { ...type.caption, color: colors.mutedForeground },
   legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
