@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -37,6 +37,7 @@ function withDate(time: Date, dayOffset: number): Date {
 export default function LogSleepSheet() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
+  const queryClient = useQueryClient();
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const [bedtime, setBedtime] = useState(new Date(2000, 0, 1, 23, 0));
@@ -67,6 +68,8 @@ export default function LogSleepSheet() {
     },
     onSuccess: () => {
       invalidate();
+      // Sleep Insights screen reads its own multi-night history key
+      queryClient.invalidateQueries({ queryKey: ['sleep_history', user?.id] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     },

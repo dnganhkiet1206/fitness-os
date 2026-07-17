@@ -18,12 +18,14 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogBiometrics } from '@/hooks/use-biometrics';
+import { useInvalidateToday } from '@/hooks/useTodayData';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 
 export default function LogBiometricsSheet() {
   const i18n = useI18n();
   const { user } = useAuth();
+  const invalidate = useInvalidateToday();
   const log = useLogBiometrics();
   const [hr, setHr] = useState('');
   const [hrv, setHrv] = useState('');
@@ -49,6 +51,8 @@ export default function LogBiometricsSheet() {
         onSuccess: async () => {
           // Fresh HRV/RHR feeds the readiness engine (web parity)
           if (user) await recomputeDailyLog(user.id, localDateStr());
+          // Refresh Today's readiness gauge + biometrics card + trend
+          invalidate();
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           router.back();
         },

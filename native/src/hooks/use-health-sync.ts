@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
 
@@ -22,6 +22,7 @@ import { localDateStr } from '@/lib/local-date';
 export function useHealthSync() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
+  const queryClient = useQueryClient();
 
   const sync = useMutation({
     mutationFn: async () => {
@@ -71,6 +72,9 @@ export function useHealthSync() {
     },
     onSuccess: () => {
       invalidate();
+      // Steps screen + biometrics history read their own keys
+      queryClient.invalidateQueries({ queryKey: ['steps_history', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['biometric_history', user?.id] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
     onError: (e: Error) => Alert.alert('Apple Health', e.message),

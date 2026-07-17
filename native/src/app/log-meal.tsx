@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { Camera, ChevronDown, ChevronRight, Clock, Minus, PencilLine, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
@@ -57,6 +57,7 @@ export default function LogMealSheet() {
   const { user } = useAuth();
   const { lang } = useAppSettings();
   const invalidate = useInvalidateToday();
+  const queryClient = useQueryClient();
   const i18n = useI18n();
 
   const MEAL_TYPES = [
@@ -315,6 +316,8 @@ export default function LogMealSheet() {
     },
     onSuccess: () => {
       invalidate();
+      // Just-logged foods should surface in the Nutrition tab's recent list
+      queryClient.invalidateQueries({ queryKey: ['recent_foods', user?.id] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     },
