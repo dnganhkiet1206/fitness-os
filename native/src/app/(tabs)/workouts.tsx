@@ -127,7 +127,9 @@ export default function WorkoutsScreen() {
         <View style={styles.empty}>
           <Icon icon={Dumbbell} size={48} color="rgba(107,107,107,0.35)" />
           <Text style={styles.emptyTitle}>{i18n.workoutsNoTemplates}</Text>
-          <Text style={styles.emptyHint}>Tap + to create your first template</Text>
+          <Text style={styles.emptyHint}>
+            {vi ? 'Nhấn + để tạo mẫu tập đầu tiên' : 'Tap + to create your first template'}
+          </Text>
         </View>
       )}
 

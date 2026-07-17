@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { t, type AppLang } from '@/lib/i18n';
 import { nativeStrings } from '@/lib/native-strings';
@@ -52,12 +52,26 @@ export function useAppSettings() {
  * layer so any key missing in another language falls back to English —
  * keeps adding new languages additive rather than all-or-nothing.
  */
-export function useI18n() {
-  const { lang } = useAppSettings();
+const i18nCache = new Map<AppLang, ReturnType<typeof buildI18n>>();
+function buildI18n(lang: AppLang) {
   return {
     ...t('en'),
     ...nativeStrings.en,
     ...t(lang),
     ...nativeStrings[lang],
   };
+}
+
+export function useI18n() {
+  const { lang } = useAppSettings();
+  // Built once per language and cached so the reference is stable across
+  // renders (avoids reallocating the merged dict on every component render)
+  return useMemo(() => {
+    let dict = i18nCache.get(lang);
+    if (!dict) {
+      dict = buildI18n(lang);
+      i18nCache.set(lang, dict);
+    }
+    return dict;
+  }, [lang]);
 }

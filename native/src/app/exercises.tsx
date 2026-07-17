@@ -7,7 +7,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useAddExercise, useDeleteExercise, useExercises } from '@/hooks/use-library';
 
@@ -17,6 +17,7 @@ export default function ExercisesScreen() {
   const addEx = useAddExercise();
   const deleteEx = useDeleteExercise();
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const [search, setSearch] = useState('');
 
   // Add form (web ExerciseLibrary dialog: name / muscle group / equipment)
@@ -101,7 +102,7 @@ export default function ExercisesScreen() {
           <Text style={styles.fieldLabel}>{i18n.exercisesName}</Text>
           <TextInput
             style={styles.input}
-            placeholder="VD: Bench Press"
+            placeholder={lang === 'vi' ? 'VD: Bench Press' : 'e.g. Bench Press'}
             placeholderTextColor={colors.mutedForeground}
             value={name}
             onChangeText={setName}

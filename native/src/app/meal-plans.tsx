@@ -7,7 +7,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useCreateMealPlan, useDeleteMealPlan, useMealPlanItems, useMealPlans } from '@/hooks/use-library';
 
 const MEALS_PER_DAY = [3, 4, 5, 6];
@@ -17,6 +17,7 @@ export default function MealPlansScreen() {
   const createPlan = useCreateMealPlan();
   const deletePlan = useDeleteMealPlan();
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const [openId, setOpenId] = useState<string | null>(null);
   const { data: items } = useMealPlanItems(openId);
 
@@ -91,7 +92,7 @@ export default function MealPlansScreen() {
           <Text style={styles.fieldLabel}>{i18n.nutritionPlanName}</Text>
           <TextInput
             style={styles.input}
-            placeholder="VD: Meal Prep Tuần 1"
+            placeholder={lang === 'vi' ? 'VD: Meal Prep Tuần 1' : 'e.g. Meal Prep Week 1'}
             placeholderTextColor={colors.mutedForeground}
             value={name}
             onChangeText={setName}
