@@ -20,12 +20,15 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
+import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
 import {
   displayHeight,
+  displayVolume,
   displayWeight,
   heightToCm,
+  volumeToMl,
   weightToKg,
   type HeightUnit,
   type WeightUnit,
@@ -75,9 +78,11 @@ export default function EditProfileSheet() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Form>(EMPTY);
   const [showDob, setShowDob] = useState(false);
-  // Display strings for the weight/height fields (form keeps metric)
+  // Display strings for the weight/height/water fields (form keeps metric)
   const [wDisp, setWDisp] = useState('');
   const [hDisp, setHDisp] = useState('');
+  const [waterDisp, setWaterDisp] = useState('');
+  const { unit: vUnit, setUnit: setVUnit } = useVolumeUnit();
 
   useEffect(() => {
     if (!profile) return;
@@ -85,6 +90,7 @@ export default function EditProfileSheet() {
     const uH: HeightUnit = profile.units_height === 'in' ? 'in' : 'cm';
     setWDisp(String(displayWeight(Number(profile.weight_kg ?? 70), uW)));
     setHDisp(String(displayHeight(Number(profile.height_cm ?? 175), uH)));
+    setWaterDisp(String(displayVolume(Number(profile.water_target_ml ?? 2500), vUnit)));
     setForm({
       name: profile.name ?? '',
       dob: profile.dob ?? '',
@@ -305,15 +311,32 @@ export default function EditProfileSheet() {
           </Field>
         </View>
 
-        {/* Water target */}
-        <Field label={`${i18n.settingsWaterTarget} (ml)`}>
-          <TextInput
-            style={styles.input}
-            keyboardType="number-pad"
-            value={form.water_target_ml}
-            onChangeText={(v) => set('water_target_ml', v)}
-          />
-        </Field>
+        {/* Water target (entered in the user's volume unit) */}
+        <View style={styles.row}>
+          <Field label={`${i18n.settingsWaterTarget} (${vUnit})`} style={styles.half}>
+            <TextInput
+              style={styles.input}
+              keyboardType="number-pad"
+              value={waterDisp}
+              onChangeText={(v) => {
+                setWaterDisp(v);
+                const n = parseFloat(v);
+                set('water_target_ml', v && !isNaN(n) ? String(volumeToMl(n, vUnit)) : '');
+              }}
+            />
+          </Field>
+          <Field label={i18n.settingsWaterTarget} style={styles.half}>
+            <Segmented
+              options={[{ key: 'ml', label: 'ml' }, { key: 'oz', label: 'oz' }]}
+              value={vUnit}
+              onChange={(v) => {
+                const ml = Number(form.water_target_ml) || 0;
+                setVUnit(v as 'ml' | 'oz');
+                setWaterDisp(ml ? String(displayVolume(ml, v as 'ml' | 'oz')) : '');
+              }}
+            />
+          </Field>
+        </View>
 
         <View style={styles.divider} />
 

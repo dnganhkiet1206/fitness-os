@@ -19,28 +19,34 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { localDateStr } from '@/lib/local-date';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useUpsertBodyMeasurement, type BodyMeasurementInput } from '@/hooks/use-fitness-data';
+import { useUnits } from '@/hooks/use-units';
+import { lengthLabel, lengthToCm } from '@/lib/units';
 
 type FieldKey = Exclude<keyof BodyMeasurementInput, 'date' | 'notes'>;
 
 export default function LogMeasurementSheet() {
   const i18n = useI18n();
+  const { height: lUnit } = useUnits();
   const upsert = useUpsertBodyMeasurement();
   const [date, setDate] = useState(new Date());
   const [fields, setFields] = useState<Partial<Record<FieldKey, string>>>({});
 
+  // Circumference labels carry "(cm)"; swap to the user's length unit
+  const lbl = (s: string) => (lUnit === 'in' ? s.replace('(cm)', '(in)') : s);
+
   // Same field set as the web Progress → "Add measurement" dialog
   const FIELDS: { key: FieldKey; label: string }[] = [
-    { key: 'neck_cm', label: i18n.measureNeck },
-    { key: 'shoulders_cm', label: i18n.measureShoulders },
-    { key: 'chest_cm', label: i18n.measureChest },
-    { key: 'waist_cm', label: i18n.measureWaist },
-    { key: 'hips_cm', label: i18n.measureHips },
-    { key: 'bicep_left_cm', label: i18n.measureBicepL },
-    { key: 'bicep_right_cm', label: i18n.measureBicepR },
-    { key: 'thigh_left_cm', label: i18n.measureThighL },
-    { key: 'thigh_right_cm', label: i18n.measureThighR },
-    { key: 'calf_left_cm', label: i18n.measureCalfL },
-    { key: 'calf_right_cm', label: i18n.measureCalfR },
+    { key: 'neck_cm', label: lbl(i18n.measureNeck) },
+    { key: 'shoulders_cm', label: lbl(i18n.measureShoulders) },
+    { key: 'chest_cm', label: lbl(i18n.measureChest) },
+    { key: 'waist_cm', label: lbl(i18n.measureWaist) },
+    { key: 'hips_cm', label: lbl(i18n.measureHips) },
+    { key: 'bicep_left_cm', label: lbl(i18n.measureBicepL) },
+    { key: 'bicep_right_cm', label: lbl(i18n.measureBicepR) },
+    { key: 'thigh_left_cm', label: lbl(i18n.measureThighL) },
+    { key: 'thigh_right_cm', label: lbl(i18n.measureThighR) },
+    { key: 'calf_left_cm', label: lbl(i18n.measureCalfL) },
+    { key: 'calf_right_cm', label: lbl(i18n.measureCalfR) },
     { key: 'body_fat_pct', label: i18n.measureBodyFat },
   ];
 
@@ -57,7 +63,11 @@ export default function LogMeasurementSheet() {
     const payload: BodyMeasurementInput = { date: localDateStr(date) };
     for (const { key } of FIELDS) {
       const v = fields[key]?.trim();
-      if (v && !isNaN(Number(v))) payload[key] = Number(v);
+      if (v && !isNaN(Number(v))) {
+        // Circumference fields are stored in cm; body_fat_pct is a %
+        payload[key] =
+          key === 'body_fat_pct' ? Number(v) : Math.round(lengthToCm(Number(v), lUnit) * 10) / 10;
+      }
     }
     upsert.mutate(payload, {
       onSuccess: () => {

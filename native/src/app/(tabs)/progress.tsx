@@ -15,7 +15,7 @@ import { useProgressPhotos } from '@/hooks/use-progress-photos';
 import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
 import { getLocale } from '@/lib/i18n';
-import { displayWeight, weightLabel } from '@/lib/units';
+import { convertLength, displayLength, displayWeight, formatHeight, weightLabel } from '@/lib/units';
 
 type Tab = 'weight' | 'measurements' | 'photos';
 
@@ -38,7 +38,7 @@ export default function ProgressScreen() {
   const { data: photos } = useProgressPhotos();
   const { data: measurements } = useBodyMeasurements();
 
-  const { weight: wUnit } = useUnits();
+  const { weight: wUnit, height: lHUnit } = useUnits();
   const wl = weightLabel(wUnit);
   // Stored kg; chart + tiles show the user's unit (BMI stays metric)
   const weightData = (weight ?? []).map((d) => ({ ...d, value: displayWeight(d.value, wUnit) }));
@@ -61,14 +61,19 @@ export default function ProgressScreen() {
     { key: 'photos', label: i18n.progressPhotos, icon: Camera },
   ];
 
+  // Circumference labels carry "(cm)"; swap to the user's length unit.
+  // A measurement value in the display unit (cm columns convert; % stays).
+  const lbl = (s: string) => (lHUnit === 'in' ? s.replace('(cm)', '(in)') : s);
+  const mval = (k: string, cm: number) => (k === 'body_fat_pct' ? cm : displayLength(cm, lHUnit));
+
   // Real body_measurements column names (the old short keys never matched a column)
   const MEASURES: { k: string; l: string }[] = [
-    { k: 'neck_cm', l: i18n.measureNeck }, { k: 'shoulders_cm', l: i18n.measureShoulders },
-    { k: 'chest_cm', l: i18n.measureChest }, { k: 'waist_cm', l: i18n.measureWaist },
-    { k: 'hips_cm', l: i18n.measureHips }, { k: 'bicep_left_cm', l: i18n.measureBicepL },
-    { k: 'bicep_right_cm', l: i18n.measureBicepR }, { k: 'thigh_left_cm', l: i18n.measureThighL },
-    { k: 'thigh_right_cm', l: i18n.measureThighR }, { k: 'calf_left_cm', l: i18n.measureCalfL },
-    { k: 'calf_right_cm', l: i18n.measureCalfR }, { k: 'body_fat_pct', l: i18n.measureBodyFat },
+    { k: 'neck_cm', l: lbl(i18n.measureNeck) }, { k: 'shoulders_cm', l: lbl(i18n.measureShoulders) },
+    { k: 'chest_cm', l: lbl(i18n.measureChest) }, { k: 'waist_cm', l: lbl(i18n.measureWaist) },
+    { k: 'hips_cm', l: lbl(i18n.measureHips) }, { k: 'bicep_left_cm', l: lbl(i18n.measureBicepL) },
+    { k: 'bicep_right_cm', l: lbl(i18n.measureBicepR) }, { k: 'thigh_left_cm', l: lbl(i18n.measureThighL) },
+    { k: 'thigh_right_cm', l: lbl(i18n.measureThighR) }, { k: 'calf_left_cm', l: lbl(i18n.measureCalfL) },
+    { k: 'calf_right_cm', l: lbl(i18n.measureCalfR) }, { k: 'body_fat_pct', l: i18n.measureBodyFat },
   ];
 
   const measurement = measurements && measurements.length > 0 ? measurements[measurements.length - 1] : null;
@@ -83,11 +88,12 @@ export default function ProgressScreen() {
     { k: 'body_fat_pct', l: 'BF%' },
   ];
 
-  // Web measurement-trend chart: 4 lines on a shared scale, same colours
+  // Web measurement-trend chart: 4 lines on a shared scale, same colours.
+  // All series here are circumference (_cm) → convert to the display unit.
   const seriesOf = (k: string) =>
     (measurements ?? []).map((row) => {
       const raw = (row as Record<string, unknown>)[k];
-      return raw != null ? Number(raw) : null;
+      return raw != null ? convertLength(Number(raw), lHUnit) : null;
     });
   const trendSeries = [
     { label: i18n.measureWaist, color: colors.readinessYellow, values: seriesOf('waist_cm') },
@@ -181,9 +187,12 @@ export default function ProgressScreen() {
                   </View>
                 </View>
                 <Text style={styles.bmiInfo}>
-                  {vi ? 'Cân nặng' : 'Weight'}: <Text style={styles.bmiInfoStrong}>{currentWeight}kg</Text>
+                  {vi ? 'Cân nặng' : 'Weight'}: <Text style={styles.bmiInfoStrong}>{currentWeight}{wl}</Text>
                   {'  ·  '}
-                  {vi ? 'Chiều cao' : 'Height'}: <Text style={styles.bmiInfoStrong}>{profile?.height_cm}cm</Text>
+                  {vi ? 'Chiều cao' : 'Height'}:{' '}
+                  <Text style={styles.bmiInfoStrong}>
+                    {profile?.height_cm != null ? formatHeight(Number(profile.height_cm), lHUnit) : '—'}
+                  </Text>
                 </Text>
               </>
             ) : (
@@ -225,7 +234,7 @@ export default function ProgressScreen() {
               <View style={styles.measureGrid}>
                 {MEASURES.map((m) => {
                   const raw = (measurement as Record<string, unknown>)[m.k];
-                  const val = raw != null ? Number(raw) : null;
+                  const val = raw != null ? mval(m.k, Number(raw)) : null;
                   return (
                     <View key={m.k} style={styles.measureCell}>
                       <Text style={styles.measureLabel} numberOfLines={1}>{m.l}</Text>
@@ -261,7 +270,7 @@ export default function ProgressScreen() {
                       const raw = (row as Record<string, unknown>)[c.k];
                       return (
                         <Text key={c.k} style={[styles.historyValue, styles.historyCol]}>
-                          {raw != null ? Number(raw) : '—'}
+                          {raw != null ? mval(c.k, Number(raw)) : '—'}
                         </Text>
                       );
                     })}

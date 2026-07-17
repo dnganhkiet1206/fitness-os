@@ -48,6 +48,8 @@ import {
 } from '@/lib/fitness-calc';
 import { getLegal, type LegalDoc } from '@/lib/legal-content';
 import { localDateStr } from '@/lib/local-date';
+import { displayVolume, volumeLabel } from '@/lib/units';
+import { useVolumeUnit } from '@/hooks/use-volume-unit';
 
 const TOTAL_STEPS = 6;
 const STEP_ICONS: LucideIcon[] = [User, Target, Dumbbell, Moon, Utensils, Pill];
@@ -85,6 +87,7 @@ export function OnboardingFlow() {
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
   const { lang } = useAppSettings();
+  const { unit: vUnit } = useVolumeUnit();
 
   const STEP_TITLES = [
     i18n.onboardingStepPersonal,
@@ -523,7 +526,7 @@ export function OnboardingFlow() {
                     <CalcItem label="Protein" value={`${macros.protein_g}g`} />
                     <CalcItem label="Carbs" value={`${macros.carbs_g}g`} />
                     <CalcItem label="Fat" value={`${macros.fat_g}g`} />
-                    <CalcItem label={i18n.navWater} value={`${waterTarget}ml`} />
+                    <CalcItem label={i18n.navWater} value={`${displayVolume(waterTarget, vUnit)} ${volumeLabel(vUnit)}`} />
                     <CalcItem label="Supps" value={`${selectedSupps.size}`} />
                   </View>
                 </View>

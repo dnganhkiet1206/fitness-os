@@ -7,14 +7,20 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { useProfile } from '@/hooks/useTodayData';
 import { useAddWater, useRemoveLastWater, useTodayWater, useTodayWaterLogs, useWaterWeek } from '@/hooks/use-water';
+import { displayVolume, volumeLabel, volumeToMl } from '@/lib/units';
 
-const QUICK = [250, 500, 750];
+// Quick-add amounts in the display unit (converted to ml on tap)
+const QUICK_ML = [250, 500, 750];
+const QUICK_OZ = [8, 12, 16];
 
 export default function WaterScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
+  const { unit: vUnit } = useVolumeUnit();
+  const vl = volumeLabel(vUnit);
   const { data: profile } = useProfile();
   const { data: total } = useTodayWater();
   const { data: logs } = useTodayWaterLogs();
@@ -27,16 +33,19 @@ export default function WaterScreen() {
   const pct = Math.min(100, (todayMl / target) * 100);
   const maxWeek = Math.max(target, ...(week ?? []).map((d) => d.total));
 
+  const QUICK = vUnit === 'oz' ? QUICK_OZ : QUICK_ML;
+  // ml → "1.80 L" (metric) or "61 oz" (imperial)
+  const bigValue = vUnit === 'oz' ? `${displayVolume(todayMl, 'oz')} oz` : `${(todayMl / 1000).toFixed(2)}L`;
+  const targetLabel = vUnit === 'oz' ? `${displayVolume(target, 'oz')} oz` : `${(target / 1000).toFixed(1)}L`;
+
   return (
     <Screen back title={i18n.nWaterTitle}>
       {/* Today ring/summary */}
       <GlassCard>
         <View style={styles.summaryRow}>
           <View>
-            <Text style={styles.bigValue}>{(todayMl / 1000).toFixed(2)}L</Text>
-            <Text style={styles.cardHint}>
-              {i18n.nOfTarget.replace('{x}', `${(target / 1000).toFixed(1)}L`)}
-            </Text>
+            <Text style={styles.bigValue}>{bigValue}</Text>
+            <Text style={styles.cardHint}>{i18n.nOfTarget.replace('{x}', targetLabel)}</Text>
           </View>
           <Text style={styles.pct}>{Math.round(pct)}%</Text>
         </View>
@@ -56,16 +65,16 @@ export default function WaterScreen() {
             onPress={() => removeLast.mutate()}>
             <Icon icon={Minus} size={16} color={colors.foreground} strokeWidth={2.5} />
           </Pressable>
-          {QUICK.map((ml) => (
+          {QUICK.map((amount) => (
             <Pressable
-              key={ml}
+              key={amount}
               style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                addWater.mutate(ml);
+                addWater.mutate(volumeToMl(amount, vUnit));
               }}>
               <Icon icon={Plus} size={14} color={colors.foreground} strokeWidth={2.5} />
-              <Text style={styles.quickText}>{ml}</Text>
+              <Text style={styles.quickText}>{amount}</Text>
             </Pressable>
           ))}
         </View>
@@ -98,7 +107,7 @@ export default function WaterScreen() {
           <View style={styles.logList}>
             {logs.map((l) => (
               <View key={l.id} style={styles.logRow}>
-                <Text style={styles.logAmount}>{Number(l.amount_ml)} ml</Text>
+                <Text style={styles.logAmount}>{displayVolume(Number(l.amount_ml), vUnit)} {vl}</Text>
                 <Text style={styles.logTime}>
                   {new Date(l.logged_at).toLocaleTimeString(lang === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
                 </Text>

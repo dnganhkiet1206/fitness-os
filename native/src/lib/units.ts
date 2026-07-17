@@ -7,9 +7,11 @@
 
 export type WeightUnit = 'kg' | 'lbs';
 export type HeightUnit = 'cm' | 'in';
+export type VolumeUnit = 'ml' | 'oz';
 
 const LB_PER_KG = 2.2046226218;
 const CM_PER_IN = 2.54;
+const ML_PER_FLOZ = 29.5735296; // US fluid ounce
 
 export function kgToLbs(kg: number): number {
   return kg * LB_PER_KG;
@@ -61,6 +63,26 @@ export function heightToCm(value: number, unit: HeightUnit): number {
   return unit === 'in' ? inToCm(value) : value;
 }
 
+/** Length (body measurements) converted to the display unit, unrounded */
+export function convertLength(cm: number, unit: HeightUnit): number {
+  return unit === 'in' ? cmToIn(cm) : cm;
+}
+
+/** Length in the display unit, rounded to 1 decimal */
+export function displayLength(cm: number, unit: HeightUnit): number {
+  return Math.round(convertLength(cm, unit) * 10) / 10;
+}
+
+/** Parse a display-unit length back to cm for storage */
+export function lengthToCm(value: number, unit: HeightUnit): number {
+  return unit === 'in' ? inToCm(value) : value;
+}
+
+/** Short length unit label */
+export function lengthLabel(unit: HeightUnit): string {
+  return unit === 'in' ? 'in' : 'cm';
+}
+
 /** "175 cm" / "5'9\"" */
 export function formatHeight(cm: number, unit: HeightUnit): string {
   if (unit === 'in') {
@@ -70,4 +92,26 @@ export function formatHeight(cm: number, unit: HeightUnit): string {
     return `${ft}'${inch}"`;
   }
   return `${Math.round(cm)} cm`;
+}
+
+export function mlToOz(ml: number): number {
+  return ml / ML_PER_FLOZ;
+}
+export function ozToMl(oz: number): number {
+  return oz * ML_PER_FLOZ;
+}
+
+/** Volume in the display unit — ml stays integer, oz rounds to 1 decimal */
+export function displayVolume(ml: number, unit: VolumeUnit): number {
+  return unit === 'oz' ? Math.round(mlToOz(ml) * 10) / 10 : Math.round(ml);
+}
+
+/** Parse a display-unit volume back to ml for storage */
+export function volumeToMl(value: number, unit: VolumeUnit): number {
+  return unit === 'oz' ? Math.round(ozToMl(value)) : Math.round(value);
+}
+
+/** Short volume unit label */
+export function volumeLabel(unit: VolumeUnit): string {
+  return unit === 'oz' ? 'oz' : 'ml';
 }

@@ -16,6 +16,8 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
+import { useVolumeUnit } from '@/hooks/use-volume-unit';
+import { displayVolume, volumeLabel } from '@/lib/units';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const TRACK = '#17171c';
@@ -292,6 +294,7 @@ function CompactWidget({
 }
 
 export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: number; labels: { title: string } }) {
+  const { unit } = useVolumeUnit();
   const pct = Math.min(100, Math.round((ml / (targetMl || 1)) * 100));
   return (
     <CompactWidget
@@ -299,7 +302,7 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
       iconColor="#38bdf8"
       iconBg="rgba(14,165,233,0.1)"
       label={labels.title}
-      valueText={`${ml} / ${targetMl} ml`}
+      valueText={`${displayVolume(ml, unit)} / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
       pct={pct}
       onPress={() => router.push('/water')}
     />
