@@ -10,7 +10,11 @@
     "ios": {
       "bundleIdentifier": "com.ascnd.fitnessos",
       "supportsTablet": false,
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true
+      }
     },
     "android": {
       "adaptiveIcon": {
