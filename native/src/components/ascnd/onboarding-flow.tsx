@@ -1,11 +1,26 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Dumbbell,
+  Moon,
+  Pill,
+  Sparkles,
+  Target,
+  User,
+  Utensils,
+  X,
+  type LucideIcon,
+} from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -14,9 +29,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Animated, { FadeIn, SlideInLeft, SlideInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -27,103 +46,130 @@ import {
   calcTDEE,
   calcWaterTarget,
 } from '@/lib/fitness-calc';
+import { getLegal, type LegalDoc } from '@/lib/legal-content';
 
-const SEXES = [
-  { key: 'male', label: 'Male' },
-  { key: 'female', label: 'Female' },
-  { key: 'other', label: 'Other' },
-] as const;
+const TOTAL_STEPS = 6;
+const STEP_ICONS: LucideIcon[] = [User, Target, Dumbbell, Moon, Utensils, Pill];
 
-const GOALS = [
-  { key: 'cut', label: 'Lose fat' },
-  { key: 'maintain', label: 'Maintain' },
-  { key: 'recomp', label: 'Recomp' },
-  { key: 'bulk', label: 'Build muscle' },
-  { key: 'strength', label: 'Strength' },
-  { key: 'endurance', label: 'Endurance' },
-] as const;
+const COMMON_ALLERGIES_VI = ['Sữa', 'Đậu phộng', 'Hạt cây', 'Trứng', 'Đậu nành', 'Lúa mì', 'Hải sản', 'Cá'];
+const COMMON_ALLERGIES_EN = ['Dairy', 'Peanuts', 'Tree nuts', 'Eggs', 'Soy', 'Wheat', 'Shellfish', 'Fish'];
 
-const ACTIVITY = [
-  { key: 'sedentary', label: 'Sedentary' },
-  { key: 'light', label: 'Light' },
-  { key: 'moderate', label: 'Moderate' },
-  { key: 'high', label: 'High' },
-  { key: 'athlete', label: 'Athlete' },
-] as const;
-
-const TRAINING = [
-  { key: 'beginner', label: 'Beginner' },
-  { key: 'intermediate', label: 'Intermediate' },
-  { key: 'advanced', label: 'Advanced' },
-] as const;
-
-const TOTAL_STEPS = 4;
+const COMMON_SUPPLEMENTS = [
+  { name: 'Whey Protein', category: 'protein', dose: '30g', timing: 'post-workout' },
+  { name: 'Creatine Monohydrate', category: 'creatine', dose: '5g', timing: 'morning' },
+  { name: 'Vitamin D3', category: 'vitamin', dose: '2000 IU', timing: 'morning' },
+  { name: 'Omega-3 Fish Oil', category: 'other', dose: '1000mg', timing: 'with meals' },
+  { name: 'Magnesium', category: 'mineral', dose: '400mg', timing: 'before bed' },
+  { name: 'ZMA', category: 'mineral', dose: '1 viên', timing: 'before bed' },
+  { name: 'Caffeine', category: 'other', dose: '200mg', timing: 'pre-workout' },
+  { name: 'BCAA', category: 'protein', dose: '5g', timing: 'pre-workout' },
+  { name: 'Multivitamin', category: 'vitamin', dose: '1 viên', timing: 'morning' },
+  { name: 'Ashwagandha', category: 'nootropic', dose: '600mg', timing: 'morning' },
+];
 
 function timeToHHMM(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+/**
+ * Six-step onboarding — faithful port of the web Onboarding page:
+ * Personal → Goal → Training → Lifestyle → Diet → Supplements, with the
+ * live BMR/TDEE auto-calc box, goal summary, and the terms-acceptance
+ * checkbox (legal docs open in a native sheet since the router isn't
+ * mounted while onboarding gates the app).
+ */
 export function OnboardingFlow() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+  const i18n = useI18n();
+  const { lang } = useAppSettings();
+
+  const STEP_TITLES = [
+    i18n.onboardingStepPersonal,
+    i18n.onboardingStepGoal,
+    i18n.onboardingStepTraining,
+    i18n.onboardingStepLifestyle,
+    i18n.onboardingStepDiet,
+    i18n.onboardingStepSupplements,
+  ];
+  const COMMON_ALLERGIES = lang === 'vi' ? COMMON_ALLERGIES_VI : COMMON_ALLERGIES_EN;
 
   const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState(1);
+
   const [name, setName] = useState('');
-  const [sex, setSex] = useState<(typeof SEXES)[number]['key']>('male');
+  const [sex, setSex] = useState('male');
   const [dob, setDob] = useState(new Date(2000, 0, 1));
   const [heightCm, setHeightCm] = useState('170');
   const [weightKg, setWeightKg] = useState('70');
-  const [goal, setGoal] = useState<(typeof GOALS)[number]['key']>('maintain');
-  const [activity, setActivity] = useState<(typeof ACTIVITY)[number]['key']>('moderate');
-  const [training, setTraining] = useState<(typeof TRAINING)[number]['key']>('intermediate');
-  const [bedtime, setBedtime] = useState(new Date(2000, 0, 1, 23, 0));
+  const [goal, setGoal] = useState('maintain');
+  const [trainingLevel, setTrainingLevel] = useState('intermediate');
+  const [activityLevel, setActivityLevel] = useState('moderate');
   const [waketime, setWaketime] = useState(new Date(2000, 0, 1, 7, 0));
+  const [bedtime, setBedtime] = useState(new Date(2000, 0, 1, 23, 0));
+  const [workType, setWorkType] = useState('sedentary');
+  const [dietaryPreference, setDietaryPreference] = useState('omnivore');
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [dislikedFoods, setDislikedFoods] = useState('');
+  const [selectedSupps, setSelectedSupps] = useState<Set<number>>(new Set());
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'health' | null>(null);
 
-  const next = () => {
+  // Live targets (web auto-calc box)
+  const w = Number(weightKg) || 70;
+  const h = Number(heightCm) || 170;
+  const age = calcAge(dob.toISOString().split('T')[0]);
+  const bmr = calcBMR(w, h, age, sex as 'male' | 'female' | 'other');
+  const tdee = calcTDEE(bmr, activityLevel);
+  const targetKcal = calcTargetCalories(tdee, goal);
+  const macros = calcMacros(targetKcal, w, goal);
+  const waterTarget = calcWaterTarget(w);
+  const sleepHours = (() => {
+    const bedMin = bedtime.getHours() * 60 + bedtime.getMinutes();
+    const wakeMin = waketime.getHours() * 60 + waketime.getMinutes();
+    let diff = wakeMin - bedMin;
+    if (diff <= 0) diff += 24 * 60;
+    return Math.round((diff / 60) * 10) / 10;
+  })();
+
+  const goNext = () => {
     Haptics.selectionAsync();
+    setDirection(1);
     setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
   };
-  const back = () => {
+  const goPrev = () => {
     Haptics.selectionAsync();
+    setDirection(-1);
     setStep((s) => Math.max(s - 1, 0));
   };
 
   const finish = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
-      const w = Number(weightKg) || 70;
-      const h = Number(heightCm) || 170;
-      const dobStr = dob.toISOString().split('T')[0];
-      const age = calcAge(dobStr);
-      const bmr = calcBMR(w, h, age, sex);
-      const tdee = calcTDEE(bmr, activity);
-      const targetKcal = calcTargetCalories(tdee, goal);
-      const macros = calcMacros(targetKcal, w, goal);
-
-      const bedMin = bedtime.getHours() * 60 + bedtime.getMinutes();
-      const wakeMin = waketime.getHours() * 60 + waketime.getMinutes();
-      let diff = wakeMin - bedMin;
-      if (diff <= 0) diff += 24 * 60;
-      const sleepHours = Math.round((diff / 60) * 10) / 10;
-
       const { error } = await supabase.from('profiles').upsert(
         {
           user_id: user.id,
           name: name.trim() || 'Athlete',
           sex,
-          dob: dobStr,
+          dob: dob.toISOString().split('T')[0],
           height_cm: h,
           weight_kg: w,
           goal,
-          activity_level: activity,
-          training_level: training,
+          activity_level: activityLevel,
+          training_level: trainingLevel,
+          work_type: workType,
+          dietary_preference: dietaryPreference,
+          allergies,
+          disliked_foods: dislikedFoods
+            ? dislikedFoods.split(',').map((s) => s.trim()).filter(Boolean)
+            : [],
           tdee_target_kcal: targetKcal,
           macro_protein_g: macros.protein_g,
           macro_carbs_g: macros.carbs_g,
           macro_fat_g: macros.fat_g,
           macro_fiber_g: macros.fiber_g,
-          water_target_ml: calcWaterTarget(w),
+          water_target_ml: waterTarget,
           sleep_target_hours: sleepHours,
           sleep_target_bedtime: timeToHHMM(bedtime),
           sleep_target_waketime: timeToHHMM(waketime),
@@ -132,16 +178,45 @@ export function OnboardingFlow() {
         { onConflict: 'user_id' },
       );
       if (error) throw error;
+
+      for (const idx of selectedSupps) {
+        const s = COMMON_SUPPLEMENTS[idx];
+        await supabase.from('supplements').insert({
+          user_id: user.id,
+          name: s.name,
+          category: s.category,
+          dose_text: s.dose,
+          timing: s.timing,
+          notes: '',
+        });
+      }
     },
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['supplement_checklist'] });
     },
     onError: (e: Error) => Alert.alert('ASCND', e.message),
   });
 
-  const canContinue =
-    step === 0 ? name.trim().length > 0 : step === 1 ? Number(heightCm) > 0 && Number(weightKg) > 0 : true;
+  const toggleAllergy = (a: string) => {
+    Haptics.selectionAsync();
+    setAllergies((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]));
+  };
+
+  const toggleSupp = (i: number) => {
+    Haptics.selectionAsync();
+    setSelectedSupps((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
+
+  const StepIcon = STEP_ICONS[step];
+  const legal = getLegal(lang);
+  const legalDoc: LegalDoc | null = legalTab ? legal[legalTab] : null;
 
   return (
     <KeyboardAvoidingView
@@ -150,229 +225,687 @@ export function OnboardingFlow() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.lg },
+          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.lg },
         ]}
         keyboardShouldPersistTaps="handled">
+        {/* Brand header (web: gradient wordmark + setup line) */}
+        <View style={styles.hero}>
+          <Text style={styles.brand}>ASCND</Text>
+          <Text style={styles.heroSub}>{i18n.onboardingSetup}</Text>
+        </View>
+
+        {/* Progress dots */}
         <View style={styles.dots}>
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-            <View key={i} style={[styles.dot, i === step && styles.dotActive, i < step && styles.dotDone]} />
+          {STEP_TITLES.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                i === step && styles.dotActive,
+                i < step && styles.dotDone,
+                i > step && styles.dotFuture,
+              ]}
+            />
           ))}
         </View>
 
-        {step === 0 && (
-          <View style={styles.stepBody}>
-            <Text style={styles.stepTitle}>Welcome to ASCND</Text>
-            <Text style={styles.stepHint}>Let's set up your profile</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Your name"
-              placeholderTextColor={colors.mutedForeground}
-              autoCapitalize="words"
-              value={name}
-              onChangeText={setName}
-            />
-            <Text style={styles.fieldLabel}>Sex</Text>
-            <ChipRow options={SEXES} value={sex} onChange={setSex} />
+        {/* Step header: icon tile + Step x/6 + title */}
+        <View style={styles.stepHeader}>
+          <View style={styles.stepIconTile}>
+            <Icon icon={StepIcon} size={16} color={colors.primary} />
           </View>
-        )}
-
-        {step === 1 && (
-          <View style={styles.stepBody}>
-            <Text style={styles.stepTitle}>Your body</Text>
-            <Text style={styles.stepHint}>Used to calculate your daily targets</Text>
-            <View style={styles.rowFields}>
-              <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>Height (cm)</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="number-pad"
-                  value={heightCm}
-                  onChangeText={setHeightCm}
-                />
-              </View>
-              <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>Weight (kg)</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="decimal-pad"
-                  value={weightKg}
-                  onChangeText={setWeightKg}
-                />
-              </View>
-            </View>
-            <Text style={styles.fieldLabel}>Date of birth</Text>
-            <View style={styles.pickerWrap}>
-              <DateTimePicker
-                value={dob}
-                mode="date"
-                display="spinner"
-                themeVariant="dark"
-                maximumDate={new Date()}
-                onChange={(_, d) => d && setDob(d)}
-              />
-            </View>
+          <View>
+            <Text style={styles.stepCount}>
+              {i18n.onboardingStep} {step + 1}/{TOTAL_STEPS}
+            </Text>
+            <Text style={styles.stepTitle}>{STEP_TITLES[step]}</Text>
           </View>
-        )}
+        </View>
 
-        {step === 2 && (
-          <View style={styles.stepBody}>
-            <Text style={styles.stepTitle}>Your goal</Text>
-            <Text style={styles.stepHint}>We'll tune calories and macros to match</Text>
-            <ChipRow options={GOALS} value={goal} onChange={setGoal} wrap />
-            <Text style={styles.fieldLabel}>Daily activity</Text>
-            <ChipRow options={ACTIVITY} value={activity} onChange={setActivity} wrap />
-            <Text style={styles.fieldLabel}>Training experience</Text>
-            <ChipRow options={TRAINING} value={training} onChange={setTraining} />
-          </View>
-        )}
-
-        {step === 3 && (
-          <View style={styles.stepBody}>
-            <Text style={styles.stepTitle}>Sleep schedule</Text>
-            <Text style={styles.stepHint}>Readiness starts with recovery</Text>
-            <View style={styles.rowFields}>
-              <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>Bedtime</Text>
-                <View style={styles.pickerWrap}>
-                  <DateTimePicker
-                    value={bedtime}
-                    mode="time"
-                    display="spinner"
-                    themeVariant="dark"
-                    onChange={(_, d) => d && setBedtime(d)}
+        <Animated.View
+          key={step}
+          entering={(direction > 0 ? SlideInRight : SlideInLeft).springify().stiffness(300).damping(30)}>
+          <GlassCard style={styles.card}>
+            {step === 0 && (
+              <>
+                <Field label={i18n.settingsName}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={i18n.nYourName}
+                    placeholderTextColor={colors.mutedForeground}
+                    autoCapitalize="words"
+                    value={name}
+                    onChangeText={setName}
                   />
+                </Field>
+                <Field label={i18n.settingsSex}>
+                  <View style={styles.chips}>
+                    {[
+                      { val: 'male', label: i18n.settingsSexMale },
+                      { val: 'female', label: i18n.settingsSexFemale },
+                      { val: 'other', label: i18n.settingsSexOther },
+                    ].map((s) => (
+                      <Chip key={s.val} label={s.label} active={sex === s.val} onPress={() => setSex(s.val)} />
+                    ))}
+                  </View>
+                </Field>
+                <Field label={i18n.settingsDob}>
+                  <View style={styles.pickerWrap}>
+                    <DateTimePicker
+                      value={dob}
+                      mode="date"
+                      display="spinner"
+                      themeVariant="dark"
+                      maximumDate={new Date()}
+                      onChange={(_, d) => d && setDob(d)}
+                    />
+                  </View>
+                </Field>
+                <View style={styles.rowFields}>
+                  <View style={styles.halfField}>
+                    <Field label={`${i18n.settingsHeight} (cm)`}>
+                      <TextInput
+                        style={styles.input}
+                        keyboardType="number-pad"
+                        value={heightCm}
+                        onChangeText={setHeightCm}
+                      />
+                    </Field>
+                  </View>
+                  <View style={styles.halfField}>
+                    <Field label={`${i18n.settingsWeight} (kg)`}>
+                      <TextInput
+                        style={styles.input}
+                        keyboardType="decimal-pad"
+                        value={weightKg}
+                        onChangeText={setWeightKg}
+                      />
+                    </Field>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>Wake up</Text>
-                <View style={styles.pickerWrap}>
-                  <DateTimePicker
-                    value={waketime}
-                    mode="time"
-                    display="spinner"
-                    themeVariant="dark"
-                    onChange={(_, d) => d && setWaketime(d)}
+              </>
+            )}
+
+            {step === 1 && (
+              <>
+                <Text style={styles.fieldLabel}>{i18n.onboardingYourGoal}</Text>
+                {[
+                  { val: 'bulk', label: i18n.onboardingGoalBulk, desc: i18n.onboardingGoalBulkDesc },
+                  { val: 'cut', label: i18n.onboardingGoalCut, desc: i18n.onboardingGoalCutDesc },
+                  { val: 'maintain', label: i18n.onboardingGoalMaintain, desc: i18n.onboardingGoalMaintainDesc },
+                  { val: 'recomp', label: i18n.onboardingGoalRecomp, desc: i18n.onboardingGoalRecompDesc },
+                  { val: 'strength', label: i18n.onboardingGoalStrength, desc: i18n.onboardingGoalStrengthDesc },
+                  { val: 'endurance', label: i18n.onboardingGoalEndurance, desc: i18n.onboardingGoalEnduranceDesc },
+                ].map((g) => (
+                  <OptionCard
+                    key={g.val}
+                    label={g.label}
+                    desc={g.desc}
+                    active={goal === g.val}
+                    onPress={() => setGoal(g.val)}
                   />
+                ))}
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <Text style={styles.fieldLabel}>{i18n.onboardingTrainingLevel}</Text>
+                {[
+                  { val: 'beginner', label: i18n.onboardingBeginner, desc: i18n.onboardingBeginnerDesc },
+                  { val: 'intermediate', label: i18n.onboardingIntermediate, desc: i18n.onboardingIntermediateDesc },
+                  { val: 'advanced', label: i18n.onboardingAdvanced, desc: i18n.onboardingAdvancedDesc },
+                ].map((t) => (
+                  <OptionCard
+                    key={t.val}
+                    label={t.label}
+                    desc={t.desc}
+                    active={trainingLevel === t.val}
+                    onPress={() => setTrainingLevel(t.val)}
+                  />
+                ))}
+                <Field label={i18n.onboardingDailyActivity}>
+                  <View style={[styles.chips, styles.chipsWrap]}>
+                    {[
+                      { val: 'sedentary', label: i18n.activitySedentary },
+                      { val: 'light', label: i18n.activityLight },
+                      { val: 'moderate', label: i18n.activityModerate },
+                      { val: 'high', label: i18n.activityHigh },
+                      { val: 'athlete', label: i18n.activityAthlete },
+                    ].map((a) => (
+                      <Chip
+                        key={a.val}
+                        label={a.label}
+                        active={activityLevel === a.val}
+                        onPress={() => setActivityLevel(a.val)}
+                        wrap
+                      />
+                    ))}
+                  </View>
+                </Field>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <View style={styles.rowFields}>
+                  <View style={styles.halfField}>
+                    <Field label={i18n.onboardingWakeTime}>
+                      <View style={styles.pickerWrap}>
+                        <DateTimePicker
+                          value={waketime}
+                          mode="time"
+                          display="spinner"
+                          themeVariant="dark"
+                          onChange={(_, d) => d && setWaketime(d)}
+                        />
+                      </View>
+                    </Field>
+                  </View>
+                  <View style={styles.halfField}>
+                    <Field label={i18n.onboardingSleepTime}>
+                      <View style={styles.pickerWrap}>
+                        <DateTimePicker
+                          value={bedtime}
+                          mode="time"
+                          display="spinner"
+                          themeVariant="dark"
+                          onChange={(_, d) => d && setBedtime(d)}
+                        />
+                      </View>
+                    </Field>
+                  </View>
                 </View>
-              </View>
-            </View>
-          </View>
+                <Field label={i18n.onboardingWorkType}>
+                  <View style={styles.chips}>
+                    {[
+                      { val: 'sedentary', label: i18n.onboardingWorkSedentary },
+                      { val: 'active', label: i18n.onboardingWorkActive },
+                    ].map((wt) => (
+                      <Chip
+                        key={wt.val}
+                        label={wt.label}
+                        active={workType === wt.val}
+                        onPress={() => setWorkType(wt.val)}
+                      />
+                    ))}
+                  </View>
+                </Field>
+                {/* Auto-calc box (web) */}
+                <View style={styles.calcBox}>
+                  <View style={styles.calcHeader}>
+                    <Icon icon={Sparkles} size={12} color={colors.primary} />
+                    <Text style={styles.calcTitle}>{i18n.onboardingAutoCalc}</Text>
+                  </View>
+                  <View style={styles.calcGrid}>
+                    <CalcItem label="BMR" value={`${bmr} kcal`} />
+                    <CalcItem label="TDEE" value={`${tdee} kcal`} />
+                    <CalcItem label={i18n.target} value={`${targetKcal} kcal`} highlight />
+                    <CalcItem label={i18n.navSleep} value={`${sleepHours}h`} />
+                  </View>
+                </View>
+              </>
+            )}
+
+            {step === 4 && (
+              <>
+                <Text style={styles.fieldLabel}>{i18n.onboardingDiet}</Text>
+                {[
+                  { val: 'omnivore', label: i18n.onboardingDietOmnivore },
+                  { val: 'vegetarian', label: i18n.onboardingDietVegetarian },
+                  { val: 'halal', label: i18n.onboardingDietHalal },
+                ].map((d) => (
+                  <OptionCard
+                    key={d.val}
+                    label={d.label}
+                    active={dietaryPreference === d.val}
+                    onPress={() => setDietaryPreference(d.val)}
+                  />
+                ))}
+                <Field label={i18n.onboardingAllergies}>
+                  <View style={[styles.chips, styles.chipsWrap]}>
+                    {COMMON_ALLERGIES.map((a) => (
+                      <Pressable
+                        key={a}
+                        onPress={() => toggleAllergy(a)}
+                        style={[styles.badge, allergies.includes(a) && styles.badgeActive]}>
+                        <Text style={[styles.badgeText, allergies.includes(a) && styles.badgeTextActive]}>
+                          {a}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </Field>
+                <Field label={i18n.onboardingDislikedFoods}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={i18n.onboardingDislikedFoodsPlaceholder}
+                    placeholderTextColor={colors.mutedForeground}
+                    value={dislikedFoods}
+                    onChangeText={setDislikedFoods}
+                  />
+                </Field>
+              </>
+            )}
+
+            {step === 5 && (
+              <>
+                <Text style={styles.fieldLabel}>{i18n.onboardingSelectSupplements}</Text>
+                {COMMON_SUPPLEMENTS.map((s, i) => {
+                  const selected = selectedSupps.has(i);
+                  return (
+                    <Pressable
+                      key={s.name}
+                      onPress={() => toggleSupp(i)}
+                      style={[styles.suppRow, selected && styles.suppRowActive]}>
+                      <View style={[styles.checkbox, selected && styles.checkboxActive]}>
+                        {selected && <Icon icon={Check} size={13} color={colors.primaryForeground} />}
+                      </View>
+                      <View style={styles.suppInfo}>
+                        <Text style={styles.suppName}>{s.name}</Text>
+                        <Text style={styles.suppMeta}>
+                          {s.dose} · {s.timing}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+
+                {/* Goal summary (web) */}
+                <View style={styles.calcBox}>
+                  <View style={styles.calcHeader}>
+                    <Icon icon={Sparkles} size={12} color={colors.primary} />
+                    <Text style={styles.calcTitle}>{i18n.onboardingSummary}</Text>
+                  </View>
+                  <View style={styles.calcGrid}>
+                    <CalcItem label="Calories" value={`${targetKcal} kcal`} highlight />
+                    <CalcItem label="Protein" value={`${macros.protein_g}g`} />
+                    <CalcItem label="Carbs" value={`${macros.carbs_g}g`} />
+                    <CalcItem label="Fat" value={`${macros.fat_g}g`} />
+                    <CalcItem label={i18n.navWater} value={`${waterTarget}ml`} />
+                    <CalcItem label="Supps" value={`${selectedSupps.size}`} />
+                  </View>
+                </View>
+              </>
+            )}
+          </GlassCard>
+        </Animated.View>
+
+        {/* Terms acceptance (final step, web) */}
+        {step === 5 && (
+          <Animated.View entering={FadeIn.duration(220)} style={styles.termsRow}>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                setTermsAccepted((v) => !v);
+              }}
+              hitSlop={8}
+              style={[styles.checkbox, termsAccepted && styles.checkboxActive]}>
+              {termsAccepted && <Icon icon={Check} size={13} color={colors.primaryForeground} />}
+            </Pressable>
+            <Text style={styles.termsText}>
+              {lang === 'vi' ? 'Tôi đã đọc và đồng ý với ' : 'I have read and agree to the '}
+              <Text style={styles.termsLink} onPress={() => setLegalTab('terms')}>
+                {legal.tabTerms}
+              </Text>
+              {', '}
+              <Text style={styles.termsLink} onPress={() => setLegalTab('privacy')}>
+                {legal.tabPrivacy}
+              </Text>
+              {lang === 'vi' ? ' và ' : ' and '}
+              <Text style={styles.termsLink} onPress={() => setLegalTab('health')}>
+                {legal.tabHealth}
+              </Text>
+              .
+            </Text>
+          </Animated.View>
         )}
 
+        {/* Prev / Next nav */}
         <View style={styles.nav}>
-          {step > 0 ? (
-            <Pressable style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]} onPress={back}>
-              <Text style={styles.backText}>Back</Text>
+          <Pressable
+            style={({ pressed }) => [styles.prevBtn, step === 0 && styles.disabled, pressed && styles.pressed]}
+            disabled={step === 0}
+            onPress={goPrev}>
+            <Icon icon={ChevronLeft} size={16} color={colors.mutedForeground} />
+            <Text style={styles.prevText}>{i18n.onboardingPrev}</Text>
+          </Pressable>
+
+          {step < TOTAL_STEPS - 1 ? (
+            <Pressable
+              style={({ pressed }) => [styles.nextBtn, pressed && styles.pressed]}
+              onPress={goNext}>
+              <Text style={styles.nextText}>{i18n.onboardingNext}</Text>
+              <Icon icon={ChevronRight} size={16} color={colors.primaryForeground} />
             </Pressable>
           ) : (
-            <View style={styles.backBtn} />
+            <Pressable
+              style={({ pressed }) => [
+                styles.nextBtn,
+                (!termsAccepted || finish.isPending) && styles.disabled,
+                pressed && termsAccepted && styles.pressed,
+              ]}
+              disabled={!termsAccepted || finish.isPending}
+              onPress={() => finish.mutate()}>
+              {finish.isPending ? (
+                <ActivityIndicator color={colors.primaryForeground} />
+              ) : (
+                <>
+                  <Icon icon={Check} size={16} color={colors.primaryForeground} />
+                  <Text style={styles.nextText}>{i18n.onboardingDone}</Text>
+                </>
+              )}
+            </Pressable>
           )}
-          <Pressable
-            style={({ pressed }) => [
-              styles.nextBtn,
-              !canContinue && styles.disabled,
-              pressed && canContinue && styles.pressed,
-            ]}
-            disabled={!canContinue || finish.isPending}
-            onPress={() => (step === TOTAL_STEPS - 1 ? finish.mutate() : next())}>
-            {finish.isPending ? (
-              <ActivityIndicator color={colors.primaryForeground} />
-            ) : (
-              <Text style={styles.nextText}>{step === TOTAL_STEPS - 1 ? 'Finish' : 'Continue'}</Text>
-            )}
-          </Pressable>
         </View>
       </ScrollView>
+
+      {/* Legal doc sheet — the stack router isn't mounted during onboarding */}
+      <Modal
+        visible={legalTab !== null}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setLegalTab(null)}>
+        <View style={styles.legalRoot}>
+          <View style={styles.legalHeader}>
+            <Text style={styles.legalTitle} numberOfLines={1}>
+              {legalDoc?.title}
+            </Text>
+            <Pressable
+              hitSlop={8}
+              style={({ pressed }) => [styles.legalClose, pressed && styles.pressed]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setLegalTab(null);
+              }}>
+              <Icon icon={X} size={18} color={colors.foreground} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.legalContent}>
+            {legalDoc?.blocks.map((b, i) => (
+              <GlassCard key={i}>
+                <Text style={styles.legalBlockTitle}>{b.title}</Text>
+                {b.body ? <Text style={styles.legalBlockBody}>{b.body}</Text> : null}
+                {b.intro ? <Text style={[styles.legalBlockBody, styles.legalIntro]}>{b.intro}</Text> : null}
+                {b.bullets?.map((line, j) => (
+                  <View key={j} style={styles.bulletRow}>
+                    <Text style={styles.bulletDot}>•</Text>
+                    <Text style={styles.bulletText}>{line}</Text>
+                  </View>
+                ))}
+              </GlassCard>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
 
-function ChipRow<T extends string>({
-  options,
-  value,
-  onChange,
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
+function Chip({
+  label,
+  active,
+  onPress,
   wrap,
 }: {
-  options: readonly { key: T; label: string }[];
-  value: T;
-  onChange: (v: T) => void;
+  label: string;
+  active: boolean;
+  onPress: () => void;
   wrap?: boolean;
 }) {
   return (
-    <View style={[styles.chips, wrap && styles.chipsWrap]}>
-      {options.map(({ key, label }) => (
-        <Pressable
-          key={key}
-          onPress={() => {
-            Haptics.selectionAsync();
-            onChange(key);
-          }}
-          style={[styles.chip, wrap && styles.chipWrap, value === key && styles.chipActive]}>
-          <Text style={[styles.chipText, value === key && styles.chipTextActive]}>{label}</Text>
-        </Pressable>
-      ))}
+    <Pressable
+      onPress={() => {
+        Haptics.selectionAsync();
+        onPress();
+      }}
+      style={[styles.chip, wrap && styles.chipWrap, active && styles.chipActive]}>
+      <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function OptionCard({
+  label,
+  desc,
+  active,
+  onPress,
+}: {
+  label: string;
+  desc?: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={() => {
+        Haptics.selectionAsync();
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.optionCard,
+        active && styles.optionCardActive,
+        pressed && styles.pressed,
+      ]}>
+      <Text style={styles.optionLabel}>{label}</Text>
+      {desc ? <Text style={styles.optionDesc}>{desc}</Text> : null}
+    </Pressable>
+  );
+}
+
+function CalcItem({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <View style={styles.calcItem}>
+      <Text style={styles.calcLabel}>{label}:</Text>
+      <Text style={[styles.calcValue, highlight && styles.calcValueHighlight]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.lg },
+  content: { flexGrow: 1, paddingHorizontal: spacing.md, gap: spacing.lg },
+
+  hero: { alignItems: 'center', gap: 4 },
+  brand: {
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: 3.6,
+    color: colors.readinessGreen,
+    textShadowColor: 'rgba(32,182,132,0.4)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
+  },
+  heroSub: { ...type.footnote, color: colors.mutedForeground },
+
   dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.secondary },
-  dotActive: { backgroundColor: colors.primary, transform: [{ scale: 1.25 }] },
-  dotDone: { backgroundColor: colors.primary, opacity: 0.5 },
-  stepBody: { flex: 1, gap: spacing.md },
-  stepTitle: { ...type.largeTitle, color: colors.foreground },
-  stepHint: { ...type.body, color: colors.mutedForeground, marginTop: -spacing.sm },
-  fieldLabel: { ...type.footnote, color: colors.mutedForeground },
+  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
+  dotActive: { transform: [{ scale: 1.3 }] },
+  dotDone: { opacity: 0.6 },
+  dotFuture: { backgroundColor: colors.muted, opacity: 0.5 },
+
+  stepHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  stepIconTile: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    backgroundColor: 'rgba(168,175,189,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepCount: { ...type.caption, color: colors.mutedForeground },
+  stepTitle: { ...type.headline, fontSize: 18, color: colors.foreground },
+
+  card: { gap: spacing.md },
+  field: { gap: spacing.sm },
+  fieldLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground },
   input: {
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    backgroundColor: colors.card,
+    backgroundColor: 'rgba(7,7,8,0.5)',
     paddingHorizontal: spacing.md,
     color: colors.foreground,
     fontSize: 16,
   },
   rowFields: { flexDirection: 'row', gap: spacing.md },
-  halfField: { flex: 1, gap: spacing.sm },
+  halfField: { flex: 1 },
   pickerWrap: {
     borderRadius: radius.md,
-    backgroundColor: colors.card,
+    backgroundColor: 'rgba(7,7,8,0.5)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     overflow: 'hidden',
     alignItems: 'center',
   },
+
   chips: { flexDirection: 'row', gap: spacing.sm },
   chipsWrap: { flexWrap: 'wrap' },
   chip: {
     flex: 1,
     height: 44,
     borderRadius: radius.md,
-    backgroundColor: colors.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(24,24,27,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
   chipWrap: { flexBasis: '30%', flexGrow: 1 },
-  chipActive: { backgroundColor: colors.primary },
-  chipText: { ...type.footnote, fontWeight: '600', color: colors.secondaryForeground },
-  chipTextActive: { color: colors.primaryForeground },
-  nav: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
-  backBtn: { flex: 1, height: 50, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
-  backText: { ...type.headline, color: colors.mutedForeground },
-  nextBtn: {
-    flex: 2,
-    height: 50,
+  chipActive: { borderColor: colors.primary, backgroundColor: 'rgba(168,175,189,0.1)' },
+  chipText: { ...type.footnote, fontWeight: '500', color: colors.mutedForeground },
+  chipTextActive: { color: colors.foreground },
+
+  optionCard: {
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(43,43,49,0.5)',
+    backgroundColor: 'rgba(24,24,27,0.3)',
+    gap: 2,
+  },
+  optionCardActive: { borderColor: colors.primary, backgroundColor: 'rgba(168,175,189,0.1)' },
+  optionLabel: { ...type.footnote, fontSize: 14, fontWeight: '600', color: colors.foreground },
+  optionDesc: { ...type.caption, color: colors.mutedForeground },
+
+  calcBox: {
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(24,24,27,0.3)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    gap: spacing.sm,
+  },
+  calcHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  calcTitle: { ...type.caption, fontWeight: '600', color: colors.mutedForeground },
+  calcGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 6 },
+  calcItem: { width: '50%', flexDirection: 'row', gap: 4 },
+  calcLabel: { ...type.footnote, color: colors.mutedForeground },
+  calcValue: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  calcValueHighlight: { color: colors.primary },
+
+  badge: {
+    paddingHorizontal: spacing.sm + 4,
+    height: 30,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nextText: { ...type.headline, color: colors.primaryForeground },
+  badgeActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  badgeText: { ...type.caption, fontWeight: '500', color: colors.mutedForeground },
+  badgeTextActive: { color: colors.primaryForeground },
+
+  suppRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 4,
+    padding: spacing.sm + 4,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(43,43,49,0.5)',
+    backgroundColor: 'rgba(24,24,27,0.3)',
+  },
+  suppRowActive: { borderColor: colors.primary, backgroundColor: 'rgba(168,175,189,0.1)' },
+  suppInfo: { flex: 1 },
+  suppName: { ...type.footnote, fontSize: 14, fontWeight: '600', color: colors.foreground },
+  suppMeta: { ...type.caption, color: colors.mutedForeground },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+
+  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm + 2, paddingHorizontal: 4 },
+  termsText: { ...type.caption, color: colors.mutedForeground, flex: 1, lineHeight: 18 },
+  termsLink: { color: colors.primary, textDecorationLine: 'underline' },
+
+  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  prevBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 48,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+  },
+  prevText: { ...type.headline, fontSize: 15, color: colors.mutedForeground },
+  nextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 48,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+  },
+  nextText: { ...type.headline, fontSize: 15, color: colors.primaryForeground },
   disabled: { opacity: 0.4 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
+
+  legalRoot: { flex: 1, backgroundColor: colors.background },
+  legalHeader: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: spacing.md,
+    paddingRight: spacing.sm,
+    borderBottomWidth: glass.borderWidth,
+    borderBottomColor: glass.border,
+  },
+  legalTitle: { flex: 1, fontSize: 17, fontWeight: '600', color: colors.foreground },
+  legalClose: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  legalContent: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
+  legalBlockTitle: { ...type.headline, color: colors.foreground, marginBottom: 4 },
+  legalBlockBody: { ...type.footnote, color: colors.mutedForeground, lineHeight: 20 },
+  legalIntro: { color: colors.foreground, marginBottom: spacing.xs },
+  bulletRow: { flexDirection: 'row', gap: spacing.sm, marginTop: 6 },
+  bulletDot: { ...type.footnote, color: colors.primary },
+  bulletText: { ...type.footnote, color: colors.mutedForeground, flex: 1, lineHeight: 20 },
 });
