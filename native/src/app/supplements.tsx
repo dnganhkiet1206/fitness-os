@@ -1,22 +1,128 @@
-import { Check } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Check, Plus, Trash2, X } from 'lucide-react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
-import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
+import {
+  useAddSupplement,
+  useDeleteSupplement,
+  useSupplementChecklist,
+  useToggleSupplement,
+} from '@/hooks/use-library';
 
 export default function SupplementsScreen() {
   const { data: supplements } = useSupplementChecklist();
   const toggle = useToggleSupplement();
+  const addSup = useAddSupplement();
+  const delSup = useDeleteSupplement();
   const i18n = useI18n();
+
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState('');
+  const [dose, setDose] = useState('');
+  const [timing, setTiming] = useState('morning');
+
+  const TIMINGS = [
+    { key: 'morning', label: i18n.supplementsTimMorning },
+    { key: 'pre-workout', label: i18n.supplementsTimPreWorkout },
+    { key: 'post-workout', label: i18n.supplementsTimPostWorkout },
+    { key: 'with meals', label: i18n.supplementsTimWithMeal },
+    { key: 'before bed', label: i18n.supplementsTimBeforeBed },
+  ];
 
   const takenCount = (supplements ?? []).filter((s) => s.taken).length;
 
+  const submit = () => {
+    if (!name.trim()) return;
+    addSup.mutate(
+      { name: name.trim(), category: 'other', dose_text: dose.trim(), timing },
+      {
+        onSuccess: () => {
+          setAdding(false);
+          setName('');
+          setDose('');
+          setTiming('morning');
+        },
+        onError: (e: Error) => Alert.alert('ASCND', e.message),
+      },
+    );
+  };
+
+  const confirmDelete = (id: string, sName: string) => {
+    Alert.alert('ASCND', `${i18n.delete} "${sName}"?`, [
+      { text: i18n.cancel, style: 'cancel' },
+      { text: i18n.delete, style: 'destructive', onPress: () => delSup.mutate(id) },
+    ]);
+  };
+
   return (
-    <Screen back title={i18n.nSupplements}>
+    <Screen
+      back
+      title={i18n.nSupplements}
+      headerRight={
+        <Pressable
+          hitSlop={8}
+          style={({ pressed }) => [styles.headerAdd, adding && styles.headerAddOn, pressed && styles.pressed]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            setAdding((v) => !v);
+          }}>
+          <Icon icon={adding ? X : Plus} size={18} color={adding ? colors.primary : colors.foreground} />
+        </Pressable>
+      }>
+      {adding && (
+        <GlassCard style={styles.form}>
+          <Text style={styles.formTitle}>{i18n.supplementsAddTitle}</Text>
+          <Text style={styles.fieldLabel}>{i18n.supplementsName}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Creatine"
+            placeholderTextColor={colors.mutedForeground}
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+          />
+          <Text style={styles.fieldLabel}>{i18n.supplementsDose}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="5g"
+            placeholderTextColor={colors.mutedForeground}
+            value={dose}
+            onChangeText={setDose}
+          />
+          <Text style={styles.fieldLabel}>{i18n.supplementsTiming}</Text>
+          <View style={styles.chipRow}>
+            {TIMINGS.map((t) => (
+              <Pressable
+                key={t.key}
+                style={[styles.chip, timing === t.key && styles.chipActive]}
+                onPress={() => { Haptics.selectionAsync(); setTiming(t.key); }}>
+                <Text style={[styles.chipText, timing === t.key && styles.chipTextActive]}>{t.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.submitBtn,
+              (!name.trim() || addSup.isPending) && styles.submitDisabled,
+              pressed && name.trim() && styles.pressed,
+            ]}
+            disabled={!name.trim() || addSup.isPending}
+            onPress={submit}>
+            {addSup.isPending ? (
+              <ActivityIndicator color={colors.primaryForeground} size="small" />
+            ) : (
+              <Text style={styles.submitText}>{i18n.save}</Text>
+            )}
+          </Pressable>
+        </GlassCard>
+      )}
+
       {supplements && supplements.length > 0 ? (
         <>
           <GlassCard>
@@ -27,23 +133,26 @@ export default function SupplementsScreen() {
             <Text style={styles.hint}>{i18n.nTakenToday}</Text>
           </GlassCard>
           {supplements.map((s) => (
-            <Pressable
-              key={s.id}
-              onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
-              <GlassCard style={styles.itemCard}>
-                <View style={styles.row}>
-                  <View style={[styles.checkbox, s.taken && styles.checkboxOn]}>
-                    {s.taken && <Icon icon={Check} size={15} color="#fff" strokeWidth={3} />}
-                  </View>
-                  <View style={styles.info}>
-                    <Text style={[styles.title, s.taken && styles.muted]}>{s.name}</Text>
-                    <Text style={styles.hint}>
-                      {[s.dose_text, s.timing].filter(Boolean).join(' · ')}
-                    </Text>
-                  </View>
-                </View>
-              </GlassCard>
-            </Pressable>
+            <GlassCard key={s.id} style={styles.itemCard}>
+              <View style={styles.row}>
+                <Pressable
+                  style={[styles.checkbox, s.taken && styles.checkboxOn]}
+                  onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
+                  {s.taken && <Icon icon={Check} size={15} color="#fff" strokeWidth={3} />}
+                </Pressable>
+                <Pressable
+                  style={styles.info}
+                  onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
+                  <Text style={[styles.title, s.taken && styles.muted]}>{s.name}</Text>
+                  <Text style={styles.hint}>
+                    {[s.dose_text, s.timing].filter(Boolean).join(' · ')}
+                  </Text>
+                </Pressable>
+                <Pressable hitSlop={8} onPress={() => confirmDelete(s.id, s.name)}>
+                  <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+            </GlassCard>
           ))}
         </>
       ) : (
@@ -57,6 +166,50 @@ export default function SupplementsScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerAdd: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  headerAddOn: { backgroundColor: 'rgba(168,175,189,0.16)' },
+
+  form: { gap: spacing.sm },
+  formTitle: { ...type.headline, color: colors.foreground, marginBottom: 2 },
+  fieldLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4 },
+  input: {
+    height: 44,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
+    color: colors.foreground,
+    fontSize: 15,
+  },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: colors.secondary,
+  },
+  chipActive: { backgroundColor: colors.primary },
+  chipText: { ...type.footnote, color: colors.secondaryForeground },
+  chipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
+  submitBtn: {
+    height: 46,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+  },
+  submitDisabled: { opacity: 0.4 },
+  submitText: { ...type.headline, color: colors.primaryForeground },
+
   title: { ...type.headline, color: colors.foreground },
   hint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
   big: { ...type.largeTitle, color: colors.foreground, marginTop: spacing.sm },
@@ -74,5 +227,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxOn: { backgroundColor: colors.readinessGreen, borderColor: colors.readinessGreen },
-  checkmark: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

@@ -65,6 +65,40 @@ export function useToggleSupplement() {
   });
 }
 
+/** Add a supplement to the user's stack (port of the web useAddSupplement) */
+export function useAddSupplement() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (sup: { name: string; category: string; dose_text: string; timing: string }) => {
+      const { error } = await supabase.from('supplements').insert({
+        user_id: user!.id,
+        name: sup.name,
+        category: sup.category,
+        dose_text: sup.dose_text,
+        timing: sup.timing,
+        notes: '',
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      queryClient.invalidateQueries({ queryKey: ['supplement_checklist'] });
+    },
+  });
+}
+
+export function useDeleteSupplement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('supplements').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['supplement_checklist'] }),
+  });
+}
+
 export function useExercises() {
   const { user } = useAuth();
   return useQuery({
