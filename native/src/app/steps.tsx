@@ -20,7 +20,10 @@ export default function StepsScreen() {
   const stats = useMemo(() => {
     const h = history ?? [];
     const last7 = h.slice(-7);
-    const today = h.length > 0 ? h[h.length - 1].steps : 0;
+    // Match today's row by date — the last row is yesterday when today
+    // has no log yet (web uses a dedicated date-matched query)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const today = h.find((d) => d.date === todayStr)?.steps ?? 0;
     const avg = last7.length > 0 ? Math.round(last7.reduce((s, d) => s + d.steps, 0) / last7.length) : 0;
     const recent3 = h.slice(-3).map((d) => d.steps);
     const older3 = h.slice(-6, -3).map((d) => d.steps);
