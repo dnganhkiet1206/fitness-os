@@ -32,9 +32,10 @@ interface SetRow {
   exerciseName: string;
   weight: string; // kept as text for input friendliness
   reps: string;
+  rpe: string;
 }
 
-const EMPTY_SET: SetRow = { exerciseId: '', exerciseName: '', weight: '', reps: '' };
+const EMPTY_SET: SetRow = { exerciseId: '', exerciseName: '', weight: '', reps: '', rpe: '' };
 
 export default function LogWorkoutSheet() {
   const { user } = useAuth();
@@ -83,6 +84,7 @@ export default function LogWorkoutSheet() {
           exerciseName: last?.exerciseName ?? '',
           weight: last?.weight ?? '',
           reps: '',
+          rpe: last?.rpe ?? '',
         },
       ];
     });
@@ -99,14 +101,17 @@ export default function LogWorkoutSheet() {
   const save = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
-      const setsJson = validSets.map((s, i) => ({
-        exerciseId: s.exerciseId,
-        exerciseName: s.exerciseName.trim() || 'Exercise',
-        setIndex: i + 1,
-        weight: Number(s.weight),
-        reps: Number(s.reps),
-        rpe: null,
-      }));
+      const setsJson = validSets.map((s, i) => {
+        const setRpe = Number(s.rpe);
+        return {
+          exerciseId: s.exerciseId,
+          exerciseName: s.exerciseName.trim() || 'Exercise',
+          setIndex: i + 1,
+          weight: Number(s.weight),
+          reps: Number(s.reps),
+          rpe: setRpe >= 1 && setRpe <= 10 ? setRpe : null,
+        };
+      });
 
       const { error } = await supabase.from('workout_sessions').insert({
         user_id: user.id,
@@ -176,6 +181,15 @@ export default function LogWorkoutSheet() {
                   keyboardType="number-pad"
                   value={s.reps}
                   onChangeText={(v) => updateSet(idx, 'reps', v)}
+                />
+                <TextInput
+                  style={[styles.input, styles.setRpe]}
+                  placeholder="RPE"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  value={s.rpe}
+                  onChangeText={(v) => updateSet(idx, 'rpe', v)}
                 />
                 <Pressable hitSlop={8} onPress={() => removeSet(idx)} style={styles.removeSet}>
                   <Icon icon={X} size={14} color={colors.mutedForeground} />
@@ -271,7 +285,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   setName: { flex: 1, paddingHorizontal: spacing.sm, height: 44 },
-  setNum: { width: 64, paddingHorizontal: spacing.sm, height: 44, textAlign: 'center' },
+  setNum: { width: 56, paddingHorizontal: spacing.xs, height: 44, textAlign: 'center' },
+  setRpe: { width: 48, paddingHorizontal: spacing.xs, height: 44, textAlign: 'center' },
   removeSet: { width: 24, alignItems: 'center' },
   suggestRow: {
     flexDirection: 'row',
