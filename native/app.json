@@ -59,7 +59,8 @@
           "faceIDPermission": "ASCND uses Face ID to lock your health data behind biometric authentication."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "./plugins/with-free-test-entitlements.js"
     ],
     "experiments": {
       "typedRoutes": true,

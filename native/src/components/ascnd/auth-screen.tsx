@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Haptics from 'expo-haptics';
 import { ArrowLeft, Globe } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -39,6 +39,18 @@ export function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  // Only offer Apple sign-in when the device/build actually supports it —
+  // hides the button on a free-account build stripped of the entitlement.
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    AppleAuthentication.isAvailableAsync()
+      .then((ok) => alive && setAppleAvailable(ok))
+      .catch(() => alive && setAppleAvailable(false));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const subtitle =
     mode === 'signin'
@@ -169,7 +181,7 @@ export function AuthScreen() {
             )}
           </Pressable>
 
-          {Platform.OS === 'ios' && mode !== 'forgot' && (
+          {Platform.OS === 'ios' && appleAvailable && mode !== 'forgot' && (
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
