@@ -14,6 +14,7 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -136,9 +137,7 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat }: Nutr
               ]}>
               {Math.round(calPct)}%
             </Text>
-            <View style={styles.sideBarTrack}>
-              <View style={[styles.sideBarFill, { width: `${calPct}%` }]} />
-            </View>
+            <ProgressBar pct={calPct} color={colors.metricOrange} height={4} style={styles.sideBarTrack} />
           </View>
         </View>
       </View>
@@ -153,9 +152,7 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat }: Nutr
                 {Math.round(m.current)}
                 <Text style={styles.macroTarget}>/{m.target}g</Text>
               </Text>
-              <View style={styles.macroBarTrack}>
-                <View style={[styles.macroBarFill, { width: `${pct}%`, backgroundColor: m.bar[0] }]} />
-              </View>
+              <ProgressBar pct={pct} color={m.bar[0]} height={4} style={styles.macroBarTrack} delay={320} />
             </View>
           );
         })}

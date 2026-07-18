@@ -28,6 +28,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActivityRingsCard } from '@/components/ascnd/activity-rings';
@@ -367,17 +368,29 @@ export default function TodayScreen() {
             </Pressable>
           )}
 
-          {/* Hero widgets (web heroWidgets: readiness, activity) */}
-          {config.heroWidgets.map((key) => (
-            <View key={key}>{renderWidget(key)}</View>
+          {/* Hero widgets (web heroWidgets: readiness, activity) — cards
+              cascade in with a light spring on mount (iOS feel) */}
+          {config.heroWidgets.map((key, i) => (
+            <Animated.View
+              key={key}
+              entering={FadeInDown.springify().damping(26).stiffness(180).delay(i * 70)}>
+              {renderWidget(key)}
+            </Animated.View>
           ))}
 
           {/* Grouped widgets, user-configurable order */}
-          {config.groups.map((group) => (
+          {config.groups.map((group, gi) => (
             <View key={group.id} style={styles.group}>
               <GroupHeader icon={group.icon} title={group.title[lang] ?? group.title.en} />
-              {group.widgets.map((key) => (
-                <View key={key}>{renderWidget(key)}</View>
+              {group.widgets.map((key, wi) => (
+                <Animated.View
+                  key={key}
+                  entering={FadeInDown.springify()
+                    .damping(26)
+                    .stiffness(180)
+                    .delay((config.heroWidgets.length + gi + wi) * 70)}>
+                  {renderWidget(key)}
+                </Animated.View>
               ))}
             </View>
           ))}

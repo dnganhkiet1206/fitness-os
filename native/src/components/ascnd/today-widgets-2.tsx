@@ -26,6 +26,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useNudges, useRecentWorkouts, useTodayBiometrics, useWearables } from '@/hooks/useTodayData';
@@ -232,9 +233,7 @@ export function WorkoutStatusCard({ planned }: { planned: number }) {
       </View>
 
       {planned > 0 && (
-        <View style={styles.statusTrack}>
-          <View style={[styles.statusFill, { width: `${pct}%` }]} />
-        </View>
+        <ProgressBar pct={pct} color={colors.primary} height={6} radius={3} trackColor="rgba(24,24,27,0.3)" style={styles.statusTrack} />
       )}
 
       {todays.length > 0 && (

@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -47,9 +48,7 @@ export default function StepsScreen() {
           </View>
           <Text style={styles.pct}>{Math.round(pct)}%</Text>
         </View>
-        <View style={styles.barTrack}>
-          <View style={[styles.barFill, { width: `${pct}%` }]} />
-        </View>
+        <ProgressBar pct={pct} color={colors.primary} height={10} radius={5} style={styles.barTrack} />
         {/* Goal stepper (web Settings inline editor, ±500) */}
         <View style={styles.goalRow}>
           <Pressable

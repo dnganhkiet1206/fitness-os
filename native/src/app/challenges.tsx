@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -54,15 +55,14 @@ export default function ChallengesScreen() {
                 </View>
                 {c.completed && <Icon icon={Check} size={18} color={colors.readinessGreen} strokeWidth={3} />}
               </View>
-              <View style={styles.progressTrack}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${pct}%` },
-                    c.completed && { backgroundColor: colors.readinessGreen },
-                  ]}
-                />
-              </View>
+              <ProgressBar
+                pct={pct}
+                color={c.completed ? colors.readinessGreen : colors.primary}
+                height={8}
+                radius={4}
+                trackColor={colors.secondary}
+                style={styles.progressTrack}
+              />
               <Text style={styles.progressLabel}>
                 {c.completed ? i18n.nCompleted : `${current} / ${target}`}
               </Text>
