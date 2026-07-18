@@ -12,7 +12,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useFavoriteFoods, useRecentFoods, useToggleFavoriteFood, type FoodItemRow } from '@/hooks/use-nutrition';
+import { dedupeSeedShadows, useFavoriteFoods, useRecentFoods, useToggleFavoriteFood, type FoodItemRow } from '@/hooks/use-nutrition';
 import { supabase } from '@/integrations/supabase/client';
 
 type Tab = 'foods' | 'plans';
@@ -49,7 +49,7 @@ export default function NutritionScreen() {
         .order('is_favorite', { ascending: false })
         .order('name')
         .limit(20);
-      return (data ?? []) as FoodItemRow[];
+      return dedupeSeedShadows((data ?? []) as FoodItemRow[]);
     },
   });
 

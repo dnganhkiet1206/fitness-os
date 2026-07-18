@@ -1,5 +1,5 @@
 import { Lock } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -7,9 +7,11 @@ import { useI18n } from '@/hooks/use-app-settings';
 import { useAppLock } from '@/hooks/use-app-lock';
 
 /**
- * Full-screen lock overlay shown while the app is locked. Rendered above
- * everything; hides all content behind an opaque blur so nothing sensitive
- * is visible in the app switcher or before Face ID succeeds.
+ * Full-screen lock shown while the app is locked. Must be an RN Modal —
+ * a plain overlay View sits below natively-presented sheets (log-meal,
+ * edit-profile, …), so locking with a sheet open would leave its content
+ * visible and usable. RN Modal renders above every native presentation
+ * (same reason the celebration modals use it).
  */
 export function AppLockGate() {
   const i18n = useI18n();
@@ -18,17 +20,19 @@ export function AppLockGate() {
   if (!locked) return null;
 
   return (
-    <View style={[StyleSheet.absoluteFill, styles.scrim]} pointerEvents="auto">
-      <View style={styles.center}>
-        <View style={styles.badge}>
-          <Icon icon={Lock} size={34} color={colors.primary} />
+    <Modal visible transparent={false} animationType="none" onRequestClose={() => {}}>
+      <View style={[StyleSheet.absoluteFill, styles.scrim]}>
+        <View style={styles.center}>
+          <View style={styles.badge}>
+            <Icon icon={Lock} size={34} color={colors.primary} />
+          </View>
+          <Text style={styles.title}>{i18n.nLockLocked}</Text>
+          <Pressable style={({ pressed }) => [styles.button, pressed && styles.pressed]} onPress={unlock}>
+            <Text style={styles.buttonText}>{i18n.nLockUnlock}</Text>
+          </Pressable>
         </View>
-        <Text style={styles.title}>{i18n.nLockLocked}</Text>
-        <Pressable style={({ pressed }) => [styles.button, pressed && styles.pressed]} onPress={unlock}>
-          <Text style={styles.buttonText}>{i18n.nLockUnlock}</Text>
-        </Pressable>
       </View>
-    </View>
+    </Modal>
   );
 }
 

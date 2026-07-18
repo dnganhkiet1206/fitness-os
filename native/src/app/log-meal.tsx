@@ -20,7 +20,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useFavoriteFoods, useRecentFoods } from '@/hooks/use-nutrition';
+import { dedupeSeedShadows, useFavoriteFoods, useRecentFoods } from '@/hooks/use-nutrition';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
@@ -131,11 +131,11 @@ export default function LogMealSheet() {
     queryFn: async () => {
       const { data } = await supabase
         .from('food_items')
-        .select('id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g')
+        .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g')
         .ilike('name', `%${debounced}%`)
         .order('name')
         .limit(8);
-      return data ?? [];
+      return dedupeSeedShadows(data ?? []);
     },
   });
 

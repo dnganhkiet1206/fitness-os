@@ -17,6 +17,7 @@ import {
   useMealPlanItems,
   useMealPlans,
 } from '@/hooks/use-library';
+import { dedupeSeedShadows } from '@/hooks/use-nutrition';
 import { supabase } from '@/integrations/supabase/client';
 
 const MEALS_PER_DAY = [3, 4, 5, 6];
@@ -51,11 +52,11 @@ export default function MealPlansScreen() {
     queryFn: async () => {
       const { data } = await supabase
         .from('food_items')
-        .select('id, name, kcal, protein_g, carbs_g, fat_g, serving_g')
+        .select('id, user_id, name, kcal, protein_g, carbs_g, fat_g, serving_g')
         .ilike('name', `%${foodDebounced}%`)
         .order('name')
         .limit(15);
-      return data ?? [];
+      return dedupeSeedShadows(data ?? []);
     },
   });
 

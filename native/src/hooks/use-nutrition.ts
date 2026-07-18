@@ -93,6 +93,17 @@ export interface FoodFormData {
   fiber_g: number;
 }
 
+/**
+ * Hide shared seed rows that the user has cloned into their own list
+ * (favoriting a seed clones it — see useToggleFavoriteFood), so searches
+ * don't show the same food twice. RLS only returns own + NULL-user rows,
+ * so a non-null user_id here always means "mine".
+ */
+export function dedupeSeedShadows<T extends { user_id?: string | null; name: string }>(rows: T[]): T[] {
+  const ownNames = new Set(rows.filter((r) => r.user_id != null).map((r) => r.name.toLowerCase()));
+  return rows.filter((r) => r.user_id != null || !ownNames.has(r.name.toLowerCase()));
+}
+
 function invalidateFoodQueries(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ['favorite_foods'] });
   qc.invalidateQueries({ queryKey: ['nutrition_food_search'] });
@@ -156,11 +167,36 @@ export function useToggleFavoriteFood() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ id, is_favorite }: { id: string; is_favorite: boolean }) => {
-      const { error } = await supabase.from('food_items').update({ is_favorite }).eq('id', id);
-      if (error) throw error;
+      // Shared seed foods (user_id NULL) can't be updated under RLS — the
+      // update silently matches 0 rows and the star never lights up.
+      // Favoriting one instead clones it into the user's own list.
+      const { data: row, error: readError } = await supabase
+        .from('food_items')
+        .select('user_id, name, brand, serving_g, kcal, protein_g, carbs_g, fat_g, fiber_g')
+        .eq('id', id)
+        .single();
+      if (readError) throw readError;
+
+      if (row.user_id === user!.id) {
+        const { error } = await supabase.from('food_items').update({ is_favorite }).eq('id', id);
+        if (error) throw error;
+      } else if (is_favorite) {
+        const { error } = await supabase.from('food_items').insert({
+          user_id: user!.id,
+          name: row.name,
+          brand: row.brand,
+          serving_g: row.serving_g,
+          kcal: row.kcal,
+          protein_g: row.protein_g,
+          carbs_g: row.carbs_g,
+          fat_g: row.fat_g,
+          fiber_g: row.fiber_g,
+          is_favorite: true,
+        });
+        if (error) throw error;
+      }
+      // Un-favoriting a seed row is a no-op: it was never favoritable
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['favorite_foods', user?.id] });
-    },
+    onSuccess: () => invalidateFoodQueries(queryClient),
   });
 }
