@@ -24,7 +24,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
-import { localDateStr } from '@/lib/local-date';
+import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import {
   displayHeight,
   displayVolume,
@@ -209,7 +209,7 @@ export default function EditProfileSheet() {
           </Pressable>
           {showDob && (
             <DateTimePicker
-              value={form.dob ? new Date(form.dob) : new Date(2000, 0, 1)}
+              value={form.dob ? parseLocalDate(form.dob) : new Date(2000, 0, 1)}
               mode="date"
               display="spinner"
               maximumDate={new Date()}
