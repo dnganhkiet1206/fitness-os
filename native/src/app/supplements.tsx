@@ -35,6 +35,10 @@ export default function SupplementsScreen() {
     { key: 'before bed', label: i18n.supplementsTimBeforeBed },
   ];
 
+  // Timing is stored as an English key ('pre-workout', …) — render the
+  // localized label, falling back to the raw value for legacy rows
+  const timingLabel = (t: string | null) => TIMINGS.find((x) => x.key === t)?.label ?? t;
+
   const takenCount = (supplements ?? []).filter((s) => s.taken).length;
 
   const submit = () => {
@@ -145,7 +149,7 @@ export default function SupplementsScreen() {
                   onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
                   <Text style={[styles.title, s.taken && styles.muted]}>{s.name}</Text>
                   <Text style={styles.hint}>
-                    {[s.dose_text, s.timing].filter(Boolean).join(' · ')}
+                    {[s.dose_text, timingLabel(s.timing)].filter(Boolean).join(' · ')}
                   </Text>
                 </Pressable>
                 <Pressable hitSlop={8} onPress={() => confirmDelete(s.id, s.name)}>

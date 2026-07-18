@@ -27,6 +27,17 @@ export default function SettingsScreen() {
   const lock = useAppLock();
   const [exporting, setExporting] = useState(false);
 
+  // Profile enums are stored as English keys — render localized labels
+  const GOAL_LABELS: Record<string, string> = {
+    bulk: i18n.goalBulk, cut: i18n.goalCut, maintain: i18n.goalMaintain,
+    recomp: i18n.goalRecomp, strength: i18n.goalStrength, endurance: i18n.goalEndurance,
+  };
+  const LEVEL_LABELS: Record<string, string> = {
+    beginner: i18n.onboardingBeginner,
+    intermediate: i18n.onboardingIntermediate,
+    advanced: i18n.onboardingAdvanced,
+  };
+
   const exportData = async () => {
     if (!user || exporting) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -87,8 +98,11 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.divider} />
             <Row label={i18n.nDailyTarget} value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
-            <Row label={i18n.nGoal} value={profile?.goal ?? '—'} />
-            <Row label={i18n.nTrainingLevel} value={profile?.training_level ?? '—'} />
+            <Row label={i18n.nGoal} value={(profile?.goal && GOAL_LABELS[profile.goal]) || profile?.goal || '—'} />
+            <Row
+              label={i18n.nTrainingLevel}
+              value={(profile?.training_level && LEVEL_LABELS[profile.training_level]) || profile?.training_level || '—'}
+            />
           </GlassCard>
         )}
       </Pressable>

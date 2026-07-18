@@ -112,6 +112,8 @@ export default function MealPlansScreen() {
     { key: 'cut', label: i18n.goalCut },
     { key: 'maintain', label: i18n.goalMaintain },
   ];
+  // goal is stored as an English key — render the localized label
+  const goalLabel = (g: string | null) => GOALS.find((x) => x.key === g)?.label ?? g;
 
   const dayLabel = (idx: number) => `${i18n.nDay} ${idx + 1}`;
 
@@ -244,7 +246,7 @@ export default function MealPlansScreen() {
                   <View style={styles.planInfo}>
                     <Text style={styles.title}>{p.name}</Text>
                     <Text style={styles.hint}>
-                      {[p.goal, p.meals_per_day ? `${p.meals_per_day} ${i18n.nMealsPerDay}` : null]
+                      {[goalLabel(p.goal), p.meals_per_day ? `${p.meals_per_day} ${i18n.nMealsPerDay}` : null]
                         .filter(Boolean)
                         .join(' · ')}
                     </Text>
