@@ -18,6 +18,7 @@ import {
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
+import { toast } from '@/lib/toast';
 import {
   useCreateFoodItem,
   useDeleteFoodItem,
@@ -90,8 +91,9 @@ export default function FoodEditorSheet() {
       onSuccess: () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.back();
+        toast.success(isEdit ? i18n.foodUpdated : i18n.foodAdded);
       },
-      onError: (e: Error) => Alert.alert('ASCND', e.message),
+      onError: (e: Error) => toast.error(e.message),
     };
     if (isEdit && id) update.mutate({ id, ...data }, opts);
     else create.mutate(data, opts);
@@ -109,8 +111,9 @@ export default function FoodEditorSheet() {
             onSuccess: () => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               router.back();
+              toast.success(i18n.foodDeleted);
             },
-            onError: (e: Error) => Alert.alert('ASCND', e.message),
+            onError: (e: Error) => toast.error(e.message),
           }),
       },
     ]);

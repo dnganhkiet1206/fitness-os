@@ -19,6 +19,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/lib/toast';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 
@@ -72,8 +73,9 @@ export default function LogSleepSheet() {
       queryClient.invalidateQueries({ queryKey: ['sleep_history', user?.id] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
+      toast.success(i18n.logSleepSaved);
     },
-    onError: (e: Error) => Alert.alert('ASCND', e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return (

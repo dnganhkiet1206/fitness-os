@@ -18,6 +18,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/lib/toast';
 
 const MIN_LENGTH = 6;
 
@@ -41,10 +42,11 @@ export default function ChangePasswordScreen() {
       const { error } = await supabase.auth.updateUser({ password: newPw });
       if (error) throw error;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('ASCND', i18n.settingsPasswordChanged, [{ text: 'OK', onPress: () => router.back() }]);
+      router.back();
+      toast.success(i18n.settingsPasswordChanged);
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Alert.alert('ASCND', e instanceof Error ? e.message : 'Error');
+      toast.error(e instanceof Error ? e.message : 'Error');
     } finally {
       setSaving(false);
     }

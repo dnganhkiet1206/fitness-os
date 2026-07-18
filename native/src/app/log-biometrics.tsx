@@ -18,6 +18,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogBiometrics } from '@/hooks/use-biometrics';
+import { toast } from '@/lib/toast';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
@@ -55,8 +56,9 @@ export default function LogBiometricsSheet() {
           invalidate();
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           router.back();
+          toast.success(i18n.logBioSaved);
         },
-        onError: (e: Error) => Alert.alert('ASCND', e.message),
+        onError: (e: Error) => toast.error(e.message),
       },
     );
   };

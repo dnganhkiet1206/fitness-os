@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { Alert } from 'react-native';
 
+import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { toast } from '@/lib/toast';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -23,6 +24,7 @@ export function useHealthSync() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
   const queryClient = useQueryClient();
+  const i18n = useI18n();
 
   const sync = useMutation({
     mutationFn: async () => {
@@ -76,8 +78,9 @@ export function useHealthSync() {
       queryClient.invalidateQueries({ queryKey: ['steps_history', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['biometric_history', user?.id] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      toast.success(i18n.nHealthSynced);
     },
-    onError: (e: Error) => Alert.alert('Apple Health', e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return { available: isHealthKitAvailable(), sync };

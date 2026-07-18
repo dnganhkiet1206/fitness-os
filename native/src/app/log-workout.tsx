@@ -24,6 +24,7 @@ import { useExercises } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/lib/toast';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
@@ -138,8 +139,9 @@ export default function LogWorkoutSheet() {
       invalidate();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
+      toast.success(i18n.logWorkoutSaved);
     },
-    onError: (e: Error) => Alert.alert('ASCND', e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const canSave = validSets.length > 0 && !save.isPending;

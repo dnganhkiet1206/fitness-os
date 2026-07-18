@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { dedupeSeedShadows, useFavoriteFoods, useRecentFoods } from '@/hooks/use-nutrition';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/lib/toast';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 import { consumePendingScan } from '@/lib/scan-bridge';
@@ -320,9 +321,10 @@ export default function LogMealSheet() {
       queryClient.invalidateQueries({ queryKey: ['recent_foods', user?.id] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
+      toast.success(i18n.logMealSaved);
     },
     onError: (e: Error) => {
-      if (e.message !== 'No items') Alert.alert('ASCND', e.message);
+      if (e.message !== 'No items') toast.error(e.message);
     },
   });
 

@@ -20,6 +20,7 @@ import { localDateStr } from '@/lib/local-date';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useUpsertBodyMeasurement, type BodyMeasurementInput } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
+import { toast } from '@/lib/toast';
 import { lengthLabel, lengthToCm } from '@/lib/units';
 
 type FieldKey = Exclude<keyof BodyMeasurementInput, 'date' | 'notes'>;
@@ -73,8 +74,9 @@ export default function LogMeasurementSheet() {
       onSuccess: () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.back();
+        toast.success(i18n.progressSaved);
       },
-      onError: (e: Error) => Alert.alert('ASCND', e.message),
+      onError: (e: Error) => toast.error(e.message),
     });
   };
 

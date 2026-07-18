@@ -7,6 +7,7 @@ import { AppLockGate } from '@/components/ascnd/app-lock-gate';
 import { AuthScreen } from '@/components/ascnd/auth-screen';
 import { CelebrationHost } from '@/components/ascnd/celebration-host';
 import { MascotUnlockCelebration } from '@/components/ascnd/mascot-unlock';
+import { NeonToastHost } from '@/components/ascnd/neon-toast';
 import { OfflineBanner } from '@/components/ascnd/offline-banner';
 import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { colors } from '@/constants/ascnd';
@@ -109,6 +110,7 @@ function LockedApp() {
     <AppLockProvider prompt={i18n.nLockPrompt}>
       <Gate />
       <OfflineBanner />
+      <NeonToastHost />
       <AppLockGate />
     </AppLockProvider>
   );

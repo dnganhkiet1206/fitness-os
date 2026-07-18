@@ -264,6 +264,7 @@ const en = {
 
   // Offline
   nOffline: 'Offline — showing saved data',
+  nHealthSynced: 'Apple Health synced!',
 
   // App lock (Face ID / biometrics)
   nLockTitle: 'App Lock',
@@ -519,6 +520,7 @@ const vi: typeof en = {
 
   // Offline
   nOffline: 'Ngoại tuyến — đang hiển thị dữ liệu đã lưu',
+  nHealthSynced: 'Đã đồng bộ Apple Health!',
 
   // App lock (Face ID / sinh trắc)
   nLockTitle: 'Khoá ứng dụng',
