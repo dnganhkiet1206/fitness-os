@@ -13,7 +13,7 @@ type Bi = { en: string; vi: string };
 
 export const AWARD_TEXT: Record<string, { title: Bi; desc: Bi }> = {
   streak_3: {
-    title: { en: 'First Spark 🔥', vi: 'Khởi Đầu 🔥' },
+    title: { en: 'First Spark', vi: 'Khởi Đầu' },
     desc: { en: 'Log 3 days in a row', vi: 'Ghi log 3 ngày liên tiếp' },
   },
   streak_7: {

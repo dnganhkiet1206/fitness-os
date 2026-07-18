@@ -2,16 +2,20 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {
+  Apple,
   Check,
   ChevronDown,
   ChevronUp,
+  Dumbbell,
   Heart,
   Pencil,
+  Pin,
   Plus,
   RotateCcw,
   Settings,
   Sparkles,
   Trash2,
+  type LucideIcon,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -62,11 +66,33 @@ import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget
 import { getLocale } from '@/lib/i18n';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
-/** Section header — web WidgetGroupSection: emoji icon + semibold title */
+/**
+ * Stored group icons are emoji strings (persisted configs) — map them to
+ * code-drawn lucide icons with a neon accent, Apple-Settings style.
+ */
+const GROUP_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
+  '❤️': { icon: Heart, color: '#ff4d6d' },
+  '🍎': { icon: Apple, color: colors.readinessGreen },
+  '💪': { icon: Dumbbell, color: colors.metricOrange },
+  '✨': { icon: Sparkles, color: colors.metricPurple },
+  '📌': { icon: Pin, color: colors.metricBlue },
+};
+
+/** Neon-tinted icon chip for a widget group */
+function GroupIconBadge({ iconKey }: { iconKey: string }) {
+  const meta = GROUP_ICONS[iconKey] ?? GROUP_ICONS['📌'];
+  return (
+    <View style={[styles.groupIconBadge, { backgroundColor: `${meta.color}1f` }]}>
+      <Icon icon={meta.icon} size={13} color={meta.color} />
+    </View>
+  );
+}
+
+/** Section header — web WidgetGroupSection: icon chip + semibold title */
 function GroupHeader({ icon, title }: { icon: string; title: string }) {
   return (
     <View style={styles.groupHeader}>
-      <Text style={styles.groupIcon}>{icon}</Text>
+      <GroupIconBadge iconKey={icon} />
       <Text style={styles.groupTitle}>{title}</Text>
     </View>
   );
@@ -369,7 +395,7 @@ export default function TodayScreen() {
           {config.groups.map((group, gi) => (
             <GlassCard key={group.id} style={styles.editGroup}>
               <View style={styles.editGroupHeader}>
-                <Text style={styles.groupIcon}>{group.icon}</Text>
+                <GroupIconBadge iconKey={group.icon} />
                 <Text style={styles.editGroupTitle}>{group.title[lang] ?? group.title.en}</Text>
                 <ArrowBtn
                   icon={ChevronUp}
@@ -536,7 +562,13 @@ const styles = StyleSheet.create({
   // Groups (web WidgetGroupSection)
   group: { gap: spacing.sm + 4, marginTop: spacing.xs },
   groupHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: 4 },
-  groupIcon: { fontSize: 16 },
+  groupIconBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   groupTitle: { fontSize: 14, fontWeight: '600', color: 'rgba(237,237,237,0.8)' },
 
   // Empty states (web EmptyState)

@@ -12,6 +12,7 @@ import {
   Minus,
   Moon,
   Sparkles,
+  Target,
   TrendingDown,
   TrendingUp,
   type LucideIcon,
@@ -456,7 +457,10 @@ export default function WeeklyReviewScreen() {
           {/* Adaptive recommendations */}
           {recommendations.length > 0 && (
             <GlassCard>
-              <Text style={styles.microTitle}>{i18n.weeklyReviewRecommendations}</Text>
+              <View style={styles.microTitleRow}>
+                <Icon icon={Target} size={14} color={colors.readinessGreen} />
+                <Text style={styles.microTitle}>{i18n.weeklyReviewRecommendations}</Text>
+              </View>
               <View style={styles.recList}>
                 {recommendations.map((r, i) => {
                   const rs = REC_STYLE[r.kind];
@@ -600,6 +604,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     color: colors.mutedForeground,
   },
+  microTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
   recList: { gap: spacing.sm, marginTop: spacing.sm },
   recRow: {

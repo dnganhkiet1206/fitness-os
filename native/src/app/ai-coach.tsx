@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Plus,
   Trash2,
+  TriangleAlert,
   User,
 } from 'lucide-react-native';
 import { useRef, useState } from 'react';
@@ -359,11 +360,14 @@ export default function AiCoachScreen() {
             <Icon icon={ArrowUp} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
           </Pressable>
         </View>
-        <Text style={styles.disclaimer}>
-          {lang === 'vi'
-            ? '⚠️ AI chỉ hỗ trợ nhắc nhở thói quen, không chẩn đoán hay phát hiện bệnh. Gặp bác sĩ khi có vấn đề sức khoẻ.'
-            : '⚠️ AI supports habit reminders only — it does not diagnose or detect illness. See a doctor for health concerns.'}
-        </Text>
+        <View style={styles.disclaimerRow}>
+          <Icon icon={TriangleAlert} size={12} color={colors.readinessYellow} />
+          <Text style={styles.disclaimer}>
+            {lang === 'vi'
+              ? 'AI chỉ hỗ trợ nhắc nhở thói quen, không chẩn đoán hay phát hiện bệnh. Gặp bác sĩ khi có vấn đề sức khoẻ.'
+              : 'AI supports habit reminders only — it does not diagnose or detect illness. See a doctor for health concerns.'}
+          </Text>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -527,7 +531,13 @@ const styles = StyleSheet.create({
     fontSize: 9,
     lineHeight: 12,
     color: 'rgba(140,140,150,0.6)',
-    textAlign: 'center',
+    flexShrink: 1,
+  },
+  disclaimerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
     paddingHorizontal: spacing.lg,
   },
   pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },

@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { Check, Sparkles } from 'lucide-react-native';
+import { Check, PartyPopper, Sparkles } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -122,7 +122,10 @@ export function SupplementChecklistCard() {
         </Text>
       </View>
       {allDone ? (
-        <Text style={styles.allDone}>{i18n.nAllSupplementsDone}</Text>
+        <View style={styles.allDoneRow}>
+          <Icon icon={PartyPopper} size={15} color={colors.readinessYellow} />
+          <Text style={styles.allDone}>{i18n.nAllSupplementsDone}</Text>
+        </View>
       ) : (
         <View style={styles.suppList}>
           {supplements.map((s) => (
@@ -299,7 +302,8 @@ const styles = StyleSheet.create({
   diffText: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
 
   // Supplements
-  allDone: { ...type.body, color: colors.readinessGreen, marginTop: spacing.sm },
+  allDone: { ...type.body, color: colors.readinessGreen },
+  allDoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
   suppList: { marginTop: spacing.sm, gap: spacing.sm },
   suppRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   checkbox: {

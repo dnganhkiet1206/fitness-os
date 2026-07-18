@@ -2,6 +2,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { Angry, Frown, Laugh, Meh, Smile, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -23,9 +25,15 @@ import { toast } from '@/lib/toast';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 
-// Emoji picks map onto the web's 1–10 quality scale (SleepCard shows "x/10")
-const QUALITY = [2, 4, 6, 8, 10] as const;
-const QUALITY_EMOJI = ['😫', '😕', '😐', '🙂', '😴'];
+// Face picks map onto the web's 1–10 quality scale (SleepCard shows
+// "x/10") — code-drawn lucide faces on a red→teal neon ramp
+const QUALITY: { value: number; icon: LucideIcon; color: string }[] = [
+  { value: 2, icon: Angry, color: colors.readinessRed },
+  { value: 4, icon: Frown, color: colors.metricOrange },
+  { value: 6, icon: Meh, color: colors.readinessYellow },
+  { value: 8, icon: Smile, color: colors.readinessGreen },
+  { value: 10, icon: Laugh, color: colors.metricCyan },
+];
 
 /** Bedtime after noon belongs to yesterday; waketime is always today. */
 function withDate(time: Date, dayOffset: number): Date {
@@ -138,17 +146,23 @@ export default function LogSleepSheet() {
 
       <Text style={styles.fieldLabel}>{i18n.nHowSleep}</Text>
       <View style={styles.chips}>
-        {QUALITY.map((q, i) => (
-          <Pressable
-            key={q}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setQuality(q);
-            }}
-            style={[styles.chip, quality === q && styles.chipActive]}>
-            <Text style={styles.chipEmoji}>{QUALITY_EMOJI[i]}</Text>
-          </Pressable>
-        ))}
+        {QUALITY.map((q) => {
+          const active = quality === q.value;
+          return (
+            <Pressable
+              key={q.value}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setQuality(q.value);
+              }}
+              style={[
+                styles.chip,
+                active && { backgroundColor: `${q.color}24`, borderColor: q.color, borderWidth: 1 },
+              ]}>
+              <Icon icon={q.icon} size={24} color={active ? q.color : colors.mutedForeground} />
+            </Pressable>
+          );
+        })}
       </View>
 
       <Pressable
@@ -224,7 +238,6 @@ const styles = StyleSheet.create({
   chipActive: {
     backgroundColor: colors.primary,
   },
-  chipEmoji: { fontSize: 24 },
   saveButton: {
     height: 50,
     borderRadius: radius.full,

@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ChevronRight, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
+import { CalendarDays, ChevronRight, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -170,6 +170,7 @@ export default function WorkoutsScreen() {
           Haptics.selectionAsync();
           router.push('/routine');
         }}>
+        <Icon icon={CalendarDays} size={15} color={colors.metricBlue} />
         <Text style={styles.weeklyBtnText}>{i18n.workoutsWeeklyPlan}</Text>
         <Icon icon={ChevronRight} size={16} color={colors.foreground} />
       </Pressable>

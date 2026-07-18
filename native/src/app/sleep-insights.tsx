@@ -1,7 +1,9 @@
+import { Lightbulb } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -136,7 +138,10 @@ export default function SleepInsightsScreen() {
           {/* Insights */}
           {insights.length > 0 && (
             <GlassCard>
-              <Text style={styles.cardTitle}>{i18n.sleepInsights}</Text>
+              <View style={styles.cardTitleRow}>
+                <Icon icon={Lightbulb} size={15} color={colors.readinessYellow} />
+                <Text style={styles.cardTitle}>{i18n.sleepInsights}</Text>
+              </View>
               <View style={styles.insightList}>
                 {insights.map((text, i) => (
                   <View key={i} style={styles.insightRow}>
@@ -173,6 +178,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 const styles = StyleSheet.create({
   cardTitle: { ...type.headline, color: colors.foreground },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xs },
   emptyTitle: { ...type.body, color: colors.foreground, fontWeight: '600' },
   emptyMsg: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
