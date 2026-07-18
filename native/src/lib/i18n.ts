@@ -193,6 +193,8 @@ interface Translations {
   settingsConfirmPassword: string;
   settingsPasswordChanged: string;
   settingsPasswordMismatch: string;
+  settingsRecalcTargets: string;
+  settingsRecalcDone: string;
   settings2FA: string;
   settings2FADesc: string;
   settings2FAEnabled: string;
@@ -904,6 +906,8 @@ const vi: Translations = {
   settingsConfirmPassword: 'Xác nhận mật khẩu mới',
   settingsPasswordChanged: 'Đổi mật khẩu thành công!',
   settingsPasswordMismatch: 'Mật khẩu xác nhận không khớp',
+  settingsRecalcTargets: 'Tính lại theo chỉ số',
+  settingsRecalcDone: 'Đã tính lại mục tiêu từ chỉ số của bạn',
   settings2FA: 'Xác thực 2 yếu tố',
   settings2FADesc: 'Bảo vệ tài khoản bằng ứng dụng xác thực (Google Authenticator, Authy...)',
   settings2FAEnabled: 'Đã bật',
@@ -1587,6 +1591,8 @@ const en: Translations = {
   settingsConfirmPassword: 'Confirm new password',
   settingsPasswordChanged: 'Password changed successfully!',
   settingsPasswordMismatch: 'Passwords do not match',
+  settingsRecalcTargets: 'Recalculate from my stats',
+  settingsRecalcDone: 'Targets recalculated from your stats',
   settings2FA: 'Two-Factor Authentication',
   settings2FADesc: 'Protect your account with an authenticator app (Google Authenticator, Authy...)',
   settings2FAEnabled: 'Enabled',

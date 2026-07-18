@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Check } from 'lucide-react-native';
+import { Check, RefreshCw } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,6 +24,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/lib/toast';
+import { calcAge, calcBMR, calcMacros, calcTargetCalories, calcTDEE, calcWaterTarget } from '@/lib/fitness-calc';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import {
   displayHeight,
@@ -115,6 +117,30 @@ export default function EditProfileSheet() {
   }, [profile]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
+
+  /** Recompute calorie / macro / water targets from the current stats —
+   *  same chain as onboarding (BMR → TDEE → goal-adjusted kcal → macros). */
+  const recalcTargets = () => {
+    const w = Number(form.weight_kg) || 70;
+    const h = Number(form.height_cm) || 170;
+    const age = form.dob ? calcAge(form.dob) : 30;
+    const bmr = calcBMR(w, h, age, form.sex as 'male' | 'female' | 'other');
+    const tdee = calcTDEE(bmr, form.activity_level);
+    const targetKcal = calcTargetCalories(tdee, form.goal);
+    const macros = calcMacros(targetKcal, w, form.goal);
+    const waterMl = calcWaterTarget(w);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setForm((f) => ({
+      ...f,
+      tdee_target_kcal: String(targetKcal),
+      macro_protein_g: String(macros.protein_g),
+      macro_carbs_g: String(macros.carbs_g),
+      macro_fat_g: String(macros.fat_g),
+      water_target_ml: String(waterMl),
+    }));
+    setWaterDisp(String(displayVolume(waterMl, vUnit)));
+    toast.success(i18n.settingsRecalcDone);
+  };
 
   const save = useMutation({
     mutationFn: async () => {
@@ -292,6 +318,14 @@ export default function EditProfileSheet() {
 
         <View style={styles.divider} />
 
+        {/* Recompute targets from stats above (weight/height/age/activity/goal) */}
+        <Pressable
+          style={({ pressed }) => [styles.recalcBtn, pressed && styles.pressed]}
+          onPress={recalcTargets}>
+          <Icon icon={RefreshCw} size={16} color={colors.primary} strokeWidth={2.5} />
+          <Text style={styles.recalcText}>{i18n.settingsRecalcTargets}</Text>
+        </Pressable>
+
         {/* Daily calories */}
         <Field label={`${i18n.nDailyTarget} (kcal)`}>
           <TextInput
@@ -464,6 +498,19 @@ const styles = StyleSheet.create({
   half: { flex: 1 },
   third: { flex: 1 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.xs },
+  recalcBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    height: 44,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.primary,
+    backgroundColor: `${colors.primary}1a`,
+  },
+  recalcText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   pickerWrap: { alignItems: 'flex-start' },
   segmented: {
     flexDirection: 'row',
