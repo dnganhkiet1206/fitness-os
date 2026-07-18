@@ -17,6 +17,9 @@ import {
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { Check } from 'lucide-react-native';
+
+import { Icon } from '@/components/ascnd/icon';
 import { useLogBiometrics } from '@/hooks/use-biometrics';
 import { toast } from '@/lib/toast';
 import { useInvalidateToday } from '@/hooks/useTodayData';
@@ -36,7 +39,7 @@ export default function LogBiometricsSheet() {
 
   const num = (v: string) => (v.trim() ? Number(v) : null);
   const canSave =
-    (hr || hrv || spo2 || vo2 || resp).length > 0 && !log.isPending;
+    (hr || hrv || spo2 || vo2 || resp).length > 0 && !log.isPending && !log.isSuccess;
 
   const save = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -77,10 +80,12 @@ export default function LogBiometricsSheet() {
         <Field label={i18n.logBioResp} placeholder="14" unit="rpm" value={resp} onChange={setResp} />
 
         <Pressable
-          style={({ pressed }) => [styles.saveButton, !canSave && styles.saveDisabled, pressed && canSave && styles.pressed]}
+          style={({ pressed }) => [styles.saveButton, !canSave && !log.isSuccess && styles.saveDisabled, pressed && canSave && styles.pressed]}
           disabled={!canSave}
           onPress={save}>
-          {log.isPending ? (
+          {log.isSuccess ? (
+            <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+          ) : log.isPending ? (
             <ActivityIndicator color={colors.primaryForeground} />
           ) : (
             <Text style={styles.saveText}>{i18n.save}</Text>

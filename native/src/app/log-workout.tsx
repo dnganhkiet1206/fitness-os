@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Plus, X } from 'lucide-react-native';
+import { Check, Plus, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -144,7 +144,8 @@ export default function LogWorkoutSheet() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const canSave = validSets.length > 0 && !save.isPending;
+  // Stays disabled after success so the closing sheet can't double-submit
+  const canSave = validSets.length > 0 && !save.isPending && !save.isSuccess;
 
   return (
     <KeyboardAvoidingView
@@ -253,12 +254,14 @@ export default function LogWorkoutSheet() {
         <Pressable
           style={({ pressed }) => [
             styles.saveButton,
-            !canSave && styles.saveDisabled,
+            !canSave && !save.isSuccess && styles.saveDisabled,
             pressed && canSave && styles.pressed,
           ]}
           disabled={!canSave}
           onPress={() => save.mutate()}>
-          {save.isPending ? (
+          {save.isSuccess ? (
+            <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+          ) : save.isPending ? (
             <ActivityIndicator color={colors.primaryForeground} />
           ) : (
             <Text style={styles.saveText}>{i18n.nSaveWorkout}</Text>

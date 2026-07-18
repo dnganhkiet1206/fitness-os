@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
-import { Camera, ChevronDown, ChevronRight, Clock, Minus, PencilLine, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
+import { Camera, Check, ChevronDown, ChevronRight, Clock, Minus, PencilLine, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -328,7 +328,8 @@ export default function LogMealSheet() {
     },
   });
 
-  const canSave = items.length > 0 && !save.isPending;
+  // Stays disabled after success so the closing sheet can't double-submit
+  const canSave = items.length > 0 && !save.isPending && !save.isSuccess;
   const quickAdds = [
     ...(favorites ?? []).map((f) => ({
       key: `fav-${f.id}`,
@@ -603,12 +604,14 @@ export default function LogMealSheet() {
         <Pressable
           style={({ pressed }) => [
             styles.saveButton,
-            !canSave && styles.saveDisabled,
+            !canSave && !save.isSuccess && styles.saveDisabled,
             pressed && canSave && styles.pressed,
           ]}
           disabled={!canSave}
           onPress={() => save.mutate()}>
-          {save.isPending ? (
+          {save.isSuccess ? (
+            <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+          ) : save.isPending ? (
             <ActivityIndicator color={colors.primaryForeground} />
           ) : (
             <Text style={styles.saveText}>{i18n.nSaveMeal}</Text>

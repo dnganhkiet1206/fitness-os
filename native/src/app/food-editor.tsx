@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Trash2 } from 'lucide-react-native';
+import { Check, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -73,7 +73,9 @@ export default function FoodEditorSheet() {
   const fatPct = totalMacroG > 0 ? 100 - proteinPct - carbsPct : 0;
 
   const saving = create.isPending || update.isPending;
-  const canSave = name.trim().length > 0 && !saving;
+  // Stays disabled after success so the closing sheet can't double-submit
+  const saved = create.isSuccess || update.isSuccess || remove.isSuccess;
+  const canSave = name.trim().length > 0 && !saving && !saved;
 
   const save = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -200,7 +202,7 @@ export default function FoodEditorSheet() {
             <Pressable
               style={({ pressed }) => [styles.deleteBtn, pressed && styles.pressed]}
               onPress={confirmDelete}
-              disabled={remove.isPending}>
+              disabled={remove.isPending || saved}>
               {remove.isPending ? (
                 <ActivityIndicator color={colors.readinessRed} size="small" />
               ) : (
@@ -209,10 +211,12 @@ export default function FoodEditorSheet() {
             </Pressable>
           )}
           <Pressable
-            style={({ pressed }) => [styles.saveButton, !canSave && styles.saveDisabled, pressed && canSave && styles.pressed]}
+            style={({ pressed }) => [styles.saveButton, !canSave && !saved && styles.saveDisabled, pressed && canSave && styles.pressed]}
             disabled={!canSave}
             onPress={save}>
-            {saving ? (
+            {saved ? (
+              <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+            ) : saving ? (
               <ActivityIndicator color={colors.primaryForeground} />
             ) : (
               <Text style={styles.saveText}>{isEdit ? i18n.save : i18n.add}</Text>

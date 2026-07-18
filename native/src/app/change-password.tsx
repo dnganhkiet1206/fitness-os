@@ -14,6 +14,9 @@ import {
   View,
 } from 'react-native';
 
+import { Check } from 'lucide-react-native';
+
+import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -29,10 +32,12 @@ export default function ChangePasswordScreen() {
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [saving, setSaving] = useState(false);
+  // Stays disabled after success so the closing screen can't double-submit
+  const [saved, setSaved] = useState(false);
 
   const tooShort = newPw.length > 0 && newPw.length < MIN_LENGTH;
   const mismatch = confirmPw.length > 0 && newPw !== confirmPw;
-  const canSave = newPw.length >= MIN_LENGTH && newPw === confirmPw && !saving;
+  const canSave = newPw.length >= MIN_LENGTH && newPw === confirmPw && !saving && !saved;
 
   const submit = async () => {
     if (!canSave) return;
@@ -42,6 +47,7 @@ export default function ChangePasswordScreen() {
       const { error } = await supabase.auth.updateUser({ password: newPw });
       if (error) throw error;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSaved(true);
       router.back();
       toast.success(i18n.settingsPasswordChanged);
     } catch (e) {
@@ -91,10 +97,12 @@ export default function ChangePasswordScreen() {
           </View>
 
           <Pressable
-            style={({ pressed }) => [styles.button, !canSave && styles.buttonDisabled, pressed && canSave && styles.pressed]}
+            style={({ pressed }) => [styles.button, !canSave && !saved && styles.buttonDisabled, pressed && canSave && styles.pressed]}
             disabled={!canSave}
             onPress={submit}>
-            {saving ? (
+            {saved ? (
+              <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+            ) : saving ? (
               <ActivityIndicator color={colors.primaryForeground} />
             ) : (
               <Text style={styles.buttonText}>{i18n.settingsChangePassword}</Text>

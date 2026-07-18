@@ -15,6 +15,9 @@ import {
   View,
 } from 'react-native';
 
+import { Check } from 'lucide-react-native';
+
+import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { localDateStr } from '@/lib/local-date';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -57,7 +60,7 @@ export default function LogMeasurementSheet() {
     const v = fields[key]?.trim();
     return v != null && v.length > 0 && !isNaN(Number(v));
   });
-  const canSave = hasValue && !upsert.isPending;
+  const canSave = hasValue && !upsert.isPending && !upsert.isSuccess;
 
   const save = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -116,10 +119,12 @@ export default function LogMeasurementSheet() {
         ))}
 
         <Pressable
-          style={({ pressed }) => [styles.saveButton, !canSave && styles.saveDisabled, pressed && canSave && styles.pressed]}
+          style={({ pressed }) => [styles.saveButton, !canSave && !upsert.isSuccess && styles.saveDisabled, pressed && canSave && styles.pressed]}
           disabled={!canSave}
           onPress={save}>
-          {upsert.isPending ? (
+          {upsert.isSuccess ? (
+            <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+          ) : upsert.isPending ? (
             <ActivityIndicator color={colors.primaryForeground} />
           ) : (
             <Text style={styles.saveText}>{i18n.save}</Text>

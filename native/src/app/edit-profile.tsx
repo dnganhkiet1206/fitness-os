@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { Check } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,6 +17,7 @@ import {
   View,
 } from 'react-native';
 
+import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -177,8 +179,10 @@ export default function EditProfileSheet() {
           <Text style={styles.headerCancel}>{i18n.nCancel}</Text>
         </Pressable>
         <Text style={styles.headerTitle}>{i18n.settingsPersonalInfo}</Text>
-        <Pressable hitSlop={8} onPress={() => save.mutate()} disabled={save.isPending}>
-          {save.isPending ? (
+        <Pressable hitSlop={8} onPress={() => save.mutate()} disabled={save.isPending || save.isSuccess}>
+          {save.isSuccess ? (
+            <Icon icon={Check} size={20} color={colors.primary} strokeWidth={3} />
+          ) : save.isPending ? (
             <ActivityIndicator color={colors.primary} size="small" />
           ) : (
             <Text style={styles.headerSave}>{i18n.save}</Text>

@@ -2,7 +2,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Angry, Frown, Laugh, Meh, Smile, type LucideIcon } from 'lucide-react-native';
+import { Angry, Check, Frown, Laugh, Meh, Smile, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -169,11 +169,13 @@ export default function LogSleepSheet() {
         style={({ pressed }) => [
           styles.saveButton,
           save.isPending && styles.saveDisabled,
-          pressed && !save.isPending && styles.pressed,
+          pressed && !save.isPending && !save.isSuccess && styles.pressed,
         ]}
-        disabled={save.isPending}
+        disabled={save.isPending || save.isSuccess}
         onPress={() => save.mutate()}>
-        {save.isPending ? (
+        {save.isSuccess ? (
+          <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+        ) : save.isPending ? (
           <ActivityIndicator color={colors.primaryForeground} />
         ) : (
           <Text style={styles.saveText}>{i18n.nSaveSleep}</Text>
