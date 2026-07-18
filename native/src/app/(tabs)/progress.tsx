@@ -15,6 +15,7 @@ import { useProgressPhotos } from '@/hooks/use-progress-photos';
 import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
 import { getLocale } from '@/lib/i18n';
+import { parseLocalDate } from '@/lib/local-date';
 import { convertLength, displayLength, displayWeight, formatHeight, weightLabel } from '@/lib/units';
 
 type Tab = 'weight' | 'measurements' | 'photos';
@@ -264,7 +265,7 @@ export default function ProgressScreen() {
                 {historyRows.map((row) => (
                   <View key={row.id} style={styles.historyRow}>
                     <Text style={[styles.historyDate, styles.historyDateCol]}>
-                      {new Date(row.date).toLocaleDateString(getLocale(lang), { day: 'numeric', month: 'short' })}
+                      {parseLocalDate(row.date).toLocaleDateString(getLocale(lang), { day: 'numeric', month: 'short' })}
                     </Text>
                     {HISTORY_COLS.map((c) => {
                       const raw = (row as Record<string, unknown>)[c.k];

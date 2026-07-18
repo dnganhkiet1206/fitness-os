@@ -49,9 +49,9 @@ export function calcWaterTarget(weight_kg: number): number {
   return Math.round(weight_kg * 35);
 }
 
-/** Age from DOB */
+/** Age from DOB (parsed as local so the birthday doesn't shift a day in negative-offset timezones) */
 export function calcAge(dob: string): number {
-  const birth = new Date(dob);
+  const birth = new Date(`${dob}T00:00:00`);
   const now = new Date();
   let age = now.getFullYear() - birth.getFullYear();
   const m = now.getMonth() - birth.getMonth();

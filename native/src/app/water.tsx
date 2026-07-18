@@ -10,6 +10,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { useProfile } from '@/hooks/useTodayData';
 import { useAddWater, useRemoveLastWater, useTodayWater, useTodayWaterLogs, useWaterWeek } from '@/hooks/use-water';
+import { parseLocalDate } from '@/lib/local-date';
 import { displayVolume, volumeLabel, volumeToMl } from '@/lib/units';
 
 // Quick-add amounts in the display unit (converted to ml on tap)
@@ -87,7 +88,7 @@ export default function WaterScreen() {
           {(week ?? []).map((d) => {
             const h = maxWeek > 0 ? (d.total / maxWeek) * 100 : 0;
             const met = d.total >= target;
-            const dayLetter = new Date(d.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'short' });
+            const dayLetter = parseLocalDate(d.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'short' });
             return (
               <View key={d.date} style={styles.barCol}>
                 <View style={styles.barColTrack}>

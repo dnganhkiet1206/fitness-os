@@ -24,6 +24,15 @@ export function localDaysAgoStr(days: number): string {
 }
 
 /**
+ * Parse a YYYY-MM-DD string as LOCAL midnight. Bare date strings fed to
+ * new Date() parse as UTC midnight, which renders as the *previous* day
+ * in negative-offset timezones (the Americas) — wrong weekday/date labels.
+ */
+export function parseLocalDate(dateStr: string): Date {
+  return new Date(`${dateStr}T00:00:00`);
+}
+
+/**
  * UTC instants bounding a local calendar day — for range queries
  * against timestamptz columns (date_time, waketime, logged_at).
  */

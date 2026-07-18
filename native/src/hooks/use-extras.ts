@@ -5,7 +5,7 @@ import { fireCelebration } from '@/components/ascnd/award-celebration';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
 import { AWARD_TEXT, CHALLENGE_TEXT } from '@/lib/gamification-i18n';
-import { localDateStr, localDayRangeISO } from '@/lib/local-date';
+import { localDateStr, localDayRangeISO, parseLocalDate } from '@/lib/local-date';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
 
@@ -318,7 +318,10 @@ export function useUpdateChallengeProgress() {
         .eq('completed', false);
       if (!challenges || challenges.length === 0) return;
 
-      const weekEnd = new Date(weekStart);
+      // parseLocalDate: a bare 'YYYY-MM-DD' parses as UTC midnight, which
+      // localDateStr would render as Sunday in negative-offset timezones —
+      // cutting the last day out of the challenge week
+      const weekEnd = parseLocalDate(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
       const weekEndStr = localDateStr(weekEnd);
 

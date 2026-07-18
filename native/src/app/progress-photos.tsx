@@ -19,6 +19,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { parseLocalDate } from '@/lib/local-date';
 import {
   useDeleteProgressPhoto,
   useProgressPhotos,
@@ -92,7 +93,7 @@ export default function ProgressPhotosScreen() {
               <View style={styles.photoMeta}>
                 <Text style={styles.photoPose}>{poseLabel(p.pose)}</Text>
                 <Text style={styles.photoDate}>
-                  {new Date(p.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
+                  {parseLocalDate(p.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
                     day: 'numeric',
                     month: 'short',
                   })}

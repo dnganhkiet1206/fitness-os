@@ -10,7 +10,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useStepsHistory } from '@/hooks/use-fitness-data';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
-import { localDateStr } from '@/lib/local-date';
+import { localDateStr, parseLocalDate } from '@/lib/local-date';
 
 export default function StepsScreen() {
   const i18n = useI18n();
@@ -93,7 +93,7 @@ export default function StepsScreen() {
           {stats.last7.map((d) => {
             const h = maxWeek > 0 ? (d.steps / maxWeek) * 100 : 0;
             const met = d.steps >= GOAL;
-            const dayLetter = new Date(d.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'short' });
+            const dayLetter = parseLocalDate(d.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'short' });
             return (
               <View key={d.date} style={styles.barCol}>
                 <View style={styles.barColTrack}>
