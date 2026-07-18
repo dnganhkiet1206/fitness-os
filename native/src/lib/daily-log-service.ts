@@ -162,8 +162,10 @@ export async function recomputeDailyLog(userId: string, date: string) {
     const result = computeReadiness(input);
     readiness_score = result.score;
     readiness_status = result.status;
-    readiness_explain = result.explain;
-    readiness_recommendation = result.recommendation;
+    // Store language-neutral tokens; the UI localizes them at render so the
+    // readiness text follows the user's language, not the compute-time one.
+    readiness_explain = result.explainToken;
+    readiness_recommendation = result.recommendationKey;
     acwr = result.acwr;
   }
 

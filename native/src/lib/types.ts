@@ -113,8 +113,12 @@ export interface ReadinessInput {
 export interface ReadinessResult {
   score: number;
   status: 'green' | 'yellow' | 'red';
+  /** Human prose (Vietnamese) — kept for reference/AI; UI renders via tokens */
   explain: string;
   recommendation: string;
+  /** Language-neutral tokens the UI localizes at render (render-by-key) */
+  explainToken: string;
+  recommendationKey: string;
   subscores: {
     hrv?: number;
     rhr: number;

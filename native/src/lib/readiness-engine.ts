@@ -124,40 +124,51 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
   // Status
   const status = score >= 75 ? 'green' : score >= 50 ? 'yellow' : 'red';
 
-  // Top 2 factors explanation
-  const factors: { name: string; score: number; impact: string }[] = [];
+  // Top 2 factors explanation. `key` is the language-neutral token the UI
+  // localizes at render; `name`/`impact` stay Vietnamese for the prose/AI.
+  const factors: { key: string; name: string; score: number; impact: string }[] = [];
   if (hrvScore !== null) {
     factors.push({
+      key: 'hrv',
       name: 'HRV',
       score: hrvScore,
       impact: hrvScore < 40 ? 'thấp' : hrvScore > 70 ? 'tốt' : 'trung bình',
     });
   }
   factors.push(
-    { name: 'Nhịp tim nghỉ', score: rhrScore, impact: rhrScore < 40 ? 'cao' : rhrScore > 70 ? 'tốt' : 'trung bình' },
-    { name: 'Giấc ngủ', score: sleepScore, impact: sleepScore < 40 ? 'kém' : sleepScore > 70 ? 'tốt' : 'trung bình' },
-    { name: 'Tải tập', score: loadScore, impact: loadScore < 40 ? 'quá tải' : loadScore > 70 ? 'tối ưu' : 'trung bình' },
+    { key: 'rhr', name: 'Nhịp tim nghỉ', score: rhrScore, impact: rhrScore < 40 ? 'cao' : rhrScore > 70 ? 'tốt' : 'trung bình' },
+    { key: 'sleep', name: 'Giấc ngủ', score: sleepScore, impact: sleepScore < 40 ? 'kém' : sleepScore > 70 ? 'tốt' : 'trung bình' },
+    { key: 'load', name: 'Tải tập', score: loadScore, impact: loadScore < 40 ? 'quá tải' : loadScore > 70 ? 'tối ưu' : 'trung bình' },
   );
 
   factors.sort((a, b) => a.score - b.score);
   const top2 = factors.slice(0, 2);
   const explain = top2.map(f => `${f.name}: ${f.impact} (${Math.round(f.score)})`).join(' · ');
+  const explainToken = top2.map(f => `${f.key}:${Math.round(f.score)}`).join('|');
 
-  // Recommendation
+  // Recommendation — keep prose + a stable key so the UI can localize it
   let recommendation: string;
+  let recommendationKey: string;
   if (status === 'green' && acwr <= 1.2) {
+    recommendationKey = 'green_optimal';
     recommendation = 'Tập theo kế hoạch — đẩy top set + backoff sets.';
   } else if (status === 'green') {
+    recommendationKey = 'green_watch';
     recommendation = 'Sẵn sàng tập. Theo dõi khối lượng — ACWR hơi cao.';
   } else if (status === 'yellow' && sleepScore < 50) {
+    recommendationKey = 'yellow_sleep';
     recommendation = 'Giữ cường độ, giảm 15% tổng sets. Ưu tiên ngủ tối nay.';
   } else if (status === 'yellow') {
+    recommendationKey = 'yellow_reduce';
     recommendation = 'Giảm volume 5–10%. Tập trung kỹ thuật và phục hồi.';
   } else if (status === 'red' && rhrScore < 40 && sleepScore < 40) {
+    recommendationKey = 'red_rest';
     recommendation = 'Nên nghỉ ngơi. Cardio nhẹ tối đa 20–30 phút.';
   } else if (status === 'red') {
+    recommendationKey = 'red_recover';
     recommendation = 'Chỉ phục hồi tích cực — zone 2, mobility, thở.';
   } else {
+    recommendationKey = 'listen';
     recommendation = 'Lắng nghe cơ thể. Vận động nhẹ nếu cảm thấy ổn.';
   }
 
@@ -166,6 +177,8 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
     status,
     explain,
     recommendation,
+    explainToken,
+    recommendationKey,
     subscores: {
       hrv: hrvScore !== null ? Math.round(hrvScore) : undefined,
       rhr: Math.round(rhrScore),

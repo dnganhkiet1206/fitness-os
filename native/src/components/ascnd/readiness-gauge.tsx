@@ -13,7 +13,8 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { colors, radius, spacing } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { readinessExplainText, readinessRecoText } from '@/lib/readiness-i18n';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -48,6 +49,11 @@ interface Props {
  */
 export function ReadinessGauge({ score, status, explain, recommendation, acwr }: Props) {
   const i18n = useI18n();
+  const { lang } = useAppSettings();
+  // Stored values are language-neutral tokens (legacy rows may hold prose);
+  // localize here so the copy follows the active language.
+  const explainText = readinessExplainText(explain, lang);
+  const recoText = readinessRecoText(recommendation, lang);
   const color = STATUS_COLOR[status] ?? colors.readinessYellow;
   const [g0, g1] = GRADIENTS[status] ?? GRADIENTS.yellow;
   const statusLabel =
@@ -143,10 +149,10 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
       )}
 
       {/* Explain + recommendation */}
-      {explain ? <Text style={styles.explain}>{explain}</Text> : null}
-      {recommendation ? (
+      {explainText ? <Text style={styles.explain}>{explainText}</Text> : null}
+      {recoText ? (
         <View style={[styles.recoPill, { backgroundColor: `${color}1a`, borderColor: `${color}33` }]}>
-          <Text style={[styles.recoText, { color }]}>{recommendation}</Text>
+          <Text style={[styles.recoText, { color }]}>{recoText}</Text>
         </View>
       ) : null}
 
