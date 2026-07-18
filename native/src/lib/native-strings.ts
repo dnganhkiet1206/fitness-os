@@ -266,6 +266,24 @@ const en = {
   nOffline: 'Offline — showing saved data',
   nHealthSynced: 'Apple Health synced!',
 
+  // Mascot room
+  nRoomQuests: 'Daily quests',
+  nRoomQuestsHint: 'Train, eat, hydrate — earn coins for your buddy',
+  nRoomWeeklyBonus: 'Weekly challenge bonus',
+  nRoomShop: 'Shop',
+  nRoomOutfits: 'Outfits',
+  nRoomGymGear: 'Gym gear',
+  nRoomClaim: 'Claim',
+  nRoomClaimed: 'Claimed',
+  nRoomBuy: 'Buy',
+  nRoomWear: 'Wear',
+  nRoomWearing: 'Wearing',
+  nRoomPlaced: 'In your gym',
+  nRoomNotEnough: 'Not enough coins yet — finish more quests!',
+  nRoomCoins: 'coins',
+  nRoomEarned: '+{n} coins!',
+  nRoomBought: 'Purchased!',
+
   // App lock (Face ID / biometrics)
   nLockTitle: 'App Lock',
   nLockDesc: 'Require Face ID to open ASCND',
@@ -521,6 +539,24 @@ const vi: typeof en = {
   // Offline
   nOffline: 'Ngoại tuyến — đang hiển thị dữ liệu đã lưu',
   nHealthSynced: 'Đã đồng bộ Apple Health!',
+
+  // Mascot room
+  nRoomQuests: 'Nhiệm vụ hôm nay',
+  nRoomQuestsHint: 'Tập, ăn, uống nước — kiếm xu cho bạn đồng hành',
+  nRoomWeeklyBonus: 'Thưởng thử thách tuần',
+  nRoomShop: 'Cửa hàng',
+  nRoomOutfits: 'Trang phục',
+  nRoomGymGear: 'Đồ phòng gym',
+  nRoomClaim: 'Nhận',
+  nRoomClaimed: 'Đã nhận',
+  nRoomBuy: 'Mua',
+  nRoomWear: 'Mặc',
+  nRoomWearing: 'Đang mặc',
+  nRoomPlaced: 'Đã đặt trong phòng',
+  nRoomNotEnough: 'Chưa đủ xu — hoàn thành thêm nhiệm vụ nhé!',
+  nRoomCoins: 'xu',
+  nRoomEarned: '+{n} xu!',
+  nRoomBought: 'Đã mua!',
 
   // App lock (Face ID / sinh trắc)
   nLockTitle: 'Khoá ứng dụng',

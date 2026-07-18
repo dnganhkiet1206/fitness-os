@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      mascot_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          reason: string
+          ref_key: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          reason?: string
+          ref_key: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          ref_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mascot_inventory: {
+        Row: {
+          equipped: boolean
+          id: string
+          item_key: string
+          purchased_at: string
+          user_id: string
+        }
+        Insert: {
+          equipped?: boolean
+          id?: string
+          item_key: string
+          purchased_at?: string
+          user_id: string
+        }
+        Update: {
+          equipped?: boolean
+          id?: string
+          item_key?: string
+          purchased_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           created_at: string
