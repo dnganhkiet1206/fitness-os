@@ -27,6 +27,13 @@ export const DAILY_QUESTS: QuestDef[] = [
 /** Coins for each completed weekly challenge (claimed on the room page) */
 export const WEEKLY_BONUS_COINS = 40;
 
+/** Daily streak bonus: grows with the streak, capped so it stays a treat */
+export const streakCoins = (streak: number) => Math.min(5 + streak * 2, 25);
+
+/** Buddy level: every LEVEL_XP coins EARNED (spending doesn't hurt) = 1 level */
+export const LEVEL_XP = 150;
+export const levelFromXp = (earned: number) => Math.floor(earned / LEVEL_XP) + 1;
+
 export const questRefKey = (dateStr: string, key: QuestKey) => `d:${dateStr}:${key}`;
 export const weeklyRefKey = (weekStart: string, challengeKey: string) => `w:${weekStart}:${challengeKey}`;
 export const buyRefKey = (itemKey: string) => `buy:${itemKey}`;
@@ -46,11 +53,15 @@ export type ShopItemKey =
   | 'barbell'
   | 'mirror'
   | 'plant'
-  | 'neon_sign';
+  | 'neon_sign'
+  | 'floor_wood'
+  | 'floor_neon'
+  | 'wall_led'
+  | 'wall_frames';
 
 export interface ShopItem {
   key: ShopItemKey;
-  type: 'outfit' | 'gym';
+  type: 'outfit' | 'gym' | 'upgrade';
   /** Outfits in the same slot are mutually exclusive when equipped */
   slot?: OutfitSlot;
   price: number;
@@ -71,6 +82,11 @@ export const SHOP_ITEMS: ShopItem[] = [
   { key: 'plant', type: 'gym', price: 120, name: { vi: 'Cây xanh', en: 'Plant' } },
   { key: 'mirror', type: 'gym', price: 260, name: { vi: 'Gương tập', en: 'Gym mirror' } },
   { key: 'neon_sign', type: 'gym', price: 400, name: { vi: 'Đèn neon ASCND', en: 'ASCND neon sign' } },
+  // Room upgrades — permanently change the scene (floor_neon > floor_wood)
+  { key: 'floor_wood', type: 'upgrade', price: 250, name: { vi: 'Sàn gỗ', en: 'Wooden floor' } },
+  { key: 'wall_led', type: 'upgrade', price: 300, name: { vi: 'Dải đèn LED', en: 'LED strip' } },
+  { key: 'wall_frames', type: 'upgrade', price: 350, name: { vi: 'Tranh động lực', en: 'Motivation frames' } },
+  { key: 'floor_neon', type: 'upgrade', price: 550, name: { vi: 'Sàn neon pro', en: 'Pro neon floor' } },
 ];
 
 export const getShopItem = (key: string): ShopItem | undefined =>

@@ -2,14 +2,20 @@ import {
   Check,
   Coins,
   Dumbbell,
+  Flame,
   Glasses,
   GraduationCap,
+  Image as ImageIcon,
+  Layers,
+  LayoutGrid,
+  Lightbulb,
   Medal,
   RectangleHorizontal,
   RectangleVertical,
   Ribbon,
   Shield,
   Sprout,
+  Star,
   Zap,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -28,6 +34,7 @@ import { useMascot } from '@/hooks/use-mascot';
 import {
   useBuyItem,
   useClaimReward,
+  useDailyStreak,
   useMascotInventory,
   useMascotWallet,
   useToggleEquip,
@@ -38,9 +45,12 @@ import { CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
   DAILY_QUESTS,
+  LEVEL_XP,
   SHOP_ITEMS,
   WEEKLY_BONUS_COINS,
+  levelFromXp,
   questRefKey,
+  streakCoins,
   type QuestKey,
   type ShopItem,
 } from '@/lib/mascot-room';
@@ -58,6 +68,10 @@ const ITEM_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   plant: { icon: Sprout, color: colors.readinessGreen },
   mirror: { icon: RectangleVertical, color: colors.mutedForeground },
   neon_sign: { icon: Zap, color: colors.metricCyan },
+  floor_wood: { icon: Layers, color: '#b0793f' },
+  floor_neon: { icon: LayoutGrid, color: colors.metricCyan },
+  wall_led: { icon: Lightbulb, color: colors.metricPurple },
+  wall_frames: { icon: ImageIcon, color: colors.metricBlue },
 };
 
 export default function MascotRoomScreen() {
@@ -67,6 +81,7 @@ export default function MascotRoomScreen() {
 
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();
+  const { data: streak = 0 } = useDailyStreak();
   const claim = useClaimReward();
   const buy = useBuyItem();
   const equip = useToggleEquip();
@@ -127,6 +142,14 @@ export default function MascotRoomScreen() {
 
   const completedWeekly = (challenges ?? []).filter((c) => c.completed);
 
+  // Buddy level from lifetime coins earned (spending never lowers it)
+  const earned = wallet?.earned ?? 0;
+  const level = levelFromXp(earned);
+  const intoLevel = earned % LEVEL_XP;
+
+  const streakRefKey = `d:${today}:streak`;
+  const streakBonus = streakCoins(streak);
+
   return (
     <Screen
       back
@@ -149,6 +172,39 @@ export default function MascotRoomScreen() {
           <Text style={styles.bubbleText}>{message}</Text>
         </View>
       ) : null}
+
+      {/* Buddy level — lifetime coins earned, spending never lowers it */}
+      <GlassCard style={styles.levelCard}>
+        <View style={[styles.levelBadge, { backgroundColor: `${mascot.accent}22` }]}>
+          <Icon icon={Star} size={20} color={mascot.accent} />
+        </View>
+        <View style={styles.levelInfo}>
+          <View style={styles.levelTopRow}>
+            <Text style={styles.levelTitle}>
+              {i18n.nRoomLevel.replace('{n}', String(level))}
+            </Text>
+            {streak >= 2 && (
+              <View style={styles.streakChip}>
+                <Icon icon={Flame} size={12} color={colors.metricOrange} />
+                <Text style={styles.streakChipText}>
+                  {i18n.nRoomStreak.replace('{n}', String(streak))}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.levelTrack}>
+            <View
+              style={[
+                styles.levelFill,
+                { width: `${Math.round((intoLevel / LEVEL_XP) * 100)}%`, backgroundColor: mascot.accent },
+              ]}
+            />
+          </View>
+          <Text style={styles.levelHint}>
+            {i18n.nRoomLevelHint.replace('{n}', String(LEVEL_XP - intoLevel))}
+          </Text>
+        </View>
+      </GlassCard>
 
       {/* Daily quests */}
       <GlassCard style={styles.card}>
@@ -191,6 +247,37 @@ export default function MascotRoomScreen() {
             </View>
           );
         })}
+        {/* Streak bonus — appears from day 2, pays more the longer the run */}
+        {streak >= 2 && (
+          <View style={styles.questRow}>
+            <View style={styles.questInfo}>
+              <View style={styles.streakNameRow}>
+                <Icon icon={Flame} size={14} color={colors.metricOrange} />
+                <Text
+                  style={[styles.questName, claimed.has(streakRefKey) && styles.questNameDone]}>
+                  {i18n.nRoomStreak.replace('{n}', String(streak))}
+                </Text>
+              </View>
+              <View style={styles.questCoins}>
+                <Icon icon={Coins} size={11} color={colors.readinessYellow} />
+                <Text style={styles.questCoinText}>+{streakBonus}</Text>
+              </View>
+            </View>
+            {claimed.has(streakRefKey) ? (
+              <View style={styles.claimedChip}>
+                <Icon icon={Check} size={13} color={colors.readinessGreen} strokeWidth={3} />
+                <Text style={styles.claimedText}>{i18n.nRoomClaimed}</Text>
+              </View>
+            ) : (
+              <Pressable
+                disabled={claim.isPending}
+                style={({ pressed }) => [styles.claimBtn, pressed && styles.pressed]}
+                onPress={() => reward(streakRefKey, streakBonus, `streak:${streak}`)}>
+                <Text style={styles.claimText}>{i18n.nRoomClaim}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
       </GlassCard>
 
       {/* Weekly challenge bonuses */}
@@ -260,12 +347,25 @@ export default function MascotRoomScreen() {
         lang={lang}
         i18n={i18n}
       />
+      <ShopSection
+        title={i18n.nRoomUpgrades}
+        items={SHOP_ITEMS.filter((it) => it.type === 'upgrade')}
+        owned={owned}
+        equipped={equippedOutfits}
+        balance={balance}
+        pendingBuy={buy.isPending}
+        onBuy={buyItem}
+        onToggleEquip={() => {}}
+        lang={lang}
+        i18n={i18n}
+        placedLabel={i18n.nRoomInstalled}
+      />
     </Screen>
   );
 }
 
 function ShopSection({
-  title, items, owned, equipped, balance, pendingBuy, onBuy, onToggleEquip, lang, i18n,
+  title, items, owned, equipped, balance, pendingBuy, onBuy, onToggleEquip, lang, i18n, placedLabel,
 }: {
   title: string;
   items: ShopItem[];
@@ -277,6 +377,7 @@ function ShopSection({
   onToggleEquip: (key: string, next: boolean) => void;
   lang: 'vi' | 'en';
   i18n: { nRoomBuy: string; nRoomWear: string; nRoomWearing: string; nRoomPlaced: string };
+  placedLabel?: string;
 }) {
   return (
     <View style={styles.shopSection}>
@@ -327,7 +428,7 @@ function ShopSection({
               ) : (
                 <View style={styles.ownedBtn}>
                   <Icon icon={Check} size={11} color={colors.readinessGreen} strokeWidth={3} />
-                  <Text style={styles.ownedText}>{i18n.nRoomPlaced}</Text>
+                  <Text style={styles.ownedText}>{placedLabel ?? i18n.nRoomPlaced}</Text>
                 </View>
               )}
             </GlassCard>
@@ -368,6 +469,37 @@ const styles = StyleSheet.create({
   card: { gap: spacing.sm },
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.caption, color: colors.mutedForeground, marginTop: -4 },
+
+  levelCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  levelBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  levelInfo: { flex: 1, minWidth: 0, gap: 6 },
+  levelTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  levelTitle: { ...type.headline, color: colors.foreground },
+  levelTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.secondary,
+    overflow: 'hidden',
+  },
+  levelFill: { height: '100%', borderRadius: 3 },
+  levelHint: { ...type.caption, color: colors.mutedForeground },
+  streakChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    height: 22,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(240,138,58,0.12)',
+  },
+  streakChipText: { ...type.caption, fontWeight: '700', color: colors.metricOrange },
+  streakNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
   questRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
   questInfo: { flex: 1, minWidth: 0, gap: 3 },

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { buyRefKey, getShopItem, type ShopItem } from '@/lib/mascot-room';
 import { useAuth } from './use-auth';
 
@@ -24,8 +25,42 @@ export function useMascotWallet() {
       const rows = data ?? [];
       return {
         balance: rows.reduce((s, r) => s + r.amount, 0),
+        // Lifetime coins earned (spending excluded) — drives the buddy level
+        earned: rows.reduce((s, r) => s + Math.max(0, r.amount), 0),
         claimed: new Set(rows.map((r) => r.ref_key)),
       };
+    },
+  });
+}
+
+/** Consecutive days with a daily_logs row, ending today or yesterday —
+ *  same rule as the streak awards in use-extras. */
+export function useDailyStreak() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['mascot_streak', user?.id, localDateStr()],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('daily_logs')
+        .select('date')
+        .eq('user_id', user!.id)
+        .order('date', { ascending: false })
+        .limit(35);
+      const dates = (data ?? []).map((d) => d.date);
+      if (dates.length === 0) return 0;
+      const todayStr = localDateStr();
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      if (dates[0] !== todayStr && dates[0] !== localDateStr(y)) return 0;
+      let streak = 1;
+      for (let i = 1; i < dates.length; i++) {
+        const diff =
+          (parseLocalDate(dates[i - 1]).getTime() - parseLocalDate(dates[i]).getTime()) / 86400000;
+        if (Math.round(diff) === 1) streak++;
+        else break;
+      }
+      return streak;
     },
   });
 }

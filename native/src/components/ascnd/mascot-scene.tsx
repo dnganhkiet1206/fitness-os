@@ -109,6 +109,23 @@ export function MascotScene({ mascot, ownedGym, equippedOutfits, celebrateSignal
         <Rect x={0} y={0} width={360} height={205} fill="#101016" />
         <Line x1={0} y1={68} x2={360} y2={68} stroke="rgba(255,255,255,0.03)" strokeWidth={1} />
         <Line x1={0} y1={136} x2={360} y2={136} stroke="rgba(255,255,255,0.03)" strokeWidth={1} />
+        {/* Upgrade: LED strip glowing along the ceiling line */}
+        {ownedGym.has('wall_led') && (
+          <G>
+            <Line x1={8} y1={12} x2={352} y2={12} stroke={colors.metricPurple} strokeWidth={7} opacity={0.18} />
+            <Line x1={8} y1={12} x2={352} y2={12} stroke={colors.metricPurple} strokeWidth={2.5} opacity={0.9} />
+          </G>
+        )}
+        {/* Upgrade: motivation frames on the left wall */}
+        {ownedGym.has('wall_frames') && (
+          <G>
+            <Rect x={96} y={84} width={40} height={30} rx={4} fill="#171a22" stroke="rgba(255,255,255,0.16)" strokeWidth={1.4} />
+            <Rect x={104} y={96} width={10} height={4} rx={2} fill={colors.metricOrange} />
+            <Rect x={118} y={92} width={4} height={12} rx={2} fill="#8b93a4" />
+            <Rect x={96} y={124} width={40} height={26} rx={4} fill="#171a22" stroke="rgba(255,255,255,0.16)" strokeWidth={1.4} />
+            <Path d="M 102 142 L 112 132 L 120 138 L 130 128" stroke={colors.readinessGreen} strokeWidth={2.4} fill="none" />
+          </G>
+        )}
         {/* Window with night skyline */}
         <G>
           <Rect x={252} y={30} width={84} height={92} rx={10} fill="#0a0a12" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
@@ -121,9 +138,33 @@ export function MascotScene({ mascot, ownedGym, equippedOutfits, celebrateSignal
           <Rect x={308} y={84} width={2} height={2} fill={colors.metricCyan} />
           <Rect x={296} y={98} width={2} height={2} fill={colors.readinessYellow} />
         </G>
-        {/* Floor */}
-        <Rect x={0} y={205} width={360} height={SCENE_H - 205} fill="#16161d" />
-        <Line x1={0} y1={205} x2={360} y2={205} stroke="rgba(255,255,255,0.06)" strokeWidth={1.5} />
+        {/* Floor — pro neon > wooden > default concrete */}
+        {ownedGym.has('floor_neon') ? (
+          <G>
+            <Rect x={0} y={205} width={360} height={SCENE_H - 205} fill="#0d1017" />
+            <Line x1={0} y1={205} x2={360} y2={205} stroke={colors.metricCyan} strokeWidth={2} opacity={0.75} />
+            <Line x1={0} y1={205} x2={360} y2={205} stroke={colors.metricCyan} strokeWidth={7} opacity={0.14} />
+            {[60, 140, 220, 300].map((x) => (
+              <Line key={x} x1={x} y1={210} x2={x - 26} y2={SCENE_H} stroke="rgba(24,194,220,0.09)" strokeWidth={1.5} />
+            ))}
+          </G>
+        ) : ownedGym.has('floor_wood') ? (
+          <G>
+            <Rect x={0} y={205} width={360} height={SCENE_H - 205} fill="#241a10" />
+            <Line x1={0} y1={205} x2={360} y2={205} stroke="rgba(255,214,150,0.16)" strokeWidth={1.5} />
+            {[232, 258].map((y) => (
+              <Line key={y} x1={0} y1={y} x2={360} y2={y} stroke="rgba(0,0,0,0.32)" strokeWidth={1.4} />
+            ))}
+            {[90, 200, 300].map((x, i) => (
+              <Line key={x} x1={x} y1={205 + i * 2} x2={x - 14} y2={SCENE_H} stroke="rgba(0,0,0,0.22)" strokeWidth={1.2} />
+            ))}
+          </G>
+        ) : (
+          <G>
+            <Rect x={0} y={205} width={360} height={SCENE_H - 205} fill="#16161d" />
+            <Line x1={0} y1={205} x2={360} y2={205} stroke="rgba(255,255,255,0.06)" strokeWidth={1.5} />
+          </G>
+        )}
 
         {ownedGym.has('neon_sign') && <NeonSign />}
         {ownedGym.has('mirror') && <Mirror />}

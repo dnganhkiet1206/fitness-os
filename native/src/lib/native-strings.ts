@@ -283,6 +283,11 @@ const en = {
   nRoomCoins: 'coins',
   nRoomEarned: '+{n} coins!',
   nRoomBought: 'Purchased!',
+  nRoomUpgrades: 'Room upgrades',
+  nRoomInstalled: 'Installed',
+  nRoomStreak: '{n}-day streak',
+  nRoomLevel: 'Level {n}',
+  nRoomLevelHint: '{n} coins to the next level',
 
   // App lock (Face ID / biometrics)
   nLockTitle: 'App Lock',
@@ -557,6 +562,11 @@ const vi: typeof en = {
   nRoomCoins: 'xu',
   nRoomEarned: '+{n} xu!',
   nRoomBought: 'Đã mua!',
+  nRoomUpgrades: 'Nâng cấp phòng',
+  nRoomInstalled: 'Đã lắp đặt',
+  nRoomStreak: 'Chuỗi {n} ngày',
+  nRoomLevel: 'Cấp {n}',
+  nRoomLevelHint: 'Còn {n} xu tới cấp tiếp theo',
 
   // App lock (Face ID / sinh trắc)
   nLockTitle: 'Khoá ứng dụng',
