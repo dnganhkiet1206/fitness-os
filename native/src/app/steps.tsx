@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { ChartBar } from '@/components/ascnd/chart-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
@@ -89,14 +90,14 @@ export default function StepsScreen() {
       <GlassCard>
         <Text style={styles.cardTitle}>{i18n.nLast7Days}</Text>
         <View style={styles.chart}>
-          {stats.last7.map((d) => {
+          {stats.last7.map((d, i) => {
             const h = maxWeek > 0 ? (d.steps / maxWeek) * 100 : 0;
             const met = d.steps >= GOAL;
             const dayLetter = parseLocalDate(d.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'short' });
             return (
               <View key={d.date} style={styles.barCol}>
                 <View style={styles.barColTrack}>
-                  <View style={[styles.barColFill, { height: `${Math.max(3, h)}%`, backgroundColor: met ? colors.primary : colors.secondary }]} />
+                  <ChartBar heightPct={Math.max(3, h)} color={met ? colors.primary : colors.secondary} delay={i * 55} />
                 </View>
                 <Text style={styles.barColLabel}>{dayLetter}</Text>
               </View>

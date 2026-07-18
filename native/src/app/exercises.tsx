@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { StaggerItem } from '@/components/ascnd/stagger-item';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -150,8 +151,8 @@ export default function ExercisesScreen() {
       )}
 
       {grouped.length > 0 ? (
-        grouped.map(([group, list]) => (
-          <View key={group} style={styles.group}>
+        grouped.map(([group, list], gi) => (
+          <StaggerItem key={group} index={gi} style={styles.group}>
             <Text style={styles.groupTitle}>{group}</Text>
             <GlassCard style={styles.groupCard}>
               {list.map((e, i) => (
@@ -167,7 +168,7 @@ export default function ExercisesScreen() {
                 </View>
               ))}
             </GlassCard>
-          </View>
+          </StaggerItem>
         ))
       ) : (
         <GlassCard>

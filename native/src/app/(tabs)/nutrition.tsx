@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
-  pressedDim: { opacity: 0.8 },
+  pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
 
   microTitle: {
     fontSize: 12,

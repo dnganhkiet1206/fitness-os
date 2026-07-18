@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
 
   // compact widgets
   compactCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, padding: spacing.md },
-  pressedDim: { opacity: 0.8 },
+  pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   compactIcon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   compactInfo: { flex: 1, minWidth: 0, gap: 2 },
   compactLabel: { fontSize: 12, color: colors.mutedForeground },

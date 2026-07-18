@@ -6,6 +6,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
+import { StaggerItem } from '@/components/ascnd/stagger-item';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
@@ -38,13 +39,14 @@ export default function ChallengesScreen() {
   return (
     <Screen back title={i18n.nChallenges}>
       {challenges && challenges.length > 0 ? (
-        challenges.map((c) => {
+        challenges.map((c, i) => {
           const target = Number(c.target_value) || 1;
           const current = Math.min(Number(c.current_value) || 0, target);
           const pct = Math.round((current / target) * 100);
           const { title, desc } = challengeText(c.challenge_key, lang, { title: c.title, desc: c.description });
           return (
-            <GlassCard key={c.id}>
+            <StaggerItem key={c.id} index={i}>
+            <GlassCard>
               <View style={styles.headerRow}>
                 <View style={styles.iconWrap}>
                   <Icon icon={Target} size={20} color={colors.primary} />
@@ -67,6 +69,7 @@ export default function ChallengesScreen() {
                 {c.completed ? i18n.nCompleted : `${current} / ${target}`}
               </Text>
             </GlassCard>
+            </StaggerItem>
           );
         })
       ) : (

@@ -364,7 +364,7 @@ export function RecentAwardsCard() {
 
 const styles = StyleSheet.create({
   stackCard: { gap: spacing.md },
-  pressedDim: { opacity: 0.8 },
+  pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   microRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   microTitle: {

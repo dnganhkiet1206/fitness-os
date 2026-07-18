@@ -15,6 +15,7 @@ import {
 } from 'lucide-react-native';
 import { useEffect, useRef } from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -57,11 +58,13 @@ function MedalCard({
   earned,
   locale,
   lang,
+  index,
 }: {
   award: AwardDef;
   earned: EarnedAward | undefined;
   locale: string;
   lang: AppLang;
+  index: number;
 }) {
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
   const AwardIcon = ICON_MAP[award.icon] ?? Trophy;
@@ -82,7 +85,9 @@ function MedalCard({
   };
 
   return (
-    <View style={[styles.medalCard, !isEarned && styles.medalLocked]}>
+    <Animated.View
+      style={[styles.medalCard, !isEarned && styles.medalLocked]}
+      entering={FadeInDown.springify().damping(26).stiffness(180).delay(Math.min(index, 12) * 45)}>
       <View style={styles.medalRing}>
         <Svg width={72} height={72} viewBox="0 0 72 72">
           <Circle cx={36} cy={36} r={R} fill="none" stroke="#17171c" strokeWidth={3} />
@@ -137,7 +142,7 @@ function MedalCard({
           </Pressable>
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -220,13 +225,14 @@ export default function AwardsScreen() {
               </Text>
             </View>
             <View style={styles.grid}>
-              {tierAwards.map((award) => (
+              {tierAwards.map((award, i) => (
                 <MedalCard
                   key={award.key}
                   award={award}
                   earned={earnedMap.get(award.key)}
                   locale={locale}
                   lang={lang}
+                  index={i}
                 />
               ))}
             </View>

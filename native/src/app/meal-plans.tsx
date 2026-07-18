@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   itemName: { ...type.body, color: colors.foreground, flex: 1 },
   itemKcal: { ...type.footnote, color: colors.mutedForeground },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
-  pressedDim: { opacity: 0.6 },
+  pressedDim: { opacity: 0.6, transform: [{ scale: 0.98 }] },
 
   addFoodBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 4 },
   addFoodText: { fontSize: 13, fontWeight: '600', color: colors.primary },

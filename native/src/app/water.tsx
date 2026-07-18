@@ -3,6 +3,7 @@ import { Minus, Plus } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { ChartBar } from '@/components/ascnd/chart-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
@@ -84,14 +85,14 @@ export default function WaterScreen() {
       <GlassCard>
         <Text style={styles.cardTitle}>{i18n.nLast7Days}</Text>
         <View style={styles.chart}>
-          {(week ?? []).map((d) => {
+          {(week ?? []).map((d, i) => {
             const h = maxWeek > 0 ? (d.total / maxWeek) * 100 : 0;
             const met = d.total >= target;
             const dayLetter = parseLocalDate(d.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'short' });
             return (
               <View key={d.date} style={styles.barCol}>
                 <View style={styles.barColTrack}>
-                  <View style={[styles.barColFill, { height: `${Math.max(3, h)}%`, backgroundColor: met ? colors.metricBlue : colors.secondary }]} />
+                  <ChartBar heightPct={Math.max(3, h)} color={met ? colors.metricBlue : colors.secondary} delay={i * 55} />
                 </View>
                 <Text style={styles.barColLabel}>{dayLetter}</Text>
               </View>
