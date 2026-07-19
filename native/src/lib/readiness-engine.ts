@@ -144,7 +144,9 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
   factors.sort((a, b) => a.score - b.score);
   const top2 = factors.slice(0, 2);
   const explain = top2.map(f => `${f.name}: ${f.impact} (${Math.round(f.score)})`).join(' · ');
-  const explainToken = top2.map(f => `${f.key}:${Math.round(f.score)}`).join('|');
+  // Encode ALL sub-scores (not just the top 2) so the gauge can show the
+  // RHR / Sleep / Load tiles; the explain line still uses the 2 lowest.
+  const explainToken = factors.map(f => `${f.key}:${Math.round(f.score)}`).join('|');
 
   // Recommendation — keep prose + a stable key so the UI can localize it
   let recommendation: string;

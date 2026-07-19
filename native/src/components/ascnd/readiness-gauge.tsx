@@ -12,9 +12,9 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { readinessExplainText, readinessRecoText } from '@/lib/readiness-i18n';
+import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -55,6 +55,18 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
   const explainText = readinessExplainText(explain, lang);
   const recoText = readinessRecoText(recommendation, lang);
   const color = STATUS_COLOR[status] ?? colors.readinessYellow;
+
+  // Sub-score tiles (web parity): RHR / Sleep / Load (0–100) + the ACWR ratio
+  const subs = readinessSubscores(explain);
+  const subColor = (v: number) =>
+    v >= 70 ? colors.readinessGreen : v >= 40 ? colors.readinessYellow : colors.readinessRed;
+  const acwrColor =
+    acwr == null ? colors.mutedForeground : acwr >= 0.8 && acwr <= 1.3 ? colors.readinessGreen : acwr > 1.3 ? colors.readinessYellow : colors.readinessRed;
+  const tiles: { label: string; value: string; color: string }[] = [];
+  if (subs.rhr != null) tiles.push({ label: 'RHR', value: String(subs.rhr), color: subColor(subs.rhr) });
+  if (subs.sleep != null) tiles.push({ label: 'SLEEP', value: String(subs.sleep), color: subColor(subs.sleep) });
+  if (subs.load != null) tiles.push({ label: 'LOAD', value: String(subs.load), color: subColor(subs.load) });
+  if (acwr != null && acwr > 0) tiles.push({ label: 'ACWR', value: String(acwr), color: acwrColor });
   const [g0, g1] = GRADIENTS[status] ?? GRADIENTS.yellow;
   const statusLabel =
     status === 'green' ? i18n.dcReadinessTrain : status === 'yellow' ? i18n.dcReadinessModerate : i18n.dcReadinessRecover;
@@ -143,13 +155,15 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
         </View>
       </View>
 
-      {/* ACWR tile row (web shows subscores + ACWR; only ACWR is real data) */}
-      {acwr != null && acwr > 0 && (
+      {/* Sub-score tiles: RHR · SLEEP · LOAD · ACWR (web parity) */}
+      {tiles.length > 0 && (
         <View style={styles.tileRow}>
-          <View style={styles.tile}>
-            <Text style={styles.tileLabel}>ACWR</Text>
-            <Text style={styles.tileValue}>{acwr}</Text>
-          </View>
+          {tiles.map((t) => (
+            <View key={t.label} style={styles.tile}>
+              <Text style={styles.tileLabel}>{t.label}</Text>
+              <Text style={[styles.tileValue, { color: t.color }]}>{t.value}</Text>
+            </View>
+          ))}
         </View>
       )}
 
@@ -199,18 +213,18 @@ const styles = StyleSheet.create({
   ringCenter: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   score: { fontSize: 60, fontWeight: '700', fontFamily: 'Menlo', fontVariant: ['tabular-nums'] },
   statusLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2.4, marginTop: 6 },
-  tileRow: { flexDirection: 'row', gap: spacing.sm + 4 },
+  tileRow: { flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch', paddingHorizontal: spacing.card },
   tile: {
+    flex: 1,
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(24,24,27,0.2)',
+    gap: 5,
+    backgroundColor: glass.bg,
     borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.2)',
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
   },
-  tileLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
+  tileLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground },
   tileValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
   explain: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', lineHeight: 18, paddingHorizontal: spacing.card },
   recoPill: {

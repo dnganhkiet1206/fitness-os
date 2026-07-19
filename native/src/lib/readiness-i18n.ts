@@ -81,23 +81,41 @@ export function readinessRecoText(stored: string | null | undefined, lang: AppLa
   return READINESS_RECO[stored]?.[lang] ?? stored;
 }
 
+/** Parse a "rhr:50|sleep:20|load:35" token into {key, score} pairs. */
+function parseFactors(stored: string): { key: string; score: number }[] {
+  return stored
+    .split('|')
+    .map((p) => {
+      const [key, scoreStr] = p.split(':');
+      return { key, score: Number(scoreStr) };
+    })
+    .filter((p) => FACTOR_LABEL[p.key] && !Number.isNaN(p.score));
+}
+
 /**
- * Localized explain line from a token like "rhr:35|sleep:20". Legacy prose
- * (no parseable token) is returned unchanged so old rows still read fine.
+ * Localized explain line from a token like "rhr:50|sleep:20|load:35" — shows
+ * the 2 lowest sub-scores (the limiting factors). Legacy prose (no parseable
+ * token) is returned unchanged so old rows still read fine.
  */
 export function readinessExplainText(stored: string | null | undefined, lang: AppLang): string {
   if (!stored) return '';
-  const parts = stored.split('|');
-  const parsed = parts.map((p) => {
-    const [key, scoreStr] = p.split(':');
-    const label = FACTOR_LABEL[key];
-    const impact = FACTOR_IMPACT[key];
-    const score = Number(scoreStr);
-    if (!label || !impact || Number.isNaN(score)) return null;
-    const bucket = score < 40 ? 'low' : score > 70 ? 'high' : 'mid';
-    return `${label[lang]}: ${impact[bucket][lang]} (${Math.round(score)})`;
-  });
-  // If nothing parsed as a token, it's legacy prose — show it verbatim
-  if (parsed.every((p) => p === null)) return stored;
-  return parsed.filter(Boolean).join(' · ');
+  const parts = parseFactors(stored);
+  if (parts.length === 0) return stored; // legacy prose
+  const top2 = [...parts].sort((a, b) => a.score - b.score).slice(0, 2);
+  return top2
+    .map((p) => {
+      const bucket = p.score < 40 ? 'low' : p.score > 70 ? 'high' : 'mid';
+      return `${FACTOR_LABEL[p.key][lang]}: ${FACTOR_IMPACT[p.key][bucket][lang]} (${Math.round(p.score)})`;
+    })
+    .join(' · ');
+}
+
+/** Sub-scores (0–100) parsed from the explain token, for the gauge tiles. */
+export function readinessSubscores(
+  stored: string | null | undefined,
+): { hrv?: number; rhr?: number; sleep?: number; load?: number } {
+  const out: Record<string, number> = {};
+  if (!stored) return out;
+  for (const p of parseFactors(stored)) out[p.key] = Math.round(p.score);
+  return out;
 }
