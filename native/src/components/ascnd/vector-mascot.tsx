@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -29,6 +30,14 @@ const RIG_H = 350;
 const FOOT_Y = 330;
 const ACCENT = '#31c9d6';
 
+interface Personality {
+  bin: number; // breath-in duration
+  bout: number; // breath-out duration
+  blink: number; // base ms between blinks
+  sway: number; // weight-shift amplitude (px)
+  swayDur: number; // weight-shift period
+}
+
 interface Art {
   body: string;
   dark: string;
@@ -42,6 +51,8 @@ interface Art {
   leg: number; // leg length
   lean: number; // posture hip shift
   tilt: number; // head tilt (deg)
+  // motion personality — each companion moves differently
+  p: Personality;
   ear?: string;
   mane?: string;
   muz?: string;
@@ -50,12 +61,18 @@ interface Art {
 }
 
 const MASCOT_ART: Record<string, Art> = {
-  koa: { body: '#9fb0b2', dark: '#7f9295', light: '#b7c4c6', ear: '#b39a9c', variant: 'koala', tank: '#e5e8ec', short: '#3d4450', sh: 96, st: 26, leg: 104, lean: 6, tilt: 4 },
-  blaze: { body: '#cfa566', dark: '#b08a48', light: '#e0c088', mane: '#b3823f', variant: 'lion', tank: '#586170', short: '#3a4048', sh: 118, st: 34, leg: 104, lean: -5, tilt: -3 },
-  swift: { body: '#cf8355', dark: '#b06537', light: '#e2a074', muz: '#e7ddcf', variant: 'fox', tank: '#e5e8ec', short: '#3d4450', sh: 92, st: 24, leg: 120, lean: 9, tilt: 6 },
-  titan: { body: '#727b87', dark: '#565e69', light: '#8b93a0', face: '#949cab', variant: 'gorilla', tank: '#586170', short: '#3a4048', sh: 132, st: 46, leg: 92, lean: 0, tilt: 0 },
-  drago: { body: '#71ab7d', dark: '#548a61', light: '#93c39d', spike: '#d7cfa0', variant: 'dragon', tank: '#e5e8ec', short: '#3d4450', sh: 104, st: 30, leg: 112, lean: -6, tilt: -4 },
-  nova: { body: '#d9d2e4', dark: '#bcb0d1', light: '#ece7f3', mane: '#a98fce', variant: 'unicorn', tank: '#e5e8ec', short: '#3d4450', sh: 90, st: 24, leg: 118, lean: 8, tilt: 5 },
+  // Koa — calm, slow, deep breathing, rare blinks, barely sways
+  koa: { body: '#9fb0b2', dark: '#7f9295', light: '#b7c4c6', ear: '#b39a9c', variant: 'koala', tank: '#e5e8ec', short: '#3d4450', sh: 96, st: 26, leg: 104, lean: 6, tilt: 4, p: { bin: 2600, bout: 3000, blink: 3400, sway: 0.6, swayDur: 5200 } },
+  // Blaze — confident, still, few but firm movements
+  blaze: { body: '#cfa566', dark: '#b08a48', light: '#e0c088', mane: '#b3823f', variant: 'lion', tank: '#586170', short: '#3a4048', sh: 118, st: 34, leg: 104, lean: -5, tilt: -3, p: { bin: 2400, bout: 2600, blink: 3000, sway: 0.4, swayDur: 5000 } },
+  // Swift — agile, shifts weight often, frequent blinks
+  swift: { body: '#cf8355', dark: '#b06537', light: '#e2a074', muz: '#e7ddcf', variant: 'fox', tank: '#e5e8ec', short: '#3d4450', sh: 92, st: 24, leg: 120, lean: 9, tilt: 6, p: { bin: 1900, bout: 2000, blink: 1900, sway: 1.4, swayDur: 3200 } },
+  // Titan — rock steady, almost no sway, slow
+  titan: { body: '#727b87', dark: '#565e69', light: '#8b93a0', face: '#949cab', variant: 'gorilla', tank: '#586170', short: '#3a4048', sh: 132, st: 46, leg: 92, lean: 0, tilt: 0, p: { bin: 2600, bout: 2800, blink: 3600, sway: 0.25, swayDur: 6000 } },
+  // Drago — energetic, quicker breath, ready to move
+  drago: { body: '#71ab7d', dark: '#548a61', light: '#93c39d', spike: '#d7cfa0', variant: 'dragon', tank: '#e5e8ec', short: '#3d4450', sh: 104, st: 30, leg: 112, lean: -6, tilt: -4, p: { bin: 1700, bout: 1800, blink: 2400, sway: 1.0, swayDur: 3600 } },
+  // Nova — soft, gentle, relaxed
+  nova: { body: '#d9d2e4', dark: '#bcb0d1', light: '#ece7f3', mane: '#a98fce', variant: 'unicorn', tank: '#e5e8ec', short: '#3d4450', sh: 90, st: 24, leg: 118, lean: 8, tilt: 5, p: { bin: 2400, bout: 2800, blink: 3000, sway: 0.9, swayDur: 4600 } },
 };
 
 function clamp(v: number) {
@@ -146,17 +163,28 @@ export function VectorMascot({
   const showEyes = !equippedOutfits.has('sunglasses');
   const eyeScreenY = (88 + headTy) * scale;
 
-  // ── quiet motion: slow breath + occasional blink ─────────────────────
+  // ── quiet motion, tuned per companion: breath + blink + weight-shift ──
   const breath = useSharedValue(0);
+  const sway = useSharedValue(0.5);
   const lid = useSharedValue(tired ? 0.4 : 0);
 
   useEffect(() => {
     if (!animated) return;
+    const bin = tired ? a.p.bin * 1.3 : a.p.bin;
+    const bout = tired ? a.p.bout * 1.3 : a.p.bout;
     breath.value = withRepeat(
-      withSequence(withTiming(1, { duration: 2200 }), withTiming(0, { duration: 2600 })),
+      withSequence(withTiming(1, { duration: bin }), withTiming(0, { duration: bout })),
       -1,
     );
-  }, [animated, breath]);
+    // slow weight shift — the "it's alive" cue; nearly frozen when tired
+    sway.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: a.p.swayDur, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: a.p.swayDur, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+    );
+  }, [animated, tired, a.p.bin, a.p.bout, a.p.swayDur, breath, sway]);
 
   useEffect(() => {
     const rest = tired ? 0.4 : 0;
@@ -172,17 +200,22 @@ export function VectorMascot({
           withTiming(rest, { duration: tired ? 260 : 120 }),
         );
         loop();
-      }, (tired ? 2000 : 3000) + Math.random() * 3000);
+      }, (tired ? a.p.blink * 0.7 : a.p.blink) + Math.random() * a.p.blink);
     };
     loop();
     return () => {
       alive = false;
       clearTimeout(t);
     };
-  }, [animated, tired, lid]);
+  }, [animated, tired, a.p.blink, lid]);
 
+  const swayAmp = tired ? a.p.sway * 0.25 : a.p.sway;
   const breathStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -breath.value * 1.5 * scale }, { scaleY: 1 + breath.value * 0.012 }],
+    transform: [
+      { translateX: (sway.value - 0.5) * 2 * swayAmp * scale },
+      { translateY: -breath.value * 1.5 * scale },
+      { scaleY: 1 + breath.value * 0.012 },
+    ],
   }));
   const lidStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: lid.value }] }));
 
@@ -243,7 +276,12 @@ export function VectorMascot({
           <Path d={`M${shL + 2} ${shoulderY + 24} C${shL - 2} ${shoulderY + 40} ${wLx} ${hipY - 24} ${wLx + 3} ${hipY}`} stroke={shade(a.tank, -20)} strokeWidth={1.5} fill="none" opacity={0.7} />
           <Path d={`M${shR - 2} ${shoulderY + 24} C${shR + 2} ${shoulderY + 40} ${wRx} ${hipY - 24} ${wRx - 3} ${hipY}`} stroke={shade(a.tank, -20)} strokeWidth={1.5} fill="none" opacity={0.7} />
           <Path d={`M${shCx - 10} ${shoulderY - 3} q10 7 20 0`} stroke={shade(a.tank, -22)} strokeWidth={2} fill="none" />
-          <Path d={`M${shCx - 6} ${hipY - 6} l6-7 l6 7`} stroke={ACCENT} strokeWidth={2.6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          {/* ribbed collar + armhole ribs — activewear detail */}
+          <Path d={`M${shCx - 12} ${shoulderY - 5} q12 9 24 0`} stroke={shade(a.tank, 26)} strokeWidth={3} fill="none" strokeLinecap="round" opacity={0.8} />
+          <Path d={`M${shL + 1} ${shoulderY + 4} q9 4 12 16`} stroke={shade(a.tank, -24)} strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.75} />
+          <Path d={`M${shR - 1} ${shoulderY + 4} q-9 4 -12 16`} stroke={shade(a.tank, -24)} strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.75} />
+          {/* small chest logo */}
+          <Path d={`M${shCx - 4} ${shoulderY + 34} l4-5 l4 5`} stroke={ACCENT} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
 
           {equippedOutfits.has('medal') && (
             <G>
@@ -254,6 +292,12 @@ export function VectorMascot({
           {equippedOutfits.has('belt') && (
             <Rect x={wLx - 4} y={hipY - 2} width={wRx - wLx + 8} height={9} rx={3} fill="#5a4634" />
           )}
+
+          {/* ambient contact shadows: subtle depth where forms meet */}
+          <Ellipse cx={120} cy={shoulderY - 2} rx={26} ry={7} fill="#000" opacity={0.12} />
+          <Ellipse cx={shL + 4} cy={shoulderY + 34} rx={9} ry={16} fill="#000" opacity={0.08} />
+          <Ellipse cx={shR - 4} cy={shoulderY + 34} rx={9} ry={16} fill="#000" opacity={0.08} />
+          <Ellipse cx={hipCx} cy={hipY + 34} rx={5} ry={18} fill="#000" opacity={0.16} />
 
           {/* head group: vertical ride + small tilt */}
           <G y={headTy}>
