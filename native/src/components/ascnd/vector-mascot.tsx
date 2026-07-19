@@ -24,54 +24,54 @@ import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
 
 /**
- * Fully code-drawn 2.5D character — no emoji. The Talking-Tom recipe,
- * lightweight: soft radial gradients sell volume ("2D wearing 3D"),
- * oversized glossy eyes carry the appeal, and the living parts (pupils
- * that wander, eyelids that really blink, a head that tilts) run as
- * separate animated layers over the SVG body.
+ * Fully code-drawn kawaii character — no emoji. One soft egg-shaped
+ * body (radial gradient sells the volume), stubby arms/feet, and huge
+ * glossy eyes that carry all the appeal: pupils wander as layered
+ * views, eyelids really blink, moods change brows/mouth/cheeks.
+ * Design iterated visually against a rendered preview (Pou/Duolingo
+ * school of cute), so proportions are proven, not guessed.
  *
- * Everything is drawn in a fixed 200×236 rig space and scaled to `size`,
- * so face geometry, outfits and muscles stay anchored at any size.
- * Species (ears/mane/horn/tail) and palette come from MASCOT_ART.
+ * Drawn in a fixed 200×240 rig space and scaled to `size`, so face
+ * geometry, outfits and muscle growth stay anchored at any size.
  */
 
 const RIG_W = 200;
-const RIG_H = 236;
+const RIG_H = 240;
 
 // Eye geometry in rig space (pupils + eyelids are layered Views)
-const EYE_Y = 78;
-const EYE_LX = 74;
-const EYE_RX = 126;
-const EYE_RXR = 14; // white rx
-const EYE_RYR = 16; // white ry
-const PUPIL_R = 7.5;
-const LID_W = 34;
-const LID_H = 38;
+const EYE_Y = 95;
+const EYE_LX = 67;
+const EYE_RX = 133;
+const EYE_RXR = 21; // white rx
+const EYE_RYR = 25; // white ry
+const PUPIL_R = 10.5;
+const LID_W = 46;
+const LID_H = 54;
 const LID_TIRED = 0.45; // heavy half-closed lids
 
 interface Art {
   body: string;
   bodyDark: string;
   belly: string;
-  /** Face/muzzle patch */
-  muzzle: string;
-  /** Extra per-species color (mane / ear tips / horn / spikes) */
+  /** Extra per-species color (mane / ear inner / horn / spikes) */
   extra: string;
+  /** Eyelid color when the face behind the eyes isn't plain body color */
+  lid?: string;
   variant: 'koala' | 'lion' | 'fox' | 'gorilla' | 'dragon' | 'unicorn';
 }
 
 const MASCOT_ART: Record<string, Art> = {
-  koa: { body: '#a9b6ad', bodyDark: '#87968c', belly: '#e2ddd2', muzzle: '#c5cfc6', extra: '#c9a9ab', variant: 'koala' },
-  blaze: { body: '#e2a850', bodyDark: '#c08a38', belly: '#f2dcae', muzzle: '#eec27c', extra: '#b8622d', variant: 'lion' },
-  swift: { body: '#e2793f', bodyDark: '#bd5e2c', belly: '#f5ead9', muzzle: '#f5ead9', extra: '#3a2e28', variant: 'fox' },
-  titan: { body: '#5b6472', bodyDark: '#464d59', belly: '#6d7684', muzzle: '#98a0ae', extra: '#39404b', variant: 'gorilla' },
-  drago: { body: '#58a968', bodyDark: '#428453', belly: '#cfe8b8', muzzle: '#7cc389', extra: '#e8e6d8', variant: 'dragon' },
-  nova: { body: '#f0eaf6', bodyDark: '#d4c8e6', belly: '#faf6fd', muzzle: '#f6f0fa', extra: '#b07de0', variant: 'unicorn' },
+  koa: { body: '#aebdb4', bodyDark: '#8d9e94', belly: '#e6e1d6', extra: '#d99ea4', variant: 'koala' },
+  blaze: { body: '#f0b254', bodyDark: '#d3942f', belly: '#f8e3b6', extra: '#cf6b2e', variant: 'lion' },
+  swift: { body: '#ee8442', bodyDark: '#cc6528', belly: '#f9efdf', extra: '#472f26', variant: 'fox' },
+  titan: { body: '#6b7585', bodyDark: '#525b69', belly: '#7d8796', extra: '#9aa3b2', lid: '#8993a2', variant: 'gorilla' },
+  drago: { body: '#62ba74', bodyDark: '#47945a', belly: '#d6eec0', extra: '#ede9d8', variant: 'dragon' },
+  nova: { body: '#f4eefa', bodyDark: '#d5c6ea', belly: '#faf6fd', extra: '#b781e8', variant: 'unicorn' },
 };
 
 interface Props {
   mascot: MascotDef;
-  /** Rendered width in px (height is width × 1.18) */
+  /** Rendered width in px (height is width × 1.2) */
   size?: number;
   mood?: MascotMood;
   level?: number;
@@ -95,8 +95,7 @@ export function VectorMascot({
 
   const lid = useSharedValue(tired ? LID_TIRED : 0); // 0 open → 1 shut
   const px = useSharedValue(0);
-  const py = useSharedValue(tired ? 3 : 0);
-  const headTilt = useSharedValue(0);
+  const py = useSharedValue(tired ? 4 : 0);
 
   // Blink: eyelids really close — slow and heavy when tired
   useEffect(() => {
@@ -122,11 +121,11 @@ export function VectorMascot({
     };
   }, [animated, tired, lid]);
 
-  // Pupils wander + the head tilts along a touch — instant "it's alive"
+  // Pupils wander — instant "it's alive"
   useEffect(() => {
     if (!animated) {
       px.value = 0;
-      py.value = tired ? 3 : 0;
+      py.value = tired ? 4 : 0;
       return;
     }
     let alive = true;
@@ -134,10 +133,8 @@ export function VectorMascot({
     const schedule = () => {
       timer = setTimeout(() => {
         if (!alive) return;
-        const tx = Math.random() * 10 - 5;
-        px.value = withTiming(tx, { duration: 420 });
-        py.value = withTiming(tired ? 3 : Math.random() * 5 - 2, { duration: 420 });
-        headTilt.value = withTiming(tx * 0.55, { duration: 620 });
+        px.value = withTiming(Math.random() * 12 - 6, { duration: 420 });
+        py.value = withTiming(tired ? 4 : Math.random() * 6 - 2.5, { duration: 420 });
         schedule();
       }, 1600 + Math.random() * 2600);
     };
@@ -146,7 +143,7 @@ export function VectorMascot({
       alive = false;
       clearTimeout(timer);
     };
-  }, [animated, tired, px, py, headTilt]);
+  }, [animated, tired, px, py]);
 
   const pupilStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: px.value }, { translateY: py.value }],
@@ -155,12 +152,10 @@ export function VectorMascot({
   const lidStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: (-LID_H / 2) * (1 - lid.value) }, { scaleY: lid.value }],
   }));
-  const headStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateZ: `${headTilt.value}deg` }],
-  }));
 
   const scale = size / RIG_W;
   const outH = RIG_H * scale;
+  const showEyes = !equippedOutfits.has('sunglasses');
 
   return (
     <View style={{ width: size, height: outH }} pointerEvents="none">
@@ -173,345 +168,311 @@ export function VectorMascot({
           height: RIG_H,
           transform: [{ scale }],
         }}>
-        {/* ─ Body layer (legs, tail, torso, arms, belt/medal) ─ */}
         <Svg width={RIG_W} height={RIG_H} viewBox={`0 0 ${RIG_W} ${RIG_H}`} style={StyleSheet.absoluteFill}>
-          <BodySvg art={art} level={level} equipped={equippedOutfits} />
+          <CharacterSvg art={art} mood={mood} level={level} equipped={equippedOutfits} />
         </Svg>
 
-        {/* ─ Head layer: tilts independently for the 2.5D feel ─ */}
-        <Animated.View style={[StyleSheet.absoluteFill, headStyle]}>
-          <Svg width={RIG_W} height={RIG_H} viewBox={`0 0 ${RIG_W} ${RIG_H}`} style={StyleSheet.absoluteFill}>
-            <HeadSvg art={art} mood={mood} equipped={equippedOutfits} />
-          </Svg>
-
-          {/* Pupils — layered Views so they can wander */}
-          {!equippedOutfits.has('sunglasses') && (
-            <>
-              {[EYE_LX, EYE_RX].map((ex) => (
-                <Animated.View
-                  key={ex}
-                  style={[
-                    styles.pupil,
-                    { left: ex - PUPIL_R, top: EYE_Y - PUPIL_R },
-                    pupilStyle,
-                  ]}>
-                  <View style={styles.pupilShine} />
-                  <View style={styles.pupilShineSm} />
-                </Animated.View>
-              ))}
-              {/* Eyelids — head-colored, drop over the eyes */}
-              {[EYE_LX, EYE_RX].map((ex) => (
-                <Animated.View
-                  key={`lid-${ex}`}
-                  style={[
-                    styles.lid,
-                    { left: ex - LID_W / 2, top: EYE_Y - LID_H / 2 - 2, backgroundColor: art.body },
-                    lidStyle,
-                  ]}
-                />
-              ))}
-            </>
-          )}
-        </Animated.View>
+        {/* Pupils — layered Views so they can wander */}
+        {showEyes && (
+          <>
+            {[EYE_LX, EYE_RX].map((ex) => (
+              <Animated.View
+                key={ex}
+                style={[styles.pupil, { left: ex - PUPIL_R, top: EYE_Y - PUPIL_R }, pupilStyle]}>
+                <View style={styles.pupilShine} />
+                <View style={styles.pupilShineSm} />
+              </Animated.View>
+            ))}
+            {/* Eyelids — face-colored, drop over the eyes */}
+            {[EYE_LX, EYE_RX].map((ex) => (
+              <Animated.View
+                key={`lid-${ex}`}
+                style={[
+                  styles.lid,
+                  {
+                    left: ex - LID_W / 2,
+                    top: EYE_Y - LID_H / 2 - 1,
+                    backgroundColor: art.lid ?? art.body,
+                  },
+                  lidStyle,
+                ]}
+              />
+            ))}
+          </>
+        )}
       </View>
     </View>
   );
 }
 
-// ─── Body ──────────────────────────────────────────────────────────────
+// ─── The character (single soft blob + species features) ───────────────
 
-function BodySvg({ art, level, equipped }: { art: Art; level: number; equipped: Set<string> }) {
-  // Gains: torso broadens and arms thicken with every level
+function CharacterSvg({
+  art,
+  mood,
+  level,
+  equipped,
+}: {
+  art: Art;
+  mood: MascotMood;
+  level: number;
+  equipped: Set<string>;
+}) {
+  const tired = mood === 'tired';
+  // Gains: the arms bulk up with every level
   const bulk = Math.min(level - 1, 12);
-  const torsoRx = 50 + bulk * 0.9;
-  const armW = 15 + bulk * 0.8;
+  const armRx = 13 + bulk * 0.5;
+  const armRy = 27 + bulk * 0.7;
   const golden = level >= 12;
-  const armStroke = golden ? colors.readinessYellow : art.bodyDark;
 
   return (
     <G>
       <Defs>
-        <RadialGradient id="torso" cx="38%" cy="30%" r="80%">
+        <RadialGradient id="vmBody" cx="38%" cy="26%" r="85%">
           <Stop offset="0%" stopColor={lighten(art.body)} />
-          <Stop offset="62%" stopColor={art.body} />
+          <Stop offset="55%" stopColor={art.body} />
           <Stop offset="100%" stopColor={art.bodyDark} />
+        </RadialGradient>
+        <LinearGradient id="vmHorn" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0%" stopColor="#f6dd92" />
+          <Stop offset="100%" stopColor="#d9a832" />
+        </LinearGradient>
+        <RadialGradient id="vmEye" cx="50%" cy="40%" r="72%">
+          <Stop offset="0%" stopColor="#ffffff" />
+          <Stop offset="100%" stopColor="#e4e6ef" />
         </RadialGradient>
       </Defs>
 
-      {art.variant === 'fox' && (
-        <G>
-          {/* bushy tail with a white tip */}
-          <Path d="M 152 190 C 190 178 198 150 188 128 C 200 160 196 196 158 208 Z" fill={art.body} />
-          <Path d="M 186 132 C 194 146 194 160 188 170 C 196 156 196 142 190 130 Z" fill={art.belly} />
-        </G>
-      )}
-      {art.variant === 'lion' && (
-        <Path d="M 150 196 C 176 190 184 172 180 158 L 186 156 C 192 176 180 198 154 204 Z" fill={art.bodyDark} />
-      )}
-      {art.variant === 'dragon' && (
-        <Path d="M 150 194 C 178 190 190 176 190 160 L 198 168 L 188 170 L 196 178 L 184 178 C 178 192 164 200 152 202 Z" fill={art.body} />
-      )}
+      <BehindBody art={art} />
 
-      {/* legs */}
-      <Rect x={62} y={192} width={30} height={40} rx={14} fill={art.bodyDark} />
-      <Rect x={108} y={192} width={30} height={40} rx={14} fill={art.bodyDark} />
-      <Ellipse cx={77} cy={228} rx={17} ry={8} fill={art.body} />
-      <Ellipse cx={123} cy={228} rx={17} ry={8} fill={art.body} />
+      {/* feet */}
+      <Ellipse cx={66} cy={212} rx={19} ry={12} fill={art.bodyDark} />
+      <Ellipse cx={134} cy={212} rx={19} ry={12} fill={art.bodyDark} />
 
-      {/* torso */}
-      <Ellipse cx={100} cy={168} rx={torsoRx} ry={46} fill="url(#torso)" />
-      <Ellipse cx={100} cy={174} rx={30} ry={27} fill={art.belly} opacity={0.92} />
-
-      {/* chest pec lines — the level-6 milestone */}
-      {level >= 6 && (
-        <G>
-          <Path d="M 78 150 Q 89 158 99 151" stroke="rgba(0,0,0,0.16)" strokeWidth={2.4} fill="none" strokeLinecap="round" />
-          <Path d="M 101 151 Q 111 158 122 150" stroke="rgba(0,0,0,0.16)" strokeWidth={2.4} fill="none" strokeLinecap="round" />
-        </G>
-      )}
-
-      {/* arms — thicken with level; bicep bump from level 2 */}
-      <Path d={`M 58 146 C 44 156 36 170 34 184`} stroke={art.body} strokeWidth={armW} strokeLinecap="round" fill="none" />
-      <Path d={`M 142 146 C 156 156 164 170 166 184`} stroke={art.body} strokeWidth={armW} strokeLinecap="round" fill="none" />
-      {level >= 2 && (
-        <G>
-          <Circle cx={46} cy={160} r={armW * 0.62} fill={art.body} stroke={golden ? armStroke : 'none'} strokeWidth={golden ? 2 : 0} />
-          <Circle cx={154} cy={160} r={armW * 0.62} fill={art.body} stroke={golden ? armStroke : 'none'} strokeWidth={golden ? 2 : 0} />
-          <Circle cx={43} cy={156} r={armW * 0.2} fill="rgba(255,255,255,0.35)" />
-          <Circle cx={151} cy={156} r={armW * 0.2} fill="rgba(255,255,255,0.35)" />
-        </G>
-      )}
-      {/* paws */}
-      <Circle cx={34} cy={186} r={armW * 0.52} fill={art.bodyDark} />
-      <Circle cx={166} cy={186} r={armW * 0.52} fill={art.bodyDark} />
-      {/* effort sparks — level 9 */}
+      {/* arms — bulk up with level */}
+      <Ellipse cx={27} cy={146} rx={armRx} ry={armRy} fill={art.body} transform="rotate(16 27 146)" stroke={golden ? colors.readinessYellow : undefined} strokeWidth={golden ? 2 : 0} />
+      <Ellipse cx={173} cy={146} rx={armRx} ry={armRy} fill={art.body} transform="rotate(-16 173 146)" stroke={golden ? colors.readinessYellow : undefined} strokeWidth={golden ? 2 : 0} />
       {level >= 9 && (
         <G>
           {[
-            [20, 150, 14, 144],
-            [16, 168, 8, 168],
-            [180, 150, 186, 144],
-            [184, 168, 192, 168],
+            [10, 122, 4, 116],
+            [6, 142, -2, 142],
+            [190, 122, 196, 116],
+            [194, 142, 202, 142],
           ].map(([x1, y1, x2, y2], i) => (
-            <Line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={colors.readinessYellow} strokeWidth={2.4} strokeLinecap="round" />
+            <Line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={colors.readinessYellow} strokeWidth={2.6} strokeLinecap="round" />
           ))}
         </G>
       )}
 
-      {/* dragon belly ridges */}
-      {art.variant === 'dragon' && (
-        <G>
-          {[160, 172, 184].map((y) => (
-            <Path key={y} d={`M 78 ${y} Q 100 ${y + 6} 122 ${y}`} stroke="rgba(0,0,0,0.12)" strokeWidth={2} fill="none" />
-          ))}
-        </G>
-      )}
+      {/* body blob + gloss + belly */}
+      <Path
+        d="M 100 34 C 146 34 168 72 166 108 C 178 150 166 196 128 208 C 110 213 90 213 72 208 C 34 196 22 150 34 108 C 32 72 54 34 100 34 Z"
+        fill="url(#vmBody)"
+      />
+      <Ellipse cx={70} cy={72} rx={30} ry={19} fill="rgba(255,255,255,0.14)" transform="rotate(-18 70 72)" />
+      <Ellipse cx={100} cy={164} rx={42} ry={35} fill={art.belly} opacity={0.95} />
 
-      {/* outfit: lifting belt */}
-      {equipped.has('belt') && (
-        <G>
-          <Rect x={100 - torsoRx + 4} y={188} width={torsoRx * 2 - 8} height={14} rx={7} fill="#5a4634" />
-          <Rect x={88} y={185} width={24} height={20} rx={4} fill="#c9a24a" />
-          <Rect x={94} y={190} width={12} height={10} rx={2} fill="#7a5f1e" />
-        </G>
-      )}
-      {/* outfit: medal */}
-      {equipped.has('medal') && (
-        <G>
-          <Path d="M 78 132 L 100 158 L 122 132" stroke="#e6485c" strokeWidth={6} fill="none" />
-          <Circle cx={100} cy={162} r={12} fill={colors.readinessYellow} stroke="#a8790e" strokeWidth={2} />
-          <Path d="M 100 156 L 102 161 L 107 161 L 103 164 L 105 169 L 100 166 L 95 169 L 97 164 L 93 161 L 98 161 Z" fill="#a8790e" />
-        </G>
-      )}
-    </G>
-  );
-}
+      <AfterBody art={art} />
 
-// ─── Head ──────────────────────────────────────────────────────────────
+      {/* eye whites (glossy) — pupils/lids are layered views above */}
+      <Ellipse cx={EYE_LX} cy={EYE_Y} rx={EYE_RXR} ry={EYE_RYR} fill="url(#vmEye)" />
+      <Ellipse cx={EYE_RX} cy={EYE_Y} rx={EYE_RXR} ry={EYE_RYR} fill="url(#vmEye)" />
 
-function HeadSvg({ art, mood, equipped }: { art: Art; mood: MascotMood; equipped: Set<string> }) {
-  const tired = mood === 'tired';
-  return (
-    <G>
-      <Defs>
-        <RadialGradient id="head" cx="40%" cy="30%" r="82%">
-          <Stop offset="0%" stopColor={lighten(art.body)} />
-          <Stop offset="60%" stopColor={art.body} />
-          <Stop offset="100%" stopColor={art.bodyDark} />
-        </RadialGradient>
-        <LinearGradient id="horn" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%" stopColor="#f4d98a" />
-          <Stop offset="100%" stopColor="#d9a832" />
-        </LinearGradient>
-        <RadialGradient id="eye" cx="50%" cy="38%" r="70%">
-          <Stop offset="0%" stopColor="#ffffff" />
-          <Stop offset="100%" stopColor="#e8e9f0" />
-        </RadialGradient>
-      </Defs>
-
-      <Ears art={art} />
-
-      {/* head */}
-      <Ellipse cx={100} cy={80} rx={56} ry={52} fill="url(#head)" />
-
-      <FaceFeatures art={art} />
-
-      {/* eye whites (glossy) */}
-      <Ellipse cx={EYE_LX} cy={EYE_Y} rx={EYE_RXR} ry={EYE_RYR} fill="url(#eye)" />
-      <Ellipse cx={EYE_RX} cy={EYE_Y} rx={EYE_RXR} ry={EYE_RYR} fill="url(#eye)" />
-
-      {/* tired brows */}
+      {/* tired: knitted brows + sweat drop */}
       {tired && (
         <G>
-          <Line x1={60} y1={58} x2={86} y2={64} stroke={art.bodyDark} strokeWidth={4} strokeLinecap="round" />
-          <Line x1={140} y1={58} x2={114} y2={64} stroke={art.bodyDark} strokeWidth={4} strokeLinecap="round" />
+          <Line x1={54} y1={56} x2={78} y2={62} stroke={art.bodyDark} strokeWidth={5} strokeLinecap="round" />
+          <Line x1={146} y1={56} x2={122} y2={62} stroke={art.bodyDark} strokeWidth={5} strokeLinecap="round" />
+          <Path d="M 160 66 C 167 77 168 84 160 86 C 152 84 153 77 160 66" fill={colors.metricCyan} opacity={0.85} />
         </G>
       )}
 
       {/* cheeks */}
-      <Ellipse cx={58} cy={98} rx={9} ry={5.5} fill="#e6708a" opacity={mood === 'happy' ? 0.4 : 0.22} />
-      <Ellipse cx={142} cy={98} rx={9} ry={5.5} fill="#e6708a" opacity={mood === 'happy' ? 0.4 : 0.22} />
+      <Ellipse cx={52} cy={122} rx={11} ry={7} fill="#e6708a" opacity={mood === 'happy' ? 0.4 : 0.24} />
+      <Ellipse cx={148} cy={122} rx={11} ry={7} fill="#e6708a" opacity={mood === 'happy' ? 0.4 : 0.24} />
 
-      <Nose art={art} />
+      <MuzzleNose art={art} />
       <Mouth mood={mood} />
 
-      {/* tired sweat drop */}
-      {tired && (
-        <Path d="M 152 52 C 158 62 159 68 152 70 C 145 68 146 62 152 52" fill={colors.metricCyan} opacity={0.85} />
-      )}
-
-      {/* outfit: headband / cap / sunglasses live on the head layer */}
+      {/* outfits */}
       {equipped.has('headband') && (
         <G>
-          <Rect x={50} y={42} width={100} height={13} rx={6.5} fill="#e6485c" />
-          <Rect x={50} y={45} width={100} height={3} fill="rgba(255,255,255,0.35)" />
+          <Rect x={52} y={50} width={96} height={13} rx={6.5} fill="#e6485c" />
+          <Rect x={52} y={53} width={96} height={3} fill="rgba(255,255,255,0.35)" />
         </G>
       )}
       {equipped.has('cap') && (
         <G>
-          <Path d="M 52 46 A 48 38 0 0 1 148 46 L 148 54 L 52 54 Z" fill={colors.metricBlue} />
-          <Rect x={40} y={50} width={78} height={10} rx={5} fill="#2b62b4" />
-          <Circle cx={100} cy={16} r={5} fill="#2b62b4" />
+          <Path d="M 52 56 A 48 38 0 0 1 148 56 L 148 62 L 52 62 Z" fill={colors.metricBlue} />
+          <Rect x={40} y={58} width={80} height={10} rx={5} fill="#2b62b4" />
+          <Circle cx={100} cy={24} r={5} fill="#2b62b4" />
         </G>
       )}
       {equipped.has('sunglasses') && (
         <G>
-          <Rect x={56} y={64} width={38} height={24} rx={9} fill="#0c0c10" stroke="rgba(255,255,255,0.4)" strokeWidth={1.6} />
-          <Rect x={106} y={64} width={38} height={24} rx={9} fill="#0c0c10" stroke="rgba(255,255,255,0.4)" strokeWidth={1.6} />
-          <Line x1={94} y1={73} x2={106} y2={73} stroke="rgba(255,255,255,0.4)" strokeWidth={2.6} />
-          <Rect x={61} y={68} width={13} height={5} rx={2.5} fill="rgba(255,255,255,0.3)" />
-          <Rect x={111} y={68} width={13} height={5} rx={2.5} fill="rgba(255,255,255,0.3)" />
+          <Rect x={44} y={80} width={46} height={30} rx={11} fill="#0c0c10" stroke="rgba(255,255,255,0.4)" strokeWidth={1.8} />
+          <Rect x={110} y={80} width={46} height={30} rx={11} fill="#0c0c10" stroke="rgba(255,255,255,0.4)" strokeWidth={1.8} />
+          <Line x1={90} y1={92} x2={110} y2={92} stroke="rgba(255,255,255,0.4)" strokeWidth={3} />
+          <Rect x={50} y={85} width={16} height={6} rx={3} fill="rgba(255,255,255,0.3)" />
+          <Rect x={116} y={85} width={16} height={6} rx={3} fill="rgba(255,255,255,0.3)" />
+        </G>
+      )}
+      {equipped.has('medal') && (
+        <G>
+          <Path d="M 76 148 L 100 172 L 124 148" stroke="#e6485c" strokeWidth={6} fill="none" />
+          <Circle cx={100} cy={176} r={12} fill={colors.readinessYellow} stroke="#a8790e" strokeWidth={2} />
+          <Path d="M 100 169 L 102.3 174 L 107.5 174 L 103.4 177.4 L 105.4 182.4 L 100 179.3 L 94.6 182.4 L 96.6 177.4 L 92.5 174 L 97.7 174 Z" fill="#a8790e" />
+        </G>
+      )}
+      {equipped.has('belt') && (
+        <G>
+          <Rect x={42} y={186} width={116} height={15} rx={7.5} fill="#5a4634" />
+          <Rect x={88} y={183} width={24} height={21} rx={4} fill="#c9a24a" />
+          <Rect x={94} y={188} width={12} height={11} rx={2} fill="#7a5f1e" />
         </G>
       )}
     </G>
   );
 }
 
-function Ears({ art }: { art: Art }) {
+/** Species features drawn behind the body (ears, horns, mane, tail) */
+function BehindBody({ art }: { art: Art }) {
   switch (art.variant) {
     case 'koala':
       return (
         <G>
-          <Circle cx={36} cy={44} r={28} fill={art.body} />
-          <Circle cx={164} cy={44} r={28} fill={art.body} />
-          <Circle cx={36} cy={44} r={16} fill={art.extra} />
-          <Circle cx={164} cy={44} r={16} fill={art.extra} />
+          <Circle cx={32} cy={46} r={27} fill={art.body} />
+          <Circle cx={168} cy={46} r={27} fill={art.body} />
+          <Circle cx={32} cy={46} r={15} fill={art.extra} />
+          <Circle cx={168} cy={46} r={15} fill={art.extra} />
         </G>
       );
     case 'lion':
       return (
         <G>
-          {/* mane: ring of petals behind the head */}
-          {Array.from({ length: 10 }).map((_, i) => {
-            const a = (i / 10) * Math.PI * 2;
+          {Array.from({ length: 12 }).map((_, i) => {
+            const t = (i / 12) * Math.PI * 2;
             return (
-              <Circle key={i} cx={100 + Math.cos(a) * 56} cy={78 + Math.sin(a) * 52} r={22} fill={art.extra} />
+              <Circle key={i} cx={100 + Math.cos(t) * 66} cy={92 + Math.sin(t) * 62} r={24} fill={art.extra} />
             );
           })}
-          <Circle cx={52} cy={30} r={13} fill={art.body} />
-          <Circle cx={148} cy={30} r={13} fill={art.body} />
         </G>
       );
     case 'fox':
       return (
         <G>
-          <Path d="M 38 58 L 50 6 L 84 40 Z" fill={art.body} />
-          <Path d="M 48 44 L 53 20 L 70 38 Z" fill={art.extra} />
-          <Path d="M 162 58 L 150 6 L 116 40 Z" fill={art.body} />
-          <Path d="M 152 44 L 147 20 L 130 38 Z" fill={art.extra} />
+          <Path d="M 28 64 L 42 0 L 88 34 Z" fill={art.body} />
+          <Path d="M 39 46 L 46 16 L 72 34 Z" fill={art.extra} />
+          <Path d="M 172 64 L 158 0 L 112 34 Z" fill={art.body} />
+          <Path d="M 161 46 L 154 16 L 128 34 Z" fill={art.extra} />
+          {/* bushy tail with a light tip */}
+          <Path d="M 158 200 C 196 188 202 152 190 124 C 206 158 202 200 164 214 Z" fill={art.body} />
+          <Path d="M 188 128 C 198 146 198 166 190 180 C 200 162 200 142 192 126 Z" fill={art.belly} />
         </G>
       );
     case 'gorilla':
       return (
         <G>
-          <Circle cx={42} cy={78} r={13} fill={art.body} />
-          <Circle cx={158} cy={78} r={13} fill={art.body} />
+          <Circle cx={28} cy={92} r={15} fill={art.body} />
+          <Circle cx={172} cy={92} r={15} fill={art.body} />
+          <Circle cx={28} cy={92} r={8} fill={art.bodyDark} />
+          <Circle cx={172} cy={92} r={8} fill={art.bodyDark} />
         </G>
       );
     case 'dragon':
       return (
         <G>
-          <Path d="M 62 40 C 56 22 60 12 70 6 C 70 20 74 28 80 34 Z" fill={art.extra} />
-          <Path d="M 138 40 C 144 22 140 12 130 6 C 130 20 126 28 120 34 Z" fill={art.extra} />
-          <Path d="M 88 32 L 94 16 L 100 30 L 106 14 L 112 32 Z" fill={art.bodyDark} />
+          <Path d="M 64 30 C 56 12 60 2 72 -4 C 71 12 76 20 82 26 Z" fill={art.extra} />
+          <Path d="M 136 30 C 144 12 140 2 128 -4 C 129 12 124 20 118 26 Z" fill={art.extra} />
+          <Path d="M 86 22 L 93 6 L 100 20 L 107 4 L 114 22 Z" fill={art.bodyDark} />
         </G>
       );
     case 'unicorn':
       return (
         <G>
-          <Path d="M 92 34 L 100 -2 L 108 34 Z" fill="url(#horn)" />
-          <Line x1={95} y1={22} x2={106} y2={18} stroke="rgba(0,0,0,0.15)" strokeWidth={2} />
-          <Line x1={93} y1={29} x2={107} y2={25} stroke="rgba(0,0,0,0.15)" strokeWidth={2} />
-          <Path d="M 46 54 L 56 22 L 76 44 Z" fill={art.body} />
-          <Path d="M 154 54 L 144 22 L 124 44 Z" fill={art.body} />
-          {/* mane strands */}
-          <Path d="M 140 38 C 162 48 168 72 160 96 C 172 70 168 44 148 32 Z" fill={art.extra} />
-          <Path d="M 150 50 C 166 64 168 84 160 102 C 174 82 172 58 156 44 Z" fill="#e08ac2" />
+          <Path d="M 90 40 L 100 -6 L 110 40 Z" fill="url(#vmHorn)" />
+          <Line x1={93} y1={24} x2={107} y2={19} stroke="rgba(0,0,0,0.16)" strokeWidth={2.5} />
+          <Line x1={91} y1={32} x2={109} y2={27} stroke="rgba(0,0,0,0.16)" strokeWidth={2.5} />
+          <Path d="M 52 52 L 60 16 L 84 40 Z" fill={art.body} />
+          <Path d="M 148 52 L 140 16 L 116 40 Z" fill={art.body} />
+          <Path d="M 138 34 C 164 48 174 82 166 116 C 180 80 172 44 146 26 Z" fill={art.extra} />
+          <Path d="M 148 44 C 166 62 170 90 162 112 C 176 88 172 60 156 38 Z" fill="#ea92c8" />
         </G>
       );
   }
 }
 
-function FaceFeatures({ art }: { art: Art }) {
+/** Species features drawn over the body, under the face */
+function AfterBody({ art }: { art: Art }) {
   switch (art.variant) {
+    case 'lion':
+      return (
+        <G>
+          <Circle cx={52} cy={38} r={12} fill={art.body} />
+          <Circle cx={148} cy={38} r={12} fill={art.body} />
+          <Circle cx={52} cy={38} r={6} fill={art.bodyDark} />
+          <Circle cx={148} cy={38} r={6} fill={art.bodyDark} />
+        </G>
+      );
     case 'gorilla':
       return (
         <G>
-          {/* strong brow + lighter face plate */}
-          <Ellipse cx={100} cy={96} rx={40} ry={30} fill={art.muzzle} opacity={0.55} />
-          <Path d="M 54 62 Q 100 48 146 62 L 146 70 Q 100 58 54 70 Z" fill={art.extra} />
+          <Ellipse cx={100} cy={106} rx={54} ry={46} fill={art.extra} opacity={0.65} />
+          <Path d="M 84 40 C 88 30 112 30 116 40 C 108 36 92 36 84 40 Z" fill={art.bodyDark} />
+        </G>
+      );
+    case 'unicorn':
+      return <Path d="M 74 34 C 82 26 96 26 102 34 C 92 32 84 36 80 44 Z" fill={art.extra} />;
+    default:
+      return null;
+  }
+}
+
+function MuzzleNose({ art }: { art: Art }) {
+  switch (art.variant) {
+    case 'koala':
+      return (
+        <G>
+          <Ellipse cx={100} cy={118} rx={13} ry={16} fill="#46464e" />
+          <Ellipse cx={96} cy={112} rx={4} ry={5} fill="rgba(255,255,255,0.22)" />
         </G>
       );
     case 'fox':
-      return <Ellipse cx={100} cy={106} rx={30} ry={22} fill={art.muzzle} />;
+      return (
+        <G>
+          <Ellipse cx={100} cy={126} rx={30} ry={20} fill={art.belly} />
+          <Path d="M 93 112 Q 100 106 107 112 Q 100 122 93 112" fill="#3a2b24" />
+        </G>
+      );
     case 'lion':
-      return <Ellipse cx={100} cy={106} rx={28} ry={20} fill={art.muzzle} opacity={0.85} />;
-    default:
-      return <Ellipse cx={100} cy={106} rx={26} ry={19} fill={art.muzzle} opacity={0.7} />;
-  }
-}
-
-function Nose({ art }: { art: Art }) {
-  switch (art.variant) {
-    case 'koala':
-      // the big koala nose is the face's centerpiece
-      return <Ellipse cx={100} cy={98} rx={13} ry={17} fill="#3d3d44" />;
+      return (
+        <G>
+          <Ellipse cx={100} cy={126} rx={26} ry={18} fill={art.belly} opacity={0.9} />
+          <Path d="M 93 114 Q 100 108 107 114 Q 100 124 93 114" fill="#6b4a2c" />
+        </G>
+      );
     case 'gorilla':
       return (
         <G>
-          <Ellipse cx={93} cy={100} rx={4.5} ry={6} fill="#2e333c" />
-          <Ellipse cx={107} cy={100} rx={4.5} ry={6} fill="#2e333c" />
+          <Ellipse cx={92} cy={122} rx={4.5} ry={6.5} fill="#39404b" />
+          <Ellipse cx={108} cy={122} rx={4.5} ry={6.5} fill="#39404b" />
         </G>
       );
     case 'dragon':
       return (
         <G>
-          <Ellipse cx={92} cy={98} rx={3.5} ry={4.5} fill="#2c4a34" />
-          <Ellipse cx={108} cy={98} rx={3.5} ry={4.5} fill="#2c4a34" />
+          <Ellipse cx={91} cy={116} rx={4} ry={5} fill="#2c4a34" />
+          <Ellipse cx={109} cy={116} rx={4} ry={5} fill="#2c4a34" />
         </G>
       );
-    default:
-      return <Path d="M 93 96 Q 100 90 107 96 Q 100 106 93 96" fill="#3d3d44" />;
+    case 'unicorn':
+      return (
+        <G>
+          <Ellipse cx={92} cy={120} rx={3.5} ry={4.5} fill="#b9a4cc" />
+          <Ellipse cx={108} cy={120} rx={3.5} ry={4.5} fill="#b9a4cc" />
+        </G>
+      );
   }
 }
 
@@ -519,15 +480,15 @@ function Mouth({ mood }: { mood: MascotMood }) {
   if (mood === 'happy') {
     return (
       <G>
-        <Path d="M 82 112 Q 100 132 118 112 Q 100 120 82 112" fill="#5a2e33" />
-        <Path d="M 92 121 Q 100 127 108 121 Q 100 130 92 121" fill="#e6708a" />
+        <Path d="M 83 134 Q 100 157 117 134 Q 100 143 83 134" fill="#5a2e33" />
+        <Ellipse cx={100} cy={146} rx={8} ry={4.5} fill="#e6708a" />
       </G>
     );
   }
   if (mood === 'tired') {
-    return <Path d="M 88 122 Q 100 112 112 122" stroke="#5a2e33" strokeWidth={3.5} fill="none" strokeLinecap="round" />;
+    return <Path d="M 89 144 Q 100 135 111 144" stroke="#5a2e33" strokeWidth={4} fill="none" strokeLinecap="round" />;
   }
-  return <Path d="M 88 114 Q 100 124 112 114" stroke="#5a2e33" strokeWidth={3.5} fill="none" strokeLinecap="round" />;
+  return <Path d="M 89 135 Q 100 145 111 135" stroke="#5a2e33" strokeWidth={4} fill="none" strokeLinecap="round" />;
 }
 
 /** Cheap perceptual lighten for gradient highlights */
@@ -545,30 +506,30 @@ const styles = StyleSheet.create({
     width: PUPIL_R * 2,
     height: PUPIL_R * 2,
     borderRadius: PUPIL_R,
-    backgroundColor: '#26262c',
+    backgroundColor: '#2b2b33',
   },
   pupilShine: {
     position: 'absolute',
-    top: 2,
-    left: 2.5,
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    top: 2.5,
+    left: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: 'rgba(255,255,255,0.95)',
   },
   pupilShineSm: {
     position: 'absolute',
-    bottom: 2.5,
-    right: 3,
-    width: 2.5,
-    height: 2.5,
-    borderRadius: 1.25,
+    bottom: 3,
+    right: 3.5,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: 'rgba(255,255,255,0.6)',
   },
   lid: {
     position: 'absolute',
     width: LID_W,
     height: LID_H,
-    borderRadius: 14,
+    borderRadius: 18,
   },
 });
