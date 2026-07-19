@@ -126,8 +126,7 @@ export default function NutritionScreen() {
             </Pressable>
           ))}
         </View>
-      }
-      stagger>
+      }>
       {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
       <View style={styles.tabBar}>
         {[

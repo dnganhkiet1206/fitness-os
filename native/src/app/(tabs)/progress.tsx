@@ -123,8 +123,7 @@ export default function ProgressScreen() {
             </Pressable>
           ))}
         </View>
-      }
-      stagger>
+      }>
       {/* Segmented tabs (web TabsList) */}
       <View style={styles.tabBar}>
         {tabs.map((t) => (
