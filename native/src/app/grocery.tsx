@@ -62,7 +62,7 @@ export default function GroceryScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen back title={i18n.nGrocery}>
+      <Screen back title={i18n.nGrocery} stagger>
         <View style={styles.addRow}>
           <TextInput
             style={styles.input}

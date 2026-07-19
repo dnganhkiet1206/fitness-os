@@ -78,7 +78,8 @@ export default function SupplementsScreen() {
           }}>
           <Icon icon={adding ? X : Plus} size={18} color={adding ? colors.primary : colors.foreground} />
         </Pressable>
-      }>
+      }
+      stagger>
       {adding && (
         <GlassCard style={styles.form}>
           <Text style={styles.formTitle}>{i18n.supplementsAddTitle}</Text>
