@@ -66,11 +66,11 @@ const MASCOT_ART: Record<string, Art> = {
   // Blaze — confident, still, few but firm movements
   blaze: { body: '#cfa566', dark: '#b08a48', light: '#e0c088', mane: '#b3823f', variant: 'lion', tank: '#586170', short: '#3a4048', sh: 118, st: 34, leg: 104, lean: -5, tilt: -3, p: { bin: 2400, bout: 2600, blink: 3000, sway: 0.4, swayDur: 5000 } },
   // Swift — agile, shifts weight often, frequent blinks
-  swift: { body: '#cf8355', dark: '#b06537', light: '#e2a074', muz: '#e7ddcf', variant: 'fox', tank: '#e5e8ec', short: '#3d4450', sh: 92, st: 24, leg: 120, lean: 9, tilt: 6, p: { bin: 1900, bout: 2000, blink: 1900, sway: 1.4, swayDur: 3200 } },
+  swift: { body: '#cf8355', dark: '#b06537', light: '#e2a074', muz: '#e7ddcf', variant: 'fox', tank: '#e5e8ec', short: '#3d4450', sh: 92, st: 24, leg: 120, lean: 9, tilt: 6, p: { bin: 1850, bout: 1950, blink: 1700, sway: 1.6, swayDur: 3000 } },
   // Titan — rock steady, almost no sway, slow
-  titan: { body: '#727b87', dark: '#565e69', light: '#8b93a0', face: '#949cab', variant: 'gorilla', tank: '#586170', short: '#3a4048', sh: 132, st: 46, leg: 92, lean: 0, tilt: 0, p: { bin: 2600, bout: 2800, blink: 3600, sway: 0.25, swayDur: 6000 } },
+  titan: { body: '#727b87', dark: '#565e69', light: '#8b93a0', face: '#949cab', variant: 'gorilla', tank: '#586170', short: '#3a4048', sh: 132, st: 46, leg: 92, lean: 0, tilt: 0, p: { bin: 2700, bout: 2900, blink: 4200, sway: 0.18, swayDur: 6400 } },
   // Drago — energetic, quicker breath, ready to move
-  drago: { body: '#71ab7d', dark: '#548a61', light: '#93c39d', spike: '#d7cfa0', variant: 'dragon', tank: '#e5e8ec', short: '#3d4450', sh: 104, st: 30, leg: 112, lean: -6, tilt: -4, p: { bin: 1700, bout: 1800, blink: 2400, sway: 1.0, swayDur: 3600 } },
+  drago: { body: '#71ab7d', dark: '#548a61', light: '#93c39d', spike: '#d7cfa0', variant: 'dragon', tank: '#e5e8ec', short: '#3d4450', sh: 104, st: 30, leg: 112, lean: -6, tilt: -4, p: { bin: 1600, bout: 1700, blink: 2300, sway: 1.1, swayDur: 3400 } },
   // Nova — soft, gentle, relaxed
   nova: { body: '#d9d2e4', dark: '#bcb0d1', light: '#ece7f3', mane: '#a98fce', variant: 'unicorn', tank: '#e5e8ec', short: '#3d4450', sh: 90, st: 24, leg: 118, lean: 8, tilt: 5, p: { bin: 2400, bout: 2800, blink: 3000, sway: 0.9, swayDur: 4600 } },
 };
@@ -209,14 +209,23 @@ export function VectorMascot({
     };
   }, [animated, tired, a.p.blink, lid]);
 
-  const swayAmp = tired ? a.p.sway * 0.25 : a.p.sway;
-  const breathStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: (sway.value - 0.5) * 2 * swayAmp * scale },
-      { translateY: -breath.value * 1.5 * scale },
-      { scaleY: 1 + breath.value * 0.012 },
-    ],
-  }));
+  // Evolution: higher level = steadier, more grounded stance (less sway)
+  const steady = Math.max(0.7, 1 - Math.max(0, level - 1) * 0.025);
+  const swayAmp = (tired ? a.p.sway * 0.25 : a.p.sway) * steady;
+  const breathStyle = useAnimatedStyle(() => {
+    const s = sway.value - 0.5; // -0.5..0.5 weight-shift
+    return {
+      transform: [
+        // weight shifts to one leg; the body counter-leans a hair so it
+        // reads as bearing load, not sliding across the floor
+        { translateX: s * 2 * swayAmp * scale },
+        { rotateZ: `${-s * 2 * swayAmp * 0.14}deg` },
+        // breath settles the body a touch and the chest rises
+        { translateY: -breath.value * 1.4 * scale },
+        { scaleY: 1 + breath.value * 0.011 },
+      ],
+    };
+  });
   const lidStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: lid.value }] }));
 
   const ids = useRef(0);
@@ -244,7 +253,10 @@ export function VectorMascot({
     <View style={{ width: size, height: outH }} pointerEvents="none">
       <Animated.View style={breathStyle}>
         <Svg width={size} height={outH} viewBox={`0 0 ${RIG_W} ${RIG_H}`}>
-          <Ellipse cx={120} cy={FOOT_Y + 4} rx={a.sh * 0.6} ry={10} fill="#000" opacity={0.32} />
+          <Ellipse cx={120} cy={FOOT_Y + 4} rx={a.sh * 0.6} ry={10} fill="#000" opacity={0.28} />
+          {/* per-shoe contact shadows — the companion bears its weight */}
+          <Ellipse cx={footL} cy={FOOT_Y + 9} rx={20} ry={5} fill="#000" opacity={0.34} />
+          <Ellipse cx={footR} cy={FOOT_Y + 9} rx={20} ry={5} fill="#000" opacity={0.34} />
 
           {a.variant === 'fox' && (
             <Part pid={id()} d={capsule(shR + 2, shoulderY + 70, 16, shR + 34, hipY + 44, 9)} base={a.body} dark={a.dark} light={a.light} />
@@ -278,6 +290,7 @@ export function VectorMascot({
           <Path d={`M${shCx - 10} ${shoulderY - 3} q10 7 20 0`} stroke={shade(a.tank, -22)} strokeWidth={2} fill="none" />
           {/* ribbed collar + armhole ribs — activewear detail */}
           <Path d={`M${shCx - 12} ${shoulderY - 5} q12 9 24 0`} stroke={shade(a.tank, 26)} strokeWidth={3} fill="none" strokeLinecap="round" opacity={0.8} />
+          <Path d={`M${shCx - 9} ${shoulderY + 1} q9 6 18 0`} stroke="#000" strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.12} />
           <Path d={`M${shL + 1} ${shoulderY + 4} q9 4 12 16`} stroke={shade(a.tank, -24)} strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.75} />
           <Path d={`M${shR - 1} ${shoulderY + 4} q-9 4 -12 16`} stroke={shade(a.tank, -24)} strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.75} />
           {/* small chest logo */}
