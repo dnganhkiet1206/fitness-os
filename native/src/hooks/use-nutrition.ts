@@ -35,6 +35,24 @@ export function useFavoriteFoods() {
   });
 }
 
+/** The user's own manually-entered foods (the "My foods" card list) */
+export function useMyFoods() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['my_foods', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('food_items')
+        .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
+        .eq('user_id', user!.id)
+        .order('name')
+        .limit(200);
+      return (data ?? []) as FoodItemRow[];
+    },
+  });
+}
+
 export interface RecentFood {
   food_name: string;
   food_item_id: string | null;
@@ -106,7 +124,9 @@ export function dedupeSeedShadows<T extends { user_id?: string | null; name: str
 
 function invalidateFoodQueries(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ['favorite_foods'] });
+  qc.invalidateQueries({ queryKey: ['my_foods'] });
   qc.invalidateQueries({ queryKey: ['nutrition_food_search'] });
+  qc.invalidateQueries({ queryKey: ['mealplan_food_search'] });
   qc.invalidateQueries({ queryKey: ['food_items_search'] });
   qc.invalidateQueries({ queryKey: ['food_item'] });
 }

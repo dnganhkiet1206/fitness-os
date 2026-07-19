@@ -52,6 +52,9 @@ export function Screen({ title, eyebrow, headerRight, back, children, style, ...
           style={styles.scroller}
           contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
           contentInsetAdjustmentBehavior="never"
+          automaticallyAdjustKeyboardInsets
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           {...props}>
           {children}
         </ScrollView>
@@ -68,6 +71,9 @@ export function Screen({ title, eyebrow, headerRight, back, children, style, ...
         style,
       ]}
       contentInsetAdjustmentBehavior="never"
+      automaticallyAdjustKeyboardInsets
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
       onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}
       scrollEventThrottle={16}
       {...props}>

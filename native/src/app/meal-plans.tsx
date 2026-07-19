@@ -17,7 +17,7 @@ import {
   useMealPlanItems,
   useMealPlans,
 } from '@/hooks/use-library';
-import { dedupeSeedShadows } from '@/hooks/use-nutrition';
+import { dedupeSeedShadows, useMyFoods } from '@/hooks/use-nutrition';
 import { supabase } from '@/integrations/supabase/client';
 
 const MEALS_PER_DAY = [3, 4, 5, 6];
@@ -40,6 +40,7 @@ export default function MealPlansScreen() {
   const [addMeal, setAddMeal] = useState<string>('breakfast');
   const [foodQuery, setFoodQuery] = useState('');
   const [foodDebounced, setFoodDebounced] = useState('');
+  const { data: myFoods } = useMyFoods();
 
   useEffect(() => {
     const t = setTimeout(() => setFoodDebounced(foodQuery.trim()), 250);
@@ -335,17 +336,36 @@ export default function MealPlansScreen() {
                           <Icon icon={X} size={15} color={colors.mutedForeground} />
                         </Pressable>
                       </View>
-                      {foodDebounced.length >= 2 &&
-                        (foodResults ?? []).map((f) => (
-                          <Pressable
-                            key={f.id}
-                            style={({ pressed }) => [styles.resultRow, pressed && styles.pressedDim]}
-                            onPress={() => addFood(f)}>
-                            <Text style={styles.resultName} numberOfLines={1}>{f.name}</Text>
-                            <Text style={styles.resultKcal}>{Math.round(Number(f.kcal))} kcal</Text>
-                            <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
-                          </Pressable>
-                        ))}
+                      {/* Searching → results; otherwise pick from your food
+                          list (web: choose from list or search) */}
+                      {foodDebounced.length >= 2
+                        ? (foodResults ?? []).map((f) => (
+                            <Pressable
+                              key={f.id}
+                              style={({ pressed }) => [styles.resultRow, pressed && styles.pressedDim]}
+                              onPress={() => addFood(f)}>
+                              <Text style={styles.resultName} numberOfLines={1}>{f.name}</Text>
+                              <Text style={styles.resultKcal}>{Math.round(Number(f.kcal))} kcal</Text>
+                              <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+                            </Pressable>
+                          ))
+                        : (myFoods && myFoods.length > 0 ? (
+                            <>
+                              <Text style={styles.pickLabel}>
+                                {lang === 'vi' ? 'Từ danh sách của bạn' : 'From your list'}
+                              </Text>
+                              {myFoods.map((f) => (
+                                <Pressable
+                                  key={f.id}
+                                  style={({ pressed }) => [styles.resultRow, pressed && styles.pressedDim]}
+                                  onPress={() => addFood({ ...f, serving_g: Number(f.serving_g) || 100 })}>
+                                  <Text style={styles.resultName} numberOfLines={1}>{f.name}</Text>
+                                  <Text style={styles.resultKcal}>{Math.round(Number(f.kcal))} kcal</Text>
+                                  <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+                                </Pressable>
+                              ))}
+                            </>
+                          ) : null)}
                     </View>
                   )}
                 </GlassCard>
@@ -461,4 +481,11 @@ const styles = StyleSheet.create({
   },
   resultName: { ...type.footnote, color: colors.foreground, flex: 1 },
   resultKcal: { ...type.caption, color: colors.mutedForeground },
+  pickLabel: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginTop: spacing.xs,
+  },
 });
