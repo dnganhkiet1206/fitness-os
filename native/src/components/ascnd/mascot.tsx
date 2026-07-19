@@ -16,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
+import { VectorMascot } from '@/components/ascnd/vector-mascot';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useMascot } from '@/hooks/use-mascot';
 import { useMascotWallet } from '@/hooks/use-mascot-room';
@@ -33,8 +34,9 @@ export function Mascot() {
   const { data: wallet } = useMascotWallet();
   const [bubbleVisible, setBubbleVisible] = useState(true);
   const tired = mood === 'tired';
+  const level = levelFromXp(wallet?.xp ?? 0);
   // Visible gains: the buddy grows a touch with every room level
-  const levelScale = Math.min(1 + (levelFromXp(wallet?.xp ?? 0) - 1) * 0.02, 1.2);
+  const levelScale = Math.min(1 + (level - 1) * 0.02, 1.2);
 
   const hover = useSharedValue(0); // 0..1 (0 = ground, 1 = top of float)
   const entrance = useSharedValue(0); // 0..1
@@ -44,7 +46,6 @@ export function Mascot() {
   const spin = useSharedValue(0); // deg rotateY for flips
   const squashX = useSharedValue(1);
   const squashY = useSharedValue(1);
-  const blinkSq = useSharedValue(1); // quick squint multiplied into scaleY
   const bubble = useSharedValue(0);
 
   // Idle life: float loop + slow look-around sway
@@ -71,26 +72,6 @@ export function Mascot() {
   useEffect(() => {
     droop.value = withSpring(tired ? 10 : 0, { stiffness: 120, damping: 14 });
   }, [tired, droop]);
-
-  useEffect(() => {
-    let alive = true;
-    let timer: ReturnType<typeof setTimeout>;
-    const schedule = () => {
-      timer = setTimeout(() => {
-        if (!alive) return;
-        blinkSq.value = withSequence(
-          withTiming(tired ? 0.8 : 0.88, { duration: tired ? 130 : 70 }),
-          withTiming(1, { duration: tired ? 240 : 110 }),
-        );
-        schedule();
-      }, (tired ? 1800 : 2800) + Math.random() * 3400);
-    };
-    schedule();
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [blinkSq, tired]);
 
   // Random quirks so it feels alive, not looping: a hop, a nod, or a flip
   // (paused while tired — no energy for tricks)
@@ -152,7 +133,7 @@ export function Mascot() {
       { rotateX: `${nod.value + droop.value}deg` },
       { scale: entrance.value * levelScale },
       { scaleX: squashX.value },
-      { scaleY: squashY.value * blinkSq.value },
+      { scaleY: squashY.value },
     ],
   }));
 
@@ -203,7 +184,7 @@ export function Mascot() {
           {/* Ground shadow */}
           <Animated.View style={[styles.groundShadow, shadowStyle]} />
           <Animated.View style={[styles.body, { shadowColor: mascot.accent }, bodyStyle]}>
-            <Text style={styles.emoji}>{mascot.emoji}</Text>
+            <VectorMascot mascot={mascot} size={54} mood={mood} level={level} />
           </Animated.View>
         </View>
       </Pressable>
@@ -259,9 +240,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },
-  },
-  emoji: {
-    fontSize: 44,
   },
   bubble: {
     flex: 1,

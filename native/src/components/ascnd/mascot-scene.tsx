@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Ellipse, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
+import { VectorMascot } from '@/components/ascnd/vector-mascot';
 import { colors } from '@/constants/ascnd';
 import type { MascotDef } from '@/lib/mascots';
 import type { MascotMood } from '@/hooks/use-mascot';
@@ -21,26 +22,20 @@ import type { ShopItemKey } from '@/lib/mascot-room';
 /**
  * The mascot's gym room — everything code-drawn. A layered SVG scene
  * (wall, window, floor) where purchased gym gear appears, with the
- * animated emoji companion standing in the middle wearing its purchased
- * outfit layers (SVG stickers anchored over the glyph). Tap the buddy to
- * play a reaction; bump `celebrateSignal` to fire the purchase jump.
+ * VectorMascot character (fully vector, no emoji) standing in the
+ * middle wearing its purchased outfits. Tap the buddy to play a
+ * reaction; bump `celebrateSignal` for the purchase jump, `flexSignal`
+ * for the level-up double-bicep flex.
  *
- * Idle life: the buddy blinks (quick squint), occasionally strolls to a
- * new spot on the floor with little hop-steps, and — when the user hasn't
- * logged meals/workouts — goes visibly tired: droops forward, hovers low
- * and slow, aura dims, zzz float up, a sweat drop appears.
- *
- * Gains: levels literally build muscle — the buddy grows a bit each
- * level and the code-drawn physique builds out milestone by milestone:
- * flexed arms at level 2 (and they keep thickening EVERY level),
- * shoulder caps at 4, chest pecs at 6, effort sparks at 9, and a golden
- * pump outline at 12. Bump `flexSignal` on level-up for the
- * double-bicep flex celebration.
+ * Idle life: real blinks and wandering pupils live inside VectorMascot;
+ * this scene adds the body language — hover, strolls with hop-steps,
+ * and the tired slump (low hover, droop, dim aura, floating zzz) when
+ * the day's log is empty. Muscle growth per level is drawn by the rig.
  */
 
-const SCENE_H = 290;
-const CHAR = 120; // character box; emoji glyph is centered inside
-const WALK_RANGE = 68; // max px the buddy strolls from center
+const SCENE_H = 340; // taller stage: viewBox extends upward (y from -50)
+const CHAR = 172; // character render width
+const WALK_RANGE = 62; // max px the buddy strolls from center
 
 interface Props {
   mascot: MascotDef;
@@ -65,7 +60,6 @@ export function MascotScene({
   const hoverAmp = useSharedValue(6); // hover height — shrinks when tired
   const squashX = useSharedValue(1);
   const squashY = useSharedValue(1);
-  const blinkSq = useSharedValue(1); // quick squint multiplied into scaleY
   const tilt = useSharedValue(0);
   const spin = useSharedValue(0);
   const droop = useSharedValue(0); // forward slump (rotateX) when tired
@@ -98,27 +92,6 @@ export function MascotScene({
       zzz.value = 0;
     }
   }, [tired, droop, hoverAmp, walkX, face, zzz]);
-
-  // Blink: random squint every few seconds (slower, heavier when tired)
-  useEffect(() => {
-    let alive = true;
-    let timer: ReturnType<typeof setTimeout>;
-    const schedule = () => {
-      timer = setTimeout(() => {
-        if (!alive) return;
-        blinkSq.value = withSequence(
-          withTiming(tired ? 0.78 : 0.86, { duration: tired ? 140 : 70 }),
-          withTiming(1, { duration: tired ? 260 : 110 }),
-        );
-        schedule();
-      }, (tired ? 1800 : 2600) + Math.random() * 3600);
-    };
-    schedule();
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [blinkSq, tired]);
 
   // Stroll: every so often wander to a new spot with hop-steps (skipped
   // while tired — a sluggish buddy stays put)
@@ -221,7 +194,7 @@ export function MascotScene({
       { rotateZ: `${tilt.value}deg` },
       { rotateY: `${spin.value}deg` },
       { scaleX: squashX.value * face.value * levelScale },
-      { scaleY: squashY.value * blinkSq.value * levelScale },
+      { scaleY: squashY.value * levelScale },
     ],
   }));
 
@@ -241,17 +214,18 @@ export function MascotScene({
 
   return (
     <View style={styles.scene}>
-      {/* Room background + owned gym gear */}
-      <Svg width="100%" height={SCENE_H} viewBox={`0 0 360 ${SCENE_H}`} preserveAspectRatio="xMidYMax slice">
+      {/* Room background + owned gym gear (viewBox extends up for the
+          taller stage; all gear keeps its floor coordinates) */}
+      <Svg width="100%" height={SCENE_H} viewBox={`0 -50 360 ${SCENE_H}`} preserveAspectRatio="xMidYMax slice">
         {/* Wall */}
-        <Rect x={0} y={0} width={360} height={205} fill="#101016" />
+        <Rect x={0} y={-50} width={360} height={255} fill="#101016" />
         <Line x1={0} y1={68} x2={360} y2={68} stroke="rgba(255,255,255,0.03)" strokeWidth={1} />
         <Line x1={0} y1={136} x2={360} y2={136} stroke="rgba(255,255,255,0.03)" strokeWidth={1} />
         {/* Upgrade: LED strip glowing along the ceiling line */}
         {ownedGym.has('wall_led') && (
           <G>
-            <Line x1={8} y1={12} x2={352} y2={12} stroke={colors.metricPurple} strokeWidth={7} opacity={0.18} />
-            <Line x1={8} y1={12} x2={352} y2={12} stroke={colors.metricPurple} strokeWidth={2.5} opacity={0.9} />
+            <Line x1={8} y1={-38} x2={352} y2={-38} stroke={colors.metricPurple} strokeWidth={7} opacity={0.18} />
+            <Line x1={8} y1={-38} x2={352} y2={-38} stroke={colors.metricPurple} strokeWidth={2.5} opacity={0.9} />
           </G>
         )}
         {/* Upgrade: motivation frames on the left wall */}
@@ -279,27 +253,27 @@ export function MascotScene({
         {/* Floor — pro neon > wooden > default concrete */}
         {ownedGym.has('floor_neon') ? (
           <G>
-            <Rect x={0} y={205} width={360} height={SCENE_H - 205} fill="#0d1017" />
+            <Rect x={0} y={205} width={360} height={85} fill="#0d1017" />
             <Line x1={0} y1={205} x2={360} y2={205} stroke={colors.metricCyan} strokeWidth={2} opacity={0.75} />
             <Line x1={0} y1={205} x2={360} y2={205} stroke={colors.metricCyan} strokeWidth={7} opacity={0.14} />
             {[60, 140, 220, 300].map((x) => (
-              <Line key={x} x1={x} y1={210} x2={x - 26} y2={SCENE_H} stroke="rgba(24,194,220,0.09)" strokeWidth={1.5} />
+              <Line key={x} x1={x} y1={210} x2={x - 26} y2={290} stroke="rgba(24,194,220,0.09)" strokeWidth={1.5} />
             ))}
           </G>
         ) : ownedGym.has('floor_wood') ? (
           <G>
-            <Rect x={0} y={205} width={360} height={SCENE_H - 205} fill="#241a10" />
+            <Rect x={0} y={205} width={360} height={85} fill="#241a10" />
             <Line x1={0} y1={205} x2={360} y2={205} stroke="rgba(255,214,150,0.16)" strokeWidth={1.5} />
             {[232, 258].map((y) => (
               <Line key={y} x1={0} y1={y} x2={360} y2={y} stroke="rgba(0,0,0,0.32)" strokeWidth={1.4} />
             ))}
             {[90, 200, 300].map((x, i) => (
-              <Line key={x} x1={x} y1={205 + i * 2} x2={x - 14} y2={SCENE_H} stroke="rgba(0,0,0,0.22)" strokeWidth={1.2} />
+              <Line key={x} x1={x} y1={205 + i * 2} x2={x - 14} y2={290} stroke="rgba(0,0,0,0.22)" strokeWidth={1.2} />
             ))}
           </G>
         ) : (
           <G>
-            <Rect x={0} y={205} width={360} height={SCENE_H - 205} fill="#16161d" />
+            <Rect x={0} y={205} width={360} height={85} fill="#16161d" />
             <Line x1={0} y1={205} x2={360} y2={205} stroke="rgba(255,255,255,0.06)" strokeWidth={1.5} />
           </G>
         )}
@@ -332,58 +306,15 @@ export function MascotScene({
           <Animated.View style={[styles.char, charStyle]}>
             {/* Aura — dims when the buddy is drained */}
             <View
-              style={[styles.aura, { backgroundColor: mascot.accent, opacity: tired ? 0.06 : 0.16 }]}
+              style={[styles.aura, { backgroundColor: mascot.accent, opacity: tired ? 0.05 : 0.14 }]}
             />
-            <Text style={styles.emoji}>{mascot.emoji}</Text>
-            {/* Outfit stickers, anchored over the glyph */}
-            <Svg width={CHAR} height={CHAR} viewBox={`0 0 ${CHAR} ${CHAR}`} style={StyleSheet.absoluteFill} pointerEvents="none">
-              {/* Muscles first so outfits layer on top of them */}
-              {level >= 2 && <MuscleArms level={level} />}
-              {equippedOutfits.has('headband') && (
-                <G>
-                  <Rect x={26} y={26} width={68} height={11} rx={5.5} fill="#e6485c" />
-                  <Rect x={26} y={29} width={68} height={2.5} fill="rgba(255,255,255,0.35)" />
-                </G>
-              )}
-              {equippedOutfits.has('cap') && (
-                <G>
-                  <Path d="M 28 30 A 32 26 0 0 1 92 30 L 92 36 L 28 36 Z" fill={colors.metricBlue} />
-                  <Rect x={54} y={6} width={12} height={16} rx={5} fill={colors.metricBlue} />
-                  <Rect x={20} y={33} width={54} height={8} rx={4} fill="#2b62b4" />
-                  <Circle cx={60} cy={18} r={3.4} fill="#2b62b4" />
-                </G>
-              )}
-              {equippedOutfits.has('sunglasses') && (
-                <G>
-                  <Rect x={30} y={48} width={26} height={15} rx={6} fill="#0c0c10" stroke="rgba(255,255,255,0.4)" strokeWidth={1.2} />
-                  <Rect x={64} y={48} width={26} height={15} rx={6} fill="#0c0c10" stroke="rgba(255,255,255,0.4)" strokeWidth={1.2} />
-                  <Line x1={56} y1={54} x2={64} y2={54} stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
-                  <Rect x={33} y={50} width={9} height={3.5} rx={1.7} fill="rgba(255,255,255,0.3)" />
-                  <Rect x={67} y={50} width={9} height={3.5} rx={1.7} fill="rgba(255,255,255,0.3)" />
-                </G>
-              )}
-              {equippedOutfits.has('medal') && (
-                <G>
-                  <Path d="M 48 78 L 60 96 L 72 78" stroke="#e6485c" strokeWidth={5} fill="none" />
-                  <Circle cx={60} cy={99} r={9.5} fill={colors.readinessYellow} stroke="#a8790e" strokeWidth={1.6} />
-                  <SvgText x={60} y={103} fontSize={9.5} fontWeight="bold" fill="#7a570a" textAnchor="middle">1</SvgText>
-                </G>
-              )}
-              {equippedOutfits.has('belt') && (
-                <G>
-                  <Rect x={30} y={92} width={60} height={11} rx={5.5} fill="#5a4634" />
-                  <Rect x={52} y={90} width={16} height={15} rx={3} fill="#c9a24a" />
-                  <Rect x={56} y={94} width={8} height={7} rx={1.6} fill="#7a5f1e" />
-                </G>
-              )}
-              {tired && (
-                <Path
-                  d="M 92 30 C 98 40 99 45 92 47 C 85 45 86 40 92 30"
-                  fill={colors.metricCyan}
-                  opacity={0.8}
-                />
-              )}
-            </Svg>
+            <VectorMascot
+              mascot={mascot}
+              size={CHAR}
+              mood={mood}
+              level={level}
+              equippedOutfits={equippedOutfits}
+            />
           </Animated.View>
         </Pressable>
       </View>
@@ -392,60 +323,6 @@ export function MascotScene({
 }
 
 // ─── Muscle arms (drawn in the 120×120 character box) ──────────────────
-
-const SKIN = '#e2a76f';
-const SKIN_DARK = '#d89a5e';
-
-/**
- * Code-drawn physique that builds out with the buddy's level. The arms
- * thicken EVERY level (not in steps); milestones add body parts:
- * shoulder caps at 4, chest pecs at 6, effort sparks at 9, golden pump
- * outline at 12. One arm is drawn on the left and mirrored right.
- */
-function MuscleArms({ level }: { level: number }) {
-  const bicep = Math.min(4.5 + level * 0.55, 12);
-  const armW = Math.min(5 + level * 0.6, 12.5);
-  const golden = level >= 12;
-  const pump = golden ? { stroke: colors.readinessYellow, strokeWidth: 1.8, strokeOpacity: 0.75 } : {};
-  const arm = (
-    <G>
-      {/* shoulder → elbow */}
-      <Path d="M 32 64 C 23 63 16 68 13 76" stroke={SKIN} strokeWidth={armW} strokeLinecap="round" fill="none" />
-      {/* elbow → raised fist (the flex) */}
-      <Path d="M 13 76 C 10 66 12 58 18 52" stroke={SKIN} strokeWidth={armW - 1} strokeLinecap="round" fill="none" />
-      {/* shoulder cap */}
-      {level >= 4 && <Circle cx={33} cy={58} r={bicep * 0.72} fill={SKIN} {...pump} />}
-      {/* bicep bulge + shine */}
-      <Circle cx={19} cy={66} r={bicep} fill={SKIN} {...pump} />
-      <Circle cx={16.5} cy={63} r={bicep * 0.34} fill="rgba(255,255,255,0.35)" />
-      {/* fist */}
-      <Circle cx={18} cy={50} r={armW * 0.62} fill={SKIN_DARK} />
-      {level >= 9 && (
-        <G>
-          <Line x1={7} y1={57} x2={3} y2={53} stroke={colors.readinessYellow} strokeWidth={2} strokeLinecap="round" />
-          <Line x1={5} y1={66} x2={1} y2={66} stroke={colors.readinessYellow} strokeWidth={2} strokeLinecap="round" />
-          <Line x1={7} y1={75} x2={3} y2={79} stroke={colors.readinessYellow} strokeWidth={2} strokeLinecap="round" />
-        </G>
-      )}
-    </G>
-  );
-  return (
-    <G>
-      {arm}
-      <G transform={`translate(${CHAR},0) scale(-1,1)`}>{arm}</G>
-      {/* chest pecs — sit above the belt line so outfits still read */}
-      {level >= 6 && (
-        <G>
-          <Ellipse cx={49} cy={84} rx={11} ry={7.5} fill={SKIN} {...pump} />
-          <Ellipse cx={71} cy={84} rx={11} ry={7.5} fill={SKIN} {...pump} />
-          <Line x1={60} y1={78} x2={60} y2={90} stroke="rgba(0,0,0,0.18)" strokeWidth={1.6} />
-          <Ellipse cx={46} cy={81} rx={3.6} ry={2.2} fill="rgba(255,255,255,0.3)" />
-          <Ellipse cx={68} cy={81} rx={3.6} ry={2.2} fill="rgba(255,255,255,0.3)" />
-        </G>
-      )}
-    </G>
-  );
-}
 
 // ─── Gym gear (SVG groups in scene coordinates, 360×290) ───────────────
 
@@ -580,30 +457,28 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: 26,
+    paddingBottom: 18,
   },
-  char: { width: CHAR, height: CHAR, alignItems: 'center', justifyContent: 'center' },
-  emoji: { fontSize: 88, lineHeight: CHAR },
+  char: { alignItems: 'center', justifyContent: 'center' },
   aura: {
     position: 'absolute',
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    opacity: 0.16,
-    transform: [{ scale: 1.16 }],
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    transform: [{ scale: 1.2 }],
   },
   shadow: {
     position: 'absolute',
-    bottom: 16,
-    width: 84,
-    height: 14,
-    borderRadius: 8,
+    bottom: 12,
+    width: 110,
+    height: 16,
+    borderRadius: 9,
     backgroundColor: '#000',
   },
   zzz: {
     position: 'absolute',
-    bottom: 150,
-    marginLeft: 74,
+    bottom: 205,
+    marginLeft: 104,
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 2,

@@ -1,5 +1,6 @@
 import {
   Armchair,
+  Cat,
   Check,
   Coins,
   Cylinder,
@@ -17,15 +18,19 @@ import {
   RectangleVertical,
   Ribbon,
   Shield,
+  Shirt,
   Sprout,
   Star,
+  Store,
   Weight,
+  X,
   Zap,
   type LucideIcon,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -104,6 +109,9 @@ export default function MascotRoomScreen() {
 
   const [celebrate, setCelebrate] = useState(0);
   const [flex, setFlex] = useState(0);
+  const [shopOpen, setShopOpen] = useState(false);
+  const [shopTab, setShopTab] = useState<'outfit' | 'gym' | 'upgrade'>('gym');
+  const welcomeTried = useRef(false);
 
   const balance = wallet?.balance ?? 0;
   const claimed = wallet?.claimed ?? new Set<string>();
@@ -159,6 +167,18 @@ export default function MascotRoomScreen() {
     });
   };
 
+  // First visit: a welcome purse so the shop is playable right away
+  // (idempotent via the 'welcome' ref_key — granted exactly once)
+  useEffect(() => {
+    if (!wallet || wallet.claimed.has('welcome') || welcomeTried.current) return;
+    welcomeTried.current = true;
+    claim.mutate(
+      { refKey: 'welcome', amount: 300, reason: 'welcome bonus' },
+      { onSuccess: () => toast.success(i18n.nRoomWelcome.replace('{n}', '300')) },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wallet]);
+
   const completedWeekly = (challenges ?? []).filter((c) => c.completed);
 
   // Buddy level from quest XP (purchases grant none, so it never drops)
@@ -174,10 +194,20 @@ export default function MascotRoomScreen() {
       back
       title={mascot.name}
       headerRight={
-        <View style={styles.coinPill}>
+        <Pressable
+          // Hidden test faucet: long-press the coin pill for +500 coins
+          delayLongPress={600}
+          onLongPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            claim.mutate(
+              { refKey: `dev:${Date.now()}`, amount: 500, reason: 'dev grant' },
+              { onSuccess: () => toast.success(i18n.nRoomEarned.replace('{n}', '500')) },
+            );
+          }}
+          style={styles.coinPill}>
           <Icon icon={Coins} size={14} color={colors.readinessYellow} />
           <Text style={styles.coinText}>{balance.toLocaleString()}</Text>
-        </View>
+        </Pressable>
       }>
       {/* The room */}
       <MascotScene
@@ -198,6 +228,39 @@ export default function MascotRoomScreen() {
           <Text style={styles.bubbleText}>{message}</Text>
         </View>
       ) : null}
+
+      {/* Quick actions — the shop lives behind one button now */}
+      <View style={styles.chipRow}>
+        <ActionChip
+          icon={Store}
+          label={i18n.nRoomShop}
+          color={colors.metricCyan}
+          onPress={() => {
+            Haptics.selectionAsync();
+            setShopTab('gym');
+            setShopOpen(true);
+          }}
+        />
+        <ActionChip
+          icon={Shirt}
+          label={i18n.nRoomWardrobe}
+          color={colors.metricPurple}
+          onPress={() => {
+            Haptics.selectionAsync();
+            setShopTab('outfit');
+            setShopOpen(true);
+          }}
+        />
+        <ActionChip
+          icon={Cat}
+          label={i18n.nRoomChangeBuddy}
+          color={colors.metricOrange}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/settings');
+          }}
+        />
+      </View>
 
       {/* Buddy level — lifetime coins earned, spending never lowers it */}
       <GlassCard style={styles.levelCard}>
@@ -349,56 +412,99 @@ export default function MascotRoomScreen() {
         </GlassCard>
       )}
 
-      {/* Shop */}
-      <Text style={styles.shopTitle}>{i18n.nRoomShop}</Text>
-      <ShopSection
-        title={i18n.nRoomOutfits}
-        items={SHOP_ITEMS.filter((it) => it.type === 'outfit')}
-        owned={owned}
-        equipped={equippedOutfits}
-        balance={balance}
-        pendingBuy={buy.isPending}
-        onBuy={buyItem}
-        onToggleEquip={(key, next) => {
-          Haptics.selectionAsync();
-          equip.mutate({ itemKey: key, equipped: next });
-        }}
-        lang={lang}
-        i18n={i18n}
-      />
-      <ShopSection
-        title={i18n.nRoomGymGear}
-        items={SHOP_ITEMS.filter((it) => it.type === 'gym')}
-        owned={owned}
-        equipped={equippedOutfits}
-        balance={balance}
-        pendingBuy={buy.isPending}
-        onBuy={buyItem}
-        onToggleEquip={() => {}}
-        lang={lang}
-        i18n={i18n}
-      />
-      <ShopSection
-        title={i18n.nRoomUpgrades}
-        items={SHOP_ITEMS.filter((it) => it.type === 'upgrade')}
-        owned={owned}
-        equipped={equippedOutfits}
-        balance={balance}
-        pendingBuy={buy.isPending}
-        onBuy={buyItem}
-        onToggleEquip={() => {}}
-        lang={lang}
-        i18n={i18n}
-        placedLabel={i18n.nRoomInstalled}
-      />
+      {/* Shop — a folder: everything lives in one sheet */}
+      <Modal
+        visible={shopOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShopOpen(false)}>
+        <View style={styles.sheetBackdropWrap}>
+          <Pressable style={styles.sheetBackdrop} onPress={() => setShopOpen(false)} />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>{i18n.nRoomShop}</Text>
+              <View style={styles.sheetCoins}>
+                <Icon icon={Coins} size={13} color={colors.readinessYellow} />
+                <Text style={styles.coinText}>{balance.toLocaleString()}</Text>
+              </View>
+              <Pressable hitSlop={10} onPress={() => setShopOpen(false)} style={styles.sheetClose}>
+                <Icon icon={X} size={18} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <View style={styles.tabRow}>
+              {(
+                [
+                  ['gym', i18n.nRoomGymGear],
+                  ['outfit', i18n.nRoomOutfits],
+                  ['upgrade', i18n.nRoomUpgrades],
+                ] as const
+              ).map(([key, label]) => (
+                <Pressable
+                  key={key}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setShopTab(key);
+                  }}
+                  style={[styles.tab, shopTab === key && styles.tabActive]}>
+                  <Text style={[styles.tabText, shopTab === key && styles.tabTextActive]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <ScrollView contentContainerStyle={styles.sheetScroll} showsVerticalScrollIndicator={false}>
+              <ShopGrid
+                items={SHOP_ITEMS.filter((it) => it.type === shopTab)}
+                owned={owned}
+                equipped={equippedOutfits}
+                balance={balance}
+                pendingBuy={buy.isPending}
+                onBuy={buyItem}
+                onToggleEquip={(key, next) => {
+                  Haptics.selectionAsync();
+                  equip.mutate({ itemKey: key, equipped: next });
+                }}
+                lang={lang}
+                i18n={i18n}
+                placedLabel={shopTab === 'upgrade' ? i18n.nRoomInstalled : undefined}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
 
-function ShopSection({
-  title, items, owned, equipped, balance, pendingBuy, onBuy, onToggleEquip, lang, i18n, placedLabel,
+function ActionChip({
+  icon,
+  label,
+  color,
+  onPress,
 }: {
-  title: string;
+  icon: LucideIcon;
+  label: string;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.chip, pressed && styles.pressed]}>
+      <View style={[styles.chipIcon, { backgroundColor: `${color}1c` }]}>
+        <Icon icon={icon} size={17} color={color} />
+      </View>
+      <Text style={styles.chipText} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function ShopGrid({
+  items, owned, equipped, balance, pendingBuy, onBuy, onToggleEquip, lang, i18n, placedLabel,
+}: {
   items: ShopItem[];
   owned: Set<string>;
   equipped: Set<string>;
@@ -412,7 +518,6 @@ function ShopSection({
 }) {
   return (
     <View style={styles.shopSection}>
-      <Text style={styles.shopSectionTitle}>{title}</Text>
       <View style={styles.shopGrid}>
         {items.map((item) => {
           const meta = ITEM_ICONS[item.key];
@@ -559,15 +664,89 @@ const styles = StyleSheet.create({
   claimedChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   claimedText: { ...type.footnote, color: colors.readinessGreen, fontWeight: '600' },
 
-  shopTitle: { ...type.title, color: colors.foreground, marginTop: spacing.xs },
-  shopSection: { gap: spacing.sm },
-  shopSectionTitle: {
-    ...type.caption,
-    color: colors.mutedForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 1.4,
-    fontWeight: '600',
+  chipRow: { flexDirection: 'row', gap: spacing.sm },
+  chip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 46,
+    borderRadius: radius.lg,
+    backgroundColor: colors.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.sm,
   },
+  chipIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipText: { ...type.caption, color: colors.foreground, fontWeight: '600', flexShrink: 1 },
+
+  sheetBackdropWrap: { flex: 1, justifyContent: 'flex-end' },
+  sheetBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(4,4,6,0.6)',
+  },
+  sheet: {
+    maxHeight: '78%',
+    backgroundColor: '#101014',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  sheetTitle: { ...type.headline, color: colors.foreground, flex: 1 },
+  sheetCoins: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  sheetClose: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing.sm,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.secondary,
+    borderRadius: radius.full,
+    padding: 3,
+    marginBottom: spacing.md,
+  },
+  tab: {
+    flex: 1,
+    height: 32,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabActive: { backgroundColor: colors.card },
+  tabText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
+  tabTextActive: { color: colors.foreground },
+  sheetScroll: { paddingBottom: spacing.lg },
+
+  shopSection: { gap: spacing.sm },
   shopGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   shopItem: {
     width: '31%',

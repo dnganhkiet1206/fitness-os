@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, Info, XCircle, type LucideIcon } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { SlideInUp, SlideOutUp } from 'react-native-reanimated';
+import Animated, { Easing, FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -47,8 +47,9 @@ export function NeonToastHost() {
     <View style={[styles.wrap, { top: insets.top + 8 }]} pointerEvents="box-none">
       <Animated.View
         key={t.id}
-        entering={SlideInUp.springify().stiffness(380).damping(30)}
-        exiting={SlideOutUp.duration(160)}
+        // Calm entrance: a short fade + gentle drop, no spring overshoot
+        entering={FadeInDown.duration(240).easing(Easing.out(Easing.quad))}
+        exiting={FadeOutUp.duration(180)}
         // Colored shadow = the neon glow; border picks up the same accent
         style={[styles.toast, { borderColor: `${accent}59`, shadowColor: accent }]}>
         <Pressable style={styles.row} onPress={() => dismissToast(t.id)}>

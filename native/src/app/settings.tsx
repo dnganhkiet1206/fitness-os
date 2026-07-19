@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { VectorMascot } from '@/components/ascnd/vector-mascot';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -140,9 +141,9 @@ export default function SettingsScreen() {
                     !m.unlocked && styles.mascotChipLocked,
                   ]}>
                   <View style={styles.mascotFace}>
-                    <Text style={[styles.mascotEmoji, !m.unlocked && styles.mascotEmojiLocked]}>
-                      {m.emoji}
-                    </Text>
+                    <View style={!m.unlocked && styles.mascotArtLocked}>
+                      <VectorMascot mascot={m} size={44} animated={false} />
+                    </View>
                     {!m.unlocked && (
                       <View style={styles.mascotLockBadge}>
                         <Icon icon={Lock} size={9} color={colors.mutedForeground} />
@@ -370,11 +371,10 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   mascotChipLocked: { opacity: 0.7 },
-  mascotFace: { width: 44, height: 40, alignItems: 'center', justifyContent: 'center' },
-  mascotEmoji: { fontSize: 30 },
+  mascotFace: { width: 44, height: 52, alignItems: 'center', justifyContent: 'center' },
+  mascotArtLocked: { opacity: 0.35 },
   // Gacha teaser: the face stays visible but ghosted, so players see
   // exactly which character they are working toward
-  mascotEmojiLocked: { opacity: 0.35 },
   mascotLockBadge: {
     position: 'absolute',
     right: 0,

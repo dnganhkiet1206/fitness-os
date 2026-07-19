@@ -290,6 +290,9 @@ const en = {
   nRoomLevelHint: '{n} XP to the next level',
   nRoomLevelUp: 'Level up! Your buddy reached level {n}',
   nRoomMoodTired: "I'm feeling sluggish today… log a meal or a workout to wake me up!",
+  nRoomWardrobe: 'Wardrobe',
+  nRoomChangeBuddy: 'Change buddy',
+  nRoomWelcome: 'Welcome gift: +{n} coins!',
 
   // App lock (Face ID / biometrics)
   nLockTitle: 'App Lock',
@@ -571,6 +574,9 @@ const vi: typeof en = {
   nRoomLevelHint: 'Còn {n} XP tới cấp tiếp theo',
   nRoomLevelUp: 'Lên cấp! Bạn đồng hành đạt cấp {n}',
   nRoomMoodTired: 'Hôm nay tớ uể oải quá… ghi một bữa ăn hoặc tập một chút cho tớ tỉnh nhé!',
+  nRoomWardrobe: 'Tủ đồ',
+  nRoomChangeBuddy: 'Đổi linh vật',
+  nRoomWelcome: 'Quà chào mừng: +{n} xu!',
 
   // App lock (Face ID / sinh trắc)
   nLockTitle: 'Khoá ứng dụng',
