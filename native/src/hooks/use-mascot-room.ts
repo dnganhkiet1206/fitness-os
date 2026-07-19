@@ -169,7 +169,9 @@ export function useBuyItem() {
                 : r,
             );
           }
-          rows.push({ item_key: item.key, equipped: item.type === 'outfit' });
+          // New purchases go in equipped/placed right away, but stay
+          // toggleable from the shop (gym gear + upgrades can be removed).
+          rows.push({ item_key: item.key, equipped: true });
           await writeLocal(LOCAL_INV_KEY, rows);
         }
         return;
@@ -177,7 +179,7 @@ export function useBuyItem() {
       const { error: invError } = await supabase.from('mascot_inventory').insert({
         user_id: user!.id,
         item_key: item.key,
-        equipped: item.type === 'outfit',
+        equipped: true,
       });
       if (invError) throw invError;
       const { error: txError } = await supabase.from('mascot_transactions').insert({

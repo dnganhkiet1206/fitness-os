@@ -156,28 +156,10 @@ export function MascotScene({
             <Stop offset="100%" stopColor="#1e150c" />
           </LinearGradient>
         </Defs>
-        {/* Upper wall + gym crash band (two-tone wall with accent stripe) */}
+        {/* Two-tone wall — kept minimal for breathing room */}
         <Rect x={0} y={-50} width={360} height={180} fill="url(#wall)" />
         <Rect x={0} y={130} width={360} height={75} fill="url(#lowerWall)" />
-        <Line x1={0} y1={130} x2={360} y2={130} stroke={colors.metricCyan} strokeWidth={2} opacity={0.32} />
-        <Line x1={0} y1={133.5} x2={360} y2={133.5} stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
-        {/* Ghost dumbbell watermark on the center wall */}
-        <G opacity={0.04} transform="translate(185 96) rotate(-18)">
-          <Rect x={-34} y={-4} width={68} height={8} rx={4} fill="#fff" />
-          <Rect x={-46} y={-16} width={12} height={32} rx={5} fill="#fff" />
-          <Rect x={34} y={-16} width={12} height={32} rx={5} fill="#fff" />
-        </G>
-        {/* Tiny stars high on the wall */}
-        {[
-          [30, -30, 1.4],
-          [74, -12, 1],
-          [150, -34, 1.2],
-          [206, -18, 1],
-          [332, -32, 1.4],
-          [232, 6, 1],
-        ].map(([x, y, r], i) => (
-          <Circle key={i} cx={x} cy={y} r={r} fill="rgba(255,255,255,0.35)" />
-        ))}
+        <Line x1={0} y1={130} x2={360} y2={130} stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
         {/* Upgrade: LED strip glowing along the ceiling line */}
         {ownedGym.has('wall_led') && (
           <G>
@@ -207,13 +189,6 @@ export function MascotScene({
           <Rect x={279} y={72} width={2} height={2} fill={colors.readinessYellow} />
           <Rect x={308} y={78} width={2} height={2} fill={colors.metricCyan} />
           <Rect x={296} y={92} width={2} height={2} fill={colors.readinessYellow} />
-        </G>
-        {/* Wall clock */}
-        <G>
-          <Circle cx={34} cy={22} r={13} fill="#14141c" stroke="rgba(255,255,255,0.2)" strokeWidth={1.6} />
-          <Line x1={34} y1={22} x2={34} y2={14} stroke="#cfd3dd" strokeWidth={1.8} strokeLinecap="round" />
-          <Line x1={34} y1={22} x2={40} y2={25} stroke="#cfd3dd" strokeWidth={1.4} strokeLinecap="round" />
-          <Circle cx={34} cy={22} r={1.6} fill={colors.metricCyan} />
         </G>
         {/* Floor — pro neon > wooden > default concrete */}
         {ownedGym.has('floor_neon') ? (
@@ -257,13 +232,6 @@ export function MascotScene({
             pooling on the floor under the buddy */}
         <Rect x={0} y={200} width={360} height={5} fill="rgba(0,0,0,0.35)" />
         <Ellipse cx={180} cy={252} rx={118} ry={30} fill="rgba(255,255,255,0.028)" />
-        {/* Bumper plates leaning on the wall (base gym decor) */}
-        <G>
-          <Circle cx={258} cy={186} r={19} fill="#1c1c26" stroke={colors.metricOrange} strokeWidth={3} />
-          <Circle cx={258} cy={186} r={5} fill="#0d0d12" />
-          <Circle cx={276} cy={190} r={14} fill="#1c1c26" stroke={colors.metricCyan} strokeWidth={2.6} />
-          <Circle cx={276} cy={190} r={4} fill="#0d0d12" />
-        </G>
 
         {ownedGym.has('neon_sign') && <NeonSign />}
         {ownedGym.has('mirror') && <Mirror />}
@@ -291,10 +259,6 @@ export function MascotScene({
         )}
         <Pressable onPress={poke} hitSlop={10}>
           <Animated.View style={[styles.char, charStyle]}>
-            {/* Aura — dims when the buddy is drained */}
-            <View
-              style={[styles.aura, { backgroundColor: mascot.accent, opacity: tired ? 0.05 : 0.14 }]}
-            />
             <VectorMascot
               mascot={mascot}
               size={CHAR}

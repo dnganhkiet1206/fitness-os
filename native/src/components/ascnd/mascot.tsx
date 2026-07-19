@@ -182,13 +182,9 @@ export function Mascot() {
     <View style={styles.row} pointerEvents="box-none">
       <Pressable onPress={poke} hitSlop={8}>
         <View style={styles.stage}>
-          {/* Character-colored aura — dims when the buddy is drained */}
-          <View
-            style={[styles.aura, { backgroundColor: mascot.accent, opacity: tired ? 0.06 : 0.16 }]}
-          />
           {/* Ground shadow */}
           <Animated.View style={[styles.groundShadow, shadowStyle]} />
-          <Animated.View style={[styles.body, { shadowColor: mascot.accent }, bodyStyle]}>
+          <Animated.View style={[styles.body, bodyStyle]}>
             <VectorMascot
               mascot={mascot}
               size={54}

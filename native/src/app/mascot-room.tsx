@@ -213,7 +213,7 @@ export default function MascotRoomScreen() {
       {/* The room */}
       <MascotScene
         mascot={mascot}
-        ownedGym={owned}
+        ownedGym={equippedOutfits}
         equippedOutfits={equippedOutfits}
         celebrateSignal={celebrate}
         flexSignal={flex}
@@ -514,7 +514,7 @@ function ShopGrid({
   onBuy: (item: ShopItem) => void;
   onToggleEquip: (key: string, next: boolean) => void;
   lang: 'vi' | 'en';
-  i18n: { nRoomBuy: string; nRoomWear: string; nRoomWearing: string; nRoomPlaced: string };
+  i18n: { nRoomBuy: string; nRoomWear: string; nRoomWearing: string; nRoomPlaced: string; nRoomPlace: string };
   placedLabel?: string;
 }) {
   return (
@@ -550,7 +550,9 @@ function ShopGrid({
                     </>
                   )}
                 </Pressable>
-              ) : item.type === 'outfit' ? (
+              ) : (
+                // Owned items toggle on/off — outfits are worn, gym gear
+                // and upgrades are placed in the room (and can be removed).
                 <Pressable
                   style={({ pressed }) => [
                     styles.ownedBtn,
@@ -560,14 +562,15 @@ function ShopGrid({
                   onPress={() => onToggleEquip(item.key, !isEquipped)}>
                   {isEquipped && <Icon icon={Check} size={11} color={colors.readinessGreen} strokeWidth={3} />}
                   <Text style={[styles.ownedText, isEquipped && styles.wearingText]}>
-                    {isEquipped ? i18n.nRoomWearing : i18n.nRoomWear}
+                    {item.type === 'outfit'
+                      ? isEquipped
+                        ? i18n.nRoomWearing
+                        : i18n.nRoomWear
+                      : isEquipped
+                        ? (placedLabel ?? i18n.nRoomPlaced)
+                        : i18n.nRoomPlace}
                   </Text>
                 </Pressable>
-              ) : (
-                <View style={styles.ownedBtn}>
-                  <Icon icon={Check} size={11} color={colors.readinessGreen} strokeWidth={3} />
-                  <Text style={styles.ownedText}>{placedLabel ?? i18n.nRoomPlaced}</Text>
-                </View>
               )}
             </GlassCard>
           );

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View } from 'react-native';
 import Animated, {
   Easing,
@@ -246,8 +246,12 @@ export function VectorMascot({
   });
   const lidStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: lid.value }] }));
 
-  const ids = useRef(0);
-  const id = () => `${pfx}_${ids.current++}`;
+  // Clip-path ids must be STABLE across re-renders — reset the counter
+  // every render so each Part keeps the same id (an ever-incrementing
+  // ref produced fresh ids each render, leaving `url(#id)` refs dangling
+  // on iOS and breaking the mascot).
+  let idc = 0;
+  const id = () => `${pfx}_${idc++}`;
 
   const legL = capsule(hipCx - 14, hipY + 8, 30, footL, FOOT_Y - 6, 20);
   const legR = capsule(hipCx + 14, hipY + 8, 30, footR, FOOT_Y - 6, 20);
