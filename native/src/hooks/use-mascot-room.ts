@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -5,6 +6,38 @@ import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { buyRefKey, getShopItem, xpForRefKey, type ShopItem } from '@/lib/mascot-room';
 import { useAuth } from './use-auth';
+
+/**
+ * While TEST_UNLOCK_ALL is on, the whole mascot economy lives in
+ * AsyncStorage on-device: the Supabase tables (mascot_transactions /
+ * mascot_inventory) come from a migration that hasn't been applied to
+ * the temporary Lovable project yet, and testing must not depend on it.
+ * Flip the flag off and every hook below goes back to Supabase.
+ */
+const LOCAL_TX_KEY = 'ascnd_test_mascot_tx';
+const LOCAL_INV_KEY = 'ascnd_test_mascot_inventory';
+
+interface LocalTx {
+  amount: number;
+  ref_key: string;
+}
+interface LocalInv {
+  item_key: string;
+  equipped: boolean;
+}
+
+async function readLocal<T>(key: string): Promise<T[]> {
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeLocal(key: string, rows: unknown[]) {
+  await AsyncStorage.setItem(key, JSON.stringify(rows));
+}
 
 /**
  * Wallet = the full transaction ledger reduced client-side: balance and
@@ -18,12 +51,17 @@ export function useMascotWallet() {
     queryKey: ['mascot_wallet', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('mascot_transactions')
-        .select('amount, ref_key')
-        .eq('user_id', user!.id);
-      if (error) throw error;
-      const rows = data ?? [];
+      let rows: LocalTx[];
+      if (TEST_UNLOCK_ALL) {
+        rows = await readLocal<LocalTx>(LOCAL_TX_KEY);
+      } else {
+        const { data, error } = await supabase
+          .from('mascot_transactions')
+          .select('amount, ref_key')
+          .eq('user_id', user!.id);
+        if (error) throw error;
+        rows = data ?? [];
+      }
       return {
         balance: rows.reduce((s, r) => s + r.amount, 0),
         // Buddy XP is re-derived from claimed ref_keys, so quests grant XP
@@ -72,7 +110,8 @@ export function useMascotInventory() {
   return useQuery({
     queryKey: ['mascot_inventory', user?.id],
     enabled: !!user,
-    queryFn: async () => {
+    queryFn: async (): Promise<LocalInv[]> => {
+      if (TEST_UNLOCK_ALL) return readLocal<LocalInv>(LOCAL_INV_KEY);
       const { data, error } = await supabase
         .from('mascot_inventory')
         .select('item_key, equipped')
@@ -89,6 +128,13 @@ export function useClaimReward() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ refKey, amount, reason }: { refKey: string; amount: number; reason: string }) => {
+      if (TEST_UNLOCK_ALL) {
+        const rows = await readLocal<LocalTx>(LOCAL_TX_KEY);
+        if (rows.some((r) => r.ref_key === refKey)) return; // already claimed
+        rows.push({ amount, ref_key: refKey });
+        await writeLocal(LOCAL_TX_KEY, rows);
+        return;
+      }
       const { error } = await supabase.from('mascot_transactions').insert({
         user_id: user!.id,
         amount,
@@ -102,6 +148,8 @@ export function useClaimReward() {
   });
 }
 
+const SAME_SLOT_POOL = ['headband', 'cap', 'sunglasses', 'medal', 'belt'] as const;
+
 /** Buy a shop item: inventory row first (unique blocks re-buys), then the
  *  spend row. Outfits auto-equip on purchase. */
 export function useBuyItem() {
@@ -109,22 +157,36 @@ export function useBuyItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (item: ShopItem) => {
+      if (TEST_UNLOCK_ALL) {
+        // Local test economy: free, instant, no Supabase needed
+        let rows = await readLocal<LocalInv>(LOCAL_INV_KEY);
+        if (!rows.some((r) => r.item_key === item.key)) {
+          if (item.type === 'outfit' && item.slot) {
+            const slotKeys = SAME_SLOT_POOL.filter((k) => getShopItem(k)?.slot === item.slot);
+            rows = rows.map((r) =>
+              slotKeys.includes(r.item_key as (typeof SAME_SLOT_POOL)[number])
+                ? { ...r, equipped: false }
+                : r,
+            );
+          }
+          rows.push({ item_key: item.key, equipped: item.type === 'outfit' });
+          await writeLocal(LOCAL_INV_KEY, rows);
+        }
+        return;
+      }
       const { error: invError } = await supabase.from('mascot_inventory').insert({
         user_id: user!.id,
         item_key: item.key,
         equipped: item.type === 'outfit',
       });
       if (invError) throw invError;
-      // Test mode: no spend row — everything in the shop is free
-      if (!TEST_UNLOCK_ALL) {
-        const { error: txError } = await supabase.from('mascot_transactions').insert({
-          user_id: user!.id,
-          amount: -item.price,
-          reason: `buy ${item.key}`,
-          ref_key: buyRefKey(item.key),
-        });
-        if (txError) throw txError;
-      }
+      const { error: txError } = await supabase.from('mascot_transactions').insert({
+        user_id: user!.id,
+        amount: -item.price,
+        reason: `buy ${item.key}`,
+        ref_key: buyRefKey(item.key),
+      });
+      if (txError) throw txError;
       // Wearing the new piece unequips others in the same slot
       if (item.type === 'outfit' && item.slot) {
         await unequipSameSlot(user!.id, item.key, item.slot);
@@ -138,7 +200,7 @@ export function useBuyItem() {
 }
 
 async function unequipSameSlot(userId: string, keepKey: string, slot: string) {
-  const sameSlotKeys = (['headband', 'cap', 'sunglasses', 'medal', 'belt'] as const).filter(
+  const sameSlotKeys = SAME_SLOT_POOL.filter(
     (k) => k !== keepKey && getShopItem(k)?.slot === slot,
   );
   if (sameSlotKeys.length === 0) return;
@@ -155,13 +217,29 @@ export function useToggleEquip() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ itemKey, equipped }: { itemKey: string; equipped: boolean }) => {
+      const item = getShopItem(itemKey);
+      if (TEST_UNLOCK_ALL) {
+        let rows = await readLocal<LocalInv>(LOCAL_INV_KEY);
+        if (equipped && item?.slot) {
+          const slotKeys = SAME_SLOT_POOL.filter(
+            (k) => k !== itemKey && getShopItem(k)?.slot === item.slot,
+          );
+          rows = rows.map((r) =>
+            slotKeys.includes(r.item_key as (typeof SAME_SLOT_POOL)[number])
+              ? { ...r, equipped: false }
+              : r,
+          );
+        }
+        rows = rows.map((r) => (r.item_key === itemKey ? { ...r, equipped } : r));
+        await writeLocal(LOCAL_INV_KEY, rows);
+        return;
+      }
       const { error } = await supabase
         .from('mascot_inventory')
         .update({ equipped })
         .eq('user_id', user!.id)
         .eq('item_key', itemKey);
       if (error) throw error;
-      const item = getShopItem(itemKey);
       if (equipped && item?.slot) await unequipSameSlot(user!.id, itemKey, item.slot);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['mascot_inventory', user?.id] }),
