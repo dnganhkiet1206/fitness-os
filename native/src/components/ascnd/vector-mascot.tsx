@@ -4,7 +4,6 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
@@ -168,22 +167,41 @@ export function VectorMascot({
   const sway = useSharedValue(0.5);
   const lid = useSharedValue(tired ? 0.4 : 0);
 
+  // Breath + weight-shift are self-scheduled (not withRepeat) so every
+  // cycle varies ±10% — no perfectly-periodic loop, which reads as
+  // "alive". The value animations still run on the UI thread; only the
+  // cheap re-scheduling is JS. Breath and sway run on separate timers so
+  // they drift out of sync (layered idle).
   useEffect(() => {
     if (!animated) return;
-    const bin = tired ? a.p.bin * 1.3 : a.p.bin;
-    const bout = tired ? a.p.bout * 1.3 : a.p.bout;
-    breath.value = withRepeat(
-      withSequence(withTiming(1, { duration: bin }), withTiming(0, { duration: bout })),
-      -1,
-    );
-    // slow weight shift — the "it's alive" cue; nearly frozen when tired
-    sway.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: a.p.swayDur, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: a.p.swayDur, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-    );
+    const jit = (v: number) => v * (0.9 + Math.random() * 0.2);
+    let alive = true;
+    let bt: ReturnType<typeof setTimeout>;
+    let st: ReturnType<typeof setTimeout>;
+    const breathe = () => {
+      const bin = jit(tired ? a.p.bin * 1.3 : a.p.bin);
+      const bout = jit(tired ? a.p.bout * 1.3 : a.p.bout);
+      breath.value = withSequence(
+        withTiming(1, { duration: bin, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: bout, easing: Easing.inOut(Easing.sin) }),
+      );
+      if (alive) bt = setTimeout(breathe, bin + bout);
+    };
+    const shift = () => {
+      const dur = jit(a.p.swayDur);
+      sway.value = withTiming(sway.value < 0.5 ? 1 : 0, {
+        duration: dur,
+        easing: Easing.inOut(Easing.sin),
+      });
+      if (alive) st = setTimeout(shift, dur);
+    };
+    breathe();
+    st = setTimeout(shift, 400 + Math.random() * 600);
+    return () => {
+      alive = false;
+      clearTimeout(bt);
+      clearTimeout(st);
+    };
   }, [animated, tired, a.p.bin, a.p.bout, a.p.swayDur, breath, sway]);
 
   useEffect(() => {
