@@ -75,6 +75,14 @@ export const spacing = {
   xl: 32,
 } as const;
 
+/**
+ * Canonical pressed-state feedback for Pressables — the app already uses
+ * this recipe in ~90% of places; import it (`pressed && press`) so every
+ * new tap target feels identical instead of re-deriving a slightly
+ * different scale/opacity each time.
+ */
+export const press = { opacity: 0.85, transform: [{ scale: 0.97 }] } as const;
+
 const mono = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
 /**
