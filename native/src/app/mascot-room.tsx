@@ -1,8 +1,11 @@
 import {
+  Armchair,
   Check,
   Coins,
+  Cylinder,
   Dumbbell,
   Flame,
+  Footprints,
   Glasses,
   GraduationCap,
   Image as ImageIcon,
@@ -16,6 +19,7 @@ import {
   Shield,
   Sprout,
   Star,
+  Weight,
   Zap,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -47,7 +51,9 @@ import {
   DAILY_QUESTS,
   LEVEL_XP,
   SHOP_ITEMS,
+  STREAK_XP,
   WEEKLY_BONUS_COINS,
+  WEEKLY_BONUS_XP,
   levelFromXp,
   questRefKey,
   streakCoins,
@@ -63,8 +69,12 @@ const ITEM_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   medal: { icon: Medal, color: colors.readinessYellow },
   belt: { icon: Shield, color: colors.metricOrange },
   yoga_mat: { icon: RectangleHorizontal, color: colors.metricPurple },
+  kettlebell: { icon: Weight, color: colors.metricOrange },
   barbell: { icon: Dumbbell, color: colors.metricCyan },
   dumbbell_rack: { icon: Dumbbell, color: colors.metricOrange },
+  bench: { icon: Armchair, color: '#e6485c' },
+  punching_bag: { icon: Cylinder, color: '#e6485c' },
+  treadmill: { icon: Footprints, color: colors.metricCyan },
   plant: { icon: Sprout, color: colors.readinessGreen },
   mirror: { icon: RectangleVertical, color: colors.mutedForeground },
   neon_sign: { icon: Zap, color: colors.metricCyan },
@@ -77,7 +87,7 @@ const ITEM_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
 export default function MascotRoomScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const { mascot, message } = useMascot();
+  const { mascot, message, mood } = useMascot();
 
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();
@@ -110,14 +120,20 @@ export default function MascotRoomScreen() {
     steps: (dailyLog?.steps ?? 0) >= 5000,
   };
 
-  const reward = (refKey: string, amount: number, reason: string) => {
+  const reward = (refKey: string, amount: number, reason: string, xpGain: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const prevXp = wallet?.xp ?? 0;
     claim.mutate(
       { refKey, amount, reason },
       {
         onSuccess: () => {
           setCelebrate((c) => c + 1);
-          toast.success(i18n.nRoomEarned.replace('{n}', String(amount)));
+          const newLevel = levelFromXp(prevXp + xpGain);
+          if (newLevel > levelFromXp(prevXp)) {
+            toast.success(i18n.nRoomLevelUp.replace('{n}', String(newLevel)));
+          } else {
+            toast.success(i18n.nRoomEarned.replace('{n}', String(amount)));
+          }
         },
         onError: (e: Error) => toast.error(e.message),
       },
@@ -142,10 +158,10 @@ export default function MascotRoomScreen() {
 
   const completedWeekly = (challenges ?? []).filter((c) => c.completed);
 
-  // Buddy level from lifetime coins earned (spending never lowers it)
-  const earned = wallet?.earned ?? 0;
-  const level = levelFromXp(earned);
-  const intoLevel = earned % LEVEL_XP;
+  // Buddy level from quest XP (purchases grant none, so it never drops)
+  const xp = wallet?.xp ?? 0;
+  const level = levelFromXp(xp);
+  const intoLevel = xp % LEVEL_XP;
 
   const streakRefKey = `d:${today}:streak`;
   const streakBonus = streakCoins(streak);
@@ -166,8 +182,14 @@ export default function MascotRoomScreen() {
         ownedGym={owned}
         equippedOutfits={equippedOutfits}
         celebrateSignal={celebrate}
+        mood={mood}
+        level={level}
       />
-      {message ? (
+      {mood === 'tired' ? (
+        <View style={styles.bubble}>
+          <Text style={styles.bubbleText}>{i18n.nRoomMoodTired}</Text>
+        </View>
+      ) : message ? (
         <View style={styles.bubble}>
           <Text style={styles.bubbleText}>{message}</Text>
         </View>
@@ -223,6 +245,7 @@ export default function MascotRoomScreen() {
                 <View style={styles.questCoins}>
                   <Icon icon={Coins} size={11} color={colors.readinessYellow} />
                   <Text style={styles.questCoinText}>+{q.coins}</Text>
+                  <Text style={styles.questXpText}>+{q.xp} XP</Text>
                 </View>
               </View>
               {isClaimed ? (
@@ -238,7 +261,7 @@ export default function MascotRoomScreen() {
                     !isDone && styles.claimBtnDisabled,
                     pressed && isDone && styles.pressed,
                   ]}
-                  onPress={() => reward(refKey, q.coins, q.key)}>
+                  onPress={() => reward(refKey, q.coins, q.key, q.xp)}>
                   <Text style={[styles.claimText, !isDone && styles.claimTextDisabled]}>
                     {i18n.nRoomClaim}
                   </Text>
@@ -261,6 +284,7 @@ export default function MascotRoomScreen() {
               <View style={styles.questCoins}>
                 <Icon icon={Coins} size={11} color={colors.readinessYellow} />
                 <Text style={styles.questCoinText}>+{streakBonus}</Text>
+                <Text style={styles.questXpText}>+{STREAK_XP} XP</Text>
               </View>
             </View>
             {claimed.has(streakRefKey) ? (
@@ -272,7 +296,7 @@ export default function MascotRoomScreen() {
               <Pressable
                 disabled={claim.isPending}
                 style={({ pressed }) => [styles.claimBtn, pressed && styles.pressed]}
-                onPress={() => reward(streakRefKey, streakBonus, `streak:${streak}`)}>
+                onPress={() => reward(streakRefKey, streakBonus, `streak:${streak}`, STREAK_XP)}>
                 <Text style={styles.claimText}>{i18n.nRoomClaim}</Text>
               </Pressable>
             )}
@@ -297,6 +321,7 @@ export default function MascotRoomScreen() {
                   <View style={styles.questCoins}>
                     <Icon icon={Coins} size={11} color={colors.readinessYellow} />
                     <Text style={styles.questCoinText}>+{WEEKLY_BONUS_COINS}</Text>
+                    <Text style={styles.questXpText}>+{WEEKLY_BONUS_XP} XP</Text>
                   </View>
                 </View>
                 {isClaimed ? (
@@ -308,7 +333,9 @@ export default function MascotRoomScreen() {
                   <Pressable
                     disabled={claim.isPending}
                     style={({ pressed }) => [styles.claimBtn, pressed && styles.pressed]}
-                    onPress={() => reward(refKey, WEEKLY_BONUS_COINS, `weekly:${c.challenge_key}`)}>
+                    onPress={() =>
+                      reward(refKey, WEEKLY_BONUS_COINS, `weekly:${c.challenge_key}`, WEEKLY_BONUS_XP)
+                    }>
                     <Text style={styles.claimText}>{i18n.nRoomClaim}</Text>
                   </Pressable>
                 )}
@@ -507,6 +534,13 @@ const styles = StyleSheet.create({
   questNameDone: { color: colors.mutedForeground },
   questCoins: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   questCoinText: { ...type.caption, fontWeight: '700', color: colors.readinessYellow, fontVariant: ['tabular-nums'] },
+  questXpText: {
+    ...type.caption,
+    fontWeight: '700',
+    color: colors.metricPurple,
+    fontVariant: ['tabular-nums'],
+    marginLeft: 4,
+  },
   claimBtn: {
     height: 32,
     paddingHorizontal: spacing.md,

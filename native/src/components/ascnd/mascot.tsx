@@ -18,6 +18,8 @@ import Animated, {
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useMascot } from '@/hooks/use-mascot';
+import { useMascotWallet } from '@/hooks/use-mascot-room';
+import { levelFromXp } from '@/lib/mascot-room';
 
 /**
  * Floating fitness companion — "2.5D": the emoji artwork is animated in
@@ -27,16 +29,22 @@ import { useMascot } from '@/hooks/use-mascot';
  * ready for real Lottie/GLB characters later.
  */
 export function Mascot() {
-  const { enabled, mascot, message } = useMascot();
+  const { enabled, mascot, message, mood } = useMascot();
+  const { data: wallet } = useMascotWallet();
   const [bubbleVisible, setBubbleVisible] = useState(true);
+  const tired = mood === 'tired';
+  // Visible gains: the buddy grows a touch with every room level
+  const levelScale = Math.min(1 + (levelFromXp(wallet?.xp ?? 0) - 1) * 0.02, 1.2);
 
   const hover = useSharedValue(0); // 0..1 (0 = ground, 1 = top of float)
   const entrance = useSharedValue(0); // 0..1
   const tiltY = useSharedValue(0); // deg — slow look-around
   const nod = useSharedValue(0); // deg rotateX
+  const droop = useSharedValue(0); // deg — forward slump when tired
   const spin = useSharedValue(0); // deg rotateY for flips
   const squashX = useSharedValue(1);
   const squashY = useSharedValue(1);
+  const blinkSq = useSharedValue(1); // quick squint multiplied into scaleY
   const bubble = useSharedValue(0);
 
   // Idle life: float loop + slow look-around sway
@@ -59,8 +67,35 @@ export function Mascot() {
     );
   }, [entrance, hover, tiltY]);
 
-  // Random quirks so it feels alive, not looping: a hop, a nod, or a flip
+  // Tired buddy slumps forward and blinks slow and heavy
   useEffect(() => {
+    droop.value = withSpring(tired ? 10 : 0, { stiffness: 120, damping: 14 });
+  }, [tired, droop]);
+
+  useEffect(() => {
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      timer = setTimeout(() => {
+        if (!alive) return;
+        blinkSq.value = withSequence(
+          withTiming(tired ? 0.8 : 0.88, { duration: tired ? 130 : 70 }),
+          withTiming(1, { duration: tired ? 240 : 110 }),
+        );
+        schedule();
+      }, (tired ? 1800 : 2800) + Math.random() * 3400);
+    };
+    schedule();
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [blinkSq, tired]);
+
+  // Random quirks so it feels alive, not looping: a hop, a nod, or a flip
+  // (paused while tired — no energy for tricks)
+  useEffect(() => {
+    if (tired) return;
     let alive = true;
     const doQuirk = () => {
       if (!alive) return;
@@ -103,7 +138,7 @@ export function Mascot() {
       alive = false;
       clearTimeout(timer);
     };
-  }, [squashX, squashY, nod, spin]);
+  }, [tired, squashX, squashY, nod, spin]);
 
   useEffect(() => {
     bubble.value = withSpring(bubbleVisible && message ? 1 : 0, { stiffness: 260, damping: 20 });
@@ -114,10 +149,10 @@ export function Mascot() {
       { perspective: 320 },
       { translateY: interpolate(hover.value, [0, 1], [0, -7]) },
       { rotateY: `${tiltY.value + spin.value}deg` },
-      { rotateX: `${nod.value}deg` },
-      { scale: entrance.value },
+      { rotateX: `${nod.value + droop.value}deg` },
+      { scale: entrance.value * levelScale },
       { scaleX: squashX.value },
-      { scaleY: squashY.value },
+      { scaleY: squashY.value * blinkSq.value },
     ],
   }));
 
@@ -161,8 +196,10 @@ export function Mascot() {
     <View style={styles.row} pointerEvents="box-none">
       <Pressable onPress={poke} hitSlop={8}>
         <View style={styles.stage}>
-          {/* Character-colored aura */}
-          <View style={[styles.aura, { backgroundColor: mascot.accent }]} />
+          {/* Character-colored aura — dims when the buddy is drained */}
+          <View
+            style={[styles.aura, { backgroundColor: mascot.accent, opacity: tired ? 0.06 : 0.16 }]}
+          />
           {/* Ground shadow */}
           <Animated.View style={[styles.groundShadow, shadowStyle]} />
           <Animated.View style={[styles.body, { shadowColor: mascot.accent }, bodyStyle]}>

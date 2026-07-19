@@ -116,10 +116,32 @@ export function useMascotMessage(): string | null {
   }, [i18n, log, meals, waterMl, profile]);
 }
 
+export type MascotMood = 'happy' | 'neutral' | 'tired';
+
+/**
+ * The buddy mirrors the user's day: fresh when meals + training are
+ * logged, visibly tired when the log stays empty past the natural hour
+ * for it (no meal after noon, or no workout by evening).
+ */
+export function useMascotMood(): MascotMood {
+  const { data: log } = useDailyLog();
+  const { data: meals } = useTodayMeals();
+
+  return useMemo(() => {
+    const hour = new Date().getHours();
+    const mealCount = meals?.length ?? 0;
+    const workedOut = Number(log?.workout_count ?? 0) > 0;
+    if (mealCount > 0 && workedOut) return 'happy';
+    if ((hour >= 12 && mealCount === 0) || (hour >= 18 && !workedOut)) return 'tired';
+    return 'neutral';
+  }, [log, meals]);
+}
+
 export function useMascot() {
   const settings = useMascotSettings();
   const { data: stats } = useUnlockStats();
   const message = useMascotMessage();
+  const mood = useMascotMood();
 
   const unlockStats = stats ?? { workouts: 0, meals: 0 };
   const selected = getMascot(settings.selectedId);
@@ -131,5 +153,5 @@ export function useMascot() {
     unlocked: isUnlocked(m, unlockStats),
   }));
 
-  return { ...settings, mascot, catalog, unlockStats, message };
+  return { ...settings, mascot, catalog, unlockStats, message, mood };
 }

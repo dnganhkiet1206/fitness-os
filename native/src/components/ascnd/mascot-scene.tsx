@@ -15,6 +15,7 @@ import Svg, { Circle, Ellipse, G, Line, Path, Rect, Text as SvgText } from 'reac
 
 import { colors } from '@/constants/ascnd';
 import type { MascotDef } from '@/lib/mascots';
+import type { MascotMood } from '@/hooks/use-mascot';
 import type { ShopItemKey } from '@/lib/mascot-room';
 
 /**
@@ -23,24 +24,56 @@ import type { ShopItemKey } from '@/lib/mascot-room';
  * animated emoji companion standing in the middle wearing its purchased
  * outfit layers (SVG stickers anchored over the glyph). Tap the buddy to
  * play a reaction; bump `celebrateSignal` to fire the purchase jump.
+ *
+ * Idle life: the buddy blinks (quick squint), occasionally strolls to a
+ * new spot on the floor with little hop-steps, and — when the user hasn't
+ * logged meals/workouts — goes visibly tired: droops forward, hovers low
+ * and slow, aura dims, zzz float up, a sweat drop appears.
+ *
+ * Gains: levels literally build muscle — the buddy grows a bit each
+ * level, and code-drawn flexed arms appear at level 2, bulk up at 5,
+ * and get the full pump (bigger guns + effort sparks) at 9.
  */
 
 const SCENE_H = 290;
 const CHAR = 120; // character box; emoji glyph is centered inside
+const WALK_RANGE = 68; // max px the buddy strolls from center
+
+/** 0 = no visible muscle yet, 1..3 = progressively swole */
+const muscleTierForLevel = (level: number) => (level >= 9 ? 3 : level >= 5 ? 2 : level >= 2 ? 1 : 0);
 
 interface Props {
   mascot: MascotDef;
   ownedGym: Set<string>;
   equippedOutfits: Set<string>;
   celebrateSignal: number;
+  mood?: MascotMood;
+  level?: number;
 }
 
-export function MascotScene({ mascot, ownedGym, equippedOutfits, celebrateSignal }: Props) {
+export function MascotScene({
+  mascot,
+  ownedGym,
+  equippedOutfits,
+  celebrateSignal,
+  mood = 'neutral',
+  level = 1,
+}: Props) {
   const hover = useSharedValue(0);
+  const hoverAmp = useSharedValue(6); // hover height — shrinks when tired
   const squashX = useSharedValue(1);
   const squashY = useSharedValue(1);
+  const blinkSq = useSharedValue(1); // quick squint multiplied into scaleY
   const tilt = useSharedValue(0);
   const spin = useSharedValue(0);
+  const droop = useSharedValue(0); // forward slump (rotateX) when tired
+  const walkX = useSharedValue(0);
+  const face = useSharedValue(1); // 1 faces right, -1 faces left
+  const zzz = useSharedValue(0);
+  const tired = mood === 'tired';
+  const muscleTier = muscleTierForLevel(level);
+  // Every level adds a little size — gains you can see (capped at +25%)
+  const levelScale = Math.min(1 + (level - 1) * 0.025, 1.25);
 
   useEffect(() => {
     hover.value = withRepeat(
@@ -51,6 +84,77 @@ export function MascotScene({ mascot, ownedGym, equippedOutfits, celebrateSignal
       -1,
     );
   }, [hover]);
+
+  // Mood: slump forward, hover barely, drift back to center when tired
+  useEffect(() => {
+    droop.value = withSpring(tired ? 13 : 0, { stiffness: 120, damping: 14 });
+    hoverAmp.value = withTiming(tired ? 2.5 : 6, { duration: 600 });
+    if (tired) {
+      walkX.value = withTiming(0, { duration: 900, easing: Easing.inOut(Easing.quad) });
+      face.value = withTiming(1, { duration: 200 });
+      zzz.value = withRepeat(withTiming(1, { duration: 2600, easing: Easing.out(Easing.quad) }), -1);
+    } else {
+      zzz.value = 0;
+    }
+  }, [tired, droop, hoverAmp, walkX, face, zzz]);
+
+  // Blink: random squint every few seconds (slower, heavier when tired)
+  useEffect(() => {
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      timer = setTimeout(() => {
+        if (!alive) return;
+        blinkSq.value = withSequence(
+          withTiming(tired ? 0.78 : 0.86, { duration: tired ? 140 : 70 }),
+          withTiming(1, { duration: tired ? 260 : 110 }),
+        );
+        schedule();
+      }, (tired ? 1800 : 2600) + Math.random() * 3600);
+    };
+    schedule();
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [blinkSq, tired]);
+
+  // Stroll: every so often wander to a new spot with hop-steps (skipped
+  // while tired — a sluggish buddy stays put)
+  useEffect(() => {
+    if (tired) return;
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      timer = setTimeout(() => {
+        if (!alive) return;
+        const target = Math.round(Math.random() * WALK_RANGE * 2 - WALK_RANGE);
+        const dist = Math.abs(target - walkX.value);
+        if (dist > 14) {
+          const dur = dist * 16;
+          face.value = withTiming(target > walkX.value ? 1 : -1, { duration: 160 });
+          walkX.value = withTiming(target, { duration: dur, easing: Easing.inOut(Easing.quad) });
+          const steps = Math.max(2, Math.round(dur / 300));
+          squashY.value = withSequence(
+            withRepeat(
+              withSequence(
+                withTiming(0.93, { duration: 150 }),
+                withTiming(1.04, { duration: 150 }),
+              ),
+              steps,
+            ),
+            withSpring(1, { stiffness: 260, damping: 14 }),
+          );
+        }
+        schedule();
+      }, 5000 + Math.random() * 8000);
+    };
+    schedule();
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [tired, walkX, face, squashY]);
 
   // Purchase celebration: double jump + full spin
   useEffect(() => {
@@ -88,17 +192,28 @@ export function MascotScene({ mascot, ownedGym, equippedOutfits, celebrateSignal
   const charStyle = useAnimatedStyle(() => ({
     transform: [
       { perspective: 320 },
-      { translateY: interpolate(hover.value, [0, 1], [0, -6]) },
+      { translateX: walkX.value },
+      { translateY: -hover.value * hoverAmp.value },
+      { rotateX: `${droop.value}deg` },
       { rotateZ: `${tilt.value}deg` },
       { rotateY: `${spin.value}deg` },
-      { scaleX: squashX.value },
-      { scaleY: squashY.value },
+      { scaleX: squashX.value * face.value * levelScale },
+      { scaleY: squashY.value * blinkSq.value * levelScale },
     ],
   }));
 
   const shadowStyle = useAnimatedStyle(() => ({
     opacity: interpolate(hover.value, [0, 1], [0.4, 0.16]),
-    transform: [{ scaleX: interpolate(hover.value, [0, 1], [1, 0.75]) }],
+    transform: [
+      { translateX: walkX.value },
+      { scaleX: interpolate(hover.value, [0, 1], [1, 0.75]) },
+    ],
+  }));
+
+  // zzz drift up and fade in a loop while tired
+  const zzzStyle = useAnimatedStyle(() => ({
+    opacity: zzz.value < 0.15 ? zzz.value * 4 : interpolate(zzz.value, [0.15, 1], [0.7, 0]),
+    transform: [{ translateX: walkX.value }, { translateY: -zzz.value * 22 }],
   }));
 
   return (
@@ -168,24 +283,39 @@ export function MascotScene({ mascot, ownedGym, equippedOutfits, celebrateSignal
 
         {ownedGym.has('neon_sign') && <NeonSign />}
         {ownedGym.has('mirror') && <Mirror />}
+        {ownedGym.has('punching_bag') && <PunchingBag />}
         {ownedGym.has('dumbbell_rack') && <DumbbellRack />}
         {ownedGym.has('plant') && <Plant />}
+        {ownedGym.has('bench') && <Bench />}
         {ownedGym.has('yoga_mat') && (
           <Ellipse cx={180} cy={252} rx={64} ry={13} fill={colors.metricPurple} opacity={0.32} />
         )}
         {ownedGym.has('barbell') && <Barbell />}
+        {ownedGym.has('kettlebell') && <Kettlebell />}
+        {ownedGym.has('treadmill') && <Treadmill />}
       </Svg>
 
       {/* Character standing on the floor */}
       <View style={styles.charWrap} pointerEvents="box-none">
         <Animated.View style={[styles.shadow, shadowStyle]} />
+        {tired && (
+          <Animated.View style={[styles.zzz, zzzStyle]} pointerEvents="none">
+            <Text style={styles.zzzBig}>z</Text>
+            <Text style={styles.zzzMid}>z</Text>
+            <Text style={styles.zzzSmall}>z</Text>
+          </Animated.View>
+        )}
         <Pressable onPress={poke} hitSlop={10}>
           <Animated.View style={[styles.char, charStyle]}>
-            {/* Aura */}
-            <View style={[styles.aura, { backgroundColor: mascot.accent }]} />
+            {/* Aura — dims when the buddy is drained */}
+            <View
+              style={[styles.aura, { backgroundColor: mascot.accent, opacity: tired ? 0.06 : 0.16 }]}
+            />
             <Text style={styles.emoji}>{mascot.emoji}</Text>
             {/* Outfit stickers, anchored over the glyph */}
             <Svg width={CHAR} height={CHAR} viewBox={`0 0 ${CHAR} ${CHAR}`} style={StyleSheet.absoluteFill} pointerEvents="none">
+              {/* Muscles first so outfits layer on top of them */}
+              {muscleTier > 0 && <MuscleArms tier={muscleTier} />}
               {equippedOutfits.has('headband') && (
                 <G>
                   <Rect x={26} y={26} width={68} height={11} rx={5.5} fill="#e6485c" />
@@ -223,11 +353,56 @@ export function MascotScene({ mascot, ownedGym, equippedOutfits, celebrateSignal
                   <Rect x={56} y={94} width={8} height={7} rx={1.6} fill="#7a5f1e" />
                 </G>
               )}
+              {tired && (
+                <Path
+                  d="M 92 30 C 98 40 99 45 92 47 C 85 45 86 40 92 30"
+                  fill={colors.metricCyan}
+                  opacity={0.8}
+                />
+              )}
             </Svg>
           </Animated.View>
         </Pressable>
       </View>
     </View>
+  );
+}
+
+// ─── Muscle arms (drawn in the 120×120 character box) ──────────────────
+
+/**
+ * Flexed cartoon arms that bulk up with the buddy's level. One arm is
+ * drawn on the left and mirrored for the right. Tier 3 adds effort
+ * sparks — the full gym-bro pump.
+ */
+function MuscleArms({ tier }: { tier: number }) {
+  const bicep = tier === 1 ? 6.5 : tier === 2 ? 8.5 : 10.5;
+  const armW = tier === 1 ? 7 : tier === 2 ? 9 : 11;
+  const arm = (
+    <G>
+      {/* shoulder → elbow */}
+      <Path d="M 32 64 C 23 63 16 68 13 76" stroke="#e2a76f" strokeWidth={armW} strokeLinecap="round" fill="none" />
+      {/* elbow → raised fist (the flex) */}
+      <Path d="M 13 76 C 10 66 12 58 18 52" stroke="#e2a76f" strokeWidth={armW - 1} strokeLinecap="round" fill="none" />
+      {/* bicep bulge + shine */}
+      <Circle cx={19} cy={66} r={bicep} fill="#e2a76f" />
+      <Circle cx={16.5} cy={63} r={bicep * 0.34} fill="rgba(255,255,255,0.35)" />
+      {/* fist */}
+      <Circle cx={18} cy={50} r={armW * 0.62} fill="#d89a5e" />
+      {tier >= 3 && (
+        <G>
+          <Line x1={7} y1={57} x2={3} y2={53} stroke={colors.readinessYellow} strokeWidth={2} strokeLinecap="round" />
+          <Line x1={5} y1={66} x2={1} y2={66} stroke={colors.readinessYellow} strokeWidth={2} strokeLinecap="round" />
+          <Line x1={7} y1={75} x2={3} y2={79} stroke={colors.readinessYellow} strokeWidth={2} strokeLinecap="round" />
+        </G>
+      )}
+    </G>
+  );
+  return (
+    <G>
+      {arm}
+      <G transform={`translate(${CHAR},0) scale(-1,1)`}>{arm}</G>
+    </G>
   );
 }
 
@@ -296,6 +471,57 @@ function Barbell() {
   );
 }
 
+function Kettlebell() {
+  return (
+    <G>
+      <Path d="M 116 232 a 9 9 0 0 1 18 0" stroke="#3a3f4c" strokeWidth={5} fill="none" />
+      <Circle cx={125} cy={247} r={13} fill="#22262e" stroke={colors.metricOrange} strokeWidth={1.6} />
+      <Ellipse cx={121} cy={243} rx={4} ry={5} fill="rgba(255,255,255,0.08)" />
+    </G>
+  );
+}
+
+function Bench() {
+  return (
+    <G>
+      <Rect x={214} y={216} width={72} height={11} rx={5.5} fill="#8f2f3c" />
+      <Rect x={214} y={219} width={72} height={3} fill="rgba(255,255,255,0.14)" />
+      <Rect x={222} y={227} width={7} height={18} rx={2.5} fill="#2c303a" />
+      <Rect x={271} y={227} width={7} height={18} rx={2.5} fill="#2c303a" />
+      <Rect x={218} y={243} width={64} height={4} rx={2} fill="#22262e" />
+    </G>
+  );
+}
+
+function PunchingBag() {
+  return (
+    <G>
+      <Line x1={228} y1={0} x2={228} y2={52} stroke="#4a4f5c" strokeWidth={2.5} />
+      <Rect x={214} y={52} width={28} height={64} rx={12} fill="#a4293a" />
+      <Rect x={214} y={74} width={28} height={7} fill="rgba(0,0,0,0.28)" />
+      <Rect x={219} y={56} width={6} height={52} rx={3} fill="rgba(255,255,255,0.12)" />
+    </G>
+  );
+}
+
+function Treadmill() {
+  return (
+    <G>
+      {/* Front-left of the floor, in front of the rack (painter order) */}
+      <Path d="M 22 258 L 100 248 L 104 258 L 26 270 Z" fill="#22262e" stroke="#3a3f4c" strokeWidth={1.4} />
+      {[44, 62, 80].map((x) => (
+        <Line key={x} x1={x} y1={256 - (x - 44) * 0.12} x2={x + 3} y2={264 - (x - 44) * 0.12} stroke="rgba(255,255,255,0.1)" strokeWidth={1.6} />
+      ))}
+      {/* Console post + glowing display */}
+      <Line x1={28} y1={256} x2={38} y2={232} stroke="#3a3f4c" strokeWidth={4} />
+      <Rect x={24} y={218} width={26} height={14} rx={4} fill="#101318" stroke={colors.metricCyan} strokeWidth={1.4} />
+      <Line x1={29} y1={225} x2={45} y2={225} stroke={colors.metricCyan} strokeWidth={1.6} opacity={0.8} />
+      <Ellipse cx={28} cy={270} rx={5} ry={4} fill="#2c303a" />
+      <Ellipse cx={100} cy={259} rx={5} ry={4} fill="#2c303a" />
+    </G>
+  );
+}
+
 const styles = StyleSheet.create({
   scene: {
     height: SCENE_H,
@@ -333,4 +559,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#000',
   },
+  zzz: {
+    position: 'absolute',
+    bottom: 150,
+    marginLeft: 74,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  zzzBig: { fontSize: 19, fontWeight: '800', color: '#8b93a4', fontStyle: 'italic' },
+  zzzMid: { fontSize: 14, fontWeight: '800', color: '#6b7280', fontStyle: 'italic', marginBottom: 8 },
+  zzzSmall: { fontSize: 10, fontWeight: '800', color: '#4a4f5c', fontStyle: 'italic', marginBottom: 16 },
 });

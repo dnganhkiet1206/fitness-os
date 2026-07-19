@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
-import { buyRefKey, getShopItem, type ShopItem } from '@/lib/mascot-room';
+import { buyRefKey, getShopItem, xpForRefKey, type ShopItem } from '@/lib/mascot-room';
 import { useAuth } from './use-auth';
 
 /**
@@ -25,8 +25,9 @@ export function useMascotWallet() {
       const rows = data ?? [];
       return {
         balance: rows.reduce((s, r) => s + r.amount, 0),
-        // Lifetime coins earned (spending excluded) — drives the buddy level
-        earned: rows.reduce((s, r) => s + Math.max(0, r.amount), 0),
+        // Buddy XP is re-derived from claimed ref_keys, so quests grant XP
+        // alongside coins and purchases never lower the level
+        xp: rows.reduce((s, r) => s + xpForRefKey(r.ref_key), 0),
         claimed: new Set(rows.map((r) => r.ref_key)),
       };
     },

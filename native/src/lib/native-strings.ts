@@ -287,7 +287,9 @@ const en = {
   nRoomInstalled: 'Installed',
   nRoomStreak: '{n}-day streak',
   nRoomLevel: 'Level {n}',
-  nRoomLevelHint: '{n} coins to the next level',
+  nRoomLevelHint: '{n} XP to the next level',
+  nRoomLevelUp: 'Level up! Your buddy reached level {n}',
+  nRoomMoodTired: "I'm feeling sluggish today… log a meal or a workout to wake me up!",
 
   // App lock (Face ID / biometrics)
   nLockTitle: 'App Lock',
@@ -566,7 +568,9 @@ const vi: typeof en = {
   nRoomInstalled: 'Đã lắp đặt',
   nRoomStreak: 'Chuỗi {n} ngày',
   nRoomLevel: 'Cấp {n}',
-  nRoomLevelHint: 'Còn {n} xu tới cấp tiếp theo',
+  nRoomLevelHint: 'Còn {n} XP tới cấp tiếp theo',
+  nRoomLevelUp: 'Lên cấp! Bạn đồng hành đạt cấp {n}',
+  nRoomMoodTired: 'Hôm nay tớ uể oải quá… ghi một bữa ăn hoặc tập một chút cho tớ tỉnh nhé!',
 
   // App lock (Face ID / sinh trắc)
   nLockTitle: 'Khoá ứng dụng',
