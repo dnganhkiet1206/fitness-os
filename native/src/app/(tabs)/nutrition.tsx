@@ -1,18 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Trash2, Utensils } from 'lucide-react-native';
+import { ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
+import { FoodCard, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { dedupeSeedShadows, useCreateFoodItem, useDeleteFoodItem, useFavoriteFoods, useMyFoods, useRecentFoods, useToggleFavoriteFood, type FoodItemRow, type RecentFood } from '@/hooks/use-nutrition';
+import { dedupeSeedShadows, useFavoriteFoods, useMyFoods, useRecentFoods, useToggleFavoriteFood, type FoodItemRow } from '@/hooks/use-nutrition';
 import { supabase } from '@/integrations/supabase/client';
 
 type Tab = 'foods' | 'plans';
@@ -34,68 +35,18 @@ export default function NutritionScreen() {
   const { data: favorites } = useFavoriteFoods();
   const { data: recents } = useRecentFoods();
   const toggleFav = useToggleFavoriteFood();
-  const deleteFood = useDeleteFoodItem();
-  const createFood = useCreateFoodItem();
 
   // Names already in "My foods" — recent items already saved hide their +
   const myFoodNames = new Set((myFoods ?? []).map((f) => f.name.toLowerCase()));
 
-  const confirmDeleteFood = (f: FoodItemRow) => {
-    Alert.alert('ASCND', `${i18n.delete} "${f.name}"?`, [
-      { text: i18n.cancel, style: 'cancel' },
-      {
-        text: i18n.delete,
-        style: 'destructive',
-        onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          deleteFood.mutate(f.id);
-        },
-      },
-    ]);
+  const seeMore = () => {
+    Haptics.selectionAsync();
+    router.push('/food-list');
   };
-
-  const quickAddRecent = (r: RecentFood) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    createFood.mutate({
-      name: r.food_name,
-      brand: '',
-      serving_g: r.serving_g || 100,
-      kcal: r.kcal,
-      protein_g: r.protein_g,
-      carbs_g: r.carbs_g,
-      fat_g: r.fat_g,
-      fiber_g: r.fiber_g,
-    });
-  };
-
-  // A food shown as a card: tap to edit macros, star to favorite, trash to delete
-  const FoodCard = ({ f }: { f: FoodItemRow }) => (
-    <Pressable
-      style={({ pressed }) => [styles.foodCard, pressed && styles.pressedDim]}
-      onPress={() => {
-        Haptics.selectionAsync();
-        router.push({ pathname: '/food-editor', params: { id: f.id } });
-      }}>
-      <View style={styles.foodInfo}>
-        <Text style={styles.foodName} numberOfLines={1}>
-          {f.name}
-          {f.brand ? <Text style={styles.foodBrand}>  ({f.brand})</Text> : null}
-        </Text>
-        <Text style={styles.foodMacros}>
-          {Math.round(Number(f.kcal))} kcal · P{Math.round(Number(f.protein_g))} · C{Math.round(Number(f.carbs_g))} · F{Math.round(Number(f.fat_g))}
-        </Text>
-      </View>
-      <Pressable
-        hitSlop={8}
-        onPress={() => {
-          Haptics.selectionAsync();
-          toggleFav.mutate({ id: f.id, is_favorite: !f.is_favorite });
-        }}>
-        <Icon icon={Star} size={17} color={f.is_favorite ? colors.readinessYellow : colors.mutedForeground} strokeWidth={f.is_favorite ? 2.5 : 2} />
-      </Pressable>
-      <Pressable hitSlop={8} onPress={() => confirmDeleteFood(f)}>
-        <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
-      </Pressable>
+  const SeeMore = () => (
+    <Pressable style={({ pressed }) => [styles.seeMore, pressed && styles.pressedDim]} onPress={seeMore}>
+      <Text style={styles.seeMoreText}>{lang === 'vi' ? 'Xem thêm' : 'See all'}</Text>
+      <Icon icon={ChevronRight} size={15} color={colors.primary} />
     </Pressable>
   );
 
@@ -244,14 +195,15 @@ export default function NutritionScreen() {
 
           {debounced.length < 2 && (
             <>
-              {/* My foods — manually saved foods as cards */}
+              {/* My foods — 4 most recent as cards, "See all" opens the full list */}
               <View style={styles.sectionHeadRow}>
                 <Icon icon={Utensils} size={13} color={colors.primary} />
                 <Text style={styles.microTitle}>{lang === 'vi' ? 'Danh sách thực phẩm' : 'My Foods'}</Text>
               </View>
               {myFoods && myFoods.length > 0 ? (
                 <View style={styles.cardList}>
-                  {myFoods.map((f) => <FoodCard key={f.id} f={f} />)}
+                  {myFoods.slice(0, 4).map((f) => <FoodCard key={f.id} f={f} />)}
+                  {myFoods.length > 4 && <SeeMore />}
                 </View>
               ) : (
                 <Text style={styles.emptyText}>
@@ -281,28 +233,10 @@ export default function NutritionScreen() {
                     <Text style={styles.microTitle}>{i18n.nutritionRecent}</Text>
                   </View>
                   <View style={styles.cardList}>
-                    {recents.map((r, i) => {
-                      const exists = myFoodNames.has(r.food_name.toLowerCase());
-                      return (
-                        <View key={i} style={styles.foodCard}>
-                          <View style={styles.foodInfo}>
-                            <Text style={styles.foodName} numberOfLines={1}>{r.food_name}</Text>
-                            <Text style={styles.foodMacros}>
-                              {r.kcal} kcal · P{r.protein_g} · C{r.carbs_g} · F{r.fat_g}
-                            </Text>
-                          </View>
-                          {!exists && (
-                            <Pressable
-                              hitSlop={8}
-                              disabled={createFood.isPending}
-                              style={({ pressed }) => pressed && styles.pressed}
-                              onPress={() => quickAddRecent(r)}>
-                              <Icon icon={Plus} size={18} color={colors.primary} strokeWidth={2.5} />
-                            </Pressable>
-                          )}
-                        </View>
-                      );
-                    })}
+                    {recents.slice(0, 4).map((r, i) => (
+                      <RecentFoodCard key={i} r={r} saved={myFoodNames.has(r.food_name.toLowerCase())} />
+                    ))}
+                    {recents.length > 4 && <SeeMore />}
                   </View>
                 </>
               )}
@@ -411,6 +345,18 @@ const styles = StyleSheet.create({
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sectionHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },
   cardList: { gap: spacing.sm },
+  seeMore: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    height: 40,
+    borderRadius: radius.md,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    backgroundColor: glass.bg,
+  },
+  seeMoreText: { fontSize: 13, fontWeight: '600', color: colors.primary },
   foodCard: {
     flexDirection: 'row',
     alignItems: 'center',
