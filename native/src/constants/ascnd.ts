@@ -51,11 +51,6 @@ export const colors = {
  */
 export const glass = {
   bg: 'rgba(255,255,255,0.06)',
-  // Opaque equivalent of the 6% white glass over the #070708 page. The web
-  // card is translucent + backdrop-blurred, but nothing sits behind a card
-  // except the flat background, so this renders identically — and being
-  // opaque it casts the web's drop shadow (a translucent layer barely does).
-  solidBg: '#161617',
   border: 'rgba(255,255,255,0.12)',
   highlight: 'rgba(255,255,255,0.08)',
   borderWidth: 0.5,
