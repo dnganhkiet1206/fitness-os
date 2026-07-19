@@ -1,11 +1,13 @@
 import { Lightbulb } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useProfile, useSleepHistory } from '@/hooks/useTodayData';
 import { getLocale } from '@/lib/i18n';
@@ -105,14 +107,15 @@ export default function SleepInsightsScreen() {
       ) : (
         <>
           {/* Stat grid */}
-          <View style={styles.statGrid}>
+          <Animated.View style={styles.statGrid} entering={rise(0)}>
             <StatCard value={`${stats.avgTotal.toFixed(1)}h`} label={i18n.sleepAvg} color={colors.foreground} />
             <StatCard value={`${stats.avgQuality.toFixed(1)}`} label={i18n.sleepAvgQuality} color={colors.readinessGreen} />
             <StatCard value={`${stats.avgDeep.toFixed(1)}h`} label={i18n.sleepAvgDeep} color={DEEP} />
             <StatCard value={`${stats.debt.toFixed(1)}h`} label={i18n.sleepDebt} color={stats.debt > 5 ? colors.readinessRed : colors.mutedForeground} />
-          </View>
+          </Animated.View>
 
           {/* Stage chart */}
+          <Animated.View entering={rise(1)}>
           <GlassCard>
             <Text style={styles.cardTitle}>{i18n.sleepStages}</Text>
             <View style={styles.legend}>
@@ -134,9 +137,11 @@ export default function SleepInsightsScreen() {
               ))}
             </View>
           </GlassCard>
+          </Animated.View>
 
           {/* Insights */}
           {insights.length > 0 && (
+            <Animated.View entering={rise(2)}>
             <GlassCard>
               <View style={styles.cardTitleRow}>
                 <Icon icon={Lightbulb} size={15} color={colors.readinessYellow} />
@@ -151,6 +156,7 @@ export default function SleepInsightsScreen() {
                 ))}
               </View>
             </GlassCard>
+            </Animated.View>
           )}
         </>
       )}
