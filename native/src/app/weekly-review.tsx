@@ -441,7 +441,7 @@ export default function WeeklyReviewScreen() {
           {/* Sleep + Volume */}
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.weeklyReviewSleepChart}</Text>
-            <WeekBars data={chartData.map((c) => c.sleep_h)} color="#8d52e0" target={targets.sleepH} unit="h" days={DAYS} />
+            <WeekBars data={chartData.map((c) => c.sleep_h)} color={colors.metricPurple} target={targets.sleepH} unit="h" days={DAYS} />
           </GlassCard>
           <GlassCard>
             <Text style={styles.microTitle}>Volume Load</Text>
@@ -451,7 +451,7 @@ export default function WeeklyReviewScreen() {
           {/* Readiness trend */}
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.weeklyReviewReadinessChart}</Text>
-            <LineChart points={readinessPoints} color="#e8ba30" height={140} />
+            <LineChart points={readinessPoints} color={colors.readinessYellow} height={140} />
           </GlassCard>
 
           {/* Adaptive recommendations */}

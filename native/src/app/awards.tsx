@@ -174,7 +174,7 @@ export default function AwardsScreen() {
       {/* Hero: medal tile + progress ring (web) */}
       <View style={styles.hero}>
         <View style={styles.heroTile}>
-          <Icon icon={Medal} size={30} color="#e8ba30" />
+          <Icon icon={Medal} size={30} color={colors.readinessYellow} />
         </View>
         <Text style={styles.heroCount}>
           {i18n.awardsEarned} <Text style={styles.heroCountNum}>{earnedCount}</Text> / {totalCount}{' '}
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(232,186,48,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#e8ba30',
+    shadowColor: colors.readinessYellow,
     shadowOpacity: 0.2,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 0 },
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressPct: { ...type.mono, fontSize: 17, fontWeight: '700', color: '#e8ba30' },
+  progressPct: { ...type.mono, fontSize: 17, fontWeight: '700', color: colors.readinessYellow },
 
   tierSection: { gap: spacing.sm + 4 },
   tierHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
