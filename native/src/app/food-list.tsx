@@ -20,7 +20,7 @@ export default function FoodListScreen() {
   const myFoodNames = new Set((myFoods ?? []).map((f) => f.name.toLowerCase()));
 
   return (
-    <Screen back title={lang === 'vi' ? 'Danh sách thực phẩm' : 'Food list'} stagger>
+    <Screen back title={lang === 'vi' ? 'Danh sách thực phẩm' : 'Food list'}>
       {/* My foods */}
       <View style={styles.head}>
         <Icon icon={Utensils} size={13} color={colors.primary} />

@@ -170,7 +170,7 @@ export default function AwardsScreen() {
   const C = 2 * Math.PI * R;
 
   return (
-    <Screen back title={i18n.awardsTitle} stagger>
+    <Screen back title={i18n.awardsTitle}>
       {/* Hero: medal tile + progress ring (web) */}
       <View style={styles.hero}>
         <View style={styles.heroTile}>

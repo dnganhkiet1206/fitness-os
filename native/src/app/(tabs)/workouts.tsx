@@ -52,7 +52,7 @@ export default function WorkoutsScreen() {
   };
 
   return (
-    <Screen title={i18n.workoutsTitle} stagger>
+    <Screen title={i18n.workoutsTitle}>
       {/* "Templates (N)" + actions row (web) */}
       <View style={styles.actionsRow}>
         <Text style={styles.sectionLabel}>

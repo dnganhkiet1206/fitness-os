@@ -153,7 +153,7 @@ export default function MealPlansScreen() {
   };
 
   return (
-    <Screen back title={i18n.nMealPlans} stagger>
+    <Screen back title={i18n.nMealPlans}>
       {/* Header row: your plans + create button (web plans tab) */}
       <View style={styles.headRow}>
         <Text style={styles.headTitle}>{i18n.nutritionYourPlans}</Text>

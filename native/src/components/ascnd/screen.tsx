@@ -1,12 +1,10 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ChevronLeft } from 'lucide-react-native';
-import { Children, isValidElement } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
-import { StaggerItem } from '@/components/ascnd/stagger-item';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, glass, spacing, type } from '@/constants/ascnd';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
@@ -23,32 +21,13 @@ interface ScreenProps extends ViewProps {
    * Tabs keep the large-title layout (web LargeTitle).
    */
   back?: boolean;
-  /**
-   * When set, the direct children rise in with the standard staggered
-   * entrance (the same cadence the Today dashboard uses), so every
-   * screen "breathes in" the same way. Opt-in — skip it on form/input
-   * screens where an entrance on fields would feel off.
-   */
-  stagger?: boolean;
 }
 
 /**
  * Page scaffold matching the web app's two header patterns.
  */
-export function Screen({ title, eyebrow, headerRight, back, stagger, children, style, ...props }: ScreenProps) {
+export function Screen({ title, eyebrow, headerRight, back, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
-
-  // Auto-stagger the direct children when requested (real elements only,
-  // so conditional `{cond && <X/>}` false-branches are skipped cleanly).
-  const content = stagger
-    ? Children.toArray(children)
-        .filter(isValidElement)
-        .map((child, i) => (
-          <StaggerItem key={i} index={i}>
-            {child}
-          </StaggerItem>
-        ))
-    : children;
 
   if (back) {
     return (
@@ -77,7 +56,7 @@ export function Screen({ title, eyebrow, headerRight, back, stagger, children, s
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           {...props}>
-          {content}
+          {children}
         </ScrollView>
       </View>
     );
@@ -105,7 +84,7 @@ export function Screen({ title, eyebrow, headerRight, back, stagger, children, s
         </View>
         {headerRight}
       </View>
-      {content}
+      {children}
     </ScrollView>
   );
 }
