@@ -2,11 +2,13 @@ import * as Haptics from 'expo-haptics';
 import { ChevronDown, Dumbbell, Moon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useRoutineDays, useUpsertRoutineDay, useWorkoutTemplates } from '@/hooks/use-library';
 
@@ -51,7 +53,8 @@ export default function RoutineScreen() {
         const isRest = d?.is_rest ?? !d?.template_id;
         const name = templateName(d?.template_id);
         return (
-          <GlassCard key={idx} style={[styles.dayCard, isRest && styles.dayCardRest]}>
+          <Animated.View key={idx} entering={rise(idx)}>
+          <GlassCard style={[styles.dayCard, isRest && styles.dayCardRest]}>
             <View style={styles.row}>
               <View style={styles.dayInfo}>
                 <Text style={styles.day}>{label}</Text>
@@ -85,6 +88,7 @@ export default function RoutineScreen() {
               </View>
             )}
           </GlassCard>
+          </Animated.View>
         );
       })}
 

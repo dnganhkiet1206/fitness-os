@@ -1,11 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
+import { rise } from '@/lib/entrance';
 import { getLegal, type LegalDoc } from '@/lib/legal-content';
 
 type Tab = 'terms' | 'privacy' | 'health' | 'data';
@@ -42,17 +44,19 @@ export default function LegalScreen() {
       <Text style={styles.docTitle}>{doc.title}</Text>
 
       {doc.blocks.map((b, i) => (
-        <GlassCard key={i} style={tab === 'health' && i === 0 ? styles.warnCard : undefined}>
-          <Text style={styles.blockTitle}>{b.title}</Text>
-          {b.body ? <Text style={styles.blockBody}>{b.body}</Text> : null}
-          {b.intro ? <Text style={[styles.blockBody, styles.intro]}>{b.intro}</Text> : null}
-          {b.bullets?.map((line, j) => (
-            <View key={j} style={styles.bulletRow}>
-              <Text style={styles.bulletDot}>•</Text>
-              <Text style={styles.bulletText}>{line}</Text>
-            </View>
-          ))}
-        </GlassCard>
+        <Animated.View key={i} entering={rise(i)}>
+          <GlassCard style={tab === 'health' && i === 0 ? styles.warnCard : undefined}>
+            <Text style={styles.blockTitle}>{b.title}</Text>
+            {b.body ? <Text style={styles.blockBody}>{b.body}</Text> : null}
+            {b.intro ? <Text style={[styles.blockBody, styles.intro]}>{b.intro}</Text> : null}
+            {b.bullets?.map((line, j) => (
+              <View key={j} style={styles.bulletRow}>
+                <Text style={styles.bulletDot}>•</Text>
+                <Text style={styles.bulletText}>{line}</Text>
+              </View>
+            ))}
+          </GlassCard>
+        </Animated.View>
       ))}
     </Screen>
   );

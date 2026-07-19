@@ -2,11 +2,9 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { CalendarDays, ChevronRight, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
-// Same cascade the Today dashboard uses — wrap each card in place (not via
-// a Children.toArray helper, which disturbs the gap layout on iOS).
-const rise = (i: number) => FadeInDown.springify().damping(26).stiffness(180).delay(i * 60);
+import { rise } from '@/lib/entrance';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
