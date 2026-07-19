@@ -109,6 +109,15 @@ interface PainFlag {
   pain_0_10?: number;
 }
 
+// ACWR zone legend (web parity): red / yellow / green / yellow / red
+const ACWR_ZONES = [
+  { color: colors.readinessRed, label: '<0.65' },
+  { color: colors.readinessYellow, label: '0.65–0.8' },
+  { color: colors.readinessGreen, label: '0.8–1.3' },
+  { color: colors.readinessYellow, label: '1.3–1.6' },
+  { color: colors.readinessRed, label: '>1.6' },
+] as const;
+
 export function TrainingCard({ acwr }: { acwr: number | null }) {
   const i18n = useI18n();
   const { weight: wUnit } = useUnits();
@@ -170,7 +179,13 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
           <Text style={[styles.acwrValue, { color: acwrColor }]}>{a}</Text>
           <View style={styles.acwrTrack}>
             <View style={styles.acwrOptimal} />
-            <View style={[styles.acwrIndicator, { left: `${acwrPct}%` }]} />
+            {/* Marker glows in the zone colour of the current ratio */}
+            <View
+              style={[
+                styles.acwrIndicator,
+                { left: `${acwrPct}%`, backgroundColor: acwrColor, shadowColor: acwrColor },
+              ]}
+            />
           </View>
           <View style={styles.acwrTicks}>
             <Text style={styles.acwrTick}>0</Text>
@@ -179,6 +194,16 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
           </View>
         </View>
       )}
+
+      {/* Zone legend — neon dots for each ACWR band (web parity) */}
+      <View style={styles.legendRow}>
+        {ACWR_ZONES.map((z) => (
+          <View key={z.label} style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: z.color, shadowColor: z.color }]} />
+            <Text style={styles.legendText}>{z.label}</Text>
+          </View>
+        ))}
+      </View>
 
       <Text style={styles.volumeLine}>
         {i18n.dcTraining7dVolume}: <Text style={styles.volumeValue}>{Math.round(displayWeight(totalVolume, wUnit)).toLocaleString()} {weightLabel(wUnit)}</Text>
@@ -454,9 +479,33 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginLeft: -3,
     backgroundColor: colors.foreground,
+    // neon glow in the zone colour (set inline)
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 5,
+    shadowOpacity: 0.9,
+    elevation: 4,
   },
   acwrTicks: { flexDirection: 'row', justifyContent: 'space-between' },
   acwrTick: { fontSize: 9, color: colors.mutedForeground, fontFamily: 'Menlo' },
+  legendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    rowGap: 6,
+  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 4,
+    shadowOpacity: 0.9,
+    elevation: 3,
+  },
+  legendText: { fontSize: 9, color: colors.mutedForeground, fontFamily: 'Menlo' },
   volumeLine: { fontSize: 12, color: colors.mutedForeground },
   volumeValue: { fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground },
   painRow: {

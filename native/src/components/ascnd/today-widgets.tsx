@@ -11,6 +11,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
+import { useProfile } from '@/hooks/useTodayData';
 import { useUnits } from '@/hooks/use-units';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
@@ -22,14 +23,38 @@ const READINESS_COLOR: Record<string, string> = {
   red: colors.readinessRed,
 };
 
+const NEUTRAL = '#9aa0aa';
+
+/**
+ * Colour a weight change by health goal, not just direction: for an
+ * underweight person gaining is good (green) and losing is bad (red); for an
+ * overweight person it's reversed; in the normal range (or unknown BMI) any
+ * change is neutral grey. `diff` sign is the direction; BMI decides meaning.
+ */
+function weightDiffTone(bmi: number | null, diff: number): { color: string; bg: string } {
+  const green = { color: colors.readinessGreen, bg: 'rgba(32,181,131,0.12)' };
+  const red = { color: colors.readinessRed, bg: 'rgba(220,47,47,0.12)' };
+  const neutral = { color: NEUTRAL, bg: 'rgba(154,160,170,0.12)' };
+  if (bmi == null || (bmi >= 18.5 && bmi < 25)) return neutral; // normal / unknown
+  const gaining = diff > 0;
+  if (bmi < 18.5) return gaining ? green : red; // underweight: gain good
+  return gaining ? red : green; // overweight (bmi >= 25): lose good
+}
+
 /** Weight check-in — shows today's weight vs profile, or an inline logger */
 export function WeightCheckinCard({ profileWeight }: { profileWeight: number | null }) {
   const i18n = useI18n();
   const { weight: wUnit } = useUnits();
   const { data: todayWeight } = useTodayWeight();
+  const { data: profile } = useProfile();
   const logWeight = useLogWeight();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState('');
+
+  // BMI from the current weight (kg) + height decides how a change reads
+  const heightCm = Number(profile?.height_cm) || 0;
+  const currentKg = todayWeight ?? profileWeight ?? 0;
+  const bmi = heightCm > 0 && currentKg > 0 ? currentKg / Math.pow(heightCm / 100, 2) : null;
 
   // Stored values are kg; show + accept entry in the user's unit
   const todayDisp = todayWeight != null ? displayWeight(todayWeight, wUnit) : null;
@@ -80,22 +105,17 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
             <Text style={styles.weightValue}>{todayDisp}</Text>
             <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
           </View>
-          {diff != null && Math.abs(diff) >= 0.05 && (
-            <View
-              style={[
-                styles.diffPill,
-                { backgroundColor: diff > 0 ? 'rgba(220,47,47,0.12)' : 'rgba(32,181,131,0.12)' },
-              ]}>
-              <Text
-                style={[
-                  styles.diffText,
-                  { color: diff > 0 ? colors.readinessRed : colors.readinessGreen },
-                ]}>
-                {diff > 0 ? '↑ +' : '↓ '}
-                {diff.toFixed(1)}
-              </Text>
-            </View>
-          )}
+          {diff != null && Math.abs(diff) >= 0.05 && (() => {
+            const tone = weightDiffTone(bmi, diff);
+            return (
+              <View style={[styles.diffPill, { backgroundColor: tone.bg }]}>
+                <Text style={[styles.diffText, { color: tone.color }]}>
+                  {diff > 0 ? '↑ +' : '↓ '}
+                  {diff.toFixed(1)}
+                </Text>
+              </View>
+            );
+          })()}
         </Pressable>
       )}
     </GlassCard>
