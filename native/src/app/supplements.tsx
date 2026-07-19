@@ -2,11 +2,13 @@ import * as Haptics from 'expo-haptics';
 import { Check, Plus, Trash2, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { rise } from '@/lib/entrance';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
   useAddSupplement,
@@ -136,8 +138,9 @@ export default function SupplementsScreen() {
             </Text>
             <Text style={styles.hint}>{i18n.nTakenToday}</Text>
           </GlassCard>
-          {supplements.map((s) => (
-            <GlassCard key={s.id} style={styles.itemCard}>
+          {supplements.map((s, i) => (
+            <Animated.View key={s.id} entering={rise(i)}>
+            <GlassCard style={styles.itemCard}>
               <View style={styles.row}>
                 <Pressable
                   style={[styles.checkbox, s.taken && styles.checkboxOn]}
@@ -157,6 +160,7 @@ export default function SupplementsScreen() {
                 </Pressable>
               </View>
             </GlassCard>
+            </Animated.View>
           ))}
         </>
       ) : (

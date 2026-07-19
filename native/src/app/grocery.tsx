@@ -11,11 +11,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useGroceryItems, useGroceryMutations } from '@/hooks/use-extras';
@@ -108,9 +110,9 @@ export default function GroceryScreen() {
         )}
 
         {items && items.length > 0 ? (
-          items.map((it) => (
+          items.map((it, i) => (
+            <Animated.View key={it.id} entering={rise(i)}>
             <Pressable
-              key={it.id}
               onPress={() => toggle.mutate({ id: it.id, checked: !it.checked })}>
               <GlassCard style={styles.itemCard}>
                 <View style={styles.itemRow}>
@@ -127,6 +129,7 @@ export default function GroceryScreen() {
                 </View>
               </GlassCard>
             </Pressable>
+            </Animated.View>
           ))
         ) : (
           <GlassCard>
