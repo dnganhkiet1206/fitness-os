@@ -45,8 +45,7 @@ import type { ShopItemKey } from '@/lib/mascot-room';
  */
 
 const SCENE_H = 340; // taller stage: viewBox extends upward (y from -50)
-const CHAR = 172; // character render width
-const WALK_RANGE = 62; // max px the buddy strolls from center
+const CHAR = 150; // character render width (standing companion is taller)
 
 interface Props {
   mascot: MascotDef;
@@ -67,160 +66,68 @@ export function MascotScene({
   mood = 'neutral',
   level = 1,
 }: Props) {
-  const hover = useSharedValue(0);
-  const hoverAmp = useSharedValue(6); // hover height — shrinks when tired
-  const squashX = useSharedValue(1);
-  const squashY = useSharedValue(1);
-  const tilt = useSharedValue(0);
-  const spin = useSharedValue(0);
-  const droop = useSharedValue(0); // forward slump (rotateX) when tired
-  const walkX = useSharedValue(0);
-  const face = useSharedValue(1); // 1 faces right, -1 faces left
+  // Quiet, grounded motion. Breathing/blinking live inside VectorMascot;
+  // the scene only adds a soft, intentional acknowledgement (a small nod
+  // + settle) on reward, and a gentle forward lean when tired. No float,
+  // no walk, no spin — the companion stands and rests between sets.
+  const nod = useSharedValue(0); // small rotateX acknowledgement
+  const settle = useSharedValue(1); // tiny weight-shift scale
+  const droop = useSharedValue(0); // forward lean (rotateX) when tired
   const zzz = useSharedValue(0);
   const tired = mood === 'tired';
-  // Every level adds a little size — gains you can see (capped at +25%)
-  const levelScale = Math.min(1 + (level - 1) * 0.025, 1.25);
+  // Level growth is subtle — posture/presence, not a size jump
+  const levelScale = Math.min(1 + (level - 1) * 0.012, 1.1);
 
   useEffect(() => {
-    hover.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-    );
-  }, [hover]);
-
-  // Mood: slump forward, hover barely, drift back to center when tired
-  useEffect(() => {
-    droop.value = withSpring(tired ? 13 : 0, { stiffness: 120, damping: 14 });
-    hoverAmp.value = withTiming(tired ? 2.5 : 6, { duration: 600 });
+    droop.value = withSpring(tired ? 8 : 0, { stiffness: 120, damping: 15 });
     if (tired) {
-      walkX.value = withTiming(0, { duration: 900, easing: Easing.inOut(Easing.quad) });
-      face.value = withTiming(1, { duration: 200 });
-      zzz.value = withRepeat(withTiming(1, { duration: 2600, easing: Easing.out(Easing.quad) }), -1);
+      zzz.value = withRepeat(withTiming(1, { duration: 2800, easing: Easing.out(Easing.quad) }), -1);
     } else {
       zzz.value = 0;
     }
-  }, [tired, droop, hoverAmp, walkX, face, zzz]);
+  }, [tired, droop, zzz]);
 
-  // Stroll: every so often wander to a new spot with hop-steps (skipped
-  // while tired — a sluggish buddy stays put)
-  useEffect(() => {
-    if (tired) return;
-    let alive = true;
-    let timer: ReturnType<typeof setTimeout>;
-    const schedule = () => {
-      timer = setTimeout(() => {
-        if (!alive) return;
-        const target = Math.round(Math.random() * WALK_RANGE * 2 - WALK_RANGE);
-        const dist = Math.abs(target - walkX.value);
-        if (dist > 14) {
-          const dur = dist * 16;
-          face.value = withTiming(target > walkX.value ? 1 : -1, { duration: 160 });
-          walkX.value = withTiming(target, { duration: dur, easing: Easing.inOut(Easing.quad) });
-          const steps = Math.max(2, Math.round(dur / 300));
-          squashY.value = withSequence(
-            withRepeat(
-              withSequence(
-                withTiming(0.93, { duration: 150 }),
-                withTiming(1.04, { duration: 150 }),
-              ),
-              steps,
-            ),
-            withSpring(1, { stiffness: 260, damping: 14 }),
-          );
-        }
-        schedule();
-      }, 5000 + Math.random() * 8000);
-    };
-    schedule();
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [tired, walkX, face, squashY]);
+  const acknowledge = () => {
+    nod.value = withSequence(
+      withTiming(6, { duration: 200, easing: Easing.out(Easing.quad) }),
+      withSpring(0, { stiffness: 160, damping: 14 }),
+    );
+    settle.value = withSequence(
+      withTiming(1.02, { duration: 180 }),
+      withSpring(1, { stiffness: 180, damping: 14 }),
+    );
+  };
 
-  // Purchase celebration: double jump + full spin
   useEffect(() => {
     if (celebrateSignal === 0) return;
-    squashY.value = withSequence(
-      withTiming(0.75, { duration: 100 }),
-      withSpring(1.2, { stiffness: 420, damping: 8 }),
-      withSpring(1, { stiffness: 260, damping: 12 }),
-    );
-    squashX.value = withSequence(
-      withTiming(1.2, { duration: 100 }),
-      withSpring(0.85, { stiffness: 420, damping: 8 }),
-      withSpring(1, { stiffness: 260, damping: 12 }),
-    );
-    spin.value = withSequence(
-      withTiming(360, { duration: 700, easing: Easing.out(Easing.cubic) }),
-      withTiming(0, { duration: 0 }),
-    );
-  }, [celebrateSignal, squashX, squashY, spin]);
-
-  // Level-up: double-bicep flex — crouch, pop tall, proud side-to-side shake
+    acknowledge();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [celebrateSignal]);
   useEffect(() => {
     if (flexSignal === 0) return;
-    squashY.value = withSequence(
-      withTiming(0.8, { duration: 180 }),
-      withSpring(1.16, { stiffness: 380, damping: 9 }),
-      withSpring(1, { stiffness: 240, damping: 13 }),
-    );
-    squashX.value = withSequence(
-      withTiming(1.16, { duration: 180 }),
-      withSpring(0.9, { stiffness: 380, damping: 9 }),
-      withSpring(1, { stiffness: 240, damping: 13 }),
-    );
-    tilt.value = withSequence(
-      withTiming(-9, { duration: 130 }),
-      withTiming(9, { duration: 150 }),
-      withTiming(-7, { duration: 130 }),
-      withTiming(7, { duration: 130 }),
-      withSpring(0, { stiffness: 300, damping: 12 }),
-    );
-  }, [flexSignal, squashX, squashY, tilt]);
+    acknowledge();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flexSignal]);
 
   const poke = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    tilt.value = withSequence(
-      withTiming(-10, { duration: 120 }),
-      withTiming(8, { duration: 140 }),
-      withSpring(0, { stiffness: 300, damping: 12 }),
-    );
-    squashY.value = withSequence(
-      withTiming(0.85, { duration: 100 }),
-      withSpring(1.12, { stiffness: 400, damping: 9 }),
-      withSpring(1, { stiffness: 260, damping: 14 }),
-    );
+    acknowledge();
   };
 
   const charStyle = useAnimatedStyle(() => ({
     transform: [
-      { perspective: 320 },
-      { translateX: walkX.value },
-      { translateY: -hover.value * hoverAmp.value },
-      { rotateX: `${droop.value}deg` },
-      { rotateZ: `${tilt.value}deg` },
-      { rotateY: `${spin.value}deg` },
-      { scaleX: squashX.value * face.value * levelScale },
-      { scaleY: squashY.value * levelScale },
+      { perspective: 420 },
+      { rotateX: `${nod.value + droop.value}deg` },
+      { scale: settle.value * levelScale },
     ],
   }));
 
-  const shadowStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(hover.value, [0, 1], [0.4, 0.16]),
-    transform: [
-      { translateX: walkX.value },
-      { scaleX: interpolate(hover.value, [0, 1], [1, 0.75]) },
-    ],
-  }));
+  const shadowStyle = useAnimatedStyle(() => ({ opacity: 0.32 }));
 
   // zzz drift up and fade in a loop while tired
   const zzzStyle = useAnimatedStyle(() => ({
     opacity: zzz.value < 0.15 ? zzz.value * 4 : interpolate(zzz.value, [0.15, 1], [0.7, 0]),
-    transform: [{ translateX: walkX.value }, { translateY: -zzz.value * 22 }],
+    transform: [{ translateY: -zzz.value * 22 }],
   }));
 
   return (

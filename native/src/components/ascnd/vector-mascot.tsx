@@ -1,86 +1,116 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, {
-  Circle,
-  Defs,
-  Ellipse,
-  G,
-  Line,
-  LinearGradient,
-  Path,
-  RadialGradient,
-  Rect,
-  Stop,
-} from 'react-native-svg';
+import Svg, { ClipPath, Defs, Ellipse, G, Path, Rect } from 'react-native-svg';
 
-import { colors } from '@/constants/ascnd';
 import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
 
 /**
- * Fully code-drawn kawaii character — no emoji. One soft egg-shaped
- * body (radial gradient sells the volume), stubby arms/feet, and huge
- * glossy eyes that carry all the appeal: pupils wander as layered
- * views, eyelids really blink, moods change brows/mouth/cheeks.
- * Design iterated visually against a rendered preview (Pou/Duolingo
- * school of cute), so proportions are proven, not guessed.
+ * Workout Companion — a calm, standing, athletic character. Fully
+ * code-drawn, flat illustration with layered shadow (a clipped darker
+ * copy offset down-right) and a whisper of highlight; depth comes from
+ * colour, not 3D. Muted palette, brand cyan only as a small accent.
  *
- * Drawn in a fixed 200×240 rig space and scaled to `size`, so face
- * geometry, outfits and muscle growth stay anchored at any size.
+ * Each species has its own silhouette (shoulder width, stance, leg
+ * length, posture lean) so the roster reads even at small sizes. Motion
+ * is deliberately quiet: a slow breath and an occasional blink — no
+ * bounce, spin or dance.
  */
 
-const RIG_W = 200;
-const RIG_H = 240;
-
-// Eye geometry in rig space (pupils + eyelids are layered Views)
-const EYE_Y = 95;
-const EYE_LX = 67;
-const EYE_RX = 133;
-const EYE_RXR = 21; // white rx
-const EYE_RYR = 25; // white ry
-const PUPIL_R = 10.5;
-const LID_W = 46;
-const LID_H = 54;
-const LID_TIRED = 0.45; // heavy half-closed lids
+const RIG_W = 240;
+const RIG_H = 350;
+const FOOT_Y = 330;
+const ACCENT = '#31c9d6';
 
 interface Art {
   body: string;
-  bodyDark: string;
-  belly: string;
-  /** Extra per-species color (mane / ear inner / horn / spikes) */
-  extra: string;
-  /** Eyelid color when the face behind the eyes isn't plain body color */
-  lid?: string;
+  dark: string;
+  light: string;
   variant: 'koala' | 'lion' | 'fox' | 'gorilla' | 'dragon' | 'unicorn';
+  tank: string;
+  short: string;
+  // silhouette params
+  sh: number; // shoulder width
+  st: number; // stance (feet apart)
+  leg: number; // leg length
+  lean: number; // posture hip shift
+  tilt: number; // head tilt (deg)
+  ear?: string;
+  mane?: string;
+  muz?: string;
+  face?: string;
+  spike?: string;
 }
 
 const MASCOT_ART: Record<string, Art> = {
-  koa: { body: '#aebdb4', bodyDark: '#8d9e94', belly: '#e6e1d6', extra: '#d99ea4', variant: 'koala' },
-  blaze: { body: '#f0b254', bodyDark: '#d3942f', belly: '#f8e3b6', extra: '#cf6b2e', variant: 'lion' },
-  swift: { body: '#ee8442', bodyDark: '#cc6528', belly: '#f9efdf', extra: '#472f26', variant: 'fox' },
-  titan: { body: '#6b7585', bodyDark: '#525b69', belly: '#7d8796', extra: '#9aa3b2', lid: '#8993a2', variant: 'gorilla' },
-  drago: { body: '#62ba74', bodyDark: '#47945a', belly: '#d6eec0', extra: '#ede9d8', variant: 'dragon' },
-  nova: { body: '#f4eefa', bodyDark: '#d5c6ea', belly: '#faf6fd', extra: '#b781e8', variant: 'unicorn' },
+  koa: { body: '#9fb0b2', dark: '#7f9295', light: '#b7c4c6', ear: '#b39a9c', variant: 'koala', tank: '#e5e8ec', short: '#3d4450', sh: 96, st: 26, leg: 104, lean: 6, tilt: 4 },
+  blaze: { body: '#cfa566', dark: '#b08a48', light: '#e0c088', mane: '#b3823f', variant: 'lion', tank: '#586170', short: '#3a4048', sh: 118, st: 34, leg: 104, lean: -5, tilt: -3 },
+  swift: { body: '#cf8355', dark: '#b06537', light: '#e2a074', muz: '#e7ddcf', variant: 'fox', tank: '#e5e8ec', short: '#3d4450', sh: 92, st: 24, leg: 120, lean: 9, tilt: 6 },
+  titan: { body: '#727b87', dark: '#565e69', light: '#8b93a0', face: '#949cab', variant: 'gorilla', tank: '#586170', short: '#3a4048', sh: 132, st: 46, leg: 92, lean: 0, tilt: 0 },
+  drago: { body: '#71ab7d', dark: '#548a61', light: '#93c39d', spike: '#d7cfa0', variant: 'dragon', tank: '#e5e8ec', short: '#3d4450', sh: 104, st: 30, leg: 112, lean: -6, tilt: -4 },
+  nova: { body: '#d9d2e4', dark: '#bcb0d1', light: '#ece7f3', mane: '#a98fce', variant: 'unicorn', tank: '#e5e8ec', short: '#3d4450', sh: 90, st: 24, leg: 118, lean: 8, tilt: 5 },
 };
+
+function clamp(v: number) {
+  return Math.max(0, Math.min(255, v));
+}
+function shade(hex: string, amt: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const r = clamp(((n >> 16) & 255) + amt);
+  const g = clamp(((n >> 8) & 255) + amt);
+  const b = clamp((n & 255) + amt);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+function capsule(x1: number, y1: number, w1: number, x2: number, y2: number, w2: number) {
+  const a = w1 / 2;
+  const b = w2 / 2;
+  return `M${x1 - a} ${y1} L${x2 - b} ${y2} Q${x2} ${y2 + b} ${x2 + b} ${y2} L${x1 + a} ${y1} Q${x1} ${y1 - a} ${x1 - a} ${y1} Z`;
+}
 
 interface Props {
   mascot: MascotDef;
-  /** Rendered width in px (height is width × 1.2) */
+  /** Rendered width in px (height ≈ width × 1.46) */
   size?: number;
   mood?: MascotMood;
   level?: number;
   equippedOutfits?: Set<string>;
-  /** Turn off the pupil/blink timers (for static grids/pickers) */
+  /** Turn off the breath/blink timers (static grids/pickers) */
   animated?: boolean;
 }
 
 const EMPTY = new Set<string>();
+let idSeq = 0;
+
+/** Flat part = base + clipped darker copy (offset down-right) + faint highlight */
+function Part({ pid, d, base, dark, light }: { pid: string; d: string; base: string; dark: string; light?: string }) {
+  return (
+    <>
+      <Defs>
+        <ClipPath id={pid}>
+          <Path d={d} />
+        </ClipPath>
+      </Defs>
+      <Path d={d} fill={base} />
+      <G clipPath={`url(#${pid})`}>
+        <G x={10} y={9}>
+          <Path d={d} fill={dark} />
+        </G>
+        {light ? (
+          <G x={-9} y={-10} opacity={0.5}>
+            <Path d={d} fill={light} />
+          </G>
+        ) : null}
+      </G>
+    </>
+  );
+}
 
 export function VectorMascot({
   mascot,
@@ -90,138 +120,215 @@ export function VectorMascot({
   equippedOutfits = EMPTY,
   animated = true,
 }: Props) {
-  const art = MASCOT_ART[mascot.id] ?? MASCOT_ART.koa;
+  const a = MASCOT_ART[mascot.id] ?? MASCOT_ART.koa;
   const tired = mood === 'tired';
+  const pfx = useMemo(() => `vm${idSeq++}`, []);
 
-  const lid = useSharedValue(tired ? LID_TIRED : 0); // 0 open → 1 shut
-  const px = useSharedValue(0);
-  const py = useSharedValue(tired ? 4 : 0);
+  // Geometry (feet on a common baseline; head rides up with leg length)
+  const hipY = FOOT_Y - a.leg;
+  const shoulderY = hipY - 72;
+  const shCx = 120 - a.lean * 0.5;
+  const hipCx = 120 + a.lean;
+  const half = a.sh / 2;
+  const wHalf = a.sh * 0.32;
+  const shL = shCx - half;
+  const shR = shCx + half;
+  const wLx = hipCx - wHalf;
+  const wRx = hipCx + wHalf;
+  const footL = 120 - a.st / 2;
+  const footR = 120 + a.st / 2;
+  const headCy = shoulderY - 52; // head drawn at local cy=86 → translate down by (headCy-86)
+  const headTy = headCy - 86;
+  const armW = Math.min(30 + Math.max(0, level - 1) * 0.4, 36);
 
-  // Blink: eyelids really close — slow and heavy when tired
+  const scale = size / RIG_W;
+  const outH = size * (RIG_H / RIG_W);
+  const showEyes = !equippedOutfits.has('sunglasses');
+  const eyeScreenY = (88 + headTy) * scale;
+
+  // ── quiet motion: slow breath + occasional blink ─────────────────────
+  const breath = useSharedValue(0);
+  const lid = useSharedValue(tired ? 0.4 : 0);
+
   useEffect(() => {
-    const rest = tired ? LID_TIRED : 0;
-    lid.value = withTiming(rest, { duration: 350 });
+    if (!animated) return;
+    breath.value = withRepeat(
+      withSequence(withTiming(1, { duration: 2200 }), withTiming(0, { duration: 2600 })),
+      -1,
+    );
+  }, [animated, breath]);
+
+  useEffect(() => {
+    const rest = tired ? 0.4 : 0;
+    lid.value = withTiming(rest, { duration: 300 });
     if (!animated) return;
     let alive = true;
-    let timer: ReturnType<typeof setTimeout>;
-    const schedule = () => {
-      timer = setTimeout(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const loop = () => {
+      t = setTimeout(() => {
         if (!alive) return;
         lid.value = withSequence(
           withTiming(1, { duration: tired ? 150 : 80 }),
-          withTiming(rest, { duration: tired ? 280 : 120 }),
+          withTiming(rest, { duration: tired ? 260 : 120 }),
         );
-        schedule();
-      }, (tired ? 1900 : 2800) + Math.random() * 3200);
+        loop();
+      }, (tired ? 2000 : 3000) + Math.random() * 3000);
     };
-    schedule();
+    loop();
     return () => {
       alive = false;
-      clearTimeout(timer);
+      clearTimeout(t);
     };
   }, [animated, tired, lid]);
 
-  // Pupils wander — instant "it's alive"
-  useEffect(() => {
-    if (!animated) {
-      px.value = 0;
-      py.value = tired ? 4 : 0;
-      return;
-    }
-    let alive = true;
-    let timer: ReturnType<typeof setTimeout>;
-    const schedule = () => {
-      timer = setTimeout(() => {
-        if (!alive) return;
-        px.value = withTiming(Math.random() * 12 - 6, { duration: 420 });
-        py.value = withTiming(tired ? 4 : Math.random() * 6 - 2.5, { duration: 420 });
-        schedule();
-      }, 1600 + Math.random() * 2600);
-    };
-    schedule();
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [animated, tired, px, py]);
-
-  // Everything renders at the FINAL size (the viewBox does the scaling
-  // inside the vector rasterizer) — no bitmap transform-scaling, so the
-  // character stays pixel-crisp at any size. The layered pupil/eyelid
-  // views get their rig coordinates multiplied by the same factor.
-  const s = size / RIG_W;
-  const outH = RIG_H * s;
-  const showEyes = !equippedOutfits.has('sunglasses');
-
-  const pupilStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: px.value * s }, { translateY: py.value * s }],
+  const breathStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -breath.value * 1.5 * scale }, { scaleY: 1 + breath.value * 0.012 }],
   }));
-  // Lids drop from the top edge of the eye (origin-top emulation)
-  const lidStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: ((-LID_H * s) / 2) * (1 - lid.value) }, { scaleY: lid.value }],
-  }));
+  const lidStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: lid.value }] }));
+
+  const ids = useRef(0);
+  const id = () => `${pfx}_${ids.current++}`;
+
+  const legL = capsule(hipCx - 14, hipY + 8, 30, footL, FOOT_Y - 6, 20);
+  const legR = capsule(hipCx + 14, hipY + 8, 30, footR, FOOT_Y - 6, 20);
+  const armLd = capsule(shL + 7, shoulderY + 8, armW, shL - 2 - (a.lean > 0 ? 4 : 0), hipY + 2, 23);
+  const armRd = capsule(shR - 7, shoulderY + 8, armW, shR + 2 + (a.lean < 0 ? 4 : 0), hipY + 2, 23);
+  const tankPath =
+    `M${shL} ${shoulderY + 2} ` +
+    `C${shL - 5} ${shoulderY + 28} ${wLx - 6} ${hipY - 18} ${wLx} ${hipY + 4} ` +
+    `Q${hipCx} ${hipY + 14} ${wRx} ${hipY + 4} ` +
+    `C${shR + 6} ${hipY - 18} ${shR + 5} ${shoulderY + 28} ${shR} ${shoulderY + 2} ` +
+    `Q${shCx + 18} ${shoulderY - 10} ${shCx + 10} ${shoulderY - 2} ` +
+    `Q${shCx} ${shoulderY + 6} ${shCx - 10} ${shoulderY - 2} ` +
+    `Q${shCx - 18} ${shoulderY - 10} ${shL} ${shoulderY + 2} Z`;
+  const shorts =
+    `M${wLx - 6} ${hipY - 4} Q${hipCx} ${hipY + 8} ${wRx + 6} ${hipY - 4} ` +
+    `L${footR - 2} ${hipY + 42} Q${footR - 12} ${hipY + 48} ${footR - 22} ${hipY + 42} ` +
+    `L${hipCx + 2} ${hipY + 24} L${hipCx - 2} ${hipY + 24} ` +
+    `L${footL + 22} ${hipY + 42} Q${footL + 12} ${hipY + 48} ${footL + 2} ${hipY + 42} Z`;
 
   return (
     <View style={{ width: size, height: outH }} pointerEvents="none">
-      <Svg width={size} height={outH} viewBox={`0 0 ${RIG_W} ${RIG_H}`}>
-        <CharacterSvg art={art} mood={mood} level={level} equipped={equippedOutfits} />
-      </Svg>
+      <Animated.View style={breathStyle}>
+        <Svg width={size} height={outH} viewBox={`0 0 ${RIG_W} ${RIG_H}`}>
+          <Ellipse cx={120} cy={FOOT_Y + 4} rx={a.sh * 0.6} ry={10} fill="#000" opacity={0.32} />
 
-      {/* Pupils — layered Views so they can wander */}
+          {a.variant === 'fox' && (
+            <Part pid={id()} d={capsule(shR + 2, shoulderY + 70, 16, shR + 34, hipY + 44, 9)} base={a.body} dark={a.dark} light={a.light} />
+          )}
+          {a.variant === 'dragon' && (
+            <Part pid={id()} d={capsule(shR - 4, shoulderY + 80, 14, shR + 26, hipY + 50, 8)} base={a.body} dark={a.dark} light={a.light} />
+          )}
+
+          <Part pid={id()} d={legL} base={a.body} dark={a.dark} light={a.light} />
+          <Part pid={id()} d={legR} base={a.body} dark={a.dark} light={a.light} />
+
+          <Part pid={id()} d={`M${footL - 14} ${FOOT_Y - 6} q-4 14 2 18 q16 6 30 2 q3-5 1-13 q-16 3-33-7 Z`} base="#2c313a" dark="#20242b" light="#3a404a" />
+          <Part pid={id()} d={`M${footR - 16} ${FOOT_Y - 6} q-3 14 3 18 q16 6 30 0 q2-6 0-14 q-17 5-33-4 Z`} base="#2c313a" dark="#20242b" light="#3a404a" />
+          <Path d={`M${footL - 14} ${FOOT_Y + 11} q17 8 34 3`} stroke="#eceef1" strokeWidth={4} fill="none" strokeLinecap="round" />
+          <Path d={`M${footR - 13} ${FOOT_Y + 9} q15 8 32 0`} stroke="#eceef1" strokeWidth={4} fill="none" strokeLinecap="round" />
+
+          <Part pid={id()} d={shorts} base={a.short} dark={shade(a.short, -14)} light={shade(a.short, 18)} />
+          <Path d={`M${hipCx} ${hipY + 2} v22`} stroke={shade(a.short, -14)} strokeWidth={2} opacity={0.6} />
+
+          <Part pid={id()} d={armLd} base={a.body} dark={a.dark} light={a.light} />
+          <Part pid={id()} d={armRd} base={a.body} dark={a.dark} light={a.light} />
+          <Rect x={shL - 8} y={hipY - 8} width={18} height={7} rx={3.5} fill={ACCENT} opacity={0.9} />
+
+          {/* neck */}
+          <Part pid={id()} d={`M${shCx - 14} ${shoulderY - 16} q14 8 28 0 l-2 18 q-12 6 -24 0 Z`} base={a.body} dark={a.dark} light={a.light} />
+
+          {/* tank top + seams + hem-line logo */}
+          <Part pid={id()} d={tankPath} base={a.tank} dark={shade(a.tank, -16)} light={shade(a.tank, 18)} />
+          <Path d={`M${shL + 2} ${shoulderY + 24} C${shL - 2} ${shoulderY + 40} ${wLx} ${hipY - 24} ${wLx + 3} ${hipY}`} stroke={shade(a.tank, -20)} strokeWidth={1.5} fill="none" opacity={0.7} />
+          <Path d={`M${shR - 2} ${shoulderY + 24} C${shR + 2} ${shoulderY + 40} ${wRx} ${hipY - 24} ${wRx - 3} ${hipY}`} stroke={shade(a.tank, -20)} strokeWidth={1.5} fill="none" opacity={0.7} />
+          <Path d={`M${shCx - 10} ${shoulderY - 3} q10 7 20 0`} stroke={shade(a.tank, -22)} strokeWidth={2} fill="none" />
+          <Path d={`M${shCx - 6} ${hipY - 6} l6-7 l6 7`} stroke={ACCENT} strokeWidth={2.6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+
+          {equippedOutfits.has('medal') && (
+            <G>
+              <Path d={`M${shCx - 12} ${shoulderY + 6} L${shCx} ${shoulderY + 30} L${shCx + 12} ${shoulderY + 6}`} stroke="#c85466" strokeWidth={5} fill="none" />
+              <Ellipse cx={shCx} cy={shoulderY + 36} rx={9} ry={9} fill="#e0b23a" />
+            </G>
+          )}
+          {equippedOutfits.has('belt') && (
+            <Rect x={wLx - 4} y={hipY - 2} width={wRx - wLx + 8} height={9} rx={3} fill="#5a4634" />
+          )}
+
+          {/* head group: vertical ride + small tilt */}
+          <G y={headTy}>
+            <G rotation={a.tilt} originX={120} originY={86}>
+              {headBehind(a)}
+              <Part pid={id()} d="M120 86 m-52 0 a52 50 0 1 0 104 0 a52 50 0 1 0 -104 0" base={a.body} dark={a.dark} light={a.light} />
+              {faceExtra(a)}
+              {showEyes && (
+                <>
+                  <Ellipse cx={100} cy={88} rx={7} ry={tired ? 1.5 : 8.5} fill="#33343a" />
+                  <Ellipse cx={140} cy={88} rx={7} ry={tired ? 1.5 : 8.5} fill="#33343a" />
+                  {!tired && <Ellipse cx={97.5} cy={85} rx={2} ry={2} fill="#fff" opacity={0.9} />}
+                  {!tired && <Ellipse cx={137.5} cy={85} rx={2} ry={2} fill="#fff" opacity={0.9} />}
+                </>
+              )}
+              {tired ? (
+                <>
+                  <Path d="M93 74 l18 2" stroke={a.dark} strokeWidth={3.5} strokeLinecap="round" />
+                  <Path d="M147 74 l-18 2" stroke={a.dark} strokeWidth={3.5} strokeLinecap="round" />
+                  <Path d="M156 74 q6 9 0 13 q-6-4 0-13" fill={ACCENT} opacity={0.7} />
+                </>
+              ) : (
+                <>
+                  <Path d="M91 74 q9-4 18 0" stroke={a.dark} strokeWidth={3} fill="none" strokeLinecap="round" opacity={0.45} />
+                  <Path d="M131 74 q9-4 18 0" stroke={a.dark} strokeWidth={3} fill="none" strokeLinecap="round" opacity={0.45} />
+                </>
+              )}
+              {nose(a)}
+              <Path
+                d={
+                  mood === 'happy'
+                    ? 'M105 107 q15 13 30 0'
+                    : tired
+                      ? 'M107 110 q13 5 26 0'
+                      : 'M107 105 q13 8 26 0'
+                }
+                stroke="#4b4b52"
+                strokeWidth={mood === 'happy' ? 4 : 3.5}
+                fill="none"
+                strokeLinecap="round"
+              />
+              {headFront(a)}
+              {equippedOutfits.has('headband') && (
+                <Rect x={70} y={54} width={100} height={12} rx={6} fill="#c85466" />
+              )}
+              {equippedOutfits.has('cap') && (
+                <Path d="M70 60 A50 40 0 0 1 170 60 L170 66 L70 66 Z" fill="#3a6db0" />
+              )}
+              {equippedOutfits.has('sunglasses') && (
+                <G>
+                  <Rect x={84} y={80} width={30} height={16} rx={7} fill="#101318" />
+                  <Rect x={126} y={80} width={30} height={16} rx={7} fill="#101318" />
+                  <Path d="M114 87 h12" stroke="#101318" strokeWidth={3} />
+                </G>
+              )}
+            </G>
+          </G>
+        </Svg>
+      </Animated.View>
+
+      {/* Blink lids — body-coloured, drop over the eyes */}
       {showEyes && (
         <>
-          {[EYE_LX, EYE_RX].map((ex) => (
+          {[100, 140].map((ex) => (
             <Animated.View
               key={ex}
               style={[
                 {
                   position: 'absolute',
-                  left: (ex - PUPIL_R) * s,
-                  top: (EYE_Y - PUPIL_R) * s,
-                  width: PUPIL_R * 2 * s,
-                  height: PUPIL_R * 2 * s,
-                  borderRadius: PUPIL_R * s,
-                  backgroundColor: '#2b2b33',
-                },
-                pupilStyle,
-              ]}>
-              <View
-                style={{
-                  position: 'absolute',
-                  top: 2.5 * s,
-                  left: 3 * s,
-                  width: 8 * s,
-                  height: 8 * s,
-                  borderRadius: 4 * s,
-                  backgroundColor: 'rgba(255,255,255,0.95)',
-                }}
-              />
-              <View
-                style={{
-                  position: 'absolute',
-                  bottom: 3 * s,
-                  right: 3.5 * s,
-                  width: 4 * s,
-                  height: 4 * s,
-                  borderRadius: 2 * s,
-                  backgroundColor: 'rgba(255,255,255,0.6)',
-                }}
-              />
-            </Animated.View>
-          ))}
-          {/* Eyelids — face-colored, drop over the eyes */}
-          {[EYE_LX, EYE_RX].map((ex) => (
-            <Animated.View
-              key={`lid-${ex}`}
-              style={[
-                {
-                  position: 'absolute',
-                  left: (ex - LID_W / 2) * s,
-                  top: (EYE_Y - LID_H / 2 - 1) * s,
-                  width: LID_W * s,
-                  height: LID_H * s,
-                  borderRadius: 18 * s,
-                  backgroundColor: art.lid ?? art.body,
+                  left: (ex - 9) * scale,
+                  top: eyeScreenY - 11 * scale,
+                  width: 18 * scale,
+                  height: 20 * scale,
+                  borderRadius: 8 * scale,
+                  backgroundColor: a.body,
                 },
                 lidStyle,
               ]}
@@ -233,298 +340,97 @@ export function VectorMascot({
   );
 }
 
-// ─── The character (single soft blob + species features) ───────────────
-
-function CharacterSvg({
-  art,
-  mood,
-  level,
-  equipped,
-}: {
-  art: Art;
-  mood: MascotMood;
-  level: number;
-  equipped: Set<string>;
-}) {
-  const tired = mood === 'tired';
-  // Gains: the arms bulk up with every level
-  const bulk = Math.min(level - 1, 12);
-  const armRx = 13 + bulk * 0.5;
-  const armRy = 27 + bulk * 0.7;
-  const golden = level >= 12;
-
-  return (
-    <G>
-      <Defs>
-        <RadialGradient id="vmBody" cx="38%" cy="26%" r="85%">
-          <Stop offset="0%" stopColor={lighten(art.body)} />
-          <Stop offset="55%" stopColor={art.body} />
-          <Stop offset="100%" stopColor={art.bodyDark} />
-        </RadialGradient>
-        <LinearGradient id="vmHorn" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%" stopColor="#f6dd92" />
-          <Stop offset="100%" stopColor="#d9a832" />
-        </LinearGradient>
-        <RadialGradient id="vmEye" cx="50%" cy="40%" r="72%">
-          <Stop offset="0%" stopColor="#ffffff" />
-          <Stop offset="100%" stopColor="#e4e6ef" />
-        </RadialGradient>
-      </Defs>
-
-      <BehindBody art={art} />
-
-      {/* feet */}
-      <Ellipse cx={66} cy={212} rx={19} ry={12} fill={art.bodyDark} />
-      <Ellipse cx={134} cy={212} rx={19} ry={12} fill={art.bodyDark} />
-
-      {/* arms — bulk up with level */}
-      <Ellipse cx={27} cy={146} rx={armRx} ry={armRy} fill={art.body} transform="rotate(16 27 146)" stroke={golden ? colors.readinessYellow : undefined} strokeWidth={golden ? 2 : 0} />
-      <Ellipse cx={173} cy={146} rx={armRx} ry={armRy} fill={art.body} transform="rotate(-16 173 146)" stroke={golden ? colors.readinessYellow : undefined} strokeWidth={golden ? 2 : 0} />
-      {level >= 9 && (
-        <G>
-          {[
-            [10, 122, 4, 116],
-            [6, 142, -2, 142],
-            [190, 122, 196, 116],
-            [194, 142, 202, 142],
-          ].map(([x1, y1, x2, y2], i) => (
-            <Line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={colors.readinessYellow} strokeWidth={2.6} strokeLinecap="round" />
-          ))}
-        </G>
-      )}
-
-      {/* body blob + gloss + belly */}
-      <Path
-        d="M 100 34 C 146 34 168 72 166 108 C 178 150 166 196 128 208 C 110 213 90 213 72 208 C 34 196 22 150 34 108 C 32 72 54 34 100 34 Z"
-        fill="url(#vmBody)"
-      />
-      <Ellipse cx={70} cy={72} rx={30} ry={19} fill="rgba(255,255,255,0.14)" transform="rotate(-18 70 72)" />
-      <Ellipse cx={100} cy={164} rx={42} ry={35} fill={art.belly} opacity={0.95} />
-
-      <AfterBody art={art} />
-
-      {/* eye whites (glossy) — pupils/lids are layered views above */}
-      <Ellipse cx={EYE_LX} cy={EYE_Y} rx={EYE_RXR} ry={EYE_RYR} fill="url(#vmEye)" />
-      <Ellipse cx={EYE_RX} cy={EYE_Y} rx={EYE_RXR} ry={EYE_RYR} fill="url(#vmEye)" />
-
-      {/* tired: knitted brows + sweat drop */}
-      {tired && (
-        <G>
-          <Line x1={54} y1={56} x2={78} y2={62} stroke={art.bodyDark} strokeWidth={5} strokeLinecap="round" />
-          <Line x1={146} y1={56} x2={122} y2={62} stroke={art.bodyDark} strokeWidth={5} strokeLinecap="round" />
-          <Path d="M 160 66 C 167 77 168 84 160 86 C 152 84 153 77 160 66" fill={colors.metricCyan} opacity={0.85} />
-        </G>
-      )}
-
-      {/* cheeks */}
-      <Ellipse cx={52} cy={122} rx={11} ry={7} fill="#e6708a" opacity={mood === 'happy' ? 0.4 : 0.24} />
-      <Ellipse cx={148} cy={122} rx={11} ry={7} fill="#e6708a" opacity={mood === 'happy' ? 0.4 : 0.24} />
-
-      <MuzzleNose art={art} />
-      <Mouth mood={mood} />
-
-      {/* outfits */}
-      {equipped.has('headband') && (
-        <G>
-          <Rect x={52} y={50} width={96} height={13} rx={6.5} fill="#e6485c" />
-          <Rect x={52} y={53} width={96} height={3} fill="rgba(255,255,255,0.35)" />
-        </G>
-      )}
-      {equipped.has('cap') && (
-        <G>
-          <Path d="M 52 56 A 48 38 0 0 1 148 56 L 148 62 L 52 62 Z" fill={colors.metricBlue} />
-          <Rect x={40} y={58} width={80} height={10} rx={5} fill="#2b62b4" />
-          <Circle cx={100} cy={24} r={5} fill="#2b62b4" />
-        </G>
-      )}
-      {equipped.has('sunglasses') && (
-        <G>
-          <Rect x={44} y={80} width={46} height={30} rx={11} fill="#0c0c10" stroke="rgba(255,255,255,0.4)" strokeWidth={1.8} />
-          <Rect x={110} y={80} width={46} height={30} rx={11} fill="#0c0c10" stroke="rgba(255,255,255,0.4)" strokeWidth={1.8} />
-          <Line x1={90} y1={92} x2={110} y2={92} stroke="rgba(255,255,255,0.4)" strokeWidth={3} />
-          <Rect x={50} y={85} width={16} height={6} rx={3} fill="rgba(255,255,255,0.3)" />
-          <Rect x={116} y={85} width={16} height={6} rx={3} fill="rgba(255,255,255,0.3)" />
-        </G>
-      )}
-      {equipped.has('medal') && (
-        <G>
-          <Path d="M 76 148 L 100 172 L 124 148" stroke="#e6485c" strokeWidth={6} fill="none" />
-          <Circle cx={100} cy={176} r={12} fill={colors.readinessYellow} stroke="#a8790e" strokeWidth={2} />
-          <Path d="M 100 169 L 102.3 174 L 107.5 174 L 103.4 177.4 L 105.4 182.4 L 100 179.3 L 94.6 182.4 L 96.6 177.4 L 92.5 174 L 97.7 174 Z" fill="#a8790e" />
-        </G>
-      )}
-      {equipped.has('belt') && (
-        <G>
-          <Rect x={42} y={186} width={116} height={15} rx={7.5} fill="#5a4634" />
-          <Rect x={88} y={183} width={24} height={21} rx={4} fill="#c9a24a" />
-          <Rect x={94} y={188} width={12} height={11} rx={2} fill="#7a5f1e" />
-        </G>
-      )}
-    </G>
-  );
-}
-
-/** Species features drawn behind the body (ears, horns, mane, tail) */
-function BehindBody({ art }: { art: Art }) {
-  switch (art.variant) {
+// ── species features (head local coords: centre 120,86, rx52 ry50) ─────
+function headBehind(a: Art) {
+  switch (a.variant) {
     case 'koala':
       return (
-        <G>
-          <Circle cx={32} cy={46} r={27} fill={art.body} />
-          <Circle cx={168} cy={46} r={27} fill={art.body} />
-          <Circle cx={32} cy={46} r={15} fill={art.extra} />
-          <Circle cx={168} cy={46} r={15} fill={art.extra} />
-        </G>
+        <>
+          <Ellipse cx={76} cy={58} rx={24} ry={24} fill={a.body} />
+          <Ellipse cx={164} cy={58} rx={24} ry={24} fill={a.body} />
+          <Ellipse cx={76} cy={58} rx={13} ry={13} fill={a.ear} />
+          <Ellipse cx={164} cy={58} rx={13} ry={13} fill={a.ear} />
+        </>
       );
-    case 'lion':
-      return (
-        <G>
-          {Array.from({ length: 12 }).map((_, i) => {
-            const t = (i / 12) * Math.PI * 2;
-            return (
-              <Circle key={i} cx={100 + Math.cos(t) * 66} cy={92 + Math.sin(t) * 62} r={24} fill={art.extra} />
-            );
-          })}
-        </G>
-      );
+    case 'lion': {
+      const petals = [];
+      petals.push(<Ellipse key="m" cx={120} cy={86} rx={60} ry={60} fill={a.mane} />);
+      for (let i = 0; i < 13; i++) {
+        const t = (i / 13) * Math.PI * 2;
+        petals.push(
+          <Ellipse key={i} cx={120 + Math.cos(t) * 60} cy={86 + Math.sin(t) * 56} rx={15} ry={15} fill={a.mane} />,
+        );
+      }
+      petals.push(<Ellipse key="c" cx={120} cy={86} rx={49} ry={49} fill={shade(a.mane!, 26)} />);
+      return <>{petals}</>;
+    }
     case 'fox':
       return (
-        <G>
-          <Path d="M 28 64 L 42 0 L 88 34 Z" fill={art.body} />
-          <Path d="M 39 46 L 46 16 L 72 34 Z" fill={art.extra} />
-          <Path d="M 172 64 L 158 0 L 112 34 Z" fill={art.body} />
-          <Path d="M 161 46 L 154 16 L 128 34 Z" fill={art.extra} />
-          {/* bushy tail with a light tip */}
-          <Path d="M 158 200 C 196 188 202 152 190 124 C 206 158 202 200 164 214 Z" fill={art.body} />
-          <Path d="M 188 128 C 198 146 198 166 190 180 C 200 162 200 142 192 126 Z" fill={art.belly} />
-        </G>
+        <>
+          <Path d="M76 50 L88 4 L118 44 Z" fill={a.body} />
+          <Path d="M164 50 L152 4 L122 44 Z" fill={a.body} />
+          <Path d="M86 44 L92 18 L108 42 Z" fill={a.dark} />
+          <Path d="M154 44 L148 18 L132 42 Z" fill={a.dark} />
+        </>
       );
     case 'gorilla':
       return (
-        <G>
-          <Circle cx={28} cy={92} r={15} fill={art.body} />
-          <Circle cx={172} cy={92} r={15} fill={art.body} />
-          <Circle cx={28} cy={92} r={8} fill={art.bodyDark} />
-          <Circle cx={172} cy={92} r={8} fill={art.bodyDark} />
-        </G>
+        <>
+          <Ellipse cx={70} cy={86} rx={14} ry={14} fill={a.body} />
+          <Ellipse cx={170} cy={86} rx={14} ry={14} fill={a.body} />
+        </>
       );
     case 'dragon':
       return (
-        <G>
-          <Path d="M 64 30 C 56 12 60 2 72 -4 C 71 12 76 20 82 26 Z" fill={art.extra} />
-          <Path d="M 136 30 C 144 12 140 2 128 -4 C 129 12 124 20 118 26 Z" fill={art.extra} />
-          <Path d="M 86 22 L 93 6 L 100 20 L 107 4 L 114 22 Z" fill={art.bodyDark} />
-        </G>
+        <>
+          <Path d="M96 44 L102 16 L112 40 Z" fill={a.spike} />
+          <Path d="M120 38 L126 12 L134 38 Z" fill={a.spike} />
+        </>
       );
     case 'unicorn':
       return (
-        <G>
-          <Path d="M 90 40 L 100 -6 L 110 40 Z" fill="url(#vmHorn)" />
-          <Line x1={93} y1={24} x2={107} y2={19} stroke="rgba(0,0,0,0.16)" strokeWidth={2.5} />
-          <Line x1={91} y1={32} x2={109} y2={27} stroke="rgba(0,0,0,0.16)" strokeWidth={2.5} />
-          <Path d="M 52 52 L 60 16 L 84 40 Z" fill={art.body} />
-          <Path d="M 148 52 L 140 16 L 116 40 Z" fill={art.body} />
-          <Path d="M 138 34 C 164 48 174 82 166 116 C 180 80 172 44 146 26 Z" fill={art.extra} />
-          <Path d="M 148 44 C 166 62 170 90 162 112 C 176 88 172 60 156 38 Z" fill="#ea92c8" />
-        </G>
+        <>
+          <Path d="M112 42 L120 4 L128 42 Z" fill="#e9d18a" />
+          <Path d="M74 52 L82 22 L100 46 Z" fill={a.body} />
+          <Path d="M166 52 L158 22 L140 46 Z" fill={a.body} />
+        </>
       );
   }
 }
-
-/** Species features drawn over the body, under the face */
-function AfterBody({ art }: { art: Art }) {
-  switch (art.variant) {
-    case 'lion':
+function faceExtra(a: Art) {
+  if (a.variant === 'gorilla') return <Ellipse cx={120} cy={96} rx={33} ry={29} fill={a.face} opacity={0.6} />;
+  if (a.variant === 'fox') return <Ellipse cx={120} cy={104} rx={25} ry={19} fill={a.muz} />;
+  if (a.variant === 'lion') return <Ellipse cx={120} cy={104} rx={23} ry={17} fill={a.light} opacity={0.7} />;
+  return null;
+}
+function headFront(a: Art) {
+  if (a.variant === 'unicorn') return <Path d="M142 58 q22 16 16 48 q12-32 -6-52 Z" fill={a.mane} />;
+  return null;
+}
+function nose(a: Art) {
+  switch (a.variant) {
+    case 'koala':
       return (
-        <G>
-          <Circle cx={52} cy={38} r={12} fill={art.body} />
-          <Circle cx={148} cy={38} r={12} fill={art.body} />
-          <Circle cx={52} cy={38} r={6} fill={art.bodyDark} />
-          <Circle cx={148} cy={38} r={6} fill={art.bodyDark} />
-        </G>
+        <>
+          <Ellipse cx={120} cy={98} rx={10} ry={12} fill="#43434b" />
+          <Ellipse cx={116} cy={93} rx={2.6} ry={3.4} fill="#fff" opacity={0.2} />
+        </>
       );
     case 'gorilla':
       return (
-        <G>
-          <Ellipse cx={100} cy={106} rx={54} ry={46} fill={art.extra} opacity={0.65} />
-          <Path d="M 84 40 C 88 30 112 30 116 40 C 108 36 92 36 84 40 Z" fill={art.bodyDark} />
-        </G>
+        <>
+          <Ellipse cx={113} cy={99} rx={3.6} ry={5} fill="#33383f" />
+          <Ellipse cx={127} cy={99} rx={3.6} ry={5} fill="#33383f" />
+        </>
       );
-    case 'unicorn':
-      return <Path d="M 74 34 C 82 26 96 26 102 34 C 92 32 84 36 80 44 Z" fill={art.extra} />;
+    case 'dragon':
+      return (
+        <>
+          <Ellipse cx={113} cy={96} rx={2.6} ry={3.6} fill="#2c4a34" />
+          <Ellipse cx={127} cy={96} rx={2.6} ry={3.6} fill="#2c4a34" />
+        </>
+      );
     default:
-      return null;
+      return <Path d="M114 96 q6 5 12 0 q-6 7 -12 0" fill="#43434b" />;
   }
 }
-
-function MuzzleNose({ art }: { art: Art }) {
-  switch (art.variant) {
-    case 'koala':
-      return (
-        <G>
-          <Ellipse cx={100} cy={118} rx={13} ry={16} fill="#46464e" />
-          <Ellipse cx={96} cy={112} rx={4} ry={5} fill="rgba(255,255,255,0.22)" />
-        </G>
-      );
-    case 'fox':
-      return (
-        <G>
-          <Ellipse cx={100} cy={126} rx={30} ry={20} fill={art.belly} />
-          <Path d="M 93 112 Q 100 106 107 112 Q 100 122 93 112" fill="#3a2b24" />
-        </G>
-      );
-    case 'lion':
-      return (
-        <G>
-          <Ellipse cx={100} cy={126} rx={26} ry={18} fill={art.belly} opacity={0.9} />
-          <Path d="M 93 114 Q 100 108 107 114 Q 100 124 93 114" fill="#6b4a2c" />
-        </G>
-      );
-    case 'gorilla':
-      return (
-        <G>
-          <Ellipse cx={92} cy={122} rx={4.5} ry={6.5} fill="#39404b" />
-          <Ellipse cx={108} cy={122} rx={4.5} ry={6.5} fill="#39404b" />
-        </G>
-      );
-    case 'dragon':
-      return (
-        <G>
-          <Ellipse cx={91} cy={116} rx={4} ry={5} fill="#2c4a34" />
-          <Ellipse cx={109} cy={116} rx={4} ry={5} fill="#2c4a34" />
-        </G>
-      );
-    case 'unicorn':
-      return (
-        <G>
-          <Ellipse cx={92} cy={120} rx={3.5} ry={4.5} fill="#b9a4cc" />
-          <Ellipse cx={108} cy={120} rx={3.5} ry={4.5} fill="#b9a4cc" />
-        </G>
-      );
-  }
-}
-
-function Mouth({ mood }: { mood: MascotMood }) {
-  if (mood === 'happy') {
-    return (
-      <G>
-        <Path d="M 83 134 Q 100 157 117 134 Q 100 143 83 134" fill="#5a2e33" />
-        <Ellipse cx={100} cy={146} rx={8} ry={4.5} fill="#e6708a" />
-      </G>
-    );
-  }
-  if (mood === 'tired') {
-    return <Path d="M 89 144 Q 100 135 111 144" stroke="#5a2e33" strokeWidth={4} fill="none" strokeLinecap="round" />;
-  }
-  return <Path d="M 89 135 Q 100 145 111 135" stroke="#5a2e33" strokeWidth={4} fill="none" strokeLinecap="round" />;
-}
-
-/** Cheap perceptual lighten for gradient highlights */
-function lighten(hex: string): string {
-  const n = parseInt(hex.slice(1), 16);
-  const r = Math.min(255, ((n >> 16) & 255) + 42);
-  const g = Math.min(255, ((n >> 8) & 255) + 42);
-  const b = Math.min(255, (n & 255) + 42);
-  return `rgb(${r},${g},${b})`;
-}
-
