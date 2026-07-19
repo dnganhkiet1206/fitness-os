@@ -101,6 +101,11 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
 
       {/* Ring */}
       <View style={styles.ringWrap}>
+        {/* Neon halo behind the ring, tinted to the status colour (web glow) */}
+        <View
+          pointerEvents="none"
+          style={[styles.ringGlow, { shadowColor: color, backgroundColor: `${color}0d` }]}
+        />
         <Svg width={208} height={208} viewBox="0 0 120 120">
           <Defs>
             <LinearGradient id="readiness-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -181,6 +186,16 @@ const styles = StyleSheet.create({
     color: colors.mutedForeground,
   },
   ringWrap: { width: 208, height: 208, alignItems: 'center', justifyContent: 'center' },
+  ringGlow: {
+    position: 'absolute',
+    width: 168,
+    height: 168,
+    borderRadius: 84,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 28,
+    shadowOpacity: 0.7,
+    elevation: 8,
+  },
   ringCenter: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   score: { fontSize: 60, fontWeight: '700', fontFamily: 'Menlo', fontVariant: ['tabular-nums'] },
   statusLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2.4, marginTop: 6 },

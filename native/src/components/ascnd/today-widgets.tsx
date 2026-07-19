@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { LineChart } from '@/components/ascnd/line-chart';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
@@ -14,14 +14,8 @@ import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library
 import { useProfile } from '@/hooks/useTodayData';
 import { useUnits } from '@/hooks/use-units';
 import { supabase } from '@/integrations/supabase/client';
-import { localDateStr } from '@/lib/local-date';
+import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
-
-const READINESS_COLOR: Record<string, string> = {
-  green: colors.readinessGreen,
-  yellow: colors.readinessYellow,
-  red: colors.readinessRed,
-};
 
 const NEUTRAL = '#9aa0aa';
 
@@ -170,20 +164,80 @@ export function SupplementChecklistCard() {
   );
 }
 
-/** Readiness trend — 14-day line, hidden until there are 2+ points */
+const readinessZone = (v: number) =>
+  v >= 75 ? colors.readinessGreen : v >= 50 ? colors.readinessYellow : colors.readinessRed;
+
+/**
+ * Readiness 7-day analysis — matches the web "Phân tích": one bar per day
+ * coloured by zone, avg/max/min stats, and the three-zone legend. Hidden
+ * until there are 2+ points.
+ */
 export function ReadinessTrendCard() {
   const i18n = useI18n();
-  const { data: history } = useReadinessHistory(14);
+  const { lang } = useAppSettings();
+  const { data: history } = useReadinessHistory(7);
 
   if (!history || history.length < 2) return null;
-  const points = history.map((h) => ({ date: h.date, value: h.value }));
-  const last = history[history.length - 1];
-  const color = READINESS_COLOR[last.status] ?? colors.primary;
+
+  const values = history.map((h) => h.value);
+  const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
+
+  const stats = [
+    { label: lang === 'vi' ? 'TB' : 'Avg', value: avg },
+    { label: lang === 'vi' ? 'Cao nhất' : 'Max', value: max },
+    { label: lang === 'vi' ? 'Thấp nhất' : 'Min', value: min },
+  ];
+  const legend = [
+    { c: colors.readinessGreen, t: lang === 'vi' ? '75+ Tập luyện' : '75+ Train' },
+    { c: colors.readinessYellow, t: lang === 'vi' ? '50–74 Vừa phải' : '50–74 Moderate' },
+    { c: colors.readinessRed, t: lang === 'vi' ? '<50 Phục hồi' : '<50 Recover' },
+  ];
 
   return (
-    <GlassCard>
-      <Text style={styles.cardTitle}>{i18n.nReadinessTrend}</Text>
-      <LineChart points={points} color={color} height={120} />
+    <GlassCard style={styles.trendCard}>
+      <View>
+        <Text style={styles.cardTitle}>{i18n.nReadinessTrend}</Text>
+        <Text style={styles.cardHint}>
+          {lang === 'vi'
+            ? 'Mức độ sẵn sàng tập luyện của bạn trong tuần qua'
+            : 'Your training readiness over the past week'}
+        </Text>
+      </View>
+
+      <View style={styles.trendBars}>
+        {history.map((h, i) => {
+          const day = parseLocalDate(h.date).toLocaleDateString(locale, { weekday: 'short' });
+          const zone = readinessZone(h.value);
+          return (
+            <View key={h.date} style={styles.trendRow}>
+              <Text style={styles.trendDay}>{day}</Text>
+              <ProgressBar pct={h.value} color={zone} height={8} radius={4} delay={i * 60} style={styles.trendBar} />
+              <Text style={[styles.trendVal, { color: zone }]}>{Math.round(h.value)}</Text>
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={styles.trendStats}>
+        {stats.map((s) => (
+          <View key={s.label} style={styles.trendStat}>
+            <Text style={styles.trendStatLabel}>{s.label}</Text>
+            <Text style={[styles.trendStatValue, { color: readinessZone(s.value) }]}>{s.value}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.trendLegend}>
+        {legend.map((z) => (
+          <View key={z.t} style={styles.trendLegendItem}>
+            <View style={[styles.trendLegendDot, { backgroundColor: z.c }]} />
+            <Text style={styles.trendLegendText}>{z.t}</Text>
+          </View>
+        ))}
+      </View>
     </GlassCard>
   );
 }
@@ -320,6 +374,28 @@ const styles = StyleSheet.create({
   weightValue: { ...type.largeTitle, ...type.mono, color: colors.foreground },
   diffPill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 4, borderRadius: radius.full },
   diffText: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
+
+  // Readiness 7-day analysis
+  trendCard: { gap: spacing.md },
+  trendBars: { gap: spacing.sm },
+  trendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  trendDay: { width: 34, fontSize: 11, color: colors.mutedForeground, textTransform: 'capitalize' },
+  trendBar: { flex: 1 },
+  trendVal: { width: 28, textAlign: 'right', fontSize: 12, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
+  trendStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  trendStat: { alignItems: 'center', gap: 2 },
+  trendStatLabel: { fontSize: 9, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
+  trendStatValue: { fontSize: 20, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
+  trendLegend: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.md, rowGap: 4 },
+  trendLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  trendLegendDot: { width: 7, height: 7, borderRadius: 4 },
+  trendLegendText: { fontSize: 9, color: colors.mutedForeground },
 
   // Supplements
   allDone: { ...type.body, color: colors.readinessGreen },
