@@ -2,6 +2,11 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { CalendarDays, ChevronRight, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+
+// Same cascade the Today dashboard uses — wrap each card in place (not via
+// a Children.toArray helper, which disturbs the gap layout on iOS).
+const rise = (i: number) => FadeInDown.springify().damping(26).stiffness(180).delay(i * 60);
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -93,11 +98,12 @@ export default function WorkoutsScreen() {
 
       {/* Template cards (web glass-card rows) */}
       {templates && templates.length > 0 ? (
-        templates.map((t) => {
+        templates.map((t, i) => {
           const raw = (t as { exercises?: unknown }).exercises;
           const exs: TplExercise[] = Array.isArray(raw) ? (raw as TplExercise[]) : [];
           return (
-            <GlassCard key={t.id} style={styles.tplCard}>
+            <Animated.View key={t.id} entering={rise(i)}>
+            <GlassCard style={styles.tplCard}>
               <View style={styles.tplRow}>
                 <View style={styles.tplInfo}>
                   <View style={styles.tplTitleRow}>
@@ -121,6 +127,7 @@ export default function WorkoutsScreen() {
                 </View>
               </View>
             </GlassCard>
+            </Animated.View>
           );
         })
       ) : (
@@ -135,7 +142,7 @@ export default function WorkoutsScreen() {
 
       {/* Logged sessions (last 14 days) — proof that saved logs landed */}
       {sessions && sessions.length > 0 && (
-        <View style={styles.sessionsWrap}>
+        <Animated.View style={styles.sessionsWrap} entering={rise(templates?.length ?? 0)}>
           <Text style={styles.sectionLabel}>
             {vi ? 'Buổi tập gần đây' : 'Recent sessions'} ({sessions.length})
           </Text>
@@ -160,7 +167,7 @@ export default function WorkoutsScreen() {
               </View>
             ))}
           </GlassCard>
-        </View>
+        </Animated.View>
       )}
 
       {/* Weekly plan link (web bottom button) */}
