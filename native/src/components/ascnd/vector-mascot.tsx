@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -145,62 +145,90 @@ export function VectorMascot({
     };
   }, [animated, tired, px, py]);
 
+  // Everything renders at the FINAL size (the viewBox does the scaling
+  // inside the vector rasterizer) — no bitmap transform-scaling, so the
+  // character stays pixel-crisp at any size. The layered pupil/eyelid
+  // views get their rig coordinates multiplied by the same factor.
+  const s = size / RIG_W;
+  const outH = RIG_H * s;
+  const showEyes = !equippedOutfits.has('sunglasses');
+
   const pupilStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: px.value }, { translateY: py.value }],
+    transform: [{ translateX: px.value * s }, { translateY: py.value * s }],
   }));
   // Lids drop from the top edge of the eye (origin-top emulation)
   const lidStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (-LID_H / 2) * (1 - lid.value) }, { scaleY: lid.value }],
+    transform: [{ translateY: ((-LID_H * s) / 2) * (1 - lid.value) }, { scaleY: lid.value }],
   }));
-
-  const scale = size / RIG_W;
-  const outH = RIG_H * scale;
-  const showEyes = !equippedOutfits.has('sunglasses');
 
   return (
     <View style={{ width: size, height: outH }} pointerEvents="none">
-      <View
-        style={{
-          position: 'absolute',
-          left: (size - RIG_W) / 2,
-          top: (outH - RIG_H) / 2,
-          width: RIG_W,
-          height: RIG_H,
-          transform: [{ scale }],
-        }}>
-        <Svg width={RIG_W} height={RIG_H} viewBox={`0 0 ${RIG_W} ${RIG_H}`} style={StyleSheet.absoluteFill}>
-          <CharacterSvg art={art} mood={mood} level={level} equipped={equippedOutfits} />
-        </Svg>
+      <Svg width={size} height={outH} viewBox={`0 0 ${RIG_W} ${RIG_H}`}>
+        <CharacterSvg art={art} mood={mood} level={level} equipped={equippedOutfits} />
+      </Svg>
 
-        {/* Pupils — layered Views so they can wander */}
-        {showEyes && (
-          <>
-            {[EYE_LX, EYE_RX].map((ex) => (
-              <Animated.View
-                key={ex}
-                style={[styles.pupil, { left: ex - PUPIL_R, top: EYE_Y - PUPIL_R }, pupilStyle]}>
-                <View style={styles.pupilShine} />
-                <View style={styles.pupilShineSm} />
-              </Animated.View>
-            ))}
-            {/* Eyelids — face-colored, drop over the eyes */}
-            {[EYE_LX, EYE_RX].map((ex) => (
-              <Animated.View
-                key={`lid-${ex}`}
-                style={[
-                  styles.lid,
-                  {
-                    left: ex - LID_W / 2,
-                    top: EYE_Y - LID_H / 2 - 1,
-                    backgroundColor: art.lid ?? art.body,
-                  },
-                  lidStyle,
-                ]}
+      {/* Pupils — layered Views so they can wander */}
+      {showEyes && (
+        <>
+          {[EYE_LX, EYE_RX].map((ex) => (
+            <Animated.View
+              key={ex}
+              style={[
+                {
+                  position: 'absolute',
+                  left: (ex - PUPIL_R) * s,
+                  top: (EYE_Y - PUPIL_R) * s,
+                  width: PUPIL_R * 2 * s,
+                  height: PUPIL_R * 2 * s,
+                  borderRadius: PUPIL_R * s,
+                  backgroundColor: '#2b2b33',
+                },
+                pupilStyle,
+              ]}>
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 2.5 * s,
+                  left: 3 * s,
+                  width: 8 * s,
+                  height: 8 * s,
+                  borderRadius: 4 * s,
+                  backgroundColor: 'rgba(255,255,255,0.95)',
+                }}
               />
-            ))}
-          </>
-        )}
-      </View>
+              <View
+                style={{
+                  position: 'absolute',
+                  bottom: 3 * s,
+                  right: 3.5 * s,
+                  width: 4 * s,
+                  height: 4 * s,
+                  borderRadius: 2 * s,
+                  backgroundColor: 'rgba(255,255,255,0.6)',
+                }}
+              />
+            </Animated.View>
+          ))}
+          {/* Eyelids — face-colored, drop over the eyes */}
+          {[EYE_LX, EYE_RX].map((ex) => (
+            <Animated.View
+              key={`lid-${ex}`}
+              style={[
+                {
+                  position: 'absolute',
+                  left: (ex - LID_W / 2) * s,
+                  top: (EYE_Y - LID_H / 2 - 1) * s,
+                  width: LID_W * s,
+                  height: LID_H * s,
+                  borderRadius: 18 * s,
+                  backgroundColor: art.lid ?? art.body,
+                },
+                lidStyle,
+              ]}
+            />
+          ))}
+        </>
+      )}
     </View>
   );
 }
@@ -500,36 +528,3 @@ function lighten(hex: string): string {
   return `rgb(${r},${g},${b})`;
 }
 
-const styles = StyleSheet.create({
-  pupil: {
-    position: 'absolute',
-    width: PUPIL_R * 2,
-    height: PUPIL_R * 2,
-    borderRadius: PUPIL_R,
-    backgroundColor: '#2b2b33',
-  },
-  pupilShine: {
-    position: 'absolute',
-    top: 2.5,
-    left: 3,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-  },
-  pupilShineSm: {
-    position: 'absolute',
-    bottom: 3,
-    right: 3.5,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-  },
-  lid: {
-    position: 'absolute',
-    width: LID_W,
-    height: LID_H,
-    borderRadius: 18,
-  },
-});

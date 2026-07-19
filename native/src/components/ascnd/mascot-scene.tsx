@@ -11,7 +11,18 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Ellipse, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  Ellipse,
+  G,
+  Line,
+  LinearGradient,
+  Path,
+  Rect,
+  Stop,
+  Text as SvgText,
+} from 'react-native-svg';
 
 import { VectorMascot } from '@/components/ascnd/vector-mascot';
 import { colors } from '@/constants/ascnd';
@@ -217,10 +228,38 @@ export function MascotScene({
       {/* Room background + owned gym gear (viewBox extends up for the
           taller stage; all gear keeps its floor coordinates) */}
       <Svg width="100%" height={SCENE_H} viewBox={`0 -50 360 ${SCENE_H}`} preserveAspectRatio="xMidYMax slice">
+        <Defs>
+          {/* Depth cues borrowed from cozy-room games: the wall darkens
+              toward the floor, the floor darkens toward the viewer */}
+          <LinearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor="#17171f" />
+            <Stop offset="70%" stopColor="#101016" />
+            <Stop offset="100%" stopColor="#0c0c11" />
+          </LinearGradient>
+          <LinearGradient id="floorBase" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor="#1a1a22" />
+            <Stop offset="100%" stopColor="#121218" />
+          </LinearGradient>
+          <LinearGradient id="floorWood" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor="#2c2015" />
+            <Stop offset="100%" stopColor="#1e150c" />
+          </LinearGradient>
+        </Defs>
         {/* Wall */}
-        <Rect x={0} y={-50} width={360} height={255} fill="#101016" />
+        <Rect x={0} y={-50} width={360} height={255} fill="url(#wall)" />
         <Line x1={0} y1={68} x2={360} y2={68} stroke="rgba(255,255,255,0.03)" strokeWidth={1} />
         <Line x1={0} y1={136} x2={360} y2={136} stroke="rgba(255,255,255,0.03)" strokeWidth={1} />
+        {/* Tiny stars high on the wall */}
+        {[
+          [30, -30, 1.4],
+          [74, -12, 1],
+          [150, -34, 1.2],
+          [206, -18, 1],
+          [332, -32, 1.4],
+          [232, 6, 1],
+        ].map(([x, y, r], i) => (
+          <Circle key={i} cx={x} cy={y} r={r} fill="rgba(255,255,255,0.35)" />
+        ))}
         {/* Upgrade: LED strip glowing along the ceiling line */}
         {ownedGym.has('wall_led') && (
           <G>
@@ -241,6 +280,7 @@ export function MascotScene({
         {/* Window with night skyline */}
         <G>
           <Rect x={252} y={30} width={84} height={92} rx={10} fill="#0a0a12" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
+          <Circle cx={318} cy={48} r={16} fill="#e8e6d8" opacity={0.12} />
           <Circle cx={318} cy={48} r={9} fill="#e8e6d8" opacity={0.85} />
           <Rect x={262} y={86} width={10} height={36} fill="#1c2340" />
           <Rect x={276} y={72} width={12} height={50} fill="#232b52" />
@@ -262,7 +302,7 @@ export function MascotScene({
           </G>
         ) : ownedGym.has('floor_wood') ? (
           <G>
-            <Rect x={0} y={205} width={360} height={85} fill="#241a10" />
+            <Rect x={0} y={205} width={360} height={85} fill="url(#floorWood)" />
             <Line x1={0} y1={205} x2={360} y2={205} stroke="rgba(255,214,150,0.16)" strokeWidth={1.5} />
             {[232, 258].map((y) => (
               <Line key={y} x1={0} y1={y} x2={360} y2={y} stroke="rgba(0,0,0,0.32)" strokeWidth={1.4} />
@@ -273,10 +313,14 @@ export function MascotScene({
           </G>
         ) : (
           <G>
-            <Rect x={0} y={205} width={360} height={85} fill="#16161d" />
+            <Rect x={0} y={205} width={360} height={85} fill="url(#floorBase)" />
             <Line x1={0} y1={205} x2={360} y2={205} stroke="rgba(255,255,255,0.06)" strokeWidth={1.5} />
           </G>
         )}
+        {/* Skirting board at the wall/floor junction + a soft spotlight
+            pooling on the floor under the buddy */}
+        <Rect x={0} y={200} width={360} height={5} fill="rgba(0,0,0,0.35)" />
+        <Ellipse cx={180} cy={252} rx={118} ry={30} fill="rgba(255,255,255,0.028)" />
 
         {ownedGym.has('neon_sign') && <NeonSign />}
         {ownedGym.has('mirror') && <Mirror />}
@@ -352,6 +396,7 @@ function Mirror() {
 function DumbbellRack() {
   return (
     <G>
+      <Ellipse cx={63} cy={244} rx={44} ry={5} fill="rgba(0,0,0,0.32)" />
       <Rect x={26} y={214} width={78} height={7} rx={3.5} fill="#3a3f4c" />
       <Rect x={30} y={221} width={6} height={22} fill="#2c303a" />
       <Rect x={94} y={221} width={6} height={22} fill="#2c303a" />
@@ -369,6 +414,7 @@ function DumbbellRack() {
 function Plant() {
   return (
     <G>
+      <Ellipse cx={318} cy={263} rx={20} ry={4.5} fill="rgba(0,0,0,0.32)" />
       <Path d="M 306 236 L 330 236 L 326 262 L 310 262 Z" fill="#7a4a2c" />
       <Path d="M 318 236 C 306 214 300 210 296 202 C 310 206 314 214 318 236" fill={colors.readinessGreen} />
       <Path d="M 318 236 C 330 212 336 208 342 200 C 328 204 322 214 318 236" fill="#188f66" />
@@ -380,6 +426,7 @@ function Plant() {
 function Barbell() {
   return (
     <G>
+      <Ellipse cx={280} cy={281} rx={56} ry={5} fill="rgba(0,0,0,0.32)" />
       <Rect x={228} y={262} width={104} height={5} rx={2.5} fill="#8b93a4" />
       <Rect x={238} y={250} width={11} height={29} rx={4} fill="#22262e" stroke={colors.metricCyan} strokeWidth={1.4} />
       <Rect x={311} y={250} width={11} height={29} rx={4} fill="#22262e" stroke={colors.metricCyan} strokeWidth={1.4} />
@@ -392,6 +439,7 @@ function Barbell() {
 function Kettlebell() {
   return (
     <G>
+      <Ellipse cx={125} cy={261} rx={16} ry={4} fill="rgba(0,0,0,0.32)" />
       <Path d="M 116 232 a 9 9 0 0 1 18 0" stroke="#3a3f4c" strokeWidth={5} fill="none" />
       <Circle cx={125} cy={247} r={13} fill="#22262e" stroke={colors.metricOrange} strokeWidth={1.6} />
       <Ellipse cx={121} cy={243} rx={4} ry={5} fill="rgba(255,255,255,0.08)" />
@@ -402,6 +450,7 @@ function Kettlebell() {
 function Bench() {
   return (
     <G>
+      <Ellipse cx={250} cy={247} rx={40} ry={5} fill="rgba(0,0,0,0.3)" />
       <Rect x={214} y={216} width={72} height={11} rx={5.5} fill="#8f2f3c" />
       <Rect x={214} y={219} width={72} height={3} fill="rgba(255,255,255,0.14)" />
       <Rect x={222} y={227} width={7} height={18} rx={2.5} fill="#2c303a" />
@@ -425,6 +474,7 @@ function PunchingBag() {
 function Treadmill() {
   return (
     <G>
+      <Ellipse cx={62} cy={273} rx={46} ry={5.5} fill="rgba(0,0,0,0.32)" />
       {/* Front-left of the floor, in front of the rack (painter order) */}
       <Path d="M 22 258 L 100 248 L 104 258 L 26 270 Z" fill="#22262e" stroke="#3a3f4c" strokeWidth={1.4} />
       {[44, 62, 80].map((x) => (

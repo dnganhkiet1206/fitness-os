@@ -19,7 +19,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { VectorMascot } from '@/components/ascnd/vector-mascot';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useMascot } from '@/hooks/use-mascot';
-import { useMascotWallet } from '@/hooks/use-mascot-room';
+import { useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
 import { levelFromXp } from '@/lib/mascot-room';
 
 /**
@@ -32,9 +32,14 @@ import { levelFromXp } from '@/lib/mascot-room';
 export function Mascot() {
   const { enabled, mascot, message, mood } = useMascot();
   const { data: wallet } = useMascotWallet();
+  const { data: inventory } = useMascotInventory();
   const [bubbleVisible, setBubbleVisible] = useState(true);
   const tired = mood === 'tired';
   const level = levelFromXp(wallet?.xp ?? 0);
+  // The buddy wears its purchased outfit everywhere, not just in its room
+  const equippedOutfits = new Set(
+    (inventory ?? []).filter((r) => r.equipped).map((r) => r.item_key),
+  );
   // Visible gains: the buddy grows a touch with every room level
   const levelScale = Math.min(1 + (level - 1) * 0.02, 1.2);
 
@@ -184,7 +189,13 @@ export function Mascot() {
           {/* Ground shadow */}
           <Animated.View style={[styles.groundShadow, shadowStyle]} />
           <Animated.View style={[styles.body, { shadowColor: mascot.accent }, bodyStyle]}>
-            <VectorMascot mascot={mascot} size={54} mood={mood} level={level} />
+            <VectorMascot
+              mascot={mascot}
+              size={54}
+              mood={mood}
+              level={level}
+              equippedOutfits={equippedOutfits}
+            />
           </Animated.View>
         </View>
       </Pressable>
