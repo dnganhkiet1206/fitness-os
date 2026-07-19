@@ -103,6 +103,7 @@ export default function MascotRoomScreen() {
   const { data: challenges } = useWeeklyChallenges();
 
   const [celebrate, setCelebrate] = useState(0);
+  const [flex, setFlex] = useState(0);
 
   const balance = wallet?.balance ?? 0;
   const claimed = wallet?.claimed ?? new Set<string>();
@@ -127,11 +128,13 @@ export default function MascotRoomScreen() {
       { refKey, amount, reason },
       {
         onSuccess: () => {
-          setCelebrate((c) => c + 1);
           const newLevel = levelFromXp(prevXp + xpGain);
           if (newLevel > levelFromXp(prevXp)) {
+            // Level-up gets the double-bicep flex instead of the jump
+            setFlex((f) => f + 1);
             toast.success(i18n.nRoomLevelUp.replace('{n}', String(newLevel)));
           } else {
+            setCelebrate((c) => c + 1);
             toast.success(i18n.nRoomEarned.replace('{n}', String(amount)));
           }
         },
@@ -182,6 +185,7 @@ export default function MascotRoomScreen() {
         ownedGym={owned}
         equippedOutfits={equippedOutfits}
         celebrateSignal={celebrate}
+        flexSignal={flex}
         mood={mood}
         level={level}
       />

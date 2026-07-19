@@ -31,22 +31,23 @@ import type { ShopItemKey } from '@/lib/mascot-room';
  * and slow, aura dims, zzz float up, a sweat drop appears.
  *
  * Gains: levels literally build muscle — the buddy grows a bit each
- * level, and code-drawn flexed arms appear at level 2, bulk up at 5,
- * and get the full pump (bigger guns + effort sparks) at 9.
+ * level and the code-drawn physique builds out milestone by milestone:
+ * flexed arms at level 2 (and they keep thickening EVERY level),
+ * shoulder caps at 4, chest pecs at 6, effort sparks at 9, and a golden
+ * pump outline at 12. Bump `flexSignal` on level-up for the
+ * double-bicep flex celebration.
  */
 
 const SCENE_H = 290;
 const CHAR = 120; // character box; emoji glyph is centered inside
 const WALK_RANGE = 68; // max px the buddy strolls from center
 
-/** 0 = no visible muscle yet, 1..3 = progressively swole */
-const muscleTierForLevel = (level: number) => (level >= 9 ? 3 : level >= 5 ? 2 : level >= 2 ? 1 : 0);
-
 interface Props {
   mascot: MascotDef;
   ownedGym: Set<string>;
   equippedOutfits: Set<string>;
   celebrateSignal: number;
+  flexSignal?: number;
   mood?: MascotMood;
   level?: number;
 }
@@ -56,6 +57,7 @@ export function MascotScene({
   ownedGym,
   equippedOutfits,
   celebrateSignal,
+  flexSignal = 0,
   mood = 'neutral',
   level = 1,
 }: Props) {
@@ -71,7 +73,6 @@ export function MascotScene({
   const face = useSharedValue(1); // 1 faces right, -1 faces left
   const zzz = useSharedValue(0);
   const tired = mood === 'tired';
-  const muscleTier = muscleTierForLevel(level);
   // Every level adds a little size — gains you can see (capped at +25%)
   const levelScale = Math.min(1 + (level - 1) * 0.025, 1.25);
 
@@ -174,6 +175,28 @@ export function MascotScene({
       withTiming(0, { duration: 0 }),
     );
   }, [celebrateSignal, squashX, squashY, spin]);
+
+  // Level-up: double-bicep flex — crouch, pop tall, proud side-to-side shake
+  useEffect(() => {
+    if (flexSignal === 0) return;
+    squashY.value = withSequence(
+      withTiming(0.8, { duration: 180 }),
+      withSpring(1.16, { stiffness: 380, damping: 9 }),
+      withSpring(1, { stiffness: 240, damping: 13 }),
+    );
+    squashX.value = withSequence(
+      withTiming(1.16, { duration: 180 }),
+      withSpring(0.9, { stiffness: 380, damping: 9 }),
+      withSpring(1, { stiffness: 240, damping: 13 }),
+    );
+    tilt.value = withSequence(
+      withTiming(-9, { duration: 130 }),
+      withTiming(9, { duration: 150 }),
+      withTiming(-7, { duration: 130 }),
+      withTiming(7, { duration: 130 }),
+      withSpring(0, { stiffness: 300, damping: 12 }),
+    );
+  }, [flexSignal, squashX, squashY, tilt]);
 
   const poke = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -315,7 +338,7 @@ export function MascotScene({
             {/* Outfit stickers, anchored over the glyph */}
             <Svg width={CHAR} height={CHAR} viewBox={`0 0 ${CHAR} ${CHAR}`} style={StyleSheet.absoluteFill} pointerEvents="none">
               {/* Muscles first so outfits layer on top of them */}
-              {muscleTier > 0 && <MuscleArms tier={muscleTier} />}
+              {level >= 2 && <MuscleArms level={level} />}
               {equippedOutfits.has('headband') && (
                 <G>
                   <Rect x={26} y={26} width={68} height={11} rx={5.5} fill="#e6485c" />
@@ -370,26 +393,34 @@ export function MascotScene({
 
 // ─── Muscle arms (drawn in the 120×120 character box) ──────────────────
 
+const SKIN = '#e2a76f';
+const SKIN_DARK = '#d89a5e';
+
 /**
- * Flexed cartoon arms that bulk up with the buddy's level. One arm is
- * drawn on the left and mirrored for the right. Tier 3 adds effort
- * sparks — the full gym-bro pump.
+ * Code-drawn physique that builds out with the buddy's level. The arms
+ * thicken EVERY level (not in steps); milestones add body parts:
+ * shoulder caps at 4, chest pecs at 6, effort sparks at 9, golden pump
+ * outline at 12. One arm is drawn on the left and mirrored right.
  */
-function MuscleArms({ tier }: { tier: number }) {
-  const bicep = tier === 1 ? 6.5 : tier === 2 ? 8.5 : 10.5;
-  const armW = tier === 1 ? 7 : tier === 2 ? 9 : 11;
+function MuscleArms({ level }: { level: number }) {
+  const bicep = Math.min(4.5 + level * 0.55, 12);
+  const armW = Math.min(5 + level * 0.6, 12.5);
+  const golden = level >= 12;
+  const pump = golden ? { stroke: colors.readinessYellow, strokeWidth: 1.8, strokeOpacity: 0.75 } : {};
   const arm = (
     <G>
       {/* shoulder → elbow */}
-      <Path d="M 32 64 C 23 63 16 68 13 76" stroke="#e2a76f" strokeWidth={armW} strokeLinecap="round" fill="none" />
+      <Path d="M 32 64 C 23 63 16 68 13 76" stroke={SKIN} strokeWidth={armW} strokeLinecap="round" fill="none" />
       {/* elbow → raised fist (the flex) */}
-      <Path d="M 13 76 C 10 66 12 58 18 52" stroke="#e2a76f" strokeWidth={armW - 1} strokeLinecap="round" fill="none" />
+      <Path d="M 13 76 C 10 66 12 58 18 52" stroke={SKIN} strokeWidth={armW - 1} strokeLinecap="round" fill="none" />
+      {/* shoulder cap */}
+      {level >= 4 && <Circle cx={33} cy={58} r={bicep * 0.72} fill={SKIN} {...pump} />}
       {/* bicep bulge + shine */}
-      <Circle cx={19} cy={66} r={bicep} fill="#e2a76f" />
+      <Circle cx={19} cy={66} r={bicep} fill={SKIN} {...pump} />
       <Circle cx={16.5} cy={63} r={bicep * 0.34} fill="rgba(255,255,255,0.35)" />
       {/* fist */}
-      <Circle cx={18} cy={50} r={armW * 0.62} fill="#d89a5e" />
-      {tier >= 3 && (
+      <Circle cx={18} cy={50} r={armW * 0.62} fill={SKIN_DARK} />
+      {level >= 9 && (
         <G>
           <Line x1={7} y1={57} x2={3} y2={53} stroke={colors.readinessYellow} strokeWidth={2} strokeLinecap="round" />
           <Line x1={5} y1={66} x2={1} y2={66} stroke={colors.readinessYellow} strokeWidth={2} strokeLinecap="round" />
@@ -402,6 +433,16 @@ function MuscleArms({ tier }: { tier: number }) {
     <G>
       {arm}
       <G transform={`translate(${CHAR},0) scale(-1,1)`}>{arm}</G>
+      {/* chest pecs — sit above the belt line so outfits still read */}
+      {level >= 6 && (
+        <G>
+          <Ellipse cx={49} cy={84} rx={11} ry={7.5} fill={SKIN} {...pump} />
+          <Ellipse cx={71} cy={84} rx={11} ry={7.5} fill={SKIN} {...pump} />
+          <Line x1={60} y1={78} x2={60} y2={90} stroke="rgba(0,0,0,0.18)" strokeWidth={1.6} />
+          <Ellipse cx={46} cy={81} rx={3.6} ry={2.2} fill="rgba(255,255,255,0.3)" />
+          <Ellipse cx={68} cy={81} rx={3.6} ry={2.2} fill="rgba(255,255,255,0.3)" />
+        </G>
+      )}
     </G>
   );
 }
