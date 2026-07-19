@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
+import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { buyRefKey, getShopItem, xpForRefKey, type ShopItem } from '@/lib/mascot-room';
 import { useAuth } from './use-auth';
@@ -114,13 +115,16 @@ export function useBuyItem() {
         equipped: item.type === 'outfit',
       });
       if (invError) throw invError;
-      const { error: txError } = await supabase.from('mascot_transactions').insert({
-        user_id: user!.id,
-        amount: -item.price,
-        reason: `buy ${item.key}`,
-        ref_key: buyRefKey(item.key),
-      });
-      if (txError) throw txError;
+      // Test mode: no spend row — everything in the shop is free
+      if (!TEST_UNLOCK_ALL) {
+        const { error: txError } = await supabase.from('mascot_transactions').insert({
+          user_id: user!.id,
+          amount: -item.price,
+          reason: `buy ${item.key}`,
+          ref_key: buyRefKey(item.key),
+        });
+        if (txError) throw txError;
+      }
       // Wearing the new piece unequips others in the same slot
       if (item.type === 'outfit' && item.slot) {
         await unequipSameSlot(user!.id, item.key, item.slot);

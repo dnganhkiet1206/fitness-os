@@ -50,6 +50,7 @@ import {
 } from '@/hooks/use-mascot-room';
 import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
+import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
@@ -152,7 +153,7 @@ export default function MascotRoomScreen() {
   };
 
   const buyItem = (item: ShopItem) => {
-    if (balance < item.price) {
+    if (!TEST_UNLOCK_ALL && balance < item.price) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       toast.warning(i18n.nRoomNotEnough);
       return;
@@ -523,7 +524,8 @@ function ShopGrid({
           const meta = ITEM_ICONS[item.key];
           const isOwned = owned.has(item.key);
           const isEquipped = equipped.has(item.key);
-          const affordable = balance >= item.price;
+          const price = TEST_UNLOCK_ALL ? 0 : item.price;
+          const affordable = TEST_UNLOCK_ALL || balance >= item.price;
           return (
             <GlassCard key={item.key} style={styles.shopItem}>
               <View style={[styles.itemIconWrap, { backgroundColor: `${meta.color}1c` }]}>
@@ -544,7 +546,7 @@ function ShopGrid({
                   ) : (
                     <>
                       <Icon icon={Coins} size={11} color={affordable ? colors.primaryForeground : colors.mutedForeground} />
-                      <Text style={[styles.buyText, !affordable && styles.buyTextPoor]}>{item.price}</Text>
+                      <Text style={[styles.buyText, !affordable && styles.buyTextPoor]}>{price}</Text>
                     </>
                   )}
                 </Pressable>

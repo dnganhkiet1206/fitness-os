@@ -18,6 +18,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascotSettings, useUnlockStats } from '@/hooks/use-mascot';
 import { enqueueMascot } from '@/lib/celebration-queue';
+import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { isUnlocked, MASCOTS, type MascotDef } from '@/lib/mascots';
 
 /**
@@ -56,6 +57,8 @@ export function MascotUnlockCelebration() {
         // later doesn't replay every unlock earned while it was off
         await AsyncStorage.setItem(SEEN_KEY, JSON.stringify([...seen, ...fresh]));
         if (!enabled) return;
+        // Test mode unlocks everything at once — don't queue 5 modals
+        if (TEST_UNLOCK_ALL) return;
         // Feed the shared celebration queue so mascot unlocks and award
         // medals play one at a time instead of stacking
         fresh.forEach((id) => enqueueMascot(id));

@@ -1,3 +1,4 @@
+import { TEST_UNLOCK_ALL } from './dev-flags';
 import type { AppLang } from './i18n';
 
 /**
@@ -115,6 +116,7 @@ export function getMascot(id: string): MascotDef {
 }
 
 export function isUnlocked(m: MascotDef, stats: { workouts: number; meals: number }): boolean {
+  if (TEST_UNLOCK_ALL) return true; // test mode: everything available
   if (m.pro) return false; // paid tier not live yet
   if (!m.unlock) return true;
   return stats[m.unlock.kind] >= m.unlock.count;
