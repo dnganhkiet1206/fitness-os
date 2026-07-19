@@ -82,7 +82,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <Screen back title={i18n.settingsTitle}>
+    <Screen back title={i18n.settingsTitle} stagger>
       <Pressable
         onPress={() => {
           Haptics.selectionAsync();
