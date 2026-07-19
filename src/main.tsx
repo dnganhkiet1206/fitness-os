@@ -13,9 +13,9 @@ window.addEventListener("error", (event) => {
 });
 
 // iOS native: configure native plugins when running in Capacitor
-const isNative = !!(window as Record<string, unknown>)?.Capacitor &&
-  typeof ((window as Record<string, unknown>).Capacitor as Record<string, unknown>)?.isNativePlatform === 'function' &&
-  ((window as Record<string, unknown>).Capacitor as { isNativePlatform: () => boolean }).isNativePlatform();
+const win = window as unknown as Record<string, unknown>;
+const cap = win.Capacitor as { isNativePlatform?: () => boolean } | undefined;
+const isNative = !!cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform();
 
 if (isNative) {
   (async () => {
