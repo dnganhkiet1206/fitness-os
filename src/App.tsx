@@ -38,6 +38,7 @@ const Challenges = lazy(() => import("./pages/Challenges"));
 const Biometrics = lazy(() => import("./pages/Biometrics"));
 const Legal = lazy(() => import("./pages/Legal"));
 const Steps = lazy(() => import("./pages/Steps"));
+const MascotLab = lazy(() => import("./pages/MascotLab"));
 
 // Loading fallback — matches app background for seamless transition
 function PageLoader() {
@@ -132,6 +133,7 @@ function AnimatedRoutes() {
               <Route path="/biometrics" element={<Biometrics />} />
               <Route path="/steps" element={<Steps />} />
               <Route path="/legal" element={<Legal />} />
+              <Route path="/mascot-lab" element={<MascotLab />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
