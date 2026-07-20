@@ -1,9 +1,38 @@
-# Companion mascot animations (Lottie)
+# Companion mascot art
 
-The premium, animated companion look comes from **Lottie** files here —
-not from code-drawn SVG. Until you add files, the app automatically falls
-back to the built-in vector figure, so nothing breaks with this folder
-empty.
+The premium companion look comes from **assets here**, not code-drawn SVG.
+Two supported kinds, in priority order:
+
+1. **Pre-rendered images** (`<id>.png`, background removed) — the
+   Talking-Tom-style look. Registered in `src/lib/mascot-images.ts`, shown
+   with a subtle breathing animation. **Currently live: `koa.png`.**
+2. **Lottie** (`<id>-idle.json`) — vector animation, registered in
+   `src/lib/mascot-lottie.ts` (see below).
+
+Any mascot without an asset falls back to the built-in vector figure, so a
+partial roster works and an empty folder never breaks the build.
+
+## Adding a pre-rendered image (recommended)
+
+1. Generate the character (see the prompt the team is using) on a **plain
+   flat grey/white background**, front-facing, full body.
+2. Remove the background (I do this — send me the raw PNG) and drop
+   `<id>.png` here.
+3. Register in `src/lib/mascot-images.ts`:
+   ```ts
+   koa: { idle: require('../../assets/mascots/koa.png'), aspect: HEIGHT/WIDTH },
+   // optional: happy / tired variants
+   ```
+4. No native rebuild needed for images — a JS reload shows it.
+
+Mascot ids: `koa`, `blaze`, `swift`, `titan`, `drago`, `nova`.
+
+---
+
+## Lottie (optional, animated)
+
+The premium, animated companion look can also come from **Lottie** files.
+Until you add files, the app falls back automatically.
 
 ## How to add a mascot animation
 
