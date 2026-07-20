@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
 import { FoodCard, RecentFoodCard } from '@/components/ascnd/food-cards';
@@ -11,6 +12,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { dedupeSeedShadows, useFavoriteFoods, useMyFoods, useRecentFoods, useToggleFavoriteFood, type FoodItemRow } from '@/hooks/use-nutrition';
@@ -201,10 +203,10 @@ export default function NutritionScreen() {
                 <Text style={styles.microTitle}>{lang === 'vi' ? 'Danh sách thực phẩm' : 'My Foods'}</Text>
               </View>
               {myFoods && myFoods.length > 0 ? (
-                <View style={styles.cardList}>
+                <Animated.View style={styles.cardList} entering={rise(0)}>
                   {myFoods.slice(0, 4).map((f) => <FoodCard key={f.id} f={f} />)}
                   {myFoods.length > 4 && <SeeMore />}
-                </View>
+                </Animated.View>
               ) : (
                 <Text style={styles.emptyText}>
                   {lang === 'vi' ? 'Chưa có thực phẩm — bấm Thêm để tạo' : 'No foods yet — tap Add to create'}
@@ -218,9 +220,9 @@ export default function NutritionScreen() {
                     <Icon icon={Star} size={13} color={colors.readinessYellow} />
                     <Text style={styles.microTitle}>{i18n.nutritionFavorites}</Text>
                   </View>
-                  <View style={styles.cardList}>
+                  <Animated.View style={styles.cardList} entering={rise(1)}>
                     {favorites.map((f) => <FoodCard key={f.id} f={f} />)}
-                  </View>
+                  </Animated.View>
                 </>
               )}
 
@@ -232,12 +234,12 @@ export default function NutritionScreen() {
                     <Icon icon={ClipboardList} size={13} color={colors.mutedForeground} />
                     <Text style={styles.microTitle}>{i18n.nutritionRecent}</Text>
                   </View>
-                  <View style={styles.cardList}>
+                  <Animated.View style={styles.cardList} entering={rise(2)}>
                     {recents.slice(0, 4).map((r, i) => (
                       <RecentFoodCard key={i} r={r} saved={myFoodNames.has(r.food_name.toLowerCase())} />
                     ))}
                     {recents.length > 4 && <SeeMore />}
-                  </View>
+                  </Animated.View>
                 </>
               )}
             </>

@@ -19,12 +19,14 @@ import {
 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
@@ -402,7 +404,7 @@ export default function WeeklyReviewScreen() {
       </View>
 
       {/* Summary stat tiles */}
-      <View style={styles.statGrid}>
+      <Animated.View style={styles.statGrid} entering={rise(0)}>
         {statCards.map((c, i) => (
           <GlassCard key={i} style={styles.statCard}>
             <View style={styles.statHead}>
@@ -428,34 +430,43 @@ export default function WeeklyReviewScreen() {
             <Text style={styles.statSub}>{c.sub}</Text>
           </GlassCard>
         ))}
-      </View>
+      </Animated.View>
 
       {daysWithData > 0 ? (
         <>
           {/* Daily calories */}
+          <Animated.View entering={rise(1)}>
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.weeklyReviewDailyNutrition}</Text>
             <WeekBars data={chartData.map((c) => c.kcal)} color="#ef7c26" target={targets.kcal} days={DAYS} />
           </GlassCard>
+          </Animated.View>
 
           {/* Sleep + Volume */}
+          <Animated.View entering={rise(2)}>
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.weeklyReviewSleepChart}</Text>
             <WeekBars data={chartData.map((c) => c.sleep_h)} color="#8d52e0" target={targets.sleepH} unit="h" days={DAYS} />
           </GlassCard>
+          </Animated.View>
+          <Animated.View entering={rise(3)}>
           <GlassCard>
             <Text style={styles.microTitle}>Volume Load</Text>
             <WeekBars data={chartData.map((c) => c.volume)} color={colors.metricBlue} days={DAYS} />
           </GlassCard>
+          </Animated.View>
 
           {/* Readiness trend */}
+          <Animated.View entering={rise(4)}>
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.weeklyReviewReadinessChart}</Text>
             <LineChart points={readinessPoints} color="#e8ba30" height={140} />
           </GlassCard>
+          </Animated.View>
 
           {/* Adaptive recommendations */}
           {recommendations.length > 0 && (
+            <Animated.View entering={rise(5)}>
             <GlassCard>
               <View style={styles.microTitleRow}>
                 <Icon icon={Target} size={14} color={colors.readinessGreen} />
@@ -473,10 +484,12 @@ export default function WeeklyReviewScreen() {
                 })}
               </View>
             </GlassCard>
+            </Animated.View>
           )}
 
           {/* AI analysis */}
           {!a ? (
+            <Animated.View entering={rise(6)}>
             <GlassCard>
               <View style={styles.titleRow}>
                 <Icon icon={Sparkles} size={17} color={colors.primary} />
@@ -494,16 +507,20 @@ export default function WeeklyReviewScreen() {
                 )}
               </Pressable>
             </GlassCard>
+            </Animated.View>
           ) : (
             <>
+              <Animated.View entering={rise(6)}>
               <GlassCard>
                 <Text style={styles.title}>{i18n.nWeekScore}</Text>
                 <Text style={styles.score}>{a.score}</Text>
                 <Text style={styles.summary}>{a.summary}</Text>
               </GlassCard>
+              </Animated.View>
 
               {a.insights?.map((ins, i) => (
-                <GlassCard key={i} style={styles.itemCard}>
+                <Animated.View key={i} entering={rise(7 + i)}>
+                <GlassCard style={styles.itemCard}>
                   <View style={styles.row}>
                     <Text style={styles.iconEmoji}>{ins.icon}</Text>
                     <View style={styles.info}>
@@ -514,10 +531,12 @@ export default function WeeklyReviewScreen() {
                     </View>
                   </View>
                 </GlassCard>
+                </Animated.View>
               ))}
 
               {a.recommendations?.map((rec, i) => (
-                <GlassCard key={`r${i}`} style={styles.itemCard}>
+                <Animated.View key={`r${i}`} entering={rise(8 + i)}>
+                <GlassCard style={styles.itemCard}>
                   <View style={styles.row}>
                     <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLOR[rec.priority] ?? colors.border }]} />
                     <View style={styles.info}>
@@ -526,6 +545,7 @@ export default function WeeklyReviewScreen() {
                     </View>
                   </View>
                 </GlassCard>
+                </Animated.View>
               ))}
             </>
           )}

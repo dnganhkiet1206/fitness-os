@@ -3,12 +3,14 @@ import * as Haptics from 'expo-haptics';
 import { Camera, Medal, Plus, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing } from '@/constants/ascnd';
+import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBodyMeasurements, useWeightHistory } from '@/hooks/use-fitness-data';
 import { useProgressPhotos } from '@/hooks/use-progress-photos';
@@ -140,7 +142,7 @@ export default function ProgressScreen() {
       {tab === 'weight' && (
         <>
           {/* Stat tiles: current / change / records */}
-          <View style={styles.tileRow}>
+          <Animated.View style={styles.tileRow} entering={rise(0)}>
             {[
               { label: i18n.progressCurrent, value: currentWeight != null ? `${currentWeight}${wl}` : '—', color: colors.foreground },
               {
@@ -155,9 +157,10 @@ export default function ProgressScreen() {
                 <Text style={[styles.tileValue, { color: c.color }]}>{c.value}</Text>
               </GlassCard>
             ))}
-          </View>
+          </Animated.View>
 
           {/* BMI card (web layout: badge, big mono number, 4-zone scale) */}
+          <Animated.View entering={rise(1)}>
           <GlassCard style={styles.bmiCard}>
             <View style={styles.bmiHead}>
               <Text style={styles.microTitle}>{vi ? 'Chỉ số BMI' : 'BMI Index'}</Text>
@@ -202,12 +205,15 @@ export default function ProgressScreen() {
               </Text>
             )}
           </GlassCard>
+          </Animated.View>
 
           {/* Weight chart */}
+          <Animated.View entering={rise(2)}>
           <GlassCard style={styles.chartCard}>
             <Text style={styles.microTitle}>{i18n.progressWeightChart}</Text>
             <LineChart points={weightData} color={colors.readinessGreen} height={180} unit={wl} emptyLabel={i18n.nNotEnoughData} />
           </GlassCard>
+          </Animated.View>
         </>
       )}
 
@@ -223,13 +229,16 @@ export default function ProgressScreen() {
 
           {/* Web: multi-line measurement trend (waist / chest / bicep / thigh) */}
           {(measurements ?? []).length > 0 && (
+            <Animated.View entering={rise(0)}>
             <GlassCard style={styles.chartCard}>
               <Text style={styles.microTitle}>{i18n.progressMeasurementTrend}</Text>
               <MultiLineChart series={trendSeries} height={200} emptyLabel={i18n.nNotEnoughData} />
             </GlassCard>
+            </Animated.View>
           )}
 
           {measurement ? (
+            <Animated.View entering={rise(1)}>
             <GlassCard style={styles.chartCard}>
               <Text style={styles.microTitle}>{i18n.progressMeasurements}</Text>
               <View style={styles.measureGrid}>
@@ -245,14 +254,18 @@ export default function ProgressScreen() {
                 })}
               </View>
             </GlassCard>
+            </Animated.View>
           ) : (
+            <Animated.View entering={rise(1)}>
             <GlassCard style={styles.chartCard}>
               <Text style={styles.emptyText}>{i18n.progressNoMeasurements}</Text>
             </GlassCard>
+            </Animated.View>
           )}
 
           {/* Web: measurement history table (last 10, newest first) */}
           {historyRows.length > 0 && (
+            <Animated.View entering={rise(2)}>
             <GlassCard style={styles.chartCard}>
               <Text style={styles.microTitle}>{i18n.progressMeasurementHistory}</Text>
               <View>
@@ -279,6 +292,7 @@ export default function ProgressScreen() {
                 ))}
               </View>
             </GlassCard>
+            </Animated.View>
           )}
         </>
       )}
@@ -292,17 +306,19 @@ export default function ProgressScreen() {
             <Text style={styles.photoCtaText}>{i18n.nPhotoAdd}</Text>
           </Pressable>
           {photos && photos.length > 0 ? (
-            <View style={styles.photoGrid}>
+            <Animated.View style={styles.photoGrid} entering={rise(0)}>
               {photos.slice(0, 12).map((p) => (
                 <View key={p.id} style={styles.photoCell}>
                   <Image source={{ uri: p.signedUrl }} style={styles.photo} />
                 </View>
               ))}
-            </View>
+            </Animated.View>
           ) : (
+            <Animated.View entering={rise(0)}>
             <GlassCard style={styles.chartCard}>
               <Text style={styles.emptyText}>{i18n.progressNoPhotos}</Text>
             </GlassCard>
+            </Animated.View>
           )}
         </>
       )}

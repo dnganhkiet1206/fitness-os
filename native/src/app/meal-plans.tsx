@@ -3,11 +3,13 @@ import * as Haptics from 'expo-haptics';
 import { ChevronDown, ChevronRight, Plus, Search, Trash2, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
   useAddMealPlanItem,
@@ -231,8 +233,8 @@ export default function MealPlansScreen() {
       )}
 
       {plans && plans.length > 0 ? (
-        plans.map((p) => (
-          <View key={p.id} style={styles.planBlock}>
+        plans.map((p, pi) => (
+          <Animated.View key={p.id} style={styles.planBlock} entering={rise(pi)}>
             <Pressable
               onPress={() => {
                 Haptics.selectionAsync();
@@ -371,7 +373,7 @@ export default function MealPlansScreen() {
                 </GlassCard>
               </>
             )}
-          </View>
+          </Animated.View>
         ))
       ) : (
         <GlassCard>

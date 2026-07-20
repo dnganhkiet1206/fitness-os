@@ -3,12 +3,14 @@ import { router } from 'expo-router';
 import { Bell, ChevronRight, KeyRound, Lock, Upload } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { VectorMascot } from '@/components/ascnd/vector-mascot';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { rise } from '@/lib/entrance';
 import { useAppLock } from '@/hooks/use-app-lock';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascot } from '@/hooks/use-mascot';
@@ -83,6 +85,7 @@ export default function SettingsScreen() {
 
   return (
     <Screen back title={i18n.settingsTitle}>
+      <Animated.View entering={rise(0)}>
       <Pressable
         onPress={() => {
           Haptics.selectionAsync();
@@ -107,7 +110,9 @@ export default function SettingsScreen() {
           </GlassCard>
         )}
       </Pressable>
+      </Animated.View>
 
+      <Animated.View entering={rise(1)}>
       <GlassCard>
         <View style={styles.toggleRow}>
           <View style={styles.toggleInfo}>
@@ -186,7 +191,9 @@ export default function SettingsScreen() {
           </ScrollView>
         )}
       </GlassCard>
+      </Animated.View>
 
+      <Animated.View entering={rise(2)}>
       <GlassCard>
         <Text style={styles.cardTitle}>Language / Ngôn ngữ</Text>
         <View style={styles.langRow}>
@@ -205,8 +212,10 @@ export default function SettingsScreen() {
           ))}
         </View>
       </GlassCard>
+      </Animated.View>
 
       {/* Reminders — local notifications */}
+      <Animated.View entering={rise(3)}>
       <Pressable
         onPress={() => {
           Haptics.selectionAsync();
@@ -227,8 +236,10 @@ export default function SettingsScreen() {
           </GlassCard>
         )}
       </Pressable>
+      </Animated.View>
 
       {/* App lock — Face ID */}
+      <Animated.View entering={rise(4)}>
       <GlassCard>
         <View style={styles.toggleRow}>
           <View style={styles.cardHeaderLeft}>
@@ -251,8 +262,10 @@ export default function SettingsScreen() {
           />
         </View>
       </GlassCard>
+      </Animated.View>
 
       {/* Change password */}
+      <Animated.View entering={rise(5)}>
       <Pressable
         onPress={() => {
           Haptics.selectionAsync();
@@ -270,7 +283,9 @@ export default function SettingsScreen() {
           </GlassCard>
         )}
       </Pressable>
+      </Animated.View>
 
+      <Animated.View entering={rise(6)}>
       <Pressable onPress={exportData} disabled={exporting}>
         {({ pressed }) => (
           <GlassCard style={pressed ? styles.cardPressed : undefined}>
@@ -288,13 +303,17 @@ export default function SettingsScreen() {
           </GlassCard>
         )}
       </Pressable>
+      </Animated.View>
 
+      <Animated.View entering={rise(7)}>
       <GlassCard>
         <Text style={styles.cardTitle}>{i18n.nAbout}</Text>
         <Row label={i18n.nVersion} value="1.0.0 (native)" />
         <Row label="Backend" value="Supabase" />
       </GlassCard>
+      </Animated.View>
 
+      <Animated.View entering={rise(8)}>
       <Pressable
         onPress={() => {
           Haptics.selectionAsync();
@@ -309,12 +328,15 @@ export default function SettingsScreen() {
           </GlassCard>
         )}
       </Pressable>
+      </Animated.View>
 
+      <Animated.View entering={rise(9)}>
       <Pressable
         style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
         onPress={confirmSignOut}>
         <Text style={styles.signOutText}>{i18n.nSignOut}</Text>
       </Pressable>
+      </Animated.View>
     </Screen>
   );
 }
