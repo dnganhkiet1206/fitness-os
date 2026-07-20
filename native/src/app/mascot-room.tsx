@@ -34,7 +34,16 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
+import { fireCelebration } from '@/components/ascnd/award-celebration';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { MascotScene } from '@/components/ascnd/mascot-scene';
@@ -105,6 +114,45 @@ const SIGNAL_META: Record<QuestKey, { icon: LucideIcon; color: string; labelKey:
   steps: { icon: Footprints, color: colors.readinessGreen, labelKey: 'nRoomSigSteps' },
 };
 
+// Rank → celebration tier (the confetti overlay speaks bronze/…/platinum)
+const RANK_TIER: Record<string, string> = {
+  rookie: 'bronze',
+  athlete: 'bronze',
+  warrior: 'silver',
+  elite: 'gold',
+  champion: 'platinum',
+  legend: 'platinum',
+};
+
+/** Floating "+N coins" that rises off the scene on every claim */
+function CoinBurst({ trigger, amount }: { trigger: number; amount: number }) {
+  const y = useSharedValue(0);
+  const op = useSharedValue(0);
+  useEffect(() => {
+    if (trigger === 0) return;
+    y.value = 0;
+    op.value = 0;
+    op.value = withSequence(
+      withTiming(1, { duration: 160 }),
+      withDelay(420, withTiming(0, { duration: 520 })),
+    );
+    y.value = withTiming(-70, { duration: 1080, easing: Easing.out(Easing.quad) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trigger]);
+  const style = useAnimatedStyle(() => ({
+    opacity: op.value,
+    transform: [{ translateY: y.value }],
+  }));
+  return (
+    <Animated.View pointerEvents="none" style={[styles.burstWrap, style]}>
+      <View style={styles.burstPill}>
+        <Icon icon={Coins} size={15} color={colors.readinessYellow} />
+        <Text style={styles.burstText}>+{amount}</Text>
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function MascotRoomScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -125,6 +173,7 @@ export default function MascotRoomScreen() {
 
   const [celebrate, setCelebrate] = useState(0);
   const [flex, setFlex] = useState(0);
+  const [burst, setBurst] = useState({ id: 0, amount: 0 });
   const [shopOpen, setShopOpen] = useState(false);
   const [shopTab, setShopTab] = useState<'outfit' | 'gym' | 'upgrade'>('gym');
   const welcomeTried = useRef(false);
@@ -152,14 +201,29 @@ export default function MascotRoomScreen() {
       { refKey, amount, reason },
       {
         onSuccess: () => {
+          // Every claim floats its coins off the scene
+          setBurst({ id: Date.now(), amount });
+          const prevLevel = levelFromXp(prevXp);
           const newLevel = levelFromXp(prevXp + xpGain);
-          if (newLevel > levelFromXp(prevXp)) {
+          if (newLevel > prevLevel) {
             // Level-up gets the double-bicep flex instead of the jump
             setFlex((f) => f + 1);
-            toast.success(i18n.nRoomLevelUp.replace('{n}', String(newLevel)));
+            const prevR = rankForLevel(prevLevel);
+            const newR = rankForLevel(newLevel);
+            if (newR.key !== prevR.key) {
+              // Crossing a rank boundary is a full confetti moment
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              fireCelebration({
+                title: newR.name[lang],
+                description: i18n.nRoomRankUp.replace('{r}', newR.name[lang]),
+                icon: 'trophy',
+                tier: RANK_TIER[newR.key] ?? 'gold',
+              });
+            } else {
+              toast.success(i18n.nRoomLevelUp.replace('{n}', String(newLevel)));
+            }
           } else {
             setCelebrate((c) => c + 1);
-            toast.success(i18n.nRoomEarned.replace('{n}', String(amount)));
           }
         },
         onError: (e: Error) => toast.error(e.message),
@@ -240,15 +304,18 @@ export default function MascotRoomScreen() {
         </Pressable>
       }>
       {/* The room */}
-      <MascotScene
-        mascot={mascot}
-        ownedGym={equippedOutfits}
-        equippedOutfits={equippedOutfits}
-        celebrateSignal={celebrate}
-        flexSignal={flex}
-        mood={mood}
-        level={level}
-      />
+      <View style={styles.sceneWrap}>
+        <MascotScene
+          mascot={mascot}
+          ownedGym={equippedOutfits}
+          equippedOutfits={equippedOutfits}
+          celebrateSignal={celebrate}
+          flexSignal={flex}
+          mood={mood}
+          level={level}
+        />
+        <CoinBurst trigger={burst.id} amount={burst.amount} />
+      </View>
       {mood === 'tired' ? (
         <View style={styles.bubble}>
           <Text style={styles.bubbleText}>{i18n.nRoomMoodTired}</Text>
@@ -678,6 +745,27 @@ const styles = StyleSheet.create({
     marginTop: -spacing.sm,
   },
   bubbleText: { ...type.footnote, color: colors.foreground, textAlign: 'center', lineHeight: 19 },
+
+  sceneWrap: { position: 'relative' },
+  burstWrap: {
+    position: 'absolute',
+    top: '30%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  burstPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(8,8,10,0.78)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(232,186,48,0.4)',
+  },
+  burstText: { ...type.headline, fontWeight: '800', color: colors.readinessYellow, fontVariant: ['tabular-nums'] },
 
   energyCard: { gap: spacing.sm },
   energyHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
