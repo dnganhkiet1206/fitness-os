@@ -298,6 +298,8 @@ const en = {
   nRoomNextRank: 'Next: {r} at level {n}',
   nRoomMaxRank: 'Top rank reached — legendary!',
   nRoomRankUp: 'New rank unlocked: {r}!',
+  nRoomJourney: 'Journey',
+  nRoomLevelsToRank: '{n} levels to {r}',
   // Today's energy
   nRoomEnergy: "Today's energy",
   nRoomEnergyEmpty: 'Running on empty — log a meal or a workout to wake me up.',
@@ -598,6 +600,8 @@ const vi: typeof en = {
   nRoomNextRank: 'Tiếp theo: {r} ở cấp {n}',
   nRoomMaxRank: 'Đã đạt danh hiệu cao nhất — huyền thoại!',
   nRoomRankUp: 'Mở danh hiệu mới: {r}!',
+  nRoomJourney: 'Hành trình',
+  nRoomLevelsToRank: 'Còn {n} cấp tới {r}',
   // Today's energy
   nRoomEnergy: 'Năng lượng hôm nay',
   nRoomEnergyEmpty: 'Đang cạn năng lượng — ghi bữa ăn hoặc buổi tập để đánh thức tớ nhé.',

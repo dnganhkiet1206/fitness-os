@@ -44,9 +44,11 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { fireCelebration } from '@/components/ascnd/award-celebration';
+import { EnergyRing } from '@/components/ascnd/energy-ring';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { MascotScene } from '@/components/ascnd/mascot-scene';
+import { RankJourney } from '@/components/ascnd/rank-journey';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -69,6 +71,7 @@ import {
   DAILY_QUESTS,
   ENERGY_SIGNALS,
   LEVEL_XP,
+  RANKS,
   SHOP_ITEMS,
   STREAK_XP,
   WEEKLY_BONUS_COINS,
@@ -328,17 +331,29 @@ export default function MascotRoomScreen() {
         </View>
       ) : null}
 
-      {/* Today's energy — the buddy is only as charged as your real day */}
+      {/* Today's energy — an Apple-Fitness-style ring where each segment is
+          one daily signal, lit in its own colour when met. The buddy is
+          only as charged as your real day. */}
       <GlassCard style={styles.energyCard}>
-        <View style={styles.energyHeadRow}>
-          <View style={styles.energyTitleWrap}>
-            <Icon icon={Flame} size={15} color={colors.metricOrange} />
-            <Text style={styles.energyTitle}>{i18n.nRoomEnergy}</Text>
+        <View style={styles.energyTopRow}>
+          <View style={styles.ringWrap}>
+            <EnergyRing
+              size={104}
+              stroke={10}
+              segments={ENERGY_SIGNALS.map((k) => ({ on: questDone[k], color: SIGNAL_META[k].color }))}
+            />
+            <View style={styles.ringCenter} pointerEvents="none">
+              <Text style={styles.ringNum}>
+                {energyCount}
+                <Text style={styles.ringNumMax}>/{ENERGY_SIGNALS.length}</Text>
+              </Text>
+              <Text style={styles.ringSub}>{i18n.nToday}</Text>
+            </View>
           </View>
-          <Text style={styles.energyCount}>
-            {energyCount}
-            <Text style={styles.energyCountMax}>/{ENERGY_SIGNALS.length}</Text>
-          </Text>
+          <View style={styles.energyInfo}>
+            <Text style={styles.energyTitle}>{i18n.nRoomEnergy}</Text>
+            <Text style={styles.energyHint}>{energyHeadline}</Text>
+          </View>
         </View>
         <View style={styles.energyPips}>
           {ENERGY_SIGNALS.map((k) => {
@@ -351,7 +366,7 @@ export default function MascotRoomScreen() {
                   styles.energyPip,
                   on && { backgroundColor: `${meta.color}1f`, borderColor: `${meta.color}66` },
                 ]}>
-                <Icon icon={meta.icon} size={17} color={on ? meta.color : colors.mutedForeground} />
+                <Icon icon={meta.icon} size={16} color={on ? meta.color : colors.mutedForeground} />
                 <Text style={[styles.energyPipLabel, on && { color: colors.foreground }]}>
                   {i18n[meta.labelKey]}
                 </Text>
@@ -359,7 +374,6 @@ export default function MascotRoomScreen() {
             );
           })}
         </View>
-        <Text style={styles.energyHint}>{energyHeadline}</Text>
       </GlassCard>
 
       {/* Quick actions — the shop lives behind one button now */}
@@ -428,13 +442,31 @@ export default function MascotRoomScreen() {
             />
           </View>
           <Text style={styles.levelHint}>
-            {upcomingRank
-              ? i18n.nRoomNextRank
-                  .replace('{r}', upcomingRank.name[lang])
-                  .replace('{n}', String(upcomingRank.minLevel))
-              : i18n.nRoomMaxRank}
+            {i18n.nRoomLevelHint.replace('{n}', String(LEVEL_XP - intoLevel))}
           </Text>
         </View>
+      </GlassCard>
+
+      {/* Rank journey — the whole ladder at a glance */}
+      <GlassCard style={styles.journeyCard}>
+        <View style={styles.journeyHead}>
+          <Text style={styles.journeyTitle}>{i18n.nRoomJourney}</Text>
+          <Text style={styles.journeySub}>
+            {upcomingRank ? (
+              <>
+                {i18n.nRoomLevelsToRank
+                  .replace('{n}', String(upcomingRank.minLevel - level))
+                  .replace('{r}', '')}
+                <Text style={{ color: upcomingRank.color, fontWeight: '700' }}>
+                  {upcomingRank.name[lang]}
+                </Text>
+              </>
+            ) : (
+              i18n.nRoomMaxRank
+            )}
+          </Text>
+        </View>
+        <RankJourney ranks={RANKS} currentKey={rank.key} lang={lang} cardBg={colors.card} />
       </GlassCard>
 
       {/* Daily quests */}
@@ -769,12 +801,24 @@ const styles = StyleSheet.create({
   },
   burstText: { ...type.headline, fontWeight: '800', color: colors.readinessYellow, fontVariant: ['tabular-nums'] },
 
-  energyCard: { gap: spacing.sm },
-  energyHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  energyTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  energyCard: { gap: spacing.md },
+  energyTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  ringWrap: { width: 104, height: 104, alignItems: 'center', justifyContent: 'center' },
+  ringCenter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringNum: { ...type.title, fontSize: 26, fontWeight: '800', color: colors.foreground, lineHeight: 28, fontVariant: ['tabular-nums'] },
+  ringNumMax: { ...type.footnote, fontWeight: '700', color: colors.mutedForeground },
+  ringSub: { fontSize: 9, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', color: colors.mutedForeground, marginTop: 3 },
+  energyInfo: { flex: 1, minWidth: 0, gap: 4 },
   energyTitle: { ...type.headline, color: colors.foreground },
-  energyCount: { ...type.title, fontWeight: '800', color: colors.metricOrange, fontVariant: ['tabular-nums'] },
-  energyCountMax: { ...type.footnote, fontWeight: '700', color: colors.mutedForeground },
+  energyHint: { ...type.footnote, color: colors.mutedForeground, lineHeight: 18 },
   energyPips: { flexDirection: 'row', gap: spacing.sm - 2 },
   energyPip: {
     flex: 1,
@@ -787,7 +831,11 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   energyPipLabel: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  energyHint: { ...type.footnote, color: colors.mutedForeground, lineHeight: 18 },
+
+  journeyCard: { gap: spacing.md },
+  journeyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  journeyTitle: { ...type.headline, color: colors.foreground },
+  journeySub: { ...type.footnote, color: colors.mutedForeground },
 
   card: { gap: spacing.sm },
   cardTitle: { ...type.headline, color: colors.foreground },
