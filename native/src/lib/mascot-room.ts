@@ -64,11 +64,11 @@ export interface RankDef {
 }
 
 export const RANKS: RankDef[] = [
-  { key: 'rookie', minLevel: 1, name: { vi: 'Tân binh', en: 'Rookie' }, color: '#8b93a4' },
-  { key: 'athlete', minLevel: 5, name: { vi: 'Vận động viên', en: 'Athlete' }, color: '#20b684' },
-  { key: 'warrior', minLevel: 10, name: { vi: 'Chiến binh', en: 'Warrior' }, color: '#3e86ea' },
-  { key: 'elite', minLevel: 20, name: { vi: 'Tinh nhuệ', en: 'Elite' }, color: '#b07de0' },
-  { key: 'champion', minLevel: 35, name: { vi: 'Nhà vô địch', en: 'Champion' }, color: '#e08a3a' },
+  { key: 'rookie', minLevel: 1, name: { vi: 'Tập sự', en: 'Rookie' }, color: '#8b93a4' },
+  { key: 'active', minLevel: 5, name: { vi: 'Năng động', en: 'Active' }, color: '#20b684' },
+  { key: 'prime', minLevel: 10, name: { vi: 'Sung sức', en: 'Prime' }, color: '#3e86ea' },
+  { key: 'peak', minLevel: 20, name: { vi: 'Đỉnh cao', en: 'Peak' }, color: '#b07de0' },
+  { key: 'apex', minLevel: 35, name: { vi: 'Tối thượng', en: 'Apex' }, color: '#e08a3a' },
   { key: 'legend', minLevel: 55, name: { vi: 'Huyền thoại', en: 'Legend' }, color: '#e8ba30' },
 ];
 

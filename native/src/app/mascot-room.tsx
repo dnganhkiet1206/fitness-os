@@ -117,10 +117,10 @@ const SIGNAL_META: Record<QuestKey, { icon: LucideIcon; color: string; labelKey:
 // Rank → celebration tier (the confetti overlay speaks bronze/…/platinum)
 const RANK_TIER: Record<string, string> = {
   rookie: 'bronze',
-  athlete: 'bronze',
-  warrior: 'silver',
-  elite: 'gold',
-  champion: 'platinum',
+  active: 'bronze',
+  prime: 'silver',
+  peak: 'gold',
+  apex: 'platinum',
   legend: 'platinum',
 };
 
