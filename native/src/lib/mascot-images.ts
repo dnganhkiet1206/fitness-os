@@ -28,7 +28,7 @@ export interface MascotImageSet {
 export const MASCOT_IMAGES: Record<string, MascotImageSet> = {
   koa: {
     idle: require('../../assets/mascots/koa.png'),
-    aspect: 719 / 560,
+    aspect: 859 / 640,
   },
 };
 
