@@ -50,6 +50,45 @@ export const xpForRefKey = (refKey: string): number => {
 export const LEVEL_XP = 120;
 export const levelFromXp = (xp: number) => Math.floor(xp / LEVEL_XP) + 1;
 
+// ─── Rank ladder ─────────────────────────────────────────────────────────
+// Levels alone are a flat number; ranks give the climb an identity and a
+// next thing to chase. Each rank re-skins the buddy's badge + level card.
+
+export interface RankDef {
+  key: string;
+  /** First level that belongs to this rank */
+  minLevel: number;
+  name: Record<AppLang, string>;
+  /** Accent used for the badge / progress on the level card */
+  color: string;
+}
+
+export const RANKS: RankDef[] = [
+  { key: 'rookie', minLevel: 1, name: { vi: 'Tân binh', en: 'Rookie' }, color: '#8b93a4' },
+  { key: 'athlete', minLevel: 5, name: { vi: 'Vận động viên', en: 'Athlete' }, color: '#20b684' },
+  { key: 'warrior', minLevel: 10, name: { vi: 'Chiến binh', en: 'Warrior' }, color: '#3e86ea' },
+  { key: 'elite', minLevel: 20, name: { vi: 'Tinh nhuệ', en: 'Elite' }, color: '#b07de0' },
+  { key: 'champion', minLevel: 35, name: { vi: 'Nhà vô địch', en: 'Champion' }, color: '#e08a3a' },
+  { key: 'legend', minLevel: 55, name: { vi: 'Huyền thoại', en: 'Legend' }, color: '#e8ba30' },
+];
+
+/** Highest rank whose minLevel the buddy has reached */
+export const rankForLevel = (level: number): RankDef => {
+  let out = RANKS[0];
+  for (const r of RANKS) if (level >= r.minLevel) out = r;
+  return out;
+};
+
+/** The rank being climbed toward, or null once at the top */
+export const nextRank = (level: number): RankDef | null =>
+  RANKS.find((r) => r.minLevel > level) ?? null;
+
+// ─── Daily energy ─────────────────────────────────────────────────────────
+// The five things a buddy "feeds" on each day. Energy is derived live from
+// real logs (never from claims), so the character visibly mirrors the day.
+
+export const ENERGY_SIGNALS: QuestKey[] = ['meal', 'workout', 'water', 'sleep', 'steps'];
+
 export const questRefKey = (dateStr: string, key: QuestKey) => `d:${dateStr}:${key}`;
 export const weeklyRefKey = (weekStart: string, challengeKey: string) => `w:${weekStart}:${challengeKey}`;
 export const buyRefKey = (itemKey: string) => `buy:${itemKey}`;

@@ -4,6 +4,7 @@ import {
   Check,
   Coins,
   Cylinder,
+  Droplets,
   Dumbbell,
   Flame,
   Footprints,
@@ -14,6 +15,7 @@ import {
   LayoutGrid,
   Lightbulb,
   Medal,
+  Moon,
   RectangleHorizontal,
   RectangleVertical,
   Ribbon,
@@ -22,6 +24,7 @@ import {
   Sprout,
   Star,
   Store,
+  Utensils,
   Weight,
   X,
   Zap,
@@ -55,13 +58,16 @@ import { CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
   DAILY_QUESTS,
+  ENERGY_SIGNALS,
   LEVEL_XP,
   SHOP_ITEMS,
   STREAK_XP,
   WEEKLY_BONUS_COINS,
   WEEKLY_BONUS_XP,
   levelFromXp,
+  nextRank,
   questRefKey,
+  rankForLevel,
   streakCoins,
   type QuestKey,
   type ShopItem,
@@ -88,6 +94,15 @@ const ITEM_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   floor_neon: { icon: LayoutGrid, color: colors.metricCyan },
   wall_led: { icon: Lightbulb, color: colors.metricPurple },
   wall_frames: { icon: ImageIcon, color: colors.metricBlue },
+};
+
+// The five daily signals that power the buddy's energy meter
+const SIGNAL_META: Record<QuestKey, { icon: LucideIcon; color: string; labelKey: 'nRoomSigMeal' | 'nRoomSigWorkout' | 'nRoomSigWater' | 'nRoomSigSleep' | 'nRoomSigSteps' }> = {
+  meal: { icon: Utensils, color: colors.metricOrange, labelKey: 'nRoomSigMeal' },
+  workout: { icon: Dumbbell, color: '#e6485c', labelKey: 'nRoomSigWorkout' },
+  water: { icon: Droplets, color: colors.metricCyan, labelKey: 'nRoomSigWater' },
+  sleep: { icon: Moon, color: colors.metricPurple, labelKey: 'nRoomSigSleep' },
+  steps: { icon: Footprints, color: colors.readinessGreen, labelKey: 'nRoomSigSteps' },
 };
 
 export default function MascotRoomScreen() {
@@ -186,6 +201,20 @@ export default function MascotRoomScreen() {
   const xp = wallet?.xp ?? 0;
   const level = levelFromXp(xp);
   const intoLevel = xp % LEVEL_XP;
+  const rank = rankForLevel(level);
+  const upcomingRank = nextRank(level);
+
+  // Live daily energy — how many of the five signals are met today (from
+  // real logs, never claims), so the buddy visibly mirrors the day
+  const energyCount = ENERGY_SIGNALS.filter((k) => questDone[k]).length;
+  const energyHeadline =
+    energyCount === 0
+      ? i18n.nRoomEnergyEmpty
+      : energyCount >= ENERGY_SIGNALS.length
+        ? i18n.nRoomEnergyFull
+        : energyCount >= 3
+          ? i18n.nRoomEnergyMid
+          : i18n.nRoomEnergyLow;
 
   const streakRefKey = `d:${today}:streak`;
   const streakBonus = streakCoins(streak);
@@ -230,6 +259,40 @@ export default function MascotRoomScreen() {
         </View>
       ) : null}
 
+      {/* Today's energy — the buddy is only as charged as your real day */}
+      <GlassCard style={styles.energyCard}>
+        <View style={styles.energyHeadRow}>
+          <View style={styles.energyTitleWrap}>
+            <Icon icon={Flame} size={15} color={colors.metricOrange} />
+            <Text style={styles.energyTitle}>{i18n.nRoomEnergy}</Text>
+          </View>
+          <Text style={styles.energyCount}>
+            {energyCount}
+            <Text style={styles.energyCountMax}>/{ENERGY_SIGNALS.length}</Text>
+          </Text>
+        </View>
+        <View style={styles.energyPips}>
+          {ENERGY_SIGNALS.map((k) => {
+            const meta = SIGNAL_META[k];
+            const on = questDone[k];
+            return (
+              <View
+                key={k}
+                style={[
+                  styles.energyPip,
+                  on && { backgroundColor: `${meta.color}1f`, borderColor: `${meta.color}66` },
+                ]}>
+                <Icon icon={meta.icon} size={17} color={on ? meta.color : colors.mutedForeground} />
+                <Text style={[styles.energyPipLabel, on && { color: colors.foreground }]}>
+                  {i18n[meta.labelKey]}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+        <Text style={styles.energyHint}>{energyHeadline}</Text>
+      </GlassCard>
+
       {/* Quick actions — the shop lives behind one button now */}
       <View style={styles.chipRow}>
         <ActionChip
@@ -263,16 +326,21 @@ export default function MascotRoomScreen() {
         />
       </View>
 
-      {/* Buddy level — lifetime coins earned, spending never lowers it */}
+      {/* Buddy level — lifetime coins earned, spending never lowers it.
+          The rank badge/colour re-skins as the buddy climbs. */}
       <GlassCard style={styles.levelCard}>
-        <View style={[styles.levelBadge, { backgroundColor: `${mascot.accent}22` }]}>
-          <Icon icon={Star} size={20} color={mascot.accent} />
+        <View style={[styles.levelBadge, { backgroundColor: `${rank.color}22`, borderColor: `${rank.color}55` }]}>
+          <Icon icon={Star} size={20} color={rank.color} />
+          <Text style={[styles.levelBadgeNum, { color: rank.color }]}>{level}</Text>
         </View>
         <View style={styles.levelInfo}>
           <View style={styles.levelTopRow}>
-            <Text style={styles.levelTitle}>
-              {i18n.nRoomLevel.replace('{n}', String(level))}
-            </Text>
+            <View style={styles.levelTitleWrap}>
+              <Text style={[styles.rankName, { color: rank.color }]}>{rank.name[lang]}</Text>
+              <Text style={styles.levelTitle}>
+                {i18n.nRoomLevel.replace('{n}', String(level))}
+              </Text>
+            </View>
             {streak >= 2 && (
               <View style={styles.streakChip}>
                 <Icon icon={Flame} size={12} color={colors.metricOrange} />
@@ -286,12 +354,16 @@ export default function MascotRoomScreen() {
             <View
               style={[
                 styles.levelFill,
-                { width: `${Math.round((intoLevel / LEVEL_XP) * 100)}%`, backgroundColor: mascot.accent },
+                { width: `${Math.round((intoLevel / LEVEL_XP) * 100)}%`, backgroundColor: rank.color },
               ]}
             />
           </View>
           <Text style={styles.levelHint}>
-            {i18n.nRoomLevelHint.replace('{n}', String(LEVEL_XP - intoLevel))}
+            {upcomingRank
+              ? i18n.nRoomNextRank
+                  .replace('{r}', upcomingRank.name[lang])
+                  .replace('{n}', String(upcomingRank.minLevel))
+              : i18n.nRoomMaxRank}
           </Text>
         </View>
       </GlassCard>
@@ -607,21 +679,46 @@ const styles = StyleSheet.create({
   },
   bubbleText: { ...type.footnote, color: colors.foreground, textAlign: 'center', lineHeight: 19 },
 
+  energyCard: { gap: spacing.sm },
+  energyHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  energyTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  energyTitle: { ...type.headline, color: colors.foreground },
+  energyCount: { ...type.title, fontWeight: '800', color: colors.metricOrange, fontVariant: ['tabular-nums'] },
+  energyCountMax: { ...type.footnote, fontWeight: '700', color: colors.mutedForeground },
+  energyPips: { flexDirection: 'row', gap: spacing.sm - 2 },
+  energyPip: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.secondary,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  energyPipLabel: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
+  energyHint: { ...type.footnote, color: colors.mutedForeground, lineHeight: 18 },
+
   card: { gap: spacing.sm },
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.caption, color: colors.mutedForeground, marginTop: -4 },
 
   levelCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   levelBadge: {
-    width: 44,
-    height: 44,
+    width: 46,
+    height: 46,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 1,
+    borderWidth: 1,
   },
+  levelBadgeNum: { fontSize: 11, fontWeight: '800', fontVariant: ['tabular-nums'], marginTop: -2 },
   levelInfo: { flex: 1, minWidth: 0, gap: 6 },
   levelTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  levelTitle: { ...type.headline, color: colors.foreground },
+  levelTitleWrap: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexShrink: 1, minWidth: 0 },
+  rankName: { ...type.headline, fontWeight: '800' },
+  levelTitle: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
   levelTrack: {
     height: 6,
     borderRadius: 3,

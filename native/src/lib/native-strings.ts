@@ -294,6 +294,21 @@ const en = {
   nRoomWardrobe: 'Wardrobe',
   nRoomChangeBuddy: 'Change buddy',
   nRoomWelcome: 'Welcome gift: +{n} coins!',
+  // Rank ladder
+  nRoomNextRank: 'Next: {r} at level {n}',
+  nRoomMaxRank: 'Top rank reached — legendary!',
+  nRoomRankUp: 'New rank unlocked: {r}!',
+  // Today's energy
+  nRoomEnergy: "Today's energy",
+  nRoomEnergyEmpty: 'Running on empty — log a meal or a workout to wake me up.',
+  nRoomEnergyLow: 'Just getting started — keep the day going!',
+  nRoomEnergyMid: 'Feeling good — a couple more to go.',
+  nRoomEnergyFull: 'Fully charged! Every daily goal is done.',
+  nRoomSigMeal: 'Meal',
+  nRoomSigWorkout: 'Workout',
+  nRoomSigWater: 'Water',
+  nRoomSigSleep: 'Sleep',
+  nRoomSigSteps: 'Steps',
 
   // App lock (Face ID / biometrics)
   nLockTitle: 'App Lock',
@@ -579,6 +594,21 @@ const vi: typeof en = {
   nRoomWardrobe: 'Tủ đồ',
   nRoomChangeBuddy: 'Đổi linh vật',
   nRoomWelcome: 'Quà chào mừng: +{n} xu!',
+  // Rank ladder
+  nRoomNextRank: 'Tiếp theo: {r} ở cấp {n}',
+  nRoomMaxRank: 'Đã đạt danh hiệu cao nhất — huyền thoại!',
+  nRoomRankUp: 'Mở danh hiệu mới: {r}!',
+  // Today's energy
+  nRoomEnergy: 'Năng lượng hôm nay',
+  nRoomEnergyEmpty: 'Đang cạn năng lượng — ghi bữa ăn hoặc buổi tập để đánh thức tớ nhé.',
+  nRoomEnergyLow: 'Vừa khởi động — tiếp tục nào!',
+  nRoomEnergyMid: 'Đang khoẻ dần — còn vài mục nữa thôi.',
+  nRoomEnergyFull: 'Nạp đầy năng lượng! Hoàn thành mọi mục tiêu hôm nay.',
+  nRoomSigMeal: 'Ăn',
+  nRoomSigWorkout: 'Tập',
+  nRoomSigWater: 'Nước',
+  nRoomSigSleep: 'Ngủ',
+  nRoomSigSteps: 'Bước',
 
   // App lock (Face ID / sinh trắc)
   nLockTitle: 'Khoá ứng dụng',
