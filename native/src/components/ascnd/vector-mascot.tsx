@@ -265,11 +265,14 @@ export function VectorMascot({
     `Q${shCx + 18} ${shoulderY - 10} ${shCx + 10} ${shoulderY - 2} ` +
     `Q${shCx} ${shoulderY + 6} ${shCx - 10} ${shoulderY - 2} ` +
     `Q${shCx - 18} ${shoulderY - 10} ${shL} ${shoulderY + 2} Z`;
+  // Athletic shorts to mid-thigh (never the old diaper-length wedge).
+  // Parametric off hips, so every body type gets proper legwear.
+  const kneeY = hipY + 64;
   const shorts =
-    `M${wLx - 6} ${hipY - 4} Q${hipCx} ${hipY + 8} ${wRx + 6} ${hipY - 4} ` +
-    `L${footR - 2} ${hipY + 42} Q${footR - 12} ${hipY + 48} ${footR - 22} ${hipY + 42} ` +
-    `L${hipCx + 2} ${hipY + 24} L${hipCx - 2} ${hipY + 24} ` +
-    `L${footL + 22} ${hipY + 42} Q${footL + 12} ${hipY + 48} ${footL + 2} ${hipY + 42} Z`;
+    `M${wLx - 7} ${hipY - 6} Q${hipCx} ${hipY + 6} ${wRx + 7} ${hipY - 6} ` +
+    `L${wRx + 9} ${kneeY} Q${hipCx + 18} ${kneeY + 8} ${hipCx + 7} ${kneeY} ` +
+    `L${hipCx + 3} ${hipY + 30} L${hipCx - 3} ${hipY + 30} ` +
+    `L${hipCx - 7} ${kneeY} Q${hipCx - 18} ${kneeY + 8} ${wLx - 9} ${kneeY} Z`;
 
   return (
     <View style={{ width: size, height: outH }} pointerEvents="none">
@@ -300,7 +303,9 @@ export function VectorMascot({
 
           <Part pid={id()} d={armLd} base={a.body} dark={a.dark} light={a.light} />
           <Part pid={id()} d={armRd} base={a.body} dark={a.dark} light={a.light} />
-          <Rect x={shL - 8} y={hipY - 8} width={18} height={7} rx={3.5} fill={ACCENT} opacity={0.9} />
+          {/* accent wristbands — one per wrist, aligned to each arm's end */}
+          <Rect x={shL - 2 - (a.lean > 0 ? 4 : 0) - 8} y={hipY - 6} width={16} height={8} rx={4} fill={ACCENT} opacity={0.9} />
+          <Rect x={shR + 2 + (a.lean < 0 ? 4 : 0) - 8} y={hipY - 6} width={16} height={8} rx={4} fill={ACCENT} opacity={0.9} />
 
           {/* neck */}
           <Part pid={id()} d={`M${shCx - 14} ${shoulderY - 16} q14 8 28 0 l-2 18 q-12 6 -24 0 Z`} base={a.body} dark={a.dark} light={a.light} />
@@ -325,7 +330,13 @@ export function VectorMascot({
             </G>
           )}
           {equippedOutfits.has('belt') && (
-            <Rect x={wLx - 4} y={hipY - 2} width={wRx - wLx + 8} height={9} rx={3} fill="#5a4634" />
+            <G>
+              {/* proper lifting belt: wide band + top edge highlight + buckle */}
+              <Rect x={wLx - 6} y={hipY - 4} width={wRx - wLx + 12} height={15} rx={5} fill="#4a3826" />
+              <Rect x={wLx - 6} y={hipY - 4} width={wRx - wLx + 12} height={4} rx={2} fill="#5f492f" />
+              <Rect x={hipCx - 8} y={hipY - 2} width={16} height={11} rx={2.5} fill="#c9a24a" />
+              <Rect x={hipCx - 4} y={hipY} width={8} height={7} rx={1.5} fill="#4a3826" />
+            </G>
           )}
 
           {/* ambient contact shadows: subtle depth where forms meet */}
