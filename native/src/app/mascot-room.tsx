@@ -313,6 +313,8 @@ export default function MascotRoomScreen() {
           flexSignal={flex}
           mood={mood}
           level={level}
+          accent={rank.color}
+          energy={energyCount / ENERGY_SIGNALS.length}
         />
         <CoinBurst trigger={burst.id} amount={burst.amount} />
       </View>

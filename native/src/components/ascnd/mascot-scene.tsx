@@ -55,6 +55,10 @@ interface Props {
   flexSignal?: number;
   mood?: MascotMood;
   level?: number;
+  /** Rank colour — tints the floor spotlight so higher ranks feel richer */
+  accent?: string;
+  /** Today's energy 0..1 — the room's spotlight brightens as you log */
+  energy?: number;
 }
 
 export function MascotScene({
@@ -65,7 +69,11 @@ export function MascotScene({
   flexSignal = 0,
   mood = 'neutral',
   level = 1,
+  accent = '#8b93a4',
+  energy = 0.5,
 }: Props) {
+  // Clamp so the lighting math never goes out of range
+  const e = Math.max(0, Math.min(1, energy));
   // Quiet, grounded motion. Breathing/blinking live inside VectorMascot;
   // the scene only adds a soft, intentional acknowledgement (a small nod
   // + settle) on reward, and a gentle forward lean when tired. No float,
@@ -228,10 +236,15 @@ export function MascotScene({
             ))}
           </G>
         )}
-        {/* Skirting board at the wall/floor junction + a soft spotlight
-            pooling on the floor under the buddy */}
+        {/* Skirting board at the wall/floor junction */}
         <Rect x={0} y={200} width={360} height={5} fill="rgba(0,0,0,0.35)" />
-        <Ellipse cx={180} cy={252} rx={118} ry={30} fill="rgba(255,255,255,0.028)" />
+        {/* Rank spotlight: a soft beam from above + a floor pool tinted by
+            the buddy's rank, both brightening with the day's energy — the
+            room literally lights up the more you log. Grounded on the
+            floor (not a halo around the body). */}
+        <Path d="M 150 -50 L 210 -50 L 238 250 L 122 250 Z" fill={accent} opacity={0.012 + e * 0.03} />
+        <Ellipse cx={180} cy={252} rx={118} ry={30} fill="rgba(255,255,255,0.03)" />
+        <Ellipse cx={180} cy={254} rx={92} ry={22} fill={accent} opacity={0.045 + e * 0.13} />
 
         {ownedGym.has('neon_sign') && <NeonSign />}
         {ownedGym.has('mirror') && <Mirror />}
