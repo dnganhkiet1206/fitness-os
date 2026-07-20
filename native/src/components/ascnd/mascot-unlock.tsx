@@ -13,7 +13,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { VectorMascot } from '@/components/ascnd/vector-mascot';
+import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascotSettings, useUnlockStats } from '@/hooks/use-mascot';
@@ -187,7 +187,7 @@ export function MascotCelebrationModal({ mascot, onClose }: { mascot: MascotDef;
           <View style={styles.stage}>
             <View style={[styles.aura, { backgroundColor: mascot.accent }]} />
             <Animated.View style={[styles.hero, { shadowColor: mascot.accent }, heroStyle]}>
-              <VectorMascot mascot={mascot} size={110} mood="happy" />
+              <MascotFigure mascot={mascot} size={110} mood="happy" />
             </Animated.View>
           </View>
 

@@ -24,7 +24,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
-import { VectorMascot } from '@/components/ascnd/vector-mascot';
+import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors } from '@/constants/ascnd';
 import type { MascotDef } from '@/lib/mascots';
 import type { MascotMood } from '@/hooks/use-mascot';
@@ -272,7 +272,7 @@ export function MascotScene({
         )}
         <Pressable onPress={poke} hitSlop={10}>
           <Animated.View style={[styles.char, charStyle]}>
-            <VectorMascot
+            <MascotFigure
               mascot={mascot}
               size={CHAR}
               mood={mood}

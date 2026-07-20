@@ -16,7 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
-import { VectorMascot } from '@/components/ascnd/vector-mascot';
+import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useMascot } from '@/hooks/use-mascot';
 import { useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
@@ -185,7 +185,7 @@ export function Mascot() {
           {/* Ground shadow */}
           <Animated.View style={[styles.groundShadow, shadowStyle]} />
           <Animated.View style={[styles.body, bodyStyle]}>
-            <VectorMascot
+            <MascotFigure
               mascot={mascot}
               size={54}
               mood={mood}
