@@ -1,12 +1,12 @@
-import { RoomRenderer } from '@/components/ascnd/room-renderer';
+import { StageRenderer } from '@/components/ascnd/stage-renderer';
 import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
 
 /**
- * The mascot's gym room. Thin adapter over the data-driven RoomRenderer:
- * the existing call sites keep this API, while positions/skin/placement
- * now live in src/config/room/{scene,theme,user_room}.json. The set of
- * placed gear (`ownedGym`) and rank accent flow straight through.
+ * The mascot showcase. Thin adapter over the code-drawn StageRenderer — the
+ * product direction is a Stage (spotlighted buddy), not a furniture room, so
+ * the existing call sites keep this API while the visuals come from the Stage.
+ * Stage skin is chosen by owned stage-theme unlocks (see stage-theme.json).
  */
 interface Props {
   mascot: MascotDef;
@@ -20,6 +20,12 @@ interface Props {
   energy?: number;
 }
 
+const STAGE_UNLOCKS: [string, string][] = [
+  ['stage_champion', 'champion'],
+  ['stage_sunset', 'sunset'],
+  ['stage_night', 'night'],
+];
+
 export function MascotScene({
   mascot,
   ownedGym,
@@ -31,12 +37,11 @@ export function MascotScene({
   accent = '#8b93a4',
   energy = 0.5,
 }: Props) {
-  // Pro neon floor upgrade swaps the room skin.
-  const themeKey = ownedGym.has('floor_neon') ? 'neon_pro' : 'neon';
+  // Highest owned stage skin wins; falls back to the default aurora.
+  const themeKey = STAGE_UNLOCKS.find(([key]) => ownedGym.has(key))?.[1] ?? 'aurora';
   return (
-    <RoomRenderer
+    <StageRenderer
       mascot={mascot}
-      owned={ownedGym}
       equippedOutfits={equippedOutfits}
       themeKey={themeKey}
       mood={mood}

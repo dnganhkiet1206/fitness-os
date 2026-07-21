@@ -1,0 +1,41 @@
+{
+  "$comment": "Stage skins (code-drawn, unlockable). bg = 3 vertical gradient stops; aura/spot/rim/platform tint the glow, spotlight, platform rim and disc.",
+  "default": "aurora",
+  "themes": {
+    "aurora": {
+      "name": { "vi": "Cực quang", "en": "Aurora" },
+      "bg": ["#26305e", "#43509c", "#7d6ac2"],
+      "aura": "#8f9bff",
+      "spot": "#cdd6ff",
+      "platform": "#343a63",
+      "rim": "#8f9bff"
+    },
+    "night": {
+      "name": { "vi": "Đêm", "en": "Night" },
+      "bg": ["#0a0f20", "#141d3c", "#243056"],
+      "aura": "#5566cc",
+      "spot": "#8aa0ff",
+      "platform": "#161d34",
+      "rim": "#5566cc",
+      "unlockedBy": "stage_night"
+    },
+    "sunset": {
+      "name": { "vi": "Hoàng hôn", "en": "Sunset" },
+      "bg": ["#3a1e46", "#a83f66", "#f0a04a"],
+      "aura": "#ffb27a",
+      "spot": "#ffe4bd",
+      "platform": "#54303f",
+      "rim": "#ffb27a",
+      "unlockedBy": "stage_sunset"
+    },
+    "champion": {
+      "name": { "vi": "Nhà vô địch", "en": "Champion" },
+      "bg": ["#1c2440", "#2f3f77", "#c79a3a"],
+      "aura": "#ffd76a",
+      "spot": "#fff0c2",
+      "platform": "#3a3320",
+      "rim": "#ffd76a",
+      "unlockedBy": "stage_champion"
+    }
+  }
+}
