@@ -116,11 +116,14 @@ export type ShopItemKey =
   | 'floor_wood'
   | 'floor_neon'
   | 'wall_led'
-  | 'wall_frames';
+  | 'wall_frames'
+  | 'stage_night'
+  | 'stage_sunset'
+  | 'stage_champion';
 
 export interface ShopItem {
   key: ShopItemKey;
-  type: 'outfit' | 'gym' | 'upgrade';
+  type: 'outfit' | 'gym' | 'upgrade' | 'stage';
   /** Outfits in the same slot are mutually exclusive when equipped */
   slot?: OutfitSlot;
   price: number;
@@ -134,22 +137,11 @@ export const SHOP_ITEMS: ShopItem[] = [
   { key: 'sunglasses', type: 'outfit', slot: 'eyes', price: 150, name: { vi: 'Kính đen', en: 'Sunglasses' } },
   { key: 'medal', type: 'outfit', slot: 'neck', price: 300, name: { vi: 'Huy chương', en: 'Medal' } },
   { key: 'belt', type: 'outfit', slot: 'waist', price: 250, name: { vi: 'Đai lực sĩ', en: 'Lifting belt' } },
-  // Gym gear — placed in the room
-  { key: 'yoga_mat', type: 'gym', price: 80, name: { vi: 'Thảm tập', en: 'Yoga mat' } },
-  { key: 'kettlebell', type: 'gym', price: 100, name: { vi: 'Tạ ấm', en: 'Kettlebell' } },
-  { key: 'barbell', type: 'gym', price: 180, name: { vi: 'Đòn tạ', en: 'Barbell' } },
-  { key: 'dumbbell_rack', type: 'gym', price: 220, name: { vi: 'Giá tạ đơn', en: 'Dumbbell rack' } },
-  { key: 'bench', type: 'gym', price: 240, name: { vi: 'Ghế đẩy tạ', en: 'Weight bench' } },
-  { key: 'punching_bag', type: 'gym', price: 320, name: { vi: 'Bao cát', en: 'Punching bag' } },
-  { key: 'treadmill', type: 'gym', price: 480, name: { vi: 'Máy chạy bộ', en: 'Treadmill' } },
-  { key: 'plant', type: 'gym', price: 120, name: { vi: 'Cây xanh', en: 'Plant' } },
-  { key: 'mirror', type: 'gym', price: 260, name: { vi: 'Gương tập', en: 'Gym mirror' } },
-  { key: 'neon_sign', type: 'gym', price: 400, name: { vi: 'Đèn neon ASCND', en: 'ASCND neon sign' } },
-  // Room upgrades — permanently change the scene (floor_neon > floor_wood)
-  { key: 'floor_wood', type: 'upgrade', price: 250, name: { vi: 'Sàn gỗ', en: 'Wooden floor' } },
-  { key: 'wall_led', type: 'upgrade', price: 300, name: { vi: 'Dải đèn LED', en: 'LED strip' } },
-  { key: 'wall_frames', type: 'upgrade', price: 350, name: { vi: 'Tranh động lực', en: 'Motivation frames' } },
-  { key: 'floor_neon', type: 'upgrade', price: 550, name: { vi: 'Sàn neon pro', en: 'Pro neon floor' } },
+  // Stage skins — reskin the whole showcase behind the buddy. The highest
+  // owned tier is applied automatically (aurora is the free default).
+  { key: 'stage_night', type: 'stage', price: 300, name: { vi: 'Sân khấu Đêm', en: 'Night Stage' } },
+  { key: 'stage_sunset', type: 'stage', price: 500, name: { vi: 'Sân khấu Hoàng hôn', en: 'Sunset Stage' } },
+  { key: 'stage_champion', type: 'stage', price: 800, name: { vi: 'Sân khấu Vô địch', en: 'Champion Stage' } },
 ];
 
 export const getShopItem = (key: string): ShopItem | undefined =>

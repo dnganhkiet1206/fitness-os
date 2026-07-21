@@ -92,6 +92,9 @@ const ITEM_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   sunglasses: { icon: Glasses, color: colors.foreground },
   medal: { icon: Medal, color: colors.readinessYellow },
   belt: { icon: Shield, color: colors.metricOrange },
+  stage_night: { icon: Moon, color: colors.metricPurple },
+  stage_sunset: { icon: Flame, color: colors.metricOrange },
+  stage_champion: { icon: Star, color: colors.readinessYellow },
   yoga_mat: { icon: RectangleHorizontal, color: colors.metricPurple },
   kettlebell: { icon: Weight, color: colors.metricOrange },
   barbell: { icon: Dumbbell, color: colors.metricCyan },
@@ -178,7 +181,7 @@ export default function MascotRoomScreen() {
   const [flex, setFlex] = useState(0);
   const [burst, setBurst] = useState({ id: 0, amount: 0 });
   const [shopOpen, setShopOpen] = useState(false);
-  const [shopTab, setShopTab] = useState<'outfit' | 'gym' | 'upgrade'>('gym');
+  const [shopTab, setShopTab] = useState<'outfit' | 'stage'>('stage');
   const welcomeTried = useRef(false);
 
   const balance = wallet?.balance ?? 0;
@@ -384,7 +387,7 @@ export default function MascotRoomScreen() {
           color={colors.metricCyan}
           onPress={() => {
             Haptics.selectionAsync();
-            setShopTab('gym');
+            setShopTab('stage');
             setShopOpen(true);
           }}
         />
@@ -609,9 +612,8 @@ export default function MascotRoomScreen() {
             <View style={styles.tabRow}>
               {(
                 [
-                  ['gym', i18n.nRoomGymGear],
+                  ['stage', i18n.nRoomStageSkins],
                   ['outfit', i18n.nRoomOutfits],
-                  ['upgrade', i18n.nRoomUpgrades],
                 ] as const
               ).map(([key, label]) => (
                 <Pressable
@@ -641,7 +643,6 @@ export default function MascotRoomScreen() {
                 }}
                 lang={lang}
                 i18n={i18n}
-                placedLabel={shopTab === 'upgrade' ? i18n.nRoomInstalled : undefined}
               />
             </ScrollView>
           </View>
@@ -687,7 +688,15 @@ function ShopGrid({
   onBuy: (item: ShopItem) => void;
   onToggleEquip: (key: string, next: boolean) => void;
   lang: 'vi' | 'en';
-  i18n: { nRoomBuy: string; nRoomWear: string; nRoomWearing: string; nRoomPlaced: string; nRoomPlace: string };
+  i18n: {
+    nRoomBuy: string;
+    nRoomWear: string;
+    nRoomWearing: string;
+    nRoomPlaced: string;
+    nRoomPlace: string;
+    nRoomUse: string;
+    nRoomUsing: string;
+  };
   placedLabel?: string;
 }) {
   return (
@@ -739,9 +748,13 @@ function ShopGrid({
                       ? isEquipped
                         ? i18n.nRoomWearing
                         : i18n.nRoomWear
-                      : isEquipped
-                        ? (placedLabel ?? i18n.nRoomPlaced)
-                        : i18n.nRoomPlace}
+                      : item.type === 'stage'
+                        ? isEquipped
+                          ? i18n.nRoomUsing
+                          : i18n.nRoomUse
+                        : isEquipped
+                          ? (placedLabel ?? i18n.nRoomPlaced)
+                          : i18n.nRoomPlace}
                   </Text>
                 </Pressable>
               )}
