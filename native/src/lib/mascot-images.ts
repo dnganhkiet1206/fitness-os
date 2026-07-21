@@ -54,15 +54,15 @@ const art = (source: number, aspect: number): PoseArt => ({ source, aspect });
 export const MASCOT_IMAGES: Record<string, MascotImageSet> = {
   koa: {
     idle: art(require('../../assets/mascots/koa.png'), 859 / 640),
-    happy: art(require('../../assets/mascots/koa-happy.webp'), 1.325),
-    sad: art(require('../../assets/mascots/koa-sad.webp'), 1.318),
-    tired: art(require('../../assets/mascots/koa-sad.webp'), 1.318),
-    sleep: art(require('../../assets/mascots/koa-sleep.webp'), 1.431),
-    celebrate: art(require('../../assets/mascots/koa-celebrate.webp'), 1.375),
-    curl: art(require('../../assets/mascots/koa-curl.webp'), 1.333),
-    wave: art(require('../../assets/mascots/koa-wave.webp'), 1.331),
-    hat: art(require('../../assets/mascots/koa-hat.webp'), 1.524),
-    coat: art(require('../../assets/mascots/koa-coat.webp'), 1.367),
+    happy: art(require('../../assets/mascots/koa-happy.webp'), 1.336),
+    sad: art(require('../../assets/mascots/koa-sad.webp'), 1.330),
+    tired: art(require('../../assets/mascots/koa-sad.webp'), 1.330),
+    sleep: art(require('../../assets/mascots/koa-sleep.webp'), 1.448),
+    celebrate: art(require('../../assets/mascots/koa-celebrate.webp'), 1.381),
+    curl: art(require('../../assets/mascots/koa-curl.webp'), 1.324),
+    wave: art(require('../../assets/mascots/koa-wave.webp'), 1.347),
+    hat: art(require('../../assets/mascots/koa-hat.webp'), 1.531),
+    coat: art(require('../../assets/mascots/koa-coat.webp'), 1.386),
   },
 };
 
