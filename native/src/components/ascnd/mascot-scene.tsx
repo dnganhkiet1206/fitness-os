@@ -1,9 +1,16 @@
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  Dimensions,
+  type LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import Animated, {
   Easing,
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -11,42 +18,44 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, {
-  Circle,
-  Defs,
-  Ellipse,
-  G,
-  Line,
-  LinearGradient,
-  Path,
-  Rect,
-  Stop,
-  Text as SvgText,
-} from 'react-native-svg';
+import Svg, { Circle, Ellipse, Line, Path, Rect } from 'react-native-svg';
 
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { triggerMascotAction } from '@/hooks/use-mascot-emotion';
 import { colors } from '@/constants/ascnd';
-import type { MascotDef } from '@/lib/mascots';
 import type { MascotMood } from '@/hooks/use-mascot';
-import type { ShopItemKey } from '@/lib/mascot-room';
+import type { MascotDef } from '@/lib/mascots';
 
 /**
- * The mascot's gym room — everything code-drawn. A layered SVG scene
- * (wall, window, floor) where purchased gym gear appears, with the
- * VectorMascot character (fully vector, no emoji) standing in the
- * middle wearing its purchased outfits. Tap the buddy to play a
- * reaction; bump `celebrateSignal` for the purchase jump, `flexSignal`
- * for the level-up double-bicep flex.
+ * The mascot's gym room — a photoreal diorama. A dark neon backdrop
+ * (scene-wall + scene-floor images) with the buddy centred on a lit
+ * podium; purchased gear appears around the room using pre-rendered,
+ * background-removed prop art, with a few simpler pieces (mirror,
+ * kettlebell, barbell, treadmill) still drawn as vector so every shop
+ * item has a home. Layout follows the ASCND room reference: weights on
+ * the left, bench + plant on the right, heavy bag overhead, STATS panel
+ * on the wall.
  *
- * Idle life: real blinks and wandering pupils live inside VectorMascot;
- * this scene adds the body language — hover, strolls with hop-steps,
- * and the tired slump (low hover, droop, dim aura, floating zzz) when
- * the day's log is empty. Muscle growth per level is drawn by the rig.
+ * The buddy runs the full Emotion Engine (wave/curl/sleep/celebrate) via
+ * MascotFigure; this scene adds the room's body language — a soft reward
+ * nod, a tired forward-lean + floating zzz, and the rank spotlight that
+ * brightens with the day's logged energy. Tap the buddy for a wave.
  */
 
-const SCENE_H = 340; // taller stage: viewBox extends upward (y from -50)
-const CHAR = 150; // character render width (standing companion is taller)
+const SCENE_H = 340;
+const FLOOR_H = 0.5 * SCENE_H; // floor image height (bottom), carries the neon junction
+
+// Pre-rendered, background-removed prop art + its aspect (height / width).
+const R = {
+  wall: require('@/assets/room/scene-wall.webp'),
+  floor: require('@/assets/room/scene-floor.webp'),
+  bench: require('@/assets/room/prop-bench.webp'),
+  heavybag: require('@/assets/room/prop-heavybag.webp'),
+  plant: require('@/assets/room/prop-plant.webp'),
+  rack: require('@/assets/room/prop-rack.webp'),
+  statscreen: require('@/assets/room/prop-statscreen.webp'),
+};
+const ASPECT = { bench: 0.981, heavybag: 3.641, plant: 1.291, rack: 0.662, statscreen: 0.681 };
 
 interface Props {
   mascot: MascotDef;
@@ -73,18 +82,15 @@ export function MascotScene({
   accent = '#8b93a4',
   energy = 0.5,
 }: Props) {
-  // Clamp so the lighting math never goes out of range
   const e = Math.max(0, Math.min(1, energy));
-  // Quiet, grounded motion. Breathing/blinking live inside VectorMascot;
-  // the scene only adds a soft, intentional acknowledgement (a small nod
-  // + settle) on reward, and a gentle forward lean when tired. No float,
-  // no walk, no spin — the companion stands and rests between sets.
-  const nod = useSharedValue(0); // small rotateX acknowledgement
-  const settle = useSharedValue(1); // tiny weight-shift scale
-  const droop = useSharedValue(0); // forward lean (rotateX) when tired
+  const [sw, setSw] = useState(Dimensions.get('window').width - 32);
+  const onLayout = (ev: LayoutChangeEvent) => setSw(ev.nativeEvent.layout.width);
+
+  const nod = useSharedValue(0);
+  const settle = useSharedValue(1);
+  const droop = useSharedValue(0);
   const zzz = useSharedValue(0);
   const tired = mood === 'tired';
-  // Level growth is subtle — posture/presence, not a size jump
   const levelScale = Math.min(1 + (level - 1) * 0.012, 1.1);
 
   useEffect(() => {
@@ -131,140 +137,110 @@ export function MascotScene({
       { scale: settle.value * levelScale },
     ],
   }));
-
-  const shadowStyle = useAnimatedStyle(() => ({ opacity: 0.32 }));
-
-  // zzz drift up and fade in a loop while tired
   const zzzStyle = useAnimatedStyle(() => ({
-    opacity: zzz.value < 0.15 ? zzz.value * 4 : interpolate(zzz.value, [0.15, 1], [0.7, 0]),
+    opacity: zzz.value < 0.15 ? zzz.value * 4 : Math.max(0, 1 - (zzz.value - 0.15) / 0.85) * 0.7,
     transform: [{ translateY: -zzz.value * 22 }],
   }));
 
-  return (
-    <View style={styles.scene}>
-      {/* Room background + owned gym gear (viewBox extends up for the
-          taller stage; all gear keeps its floor coordinates) */}
-      <Svg width="100%" height={SCENE_H} viewBox={`0 -50 360 ${SCENE_H}`} preserveAspectRatio="xMidYMax slice">
-        <Defs>
-          {/* Depth cues borrowed from cozy-room games: the wall darkens
-              toward the floor, the floor darkens toward the viewer */}
-          <LinearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor="#191922" />
-            <Stop offset="70%" stopColor="#111118" />
-            <Stop offset="100%" stopColor="#0d0d12" />
-          </LinearGradient>
-          <LinearGradient id="lowerWall" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor="#0f0f15" />
-            <Stop offset="100%" stopColor="#0b0b10" />
-          </LinearGradient>
-          <LinearGradient id="floorBase" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor="#1b1b23" />
-            <Stop offset="100%" stopColor="#121218" />
-          </LinearGradient>
-          <LinearGradient id="floorWood" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor="#2c2015" />
-            <Stop offset="100%" stopColor="#1e150c" />
-          </LinearGradient>
-        </Defs>
-        {/* Two-tone wall — kept minimal for breathing room */}
-        <Rect x={0} y={-50} width={360} height={180} fill="url(#wall)" />
-        <Rect x={0} y={130} width={360} height={75} fill="url(#lowerWall)" />
-        <Line x1={0} y1={130} x2={360} y2={130} stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
-        {/* Upgrade: LED strip glowing along the ceiling line */}
-        {ownedGym.has('wall_led') && (
-          <G>
-            <Line x1={8} y1={-38} x2={352} y2={-38} stroke={colors.metricPurple} strokeWidth={7} opacity={0.18} />
-            <Line x1={8} y1={-38} x2={352} y2={-38} stroke={colors.metricPurple} strokeWidth={2.5} opacity={0.9} />
-          </G>
-        )}
-        {/* Upgrade: motivation frames on the left wall */}
-        {ownedGym.has('wall_frames') && (
-          <G>
-            <Rect x={96} y={76} width={40} height={30} rx={4} fill="#171a22" stroke="rgba(255,255,255,0.16)" strokeWidth={1.4} />
-            <Rect x={104} y={88} width={10} height={4} rx={2} fill={colors.metricOrange} />
-            <Rect x={118} y={84} width={4} height={12} rx={2} fill="#8b93a4" />
-            <Rect x={96} y={112} width={40} height={26} rx={4} fill="#171a22" stroke="rgba(255,255,255,0.16)" strokeWidth={1.4} />
-            <Path d="M 102 130 L 112 120 L 120 126 L 130 116" stroke={colors.readinessGreen} strokeWidth={2.4} fill="none" />
-          </G>
-        )}
-        {/* Window with night skyline */}
-        <G>
-          <Rect x={252} y={26} width={84} height={90} rx={10} fill="#0a0a12" stroke="rgba(255,255,255,0.1)" strokeWidth={1.5} />
-          <Circle cx={318} cy={44} r={16} fill="#e8e6d8" opacity={0.12} />
-          <Circle cx={318} cy={44} r={9} fill="#e8e6d8" opacity={0.85} />
-          <Rect x={262} y={80} width={10} height={36} fill="#1c2340" />
-          <Rect x={276} y={66} width={12} height={50} fill="#232b52" />
-          <Rect x={292} y={86} width={9} height={30} fill="#1c2340" />
-          <Rect x={305} y={72} width={12} height={44} fill="#202a4e" />
-          <Rect x={279} y={72} width={2} height={2} fill={colors.readinessYellow} />
-          <Rect x={308} y={78} width={2} height={2} fill={colors.metricCyan} />
-          <Rect x={296} y={92} width={2} height={2} fill={colors.readinessYellow} />
-        </G>
-        {/* Floor — pro neon > wooden > default concrete */}
-        {ownedGym.has('floor_neon') ? (
-          <G>
-            <Rect x={0} y={205} width={360} height={85} fill="#0d1017" />
-            <Line x1={0} y1={205} x2={360} y2={205} stroke={colors.metricCyan} strokeWidth={2} opacity={0.75} />
-            <Line x1={0} y1={205} x2={360} y2={205} stroke={colors.metricCyan} strokeWidth={7} opacity={0.14} />
-            {[60, 140, 220, 300].map((x) => (
-              <Line key={x} x1={x} y1={210} x2={x - 26} y2={290} stroke="rgba(24,194,220,0.09)" strokeWidth={1.5} />
-            ))}
-          </G>
-        ) : ownedGym.has('floor_wood') ? (
-          <G>
-            <Rect x={0} y={205} width={360} height={85} fill="url(#floorWood)" />
-            <Line x1={0} y1={205} x2={360} y2={205} stroke="rgba(255,214,150,0.16)" strokeWidth={1.5} />
-            {[232, 258].map((y) => (
-              <Line key={y} x1={0} y1={y} x2={360} y2={y} stroke="rgba(0,0,0,0.32)" strokeWidth={1.4} />
-            ))}
-            {[90, 200, 300].map((x, i) => (
-              <Line key={x} x1={x} y1={205 + i * 2} x2={x - 14} y2={290} stroke="rgba(0,0,0,0.22)" strokeWidth={1.2} />
-            ))}
-          </G>
-        ) : (
-          <G>
-            {/* Default: rubber gym floor with speckles + tile seams */}
-            <Rect x={0} y={205} width={360} height={85} fill="url(#floorBase)" />
-            <Line x1={0} y1={205} x2={360} y2={205} stroke="rgba(255,255,255,0.06)" strokeWidth={1.5} />
-            {[120, 240].map((x) => (
-              <Line key={x} x1={x} y1={205} x2={x - 18} y2={290} stroke="rgba(0,0,0,0.3)" strokeWidth={1.3} />
-            ))}
-            {[
-              [24, 222], [60, 248], [95, 268], [130, 232], [170, 258],
-              [205, 240], [245, 270], [288, 236], [322, 258], [344, 226],
-              [40, 275], [150, 280], [265, 222], [310, 278], [80, 225],
-            ].map(([x, y], i) => (
-              <Circle key={i} cx={x} cy={y} r={1.3} fill="rgba(255,255,255,0.05)" />
-            ))}
-          </G>
-        )}
-        {/* Skirting board at the wall/floor junction */}
-        <Rect x={0} y={200} width={360} height={5} fill="rgba(0,0,0,0.35)" />
-        {/* Rank spotlight: a soft beam from above + a floor pool tinted by
-            the buddy's rank, both brightening with the day's energy — the
-            room literally lights up the more you log. Grounded on the
-            floor (not a halo around the body). */}
-        <Path d="M 150 -50 L 210 -50 L 238 250 L 122 250 Z" fill={accent} opacity={0.012 + e * 0.03} />
-        <Ellipse cx={180} cy={252} rx={118} ry={30} fill="rgba(255,255,255,0.03)" />
-        <Ellipse cx={180} cy={254} rx={92} ry={22} fill={accent} opacity={0.045 + e * 0.13} />
+  // Absolute box for a floor-standing prop: bottom edge sits on the floor line.
+  const prop = (cx: number, w: number, aspect: number, bottom: number) => {
+    const width = w * sw;
+    return {
+      position: 'absolute' as const,
+      width,
+      height: width * aspect,
+      left: cx * sw - width / 2,
+      bottom: bottom * SCENE_H,
+    };
+  };
 
-        {ownedGym.has('neon_sign') && <NeonSign />}
-        {ownedGym.has('mirror') && <Mirror />}
-        {ownedGym.has('punching_bag') && <PunchingBag />}
-        {ownedGym.has('dumbbell_rack') && <DumbbellRack />}
-        {ownedGym.has('plant') && <Plant />}
-        {ownedGym.has('bench') && <Bench />}
-        {ownedGym.has('yoga_mat') && (
-          <Ellipse cx={180} cy={252} rx={64} ry={13} fill={colors.metricPurple} opacity={0.32} />
-        )}
-        {ownedGym.has('barbell') && <Barbell />}
-        {ownedGym.has('kettlebell') && <Kettlebell />}
-        {ownedGym.has('treadmill') && <Treadmill />}
+  const charSize = Math.round(0.32 * sw);
+
+  return (
+    <View style={styles.scene} onLayout={onLayout}>
+      {/* ── photoreal backdrop ── */}
+      <Image source={R.wall} style={StyleSheet.absoluteFill} contentFit="cover" />
+      <Image
+        source={R.floor}
+        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: FLOOR_H }}
+        contentFit="cover"
+      />
+
+      {/* ── rank spotlight: soft beam + floor pool, brightening with energy ── */}
+      <Svg
+        width={sw}
+        height={SCENE_H}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none">
+        <Path
+          d={`M ${sw * 0.4} 0 L ${sw * 0.6} 0 L ${sw * 0.66} ${SCENE_H * 0.72} L ${sw * 0.34} ${SCENE_H * 0.72} Z`}
+          fill={accent}
+          opacity={0.02 + e * 0.05}
+        />
+        <Ellipse
+          cx={sw * 0.5}
+          cy={SCENE_H * 0.95}
+          rx={sw * 0.28}
+          ry={SCENE_H * 0.07}
+          fill={accent}
+          opacity={0.06 + e * 0.16}
+        />
       </Svg>
 
-      {/* Character standing on the floor */}
+      {/* ── ambient room identity (always present) ── */}
+      <Text style={styles.neon}>ASCND</Text>
+      <WallCard style={{ top: SCENE_H * 0.17, left: sw * 0.25, width: sw * 0.19 }} label="WORKOUT" kind="bars" />
+      <WallCard style={{ top: SCENE_H * 0.33, left: sw * 0.25, width: sw * 0.19 }} label="PROGRESS" kind="trend" />
+      <Image
+        source={R.statscreen}
+        style={{ position: 'absolute', right: sw * 0.02, top: SCENE_H * 0.12, width: sw * 0.26, height: sw * 0.26 * ASPECT.statscreen }}
+        contentFit="contain"
+      />
+      {/* podium under the buddy */}
+      <View
+        style={{
+          position: 'absolute',
+          left: sw * 0.25,
+          width: sw * 0.5,
+          height: SCENE_H * 0.11,
+          bottom: SCENE_H * 0.02,
+          borderRadius: 999,
+          backgroundColor: 'rgba(30,34,44,0.85)',
+          borderWidth: 1,
+          borderColor: 'rgba(80,120,180,0.28)',
+        }}
+      />
+      {ownedGym.has('yoga_mat') && (
+        <View
+          style={{
+            position: 'absolute',
+            left: sw * 0.3,
+            width: sw * 0.4,
+            height: SCENE_H * 0.07,
+            bottom: SCENE_H * 0.04,
+            borderRadius: 999,
+            backgroundColor: colors.metricPurple,
+            opacity: 0.32,
+          }}
+        />
+      )}
+
+      {/* ── gear behind / around the buddy (gated by ownership) ── */}
+      {ownedGym.has('punching_bag') && (
+        <Image
+          source={R.heavybag}
+          style={{ position: 'absolute', top: -SCENE_H * 0.02, left: sw * 0.5 - sw * 0.065, width: sw * 0.13, height: sw * 0.13 * ASPECT.heavybag }}
+          contentFit="contain"
+        />
+      )}
+      {ownedGym.has('mirror') && <Mirror w={sw * 0.12} left={sw * 0.02} bottom={SCENE_H * 0.28} />}
+      {ownedGym.has('dumbbell_rack') && <Image source={R.rack} style={prop(0.18, 0.28, ASPECT.rack, 0.3)} contentFit="contain" />}
+      {ownedGym.has('bench') && <Image source={R.bench} style={prop(0.82, 0.3, ASPECT.bench, 0.19)} contentFit="contain" />}
+      {ownedGym.has('plant') && <Image source={R.plant} style={prop(0.95, 0.13, ASPECT.plant, 0.3)} contentFit="contain" />}
+      {ownedGym.has('treadmill') && <Treadmill w={sw * 0.22} left={sw * 0.6} bottom={SCENE_H * 0.32} />}
+
+      {/* ── character on the podium ── */}
       <View style={styles.charWrap} pointerEvents="box-none">
-        <Animated.View style={[styles.shadow, shadowStyle]} />
         {tired && (
           <Animated.View style={[styles.zzz, zzzStyle]} pointerEvents="none">
             <Text style={styles.zzzBig}>z</Text>
@@ -276,7 +252,7 @@ export function MascotScene({
           <Animated.View style={[styles.char, charStyle]}>
             <MascotFigure
               mascot={mascot}
-              size={CHAR}
+              size={charSize}
               mood={mood}
               level={level}
               equippedOutfits={equippedOutfits}
@@ -284,155 +260,102 @@ export function MascotScene({
           </Animated.View>
         </Pressable>
       </View>
+
+      {/* ── gear in front of the buddy ── */}
+      {ownedGym.has('kettlebell') && <Kettlebell w={sw * 0.12} left={sw * 0.07} bottom={SCENE_H * 0.05} />}
+      {ownedGym.has('barbell') && <Barbell w={sw * 0.22} left={sw * 0.78} bottom={SCENE_H * 0.05} />}
     </View>
   );
 }
 
-// ─── Muscle arms (drawn in the 120×120 character box) ──────────────────
-
-// ─── Gym gear (SVG groups in scene coordinates, 360×290) ───────────────
-
-function NeonSign() {
+// ─── Wall UI cards (WORKOUT / PROGRESS) ────────────────────────────────
+function WallCard({
+  style,
+  label,
+  kind,
+}: {
+  style: object;
+  label: string;
+  kind: 'bars' | 'trend';
+}) {
   return (
-    <G>
-      <SvgText x={112} y={8} fontSize={26} fontWeight="bold" fill="none" stroke={colors.metricCyan} strokeWidth={5} opacity={0.25} textAnchor="middle" letterSpacing={6}>
-        ASCND
-      </SvgText>
-      <SvgText x={112} y={8} fontSize={26} fontWeight="bold" fill={colors.metricCyan} textAnchor="middle" letterSpacing={6}>
-        ASCND
-      </SvgText>
-    </G>
+    <View style={[styles.card, style]}>
+      <Text style={styles.cardLabel}>{label}</Text>
+      {kind === 'bars' ? (
+        <View style={styles.cardBars}>
+          {[0.4, 0.65, 1].map((h, i) => (
+            <View
+              key={i}
+              style={{
+                width: 5,
+                height: 14 * h,
+                borderRadius: 1.5,
+                backgroundColor: i === 2 ? colors.metricOrange : 'rgba(140,150,170,0.7)',
+              }}
+            />
+          ))}
+        </View>
+      ) : (
+        <Svg width={44} height={16} style={{ marginTop: 4 }}>
+          <Path d="M 2 13 L 14 5 L 24 9 L 42 2" stroke={colors.readinessGreen} strokeWidth={2} fill="none" />
+          <Path d="M 42 2 L 35 3 L 39 8 Z" fill={colors.readinessGreen} />
+        </Svg>
+      )}
+    </View>
   );
 }
 
-function Mirror() {
+// ─── Vector gear (self-contained SVG boxes, positioned absolutely) ─────
+function box(w: number, left: number, bottom: number, aspect: number) {
+  return { position: 'absolute' as const, left, bottom, width: w, height: w * aspect };
+}
+
+function Mirror({ w, left, bottom }: { w: number; left: number; bottom: number }) {
   return (
-    <G>
-      <Rect x={20} y={64} width={54} height={118} rx={8} fill="#1b2029" stroke="rgba(255,255,255,0.18)" strokeWidth={1.6} />
-      <Line x1={32} y1={82} x2={54} y2={166} stroke="rgba(255,255,255,0.08)" strokeWidth={7} />
-      <Line x1={44} y1={76} x2={64} y2={152} stroke="rgba(255,255,255,0.05)" strokeWidth={4} />
-      {/* ballet-style rail — reads "gym mirror" instantly */}
-      <Line x1={20} y1={150} x2={74} y2={150} stroke="#3a3f4c" strokeWidth={3} />
-    </G>
+    <Svg style={box(w, left, bottom, 2.4)} viewBox="0 0 100 240">
+      <Rect x={6} y={4} width={88} height={232} rx={12} fill="#1b2029" stroke="rgba(255,255,255,0.18)" strokeWidth={2.5} />
+      <Line x1={26} y1={30} x2={64} y2={150} stroke="rgba(255,255,255,0.09)" strokeWidth={12} />
+      <Line x1={48} y1={22} x2={80} y2={120} stroke="rgba(255,255,255,0.05)" strokeWidth={7} />
+    </Svg>
   );
 }
 
-function DumbbellRack() {
-  // A-frame rack with two tiers of colored hex dumbbells
-  const TOP: [number, string][] = [
-    [44, colors.metricOrange],
-    [64, colors.metricCyan],
-    [84, colors.metricPurple],
-  ];
-  const BOTTOM: [number, string][] = [
-    [38, colors.readinessGreen],
-    [62, colors.readinessYellow],
-    [86, colors.metricOrange],
-  ];
+function Kettlebell({ w, left, bottom }: { w: number; left: number; bottom: number }) {
   return (
-    <G>
-      <Ellipse cx={63} cy={246} rx={46} ry={5} fill="rgba(0,0,0,0.32)" />
-      <Path d="M 24 244 L 40 196 L 46 196 L 32 244 Z" fill="#2c303a" />
-      <Path d="M 102 244 L 86 196 L 80 196 L 94 244 Z" fill="#2c303a" />
-      <Rect x={30} y={214} width={66} height={6} rx={3} fill="#3a3f4c" />
-      <Rect x={24} y={238} width={78} height={6} rx={3} fill="#3a3f4c" />
-      {TOP.map(([x, c]) => (
-        <G key={x}>
-          <Rect x={x - 10} y={208} width={7} height={12} rx={2.5} fill={c} />
-          <Rect x={x + 3} y={208} width={7} height={12} rx={2.5} fill={c} />
-          <Rect x={x - 4} y={212} width={8} height={3.5} fill="#8b93a4" />
-        </G>
-      ))}
-      {BOTTOM.map(([x, c]) => (
-        <G key={x}>
-          <Rect x={x - 11} y={232} width={8} height={13} rx={2.5} fill={c} />
-          <Rect x={x + 3} y={232} width={8} height={13} rx={2.5} fill={c} />
-          <Rect x={x - 4} y={237} width={8} height={3.5} fill="#8b93a4" />
-        </G>
-      ))}
-    </G>
+    <Svg style={box(w, left, bottom, 1.05)} viewBox="0 0 100 105">
+      <Ellipse cx={50} cy={99} rx={34} ry={5} fill="rgba(0,0,0,0.35)" />
+      <Path d="M 30 46 a 20 20 0 0 1 40 0" stroke="#3a3f4c" strokeWidth={11} fill="none" />
+      <Circle cx={50} cy={68} r={28} fill="#22262e" stroke={colors.metricOrange} strokeWidth={3} />
+      <Ellipse cx={50} cy={70} rx={12} ry={9} fill={colors.metricOrange} />
+      <Ellipse cx={40} cy={58} rx={7} ry={9} fill="rgba(255,255,255,0.09)" />
+    </Svg>
   );
 }
 
-function Plant() {
+function Barbell({ w, left, bottom }: { w: number; left: number; bottom: number }) {
   return (
-    <G>
-      <Ellipse cx={318} cy={263} rx={20} ry={4.5} fill="rgba(0,0,0,0.32)" />
-      <Path d="M 306 236 L 330 236 L 326 262 L 310 262 Z" fill="#7a4a2c" />
-      <Path d="M 318 236 C 306 214 300 210 296 202 C 310 206 314 214 318 236" fill={colors.readinessGreen} />
-      <Path d="M 318 236 C 330 212 336 208 342 200 C 328 204 322 214 318 236" fill="#188f66" />
-      <Path d="M 318 236 C 318 214 318 206 318 196 C 322 208 322 220 318 236" fill={colors.readinessGreen} />
-    </G>
+    <Svg style={box(w, left, bottom, 0.42)} viewBox="0 0 200 84">
+      <Ellipse cx={100} cy={78} rx={92} ry={6} fill="rgba(0,0,0,0.32)" />
+      <Rect x={20} y={38} width={160} height={7} rx={3.5} fill="#9aa2b2" />
+      <Circle cx={44} cy={41} r={26} fill="#22262e" stroke="#c8384a" strokeWidth={7} />
+      <Circle cx={44} cy={41} r={6} fill="#0d0d12" />
+      <Circle cx={156} cy={41} r={26} fill="#22262e" stroke="#c8384a" strokeWidth={7} />
+      <Circle cx={156} cy={41} r={6} fill="#0d0d12" />
+      <Rect x={74} y={32} width={9} height={18} rx={4} fill="#2c303a" />
+      <Rect x={117} y={32} width={9} height={18} rx={4} fill="#2c303a" />
+    </Svg>
   );
 }
 
-function Barbell() {
-  // Loaded bar with big red bumper plates — the classic gym silhouette
+function Treadmill({ w, left, bottom }: { w: number; left: number; bottom: number }) {
   return (
-    <G>
-      <Ellipse cx={280} cy={281} rx={56} ry={5} fill="rgba(0,0,0,0.32)" />
-      <Rect x={228} y={262} width={104} height={5} rx={2.5} fill="#9aa2b2" />
-      <Circle cx={246} cy={264} r={16} fill="#22262e" stroke="#c8384a" strokeWidth={4} />
-      <Circle cx={246} cy={264} r={4} fill="#0d0d12" />
-      <Circle cx={314} cy={264} r={16} fill="#22262e" stroke="#c8384a" strokeWidth={4} />
-      <Circle cx={314} cy={264} r={4} fill="#0d0d12" />
-      <Rect x={262} y={258} width={7} height={13} rx={3} fill="#2c303a" />
-      <Rect x={291} y={258} width={7} height={13} rx={3} fill="#2c303a" />
-    </G>
-  );
-}
-
-function Kettlebell() {
-  return (
-    <G>
-      <Ellipse cx={32} cy={280} rx={16} ry={4} fill="rgba(0,0,0,0.32)" />
-      <Path d="M 23 251 a 9 9 0 0 1 18 0" stroke="#3a3f4c" strokeWidth={5} fill="none" />
-      <Circle cx={32} cy={266} r={13} fill="#22262e" stroke={colors.metricOrange} strokeWidth={1.6} />
-      <Ellipse cx={28} cy={262} rx={4} ry={5} fill="rgba(255,255,255,0.08)" />
-    </G>
-  );
-}
-
-function Bench() {
-  return (
-    <G>
-      <Ellipse cx={250} cy={247} rx={40} ry={5} fill="rgba(0,0,0,0.3)" />
-      <Rect x={214} y={216} width={72} height={11} rx={5.5} fill="#8f2f3c" />
-      <Rect x={214} y={219} width={72} height={3} fill="rgba(255,255,255,0.14)" />
-      <Rect x={222} y={227} width={7} height={18} rx={2.5} fill="#2c303a" />
-      <Rect x={271} y={227} width={7} height={18} rx={2.5} fill="#2c303a" />
-      <Rect x={218} y={243} width={64} height={4} rx={2} fill="#22262e" />
-    </G>
-  );
-}
-
-function PunchingBag() {
-  return (
-    <G>
-      <Line x1={228} y1={-50} x2={228} y2={2} stroke="#4a4f5c" strokeWidth={2.5} />
-      <Rect x={214} y={2} width={28} height={64} rx={12} fill="#a4293a" />
-      <Rect x={214} y={24} width={28} height={7} fill="rgba(0,0,0,0.28)" />
-      <Rect x={219} y={6} width={6} height={52} rx={3} fill="rgba(255,255,255,0.12)" />
-    </G>
-  );
-}
-
-function Treadmill() {
-  // Front-center of the floor, clear of the rack corner
-  return (
-    <G>
-      <Ellipse cx={142} cy={277} rx={46} ry={5.5} fill="rgba(0,0,0,0.32)" />
-      <Path d="M 102 262 L 180 252 L 184 262 L 106 274 Z" fill="#22262e" stroke="#3a3f4c" strokeWidth={1.4} />
-      {[124, 142, 160].map((x) => (
-        <Line key={x} x1={x} y1={260 - (x - 124) * 0.12} x2={x + 3} y2={268 - (x - 124) * 0.12} stroke="rgba(255,255,255,0.1)" strokeWidth={1.6} />
-      ))}
-      {/* Console post + glowing display */}
-      <Line x1={108} y1={260} x2={118} y2={238} stroke="#3a3f4c" strokeWidth={4} />
-      <Rect x={104} y={224} width={26} height={14} rx={4} fill="#101318" stroke={colors.metricCyan} strokeWidth={1.4} />
-      <Line x1={109} y1={231} x2={125} y2={231} stroke={colors.metricCyan} strokeWidth={1.6} opacity={0.8} />
-      <Ellipse cx={108} cy={274} rx={5} ry={4} fill="#2c303a" />
-      <Ellipse cx={180} cy={263} rx={5} ry={4} fill="#2c303a" />
-    </G>
+    <Svg style={box(w, left, bottom, 0.72)} viewBox="0 0 160 115">
+      <Ellipse cx={82} cy={108} rx={62} ry={7} fill="rgba(0,0,0,0.3)" />
+      <Path d="M 20 96 L 132 78 L 140 96 L 28 112 Z" fill="#22262e" stroke="#3a3f4c" strokeWidth={2} />
+      <Line x1={40} y1={60} x2={60} y2={94} stroke="#3a3f4c" strokeWidth={6} />
+      <Rect x={22} y={40} width={40} height={22} rx={6} fill="#101318" stroke={colors.metricCyan} strokeWidth={2} />
+      <Line x1={30} y1={51} x2={54} y2={51} stroke={colors.metricCyan} strokeWidth={2.4} opacity={0.85} />
+    </Svg>
   );
 }
 
@@ -441,7 +364,7 @@ const styles = StyleSheet.create({
     height: SCENE_H,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: '#101016',
+    backgroundColor: '#0b0d13',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.1)',
   },
@@ -453,27 +376,35 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: 18,
+    paddingBottom: SCENE_H * 0.03,
   },
   char: { alignItems: 'center', justifyContent: 'center' },
-  aura: {
+  neon: {
     position: 'absolute',
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    transform: [{ scale: 1.2 }],
+    top: SCENE_H * 0.05,
+    left: 16,
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: 4,
+    color: '#5eb4ff',
+    textShadowColor: 'rgba(94,180,255,0.9)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
   },
-  shadow: {
+  card: {
     position: 'absolute',
-    bottom: 12,
-    width: 110,
-    height: 16,
-    borderRadius: 9,
-    backgroundColor: '#000',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(18,22,30,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(70,82,104,0.7)',
   },
+  cardLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5, color: '#c3cad9' },
+  cardBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, marginTop: 5, height: 14 },
   zzz: {
     position: 'absolute',
-    bottom: 205,
+    bottom: SCENE_H * 0.6,
     marginLeft: 104,
     flexDirection: 'row',
     alignItems: 'flex-end',
