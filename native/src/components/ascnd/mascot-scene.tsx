@@ -1,4 +1,4 @@
-import { StageRenderer } from '@/components/ascnd/stage-renderer';
+import { StageRenderer, type StageStat } from '@/components/ascnd/stage-renderer';
 import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
 
@@ -18,6 +18,10 @@ interface Props {
   level?: number;
   accent?: string;
   energy?: number;
+  name?: string;
+  xp?: number;
+  xpMax?: number;
+  stats?: StageStat[];
 }
 
 const STAGE_UNLOCKS: [string, string][] = [
@@ -36,9 +40,13 @@ export function MascotScene({
   level = 1,
   accent = '#8b93a4',
   energy = 0.5,
+  name,
+  xp,
+  xpMax,
+  stats,
 }: Props) {
-  // Highest owned stage skin wins; falls back to the default aurora.
-  const themeKey = STAGE_UNLOCKS.find(([key]) => ownedGym.has(key))?.[1] ?? 'aurora';
+  // Highest owned stage skin wins; falls back to the default arena.
+  const themeKey = STAGE_UNLOCKS.find(([key]) => ownedGym.has(key))?.[1] ?? 'arena';
   return (
     <StageRenderer
       mascot={mascot}
@@ -50,6 +58,10 @@ export function MascotScene({
       energy={energy}
       celebrateSignal={celebrateSignal}
       flexSignal={flexSignal}
+      name={name}
+      xp={xp}
+      xpMax={xpMax}
+      stats={stats}
     />
   );
 }

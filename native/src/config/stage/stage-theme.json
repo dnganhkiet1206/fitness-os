@@ -1,10 +1,18 @@
 {
   "$comment": "Stage skins (code-drawn, unlockable). bg = 3 vertical gradient stops; aura/spot/rim/platform tint the glow, spotlight, platform rim and disc.",
-  "default": "aurora",
+  "default": "arena",
   "themes": {
+    "arena": {
+      "name": { "vi": "Đấu trường", "en": "Arena" },
+      "bg": ["#8288ad", "#5f6488", "#3f4260"],
+      "aura": "#cdb98f",
+      "spot": "#ffe08a",
+      "platform": "#54566e",
+      "rim": "#ffc23e"
+    },
     "aurora": {
       "name": { "vi": "Cực quang", "en": "Aurora" },
-      "bg": ["#26305e", "#43509c", "#7d6ac2"],
+      "bg": ["#4a4f86", "#43509c", "#7d6ac2"],
       "aura": "#8f9bff",
       "spot": "#cdd6ff",
       "platform": "#343a63",
