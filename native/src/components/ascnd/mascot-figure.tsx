@@ -10,17 +10,20 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { RiveMascot } from '@/components/ascnd/mascot-rive-view';
 import { VectorMascot } from '@/components/ascnd/vector-mascot';
 import type { MascotMood } from '@/hooks/use-mascot';
 import { imageFor } from '@/lib/mascot-images';
 import { lottieFor } from '@/lib/mascot-lottie';
+import { riveFor } from '@/lib/mascot-rive';
 import type { MascotDef } from '@/lib/mascots';
 
 /**
  * The companion figure, in priority order:
- *   1. a pre-rendered image (Talking-Tom-style art) + subtle breathing,
- *   2. a registered Lottie animation,
- *   3. the built-in vector figure (fallback).
+ *   1. a rigged Rive character (fully animated — bones/mesh/IK/SM),
+ *   2. a pre-rendered image (Talking-Tom-style art) + subtle breathing,
+ *   3. a registered Lottie animation,
+ *   4. the built-in vector figure (fallback).
  *
  * So the app works identically until premium assets are dropped in, and
  * upgrades per-character as each one gets art.
@@ -110,7 +113,13 @@ function ImageMascot({
 export function MascotFigure(props: Props) {
   const { mascot, size = 160, mood = 'neutral', animated = true } = props;
 
-  // 1) pre-rendered image
+  // 1) rigged Rive character
+  const rive = riveFor(mascot.id);
+  if (rive) {
+    return <RiveMascot spec={rive} size={size} mood={mood} animated={animated} />;
+  }
+
+  // 2) pre-rendered image
   const img = imageFor(mascot.id, mood);
   if (img) {
     return <ImageMascot source={img.source} aspect={img.aspect} size={size} animated={animated} />;
