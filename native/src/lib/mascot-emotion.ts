@@ -22,7 +22,9 @@ export type MascotEmotion =
   | 'sleep'
   | 'celebrate'
   | 'curl'
-  | 'wave';
+  | 'wave'
+  | 'hat'
+  | 'coat';
 
 /** How long each one-shot action holds before returning to the base emotion. */
 export const ACTION_MS: Record<MascotAction, number> = {
@@ -40,17 +42,25 @@ export interface EmotionInput {
   hour: number;
   /** user is on the workout-logging flow right now */
   onWorkoutScreen: boolean;
+  /** today is the user's birthday (from profile DOB) → party hat */
+  isBirthday?: boolean;
+  /** cold outside (needs a weather source) → puffer coat */
+  cold?: boolean;
 }
 
 /**
  * Held emotion derived purely from current state (no one-shots).
- * Priority: workout flow → late-night sleep → mood.
+ * Priority: workout flow → birthday hat → late-night sleep → cold coat → mood.
  */
 export function baseEmotion(i: EmotionInput): MascotEmotion {
   // Actively logging a workout → doing curls alongside the user.
   if (i.onWorkoutScreen) return 'curl';
+  // Birthday takes over the day — party hat on.
+  if (i.isBirthday) return 'hat';
   // Late night with nothing going on → asleep.
   if (i.hour >= 22 || i.hour < 6) return 'sleep';
+  // Chilly out → bundled up in the coat.
+  if (i.cold) return 'coat';
   // Otherwise mirror the day.
   if (i.mood === 'happy') return 'happy';
   if (i.mood === 'tired') return i.streak === 0 ? 'sad' : 'tired';

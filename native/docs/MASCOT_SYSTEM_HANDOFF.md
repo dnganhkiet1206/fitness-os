@@ -122,7 +122,34 @@ rank-up confetti, room lighting reacting to rank/energy.
 
 ---
 
-## 5. NEXT STEPS — build the Emotion Engine (primary task)
+## 4b. Progress log (what shipped after this hand-off)
+
+- **§5 Emotion Engine — DONE.** `src/lib/mascot-emotion.ts` (pure map) +
+  `src/hooks/use-mascot-emotion.tsx` (one-shot store + `useMascotEmotion()`
+  + `triggerMascotAction()`). Held emotion from mood/streak/hour/route
+  (workout→curl, night→sleep, birthday→hat, mood→happy/tired/sad); one-shots
+  wave (app-open / tap) and celebrate (award medal + mascot unlock, via the
+  celebration host). `MascotFigure`/`ImageMascot` give each emotion its own
+  micro-motion (celebrate bounce, curl pulse, wave sway, sad/tired/sleep
+  slow-breath + slump). `hat` uses the real profile DOB; `coat` is wired but
+  gated `cold:false` until a weather source (location + API) lands.
+- **8 poses re-cut** (happy/sad/sleep/celebrate/curl/wave/hat/coat) — full
+  fur, solid body, fully transparent. Aspects live in `mascot-images.ts`.
+- **§6 background removal — DONE, reproducible:** `scripts/remove-bg.py`
+  (texture-flood silhouette + band-limited matting; no ML model, works
+  offline). Replaces the blocked U2Net path. See `scripts/README.md`.
+- **Gym room — DONE, data-driven.** `RoomRenderer.tsx` reads
+  `src/config/room/{scene,theme,user_room}.json` (+ `room-assets.ts`):
+  positions / skin / placement as data, z-sorted layers, width-relative.
+  Photoreal neon backdrop + background-removed props (rack/bench/plant/
+  heavy-bag/stats panel) with vector fallbacks (mirror/kettlebell/barbell/
+  treadmill). `MascotScene` is now a thin adapter over it.
+
+Still open: §7 smooth-motion (needs animated clips), `coat` weather source.
+
+---
+
+## 5. NEXT STEPS — build the Emotion Engine (primary task) — ✅ DONE (see §4b)
 
 Goal: a small TS engine that maps **real app state/events → a mascot
 emotion/action**, rendered via the image provider, and degrading
@@ -184,7 +211,7 @@ up its emotion automatically.
 
 ---
 
-## 6. Asset processing pipeline (background removal) — reproducible in code
+## 6. Asset processing pipeline (background removal) — ✅ DONE: `scripts/remove-bg.py`
 
 The user sends raw AI images with a **plain flat light-grey background**,
 full body, front view (like the koala). Cut them with **U2Net matting** (NOT

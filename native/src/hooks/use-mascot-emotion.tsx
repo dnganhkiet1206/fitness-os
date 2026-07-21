@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { useMascotMood } from '@/hooks/use-mascot';
 import { useDailyStreak } from '@/hooks/use-mascot-room';
+import { useProfile } from '@/hooks/useTodayData';
 import {
   ACTION_MS,
   baseEmotion,
@@ -60,9 +61,21 @@ function useActiveAction(): MascotAction | null {
 export function useMascotEmotion(): MascotEmotion {
   const mood = useMascotMood();
   const { data: streak } = useDailyStreak();
+  const { data: profile } = useProfile();
   const pathname = usePathname();
   const action = useActiveAction();
   const onWorkoutScreen = /log-workout|workout/i.test(pathname ?? '');
+
+  // Birthday = today's month/day matches the profile DOB (parsed local so
+  // it doesn't shift a day in negative-offset timezones). Real data, no API.
+  const isBirthday = (() => {
+    const dob = profile?.dob;
+    if (!dob) return false;
+    const b = new Date(`${dob}T00:00:00`);
+    if (Number.isNaN(b.getTime())) return false;
+    const now = new Date();
+    return b.getMonth() === now.getMonth() && b.getDate() === now.getDate();
+  })();
 
   // Greet with a wave the first time the buddy appears this session.
   useEffect(() => {
@@ -86,11 +99,14 @@ export function useMascotEmotion(): MascotEmotion {
           streak: streak ?? 0,
           hour: new Date().getHours(),
           onWorkoutScreen,
+          isBirthday,
+          // `cold` needs a weather source (location + API); off until then.
+          cold: false,
         }),
         action,
       ),
     // `force` re-runs the memo via a re-render; hour is read fresh inside.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mood, streak, onWorkoutScreen, action],
+    [mood, streak, onWorkoutScreen, action, isBirthday],
   );
 }
