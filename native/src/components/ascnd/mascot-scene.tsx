@@ -25,6 +25,7 @@ import Svg, {
 } from 'react-native-svg';
 
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
+import { triggerMascotAction } from '@/hooks/use-mascot-emotion';
 import { colors } from '@/constants/ascnd';
 import type { MascotDef } from '@/lib/mascots';
 import type { MascotMood } from '@/hooks/use-mascot';
@@ -119,6 +120,7 @@ export function MascotScene({
 
   const poke = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerMascotAction('wave');
     acknowledge();
   };
 

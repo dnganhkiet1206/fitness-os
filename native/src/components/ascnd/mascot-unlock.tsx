@@ -187,7 +187,7 @@ export function MascotCelebrationModal({ mascot, onClose }: { mascot: MascotDef;
           <View style={styles.stage}>
             <View style={[styles.aura, { backgroundColor: mascot.accent }]} />
             <Animated.View style={[styles.hero, { shadowColor: mascot.accent }, heroStyle]}>
-              <MascotFigure mascot={mascot} size={110} mood="happy" />
+              <MascotFigure mascot={mascot} size={110} mood="happy" emotion="celebrate" />
             </Animated.View>
           </View>
 

@@ -12,8 +12,10 @@ import Animated, {
 
 import { RiveMascot } from '@/components/ascnd/mascot-rive-view';
 import { VectorMascot } from '@/components/ascnd/vector-mascot';
+import { useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
 import { imageFor } from '@/lib/mascot-images';
+import type { MascotEmotion } from '@/lib/mascot-emotion';
 import { lottieFor } from '@/lib/mascot-lottie';
 import { riveFor } from '@/lib/mascot-rive';
 import type { MascotDef } from '@/lib/mascots';
@@ -35,6 +37,8 @@ interface Props {
   mascot: MascotDef;
   size?: number;
   mood?: MascotMood;
+  /** Explicit emotion override. When omitted, the Emotion Engine drives it. */
+  emotion?: MascotEmotion;
   level?: number;
   equippedOutfits?: Set<string>;
   animated?: boolean;
@@ -56,44 +60,106 @@ function getLottie() {
   return LottieView;
 }
 
-/** Image companion — grounded, breathing gently (no bounce/spin) */
+const SLOW = new Set<MascotEmotion>(['sad', 'tired', 'sleep']);
+
+/**
+ * Image companion — always breathing, with per-emotion micro-motion:
+ * celebrate bounces/squashes, curl pulses with effort, wave sways, and the
+ * low-energy emotions (sad/tired/sleep) breathe slowly and sit a hair lower.
+ */
 function ImageMascot({
   source,
   aspect,
   size,
   animated,
+  emotion,
 }: {
   source: number;
   aspect: number;
   size: number;
   animated: boolean;
+  emotion: MascotEmotion;
 }) {
   const w = size;
   const h = size * aspect;
   const breath = useSharedValue(0);
+  const act = useSharedValue(0);
 
+  // Base breathing loop — slower for low-energy emotions, livelier for happy.
   useEffect(() => {
-    if (!animated) return;
-    // slow, organic breathing: chest rises, body settles a hair
+    if (!animated) {
+      breath.value = 0;
+      return;
+    }
+    const slow = SLOW.has(emotion);
+    const up = slow ? 2800 : emotion === 'happy' ? 1500 : 2200;
+    const down = slow ? 3200 : emotion === 'happy' ? 1700 : 2600;
     breath.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: up, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: down, easing: Easing.inOut(Easing.sin) }),
       ),
       -1,
     );
     return () => {
       breath.value = 0;
     };
-  }, [animated, breath]);
+  }, [animated, emotion, breath]);
 
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: -breath.value * (h * 0.008) },
-      { scaleY: 1 + breath.value * 0.012 },
-      { scaleX: 1 - breath.value * 0.004 },
-    ],
-  }));
+  // Action emphasis layered on top of the breathing.
+  useEffect(() => {
+    act.value = 0;
+    if (!animated) return;
+    if (emotion === 'celebrate') {
+      act.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 280, easing: Easing.out(Easing.quad) }),
+          withTiming(0, { duration: 360, easing: Easing.in(Easing.quad) }),
+        ),
+        4,
+        false,
+      );
+    } else if (emotion === 'curl') {
+      act.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+        ),
+        -1,
+      );
+    } else if (emotion === 'wave') {
+      act.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 260, easing: Easing.inOut(Easing.sin) }),
+          withTiming(-1, { duration: 520, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 260, easing: Easing.inOut(Easing.sin) }),
+        ),
+        2,
+        false,
+      );
+    }
+  }, [animated, emotion, act]);
+
+  const style = useAnimatedStyle(() => {
+    const slump = SLOW.has(emotion) ? h * 0.01 : 0;
+    let translateY = -breath.value * (h * 0.008) + slump;
+    let scaleY = 1 + breath.value * 0.012;
+    let scaleX = 1 - breath.value * 0.004;
+    let rotate = 0;
+    if (emotion === 'celebrate') {
+      translateY += -act.value * (h * 0.05);
+      scaleY += act.value * 0.04;
+      scaleX -= act.value * 0.02;
+    } else if (emotion === 'curl') {
+      scaleY -= act.value * 0.03;
+      translateY += act.value * (h * 0.012);
+    } else if (emotion === 'wave') {
+      rotate = act.value * 4;
+    }
+    return {
+      transform: [{ translateY }, { rotate: `${rotate}deg` }, { scaleY }, { scaleX }],
+    };
+  });
 
   return (
     <View style={{ width: w, height: h }} pointerEvents="none">
@@ -102,7 +168,6 @@ function ImageMascot({
           source={source}
           style={{ width: w, height: h }}
           contentFit="contain"
-          // keep the little contact shadow anchored to the floor
           contentPosition="bottom"
         />
       </Animated.View>
@@ -111,7 +176,12 @@ function ImageMascot({
 }
 
 export function MascotFigure(props: Props) {
-  const { mascot, size = 160, mood = 'neutral', animated = true } = props;
+  const { mascot, size = 160, mood = 'neutral', animated = true, emotion: emotionProp } = props;
+
+  // The Emotion Engine drives the image companion; an explicit `emotion` prop
+  // (e.g. the unlock celebration) overrides it. Hook runs unconditionally.
+  const engineEmotion = useMascotEmotion();
+  const emotion = emotionProp ?? engineEmotion;
 
   // 1) rigged Rive character
   const rive = riveFor(mascot.id);
@@ -120,9 +190,17 @@ export function MascotFigure(props: Props) {
   }
 
   // 2) pre-rendered image
-  const img = imageFor(mascot.id, mood);
+  const img = imageFor(mascot.id, emotion);
   if (img) {
-    return <ImageMascot source={img.source} aspect={img.aspect} size={size} animated={animated} />;
+    return (
+      <ImageMascot
+        source={img.source}
+        aspect={img.aspect}
+        size={size}
+        animated={animated}
+        emotion={emotion}
+      />
+    );
   }
 
   // 2) Lottie

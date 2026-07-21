@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
+
 import { AwardCelebrationModal } from '@/components/ascnd/award-celebration';
 import { MascotCelebrationModal } from '@/components/ascnd/mascot-unlock';
+import { triggerMascotAction } from '@/hooks/use-mascot-emotion';
 import { dequeueCelebration, useCelebrationHead } from '@/lib/celebration-queue';
 import { MASCOTS } from '@/lib/mascots';
 
@@ -11,6 +14,12 @@ import { MASCOTS } from '@/lib/mascots';
  */
 export function CelebrationHost() {
   const head = useCelebrationHead();
+
+  // Any award medal or mascot unlock makes the buddy celebrate too.
+  useEffect(() => {
+    if (head) triggerMascotAction('celebrate');
+  }, [head?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!head) return null;
 
   if (head.kind === 'award') {
