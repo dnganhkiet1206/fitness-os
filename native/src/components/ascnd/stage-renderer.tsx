@@ -44,14 +44,21 @@ interface StageTheme {
   platform: string;
   rim: string;
 }
+type Range = [number, number];
 const STAGE = stageCfg as unknown as {
   canvas: { height: number };
-  aura: { cy: number; rx: number; ry: number };
+  hero: { x: number; bottom: number; width: number };
+  podium: { cy: number; rx: number; ry: number; depth: number };
   ring: { cy: number; r: number };
+  aura: { cy: number; rx: number; ry: number };
   spotlight: { topW: number; bottomW: number; top: number; bottom: number };
-  platform: { cy: number; rx: number; ry: number; depth: number };
-  mascot: { x: number; w: number; bottom: number };
   particles: { count: number; minSize: number; maxSize: number };
+  zones: {
+    leftEquipment: { x: Range; y: Range };
+    rightDecoration: { x: Range; y: Range };
+    background: { groundLine: number; window: { x: Range; y: Range } };
+    floorProp: { yMin: number };
+  };
 };
 const THEMES = stageThemes as unknown as { default: string; themes: Record<string, StageTheme> };
 const H = STAGE.canvas.height;
@@ -173,10 +180,10 @@ export function StageRenderer({
   }));
 
   const sp = STAGE.spotlight;
-  const pf = STAGE.platform;
+  const pf = STAGE.podium;
   const au = STAGE.aura;
   const rg = STAGE.ring;
-  const size = Math.round(STAGE.mascot.w * sw);
+  const size = Math.round(STAGE.hero.width * sw);
 
   // ── round podium geometry ──
   const cx = 0.5 * sw;
@@ -272,7 +279,7 @@ export function StageRenderer({
 
       {/* ── the buddy ── */}
       <View
-        style={{ position: 'absolute', left: STAGE.mascot.x * sw - size / 2, bottom: STAGE.mascot.bottom * H, width: size, alignItems: 'center' }}
+        style={{ position: 'absolute', left: STAGE.hero.x * sw - size / 2, bottom: STAGE.hero.bottom * H, width: size, alignItems: 'center' }}
         pointerEvents="box-none">
         {tired && (
           <Animated.View style={[styles.zzz, zzzStyle]} pointerEvents="none">
@@ -313,7 +320,7 @@ export function StageRenderer({
 
       {/* ── level card (top-left) ── */}
       {xp != null && xpMax ? (
-        <View style={[styles.lvCard, { top: topInset + 8 }]} pointerEvents="none">
+        <View style={[styles.lvCard, { top: topInset + 4 }]} pointerEvents="none">
           <View style={styles.lvTop}>
             <Star size={17} color="#ffcf3a" fill="#ffcf3a" />
             <Text style={styles.lvNum}>Lv. {level}</Text>
@@ -328,7 +335,7 @@ export function StageRenderer({
       ) : null}
 
       {/* ── streak + quest cards (top-right) ── */}
-      <View style={[styles.rightCol, { top: topInset + 8 }]} pointerEvents="none">
+      <View style={[styles.rightCol, { top: topInset + 4 }]} pointerEvents="none">
         <View style={styles.miniCard}>
           <View style={styles.miniRow}>
             <Flame size={17} color="#ff7a3c" fill="#ff7a3c" />
@@ -352,9 +359,52 @@ export function StageRenderer({
   );
 }
 
-// ─── stylised gym room silhouettes (subtle backdrop) ───────────────────
+// ─── stylised gym room silhouettes, positioned strictly inside the zones
+//     defined by HERO_STAGE_LAYOUT_SPEC.md. Every asset derives its geometry
+//     from its zone, so a Shop swap only changes the art, never the layout. ──
 function RoomBackdrop({ sw, theme }: { sw: number; theme: StageTheme }) {
   const frame = '#3a4165';
+  const Z = STAGE.zones;
+
+  // Background — ground line + window
+  const ground = Z.background.groundLine * H;
+  const win = Z.background.window;
+  const wx = win.x[0] * sw;
+  const wy = win.y[0] * H;
+  const wW = (win.x[1] - win.x[0]) * sw;
+  const wH = (win.y[1] - win.y[0]) * H;
+
+  // Left equipment zone — one dumbbell rack that fills the zone
+  const le = Z.leftEquipment;
+  const lx0 = le.x[0] * sw;
+  const lx1 = le.x[1] * sw;
+  const ly0 = le.y[0] * H;
+  const ly1 = le.y[1] * H;
+  const lW = lx1 - lx0;
+  const lH = ly1 - ly0;
+  const rackTop = ly0 + 0.05 * lH;
+  const tierYs = [ly0 + 0.38 * lH, ly0 + 0.66 * lH];
+  const rackCols = [0.26, 0.5, 0.74].map((f) => lx0 + f * lW);
+
+  // Right decoration zone — medicine ball (left) + potted plant (right)
+  const rd = Z.rightDecoration;
+  const rx0 = rd.x[0] * sw;
+  const rx1 = rd.x[1] * sw;
+  const ry0 = rd.y[0] * H;
+  const ry1 = rd.y[1] * H;
+  const rW = rx1 - rx0;
+  const rH = ry1 - ry0;
+  const ballCx = rx0 + 0.3 * rW;
+  const ballCy = ry1 - 0.42 * rH;
+  const ballR = 0.36 * rW;
+  const plantCx = rx0 + 0.76 * rW;
+  const potBot = ry1 - 0.04 * rH;
+  const potTop = potBot - 0.2 * rH;
+  const potHW = 0.14 * rW;
+
+  // Floor prop zone (y >= yMin) — a rolled yoga mat on the left
+  const fpY = Math.max(Z.floorProp.yMin + 0.03, 0.66) * H;
+
   return (
     <Svg width={sw} height={H} style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
@@ -370,69 +420,69 @@ function RoomBackdrop({ sw, theme }: { sw: number; theme: StageTheme }) {
         </RadialGradient>
       </Defs>
 
-      {/* floor band */}
-      <Rect x={0} y={0.58 * H} width={sw} height={0.42 * H} fill="#0b0d16" opacity={0.5} />
-      <Line x1={0} y1={0.58 * H} x2={sw} y2={0.58 * H} stroke={theme.rim} strokeWidth={1} opacity={0.12} />
+      {/* floor band + ground line */}
+      <Rect x={0} y={ground} width={sw} height={H - ground} fill="#0b0d16" opacity={0.5} />
+      <Line x1={0} y1={ground} x2={sw} y2={ground} stroke={theme.rim} strokeWidth={1} opacity={0.12} />
 
-      {/* window (top-right, inset from the edge) */}
-      <G opacity={0.55}>
-        <Rect x={0.67 * sw} y={0.08 * H} width={0.23 * sw} height={0.26 * H} rx={10} fill="url(#win)" />
-        <Rect x={0.67 * sw} y={0.08 * H} width={0.23 * sw} height={0.26 * H} rx={10} fill="none" stroke="#0b0d16" strokeWidth={4} />
-        <Line x1={0.785 * sw} y1={0.08 * H} x2={0.785 * sw} y2={0.34 * H} stroke="#0b0d16" strokeWidth={3} />
-        <Line x1={0.67 * sw} y1={0.21 * H} x2={0.9 * sw} y2={0.21 * H} stroke="#0b0d16" strokeWidth={3} />
+      {/* BACKGROUND ZONE — window (kept dim, never brighter than the hero) */}
+      <G opacity={0.5}>
+        <Rect x={wx} y={wy} width={wW} height={wH} rx={10} fill="url(#win)" />
+        <Rect x={wx} y={wy} width={wW} height={wH} rx={10} fill="none" stroke="#0b0d16" strokeWidth={4} />
+        <Line x1={wx + wW / 2} y1={wy} x2={wx + wW / 2} y2={wy + wH} stroke="#0b0d16" strokeWidth={3} />
+        <Line x1={wx} y1={wy + wH / 2} x2={wx + wW} y2={wy + wH / 2} stroke="#0b0d16" strokeWidth={3} />
       </G>
 
-      {/* dumbbell rack (left, inset) */}
-      <G opacity={0.68}>
+      {/* LEFT EQUIPMENT ZONE — dumbbell rack */}
+      <G opacity={0.66}>
         <Path
-          d={`M ${0.08 * sw} ${0.6 * H} L ${0.11 * sw} ${0.4 * H} L ${0.28 * sw} ${0.4 * H} L ${0.26 * sw} ${0.6 * H}`}
+          d={`M ${lx0 + 0.06 * lW} ${ly1} L ${lx0 + 0.16 * lW} ${rackTop} L ${lx1 - 0.06 * lW} ${rackTop} L ${lx1 - 0.02 * lW} ${ly1}`}
           fill="none"
           stroke={frame}
           strokeWidth={4}
           strokeLinejoin="round"
         />
-        <Line x1={0.098 * sw} y1={0.49 * H} x2={0.272 * sw} y2={0.49 * H} stroke={frame} strokeWidth={4} />
-        {[0.46, 0.565].map((ty, r) =>
-          [0.13, 0.18, 0.23].map((tx, c) => (
+        {tierYs.map((ty, r) =>
+          rackCols.map((cxp, c) => (
             <G key={`${r}-${c}`}>
-              <Rect x={tx * sw - 9} y={ty * H - 3} width={18} height={6} rx={3} fill="#566089" />
-              <Circle cx={tx * sw - 10} cy={ty * H} r={5} fill={frame} />
-              <Circle cx={tx * sw + 10} cy={ty * H} r={5} fill={frame} />
+              <Rect x={cxp - 9} y={ty - 3} width={18} height={6} rx={3} fill="#566089" />
+              <Circle cx={cxp - 10} cy={ty} r={5} fill={frame} />
+              <Circle cx={cxp + 10} cy={ty} r={5} fill={frame} />
             </G>
           )),
         )}
       </G>
 
-      {/* rolled yoga mat (bottom-left, inset) */}
-      <G opacity={0.7}>
-        <Rect x={0.08 * sw} y={0.67 * H} width={0.14 * sw} height={0.048 * H} rx={0.024 * H} fill="#6a5aa8" />
-        <Ellipse cx={0.085 * sw} cy={0.694 * H} rx={0.019 * sw} ry={0.024 * H} fill="#7d6ac2" />
-        <Ellipse cx={0.085 * sw} cy={0.694 * H} rx={0.009 * sw} ry={0.011 * H} fill="#4b3f7a" />
-      </G>
-
-      {/* exercise ball (right, inset) */}
-      <Circle cx={0.79 * sw} cy={0.6 * H} r={0.07 * H} fill="url(#ball)" opacity={0.8} />
-      <Ellipse cx={0.76 * sw} cy={0.575 * H} rx={0.02 * sw} ry={0.018 * H} fill="#d7e0ff" opacity={0.35} />
-
-      {/* potted plant (right, inset off the edge) */}
+      {/* RIGHT DECORATION ZONE — medicine ball + potted plant (secondary) */}
+      <Circle cx={ballCx} cy={ballCy} r={ballR} fill="url(#ball)" opacity={0.78} />
+      <Ellipse cx={ballCx - ballR * 0.35} cy={ballCy - ballR * 0.4} rx={ballR * 0.28} ry={ballR * 0.22} fill="#d7e0ff" opacity={0.3} />
       <G opacity={0.8}>
         {[
-          [-0.028, 0.05],
-          [-0.012, 0.062],
-          [0.004, 0.064],
-          [0.02, 0.055],
-        ].map(([dx, h], i) => (
-          <Ellipse
-            key={i}
-            cx={0.88 * sw + dx * sw}
-            cy={0.57 * H - h * H}
-            rx={0.014 * sw}
-            ry={h * H}
-            fill={i % 2 === 0 ? '#3f7d5a' : '#4c9169'}
-          />
-        ))}
-        <Path d={`M ${0.84 * sw} ${0.59 * H} L ${0.92 * sw} ${0.59 * H} L ${0.905 * sw} ${0.67 * H} L ${0.855 * sw} ${0.67 * H} Z`} fill="#8a8397" />
-        <Rect x={0.833 * sw} y={0.575 * H} width={0.094 * sw} height={0.022 * H} rx={3} fill="#9a93a8" />
+          [-0.5, 0.62],
+          [-0.2, 0.78],
+          [0.08, 0.8],
+          [0.36, 0.68],
+        ].map(([dx, hf], i) => {
+          const lh = hf * (potTop - ry0) * 0.9;
+          return (
+            <Ellipse
+              key={i}
+              cx={plantCx + dx * potHW}
+              cy={potTop - lh}
+              rx={0.28 * potHW}
+              ry={lh}
+              fill={i % 2 === 0 ? '#3f7d5a' : '#4c9169'}
+            />
+          );
+        })}
+        <Path d={`M ${plantCx - potHW} ${potTop} L ${plantCx + potHW} ${potTop} L ${plantCx + potHW * 0.8} ${potBot} L ${plantCx - potHW * 0.8} ${potBot} Z`} fill="#8a8397" />
+        <Rect x={plantCx - potHW * 1.1} y={potTop - 0.02 * rH} width={potHW * 2.2} height={0.024 * rH} rx={3} fill="#9a93a8" />
+      </G>
+
+      {/* FLOOR PROP ZONE — rolled yoga mat */}
+      <G opacity={0.7}>
+        <Rect x={0.08 * sw} y={fpY} width={0.14 * sw} height={0.045 * H} rx={0.022 * H} fill="#6a5aa8" />
+        <Ellipse cx={0.085 * sw} cy={fpY + 0.0225 * H} rx={0.019 * sw} ry={0.023 * H} fill="#7d6ac2" />
+        <Ellipse cx={0.085 * sw} cy={fpY + 0.0225 * H} rx={0.009 * sw} ry={0.011 * H} fill="#4b3f7a" />
       </G>
     </Svg>
   );

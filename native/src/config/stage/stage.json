@@ -1,10 +1,22 @@
 {
-  "$comment": "Stage layout — full-bleed gym hero with a floating header on top. Fractions: x/w/rx of WIDTH, top/bottom/cy/ry/r/depth of HEIGHT.",
+  "$comment": "HERO STAGE — canonical fixed composition. Governed by docs/HERO_STAGE_LAYOUT_SPEC.md (v1.0). x/width/rx = fraction of WIDTH; y/top/bottom/cy/ry/r/depth/groundLine = fraction of HEIGHT. NEVER hardcode pixels or per-device logic. Shop swaps ASSETS inside a zone; it must never change these numbers.",
   "canvas": { "height": 560 },
-  "aura": { "cy": 0.49, "rx": 0.32, "ry": 0.26 },
-  "ring": { "cy": 0.46, "r": 0.2 },
+
+  "hero": { "x": 0.5, "bottom": 0.3, "width": 0.52 },
+  "podium": { "cy": 0.73, "rx": 0.39, "ry": 0.075, "depth": 0.065 },
+  "ring": { "cy": 0.42, "r": 0.23 },
+
+  "aura": { "cy": 0.48, "rx": 0.34, "ry": 0.27 },
   "spotlight": { "topW": 0.1, "bottomW": 0.5, "top": 0.05, "bottom": 0.44 },
-  "platform": { "cy": 0.73, "rx": 0.34, "ry": 0.072, "depth": 0.05 },
-  "mascot": { "x": 0.5, "w": 0.48, "bottom": 0.27 },
-  "particles": { "count": 12, "minSize": 3, "maxSize": 7 }
+  "particles": { "count": 12, "minSize": 3, "maxSize": 7 },
+
+  "zones": {
+    "leftEquipment": { "x": [0.05, 0.3], "y": [0.4, 0.68] },
+    "rightDecoration": { "x": [0.72, 0.94], "y": [0.42, 0.7] },
+    "background": {
+      "groundLine": 0.58,
+      "window": { "x": [0.62, 0.88], "y": [0.08, 0.34] }
+    },
+    "floorProp": { "yMin": 0.63 }
+  }
 }
