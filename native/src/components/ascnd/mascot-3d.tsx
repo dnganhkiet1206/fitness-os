@@ -43,6 +43,10 @@ interface Pose {
 }
 const lerp = THREE.MathUtils.lerp;
 
+// The model's rest pose keeps the arms tucked against the body (hands touch the
+// shorts). Hold the upper arms a little OUT so the hands always clear the body.
+const REST_ARM_OUT = 0.26;
+
 function Koala({ emotion }: { emotion: MascotEmotion }) {
   const gltf = useGLTF(MODEL);
   const scene = (Array.isArray(gltf) ? gltf[0] : gltf).scene as THREE.Group;
@@ -134,28 +138,32 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
       tp.tilt = 0.12;
       tp.head = -0.05;
     } else if (e === 'curl') {
-      // double-biceps flex — both forearms pump up
+      // double-biceps flex — arms out, both forearms pump up
       const pump = Math.sin(t * 3) * 0.5 + 0.5;
-      tp.rArm = -0.35;
-      tp.lArm = 0.35;
+      tp.rArm = -0.6;
+      tp.lArm = 0.6;
       tp.rFore = 1.1 + pump * 0.5;
       tp.lFore = 1.1 + pump * 0.5;
     } else if (e === 'sleep') {
       lean = 0.16;
       tp.head = 0.5 + breathe * 0.03; // head droops forward, gentle breathe
       tp.tilt = 0.14;
+      tp.rArm = -REST_ARM_OUT * 0.8;
+      tp.lArm = REST_ARM_OUT * 0.8;
     } else if (e === 'sad' || e === 'tired') {
       lean = 0.06;
       tp.head = 0.3;
       tp.tilt = Math.sin(t * 1.1) * 0.04;
+      tp.rArm = -REST_ARM_OUT * 0.8;
+      tp.lArm = REST_ARM_OUT * 0.8;
     } else {
-      // idle / happy — breathe + subtle head bob + tiny arm sway
+      // idle / happy — breathe + subtle head bob + tiny arm sway (arms held out)
       py = Math.sin(t * (e === 'happy' ? 2.4 : 1.6)) * 0.015;
-      const s = Math.sin(t * 1.1) * 0.05;
+      const s = Math.sin(t * 1.1) * 0.04;
       tp.head = Math.sin(t * 1.6) * 0.05 + 0.02;
       tp.tilt = Math.sin(t * 0.8) * 0.04;
-      tp.rArm = s * 0.6;
-      tp.lArm = -s * 0.6;
+      tp.rArm = -REST_ARM_OUT + s;
+      tp.lArm = REST_ARM_OUT - s;
       tp.rFore = (e === 'happy' ? 0.1 : 0) + breathe * 0.04;
     }
 
