@@ -285,6 +285,18 @@ export function StageRenderer({
         </Pressable>
       </View>
 
+      {/* ── bottom fade: the hero dissolves into the page (clean, edge-less) ── */}
+      <Svg width={sw} height={H} style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Defs>
+          <LinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0.66" stopColor={PAGE} stopOpacity={0} />
+            <Stop offset="0.86" stopColor={PAGE} stopOpacity={0.72} />
+            <Stop offset="1" stopColor={PAGE} stopOpacity={1} />
+          </LinearGradient>
+        </Defs>
+        <Rect x={0} y={0} width={sw} height={H} fill="url(#fade)" />
+      </Svg>
+
       {/* ── level card (top-left) ── */}
       {xp != null && xpMax ? (
         <View style={styles.lvCard} pointerEvents="none">
@@ -438,8 +450,17 @@ function Particle({ sw, color, energy, idx }: { sw: number; color: string; energ
 
 const CARD = 'rgba(15,18,32,0.78)';
 const BORDER = 'rgba(255,255,255,0.10)';
+const PAGE = '#070708'; // app background — the hero fades into it at the bottom
 const styles = StyleSheet.create({
-  scene: { height: H, borderRadius: 22, overflow: 'hidden', backgroundColor: '#0b0d13', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.1)' },
+  // Borderless hero: rounded top only, no frame, and the bottom dissolves into
+  // the page (see the fade overlay) for a clean, modern, edge-less feel.
+  scene: {
+    height: H,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    overflow: 'hidden',
+    backgroundColor: PAGE,
+  },
 
   lvCard: { position: 'absolute', left: 12, top: 12, minWidth: 148, backgroundColor: CARD, borderWidth: 1, borderColor: BORDER, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10 },
   lvTop: { flexDirection: 'row', alignItems: 'center', gap: 7 },

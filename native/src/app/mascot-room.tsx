@@ -803,7 +803,9 @@ const styles = StyleSheet.create({
   },
   bubbleText: { ...type.footnote, color: colors.foreground, textAlign: 'center', lineHeight: 19 },
 
-  sceneWrap: { position: 'relative' },
+  // The hero fades into the page at the bottom, so tuck the next content up
+  // into that dissolve instead of leaving an empty band.
+  sceneWrap: { position: 'relative', marginBottom: -28 },
   burstWrap: {
     position: 'absolute',
     top: '30%',
