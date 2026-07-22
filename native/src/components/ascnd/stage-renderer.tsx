@@ -23,6 +23,8 @@ import Svg, { Circle, Defs, Ellipse, G, Line, LinearGradient, Path, RadialGradie
 import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
 import stageCfg from '@/config/stage/stage.json';
 import stageThemes from '@/config/stage/stage-theme.json';
+import { DEFAULT_ACTIVE_ASSETS } from '@/config/stage/stage-assets';
+import { GROUND_LINE, resolveLayout, type Placement } from '@/lib/stage-layout';
 import { triggerMascotAction, useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
@@ -43,7 +45,6 @@ interface StageTheme {
   platform: string;
   rim: string;
 }
-type Range = [number, number];
 const STAGE = stageCfg as unknown as {
   canvas: { height: number };
   hero: { x: number; bottom: number; width: number };
@@ -52,12 +53,6 @@ const STAGE = stageCfg as unknown as {
   aura: { cy: number; rx: number; ry: number };
   spotlight: { topW: number; bottomW: number; top: number; bottom: number };
   particles: { count: number; minSize: number; maxSize: number };
-  zones: {
-    leftEquipment: { x: Range; y: Range };
-    rightDecoration: { x: Range; y: Range };
-    background: { groundLine: number; window: { x: Range; y: Range } };
-    floorProp: { yMin: number };
-  };
 };
 const THEMES = stageThemes as unknown as { default: string; themes: Record<string, StageTheme> };
 const H = STAGE.canvas.height;
@@ -311,52 +306,16 @@ export function StageRenderer({
   );
 }
 
-// ─── stylised gym room silhouettes, positioned strictly inside the zones
-//     defined by HERO_STAGE_LAYOUT_SPEC.md. Every asset derives its geometry
-//     from its zone, so a Shop swap only changes the art, never the layout. ──
+// ─── The gym room, drawn from the Layout Engine's placements. The engine
+//     (src/lib/stage-layout.ts) owns WHERE each asset goes (zone, occupancy,
+//     priority, exclusive group); each art fn below only knows HOW to draw
+//     itself around an anchor. A Shop unlock registers an asset and it appears
+//     here automatically — no layout edits. Governed by
+//     HERO_STAGE_LAYOUT_SPEC.md (v2.0). ──
 function RoomBackdrop({ sw, theme }: { sw: number; theme: StageTheme }) {
   const frame = '#3a4165';
-  const Z = STAGE.zones;
-
-  // Background — ground line + window
-  const ground = Z.background.groundLine * H;
-  const win = Z.background.window;
-  const wx = win.x[0] * sw;
-  const wy = win.y[0] * H;
-  const wW = (win.x[1] - win.x[0]) * sw;
-  const wH = (win.y[1] - win.y[0]) * H;
-
-  // Left equipment zone — one dumbbell rack that fills the zone
-  const le = Z.leftEquipment;
-  const lx0 = le.x[0] * sw;
-  const lx1 = le.x[1] * sw;
-  const ly0 = le.y[0] * H;
-  const ly1 = le.y[1] * H;
-  const lW = lx1 - lx0;
-  const lH = ly1 - ly0;
-  const rackTop = ly0 + 0.05 * lH;
-  const tierYs = [ly0 + 0.38 * lH, ly0 + 0.66 * lH];
-  const rackCols = [0.26, 0.5, 0.74].map((f) => lx0 + f * lW);
-
-  // Right decoration zone — medicine ball (left) + potted plant (right)
-  const rd = Z.rightDecoration;
-  const rx0 = rd.x[0] * sw;
-  const rx1 = rd.x[1] * sw;
-  const ry0 = rd.y[0] * H;
-  const ry1 = rd.y[1] * H;
-  const rW = rx1 - rx0;
-  const rH = ry1 - ry0;
-  const ballCx = rx0 + 0.3 * rW;
-  const ballCy = ry1 - 0.42 * rH;
-  const ballR = 0.36 * rW;
-  const plantCx = rx0 + 0.76 * rW;
-  const potBot = ry1 - 0.04 * rH;
-  const potTop = potBot - 0.2 * rH;
-  const potHW = 0.14 * rW;
-
-  // Floor prop zone (y >= yMin) — a rolled yoga mat on the left
-  const fpY = Math.max(Z.floorProp.yMin + 0.03, 0.66) * H;
-
+  const ground = GROUND_LINE * H;
+  const placements = resolveLayout(DEFAULT_ACTIVE_ASSETS);
   return (
     <Svg width={sw} height={H} style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
@@ -376,68 +335,132 @@ function RoomBackdrop({ sw, theme }: { sw: number; theme: StageTheme }) {
       <Rect x={0} y={ground} width={sw} height={H - ground} fill="#0b0d16" opacity={0.5} />
       <Line x1={0} y1={ground} x2={sw} y2={ground} stroke={theme.rim} strokeWidth={1} opacity={0.12} />
 
-      {/* BACKGROUND ZONE — window (kept dim, never brighter than the hero) */}
-      <G opacity={0.5}>
-        <Rect x={wx} y={wy} width={wW} height={wH} rx={10} fill="url(#win)" />
-        <Rect x={wx} y={wy} width={wW} height={wH} rx={10} fill="none" stroke="#0b0d16" strokeWidth={4} />
-        <Line x1={wx + wW / 2} y1={wy} x2={wx + wW / 2} y2={wy + wH} stroke="#0b0d16" strokeWidth={3} />
-        <Line x1={wx} y1={wy + wH / 2} x2={wx + wW} y2={wy + wH / 2} stroke="#0b0d16" strokeWidth={3} />
-      </G>
-
-      {/* LEFT EQUIPMENT ZONE — dumbbell rack */}
-      <G opacity={0.66}>
-        <Path
-          d={`M ${lx0 + 0.06 * lW} ${ly1} L ${lx0 + 0.16 * lW} ${rackTop} L ${lx1 - 0.06 * lW} ${rackTop} L ${lx1 - 0.02 * lW} ${ly1}`}
-          fill="none"
-          stroke={frame}
-          strokeWidth={4}
-          strokeLinejoin="round"
-        />
-        {tierYs.map((ty, r) =>
-          rackCols.map((cxp, c) => (
-            <G key={`${r}-${c}`}>
-              <Rect x={cxp - 9} y={ty - 3} width={18} height={6} rx={3} fill="#566089" />
-              <Circle cx={cxp - 10} cy={ty} r={5} fill={frame} />
-              <Circle cx={cxp + 10} cy={ty} r={5} fill={frame} />
-            </G>
-          )),
-        )}
-      </G>
-
-      {/* RIGHT DECORATION ZONE — medicine ball + potted plant (secondary) */}
-      <Circle cx={ballCx} cy={ballCy} r={ballR} fill="url(#ball)" opacity={0.78} />
-      <Ellipse cx={ballCx - ballR * 0.35} cy={ballCy - ballR * 0.4} rx={ballR * 0.28} ry={ballR * 0.22} fill="#d7e0ff" opacity={0.3} />
-      <G opacity={0.8}>
-        {[
-          [-0.5, 0.62],
-          [-0.2, 0.78],
-          [0.08, 0.8],
-          [0.36, 0.68],
-        ].map(([dx, hf], i) => {
-          const lh = hf * (potTop - ry0) * 0.9;
-          return (
-            <Ellipse
-              key={i}
-              cx={plantCx + dx * potHW}
-              cy={potTop - lh}
-              rx={0.28 * potHW}
-              ry={lh}
-              fill={i % 2 === 0 ? '#3f7d5a' : '#4c9169'}
-            />
-          );
-        })}
-        <Path d={`M ${plantCx - potHW} ${potTop} L ${plantCx + potHW} ${potTop} L ${plantCx + potHW * 0.8} ${potBot} L ${plantCx - potHW * 0.8} ${potBot} Z`} fill="#8a8397" />
-        <Rect x={plantCx - potHW * 1.1} y={potTop - 0.02 * rH} width={potHW * 2.2} height={0.024 * rH} rx={3} fill="#9a93a8" />
-      </G>
-
-      {/* FLOOR PROP ZONE — rolled yoga mat */}
-      <G opacity={0.7}>
-        <Rect x={0.08 * sw} y={fpY} width={0.14 * sw} height={0.045 * H} rx={0.022 * H} fill="#6a5aa8" />
-        <Ellipse cx={0.085 * sw} cy={fpY + 0.0225 * H} rx={0.019 * sw} ry={0.023 * H} fill="#7d6ac2" />
-        <Ellipse cx={0.085 * sw} cy={fpY + 0.0225 * H} rx={0.009 * sw} ry={0.011 * H} fill="#4b3f7a" />
-      </G>
+      {placements.map((p) => (
+        <StageAssetArt key={p.id} p={p} sw={sw} frame={frame} />
+      ))}
     </Svg>
   );
+}
+
+/** Draw one placed asset, anchored at the engine-computed (cx, cy) + scale. */
+function StageAssetArt({ p, sw, frame }: { p: Placement; sw: number; frame: string }) {
+  const ax = p.cx * sw;
+  const baseY = p.cy * H; // standing baseline (feet of the prop)
+  const s = p.scale;
+
+  switch (p.id) {
+    case 'dumbbell_rack': {
+      const rackW = 0.2 * sw * s;
+      const rackH = 0.22 * H * s;
+      const top = baseY - rackH;
+      const left = ax - rackW / 2;
+      const right = ax + rackW / 2;
+      const tierYs = [top + 0.42 * rackH, top + 0.74 * rackH];
+      const cols = [-0.28, 0, 0.28].map((f) => ax + f * rackW);
+      return (
+        <G opacity={0.66}>
+          <Path
+            d={`M ${left + 0.06 * rackW} ${baseY} L ${left + 0.16 * rackW} ${top} L ${right - 0.16 * rackW} ${top} L ${right - 0.06 * rackW} ${baseY}`}
+            fill="none"
+            stroke={frame}
+            strokeWidth={4}
+            strokeLinejoin="round"
+          />
+          {tierYs.map((ty, r) =>
+            cols.map((cxp, c) => (
+              <G key={`${r}-${c}`}>
+                <Rect x={cxp - 9} y={ty - 3} width={18} height={6} rx={3} fill="#566089" />
+                <Circle cx={cxp - 10} cy={ty} r={5} fill={frame} />
+                <Circle cx={cxp + 10} cy={ty} r={5} fill={frame} />
+              </G>
+            )),
+          )}
+        </G>
+      );
+    }
+    case 'bench': {
+      const bw = 0.2 * sw * s;
+      const bh = 0.09 * H * s;
+      const top = baseY - bh;
+      return (
+        <G opacity={0.66}>
+          <Rect x={ax - bw / 2} y={top} width={bw} height={0.028 * H * s} rx={5} fill="#4a5175" />
+          <Line x1={ax - bw / 2 + 6} y1={top + 0.03 * H * s} x2={ax - bw / 2 + 6} y2={baseY} stroke={frame} strokeWidth={4} />
+          <Line x1={ax + bw / 2 - 6} y1={top + 0.03 * H * s} x2={ax + bw / 2 - 6} y2={baseY} stroke={frame} strokeWidth={4} />
+        </G>
+      );
+    }
+    case 'medicine_ball': {
+      const r = 0.06 * H * s;
+      const cy = baseY - r;
+      return (
+        <G opacity={0.8}>
+          <Circle cx={ax} cy={cy} r={r} fill="url(#ball)" />
+          <Ellipse cx={ax - r * 0.35} cy={cy - r * 0.4} rx={r * 0.28} ry={r * 0.22} fill="#d7e0ff" opacity={0.3} />
+        </G>
+      );
+    }
+    case 'plant': {
+      const potHW = 0.045 * sw * s;
+      const potH = 0.09 * H * s;
+      const potBot = baseY;
+      const potTop = potBot - potH;
+      const leafH = 0.15 * H * s;
+      return (
+        <G opacity={0.82}>
+          {[
+            [-0.5, 0.62],
+            [-0.2, 0.82],
+            [0.08, 0.85],
+            [0.36, 0.66],
+          ].map(([dx, hf], i) => {
+            const lh = hf * leafH;
+            return (
+              <Ellipse
+                key={i}
+                cx={ax + dx * potHW}
+                cy={potTop - lh}
+                rx={0.3 * potHW}
+                ry={lh}
+                fill={i % 2 === 0 ? '#3f7d5a' : '#4c9169'}
+              />
+            );
+          })}
+          <Path d={`M ${ax - potHW} ${potTop} L ${ax + potHW} ${potTop} L ${ax + potHW * 0.8} ${potBot} L ${ax - potHW * 0.8} ${potBot} Z`} fill="#8a8397" />
+          <Rect x={ax - potHW * 1.1} y={potTop - 0.012 * H * s} width={potHW * 2.2} height={0.014 * H * s} rx={3} fill="#9a93a8" />
+        </G>
+      );
+    }
+    case 'yoga_mat': {
+      const w = 0.14 * sw * s;
+      const h = 0.045 * H * s;
+      const top = baseY - h;
+      return (
+        <G opacity={0.7}>
+          <Rect x={ax - w / 2} y={top} width={w} height={h} rx={h / 2} fill="#6a5aa8" />
+          <Ellipse cx={ax - w / 2} cy={top + h / 2} rx={0.019 * sw * s} ry={h / 2} fill="#7d6ac2" />
+          <Ellipse cx={ax - w / 2} cy={top + h / 2} rx={0.009 * sw * s} ry={h / 4} fill="#4b3f7a" />
+        </G>
+      );
+    }
+    case 'window': {
+      if (!p.rect) return null;
+      const wx = p.rect.x * sw;
+      const wy = p.rect.y * H;
+      const wW = p.rect.w * sw;
+      const wH = p.rect.h * H;
+      return (
+        <G opacity={0.5}>
+          <Rect x={wx} y={wy} width={wW} height={wH} rx={10} fill="url(#win)" />
+          <Rect x={wx} y={wy} width={wW} height={wH} rx={10} fill="none" stroke="#0b0d16" strokeWidth={4} />
+          <Line x1={wx + wW / 2} y1={wy} x2={wx + wW / 2} y2={wy + wH} stroke="#0b0d16" strokeWidth={3} />
+          <Line x1={wx} y1={wy + wH / 2} x2={wx + wW} y2={wy + wH / 2} stroke="#0b0d16" strokeWidth={3} />
+        </G>
+      );
+    }
+    default:
+      return null;
+  }
 }
 
 // ─── a single rising light mote ────────────────────────────────────────

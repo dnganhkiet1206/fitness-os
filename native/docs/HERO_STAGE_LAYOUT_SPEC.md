@@ -1,356 +1,341 @@
-# HERO_STAGE_LAYOUT_SPEC.md
-Version: 1.1 (Canonical)
-Mục tiêu: Đây là tài liệu duy nhất quy định bố cục Hero Stage. Mọi asset, theme và vật phẩm Shop trong tương lai đều phải tuân theo tài liệu này.
+# HERO STAGE LAYOUT SPECIFICATION
+Version: 2.0
+Status: CANONICAL
+Priority: HIGHEST
 
-Changelog:
-- v1.1 — Theo chỉ đạo dev: thu nhỏ Hero + Podium + Ring để chừa không gian cho
-  Decor/Shop, và ghim chân Hero đứng tự nhiên trên Podium (khung 3D chừa lề
-  dưới chân, không xén giày). Bố cục & zone giữ nguyên; chỉ đổi kích thước Hero.
+====================================================================
 
----
+MỤC TIÊU
 
-# 1. TRIẾT LÝ
+Hero Stage là một không gian 3D có thể mở rộng.
 
-Hero Stage là một bố cục bất biến (Fixed Composition).
+KHÔNG phải màn hình hiển thị nhân vật.
 
-Asset có thể thay đổi.
-Theme có thể thay đổi.
-Linh vật có thể thay đổi.
+KHÔNG phải ảnh nền.
 
-Bố cục KHÔNG được thay đổi.
+KHÔNG phải sân khấu.
 
-Không được sắp xếp bằng cảm tính.
+Hero Stage phải tạo cảm giác người chơi đang sở hữu một căn phòng gym có thể phát triển trong nhiều năm.
 
-Không được tự ý di chuyển asset để "trông đẹp hơn".
+Mọi vật phẩm trong Shop tương lai đều phải tự động đặt đúng vị trí mà KHÔNG cần sửa Layout.
 
-Mọi vị trí đều phải tuân theo các ràng buộc dưới đây.
+Đây là tài liệu có độ ưu tiên cao nhất.
 
----
+Claude không được phép tự ý thay đổi bất kỳ quy tắc nào bên dưới.
 
-# 2. HỆ TỌA ĐỘ
+====================================================================
 
-Tất cả giá trị đều là tỷ lệ.
+NGUYÊN TẮC
 
-x, width, rx = theo chiều rộng Hero Section.
+Asset KHÔNG quyết định vị trí.
 
-y, top, bottom, cy, height, ry = theo chiều cao Hero Section.
+Zone quyết định vị trí.
 
-Không được dùng pixel.
+Layout quyết định vị trí.
 
-Không được hardcode theo thiết bị.
+Asset chỉ mô tả:
 
-Không viết logic riêng cho iPhone hoặc Android.
+- Category
+- Zone
+- Size
+- Priority
+- Footprint
 
----
+Tuyệt đối KHÔNG lưu:
 
-# 3. HERO (LINH VẬT)
+x
 
-Đây là đối tượng quan trọng nhất.
+y
 
-Hero luôn là điểm nhìn đầu tiên.
+width
 
-Hero luôn nằm giữa Hero Section.
+height
 
-Thông số chuẩn:
+Mọi vị trí đều do Layout Engine tính toán.
 
-koala.x = 0.50
-koala.bottom = 0.28 ± 0.01
-koala.width = 0.42 ± 0.03
+====================================================================
 
-Quy tắc:
+RESPONSIVE
 
-- Hero luôn đứng trên Podium.
-- Hero không được chạm Header.
-- Hero không được chạm Motivation Card.
-- Hero không được chạm Level Card.
-- Hero luôn lớn nhất trong Hero Section.
-- Hero luôn chiếm khoảng 60–65% chiều cao vùng hiển thị.
+Không được hardcode pixel.
 
-Nếu model mới cao hơn hoặc thấp hơn:
+Không được tạo layout riêng cho:
 
-→ Chỉ được scale Hero.
-
-→ Không được đổi vị trí Hero.
-
----
-
-# 4. PODIUM
-
-Podium luôn đi cùng Hero.
-
-Không được di chuyển độc lập.
-
-Thông số chuẩn:
-
-podium.cy = 0.68
-podium.rx = 0.30
-podium.ry = 0.055
-podium.depth = 0.05
-
-Quy tắc:
-
-- Hero luôn đứng đúng giữa Podium.
-- Podium rộng khoảng 1.6 lần vai Hero.
-- Hai chân Hero luôn nằm hoàn toàn trên mặt Podium.
-
----
-
-# 5. RING
-
-Ring luôn căn theo Hero.
-
-Không căn theo màn hình.
-
-Thông số chuẩn:
-
-ring.cy = 0.42
-ring.r = 0.18
-
-Quy tắc:
-
-- Ring ôm đầu và vai Hero.
-- Không được cắt tai.
-- Không được cắt đầu.
-- Không được chạm vai.
-
-Nếu Hero thay đổi kích thước.
-
-Ring tự scale theo Hero.
-
----
-
-# 6. LEFT EQUIPMENT ZONE
-
-Giới hạn:
-
-x = 0.05 → 0.30
-y = 0.40 → 0.68
-
-Chỉ chứa:
-
-- Dumbbell Rack
-- Bench
-- Bike
-- Punching Bag
-- Squat Rack
-- Treadmill
-
-Quy tắc:
-
-- Chỉ có 1 asset chính.
-- Asset cao khoảng 70–80% chiều cao Hero.
-- Không được che Hero.
-- Không vượt khỏi Zone.
-
----
-
-# 7. RIGHT DECORATION ZONE
-
-Giới hạn:
-
-x = 0.72 → 0.94
-y = 0.42 → 0.70
-
-Chỉ chứa:
-
-- Trophy
-- Plant
-- Locker
-- Cabinet
-- Medicine Ball
-
-Quy tắc:
-
-- Tối đa 2 asset.
-- Asset chỉ đóng vai trò phụ.
-- Không nổi bật hơn Hero.
-
----
-
-# 8. BACKGROUND ZONE
-
-Thông số:
-
-Ground Line = 0.58
-
-Window:
-
-x = 0.62 → 0.88
-
-y = 0.08 → 0.34
-
-Quy tắc:
-
-- Window luôn nằm sau Hero.
-- Không được sáng hơn Hero.
-- Chỉ tạo chiều sâu.
-- Không thu hút sự chú ý.
-
----
-
-# 9. FLOOR PROP ZONE
-
-Giới hạn:
-
-y ≥ 0.63
-
-Chỉ chứa:
-
-- Bottle
-- Yoga Mat
-- Shoes
-- Plate
-- Small Dumbbell
-
-Không được cao quá đầu gối Hero.
-
----
-
-# 10. UI
-
-v1.1: Level / Streak / Nhiệm vụ KHÔNG còn hiển thị đè trên Stage (theo chỉ đạo
-dev). Chúng nằm trong phần thân trang phía dưới Hero (card Level, card Năng
-lượng…). Stage chỉ chứa: Hero + Podium + Ring + Equipment + Decoration +
-Background + Floor Prop.
-
-Nếu về sau đưa UI trở lại Stage:
-
-Card Level: left = 12dp, top = Header + 4dp
-Card Streak: right = 12dp, top = Header + 4dp
-
-UI luôn độc lập với Stage.
-
-Stage không điều khiển UI.
-
----
-
-# 11. THỊ GIÁC
-
-Thứ tự người dùng nhìn thấy:
-
-① Hero
-
-↓
-
-② Level
-
-↓
-
-③ Podium
-
-↓
-
-④ Equipment
-
-↓
-
-⑤ Decoration
-
-↓
-
-⑥ Background
-
-Nếu bất kỳ asset nào nổi bật hơn Hero.
-
-Đó là lỗi.
-
----
-
-# 12. RESPONSIVE
-
-Mọi điện thoại đều dùng cùng một Layout Engine.
-
-Không tạo layout riêng cho:
-
-- iPhone SE
-- iPhone Mini
-- iPhone Pro Max
+- iPhone
 - Android
 - Tablet
 
-Nếu màn hình hẹp:
+Không được viết:
 
-→ Scale Hero.
+if (iphone)...
 
-→ Scale Props.
+if (tablet)...
 
-→ Không đổi bố cục.
+if (android)...
 
-Nếu màn hình rộng:
+Tất cả thiết bị phải dùng cùng một Layout Engine.
 
-→ Giữ nguyên bố cục.
+Nếu màn hình nhỏ:
 
-→ Chỉ tăng khoảng trắng.
+→ Scale Scene.
 
-Không được kéo giãn khoảng cách giữa các thành phần.
+Nếu màn hình lớn:
 
----
+→ Tăng khoảng trắng.
 
-# 13. SHOP
+KHÔNG đổi bố cục.
 
-Shop chỉ được phép thay Asset.
+====================================================================
 
-Ví dụ:
+HERO STAGE LÀ SCENE 3D
 
-Dumbbell Rack
+Hero Stage gồm:
+
+Hero
+
+Podium
+
+Props
+
+Background
+
+Lighting
+
+Particles
+
+Tất cả đều tồn tại trong cùng một World Space.
+
+Không được thiết kế như ảnh 2D.
+
+====================================================================
+
+CAMERA
+
+Camera cố định.
+
+Camera KHÔNG xoay.
+
+Camera luôn nhìn Hero ở góc khoảng 3/4.
+
+Camera chỉ thay đổi khoảng cách nếu cần để giữ đúng bố cục.
+
+====================================================================
+
+STAGE ROTATION
+
+Người dùng được phép xoay Stage.
+
+Stage Rotation:
+
+-45°
 
 ↓
 
-Olympic Rack
+0°
 
 ↓
 
-Không đổi vị trí.
++45°
 
-Plant
+Camera KHÔNG xoay.
 
-↓
+Stage xoay.
 
-Golden Trophy
+Hero xoay.
 
-↓
+Podium xoay.
 
-Không đổi vị trí.
+Props xoay.
 
-Cyber Stage
+Background xoay.
 
-↓
+Toàn bộ Scene xoay cùng nhau.
 
-Classic Stage
+Không có object nào đứng yên.
 
-↓
+====================================================================
 
-Không đổi bố cục.
+TỶ LỆ KHÔNG GIAN
 
-Mọi Asset mới phải tự động vừa với Zone tương ứng.
+Đây là căn phòng.
 
-Không cần sửa Layout.
+Không phải màn hình hiển thị Hero.
 
----
+Hero chỉ chiếm khoảng 40% diện tích thị giác.
 
-# 14. VALIDATION (BẮT BUỘC)
+Khoảng 60% còn lại dành cho:
 
-Sau mỗi lần render, Layout Engine phải tự kiểm tra:
+- Decoration
+- Equipment
+- Empty Space
+- Shop Items
+- Future Expansion
 
-- [ ] Hero nằm chính giữa.
-- [ ] Hero là vật lớn nhất.
-- [ ] Hero là điểm sáng nhất.
+Nếu Hero quá lớn khiến căn phòng chật.
+
+Đó là lỗi.
+
+====================================================================
+
+ZONE SYSTEM
+
+Hero Stage luôn có đúng các Zone sau.
+
+Không được tạo thêm.
+
+────────────────────
+
+ZONE 01 — Hero Zone
+Trung tâm. Chỉ chứa: Hero, Outfit, Animation, Accessory gắn trên Hero.
+
+ZONE 02 — Podium Zone
+Chỉ chứa Podium. Hero luôn đứng giữa Podium.
+
+ZONE 03 — Ring Zone
+Chỉ chứa Ring. Ring luôn bám theo Hero.
+
+ZONE 04 — Left Equipment Zone
+Chỉ chứa thiết bị tập lớn (Rack, Bench, Bike, Squat Rack, Punching Bag,
+Treadmill). Tối đa: 2 Large Asset hoặc 1 XL Asset.
+
+ZONE 05 — Right Decoration Zone
+Chỉ chứa: Plant, Locker, Shelf, Cabinet, Trophy, Medicine Ball, Decoration.
+Tối đa: 3 Asset. Trong đó chỉ có 1 Dominant Decoration.
+
+ZONE 06 — Background Zone
+Window, Mirror, Wall, Poster, Banner, Lighting. Không đặt vật thể tương tác.
+
+ZONE 07 — Floor Zone
+Yoga Mat, Bottle, Shoes, Plate, Small Dumbbell, Floor Decoration.
+Không cao quá đầu gối Hero.
+
+ZONE 08 — FX Zone
+Glow, Aura, XP, Coin, Sparkle, Particle, Confetti. Không che Hero.
+
+====================================================================
+
+OCCUPANCY SYSTEM
+
+Mỗi Zone có số lượng tối đa.
+
+Left Equipment: 2 Slot
+Right Decoration: 3 Slot
+Floor: 5 Slot
+
+Nếu Zone đầy. Asset mới KHÔNG được spawn.
+
+====================================================================
+
+COLLISION RULE
+
+Không được để hai Asset đè lên nhau.
+
+Footprint không được giao nhau. Bounding Box không được giao nhau.
+
+Nếu xảy ra Collision. Layout Engine phải:
+
+1. Scale nhỏ Asset. →
+2. Di chuyển Asset. →
+3. Ẩn Asset Priority thấp.
+
+====================================================================
+
+EXCLUSIVE GROUP
+
+Một số Asset không được xuất hiện cùng nhau:
+
+- Bike × Treadmill
+- Large Plant × Large Cabinet
+- Bench × Yoga Bench
+- Olympic Rack × Small Rack
+- Christmas Tree × Large Trophy
+
+Nếu cùng Occupancy. Chỉ được giữ Asset Priority cao hơn.
+
+====================================================================
+
+PRIORITY
+
+Hero → Podium → Equipment → Decoration → Background → FX
+
+Nếu xảy ra xung đột. Asset Priority thấp phải nhường.
+
+====================================================================
+
+SHOP
+
+Shop KHÔNG thay đổi Layout. Shop chỉ thay Asset.
+
+Ví dụ: Rack → Olympic Rack. Giữ nguyên Zone. Giữ nguyên Slot. Giữ nguyên Anchor.
+
+====================================================================
+
+VISUAL RULE
+
+Hero luôn là điểm nhìn đầu tiên.
+
+Không Asset nào sáng hơn Hero.
+Không Asset nào lớn hơn Hero.
+Không Asset nào che Hero.
+
+====================================================================
+
+EMPTY SPACE
+
+Không cố lấp đầy căn phòng.
+
+Khoảng trống là một phần của thiết kế. Room phải luôn có cảm giác rộng.
+
+Người chơi phải cảm thấy vẫn còn chỗ để mua thêm đồ.
+
+====================================================================
+
+FUTURE PROOF
+
+Thiết kế Layout như thể người chơi đã mở khóa:
+
+50 Decoration · 30 Equipment · 20 Trophy · 10 Furniture · 5 Pet · 5 Seasonal Item
+
+Nếu lúc đó Layout vẫn hoạt động → PASS. Nếu phải sửa Layout → FAIL.
+
+====================================================================
+
+VALIDATION
+
+Sau mỗi lần Render. Layout Engine phải kiểm tra:
+
+- [ ] Hero nằm giữa.
+- [ ] Hero chiếm khoảng 40% Room.
+- [ ] Room vẫn còn nhiều khoảng trống.
 - [ ] Hero không chạm UI.
-- [ ] Hero đứng đúng trên Podium.
+- [ ] Hero đứng trên Podium.
 - [ ] Ring không cắt tai.
-- [ ] Podium lớn hơn vai Hero.
-- [ ] Left Equipment không vượt Zone.
-- [ ] Right Decoration không vượt Zone.
-- [ ] Background không sáng hơn Hero.
-- [ ] Props không che Hero.
-- [ ] Khoảng trắng hai bên Hero cân bằng.
+- [ ] Podium không nhỏ hơn Hero.
+- [ ] Không Asset nào vượt Zone.
+- [ ] Không Asset nào chồng nhau.
+- [ ] Không Asset nào che Hero.
+- [ ] Không Asset nào sáng hơn Hero.
+- [ ] Không vượt Occupancy.
+- [ ] Không vi phạm Exclusive Group.
+- [ ] Rotation đúng.
+- [ ] Responsive đúng.
 
-Nếu chỉ cần 1 điều sai.
+Nếu chỉ cần 1 điều sai → Render FAILED → Layout Engine phải tự tính lại.
 
-Render được xem là FAILED và phải tự tính lại layout.
+====================================================================
 
----
+## PHỤ LỤC — TRẠNG THÁI TRIỂN KHAI (Claude cập nhật, không phải luật)
 
-ĐÂY LÀ NGUỒN CHÂN LÝ DUY NHẤT.
+- [x] Layout Engine: asset registry (metadata-only, không x/y) + resolver
+      (zone / occupancy / priority / exclusive group / collision).
+      → `src/config/stage/stage-assets.ts`, `src/lib/stage-layout.ts`.
+- [x] Renderer đọc placement từ engine (Zone quyết định vị trí).
+- [x] Hero ~40% diện tích; nhiều khoảng trống cho Shop mở rộng.
+- [ ] Scene 3D thật (props trong world 3D thay vì SVG 2D) — CẦN model 3D cho
+      từng prop (pipeline asset GLB). Chờ chỉ thị dev.
+- [ ] Stage Rotation -45°/0/+45° (xoay cả scene, camera cố định) — phụ thuộc
+      Scene 3D ở trên. Chờ chỉ thị dev.
 
-Claude không được tự ý thay đổi bất kỳ quy tắc nào trong tài liệu này nếu không có chỉ định trực tiếp từ người phát triển.
+Đây là nguồn chân lý duy nhất (Single Source of Truth). Claude không được tự ý
+thay đổi Layout / Zone / Occupancy / Priority / Constraint nếu không có chỉ thị
+trực tiếp từ người phát triển.
