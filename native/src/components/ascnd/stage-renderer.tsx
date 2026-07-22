@@ -193,7 +193,7 @@ export function StageRenderer({
       {/* ── back wall + spotlight ── */}
       <Svg width={sw} height={H} style={StyleSheet.absoluteFill}>
         <Defs>
-          <RadialGradient id="sky" cx="50%" cy="34%" r="85%">
+          <RadialGradient id="sky" cx="50%" cy="32%" r="85%">
             <Stop offset="0%" stopColor={theme.bg[0]} />
             <Stop offset="58%" stopColor={theme.bg[1]} />
             <Stop offset="100%" stopColor={theme.bg[2]} />
@@ -209,6 +209,17 @@ export function StageRenderer({
 
       {/* ── stylised gym room props ── */}
       <RoomBackdrop sw={sw} theme={theme} />
+
+      {/* ── vignette: darkens the four corners so the buddy is the focal point ── */}
+      <Svg width={sw} height={H} style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Defs>
+          <RadialGradient id="vig" cx="50%" cy="42%" r="72%">
+            <Stop offset="55%" stopColor="#05060c" stopOpacity={0} />
+            <Stop offset="100%" stopColor="#05060c" stopOpacity={0.5} />
+          </RadialGradient>
+        </Defs>
+        <Rect x={0} y={0} width={sw} height={H} fill="url(#vig)" />
+      </Svg>
 
       {/* ── glowing neon ring behind the buddy ── */}
       <Animated.View style={[StyleSheet.absoluteFill, ringStyle]} pointerEvents="none">
@@ -334,29 +345,29 @@ function RoomBackdrop({ sw, theme }: { sw: number; theme: StageTheme }) {
       </Defs>
 
       {/* floor band */}
-      <Rect x={0} y={0.6 * H} width={sw} height={0.4 * H} fill="#0b0d16" opacity={0.5} />
-      <Line x1={0} y1={0.6 * H} x2={sw} y2={0.6 * H} stroke={theme.rim} strokeWidth={1} opacity={0.12} />
+      <Rect x={0} y={0.58 * H} width={sw} height={0.42 * H} fill="#0b0d16" opacity={0.5} />
+      <Line x1={0} y1={0.58 * H} x2={sw} y2={0.58 * H} stroke={theme.rim} strokeWidth={1} opacity={0.12} />
 
-      {/* window (top-right) */}
-      <G opacity={0.6}>
-        <Rect x={0.72 * sw} y={0.09 * H} width={0.24 * sw} height={0.29 * H} rx={10} fill="url(#win)" />
-        <Rect x={0.72 * sw} y={0.09 * H} width={0.24 * sw} height={0.29 * H} rx={10} fill="none" stroke="#0b0d16" strokeWidth={4} />
-        <Line x1={0.84 * sw} y1={0.09 * H} x2={0.84 * sw} y2={0.38 * H} stroke="#0b0d16" strokeWidth={3} />
-        <Line x1={0.72 * sw} y1={0.235 * H} x2={0.96 * sw} y2={0.235 * H} stroke="#0b0d16" strokeWidth={3} />
+      {/* window (top-right, inset from the edge) */}
+      <G opacity={0.55}>
+        <Rect x={0.67 * sw} y={0.08 * H} width={0.23 * sw} height={0.26 * H} rx={10} fill="url(#win)" />
+        <Rect x={0.67 * sw} y={0.08 * H} width={0.23 * sw} height={0.26 * H} rx={10} fill="none" stroke="#0b0d16" strokeWidth={4} />
+        <Line x1={0.785 * sw} y1={0.08 * H} x2={0.785 * sw} y2={0.34 * H} stroke="#0b0d16" strokeWidth={3} />
+        <Line x1={0.67 * sw} y1={0.21 * H} x2={0.9 * sw} y2={0.21 * H} stroke="#0b0d16" strokeWidth={3} />
       </G>
 
-      {/* dumbbell rack (left) */}
-      <G opacity={0.7}>
+      {/* dumbbell rack (left, inset) */}
+      <G opacity={0.68}>
         <Path
-          d={`M ${0.05 * sw} ${0.66 * H} L ${0.085 * sw} ${0.45 * H} L ${0.26 * sw} ${0.45 * H} L ${0.235 * sw} ${0.66 * H}`}
+          d={`M ${0.08 * sw} ${0.6 * H} L ${0.11 * sw} ${0.4 * H} L ${0.28 * sw} ${0.4 * H} L ${0.26 * sw} ${0.6 * H}`}
           fill="none"
           stroke={frame}
           strokeWidth={4}
           strokeLinejoin="round"
         />
-        <Line x1={0.072 * sw} y1={0.54 * H} x2={0.252 * sw} y2={0.54 * H} stroke={frame} strokeWidth={4} />
-        {[0.51, 0.62].map((ty, r) =>
-          [0.105, 0.155, 0.205].map((tx, c) => (
+        <Line x1={0.098 * sw} y1={0.49 * H} x2={0.272 * sw} y2={0.49 * H} stroke={frame} strokeWidth={4} />
+        {[0.46, 0.565].map((ty, r) =>
+          [0.13, 0.18, 0.23].map((tx, c) => (
             <G key={`${r}-${c}`}>
               <Rect x={tx * sw - 9} y={ty * H - 3} width={18} height={6} rx={3} fill="#566089" />
               <Circle cx={tx * sw - 10} cy={ty * H} r={5} fill={frame} />
@@ -366,19 +377,19 @@ function RoomBackdrop({ sw, theme }: { sw: number; theme: StageTheme }) {
         )}
       </G>
 
-      {/* rolled yoga mat (bottom-left) */}
-      <G opacity={0.72}>
-        <Rect x={0.045 * sw} y={0.72 * H} width={0.15 * sw} height={0.05 * H} rx={0.025 * H} fill="#6a5aa8" />
-        <Ellipse cx={0.05 * sw} cy={0.745 * H} rx={0.02 * sw} ry={0.026 * H} fill="#7d6ac2" />
-        <Ellipse cx={0.05 * sw} cy={0.745 * H} rx={0.009 * sw} ry={0.012 * H} fill="#4b3f7a" />
+      {/* rolled yoga mat (bottom-left, inset) */}
+      <G opacity={0.7}>
+        <Rect x={0.08 * sw} y={0.67 * H} width={0.14 * sw} height={0.048 * H} rx={0.024 * H} fill="#6a5aa8" />
+        <Ellipse cx={0.085 * sw} cy={0.694 * H} rx={0.019 * sw} ry={0.024 * H} fill="#7d6ac2" />
+        <Ellipse cx={0.085 * sw} cy={0.694 * H} rx={0.009 * sw} ry={0.011 * H} fill="#4b3f7a" />
       </G>
 
-      {/* exercise ball (right) */}
-      <Circle cx={0.8 * sw} cy={0.66 * H} r={0.072 * H} fill="url(#ball)" opacity={0.82} />
-      <Ellipse cx={0.77 * sw} cy={0.63 * H} rx={0.02 * sw} ry={0.02 * H} fill="#d7e0ff" opacity={0.35} />
+      {/* exercise ball (right, inset) */}
+      <Circle cx={0.79 * sw} cy={0.6 * H} r={0.07 * H} fill="url(#ball)" opacity={0.8} />
+      <Ellipse cx={0.76 * sw} cy={0.575 * H} rx={0.02 * sw} ry={0.018 * H} fill="#d7e0ff" opacity={0.35} />
 
-      {/* potted plant (far right) */}
-      <G opacity={0.82}>
+      {/* potted plant (right, inset off the edge) */}
+      <G opacity={0.8}>
         {[
           [-0.028, 0.05],
           [-0.012, 0.062],
@@ -387,15 +398,15 @@ function RoomBackdrop({ sw, theme }: { sw: number; theme: StageTheme }) {
         ].map(([dx, h], i) => (
           <Ellipse
             key={i}
-            cx={0.925 * sw + dx * sw}
-            cy={0.61 * H - h * H}
+            cx={0.88 * sw + dx * sw}
+            cy={0.57 * H - h * H}
             rx={0.014 * sw}
             ry={h * H}
             fill={i % 2 === 0 ? '#3f7d5a' : '#4c9169'}
           />
         ))}
-        <Path d={`M ${0.885 * sw} ${0.63 * H} L ${0.965 * sw} ${0.63 * H} L ${0.95 * sw} ${0.71 * H} L ${0.9 * sw} ${0.71 * H} Z`} fill="#8a8397" />
-        <Rect x={0.878 * sw} y={0.615 * H} width={0.094 * sw} height={0.022 * H} rx={3} fill="#9a93a8" />
+        <Path d={`M ${0.84 * sw} ${0.59 * H} L ${0.92 * sw} ${0.59 * H} L ${0.905 * sw} ${0.67 * H} L ${0.855 * sw} ${0.67 * H} Z`} fill="#8a8397" />
+        <Rect x={0.833 * sw} y={0.575 * H} width={0.094 * sw} height={0.022 * H} rx={3} fill="#9a93a8" />
       </G>
     </Svg>
   );

@@ -119,13 +119,19 @@ export function Mascot3D({
 }) {
   return (
     <Canvas
-      style={{ width: size, height: size * 1.15 }}
-      camera={{ position: [0, 0.85, 3.2], fov: 38 }}
+      style={{ width: size, height: size * 1.25 }}
+      camera={{ position: [0, 1.0, 3.5], fov: 32 }}
       gl={{ alpha: true, antialias: true }}
-      onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}>
-      <ambientLight intensity={0.85} />
-      <directionalLight position={[3, 5, 4]} intensity={1.3} castShadow />
-      <directionalLight position={[-4, 2, -2]} intensity={0.5} color={accent} />
+      onCreated={({ gl, camera }) => {
+        gl.setClearColor(0x000000, 0);
+        // Look horizontally at the buddy's chest so the feet land at the very
+        // bottom edge of the canvas (no float) with a flattering near-eye-level
+        // hero angle.
+        camera.lookAt(0, 1.0, 0);
+      }}>
+      <ambientLight intensity={0.9} />
+      <directionalLight position={[3, 5, 4]} intensity={1.35} castShadow />
+      <directionalLight position={[-4, 2, -2]} intensity={0.55} color={accent} />
       <Koala emotion={emotion} />
     </Canvas>
   );
