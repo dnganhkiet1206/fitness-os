@@ -20,10 +20,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { MascotFigure } from '@/components/ascnd/mascot-figure';
+import { MascotBuddy } from '@/components/ascnd/mascot-3d';
 import stageCfg from '@/config/stage/stage.json';
 import stageThemes from '@/config/stage/stage-theme.json';
-import { triggerMascotAction } from '@/hooks/use-mascot-emotion';
+import { triggerMascotAction, useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
 
@@ -99,6 +99,7 @@ export function StageRenderer({
   const theme = THEMES.themes[themeKey ?? THEMES.default] ?? THEMES.themes[THEMES.default];
   const acc = accent ?? theme.aura;
   const e = Math.max(0, Math.min(1, energy));
+  const emotion = useMascotEmotion();
   const [sw, setSw] = useState(Dimensions.get('window').width - 32);
   const onLayout = (ev: LayoutChangeEvent) => setSw(ev.nativeEvent.layout.width);
 
@@ -265,7 +266,7 @@ export function StageRenderer({
         )}
         <Pressable onPress={poke} hitSlop={12}>
           <Animated.View style={charStyle}>
-            <MascotFigure mascot={mascot} size={size} mood={mood} level={level} equippedOutfits={equippedOutfits} />
+            <MascotBuddy mascot={mascot} emotion={emotion} size={size} mood={mood} level={level} accent={acc} equippedOutfits={equippedOutfits} />
           </Animated.View>
         </Pressable>
       </View>

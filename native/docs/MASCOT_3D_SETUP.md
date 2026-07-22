@@ -1,60 +1,40 @@
-# Mascot 3D (path B) — setup
+# Mascot 3D (path B) — status & how to run
 
-The rigged/textured koala renders in real time via react-three-fiber over
-expo-gl. The asset (`assets/mascots/koa.glb`, 1.2 MB) and the component
-(`src/components/ascnd/mascot-3d.tsx`) are already in the repo. The steps below
-must run on a machine with npm access (the CI sandbox blocks installs), and 3D
-needs a **dev-build rebuild** (expo-gl is native).
+The real-time 3D buddy is **wired in and build-verified** on the branch:
 
-## 1. Install deps (compatible with Expo SDK 57 / React 19)
+- Asset: `assets/mascots/koa.glb` (1.2 MB — rigged, textured, 8,980 tris).
+- Component: `src/components/ascnd/mascot-3d.tsx` — `Mascot3D` (react-three-fiber
+  over expo-gl) + `MascotBuddy` (error-boundary that falls back to the 2D
+  `MascotFigure` if GL/model fails, so the Stage never goes blank).
+- Wired into `src/components/ascnd/stage-renderer.tsx` (the buddy slot),
+  driven by the Emotion Engine.
+- Deps added to package.json: `expo-gl` 57.0.2, `three` 0.185.1,
+  `@react-three/fiber` 9.6.1, `@react-three/drei` 10.7.7 (+ `@types/three`).
+- `metro.config.js` bundles `.glb`/`.gltf`.
+- Verified: `tsc --noEmit` clean, `expo export` bundles the model + all 3D deps.
+
+## To see it on a device
+
+expo-gl is native, so a JS reload isn't enough — rebuild the dev client once:
 
 ```bash
 cd native
-npx expo install expo-gl
-npm install three @react-three/fiber @react-three/drei
-npm install -D @types/three
+npm install          # pull the newly-added 3D deps
+npx expo run:ios     # or: eas build --profile development
 ```
 
-If `@react-three/fiber` warns about React 19, use the v9 line
-(`@react-three/fiber@^9`), which supports React 19.
+Then open the Mascot tab. If anything GL-related fails on the device, the
+boundary shows the 2D figure instead (no crash) — tell me and send the log.
 
-## 2. Let Metro bundle .glb
+## Animation
 
-Add `glb` to `assetExts` in `metro.config.js` (create it if missing):
+v1 is **whole-object** procedural motion (bob / breathe / hop / spin / slump)
+driven by the emotion, so the head never warps and no bone mapping is needed.
+Next: limb-level poses (arm wave, bicep curl) by rotating named bones
+(Bone_000…Bone_034) once we identify head/arms from the live skeleton.
 
-```js
-const { getDefaultConfig } = require('expo/metro-config');
-const config = getDefaultConfig(__dirname);
-config.resolver.assetExts.push('glb');
-module.exports = config;
-```
+## Tuning (send a device screenshot)
 
-## 3. Rebuild the dev client
-
-expo-gl is native, so a JS reload isn't enough:
-
-```bash
-npx expo run:ios   # or: eas build --profile development
-```
-
-## 4. Wire it into the Stage
-
-In `src/components/ascnd/stage-renderer.tsx`, swap the `MascotFigure` in the
-buddy slot for `Mascot3D` (pass the engine `emotion` instead of `mood`). Keep
-`MascotFigure` as the fallback when the 3D asset/deps aren't present so the app
-still runs everywhere. Remove the `// @ts-nocheck` at the top of
-`mascot-3d.tsx` once deps are installed to get real type-checking.
-
-## 5. Tune on device → iterate
-
-Only a device shows the real 3D result. Send a screenshot and we tune camera
-(`position`/`fov`), lights, model scale (`1.6 / size.y`), and the per-emotion
-motion. Limb-level poses (arm wave, bicep curl) come next by rotating named
-bones (Bone_000…Bone_034) once we identify head/arms from the live skeleton.
-
-## Notes
-
-- v1 animation is **whole-object** (bob / breathe / hop / spin / slump) — the
-  head never warps and no bone mapping is needed.
-- Keep the 2D image Stage as the default until the 3D path is verified on
-  device; gate the swap behind a flag if you want to A/B them.
+Only a device shows the real GL result. With a screenshot I tune, in
+`mascot-3d.tsx`: camera (`position`/`fov`), the two lights, model fit
+(`1.6 / size.y`), and the per-emotion motion curves.

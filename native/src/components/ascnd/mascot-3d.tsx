@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Mascot3D — real-time 3D buddy (path B). Renders the rigged/textured koala
  * GLB with react-three-fiber over expo-gl, driven by the Emotion Engine.
@@ -13,15 +12,19 @@
  */
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { useGLTF } from '@react-three/drei/native';
-import { useEffect, useMemo, useRef } from 'react';
+import { Component, type ReactNode, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
+import { MascotFigure } from '@/components/ascnd/mascot-figure';
+import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
+import type { MascotDef } from '@/lib/mascots';
 
-const MODEL = require('../../assets/mascots/koa.glb');
+const MODEL = require('../../../assets/mascots/koa.glb');
 
 function Koala({ emotion }: { emotion: MascotEmotion }) {
-  const { scene } = useGLTF(MODEL);
+  const gltf = useGLTF(MODEL);
+  const scene = (Array.isArray(gltf) ? gltf[0] : gltf).scene as THREE.Group;
   const group = useRef<THREE.Group>(null);
   const emo = useRef<MascotEmotion>(emotion);
   emo.current = emotion;
@@ -132,3 +135,44 @@ export function Mascot3D({
 }
 
 useGLTF.preload?.(MODEL);
+
+/**
+ * Renders the 3D buddy, falling back to the 2D image figure if the GL context
+ * or model fails on a device — so the Stage never goes blank.
+ */
+class Mascot3DBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+export function MascotBuddy({
+  mascot,
+  emotion,
+  size = 200,
+  mood = 'neutral',
+  level = 1,
+  accent,
+  equippedOutfits,
+}: {
+  mascot: MascotDef;
+  emotion: MascotEmotion;
+  size?: number;
+  mood?: MascotMood;
+  level?: number;
+  accent?: string;
+  equippedOutfits?: Set<string>;
+}) {
+  return (
+    <Mascot3DBoundary
+      fallback={
+        <MascotFigure mascot={mascot} size={size} mood={mood} emotion={emotion} level={level} equippedOutfits={equippedOutfits} />
+      }>
+      <Mascot3D emotion={emotion} size={size} accent={accent} />
+    </Mascot3DBoundary>
+  );
+}
