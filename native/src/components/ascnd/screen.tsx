@@ -30,12 +30,15 @@ interface ScreenProps extends ViewProps {
   transparentHeader?: boolean;
   /** report the header height (insets.top + 44) so content can offset under it */
   onHeaderHeight?: (h: number) => void;
+  /** transparentHeader only — set false to lock page scroll (e.g. while a
+   *  fixed game surface at the top is being touched) */
+  contentScrollEnabled?: boolean;
 }
 
 /**
  * Page scaffold matching the web app's two header patterns.
  */
-export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, children, style, ...props }: ScreenProps) {
+export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, contentScrollEnabled = true, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
 
   if (back) {
@@ -65,6 +68,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
             style={styles.scroller}
             contentContainerStyle={[styles.subContentFlush, { paddingBottom: insets.bottom + spacing.xl }, style]}
             contentInsetAdjustmentBehavior="never"
+            scrollEnabled={contentScrollEnabled}
             automaticallyAdjustKeyboardInsets
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"

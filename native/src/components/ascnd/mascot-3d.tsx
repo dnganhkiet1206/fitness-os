@@ -28,24 +28,29 @@ const BONES = {
 } as const;
 
 // reusable temporaries (single koala on screen, so module-shared is fine)
-const _qx = new THREE.Quaternion();
-const _qz = new THREE.Quaternion();
-const _AX = new THREE.Vector3(1, 0, 0);
-const _AZ = new THREE.Vector3(0, 0, 1);
+const _rd = new THREE.Quaternion();
+const _rd2 = new THREE.Quaternion();
+const _acc = new THREE.Quaternion();
+// WORLD axes — we rotate bones in world (koala) space, not their local frame,
+// so the direction of each pose is geometrically predictable regardless of how
+// the auto-rig oriented each bone.
+const _WX = new THREE.Vector3(1, 0, 0); // pitch (nod / curl)
+const _WZ = new THREE.Vector3(0, 0, 1); // roll (arm abduction — swing out to the side)
 
 interface Pose {
-  head: number; // X nod (+ = look down)
-  tilt: number; // Z head tilt
-  rArm: number; // R upper-arm Z (− = raise out to the side)
-  rFore: number; // R forearm X (+ = curl up)
-  lArm: number; // L upper-arm Z (+ = raise out to the side, mirrored)
-  lFore: number; // L forearm X
+  head: number; // world-X nod (+ = look down)
+  tilt: number; // world-Z head tilt
+  rArm: number; // R upper-arm world-Z (+ = swing out/up to the side)
+  rFore: number; // R forearm world-X curl
+  lArm: number; // L upper-arm world-Z (− = swing out/up, mirrored)
+  lFore: number; // L forearm world-X curl
 }
 const lerp = THREE.MathUtils.lerp;
 
 // The model's rest pose keeps the arms tucked against the body (hands touch the
 // shorts). Hold the upper arms a little OUT so the hands always clear the body.
-const REST_ARM_OUT = 0.26;
+// Right arm swings out with +Z, left arm mirrors with −Z (world space).
+const REST_ARM_OUT = 0.4;
 
 function Koala({ emotion }: { emotion: MascotEmotion }) {
   const gltf = useGLTF(MODEL);
@@ -61,7 +66,7 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
   // group (NOT by cloning the scene: cloning a rigged SkinnedMesh detaches the
   // skeleton and breaks/throws). We render the shared scene directly, then find
   // the bones once and cache each one's rest quaternion.
-  const { fit, bones, baseQ } = useMemo(() => {
+  const { fit, bones, baseQ, parentW, parentWInv } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
@@ -77,6 +82,19 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
         q[o.name] = o.quaternion.clone();
       }
     });
+    // Cache each animated bone's parent world-orientation (at rest) so we can
+    // convert a world-space rotation into the bone's local quaternion.
+    scene.updateWorldMatrix(true, true);
+    const pw: Record<string, THREE.Quaternion> = {};
+    const pwi: Record<string, THREE.Quaternion> = {};
+    for (const name of Object.values(BONES)) {
+      const bone = b[name];
+      if (bone?.parent) {
+        const w = bone.parent.getWorldQuaternion(new THREE.Quaternion());
+        pw[name] = w;
+        pwi[name] = w.clone().invert();
+      }
+    }
     return {
       fit: {
         scale,
@@ -84,6 +102,8 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
       },
       bones: b,
       baseQ: q,
+      parentW: pw,
+      parentWInv: pwi,
     };
   }, [scene]);
 
@@ -91,20 +111,24 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
     t0.current = 0;
   }, [emotion]);
 
-  // rotate a bone off its rest pose: base * Rx(ax) * Rz(az)
-  const poseBone = (name: string, ax: number, az: number) => {
+  // Rotate a bone in WORLD space by (angX around world-X) then (angZ around
+  // world-Z), on top of its rest pose:  local = parentWⁿⁱ · Rworld · parentW · rest
+  const poseBone = (name: string, angX: number, angZ: number) => {
     const bone = bones[name];
     const base = baseQ[name];
-    if (!bone || !base) return;
-    bone.quaternion.copy(base);
-    if (ax) {
-      _qx.setFromAxisAngle(_AX, ax);
-      bone.quaternion.multiply(_qx);
+    const pw = parentW[name];
+    const pwi = parentWInv[name];
+    if (!bone || !base || !pw || !pwi) return;
+    _acc.identity();
+    if (angX) {
+      _rd.setFromAxisAngle(_WX, angX);
+      _acc.multiply(_rd);
     }
-    if (az) {
-      _qz.setFromAxisAngle(_AZ, az);
-      bone.quaternion.multiply(_qz);
+    if (angZ) {
+      _rd2.setFromAxisAngle(_WZ, angZ);
+      _acc.multiply(_rd2);
     }
+    bone.quaternion.copy(pwi).multiply(_acc).multiply(pw).multiply(base);
   };
 
   useFrame((_, delta) => {
@@ -127,44 +151,44 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
       const hop = Math.max(0, Math.sin(t * 6)) * 0.16;
       py = hop;
       spin = Math.min(t * 2.5, Math.PI * 2);
-      // both arms thrown up
-      tp.rArm = -2.0;
-      tp.lArm = 2.0;
+      // both arms thrown up (right +Z, left −Z, near-vertical)
+      tp.rArm = 2.3;
+      tp.lArm = -2.3;
       tp.head = -0.12;
     } else if (e === 'wave') {
-      // right arm up, forearm waving side to side
-      tp.rArm = -1.9;
-      tp.rFore = Math.sin(t * 9) * 0.5 + 0.1;
+      // right arm raised out, forearm waving
+      tp.rArm = 1.6;
+      tp.rFore = Math.sin(t * 9) * 0.5;
       tp.tilt = 0.12;
       tp.head = -0.05;
     } else if (e === 'curl') {
-      // double-biceps flex — arms out, both forearms pump up
+      // double-biceps flex — arms out to the sides, forearms pump up
       const pump = Math.sin(t * 3) * 0.5 + 0.5;
-      tp.rArm = -0.6;
-      tp.lArm = 0.6;
-      tp.rFore = 1.1 + pump * 0.5;
-      tp.lFore = 1.1 + pump * 0.5;
+      tp.rArm = 1.4;
+      tp.lArm = -1.4;
+      tp.rFore = -(1.0 + pump * 0.5);
+      tp.lFore = -(1.0 + pump * 0.5);
     } else if (e === 'sleep') {
       lean = 0.16;
       tp.head = 0.5 + breathe * 0.03; // head droops forward, gentle breathe
       tp.tilt = 0.14;
-      tp.rArm = -REST_ARM_OUT * 0.8;
-      tp.lArm = REST_ARM_OUT * 0.8;
+      tp.rArm = REST_ARM_OUT * 0.8;
+      tp.lArm = -REST_ARM_OUT * 0.8;
     } else if (e === 'sad' || e === 'tired') {
       lean = 0.06;
       tp.head = 0.3;
       tp.tilt = Math.sin(t * 1.1) * 0.04;
-      tp.rArm = -REST_ARM_OUT * 0.8;
-      tp.lArm = REST_ARM_OUT * 0.8;
+      tp.rArm = REST_ARM_OUT * 0.8;
+      tp.lArm = -REST_ARM_OUT * 0.8;
     } else {
       // idle / happy — breathe + subtle head bob + tiny arm sway (arms held out)
       py = Math.sin(t * (e === 'happy' ? 2.4 : 1.6)) * 0.015;
       const s = Math.sin(t * 1.1) * 0.04;
       tp.head = Math.sin(t * 1.6) * 0.05 + 0.02;
       tp.tilt = Math.sin(t * 0.8) * 0.04;
-      tp.rArm = -REST_ARM_OUT + s;
-      tp.lArm = REST_ARM_OUT - s;
-      tp.rFore = (e === 'happy' ? 0.1 : 0) + breathe * 0.04;
+      tp.rArm = REST_ARM_OUT + s;
+      tp.lArm = -REST_ARM_OUT - s;
+      tp.rFore = (e === 'happy' ? -0.1 : 0) - breathe * 0.04;
     }
 
     // smooth the pose toward the target

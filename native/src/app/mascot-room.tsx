@@ -185,6 +185,9 @@ export default function MascotRoomScreen() {
   const [burst, setBurst] = useState({ id: 0, amount: 0 });
   const [shopOpen, setShopOpen] = useState(false);
   const [shopTab, setShopTab] = useState<'outfit' | 'stage'>('stage');
+  // While a touch is on the game stage, lock page scroll so gestures on the
+  // buddy (poke / future rotate) stay game-only and never scroll the page.
+  const [stageActive, setStageActive] = useState(false);
   const welcomeTried = useRef(false);
 
   const balance = wallet?.balance ?? 0;
@@ -299,6 +302,7 @@ export default function MascotRoomScreen() {
     <Screen
       back
       transparentHeader
+      contentScrollEnabled={!stageActive}
       title={mascot.name}
       headerRight={
         <Pressable
@@ -319,14 +323,12 @@ export default function MascotRoomScreen() {
       {/* The room */}
       <View
         style={styles.sceneWrap}
-        // The stage is a game surface: claim drags here so a pan on the buddy
-        // interacts (poke / future stage-rotate) instead of scrolling the page.
-        // Taps still reach the buddy (we don't claim the touch on start).
-        onStartShouldSetResponder={() => false}
-        onMoveShouldSetResponder={() => true}
-        onResponderTerminationRequest={() => false}
-        onResponderMove={() => {}}
-        onResponderRelease={() => {}}>
+        // The stage is a game surface: as soon as a touch lands here we lock
+        // page scroll, so any gesture on the buddy (poke / future rotate) is
+        // game-only and never scrolls the page. Taps still reach the buddy.
+        onTouchStart={() => setStageActive(true)}
+        onTouchEnd={() => setStageActive(false)}
+        onTouchCancel={() => setStageActive(false)}>
         <MascotScene
           mascot={mascot}
           ownedGym={equippedOutfits}
