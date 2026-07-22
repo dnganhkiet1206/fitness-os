@@ -2,12 +2,12 @@
   "$comment": "HERO STAGE — canonical fixed composition. Governed by docs/HERO_STAGE_LAYOUT_SPEC.md (v1.0). x/width/rx = fraction of WIDTH; y/top/bottom/cy/ry/r/depth/groundLine = fraction of HEIGHT. NEVER hardcode pixels or per-device logic. Shop swaps ASSETS inside a zone; it must never change these numbers.",
   "canvas": { "height": 560 },
 
-  "hero": { "x": 0.5, "bottom": 0.3, "width": 0.52 },
-  "podium": { "cy": 0.73, "rx": 0.39, "ry": 0.075, "depth": 0.065 },
-  "ring": { "cy": 0.42, "r": 0.23 },
+  "hero": { "x": 0.5, "bottom": 0.28, "width": 0.42 },
+  "podium": { "cy": 0.68, "rx": 0.3, "ry": 0.055, "depth": 0.05 },
+  "ring": { "cy": 0.42, "r": 0.18 },
 
-  "aura": { "cy": 0.48, "rx": 0.34, "ry": 0.27 },
-  "spotlight": { "topW": 0.1, "bottomW": 0.5, "top": 0.05, "bottom": 0.44 },
+  "aura": { "cy": 0.44, "rx": 0.28, "ry": 0.22 },
+  "spotlight": { "topW": 0.1, "bottomW": 0.46, "top": 0.05, "bottom": 0.4 },
   "particles": { "count": 12, "minSize": 3, "maxSize": 7 },
 
   "zones": {

@@ -1,5 +1,4 @@
 import * as Haptics from 'expo-haptics';
-import { Flame, Star, Target } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   Dimensions,
@@ -98,14 +97,6 @@ export function StageRenderer({
   energy = 0.5,
   celebrateSignal = 0,
   flexSignal = 0,
-  xp,
-  xpMax,
-  streak = 0,
-  questCount,
-  questTotal,
-  streakLabel = 'Day streak',
-  questLabel = 'Quests',
-  topInset = 0,
 }: Props) {
   const theme = THEMES.themes[themeKey ?? THEMES.default] ?? THEMES.themes[THEMES.default];
   const acc = accent ?? theme.aura;
@@ -195,8 +186,6 @@ export function StageRenderer({
     `M ${cx - rx} ${cy} L ${cx - rx} ${cy + depth} ` +
     `A ${rx} ${ry} 0 0 0 ${cx + rx} ${cy + depth} L ${cx + rx} ${cy} ` +
     `A ${rx} ${ry} 0 0 1 ${cx - rx} ${cy} Z`;
-
-  const xpPct = xp != null && xpMax ? Math.max(4, Math.min(100, (xp / xpMax) * 100)) : 0;
 
   return (
     <View style={styles.scene} onLayout={onLayout}>
@@ -318,43 +307,6 @@ export function StageRenderer({
         <Rect x={0} y={0} width={sw} height={H} fill="url(#fadeV)" />
       </Svg>
 
-      {/* ── level card (top-left) ── */}
-      {xp != null && xpMax ? (
-        <View style={[styles.lvCard, { top: topInset + 4 }]} pointerEvents="none">
-          <View style={styles.lvTop}>
-            <Star size={17} color="#ffcf3a" fill="#ffcf3a" />
-            <Text style={styles.lvNum}>Lv. {level}</Text>
-          </View>
-          <View style={styles.xpTrack}>
-            <View style={[styles.xpFill, { width: `${xpPct}%`, backgroundColor: acc }]} />
-          </View>
-          <Text style={styles.xpText}>
-            {xp} / {xpMax} XP
-          </Text>
-        </View>
-      ) : null}
-
-      {/* ── streak + quest cards (top-right) ── */}
-      <View style={[styles.rightCol, { top: topInset + 4 }]} pointerEvents="none">
-        <View style={styles.miniCard}>
-          <View style={styles.miniRow}>
-            <Flame size={17} color="#ff7a3c" fill="#ff7a3c" />
-            <Text style={styles.miniNum}>{streak}</Text>
-          </View>
-          <Text style={styles.miniSub}>{streakLabel}</Text>
-        </View>
-        {questCount != null && questTotal != null ? (
-          <View style={[styles.miniCard, styles.questCard]}>
-            <Target size={16} color={acc} />
-            <View>
-              <Text style={styles.miniSub}>{questLabel}</Text>
-              <Text style={styles.questNum}>
-                {questCount} / {questTotal}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-      </View>
     </View>
   );
 }

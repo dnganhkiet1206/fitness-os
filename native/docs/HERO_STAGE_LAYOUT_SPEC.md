@@ -1,6 +1,11 @@
 # HERO_STAGE_LAYOUT_SPEC.md
-Version: 1.0 (Canonical)
+Version: 1.1 (Canonical)
 Mục tiêu: Đây là tài liệu duy nhất quy định bố cục Hero Stage. Mọi asset, theme và vật phẩm Shop trong tương lai đều phải tuân theo tài liệu này.
+
+Changelog:
+- v1.1 — Theo chỉ đạo dev: thu nhỏ Hero + Podium + Ring để chừa không gian cho
+  Decor/Shop, và ghim chân Hero đứng tự nhiên trên Podium (khung 3D chừa lề
+  dưới chân, không xén giày). Bố cục & zone giữ nguyên; chỉ đổi kích thước Hero.
 
 ---
 
@@ -49,8 +54,8 @@ Hero luôn nằm giữa Hero Section.
 Thông số chuẩn:
 
 koala.x = 0.50
-koala.bottom = 0.30 ± 0.01
-koala.width = 0.52 ± 0.03
+koala.bottom = 0.28 ± 0.01
+koala.width = 0.42 ± 0.03
 
 Quy tắc:
 
@@ -77,10 +82,10 @@ Không được di chuyển độc lập.
 
 Thông số chuẩn:
 
-podium.cy = 0.73
-podium.rx = 0.39
-podium.ry = 0.075
-podium.depth = 0.065
+podium.cy = 0.68
+podium.rx = 0.30
+podium.ry = 0.055
+podium.depth = 0.05
 
 Quy tắc:
 
@@ -99,7 +104,7 @@ Không căn theo màn hình.
 Thông số chuẩn:
 
 ring.cy = 0.42
-ring.r = 0.23
+ring.r = 0.18
 
 Quy tắc:
 
@@ -203,17 +208,15 @@ Không được cao quá đầu gối Hero.
 
 # 10. UI
 
-Card Level:
+v1.1: Level / Streak / Nhiệm vụ KHÔNG còn hiển thị đè trên Stage (theo chỉ đạo
+dev). Chúng nằm trong phần thân trang phía dưới Hero (card Level, card Năng
+lượng…). Stage chỉ chứa: Hero + Podium + Ring + Equipment + Decoration +
+Background + Floor Prop.
 
-left = 12dp
+Nếu về sau đưa UI trở lại Stage:
 
-top = Header + 4dp
-
-Card Streak:
-
-right = 12dp
-
-top = Header + 4dp
+Card Level: left = 12dp, top = Header + 4dp
+Card Streak: right = 12dp, top = Header + 4dp
 
 UI luôn độc lập với Stage.
 

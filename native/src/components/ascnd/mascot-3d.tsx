@@ -38,7 +38,7 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
     const center = new THREE.Vector3();
     box.getSize(size);
     box.getCenter(center);
-    const scale = 1.72 / (size.y || 1);
+    const scale = 1.55 / (size.y || 1);
     scene.traverse((o: any) => {
       if (o.isMesh) o.frustumCulled = false;
     });
@@ -120,14 +120,14 @@ export function Mascot3D({
   return (
     <Canvas
       style={{ width: size, height: size * 1.25 }}
-      camera={{ position: [0, 1.0, 3.5], fov: 32 }}
+      camera={{ position: [0, 0.8, 3.5], fov: 32 }}
       gl={{ alpha: true, antialias: true }}
       onCreated={({ gl, camera }) => {
         gl.setClearColor(0x000000, 0);
-        // Look horizontally at the buddy's chest so the feet land at the very
-        // bottom edge of the canvas (no float) with a flattering near-eye-level
-        // hero angle.
-        camera.lookAt(0, 1.0, 0);
+        // Look horizontally at the buddy's mid-body so the feet sit ~10% above
+        // the canvas bottom — leaves a margin so the shoes are never clipped,
+        // and the podium.cy is tuned to meet the feet at that height.
+        camera.lookAt(0, 0.8, 0);
       }}>
       <ambientLight intensity={0.9} />
       <directionalLight position={[3, 5, 4]} intensity={1.35} castShadow />
