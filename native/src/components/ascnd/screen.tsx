@@ -21,33 +21,70 @@ interface ScreenProps extends ViewProps {
    * Tabs keep the large-title layout (web LargeTitle).
    */
   back?: boolean;
+  /**
+   * Floating header — the 44pt bar (back chevron + title + accessory) is
+   * transparent and overlays the content, which starts at the very top so a
+   * full-bleed hero can render behind it. Title/chevron get a shadow for
+   * legibility. Requires `back`.
+   */
+  transparentHeader?: boolean;
+  /** report the header height (insets.top + 44) so content can offset under it */
+  onHeaderHeight?: (h: number) => void;
 }
 
 /**
  * Page scaffold matching the web app's two header patterns.
  */
-export function Screen({ title, eyebrow, headerRight, back, children, style, ...props }: ScreenProps) {
+export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
 
   if (back) {
+    const headerBar = (
+      <View style={styles.pageHeaderRow}>
+        <Pressable
+          hitSlop={8}
+          style={({ pressed }) => [styles.backBtn, pressed && styles.backPressed]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.back();
+          }}>
+          <Icon icon={ChevronLeft} size={22} color={transparentHeader ? '#fff' : colors.primary} />
+        </Pressable>
+        <Text style={[styles.pageTitle, transparentHeader && styles.pageTitleFloat]} numberOfLines={1}>
+          {title}
+        </Text>
+        <View style={styles.pageHeaderRight}>{headerRight}</View>
+      </View>
+    );
+
+    if (transparentHeader) {
+      // Header floats over a full-bleed hero; content starts at the very top.
+      return (
+        <View style={styles.root}>
+          <ScrollView
+            style={styles.scroller}
+            contentContainerStyle={[styles.subContentFlush, { paddingBottom: insets.bottom + spacing.xl }, style]}
+            contentInsetAdjustmentBehavior="never"
+            automaticallyAdjustKeyboardInsets
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            {...props}>
+            {children}
+          </ScrollView>
+          <View
+            style={[styles.pageHeaderFloat, { paddingTop: insets.top }]}
+            pointerEvents="box-none"
+            onLayout={(ev) => onHeaderHeight?.(ev.nativeEvent.layout.height)}>
+            {headerBar}
+          </View>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.root}>
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
-        <View style={[styles.pageHeader, { paddingTop: insets.top }]}>
-          <View style={styles.pageHeaderRow}>
-            <Pressable
-              hitSlop={8}
-              style={({ pressed }) => [styles.backBtn, pressed && styles.backPressed]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                router.back();
-              }}>
-              <Icon icon={ChevronLeft} size={22} color={colors.primary} />
-            </Pressable>
-            <Text style={styles.pageTitle} numberOfLines={1}>{title}</Text>
-            <View style={styles.pageHeaderRight}>{headerRight}</View>
-          </View>
-        </View>
+        <View style={[styles.pageHeader, { paddingTop: insets.top }]}>{headerBar}</View>
         <ScrollView
           style={styles.scroller}
           contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
@@ -114,6 +151,25 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     color: colors.foreground,
     textAlign: 'center',
+  },
+  pageTitleFloat: {
+    fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+  },
+  pageHeaderFloat: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    backgroundColor: 'transparent',
+  },
+  subContentFlush: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.stack,
+    gap: spacing.stack,
   },
   pageHeaderRight: {
     minWidth: 44,

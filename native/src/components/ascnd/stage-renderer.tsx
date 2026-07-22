@@ -77,6 +77,8 @@ interface Props {
   /** localized card labels */
   streakLabel?: string;
   questLabel?: string;
+  /** px height of the floating header — the top cards clear it */
+  topInset?: number;
 }
 
 export function StageRenderer({
@@ -96,6 +98,7 @@ export function StageRenderer({
   questTotal,
   streakLabel = 'Day streak',
   questLabel = 'Quests',
+  topInset = 0,
 }: Props) {
   const theme = THEMES.themes[themeKey ?? THEMES.default] ?? THEMES.themes[THEMES.default];
   const acc = accent ?? theme.aura;
@@ -285,21 +288,32 @@ export function StageRenderer({
         </Pressable>
       </View>
 
-      {/* ── bottom fade: the hero dissolves into the page (clean, edge-less) ── */}
+      {/* ── edge fades: the hero dissolves into the page on all four sides and
+             up into the floating header (clean, edge-less) ── */}
       <Svg width={sw} height={H} style={StyleSheet.absoluteFill} pointerEvents="none">
         <Defs>
-          <LinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0.66" stopColor={PAGE} stopOpacity={0} />
-            <Stop offset="0.86" stopColor={PAGE} stopOpacity={0.72} />
+          <LinearGradient id="fadeV" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={PAGE} stopOpacity={0.92} />
+            <Stop offset="0.13" stopColor={PAGE} stopOpacity={0.32} />
+            <Stop offset="0.26" stopColor={PAGE} stopOpacity={0} />
+            <Stop offset="0.68" stopColor={PAGE} stopOpacity={0} />
+            <Stop offset="0.87" stopColor={PAGE} stopOpacity={0.72} />
             <Stop offset="1" stopColor={PAGE} stopOpacity={1} />
           </LinearGradient>
+          <LinearGradient id="fadeH" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor={PAGE} stopOpacity={0.95} />
+            <Stop offset="0.09" stopColor={PAGE} stopOpacity={0} />
+            <Stop offset="0.91" stopColor={PAGE} stopOpacity={0} />
+            <Stop offset="1" stopColor={PAGE} stopOpacity={0.95} />
+          </LinearGradient>
         </Defs>
-        <Rect x={0} y={0} width={sw} height={H} fill="url(#fade)" />
+        <Rect x={0} y={0} width={sw} height={H} fill="url(#fadeH)" />
+        <Rect x={0} y={0} width={sw} height={H} fill="url(#fadeV)" />
       </Svg>
 
       {/* ── level card (top-left) ── */}
       {xp != null && xpMax ? (
-        <View style={styles.lvCard} pointerEvents="none">
+        <View style={[styles.lvCard, { top: topInset + 8 }]} pointerEvents="none">
           <View style={styles.lvTop}>
             <Star size={17} color="#ffcf3a" fill="#ffcf3a" />
             <Text style={styles.lvNum}>Lv. {level}</Text>
@@ -314,7 +328,7 @@ export function StageRenderer({
       ) : null}
 
       {/* ── streak + quest cards (top-right) ── */}
-      <View style={styles.rightCol} pointerEvents="none">
+      <View style={[styles.rightCol, { top: topInset + 8 }]} pointerEvents="none">
         <View style={styles.miniCard}>
           <View style={styles.miniRow}>
             <Flame size={17} color="#ff7a3c" fill="#ff7a3c" />
@@ -452,12 +466,11 @@ const CARD = 'rgba(15,18,32,0.78)';
 const BORDER = 'rgba(255,255,255,0.10)';
 const PAGE = '#070708'; // app background — the hero fades into it at the bottom
 const styles = StyleSheet.create({
-  // Borderless hero: rounded top only, no frame, and the bottom dissolves into
-  // the page (see the fade overlay) for a clean, modern, edge-less feel.
+  // Full-bleed, frameless hero: no border, no rounded corners — every edge
+  // dissolves into the page (see the four-side fade overlay), and the top
+  // blends up under the floating header.
   scene: {
     height: H,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
     overflow: 'hidden',
     backgroundColor: PAGE,
   },

@@ -34,6 +34,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -162,6 +163,8 @@ function CoinBurst({ trigger, amount }: { trigger: number; amount: number }) {
 export default function MascotRoomScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
+  const insets = useSafeAreaInsets();
+  const headerInset = insets.top + 44; // floating header height — cards clear it
   const { mascot, message, mood } = useMascot();
 
   const { data: wallet } = useMascotWallet();
@@ -295,6 +298,7 @@ export default function MascotRoomScreen() {
   return (
     <Screen
       back
+      transparentHeader
       title={mascot.name}
       headerRight={
         <Pressable
@@ -331,6 +335,7 @@ export default function MascotRoomScreen() {
           questTotal={DAILY_QUESTS.length}
           streakLabel={i18n.nStageStreak}
           questLabel={i18n.nStageQuests}
+          topInset={headerInset}
         />
         <CoinBurst trigger={burst.id} amount={burst.amount} />
       </View>
@@ -803,9 +808,10 @@ const styles = StyleSheet.create({
   },
   bubbleText: { ...type.footnote, color: colors.foreground, textAlign: 'center', lineHeight: 19 },
 
-  // The hero fades into the page at the bottom, so tuck the next content up
-  // into that dissolve instead of leaving an empty band.
-  sceneWrap: { position: 'relative', marginBottom: -28 },
+  // Full-bleed hero: cancel the page's horizontal padding so the gym art
+  // reaches both screen edges, and tuck the next content up into the bottom
+  // dissolve instead of leaving an empty band.
+  sceneWrap: { position: 'relative', marginHorizontal: -spacing.md, marginBottom: -28 },
   burstWrap: {
     position: 'absolute',
     top: '30%',
