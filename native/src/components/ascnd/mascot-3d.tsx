@@ -38,7 +38,7 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
     const center = new THREE.Vector3();
     box.getSize(size);
     box.getCenter(center);
-    const scale = 1.6 / (size.y || 1);
+    const scale = 1.72 / (size.y || 1);
     scene.traverse((o: any) => {
       if (o.isMesh) o.frustumCulled = false;
     });

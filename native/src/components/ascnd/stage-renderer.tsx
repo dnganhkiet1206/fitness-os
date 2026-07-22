@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { Flame, Star, Target } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
   Dimensions,
@@ -18,7 +19,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, Line, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
 import stageCfg from '@/config/stage/stage.json';
@@ -28,21 +29,13 @@ import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
 
 /**
- * The mascot Stage — a code-drawn showcase (no room / furniture). A themeable
- * gradient sky, an octagonal glowing podium with a nameplate, a pulsing aura
- * and rising particles put the buddy centre-stage. Floating cards overlay the
- * RPG stats (left) and the level + XP (right). All SVG + Reanimated, so new
- * skins are data (stage-theme.json); layout is stage.json.
+ * The mascot Stage — a code-drawn gym room. A themeable back wall, a stylised
+ * dumbbell rack / rolled mat / exercise ball / plant / window set the scene, a
+ * glowing neon ring frames the buddy, and a round glowing podium puts it centre
+ * stage. Three floating cards overlay the level + XP (top-left), the streak and
+ * the daily-quest count (top-right). All SVG + Reanimated, so new skins are
+ * data (stage-theme.json) and layout is stage.json.
  */
-
-export type StageStatKind = 'health' | 'energy' | 'strength' | 'focus';
-export interface StageStat {
-  kind: StageStatKind;
-  label: string;
-  value: number;
-  max: number;
-  color: string;
-}
 
 interface StageTheme {
   bg: [string, string, string];
@@ -54,8 +47,9 @@ interface StageTheme {
 const STAGE = stageCfg as unknown as {
   canvas: { height: number };
   aura: { cy: number; rx: number; ry: number };
+  ring: { cy: number; r: number };
   spotlight: { topW: number; bottomW: number; top: number; bottom: number };
-  platform: { cy: number; rx: number; ry: number };
+  platform: { cy: number; rx: number; ry: number; depth: number };
   mascot: { x: number; w: number; bottom: number };
   particles: { count: number; minSize: number; maxSize: number };
 };
@@ -72,13 +66,17 @@ interface Props {
   energy?: number;
   celebrateSignal?: number;
   flexSignal?: number;
-  /** nameplate text (buddy name) */
-  name?: string;
-  /** XP into the current level + the level size, for the top-right card */
+  /** XP into the current level + the level size (top-left card) */
   xp?: number;
   xpMax?: number;
-  /** RPG stat bars (left panel) */
-  stats?: StageStat[];
+  /** streak days (top-right card) */
+  streak?: number;
+  /** daily-quest progress (top-right card) */
+  questCount?: number;
+  questTotal?: number;
+  /** localized card labels */
+  streakLabel?: string;
+  questLabel?: string;
 }
 
 export function StageRenderer({
@@ -91,10 +89,13 @@ export function StageRenderer({
   energy = 0.5,
   celebrateSignal = 0,
   flexSignal = 0,
-  name,
   xp,
   xpMax,
-  stats,
+  streak = 0,
+  questCount,
+  questTotal,
+  streakLabel = 'Day streak',
+  questLabel = 'Quests',
 }: Props) {
   const theme = THEMES.themes[themeKey ?? THEMES.default] ?? THEMES.themes[THEMES.default];
   const acc = accent ?? theme.aura;
@@ -160,6 +161,9 @@ export function StageRenderer({
     opacity: (0.3 + aura.value * 0.28) * (0.6 + e * 0.4),
     transform: [{ scale: 1 + aura.value * 0.06 }],
   }));
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: 0.7 + aura.value * 0.3,
+  }));
   const zzzStyle = useAnimatedStyle(() => ({
     opacity: zzz.value < 0.15 ? zzz.value * 4 : Math.max(0, 1 - (zzz.value - 0.15) / 0.85) * 0.7,
     transform: [{ translateY: -zzz.value * 22 }],
@@ -168,33 +172,28 @@ export function StageRenderer({
   const sp = STAGE.spotlight;
   const pf = STAGE.platform;
   const au = STAGE.aura;
+  const rg = STAGE.ring;
   const size = Math.round(STAGE.mascot.w * sw);
 
-  // ── octagon podium geometry ──
+  // ── round podium geometry ──
   const cx = 0.5 * sw;
   const cy = pf.cy * H;
-  const orx = 0.3 * sw;
-  const ory = 0.062 * H;
-  const depth = 0.11 * H;
-  const ang = (i: number) => (Math.PI / 180) * (22.5 + 45 * i);
-  const pts = Array.from({ length: 8 }, (_, i) => [cx + orx * Math.cos(ang(i)), cy + ory * Math.sin(ang(i))] as const);
-  const topFace = `M ${pts.map((p) => `${p[0]} ${p[1]}`).join(' L ')} Z`;
-  const front = [3, 2, 1, 0].map((i) => pts[i]); // left → right along the front rim
-  const rimPath = `M ${front.map((p) => `${p[0]} ${p[1]}`).join(' L ')}`;
+  const rx = pf.rx * sw;
+  const ry = pf.ry * H;
+  const depth = pf.depth * H;
   const sidePath =
-    `${rimPath} ` +
-    `L ${front[3][0]} ${front[3][1] + depth} ` +
-    `L ${front[2][0]} ${front[2][1] + depth} ` +
-    `L ${front[1][0]} ${front[1][1] + depth} ` +
-    `L ${front[0][0]} ${front[0][1] + depth} Z`;
-  const plateY = (front[1][1] + front[2][1]) / 2 + depth * 0.52;
+    `M ${cx - rx} ${cy} L ${cx - rx} ${cy + depth} ` +
+    `A ${rx} ${ry} 0 0 0 ${cx + rx} ${cy + depth} L ${cx + rx} ${cy} ` +
+    `A ${rx} ${ry} 0 0 1 ${cx - rx} ${cy} Z`;
+
+  const xpPct = xp != null && xpMax ? Math.max(4, Math.min(100, (xp / xpMax) * 100)) : 0;
 
   return (
     <View style={styles.scene} onLayout={onLayout}>
-      {/* ── backdrop: radial sky + spotlight ── */}
+      {/* ── back wall + spotlight ── */}
       <Svg width={sw} height={H} style={StyleSheet.absoluteFill}>
         <Defs>
-          <RadialGradient id="sky" cx="50%" cy="38%" r="80%">
+          <RadialGradient id="sky" cx="50%" cy="34%" r="85%">
             <Stop offset="0%" stopColor={theme.bg[0]} />
             <Stop offset="58%" stopColor={theme.bg[1]} />
             <Stop offset="100%" stopColor={theme.bg[2]} />
@@ -204,49 +203,53 @@ export function StageRenderer({
         <Path
           d={`M ${sw * (0.5 - sp.topW / 2)} ${sp.top * H} L ${sw * (0.5 + sp.topW / 2)} ${sp.top * H} L ${sw * (0.5 + sp.bottomW / 2)} ${sp.bottom * H} L ${sw * (0.5 - sp.bottomW / 2)} ${sp.bottom * H} Z`}
           fill={theme.spot}
-          opacity={0.06 + e * 0.05}
+          opacity={0.05 + e * 0.05}
         />
       </Svg>
 
-      {/* ── pulsing aura behind the buddy ── */}
+      {/* ── stylised gym room props ── */}
+      <RoomBackdrop sw={sw} theme={theme} />
+
+      {/* ── glowing neon ring behind the buddy ── */}
+      <Animated.View style={[StyleSheet.absoluteFill, ringStyle]} pointerEvents="none">
+        <Svg width={sw} height={H}>
+          <Circle cx={cx} cy={rg.cy * H} r={rg.r * H} fill="none" stroke={acc} strokeWidth={16} opacity={0.14} />
+          <Circle cx={cx} cy={rg.cy * H} r={rg.r * H} fill="none" stroke={acc} strokeWidth={5} opacity={0.5} />
+          <Circle cx={cx} cy={rg.cy * H} r={rg.r * H} fill="none" stroke="#eaf0ff" strokeWidth={1.6} opacity={0.85} />
+        </Svg>
+      </Animated.View>
+
+      {/* ── pulsing aura ── */}
       <Animated.View style={[StyleSheet.absoluteFill, auraStyle]} pointerEvents="none">
         <Svg width={sw} height={H}>
           <Defs>
             <RadialGradient id="aura" cx="50%" cy="50%" r="50%">
-              <Stop offset="0%" stopColor={acc} stopOpacity={0.5} />
-              <Stop offset="55%" stopColor={acc} stopOpacity={0.16} />
+              <Stop offset="0%" stopColor={acc} stopOpacity={0.45} />
+              <Stop offset="55%" stopColor={acc} stopOpacity={0.14} />
               <Stop offset="100%" stopColor={acc} stopOpacity={0} />
             </RadialGradient>
           </Defs>
-          <Ellipse cx={sw * 0.5} cy={au.cy * H} rx={sw * au.rx} ry={au.ry * H} fill="url(#aura)" />
+          <Ellipse cx={cx} cy={au.cy * H} rx={sw * au.rx} ry={au.ry * H} fill="url(#aura)" />
         </Svg>
       </Animated.View>
 
-      {/* ── octagon podium ── */}
+      {/* ── round podium ── */}
       <Svg width={sw} height={H} style={StyleSheet.absoluteFill} pointerEvents="none">
         <Defs>
           <RadialGradient id="floorpool" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={theme.rim} stopOpacity={0.35} />
+            <Stop offset="0%" stopColor={theme.rim} stopOpacity={0.4} />
             <Stop offset="100%" stopColor={theme.rim} stopOpacity={0} />
           </RadialGradient>
         </Defs>
-        <Ellipse cx={cx} cy={cy + depth * 0.5} rx={orx * 1.15} ry={ory * 2.4} fill="url(#floorpool)" opacity={0.6 + e * 0.3} />
+        <Ellipse cx={cx} cy={cy + depth * 0.5} rx={rx * 1.12} ry={ry * 2.3} fill="url(#floorpool)" opacity={0.5 + e * 0.35} />
         <Path d={sidePath} fill={theme.platform} />
-        <Path d={topFace} fill={theme.platform} />
-        <Path d={topFace} fill={theme.spot} opacity={0.12} />
-        {/* gold glow rim (blurred base + crisp line) */}
-        <Path d={rimPath} fill="none" stroke={theme.rim} strokeWidth={7} opacity={0.35} />
-        <Path d={rimPath} fill="none" stroke={theme.rim} strokeWidth={2.5} />
+        <Ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={theme.platform} />
+        <Ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={theme.spot} opacity={0.08} />
+        <Ellipse cx={cx} cy={cy} rx={rx * 0.8} ry={ry * 0.8} fill="none" stroke={theme.rim} strokeWidth={1.5} opacity={0.4} />
+        {/* glowing rim (blurred base + crisp line) */}
+        <Ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke={theme.rim} strokeWidth={7} opacity={0.26} />
+        <Ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke={theme.rim} strokeWidth={2.5} opacity={0.9} />
       </Svg>
-
-      {/* nameplate */}
-      {name ? (
-        <View style={[styles.plate, { left: cx - 0.17 * sw, width: 0.34 * sw, top: plateY - 13, borderColor: `${theme.rim}88` }]}>
-          <Text style={[styles.plateText, { color: theme.spot }]} numberOfLines={1}>
-            {name.toUpperCase()}
-          </Text>
-        </View>
-      ) : null}
 
       {/* ── rising particles ── */}
       {Array.from({ length: STAGE.particles.count }).map((_, i) => (
@@ -271,71 +274,129 @@ export function StageRenderer({
         </Pressable>
       </View>
 
-      {/* ── stat panel (left) ── */}
-      {stats && stats.length > 0 ? (
-        <View style={styles.statPanel} pointerEvents="none">
-          {stats.map((s) => (
-            <View key={s.kind} style={styles.statRow}>
-              <StatIcon kind={s.kind} color={s.color} />
-              <Text style={styles.statLabel}>{s.label}</Text>
-              <View style={styles.segs}>
-                {Array.from({ length: s.max }).map((_, i) => (
-                  <View key={i} style={[styles.seg, { backgroundColor: i < s.value ? s.color : 'rgba(255,255,255,0.16)' }]} />
-                ))}
-              </View>
-            </View>
-          ))}
-        </View>
-      ) : null}
-
-      {/* ── level card (right) ── */}
+      {/* ── level card (top-left) ── */}
       {xp != null && xpMax ? (
-        <View style={styles.levelCard} pointerEvents="none">
-          <View style={styles.levelTop}>
-            <StatIcon kind="star" color="#f2b21e" size={26} />
-            <Text style={styles.levelNum}>Lv. {level}</Text>
+        <View style={styles.lvCard} pointerEvents="none">
+          <View style={styles.lvTop}>
+            <Star size={17} color="#ffcf3a" fill="#ffcf3a" />
+            <Text style={styles.lvNum}>Lv. {level}</Text>
           </View>
           <View style={styles.xpTrack}>
-            <View style={[styles.xpFill, { width: `${Math.max(4, Math.min(100, (xp / xpMax) * 100))}%` }]} />
+            <View style={[styles.xpFill, { width: `${xpPct}%`, backgroundColor: acc }]} />
           </View>
           <Text style={styles.xpText}>
             {xp} / {xpMax} XP
           </Text>
         </View>
       ) : null}
+
+      {/* ── streak + quest cards (top-right) ── */}
+      <View style={styles.rightCol} pointerEvents="none">
+        <View style={styles.miniCard}>
+          <View style={styles.miniRow}>
+            <Flame size={17} color="#ff7a3c" fill="#ff7a3c" />
+            <Text style={styles.miniNum}>{streak}</Text>
+          </View>
+          <Text style={styles.miniSub}>{streakLabel}</Text>
+        </View>
+        {questCount != null && questTotal != null ? (
+          <View style={[styles.miniCard, styles.questCard]}>
+            <Target size={16} color={acc} />
+            <View>
+              <Text style={styles.miniSub}>{questLabel}</Text>
+              <Text style={styles.questNum}>
+                {questCount} / {questTotal}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
 
-// ─── small tinted stat icons ───────────────────────────────────────────
-function StatIcon({ kind, color, size = 22 }: { kind: StageStatKind | 'star'; color: string; size?: number }) {
-  const P = { width: size, height: size, viewBox: '0 0 60 60' } as const;
-  if (kind === 'health')
-    return (
-      <Svg {...P}>
-        <Path d="M30 47C13 36 9 27 12 20c2.6-6 10.6-6.6 14-1 3.4-5.6 11.4-5 14 1 3 7-1 16-10 27z" fill={color} />
-      </Svg>
-    );
-  if (kind === 'energy')
-    return (
-      <Svg {...P}>
-        <Path d="M34 8L16 34h11l-5 18 22-28H31l6-16z" fill={color} />
-      </Svg>
-    );
-  if (kind === 'strength')
-    return (
-      <Svg {...P}>
-        <Rect x={8} y={23} width={8} height={14} rx={2} fill={color} />
-        <Rect x={44} y={23} width={8} height={14} rx={2} fill={color} />
-        <Rect x={15} y={26} width={6} height={8} rx={1.5} fill={color} />
-        <Rect x={39} y={26} width={6} height={8} rx={1.5} fill={color} />
-        <Rect x={20} y={27} width={20} height={5} rx={2.5} fill={color} />
-      </Svg>
-    );
-  // focus / star
+// ─── stylised gym room silhouettes (subtle backdrop) ───────────────────
+function RoomBackdrop({ sw, theme }: { sw: number; theme: StageTheme }) {
+  const frame = '#3a4165';
   return (
-    <Svg {...P}>
-      <Path d="M30 11l5.6 11.3 12.4 1.8-9 8.8 2.1 12.4L30 39.2 16.9 45.1 19 32.7l-9-8.8 12.4-1.8z" fill={color} />
+    <Svg width={sw} height={H} style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Defs>
+        <LinearGradient id="win" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0%" stopColor="#ffd9a8" />
+          <Stop offset="45%" stopColor="#e79a78" />
+          <Stop offset="100%" stopColor="#5b5286" />
+        </LinearGradient>
+        <RadialGradient id="ball" cx="38%" cy="30%" r="80%">
+          <Stop offset="0%" stopColor="#8fa9ff" />
+          <Stop offset="60%" stopColor="#4a5fb0" />
+          <Stop offset="100%" stopColor="#2b3570" />
+        </RadialGradient>
+      </Defs>
+
+      {/* floor band */}
+      <Rect x={0} y={0.6 * H} width={sw} height={0.4 * H} fill="#0b0d16" opacity={0.5} />
+      <Line x1={0} y1={0.6 * H} x2={sw} y2={0.6 * H} stroke={theme.rim} strokeWidth={1} opacity={0.12} />
+
+      {/* window (top-right) */}
+      <G opacity={0.6}>
+        <Rect x={0.72 * sw} y={0.09 * H} width={0.24 * sw} height={0.29 * H} rx={10} fill="url(#win)" />
+        <Rect x={0.72 * sw} y={0.09 * H} width={0.24 * sw} height={0.29 * H} rx={10} fill="none" stroke="#0b0d16" strokeWidth={4} />
+        <Line x1={0.84 * sw} y1={0.09 * H} x2={0.84 * sw} y2={0.38 * H} stroke="#0b0d16" strokeWidth={3} />
+        <Line x1={0.72 * sw} y1={0.235 * H} x2={0.96 * sw} y2={0.235 * H} stroke="#0b0d16" strokeWidth={3} />
+      </G>
+
+      {/* dumbbell rack (left) */}
+      <G opacity={0.7}>
+        <Path
+          d={`M ${0.05 * sw} ${0.66 * H} L ${0.085 * sw} ${0.45 * H} L ${0.26 * sw} ${0.45 * H} L ${0.235 * sw} ${0.66 * H}`}
+          fill="none"
+          stroke={frame}
+          strokeWidth={4}
+          strokeLinejoin="round"
+        />
+        <Line x1={0.072 * sw} y1={0.54 * H} x2={0.252 * sw} y2={0.54 * H} stroke={frame} strokeWidth={4} />
+        {[0.51, 0.62].map((ty, r) =>
+          [0.105, 0.155, 0.205].map((tx, c) => (
+            <G key={`${r}-${c}`}>
+              <Rect x={tx * sw - 9} y={ty * H - 3} width={18} height={6} rx={3} fill="#566089" />
+              <Circle cx={tx * sw - 10} cy={ty * H} r={5} fill={frame} />
+              <Circle cx={tx * sw + 10} cy={ty * H} r={5} fill={frame} />
+            </G>
+          )),
+        )}
+      </G>
+
+      {/* rolled yoga mat (bottom-left) */}
+      <G opacity={0.72}>
+        <Rect x={0.045 * sw} y={0.72 * H} width={0.15 * sw} height={0.05 * H} rx={0.025 * H} fill="#6a5aa8" />
+        <Ellipse cx={0.05 * sw} cy={0.745 * H} rx={0.02 * sw} ry={0.026 * H} fill="#7d6ac2" />
+        <Ellipse cx={0.05 * sw} cy={0.745 * H} rx={0.009 * sw} ry={0.012 * H} fill="#4b3f7a" />
+      </G>
+
+      {/* exercise ball (right) */}
+      <Circle cx={0.8 * sw} cy={0.66 * H} r={0.072 * H} fill="url(#ball)" opacity={0.82} />
+      <Ellipse cx={0.77 * sw} cy={0.63 * H} rx={0.02 * sw} ry={0.02 * H} fill="#d7e0ff" opacity={0.35} />
+
+      {/* potted plant (far right) */}
+      <G opacity={0.82}>
+        {[
+          [-0.028, 0.05],
+          [-0.012, 0.062],
+          [0.004, 0.064],
+          [0.02, 0.055],
+        ].map(([dx, h], i) => (
+          <Ellipse
+            key={i}
+            cx={0.925 * sw + dx * sw}
+            cy={0.61 * H - h * H}
+            rx={0.014 * sw}
+            ry={h * H}
+            fill={i % 2 === 0 ? '#3f7d5a' : '#4c9169'}
+          />
+        ))}
+        <Path d={`M ${0.885 * sw} ${0.63 * H} L ${0.965 * sw} ${0.63 * H} L ${0.95 * sw} ${0.71 * H} L ${0.9 * sw} ${0.71 * H} Z`} fill="#8a8397" />
+        <Rect x={0.878 * sw} y={0.615 * H} width={0.094 * sw} height={0.022 * H} rx={3} fill="#9a93a8" />
+      </G>
     </Svg>
   );
 }
@@ -364,23 +425,26 @@ function Particle({ sw, color, energy, idx }: { sw: number; color: string; energ
   );
 }
 
-const CARD = 'rgba(20,24,38,0.55)';
-const BORDER = 'rgba(255,255,255,0.14)';
+const CARD = 'rgba(15,18,32,0.78)';
+const BORDER = 'rgba(255,255,255,0.10)';
 const styles = StyleSheet.create({
-  scene: { height: H, borderRadius: 20, overflow: 'hidden', backgroundColor: '#0b0d13', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.1)' },
-  plate: { position: 'absolute', height: 26, borderRadius: 8, backgroundColor: 'rgba(18,20,30,0.92)', borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  plateText: { fontSize: 12, fontWeight: '800', letterSpacing: 1 },
-  statPanel: { position: 'absolute', left: 12, top: H * 0.48, backgroundColor: CARD, borderWidth: 1, borderColor: BORDER, borderRadius: 16, paddingHorizontal: 11, paddingVertical: 9 },
-  statRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 },
-  statLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, color: '#e7ecf5', width: 60 },
-  segs: { flexDirection: 'row', gap: 2.5 },
-  seg: { width: 12, height: 9, borderRadius: 2 },
-  levelCard: { position: 'absolute', right: 12, top: H * 0.05, width: 150, backgroundColor: CARD, borderWidth: 1, borderColor: BORDER, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10 },
-  levelTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  levelNum: { fontSize: 17, fontWeight: '800', color: '#fff' },
-  xpTrack: { height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.15)', marginTop: 8, overflow: 'hidden' },
-  xpFill: { height: '100%', borderRadius: 4, backgroundColor: '#f5b418' },
-  xpText: { fontSize: 10, fontWeight: '700', color: '#c3cad9', marginTop: 5, textAlign: 'right' },
+  scene: { height: H, borderRadius: 22, overflow: 'hidden', backgroundColor: '#0b0d13', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.1)' },
+
+  lvCard: { position: 'absolute', left: 12, top: 12, minWidth: 148, backgroundColor: CARD, borderWidth: 1, borderColor: BORDER, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10 },
+  lvTop: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  lvNum: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  xpTrack: { height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.15)', marginTop: 8, overflow: 'hidden' },
+  xpFill: { height: '100%', borderRadius: 4 },
+  xpText: { fontSize: 10, fontWeight: '700', color: '#c3cad9', marginTop: 5, textAlign: 'right', fontVariant: ['tabular-nums'] },
+
+  rightCol: { position: 'absolute', right: 12, top: 12, alignItems: 'flex-end', gap: 8 },
+  miniCard: { minWidth: 92, backgroundColor: CARD, borderWidth: 1, borderColor: BORDER, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 9 },
+  miniRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  miniNum: { fontSize: 20, fontWeight: '800', color: '#fff', fontVariant: ['tabular-nums'] },
+  miniSub: { fontSize: 10, fontWeight: '700', color: '#aeb6c8', marginTop: 2 },
+  questCard: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8 },
+  questNum: { fontSize: 15, fontWeight: '800', color: '#fff', fontVariant: ['tabular-nums'] },
+
   zzz: { position: 'absolute', bottom: '100%', right: -6, flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
   zzzBig: { fontSize: 19, fontWeight: '800', color: '#dfe6f5', fontStyle: 'italic' },
   zzzMid: { fontSize: 14, fontWeight: '800', color: '#b7c2d6', fontStyle: 'italic', marginBottom: 8 },

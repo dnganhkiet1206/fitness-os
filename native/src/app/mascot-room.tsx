@@ -289,26 +289,8 @@ export default function MascotRoomScreen() {
   const streakRefKey = `d:${today}:streak`;
   const streakBonus = streakCoins(streak);
 
-  // RPG stat bars — grounded in today's real signals + the streak, each 1..5.
-  const clamp5 = (n: number) => Math.max(1, Math.min(5, Math.round(n)));
-  const stageStats = [
-    {
-      kind: 'health' as const,
-      label: 'HEALTH',
-      color: '#e6485c',
-      max: 5,
-      value: clamp5((questDone.sleep ? 2 : 0) + (questDone.water ? 2 : 0) + (questDone.meal ? 1 : 0)),
-    },
-    { kind: 'energy' as const, label: 'ENERGY', color: colors.readinessYellow, max: 5, value: clamp5(energyCount) },
-    {
-      kind: 'strength' as const,
-      label: 'STRENGTH',
-      color: colors.metricBlue,
-      max: 5,
-      value: clamp5(1 + (Number(dailyLog?.workout_count) || 0) * 2 + (questDone.workout ? 1 : 0)),
-    },
-    { kind: 'focus' as const, label: 'FOCUS', color: colors.readinessGreen, max: 5, value: clamp5(1 + Math.floor(streak / 2)) },
-  ];
+  // Daily quest progress for the Stage card (how many of today's quests done)
+  const questDoneCount = DAILY_QUESTS.filter((q) => questDone[q.key]).length;
 
   return (
     <Screen
@@ -342,10 +324,13 @@ export default function MascotRoomScreen() {
           level={level}
           accent={rank.color}
           energy={energyCount / ENERGY_SIGNALS.length}
-          name={mascot.name}
           xp={intoLevel}
           xpMax={LEVEL_XP}
-          stats={stageStats}
+          streak={streak}
+          questCount={questDoneCount}
+          questTotal={DAILY_QUESTS.length}
+          streakLabel={i18n.nStageStreak}
+          questLabel={i18n.nStageQuests}
         />
         <CoinBurst trigger={burst.id} amount={burst.amount} />
       </View>

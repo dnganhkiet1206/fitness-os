@@ -3,12 +3,12 @@
   "default": "arena",
   "themes": {
     "arena": {
-      "name": { "vi": "Đấu trường", "en": "Arena" },
-      "bg": ["#8288ad", "#5f6488", "#3f4260"],
-      "aura": "#cdb98f",
-      "spot": "#ffe08a",
-      "platform": "#54566e",
-      "rim": "#ffc23e"
+      "name": { "vi": "Phòng gym", "en": "Gym" },
+      "bg": ["#3b3f63", "#22243c", "#111220"],
+      "aura": "#6d8bff",
+      "spot": "#dbe4ff",
+      "platform": "#1c2036",
+      "rim": "#5f86ff"
     },
     "aurora": {
       "name": { "vi": "Cực quang", "en": "Aurora" },

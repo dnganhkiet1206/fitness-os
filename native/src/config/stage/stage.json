@@ -1,9 +1,10 @@
 {
-  "$comment": "Stage layout — the buddy stands on an octagonal podium, no room/furniture. Fractions: x/w/rx of WIDTH, top/bottom/cy/ry/h of HEIGHT.",
-  "canvas": { "height": 360 },
-  "aura": { "cy": 0.42, "rx": 0.34, "ry": 0.3 },
-  "spotlight": { "topW": 0.16, "bottomW": 0.46, "top": -0.06, "bottom": 0.3 },
-  "platform": { "cy": 0.86, "rx": 0.3, "ry": 0.055 },
-  "mascot": { "x": 0.5, "w": 0.4, "bottom": 0.14 },
-  "particles": { "count": 14, "minSize": 3, "maxSize": 7 }
+  "$comment": "Stage layout — the buddy stands on a round glowing podium inside a stylised gym room. Fractions: x/w/rx of WIDTH, top/bottom/cy/ry/r/depth of HEIGHT.",
+  "canvas": { "height": 430 },
+  "aura": { "cy": 0.4, "rx": 0.32, "ry": 0.26 },
+  "ring": { "cy": 0.4, "r": 0.185 },
+  "spotlight": { "topW": 0.14, "bottomW": 0.5, "top": -0.08, "bottom": 0.36 },
+  "platform": { "cy": 0.82, "rx": 0.34, "ry": 0.072, "depth": 0.05 },
+  "mascot": { "x": 0.5, "w": 0.47, "bottom": 0.155 },
+  "particles": { "count": 12, "minSize": 3, "maxSize": 7 }
 }
