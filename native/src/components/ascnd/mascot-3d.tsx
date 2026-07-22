@@ -12,13 +12,10 @@
  */
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { useGLTF } from '@react-three/drei/native';
-import { Component, type ReactNode, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
-import { MascotFigure } from '@/components/ascnd/mascot-figure';
-import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
-import type { MascotDef } from '@/lib/mascots';
 
 const MODEL = require('../../../assets/mascots/koa.glb');
 
@@ -136,43 +133,4 @@ export function Mascot3D({
 
 useGLTF.preload?.(MODEL);
 
-/**
- * Renders the 3D buddy, falling back to the 2D image figure if the GL context
- * or model fails on a device — so the Stage never goes blank.
- */
-class Mascot3DBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? this.props.fallback : this.props.children;
-  }
-}
-
-export function MascotBuddy({
-  mascot,
-  emotion,
-  size = 200,
-  mood = 'neutral',
-  level = 1,
-  accent,
-  equippedOutfits,
-}: {
-  mascot: MascotDef;
-  emotion: MascotEmotion;
-  size?: number;
-  mood?: MascotMood;
-  level?: number;
-  accent?: string;
-  equippedOutfits?: Set<string>;
-}) {
-  return (
-    <Mascot3DBoundary
-      fallback={
-        <MascotFigure mascot={mascot} size={size} mood={mood} emotion={emotion} level={level} equippedOutfits={equippedOutfits} />
-      }>
-      <Mascot3D emotion={emotion} size={size} accent={accent} />
-    </Mascot3DBoundary>
-  );
-}
+export default Mascot3D;

@@ -20,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { MascotBuddy } from '@/components/ascnd/mascot-3d';
+import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
 import stageCfg from '@/config/stage/stage.json';
 import stageThemes from '@/config/stage/stage-theme.json';
 import { triggerMascotAction, useMascotEmotion } from '@/hooks/use-mascot-emotion';
