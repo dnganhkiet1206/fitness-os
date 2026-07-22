@@ -317,7 +317,16 @@ export default function MascotRoomScreen() {
         </Pressable>
       }>
       {/* The room */}
-      <View style={styles.sceneWrap}>
+      <View
+        style={styles.sceneWrap}
+        // The stage is a game surface: claim drags here so a pan on the buddy
+        // interacts (poke / future stage-rotate) instead of scrolling the page.
+        // Taps still reach the buddy (we don't claim the touch on start).
+        onStartShouldSetResponder={() => false}
+        onMoveShouldSetResponder={() => true}
+        onResponderTerminationRequest={() => false}
+        onResponderMove={() => {}}
+        onResponderRelease={() => {}}>
         <MascotScene
           mascot={mascot}
           ownedGym={equippedOutfits}

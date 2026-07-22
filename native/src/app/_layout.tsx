@@ -75,6 +75,10 @@ function Gate() {
         name="scan-food"
         options={{ presentation: 'fullScreenModal', contentStyle: { backgroundColor: '#000' } }}
       />
+      {/* Mascot room is a game surface — disable the edge swipe-back so
+          dragging on the stage (poke / future rotate) never navigates away.
+          Use the on-screen back chevron to leave. */}
+      <Stack.Screen name="mascot-room" options={{ gestureEnabled: false }} />
       {(
         [
           'log-workout',
