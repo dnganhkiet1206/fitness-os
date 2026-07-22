@@ -40,17 +40,21 @@ const _WZ = new THREE.Vector3(0, 0, 1); // roll (arm abduction — swing out to 
 interface Pose {
   head: number; // world-X nod (+ = look down)
   tilt: number; // world-Z head tilt
-  rArm: number; // R upper-arm world-Z (+ = swing out/up to the side)
+  rArmX: number; // R upper-arm world-X (− = swing forward, hand in front of hip)
+  rArmZ: number; // R upper-arm world-Z (+ = abduct out to the side)
+  lArmX: number; // L upper-arm world-X (− = swing forward)
+  lArmZ: number; // L upper-arm world-Z (− = abduct out, mirrored)
   rFore: number; // R forearm world-X curl
-  lArm: number; // L upper-arm world-Z (− = swing out/up, mirrored)
   lFore: number; // L forearm world-X curl
 }
 const lerp = THREE.MathUtils.lerp;
 
-// The model's rest pose keeps the arms tucked against the body (hands touch the
-// shorts). Hold the upper arms a little OUT so the hands always clear the body.
-// Right arm swings out with +Z, left arm mirrors with −Z (world space).
-const REST_ARM_OUT = 0.4;
+// HERO_MODEL_SPEC: the arms must NEVER touch the body — always keep a visible
+// gap (Pixar-style round mascot, silhouette first). At rest the upper arms are
+// held OUT to the side (Z) and slightly FORWARD so the hands sit just in front
+// of the hips, clear of the shorts. Right arm abducts +Z, left mirrors −Z.
+const REST_ARM_OUT = 0.42; // abduction (side clearance)
+const REST_ARM_FWD = -0.3; // forward swing (hands in front of hips)
 
 function Koala({ emotion }: { emotion: MascotEmotion }) {
   const gltf = useGLTF(MODEL);
@@ -60,7 +64,7 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
   emo.current = emotion;
 
   const t0 = useRef(0);
-  const cur = useRef<Pose>({ head: 0, tilt: 0, rArm: 0, rFore: 0, lArm: 0, lFore: 0 });
+  const cur = useRef<Pose>({ head: 0, tilt: 0, rArmX: 0, rArmZ: 0, lArmX: 0, lArmZ: 0, rFore: 0, lFore: 0 });
 
   // Fit the model to ~1.55 units tall with feet at y=0 — applied to a wrapper
   // group (NOT by cloning the scene: cloning a rigged SkinnedMesh detaches the
@@ -144,51 +148,63 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
     let py = 0;
     let spin = 0;
     let lean = 0;
-    // bone pose target
-    const tp: Pose = { head: 0, tilt: 0, rArm: 0, rFore: 0, lArm: 0, lFore: 0 };
+
+    // Start every frame from the mandatory rest pose: arms OUT + slightly
+    // FORWARD so there is always a visible arm↔body gap (HERO_MODEL_SPEC).
+    const tp: Pose = {
+      head: 0,
+      tilt: 0,
+      rArmX: REST_ARM_FWD,
+      rArmZ: REST_ARM_OUT,
+      lArmX: REST_ARM_FWD,
+      lArmZ: -REST_ARM_OUT,
+      rFore: 0,
+      lFore: 0,
+    };
 
     if (e === 'celebrate') {
       const hop = Math.max(0, Math.sin(t * 6)) * 0.16;
       py = hop;
       spin = Math.min(t * 2.5, Math.PI * 2);
-      // both arms thrown up (right +Z, left −Z, near-vertical)
-      tp.rArm = 2.3;
-      tp.lArm = -2.3;
+      // both arms thrown up (abduct near-vertical)
+      tp.rArmX = 0;
+      tp.lArmX = 0;
+      tp.rArmZ = 2.3;
+      tp.lArmZ = -2.3;
       tp.head = -0.12;
     } else if (e === 'wave') {
-      // right arm raised out, forearm waving
-      tp.rArm = 1.6;
+      // right arm raised out to the side, forearm waving; left stays at rest
+      tp.rArmX = -0.1;
+      tp.rArmZ = 1.7;
       tp.rFore = Math.sin(t * 9) * 0.5;
       tp.tilt = 0.12;
       tp.head = -0.05;
     } else if (e === 'curl') {
       // double-biceps flex — arms out to the sides, forearms pump up
       const pump = Math.sin(t * 3) * 0.5 + 0.5;
-      tp.rArm = 1.4;
-      tp.lArm = -1.4;
+      tp.rArmX = 0;
+      tp.lArmX = 0;
+      tp.rArmZ = 1.45;
+      tp.lArmZ = -1.45;
       tp.rFore = -(1.0 + pump * 0.5);
       tp.lFore = -(1.0 + pump * 0.5);
     } else if (e === 'sleep') {
       lean = 0.16;
       tp.head = 0.5 + breathe * 0.03; // head droops forward, gentle breathe
       tp.tilt = 0.14;
-      tp.rArm = REST_ARM_OUT * 0.8;
-      tp.lArm = -REST_ARM_OUT * 0.8;
     } else if (e === 'sad' || e === 'tired') {
       lean = 0.06;
       tp.head = 0.3;
       tp.tilt = Math.sin(t * 1.1) * 0.04;
-      tp.rArm = REST_ARM_OUT * 0.8;
-      tp.lArm = -REST_ARM_OUT * 0.8;
     } else {
-      // idle / happy — breathe + subtle head bob + tiny arm sway (arms held out)
+      // idle / happy — breathe + subtle head bob + tiny arm sway (gap kept)
       py = Math.sin(t * (e === 'happy' ? 2.4 : 1.6)) * 0.015;
-      const s = Math.sin(t * 1.1) * 0.04;
+      const s = Math.sin(t * 1.1) * 0.03;
       tp.head = Math.sin(t * 1.6) * 0.05 + 0.02;
       tp.tilt = Math.sin(t * 0.8) * 0.04;
-      tp.rArm = REST_ARM_OUT + s;
-      tp.lArm = -REST_ARM_OUT - s;
-      tp.rFore = (e === 'happy' ? -0.1 : 0) - breathe * 0.04;
+      tp.rArmZ = REST_ARM_OUT + s;
+      tp.lArmZ = -REST_ARM_OUT - s;
+      tp.rFore = (e === 'happy' ? -0.1 : 0) - breathe * 0.03;
     }
 
     // smooth the pose toward the target
@@ -196,16 +212,18 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
     const c = cur.current;
     c.head = lerp(c.head, tp.head, k);
     c.tilt = lerp(c.tilt, tp.tilt, k);
-    c.rArm = lerp(c.rArm, tp.rArm, k);
+    c.rArmX = lerp(c.rArmX, tp.rArmX, k);
+    c.rArmZ = lerp(c.rArmZ, tp.rArmZ, k);
+    c.lArmX = lerp(c.lArmX, tp.lArmX, k);
+    c.lArmZ = lerp(c.lArmZ, tp.lArmZ, k);
     c.rFore = lerp(c.rFore, tp.rFore, k);
-    c.lArm = lerp(c.lArm, tp.lArm, k);
     c.lFore = lerp(c.lFore, tp.lFore, k);
 
-    // apply to bones
+    // apply to bones (upper arms: forward-X + abduct-Z; forearms: curl-X)
     poseBone(BONES.head, c.head, c.tilt);
-    poseBone(BONES.rUpperArm, 0, c.rArm);
+    poseBone(BONES.rUpperArm, c.rArmX, c.rArmZ);
     poseBone(BONES.rForearm, c.rFore, 0);
-    poseBone(BONES.lUpperArm, 0, c.lArm);
+    poseBone(BONES.lUpperArm, c.lArmX, c.lArmZ);
     poseBone(BONES.lForearm, c.lFore, 0);
 
     // whole-object
