@@ -293,11 +293,11 @@ export function StageRenderer({
       <Svg width={sw} height={H} style={StyleSheet.absoluteFill} pointerEvents="none">
         <Defs>
           <LinearGradient id="fadeV" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={PAGE} stopOpacity={0.92} />
-            <Stop offset="0.13" stopColor={PAGE} stopOpacity={0.32} />
-            <Stop offset="0.26" stopColor={PAGE} stopOpacity={0} />
-            <Stop offset="0.68" stopColor={PAGE} stopOpacity={0} />
-            <Stop offset="0.87" stopColor={PAGE} stopOpacity={0.72} />
+            <Stop offset="0" stopColor={PAGE} stopOpacity={0.66} />
+            <Stop offset="0.1" stopColor={PAGE} stopOpacity={0.24} />
+            <Stop offset="0.19" stopColor={PAGE} stopOpacity={0} />
+            <Stop offset="0.74" stopColor={PAGE} stopOpacity={0} />
+            <Stop offset="0.9" stopColor={PAGE} stopOpacity={0.74} />
             <Stop offset="1" stopColor={PAGE} stopOpacity={1} />
           </LinearGradient>
           <LinearGradient id="fadeH" x1="0" y1="0" x2="1" y2="0">
