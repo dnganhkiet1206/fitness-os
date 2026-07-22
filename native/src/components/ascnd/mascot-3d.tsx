@@ -29,25 +29,23 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
   // one-shot timers for celebrate/wave so they play then settle
   const t0 = useRef(0);
 
-  // center + normalize the model to a unit height, feet at y=0
-  const fitted = useMemo(() => {
-    const s = scene.clone(true);
-    const box = new THREE.Box3().setFromObject(s);
+  // Fit the model to ~1.6 units tall with feet at y=0 — applied to a wrapper
+  // group (NOT by cloning the scene: cloning a rigged SkinnedMesh detaches the
+  // skeleton and breaks/throws). We render the shared scene directly.
+  const fit = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(scene);
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
     box.getSize(size);
     box.getCenter(center);
     const scale = 1.6 / (size.y || 1);
-    s.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
-    s.scale.setScalar(scale);
-    s.traverse((o: any) => {
-      if (o.isMesh) {
-        o.castShadow = true;
-        o.frustumCulled = false;
-        if (o.material) o.material.envMapIntensity = 0.6;
-      }
+    scene.traverse((o: any) => {
+      if (o.isMesh) o.frustumCulled = false;
     });
-    return s;
+    return {
+      scale,
+      pos: [-center.x * scale, -box.min.y * scale, -center.z * scale] as [number, number, number],
+    };
   }, [scene]);
 
   useEffect(() => {
@@ -103,7 +101,9 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
 
   return (
     <group ref={group}>
-      <primitive object={fitted} />
+      <group scale={fit.scale} position={fit.pos}>
+        <primitive object={scene} />
+      </group>
     </group>
   );
 }

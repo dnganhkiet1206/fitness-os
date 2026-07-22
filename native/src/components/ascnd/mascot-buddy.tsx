@@ -1,4 +1,5 @@
 import { Component, lazy, type ReactNode, Suspense } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import type { MascotMood } from '@/hooks/use-mascot';
@@ -14,15 +15,41 @@ import type { MascotDef } from '@/lib/mascots';
  */
 const Mascot3D = lazy(() => import('@/components/ascnd/mascot-3d'));
 
-class Boundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
+class Boundary extends Component<{ fallback: ReactNode; children: ReactNode }, { error: Error | null }> {
+  state: { error: Error | null } = { error: null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
   }
   render() {
-    return this.state.failed ? this.props.fallback : this.props.children;
+    if (this.state.error) {
+      return (
+        <View style={styles.wrap}>
+          {this.props.fallback}
+          {__DEV__ && (
+            <Text style={styles.err} numberOfLines={5}>
+              3D fell back → {String(this.state.error?.message ?? this.state.error)}
+            </Text>
+          )}
+        </View>
+      );
+    }
+    return this.props.children;
   }
 }
+
+const styles = StyleSheet.create({
+  wrap: { alignItems: 'center', justifyContent: 'center' },
+  err: {
+    position: 'absolute',
+    bottom: -4,
+    left: -40,
+    right: -40,
+    fontSize: 9,
+    lineHeight: 11,
+    color: '#ff9090',
+    textAlign: 'center',
+  },
+});
 
 export interface MascotBuddyProps {
   mascot: MascotDef;
