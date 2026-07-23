@@ -11,9 +11,35 @@
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { useGLTF } from '@react-three/drei/native';
 import { useEffect, useMemo, useRef } from 'react';
+import { View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import * as THREE from 'three';
 
 import type { MascotEmotion } from '@/lib/mascot-emotion';
+
+/**
+ * The GLB has NO facial rig (0 morph targets, no eye/jaw bones) — the face is
+ * baked into the texture. Since the camera is a fixed 3/4 angle, facial
+ * expression is done with a 2D overlay of eyelids aligned over the eyes: a
+ * periodic blink, and held-closed lids for sleep / tired / sad. Positions are
+ * fractions of the canvas so one screenshot calibrates them.
+ */
+const FACE = {
+  lx: 0.4, // left eye centre (fraction of canvas width)
+  rx: 0.6, // right eye centre
+  y: 0.33, // eye centre (fraction of canvas height)
+  w: 0.12, // eye width
+  h: 0.1, // eye height
+  fur: '#8f8d92', // koala fur tone for the lids
+};
 
 const MODEL = require('../../../assets/mascots/koa.glb');
 
@@ -241,6 +267,71 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
   );
 }
 
+// ── 2D eyelid overlay: blink + held-closed for sleepy/sad emotions ──
+function FaceOverlay({ emotion, size }: { emotion: MascotEmotion; size: number }) {
+  const W = size;
+  const Hc = size * 1.25;
+  const eyeW = FACE.w * W;
+  const eyeH = FACE.h * Hc;
+
+  const blink = useSharedValue(0); // 0 = open, 1 = closed
+  const base = useSharedValue(0); // emotion-held closure
+
+  useEffect(() => {
+    // occasional double-ish blink loop
+    blink.value = withRepeat(
+      withSequence(
+        withDelay(2600, withTiming(1, { duration: 70, easing: Easing.in(Easing.quad) })),
+        withTiming(0, { duration: 110, easing: Easing.out(Easing.quad) }),
+      ),
+      -1,
+    );
+  }, [blink]);
+
+  useEffect(() => {
+    const target =
+      emotion === 'sleep' ? 0.92 : emotion === 'tired' ? 0.5 : emotion === 'sad' ? 0.55 : 0;
+    base.value = withTiming(target, { duration: 420 });
+  }, [emotion, base]);
+
+  const lidStyle = useAnimatedStyle(() => {
+    const c = Math.max(base.value, blink.value); // 0 open → 1 closed
+    // lid slides down from above; open = pulled fully up out of the eye
+    return { transform: [{ translateY: (c - 1) * eyeH }] };
+  });
+
+  const eyeBox = (cx: number) => ({
+    position: 'absolute' as const,
+    left: cx * W - eyeW / 2,
+    top: FACE.y * Hc - eyeH / 2,
+    width: eyeW,
+    height: eyeH,
+    borderRadius: eyeW / 2,
+    overflow: 'hidden' as const,
+  });
+  const lidBase = {
+    position: 'absolute' as const,
+    left: 0,
+    right: 0,
+    top: 0,
+    height: '100%' as const,
+    backgroundColor: FACE.fur,
+    borderBottomLeftRadius: eyeW * 0.5,
+    borderBottomRightRadius: eyeW * 0.5,
+  };
+
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, width: W, height: Hc }}>
+      <View style={eyeBox(FACE.lx)}>
+        <Animated.View style={[lidBase, lidStyle]} />
+      </View>
+      <View style={eyeBox(FACE.rx)}>
+        <Animated.View style={[lidBase, lidStyle]} />
+      </View>
+    </View>
+  );
+}
+
 export function Mascot3D({
   emotion = 'idle',
   size = 200,
@@ -251,22 +342,25 @@ export function Mascot3D({
   accent?: string;
 }) {
   return (
-    <Canvas
-      style={{ width: size, height: size * 1.25 }}
-      camera={{ position: [0, 0.8, 3.5], fov: 32 }}
-      gl={{ alpha: true, antialias: true }}
-      onCreated={({ gl, camera }) => {
-        gl.setClearColor(0x000000, 0);
-        // Look horizontally at the buddy's mid-body so the feet sit ~10% above
-        // the canvas bottom — leaves a margin so the shoes are never clipped,
-        // and the podium.cy is tuned to meet the feet at that height.
-        camera.lookAt(0, 0.8, 0);
-      }}>
-      <ambientLight intensity={0.9} />
-      <directionalLight position={[3, 5, 4]} intensity={1.35} castShadow />
-      <directionalLight position={[-4, 2, -2]} intensity={0.55} color={accent} />
-      <Koala emotion={emotion} />
-    </Canvas>
+    <View style={{ width: size, height: size * 1.25 }}>
+      <Canvas
+        style={{ flex: 1 }}
+        camera={{ position: [0, 0.8, 3.5], fov: 32 }}
+        gl={{ alpha: true, antialias: true }}
+        onCreated={({ gl, camera }) => {
+          gl.setClearColor(0x000000, 0);
+          // Look horizontally at the buddy's mid-body so the feet sit ~10% above
+          // the canvas bottom — leaves a margin so the shoes are never clipped,
+          // and the podium.cy is tuned to meet the feet at that height.
+          camera.lookAt(0, 0.8, 0);
+        }}>
+        <ambientLight intensity={0.9} />
+        <directionalLight position={[3, 5, 4]} intensity={1.35} castShadow />
+        <directionalLight position={[-4, 2, -2]} intensity={0.55} color={accent} />
+        <Koala emotion={emotion} />
+      </Canvas>
+      <FaceOverlay emotion={emotion} size={size} />
+    </View>
   );
 }
 
