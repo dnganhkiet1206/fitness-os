@@ -30,6 +30,27 @@ function emit() {
   listeners.forEach((l) => l());
 }
 
+// ── DEV emotion override — lets a dev force any emotion to test the animation
+//    without recreating real conditions (streak / time of day / screen). Only
+//    honoured in __DEV__. `null` = back to the real Emotion Engine. ──
+let devOverride: MascotEmotion | null = null;
+export function setDevEmotion(e: MascotEmotion | null) {
+  devOverride = e;
+  emit();
+}
+const getDevOverride = () => devOverride;
+/** Emotions worth cycling through when testing the mascot animation. */
+export const DEV_EMOTIONS: MascotEmotion[] = [
+  'idle',
+  'happy',
+  'sad',
+  'tired',
+  'sleep',
+  'celebrate',
+  'curl',
+  'wave',
+];
+
 /** Play a one-shot action (celebrate on a PR, wave on open, curl on a lift). */
 export function triggerMascotAction(action: MascotAction) {
   active = { action, expires: Date.now() + ACTION_MS[action] };
@@ -64,6 +85,7 @@ export function useMascotEmotion(): MascotEmotion {
   const { data: profile } = useProfile();
   const pathname = usePathname();
   const action = useActiveAction();
+  const devOverrideEmotion = useSyncExternalStore(subscribe, getDevOverride, getDevOverride);
   const onWorkoutScreen = /log-workout|workout/i.test(pathname ?? '');
 
   // Birthday = today's month/day matches the profile DOB (parsed local so
@@ -91,7 +113,7 @@ export function useMascotEmotion(): MascotEmotion {
     return () => clearInterval(id);
   }, []);
 
-  return useMemo(
+  const resolved = useMemo(
     () =>
       resolveEmotion(
         baseEmotion({
@@ -109,4 +131,7 @@ export function useMascotEmotion(): MascotEmotion {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mood, streak, onWorkoutScreen, action, isBirthday],
   );
+
+  // Dev override wins in development so animations are testable on demand.
+  return __DEV__ && devOverrideEmotion ? devOverrideEmotion : resolved;
 }

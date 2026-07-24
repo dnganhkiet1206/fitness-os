@@ -55,6 +55,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWeeklyChallenges } from '@/hooks/use-extras';
 import { useMascot } from '@/hooks/use-mascot';
+import { DEV_EMOTIONS, setDevEmotion } from '@/hooks/use-mascot-emotion';
 import {
   useBuyItem,
   useClaimReward,
@@ -188,6 +189,7 @@ export default function MascotRoomScreen() {
   // While a touch is on the game stage, lock page scroll so gestures on the
   // buddy (poke / future rotate) stay game-only and never scroll the page.
   const [stageActive, setStageActive] = useState(false);
+  const [devEmo, setDevEmo] = useState<string | null>(null); // dev-only emotion override
   const welcomeTried = useRef(false);
 
   const balance = wallet?.balance ?? 0;
@@ -350,6 +352,29 @@ export default function MascotRoomScreen() {
         />
         <CoinBurst trigger={burst.id} amount={burst.amount} />
       </View>
+
+      {/* DEV-only: force an emotion to test the mascot animation without
+          recreating real conditions. Hidden in production builds. */}
+      {__DEV__ ? (
+        <View style={styles.devBar}>
+          {(['auto', ...DEV_EMOTIONS] as const).map((label) => {
+            const on = label === 'auto' ? devEmo === null : devEmo === label;
+            return (
+              <Pressable
+                key={label}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  const next = label === 'auto' ? null : (label as (typeof DEV_EMOTIONS)[number]);
+                  setDevEmo(next);
+                  setDevEmotion(next);
+                }}
+                style={[styles.devChip, on && styles.devChipOn]}>
+                <Text style={[styles.devChipText, on && styles.devChipTextOn]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
       {mood === 'tired' ? (
         <View style={styles.bubble}>
           <Text style={styles.bubbleText}>{i18n.nRoomMoodTired}</Text>
@@ -823,6 +848,20 @@ const styles = StyleSheet.create({
   // reaches both screen edges, and tuck the next content up into the bottom
   // dissolve instead of leaving an empty band.
   sceneWrap: { position: 'relative', marginHorizontal: -spacing.md, marginBottom: -28 },
+  devBar: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginTop: spacing.sm },
+  devChip: {
+    paddingHorizontal: 10,
+    height: 26,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  devChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  devChipText: { ...type.caption, color: colors.mutedForeground, fontWeight: '700' },
+  devChipTextOn: { color: colors.primaryForeground },
   burstWrap: {
     position: 'absolute',
     top: '30%',
