@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import { BONES, REQUIRED_BONES } from '@/config/mascot-bones';
+import { POSES, type KoaPose, type PoseKey } from '@/config/mascot-poses';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
 
 const MODEL = require('../../../assets/mascots/koa.glb');
@@ -40,25 +41,23 @@ const _WY = new THREE.Vector3(0, 1, 0); // yaw (head look left / right)
 const _WZ = new THREE.Vector3(0, 0, 1); // roll (arm abduction — swing out to the side)
 const _rd3 = new THREE.Quaternion();
 
-interface Pose {
-  head: number; // world-X nod (+ = look down)
-  headYaw: number; // world-Y head turn (+ = look to +X side)
-  tilt: number; // world-Z head tilt
-  rArmX: number; // R upper-arm world-X (− = swing forward, hand in front of hip)
-  rArmZ: number; // R upper-arm world-Z (+ = abduct out to the side)
-  lArmX: number; // L upper-arm world-X (− = swing forward)
-  lArmZ: number; // L upper-arm world-Z (− = abduct out, mirrored)
-  rFore: number; // R forearm world-X curl
-  lFore: number; // L forearm world-X curl
-}
 const lerp = THREE.MathUtils.lerp;
+const clamp = THREE.MathUtils.clamp;
 
-// HERO_MODEL_SPEC: the arms must NEVER touch the body — always keep a visible
-// gap (Pixar-style round mascot, silhouette first). At rest the upper arms are
-// held OUT to the side (Z) and slightly FORWARD so the hands sit just in front
-// of the hips, clear of the shorts. Right arm abducts +Z, left mirrors −Z.
-const REST_ARM_OUT = 0.42; // abduction (side clearance)
-const REST_ARM_FWD = -0.3; // forward swing (hands in front of hips)
+// The animator holds a single blended pose and eases it toward the active pose
+// (Pose Library, v1.2 P1). Breathing / weight / dynamic overlays are layered on
+// at apply time so the pose data stays clean.
+function blendPose(cur: KoaPose, tgt: KoaPose, k: number, kSlow: number) {
+  cur.hx = lerp(cur.hx, tgt.hx, k);
+  cur.hy = lerp(cur.hy, tgt.hy, kSlow); // head look eases slower (deliberate turn)
+  cur.hz = lerp(cur.hz, tgt.hz, k);
+  cur.armR = lerp(cur.armR, tgt.armR, k);
+  cur.armL = lerp(cur.armL, tgt.armL, k);
+  cur.armFwd = lerp(cur.armFwd, tgt.armFwd, k);
+  cur.foreR = lerp(cur.foreR, tgt.foreR, k);
+  cur.foreL = lerp(cur.foreL, tgt.foreL, k);
+  cur.lean = lerp(cur.lean, tgt.lean, k);
+}
 
 function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number }) {
   const gltf = useGLTF(MODEL);
@@ -70,15 +69,14 @@ function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number 
   lvl.current = level;
 
   const t0 = useRef(0);
-  const cur = useRef<Pose>({ head: 0, headYaw: 0, tilt: 0, rArmX: 0, rArmZ: 0, lArmX: 0, lArmZ: 0, rFore: 0, lFore: 0 });
-  // living-idle state machine (intentful look / tilt / stretch) + weight shift
+  // the single blended pose the animator eases toward the active pose
+  const ps = useRef<KoaPose>({ ...POSES.relax });
+  // idle state machine — Relax / Curious / Waiting / Stretch / Nothing, each
+  // held for an irregular number of seconds, ~45% just standing (v1.2 P2/P3/P4)
   const idle = useRef({
-    timer: 1.2,
-    action: 'none' as 'none' | 'look' | 'tilt' | 'stretch',
-    actionT: 0,
-    lookX: 0,
-    lookY: 0,
-    tiltZ: 0,
+    state: 'relax' as PoseKey,
+    stateT: 2.5,
+    lookDir: 1, // randomised gaze direction on entering curious/waiting
     weightTgt: 0,
     weightCur: 0,
     weightTimer: 1,
@@ -170,177 +168,109 @@ function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number 
     t0.current += delta;
     const t = t0.current;
     const e = emo.current;
-    const slow = e === 'sleep' || e === 'sad' || e === 'tired';
-    const breathe = Math.sin(t * (slow ? 1.4 : 2.2)) * 0.5 + 0.5;
+    const happy = e === 'happy';
+    const restless = clamp(1 - (lvl.current - 1) * 0.045, 0.35, 1);
+    const id = idle.current;
 
-    // whole-object motion
-    let py = 0;
+    // ── 1. pick the active pose (+ dynamic overlays) ──
+    let key: PoseKey = 'relax';
+    let hop = 0;
     let spin = 0;
-    let lean = 0;
-    let roll = 0; // body weight-shift (z)
-
-    // Start every frame from the mandatory rest pose: arms OUT + slightly
-    // FORWARD so there is always a visible arm↔body gap (HERO_MODEL_SPEC).
-    const tp: Pose = {
-      head: 0,
-      headYaw: 0,
-      tilt: 0,
-      rArmX: REST_ARM_FWD,
-      rArmZ: REST_ARM_OUT,
-      lArmX: REST_ARM_FWD,
-      lArmZ: -REST_ARM_OUT,
-      rFore: 0,
-      lFore: 0,
-    };
-
+    let waveFore = 0;
+    let pump = 0;
     if (e === 'celebrate') {
-      const hop = Math.max(0, Math.sin(t * 6)) * 0.16;
-      py = hop;
+      key = 'celebrate';
+      hop = Math.max(0, Math.sin(t * 6)) * 0.16;
       spin = Math.min(t * 2.5, Math.PI * 2);
-      // arms up in a "Y" (out to the sides) — kept clear of the head/ears, not
-      // straight up. Slight L/R offset so it isn't perfectly symmetric.
-      tp.rArmX = -0.15;
-      tp.lArmX = -0.15;
-      tp.rArmZ = 1.72;
-      tp.lArmZ = -1.62;
-      tp.head = -0.1;
     } else if (e === 'wave') {
-      // right arm raised out to the side, forearm waving; left stays at rest
-      tp.rArmX = -0.1;
-      tp.rArmZ = 1.5;
-      tp.rFore = Math.sin(t * 9) * 0.45;
-      tp.tilt = 0.1;
-      tp.head = -0.04;
+      key = 'wave';
+      waveFore = Math.sin(t * 9) * 0.45;
     } else if (e === 'curl') {
-      // double-biceps flex — arms out to the sides, forearms pump up
-      const pump = Math.sin(t * 3) * 0.5 + 0.5;
-      tp.rArmX = 0;
-      tp.lArmX = 0;
-      tp.rArmZ = 1.45;
-      tp.lArmZ = -1.45;
-      tp.rFore = -(1.0 + pump * 0.5);
-      tp.lFore = -(1.0 + pump * 0.5);
+      key = 'workout';
+      pump = Math.sin(t * 3) * 0.5 + 0.5;
     } else if (e === 'sleep') {
-      lean = 0.16;
-      tp.head = 0.5 + breathe * 0.03; // head droops forward, gentle breathe
-      tp.tilt = 0.14;
+      key = 'sleep';
     } else if (e === 'sad' || e === 'tired') {
-      lean = 0.06;
-      tp.head = 0.3;
-      tp.tilt = Math.sin(t * 1.1) * 0.04;
+      key = 'tired';
     } else {
-      // ── living idle (Phase 1). The test: hide the face and the silhouette
-      //    must still feel alive. Priorities: WEIGHT (shifts + holds between
-      //    the feet), phase-offset breathing (body/head/shoulders not in sync),
-      //    intentful head motion (look → hold → settle), and a weighted idle
-      //    where 40% of the time it just stands. Energy scales with LEVEL
-      //    (Phase 5: low = restless/curious, high = calm/confident). ──
-      const happy = e === 'happy';
-      const restless = THREE.MathUtils.clamp(1 - (lvl.current - 1) * 0.045, 0.35, 1);
-      const id = idle.current;
-
-      // WEIGHT — ease to one foot, hold, then transfer (never perfectly balanced)
-      id.weightTimer -= delta;
-      if (id.weightTimer <= 0) {
-        id.weightTgt = (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.4);
-        id.weightTimer = 2.6 + Math.random() * 3.4;
-      }
-      id.weightCur = lerp(id.weightCur, id.weightTgt, 0.018 + restless * 0.02);
-      const weight = id.weightCur;
-
-      // intentful action state machine (look / tilt / stretch / just stand)
-      id.timer -= delta;
-      if (id.action === 'none' && id.timer <= 0) {
+      // idle STATE MACHINE (P2/P3/P4): hold a state for an irregular time,
+      // ~45% of the time it just stands. Restless (low level) = shorter holds.
+      id.stateT -= delta;
+      if (id.stateT <= 0) {
         const r = Math.random();
-        if (r < 0.55) {
-          id.action = 'none'; // 40%-ish: stand (breathing + weight only)
-        } else if (r < 0.73) {
-          id.action = 'look';
-          id.lookX = (Math.random() * 2 - 1) * 0.32 * restless;
-          id.lookY = (Math.random() < 0.3 ? 0.1 : 0) * restless;
-          id.actionT = 1.2 + Math.random() * 1.6; // hold the gaze
-        } else if (r < 0.88) {
-          id.action = 'tilt';
-          id.tiltZ = (Math.random() * 2 - 1) * 0.14 * restless;
-          id.actionT = 1.0 + Math.random() * 1.2;
-        } else {
-          id.action = 'stretch';
-          id.actionT = 1.4;
-        }
-        id.timer = (1.6 + Math.random() * 2.6) * (1.5 - restless * 0.7);
+        id.state = r < 0.45 ? 'nothing' : r < 0.64 ? 'relax' : r < 0.8 ? 'curious' : r < 0.92 ? 'waiting' : 'stretch';
+        id.lookDir = Math.random() < 0.5 ? -1 : 1;
+        const span = id.state === 'stretch' ? 1.6 : id.state === 'nothing' ? 3.2 + Math.random() * 3.8 : 2.4 + Math.random() * 3.6;
+        id.stateT = span * (1.35 - restless * 0.45);
       }
-      if (id.action !== 'none') {
-        id.actionT -= delta;
-        if (id.actionT <= 0) {
-          id.action = 'none'; // return gaze to centre after the beat
-          id.lookX = 0; id.lookY = 0; id.tiltZ = 0;
-        }
-      }
-      const stretch = id.action === 'stretch' ? Math.sin((1 - Math.max(0, id.actionT) / 1.4) * Math.PI) : 0;
-
-      // phase-offset breathing — body, head and shoulders not fully in sync
-      const bRate = happy ? 2.4 : 1.6;
-      const bodyB = Math.sin(t * bRate);
-      const headB = Math.sin(t * bRate + 0.5);
-      const shB = Math.sin(t * bRate + 0.25);
-
-      py = bodyB * (0.01 + restless * 0.005) + stretch * 0.05;
-      tp.head = id.lookY + headB * 0.02 * restless + 0.03 - stretch * 0.12;
-      tp.headYaw = id.lookX; // eases slowly below (deliberate turn)
-      tp.tilt = 0.05 + id.tiltZ + weight * 0.03 + shB * 0.01; // P4: slight default head tilt
-      roll = weight * 0.05; // body weight-shift
-      // P8 — arms never perfectly symmetric: different phase + amplitude L vs R
-      const swayR = shB * 0.026 * restless + weight * 0.05;
-      const swayL = Math.sin(t * bRate + 0.9) * 0.022 * restless - weight * 0.05;
-      tp.rArmZ = REST_ARM_OUT + swayR + stretch * 0.5;
-      tp.lArmZ = -REST_ARM_OUT * 0.93 + swayL - stretch * 0.5;
-      tp.rArmX = REST_ARM_FWD - stretch * 0.2;
-      tp.lArmX = REST_ARM_FWD * 0.9 - stretch * 0.2;
-      // P4 — resting elbow bend (arms not fully extended), slightly asymmetric
-      tp.rFore = (happy ? -0.18 : -0.12) - headB * 0.03;
-      tp.lFore = (happy ? -0.15 : -0.09) - shB * 0.025;
+      key = id.state;
     }
 
-    // smooth the pose toward the target (head look eases a touch slower)
-    const k = 0.12;
-    const c = cur.current;
-    c.head = lerp(c.head, tp.head, k);
-    c.headYaw = lerp(c.headYaw, tp.headYaw, 0.08);
-    c.tilt = lerp(c.tilt, tp.tilt, k);
-    c.rArmX = lerp(c.rArmX, tp.rArmX, k);
-    c.rArmZ = lerp(c.rArmZ, tp.rArmZ, k);
-    c.lArmX = lerp(c.lArmX, tp.lArmX, k);
-    c.lArmZ = lerp(c.lArmZ, tp.lArmZ, k);
-    c.rFore = lerp(c.rFore, tp.rFore, k);
-    c.lFore = lerp(c.lFore, tp.lFore, k);
+    // ── 2. target pose (randomise the gaze direction for idle glances) ──
+    const basePose = POSES[key];
+    const tgt: KoaPose = { ...basePose };
+    if (key === 'curious' || key === 'waiting') {
+      tgt.hy = basePose.hy * id.lookDir;
+      tgt.hz = basePose.hz * (id.lookDir > 0 ? 1 : 0.6);
+    }
 
-    // P2 — anatomical limits: no pose may exceed these, so nothing can push an
-    // arm through the head/ear or over-bend the neck (radians).
-    const CL = THREE.MathUtils.clamp;
-    c.head = CL(c.head, -0.35, 0.6); // nod up / down
-    c.headYaw = CL(c.headYaw, -0.5, 0.5); // look left / right
-    c.tilt = CL(c.tilt, -0.32, 0.32); // head roll
-    c.rArmZ = CL(c.rArmZ, -0.25, 1.8); // +X arm abduction (max keeps it clear of the head)
-    c.lArmZ = CL(c.lArmZ, -1.8, 0.25); // −X arm abduction
-    c.rArmX = CL(c.rArmX, -0.9, 0.4); // arm forward / back
-    c.lArmX = CL(c.lArmX, -0.9, 0.4);
-    c.rFore = CL(c.rFore, -1.7, 0.3); // forearm curl
-    c.lFore = CL(c.lFore, -1.7, 0.3);
+    // ── 3. ease the blended pose toward the target (P7/P8: soft in & settle) ──
+    blendPose(ps.current, tgt, 0.1, key === 'curious' || key === 'waiting' ? 0.05 : 0.09);
+    const p = ps.current;
 
-    // apply to bones (head: nod-X + look-Y + tilt-Z; arms: forward-X + abduct-Z)
-    poseBone(RIG.head, c.head, c.headYaw, c.tilt);
-    poseBone(RIG.posArm, c.rArmX, 0, c.rArmZ);
-    poseBone(RIG.posFore, c.rFore, 0, 0);
-    poseBone(RIG.negArm, c.lArmX, 0, c.lArmZ);
-    poseBone(RIG.negFore, c.lFore, 0, 0);
+    // ── 4. weight shift — ease onto one foot, hold, transfer (P5) ──
+    id.weightTimer -= delta;
+    if (id.weightTimer <= 0) {
+      id.weightTgt = (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.4);
+      id.weightTimer = 2.6 + Math.random() * 3.4;
+    }
+    id.weightCur = lerp(id.weightCur, id.weightTgt, 0.018 + restless * 0.02);
+    const weight = id.weightCur;
 
-    // whole-object: bob, spin, forward lean, weight-shift roll + posture.
-    // Phase 5 — higher level stands a hair taller (confident).
+    // ── 5. phase-offset breathing — body / head / shoulders out of sync (P9) ──
+    const bRate = happy ? 2.4 : 1.6;
+    const bodyB = Math.sin(t * bRate);
+    const headB = Math.sin(t * bRate + 0.5);
+    const shB = Math.sin(t * bRate + 0.25);
+    const shBL = Math.sin(t * bRate + 0.9); // different phase for the left arm
+
+    // ── 6. compose final bone angles: pose + overlays ──
+    let headX = p.hx + headB * 0.02 * restless;
+    let headY = p.hy;
+    let headZ = p.hz + weight * 0.03 + shB * 0.008;
+    let rArmZ = p.armR + shB * 0.026 * restless + weight * 0.05;
+    let lArmZ = -p.armL + shBL * 0.022 * restless - weight * 0.05;
+    let rArmX = p.armFwd;
+    let lArmX = p.armFwd * 0.92;
+    let rFore = p.foreR - headB * 0.03 + waveFore - pump * 0.5;
+    let lFore = p.foreL - shB * 0.025 - pump * 0.5;
+
+    // ── 7. anatomical clamps (P2) ──
+    headX = clamp(headX, -0.35, 0.6);
+    headY = clamp(headY, -0.5, 0.5);
+    headZ = clamp(headZ, -0.32, 0.32);
+    rArmZ = clamp(rArmZ, -0.25, 1.8);
+    lArmZ = clamp(lArmZ, -1.8, 0.25);
+    rArmX = clamp(rArmX, -0.9, 0.4);
+    lArmX = clamp(lArmX, -0.9, 0.4);
+    rFore = clamp(rFore, -1.7, 0.3);
+    lFore = clamp(lFore, -1.7, 0.3);
+
+    // ── 8. apply. Motion chain (P6): the body carries ~20% of the head yaw so a
+    //    turn originates from the torso, not the neck alone (whole-body yaw is
+    //    safe vs. the uncertain chest-bone role). ──
+    poseBone(RIG.head, headX, headY * 0.8, headZ);
+    poseBone(RIG.posArm, rArmX, 0, rArmZ);
+    poseBone(RIG.posFore, rFore, 0, 0);
+    poseBone(RIG.negArm, lArmX, 0, lArmZ);
+    poseBone(RIG.negFore, lFore, 0, 0);
+
+    // ── 9. whole-object: bob, spin, lean, weight roll, body-follow yaw, posture
     const tall = 1 + Math.min((lvl.current - 1) * 0.004, 0.05);
-    g.position.y = lerp(g.position.y, py, 0.15);
-    g.rotation.y = lerp(g.rotation.y, spin, 0.2);
-    g.rotation.x = lerp(g.rotation.x, lean, 0.15);
-    g.rotation.z = lerp(g.rotation.z, roll, 0.1);
+    g.position.y = lerp(g.position.y, bodyB * (0.01 + restless * 0.005) + hop, 0.15);
+    g.rotation.y = lerp(g.rotation.y, spin + headY * 0.2 + weight * 0.03, 0.18);
+    g.rotation.x = lerp(g.rotation.x, p.lean, 0.15);
+    g.rotation.z = lerp(g.rotation.z, weight * 0.05, 0.1);
     g.scale.y = lerp(g.scale.y, tall, 0.05);
   });
 
