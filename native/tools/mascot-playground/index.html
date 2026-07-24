@@ -44,6 +44,12 @@
 <div id="overlay"></div>
 
 <div id="left" class="panel">
+  <h3>Rig — auto-detected <span style="color:#7c88a0;font-weight:400;text-transform:none">(drop a .glb)</span></h3>
+  <div id="rig" style="font-size:11px">analysing…</div>
+  <div class="btns" style="margin-top:6px">
+    <button id="expBones">bones.ts</button>
+    <button id="expManifest">manifest.json</button>
+  </div>
   <h3>Validation</h3><div id="valid">loading…</div>
   <h3>Visualizer</h3>
   <div class="chk">
@@ -106,8 +112,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { analyzeRig } from './rig-analyzer.js';
 
+// Fallback map (used if auto-detection can't find a role). Auto-analysis
+// overrides these on load — the Studio is model-agnostic.
 const BONES = { head:'Bone_029', neck:'Bone_028', chest:'Bone_026', leftShoulder:'Bone_025', leftForeArm:'Bone_024', rightShoulder:'Bone_020', rightForeArm:'Bone_019' };
+let MODEL_NAME = 'koa.glb';
 const REQUIRED = ['head','neck','chest','leftShoulder','rightShoulder','leftForeArm','rightForeArm'];
 const MODEL_URL = '../../assets/mascots/koa.glb';
 const D = Math.PI/180;
@@ -134,20 +144,48 @@ function poseBone(name,ax,ay,az){ const b=bones[name],base=baseQ[name],pw=parent
   _acc.identity(); if(ax){_rd.setFromAxisAngle(WX,ax);_acc.multiply(_rd);} if(ay){_rd2.setFromAxisAngle(WY,ay);_acc.multiply(_rd2);} if(az){_rd.setFromAxisAngle(WZ,az);_acc.multiply(_rd);}
   b.quaternion.copy(pwi).multiply(_acc).multiply(pw).multiply(base); }
 
-let model, skelHelper, headAxes;
-new GLTFLoader().load(MODEL_URL,(g)=>{
-  model=g.scene;
-  const box=new THREE.Box3().setFromObject(model), size=new THREE.Vector3(), center=new THREE.Vector3();
-  box.getSize(size); box.getCenter(center); const s=1.55/(size.y||1);
-  model.scale.setScalar(s); model.position.set(-center.x*s,-box.min.y*s,-center.z*s); model.userData.baseY=model.position.y;
-  scene.add(model);
-  model.traverse((o)=>{ if(o.isMesh)o.frustumCulled=false; if(o.isBone){bones[o.name]=o; baseQ[o.name]=o.quaternion.clone();} });
-  model.updateWorldMatrix(true,true);
-  for(const n of Object.values(BONES)){ const b=bones[n]; if(b?.parent){ const w=b.parent.getWorldQuaternion(new THREE.Quaternion()); parentW[n]=w; parentWInv[n]=w.clone().invert(); } }
-  skelHelper=new THREE.SkeletonHelper(model); skelHelper.visible=false; scene.add(skelHelper);
-  headAxes=new THREE.AxesHelper(0.4); headAxes.visible=false; scene.add(headAxes);
-  buildValidation(); buildTree();
-},undefined,(e)=>{ $('valid').innerHTML='<span class="bad">Load failed — serve from the <b>native/</b> folder (README).</span>'; console.error(e); });
+let model, skelHelper, headAxes, detected = {};
+const loader = new GLTFLoader();
+function clearModel(){ if(model){ scene.remove(model); } if(skelHelper){scene.remove(skelHelper);} if(headAxes){scene.remove(headAxes);}
+  for(const k in bones)delete bones[k]; for(const k in baseQ)delete baseQ[k]; for(const k in parentW)delete parentW[k]; for(const k in parentWInv)delete parentWInv[k]; model=null; }
+function loadModel(url, label){
+  clearModel(); MODEL_NAME = label || MODEL_NAME;
+  loader.load(url,(g)=>{
+    model=g.scene;
+    const box=new THREE.Box3().setFromObject(model), size=new THREE.Vector3(), center=new THREE.Vector3();
+    box.getSize(size); box.getCenter(center); const s=1.55/(size.y||1);
+    model.scale.setScalar(s); model.position.set(-center.x*s,-box.min.y*s,-center.z*s); model.userData.baseY=model.position.y;
+    scene.add(model);
+    model.traverse((o)=>{ if(o.isMesh)o.frustumCulled=false; if(o.isBone){bones[o.name]=o; baseQ[o.name]=o.quaternion.clone();} });
+    model.updateWorldMatrix(true,true);
+    autoDetectRig();          // ← model-agnostic role detection
+    rebuildParentCache();
+    skelHelper=new THREE.SkeletonHelper(model); skelHelper.visible=$('vSkel').checked; scene.add(skelHelper);
+    headAxes=new THREE.AxesHelper(0.4); headAxes.visible=$('vAxis').checked; scene.add(headAxes);
+    buildValidation(); buildTree();
+  },undefined,(e)=>{ $('valid').innerHTML='<span class="bad">Load failed — serve from the <b>native/</b> folder (README).</span>'; console.error(e); });
+}
+function autoDetectRig(){
+  const joints=[];
+  for(const nm in bones){ const b=bones[nm]; const wp=new THREE.Vector3(); b.getWorldPosition(wp);
+    joints.push({ name:nm, x:wp.x, y:wp.y, z:wp.z, parent:(b.parent&&b.parent.isBone)?b.parent.name:null }); }
+  const { roles, meta } = analyzeRig(joints);
+  detected = roles;
+  for(const k of Object.keys(roles)){ if(roles[k]) BONES[k]=roles[k]; }
+  showRig(roles, meta);
+}
+function rebuildParentCache(){
+  for(const n of new Set(Object.values(BONES))){ const b=bones[n]; if(b?.parent){ const w=b.parent.getWorldQuaternion(new THREE.Quaternion()); parentW[n]=w; parentWInv[n]=w.clone().invert(); } }
+}
+function showRig(roles, meta){
+  const rows=Object.entries(roles).map(([k,v])=>`<div class="${v?'ok':'bad'}">${v?'✓':'—'} ${k}: <b>${v||'not found'}</b></div>`).join('');
+  $('rig').innerHTML = rows + `<div style="color:#7c88a0;margin-top:4px">joints: ${meta.jointCount} · h ${meta.height?.toFixed(2)} · w ${meta.width?.toFixed(2)}</div>`;
+}
+loadModel(MODEL_URL, 'koa.glb');
+
+// drag-drop any .glb to re-analyse (model-agnostic import)
+addEventListener('dragover', e=>{ e.preventDefault(); });
+addEventListener('drop', e=>{ e.preventDefault(); const f=e.dataTransfer?.files?.[0]; if(f && /\.(glb|gltf)$/i.test(f.name)){ loadModel(URL.createObjectURL(f), f.name); } });
 
 function buildValidation(){ $('valid').innerHTML=REQUIRED.map(k=>{const ok=!!bones[BONES[k]];return `<div class="${ok?'ok':'bad'}">${ok?'✓':'✗'} ${k} → ${BONES[k]}</div>`;}).join(''); }
 function buildTree(){ const L=[]; model.traverse((o)=>{ let d=0,p=o; while(p&&p!==model){d++;p=p.parent;} const pad='· '.repeat(d);
@@ -206,6 +244,13 @@ let testBlink=0; $('blinkTest').onclick=()=>{ testBlink=1; };
 dumpFace(); layoutEyes();
 
 function download(name,text){ const b=new Blob([text],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; a.click(); }
+function bonesTs(){ const order=['head','neck','chest','hip','leftShoulder','leftForeArm','leftHand','rightShoulder','rightForeArm','rightHand'];
+  const lines=order.filter(k=>BONES[k]).map(k=>`  ${k}: '${BONES[k]}',`).join('\n');
+  return `// Auto-detected from ${MODEL_NAME} by Mascot Studio rig-analyzer\nexport const BONES = {\n${lines}\n} as const;`; }
+$('expBones').onclick=()=>download('mascot-bones.ts', bonesTs());
+$('expManifest').onclick=()=>{ const m={ version:1, model:MODEL_NAME,
+  bones:Object.fromEntries(Object.keys(detected).filter(k=>detected[k]).map(k=>[k,BONES[k]])),
+  face:FACE, updatedAt:new Date().toISOString() }; download('mascot-manifest.json', JSON.stringify(m,null,2)); };
 
 // save pose
 $('savePose').onclick=()=>{ const nm=(prompt('Pose name?','Happy')||'POSE').toUpperCase().replace(/[^A-Z0-9_]/g,'_');

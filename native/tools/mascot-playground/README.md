@@ -20,6 +20,17 @@ Then open: `http://localhost:3000/tools/mascot-playground/` (serve) or
 
 Requires internet (Three.js loads from a CDN via import map).
 
+## Model-agnostic (Mascot Studio)
+
+- **Drop any `.glb`/`.gltf`** onto the window → it reloads and **auto-detects the
+  bone roles** (head, shoulders, forearms, hands, hip) from skeleton geometry —
+  no hardcoded bone names, works for any roughly-humanoid mascot. See the
+  "Rig — auto-detected" panel.
+- **Export `bones.ts`** — the detected mapping, ready to drop into
+  `src/config/mascot-bones.ts`.
+- **Export `manifest.json`** — model + bones + face in one restorable file.
+- Detection lives in `rig-analyzer.js` (pure, validated against the koala rig).
+
 ## What it shows
 
 - **Viewport** — the model at the app's exact camera (fov 32, pos [0, 0.8, 3.5],
