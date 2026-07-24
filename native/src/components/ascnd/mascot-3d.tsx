@@ -235,7 +235,7 @@ function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number 
     const shBL = Math.sin(t * bRate + 0.9); // different phase for the left arm
 
     // ── 6. compose final bone angles: pose + overlays ──
-    let headX = p.hx + headB * 0.02 * restless;
+    let headX = p.hx + headB * 0.012 * restless; // gentle breathing nod (small)
     let headY = p.hy;
     let headZ = p.hz + weight * 0.03 + shB * 0.008;
     let rArmZ = p.armR + shB * 0.026 * restless + weight * 0.05;

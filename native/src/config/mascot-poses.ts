@@ -24,18 +24,19 @@ const OUT = 0.42; // rest abduction (arm↔body clearance)
 const FWD = -0.3; // rest forward swing (hands in front of hips)
 
 export const POSES: Record<string, KoaPose> = {
-  // ── idle states ──
-  nothing: { hx: 0.02, hy: 0, hz: 0.045, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.12, foreL: -0.09, lean: 0 },
-  relax: { hx: 0.03, hy: 0, hz: 0.05, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.12, foreL: -0.09, lean: 0 },
-  curious: { hx: -0.01, hy: 0.2, hz: 0.14, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.12, foreL: -0.08, lean: 0.03 },
-  waiting: { hx: -0.03, hy: -0.1, hz: 0.03, armR: OUT, armL: OUT * 0.96, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0 },
-  stretch: { hx: -0.12, hy: 0, hz: 0.02, armR: OUT + 0.5, armL: OUT + 0.44, armFwd: FWD - 0.2, foreR: -0.05, foreL: -0.06, lean: -0.03 },
+  // ── idle states — head level / slightly up so it looks AT the user, not down.
+  //    hx is +down, so idle uses small NEGATIVE (up) values. ──
+  nothing: { hx: -0.05, hy: 0, hz: 0.045, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.12, foreL: -0.09, lean: 0 },
+  relax: { hx: -0.05, hy: 0, hz: 0.05, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.12, foreL: -0.09, lean: 0 },
+  curious: { hx: -0.08, hy: 0.2, hz: 0.14, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.12, foreL: -0.08, lean: 0.03 },
+  waiting: { hx: -0.09, hy: -0.1, hz: 0.03, armR: OUT, armL: OUT * 0.96, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0 },
+  stretch: { hx: -0.15, hy: 0, hz: 0.02, armR: OUT + 0.5, armL: OUT + 0.44, armFwd: FWD - 0.2, foreR: -0.05, foreL: -0.06, lean: -0.03 },
   // ── emotion poses ──
-  celebrate: { hx: -0.1, hy: 0, hz: 0, armR: 1.67, armL: 1.6, armFwd: -0.15, foreR: -0.1, foreL: -0.12, lean: 0 },
-  wave: { hx: -0.04, hy: 0, hz: 0.1, armR: 1.5, armL: OUT, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0 },
-  workout: { hx: 0, hy: 0, hz: 0, armR: 1.45, armL: 1.4, armFwd: 0, foreR: -1.0, foreL: -1.0, lean: 0 },
-  sleep: { hx: 0.5, hy: 0, hz: 0.14, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0.16 },
-  tired: { hx: 0.3, hy: 0, hz: 0.04, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0.06 },
+  celebrate: { hx: -0.12, hy: 0, hz: 0, armR: 1.67, armL: 1.6, armFwd: -0.15, foreR: -0.1, foreL: -0.12, lean: 0 },
+  wave: { hx: -0.06, hy: 0, hz: 0.1, armR: 1.5, armL: OUT, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0 },
+  workout: { hx: -0.03, hy: 0, hz: 0, armR: 1.45, armL: 1.4, armFwd: 0, foreR: -1.0, foreL: -1.0, lean: 0 },
+  sleep: { hx: 0.42, hy: 0, hz: 0.14, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0.14 },
+  tired: { hx: 0.24, hy: 0, hz: 0.04, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0.05 },
 };
 
 export type PoseKey = keyof typeof POSES;
