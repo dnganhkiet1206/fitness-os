@@ -82,8 +82,18 @@ function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number 
 
   const t0 = useRef(0);
   const cur = useRef<Pose>({ head: 0, headYaw: 0, tilt: 0, rArmX: 0, rArmZ: 0, lArmX: 0, lArmZ: 0, rFore: 0, lFore: 0 });
-  // living-idle random targets (look around / tilt / weight shift)
-  const idle = useRef({ timer: 1.5, lookX: 0, lookY: 0, tiltZ: 0, weightPh: Math.random() * 6 });
+  // living-idle state machine (intentful look / tilt / stretch) + weight shift
+  const idle = useRef({
+    timer: 1.2,
+    action: 'none' as 'none' | 'look' | 'tilt' | 'stretch',
+    actionT: 0,
+    lookX: 0,
+    lookY: 0,
+    tiltZ: 0,
+    weightTgt: 0,
+    weightCur: 0,
+    weightTimer: 1,
+  });
 
   // Fit the model to ~1.55 units tall with feet at y=0 — applied to a wrapper
   // group (NOT by cloning the scene: cloning a rigged SkinnedMesh detaches the
@@ -229,44 +239,72 @@ function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number 
       tp.head = 0.3;
       tp.tilt = Math.sin(t * 1.1) * 0.04;
     } else {
-      // ── living idle (Phase 1) — breathing + weight shift + random look-around
-      //    + head tilt, never a hard loop; energy scales with LEVEL (Phase 5:
-      //    low level = restless/curious, high level = calm/confident). ──
+      // ── living idle (Phase 1). The test: hide the face and the silhouette
+      //    must still feel alive. Priorities: WEIGHT (shifts + holds between
+      //    the feet), phase-offset breathing (body/head/shoulders not in sync),
+      //    intentful head motion (look → hold → settle), and a weighted idle
+      //    where 40% of the time it just stands. Energy scales with LEVEL
+      //    (Phase 5: low = restless/curious, high = calm/confident). ──
+      const happy = e === 'happy';
       const restless = THREE.MathUtils.clamp(1 - (lvl.current - 1) * 0.045, 0.35, 1);
       const id = idle.current;
+
+      // WEIGHT — ease to one foot, hold, then transfer (never perfectly balanced)
+      id.weightTimer -= delta;
+      if (id.weightTimer <= 0) {
+        id.weightTgt = (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.4);
+        id.weightTimer = 2.6 + Math.random() * 3.4;
+      }
+      id.weightCur = lerp(id.weightCur, id.weightTgt, 0.018 + restless * 0.02);
+      const weight = id.weightCur;
+
+      // intentful action state machine (look / tilt / stretch / just stand)
       id.timer -= delta;
-      if (id.timer <= 0) {
+      if (id.action === 'none' && id.timer <= 0) {
         const r = Math.random();
-        if (r < 0.34) {
-          id.lookX = 0; id.lookY = 0; id.tiltZ = 0; // settle & blink (blink is on the overlay)
-        } else if (r < 0.52) {
-          id.lookX = (Math.random() * 2 - 1) * 0.3 * restless; // glance left / right
-        } else if (r < 0.64) {
-          id.lookY = 0.12 * restless; id.lookX *= 0.4; // glance down
-        } else if (r < 0.76) {
-          id.lookY = -0.1 * restless; // glance up
-        } else if (r < 0.9) {
-          id.tiltZ = (Math.random() * 2 - 1) * 0.13 * restless; // curious head tilt
+        if (r < 0.55) {
+          id.action = 'none'; // 40%-ish: stand (breathing + weight only)
+        } else if (r < 0.73) {
+          id.action = 'look';
+          id.lookX = (Math.random() * 2 - 1) * 0.32 * restless;
+          id.lookY = (Math.random() < 0.3 ? 0.1 : 0) * restless;
+          id.actionT = 1.2 + Math.random() * 1.6; // hold the gaze
+        } else if (r < 0.88) {
+          id.action = 'tilt';
+          id.tiltZ = (Math.random() * 2 - 1) * 0.14 * restless;
+          id.actionT = 1.0 + Math.random() * 1.2;
         } else {
+          id.action = 'stretch';
+          id.actionT = 1.4;
+        }
+        id.timer = (1.6 + Math.random() * 2.6) * (1.5 - restless * 0.7);
+      }
+      if (id.action !== 'none') {
+        id.actionT -= delta;
+        if (id.actionT <= 0) {
+          id.action = 'none'; // return gaze to centre after the beat
           id.lookX = 0; id.lookY = 0; id.tiltZ = 0;
         }
-        // restless buddies fidget sooner; calm ones hold still longer
-        id.timer = (1.8 + Math.random() * 3.2) * (1.4 - restless * 0.7);
       }
-      // slow weight shift between the feet
-      id.weightPh += delta * 0.5;
-      const weight = Math.sin(id.weightPh) * (0.4 + restless * 0.6);
+      const stretch = id.action === 'stretch' ? Math.sin((1 - Math.max(0, id.actionT) / 1.4) * Math.PI) : 0;
 
-      const happy = e === 'happy';
-      py = Math.sin(t * (happy ? 2.4 : 1.6)) * (0.012 + restless * 0.006);
-      tp.head = id.lookY + Math.sin(t * 1.5) * 0.03 * restless + 0.02;
-      tp.headYaw = id.lookX + Math.sin(t * 0.4) * 0.02 * restless;
-      tp.tilt = id.tiltZ + Math.sin(t * 0.7) * 0.03 * restless;
-      roll = weight * 0.05; // body sway
-      const armSway = Math.sin(t * 1.1) * 0.03 * restless + weight * 0.04;
-      tp.rArmZ = REST_ARM_OUT + armSway;
-      tp.lArmZ = -REST_ARM_OUT + armSway;
-      tp.rFore = (happy ? -0.12 : 0) - breathe * 0.03;
+      // phase-offset breathing — body, head and shoulders not fully in sync
+      const bRate = happy ? 2.4 : 1.6;
+      const bodyB = Math.sin(t * bRate);
+      const headB = Math.sin(t * bRate + 0.5);
+      const shB = Math.sin(t * bRate + 0.25);
+
+      py = bodyB * (0.01 + restless * 0.005) + stretch * 0.05;
+      tp.head = id.lookY + headB * 0.02 * restless + 0.02 - stretch * 0.12;
+      tp.headYaw = id.lookX; // eases slowly below (deliberate turn)
+      tp.tilt = id.tiltZ + weight * 0.03 + shB * 0.01;
+      roll = weight * 0.05; // body weight-shift
+      const armSway = shB * 0.025 * restless + weight * 0.05;
+      tp.rArmZ = REST_ARM_OUT + armSway + stretch * 0.5;
+      tp.lArmZ = -REST_ARM_OUT + armSway - stretch * 0.5;
+      tp.rArmX = REST_ARM_FWD - stretch * 0.2;
+      tp.lArmX = REST_ARM_FWD - stretch * 0.2;
+      tp.rFore = (happy ? -0.12 : 0) - headB * 0.03;
     }
 
     // smooth the pose toward the target (head look eases a touch slower)
