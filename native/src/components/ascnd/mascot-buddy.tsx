@@ -117,7 +117,7 @@ export function MascotBuddy({
   return (
     <Boundary fallback={fallback}>
       <Suspense fallback={<LoadingFallback fallback={fallback} />}>
-        <Mascot3D emotion={emotion} size={size} accent={accent} />
+        <Mascot3D emotion={emotion} size={size} accent={accent} level={level} />
       </Suspense>
     </Boundary>
   );

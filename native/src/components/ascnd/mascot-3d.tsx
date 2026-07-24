@@ -47,10 +47,13 @@ const _acc = new THREE.Quaternion();
 // so the direction of each pose is geometrically predictable regardless of how
 // the auto-rig oriented each bone.
 const _WX = new THREE.Vector3(1, 0, 0); // pitch (nod / curl)
+const _WY = new THREE.Vector3(0, 1, 0); // yaw (head look left / right)
 const _WZ = new THREE.Vector3(0, 0, 1); // roll (arm abduction — swing out to the side)
+const _rd3 = new THREE.Quaternion();
 
 interface Pose {
   head: number; // world-X nod (+ = look down)
+  headYaw: number; // world-Y head turn (+ = look to +X side)
   tilt: number; // world-Z head tilt
   rArmX: number; // R upper-arm world-X (− = swing forward, hand in front of hip)
   rArmZ: number; // R upper-arm world-Z (+ = abduct out to the side)
@@ -68,15 +71,19 @@ const lerp = THREE.MathUtils.lerp;
 const REST_ARM_OUT = 0.42; // abduction (side clearance)
 const REST_ARM_FWD = -0.3; // forward swing (hands in front of hips)
 
-function Koala({ emotion }: { emotion: MascotEmotion }) {
+function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number }) {
   const gltf = useGLTF(MODEL);
   const scene = (Array.isArray(gltf) ? gltf[0] : gltf).scene as THREE.Group;
   const group = useRef<THREE.Group>(null);
   const emo = useRef<MascotEmotion>(emotion);
   emo.current = emotion;
+  const lvl = useRef(level);
+  lvl.current = level;
 
   const t0 = useRef(0);
-  const cur = useRef<Pose>({ head: 0, tilt: 0, rArmX: 0, rArmZ: 0, lArmX: 0, lArmZ: 0, rFore: 0, lFore: 0 });
+  const cur = useRef<Pose>({ head: 0, headYaw: 0, tilt: 0, rArmX: 0, rArmZ: 0, lArmX: 0, lArmZ: 0, rFore: 0, lFore: 0 });
+  // living-idle random targets (look around / tilt / weight shift)
+  const idle = useRef({ timer: 1.5, lookX: 0, lookY: 0, tiltZ: 0, weightPh: Math.random() * 6 });
 
   // Fit the model to ~1.55 units tall with feet at y=0 — applied to a wrapper
   // group (NOT by cloning the scene: cloning a rigged SkinnedMesh detaches the
@@ -136,7 +143,7 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
 
   // Rotate a bone in WORLD space by (angX around world-X) then (angZ around
   // world-Z), on top of its rest pose:  local = parentWⁿⁱ · Rworld · parentW · rest
-  const poseBone = (name: string, angX: number, angZ: number) => {
+  const poseBone = (name: string, angX: number, angY: number, angZ: number) => {
     const bone = bones[name];
     const base = baseQ[name];
     const pw = parentW[name];
@@ -146,6 +153,10 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
     if (angX) {
       _rd.setFromAxisAngle(_WX, angX);
       _acc.multiply(_rd);
+    }
+    if (angY) {
+      _rd3.setFromAxisAngle(_WY, angY);
+      _acc.multiply(_rd3);
     }
     if (angZ) {
       _rd2.setFromAxisAngle(_WZ, angZ);
@@ -167,11 +178,13 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
     let py = 0;
     let spin = 0;
     let lean = 0;
+    let roll = 0; // body weight-shift (z)
 
     // Start every frame from the mandatory rest pose: arms OUT + slightly
     // FORWARD so there is always a visible arm↔body gap (HERO_MODEL_SPEC).
     const tp: Pose = {
       head: 0,
+      headYaw: 0,
       tilt: 0,
       rArmX: REST_ARM_FWD,
       rArmZ: REST_ARM_OUT,
@@ -216,20 +229,51 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
       tp.head = 0.3;
       tp.tilt = Math.sin(t * 1.1) * 0.04;
     } else {
-      // idle / happy — breathe + subtle head bob + tiny arm sway (gap kept)
-      py = Math.sin(t * (e === 'happy' ? 2.4 : 1.6)) * 0.015;
-      const s = Math.sin(t * 1.1) * 0.03;
-      tp.head = Math.sin(t * 1.6) * 0.05 + 0.02;
-      tp.tilt = Math.sin(t * 0.8) * 0.04;
-      tp.rArmZ = REST_ARM_OUT + s;
-      tp.lArmZ = -REST_ARM_OUT - s;
-      tp.rFore = (e === 'happy' ? -0.1 : 0) - breathe * 0.03;
+      // ── living idle (Phase 1) — breathing + weight shift + random look-around
+      //    + head tilt, never a hard loop; energy scales with LEVEL (Phase 5:
+      //    low level = restless/curious, high level = calm/confident). ──
+      const restless = THREE.MathUtils.clamp(1 - (lvl.current - 1) * 0.045, 0.35, 1);
+      const id = idle.current;
+      id.timer -= delta;
+      if (id.timer <= 0) {
+        const r = Math.random();
+        if (r < 0.34) {
+          id.lookX = 0; id.lookY = 0; id.tiltZ = 0; // settle & blink (blink is on the overlay)
+        } else if (r < 0.52) {
+          id.lookX = (Math.random() * 2 - 1) * 0.3 * restless; // glance left / right
+        } else if (r < 0.64) {
+          id.lookY = 0.12 * restless; id.lookX *= 0.4; // glance down
+        } else if (r < 0.76) {
+          id.lookY = -0.1 * restless; // glance up
+        } else if (r < 0.9) {
+          id.tiltZ = (Math.random() * 2 - 1) * 0.13 * restless; // curious head tilt
+        } else {
+          id.lookX = 0; id.lookY = 0; id.tiltZ = 0;
+        }
+        // restless buddies fidget sooner; calm ones hold still longer
+        id.timer = (1.8 + Math.random() * 3.2) * (1.4 - restless * 0.7);
+      }
+      // slow weight shift between the feet
+      id.weightPh += delta * 0.5;
+      const weight = Math.sin(id.weightPh) * (0.4 + restless * 0.6);
+
+      const happy = e === 'happy';
+      py = Math.sin(t * (happy ? 2.4 : 1.6)) * (0.012 + restless * 0.006);
+      tp.head = id.lookY + Math.sin(t * 1.5) * 0.03 * restless + 0.02;
+      tp.headYaw = id.lookX + Math.sin(t * 0.4) * 0.02 * restless;
+      tp.tilt = id.tiltZ + Math.sin(t * 0.7) * 0.03 * restless;
+      roll = weight * 0.05; // body sway
+      const armSway = Math.sin(t * 1.1) * 0.03 * restless + weight * 0.04;
+      tp.rArmZ = REST_ARM_OUT + armSway;
+      tp.lArmZ = -REST_ARM_OUT + armSway;
+      tp.rFore = (happy ? -0.12 : 0) - breathe * 0.03;
     }
 
-    // smooth the pose toward the target
+    // smooth the pose toward the target (head look eases a touch slower)
     const k = 0.12;
     const c = cur.current;
     c.head = lerp(c.head, tp.head, k);
+    c.headYaw = lerp(c.headYaw, tp.headYaw, 0.08);
     c.tilt = lerp(c.tilt, tp.tilt, k);
     c.rArmX = lerp(c.rArmX, tp.rArmX, k);
     c.rArmZ = lerp(c.rArmZ, tp.rArmZ, k);
@@ -238,17 +282,21 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
     c.rFore = lerp(c.rFore, tp.rFore, k);
     c.lFore = lerp(c.lFore, tp.lFore, k);
 
-    // apply to bones (upper arms: forward-X + abduct-Z; forearms: curl-X)
-    poseBone(RIG.head, c.head, c.tilt);
-    poseBone(RIG.posArm, c.rArmX, c.rArmZ);
-    poseBone(RIG.posFore, c.rFore, 0);
-    poseBone(RIG.negArm, c.lArmX, c.lArmZ);
-    poseBone(RIG.negFore, c.lFore, 0);
+    // apply to bones (head: nod-X + look-Y + tilt-Z; arms: forward-X + abduct-Z)
+    poseBone(RIG.head, c.head, c.headYaw, c.tilt);
+    poseBone(RIG.posArm, c.rArmX, 0, c.rArmZ);
+    poseBone(RIG.posFore, c.rFore, 0, 0);
+    poseBone(RIG.negArm, c.lArmX, 0, c.lArmZ);
+    poseBone(RIG.negFore, c.lFore, 0, 0);
 
-    // whole-object
+    // whole-object: bob, spin, forward lean, weight-shift roll + posture.
+    // Phase 5 — higher level stands a hair taller (confident).
+    const tall = 1 + Math.min((lvl.current - 1) * 0.004, 0.05);
     g.position.y = lerp(g.position.y, py, 0.15);
     g.rotation.y = lerp(g.rotation.y, spin, 0.2);
     g.rotation.x = lerp(g.rotation.x, lean, 0.15);
+    g.rotation.z = lerp(g.rotation.z, roll, 0.1);
+    g.scale.y = lerp(g.scale.y, tall, 0.05);
   });
 
   return (
@@ -351,10 +399,12 @@ export function Mascot3D({
   emotion = 'idle',
   size = 200,
   accent = '#8f9bff',
+  level = 1,
 }: {
   emotion?: MascotEmotion;
   size?: number;
   accent?: string;
+  level?: number;
 }) {
   return (
     <View style={{ width: size, height: size * 1.25 }}>
@@ -372,7 +422,7 @@ export function Mascot3D({
         <ambientLight intensity={0.9} />
         <directionalLight position={[3, 5, 4]} intensity={1.35} castShadow />
         <directionalLight position={[-4, 2, -2]} intensity={0.55} color={accent} />
-        <Koala emotion={emotion} />
+        <Koala emotion={emotion} level={level} />
       </Canvas>
       <FaceOverlay emotion={emotion} size={size} />
     </View>
