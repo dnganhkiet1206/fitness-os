@@ -43,14 +43,14 @@ const FACE = {
 
 const MODEL = require('../../../assets/mascots/koa.glb');
 
-// ── Bone map (from koa.glb rest-pose analysis, UniRig auto-rig) ──
+// ── Bone map (from koa.glb rest-pose analysis, UniRig auto-rig, 38-bone rig) ──
 const BONES = {
-  head: 'Bone_034', // neck base — rigid head rotation (no face warp)
-  chest: 'Bone_002',
-  rUpperArm: 'Bone_030',
-  rForearm: 'Bone_029',
-  lUpperArm: 'Bone_022',
-  lForearm: 'Bone_021',
+  head: 'Bone_029', // neck base — rigid head rotation (no face warp)
+  chest: 'Bone_003',
+  rUpperArm: 'Bone_025', // right shoulder → elbow Bone_024
+  rForearm: 'Bone_024',
+  lUpperArm: 'Bone_020', // left shoulder → elbow Bone_019
+  lForearm: 'Bone_019',
 } as const;
 
 // reusable temporaries (single koala on screen, so module-shared is fine)
