@@ -24,23 +24,8 @@ import Animated, {
 import * as THREE from 'three';
 
 import { BONES, REQUIRED_BONES } from '@/config/mascot-bones';
+import { FACE, type EyeSpec } from '@/config/mascot-face';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
-
-/**
- * The GLB has NO facial rig (0 morph targets, no eye/jaw bones) — the face is
- * baked into the texture. Since the camera is a fixed 3/4 angle, facial
- * expression is done with a 2D overlay of eyelids aligned over the eyes: a
- * periodic blink, and held-closed lids for sleep / tired / sad. Positions are
- * fractions of the canvas so one screenshot calibrates them.
- */
-const FACE = {
-  lx: 0.4, // left eye centre (fraction of canvas width)
-  rx: 0.6, // right eye centre
-  y: 0.33, // eye centre (fraction of canvas height)
-  w: 0.12, // eye width
-  h: 0.1, // eye height
-  fur: '#8f8d92', // koala fur tone for the lids
-};
 
 const MODEL = require('../../../assets/mascots/koa.glb');
 
@@ -275,18 +260,16 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
   );
 }
 
-// ── 2D eyelid overlay: blink + held-closed for sleepy/sad emotions ──
+// ── 2D eyelid overlay: blink + held-closed for sleepy/sad emotions (per-eye) ──
 function FaceOverlay({ emotion, size }: { emotion: MascotEmotion; size: number }) {
   const W = size;
   const Hc = size * 1.25;
-  const eyeW = FACE.w * W;
-  const eyeH = FACE.h * Hc;
 
   const blink = useSharedValue(0); // 0 = open, 1 = closed
   const base = useSharedValue(0); // emotion-held closure
+  const wink = useSharedValue(0); // right-eye only (wink action → sad? reserved)
 
   useEffect(() => {
-    // occasional double-ish blink loop
     blink.value = withRepeat(
       withSequence(
         withDelay(2600, withTiming(1, { duration: 70, easing: Easing.in(Easing.quad) })),
@@ -300,42 +283,66 @@ function FaceOverlay({ emotion, size }: { emotion: MascotEmotion; size: number }
     const target =
       emotion === 'sleep' ? 0.92 : emotion === 'tired' ? 0.5 : emotion === 'sad' ? 0.55 : 0;
     base.value = withTiming(target, { duration: 420 });
-  }, [emotion, base]);
-
-  const lidStyle = useAnimatedStyle(() => {
-    const c = Math.max(base.value, blink.value); // 0 open → 1 closed
-    // lid slides down from above; open = pulled fully up out of the eye
-    return { transform: [{ translateY: (c - 1) * eyeH }] };
-  });
-
-  const eyeBox = (cx: number) => ({
-    position: 'absolute' as const,
-    left: cx * W - eyeW / 2,
-    top: FACE.y * Hc - eyeH / 2,
-    width: eyeW,
-    height: eyeH,
-    borderRadius: eyeW / 2,
-    overflow: 'hidden' as const,
-  });
-  const lidBase = {
-    position: 'absolute' as const,
-    left: 0,
-    right: 0,
-    top: 0,
-    height: '100%' as const,
-    backgroundColor: FACE.fur,
-    borderBottomLeftRadius: eyeW * 0.5,
-    borderBottomRightRadius: eyeW * 0.5,
-  };
+    wink.value = 0;
+  }, [emotion, base, wink]);
 
   return (
     <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, width: W, height: Hc }}>
-      <View style={eyeBox(FACE.lx)}>
-        <Animated.View style={[lidBase, lidStyle]} />
-      </View>
-      <View style={eyeBox(FACE.rx)}>
-        <Animated.View style={[lidBase, lidStyle]} />
-      </View>
+      <Eyelid eye={FACE.left} W={W} Hc={Hc} blink={blink} base={base} extra={undefined} />
+      <Eyelid eye={FACE.right} W={W} Hc={Hc} blink={blink} base={base} extra={wink} />
+    </View>
+  );
+}
+
+function Eyelid({
+  eye,
+  W,
+  Hc,
+  blink,
+  base,
+  extra,
+}: {
+  eye: EyeSpec;
+  W: number;
+  Hc: number;
+  blink: { value: number };
+  base: { value: number };
+  extra?: { value: number };
+}) {
+  const eyeW = eye.w * W;
+  const eyeH = eye.h * Hc;
+  const lidStyle = useAnimatedStyle(() => {
+    const c = Math.max(base.value, blink.value, extra ? extra.value : 0); // 0 open → 1 closed
+    return { transform: [{ translateY: (c - 1) * eyeH }] };
+  });
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: eye.x * W - eyeW / 2,
+        top: eye.y * Hc - eyeH / 2,
+        width: eyeW,
+        height: eyeH,
+        borderRadius: (Math.min(eyeW, eyeH) / 2) * eye.radius,
+        overflow: 'hidden',
+        opacity: eye.opacity,
+        transform: [{ rotate: `${eye.rotation}deg` }],
+      }}>
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            height: '100%',
+            backgroundColor: FACE.fur,
+            borderBottomLeftRadius: eyeW * 0.5,
+            borderBottomRightRadius: eyeW * 0.5,
+          },
+          lidStyle,
+        ]}
+      />
     </View>
   );
 }

@@ -3,37 +3,40 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mascot Facial Playground</title>
+<title>Mascot Facial Playground v3</title>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
   body { margin: 0; font: 12px/1.4 -apple-system, system-ui, sans-serif; background: #0c0d12; color: #e7ecf5; overflow: hidden; }
   #app { position: fixed; inset: 0; }
   canvas { display: block; }
-  .panel { position: absolute; background: rgba(18,20,30,0.92); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px 12px; backdrop-filter: blur(8px); max-height: 46vh; overflow: auto; }
-  #left { left: 12px; top: 12px; width: 250px; }
-  #right { right: 12px; top: 12px; width: 268px; }
-  #face { right: 12px; bottom: 12px; width: 268px; }
-  h3 { margin: 2px 0 8px; font-size: 12px; letter-spacing: .4px; color: #aab4c8; text-transform: uppercase; }
-  .row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
-  .row label { width: 96px; color: #b9c2d6; flex-shrink: 0; }
-  .row input[type=range] { flex: 1; }
-  .row .val { width: 42px; text-align: right; color: #8fe3b0; font-variant-numeric: tabular-nums; }
+  .panel { position: absolute; background: rgba(18,20,30,0.92); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px 12px; backdrop-filter: blur(8px); max-height: 92vh; overflow: auto; width: 262px; }
+  #left { left: 12px; top: 12px; bottom: 12px; }
+  #right { right: 12px; top: 12px; }
+  #face { right: 12px; bottom: 12px; width: 288px; }
+  h3 { margin: 10px 0 6px; font-size: 11px; letter-spacing: .4px; color: #aab4c8; text-transform: uppercase; }
+  h3:first-child { margin-top: 0; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .row label { width: 84px; color: #b9c2d6; flex-shrink: 0; }
+  .row input[type=range] { flex: 1; min-width: 40px; }
+  .row .val { width: 44px; text-align: right; color: #8fe3b0; font-variant-numeric: tabular-nums; }
   .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   button { background: #1b2740; color: #dfe7f5; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; padding: 6px 9px; cursor: pointer; font-size: 12px; }
   button:hover { background: #24365c; }
   button.on { background: #3a6df0; border-color: #3a6df0; }
-  .tree { font-size: 11px; }
+  .tree { font-size: 11px; max-height: 150px; overflow: auto; }
   .tree .b { color: #f0b74a; cursor: pointer; }
   .tree .m { color: #6fd3ff; }
-  .tree .b:hover { text-decoration: underline; }
   .ok { color: #56d996; } .bad { color: #ff6b6b; }
-  #fps { position: absolute; left: 12px; bottom: 12px; background: rgba(0,0,0,.5); padding: 4px 8px; border-radius: 6px; color: #8fe3b0; }
-  #out { white-space: pre-wrap; word-break: break-all; font-family: ui-monospace, monospace; font-size: 11px; color: #ffd98a; background: rgba(0,0,0,.35); border-radius: 6px; padding: 6px; margin-top: 6px; user-select: all; }
-  /* 2D eyelid overlay */
+  #fps { position: absolute; left: 286px; bottom: 12px; background: rgba(0,0,0,.5); padding: 4px 8px; border-radius: 6px; color: #8fe3b0; }
+  pre.out { white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, monospace; font-size: 10.5px; color: #ffd98a; background: rgba(0,0,0,.35); border-radius: 6px; padding: 6px; margin: 6px 0 0; user-select: all; max-height: 150px; overflow: auto; }
+  .chk { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .chk label { display: flex; align-items: center; gap: 4px; color: #c7d0e2; }
+  #dbg { font-family: ui-monospace, monospace; font-size: 10.5px; color: #9fb2d6; white-space: pre; }
   #overlay { position: absolute; inset: 0; pointer-events: none; }
-  .lid { position: absolute; overflow: hidden; border-radius: 50%; }
+  .lid { position: absolute; overflow: hidden; }
   .lid > div { position: absolute; left: 0; right: 0; top: 0; height: 100%; border-bottom-left-radius: 50%; border-bottom-right-radius: 50%; }
+  .lid.outline { outline: 1px dashed rgba(255,220,120,.7); }
 </style>
 </head>
 <body>
@@ -41,12 +44,16 @@
 <div id="overlay"></div>
 
 <div id="left" class="panel">
-  <h3>Validation</h3>
-  <div id="valid">loading…</div>
-  <h3 style="margin-top:12px">Hierarchy</h3>
-  <div id="tree" class="tree"></div>
-  <h3 style="margin-top:12px">Inspector</h3>
-  <div id="insp" style="font-size:11px;color:#c7d0e2">click a bone…</div>
+  <h3>Validation</h3><div id="valid">loading…</div>
+  <h3>Visualizer</h3>
+  <div class="chk">
+    <label><input type="checkbox" id="vSkel"> Skeleton</label>
+    <label><input type="checkbox" id="vWire"> Wireframe</label>
+    <label><input type="checkbox" id="vAxis"> Head axis</label>
+    <label><input type="checkbox" id="vEyeBox" checked> Eye boxes</label>
+  </div>
+  <h3>Hierarchy</h3><div id="tree" class="tree"></div>
+  <h3>Inspector</h3><div id="insp" style="font-size:11px;color:#c7d0e2">click a bone…</div>
 </div>
 
 <div id="right" class="panel">
@@ -58,23 +65,33 @@
   <div class="row"><label>Arm fwd°</label><input id="af" type="range" min="-45" max="20" value="-17"><span class="val" id="afv">-17</span></div>
   <div class="row"><label>Blink /s</label><input id="bs" type="range" min="1" max="8" step="0.5" value="4"><span class="val" id="bsv">4</span></div>
   <div class="row"><label>Breath /s</label><input id="br" type="range" min="0.2" max="2" step="0.1" value="0.5"><span class="val" id="brv">0.5</span></div>
-  <h3 style="margin-top:12px">Expression</h3>
+  <h3>Expression</h3>
   <div class="btns" id="exprs"></div>
   <div class="btns" style="margin-top:8px">
-    <button id="camApp" class="on">App camera</button>
+    <button id="camApp" class="on">App cam</button>
     <button id="camFree">Free orbit</button>
+    <button id="idleBtn">Random idle: off</button>
   </div>
+  <h3>Emotion debug</h3>
+  <div id="dbg">—</div>
+  <div class="btns"><button id="savePose">Save pose ⭳</button></div>
+  <pre class="out" id="poseOut" style="display:none"></pre>
 </div>
 
 <div id="face" class="panel">
-  <h3>Eye overlay (FACE) — calibrate</h3>
-  <div class="row"><label>lx</label><input id="flx" type="range" min="0.2" max="0.5" step="0.005" value="0.40"><span class="val" id="flxv">0.40</span></div>
-  <div class="row"><label>rx</label><input id="frx" type="range" min="0.5" max="0.8" step="0.005" value="0.60"><span class="val" id="frxv">0.60</span></div>
-  <div class="row"><label>y</label><input id="fy" type="range" min="0.15" max="0.55" step="0.005" value="0.33"><span class="val" id="fyv">0.33</span></div>
-  <div class="row"><label>w</label><input id="fw" type="range" min="0.04" max="0.24" step="0.005" value="0.12"><span class="val" id="fwv">0.12</span></div>
-  <div class="row"><label>h</label><input id="fh" type="range" min="0.03" max="0.2" step="0.005" value="0.10"><span class="val" id="fhv">0.10</span></div>
-  <div class="row"><label>show eyes</label><input id="feye" type="checkbox" checked></div>
-  <div id="out">FACE = { … }</div>
+  <h3>Eye overlay editor (per-eye)</h3>
+  <div class="row"><label>L eye X</label><input id="Lx" type="range" min="0.2" max="0.5" step="0.004" value="0.40"><span class="val" id="Lxv">0.40</span></div>
+  <div class="row"><label>L eye Y</label><input id="Ly" type="range" min="0.15" max="0.55" step="0.004" value="0.33"><span class="val" id="Lyv">0.33</span></div>
+  <div class="row"><label>R eye X</label><input id="Rx" type="range" min="0.5" max="0.8" step="0.004" value="0.60"><span class="val" id="Rxv">0.60</span></div>
+  <div class="row"><label>R eye Y</label><input id="Ry" type="range" min="0.15" max="0.55" step="0.004" value="0.33"><span class="val" id="Ryv">0.33</span></div>
+  <div class="row"><label>Width</label><input id="Ew" type="range" min="0.04" max="0.24" step="0.004" value="0.12"><span class="val" id="Ewv">0.12</span></div>
+  <div class="row"><label>Height</label><input id="Eh" type="range" min="0.03" max="0.2" step="0.004" value="0.10"><span class="val" id="Ehv">0.10</span></div>
+  <div class="row"><label>Rotation°</label><input id="Er" type="range" min="-30" max="30" step="1" value="0"><span class="val" id="Erv">0</span></div>
+  <div class="row"><label>Radius</label><input id="Erad" type="range" min="0" max="1" step="0.05" value="0.5"><span class="val" id="Eradv">0.50</span></div>
+  <div class="row"><label>Opacity</label><input id="Eop" type="range" min="0.2" max="1" step="0.05" value="1"><span class="val" id="Eopv">1.00</span></div>
+  <div class="row"><label>Fur</label><input id="Efur" type="color" value="#8f8d92"></div>
+  <div class="btns"><button id="cpFace">Copy FACE</button><button id="dlFace">Download</button><button id="blinkTest">Test blink</button></div>
+  <pre class="out" id="faceOut"></pre>
 </div>
 
 <div id="fps">-- fps</div>
@@ -90,228 +107,160 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// Canonical bone map (mirror of src/config/mascot-bones.ts)
-const BONES = {
-  head: 'Bone_029', neck: 'Bone_028', chest: 'Bone_026',
-  leftShoulder: 'Bone_025', leftForeArm: 'Bone_024',
-  rightShoulder: 'Bone_020', rightForeArm: 'Bone_019',
-};
-const REQUIRED = ['head','leftShoulder','leftForeArm','rightShoulder','rightForeArm'];
+const BONES = { head:'Bone_029', neck:'Bone_028', chest:'Bone_026', leftShoulder:'Bone_025', leftForeArm:'Bone_024', rightShoulder:'Bone_020', rightForeArm:'Bone_019' };
+const REQUIRED = ['head','neck','chest','leftShoulder','rightShoulder','leftForeArm','rightForeArm'];
 const MODEL_URL = '../../assets/mascots/koa.glb';
-
+const D = Math.PI/180;
 const $ = (id) => document.getElementById(id);
-const app = $('app');
-const W = () => app.clientWidth, H = () => app.clientHeight;
+const app = $('app'), W = () => app.clientWidth, H = () => app.clientHeight;
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(W(), H());
-app.appendChild(renderer.domElement);
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(W(),H()); app.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0c0d12);
+scene.add(new THREE.GridHelper(6,24,0x2a3350,0x1a2036));
+const camera = new THREE.PerspectiveCamera(32, W()/H(), 0.1, 100);
+const APP_CAM = { pos:[0,0.8,3.5], look:[0,0.8,0] };
+camera.position.set(...APP_CAM.pos); camera.lookAt(...APP_CAM.look);
+const controls = new OrbitControls(camera, renderer.domElement); controls.target.set(...APP_CAM.look); controls.enabled = false;
+scene.add(new THREE.AmbientLight(0xffffff,0.9));
+const d1 = new THREE.DirectionalLight(0xffffff,1.35); d1.position.set(3,5,4); scene.add(d1);
+const d2 = new THREE.DirectionalLight(0x8f9bff,0.55); d2.position.set(-4,2,-2); scene.add(d2);
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0c0d12);
-const grid = new THREE.GridHelper(6, 24, 0x2a3350, 0x1a2036); grid.position.y = 0; scene.add(grid);
+// world-space bone posing (same math as the app)
+const bones={}, baseQ={}, parentW={}, parentWInv={};
+const _rd=new THREE.Quaternion(),_rd2=new THREE.Quaternion(),_acc=new THREE.Quaternion();
+const WX=new THREE.Vector3(1,0,0),WY=new THREE.Vector3(0,1,0),WZ=new THREE.Vector3(0,0,1);
+function poseBone(name,ax,ay,az){ const b=bones[name],base=baseQ[name],pw=parentW[name],pwi=parentWInv[name]; if(!b||!base||!pw)return;
+  _acc.identity(); if(ax){_rd.setFromAxisAngle(WX,ax);_acc.multiply(_rd);} if(ay){_rd2.setFromAxisAngle(WY,ay);_acc.multiply(_rd2);} if(az){_rd.setFromAxisAngle(WZ,az);_acc.multiply(_rd);}
+  b.quaternion.copy(pwi).multiply(_acc).multiply(pw).multiply(base); }
 
-const camera = new THREE.PerspectiveCamera(32, W() / H(), 0.1, 100);
-const APP_CAM = { pos: [0, 0.8, 3.5], look: [0, 0.8, 0] };
-camera.position.set(...APP_CAM.pos);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(...APP_CAM.look);
-controls.enabled = false; // start on app camera
-camera.lookAt(...APP_CAM.look);
-
-scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-const d1 = new THREE.DirectionalLight(0xffffff, 1.35); d1.position.set(3, 5, 4); scene.add(d1);
-const d2 = new THREE.DirectionalLight(0x8f9bff, 0.55); d2.position.set(-4, 2, -2); scene.add(d2);
-
-// ── world-space bone posing (same math as the app) ──
-const bones = {}, baseQ = {}, parentW = {}, parentWInv = {};
-const _rd = new THREE.Quaternion(), _rd2 = new THREE.Quaternion(), _acc = new THREE.Quaternion();
-const WX = new THREE.Vector3(1,0,0), WZ = new THREE.Vector3(0,0,1), WY = new THREE.Vector3(0,1,0);
-function poseBone(name, ax, ay, az) {
-  const b = bones[name], base = baseQ[name], pw = parentW[name], pwi = parentWInv[name];
-  if (!b || !base || !pw) return;
-  _acc.identity();
-  if (ax) { _rd.setFromAxisAngle(WX, ax); _acc.multiply(_rd); }
-  if (ay) { _rd2.setFromAxisAngle(WY, ay); _acc.multiply(_rd2); }
-  if (az) { _rd.setFromAxisAngle(WZ, az); _acc.multiply(_rd); }
-  b.quaternion.copy(pwi).multiply(_acc).multiply(pw).multiply(base);
-}
-
-let model, headBone;
-const loader = new GLTFLoader();
-loader.load(MODEL_URL, (gltf) => {
-  model = gltf.scene;
-  const box = new THREE.Box3().setFromObject(model);
-  const size = new THREE.Vector3(); box.getSize(size);
-  const center = new THREE.Vector3(); box.getCenter(center);
-  const s = 1.55 / (size.y || 1);
-  model.scale.setScalar(s);
-  model.position.set(-center.x * s, -box.min.y * s, -center.z * s);
+let model, skelHelper, headAxes;
+new GLTFLoader().load(MODEL_URL,(g)=>{
+  model=g.scene;
+  const box=new THREE.Box3().setFromObject(model), size=new THREE.Vector3(), center=new THREE.Vector3();
+  box.getSize(size); box.getCenter(center); const s=1.55/(size.y||1);
+  model.scale.setScalar(s); model.position.set(-center.x*s,-box.min.y*s,-center.z*s); model.userData.baseY=model.position.y;
   scene.add(model);
-  model.traverse((o) => { if (o.isMesh) o.frustumCulled = false; if (o.isBone) { bones[o.name] = o; baseQ[o.name] = o.quaternion.clone(); } });
-  model.updateWorldMatrix(true, true);
-  for (const n of Object.values(BONES)) { const b = bones[n]; if (b?.parent) { const w = b.parent.getWorldQuaternion(new THREE.Quaternion()); parentW[n] = w; parentWInv[n] = w.clone().invert(); } }
-  headBone = bones[BONES.head];
+  model.traverse((o)=>{ if(o.isMesh)o.frustumCulled=false; if(o.isBone){bones[o.name]=o; baseQ[o.name]=o.quaternion.clone();} });
+  model.updateWorldMatrix(true,true);
+  for(const n of Object.values(BONES)){ const b=bones[n]; if(b?.parent){ const w=b.parent.getWorldQuaternion(new THREE.Quaternion()); parentW[n]=w; parentWInv[n]=w.clone().invert(); } }
+  skelHelper=new THREE.SkeletonHelper(model); skelHelper.visible=false; scene.add(skelHelper);
+  headAxes=new THREE.AxesHelper(0.4); headAxes.visible=false; scene.add(headAxes);
   buildValidation(); buildTree();
-}, undefined, (err) => { $('valid').innerHTML = '<span class="bad">Load failed — serve from the <b>native/</b> folder (see README). </span>' + err; });
+},undefined,(e)=>{ $('valid').innerHTML='<span class="bad">Load failed — serve from the <b>native/</b> folder (README).</span>'; console.error(e); });
 
-function buildValidation() {
-  $('valid').innerHTML = REQUIRED.map(k => {
-    const ok = !!bones[BONES[k]];
-    return `<div class="${ok?'ok':'bad'}">${ok?'✓':'✗'} ${k} → ${BONES[k]}</div>`;
-  }).join('');
-}
-function buildTree() {
-  const lines = [];
-  model.traverse((o) => {
-    const depth = (() => { let d = 0, p = o; while (p && p !== model) { d++; p = p.parent; } return d; })();
-    if (o.isBone) lines.push(`<div class="tree"><span class="b" data-bone="${o.name}">${'· '.repeat(depth)}${o.name}</span></div>`);
-    else if (o.isMesh) lines.push(`<div class="tree"><span class="m">${'· '.repeat(depth)}◇ ${o.name || 'mesh'} (${(o.geometry.index?o.geometry.index.count/3:0)|0} tris)</span></div>`);
-  });
-  $('tree').innerHTML = lines.join('');
-  $('tree').querySelectorAll('[data-bone]').forEach(el => el.onclick = () => inspect(el.dataset.bone));
-}
-function inspect(name) {
-  const b = bones[name]; if (!b) return;
-  const p = new THREE.Vector3(); b.getWorldPosition(p);
-  $('insp').innerHTML = `<b>${name}</b><br>parent: ${b.parent?.name||'-'}<br>children: ${b.children.map(c=>c.name).join(', ')||'-'}<br>world: ${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}<br>quat: ${b.quaternion.x.toFixed(2)}, ${b.quaternion.y.toFixed(2)}, ${b.quaternion.z.toFixed(2)}, ${b.quaternion.w.toFixed(2)}`;
-}
+function buildValidation(){ $('valid').innerHTML=REQUIRED.map(k=>{const ok=!!bones[BONES[k]];return `<div class="${ok?'ok':'bad'}">${ok?'✓':'✗'} ${k} → ${BONES[k]}</div>`;}).join(''); }
+function buildTree(){ const L=[]; model.traverse((o)=>{ let d=0,p=o; while(p&&p!==model){d++;p=p.parent;} const pad='· '.repeat(d);
+  if(o.isBone)L.push(`<div><span class="b" data-bone="${o.name}">${pad}${o.name}</span></div>`);
+  else if(o.isMesh)L.push(`<div><span class="m">${pad}◇ ${o.name||'mesh'} (${(o.geometry.index?o.geometry.index.count/3:0)|0} tris, ${(o.geometry.attributes.position?.count||0)} verts)</span></div>`); });
+  $('tree').innerHTML=L.join(''); $('tree').querySelectorAll('[data-bone]').forEach(el=>el.onclick=()=>inspect(el.dataset.bone)); }
+function inspect(name){ const b=bones[name]; if(!b)return; const p=new THREE.Vector3(); b.getWorldPosition(p);
+  $('insp').innerHTML=`<b>${name}</b><br>parent: ${b.parent?.name||'-'}<br>children: ${b.children.map(c=>c.name).join(', ')||'-'}<br>world: ${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}<br>quat: ${b.quaternion.x.toFixed(2)}, ${b.quaternion.y.toFixed(2)}, ${b.quaternion.z.toFixed(2)}, ${b.quaternion.w.toFixed(2)}`; }
 
-// ── expressions: head(x,y,z deg) + arm out/fwd + forearm curl + lid closure ──
-const D = Math.PI / 180;
+// visualizer toggles
+$('vSkel').onchange=e=>{ if(skelHelper)skelHelper.visible=e.target.checked; };
+$('vAxis').onchange=e=>{ if(headAxes)headAxes.visible=e.target.checked; };
+$('vWire').onchange=e=>{ model?.traverse(o=>{ if(o.isMesh){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.wireframe=e.target.checked); } }); };
+$('vEyeBox').onchange=()=>layoutEyes();
+
+// expressions
 const EXPR = {
-  Neutral:    { h:[0,0,0],    lid:0,    fore:0 },
-  Happy:      { h:[2,0,5],    lid:0.15, fore:-0.1 },
-  Excited:    { h:[-3,0,0],   lid:0,    fore:-0.2, arm:1.6 },
-  Determined: { h:[4,0,0],    lid:0.25, fore:0 },
-  Sad:        { h:[8,0,0],    lid:0.55, fore:0 },
-  Sleep:      { h:[10,0,4],   lid:0.92, fore:0 },
-  Tired:      { h:[6,0,0],    lid:0.5,  fore:0 },
-  Surprised:  { h:[-4,0,0],   lid:-0.2, fore:0 },
-  Wink:       { h:[0,0,6],    lid:0,    fore:0, wink:true },
-  Wave:       { h:[-3,0,0],   lid:0,    fore:0, wave:true },
-  Curl:       { h:[0,0,0],    lid:0.1,  fore:1.2, arm:1.45 },
+  Neutral:{h:[0,0,0],lid:0,fore:0}, Happy:{h:[2,0,5],lid:0.18,fore:-0.1}, Excited:{h:[-3,0,0],lid:0,fore:-0.2,arm:1.6},
+  Determined:{h:[4,0,0],lid:0.28,fore:0}, Sad:{h:[8,0,0],lid:0.55,fore:0}, Sleep:{h:[10,0,4],lid:0.92,fore:0},
+  Tired:{h:[6,0,0],lid:0.5,fore:0}, Surprised:{h:[-4,0,0],lid:-0.15,fore:0}, Wink:{h:[0,0,6],lid:0,fore:0,wink:true},
+  Angry:{h:[5,0,0],lid:0.2,fore:0}, Wave:{h:[-3,0,0],lid:0,fore:0,wave:true}, Curl:{h:[0,0,0],lid:0.1,fore:1.2,arm:1.45},
 };
-let expr = 'Neutral';
-const exBtns = {};
-Object.keys(EXPR).forEach(name => {
-  const btn = document.createElement('button'); btn.textContent = name; btn.onclick = () => setExpr(name);
-  $('exprs').appendChild(btn); exBtns[name] = btn;
-});
-function setExpr(name) { expr = name; Object.entries(exBtns).forEach(([k,b]) => b.classList.toggle('on', k===name)); }
-setExpr('Neutral');
+let expr='Neutral'; const exB={};
+Object.keys(EXPR).forEach(n=>{ const b=document.createElement('button'); b.textContent=n; b.onclick=()=>setExpr(n); $('exprs').appendChild(b); exB[n]=b; });
+function setExpr(n){ expr=n; Object.entries(exB).forEach(([k,b])=>b.classList.toggle('on',k===n)); } setExpr('Neutral');
 
-// sliders
-const sl = (id, cb) => { const e = $(id), v = $(id+'v'); const f = () => { v.textContent = (+e.value).toString(); cb(+e.value); }; e.oninput = f; f(); };
-let headOverride = { x:0, y:0, z:0, active:false };
-sl('hx', v => { headOverride.x = v; headOverride.active = true; });
-sl('hy', v => { headOverride.y = v; headOverride.active = true; });
-sl('hz', v => { headOverride.z = v; headOverride.active = true; });
-let armOut = 24*D, armFwd = -17*D, blinkPerSec = 4, breathPerSec = 0.5;
-sl('ao', v => armOut = v*D); sl('af', v => armFwd = v*D);
-sl('bs', v => blinkPerSec = v); sl('br', v => breathPerSec = v);
+const sl=(id,cb)=>{ const e=$(id),v=$(id+'v'); const f=()=>{ if(v)v.textContent=(+e.value).toFixed((+e.step<1)?2:0); cb(+e.value); }; e.oninput=f; f(); };
+let headOv={x:0,y:0,z:0,on:false}; sl('hx',v=>{headOv.x=v;headOv.on=true;}); sl('hy',v=>{headOv.y=v;headOv.on=true;}); sl('hz',v=>{headOv.z=v;headOv.on=true;});
+let armOut=24,armFwd=-17,blinkPerSec=4,breathPerSec=0.5;
+sl('ao',v=>armOut=v); sl('af',v=>armFwd=v); sl('bs',v=>blinkPerSec=v); sl('br',v=>breathPerSec=v);
+$('camApp').onclick=()=>{controls.enabled=false;camera.position.set(...APP_CAM.pos);camera.lookAt(...APP_CAM.look);$('camApp').classList.add('on');$('camFree').classList.remove('on');};
+$('camFree').onclick=()=>{controls.enabled=true;$('camFree').classList.add('on');$('camApp').classList.remove('on');};
+let randomIdle=false; $('idleBtn').onclick=()=>{ randomIdle=!randomIdle; $('idleBtn').textContent='Random idle: '+(randomIdle?'on':'off'); $('idleBtn').classList.toggle('on',randomIdle); };
 
-$('camApp').onclick = () => { controls.enabled = false; camera.position.set(...APP_CAM.pos); camera.lookAt(...APP_CAM.look); $('camApp').classList.add('on'); $('camFree').classList.remove('on'); };
-$('camFree').onclick = () => { controls.enabled = true; $('camFree').classList.add('on'); $('camApp').classList.remove('on'); };
-
-// ── 2D eyelid overlay calibrator ──
-const overlay = $('overlay');
-const FACE = { lx:0.40, rx:0.60, y:0.33, w:0.12, h:0.10, fur:'#8f8d92' };
-['flx','frx','fy','fw','fh'].forEach(id => {
-  const key = { flx:'lx', frx:'rx', fy:'y', fw:'w', fh:'h' }[id];
-  sl(id, v => { FACE[key] = v; layoutEyes(); dumpFace(); });
-});
-$('feye').onchange = () => layoutEyes();
-const lidEls = [document.createElement('div'), document.createElement('div')];
-lidEls.forEach(el => { el.className = 'lid'; el.innerHTML = '<div></div>'; overlay.appendChild(el); });
-function projectHeadToScreen() {
-  // canvas centre of the model head, in overlay px — approx via head bone
-  if (!headBone) return null;
-  const p = new THREE.Vector3(); headBone.getWorldPosition(p); p.project(camera);
-  return { cx: (p.x*0.5+0.5)*W(), cy: (-p.y*0.5+0.5)*H() };
+// ── FACE (structured, per-eye) ──
+const FACE = { left:{x:0.40,y:0.33,w:0.12,h:0.10,rotation:0,radius:0.5,opacity:1}, right:{x:0.60,y:0.33,w:0.12,h:0.10,rotation:0,radius:0.5,opacity:1}, fur:'#8f8d92' };
+const overlay=$('overlay'); const lidEls=[document.createElement('div'),document.createElement('div')];
+lidEls.forEach(el=>{el.className='lid';el.innerHTML='<div></div>';overlay.appendChild(el);});
+function faceBox(){ const boxW=Math.min(W(),H())*0.55, boxH=boxW*1.25; return { boxW, boxH, ox:W()/2-boxW/2, oy:H()/2-boxH*0.5 }; }
+function layoutEyes(){ const {boxW,boxH,ox,oy}=faceBox(); const show=$('vEyeBox').checked; const eyes=[FACE.left,FACE.right];
+  eyes.forEach((e,i)=>{ const el=lidEls[i]; const eyeW=e.w*boxW, eyeH=e.h*boxH; el.style.display='block';
+    el.style.left=(ox+e.x*boxW-eyeW/2)+'px'; el.style.top=(oy+e.y*boxH-eyeH/2)+'px'; el.style.width=eyeW+'px'; el.style.height=eyeH+'px';
+    el.style.borderRadius=(Math.min(eyeW,eyeH)/2*e.radius)+'px'; el.style.opacity=e.opacity; el.style.transform='rotate('+e.rotation+'deg)';
+    el.classList.toggle('outline',show); el.firstChild.style.background=FACE.fur; });
 }
-function layoutEyes() {
-  const show = $('feye').checked;
-  // The app overlay is sized to the 3D CANVAS (size × size*1.25). Here we map
-  // FACE fractions onto the same box centred on the model. Use a nominal box.
-  const boxW = Math.min(W(), H()) * 0.55, boxH = boxW * 1.25;
-  const ox = W()/2 - boxW/2, oy = H()/2 - boxH*0.5;
-  const eyeW = FACE.w*boxW, eyeH = FACE.h*boxH;
-  [[FACE.lx],[FACE.rx]].forEach(([cx], i) => {
-    const el = lidEls[i];
-    el.style.display = show ? 'block' : 'none';
-    el.style.left = (ox + cx*boxW - eyeW/2) + 'px';
-    el.style.top = (oy + FACE.y*boxH - eyeH/2) + 'px';
-    el.style.width = eyeW + 'px'; el.style.height = eyeH + 'px';
-    el.firstChild.style.background = FACE.fur;
-  });
-}
-function dumpFace() {
-  $('out').textContent = 'FACE = { lx: ' + FACE.lx.toFixed(3) + ', rx: ' + FACE.rx.toFixed(3) +
-    ', y: ' + FACE.y.toFixed(3) + ', w: ' + FACE.w.toFixed(3) + ', h: ' + FACE.h.toFixed(3) + ", fur: '" + FACE.fur + "' }";
-}
+function bindEye(id,side,key,fmt){ sl(id,v=>{ FACE[side][key]=v; if(key==='w'||key==='h'){FACE.left[key]=v;FACE.right[key]=v;} else if(['rotation','radius','opacity'].includes(key)){FACE.left[key]=v;FACE.right[key]=v;} layoutEyes(); dumpFace(); }); }
+bindEye('Lx','left','x'); bindEye('Ly','left','y'); bindEye('Rx','right','x'); bindEye('Ry','right','y');
+bindEye('Ew','left','w'); bindEye('Eh','left','h'); bindEye('Er','left','rotation'); bindEye('Erad','left','radius'); bindEye('Eop','left','opacity');
+$('Efur').oninput=e=>{ FACE.fur=e.target.value; layoutEyes(); dumpFace(); };
+function faceStr(){ const e=o=>`{ x: ${o.x.toFixed(3)}, y: ${o.y.toFixed(3)}, w: ${o.w.toFixed(3)}, h: ${o.h.toFixed(3)}, rotation: ${o.rotation}, radius: ${o.radius}, opacity: ${o.opacity} }`;
+  return `export const FACE = {\n  left:  ${e(FACE.left)},\n  right: ${e(FACE.right)},\n  fur: '${FACE.fur}',\n};`; }
+function dumpFace(){ $('faceOut').textContent=faceStr(); }
+$('cpFace').onclick=()=>{ navigator.clipboard?.writeText(faceStr()); $('cpFace').textContent='Copied!'; setTimeout(()=>$('cpFace').textContent='Copy FACE',900); };
+$('dlFace').onclick=()=>download('mascot-face.ts', faceStr());
+let testBlink=0; $('blinkTest').onclick=()=>{ testBlink=1; };
 dumpFace(); layoutEyes();
 
-// ── animation loop ──
-const cur = { hx:0, hy:0, hz:0, armOut:0, armFwd:0, fore:0, lid:0 };
-const lerp = (a,b,t) => a + (b-a)*t;
-let t = 0, last = performance.now(), frames = 0, fpsT = 0, blinkTimer = 0, nextBlink = 2, look = { x:0, y:0, tx:0, ty:0, timer:0 };
-function tick(now) {
-  const dt = Math.min((now - last)/1000, 0.05); last = now; t += dt;
-  frames++; fpsT += dt; if (fpsT >= 0.5) { $('fps').textContent = Math.round(frames/fpsT) + ' fps'; frames = 0; fpsT = 0; }
+function download(name,text){ const b=new Blob([text],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; a.click(); }
 
-  const e = EXPR[expr];
-  // breathing
-  const breath = Math.sin(t * breathPerSec * Math.PI * 2);
-  // blink
-  blinkTimer += dt; let blink = 0;
-  if (blinkTimer > nextBlink) { const p = (blinkTimer - nextBlink) / 0.11; blink = p < 1 ? Math.sin(p*Math.PI) : (blinkTimer > nextBlink + 0.12 ? (blinkTimer = 0, nextBlink = 1/blinkPerSec + Math.random()*2, 0) : 0); }
-  // eye look
-  look.timer -= dt; if (look.timer <= 0) { look.tx = (Math.random()*2-1)*0.04; look.ty = (Math.random()*2-1)*0.03; look.timer = 3 + Math.random()*3; }
-  look.x = lerp(look.x, look.tx, 0.05); look.y = lerp(look.y, look.ty, 0.05);
+// save pose
+$('savePose').onclick=()=>{ const nm=(prompt('Pose name?','Happy')||'POSE').toUpperCase().replace(/[^A-Z0-9_]/g,'_');
+  const t=`export const ${nm} = {\n  head: { x: ${cur.hx.toFixed(1)}, y: ${cur.hy.toFixed(1)}, z: ${cur.hz.toFixed(1)} },\n  arm: { out: ${cur.armOut.toFixed(1)}, forward: ${cur.armFwd.toFixed(1)}, fore: ${cur.fore.toFixed(2)} },\n  eye: { close: ${cur.lid.toFixed(2)} },\n};`;
+  $('poseOut').style.display='block'; $('poseOut').textContent=t; download(nm.toLowerCase()+'.ts',t); };
 
-  // targets
-  let hx = e.h[0], hy = e.h[1], hz = e.h[2];
-  if (headOverride.active) { hx = headOverride.x; hy = headOverride.y; hz = headOverride.z; }
-  hx += breath * 0.6; // head micro nod from breathing
-  let tOut = e.arm ?? armOut/D, tFwd = armFwd/D, tFore = (e.fore||0);
-  let lid = Math.max(0, e.lid||0);
-  let waveFore = 0, winkR = 0;
-  if (e.wave) { tOut = 90; waveFore = Math.sin(t*9)*28; }
-  if (e.wink) winkR = 1; // close only right lid
+// ── loop ──
+const cur={hx:0,hy:0,hz:0,armOut:0,armFwd:0,fore:0,lid:0};
+const lerp=(a,b,t)=>a+(b-a)*t;
+let t=0,last=performance.now(),frames=0,fpsT=0,blinkTimer=0,nextBlink=2,look={x:0,y:0,tx:0,ty:0,timer:0},idleTimer=0;
+function pickIdle(){ const r=Math.random(); if(r<0.4){nextBlink=blinkTimer;} else if(r<0.6){nextBlink=blinkTimer;/*double*/} else if(r<0.7){look.tx=-0.04;} else if(r<0.8){look.tx=0.04;} else if(r<0.88){/*tilt handled below*/} }
+let idleTilt=0;
+function tick(now){ const dt=Math.min((now-last)/1000,0.05); last=now; t+=dt;
+  frames++; fpsT+=dt; if(fpsT>=0.5){ $('fps').textContent=Math.round(frames/fpsT)+' fps'; frames=0; fpsT=0; }
+  const e=EXPR[expr];
+  const breath=Math.sin(t*breathPerSec*Math.PI*2);
+  blinkTimer+=dt; let blink=0;
+  if(blinkTimer>nextBlink){ const p=(blinkTimer-nextBlink)/0.11; if(p<1)blink=Math.sin(p*Math.PI); else if(blinkTimer>nextBlink+0.12){blinkTimer=0;nextBlink=1/blinkPerSec+Math.random()*2;} }
+  if(testBlink>0){ blink=Math.max(blink,testBlink); testBlink-=dt*8; if(testBlink<0)testBlink=0; }
+  look.timer-=dt; if(look.timer<=0){ look.tx=(Math.random()*2-1)*0.04; look.ty=(Math.random()*2-1)*0.03; look.timer=3+Math.random()*3; }
+  look.x=lerp(look.x,look.tx,0.05); look.y=lerp(look.y,look.ty,0.05);
+  if(randomIdle){ idleTimer-=dt; if(idleTimer<=0){ pickIdle(); idleTilt=(Math.random()<0.3)?(Math.random()*2-1)*4:0; idleTimer=2+Math.random()*4; } }
 
-  const k = 0.12;
-  cur.hx = lerp(cur.hx, hx, k); cur.hy = lerp(cur.hy, hy, k); cur.hz = lerp(cur.hz, hz, k);
-  cur.armOut = lerp(cur.armOut, tOut, k); cur.armFwd = lerp(cur.armFwd, tFwd, k); cur.fore = lerp(cur.fore, tFore, k);
-  cur.lid = lerp(cur.lid, lid, k);
+  let hx=e.h[0],hy=e.h[1],hz=e.h[2];
+  if(headOv.on){ hx=headOv.x; hy=headOv.y; hz=headOv.z; }
+  hx+=breath*0.6; hz+=idleTilt;
+  let tOut=e.arm??armOut, tFwd=armFwd, tFore=e.fore||0, lid=Math.max(0,e.lid||0), waveFore=0, winkR=0;
+  if(e.wave){ tOut=90; waveFore=Math.sin(t*9)*28; } if(e.wink)winkR=1;
+  const k=0.12;
+  cur.hx=lerp(cur.hx,hx,k); cur.hy=lerp(cur.hy,hy,k); cur.hz=lerp(cur.hz,hz,k);
+  cur.armOut=lerp(cur.armOut,tOut,k); cur.armFwd=lerp(cur.armFwd,tFwd,k); cur.fore=lerp(cur.fore,tFore,k); cur.lid=lerp(cur.lid,lid,k);
 
-  if (model) {
-    // head (+ tiny eye-look adds to head yaw for a "looking" read)
-    poseBone(BONES.head, cur.hx*D, (cur.hy + look.x*20)*D, cur.hz*D);
-    // arms: +X arm = leftShoulder (+Z out), −X arm = rightShoulder (−Z out)
+  if(model){
+    poseBone(BONES.head, cur.hx*D, (cur.hy+look.x*20)*D, cur.hz*D);
     poseBone(BONES.leftShoulder, cur.armFwd*D, 0, cur.armOut*D);
     poseBone(BONES.rightShoulder, cur.armFwd*D, 0, -cur.armOut*D);
-    poseBone(BONES.leftForeArm, (cur.fore + waveFore/57.3), 0, 0);
+    poseBone(BONES.leftForeArm, (cur.fore+waveFore/57.3), 0, 0);
     poseBone(BONES.rightForeArm, cur.fore, 0, 0);
-    // gentle body bob
-    model.position.y = (model.userData.baseY ?? (model.userData.baseY = model.position.y)) + breath * 0.01;
+    model.position.y=model.userData.baseY+breath*0.01;
+    if(headAxes?.visible){ const hb=bones[BONES.head]; if(hb){ hb.getWorldPosition(headAxes.position); hb.getWorldQuaternion(headAxes.quaternion); } }
   }
+  // eyelids
+  const {boxH}=faceBox();
+  const cL=Math.max(cur.lid,blink), cR=Math.max(cur.lid,blink,winkR?1:0);
+  lidEls[0].firstChild.style.transform=`translateY(${(cL-1)*FACE.left.h*boxH}px)`;
+  lidEls[1].firstChild.style.transform=`translateY(${(cR-1)*FACE.right.h*boxH}px)`;
 
-  // eyelids (blink + emotion) — translateY from -h (open) to 0 (closed)
-  const closeL = Math.max(cur.lid, blink);
-  const closeR = Math.max(cur.lid, blink, winkR ? 1 : 0);
-  const eyeH = FACE.h * Math.min(W(),H())*0.55*1.25;
-  lidEls[0].firstChild.style.transform = `translateY(${(closeL-1)*eyeH}px)`;
-  lidEls[1].firstChild.style.transform = `translateY(${(closeR-1)*eyeH}px)`;
+  $('dbg').textContent=`expr: ${expr}\nhead: ${cur.hx.toFixed(1)}, ${cur.hy.toFixed(1)}, ${cur.hz.toFixed(1)}\narm out/fwd: ${cur.armOut.toFixed(0)} / ${cur.armFwd.toFixed(0)}\neye close: ${cur.lid.toFixed(2)}  blink: ${blink.toFixed(2)}\nbreath: ${breath.toFixed(2)}  idle: ${randomIdle?'on':'off'}`;
 
-  if (controls.enabled) controls.update();
-  renderer.render(scene, camera);
+  if(controls.enabled)controls.update();
+  renderer.render(scene,camera);
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
-
-addEventListener('resize', () => { renderer.setSize(W(), H()); camera.aspect = W()/H(); camera.updateProjectionMatrix(); layoutEyes(); });
+addEventListener('resize',()=>{ renderer.setSize(W(),H()); camera.aspect=W()/H(); camera.updateProjectionMatrix(); layoutEyes(); });
 </script>
 </body>
 </html>

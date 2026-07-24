@@ -31,10 +31,19 @@ Requires internet (Three.js loads from a CDN via import map).
 - **Expression** — Neutral / Happy / Excited / Determined / Sad / Sleep /
   Tired / Surprised / Wink / Wave / Curl (procedural: head + arms + eyelids +
   breathing, no facial rig needed).
-- **Eye overlay (FACE)** — drag the yellow lid boxes over the model's real eyes
-  with the lx / rx / y / w / h sliders. The box at the bottom prints the
-  `FACE = { … }` values — **paste those into `FACE` in
-  `src/components/ascnd/mascot-3d.tsx`** so the in-app eyelids line up.
+- **Eye overlay editor (per-eye)** — independent Left/Right eye X-Y plus shared
+  width, height, rotation, corner radius, opacity and fur colour. Drag the
+  dashed boxes over the model's real eyes. **Copy FACE** / **Download** emit a
+  structured object you paste straight into `src/config/mascot-face.ts`:
+  ```ts
+  export const FACE = { left: {...}, right: {...}, fur: '#8f8d92' };
+  ```
+- **Visualizer** — Skeleton, Wireframe, Head axis, Eye boxes toggles.
+- **Emotion debug** — live head/arm/eye/blink/breathing readout.
+- **Save pose** — names + downloads the current head/arm/eye values as a `.ts`
+  pose object.
+- **Random idle** — weighted blink / double-blink / look / tilt so it never
+  loops identically.
 
 ## Notes
 
