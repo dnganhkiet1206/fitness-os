@@ -11,20 +11,9 @@
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { useGLTF } from '@react-three/drei/native';
 import { useEffect, useMemo, useRef } from 'react';
-import { View } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
 import * as THREE from 'three';
 
 import { BONES, REQUIRED_BONES } from '@/config/mascot-bones';
-import { FACE, type EyeSpec } from '@/config/mascot-face';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
 
 const MODEL = require('../../../assets/mascots/koa.glb');
@@ -208,19 +197,20 @@ function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number 
       const hop = Math.max(0, Math.sin(t * 6)) * 0.16;
       py = hop;
       spin = Math.min(t * 2.5, Math.PI * 2);
-      // both arms thrown up (abduct near-vertical)
-      tp.rArmX = 0;
-      tp.lArmX = 0;
-      tp.rArmZ = 2.3;
-      tp.lArmZ = -2.3;
-      tp.head = -0.12;
+      // arms up in a "Y" (out to the sides) — kept clear of the head/ears, not
+      // straight up. Slight L/R offset so it isn't perfectly symmetric.
+      tp.rArmX = -0.15;
+      tp.lArmX = -0.15;
+      tp.rArmZ = 1.72;
+      tp.lArmZ = -1.62;
+      tp.head = -0.1;
     } else if (e === 'wave') {
       // right arm raised out to the side, forearm waving; left stays at rest
       tp.rArmX = -0.1;
-      tp.rArmZ = 1.7;
-      tp.rFore = Math.sin(t * 9) * 0.5;
-      tp.tilt = 0.12;
-      tp.head = -0.05;
+      tp.rArmZ = 1.5;
+      tp.rFore = Math.sin(t * 9) * 0.45;
+      tp.tilt = 0.1;
+      tp.head = -0.04;
     } else if (e === 'curl') {
       // double-biceps flex — arms out to the sides, forearms pump up
       const pump = Math.sin(t * 3) * 0.5 + 0.5;
@@ -295,16 +285,20 @@ function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number 
       const shB = Math.sin(t * bRate + 0.25);
 
       py = bodyB * (0.01 + restless * 0.005) + stretch * 0.05;
-      tp.head = id.lookY + headB * 0.02 * restless + 0.02 - stretch * 0.12;
+      tp.head = id.lookY + headB * 0.02 * restless + 0.03 - stretch * 0.12;
       tp.headYaw = id.lookX; // eases slowly below (deliberate turn)
-      tp.tilt = id.tiltZ + weight * 0.03 + shB * 0.01;
+      tp.tilt = 0.05 + id.tiltZ + weight * 0.03 + shB * 0.01; // P4: slight default head tilt
       roll = weight * 0.05; // body weight-shift
-      const armSway = shB * 0.025 * restless + weight * 0.05;
-      tp.rArmZ = REST_ARM_OUT + armSway + stretch * 0.5;
-      tp.lArmZ = -REST_ARM_OUT + armSway - stretch * 0.5;
+      // P8 — arms never perfectly symmetric: different phase + amplitude L vs R
+      const swayR = shB * 0.026 * restless + weight * 0.05;
+      const swayL = Math.sin(t * bRate + 0.9) * 0.022 * restless - weight * 0.05;
+      tp.rArmZ = REST_ARM_OUT + swayR + stretch * 0.5;
+      tp.lArmZ = -REST_ARM_OUT * 0.93 + swayL - stretch * 0.5;
       tp.rArmX = REST_ARM_FWD - stretch * 0.2;
-      tp.lArmX = REST_ARM_FWD - stretch * 0.2;
-      tp.rFore = (happy ? -0.12 : 0) - headB * 0.03;
+      tp.lArmX = REST_ARM_FWD * 0.9 - stretch * 0.2;
+      // P4 — resting elbow bend (arms not fully extended), slightly asymmetric
+      tp.rFore = (happy ? -0.18 : -0.12) - headB * 0.03;
+      tp.lFore = (happy ? -0.15 : -0.09) - shB * 0.025;
     }
 
     // smooth the pose toward the target (head look eases a touch slower)
@@ -319,6 +313,19 @@ function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number 
     c.lArmZ = lerp(c.lArmZ, tp.lArmZ, k);
     c.rFore = lerp(c.rFore, tp.rFore, k);
     c.lFore = lerp(c.lFore, tp.lFore, k);
+
+    // P2 — anatomical limits: no pose may exceed these, so nothing can push an
+    // arm through the head/ear or over-bend the neck (radians).
+    const CL = THREE.MathUtils.clamp;
+    c.head = CL(c.head, -0.35, 0.6); // nod up / down
+    c.headYaw = CL(c.headYaw, -0.5, 0.5); // look left / right
+    c.tilt = CL(c.tilt, -0.32, 0.32); // head roll
+    c.rArmZ = CL(c.rArmZ, -0.25, 1.8); // +X arm abduction (max keeps it clear of the head)
+    c.lArmZ = CL(c.lArmZ, -1.8, 0.25); // −X arm abduction
+    c.rArmX = CL(c.rArmX, -0.9, 0.4); // arm forward / back
+    c.lArmX = CL(c.lArmX, -0.9, 0.4);
+    c.rFore = CL(c.rFore, -1.7, 0.3); // forearm curl
+    c.lFore = CL(c.lFore, -1.7, 0.3);
 
     // apply to bones (head: nod-X + look-Y + tilt-Z; arms: forward-X + abduct-Z)
     poseBone(RIG.head, c.head, c.headYaw, c.tilt);
@@ -346,93 +353,6 @@ function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number 
   );
 }
 
-// ── 2D eyelid overlay: blink + held-closed for sleepy/sad emotions (per-eye) ──
-function FaceOverlay({ emotion, size }: { emotion: MascotEmotion; size: number }) {
-  const W = size;
-  const Hc = size * 1.25;
-
-  const blink = useSharedValue(0); // 0 = open, 1 = closed
-  const base = useSharedValue(0); // emotion-held closure
-  const wink = useSharedValue(0); // right-eye only (wink action → sad? reserved)
-
-  useEffect(() => {
-    blink.value = withRepeat(
-      withSequence(
-        withDelay(2600, withTiming(1, { duration: 70, easing: Easing.in(Easing.quad) })),
-        withTiming(0, { duration: 110, easing: Easing.out(Easing.quad) }),
-      ),
-      -1,
-    );
-  }, [blink]);
-
-  useEffect(() => {
-    const target =
-      emotion === 'sleep' ? 0.92 : emotion === 'tired' ? 0.5 : emotion === 'sad' ? 0.55 : 0;
-    base.value = withTiming(target, { duration: 420 });
-    wink.value = 0;
-  }, [emotion, base, wink]);
-
-  return (
-    <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, width: W, height: Hc }}>
-      <Eyelid eye={FACE.left} W={W} Hc={Hc} blink={blink} base={base} extra={undefined} />
-      <Eyelid eye={FACE.right} W={W} Hc={Hc} blink={blink} base={base} extra={wink} />
-    </View>
-  );
-}
-
-function Eyelid({
-  eye,
-  W,
-  Hc,
-  blink,
-  base,
-  extra,
-}: {
-  eye: EyeSpec;
-  W: number;
-  Hc: number;
-  blink: { value: number };
-  base: { value: number };
-  extra?: { value: number };
-}) {
-  const eyeW = eye.w * W;
-  const eyeH = eye.h * Hc;
-  const lidStyle = useAnimatedStyle(() => {
-    const c = Math.max(base.value, blink.value, extra ? extra.value : 0); // 0 open → 1 closed
-    return { transform: [{ translateY: (c - 1) * eyeH }] };
-  });
-  return (
-    <View
-      style={{
-        position: 'absolute',
-        left: eye.x * W - eyeW / 2,
-        top: eye.y * Hc - eyeH / 2,
-        width: eyeW,
-        height: eyeH,
-        borderRadius: (Math.min(eyeW, eyeH) / 2) * eye.radius,
-        overflow: 'hidden',
-        opacity: eye.opacity,
-        transform: [{ rotate: `${eye.rotation}deg` }],
-      }}>
-      <Animated.View
-        style={[
-          {
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 0,
-            height: '100%',
-            backgroundColor: FACE.fur,
-            borderBottomLeftRadius: eyeW * 0.5,
-            borderBottomRightRadius: eyeW * 0.5,
-          },
-          lidStyle,
-        ]}
-      />
-    </View>
-  );
-}
-
 export function Mascot3D({
   emotion = 'idle',
   size = 200,
@@ -444,26 +364,26 @@ export function Mascot3D({
   accent?: string;
   level?: number;
 }) {
+  // NB: no 2D eyelid overlay — the model has no facial rig and floating fake
+  // lids broke the quality. Blink/expression will come from a proper method
+  // (eye texture-swap or a rig) later, not detached rectangles.
   return (
-    <View style={{ width: size, height: size * 1.25 }}>
-      <Canvas
-        style={{ flex: 1 }}
-        camera={{ position: [0, 0.8, 3.5], fov: 32 }}
-        gl={{ alpha: true, antialias: true }}
-        onCreated={({ gl, camera }) => {
-          gl.setClearColor(0x000000, 0);
-          // Look horizontally at the buddy's mid-body so the feet sit ~10% above
-          // the canvas bottom — leaves a margin so the shoes are never clipped,
-          // and the podium.cy is tuned to meet the feet at that height.
-          camera.lookAt(0, 0.8, 0);
-        }}>
-        <ambientLight intensity={0.9} />
-        <directionalLight position={[3, 5, 4]} intensity={1.35} castShadow />
-        <directionalLight position={[-4, 2, -2]} intensity={0.55} color={accent} />
-        <Koala emotion={emotion} level={level} />
-      </Canvas>
-      <FaceOverlay emotion={emotion} size={size} />
-    </View>
+    <Canvas
+      style={{ width: size, height: size * 1.25 }}
+      camera={{ position: [0, 0.8, 3.5], fov: 32 }}
+      gl={{ alpha: true, antialias: true }}
+      onCreated={({ gl, camera }) => {
+        gl.setClearColor(0x000000, 0);
+        // Look horizontally at the buddy's mid-body so the feet sit ~10% above
+        // the canvas bottom — leaves a margin so the shoes are never clipped,
+        // and the podium.cy is tuned to meet the feet at that height.
+        camera.lookAt(0, 0.8, 0);
+      }}>
+      <ambientLight intensity={0.9} />
+      <directionalLight position={[3, 5, 4]} intensity={1.35} castShadow />
+      <directionalLight position={[-4, 2, -2]} intensity={0.55} color={accent} />
+      <Koala emotion={emotion} level={level} />
+    </Canvas>
   );
 }
 
