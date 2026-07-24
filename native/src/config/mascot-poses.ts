@@ -35,8 +35,10 @@ export const POSES: Record<string, KoaPose> = {
   celebrate: { hx: -0.12, hy: 0, hz: 0, armR: 1.67, armL: 1.6, armFwd: -0.15, foreR: -0.1, foreL: -0.12, lean: 0 },
   wave: { hx: -0.06, hy: 0, hz: 0.1, armR: 1.5, armL: OUT, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0 },
   workout: { hx: -0.03, hy: 0, hz: 0, armR: 1.45, armL: 1.4, armFwd: 0, foreR: -1.0, foreL: -1.0, lean: 0 },
-  sleep: { hx: 0.42, hy: 0, hz: 0.14, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0.14 },
-  tired: { hx: 0.24, hy: 0, hz: 0.04, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0.05 },
+  // Talking-Tom style: the head stays mostly upright, emotion will come from
+  // the FACE later — so even sleep/tired only droop a little.
+  sleep: { hx: 0.18, hy: 0, hz: 0.1, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0.06 },
+  tired: { hx: 0.1, hy: 0, hz: 0.03, armR: OUT, armL: OUT * 0.95, armFwd: FWD, foreR: -0.1, foreL: -0.09, lean: 0.03 },
 };
 
 export type PoseKey = keyof typeof POSES;

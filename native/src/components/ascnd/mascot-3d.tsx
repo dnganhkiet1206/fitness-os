@@ -246,7 +246,7 @@ function Koala({ emotion, level = 1 }: { emotion: MascotEmotion; level?: number 
     let lFore = p.foreL - shB * 0.025 - pump * 0.5;
 
     // ── 7. anatomical clamps (P2) ──
-    headX = clamp(headX, -0.35, 0.6);
+    headX = clamp(headX, -0.35, 0.28); // cap head-down: Talking-Tom stays upright, emotion is on the face
     headY = clamp(headY, -0.5, 0.5);
     headZ = clamp(headZ, -0.32, 0.32);
     rArmZ = clamp(rArmZ, -0.25, 1.8);
