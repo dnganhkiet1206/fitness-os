@@ -11,8 +11,10 @@
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { useGLTF } from '@react-three/drei/native';
 import { useEffect, useMemo, useRef } from 'react';
+import { View } from 'react-native';
 import * as THREE from 'three';
 
+import { MascotFaceOverlay } from '@/components/ascnd/mascot-face-overlay';
 import { BONES, REQUIRED_BONES } from '@/config/mascot-bones';
 import { POSES, type KoaPose, type PoseKey } from '@/config/mascot-poses';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
@@ -294,26 +296,28 @@ export function Mascot3D({
   accent?: string;
   level?: number;
 }) {
-  // NB: no 2D eyelid overlay — the model has no facial rig and floating fake
-  // lids broke the quality. Blink/expression will come from a proper method
-  // (eye texture-swap or a rig) later, not detached rectangles.
+  // The 3D body + a 2D expression face (Talking-Tom style) aligned on top —
+  // the model has no facial rig, so eyebrows / mouth / eyelids carry emotion.
   return (
-    <Canvas
-      style={{ width: size, height: size * 1.25 }}
-      camera={{ position: [0, 0.8, 3.5], fov: 32 }}
-      gl={{ alpha: true, antialias: true }}
-      onCreated={({ gl, camera }) => {
-        gl.setClearColor(0x000000, 0);
-        // Look horizontally at the buddy's mid-body so the feet sit ~10% above
-        // the canvas bottom — leaves a margin so the shoes are never clipped,
-        // and the podium.cy is tuned to meet the feet at that height.
-        camera.lookAt(0, 0.8, 0);
-      }}>
-      <ambientLight intensity={0.9} />
-      <directionalLight position={[3, 5, 4]} intensity={1.35} castShadow />
-      <directionalLight position={[-4, 2, -2]} intensity={0.55} color={accent} />
-      <Koala emotion={emotion} level={level} />
-    </Canvas>
+    <View style={{ width: size, height: size * 1.25 }}>
+      <Canvas
+        style={{ flex: 1 }}
+        camera={{ position: [0, 0.8, 3.5], fov: 32 }}
+        gl={{ alpha: true, antialias: true }}
+        onCreated={({ gl, camera }) => {
+          gl.setClearColor(0x000000, 0);
+          // Look horizontally at the buddy's mid-body so the feet sit ~10% above
+          // the canvas bottom — leaves a margin so the shoes are never clipped,
+          // and the podium.cy is tuned to meet the feet at that height.
+          camera.lookAt(0, 0.8, 0);
+        }}>
+        <ambientLight intensity={0.9} />
+        <directionalLight position={[3, 5, 4]} intensity={1.35} castShadow />
+        <directionalLight position={[-4, 2, -2]} intensity={0.55} color={accent} />
+        <Koala emotion={emotion} level={level} />
+      </Canvas>
+      <MascotFaceOverlay emotion={emotion} size={size} />
+    </View>
   );
 }
 
