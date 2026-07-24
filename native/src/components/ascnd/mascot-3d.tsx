@@ -23,6 +23,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as THREE from 'three';
 
+import { BONES, REQUIRED_BONES } from '@/config/mascot-bones';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
 
 /**
@@ -43,14 +44,14 @@ const FACE = {
 
 const MODEL = require('../../../assets/mascots/koa.glb');
 
-// ── Bone map (from koa.glb rest-pose analysis, UniRig auto-rig, 38-bone rig) ──
-const BONES = {
-  head: 'Bone_029', // neck base — rigid head rotation (no face warp)
-  chest: 'Bone_003',
-  rUpperArm: 'Bone_025', // right shoulder → elbow Bone_024
-  rForearm: 'Bone_024',
-  lUpperArm: 'Bone_020', // left shoulder → elbow Bone_019
-  lForearm: 'Bone_019',
+// Animation roles → canonical bones (mascot-bones.ts is the single source of
+// truth). `posArm` is the +X arm (abducts with +Z), `negArm` the −X arm (−Z).
+const RIG = {
+  head: BONES.head,
+  posArm: BONES.leftShoulder,
+  posFore: BONES.leftForeArm,
+  negArm: BONES.rightShoulder,
+  negFore: BONES.rightForeArm,
 } as const;
 
 // reusable temporaries (single koala on screen, so module-shared is fine)
@@ -112,6 +113,13 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
         q[o.name] = o.quaternion.clone();
       }
     });
+    // Validate the rig (warn, never crash) per the spec's automatic check.
+    for (const key of REQUIRED_BONES) {
+      if (!b[BONES[key]]) {
+        // eslint-disable-next-line no-console
+        console.warn(`[Mascot3D] missing bone "${key}" (${BONES[key]}) — animation for it is skipped`);
+      }
+    }
     // Cache each animated bone's parent world-orientation (at rest) so we can
     // convert a world-space rotation into the bone's local quaternion.
     scene.updateWorldMatrix(true, true);
@@ -246,11 +254,11 @@ function Koala({ emotion }: { emotion: MascotEmotion }) {
     c.lFore = lerp(c.lFore, tp.lFore, k);
 
     // apply to bones (upper arms: forward-X + abduct-Z; forearms: curl-X)
-    poseBone(BONES.head, c.head, c.tilt);
-    poseBone(BONES.rUpperArm, c.rArmX, c.rArmZ);
-    poseBone(BONES.rForearm, c.rFore, 0);
-    poseBone(BONES.lUpperArm, c.lArmX, c.lArmZ);
-    poseBone(BONES.lForearm, c.lFore, 0);
+    poseBone(RIG.head, c.head, c.tilt);
+    poseBone(RIG.posArm, c.rArmX, c.rArmZ);
+    poseBone(RIG.posFore, c.rFore, 0);
+    poseBone(RIG.negArm, c.lArmX, c.lArmZ);
+    poseBone(RIG.negFore, c.lFore, 0);
 
     // whole-object
     g.position.y = lerp(g.position.y, py, 0.15);
