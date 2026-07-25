@@ -50,76 +50,50 @@ export const SHAPES = {
     'M120 272 C92 272 70 277 70 283 C70 289 92 294 120 294 ' +
     'C149 294 171 289 171 283 C171 277 149 272 120 272 Z',
 
-  /** 02 — left ear: large, wavy outer edge, heavier at the base */
-  earL:
-    'M62 50 C46 33 22 32 11 49 C0 66 3 93 18 107 ' +
-    'C31 119 52 118 62 105 C71 94 72 62 62 50 Z',
-  /** 04 — inner ear left */
-  earLInner:
-    'M59 66 C47 54 30 56 23 68 C16 81 19 99 31 106 ' +
-    'C42 112 56 107 60 96 C64 86 65 74 59 66 Z',
-
-  /** 03 — right ear: intentionally NOT a mirror of the left */
-  earR:
-    'M180 44 C197 27 221 29 231 47 C241 65 237 92 221 104 ' +
-    'C208 114 188 112 180 99 C172 87 171 56 180 44 Z',
-  /** 05 — inner ear right */
-  earRInner:
-    'M177 60 C190 49 207 52 213 65 C219 78 215 96 203 102 ' +
-    'C192 107 179 101 176 90 C173 80 172 67 177 60 Z',
-
   /**
-   * 01 — head. 20 nodes. Not an ellipse: the crown dips slightly, the
-   * cheeks bulge low and the left side is a touch fuller than the right.
+   * MASTER SILHOUETTE — ears, head, cheeks, waist and body are ONE
+   * continuous Bézier outline (18 nodes). Drawing them as separate
+   * stacked blobs is what made earlier versions read as glued-together
+   * ellipses; here the contour never breaks, so the form reads sculpted.
    */
-  head:
-    'M120 26 C149 24 173 37 187 59 ' +
-    'C197 76 201 95 199 113 ' +
-    'C197 139 181 161 155 171 ' +
-    'C141 177 128 179 119 179 ' +
-    'C101 179 83 175 68 167 ' +
-    'C43 154 29 132 28 107 ' +
-    'C27 87 33 67 47 52 ' +
-    'C63 34 92 27 120 26 Z',
-  /** soft light patch, upper-left key light */
-  headLight:
-    'M84 46 C63 56 48 74 47 94 C63 78 84 63 106 55 C99 47 91 44 84 46 Z',
+  silhouette:
+    'M120 34 ' +
+    'C142 32 160 38 173 50 ' +
+    'C184 33 210 28 224 44 ' +      // right ear grows out of the skull
+    'C240 61 238 92 220 104 ' +
+    'C213 109 205 111 198 110 ' +
+    'C197 133 190 154 176 167 ' +   // right cheek flows down
+    'C173 170 170 172 167 174 ' +
+    'C172 184 175 198 175 213 ' +   // straight into the small body
+    'C175 240 152 259 121 260 ' +
+    'C90 261 66 242 66 214 ' +
+    'C66 199 69 185 74 175 ' +
+    'C71 173 68 171 65 168 ' +
+    'C51 155 44 134 43 111 ' +      // left cheek back up
+    'C36 112 28 110 21 104 ' +
+    'C4 91 3 61 19 45 ' +           // left ear
+    'C34 30 60 34 71 51 ' +
+    'C84 39 100 35 120 34 Z',
 
-  /** 06 — face patch, deliberately off-round and pushed slightly left */
+  /** inner ears — detail drawn over the silhouette, hiding any seam */
+  earLInner:
+    'M42 66 C30 58 17 63 13 76 C9 90 15 102 26 104 C37 106 45 97 46 85 C47 76 46 70 42 66 Z',
+  earRInner:
+    'M199 62 C211 54 225 60 228 74 C231 88 224 100 213 101 C202 102 195 93 195 81 C195 72 196 66 199 62 Z',
+
+  /** face patch — pushed 2px left of centre, never a true oval */
   facePatch:
-    'M117 86 C90 85 71 103 72 127 C73 150 94 165 119 164 ' +
-    'C145 163 163 148 162 125 C161 101 142 86 117 86 Z',
+    'M118 92 C90 91 70 110 71 135 C72 159 94 175 120 174 ' +
+    'C147 173 166 157 165 133 C164 108 144 92 118 92 Z',
 
-  /** 18 — body: small standing oval that tucks under the head */
-  body:
-    'M119 150 C93 150 73 172 71 202 ' +
-    'C69 234 88 260 120 261 ' +
-    'C152 262 170 237 169 205 ' +
-    'C168 175 147 150 119 150 Z',
-  /** 19 — belly, vertical oval, smaller than the body */
+  /** belly — small vertical form tucked into the body */
   belly:
-    'M117 178 C97 179 85 197 86 219 ' +
-    'C87 241 101 254 118 253 ' +
-    'C137 252 149 237 148 215 ' +
-    'C147 193 135 177 117 178 Z',
+    'M120 186 C101 187 89 203 90 222 C91 241 104 253 121 252 ' +
+    'C139 251 150 238 149 219 C148 200 137 185 120 186 Z',
 
-  /** 20 — left arm: curved capsule, never straight */
-  armL:
-    'M74 166 C59 170 48 192 50 215 ' +
-    'C52 233 68 240 77 228 C86 214 86 176 74 166 Z',
-  /** 21 — right arm, a little longer than the left */
-  armR:
-    'M166 162 C182 166 194 189 192 213 ' +
-    'C190 232 173 239 164 227 C154 212 154 172 166 162 Z',
-
-  /** 22 — left leg: short capsule, splayed outward */
-  legL:
-    'M92 234 C79 236 71 252 74 266 ' +
-    'C77 278 96 280 102 269 C108 257 103 236 92 234 Z',
-  /** 23 — right leg */
-  legR:
-    'M146 232 C133 234 126 250 129 264 ' +
-    'C133 277 151 278 157 267 C163 255 157 234 146 232 Z',
+  /** arms — curved capsules that overlap deep into the torso */
+  armL: 'M77 180 C62 186 54 208 58 227 C62 243 77 246 84 234 C91 220 89 190 77 180 Z',
+  armR: 'M164 177 C179 183 188 205 184 224 C180 240 165 243 158 231 C151 217 152 187 164 177 Z',
 
   /** 13 — nose: teardrop, round base, softly pointed top */
   nose:
@@ -137,15 +111,13 @@ export const SHAPES = {
 
 /** Rotation pivots — joints, per the animation rules */
 export const PIVOTS = {
-  head: { x: 120, y: 150 }, // neck
-  earL: { x: 58, y: 100 },  // ear base
-  earR: { x: 184, y: 96 },
-  armL: { x: 76, y: 170 },  // shoulder
-  armR: { x: 164, y: 166 },
-  legL: { x: 94, y: 238 },  // hip
-  legR: { x: 145, y: 236 },
+  /** whole-figure tilt (the silhouette is a single piece) */
+  body: { x: 120, y: 230 },
+  armL: { x: 79, y: 184 }, // shoulder
+  armR: { x: 162, y: 181 },
 } as const;
 
+/** A single filled Bézier layer */
 export interface Layer {
   d: string;
   fill: string;
@@ -156,15 +128,15 @@ export interface Layer {
 /** 07/08 — vertical oval eye wells, authored as paths (left is smaller) */
 const EYE_L = {
   well:
-    'M89 80 C77 80 70 93 70 107 C70 122 78 133 89 133 ' +
-    'C100 133 108 121 108 106 C108 92 100 80 89 80 Z',
-  cx: 89, cy: 106, rx: 19, ry: 26,
+    'M89 84 C76 84 68 98 68 113 C68 129 77 141 89 141 ' +
+    'C101 141 110 128 110 112 C110 97 101 84 89 84 Z',
+  cx: 89, cy: 112, rx: 21, ry: 29,
 };
 const EYE_R = {
   well:
-    'M152 76 C139 76 131 90 131 105 C131 121 140 133 152 133 ' +
-    'C164 133 172 120 172 104 C172 89 164 76 152 76 Z',
-  cx: 152, cy: 104, rx: 21, ry: 28,
+    'M153 80 C139 80 130 95 130 111 C130 128 140 141 153 141 ' +
+    'C166 141 176 127 176 110 C176 94 166 80 153 80 Z',
+  cx: 153, cy: 110, rx: 23, ry: 31,
 };
 
 /** 09/10 — pupil: teardrop-ish oval, never centred (pushed up + inward) */
