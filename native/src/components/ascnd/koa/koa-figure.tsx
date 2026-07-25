@@ -62,7 +62,7 @@ export function KoaFigure({
   hideShadow,
 }: Props) {
   const p = { tilt: 0, armL: 0, armR: 0, ...pose };
-  const height = size * (300 / 240);
+  const height = size * (300 / 292);
 
   return (
     <Svg width={size} height={height} viewBox={KOA_VIEWBOX}>
