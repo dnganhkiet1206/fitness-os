@@ -68,28 +68,28 @@ export const SHAPES = {
     'C136 24 152 30 163 42 ' +
     // the crown does NOT dip into a valley before the ear; it keeps
     // rising so ear and skull share one mass
-    'C174 30 189 20 206 20 ' +
+    'C176 32 192 24 210 25 ' +
     // RIGHT EAR — teardrop, not a circle: narrow at the top, the outer
     // edge is one long flat-ish sweep, the weight sits low
-    'C228 20 246 39 248 63 ' +
-    'C250 86 238 104 218 110 ' +
+    'C232 26 250 45 250 69 ' +
+    'C250 93 236 109 216 114 ' +
     // base is heavy and slides back under the skull
-    'C207 113 199 110 195 104 ' +
+    'C204 117 197 113 193 105 ' +
     // cheek swells low and wide, then the chin tapers in (baby face)
-    'C199 122 200 141 195 158 ' +
-    'C190 176 177 190 160 196 ' +
+    'C204 121 206 143 199 160 ' +
+    'C194 178 178 192 152 199 ' +
     // no waist: the jaw runs straight on into a wide shoulder
-    'C173 201 181 212 181 226 ' +
+    'C175 202 182 213 182 227 ' +
     'C181 247 155 260 120 260 ' +
     'C85 260 59 247 59 226 ' +
-    'C59 212 67 201 80 196 ' +
-    'C63 190 50 176 45 158 ' +
-    'C40 141 41 122 45 104 ' +
+    'C58 213 65 202 78 197 ' +
+    'C68 192 46 178 41 160 ' +
+    'C34 143 36 121 40 103 ' +
     // LEFT EAR — mirrored idea, deliberately a little lower and fuller
-    'C41 111 32 114 21 111 ' +
-    'C0 105 -12 86 -10 62 ' +
-    'C-8 38 11 19 33 19 ' +
-    'C50 19 65 30 76 42 ' +
+    'C40 113 30 117 18 114 ' +
+    'C-3 109 -14 91 -12 68 ' +
+    'C-11 44 8 25 30 24 ' +
+    'C48 25 64 33 74 44 ' +
     'C87 30 104 24 120 27 Z',
 
   /** inner ears — follow the new, larger ear masses */
@@ -105,32 +105,32 @@ export const SHAPES = {
    * small chin, so it melts into the skull instead of reading as an oval
    */
   facePatch:
-    'M118 94 C95 93 76 102 68 119 ' +
-    'C62 132 62 148 70 162 ' +      // má trái loe thấp
-    'C78 176 96 187 120 187 ' +     // cằm thu nhỏ
-    'C145 187 163 175 170 161 ' +
-    'C177 147 176 131 170 118 ' +   // má phải loe
-    'C161 101 142 94 118 94 Z',
+    'M118 92 C98 91 80 100 71 117 ' +
+    'C63 131 62 151 71 166 ' +      // má trái loe rộng, thấp
+    'C80 179 98 186 120 186 ' +     // cằm patch nhỏ
+    'C142 186 160 176 168 164 ' +
+    'C177 150 177 131 169 116 ' +   // má phải loe rộng
+    'C159 99 140 92 118 92 Z',
 
   /** belly — smaller, so the shoulders read wide and the head still leads */
   belly:
-    'M120 200 C105 201 96 212 97 226 C98 240 108 249 121 248 ' +
-    'C135 247 143 237 142 224 C141 210 133 199 120 200 Z',
+    'M120 201 C104 202 94 214 95 229 C96 244 107 253 121 252 ' +
+    'C136 251 145 240 144 226 C143 211 134 200 120 201 Z',
 
   /** arms — curved with large rounded ends, never a straight capsule */
-  armL: 'M80 194 C64 200 55 218 59 234 C63 248 79 250 85 239 C92 226 90 202 80 194 Z',
-  armR: 'M160 191 C176 197 186 216 182 233 C178 247 162 249 156 238 C149 224 150 199 160 191 Z',
+  armL: 'M82 192 C62 199 51 220 57 237 C62 252 81 254 88 240 C95 226 94 200 82 192 Z',
+  armR: 'M158 189 C178 196 190 218 184 236 C179 251 160 253 153 239 C146 225 146 197 158 189 Z',
 
   /** legs — 10% shorter, wider feet, splayed outward */
-  legL: 'M101 242 C88 245 81 258 85 268 C90 278 108 278 112 269 C116 259 111 244 101 242 Z',
-  legR: 'M141 240 C128 243 122 256 126 266 C131 276 147 276 152 267 C156 257 151 242 141 240 Z',
+  legL: 'M101 243 C87 246 78 258 82 267 C88 277 110 277 115 268 C119 258 111 245 101 243 Z',
+  legR: 'M141 241 C127 244 119 256 123 265 C129 275 149 275 154 266 C158 256 151 243 141 241 Z',
 
   /** nose — teardrop with a broad base and a softened tip */
   nose:
-    'M120 106 C115 106 110 113 108 122 ' +
-    'C106 134 114 146 122 145 ' +
-    'C133 144 140 133 137 122 C135 112 126 106 120 106 Z',
-  noseShine: 'M115 115 C111 118 110 125 113 127 C117 125 119 118 118 115 Z',
+    'M120 109 C114 109 109 117 107 126 ' +
+    'C105 139 113 150 122 149 ' +
+    'C134 148 141 136 138 125 C136 114 127 109 120 109 Z',
+  noseShine: 'M115 118 C111 121 110 128 113 130 C117 128 119 121 118 118 Z',
 
   /** blush — overlaps the face patch, left larger and lower */
   blushL:
@@ -158,15 +158,15 @@ export interface Layer {
 /** 07/08 — vertical oval eye wells, authored as paths (left is smaller) */
 const EYE_L = {
   well:
-    'M84 86 C68 86 58 104 58 123 C58 143 69 159 84 159 ' +
-    'C99 159 110 142 110 122 C110 103 99 86 84 86 Z',
+    'M86 86 C70 87 59 104 57 123 C55 143 67 159 82 159 ' +
+    'C97 158 109 141 111 122 C112 103 101 85 86 86 Z',
   cx: 84, cy: 122, rx: 26, ry: 36,
 };
 const EYE_R = {
   well:
-    'M157 84 C140 84 130 102 130 121 ' +
-    'C130 142 142 159 157 159 C173 159 184 141 184 120 ' +
-    'C184 100 173 84 157 84 Z',
+    'M159 84 C142 85 131 102 129 121 ' +
+    'C127 142 140 159 155 159 C171 158 185 141 186 120 ' +
+    'C187 100 174 83 159 84 Z',
   cx: 157, cy: 121, rx: 27, ry: 37,
 };
 
@@ -186,7 +186,7 @@ function pupil(E: typeof EYE_L, dy = 0, s = 1): Layer[] {
     // 11/12 — big highlight, upper-left
     {
       d:
-        `M${x - rx * 0.36} ${y - ry * 0.70} C${x - rx * 0.82} ${y - ry * 0.5} ${x - rx * 0.8} ${y - ry * 0.06} ` +
+        `M${x - rx * 0.40} ${y - ry * 0.74} C${x - rx * 0.82} ${y - ry * 0.5} ${x - rx * 0.8} ${y - ry * 0.06} ` +
         `${x - rx * 0.34} ${y - ry * 0.12} C${x + rx * 0.02} ${y - ry * 0.2} ${x + rx * 0.02} ${y - ry * 0.6} ` +
         `${x - rx * 0.36} ${y - ry * 0.70} Z`,
       fill: PALETTE.white,
@@ -194,7 +194,7 @@ function pupil(E: typeof EYE_L, dy = 0, s = 1): Layer[] {
     // small secondary highlight, lower-right
     {
       d:
-        `M${x + rx * 0.4} ${y + ry * 0.3} C${x + rx * 0.62} ${y + ry * 0.36} ${x + rx * 0.62} ${y + ry * 0.64} ` +
+        `M${x + rx * 0.44} ${y + ry * 0.34} C${x + rx * 0.62} ${y + ry * 0.36} ${x + rx * 0.62} ${y + ry * 0.64} ` +
         `${x + rx * 0.36} ${y + ry * 0.62} C${x + rx * 0.16} ${y + ry * 0.58} ${x + rx * 0.18} ${y + ry * 0.32} ` +
         `${x + rx * 0.4} ${y + ry * 0.3} Z`,
       fill: PALETTE.white,
@@ -307,17 +307,17 @@ export function mouthShapes(m: MouthKind): Layer[] {
   switch (m) {
     case 'smile':
       return [{
-        d: 'M99 170 C105 187 134 188 143 172 C136 182 110 181 99 170 Z',
+        d: 'M96 173 C103 191 137 192 146 174 C138 185 108 184 96 173 Z',
         fill: PALETTE.ink,
       }];
     case 'sad':
       return [{
-        d: 'M100 186 C107 172 133 172 141 182 C132 178 110 178 100 186 Z',
+        d: 'M97 189 C105 174 135 174 144 185 C134 181 108 181 97 189 Z',
         fill: PALETTE.ink,
       }];
     case 'flat':
       return [{
-        d: 'M99 175 C110 180 130 179 140 174 C132 183 109 184 99 175 Z',
+        d: 'M96 178 C108 183 132 182 143 177 C134 187 107 188 96 178 Z',
         fill: PALETTE.ink,
       }];
     case 'small':
@@ -330,13 +330,13 @@ export function mouthShapes(m: MouthKind): Layer[] {
         {
           // corners lift, upper lip has thickness, lower lip is deep
           d:
-            'M96 170 C102 168 110 173 120 173 ' +
-            'C131 173 139 168 145 167 ' +
-            'C145 191 130 202 120 202 C110 202 96 192 96 170 Z',
+            'M93 172 C100 170 109 176 120 176 ' +
+            'C132 176 141 170 148 169 ' +
+            'C148 195 132 206 120 206 C108 206 93 195 93 172 Z',
           fill: PALETTE.ink,
         },
         {
-          d: 'M105 186 C110 200 133 199 137 184 C127 190 113 190 105 186 Z',
+          d: 'M103 189 C108 206 135 205 139 186 C128 193 112 193 103 189 Z',
           fill: PALETTE.tongue,
         },
       ];
