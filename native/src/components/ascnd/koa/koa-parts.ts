@@ -1,15 +1,19 @@
 /**
  * Koa — flat-vector mascot part library.
+ * Built to the "Koala SVG Construction Manual v1.0".
  *
- * Spec (from the character sheet):
- *  - vector shapes only, NO stroke, NO gradient, NO filter
- *  - flat colours from the fixed palette below
- *  - every body part is its own layer with a stable pivot, so poses and
- *    expressions are made by transforming/swapping layers, never by
- *    redrawing the character
+ * Hard rules honoured here:
+ *  - every part is a hand-authored Bézier path; no ellipse/circle/rect is
+ *    used to build the character
+ *  - flat palette colours only — no stroke, gradient, filter or blur
+ *  - layers overlap (ears tuck 10–20% behind the head, eyes sit under the
+ *    face patch, nose over the patch, mouth over the nose)
+ *  - deliberate ~5% asymmetry: ears, cheeks and mouth differ slightly and
+ *    pupils never sit dead-centre
+ *  - node counts kept low (head 16–24, ear 10–16, body 12–18, limbs 6–10)
  *
- * Coordinate space: viewBox "0 0 240 300" (portrait). Head is centred on
- * (114, 106); the body sits below and the feet rest near y = 280.
+ * Coordinate space: viewBox "0 0 240 300". Head occupies the upper block,
+ * the small body tucks beneath it, feet rest near y = 268.
  */
 
 export const KOA_VIEWBOX = '0 0 240 300';
@@ -21,244 +25,313 @@ export const PALETTE = {
   ink: '#20242A',
   blush: '#F3B5B5',
   shade: '#AEB6BF',
-  tongue: '#F0798C',
   white: '#FFFFFF',
+  tongue: '#E8657B',
 } as const;
 
 export type Expression =
-  | 'happy'        // vui vẻ
-  | 'surprised'    // ngạc nhiên
-  | 'eyesClosed'   // cười tít mắt
-  | 'confident'    // tự tin
-  | 'sad'          // buồn
-  | 'tired'        // mệt mỏi
-  | 'angry'        // tức giận
-  | 'excited'      // thích thú
+  | 'happy'
+  | 'surprised'
+  | 'eyesClosed'
+  | 'confident'
+  | 'sad'
+  | 'tired'
+  | 'angry'
+  | 'excited'
   | 'blink';
 
-/** Static body/head shapes — asymmetric on purpose so it reads hand-drawn */
+export type MouthKind = 'open' | 'smile' | 'sad' | 'flat' | 'small';
+
+/* ── Silhouette-forming shapes (all Bézier) ───────────────────────────── */
+
 export const SHAPES = {
-  /** ellipse #AEB6BF @ 40% per spec */
-  shadow: 'M114 288 C86 288 66 292 66 296 C66 300 86 304 114 304 C142 304 162 300 162 296 C162 292 142 288 114 288 Z',
+  /** 24 — ground shadow, the only place a flattened oval is acceptable */
+  shadow:
+    'M120 272 C92 272 70 277 70 283 C70 289 92 294 120 294 ' +
+    'C149 294 171 289 171 283 C171 277 149 272 120 272 Z',
 
-  head:
-    'M112 34 C68 32 38 60 36 104 C34 148 66 178 112 179 ' +
-    'C160 180 190 150 191 106 C192 62 158 36 112 34 Z',
-  headLight:
-    'M78 52 C56 66 45 86 47 106 C64 90 86 72 108 62 C98 54 88 49 78 52 Z',
-
+  /** 02 — left ear: large, wavy outer edge, heavier at the base */
   earL:
-    'M58 46 C30 38 12 58 15 86 C18 113 42 125 64 112 C83 100 82 55 58 46 Z',
+    'M62 50 C46 33 22 32 11 49 C0 66 3 93 18 107 ' +
+    'C31 119 52 118 62 105 C71 94 72 62 62 50 Z',
+  /** 04 — inner ear left */
   earLInner:
-    'M55 63 C36 57 24 71 27 88 C30 106 48 112 61 101 C72 91 68 68 55 63 Z',
+    'M59 66 C47 54 30 56 23 68 C16 81 19 99 31 106 ' +
+    'C42 112 56 107 60 96 C64 86 65 74 59 66 Z',
+
+  /** 03 — right ear: intentionally NOT a mirror of the left */
   earR:
-    'M170 40 C200 30 220 52 217 82 C214 112 187 124 165 110 C144 96 145 50 170 40 Z',
+    'M180 44 C197 27 221 29 231 47 C241 65 237 92 221 104 ' +
+    'C208 114 188 112 180 99 C172 87 171 56 180 44 Z',
+  /** 05 — inner ear right */
   earRInner:
-    'M172 58 C192 51 205 67 202 86 C199 105 179 111 166 99 C154 88 159 63 172 58 Z',
+    'M177 60 C190 49 207 52 213 65 C219 78 215 96 203 102 ' +
+    'C192 107 179 101 176 90 C173 80 172 67 177 60 Z',
 
-  /** muzzle / face patch */
-  face:
-    'M111 92 C78 91 58 112 60 138 C62 162 86 176 114 175 ' +
-    'C144 174 164 158 163 132 C162 106 142 93 111 92 Z',
+  /**
+   * 01 — head. 20 nodes. Not an ellipse: the crown dips slightly, the
+   * cheeks bulge low and the left side is a touch fuller than the right.
+   */
+  head:
+    'M120 26 C149 24 173 37 187 59 ' +
+    'C197 76 201 95 199 113 ' +
+    'C197 139 181 161 155 171 ' +
+    'C141 177 128 179 119 179 ' +
+    'C101 179 83 175 68 167 ' +
+    'C43 154 29 132 28 107 ' +
+    'C27 87 33 67 47 52 ' +
+    'C63 34 92 27 120 26 Z',
+  /** soft light patch, upper-left key light */
+  headLight:
+    'M84 46 C63 56 48 74 47 94 C63 78 84 63 106 55 C99 47 91 44 84 46 Z',
 
-  nose:
-    'M112 100 C99 99 90 111 93 124 C96 136 110 142 119 136 ' +
-    'C130 129 132 111 125 104 C121 100 116 100 112 100 Z',
-  noseShine: 'M103 108 C99 111 98 117 101 119 C105 117 107 111 106 108 Z',
+  /** 06 — face patch, deliberately off-round and pushed slightly left */
+  facePatch:
+    'M117 86 C90 85 71 103 72 127 C73 150 94 165 119 164 ' +
+    'C145 163 163 148 162 125 C161 101 142 86 117 86 Z',
 
-  blushL: 'M56 132 C46 131 41 139 46 144 C52 149 66 147 68 141 C70 135 63 132 56 132 Z',
-  blushR: 'M164 136 C156 135 151 142 155 147 C160 151 171 149 173 144 C175 138 170 136 164 136 Z',
-
+  /** 18 — body: small standing oval that tucks under the head */
   body:
-    'M112 164 C74 164 55 194 54 228 C53 262 80 280 116 280 ' +
-    'C153 280 174 260 173 226 C172 192 151 164 112 164 Z',
-  bodyShade:
-    'M112 182 C85 182 69 204 69 230 C69 258 89 271 116 271 ' +
-    'C144 271 160 257 159 229 C158 202 139 182 112 182 Z',
+    'M119 150 C93 150 73 172 71 202 ' +
+    'C69 234 88 260 120 261 ' +
+    'C152 262 170 237 169 205 ' +
+    'C168 175 147 150 119 150 Z',
+  /** 19 — belly, vertical oval, smaller than the body */
   belly:
-    'M107 190 C84 191 71 211 72 234 C73 258 90 270 111 269 ' +
-    'C134 268 147 253 146 230 C145 207 130 189 107 190 Z',
+    'M117 178 C97 179 85 197 86 219 ' +
+    'C87 241 101 254 118 253 ' +
+    'C137 252 149 237 148 215 ' +
+    'C147 193 135 177 117 178 Z',
 
-  armL: 'M63 168 C44 172 34 198 38 224 C42 246 64 250 71 234 C79 215 78 176 63 168 Z',
-  armLShade: 'M50 222 C45 232 53 242 62 239 C69 235 68 223 61 219 Z',
-  armR: 'M163 164 C183 168 194 194 190 221 C186 244 164 248 157 232 C149 212 149 172 163 164 Z',
-  armRShade: 'M176 219 C182 229 174 239 165 236 C158 232 159 220 166 216 Z',
+  /** 20 — left arm: curved capsule, never straight */
+  armL:
+    'M74 166 C59 170 48 192 50 215 ' +
+    'C52 233 68 240 77 228 C86 214 86 176 74 166 Z',
+  /** 21 — right arm, a little longer than the left */
+  armR:
+    'M166 162 C182 166 194 189 192 213 ' +
+    'C190 232 173 239 164 227 C154 212 154 172 166 162 Z',
 
-  legL: 'M80 242 C67 245 64 264 69 274 C75 286 96 287 101 275 C106 263 99 243 89 240 Z',
-  legLFoot: 'M74 268 C79 278 95 279 99 270 C96 262 79 261 74 268 Z',
-  legR: 'M136 239 C123 242 119 261 125 272 C132 285 153 284 157 272 C161 260 154 240 145 237 Z',
-  legRFoot: 'M129 265 C134 276 151 276 155 267 C152 259 134 258 129 265 Z',
+  /** 22 — left leg: short capsule, splayed outward */
+  legL:
+    'M92 234 C79 236 71 252 74 266 ' +
+    'C77 278 96 280 102 269 C108 257 103 236 92 234 Z',
+  /** 23 — right leg */
+  legR:
+    'M146 232 C133 234 126 250 129 264 ' +
+    'C133 277 151 278 157 267 C163 255 157 234 146 232 Z',
+
+  /** 13 — nose: teardrop, round base, softly pointed top */
+  nose:
+    'M120 98 C112 98 105 108 106 119 ' +
+    'C107 131 116 139 124 136 ' +
+    'C134 132 138 118 134 108 C131 101 126 98 120 98 Z',
+  noseShine: 'M113 106 C108 109 107 116 110 118 C114 116 116 109 115 106 Z',
+
+  /** 16/17 — blush, left slightly larger and higher */
+  blushL:
+    'M62 130 C51 129 45 137 50 143 C56 149 71 147 73 140 C75 133 69 130 62 130 Z',
+  blushR:
+    'M170 134 C161 133 156 141 160 146 C166 151 177 149 179 143 C181 137 176 134 170 134 Z',
 } as const;
 
-/** Rotation pivots (joint centres) for posing */
+/** Rotation pivots — joints, per the animation rules */
 export const PIVOTS = {
-  head: { x: 114, y: 110 },
-  armL: { x: 63, y: 171 },
-  armR: { x: 163, y: 167 },
-  legL: { x: 84, y: 244 },
-  legR: { x: 140, y: 241 },
+  head: { x: 120, y: 150 }, // neck
+  earL: { x: 58, y: 100 },  // ear base
+  earR: { x: 184, y: 96 },
+  armL: { x: 76, y: 170 },  // shoulder
+  armR: { x: 164, y: 166 },
+  legL: { x: 94, y: 238 },  // hip
+  legR: { x: 145, y: 236 },
 } as const;
 
-/** Eye geometry — left is slightly smaller/lower for a hand-drawn feel */
-const EYE_L = { x: 84, y: 106, rx: 22, ry: 28 };
-const EYE_R = { x: 142, y: 102, rx: 24, ry: 30 };
-
-/** Egg-shaped filled pupil (no stroke), wider at the bottom */
-function eggPath(x: number, y: number, rx: number, ry: number) {
-  return (
-    `M${x} ${y - ry} ` +
-    `C${x - rx * 0.92} ${y - ry * 0.86} ${x - rx} ${y + ry * 0.45} ${x} ${y + ry} ` +
-    `C${x + rx} ${y + ry * 0.45} ${x + rx * 0.92} ${y - ry * 0.86} ${x} ${y - ry} Z`
-  );
-}
-
-/** Filled crescent (used instead of a stroked arc — spec forbids strokes) */
-function crescent(x: number, y: number, w: number, h: number, t: number, flip = false) {
-  const d = flip ? -1 : 1;
-  return (
-    `M${x - w} ${y} ` +
-    `C${x - w * 0.45} ${y - h * d} ${x + w * 0.45} ${y - h * d} ${x + w} ${y} ` +
-    `C${x + w * 0.45} ${y - (h - t) * d} ${x - w * 0.45} ${y - (h - t) * d} ${x - w} ${y} Z`
-  );
-}
-
-/** A tapered brow (filled crescent, no stroke) sitting above the eye */
-function brow(x: number, y: number, w: number, lift: number, t = 5, mirror = false) {
-  const m = mirror ? -1 : 1;
-  const x1 = x - w;
-  const x2 = x + w;
-  const cy = y - lift;
-  return (
-    `M${x1} ${y + (mirror ? 0 : 0)} ` +
-    `C${x1 + w * 0.5} ${cy - 3 * m} ${x2 - w * 0.5} ${cy - 5 * m} ${x2} ${y - lift * 0.35 * m} ` +
-    `C${x2 - w * 0.5} ${cy - 5 * m + t} ${x1 + w * 0.5} ${cy - 3 * m + t} ${x1} ${y + t} Z`
-  );
-}
-
-export interface EyeLayer {
+export interface Layer {
   d: string;
   fill: string;
   opacity?: number;
 }
 
-/** Returns every filled shape that makes up the eyes + brows for a mood */
-export function eyeShapes(e: Expression): EyeLayer[] {
-  const L = EYE_L;
-  const R = EYE_R;
-  const out: EyeLayer[] = [];
+/* ── Eyes ─────────────────────────────────────────────────────────────── */
+/** 07/08 — vertical oval eye wells, authored as paths (left is smaller) */
+const EYE_L = {
+  well:
+    'M89 80 C77 80 70 93 70 107 C70 122 78 133 89 133 ' +
+    'C100 133 108 121 108 106 C108 92 100 80 89 80 Z',
+  cx: 89, cy: 106, rx: 19, ry: 26,
+};
+const EYE_R = {
+  well:
+    'M152 76 C139 76 131 90 131 105 C131 121 140 133 152 133 ' +
+    'C164 133 172 120 172 104 C172 89 164 76 152 76 Z',
+  cx: 152, cy: 104, rx: 21, ry: 28,
+};
 
-  const pupil = (E: typeof EYE_L, dy = 0, sx = 1, sy = 1) => {
-    out.push({ d: eggPath(E.x, E.y + dy, E.rx * sx, E.ry * sy), fill: PALETTE.ink });
-    // white highlights (spec: pupil #20242A, white highlight)
-    out.push({
-      d: eggPath(E.x - E.rx * 0.3, E.y + dy - E.ry * 0.34, E.rx * 0.3, E.ry * 0.28),
+/** 09/10 — pupil: teardrop-ish oval, never centred (pushed up + inward) */
+function pupil(E: typeof EYE_L, dy = 0, s = 1): Layer[] {
+  const x = E.cx + (E.cx < 120 ? 2.2 : -2.4); // inward
+  const y = E.cy - E.ry * 0.16 + dy;          // up
+  const rx = E.rx * 0.62 * s;
+  const ry = E.ry * 0.66 * s;
+  return [
+    {
+      d:
+        `M${x} ${y - ry} C${x - rx * 0.95} ${y - ry * 0.8} ${x - rx} ${y + ry * 0.4} ${x} ${y + ry} ` +
+        `C${x + rx} ${y + ry * 0.4} ${x + rx * 0.95} ${y - ry * 0.8} ${x} ${y - ry} Z`,
+      fill: PALETTE.ink,
+    },
+    // 11/12 — big highlight, upper-left
+    {
+      d:
+        `M${x - rx * 0.34} ${y - ry * 0.66} C${x - rx * 0.82} ${y - ry * 0.5} ${x - rx * 0.8} ${y - ry * 0.06} ` +
+        `${x - rx * 0.34} ${y - ry * 0.12} C${x + rx * 0.02} ${y - ry * 0.2} ${x + rx * 0.02} ${y - ry * 0.6} ` +
+        `${x - rx * 0.34} ${y - ry * 0.66} Z`,
       fill: PALETTE.white,
-    });
-    out.push({
-      d: eggPath(E.x + E.rx * 0.28, E.y + dy + E.ry * 0.3, E.rx * 0.15, E.ry * 0.14),
+    },
+    // small secondary highlight, lower-right
+    {
+      d:
+        `M${x + rx * 0.4} ${y + ry * 0.3} C${x + rx * 0.62} ${y + ry * 0.36} ${x + rx * 0.62} ${y + ry * 0.64} ` +
+        `${x + rx * 0.36} ${y + ry * 0.62} C${x + rx * 0.16} ${y + ry * 0.58} ${x + rx * 0.18} ${y + ry * 0.32} ` +
+        `${x + rx * 0.4} ${y + ry * 0.3} Z`,
       fill: PALETTE.white,
-      opacity: 0.85,
-    });
+      opacity: 0.9,
+    },
+  ];
+}
+
+/** closed / squinting eye — a filled curved wedge, no stroke */
+function closedEye(E: typeof EYE_L, up = true, thick = 5.5): Layer {
+  const w = E.rx * 0.92;
+  const h = up ? 13 : -11;
+  const x = E.cx;
+  const y = E.cy + (up ? 5 : 1);
+  return {
+    d:
+      `M${x - w} ${y} C${x - w * 0.42} ${y - h} ${x + w * 0.42} ${y - h} ${x + w} ${y} ` +
+      `C${x + w * 0.42} ${y - h + thick} ${x - w * 0.42} ${y - h + thick} ${x - w} ${y} Z`,
+    fill: PALETTE.ink,
   };
+}
+
+/** 11/12 — eyebrow: tapered filled sliver above the eye */
+function brow(E: typeof EYE_L, lift: number, tiltIn: number): Layer {
+  const w = E.rx * 0.86;
+  const x = E.cx;
+  const y = E.cy - E.ry - 6;
+  const inner = E.cx < 120 ? 1 : -1; // which end tips toward the nose
+  const t = 5.2;
+  const yi = y - lift + tiltIn * inner;
+  const yo = y - lift - tiltIn * inner;
+  return {
+    d:
+      `M${x - w} ${inner > 0 ? yo : yi} ` +
+      `C${x - w * 0.3} ${y - lift - 5} ${x + w * 0.3} ${y - lift - 5} ${x + w} ${inner > 0 ? yi : yo} ` +
+      `C${x + w * 0.3} ${y - lift - 5 + t} ${x - w * 0.3} ${y - lift - 5 + t} ${x - w} ${(inner > 0 ? yo : yi) + t} Z`,
+    fill: PALETTE.ink,
+  };
+}
+
+/** Heavy lid used by the tired mood — body-coloured cap over the eye */
+function lid(E: typeof EYE_L): Layer {
+  const w = E.rx + 3;
+  const x = E.cx;
+  const y = E.cy - 2;
+  return {
+    d:
+      `M${x - w} ${y} C${x - w * 0.4} ${y - E.ry * 0.62} ${x + w * 0.4} ${y - E.ry * 0.62} ${x + w} ${y - 4} ` +
+      `L${x + w} ${y - E.ry - 10} L${x - w} ${y - E.ry - 8} Z`,
+    fill: PALETTE.body,
+  };
+}
+
+/** All eye + brow layers for a mood (07–12) */
+export function eyeShapes(e: Expression): Layer[] {
+  const wells: Layer[] = [
+    { d: EYE_L.well, fill: PALETTE.white },
+    { d: EYE_R.well, fill: PALETTE.white },
+  ];
 
   switch (e) {
     case 'eyesClosed':
-      out.push({ d: crescent(L.x, L.y + 4, L.rx * 0.9, 16, 5), fill: PALETTE.ink });
-      out.push({ d: crescent(R.x, R.y + 4, R.rx * 0.9, 17, 5), fill: PALETTE.ink });
-      break;
+      return [closedEye(EYE_L), closedEye(EYE_R)];
     case 'blink':
-      out.push({ d: crescent(L.x, L.y, L.rx * 0.85, 11, 4.4, true), fill: PALETTE.ink });
-      out.push({ d: crescent(R.x, R.y, R.rx * 0.85, 12, 4.4, true), fill: PALETTE.ink });
-      break;
+      return [closedEye(EYE_L, false), closedEye(EYE_R, false)];
     case 'surprised':
-      pupil(L, -1, 1.06, 1.06);
-      pupil(R, -1, 1.06, 1.06);
-      out.push({ d: brow(74, 58, 16, 9), fill: PALETTE.ink });
-      out.push({ d: brow(152, 54, 17, 9, 5, true), fill: PALETTE.ink });
-      break;
+      return [...wells, ...pupil(EYE_L, -2, 1.08), ...pupil(EYE_R, -2, 1.08),
+        brow(EYE_L, 9, -2), brow(EYE_R, 9, -2)];
     case 'sad':
-      pupil(L, 4);
-      pupil(R, 4);
-      out.push({ d: brow(74, 62, 16, -6), fill: PALETTE.ink });
-      out.push({ d: brow(152, 58, 17, -6, 5, true), fill: PALETTE.ink });
-      break;
+      return [...wells, ...pupil(EYE_L, 4), ...pupil(EYE_R, 4),
+        brow(EYE_L, 1, 6), brow(EYE_R, 1, 6)];
     case 'angry':
-      pupil(L, 2, 0.9, 0.9);
-      pupil(R, 2, 0.9, 0.9);
-      out.push({ d: brow(74, 62, 17, -10), fill: PALETTE.ink });
-      out.push({ d: brow(152, 58, 18, -10, 5, true), fill: PALETTE.ink });
-      break;
-    case 'tired':
-      pupil(L, 5);
-      pupil(R, 5);
-      // heavy lids: body-coloured caps that cover the top of each eye
-      out.push({
-        d: `M${L.x - L.rx - 3} ${L.y - 2} C${L.x - L.rx * 0.4} ${L.y - L.ry * 0.6} ${L.x + L.rx * 0.4} ${L.y - L.ry * 0.6} ${L.x + L.rx + 3} ${L.y - 5} L${L.x + L.rx + 3} ${L.y - L.ry - 8} L${L.x - L.rx - 3} ${L.y - L.ry - 6} Z`,
-        fill: PALETTE.body,
-      });
-      out.push({
-        d: `M${R.x - R.rx - 3} ${R.y - 2} C${R.x - R.rx * 0.4} ${R.y - R.ry * 0.6} ${R.x + R.rx * 0.4} ${R.y - R.ry * 0.6} ${R.x + R.rx + 3} ${R.y - 5} L${R.x + R.rx + 3} ${R.y - R.ry - 8} L${R.x - R.rx - 3} ${R.y - R.ry - 6} Z`,
-        fill: PALETTE.body,
-      });
-      out.push({ d: crescent(L.x, L.y - 1, L.rx, 8, 3.6), fill: PALETTE.ink });
-      out.push({ d: crescent(R.x, R.y - 4, R.rx, 8, 3.6), fill: PALETTE.ink });
-      break;
+      return [...wells, ...pupil(EYE_L, 2, 0.9), ...pupil(EYE_R, 2, 0.9),
+        brow(EYE_L, 2, -8), brow(EYE_R, 2, -8)];
     case 'confident':
-      out.push({ d: crescent(L.x, L.y + 3, L.rx * 0.9, 14, 5), fill: PALETTE.ink });
-      pupil(R, 0, 0.94, 0.94);
-      out.push({ d: brow(74, 60, 16, -8), fill: PALETTE.ink });
-      out.push({ d: brow(152, 56, 17, -8, 5, true), fill: PALETTE.ink });
-      break;
-    case 'excited':
-      // sparkle eyes: four-point stars
-      [L, R].forEach((E) => {
-        out.push({ d: eggPath(E.x, E.y, E.rx, E.ry), fill: PALETTE.ink });
-        const s = E.rx * 0.78;
-        out.push({
+      return [closedEye(EYE_L), ...[{ d: EYE_R.well, fill: PALETTE.white }], ...pupil(EYE_R, 0, 0.95),
+        brow(EYE_R, 4, -5)];
+    case 'tired':
+      return [...wells, ...pupil(EYE_L, 5), ...pupil(EYE_R, 5),
+        lid(EYE_L), lid(EYE_R),
+        closedEye(EYE_L, true, 3.6), closedEye(EYE_R, true, 3.6)];
+    case 'excited': {
+      const star = (E: typeof EYE_L) => {
+        const s = E.rx * 0.8;
+        const x = E.cx;
+        const y = E.cy;
+        return {
           d:
-            `M${E.x} ${E.y - s} C${E.x + s * 0.22} ${E.y - s * 0.22} ${E.x + s * 0.22} ${E.y - s * 0.22} ${E.x + s} ${E.y} ` +
-            `C${E.x + s * 0.22} ${E.y + s * 0.22} ${E.x + s * 0.22} ${E.y + s * 0.22} ${E.x} ${E.y + s} ` +
-            `C${E.x - s * 0.22} ${E.y + s * 0.22} ${E.x - s * 0.22} ${E.y + s * 0.22} ${E.x - s} ${E.y} ` +
-            `C${E.x - s * 0.22} ${E.y - s * 0.22} ${E.x - s * 0.22} ${E.y - s * 0.22} ${E.x} ${E.y - s} Z`,
+            `M${x} ${y - s} C${x + s * 0.2} ${y - s * 0.2} ${x + s * 0.2} ${y - s * 0.2} ${x + s} ${y} ` +
+            `C${x + s * 0.2} ${y + s * 0.2} ${x + s * 0.2} ${y + s * 0.2} ${x} ${y + s} ` +
+            `C${x - s * 0.2} ${y + s * 0.2} ${x - s * 0.2} ${y + s * 0.2} ${x - s} ${y} ` +
+            `C${x - s * 0.2} ${y - s * 0.2} ${x - s * 0.2} ${y - s * 0.2} ${x} ${y - s} Z`,
           fill: '#F5D65B',
-        });
-      });
-      break;
+        };
+      };
+      return [
+        { d: EYE_L.well, fill: PALETTE.ink },
+        { d: EYE_R.well, fill: PALETTE.ink },
+        star(EYE_L), star(EYE_R),
+      ];
+    }
     default: // happy
-      pupil(L);
-      pupil(R);
-      out.push({ d: brow(74, 60, 16, 7), fill: PALETTE.ink });
-      out.push({ d: brow(152, 56, 17, 7, 5, true), fill: PALETTE.ink });
+      return [...wells, ...pupil(EYE_L), ...pupil(EYE_R),
+        brow(EYE_L, 5, 2), brow(EYE_R, 5, 2)];
   }
-  return out;
 }
 
-export type MouthKind = 'open' | 'smile' | 'sad' | 'flat' | 'small';
-
-/** Mouth is an oval/ellipse shape with a pink tongue (spec) */
-export function mouthShapes(m: MouthKind): EyeLayer[] {
+/* ── Mouth (14/15) — own path with corners + tongue, offset 2px left ──── */
+export function mouthShapes(m: MouthKind): Layer[] {
   switch (m) {
     case 'smile':
-      return [{ d: crescent(113, 150, 17, 12, 4.2), fill: PALETTE.ink }];
+      return [{
+        d: 'M102 148 C107 160 124 161 132 150 C127 157 108 156 102 148 Z',
+        fill: PALETTE.ink,
+      }];
     case 'sad':
-      return [{ d: crescent(113, 154, 15, 9, 4, true), fill: PALETTE.ink }];
+      return [{
+        d: 'M103 158 C109 148 126 148 132 156 C125 152 110 152 103 158 Z',
+        fill: PALETTE.ink,
+      }];
     case 'flat':
-      return [{ d: crescent(113, 151, 14, 3.4, 3.4), fill: PALETTE.ink }];
+      return [{
+        d: 'M104 151 C112 154 124 153 130 150 C124 156 111 156 104 151 Z',
+        fill: PALETTE.ink,
+      }];
     case 'small':
       return [
-        { d: eggPath(113, 149, 8, 7), fill: PALETTE.ink },
-        { d: eggPath(113, 151, 5, 4), fill: PALETTE.tongue },
+        { d: 'M112 145 C106 146 104 153 108 157 C114 160 121 156 121 150 C121 146 117 144 112 145 Z', fill: PALETTE.ink },
+        { d: 'M112 152 C109 152 108 156 111 157 C114 157 116 153 112 152 Z', fill: PALETTE.tongue },
       ];
     default: // open smile with tongue
       return [
         {
           d:
-            'M95 144 C100 164 127 163 131 143 ' +
-            'C120 149 106 149 95 144 Z',
+            'M101 142 C104 160 129 161 134 141 ' +
+            'C127 148 108 148 101 142 Z',
           fill: PALETTE.ink,
         },
         {
-          d: 'M102 150 C106 160 122 159 124 149 C117 152 108 152 102 150 Z',
+          d: 'M108 150 C111 159 126 158 128 148 C121 152 113 152 108 150 Z',
           fill: PALETTE.tongue,
         },
       ];
