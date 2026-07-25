@@ -69,6 +69,10 @@ export function KoaFigure({
       {!hideShadow && <Path d={SHAPES.shadow} fill={PALETTE.shade} opacity={0.4} />}
 
       <G rotation={p.tilt} originX={PIVOTS.body.x} originY={PIVOTS.body.y}>
+        {/* legs sit under the body so the join is hidden */}
+        <Path d={SHAPES.legL} fill={PALETTE.body} />
+        <Path d={SHAPES.legR} fill={PALETTE.body} />
+
         {/* one continuous form: ears + head + cheeks + waist + body */}
         <Path d={SHAPES.silhouette} fill={PALETTE.body} />
         <Path d={SHAPES.belly} fill={PALETTE.light} />

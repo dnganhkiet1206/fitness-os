@@ -95,6 +95,13 @@ export const SHAPES = {
   armL: 'M77 180 C62 186 54 208 58 227 C62 243 77 246 84 234 C91 220 89 190 77 180 Z',
   armR: 'M164 177 C179 183 188 205 184 224 C180 240 165 243 158 231 C151 217 152 187 164 177 Z',
 
+  /**
+   * legs — short capsules splayed ~8° outward, tucked deep under the body
+   * so the join never shows. Left sits 2px lower (deliberate asymmetry).
+   */
+  legL: 'M99 238 C86 241 79 256 82 268 C86 279 103 280 108 270 C113 259 109 240 99 238 Z',
+  legR: 'M143 236 C130 239 124 254 128 266 C132 277 148 278 153 268 C158 257 153 238 143 236 Z',
+
   /** 13 — nose: teardrop, round base, softly pointed top */
   nose:
     'M120 98 C112 98 105 108 106 119 ' +
