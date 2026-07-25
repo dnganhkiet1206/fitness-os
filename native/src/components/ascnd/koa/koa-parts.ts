@@ -63,25 +63,34 @@ export const SHAPES = {
    *  · shoulders are wide, the waist never pinches
    */
   silhouette:
-    'M120 28 ' +
-    'C132 23 144 27 151 37 ' +       // crown rise (right)
-    'C161 30 172 34 180 45 ' +       // brow shelf → ear root
-    'C195 22 228 16 246 41 ' +       // RIGHT EAR — big, warped
-    'C264 62 255 92 228 104 ' +
-    'C216 108 205 108 196 104 ' +    // heavy base sinks into the skull
-    'C199 121 200 139 196 155 ' +    // cheek bulges out, low
-    'C192 173 180 188 163 195 ' +    // chin tapers in (narrower than brow)
-    'C173 200 180 211 180 225 ' +    // wide shoulder, no waist pinch
-    'C180 246 155 259 120 259 ' +
-    'C85 259 60 246 60 225 ' +
-    'C60 211 67 200 77 195 ' +
-    'C60 188 48 173 44 155 ' +       // left chin → cheek bulge
-    'C40 139 41 121 44 104 ' +
-    'C34 108 23 108 16 104 ' +       // LEFT EAR
-    'C-16 92 -24 62 -6 40 ' +
-    'C11 16 44 22 60 45 ' +
-    'C68 34 79 30 89 37 ' +          // crown rise (left)
-    'C96 27 108 23 120 28 Z',
+    // crown — one long soft dome, no separate "bumps" to read as parts
+    'M120 27 ' +
+    'C136 24 152 30 163 42 ' +
+    // the crown does NOT dip into a valley before the ear; it keeps
+    // rising so ear and skull share one mass
+    'C174 30 189 20 206 20 ' +
+    // RIGHT EAR — teardrop, not a circle: narrow at the top, the outer
+    // edge is one long flat-ish sweep, the weight sits low
+    'C228 20 246 39 248 63 ' +
+    'C250 86 238 104 218 110 ' +
+    // base is heavy and slides back under the skull
+    'C207 113 199 110 195 104 ' +
+    // cheek swells low and wide, then the chin tapers in (baby face)
+    'C199 122 200 141 195 158 ' +
+    'C190 176 177 190 160 196 ' +
+    // no waist: the jaw runs straight on into a wide shoulder
+    'C173 201 181 212 181 226 ' +
+    'C181 247 155 260 120 260 ' +
+    'C85 260 59 247 59 226 ' +
+    'C59 212 67 201 80 196 ' +
+    'C63 190 50 176 45 158 ' +
+    'C40 141 41 122 45 104 ' +
+    // LEFT EAR — mirrored idea, deliberately a little lower and fuller
+    'C41 111 32 114 21 111 ' +
+    'C0 105 -12 86 -10 62 ' +
+    'C-8 38 11 19 33 19 ' +
+    'C50 19 65 30 76 42 ' +
+    'C87 30 104 24 120 27 Z',
 
   /** inner ears — follow the new, larger ear masses */
   earLInner:
@@ -96,12 +105,12 @@ export const SHAPES = {
    * small chin, so it melts into the skull instead of reading as an oval
    */
   facePatch:
-    'M118 96 C92 95 72 108 66 128 ' +
-    'C62 144 66 161 78 173 ' +
-    'C90 183 105 187 120 187 ' +
-    'C136 187 151 182 162 172 ' +
-    'C174 160 178 144 174 128 ' +
-    'C168 107 146 96 118 96 Z',
+    'M118 94 C95 93 76 102 68 119 ' +
+    'C62 132 62 148 70 162 ' +      // má trái loe thấp
+    'C78 176 96 187 120 187 ' +     // cằm thu nhỏ
+    'C145 187 163 175 170 161 ' +
+    'C177 147 176 131 170 118 ' +   // má phải loe
+    'C161 101 142 94 118 94 Z',
 
   /** belly — smaller, so the shoulders read wide and the head still leads */
   belly:
