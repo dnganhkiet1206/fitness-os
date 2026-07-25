@@ -51,69 +51,73 @@ export const SHAPES = {
     'C149 294 171 289 171 283 C171 277 149 272 120 272 Z',
 
   /**
-   * MASTER SILHOUETTE — ears, head, cheeks, waist and body are ONE
-   * continuous Bézier outline (18 nodes). Drawing them as separate
-   * stacked blobs is what made earlier versions read as glued-together
-   * ellipses; here the contour never breaks, so the form reads sculpted.
+   * MASTER SILHOUETTE — ears, crown, cheeks, waist and body as ONE
+   * unbroken Bézier outline. Tuned to the review:
+   *  1. head is ~7% taller than wide (was square and heavy)
+   *  3. ears are ~40% of head width (were ~31%)
+   *  4. the crown carries 3 soft fur bumps instead of a flat dome
+   *  5. cheeks bulge below the eyes for a "baby face"
+   *  9. body is ~40% of head height — short and round, not long
    */
   silhouette:
-    'M120 34 ' +
-    'C142 32 160 38 173 50 ' +
-    'C184 33 210 28 224 44 ' +      // right ear grows out of the skull
-    'C240 61 238 92 220 104 ' +
-    'C213 109 205 111 198 110 ' +
-    'C197 133 190 154 176 167 ' +   // right cheek flows down
-    'C173 170 170 172 167 174 ' +
-    'C172 184 175 198 175 213 ' +   // straight into the small body
-    'C175 240 152 259 121 260 ' +
-    'C90 261 66 242 66 214 ' +
-    'C66 199 69 185 74 175 ' +
-    'C71 173 68 171 65 168 ' +
-    'C51 155 44 134 43 111 ' +      // left cheek back up
-    'C36 112 28 110 21 104 ' +
-    'C4 91 3 61 19 45 ' +           // left ear
-    'C34 30 60 34 71 51 ' +
-    'C84 39 100 35 120 34 Z',
+    'M120 26 ' +
+    'C129 21 138 25 143 33 ' +        // crown fur bump 1
+    'C152 25 163 29 169 41 ' +        // crown fur bump 2 → head shoulder
+    'C182 24 210 22 222 41 ' +        // RIGHT EAR — big, warped oval
+    'C235 60 230 89 209 99 ' +
+    'C203 102 197 103 192 102 ' +
+    'C196 122 197 143 191 159 ' +     // right cheek bulges out
+    'C185 175 171 187 153 191 ' +
+    'C161 197 167 208 167 221 ' +     // short, round body
+    'C167 241 146 255 120 255 ' +
+    'C94 255 73 241 73 221 ' +
+    'C73 208 79 197 87 191 ' +
+    'C69 187 55 175 49 159 ' +        // left cheek bulge
+    'C43 143 44 122 48 102 ' +
+    'C43 103 37 102 31 99 ' +         // LEFT EAR
+    'C10 89 5 60 18 41 ' +
+    'C30 22 58 24 71 41 ' +
+    'C77 29 88 25 97 33 ' +           // crown fur bump 3
+    'C102 25 111 21 120 26 Z',
 
-  /** inner ears — detail drawn over the silhouette, hiding any seam */
+  /** inner ears — thicker at the base, tilted outward (fix 2) */
   earLInner:
-    'M42 66 C30 58 17 63 13 76 C9 90 15 102 26 104 C37 106 45 97 46 85 C47 76 46 70 42 66 Z',
+    'M46 62 C33 55 19 62 15 77 C11 93 19 105 32 106 ' +
+    'C44 107 51 97 51 84 C51 74 50 66 46 62 Z',
   earRInner:
-    'M199 62 C211 54 225 60 228 74 C231 88 224 100 213 101 C202 102 195 93 195 81 C195 72 196 66 199 62 Z',
+    'M196 58 C209 50 224 57 227 72 C231 88 223 101 210 102 ' +
+    'C198 103 191 93 191 80 C191 70 192 62 196 58 Z',
 
-  /** face patch — pushed 2px left of centre, never a true oval */
+  /** face patch — 2px left of centre, never a true oval */
   facePatch:
-    'M118 92 C90 91 70 110 71 135 C72 159 94 175 120 174 ' +
-    'C147 173 166 157 165 133 C164 108 144 92 118 92 Z',
+    'M118 94 C89 93 68 113 69 139 C70 164 93 181 120 180 ' +
+    'C148 179 168 162 167 137 C166 111 145 94 118 94 Z',
 
-  /** belly — small vertical form tucked into the body */
+  /** belly — round, tucked into the short body */
   belly:
-    'M120 186 C101 187 89 203 90 222 C91 241 104 253 121 252 ' +
-    'C139 251 150 238 149 219 C148 200 137 185 120 186 Z',
+    'M120 192 C102 193 91 206 92 222 C93 239 105 250 121 249 ' +
+    'C138 248 148 236 147 220 C146 204 136 191 120 192 Z',
 
-  /** arms — curved capsules that overlap deep into the torso */
-  armL: 'M77 180 C62 186 54 208 58 227 C62 243 77 246 84 234 C91 220 89 190 77 180 Z',
-  armR: 'M164 177 C179 183 188 205 184 224 C180 240 165 243 158 231 C151 217 152 187 164 177 Z',
+  /** arms — short, plump, clearly curved (fix 10) */
+  armL: 'M80 190 C66 195 58 212 61 228 C64 241 78 244 84 234 C90 222 89 198 80 190 Z',
+  armR: 'M161 187 C175 192 184 210 181 227 C178 240 164 243 158 233 C152 220 152 195 161 187 Z',
 
-  /**
-   * legs — short capsules splayed ~8° outward, tucked deep under the body
-   * so the join never shows. Left sits 2px lower (deliberate asymmetry).
-   */
-  legL: 'M99 238 C86 241 79 256 82 268 C86 279 103 280 108 270 C113 259 109 240 99 238 Z',
-  legR: 'M143 236 C130 239 124 254 128 266 C132 277 148 278 153 268 C158 257 153 238 143 236 Z',
+  /** legs — short, round, splayed ~8°, left 2px lower */
+  legL: 'M101 238 C89 241 83 254 86 265 C90 275 105 276 110 267 C114 257 110 240 101 238 Z',
+  legR: 'M141 236 C129 239 124 252 128 263 C132 273 146 274 151 265 C155 255 150 238 141 236 Z',
 
   /** 13 — nose: teardrop, round base, softly pointed top */
   nose:
-    'M120 98 C112 98 105 108 106 119 ' +
-    'C107 131 116 139 124 136 ' +
-    'C134 132 138 118 134 108 C131 101 126 98 120 98 Z',
-  noseShine: 'M113 106 C108 109 107 116 110 118 C114 116 116 109 115 106 Z',
+    'M120 104 C116 104 112 112 110 121 ' +
+    'C108 133 115 143 122 142 ' +
+    'C132 141 138 131 136 121 C134 111 127 104 120 104 Z',
+  noseShine: 'M116 113 C112 116 111 123 114 125 C118 123 120 116 119 113 Z',
 
   /** 16/17 — blush, left slightly larger and higher */
   blushL:
-    'M62 130 C51 129 45 137 50 143 C56 149 71 147 73 140 C75 133 69 130 62 130 Z',
+    'M60 146 C48 145 41 154 47 161 C54 168 71 166 73 158 C75 150 68 146 60 146 Z',
   blushR:
-    'M170 134 C161 133 156 141 160 146 C166 151 177 149 179 143 C181 137 176 134 170 134 Z',
+    'M180 142 C170 141 164 150 169 156 C175 162 188 160 190 153 C192 146 187 142 180 142 Z',
 } as const;
 
 /** Rotation pivots — joints, per the animation rules */
@@ -135,23 +139,23 @@ export interface Layer {
 /** 07/08 — vertical oval eye wells, authored as paths (left is smaller) */
 const EYE_L = {
   well:
-    'M89 84 C76 84 68 98 68 113 C68 129 77 141 89 141 ' +
-    'C101 141 110 128 110 112 C110 97 101 84 89 84 Z',
-  cx: 89, cy: 112, rx: 21, ry: 29,
+    'M84 88 C70 88 61 103 61 120 C61 138 71 151 84 151 ' +
+    'C97 151 107 137 107 119 C107 102 97 88 84 88 Z',
+  cx: 84, cy: 119, rx: 23, ry: 32,
 };
 const EYE_R = {
   well:
-    'M153 80 C139 80 130 95 130 111 C130 128 140 141 153 141 ' +
-    'C166 141 176 127 176 110 C176 94 166 80 153 80 Z',
-  cx: 153, cy: 110, rx: 23, ry: 31,
+    'M159 84 C144 84 134 100 134 118 C134 137 145 152 159 152 ' +
+    'C173 152 184 136 184 117 C184 99 173 84 159 84 Z',
+  cx: 159, cy: 118, rx: 25, ry: 34,
 };
 
 /** 09/10 — pupil: teardrop-ish oval, never centred (pushed up + inward) */
 function pupil(E: typeof EYE_L, dy = 0, s = 1): Layer[] {
   const x = E.cx + (E.cx < 120 ? 2.2 : -2.4); // inward
   const y = E.cy - E.ry * 0.16 + dy;          // up
-  const rx = E.rx * 0.62 * s;
-  const ry = E.ry * 0.66 * s;
+  const rx = E.rx * 0.63 * s;
+  const ry = E.ry * 0.68 * s;
   return [
     {
       d:
@@ -283,17 +287,17 @@ export function mouthShapes(m: MouthKind): Layer[] {
   switch (m) {
     case 'smile':
       return [{
-        d: 'M102 148 C107 160 124 161 132 150 C127 157 108 156 102 148 Z',
+        d: 'M102 166 C107 180 130 181 138 168 C132 176 111 175 102 166 Z',
         fill: PALETTE.ink,
       }];
     case 'sad':
       return [{
-        d: 'M103 158 C109 148 126 148 132 156 C125 152 110 152 103 158 Z',
+        d: 'M103 178 C109 166 130 166 137 175 C129 171 111 171 103 178 Z',
         fill: PALETTE.ink,
       }];
     case 'flat':
       return [{
-        d: 'M104 151 C112 154 124 153 130 150 C124 156 111 156 104 151 Z',
+        d: 'M103 170 C112 174 128 173 136 169 C129 176 111 177 103 170 Z',
         fill: PALETTE.ink,
       }];
     case 'small':
@@ -304,13 +308,15 @@ export function mouthShapes(m: MouthKind): Layer[] {
     default: // open smile with tongue
       return [
         {
+          // corners lift, upper lip has thickness, lower lip is deep
           d:
-            'M101 142 C104 160 129 161 134 141 ' +
-            'C127 148 108 148 101 142 Z',
+            'M100 166 C104 165 111 168 120 168 ' +
+            'C130 168 137 165 141 164 ' +
+            'C141 181 128 190 120 190 C112 190 100 182 100 166 Z',
           fill: PALETTE.ink,
         },
         {
-          d: 'M108 150 C111 159 126 158 128 148 C121 152 113 152 108 150 Z',
+          d: 'M108 179 C112 189 130 188 133 177 C125 182 114 182 108 179 Z',
           fill: PALETTE.tongue,
         },
       ];
