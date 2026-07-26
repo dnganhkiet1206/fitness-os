@@ -11,6 +11,7 @@ import {
   Pop,
   Rot,
   RunBody,
+  Swing,
   Shake,
   Shift,
   useGaze,
@@ -19,11 +20,11 @@ import {
 } from '@/components/ascnd/koa/koa-anim';
 import {
   BODY,
-  CAP,
   DUST,
   FACE,
   GEAR,
   HEAD,
+  HEADBAND,
   HEARTS,
   KOA_ASPECT,
   KOA_VIEWBOX,
@@ -32,6 +33,7 @@ import {
   PALETTE as C,
   PIVOTS,
   RELAX,
+  RUN,
   SPEED_LINES,
   STEAM,
   STRETCH,
@@ -228,7 +230,7 @@ export function KoaFigure({
 
   const brows = (
     <>
-      {f.browArc && (
+      {f.browArc && !p.poseRun && (
         <>
           <Path id="eyebrow_left" d={FACE.browArcLeft} stroke={C.ink} strokeWidth={5} strokeLinecap="round" fill="none" />
           <Path id="eyebrow_right" d={FACE.browArcRight} stroke={C.ink} strokeWidth={5} strokeLinecap="round" fill="none" />
@@ -464,6 +466,22 @@ export function KoaFigure({
             <Path d={HEAD.topFurB} fill={C.body} stroke={C.outline} strokeWidth={0.45} strokeLinejoin="round" />
             <Path d={HEAD.topFurFill} fill={C.body} />
           </G>
+          {p.poseRun && (
+            <G id="HEADBAND">
+              <Path d={HEADBAND.band} stroke={C.kitShade} strokeWidth={HEADBAND.width + 2} fill="none" />
+              <Path d={HEADBAND.band} stroke={C.kit} strokeWidth={HEADBAND.width} fill="none" />
+              <Rect
+                x={HEADBAND.tag.x}
+                y={HEADBAND.tag.y}
+                width={HEADBAND.tag.width}
+                height={HEADBAND.tag.height}
+                rx={HEADBAND.tag.rx}
+                fill="#EAF6FE"
+                opacity={0.8}
+                transform={`rotate(${HEADBAND.tag.rot} ${HEADBAND.tag.ox} ${HEADBAND.tag.oy})`}
+              />
+            </G>
+          )}
         </G>
 
         {/* turned to the right, the near ear rides in front of the skull */}
@@ -498,24 +516,46 @@ export function KoaFigure({
     </G>
   );
 
-  const runningLegs = (
-    <>
-      <G transform="translate(6,0)">
-        <Rot v={run} phase={0.9} from={-22} to={24} ox={PIVOTS.legLeft.x} oy={PIVOTS.legLeft.y}>
-          <Path d={BODY.legRunLeft} fill={C.body} />
-          <Ellipse cx={96} cy={291} rx={17} ry={5} fill={C.shadow} opacity={0.26} />
-          <Path d={BODY.shinLeft} fill={C.shade} opacity={0.5} />
-        </Rot>
-      </G>
-      <G transform="translate(6,0)">
-        <Rot v={run} from={16} to={-17} ox={PIVOTS.legRight.x} oy={PIVOTS.legRight.y}>
-          <Path d={BODY.legRunRight} fill={C.body} />
-          <Ellipse cx={144} cy={291} rx={17} ry={5} fill={C.shadow} opacity={0.26} />
-          <Path d={BODY.shinRight} fill={C.shade} opacity={0.5} />
-        </Rot>
-      </G>
-    </>
-  );
+  /* ── the run rig: two-bone limbs, near side light, far side darker ──── */
+
+  /** one bone — a fat stroke with a darker one behind it, rounded at both ends */
+  const bone = (x1: number, y1: number, x2: number, y2: number, w: number, col: string) => {
+    const d = `M${x1} ${y1} L${x2} ${y2}`;
+    return (
+      <>
+        <Path d={d} stroke={C.shade} strokeWidth={w + 3} strokeLinecap="round" fill="none" />
+        <Path d={d} stroke={col} strokeWidth={w} strokeLinecap="round" fill="none" />
+      </>
+    );
+  };
+
+  const runLeg = (hip: { x: number; y: number }, phase: number, col: string) => {
+    const knee = { x: hip.x, y: hip.y + RUN.thigh };
+    const ankle = { x: knee.x, y: knee.y + RUN.shin };
+    return (
+      <Swing v={run} phase={phase} keys={RUN.thighKeys} ox={hip.x} oy={hip.y}>
+        {bone(hip.x, hip.y, knee.x, knee.y, RUN.thighW, col)}
+        <Swing v={run} phase={phase} keys={RUN.kneeKeys} ox={knee.x} oy={knee.y}>
+          {bone(knee.x, knee.y, ankle.x, ankle.y, RUN.shinW, col)}
+          <Ellipse cx={ankle.x + 4} cy={ankle.y + 1} rx={RUN.footRx} ry={RUN.footRy} fill={col} />
+        </Swing>
+      </Swing>
+    );
+  };
+
+  const runArm = (shoulder: { x: number; y: number }, phase: number, col: string) => {
+    const elbow = { x: shoulder.x, y: shoulder.y + RUN.upper };
+    const wrist = { x: elbow.x, y: elbow.y + RUN.fore };
+    return (
+      <Swing v={run} phase={phase} keys={RUN.upperKeys} ox={shoulder.x} oy={shoulder.y}>
+        {bone(shoulder.x, shoulder.y, elbow.x, elbow.y, RUN.upperW, col)}
+        <Swing v={run} phase={phase} keys={RUN.elbowKeys} ox={elbow.x} oy={elbow.y}>
+          {bone(elbow.x, elbow.y, wrist.x, wrist.y, RUN.foreW, col)}
+          <Circle cx={wrist.x} cy={wrist.y} r={RUN.handR} fill={col} />
+        </Swing>
+      </Swing>
+    );
+  };
 
   const tank = (color: string, withShorts = true) => (
     <>
@@ -562,10 +602,17 @@ export function KoaFigure({
 
   const body = (
     <>
+      {/* the far arm and leg live behind the torso, in a darker tone */}
+      {p.poseRun && (
+        <G id="LIMBS_FAR">
+          {runArm(RUN.shoulderFar, 0.5, C.far)}
+          {runLeg(RUN.hipFar, 0.5, C.far)}
+        </G>
+      )}
+
       <G id="BODYRIG">
         <Breathe v={idle} sx={1.015} sy={1.025} ox={PIVOTS.body.x} oy={PIVOTS.body.y}>
           {p.legsStand && standingLegs}
-          {p.poseRun && runningLegs}
 
           <G id="TORSO">
             <Path id="torso_front" d={BODY.torsoFront} fill={C.body} />
@@ -605,21 +652,15 @@ export function KoaFigure({
         </G>
       )}
 
+      {/* the blue singlet of §5 CHẠY BỘ — no shorts, bare legs, as drawn */}
       {p.poseRun && (
-        <G id="ARMS">
-          <G transform={`translate(${TURN.armLeftDx},0) rotate(${TURN.armLeftRotate} ${TURN.armLeftOx} ${TURN.armLeftOy})`}>
-            <Rot v={run} phase={0.9} from={-22} to={24} ox={PIVOTS.armLeft.x} oy={PIVOTS.armLeft.y}>
-              <Path d={BODY.armRunLeft} fill={C.body} />
-            </Rot>
+        <>
+          {tank(C.kit, false)}
+          <G id="LIMBS_NEAR">
+            {runLeg(RUN.hipNear, 0, C.body)}
+            {runArm(RUN.shoulderNear, 0, C.body)}
           </G>
-          <Rot v={run} from={16} to={-17} ox={PIVOTS.armRight.x} oy={PIVOTS.armRight.y}>
-            <Path d={BODY.armRunRight} fill={C.body} />
-          </Rot>
-          <Path d={BODY.armRightCrease} fill={C.shade} opacity={0.55} />
-          <G transform={`translate(${TURN.armLeftDx},0) rotate(${TURN.armLeftRotate} ${TURN.armLeftOx} ${TURN.armLeftOy})`}>
-            <Path d={BODY.armLeftCrease} fill={C.shade} opacity={0.55} />
-          </G>
-        </G>
+        </>
       )}
 
       {p.poseLift && (
@@ -726,7 +767,7 @@ export function KoaFigure({
           id="POSERIG"
           transform={
             p.turn
-              ? `rotate(${TURN.bodyRotate} ${TURN.bodyRotateOx} ${TURN.bodyRotateOy}) ` +
+              ? `rotate(${RUN.lean} ${TURN.bodyRotateOx} ${TURN.bodyRotateOy}) ` +
                 `translate(${TURN.bodyScaleOx},0) scale(${TURN.bodyScaleX},1) translate(${-TURN.bodyScaleOx},0)`
               : undefined
           }>
@@ -736,8 +777,6 @@ export function KoaFigure({
 
             {p.poseRun && (
               <>
-                <Path d={CAP.crown} fill={C.cap} />
-                <Path d={CAP.shade} fill={C.capShade} opacity={0.35} />
                 <G fill={C.sweat}>
                   {SWEAT.map((s, i) => (
                     <Fly

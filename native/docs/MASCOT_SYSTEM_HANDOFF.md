@@ -179,6 +179,25 @@ rank-up confetti, room lighting reacting to rank/energy.
   the cheek pop — the head squashes wide onto the shoulders and both blushes
   swell — on every `pokeSignal` bump, which `StageRenderer` raises when the
   buddy is tapped (on top of the existing nod + wave).
+- **CHẠY BỘ rebuilt from the sheet, not from the design component.** The
+  component's running pose read as standing still, and it was faithful — the
+  fault is in the component, not the port: its legs are the standing blobs
+  swinging ±22° about a hip *inside* the torso, so no part of a leg ever
+  leaves the silhouette, and its "cap" is an arc over the crown where the
+  sheet draws a headband. Rebuilt against §5 CHẠY BỘ itself:
+  - each limb is now two bones (hip → knee → ankle, shoulder → elbow →
+    wrist), every joint on its own 4-key cycle — reach, stance, push-off,
+    recovery — via `keyed()` / `<Swing>`. A sine cannot express a stride;
+    the knee has to fold on the way through and straighten to plant.
+  - near and far side run half a stride apart, and the far limbs are drawn
+    behind the torso in `PALETTE.far` so the two sides never merge.
+  - blue headband (`HEADBAND`) following the skull's curve — a flatter or
+    wider arc instantly reads as earmuffs — plus the blue singlet, no
+    shorts, bare legs, as drawn. The band covers the brow line, so the run
+    hides the eyebrows, which is what the sheet shows.
+  - `RUN.lean` / `RUN.bob` raise the forward lean and the stride bounce.
+  All numbers live in `RUN` in `koa-parts.ts`; they were tuned by rendering
+  the cycle frame-by-frame, so change them there and re-check a strip.
 - **`/koa-sheet` — the character review screen.** Panels §3 and §5 of the
   sheet, live on device: all 8 expressions and all 5 poses, tap a card to
   load it into the hero, tap the hero to cycle ("chạm vào Koa để đổi biểu
