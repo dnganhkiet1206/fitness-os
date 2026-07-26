@@ -198,6 +198,12 @@ rank-up confetti, room lighting reacting to rank/energy.
   - `RUN.lean` / `RUN.bob` raise the forward lean and the stride bounce.
   All numbers live in `RUN` in `koa-parts.ts`; they were tuned by rendering
   the cycle frame-by-frame, so change them there and re-check a strip.
+  **Limb proportions are locked to the original drawing** — measured off it:
+  the standing leg is 43 tall and 47 wide, the idle arm 77 long and ~28
+  thick, and every other pose's limb is a 26-wide tube with an r13.5 hand.
+  A first pass at the stride slimmed and lengthened the legs to make the
+  swing read; that was rejected and reverted. Only the ANGLES in `RUN` are
+  free — never re-proportion the character to buy a better silhouette.
 - **`/koa-sheet` — the character review screen.** Panels §3 and §5 of the
   sheet, live on device: all 8 expressions and all 5 poses, tap a card to
   load it into the hero, tap the hero to cycle ("chạm vào Koa để đổi biểu

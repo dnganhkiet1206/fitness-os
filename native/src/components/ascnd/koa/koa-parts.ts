@@ -488,23 +488,31 @@ export const HEADBAND = {
  *
  * The far side runs the same cycle half a stride out of phase and in a
  * darker tone, so near and far limbs never merge into one shape.
+ *
+ * PROPORTIONS ARE FIXED BY THE ORIGINAL DRAWING — do not slim or stretch
+ * the limbs to make a stride read better. Measured off the sheet's own art:
+ *   · standing leg   `legLeftLower`  = 43 tall (hip 250 → foot 293), 47 wide
+ *   · idle arm       `armLeftUpper`  = 77 long from the shoulder, ~28 thick
+ *   · every other pose's limb        = a 26-wide tube with an r13.5 hand
+ * so the run uses 20+18 (+10 foot) legs at 33/29, and 30+29 arms at 26/24.
+ * Only the ANGLES below are free to change.
  */
 export const RUN = {
   hipNear: { x: 134, y: 246 },
   hipFar: { x: 102, y: 245 },
-  shoulderNear: { x: 154, y: 186 },
-  shoulderFar: { x: 88, y: 186 },
-  thigh: 26,
-  shin: 24,
-  thighW: 25,
-  shinW: 21,
-  footRx: 11.5,
-  footRy: 8.5,
-  upper: 24,
-  fore: 22,
-  upperW: 21,
-  foreW: 18,
-  handR: 9.5,
+  shoulderNear: { x: 152, y: 178 },
+  shoulderFar: { x: 90, y: 178 },
+  thigh: 20,
+  shin: 18,
+  thighW: 33,
+  shinW: 29,
+  footRx: 15,
+  footRy: 10,
+  upper: 30,
+  fore: 29,
+  upperW: 26,
+  foreW: 24,
+  handR: 13.5,
   thighKeys: [-58, -10, 52, -34],
   kneeKeys: [18, 8, 14, 92],
   /** arms swing against the legs of the same side */
