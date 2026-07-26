@@ -87,9 +87,11 @@ omgulr) and push BOTH. Always merge to omgulr.
 
 Files:
 - `src/components/ascnd/mascot-figure.tsx` — **provider selector**.
-  Renders: Rive (if registered) → **image + breathing** (koa) → Lottie →
-  `VectorMascot`. `ImageMascot` uses `expo-image` + a Reanimated breathing
-  loop (scaleY/translateY), `contentPosition="bottom"` so feet touch floor.
+  Renders: **`KoaFigure`** (koa — the spec-sheet vector, see §4b) → Rive
+  (if registered) → image + breathing → Lottie → `VectorMascot`.
+  `ImageMascot` uses `expo-image` + a Reanimated breathing loop
+  (scaleY/translateY), `contentPosition="bottom"` so feet touch floor. The
+  image entries for koa are kept but no longer reached.
 - `src/lib/mascot-images.ts` — **image registry** (koa live; `aspect` =
   h/w so the box matches the art). `imageFor(id, mood)` → source+aspect.
 - `src/lib/mascot-lottie.ts` — Lottie registry (empty; lazy).
@@ -169,6 +171,13 @@ rank-up confetti, room lighting reacting to rank/energy.
     figure appears.
   A new `run` emotion carries the running pose; it is reachable from the
   DEV picker but not yet derived automatically in `baseEmotion()`.
+- **3D removed — DONE.** With the sheet as the direction, the real-time 3D
+  buddy was deleted: `mascot-3d.tsx`, `assets/mascots/koa.glb`,
+  `config/mascot-{bones,face,poses}.ts`, `tools/mascot-playground`,
+  `docs/MASCOT_3D_SETUP.md`, `docs/HERO_MODEL_SPEC.md`, the `glb`/`gltf`
+  Metro asset extensions and the `three` / `@react-three/*` / `expo-gl`
+  dependencies. `MascotBuddy` is now a thin wrapper over `MascotFigure` —
+  no lazy Canvas, no error boundary, no dev fallback banners.
 
 Still open: §7 smooth-motion (needs animated clips), `coat` weather source,
 sheet §1 **turnaround** (side + back views — the sheet shows them, no path
@@ -308,12 +317,18 @@ paste does NOT persist to disk — must be a file attachment).
 ---
 
 ## 9. Guardrails (settled — do NOT drift)
-- **Do NOT hand-draw the character in SVG/code to match the 3D look.** It
-  was tried repeatedly and rejected (“no volume / bad”). Hand-drawn vector
-  tops out at flat 2D. The 3D-render quality only comes from the user’s AI
-  image tool. The vector figure stays ONLY as the graceful fallback.
-- **Do NOT make Rive or GLB the primary** — GUI-authored binaries block an
-  AI-only workflow. Keep as optional providers.
+- ~~Do NOT hand-draw the character in SVG/code~~ — **REVERSED by the user
+  (2026-07-26).** The direction is now the flat-vector spec sheet
+  (`assets/mascots/koa-svg-spec-sheet.png`), whose §10 names React Native
+  SVG as the target. Koa is code-drawn in `components/ascnd/koa/`. Do not
+  reintroduce a photoreal/AI-image Koa to “add volume”.
+- **The 3D path is GONE, on purpose.** `mascot-3d.tsx`, `koa.glb`, the bone/
+  pose/face configs, the Three.js rig playground and the
+  react-three-fiber / expo-gl / three dependencies were all removed at the
+  user’s request. Do not add them back; the stage is being redesigned
+  around the vector character.
+- **Do NOT make Rive the primary** — GUI-authored binaries block an
+  AI-only workflow. It stays an optional provider (registry is empty).
 - **Do NOT bake clothing into animations** — outfits are overlays/variants
   swapped independently.
 - **Keep all logic in TypeScript**, providers thin, assets as data.

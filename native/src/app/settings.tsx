@@ -6,7 +6,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Swi
 import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
-import { VectorMascot } from '@/components/ascnd/vector-mascot';
+import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -147,7 +147,7 @@ export default function SettingsScreen() {
                   ]}>
                   <View style={styles.mascotFace}>
                     <View style={!m.unlocked && styles.mascotArtLocked}>
-                      <VectorMascot mascot={m} size={44} animated={false} />
+                      <MascotFigure mascot={m} size={44} emotion="idle" animated={false} />
                     </View>
                     {!m.unlocked && (
                       <View style={styles.mascotLockBadge}>
