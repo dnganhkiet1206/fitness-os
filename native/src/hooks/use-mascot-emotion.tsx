@@ -49,6 +49,7 @@ export const DEV_EMOTIONS: MascotEmotion[] = [
   'celebrate',
   'curl',
   'wave',
+  'run',
 ];
 
 /** Play a one-shot action (celebrate on a PR, wave on open, curl on a lift). */

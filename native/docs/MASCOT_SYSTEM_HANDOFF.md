@@ -145,7 +145,35 @@ rank-up confetti, room lighting reacting to rank/energy.
   heavy-bag/stats panel) with vector fallbacks (mirror/kettlebell/barbell/
   treadmill). `MascotScene` is now a thin adapter over it.
 
-Still open: §7 smooth-motion (needs animated clips), `coat` weather source.
+- **Koa redrawn from the SVG spec sheet — DONE.** The sheet
+  (`../assets/mascots/koa-svg-spec-sheet.png`, "KOALA MASCOT – SVG DESIGN")
+  is now the character's source of truth, and §10 of it asks for exactly
+  one target: **React Native SVG**. Ported in
+  `src/components/ascnd/koa/`:
+  - `koa-parts.ts` — §2 palette, every Bézier path, and the two lookup
+    tables (`faceFlags`, `poseFlags`) that turn `expression`/`pose` into
+    the set of layers to draw. Layer ids match `KOA_RIG_SPEC.md` §1.
+  - `koa-anim.tsx` — the sheet's CSS `@keyframes` as Reanimated
+    primitives (`Rot`/`Shift`/`Breathe`/`Blink`/`Fade`/`Flash`/`Fly`/
+    `Shake`/`RunBody`). Groups animate through `matrix`, the one transform
+    prop `RNSVGGroup` takes natively, so nothing crosses to JS per frame.
+    Every loop is stopped unless the current state uses it — an idle Koa
+    runs three.
+  - `koa-figure.tsx` — the figure. All 8 expressions of §3 plus
+    `happytired`, and all 5 poses of §5 (idle / chạy bộ / tập tạ / giãn cơ
+    / thư giãn) including the 3/4 turn, hip-pivot leg cycle, speed lines,
+    ground dust, sweat and cap that come with the run.
+  - `src/lib/koa-emotion.ts` — the one table mapping Emotion Engine states
+    to sheet expressions/poses. `MascotFigure` renders it for `koa` ahead
+    of the pre-rendered art, so the buddy is live vector everywhere the 2D
+    figure appears.
+  A new `run` emotion carries the running pose; it is reachable from the
+  DEV picker but not yet derived automatically in `baseEmotion()`.
+
+Still open: §7 smooth-motion (needs animated clips), `coat` weather source,
+sheet §1 **turnaround** (side + back views — the sheet shows them, no path
+data exists for them yet), and app states for the sheet's `surprised` /
+`angry` expressions.
 
 ---
 

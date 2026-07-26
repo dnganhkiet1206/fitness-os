@@ -23,6 +23,8 @@ export type MascotEmotion =
   | 'celebrate'
   | 'curl'
   | 'wave'
+  /** out for a run — only the spec-sheet Koa has art for it so far */
+  | 'run'
   | 'hat'
   | 'coat';
 

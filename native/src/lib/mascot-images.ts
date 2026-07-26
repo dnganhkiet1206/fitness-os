@@ -46,6 +46,7 @@ export type MascotEmotion =
   | 'celebrate'
   | 'curl'
   | 'wave'
+  | 'run'
   | 'hat'
   | 'coat';
 

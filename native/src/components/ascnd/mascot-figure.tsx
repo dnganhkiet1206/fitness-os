@@ -10,10 +10,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { KoaFigure } from '@/components/ascnd/koa/koa-figure';
 import { RiveMascot } from '@/components/ascnd/mascot-rive-view';
 import { VectorMascot } from '@/components/ascnd/vector-mascot';
 import { useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
+import { koaStateFor } from '@/lib/koa-emotion';
 import { imageFor } from '@/lib/mascot-images';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
 import { lottieFor } from '@/lib/mascot-lottie';
@@ -182,6 +184,24 @@ export function MascotFigure(props: Props) {
   // (e.g. the unlock celebration) overrides it. Hook runs unconditionally.
   const engineEmotion = useMascotEmotion();
   const emotion = emotionProp ?? engineEmotion;
+
+  // 0) Koa is drawn from its SVG spec sheet — every layer stays live, so it
+  //    outranks the pre-rendered art it replaces.
+  if (mascot.id === 'koa') {
+    const state = koaStateFor(emotion);
+    const outfits = state.outfit
+      ? new Set([...(props.equippedOutfits ?? []), state.outfit])
+      : props.equippedOutfits;
+    return (
+      <KoaFigure
+        expression={state.expression}
+        pose={state.pose}
+        size={size}
+        animated={animated}
+        equippedOutfits={outfits}
+      />
+    );
+  }
 
   // 1) rigged Rive character
   const rive = riveFor(mascot.id);
