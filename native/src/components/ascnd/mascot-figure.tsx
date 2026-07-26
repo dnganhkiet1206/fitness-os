@@ -24,6 +24,7 @@ import type { MascotDef } from '@/lib/mascots';
 
 /**
  * The companion figure, in priority order:
+ *   0. Koa, code-drawn from its SVG spec sheet (every layer stays live),
  *   1. a rigged Rive character (fully animated — bones/mesh/IK/SM),
  *   2. a pre-rendered image (Talking-Tom-style art) + subtle breathing,
  *   3. a registered Lottie animation,
@@ -44,6 +45,8 @@ interface Props {
   level?: number;
   equippedOutfits?: Set<string>;
   animated?: boolean;
+  /** bump to make the buddy react to a touch (Koa only, for now) */
+  pokeSignal?: number;
 }
 
 // Native Lottie module is required lazily, only when a source exists, so a
@@ -199,6 +202,7 @@ export function MascotFigure(props: Props) {
         size={size}
         animated={animated}
         equippedOutfits={outfits}
+        pokeSignal={props.pokeSignal}
       />
     );
   }

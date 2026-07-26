@@ -140,10 +140,14 @@ export function StageRenderer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flexSignal]);
 
+  // Every poke bumps a counter the buddy watches, so the character itself
+  // reacts (cheek pop + eyes front) on top of the stage's nod.
+  const [pokes, setPokes] = useState(0);
   const poke = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     triggerMascotAction('wave');
     acknowledge();
+    setPokes((n) => n + 1);
   };
 
   const charStyle = useAnimatedStyle(() => ({
@@ -274,7 +278,7 @@ export function StageRenderer({
         )}
         <Pressable onPress={poke} hitSlop={12}>
           <Animated.View style={charStyle}>
-            <MascotBuddy mascot={mascot} emotion={emotion} size={size} mood={mood} level={level} accent={acc} equippedOutfits={equippedOutfits} />
+            <MascotBuddy mascot={mascot} emotion={emotion} size={size} mood={mood} level={level} accent={acc} equippedOutfits={equippedOutfits} pokeSignal={pokes} />
           </Animated.View>
         </Pressable>
       </View>

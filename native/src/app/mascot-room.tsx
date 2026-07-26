@@ -373,6 +373,15 @@ export default function MascotRoomScreen() {
               </Pressable>
             );
           })}
+          {/* the full spec sheet — all 8 expressions and 5 poses, on device */}
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/koa-sheet');
+            }}
+            style={styles.devChip}>
+            <Text style={styles.devChipText}>spec sheet →</Text>
+          </Pressable>
         </View>
       ) : null}
       {mood === 'tired' ? (

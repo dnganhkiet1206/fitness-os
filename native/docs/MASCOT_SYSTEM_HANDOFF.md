@@ -171,6 +171,20 @@ rank-up confetti, room lighting reacting to rank/energy.
     figure appears.
   A new `run` emotion carries the running pose; it is reachable from the
   DEV picker but not yet derived automatically in `baseEmotion()`.
+- **Sheet §8 GỢI Ý ANIMATE — all four DONE.** Blink and Mouth Open/Close
+  came with the port; **Look Left / Right** and **Cheek Pop** landed after.
+  `useGaze()` wanders the pupils (and their highlights) in −1…1, mostly
+  looking at you with a short glance every few seconds, holds randomised so
+  it never reads as a loop; the gaze rests while Koa runs. `usePop()` fires
+  the cheek pop — the head squashes wide onto the shoulders and both blushes
+  swell — on every `pokeSignal` bump, which `StageRenderer` raises when the
+  buddy is tapped (on top of the existing nod + wave).
+- **`/koa-sheet` — the character review screen.** Panels §3 and §5 of the
+  sheet, live on device: all 8 expressions and all 5 poses, tap a card to
+  load it into the hero, tap the hero to cycle ("chạm vào Koa để đổi biểu
+  cảm", as the design's room panel does). Reached from the DEV bar in the
+  Mascot Room; nothing links to it in a production build. Use it to check
+  the drawing on real hardware rather than from a simulator screenshot.
 - **3D removed — DONE.** With the sheet as the direction, the real-time 3D
   buddy was deleted: `mascot-3d.tsx`, `assets/mascots/koa.glb`,
   `config/mascot-{bones,face,poses}.ts`, `tools/mascot-playground`,

@@ -7,11 +7,15 @@ import {
   Fade,
   Flash,
   Fly,
+  Look,
+  Pop,
   Rot,
   RunBody,
   Shake,
   Shift,
+  useGaze,
   useLoop,
+  usePop,
 } from '@/components/ascnd/koa/koa-anim';
 import {
   BODY,
@@ -71,6 +75,8 @@ export interface KoaFigureProps {
   /** turn the loops off for static grids and pickers */
   animated?: boolean;
   equippedOutfits?: Set<string>;
+  /** bump to make Koa react to a touch — §8's cheek pop, and eyes front */
+  pokeSignal?: number;
 }
 
 export function KoaFigure({
@@ -79,6 +85,7 @@ export function KoaFigure({
   size = 160,
   animated = true,
   equippedOutfits = EMPTY,
+  pokeSignal = 0,
 }: KoaFigureProps) {
   const f = faceFlags(expression);
   const p = poseFlags(pose);
@@ -102,6 +109,11 @@ export function KoaFigure({
   const breath = useLoop(5000, animated && (f.mouthGrin || f.mouthBreath));
   const deep = useLoop(12000, animated && (f.mouthGrin || f.mouthBreath));
   const sway = useLoop(3000, animated && p.poseStretch);
+
+  // §8 GỢI Ý ANIMATE: the wandering gaze, and the cheek pop it snaps out of.
+  // Running looks ahead, not around, so the gaze rests while Koa runs.
+  const { gx, gy } = useGaze(animated && !p.poseRun, pokeSignal);
+  const cheek = usePop(pokeSignal, animated);
 
   const earShift = p.turn ? `translate(${TURN.earDx},0)` : undefined;
   const earLeftShift = p.turn ? `translate(${TURN.earLeftDx},0)` : undefined;
@@ -133,12 +145,15 @@ export function KoaFigure({
         <>
           <Ellipse id="eye_left" cx={FACE.eye.left.cx} cy={FACE.eye.left.cy} rx={FACE.eye.rx} ry={FACE.eye.ry} fill={C.white} />
           <Ellipse id="eye_right" cx={FACE.eye.right.cx} cy={FACE.eye.right.cy} rx={FACE.eye.rx} ry={FACE.eye.ry} fill={C.white} />
-          <Ellipse id="pupil_left" cx={FACE.pupil.left.cx} cy={FACE.pupil.left.cy} rx={FACE.pupil.rx} ry={FACE.pupil.ry} fill={C.ink} />
-          <Ellipse id="pupil_right" cx={FACE.pupil.right.cx} cy={FACE.pupil.right.cy} rx={FACE.pupil.rx} ry={FACE.pupil.ry} fill={C.ink} />
-          <Circle cx={83.5} cy={90} r={4.8} fill={C.white} />
-          <Circle cx={92} cy={108} r={2.3} fill={C.white} opacity={0.9} />
-          <Circle cx={156.5} cy={90} r={4.8} fill={C.white} />
-          <Circle cx={148} cy={108} r={2.3} fill={C.white} opacity={0.9} />
+          {/* pupils + their specular highlights travel together with the gaze */}
+          <Look gx={gx} gy={gy} ax={4} ay={2.6}>
+            <Ellipse id="pupil_left" cx={FACE.pupil.left.cx} cy={FACE.pupil.left.cy} rx={FACE.pupil.rx} ry={FACE.pupil.ry} fill={C.ink} />
+            <Ellipse id="pupil_right" cx={FACE.pupil.right.cx} cy={FACE.pupil.right.cy} rx={FACE.pupil.rx} ry={FACE.pupil.ry} fill={C.ink} />
+            <Circle cx={83.5} cy={90} r={4.8} fill={C.white} />
+            <Circle cx={92} cy={108} r={2.3} fill={C.white} opacity={0.9} />
+            <Circle cx={156.5} cy={90} r={4.8} fill={C.white} />
+            <Circle cx={148} cy={108} r={2.3} fill={C.white} opacity={0.9} />
+          </Look>
         </>
       )}
 
@@ -146,10 +161,12 @@ export function KoaFigure({
         <Breathe v={pop} sx={1.07} sy={1.07} ox={PIVOTS.eyes.x} oy={hy(PIVOTS.eyes.y)}>
           <Ellipse cx={82} cy={95} rx={19.5} ry={25.5} fill={C.white} />
           <Ellipse cx={158} cy={95} rx={19.5} ry={25.5} fill={C.white} />
-          <Ellipse cx={89} cy={96} rx={11} ry={13} fill={C.ink} />
-          <Ellipse cx={151} cy={96} rx={11} ry={13} fill={C.ink} />
-          <Circle cx={84.5} cy={90} r={3.8} fill={C.white} />
-          <Circle cx={146.5} cy={90} r={3.8} fill={C.white} />
+          <Look gx={gx} gy={gy} ax={4.5} ay={3}>
+            <Ellipse cx={89} cy={96} rx={11} ry={13} fill={C.ink} />
+            <Ellipse cx={151} cy={96} rx={11} ry={13} fill={C.ink} />
+            <Circle cx={84.5} cy={90} r={3.8} fill={C.white} />
+            <Circle cx={146.5} cy={90} r={3.8} fill={C.white} />
+          </Look>
         </Breathe>
       )}
 
@@ -357,26 +374,30 @@ export function KoaFigure({
         )}
 
         <Fade v={blushClock} from={1} to={0.72}>
-          <Ellipse
-            id="blush_left"
-            cx={FACE.blush.left.cx}
-            cy={FACE.blush.left.cy}
-            rx={FACE.blush.rx}
-            ry={FACE.blush.ry}
-            fill={C.blush}
-            transform={`rotate(${FACE.blush.left.rot} ${FACE.blush.left.cx} ${FACE.blush.left.cy})`}
-          />
+          <Pop v={cheek} sx={1.4} sy={1.4} ox={FACE.blush.left.cx} oy={FACE.blush.left.cy}>
+            <Ellipse
+              id="blush_left"
+              cx={FACE.blush.left.cx}
+              cy={FACE.blush.left.cy}
+              rx={FACE.blush.rx}
+              ry={FACE.blush.ry}
+              fill={C.blush}
+              transform={`rotate(${FACE.blush.left.rot} ${FACE.blush.left.cx} ${FACE.blush.left.cy})`}
+            />
+          </Pop>
         </Fade>
         <Fade v={blushClock} phase={0.136} from={1} to={0.72}>
-          <Ellipse
-            id="blush_right"
-            cx={FACE.blush.right.cx}
-            cy={FACE.blush.right.cy}
-            rx={FACE.blush.rx}
-            ry={FACE.blush.ry}
-            fill={C.blush}
-            transform={`rotate(${FACE.blush.right.rot} ${FACE.blush.right.cx} ${FACE.blush.right.cy})`}
-          />
+          <Pop v={cheek} sx={1.4} sy={1.4} ox={FACE.blush.right.cx} oy={FACE.blush.right.cy}>
+            <Ellipse
+              id="blush_right"
+              cx={FACE.blush.right.cx}
+              cy={FACE.blush.right.cy}
+              rx={FACE.blush.rx}
+              ry={FACE.blush.ry}
+              fill={C.blush}
+              transform={`rotate(${FACE.blush.right.rot} ${FACE.blush.right.cx} ${FACE.blush.right.cy})`}
+            />
+          </Pop>
         </Fade>
 
         {f.showSteam && (
@@ -433,6 +454,8 @@ export function KoaFigure({
           : undefined
       }>
       <Shift v={idle} dy={-2.5} deg={-0.8} ox={PIVOTS.head.x} oy={PIVOTS.head.y}>
+        {/* §8 cheek pop: the head squashes wide onto the shoulders when poked */}
+        <Pop v={cheek} sx={1.06} sy={0.95} dy={2} ox={PIVOTS.cheekPop.x} oy={PIVOTS.cheekPop.y}>
         {ears}
         <G id="HEAD" transform={DOWN}>
           <Path id="head_front" d={HEAD.front} fill={C.body} stroke={C.outline} strokeWidth={0.45} />
@@ -455,8 +478,9 @@ export function KoaFigure({
           </G>
         )}
 
-        {face}
-        {headOutfits}
+          {face}
+          {headOutfits}
+        </Pop>
       </Shift>
     </G>
   );

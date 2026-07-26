@@ -23,6 +23,8 @@ export interface MascotBuddyProps {
   /** kept for call-site compatibility; the vector figure has no accent light */
   accent?: string;
   equippedOutfits?: Set<string>;
+  /** bump on every poke — the buddy pops its cheeks and looks front */
+  pokeSignal?: number;
 }
 
 export function MascotBuddy({
@@ -32,6 +34,7 @@ export function MascotBuddy({
   mood = 'neutral',
   level = 1,
   equippedOutfits,
+  pokeSignal,
 }: MascotBuddyProps) {
   return (
     <MascotFigure
@@ -41,6 +44,7 @@ export function MascotBuddy({
       emotion={emotion}
       level={level}
       equippedOutfits={equippedOutfits}
+      pokeSignal={pokeSignal}
     />
   );
 }

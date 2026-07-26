@@ -218,6 +218,8 @@ export const PIVOTS = {
   stretchArm: { x: 88, y: 176 },
   starLeft: { x: 82, y: 96 },
   starRight: { x: 158, y: 96 },
+  /** where the head meets the shoulders — the cheek pop squashes onto it */
+  cheekPop: { x: 120, y: 179 },
 } as const;
 
 /* ── body ─────────────────────────────────────────────────────────────── */

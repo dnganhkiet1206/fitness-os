@@ -5,6 +5,7 @@ import Animated, {
   useAnimatedProps,
   useSharedValue,
   withRepeat,
+  withSequence,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -93,6 +94,105 @@ export function useLoop(duration: number, active: boolean): SharedValue<number> 
     return () => cancelAnimation(v);
   }, [active, duration, v]);
   return v;
+}
+
+/**
+ * §8 of the sheet, "Look Left / Right".
+ *
+ * A wandering gaze in −1…1 (x) and −1…1 (y). Koa mostly looks at you and
+ * every few seconds glances somewhere and comes back; the hold is randomised
+ * so it never reads as a loop. `resetSignal` snaps the eyes front — used when
+ * the buddy is poked, so it looks at whoever just touched it.
+ */
+export function useGaze(active: boolean, resetSignal = 0) {
+  const gx = useSharedValue(0);
+  const gy = useSharedValue(0);
+  useEffect(() => {
+    if (!active) {
+      cancelAnimation(gx);
+      cancelAnimation(gy);
+      gx.value = withTiming(0, { duration: 240 });
+      gy.value = withTiming(0, { duration: 240 });
+      return;
+    }
+    let alive = true;
+    let t: ReturnType<typeof setTimeout>;
+    const look = (front: boolean) => {
+      const tx = front ? 0 : Math.random() * 2 - 1;
+      const ty = front ? 0 : Math.random() * 0.9 - 0.45;
+      const dur = 260 + Math.random() * 220;
+      gx.value = withTiming(tx, { duration: dur, easing: Easing.out(Easing.cubic) });
+      gy.value = withTiming(ty, { duration: dur, easing: Easing.out(Easing.cubic) });
+      // a glance is brief; looking back at you lasts much longer
+      const hold = front ? 1900 + Math.random() * 3200 : 700 + Math.random() * 1100;
+      if (alive) t = setTimeout(() => look(!front), hold);
+    };
+    // start front, then take the first glance after a beat
+    look(true);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [active, resetSignal, gx, gy]);
+  return { gx, gy };
+}
+
+/** offsets its children by the gaze, scaled to each layer's travel */
+export function Look({
+  gx,
+  gy,
+  ax,
+  ay,
+  children,
+}: {
+  gx: SharedValue<number>;
+  gy: SharedValue<number>;
+  ax: number;
+  ay: number;
+  children: ReactNode;
+}) {
+  const p = useAnimatedProps(() => ({ matrix: mat(gx.value * ax, gy.value * ay, 0, 1, 1, 0, 0) }));
+  return <AnimatedG animatedProps={p}>{children}</AnimatedG>;
+}
+
+/**
+ * A one-shot 0→1→0 beat, fired every time `signal` changes. Drives §8's
+ * "Cheek Pop": the reaction when the buddy is touched.
+ */
+export function usePop(signal: number, active: boolean): SharedValue<number> {
+  const v = useSharedValue(0);
+  useEffect(() => {
+    if (!signal || !active) return;
+    v.value = withSequence(
+      withTiming(1, { duration: 130, easing: Easing.out(Easing.back(2)) }),
+      withTiming(0, { duration: 340, easing: Easing.inOut(Easing.quad) }),
+    );
+  }, [signal, active, v]);
+  return v;
+}
+
+/** scale/offset driven straight by a 0→1 value (not a loop) */
+export function Pop({
+  v,
+  sx,
+  sy,
+  dy = 0,
+  ox,
+  oy,
+  children,
+}: {
+  v: SharedValue<number>;
+  sx: number;
+  sy: number;
+  dy?: number;
+  ox: number;
+  oy: number;
+  children: ReactNode;
+}) {
+  const p = useAnimatedProps(() => ({
+    matrix: mat(0, dy * v.value, 0, 1 + (sx - 1) * v.value, 1 + (sy - 1) * v.value, ox, oy),
+  }));
+  return <AnimatedG animatedProps={p}>{children}</AnimatedG>;
 }
 
 interface Base {
