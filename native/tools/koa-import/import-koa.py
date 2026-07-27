@@ -16,7 +16,7 @@ any design update instead of hand-transcribing:
 
     python3 tools/koa-import/import-koa.py <Koa.dc.html> src/components/ascnd/koa/koa-scene.ts
 """
-import json, re, sys
+import json, math, re, sys
 from xml.etree import ElementTree as ET
 
 SRC, OUT = sys.argv[1], sys.argv[2]
@@ -39,20 +39,81 @@ def parse_ops(css):
         elif fn == 'scaleY':      ops.append(['s', 1, n[0]])
     return ops
 
+IDENT = {'r': ['r', 0.0], 't': ['t', 0.0, 0.0], 's': ['s', 1.0, 1.0]}
+
+def mat(ops):
+    """a transform list → [a,b,c,d,e,f]"""
+    m = [1, 0, 0, 1, 0, 0]
+    for o in ops:
+        if o[0] == 'r':
+            r = math.radians(o[1]); n = [math.cos(r), math.sin(r), -math.sin(r), math.cos(r), 0, 0]
+        elif o[0] == 't':
+            n = [1, 0, 0, 1, o[1], o[2]]
+        else:
+            n = [o[1], 0, 0, o[2], 0, 0]
+        m = [m[0]*n[0] + m[2]*n[1], m[1]*n[0] + m[3]*n[1],
+             m[0]*n[2] + m[2]*n[3], m[1]*n[2] + m[3]*n[3],
+             m[0]*n[4] + m[2]*n[5] + m[4], m[1]*n[4] + m[3]*n[5] + m[5]]
+    return m
+
+def decompose(ops):
+    """a transform list → translate · rotate · scale, CSS's own `unmatrix`"""
+    a, b, c, d, e, f = mat(ops)
+    sx = math.hypot(a, b)
+    if sx: a, b = a / sx, b / sx
+    shear = a * c + b * d
+    c, d = c - a * shear, d - b * shear
+    sy = math.hypot(c, d)
+    if a * d - b * c < 0: sx = -sx
+    return [['t', round(e, 5), round(f, 5)],
+            ['r', round(math.degrees(math.atan2(b, a)), 5)],
+            ['s', round(sx, 5), round(sy, 5)]]
+
+def link(frames, name):
+    """Pair every stop with the next one, matched up the way CSS matches them.
+
+    Interpolation happens between adjacent keyframes, so the matching is
+    pairwise. When the two lists name the same functions and one is merely
+    shorter — `rotate(-16deg)` against `rotate(17deg) translateY(-9px)
+    scale(.94)`, which is how the run legs are written — CSS pads the short
+    one with identity functions. When they name different functions, it
+    falls back to interpolating the decomposed matrices instead. Resolving
+    both here leaves the runtime a single component-wise lerp.
+    """
+    for i, f in enumerate(frames[:-1]):
+        x, y = f['ops'], frames[i + 1]['ops']
+        n = min(len(x), len(y))
+        if all(x[j][0] == y[j][0] for j in range(n)):
+            sig = x if len(x) > len(y) else y
+            f['to'] = y + [IDENT[o[0]] for o in sig[len(y):]]
+            f['ops'] = x + [IDENT[o[0]] for o in sig[len(x):]]
+        else:
+            f['ops'], f['to'] = decompose(x), decompose(y)
+            if name not in MIXED: MIXED.append(name)
+    return frames
+
+MIXED = []
+
 style_css = raw[raw.find('<style>') + 7: raw.find('</style>')]
 KEYFRAMES = {}
 for name, body in re.findall(r'@keyframes (\w+) \{(.*?)\}\s*(?=@keyframes|\Z)', style_css, re.S):
-    frames = []
+    # One track per property, not one list of frames. CSS animates each
+    # property across only the stops that declare it — `0% { transform: …;
+    # opacity: 0 } 25% { opacity: .95 } 100% { transform: …; opacity: 0 }`
+    # is a two-stop transform and a three-stop opacity, so the drop keeps
+    # travelling through the middle stop instead of snapping back.
+    tf, op = [], []
     for stops, decl in re.findall(r'([\d.%,\s]+)\{([^}]*)\}', body):
         offsets = [float(x) / 100 for x in re.findall(r'([\d.]+)%', stops)]
-        f = {}
-        m = re.search(r'transform:([^;}]*)', decl)
-        if m: f['ops'] = parse_ops(m.group(1))
-        m = re.search(r'opacity:\s*([\d.]+)', decl)
-        if m: f['op'] = float(m.group(1))
+        mt = re.search(r'transform:([^;}]*)', decl)
+        mo = re.search(r'opacity:\s*([\d.]+)', decl)
         for o in offsets:
-            frames.append(dict(f, o=o))
-    KEYFRAMES[name] = sorted(frames, key=lambda f: f['o'])
+            if mt: tf.append({'o': o, 'ops': parse_ops(mt.group(1))})
+            if mo: op.append({'o': o, 'v': float(mo.group(1))})
+    track = {}
+    if tf: track['tf'] = link(sorted(tf, key=lambda f: f['o']), name)
+    if op: track['op'] = sorted(op, key=lambda f: f['o'])
+    KEYFRAMES[name] = track
 
 # ── SVG tree ──────────────────────────────────────────────────────────────
 svg = raw[raw.find('<svg'): raw.find('</svg>') + 6]
@@ -75,10 +136,16 @@ def style_bits(el):
                        'ease': {'linear': 'lin', 'ease-out': 'out'}.get(ease, 'io')}
     m = re.search(r'transform-origin:\s*([\d.]+)px\s+([\d.]+)px', st)
     if m: out['o'] = [float(m.group(1)), float(m.group(2))]
-    m = re.search(r'(?:^|;)\s*translate:\s*(-?[\d.]+)px\s+(-?[\d.]+)px', st)
-    if m: out['tr'] = [float(m.group(1)), float(m.group(2))]
+    # the CSS `translate` property. `px` is optional on a zero and the y is
+    # optional altogether — `translate:6px 0` is what the run legs use, and
+    # a stricter pattern silently dropped their 6px offset
+    m = re.search(r'(?:^|;)\s*translate:\s*(-?[\d.]+)(?:px)?(?:\s+(-?[\d.]+)(?:px)?)?', st)
+    if m: out['tr'] = [float(m.group(1)), float(m.group(2) or 0)]
+    # kept even alongside an animation: whether it survives is the runtime's
+    # call, and it depends on whether that animation's keyframes touch
+    # `transform` at all
     m = re.search(r'(?:^|;)\s*transform:\s*([^;]+)', st)
-    if m and 'anim' not in out: out['tf'] = parse_ops(m.group(1))
+    if m: out['tf'] = parse_ops(m.group(1))
     return out
 
 def walk(el):
@@ -135,7 +202,20 @@ open(OUT, 'w', encoding='utf-8').write(f'''/**
 
 /** one transform step: rotate(deg[,cx,cy]) | translate(x,y) | scale(sx,sy) */
 export type Op = [string, ...number[]];
-export interface Frame {{ o: number; ops?: Op[]; op?: number }}
+export interface TFrame {{
+  o: number;
+  ops: Op[];
+  /** the next stop's list, already matched to `ops` function for function */
+  to?: Op[];
+}}
+export interface OFrame {{ o: number; v: number }}
+/**
+ * One track per animated property. A track that is absent means the
+ * animation leaves that property alone, so the element's own attribute
+ * still applies; a track that is present replaces it outright, the way a
+ * CSS animation outranks a presentation attribute.
+ */
+export interface Track {{ tf?: TFrame[]; op?: OFrame[] }}
 export interface Anim {{ k: string; dur: number; delay: number; ease: string }}
 export interface Node {{
   t: string;
@@ -156,8 +236,9 @@ export interface Node {{
   kids?: Node[];
 }}
 
-export const KEYFRAMES: Record<string, Frame[]> = {ts(KEYFRAMES)};
+export const KEYFRAMES: Record<string, Track> = {ts(KEYFRAMES)};
 
 export const NODES: Node[] = {ts(NODES)};
 ''')
+print(f'mixed-list keyframes (interpolated as matrices): {MIXED}')
 print(f'keyframes: {len(KEYFRAMES)}  nodes(top): {len(NODES)}  bytes: {len(open(OUT,encoding="utf-8").read())}')

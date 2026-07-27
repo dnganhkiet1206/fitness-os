@@ -29,9 +29,10 @@ import {
   KEYFRAMES,
   NODES,
   type Anim,
-  type Frame,
   type Node,
+  type OFrame,
   type Op,
+  type TFrame,
 } from '@/components/ascnd/koa/koa-scene';
 
 /**
@@ -112,11 +113,30 @@ function opsMat(ops: Op[] | undefined, ox: number, oy: number): number[] {
 
 /* ── keyframe sampling ────────────────────────────────────────────────── */
 
+/**
+ * CSS's own timing functions, not lookalikes.
+ *
+ * `ease-out` is cubic-bezier(0, 0, .58, 1) and `ease-in-out` is
+ * cubic-bezier(.42, 0, .58, 1); the quadratic and smoothstep curves that
+ * stood in for them drifted the particle layers by up to 3px mid-flight.
+ * Newton's method on x(s) = t converges in a handful of steps.
+ */
+function bezier(t: number, ax: number, bx: number, cx: number, ay: number, by: number, cy: number) {
+  'worklet';
+  let s = t;
+  for (let i = 0; i < 5; i++) {
+    const d = (3 * ax * s + 2 * bx) * s + cx;
+    if (d < 1e-6 && d > -1e-6) break;
+    s -= (((ax * s + bx) * s + cx) * s - t) / d;
+  }
+  return ((ay * s + by) * s + cy) * s;
+}
+
 function ease(t: number, kind: string): number {
   'worklet';
   if (kind === 'lin') return t;
-  if (kind === 'out') return 1 - (1 - t) * (1 - t);
-  return t * t * (3 - 2 * t); // ease-in-out
+  if (kind === 'out') return bezier(t, -0.74, 1.74, 0, -2, 3, 0);
+  return bezier(t, 0.52, -0.78, 1.26, -2, 3, 0);
 }
 
 /** one op, interpolated between two keyframes, straight to a matrix */
@@ -142,47 +162,48 @@ function lerpOpMat(pa: Op, pb: Op | undefined, f: number): number[] {
   return [v(1), 0, 0, v(2), 0, 0];
 }
 
+/** the pair of stops a track straddles at `t`, and the eased fraction between */
+function span(frames: { o: number }[], t: number, kind: string): [number, number, number] {
+  'worklet';
+  let i = 0;
+  let j = frames.length - 1;
+  for (let k = 0; k < frames.length - 1; k++) {
+    if (t >= frames[k].o && t <= frames[k + 1].o) {
+      i = k;
+      j = k + 1;
+      break;
+    }
+  }
+  const w = frames[j].o - frames[i].o;
+  return [i, j, w > 0 ? ease((t - frames[i].o) / w, kind) : 0];
+}
+
 /**
- * Sample a frame list at 0..1 straight into a matrix.
+ * Sample a transform track at 0..1 straight into a matrix.
  *
  * Deliberately allocation-light: this runs for every animated layer on
  * every tick, so it walks the ops in place instead of building an
  * intermediate `Op[]` and composing it afterwards.
  */
-function sampleMat(
-  frames: Frame[],
-  t: number,
-  kind: string,
-  ox: number,
-  oy: number,
-): { m: number[]; op: number } {
+function sampleMat(frames: TFrame[], t: number, kind: string, ox: number, oy: number): number[] {
   'worklet';
-  let a = frames[0];
-  let b = frames[frames.length - 1];
-  for (let i = 0; i < frames.length - 1; i++) {
-    if (t >= frames[i].o && t <= frames[i + 1].o) {
-      a = frames[i];
-      b = frames[i + 1];
-      break;
-    }
-  }
-  const span = b.o - a.o;
-  const f = span > 0 ? ease((t - a.o) / span, kind) : 0;
-
-  const oa = a.op == null ? 1 : a.op;
-  const ob = b.op == null ? 1 : b.op;
-  const op = oa + (ob - oa) * f;
-
-  if (!a.ops || a.ops.length === 0) return { m: IDENTITY, op };
-  const sameShape = !!b.ops && b.ops.length === a.ops.length;
+  const s = span(frames, t, kind);
+  const a = frames[s[0]];
+  const b = a.to ?? a.ops;
+  const f = s[2];
+  if (a.ops.length === 0) return IDENTITY;
   let m = IDENTITY;
-  for (let i = 0; i < a.ops.length; i++) {
-    m = mul(m, lerpOpMat(a.ops[i], sameShape ? b.ops![i] : undefined, sameShape ? f : 0));
-  }
+  for (let i = 0; i < a.ops.length; i++) m = mul(m, lerpOpMat(a.ops[i], b[i], f));
   if (ox !== 0 || oy !== 0) {
     m = mul(mul([1, 0, 0, 1, ox, oy], m), [1, 0, 0, 1, -ox, -oy]);
   }
-  return { m, op };
+  return m;
+}
+
+function sampleOp(frames: OFrame[], t: number, kind: string): number {
+  'worklet';
+  const s = span(frames, t, kind);
+  return frames[s[0]].v + (frames[s[1]].v - frames[s[0]].v) * s[2];
 }
 
 function AnimGroup({
@@ -190,29 +211,60 @@ function AnimGroup({
   anim,
   origin,
   base,
+  over,
+  ownOpacity,
+  gProps,
   children,
 }: {
   clock: SharedValue<number>;
   anim: Anim;
   origin: [number, number] | undefined;
-  /** static transform applied outside the animation (SVG attr / CSS translate) */
+  /** transform that applies whatever the animation does — the CSS `translate` property */
   base: Op[];
+  /** the layer's own transform, which the animation replaces once it starts */
+  over: Op[];
+  /** the layer's own opacity, likewise */
+  ownOpacity: number;
+  /** the layer's own presentation attributes — fill, stroke, clip-path … */
+  gProps: Record<string, string | number>;
   children: ReactNode;
 }) {
-  const frames = KEYFRAMES[anim.k];
+  const track = KEYFRAMES[anim.k];
+  const tf = track?.tf;
+  const op = track?.op;
   const ox = origin ? origin[0] : 0;
   const oy = origin ? origin[1] : 0;
-  // `base` never changes for a mounted layer — compose it once, not 60× a second
+  // neither changes for a mounted layer — compose them once, not 30× a second
   const baseM = useMemo(() => opsMat(base, 0, 0), [base]);
+  // `transform-origin` is the layer's, not the animation's: an eyelid whose
+  // own style is `scaleY(0)` collapses onto the lash line at y=72, not onto
+  // the top of the viewBox
+  const beforeM = useMemo(() => mul(baseM, opsMat(over, ox, oy)), [baseM, over, ox, oy]);
   const isBase = baseM === IDENTITY;
-  const props = useAnimatedProps(() => {
-    if (!frames || frames.length === 0) return { matrix: IDENTITY, opacity: 1 };
-    const elapsed = clock.value - anim.delay;
-    const t = elapsed <= 0 ? 0 : (elapsed % anim.dur) / anim.dur;
-    const s = sampleMat(frames, t, anim.ease, ox, oy);
-    return { matrix: isBase ? s.m : mul(baseM, s.m), opacity: s.op };
+  const delay = anim.delay;
+  // whether this layer animates its opacity is fixed for its lifetime, so
+  // the prop set stays stable even though the two branches differ
+  const props = useAnimatedProps<{ matrix: number[]; opacity: number }>(() => {
+    const c = clock.value;
+    // `animation-fill-mode` is `none` throughout this export, so until the
+    // delay is up the animation contributes nothing at all — the layer sits
+    // on its own transform and opacity, not on the 0% keyframe
+    if (c < delay) return op && op.length > 0 ? { matrix: beforeM, opacity: ownOpacity } : { matrix: beforeM };
+    const elapsed = c - delay;
+    // exactly on an iteration boundary the loop is at the end of the cycle
+    // it just finished, not the start of the next one
+    const r = elapsed % anim.dur;
+    const t = r === 0 && elapsed > 0 ? 1 : r / anim.dur;
+    const m = tf && tf.length > 0 ? sampleMat(tf, t, anim.ease, ox, oy) : IDENTITY;
+    const matrix = isBase ? m : mul(baseM, m);
+    if (!op || op.length === 0) return { matrix };
+    return { matrix, opacity: sampleOp(op, t, anim.ease) };
   });
-  return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
+  return (
+    <AnimatedG {...gProps} animatedProps={props}>
+      {children}
+    </AnimatedG>
+  );
 }
 
 /* ── strings handed down by the logic layer ───────────────────────────── */
@@ -239,7 +291,8 @@ function parseAnim(css: string): { anim: Anim; origin?: [number, number]; tr?: O
   const m = /(\w+)\s+([\d.]+)s\s+([\w-]+)(?:\s+([\d.]+)s)?\s+infinite/.exec(css);
   if (!m) return null;
   const o = /transform-origin:\s*([\d.]+)px\s+([\d.]+)px/.exec(css);
-  const tr = /(?:^|;)\s*translate:\s*(-?[\d.]+)px\s+(-?[\d.]+)px/.exec(css);
+  // `px` is optional on a zero, and the y is optional altogether
+  const tr = /(?:^|;)\s*translate:\s*(-?[\d.]+)(?:px)?(?:\s+(-?[\d.]+)(?:px)?)?/.exec(css);
   return {
     anim: {
       k: m[1],
@@ -248,7 +301,7 @@ function parseAnim(css: string): { anim: Anim; origin?: [number, number]; tr?: O
       ease: m[3] === 'linear' ? 'lin' : m[3] === 'ease-out' ? 'out' : 'io',
     },
     origin: o ? [parseFloat(o[1]), parseFloat(o[2])] : undefined,
-    tr: tr ? [['t', parseFloat(tr[1]), parseFloat(tr[2])]] : undefined,
+    tr: tr ? [['t', parseFloat(tr[1]), tr[2] ? parseFloat(tr[2]) : 0]] : undefined,
   };
 }
 
@@ -273,16 +326,26 @@ const ATTR: Record<string, string> = {
   'stroke-dasharray': 'strokeDasharray',
 };
 
-function attrs(a: Record<string, string | number> | undefined) {
+function attrs(a: Record<string, string | number> | undefined, dropOpacity: boolean) {
   if (!a) return {};
   const out: Record<string, string | number> = {};
-  for (const k of Object.keys(a)) out[ATTR[k] ?? k] = a[k];
+  for (const k of Object.keys(a)) {
+    if (dropOpacity && k === 'opacity') continue;
+    out[ATTR[k] ?? k] = a[k];
+  }
   return out;
 }
 
-function matrixTransform(ops: Op[]): string | undefined {
+/** the layer's own `transform`, whether written inline or handed down by name */
+function own_tf(n: Node, flags: Flags): Op[] {
+  // an inline style outranks the presentation attribute a `bind` comes from
+  if (n.tf) return n.tf;
+  return n.bind ? parseOps(String(flags[n.bind] ?? '')) : [];
+}
+
+function matrixTransform(ops: Op[], origin: [number, number] | undefined): string | undefined {
   if (ops.length === 0) return undefined;
-  return `matrix(${opsMat(ops, 0, 0).join(' ')})`;
+  return `matrix(${opsMat(ops, origin ? origin[0] : 0, origin ? origin[1] : 0).join(' ')})`;
 }
 
 function RenderNode({
@@ -311,50 +374,84 @@ function RenderNode({
   if (/opacity:\s*0/.test(bound)) return null;
   const boundAnim = bound ? parseAnim(bound) : null;
 
+  const anim = n.anim ?? boundAnim?.anim;
+  const origin = n.o ?? boundAnim?.origin;
+  const track = anim ? KEYFRAMES[anim.k] : undefined;
+  // A CSS animation outranks a presentation attribute, so a keyframe set
+  // that touches `transform` replaces this layer's own `transform` outright
+  // — it does not compose with it. Same for `opacity`. The CSS `translate`
+  // property is a different property and survives either way.
+  const drivesTf = !!track?.tf?.length;
+  const drivesOp = !!track?.op?.length;
+
+  // what the animation cannot touch, and what it replaces once it starts
   const base: Op[] = [
     ...(n.tr ? ([['t', n.tr[0], n.tr[1]]] as Op[]) : []),
     ...(boundAnim?.tr ?? []),
-    ...(n.tf ?? []),
-    ...(n.bind ? parseOps(String(flags[n.bind] ?? '')) : []),
+    ...(drivesTf ? [] : own_tf(n, flags)),
   ];
-  const anim = n.anim ?? boundAnim?.anim;
-  const origin = n.o ?? boundAnim?.origin;
+  const over: Op[] = drivesTf ? own_tf(n, flags) : [];
 
-  const body =
-    n.t === 'g' ? (
-      kids
-    ) : SHAPES[n.t] ? (
-      (() => {
-        const Shape = SHAPES[n.t];
-        return <Shape {...attrs(n.a)} />;
-      })()
-    ) : (
-      <Fragment>{kids}</Fragment>
-    );
+  // presentation attributes belong to the layer whether it is a shape or a
+  // group — a `<g fill="none" stroke="#AEB6BF">` is what makes its children
+  // strokes rather than black fills
+  const own = attrs(n.a, drivesOp);
+  const ownOpacity = drivesOp && n.a?.opacity != null ? Number(n.a.opacity) : 1;
+  const isShape = !!SHAPES[n.t];
+  const gProps = isShape ? {} : own;
+
+  const body = isShape ? (
+    (() => {
+      const Shape = SHAPES[n.t];
+      return <Shape {...own} />;
+    })()
+  ) : n.t === 'g' ? (
+    kids
+  ) : (
+    <Fragment>{kids}</Fragment>
+  );
 
   if (anim && live) {
     return (
-      <AnimGroup clock={clock} anim={anim} origin={origin} base={base}>
+      <AnimGroup
+        clock={clock}
+        anim={anim}
+        origin={origin}
+        base={base}
+        over={over}
+        ownOpacity={ownOpacity}
+        gProps={gProps}>
         {body}
       </AnimGroup>
     );
   }
   if (anim) {
-    // frozen: bake the first frame in, so a grid of thumbnails costs
-    // nothing per frame and mounts no animated views
-    const frames = KEYFRAMES[anim.k];
-    const s0 = frames?.length
-      ? sampleMat(frames, 0, anim.ease, origin ? origin[0] : 0, origin ? origin[1] : 0)
-      : { m: IDENTITY, op: 1 };
-    const m = mul(opsMat(base, 0, 0), s0.m);
+    // frozen: the clock never leaves 0, so every layer sits where it does at
+    // t=0 — inside its delay that is its own transform, outside it the 0%
+    // keyframe. A grid of thumbnails then costs nothing per frame.
+    const early = anim.delay > 0;
+    const ox = origin ? origin[0] : 0;
+    const oy = origin ? origin[1] : 0;
+    const m = mul(
+      opsMat(base, 0, 0),
+      early
+        ? opsMat(over, ox, oy)
+        : track?.tf?.length
+          ? sampleMat(track.tf, 0, anim.ease, ox, oy)
+          : IDENTITY,
+    );
+    const frozenOp: { opacity?: number } = track?.op?.length
+      ? { opacity: early ? ownOpacity : sampleOp(track.op, 0, anim.ease) }
+      : {};
     return (
-      <G transform={`matrix(${m.join(' ')})`} opacity={s0.op}>
+      <G {...gProps} {...frozenOp} transform={`matrix(${m.join(' ')})`}>
         {body}
       </G>
     );
   }
-  const t = matrixTransform(base);
-  if (t) return <G transform={t}>{body}</G>;
+  const t = matrixTransform(base, origin);
+  if (t) return <G {...gProps} transform={t}>{body}</G>;
+  if (Object.keys(gProps).length > 0) return <G {...gProps}>{body}</G>;
   return n.t === 'g' ? <G>{body}</G> : <>{body}</>;
 }
 

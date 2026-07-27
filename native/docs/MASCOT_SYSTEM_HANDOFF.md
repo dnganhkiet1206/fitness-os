@@ -194,6 +194,27 @@ rank-up confetti, room lighting reacting to rank/energy.
   dependencies. `MascotBuddy` is now a thin wrapper over `MascotFigure` —
   no lazy Canvas, no error boundary, no dev fallback banners.
 
+- **The port now matches the export exactly — VERIFIED.** After the import
+  rewrite the figure was wrong in six ways at once, all of them mine, all of
+  them CSS rules the runtime was not honouring: a keyframe `transform`
+  overriding (not composing with) the element's own; keyframes tracked per
+  property rather than as one frame list; pairwise matching of mismatched
+  transform lists; `transform-origin` applying to the element's own
+  transform; nothing from an animation applying during `animation-delay`;
+  and the real cubic-bézier easings. Groups were also losing their
+  presentation attributes entirely, so `<g fill="none" stroke="#AEB6BF">`
+  layers — the run's speed lines, the stretch arcs, the lifting strain lines
+  — drew as solid black fills.
+
+  Every rule is written up in `tools/koa-import/README.md`, and
+  `tools/koa-import/verify.mjs` now checks them: it freezes the export's
+  animations in Chromium and compares every shape's box, opacity, fill,
+  stroke and clip against the generated data at the same clock. **904 cases
+  — every pose × expression at thirteen points in the cycle, all 70 wardrobe
+  items at four — 0 differences.** Whole-image pixel diff fell from 2–8% to
+  a uniform ~0.6% of edge antialiasing. Run it after any design update; it
+  exits non-zero on a drift.
+
 Still open: §7 smooth-motion (needs animated clips), `coat` weather source,
 sheet §1 **turnaround** (side + back views — the sheet shows them, no path
 data exists for them yet), and app states for the sheet's `surprised` /
@@ -379,6 +400,12 @@ paste does NOT persist to disk — must be a file attachment).
   swapped independently.
 - **Keep all logic in TypeScript**, providers thin, assets as data.
 - **Background removal = U2Net matting** (§6), not colour-key.
+- **Never judge the character from a static screenshot.** That is how the
+  run pose got rebuilt from scratch, wrongly, and how six CSS-semantics bugs
+  hid at once. Freeze the export's animations in a browser and diff against
+  the port: `node tools/koa-import/verify.mjs <Koa.dc.html>`. If a change to
+  `koa-figure.tsx` or `import-koa.py` cannot be shown to keep that at zero,
+  it is not finished.
 - Typecheck before commit: `cd native && npx tsc --noEmit` (ignore the
   pre-existing TS5101 baseUrl warning). Commit + push BOTH branches;
   always ff-merge into `claude/ios-fitness-rebuild-omgulr`.
