@@ -173,6 +173,13 @@ rank-up confetti, room lighting reacting to rank/energy.
   DEV picker but not yet derived automatically in `baseEmotion()`.
 - **Sheet §8 GỢI Ý ANIMATE — all four DONE.** Blink and Mouth Open/Close
   came with the port; **Look Left / Right** and **Cheek Pop** landed after.
+  The blink was then corrected against `koaBlink` / `koaBlink2` frame by
+  frame: the double flutter had been holding the eye shut 404ms instead of
+  258ms (it never reopened between the two halves, so it read as a sleepy
+  droop), and every window ramp was linear where CSS eases each keyframe
+  interval. `pulse()` is smoothstepped now. If a lid ever looks wrong
+  again, print the curve against the CSS keyframes before touching it —
+  the timings are in the `Blink` docstring.
   `useGaze()` wanders the pupils (and their highlights) in −1…1, mostly
   looking at you with a short glance every few seconds, holds randomised so
   it never reads as a loop; the gaze rests while Koa runs. `usePop()` fires

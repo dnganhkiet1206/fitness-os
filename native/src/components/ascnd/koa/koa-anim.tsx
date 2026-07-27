@@ -63,12 +63,23 @@ export function wave(t: number, a: number, b: number): number {
   return a + (b - a) * ((1 - Math.cos(t * TAU)) / 2);
 }
 
-/** trapezoid window: 0 outside [start,end], 1 in the middle, linear ramps */
+/**
+ * Window: 0 outside [start,end], 1 in the middle, eased on the way in and
+ * out. The ramps are smoothstepped, not linear — CSS applies the animation's
+ * `ease-in-out` to every keyframe interval, and a lid that travels at
+ * constant speed reads mechanical.
+ */
 export function pulse(t: number, start: number, up: number, down: number, end: number): number {
   'worklet';
   if (t <= start || t >= end) return 0;
-  if (t < start + up) return (t - start) / up;
-  if (t > end - down) return (end - t) / down;
+  if (t < start + up) {
+    const f = (t - start) / up;
+    return f * f * (3 - 2 * f);
+  }
+  if (t > end - down) {
+    const f = (end - t) / down;
+    return f * f * (3 - 2 * f);
+  }
   return 1;
 }
 
@@ -316,7 +327,16 @@ export function Shake({ v, amp = 1.6, children }: Base & { amp?: number }) {
   return <AnimatedG animatedProps={p}>{children}</AnimatedG>;
 }
 
-/** squash the group to nothing on Y, then snap it open — one blink */
+/**
+ * The lid drops from the brow and lifts again — one blink, or the sheet's
+ * double flutter.
+ *
+ * Windows are `koaBlink` / `koaBlink2` from the sheet, to the frame:
+ *   single — shut 4966→5044ms of a 5.2s loop  (close 130ms, open 156ms)
+ *   double — shut 7874→8004 then 8483→8570 of an 8.7s loop
+ * The eye must come back OPEN between the two halves of the flutter; leaving
+ * it shut across the gap is what makes a blink read as a slow, sleepy droop.
+ */
 export function Blink({
   v,
   ox,
@@ -327,7 +347,7 @@ export function Blink({
   const p = useAnimatedProps(() => {
     const t = v.value;
     const s = double
-      ? Math.max(pulse(t, 0.88, 0.025, 0.02, 0.96), pulse(t, 0.965, 0.01, 0.014, 1))
+      ? Math.max(pulse(t, 0.88, 0.025, 0.02, 0.94), pulse(t, 0.965, 0.01, 0.014, 1))
       : pulse(t, 0.93, 0.025, 0.03, 1);
     return { matrix: mat(0, 0, 0, 1, s, ox, oy) };
   });
