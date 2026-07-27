@@ -1,7 +1,0 @@
-{
-  "$comment": "Default player room. In the app this is overridden live: `mascot` from the selected buddy, `theme` from owned upgrades, and `placed` from the Supabase/AsyncStorage inventory (shop keys -> slots via room-assets.SHOP_TO_SLOT). These defaults drive the standalone preview and the empty-inventory state.",
-  "theme": "neon",
-  "mascot": "koa",
-  "placed": ["dumbbell_rack", "bench", "plant", "punching_bag"],
-  "outfits": []
-}

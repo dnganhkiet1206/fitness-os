@@ -13,7 +13,7 @@ import type { MascotMood } from '@/hooks/use-mascot';
 /** One-shot actions that play briefly then return to the held emotion. */
 export type MascotAction = 'celebrate' | 'wave' | 'curl';
 
-/** Everything the figure can be asked to show (image keys in mascot-images). */
+/** Everything the figure can be asked to show (mapped in `koa-emotion.ts`). */
 export type MascotEmotion =
   | 'idle'
   | 'happy'

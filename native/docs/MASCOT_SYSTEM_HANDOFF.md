@@ -1,428 +1,211 @@
 # Mascot System — Hand-off / Continuation Guide
 
-**Read this first if you are continuing the mascot work.** It captures the
-goal, the decided architecture, what is already built, and the exact next
-steps — so you continue without drifting. Do not relitigate settled
-decisions (see “Guardrails”).
+**Read this first if you are continuing the mascot work.** It is the goal,
+the shape of the thing as it actually is, the rules, and what is open.
+
+This document was rewritten on 2026-07-27. Four earlier directions —
+pre-rendered AI art, Lottie, a rigged Rive character, and a real-time 3D
+GLB — are gone, along with the rules that served them. Do not mine the git
+history for those rules; they were written for a system that no longer
+exists.
 
 ---
 
-## 1. The goal (do not lose this)
+## 1. The goal (unchanged, do not lose this)
 
 Make **this exact koala** live inside the iOS fitness app as a character
 with **emotions that react to real user activity**, like Duolingo / Apple
-Fitness. Concretely:
+Fitness:
 
-- 😊 Open app → smile / wave
-- 😔 No workout for ~3 days → sad / tired / yawn
-- 🏆 Hit a PR → jump / celebrate
-- 💪 During a workout (curl) → holding a dumbbell
-- 🥶 Cold weather → wearing a coat
-- 🎂 Birthday → party hat
+- open the app → wave
+- no workout for ~3 days → sad / tired
+- hit a PR → celebrate
+- logging a workout → curling a dumbbell
+- cold outside → coat · birthday → party hat
 
-The **“soul” is the logic** (when/why it reacts) — that is the valuable
-part and it is 100% code. The **art** (a picture per emotion) is generated
-by the USER with an AI image tool; the AI dev does everything else.
-
-Reference art (the character) and the current clean idle:
-![Koala reference](../assets/mascots/koa-rig-reference.png)
-- Live idle asset (background removed): `native/assets/mascots/koa.png`.
+The **soul is the logic** — when and why it reacts. That is 100% code and
+it is the valuable part.
 
 ---
 
-## 2. Division of labour (the working model — agreed)
+## 2. Division of labour
 
 | Task | Who |
 |---|---|
-| Generate character art per pose/emotion (AI image tool) | **User** |
-| Cut background cleanly, integrate, animate | **AI dev (you)** |
-| Emotion/event logic, state machine, equipment, app wiring | **AI dev (you)** |
+| Design Koa — poses, expressions, wardrobe — and export it | **User** |
+| Import the export, render it, prove it matches | **AI dev (you)** |
+| Emotion logic, state, shop, app wiring | **AI dev (you)** |
 
-The user depends almost entirely on AI and cannot run GUI tools. Therefore
-**all logic and asset processing must be code (no GUI in the loop).** The
-only thing the user does outside code is *prompt an image generator*.
+The user works in a design tool and cannot run developer GUIs. Everything
+downstream of the export must be code. The user's deliverable is a
+`Koa.dc.html` export; yours is everything else.
 
 ---
 
-## 3. Architecture (decided — Principal-Architect level)
-
-Layered, provider-abstracted “Mascot Engine”. **App never knows the render
-tech.** All intelligence in TypeScript; providers are thin adapters; assets
-are data (images/frames + JSON manifest).
+## 3. How Koa is rendered
 
 ```
-App screens
-  → MascotController (public API: play/setMood/setEnergy/setWorkout/equip)
-    → MascotEngine (TS: state machine + mood + equipment)   ← the brain
-      → IAnimationProvider (adapter)                          ← thin
-        → Renderer (draws image/frames/…)
-          → React Native
+Koa.dc.html                          ← the user's design export (truth)
+  → tools/koa-import/import-koa.py   ← generator
+    → koa/koa-scene.ts               ← SVG tree + keyframes, as data (generated)
+       koa/koa-flags.ts              ← the export's renderVals(), ported by hand
+      → koa/koa-figure.tsx           ← the runtime that walks the tree
+        → react-native-svg + Reanimated
 ```
 
-**Chosen primary provider: image / sprite-frame (raster).** Reasoning under
-the “AI-only, no GUI” constraint:
+- **`koa-scene.ts` is generated. Never edit it.** Re-run the importer.
+- **`koa-flags.ts` is hand-kept** because it is logic, not data. A new
+  pose, expression, slot or binding in the export must be mirrored here or
+  those layers silently never draw.
+- **`koa-figure.tsx` is a generic runtime**, not a drawing. It evaluates
+  flags, composes transforms and samples keyframes. One `useFrameCallback`
+  clock on the UI thread at 30fps feeds every animated layer; groups
+  animate through `matrix`, the only transform prop `RNSVGGroup` takes
+  natively, so nothing crosses to JS per frame.
 
-- Raster assets come from AI image/video (user prompts) and are **processed
-  and assembled entirely in code** (Python/PIL — see §6). Adding an
-  animation = new frames + a JSON line. **No GUI ever.**
-- **Rive and GLB are demoted to optional future providers.** They look
-  great but are **binary formats authored only in GUI editors (Rive
-  editor / Blender / Mixamo)** — the AI cannot create or modify them, so as
-  a *primary* they would block development. Keep them as pluggable options
-  for if/when a human/artist is available. **Do not make Rive/GLB the
-  core.** (The earlier `KOA_RIG_SPEC.md` is a valid Rive brief but Rive is
-  NOT the primary path.)
+`tools/koa-import/README.md` is the operating manual, including **the CSS
+rules the runtime has to honour**. Read it before changing either file.
 
-Provider priority already implemented in `mascot-figure.tsx`:
-`Rive → image → Lottie → vector-fallback`. This is the seed of the engine;
-the next step formalises it (§5).
+The emotion side:
 
----
-
-## 4. What is already built (in the repo, both branches)
-
-Branches: develop on `claude/native-logging-input-design-1ziiu3`, then
-**ff-merge into `claude/ios-fitness-rebuild-omgulr`** (the user pulls
-omgulr) and push BOTH. Always merge to omgulr.
-
-Files:
-- `src/components/ascnd/mascot-figure.tsx` — **provider selector**.
-  Renders: **`KoaFigure`** (koa — the spec-sheet vector, see §4b) → Rive
-  (if registered) → image + breathing → Lottie → `VectorMascot`.
-  `ImageMascot` uses `expo-image` + a Reanimated breathing loop
-  (scaleY/translateY), `contentPosition="bottom"` so feet touch floor. The
-  image entries for koa are kept but no longer reached.
-- `src/lib/mascot-images.ts` — **image registry** (koa live; `aspect` =
-  h/w so the box matches the art). `imageFor(id, mood)` → source+aspect.
-- `src/lib/mascot-lottie.ts` — Lottie registry (empty; lazy).
-- `src/lib/mascot-rive.ts` + `src/components/ascnd/mascot-rive-view.tsx` —
-  Rive registry + view (empty; lazy native require). Contract: SM
-  `MascotSM`, number input `mood`, action triggers.
-- `assets/mascots/koa.png` — clean idle (U2Net-cut, 640×859).
-- `assets/mascots/README.md`, `KOA_RIG_SPEC.md`, `koa-rig-reference.png`.
-- Deps installed: `expo-image` (was present), `lottie-react-native@7.3.8`,
-  `rive-react-native@9.8.5` (native modules → dev build rebuild needed to
-  link, but both are lazy so an empty registry never touches them).
-
-Data the logic can already use:
-- `src/hooks/use-mascot.tsx` — `useMascotMood()` returns
-  `happy | neutral | tired` (happy = meals+workout logged; tired = no meal
-  after noon / no workout by evening). `useMascotMessage()` context lines.
-  `MASCOTS` catalog ids: `koa, blaze, swift, titan, drago, nova`.
-- `src/hooks/use-mascot-room.ts` — `useDailyStreak()` (consecutive
-  daily_logs), wallet/xp/level, quests.
-- PR signal: `workout_sessions.pr_detected` (see `use-extras.ts` awards
-  `first_pr` / `pr_5`).
-- The gym scene (`mascot-scene.tsx`) already wraps the figure in event
-  motion (nod/settle on `celebrateSignal`, droop + zzz when tired) and
-  passes `celebrateSignal`/`flexSignal` from the room screen.
-
-Gamification already shipped (context, don’t redo): rank ladder
-(Rookie→Legend, `mascot-room.ts`), Today’s Energy ring
-(`energy-ring.tsx`), Rank Journey (`rank-journey.tsx`), reward coin-burst +
-rank-up confetti, room lighting reacting to rank/energy.
+- `lib/mascot-emotion.ts` — pure map from app state to an emotion.
+- `hooks/use-mascot-emotion.tsx` — held emotion + one-shot actions.
+- `lib/koa-emotion.ts` — the one table that turns an emotion into the
+  sheet's own vocabulary (expression + pose + implied outfit).
+- `components/ascnd/mascot-figure.tsx` — Koa, or the generic vector figure
+  for the five characters that have no art.
 
 ---
 
-## 4b. Progress log (what shipped after this hand-off)
+## 4. What is built
 
-- **§5 Emotion Engine — DONE.** `src/lib/mascot-emotion.ts` (pure map) +
-  `src/hooks/use-mascot-emotion.tsx` (one-shot store + `useMascotEmotion()`
-  + `triggerMascotAction()`). Held emotion from mood/streak/hour/route
-  (workout→curl, night→sleep, birthday→hat, mood→happy/tired/sad); one-shots
-  wave (app-open / tap) and celebrate (award medal + mascot unlock, via the
-  celebration host). `MascotFigure`/`ImageMascot` give each emotion its own
-  micro-motion (celebrate bounce, curl pulse, wave sway, sad/tired/sleep
-  slow-breath + slump). `hat` uses the real profile DOB; `coat` is wired but
-  gated `cold:false` until a weather source (location + API) lands.
-- **8 poses re-cut** (happy/sad/sleep/celebrate/curl/wave/hat/coat) — full
-  fur, solid body, fully transparent. Aspects live in `mascot-images.ts`.
-- **§6 background removal — DONE, reproducible:** `scripts/remove-bg.py`
-  (texture-flood silhouette + band-limited matting; no ML model, works
-  offline). Replaces the blocked U2Net path. See `scripts/README.md`.
-- **Gym room — DONE, data-driven.** `RoomRenderer.tsx` reads
-  `src/config/room/{scene,theme,user_room}.json` (+ `room-assets.ts`):
-  positions / skin / placement as data, z-sorted layers, width-relative.
-  Photoreal neon backdrop + background-removed props (rack/bench/plant/
-  heavy-bag/stats panel) with vector fallbacks (mirror/kettlebell/barbell/
-  treadmill). `MascotScene` is now a thin adapter over it.
+- **Koa, imported and verified.** 10 expressions, 6 poses, a 7-slot × 10
+  wardrobe (`assets/mascots/KOA_OUTFIT_CATALOGUE.md`). `verify.mjs` reports
+  904 cases — every pose × expression at thirteen points in the cycle, all
+  70 items at four — with 0 differences against the export.
+- **The Emotion Engine.** Held emotion from mood / streak / hour / route;
+  one-shots `wave` (app open, tap) and `celebrate` (award, unlock). `hat`
+  uses the real profile DOB; `coat` is wired but gated `cold: false` until
+  a weather source lands.
+- **`/koa-sheet`** — the DEV review screen: every expression, every pose,
+  all 70 items, tap to wear. Reached from the DEV bar in the Mascot Room;
+  nothing links to it in a production build. Only the hero animates.
+- **The Stage** — `stage-renderer.tsx` over `config/stage/*.json`, with
+  aura, particles and event motion. The user intends to replace it with an
+  idea suited to the vector character; it is untouched and waiting.
+- **Gamification** (context, do not redo): rank ladder, Today's Energy
+  ring, Rank Journey, coin-burst and rank-up confetti, stage lighting off
+  rank and energy.
+- **Performance**: the figure runs at 30fps, pauses when the app
+  backgrounds, and the Mascot Room passes screen focus down so an
+  unfocused stack screen costs nothing. The run pose's 33 animated layers
+  cost ~13.5µs of maths per frame.
 
-- **Koa is now IMPORTED from the design export, not hand-ported.** This is
-  the big one, and it replaces everything the bullets below used to say
-  about `koa-parts.ts` / `koa-anim.tsx` (both deleted).
+### Removed, on purpose — do not bring back
 
-  `tools/koa-import/import-koa.py` reads the design tool's `Koa.dc.html`
-  and emits `src/components/ascnd/koa/koa-scene.ts`: the SVG tree with each
-  layer's conditional flag, plus every CSS `@keyframes` sampled into
-  frames. `koa-flags.ts` is the export's own `renderVals()`, ported as-is.
-  `koa-figure.tsx` is a small runtime that evaluates the flags and walks
-  the tree; one `useFrameCallback` clock on the UI thread feeds all 36
-  animations, and groups animate through `matrix`.
-
-  **A design update is now `python3 tools/koa-import/import-koa.py …`, not
-  a transcription.** Every visual regression in this file's history came
-  from hand-copying that export; do not go back to it.
-
-  Current export covers: 10 expressions (adds `strain`, the lifting face),
-  6 poses (adds `turn34`, the §1 turnaround), and a seven-slot wardrobe —
-  head / face / top / bottom / shoes / back / hand, ten items each. See
-  `assets/mascots/KOA_OUTFIT_CATALOGUE.md`. Verified by rendering the
-  generated data and the export side by side, frame-frozen, across all
-  poses and all 70 items.
-
-  **Dropped in the swap, needs a decision:** the gaze (`useGaze`), the
-  cheek pop on poke (`usePop`, `pokeSignal`) and the lash-line blink pivot
-  were ours, not the export's, so they are gone. The run cadence knob
-  (`RUN_CYCLE_MS`) is moot — the export bakes its own choreography into an
-  18s timeline that runs, slows and stops.
-
-  The shop still sells five flat outfit keys; `WORN_FROM_SHOP` in
-  `mascot-figure.tsx` maps the three with an equivalent. Extending the shop
-  to the full catalogue is open work.
-
-- **`/koa-sheet` — the character review screen.** Panels §3 and §5 of the
-  sheet, live on device: all 8 expressions and all 5 poses, tap a card to
-  load it into the hero, tap the hero to cycle ("chạm vào Koa để đổi biểu
-  cảm", as the design's room panel does). Reached from the DEV bar in the
-  Mascot Room; nothing links to it in a production build. Use it to check
-  the drawing on real hardware rather than from a simulator screenshot.
-- **3D removed — DONE.** With the sheet as the direction, the real-time 3D
-  buddy was deleted: `mascot-3d.tsx`, `assets/mascots/koa.glb`,
-  `config/mascot-{bones,face,poses}.ts`, `tools/mascot-playground`,
-  `docs/MASCOT_3D_SETUP.md`, `docs/HERO_MODEL_SPEC.md`, the `glb`/`gltf`
-  Metro asset extensions and the `three` / `@react-three/*` / `expo-gl`
-  dependencies. `MascotBuddy` is now a thin wrapper over `MascotFigure` —
-  no lazy Canvas, no error boundary, no dev fallback banners.
-
-- **The port now matches the export exactly — VERIFIED.** After the import
-  rewrite the figure was wrong in six ways at once, all of them mine, all of
-  them CSS rules the runtime was not honouring: a keyframe `transform`
-  overriding (not composing with) the element's own; keyframes tracked per
-  property rather than as one frame list; pairwise matching of mismatched
-  transform lists; `transform-origin` applying to the element's own
-  transform; nothing from an animation applying during `animation-delay`;
-  and the real cubic-bézier easings. Groups were also losing their
-  presentation attributes entirely, so `<g fill="none" stroke="#AEB6BF">`
-  layers — the run's speed lines, the stretch arcs, the lifting strain lines
-  — drew as solid black fills.
-
-  Every rule is written up in `tools/koa-import/README.md`, and
-  `tools/koa-import/verify.mjs` now checks them: it freezes the export's
-  animations in Chromium and compares every shape's box, opacity, fill,
-  stroke and clip against the generated data at the same clock. **904 cases
-  — every pose × expression at thirteen points in the cycle, all 70 wardrobe
-  items at four — 0 differences.** Whole-image pixel diff fell from 2–8% to
-  a uniform ~0.6% of edge antialiasing. Run it after any design update; it
-  exits non-zero on a drift.
-
-Still open: §7 smooth-motion (needs animated clips), `coat` weather source,
-sheet §1 **turnaround** (side + back views — the sheet shows them, no path
-data exists for them yet), and app states for the sheet's `surprised` /
-`angry` expressions.
+| Gone | Why |
+|---|---|
+| Real-time 3D (`mascot-3d.tsx`, `koa.glb`, bone/pose/face configs, three / @react-three/* / expo-gl) | The direction is the flat vector sheet. Removed at the user's request. |
+| Rive (`mascot-rive.ts`, `mascot-rive-view.tsx`, `rive-react-native`, `KOA_RIG_SPEC.md`) | Registry empty by design — GUI-authored binaries an AI cannot produce. |
+| Lottie (`mascot-lottie.ts`, `lottie-react-native`) | Registry empty by design. |
+| Pre-rendered art (`mascot-images.ts`, 9 `koa-*.webp/png`, `scripts/remove-bg.py`) | Unreachable: Koa short-circuits ahead of it and nothing else was registered. |
+| The photoreal gym room (`room-renderer.tsx`, `config/room/`) | Zero call sites — `StageRenderer` replaced it, and photoreal props clash with a flat-vector character. The art in `assets/room/` is kept for the user. |
+| `koa-parts.ts`, `koa-anim.tsx` | The hand-drawn Koa, superseded by the import. |
 
 ---
 
-## 4c. OPEN — parked, ask the user when they are ready
+## 5. Rules
+
+**About the character**
+
+1. **`koa-scene.ts` is generated.** A design update is
+   `python3 tools/koa-import/import-koa.py <Koa.dc.html> …`, never a
+   transcription. Every visual regression in this project's history came
+   from hand-copying that export.
+2. **Never judge the character from a static screenshot.** That is how the
+   run pose got rebuilt from scratch, wrongly, and how six CSS-semantics
+   bugs hid at once. Run
+   `node tools/koa-import/verify.mjs <Koa.dc.html>`; a change to
+   `koa-figure.tsx` or `import-koa.py` that cannot be shown to keep it at
+   zero is not finished.
+3. **The export is the truth, including its mistakes.** If the browser
+   renders something you think is wrong, the app must still match it, and
+   the fix belongs in the design tool. Do not "improve" the design in the
+   port.
+4. **Do not change the character's proportions.** The user said so
+   explicitly about the arms and legs; treat it as covering the whole
+   figure.
+5. **Anything of ours layered on the character goes on top of the
+   generated tree**, never inside generated data — the next import wipes
+   it otherwise. That is what happened to the gaze, the cheek pop and the
+   lash-line blink.
+
+**About the system**
+
+6. **One rendering path.** Koa is code-drawn vector; other characters fall
+   back to the generic vector figure. Do not add an asset pipeline,
+   provider chain or binary format back. Give a new character art by
+   giving it Koa's treatment.
+7. **Do not bake clothing into poses** — outfits stay per-slot overlays,
+   swapped independently.
+8. **All logic in TypeScript**, assets as data, no GUI in the loop.
+9. **Keep the room cool.** Anything that runs per frame is paid for on the
+   user's phone. Gate loops on screen focus and app state, and prefer one
+   clock over many.
+
+**Working rules**
+
+10. `cd native && npx tsc --noEmit` before every commit (ignore the
+    pre-existing TS5101 baseUrl warning).
+11. Develop on `claude/ios-fitness-rebuild-omgulr`; ff-merge into
+    `claude/ios-fitness-rebuild-fiyl9k` and push both. `main` and the
+    `devin/*` branches are a **different project** (a Vite/Capacitor web
+    app) with unrelated history — do not merge across.
+12. Commit trailer: `Co-Authored-By:` and the `Claude-Session:` line.
+    Never put the model id in a commit, a PR or a code comment.
+
+---
+
+## 6. Open — parked, ask the user when they are ready
 
 The user is still designing and asked to be left alone until then. Do NOT
 act on these; raise them when a design pass lands.
 
-1. **Three touches lost when Koa became an import.** They were ours, not
-   the export's, so re-running the importer wiped them. All three were
-   built and approved before; re-applying means layering them on top of the
-   generated tree, not editing generated data.
+1. **Two touches lost when Koa became an import.** They were ours, not the
+   export's, so re-running the importer wiped them. Re-applying means
+   layering them on top of the generated tree (rule 5).
    - the wandering gaze (`useGaze`) — sheet §8 "Look Left / Right"
-   - the cheek pop on poke (`usePop` + `pokeSignal` through
-     `StageRenderer → MascotBuddy → MascotFigure`)
-   - the blink pivoting at the lash line instead of the sheet's brow-line
-     origin — the user asked for this one specifically, so it will need
-     re-doing unless the export starts doing it
-   `MascotBuddy` / `MascotFigure` still carry a `pokeSignal` prop with
-   nothing on the other end; wire or remove it with this decision.
+   - the cheek pop on poke (`usePop`) — the dangling `pokeSignal` prop it
+     used to ride on has been removed, so this needs re-wiring from
+     scratch if the user wants it back
+   The lash-line blink pivot has since become moot: the export's own
+   eyelid collapses onto the lash line at y=72, which is what the user
+   asked for.
 2. **The shop vs the 70-item wardrobe.** `SHOP_ITEMS` sells five flat
-   outfit keys on head/eyes/neck/waist; the character now wears one item
-   per slot across head/face/top/bottom/shoes/back/hand.
-   `WORN_FROM_SHOP` in `mascot-figure.tsx` bridges the three that overlap.
-   Open: prices, unlock rules, and a season/theme field — a third of the
-   catalogue is Tết / Christmas / Halloween.
-3. **The stage.** The user said they would replace the 3D stage with an
-   idea suited to the mascot; `StageRenderer` is untouched and waiting.
+   outfit keys on head/eyes/neck/waist; the character wears one item per
+   slot across head/face/top/bottom/shoes/back/hand. `WORN_FROM_SHOP` in
+   `mascot-figure.tsx` bridges the three that overlap. Open: prices,
+   unlock rules, and a season/theme field — a third of the catalogue is
+   Tết / Christmas / Halloween.
+3. **The stage.** The user said they would replace it with an idea suited
+   to the mascot.
 4. **Expressions with no trigger.** `surprised` and `angry` are drawn but
-   nothing in `baseEmotion()` produces them. `run` is reachable only from
+   nothing in `baseEmotion()` produces them; `run` is reachable only from
    the DEV picker.
+5. **Sheet §1 turnaround.** The sheet shows side and back views; no path
+   data exists for them in the export yet.
+6. **`coat` needs a weather source** — location + a free weather API.
 
 ---
 
-## 5. NEXT STEPS — build the Emotion Engine (primary task) — ✅ DONE (see §4b)
+## 7. One paragraph for a fresh model
 
-Goal: a small TS engine that maps **real app state/events → a mascot
-emotion/action**, rendered via the image provider, and degrading
-gracefully (1 still per emotion + micro-motion is enough; swap in animated
-WebP later for smooth actions).
-
-### 5a. Emotion state model
-Emotions/actions (start): `idle, happy, sad, tired/sleep, celebrate, curl,
-wave`. Each maps to an image key in `mascot-images.ts` (fall back to
-`idle` when the art isn’t added yet — so it works incrementally).
-
-Extend `MascotImageSet` to hold these keys, e.g.:
-```ts
-{ idle, happy?, sad?, tired?, sleep?, celebrate?, curl?, wave?, coat?, hat?, aspect }
-```
-`imageFor(id, emotion)` returns the specific art or `idle`.
-
-### 5b. Event → emotion mapping (the brain)
-Create `src/lib/mascot-emotion.ts` (pure functions) + a hook
-`useMascotEmotion()` that derives the current emotion from data:
-
-| Trigger | Source (exists?) | Emotion |
-|---|---|---|
-| App/room opened | mount | `happy` (brief) → `idle` |
-| Streak lapse ≥3 days / mood tired | `useDailyStreak`, `useMascotMood` | `sad`/`tired` |
-| Recent PR | `workout_sessions.pr_detected` / new award | `celebrate` (one-shot) |
-| On workout log / curl screen | route = `log-workout` (or exercise name) | `curl` |
-| Night / no activity late | hour + logs | `sleep` |
-| Cold weather | ⚠️ needs weather API + location | overlay `coat` |
-| Birthday | ⚠️ needs `birthdate` (add to profile/settings) | overlay `hat` |
-
-First 4 use **existing** data. Weather + birthday need a small data add
-(free weather API by location; a birthdate field in settings) — do those
-when you reach outfits.
-
-### 5c. Playback / state machine (TS, code-only)
-`src/lib/mascot-state-machine.ts`:
-- Base loop = `idle`, blended by mood (`happy`/`sad`/`tired` idle variant).
-- One-shot actions (`celebrate`, `curl`, `wave`) play then auto-return to
-  the mood idle. Held state = `sleep` (until mood changes).
-- Micro-motion per still (breathe always; squash on celebrate/jump;
-  slump on sad) via Reanimated in the renderer.
-- Face blink can be a timed overlay later (or a `blink` art frame).
-
-### 5d. Renderer
-Evolve `ImageMascot` (in `mascot-figure.tsx`) to accept an `emotion` and
-pick per-emotion micro-motion. Keep `expo-image`. Later add a
-`SpriteRenderer` for multi-frame WebP/sprite clips (see §7).
-
-### 5e. Wire it
-- `MascotFigure` already receives `mood`; add `emotion`/`action` from the
-  engine (a context `MascotProvider` at root, or thread props).
-- Fire `celebrate` on reward/PR (room already has `celebrateSignal`), set
-  `sleep`/`sad` from mood, `curl` when on the workout logging flow.
-
-**Ship incrementally:** with only `koa.png` today you can already do
-mood-driven micro-motion (breathe/slump/bounce). Each new art file lights
-up its emotion automatically.
-
----
-
-## 6. Asset processing pipeline (background removal) — ✅ DONE: `scripts/remove-bg.py`
-
-The user sends raw AI images with a **plain flat light-grey background**,
-full body, front view (like the koala). Cut them with **U2Net matting** (NOT
-colour-key flood-fill — that chews fur and leaves grey fringe).
-
-Setup (ephemeral container — re-fetch each session):
-```bash
-python3 -m pip install --quiet numpy Pillow onnxruntime
-# model (GitHub release is 403-blocked; use the HF mirror):
-mkdir -p ~/.u2net && curl -fsSL -o ~/.u2net/u2net.onnx \
-  "https://huggingface.co/tomjackson2023/rembg/resolve/main/u2net.onnx"
-```
-
-Cut script (`cut.py`) — soft fur alpha, defringe, crop, resize:
-```python
-import numpy as np, onnxruntime as ort
-from PIL import Image, ImageFilter
-SRC='in.png'; OUT='out.png'; TW=640   # target width
-im=Image.open(SRC).convert('RGB'); W,H=im.size
-sess=ort.InferenceSession('/root/.u2net/u2net.onnx',providers=['CPUExecutionProvider'])
-n=sess.get_inputs()[0].name
-r=im.resize((320,320),Image.BILINEAR)
-x=(np.asarray(r).astype(np.float32)/255.0-[0.485,0.456,0.406])/[0.229,0.224,0.225]
-x=x.transpose(2,0,1)[None].astype(np.float32)
-m=sess.run(None,{n:x})[0][0,0]
-m=(m-m.min())/(m.max()-m.min()+1e-8)
-a=np.asarray(Image.fromarray((m*255).astype(np.uint8),'L').resize((W,H),Image.BILINEAR)).astype(np.float32)/255.
-a=np.clip((a-0.06)/0.88,0,1)                      # crisp transition, kill haze
-arr=np.asarray(im).astype(np.float32); af=a[...,None]
-pb=np.stack([np.asarray(Image.fromarray((arr*af)[...,c].astype(np.uint8),'L').filter(ImageFilter.GaussianBlur(2.5))).astype(np.float32) for c in range(3)],-1)
-ab=np.asarray(Image.fromarray((a*255).astype(np.uint8),'L').filter(ImageFilter.GaussianBlur(2.5))).astype(np.float32)[...,None]
-rgb=np.where(af>0.9,arr,pb/np.clip(ab,1,None))    # defringe: edge = fur colour
-o=Image.fromarray(np.dstack([np.clip(rgb,0,255).astype(np.uint8),(a*255).astype(np.uint8)]),'RGBA')
-o=o.crop(Image.fromarray((a*255).astype(np.uint8),'L').getbbox())
-o=o.resize((TW,round(o.size[1]*TW/o.size[0])),Image.LANCZOS); o.save(OUT)
-print('aspect h/w =', round(o.size[1]/o.size[0],4))
-```
-Always verify on a magenta background (fringe/jaggies show there) before
-committing. Save to `assets/mascots/koa-<emotion>.png`; register in
-`mascot-images.ts` with the printed aspect.
-
----
-
-## 7. Smooth motion (optional upgrade, still code-only)
-For truly animated actions (curl up/down, jump): user makes a short clip
-with **image-to-video AI** (Kling/Luma/Runway/Pika) → you extract frames,
-U2Net-cut each, assemble an **animated WebP / APNG (transparent)** or a
-sprite sheet + JSON, play via `expo-image` (animated) or a `SpriteRenderer`
-that drives the frame index. This stays 100% code/asset — no GUI.
-
----
-
-## 8. Asset shopping list (what to ask the user for)
-Same character, same outfit/colors, full body, front, **plain grey bg**,
-one character. Base prompt + one action line each. Filenames:
-
-Priority 1 (turns the engine on): `koa-happy.png` (smiling),
-`koa-sad.png` (sad/tired), `koa-celebrate.png` (jumping, arms up),
-`koa-curl.png` (holding a dumbbell, bicep curl).
-Priority 2: `koa-wave.png`, `koa-sleep.png` (eyes closed).
-Priority 3 (outfits, full variants for v1): `koa-coat.png`, `koa-hat.png`.
-
-1 still per emotion is enough to start. The user attaches files (inline
-paste does NOT persist to disk — must be a file attachment).
-
----
-
-## 9. Guardrails (settled — do NOT drift)
-- ~~Do NOT hand-draw the character in SVG/code~~ — **REVERSED by the user
-  (2026-07-26).** The direction is now the flat-vector spec sheet
-  (`assets/mascots/koa-svg-spec-sheet.png`), whose §10 names React Native
-  SVG as the target. Koa is code-drawn in `components/ascnd/koa/`. Do not
-  reintroduce a photoreal/AI-image Koa to “add volume”.
-- **The 3D path is GONE, on purpose.** `mascot-3d.tsx`, `koa.glb`, the bone/
-  pose/face configs, the Three.js rig playground and the
-  react-three-fiber / expo-gl / three dependencies were all removed at the
-  user’s request. Do not add them back; the stage is being redesigned
-  around the vector character.
-- **Do NOT make Rive the primary** — GUI-authored binaries block an
-  AI-only workflow. It stays an optional provider (registry is empty).
-- **Do NOT bake clothing into animations** — outfits are overlays/variants
-  swapped independently.
-- **Keep all logic in TypeScript**, providers thin, assets as data.
-- **Background removal = U2Net matting** (§6), not colour-key.
-- **Never judge the character from a static screenshot.** That is how the
-  run pose got rebuilt from scratch, wrongly, and how six CSS-semantics bugs
-  hid at once. Freeze the export's animations in a browser and diff against
-  the port: `node tools/koa-import/verify.mjs <Koa.dc.html>`. If a change to
-  `koa-figure.tsx` or `import-koa.py` cannot be shown to keep that at zero,
-  it is not finished.
-- Typecheck before commit: `cd native && npx tsc --noEmit` (ignore the
-  pre-existing TS5101 baseUrl warning). Commit + push BOTH branches;
-  always ff-merge into `claude/ios-fitness-rebuild-omgulr`.
-- Commit trailer: `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`
-  and the Claude-Session line. Never put the model id in commits.
-
----
-
-## 10. One-paragraph summary for a fresh model
-The user generates AI images of one koala mascot in different emotions; you
-cut them with U2Net (§6) and build a **TypeScript Emotion Engine** (§5)
-that maps real app events (streak lapse, PR, workout, mood) to an emotion,
-rendered via the image provider in `mascot-figure.tsx` with per-emotion
-micro-motion, degrading to the current `koa.png` idle + the vector fallback
-when art is missing. Raster (image/sprite) is the intended primary because
-it’s the only high-quality path an AI can produce and maintain without a
-GUI; Rive/GLB are optional future providers, not the core. Start by wiring
-mood-driven micro-motion today, then light up each emotion as its art
-arrives, then add weather (coat) and birthday (hat) with a small data add.
-```
+Koa is a flat-vector koala **drawn in code from the user's design-tool
+export**. `tools/koa-import/import-koa.py` turns `Koa.dc.html` into
+`koa-scene.ts` (tree + keyframes as data); `koa-flags.ts` is the export's
+own logic ported by hand; `koa-figure.tsx` is a small runtime that walks
+the tree on one UI-thread clock. A TypeScript Emotion Engine maps real app
+events to an expression + pose. Everything else that was ever tried — 3D,
+Rive, Lottie, pre-rendered art — has been removed and must not come back.
+The one hard rule: never judge the render by eye,
+`node tools/koa-import/verify.mjs <Koa.dc.html>` must report zero.

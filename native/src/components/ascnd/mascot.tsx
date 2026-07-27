@@ -26,8 +26,7 @@ import { levelFromXp } from '@/lib/mascot-room';
  * Floating fitness companion — "2.5D": the emoji artwork is animated in
  * real 3D space (perspective + rotateX/rotateY), with squash & stretch,
  * a ground shadow that reacts to hover height and a character-colored
- * aura. All transforms run on the UI thread via Reanimated. The shell is
- * ready for real Lottie/GLB characters later.
+ * aura. All transforms run on the UI thread via Reanimated.
  */
 export function Mascot() {
   const { enabled, mascot, message, mood } = useMascot();

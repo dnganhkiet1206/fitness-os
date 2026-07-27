@@ -6,13 +6,9 @@ import type { MascotDef } from '@/lib/mascots';
 /**
  * The buddy on the Stage.
  *
- * There is one renderer now: the code-drawn figure. Koa is drawn from its
- * SVG spec sheet (`components/ascnd/koa/`), every other companion falls back
- * to the built-in vector figure — see `MascotFigure` for the order.
- *
- * The 3D path (react-three-fiber over expo-gl, a rigged GLB) was removed:
- * the character direction is the flat vector sheet, and the stage is being
- * rebuilt around it.
+ * There is one renderer: the code-drawn figure. Koa comes from the design
+ * export (`components/ascnd/koa/`); every other companion falls back to the
+ * built-in vector figure.
  */
 export interface MascotBuddyProps {
   mascot: MascotDef;
@@ -23,8 +19,6 @@ export interface MascotBuddyProps {
   /** kept for call-site compatibility; the vector figure has no accent light */
   accent?: string;
   equippedOutfits?: Set<string>;
-  /** bump on every poke — the buddy pops its cheeks and looks front */
-  pokeSignal?: number;
   /** false pauses the figure — the room passes screen focus down */
   animated?: boolean;
 }
@@ -36,7 +30,6 @@ export function MascotBuddy({
   mood = 'neutral',
   level = 1,
   equippedOutfits,
-  pokeSignal,
   animated = true,
 }: MascotBuddyProps) {
   return (
@@ -47,7 +40,6 @@ export function MascotBuddy({
       emotion={emotion}
       level={level}
       equippedOutfits={equippedOutfits}
-      pokeSignal={pokeSignal}
       animated={animated}
     />
   );

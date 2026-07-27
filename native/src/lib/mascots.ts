@@ -6,9 +6,11 @@ import type { AppLang } from './i18n';
  * counts) — the foundation for a future paid tier: `pro` characters are
  * visible but locked ("coming soon") until purchases ship.
  *
- * Rendering uses Apple's emoji glyphs — at large sizes they are shaded,
- * dimensional artwork, which keeps this test phase asset-free. Swapping
- * in real 3D models (Lottie/GLB) later only touches the Mascot view.
+ * The picker renders each character as its emoji glyph. Only `koa` has a
+ * real figure so far (`components/ascnd/koa/`, drawn from the design
+ * export); the rest fall back to the generic vector figure. Giving one of
+ * them art means giving it Koa's treatment — see
+ * `docs/MASCOT_SYSTEM_HANDOFF.md`.
  */
 
 export interface MascotDef {

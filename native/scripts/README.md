@@ -1,21 +1,12 @@
 # native/scripts
 
-Reproducible, code-only asset tooling for the mascot / room system.
+- `reset-project.js` — the Expo template's fresh-start helper.
 
-## remove-bg.py — background remover
+Mascot tooling lives in `tools/koa-import/` now: `import-koa.py` turns a
+design export into the scene data, and `verify.mjs` proves the render
+matches the export.
 
-Cuts the studio-grey AI renders to transparent WebP with no ML model
-(the U2Net download is network-blocked here). It combines a **texture
-flood** for the silhouette — which absorbs the gradient floor + soft cast
-shadow that colour thresholds miss — with **band-limited alpha matting**
-for full, soft fur and a speckle-free body. See the module docstring for
-the full method.
-
-```bash
-pip install pillow numpy scipy pymatting
-python scripts/remove-bg.py INPUT.png assets/mascots/koa-happy.webp
-# prints size + aspect(h/w) → paste the aspect into src/lib/mascot-images.ts
-```
-
-Verified on all 8 Koa poses and the room props. Re-run it whenever new
-pose / prop art arrives, then register the printed aspect ratio.
+`remove-bg.py` (matting for pre-rendered character art) and
+`optimize-glb.py` (3D mesh/texture reduction) were removed along with the
+image and 3D companion paths they fed. Koa is drawn in code; nothing in the
+app reads a character asset any more.
