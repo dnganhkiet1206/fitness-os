@@ -71,6 +71,18 @@ const EMPTY: Set<string> = new Set();
  */
 const STEP_A_PHASE = 0.1;
 
+/**
+ * Arms swing AGAINST the leg on the same side — half a stride apart.
+ *
+ * The sheet drives the left arm and the left leg from the same `koaStepA`,
+ * and the right arm and right leg from the same `koaStepB`, so each arm
+ * swings in lockstep with the leg below it. That is the one thing a run
+ * cannot do: sample it and the same-side pair reads identical at every
+ * frame. Offsetting the arms by half a cycle keeps every authored curve,
+ * amplitude and easing exactly as drawn, and only moves WHEN they happen.
+ */
+const ARM_OPPOSE = 0.5;
+
 const HEAD_DY = 11;
 const hy = (y: number) => y - HEAD_DY;
 const DOWN = `translate(0,${HEAD_DY})`;
@@ -618,11 +630,17 @@ export function KoaFigure({
       {p.poseRun && (
         <G id="ARMS">
           <G transform={`translate(${TURN.armLeftDx},0) rotate(${TURN.armLeftRotate} ${TURN.armLeftOx} ${TURN.armLeftOy})`}>
-            <Rot v={run} phase={STEP_A_PHASE} from={-22} to={24} ox={PIVOTS.armLeft.x} oy={PIVOTS.armLeft.y}>
+            <Rot
+              v={run}
+              phase={STEP_A_PHASE + ARM_OPPOSE}
+              from={-22}
+              to={24}
+              ox={PIVOTS.armLeft.x}
+              oy={PIVOTS.armLeft.y}>
               <Path d={BODY.armRunLeft} fill={C.body} />
             </Rot>
           </G>
-          <Rot v={run} from={16} to={-17} ox={PIVOTS.armRight.x} oy={PIVOTS.armRight.y}>
+          <Rot v={run} phase={ARM_OPPOSE} from={16} to={-17} ox={PIVOTS.armRight.x} oy={PIVOTS.armRight.y}>
             <Path d={BODY.armRunRight} fill={C.body} />
           </Rot>
           <Path d={BODY.armRightCrease} fill={C.shade} opacity={0.55} />
