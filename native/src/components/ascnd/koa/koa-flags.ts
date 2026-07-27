@@ -46,6 +46,8 @@ export const KOA_EXPRESSIONS: { key: KoaExpression; label: string }[] = [
   { key: 'tired', label: 'MỆT MỎI' },
   { key: 'angry', label: 'TỨC GIẬN' },
   { key: 'delighted', label: 'THÍCH THÚ' },
+  { key: 'happytired', label: 'VUI MÀ MỆT' },
+  { key: 'strain', label: 'GỒNG SỨC' },
 ];
 
 export const KOA_POSES: { key: KoaPose; label: string }[] = [

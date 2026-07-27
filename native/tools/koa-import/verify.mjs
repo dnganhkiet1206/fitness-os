@@ -8,6 +8,11 @@
  * drifts shows up as a named shape and a pixel distance instead of as
  * "something looks off".
  *
+ * It also cross-checks `koa-flags.ts` against the export's own renderVals().
+ * That one matters more than it looks: the geometry comparison feeds koaFlags
+ * to BOTH sides, so a mistake in the port would cancel itself out and never
+ * show up. This is the only thing that can see it.
+ *
  * This exists because eyeballing screenshots got the running pose rebuilt
  * from scratch once, wrongly, and because four separate CSS rules were being
  * broken at the same time with no way to see it.
@@ -221,6 +226,68 @@ const COLLECT = `(() => {
   return out;
 })()`;
 
+/* ── the flags, against the export's own logic ────────────────────────── */
+
+const script = raw.slice(raw.lastIndexOf('<script'));
+const scriptBody = script.slice(script.indexOf('>') + 1, script.lastIndexOf('</script>'));
+const rvAt = scriptBody.indexOf('renderVals(');
+if (rvAt < 0) throw new Error('renderVals() không có trong export');
+let depth = 0;
+let rvEnd = scriptBody.indexOf('{', rvAt);
+for (let k = rvEnd; k < scriptBody.length; k++) {
+  if (scriptBody[k] === '{') depth++;
+  else if (scriptBody[k] === '}' && --depth === 0) {
+    rvEnd = k;
+    break;
+  }
+}
+// it reads `this.props.*`, so run it as a method on a stand-in object
+const rvBody = scriptBody.slice(scriptBody.indexOf('{', rvAt), rvEnd + 1);
+const renderVals = new Function(
+  'props',
+  `const self = { props }; const f = function () ${rvBody}; return f.call(self);`,
+);
+const declared = JSON.parse(
+  /data-props="([^"]*)"/.exec(script)[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'),
+);
+
+let flagBad = 0;
+const listCheck = (name, a, b) => {
+  if (JSON.stringify(a) === JSON.stringify(b)) return;
+  flagBad++;
+  console.log(`danh mục ${name}: export [${a}] · port [${b}]`);
+};
+listCheck('expression', declared.expression.options, KOA_EXPRESSIONS.map((x) => x.key));
+listCheck('pose', declared.pose.options, KOA_POSES.map((x) => x.key));
+for (const slot of KOA_SLOTS) listCheck(slot, declared[slot].options, ['none', ...KOA_ITEMS[slot]]);
+
+let flagCases = 0;
+const flagCheck = (label, e, p, worn) => {
+  const A = renderVals({
+    expression: e,
+    pose: p,
+    ...Object.fromEntries(KOA_SLOTS.map((s) => [s, worn[s] ?? 'none'])),
+  });
+  const B = koaFlags(e, p, worn);
+  flagCases++;
+  for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) {
+    const a = A[k] === undefined ? '' : A[k];
+    const b = B[k] === undefined ? '' : B[k];
+    if (String(a) !== String(b)) {
+      flagBad++;
+      console.log(`${label} · ${k}: export=${JSON.stringify(a)} port=${JSON.stringify(b)}`);
+    }
+  }
+};
+for (const p of KOA_POSES.map((x) => x.key))
+  for (const e of declared.expression.options) flagCheck(`${p}/${e}`, e, p, {});
+for (const slot of KOA_SLOTS)
+  for (const id of KOA_ITEMS[slot])
+    for (const p of KOA_POSES.map((x) => x.key)) flagCheck(`${p}+${slot}=${id}`, 'happy', p, { [slot]: id });
+console.log(`koa-flags.ts vs renderVals(): ${flagCases} tổ hợp, ${flagBad} lệch`);
+
+/* ── the geometry, against the browser ────────────────────────────────── */
+
 const TIMES = QUICK ? [0, 4700, 20000] : [0, 137, 620, 1100, 2600, 4700, 8300, 12900, 17500, 20000, 23300, 31000, 44444];
 const cases = [];
 for (const p of KOA_POSES.map((x) => x.key))
@@ -262,5 +329,5 @@ for (const [e, p, worn, T] of cases) {
   if (issues.length) { bad++; console.log(`${label}: ${issues.slice(0, 4).join(' | ')}`); }
 }
 await browser.close();
-console.log(`\n${cases.length} trường hợp, ${bad} lệch`);
-process.exit(bad ? 1 : 0);
+console.log(`\n${cases.length} trường hợp hình học, ${bad} lệch · ${flagCases} tổ hợp flag, ${flagBad} lệch`);
+process.exit(bad || flagBad ? 1 : 0);
