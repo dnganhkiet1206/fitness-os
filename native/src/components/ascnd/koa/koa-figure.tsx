@@ -654,10 +654,11 @@ export function KoaFigure({
         </G>
       )}
 
-      {/* the blue singlet of §5 CHẠY BỘ — no shorts, bare legs, as drawn */}
+      {/* §5 CHẠY BỘ wears a blue singlet, no shorts, bare legs. It is off
+          for now (RUN.wearKit) so the pose reads on the body alone. */}
       {p.poseRun && (
         <>
-          {tank(C.kit, false)}
+          {RUN.wearKit && tank(C.kit, false)}
           <G id="LIMBS_NEAR">
             {runLeg(RUN.hipNear, 0, C.body)}
             {runArm(RUN.shoulderNear, 0, C.body)}

@@ -526,8 +526,21 @@ export const RUN = {
   upperW: 26,
   foreW: 24,
   handR: 13.5,
-  thighKeys: [-58, -10, 52, -34],
-  kneeKeys: [18, 8, 14, 92],
+  /**
+   * FORESHORTENED FOR THE 3/4 VIEW — these are not side-view angles.
+   *
+   * The sheet draws the turned body with `scale(0.91,1)`, i.e. its width is
+   * compressed to 91%, so the figure is turned only ~24.5° off front — the
+   * amount you can read in the head and face. Fore/aft motion therefore
+   * projects onto screen-x by sin(24.5°) ≈ 0.41, and a full sagittal stride
+   * (foot travelling 61 units across) reads as a pure side view against a
+   * body that is barely turned. These keys put the foot's horizontal travel
+   * at 31 units, so the legs stay under the body the way a 3/4 view demands.
+   * If the turn ever changes, re-derive from the new scaleX — do not just
+   * open the angles up.
+   */
+  thighKeys: [-24, -4, 24, -14],
+  kneeKeys: [10, 4, 12, 80],
   /**
    * Arms swing against the legs of the same side.
    *
@@ -540,11 +553,17 @@ export const RUN = {
    * The elbow stays near 74° through the cycle; the swing comes from the
    * shoulder, which is how a runner actually carries their arms.
    */
-  upperKeys: [34, 6, -30, 4],
-  elbowKeys: [-76, -70, -74, -72],
+  upperKeys: [20, 4, -18, 2],
+  elbowKeys: [-64, -60, -62, -60],
   /** the body rises twice a stride and leans into the run */
   bob: 6,
-  lean: 6,
+  lean: 4,
+  /**
+   * The singlet is OFF for now, at the author's request, so the pose can be
+   * judged on the body alone. Flip back to true to dress the run again —
+   * nothing else needs touching.
+   */
+  wearKit: false,
 } as const;
 
 /** lifting / stretching / relaxing all wear the same tank + shorts */

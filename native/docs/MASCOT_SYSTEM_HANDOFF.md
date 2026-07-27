@@ -215,6 +215,16 @@ rank-up confetti, room lighting reacting to rank/energy.
   - `RUN.lean` / `RUN.bob` raise the forward lean and the stride bounce.
   All numbers live in `RUN` in `koa-parts.ts`; they were tuned by rendering
   the cycle frame-by-frame, so change them there and re-check a strip.
+  **The stride is foreshortened, on purpose.** The sheet draws the turned
+  body with `scale(0.91,1)` — width compressed to 91% — so the figure is
+  turned only ~24.5° off front, which is all the turn you can read in the
+  head and face. Fore/aft motion therefore projects onto screen-x by
+  sin(24.5°) ≈ 0.41. A full sagittal stride (foot travelling 61 units
+  across) reads as a pure side view stuck on a body that is barely turned;
+  the keys now put it at 31. If the turn angle ever changes, re-derive from
+  the new scaleX rather than opening the angles back up.
+  The singlet is currently **off** (`RUN.wearKit = false`) at the author's
+  request, so the pose is judged on the body alone. One flag to dress it.
   **Watch the sign on `elbowKeys`.** Koa runs to the right; a negative
   rotation carries a limb's end forward, and the elbow only folds toward
   the front of the body, so the forearm's angle relative to the upper arm
