@@ -201,6 +201,37 @@ data exists for them yet), and app states for the sheet's `surprised` /
 
 ---
 
+## 4c. OPEN — parked, ask the user when they are ready
+
+The user is still designing and asked to be left alone until then. Do NOT
+act on these; raise them when a design pass lands.
+
+1. **Three touches lost when Koa became an import.** They were ours, not
+   the export's, so re-running the importer wiped them. All three were
+   built and approved before; re-applying means layering them on top of the
+   generated tree, not editing generated data.
+   - the wandering gaze (`useGaze`) — sheet §8 "Look Left / Right"
+   - the cheek pop on poke (`usePop` + `pokeSignal` through
+     `StageRenderer → MascotBuddy → MascotFigure`)
+   - the blink pivoting at the lash line instead of the sheet's brow-line
+     origin — the user asked for this one specifically, so it will need
+     re-doing unless the export starts doing it
+   `MascotBuddy` / `MascotFigure` still carry a `pokeSignal` prop with
+   nothing on the other end; wire or remove it with this decision.
+2. **The shop vs the 70-item wardrobe.** `SHOP_ITEMS` sells five flat
+   outfit keys on head/eyes/neck/waist; the character now wears one item
+   per slot across head/face/top/bottom/shoes/back/hand.
+   `WORN_FROM_SHOP` in `mascot-figure.tsx` bridges the three that overlap.
+   Open: prices, unlock rules, and a season/theme field — a third of the
+   catalogue is Tết / Christmas / Halloween.
+3. **The stage.** The user said they would replace the 3D stage with an
+   idea suited to the mascot; `StageRenderer` is untouched and waiting.
+4. **Expressions with no trigger.** `surprised` and `angry` are drawn but
+   nothing in `baseEmotion()` produces them. `run` is reachable only from
+   the DEV picker.
+
+---
+
 ## 5. NEXT STEPS — build the Emotion Engine (primary task) — ✅ DONE (see §4b)
 
 Goal: a small TS engine that maps **real app state/events → a mascot
