@@ -215,6 +215,13 @@ rank-up confetti, room lighting reacting to rank/energy.
   - `RUN.lean` / `RUN.bob` raise the forward lean and the stride bounce.
   All numbers live in `RUN` in `koa-parts.ts`; they were tuned by rendering
   the cycle frame-by-frame, so change them there and re-check a strip.
+  **Watch the sign on `elbowKeys`.** Koa runs to the right; a negative
+  rotation carries a limb's end forward, and the elbow only folds toward
+  the front of the body, so the forearm's angle relative to the upper arm
+  is always negative. The first cut had them positive: the arms bent
+  backwards and the figure read as running one way while reaching the
+  other. The elbow now holds near 74° and the swing comes from the
+  shoulder, which is how a runner carries their arms.
   **Limb proportions are locked to the original drawing** — measured off it:
   the standing leg is 43 tall and 47 wide, the idle arm 77 long and ~28
   thick, and every other pose's limb is a 26-wide tube with an r13.5 hand.

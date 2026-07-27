@@ -528,9 +528,20 @@ export const RUN = {
   handR: 13.5,
   thighKeys: [-58, -10, 52, -34],
   kneeKeys: [18, 8, 14, 92],
-  /** arms swing against the legs of the same side */
-  upperKeys: [46, 6, -40, 4],
-  elbowKeys: [74, 84, 66, 58],
+  /**
+   * Arms swing against the legs of the same side.
+   *
+   * SIGNS MATTER, and they are not symmetric. Koa runs to the RIGHT, and a
+   * negative rotation here carries a limb's far end toward +x — forward.
+   * The elbow only folds one way: toward the front of the body, so the
+   * forearm's angle relative to the upper arm is always NEGATIVE. Positive
+   * elbow keys bend the arm backwards and the whole figure reads as running
+   * one way while reaching the other.
+   * The elbow stays near 74° through the cycle; the swing comes from the
+   * shoulder, which is how a runner actually carries their arms.
+   */
+  upperKeys: [34, 6, -30, 4],
+  elbowKeys: [-76, -70, -74, -72],
   /** the body rises twice a stride and leans into the run */
   bob: 6,
   lean: 6,
