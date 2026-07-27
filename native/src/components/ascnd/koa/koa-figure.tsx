@@ -414,14 +414,16 @@ export function KoaFigure({
           </G>
         )}
 
-        {/* blink lids — two loops out of phase, so blinks never feel metronomic */}
+        {/* Blink lids — two loops out of phase, so blinks never feel
+            metronomic. They unroll from the lash line, NOT from the sheet's
+            pivot 11px higher: see PIVOTS.lashLine for why. */}
         {f.eyesOpen && (
           <>
-            <Blink v={blinkA} ox={PIVOTS.lids.x} oy={hy(PIVOTS.lids.y)}>
+            <Blink v={blinkA} ox={PIVOTS.lashLine.x} oy={PIVOTS.lashLine.y}>
               <Ellipse cx={82} cy={96} rx={19} ry={25} fill={C.body} />
               <Ellipse cx={158} cy={96} rx={19} ry={25} fill={C.body} />
             </Blink>
-            <Blink v={blinkB} double ox={PIVOTS.lids.x} oy={hy(PIVOTS.lids.y)}>
+            <Blink v={blinkB} double ox={PIVOTS.lashLine.x} oy={PIVOTS.lashLine.y}>
               <Ellipse cx={82} cy={96} rx={19} ry={25} fill={C.body} />
               <Ellipse cx={158} cy={96} rx={19} ry={25} fill={C.body} />
             </Blink>

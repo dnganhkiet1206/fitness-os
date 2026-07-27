@@ -180,6 +180,16 @@ rank-up confetti, room lighting reacting to rank/energy.
   interval. `pulse()` is smoothstepped now. If a lid ever looks wrong
   again, print the curve against the CSS keyframes before touching it —
   the timings are in the `Blink` docstring.
+  The lid **pivot** then moved to the lash line, and this one is a
+  deliberate departure from the sheet, not a bug fix. The sheet pivots the
+  lid at view-box y=72 → face-local y=61, level with the eyebrows; checked
+  by running the design itself in a browser paused mid-blink, the lid
+  sliver really does ride over the brows there and clip them into stubs on
+  the way down, which is what makes the blink catch your eye. Pivoting at
+  face-local y=72 — the top of the eye ellipse — keeps the whole travel
+  inside the eye and leaves the brows untouched. See `PIVOTS.lashLine`.
+  Note this does NOT mean the sheet's other view-box origins are wrong:
+  `hy()` was verified correct against the browser and stays everywhere else.
   `useGaze()` wanders the pupils (and their highlights) in −1…1, mostly
   looking at you with a short glance every few seconds, holds randomised so
   it never reads as a loop; the gaze rests while Koa runs. `usePop()` fires

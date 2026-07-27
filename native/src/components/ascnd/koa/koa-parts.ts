@@ -207,7 +207,20 @@ export const PIVOTS = {
   runBody: { x: 120, y: 290 },
   shadow: { x: 120, y: 294 },
   eyes: { x: 120, y: 96 },
-  lids: { x: 120, y: 72 },
+  /**
+   * Blink pivot — the LASH LINE, and the one place we deliberately leave the
+   * sheet. Given in FACE-LOCAL coords, so it is used raw (no `hy()`).
+   *
+   * The sheet pivots the lid at view-box y=72, which resolves to face-local
+   * y=61 — 11px above the eye, level with the eyebrows. Verified against the
+   * design running in a browser: the lid really does unroll from the brow
+   * line there, which is what makes the blink catch the eye. The author asked
+   * for it to start at the eyelid instead. The eye ellipse tops out at 72.5
+   * and the lid at 71, so face-local 72 IS the lash line: at scaleY 0 the lid
+   * is a flat line exactly along the top of the eye, and it never reaches the
+   * brows at any point in the blink.
+   */
+  lashLine: { x: 120, y: 72 },
   mouth: { x: 120, y: 138 },
   curlLeft: { x: 84, y: 184 },
   curlRight: { x: 156, y: 184 },
