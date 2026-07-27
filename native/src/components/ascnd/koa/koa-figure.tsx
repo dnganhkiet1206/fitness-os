@@ -1,5 +1,5 @@
-import { Fragment, type ReactNode } from 'react';
-import { View } from 'react-native';
+import { Fragment, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { AppState, View } from 'react-native';
 import Animated, {
   useAnimatedProps,
   useFrameCallback,
@@ -53,6 +53,14 @@ import {
 const AnimatedG = Animated.createAnimatedComponent(
   G as unknown as React.ComponentType<GProps & { matrix?: number[]; opacity?: number }>,
 );
+
+/**
+ * The character is a cartoon; 30 is plenty and it halves every downstream
+ * cost — worklet runs, matrix maths and native prop commits all scale off
+ * this one number.
+ */
+const FIGURE_FPS = 30;
+const FRAME_MS = 1000 / FIGURE_FPS;
 
 export const KOA_VIEWBOX = '0 0 240 300';
 export const KOA_ASPECT = 300 / 240;
@@ -111,8 +119,43 @@ function ease(t: number, kind: string): number {
   return t * t * (3 - 2 * t); // ease-in-out
 }
 
-/** interpolate a frame list at 0..1 */
-function sample(frames: Frame[], t: number, kind: string): { ops: Op[] | undefined; op: number } {
+/** one op, interpolated between two keyframes, straight to a matrix */
+function lerpOpMat(pa: Op, pb: Op | undefined, f: number): number[] {
+  'worklet';
+  const v = (j: number) => {
+    const a = pa[j] as number;
+    const b = pb && pb.length > j ? (pb[j] as number) : a;
+    return a + (b - a) * f;
+  };
+  if (pa[0] === 'r') {
+    const r = (v(1) * Math.PI) / 180;
+    const c = Math.cos(r);
+    const s = Math.sin(r);
+    if (pa.length === 4) {
+      const cx = v(2);
+      const cy = v(3);
+      return [c, s, -s, c, cx - (c * cx - s * cy), cy - (s * cx + c * cy)];
+    }
+    return [c, s, -s, c, 0, 0];
+  }
+  if (pa[0] === 't') return [1, 0, 0, 1, v(1), v(2)];
+  return [v(1), 0, 0, v(2), 0, 0];
+}
+
+/**
+ * Sample a frame list at 0..1 straight into a matrix.
+ *
+ * Deliberately allocation-light: this runs for every animated layer on
+ * every tick, so it walks the ops in place instead of building an
+ * intermediate `Op[]` and composing it afterwards.
+ */
+function sampleMat(
+  frames: Frame[],
+  t: number,
+  kind: string,
+  ox: number,
+  oy: number,
+): { m: number[]; op: number } {
   'worklet';
   let a = frames[0];
   let b = frames[frames.length - 1];
@@ -130,20 +173,16 @@ function sample(frames: Frame[], t: number, kind: string): { ops: Op[] | undefin
   const ob = b.op == null ? 1 : b.op;
   const op = oa + (ob - oa) * f;
 
-  if (!a.ops || !b.ops || a.ops.length !== b.ops.length) return { ops: a.ops, op };
-  const ops: Op[] = [];
+  if (!a.ops || a.ops.length === 0) return { m: IDENTITY, op };
+  const sameShape = !!b.ops && b.ops.length === a.ops.length;
+  let m = IDENTITY;
   for (let i = 0; i < a.ops.length; i++) {
-    const pa = a.ops[i];
-    const pb = b.ops[i];
-    const out: number[] = [];
-    for (let j = 1; j < pa.length; j++) {
-      const va = pa[j] as number;
-      const vb = (pb.length > j ? pb[j] : va) as number;
-      out.push(va + (vb - va) * f);
-    }
-    ops.push([pa[0], ...out] as Op);
+    m = mul(m, lerpOpMat(a.ops[i], sameShape ? b.ops![i] : undefined, sameShape ? f : 0));
   }
-  return { ops, op };
+  if (ox !== 0 || oy !== 0) {
+    m = mul(mul([1, 0, 0, 1, ox, oy], m), [1, 0, 0, 1, -ox, -oy]);
+  }
+  return { m, op };
 }
 
 function AnimGroup({
@@ -163,12 +202,15 @@ function AnimGroup({
   const frames = KEYFRAMES[anim.k];
   const ox = origin ? origin[0] : 0;
   const oy = origin ? origin[1] : 0;
+  // `base` never changes for a mounted layer — compose it once, not 60× a second
+  const baseM = useMemo(() => opsMat(base, 0, 0), [base]);
+  const isBase = baseM === IDENTITY;
   const props = useAnimatedProps(() => {
     if (!frames || frames.length === 0) return { matrix: IDENTITY, opacity: 1 };
     const elapsed = clock.value - anim.delay;
     const t = elapsed <= 0 ? 0 : (elapsed % anim.dur) / anim.dur;
-    const s = sample(frames, t, anim.ease);
-    return { matrix: mul(opsMat(base, 0, 0), opsMat(s.ops, ox, oy)), opacity: s.op };
+    const s = sampleMat(frames, t, anim.ease, ox, oy);
+    return { matrix: isBase ? s.m : mul(baseM, s.m), opacity: s.op };
   });
   return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
 }
@@ -243,10 +285,23 @@ function matrixTransform(ops: Op[]): string | undefined {
   return `matrix(${opsMat(ops, 0, 0).join(' ')})`;
 }
 
-function RenderNode({ n, flags, clock }: { n: Node; flags: Flags; clock: SharedValue<number> }) {
+function RenderNode({
+  n,
+  flags,
+  clock,
+  live,
+}: {
+  n: Node;
+  flags: Flags;
+  clock: SharedValue<number>;
+  /** false → draw the first frame as plain SVG, with no animated components */
+  live: boolean;
+}) {
   if (n.if && !flags[n.if]) return null;
 
-  const kids = n.kids ? n.kids.map((k, i) => <RenderNode key={i} n={k} flags={flags} clock={clock} />) : null;
+  const kids = n.kids
+    ? n.kids.map((k, i) => <RenderNode key={i} n={k} flags={flags} clock={clock} live={live} />)
+    : null;
 
   if (n.t === 'defs') return <Defs>{kids}</Defs>;
   if (n.t === 'clipPath') return <ClipPath id={String(n.id ?? '')}>{kids}</ClipPath>;
@@ -277,11 +332,25 @@ function RenderNode({ n, flags, clock }: { n: Node; flags: Flags; clock: SharedV
       <Fragment>{kids}</Fragment>
     );
 
-  if (anim) {
+  if (anim && live) {
     return (
       <AnimGroup clock={clock} anim={anim} origin={origin} base={base}>
         {body}
       </AnimGroup>
+    );
+  }
+  if (anim) {
+    // frozen: bake the first frame in, so a grid of thumbnails costs
+    // nothing per frame and mounts no animated views
+    const frames = KEYFRAMES[anim.k];
+    const s0 = frames?.length
+      ? sampleMat(frames, 0, anim.ease, origin ? origin[0] : 0, origin ? origin[1] : 0)
+      : { m: IDENTITY, op: 1 };
+    const m = mul(opsMat(base, 0, 0), s0.m);
+    return (
+      <G transform={`matrix(${m.join(' ')})`} opacity={s0.op}>
+        {body}
+      </G>
     );
   }
   const t = matrixTransform(base);
@@ -314,17 +383,47 @@ export function KoaFigure({
 
   // One clock for the whole figure, on the UI thread: 36 loops, one frame
   // callback, nothing crossing to JS.
+  // The clock is the whole figure's cost driver: every animated layer
+  // recomputes when it moves. So it ticks at FIGURE_FPS rather than the
+  // display's 60–120, and stops while the app is backgrounded. Screen
+  // focus is handled by the caller through `animated` — a stack screen
+  // stays mounted underneath whatever is pushed on top of it, and this
+  // component also renders outside the navigator (the unlock celebration),
+  // where a focus hook would throw.
   const clock = useSharedValue(0);
-  useFrameCallback((frame) => {
+  const last = useSharedValue(0);
+  const frameCb = useFrameCallback((frame) => {
     'worklet';
-    clock.value = frame.timeSinceFirstFrame;
-  }, animated);
+    const t = frame.timeSinceFirstFrame;
+    if (t - last.value < FRAME_MS) return;
+    last.value = t;
+    clock.value = t;
+  }, false);
+
+  const active = useRef(false);
+  useEffect(() => {
+    const apply = () => {
+      const on = animated && AppState.currentState === 'active';
+      if (on === active.current) return;
+      active.current = on;
+      frameCb.setActive(on);
+    };
+    apply();
+    const sub = AppState.addEventListener('change', apply);
+    return () => {
+      sub.remove();
+      if (active.current) {
+        active.current = false;
+        frameCb.setActive(false);
+      }
+    };
+  }, [animated, frameCb]);
 
   return (
     <View style={{ width: size, height }} pointerEvents="none">
       <Svg width={size} height={height} viewBox={KOA_VIEWBOX} preserveAspectRatio="xMidYMax meet">
         {NODES.map((n, i) => (
-          <RenderNode key={i} n={n} flags={flags} clock={clock} />
+          <RenderNode key={i} n={n} flags={flags} clock={clock} live={animated} />
         ))}
       </Svg>
     </View>

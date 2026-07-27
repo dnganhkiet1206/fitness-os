@@ -27,6 +27,8 @@ interface Props {
   streakLabel?: string;
   questLabel?: string;
   topInset?: number;
+  /** false pauses everything on the stage (screen not focused) */
+  animated?: boolean;
 }
 
 const STAGE_UNLOCKS: [string, string][] = [
@@ -53,6 +55,7 @@ export function MascotScene({
   streakLabel,
   questLabel,
   topInset,
+  animated = true,
 }: Props) {
   // Highest owned stage skin wins; falls back to the default gym.
   const themeKey = STAGE_UNLOCKS.find(([key]) => ownedGym.has(key))?.[1] ?? 'arena';
@@ -75,6 +78,7 @@ export function MascotScene({
       streakLabel={streakLabel}
       questLabel={questLabel}
       topInset={topInset}
+      animated={animated}
     />
   );
 }

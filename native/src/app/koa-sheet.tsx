@@ -28,6 +28,10 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
  *
  * Reached from the DEV bar in the Mascot Room; nothing links to it in a
  * production build.
+ *
+ * Only the hero animates. The boards are 84 thumbnails — leaving those live
+ * meant 84 clocks and several hundred native prop commits a frame, which is
+ * enough to heat a phone on its own.
  */
 
 /** the expression each pose is drawn with on the sheet's §4 */
@@ -98,7 +102,7 @@ export default function KoaSheetScreen() {
               {/* expressions are judged on the face — crop to the head, as
                   the sheet's own §3 board does */}
               <View style={styles.tileFace}>
-                <KoaFigure expression={e.key} worn={worn} size={104} />
+                <KoaFigure expression={e.key} worn={worn} size={104} animated={false} />
               </View>
               <Text style={[styles.tileLabel, expression === e.key && styles.tileLabelOn]}>
                 {e.label}
@@ -124,7 +128,7 @@ export default function KoaSheetScreen() {
               }}
               style={[styles.tile, pose === po.key && styles.tileOn]}>
               {/* a pose is the whole silhouette — never crop it */}
-              <KoaFigure expression={POSE_FACE[po.key]} pose={po.key} worn={worn} size={104} />
+              <KoaFigure expression={POSE_FACE[po.key]} pose={po.key} worn={worn} size={104} animated={false} />
               <Text style={[styles.tileLabel, pose === po.key && styles.tileLabelOn]}>
                 {po.label}
               </Text>

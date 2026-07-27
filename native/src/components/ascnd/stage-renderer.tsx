@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
   useSharedValue,
@@ -80,6 +81,8 @@ interface Props {
   questLabel?: string;
   /** px height of the floating header — the top cards clear it */
   topInset?: number;
+  /** false pauses the buddy and the stage's own loops (screen not focused) */
+  animated?: boolean;
 }
 
 export function StageRenderer({
@@ -92,6 +95,7 @@ export function StageRenderer({
   energy = 0.5,
   celebrateSignal = 0,
   flexSignal = 0,
+  animated = true,
 }: Props) {
   const theme = THEMES.themes[themeKey ?? THEMES.default] ?? THEMES.themes[THEMES.default];
   const acc = accent ?? theme.aura;
@@ -109,6 +113,10 @@ export function StageRenderer({
   const levelScale = Math.min(1 + (level - 1) * 0.012, 1.1);
 
   useEffect(() => {
+    if (!animated) {
+      cancelAnimation(aura);
+      return;
+    }
     aura.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
@@ -116,7 +124,7 @@ export function StageRenderer({
       ),
       -1,
     );
-  }, [aura]);
+  }, [aura, animated]);
   useEffect(() => {
     droop.value = withSpring(tired ? 8 : 0, { stiffness: 120, damping: 15 });
     zzz.value = tired
@@ -262,7 +270,7 @@ export function StageRenderer({
 
       {/* ── rising particles ── */}
       {Array.from({ length: STAGE.particles.count }).map((_, i) => (
-        <Particle key={i} sw={sw} color={theme.spot} energy={e} idx={i} />
+        <Particle key={i} sw={sw} color={theme.spot} energy={e} idx={i} animated={animated} />
       ))}
 
       {/* ── the buddy ── */}
@@ -278,7 +286,7 @@ export function StageRenderer({
         )}
         <Pressable onPress={poke} hitSlop={12}>
           <Animated.View style={charStyle}>
-            <MascotBuddy mascot={mascot} emotion={emotion} size={size} mood={mood} level={level} accent={acc} equippedOutfits={equippedOutfits} pokeSignal={pokes} />
+            <MascotBuddy mascot={mascot} emotion={emotion} size={size} mood={mood} level={level} accent={acc} equippedOutfits={equippedOutfits} pokeSignal={pokes} animated={animated} />
           </Animated.View>
         </Pressable>
       </View>
@@ -468,7 +476,7 @@ function StageAssetArt({ p, sw, frame }: { p: Placement; sw: number; frame: stri
 }
 
 // ─── a single rising light mote ────────────────────────────────────────
-function Particle({ sw, color, energy, idx }: { sw: number; color: string; energy: number; idx: number }) {
+function Particle({ sw, color, energy, idx, animated }: { sw: number; color: string; energy: number; idx: number; animated: boolean }) {
   const t = useSharedValue(0);
   const x = ((idx * 61) % 100) / 100;
   const size = 3 + ((idx * 37) % 5);
@@ -476,8 +484,13 @@ function Particle({ sw, color, energy, idx }: { sw: number; color: string; energ
   const delay = (idx * 400) % 4000;
   const drift = (idx % 2 === 0 ? 1 : -1) * (6 + (idx % 4) * 3);
   useEffect(() => {
+    if (!animated) {
+      cancelAnimation(t);
+      return;
+    }
     t.value = withDelay(delay, withRepeat(withTiming(1, { duration: dur, easing: Easing.linear }), -1, false));
-  }, [t, dur, delay]);
+    return () => cancelAnimation(t);
+  }, [t, dur, delay, animated]);
   const style = useAnimatedStyle(() => {
     const p = t.value;
     const op = p < 0.12 ? (p / 0.12) * 0.7 : p > 0.85 ? ((1 - p) / 0.15) * 0.7 : 0.7;

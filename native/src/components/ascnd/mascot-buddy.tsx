@@ -25,6 +25,8 @@ export interface MascotBuddyProps {
   equippedOutfits?: Set<string>;
   /** bump on every poke — the buddy pops its cheeks and looks front */
   pokeSignal?: number;
+  /** false pauses the figure — the room passes screen focus down */
+  animated?: boolean;
 }
 
 export function MascotBuddy({
@@ -35,6 +37,7 @@ export function MascotBuddy({
   level = 1,
   equippedOutfits,
   pokeSignal,
+  animated = true,
 }: MascotBuddyProps) {
   return (
     <MascotFigure
@@ -45,6 +48,7 @@ export function MascotBuddy({
       level={level}
       equippedOutfits={equippedOutfits}
       pokeSignal={pokeSignal}
+      animated={animated}
     />
   );
 }

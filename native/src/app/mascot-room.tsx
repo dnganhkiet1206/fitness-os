@@ -31,7 +31,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -167,6 +167,10 @@ export default function MascotRoomScreen() {
   const insets = useSafeAreaInsets();
   const headerInset = insets.top + 44; // floating header height — cards clear it
   const { mascot, message, mood } = useMascot();
+  // A stack screen stays mounted under whatever is pushed on top of it, so
+  // without this the room keeps animating behind the shop, the settings
+  // page and every other push.
+  const focused = useIsFocused();
 
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();
@@ -349,6 +353,7 @@ export default function MascotRoomScreen() {
           streakLabel={i18n.nStageStreak}
           questLabel={i18n.nStageQuests}
           topInset={headerInset}
+          animated={focused}
         />
         <CoinBurst trigger={burst.id} amount={burst.amount} />
       </View>
