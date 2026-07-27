@@ -196,48 +196,23 @@ rank-up confetti, room lighting reacting to rank/energy.
   the cheek pop — the head squashes wide onto the shoulders and both blushes
   swell — on every `pokeSignal` bump, which `StageRenderer` raises when the
   buddy is tapped (on top of the existing nod + wave).
-- **CHẠY BỘ rebuilt from the sheet, not from the design component.** The
-  component's running pose read as standing still, and it was faithful — the
-  fault is in the component, not the port: its legs are the standing blobs
-  swinging ±22° about a hip *inside* the torso, so no part of a leg ever
-  leaves the silhouette, and its "cap" is an arc over the crown where the
-  sheet draws a headband. Rebuilt against §5 CHẠY BỘ itself:
-  - each limb is now two bones (hip → knee → ankle, shoulder → elbow →
-    wrist), every joint on its own 4-key cycle — reach, stance, push-off,
-    recovery — via `keyed()` / `<Swing>`. A sine cannot express a stride;
-    the knee has to fold on the way through and straighten to plant.
-  - near and far side run half a stride apart, and the far limbs are drawn
-    behind the torso in `PALETTE.far` so the two sides never merge.
-  - blue headband (`HEADBAND`) following the skull's curve — a flatter or
-    wider arc instantly reads as earmuffs — plus the blue singlet, no
-    shorts, bare legs, as drawn. The band covers the brow line, so the run
-    hides the eyebrows, which is what the sheet shows.
-  - `RUN.lean` / `RUN.bob` raise the forward lean and the stride bounce.
-  All numbers live in `RUN` in `koa-parts.ts`; they were tuned by rendering
-  the cycle frame-by-frame, so change them there and re-check a strip.
-  **The stride is foreshortened, on purpose.** The sheet draws the turned
-  body with `scale(0.91,1)` — width compressed to 91% — so the figure is
-  turned only ~24.5° off front, which is all the turn you can read in the
-  head and face. Fore/aft motion therefore projects onto screen-x by
-  sin(24.5°) ≈ 0.41. A full sagittal stride (foot travelling 61 units
-  across) reads as a pure side view stuck on a body that is barely turned;
-  the keys now put it at 31. If the turn angle ever changes, re-derive from
-  the new scaleX rather than opening the angles back up.
-  The singlet is currently **off** (`RUN.wearKit = false`) at the author's
-  request, so the pose is judged on the body alone. One flag to dress it.
-  **Watch the sign on `elbowKeys`.** Koa runs to the right; a negative
-  rotation carries a limb's end forward, and the elbow only folds toward
-  the front of the body, so the forearm's angle relative to the upper arm
-  is always negative. The first cut had them positive: the arms bent
-  backwards and the figure read as running one way while reaching the
-  other. The elbow now holds near 74° and the swing comes from the
-  shoulder, which is how a runner carries their arms.
-  **Limb proportions are locked to the original drawing** — measured off it:
-  the standing leg is 43 tall and 47 wide, the idle arm 77 long and ~28
-  thick, and every other pose's limb is a 26-wide tube with an r13.5 hand.
-  A first pass at the stride slimmed and lengthened the legs to make the
-  swing read; that was rejected and reverted. Only the ANGLES in `RUN` are
-  free — never re-proportion the character to buy a better silhouette.
+- **CHẠY BỘ: keep the sheet's own run. A rewrite was tried and reverted.**
+  It looked static in review, so the pose was rebuilt from scratch —
+  two-bone limbs, a real stride, headband, singlet. The author rejected it
+  and asked for the original back, and they were right: the review had been
+  done on a render with the CSS `animation:` declarations stripped out, so
+  it showed the pose frozen at its transform-attribute state, not what the
+  design actually does. **Never judge this sheet from a static render.** To
+  see it truthfully, resolve the `<sc-if>` bindings, keep the CSS, load it
+  in a browser and freeze each frame through the Web Animations API
+  (`el.getAnimations().forEach(a => { a.currentTime = t; a.pause(); })`).
+  Running, the sheet's Koa reads as a bouncing jog: limbs tucked under a
+  barely-turned body, sold by the bob, the speed lines, the dust and the
+  sweat rather than by a wide stride.
+  One real porting bug came out of it and is fixed: `koaStepA` carries
+  `animation-delay: 1.35s` on a 1.5s loop, so its phase is **+0.1**, not
+  +0.9 — a delay winds the clock back. At +0.9 the left limbs ran 17° out
+  of step on average. See `STEP_A_PHASE`.
 - **`/koa-sheet` — the character review screen.** Panels §3 and §5 of the
   sheet, live on device: all 8 expressions and all 5 poses, tap a card to
   load it into the hero, tap the hero to cycle ("chạm vào Koa để đổi biểu

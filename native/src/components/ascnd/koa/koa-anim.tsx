@@ -85,23 +85,7 @@ export function pulse(t: number, start: number, up: number, down: number, end: n
 
 function frac(t: number, phase: number): number {
   'worklet';
-  return (t + phase + 1) % 1;
-}
-
-/**
- * Smooth cycle through N key values, evenly spaced around the loop.
- *
- * A sine can only say "there and back", which is enough for a breath but
- * not for a stride: a running leg reaches, plants, drives back and then
- * folds up on the way through, and each of those is its own key.
- */
-export function keyed(t: number, k: readonly number[]): number {
-  'worklet';
-  const n = k.length;
-  const x = t * n;
-  const i = Math.floor(x) % n;
-  const f = x - Math.floor(x);
-  return k[i] + (k[(i + 1) % n] - k[i]) * (f * f * (3 - 2 * f));
+  return (t + phase) % 1;
 }
 
 /**
@@ -241,21 +225,6 @@ export function Rot({
 }: Base & { from: number; to: number; ox: number; oy: number }) {
   const p = useAnimatedProps(() => ({
     matrix: mat(0, 0, wave(frac(v.value, phase), from, to), 1, 1, ox, oy),
-  }));
-  return <AnimatedG animatedProps={p}>{children}</AnimatedG>;
-}
-
-/** rotate through a keyed cycle about (ox,oy) — one joint of the run rig */
-export function Swing({
-  v,
-  phase = 0,
-  keys,
-  ox,
-  oy,
-  children,
-}: Base & { keys: readonly number[]; ox: number; oy: number }) {
-  const p = useAnimatedProps(() => ({
-    matrix: mat(0, 0, keyed(frac(v.value, phase), keys), 1, 1, ox, oy),
   }));
   return <AnimatedG animatedProps={p}>{children}</AnimatedG>;
 }

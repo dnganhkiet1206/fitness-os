@@ -42,11 +42,8 @@ export const PALETTE = {
   star: '#FBD24E',
   speed: '#C7CFD8',
   sweat: '#7FD3F5',
-  /** the run's headband + singlet */
-  kit: '#3FA9E5',
-  kitShade: '#2E8FCB',
-  /** limbs on the far side of a turned body — never the same tone as near */
-  far: '#9AA4AF',
+  cap: '#3FA9E5',
+  capShade: '#2E8FCB',
   /** the tank top is a different colour per pose, straight off the sheet */
   tankLift: '#63B948',
   tankStretch: '#F2C13D',
@@ -193,6 +190,11 @@ export const TURN = {
   faceDx: 18,
   earDx: 14,
   earLeftDx: -19,
+  /** left arm: translate(9,0) then rotate(6 80 178) */
+  armLeftDx: 9,
+  armLeftRotate: 6,
+  armLeftOx: 80,
+  armLeftOy: 178,
 } as const;
 
 /* ── pivots (transform-origin of every animated group) ────────────────── */
@@ -204,6 +206,8 @@ export const PIVOTS = {
   earRight: { x: 178, y: 92 },
   armLeft: { x: 80, y: 178 },
   armRight: { x: 160, y: 178 },
+  legLeft: { x: 104, y: 252 },
+  legRight: { x: 136, y: 252 },
   runBody: { x: 120, y: 290 },
   shadow: { x: 120, y: 294 },
   eyes: { x: 120, y: 96 },
@@ -241,6 +245,13 @@ export const BODY = {
   legRightLower:
     'M136 252 C 126 254 123 268 123 279 C 123 288 129 293 140 293 ' +
     'C 152 293 162 292 166 287 C 170 281 169 268 163 260 C 156 253 144 250 136 252 Z',
+  /** the same legs redrawn a hair straighter, for the run cycle */
+  legRunLeft:
+    'M104 252 C 114 254 117 268 117 280 C 117 289 111 293 100 293 ' +
+    'C 88 293 78 292 74 287 C 70 281 72 266 78 256 C 84 251 96 250 104 252 Z',
+  legRunRight:
+    'M136 252 C 126 254 123 268 123 280 C 123 289 129 293 140 293 ' +
+    'C 152 293 162 292 166 287 C 170 281 168 266 162 256 C 156 251 144 250 136 252 Z',
   shinLeft:
     'M104 256 C 112 262 115 271 115.5 284 C 115.5 287 113.6 287 113.3 284 ' +
     'C 112.6 272 109 264 101 259 Z',
@@ -265,6 +276,13 @@ export const BODY = {
   armRightUpper:
     'M172 171 C 189 188 200 208 203 228 C 205 242 182 248 175 234 ' +
     'C 168 220 161 209 151 199 C 148 181 164 164 172 171 Z',
+  /** ARMS — swinging (running); the elbow reads higher */
+  armRunLeft:
+    'M68 171 C 51 188 40 208 37 228 C 35 242 58 248 65 234 ' +
+    'C 72 220 79 206 90 194 C 88 178 74 165 68 171 Z',
+  armRunRight:
+    'M172 171 C 189 188 200 208 203 228 C 205 242 182 248 175 234 ' +
+    'C 168 220 161 206 150 194 C 152 178 166 165 172 171 Z',
   armLeftCrease:
     'M71.5 192 C 66.0 200 63.5 226 65.0 237 C 65.5 238.8 67.0 238.3 66.5 236 ' +
     'C 65.2 226 67.5 203 72.0 192.6 C 72.3 191.8 71.8 191.5 71.5 192 Z',
@@ -475,95 +493,12 @@ export const SWEAT = [
   },
 ] as const;
 
-/**
- * running: the blue headband of §5 CHẠY BỘ.
- *
- * Head-local, so it rides the head rig. It follows the skull's own curve —
- * a flatter or wider arc immediately reads as earmuffs — and sits on the
- * brow line, which is why the run drops the eyebrows.
- */
-export const HEADBAND = {
-  band: 'M47 80 C 56 52 88 44 120 44 C 152 44 184 52 193 80',
-  width: 16,
-  /** the little woven tag on the near side */
-  tag: { x: 163, y: 50, width: 9, height: 15, rx: 3, rot: 16, ox: 167, oy: 57 },
-} as const;
-
-/**
- * running: a two-bone stride.
- *
- * The sheet's runner has legs that clearly leave the silhouette — the old
- * rigid leg blobs stayed hidden behind the torso the whole cycle, which is
- * why it read as standing still. Each limb is now hip → knee → ankle (and
- * shoulder → elbow → wrist), each joint rotating on its own 4-key cycle:
- *
- *   reach → stance → push-off → recovery
- *
- * The far side runs the same cycle half a stride out of phase and in a
- * darker tone, so near and far limbs never merge into one shape.
- *
- * PROPORTIONS ARE FIXED BY THE ORIGINAL DRAWING — do not slim or stretch
- * the limbs to make a stride read better. Measured off the sheet's own art:
- *   · standing leg   `legLeftLower`  = 43 tall (hip 250 → foot 293), 47 wide
- *   · idle arm       `armLeftUpper`  = 77 long from the shoulder, ~28 thick
- *   · every other pose's limb        = a 26-wide tube with an r13.5 hand
- * so the run uses 20+18 (+10 foot) legs at 33/29, and 30+29 arms at 26/24.
- * Only the ANGLES below are free to change.
- */
-export const RUN = {
-  hipNear: { x: 134, y: 246 },
-  hipFar: { x: 102, y: 245 },
-  shoulderNear: { x: 152, y: 178 },
-  shoulderFar: { x: 90, y: 178 },
-  thigh: 20,
-  shin: 18,
-  thighW: 33,
-  shinW: 29,
-  footRx: 15,
-  footRy: 10,
-  upper: 30,
-  fore: 29,
-  upperW: 26,
-  foreW: 24,
-  handR: 13.5,
-  /**
-   * FORESHORTENED FOR THE 3/4 VIEW — these are not side-view angles.
-   *
-   * The sheet draws the turned body with `scale(0.91,1)`, i.e. its width is
-   * compressed to 91%, so the figure is turned only ~24.5° off front — the
-   * amount you can read in the head and face. Fore/aft motion therefore
-   * projects onto screen-x by sin(24.5°) ≈ 0.41, and a full sagittal stride
-   * (foot travelling 61 units across) reads as a pure side view against a
-   * body that is barely turned. These keys put the foot's horizontal travel
-   * at 31 units, so the legs stay under the body the way a 3/4 view demands.
-   * If the turn ever changes, re-derive from the new scaleX — do not just
-   * open the angles up.
-   */
-  thighKeys: [-24, -4, 24, -14],
-  kneeKeys: [10, 4, 12, 80],
-  /**
-   * Arms swing against the legs of the same side.
-   *
-   * SIGNS MATTER, and they are not symmetric. Koa runs to the RIGHT, and a
-   * negative rotation here carries a limb's far end toward +x — forward.
-   * The elbow only folds one way: toward the front of the body, so the
-   * forearm's angle relative to the upper arm is always NEGATIVE. Positive
-   * elbow keys bend the arm backwards and the whole figure reads as running
-   * one way while reaching the other.
-   * The elbow stays near 74° through the cycle; the swing comes from the
-   * shoulder, which is how a runner actually carries their arms.
-   */
-  upperKeys: [20, 4, -18, 2],
-  elbowKeys: [-64, -60, -62, -60],
-  /** the body rises twice a stride and leans into the run */
-  bob: 6,
-  lean: 4,
-  /**
-   * The singlet is OFF for now, at the author's request, so the pose can be
-   * judged on the body alone. Flip back to true to dress the run again —
-   * nothing else needs touching.
-   */
-  wearKit: false,
+/** running: the cap that keeps the sun off */
+export const CAP = {
+  crown: 'M50 86 C 54 46 84 28 120 28 C 156 28 186 46 190 86 C 178 56 152 44 120 44 C 88 44 62 56 50 86 Z',
+  shade:
+    'M50 86 C 54 46 84 28 120 28 C 156 28 186 46 190 86 C 186 70 178 60 168 54 ' +
+    'C 160 68 142 76 120 76 C 98 76 80 68 72 54 C 62 60 54 70 50 86 Z',
 } as const;
 
 /** lifting / stretching / relaxing all wear the same tank + shorts */
