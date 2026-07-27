@@ -28,8 +28,10 @@ const STATES: Record<MascotEmotion, KoaState> = {
   celebrate: { expression: 'delighted', pose: 'idle' },
   // logging a workout — curling alongside the user, and sure of itself
   curl: { expression: 'strain', pose: 'lifting' },
-  // the overhead reach doubles as a wave
-  wave: { expression: 'happy', pose: 'stretching' },
+  // A greeting turns to face you. NOT `stretching`: that pose is a side
+  // bend — the export tilts it 6° and shifts it 8px left — so using it to
+  // say hello made the character lean every time the room opened.
+  wave: { expression: 'happy', pose: 'turn34' },
   // 3/4 turn, hip-pivot leg cycle, out of breath — the sheet's finished pose
   run: { expression: 'happytired', pose: 'running' },
   hat: { expression: 'happy', pose: 'idle', outfit: { head: 'santa' } },

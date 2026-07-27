@@ -403,7 +403,10 @@ export function KoaFigure({
   const active = useRef(false);
   useEffect(() => {
     const apply = () => {
-      const on = animated && AppState.currentState === 'active';
+      // NOT `=== 'active'`: iOS reports 'unknown' on the first render and
+      // then never fires a change event if the app was already frontmost,
+      // which left the clock switched off and the figure frozen.
+      const on = animated && AppState.currentState !== 'background';
       if (on === active.current) return;
       active.current = on;
       frameCb.setActive(on);
