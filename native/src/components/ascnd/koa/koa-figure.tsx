@@ -72,6 +72,20 @@ const EMPTY: Set<string> = new Set();
 const STEP_A_PHASE = 0.1;
 
 /**
+ * Run cadence.
+ *
+ * The sheet's cycle is 1.5s. One cycle is two steps, so that is 80 steps a
+ * minute — slower than walking (100–120), which is a large part of why the
+ * pose does not read as running however it is drawn. 800ms puts it at 150,
+ * a light jog; a real run is 170–180 (≈700ms) and reads frantic on a
+ * character this round. Everything cadence-locked scales off this: the leg
+ * and arm swings, the body bob, the ground dust and the speed lines.
+ */
+const RUN_CYCLE_MS = 800;
+/** the sheet times the speed lines at 1100ms against its 1500ms cycle */
+const SPEED_LINE_MS = Math.round(1100 * (RUN_CYCLE_MS / 1500));
+
+/**
  * The arms keep the sheet's own timing. Do not "fix" them to swing against
  * the leg on the same side.
  *
@@ -119,8 +133,8 @@ export function KoaFigure({
   const blushClock = useLoop(4400, animated);
   const blinkA = useLoop(5200, animated && f.eyesOpen);
   const blinkB = useLoop(8700, animated && f.eyesOpen);
-  const run = useLoop(1500, animated && p.poseRun);
-  const speed = useLoop(1100, animated && p.poseRun);
+  const run = useLoop(RUN_CYCLE_MS, animated && p.poseRun);
+  const speed = useLoop(SPEED_LINE_MS, animated && p.poseRun);
   const sweat = useLoop(2800, animated && p.poseRun);
   const pop = useLoop(1600, animated && (f.eyesWide || p.poseLift));
   const twinkle = useLoop(1400, animated && f.eyesStar);

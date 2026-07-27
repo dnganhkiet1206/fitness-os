@@ -219,6 +219,13 @@ rank-up confetti, room lighting reacting to rank/energy.
   lowest and driving off the ground. Offset, it sweeps forward through that
   beat and the run reads right-to-left. Trace the hand's screen travel
   against the bob before touching arm timing.
+  **Cadence.** The sheet runs the cycle at 1500ms. One cycle is two steps,
+  so that is 80 steps a minute — slower than walking, and a large part of
+  why the pose does not read as running however it is drawn. It now runs at
+  `RUN_CYCLE_MS = 800` (150/min, a light jog); 700 is a real run's 171 and
+  reads frantic on a character this round. The speed lines scale off the
+  same constant, and the dust and bob ride the run loop, so one number
+  moves the whole thing.
   One real porting bug came out of it and is fixed: `koaStepA` carries
   `animation-delay: 1.35s` on a 1.5s loop, so its phase is **+0.1**, not
   +0.9 — a delay winds the clock back. At +0.9 the left limbs ran 17° out
