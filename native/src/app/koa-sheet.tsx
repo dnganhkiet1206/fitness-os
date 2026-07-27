@@ -6,10 +6,14 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { KoaFigure } from '@/components/ascnd/koa/koa-figure';
 import {
   KOA_EXPRESSIONS,
-  PALETTE,
+  KOA_ITEMS,
+  KOA_POSES,
+  KOA_SLOTS,
   type KoaExpression,
   type KoaPose,
-} from '@/components/ascnd/koa/koa-parts';
+  type KoaSlot,
+  type Worn,
+} from '@/components/ascnd/koa/koa-flags';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 
@@ -26,42 +30,50 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
  * production build.
  */
 
-const POSES: { key: KoaPose; label: string }[] = [
-  { key: 'idle', label: 'ĐỨNG YÊN' },
-  { key: 'running', label: 'CHẠY BỘ' },
-  { key: 'lifting', label: 'TẬP TẠ' },
-  { key: 'stretching', label: 'GIÃN CƠ' },
-  { key: 'relaxing', label: 'THƯ GIÃN' },
-];
-
-/** the expression each pose is drawn with on the sheet's §5 */
+/** the expression each pose is drawn with on the sheet's §4 */
 const POSE_FACE: Record<KoaPose, KoaExpression> = {
   idle: 'happy',
+  turn34: 'happy',
   running: 'happytired',
-  lifting: 'confident',
+  lifting: 'strain',
   stretching: 'happy',
   relaxing: 'tired',
+};
+
+const SLOT_LABEL: Record<KoaSlot, string> = {
+  head: 'ĐẦU',
+  face: 'MẶT',
+  top: 'ÁO',
+  bottom: 'QUẦN',
+  shoes: 'GIÀY',
+  back: 'SAU LƯNG',
+  hand: 'CẦM TAY',
 };
 
 export default function KoaSheetScreen() {
   const [expression, setExpression] = useState<KoaExpression>('happy');
   const [pose, setPose] = useState<KoaPose>('idle');
-  const [pokes, setPokes] = useState(0);
+  const [worn, setWorn] = useState<Worn>({});
 
   const label = KOA_EXPRESSIONS.find((e) => e.key === expression)?.label ?? expression.toUpperCase();
 
   const cycle = () => {
     Haptics.selectionAsync();
-    setPokes((n) => n + 1);
     const i = KOA_EXPRESSIONS.findIndex((e) => e.key === expression);
     setExpression(KOA_EXPRESSIONS[(i + 1) % KOA_EXPRESSIONS.length].key);
+  };
+
+  /** tapping an item wears it; tapping it again takes it off */
+  const toggle = (slot: KoaSlot, id: string) => {
+    Haptics.selectionAsync();
+    setWorn((w) => ({ ...w, [slot]: w[slot] === id ? undefined : id }));
   };
 
   return (
     <Screen title="Koa · spec sheet" back>
       <View style={styles.hero}>
         <Pressable onPress={cycle} hitSlop={8}>
-          <KoaFigure expression={expression} pose={pose} size={200} pokeSignal={pokes} />
+          <KoaFigure expression={expression} pose={pose} worn={worn} size={200} />
         </Pressable>
         <Text style={styles.heroLabel}>
           {label} · {pose.toUpperCase()}
@@ -72,10 +84,10 @@ export default function KoaSheetScreen() {
       <GlassCard style={styles.card}>
         <View style={styles.cardHead}>
           <Text style={styles.section}>3. BIỂU CẢM</Text>
-          <Text style={styles.sectionSub}>Koa · Koala · {PALETTE.body}</Text>
+          <Text style={styles.sectionSub}>Koa · Koala · #BFC7CF</Text>
         </View>
         <View style={styles.grid}>
-          {KOA_EXPRESSIONS.map((e) => (
+          {KOA_EXPRESSIONS.map((e: { key: KoaExpression; label: string }) => (
             <Pressable
               key={e.key}
               onPress={() => {
@@ -86,7 +98,7 @@ export default function KoaSheetScreen() {
               {/* expressions are judged on the face — crop to the head, as
                   the sheet's own §3 board does */}
               <View style={styles.tileFace}>
-                <KoaFigure expression={e.key} size={104} />
+                <KoaFigure expression={e.key} worn={worn} size={104} />
               </View>
               <Text style={[styles.tileLabel, expression === e.key && styles.tileLabelOn]}>
                 {e.label}
@@ -99,10 +111,10 @@ export default function KoaSheetScreen() {
       <GlassCard style={styles.card}>
         <View style={styles.cardHead}>
           <Text style={styles.section}>5. TƯ THẾ</Text>
-          <Text style={styles.sectionSub}>pose · 5 trạng thái</Text>
+          <Text style={styles.sectionSub}>pose · {KOA_POSES.length} trạng thái</Text>
         </View>
         <View style={styles.grid}>
-          {POSES.map((po) => (
+          {KOA_POSES.map((po) => (
             <Pressable
               key={po.key}
               onPress={() => {
@@ -112,7 +124,7 @@ export default function KoaSheetScreen() {
               }}
               style={[styles.tile, pose === po.key && styles.tileOn]}>
               {/* a pose is the whole silhouette — never crop it */}
-              <KoaFigure expression={POSE_FACE[po.key]} pose={po.key} size={104} />
+              <KoaFigure expression={POSE_FACE[po.key]} pose={po.key} worn={worn} size={104} />
               <Text style={[styles.tileLabel, pose === po.key && styles.tileLabelOn]}>
                 {po.label}
               </Text>
@@ -120,6 +132,29 @@ export default function KoaSheetScreen() {
           ))}
         </View>
       </GlassCard>
+      {KOA_SLOTS.map((slot) => (
+        <GlassCard key={slot} style={styles.card}>
+          <View style={styles.cardHead}>
+            <Text style={styles.section}>{SLOT_LABEL[slot]}</Text>
+            <Text style={styles.sectionSub}>
+              {slot} · {KOA_ITEMS[slot].length} món — chạm để mặc / cởi
+            </Text>
+          </View>
+          <View style={styles.grid}>
+            {KOA_ITEMS[slot].map((id) => (
+              <Pressable
+                key={id}
+                onPress={() => toggle(slot, id)}
+                style={[styles.tile, worn[slot] === id && styles.tileOn]}>
+                <View style={styles.tileFace}>
+                  <KoaFigure pose="idle" worn={{ [slot]: id }} size={104} animated={false} />
+                </View>
+                <Text style={[styles.tileLabel, worn[slot] === id && styles.tileLabelOn]}>{id}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </GlassCard>
+      ))}
     </Screen>
   );
 }

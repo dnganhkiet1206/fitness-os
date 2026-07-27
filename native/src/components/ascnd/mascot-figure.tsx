@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { KoaFigure } from '@/components/ascnd/koa/koa-figure';
+import type { Worn } from '@/components/ascnd/koa/koa-flags';
 import { RiveMascot } from '@/components/ascnd/mascot-rive-view';
 import { VectorMascot } from '@/components/ascnd/vector-mascot';
 import { useMascotEmotion } from '@/hooks/use-mascot-emotion';
@@ -66,6 +67,25 @@ function getLottie() {
 }
 
 const SLOW = new Set<MascotEmotion>(['sad', 'tired', 'sleep']);
+
+/**
+ * The shop still sells a flat set of outfit keys; the character now wears one
+ * item per slot. Map the ones that have an equivalent — the rest of the
+ * catalogue (see assets/mascots/KOA_OUTFIT_CATALOGUE.md) is not in the shop
+ * yet, so the shop is what needs extending, not this table.
+ */
+const WORN_FROM_SHOP: Record<string, Worn> = {
+  headband: { head: 'band' },
+  cap: { head: 'cap' },
+  sunglasses: { face: 'shades' },
+};
+
+function wornFrom(equipped: Set<string> | undefined): Worn {
+  if (!equipped) return {};
+  let worn: Worn = {};
+  for (const key of equipped) worn = { ...worn, ...WORN_FROM_SHOP[key] };
+  return worn;
+}
 
 /**
  * Image companion — always breathing, with per-emotion micro-motion:
@@ -192,17 +212,13 @@ export function MascotFigure(props: Props) {
   //    outranks the pre-rendered art it replaces.
   if (mascot.id === 'koa') {
     const state = koaStateFor(emotion);
-    const outfits = state.outfit
-      ? new Set([...(props.equippedOutfits ?? []), state.outfit])
-      : props.equippedOutfits;
     return (
       <KoaFigure
         expression={state.expression}
         pose={state.pose}
         size={size}
         animated={animated}
-        equippedOutfits={outfits}
-        pokeSignal={props.pokeSignal}
+        worn={{ ...wornFrom(props.equippedOutfits), ...state.outfit }}
       />
     );
   }

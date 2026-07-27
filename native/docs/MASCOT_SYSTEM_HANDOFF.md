@@ -147,89 +147,39 @@ rank-up confetti, room lighting reacting to rank/energy.
   heavy-bag/stats panel) with vector fallbacks (mirror/kettlebell/barbell/
   treadmill). `MascotScene` is now a thin adapter over it.
 
-- **Koa redrawn from the SVG spec sheet — DONE.** The sheet
-  (`../assets/mascots/koa-svg-spec-sheet.png`, "KOALA MASCOT – SVG DESIGN")
-  is now the character's source of truth, and §10 of it asks for exactly
-  one target: **React Native SVG**. Ported in
-  `src/components/ascnd/koa/`:
-  - `koa-parts.ts` — §2 palette, every Bézier path, and the two lookup
-    tables (`faceFlags`, `poseFlags`) that turn `expression`/`pose` into
-    the set of layers to draw. Layer ids match `KOA_RIG_SPEC.md` §1.
-  - `koa-anim.tsx` — the sheet's CSS `@keyframes` as Reanimated
-    primitives (`Rot`/`Shift`/`Breathe`/`Blink`/`Fade`/`Flash`/`Fly`/
-    `Shake`/`RunBody`). Groups animate through `matrix`, the one transform
-    prop `RNSVGGroup` takes natively, so nothing crosses to JS per frame.
-    Every loop is stopped unless the current state uses it — an idle Koa
-    runs three.
-  - `koa-figure.tsx` — the figure. All 8 expressions of §3 plus
-    `happytired`, and all 5 poses of §5 (idle / chạy bộ / tập tạ / giãn cơ
-    / thư giãn) including the 3/4 turn, hip-pivot leg cycle, speed lines,
-    ground dust, sweat and cap that come with the run.
-  - `src/lib/koa-emotion.ts` — the one table mapping Emotion Engine states
-    to sheet expressions/poses. `MascotFigure` renders it for `koa` ahead
-    of the pre-rendered art, so the buddy is live vector everywhere the 2D
-    figure appears.
-  A new `run` emotion carries the running pose; it is reachable from the
-  DEV picker but not yet derived automatically in `baseEmotion()`.
-- **Sheet §8 GỢI Ý ANIMATE — all four DONE.** Blink and Mouth Open/Close
-  came with the port; **Look Left / Right** and **Cheek Pop** landed after.
-  The blink was then corrected against `koaBlink` / `koaBlink2` frame by
-  frame: the double flutter had been holding the eye shut 404ms instead of
-  258ms (it never reopened between the two halves, so it read as a sleepy
-  droop), and every window ramp was linear where CSS eases each keyframe
-  interval. `pulse()` is smoothstepped now. If a lid ever looks wrong
-  again, print the curve against the CSS keyframes before touching it —
-  the timings are in the `Blink` docstring.
-  The lid **pivot** then moved to the lash line, and this one is a
-  deliberate departure from the sheet, not a bug fix. The sheet pivots the
-  lid at view-box y=72 → face-local y=61, level with the eyebrows; checked
-  by running the design itself in a browser paused mid-blink, the lid
-  sliver really does ride over the brows there and clip them into stubs on
-  the way down, which is what makes the blink catch your eye. Pivoting at
-  face-local y=72 — the top of the eye ellipse — keeps the whole travel
-  inside the eye and leaves the brows untouched. See `PIVOTS.lashLine`.
-  Note this does NOT mean the sheet's other view-box origins are wrong:
-  `hy()` was verified correct against the browser and stays everywhere else.
-  `useGaze()` wanders the pupils (and their highlights) in −1…1, mostly
-  looking at you with a short glance every few seconds, holds randomised so
-  it never reads as a loop; the gaze rests while Koa runs. `usePop()` fires
-  the cheek pop — the head squashes wide onto the shoulders and both blushes
-  swell — on every `pokeSignal` bump, which `StageRenderer` raises when the
-  buddy is tapped (on top of the existing nod + wave).
-- **CHẠY BỘ: keep the sheet's own run. A rewrite was tried and reverted.**
-  It looked static in review, so the pose was rebuilt from scratch —
-  two-bone limbs, a real stride, headband, singlet. The author rejected it
-  and asked for the original back, and they were right: the review had been
-  done on a render with the CSS `animation:` declarations stripped out, so
-  it showed the pose frozen at its transform-attribute state, not what the
-  design actually does. **Never judge this sheet from a static render.** To
-  see it truthfully, resolve the `<sc-if>` bindings, keep the CSS, load it
-  in a browser and freeze each frame through the Web Animations API
-  (`el.getAnimations().forEach(a => { a.currentTime = t; a.pause(); })`).
-  Running, the sheet's Koa reads as a bouncing jog: limbs tucked under a
-  barely-turned body, sold by the bob, the speed lines, the dust and the
-  sweat rather than by a wide stride.
-  **Do not "fix" the arms to swing against the leg on the same side.** It
-  is the textbook correction and it was tried: the sheet drives the left
-  arm and left leg from the same `koaStepA`, so each arm is in lockstep
-  with the leg below it. Offsetting the arms half a stride reversed the
-  apparent direction of travel — this camera is barely turned off front,
-  the left arm is the largest moving mass in frame, and on the sheet's
-  timing its hand sweeps backwards (x≈98→60) exactly while the body is
-  lowest and driving off the ground. Offset, it sweeps forward through that
-  beat and the run reads right-to-left. Trace the hand's screen travel
-  against the bob before touching arm timing.
-  **Cadence.** The sheet runs the cycle at 1500ms. One cycle is two steps,
-  so that is 80 steps a minute — slower than walking, and a large part of
-  why the pose does not read as running however it is drawn. It now runs at
-  `RUN_CYCLE_MS = 800` (150/min, a light jog); 700 is a real run's 171 and
-  reads frantic on a character this round. The speed lines scale off the
-  same constant, and the dust and bob ride the run loop, so one number
-  moves the whole thing.
-  One real porting bug came out of it and is fixed: `koaStepA` carries
-  `animation-delay: 1.35s` on a 1.5s loop, so its phase is **+0.1**, not
-  +0.9 — a delay winds the clock back. At +0.9 the left limbs ran 17° out
-  of step on average. See `STEP_A_PHASE`.
+- **Koa is now IMPORTED from the design export, not hand-ported.** This is
+  the big one, and it replaces everything the bullets below used to say
+  about `koa-parts.ts` / `koa-anim.tsx` (both deleted).
+
+  `tools/koa-import/import-koa.py` reads the design tool's `Koa.dc.html`
+  and emits `src/components/ascnd/koa/koa-scene.ts`: the SVG tree with each
+  layer's conditional flag, plus every CSS `@keyframes` sampled into
+  frames. `koa-flags.ts` is the export's own `renderVals()`, ported as-is.
+  `koa-figure.tsx` is a small runtime that evaluates the flags and walks
+  the tree; one `useFrameCallback` clock on the UI thread feeds all 36
+  animations, and groups animate through `matrix`.
+
+  **A design update is now `python3 tools/koa-import/import-koa.py …`, not
+  a transcription.** Every visual regression in this file's history came
+  from hand-copying that export; do not go back to it.
+
+  Current export covers: 10 expressions (adds `strain`, the lifting face),
+  6 poses (adds `turn34`, the §1 turnaround), and a seven-slot wardrobe —
+  head / face / top / bottom / shoes / back / hand, ten items each. See
+  `assets/mascots/KOA_OUTFIT_CATALOGUE.md`. Verified by rendering the
+  generated data and the export side by side, frame-frozen, across all
+  poses and all 70 items.
+
+  **Dropped in the swap, needs a decision:** the gaze (`useGaze`), the
+  cheek pop on poke (`usePop`, `pokeSignal`) and the lash-line blink pivot
+  were ours, not the export's, so they are gone. The run cadence knob
+  (`RUN_CYCLE_MS`) is moot — the export bakes its own choreography into an
+  18s timeline that runs, slows and stops.
+
+  The shop still sells five flat outfit keys; `WORN_FROM_SHOP` in
+  `mascot-figure.tsx` maps the three with an equivalent. Extending the shop
+  to the full catalogue is open work.
+
 - **`/koa-sheet` — the character review screen.** Panels §3 and §5 of the
   sheet, live on device: all 8 expressions and all 5 poses, tap a card to
   load it into the hero, tap the hero to cycle ("chạm vào Koa để đổi biểu

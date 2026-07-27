@@ -1,5 +1,5 @@
 import type { MascotEmotion } from '@/lib/mascot-emotion';
-import type { KoaExpression, KoaPose } from '@/components/ascnd/koa/koa-parts';
+import type { KoaExpression, KoaPose, Worn } from '@/components/ascnd/koa/koa-flags';
 
 /**
  * Emotion Engine → the spec sheet's own vocabulary.
@@ -13,8 +13,8 @@ import type { KoaExpression, KoaPose } from '@/components/ascnd/koa/koa-parts';
 export interface KoaState {
   expression: KoaExpression;
   pose: KoaPose;
-  /** outfit ids the emotion implies on top of what the user has equipped */
-  outfit?: string;
+  /** outfit the emotion implies on top of what the user has equipped */
+  outfit?: Worn;
 }
 
 const STATES: Record<MascotEmotion, KoaState> = {
@@ -27,12 +27,12 @@ const STATES: Record<MascotEmotion, KoaState> = {
   sleep: { expression: 'tired', pose: 'relaxing' },
   celebrate: { expression: 'delighted', pose: 'idle' },
   // logging a workout — curling alongside the user, and sure of itself
-  curl: { expression: 'confident', pose: 'lifting' },
+  curl: { expression: 'strain', pose: 'lifting' },
   // the overhead reach doubles as a wave
   wave: { expression: 'happy', pose: 'stretching' },
   // 3/4 turn, hip-pivot leg cycle, out of breath — the sheet's finished pose
   run: { expression: 'happytired', pose: 'running' },
-  hat: { expression: 'happy', pose: 'idle', outfit: 'cap' },
+  hat: { expression: 'happy', pose: 'idle', outfit: { head: 'santa' } },
   coat: { expression: 'happy', pose: 'idle' },
 };
 
