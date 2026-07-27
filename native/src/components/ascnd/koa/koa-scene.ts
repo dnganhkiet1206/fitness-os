@@ -42,6 +42,8 @@ export interface Node {
   tr?: [number, number];
   /** transform-origin, in the element's own coordinates */
   o?: [number, number];
+  /** character data — `<text>` carries its label here */
+  x?: string;
   kids?: Node[];
 }
 

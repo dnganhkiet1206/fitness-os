@@ -6,17 +6,7 @@ import Animated, {
   useSharedValue,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, {
-  Circle,
-  ClipPath,
-  Defs,
-  Ellipse,
-  G,
-  Line,
-  Path,
-  Rect,
-  type GProps,
-} from 'react-native-svg';
+import Svg, { ClipPath, Defs, G, type GProps } from 'react-native-svg';
 
 import {
   koaFlags,
@@ -25,6 +15,7 @@ import {
   type KoaPose,
   type Worn,
 } from '@/components/ascnd/koa/koa-flags';
+import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
   KEYFRAMES,
   NODES,
@@ -306,35 +297,6 @@ function parseAnim(css: string): { anim: Anim; origin?: [number, number]; tr?: O
 }
 
 /* ── static rendering ─────────────────────────────────────────────────── */
-
-const SHAPES: Record<string, React.ComponentType<Record<string, unknown>>> = {
-  path: Path as never,
-  ellipse: Ellipse as never,
-  circle: Circle as never,
-  rect: Rect as never,
-  line: Line as never,
-};
-
-/** react-native-svg wants camelCase where SVG uses kebab-case */
-const ATTR: Record<string, string> = {
-  'stroke-width': 'strokeWidth',
-  'stroke-linecap': 'strokeLinecap',
-  'stroke-linejoin': 'strokeLinejoin',
-  'clip-path': 'clipPath',
-  'clip-rule': 'clipRule',
-  'fill-rule': 'fillRule',
-  'stroke-dasharray': 'strokeDasharray',
-};
-
-function attrs(a: Record<string, string | number> | undefined, dropOpacity: boolean) {
-  if (!a) return {};
-  const out: Record<string, string | number> = {};
-  for (const k of Object.keys(a)) {
-    if (dropOpacity && k === 'opacity') continue;
-    out[ATTR[k] ?? k] = a[k];
-  }
-  return out;
-}
 
 /** the layer's own `transform`, whether written inline or handed down by name */
 function own_tf(n: Node, flags: Flags): Op[] {
