@@ -1,6 +1,8 @@
+import { useIsFocused } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
   useAnimatedProps,
   useSharedValue,
   withDelay,
@@ -77,11 +79,17 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
 
   const progress = useSharedValue(0);
   const pulse = useSharedValue(1);
+  // this sits on the home tab, which stays mounted for the whole session —
+  // an ungated repeat here is a loop that never stops running
+  const focused = useIsFocused();
   useEffect(() => {
     progress.value = withDelay(
       300,
       withTiming(score / 100, { duration: 1600, easing: Easing.bezier(0.16, 1, 0.3, 1) }),
     );
+  }, [score, progress]);
+  useEffect(() => {
+    if (!focused) return;
     pulse.value = withRepeat(
       withSequence(
         withTiming(1.3, { duration: 1000, easing: Easing.inOut(Easing.quad) }),
@@ -89,7 +97,11 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
       ),
       -1,
     );
-  }, [score, progress, pulse]);
+    return () => {
+      cancelAnimation(pulse);
+      pulse.value = 1;
+    };
+  }, [focused, pulse]);
 
   const ringProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRC - progress.value * CIRC,

@@ -452,7 +452,11 @@ function RenderNode({
   const t = matrixTransform(base, origin);
   if (t) return <G {...gProps} transform={t}>{body}</G>;
   if (Object.keys(gProps).length > 0) return <G {...gProps}>{body}</G>;
-  return n.t === 'g' ? <G>{body}</G> : <>{body}</>;
+  // A group with no transform, no animation and no attributes draws exactly
+  // what its children draw. The export has ~20 of them per pose — every
+  // `<sc-if>` is one — and each would otherwise be a native view that
+  // costs mounting and layout to do nothing.
+  return <>{body}</>;
 }
 
 /* ── the figure ───────────────────────────────────────────────────────── */
@@ -475,8 +479,12 @@ export function KoaFigure({
   size = 160,
   animated = true,
 }: KoaFigureProps) {
-  const flags = koaFlags(expression, pose, worn);
   const height = size * KOA_ASPECT;
+  // `worn` arrives as a fresh object on most renders, so identity is no use
+  // as a dependency — but there are only ever seven slots in it.
+  const wornKey = worn ? JSON.stringify(worn) : '';
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const flags = useMemo(() => koaFlags(expression, pose, worn), [expression, pose, wornKey]);
 
   // One clock for the whole figure, on the UI thread: 36 loops, one frame
   // callback, nothing crossing to JS.
@@ -519,12 +527,19 @@ export function KoaFigure({
     };
   }, [animated, frameCb]);
 
+  // The tree is ~90 elements at rest and 130 mid-run, and it only depends on
+  // the flags. Rebuilding it every time a parent re-renders — the Stage does
+  // so on every emotion, energy and XP change — is pure waste, and the clock
+  // drives the motion without React seeing any of it.
+  const tree = useMemo(
+    () => NODES.map((n, i) => <RenderNode key={i} n={n} flags={flags} clock={clock} live={animated} />),
+    [flags, clock, animated],
+  );
+
   return (
     <View style={{ width: size, height }} pointerEvents="none">
       <Svg width={size} height={height} viewBox={KOA_VIEWBOX} preserveAspectRatio="xMidYMax meet">
-        {NODES.map((n, i) => (
-          <RenderNode key={i} n={n} flags={flags} clock={clock} live={animated} />
-        ))}
+        {tree}
       </Svg>
     </View>
   );

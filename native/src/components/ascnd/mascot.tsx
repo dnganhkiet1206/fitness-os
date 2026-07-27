@@ -1,9 +1,10 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   interpolate,
   useAnimatedStyle,
@@ -27,8 +28,14 @@ import { levelFromXp } from '@/lib/mascot-room';
  * real 3D space (perspective + rotateX/rotateY), with squash & stretch,
  * a ground shadow that reacts to hover height and a character-colored
  * aura. All transforms run on the UI thread via Reanimated.
+ *
+ * Everything here idles forever by design, and this sits on the app's home
+ * screen — a tab the user leaves mounted all day. So the float, the sway,
+ * the quirk timer and the character's own clock all stop the moment the
+ * tab loses focus; an unwatched buddy costs nothing.
  */
 export function Mascot() {
+  const focused = useIsFocused();
   const { enabled, mascot, message, mood } = useMascot();
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();
@@ -55,6 +62,10 @@ export function Mascot() {
   // Idle life: float loop + slow look-around sway
   useEffect(() => {
     entrance.value = withDelay(350, withSpring(1, { stiffness: 200, damping: 13 }));
+  }, [entrance]);
+
+  useEffect(() => {
+    if (!focused) return;
     hover.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 1700, easing: Easing.inOut(Easing.sin) }),
@@ -70,7 +81,14 @@ export function Mascot() {
       -1,
       true,
     );
-  }, [entrance, hover, tiltY]);
+    return () => {
+      // a repeat runs until it is cancelled — leaving the tab is not enough
+      cancelAnimation(hover);
+      cancelAnimation(tiltY);
+      hover.value = 0;
+      tiltY.value = 0;
+    };
+  }, [focused, hover, tiltY]);
 
   // Tired buddy slumps forward and blinks slow and heavy
   useEffect(() => {
@@ -80,7 +98,7 @@ export function Mascot() {
   // Random quirks so it feels alive, not looping: a hop, a nod, or a flip
   // (paused while tired — no energy for tricks)
   useEffect(() => {
-    if (tired) return;
+    if (tired || !focused) return;
     let alive = true;
     const doQuirk = () => {
       if (!alive) return;
@@ -123,7 +141,7 @@ export function Mascot() {
       alive = false;
       clearTimeout(timer);
     };
-  }, [tired, squashX, squashY, nod, spin]);
+  }, [tired, focused, squashX, squashY, nod, spin]);
 
   useEffect(() => {
     bubble.value = withSpring(bubbleVisible && message ? 1 : 0, { stiffness: 260, damping: 20 });
@@ -190,6 +208,7 @@ export function Mascot() {
               mood={mood}
               level={level}
               equippedOutfits={equippedOutfits}
+              animated={focused}
             />
           </Animated.View>
         </View>

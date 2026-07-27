@@ -127,10 +127,15 @@ export function StageRenderer({
   }, [aura, animated]);
   useEffect(() => {
     droop.value = withSpring(tired ? 8 : 0, { stiffness: 120, damping: 15 });
-    zzz.value = tired
-      ? withRepeat(withTiming(1, { duration: 2800, easing: Easing.out(Easing.quad) }), -1)
-      : 0;
-  }, [tired, droop, zzz]);
+    // the sleep 'z' loop is the one repeat here that was not gated — a tired
+    // buddy kept it running on an unfocused screen
+    if (!tired || !animated) {
+      cancelAnimation(zzz);
+      zzz.value = 0;
+      return;
+    }
+    zzz.value = withRepeat(withTiming(1, { duration: 2800, easing: Easing.out(Easing.quad) }), -1);
+  }, [tired, animated, droop, zzz]);
 
   const acknowledge = () => {
     nod.value = withSequence(

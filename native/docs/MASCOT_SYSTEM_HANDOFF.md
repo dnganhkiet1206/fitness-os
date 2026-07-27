@@ -96,10 +96,15 @@ The emotion side:
 - **Gamification** (context, do not redo): rank ladder, Today's Energy
   ring, Rank Journey, coin-burst and rank-up confetti, stage lighting off
   rank and energy.
-- **Performance**: the figure runs at 30fps, pauses when the app
-  backgrounds, and the Mascot Room passes screen focus down so an
-  unfocused stack screen costs nothing. The run pose's 33 animated layers
-  cost ~13.5µs of maths per frame.
+- **Performance.** The figure runs at 30fps, pauses when the app
+  backgrounds, and every screen that shows it passes focus down — the
+  Mascot Room, and the home tab, which stays mounted all session and used
+  to keep the buddy's float, sway, quirk timer, the readiness pulse and a
+  live 30fps character running behind whatever the user was looking at.
+  A group with no transform, animation or attributes is flattened away,
+  which is 15–23% of the figure's native views. The tree is memoised on
+  the flags, so a parent re-render does not rebuild ~100 elements. The
+  run pose's 33 animated layers cost ~13.5µs of maths per frame.
 
 ### Removed, on purpose — do not bring back
 

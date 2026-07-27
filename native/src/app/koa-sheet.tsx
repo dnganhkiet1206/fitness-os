@@ -29,9 +29,13 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
  * Reached from the DEV bar in the Mascot Room; nothing links to it in a
  * production build.
  *
- * Only the hero animates. The boards are 84 thumbnails — leaving those live
- * meant 84 clocks and several hundred native prop commits a frame, which is
+ * Only the hero animates. The boards are 86 thumbnails — leaving those live
+ * meant 86 clocks and several hundred native prop commits a frame, which is
  * enough to heat a phone on its own.
+ *
+ * The wardrobe is an accordion for the same reason. Seventy items, each a
+ * whole figure, is around 6,000 native views mounted at once; one slot open
+ * at a time keeps it under a thousand.
  */
 
 /** the expression each pose is drawn with on the sheet's §4 */
@@ -58,6 +62,8 @@ export default function KoaSheetScreen() {
   const [expression, setExpression] = useState<KoaExpression>('happy');
   const [pose, setPose] = useState<KoaPose>('idle');
   const [worn, setWorn] = useState<Worn>({});
+  // one wardrobe slot open at a time — see the note above
+  const [openSlot, setOpenSlot] = useState<KoaSlot | null>('head');
 
   const label = KOA_EXPRESSIONS.find((e) => e.key === expression)?.label ?? expression.toUpperCase();
 
@@ -136,29 +142,44 @@ export default function KoaSheetScreen() {
           ))}
         </View>
       </GlassCard>
-      {KOA_SLOTS.map((slot) => (
-        <GlassCard key={slot} style={styles.card}>
-          <View style={styles.cardHead}>
-            <Text style={styles.section}>{SLOT_LABEL[slot]}</Text>
-            <Text style={styles.sectionSub}>
-              {slot} · {KOA_ITEMS[slot].length} món — chạm để mặc / cởi
-            </Text>
-          </View>
-          <View style={styles.grid}>
-            {KOA_ITEMS[slot].map((id) => (
-              <Pressable
-                key={id}
-                onPress={() => toggle(slot, id)}
-                style={[styles.tile, worn[slot] === id && styles.tileOn]}>
-                <View style={styles.tileFace}>
-                  <KoaFigure pose="idle" worn={{ [slot]: id }} size={104} animated={false} />
-                </View>
-                <Text style={[styles.tileLabel, worn[slot] === id && styles.tileLabelOn]}>{id}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </GlassCard>
-      ))}
+      {KOA_SLOTS.map((slot) => {
+        const open = openSlot === slot;
+        return (
+          <GlassCard key={slot} style={styles.card}>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                setOpenSlot(open ? null : slot);
+              }}
+              style={styles.cardHead}>
+              <Text style={styles.section}>
+                {open ? '−' : '+'}  {SLOT_LABEL[slot]}
+              </Text>
+              <Text style={styles.sectionSub}>
+                {slot} · {KOA_ITEMS[slot].length} món
+                {worn[slot] ? ` · đang mặc ${worn[slot]}` : ''}
+              </Text>
+            </Pressable>
+            {open && (
+              <View style={styles.grid}>
+                {KOA_ITEMS[slot].map((id) => (
+                  <Pressable
+                    key={id}
+                    onPress={() => toggle(slot, id)}
+                    style={[styles.tile, worn[slot] === id && styles.tileOn]}>
+                    <View style={styles.tileFace}>
+                      <KoaFigure pose="idle" worn={{ [slot]: id }} size={104} animated={false} />
+                    </View>
+                    <Text style={[styles.tileLabel, worn[slot] === id && styles.tileLabelOn]}>
+                      {id}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </GlassCard>
+        );
+      })}
     </Screen>
   );
 }
