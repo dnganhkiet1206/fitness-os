@@ -72,16 +72,18 @@ const EMPTY: Set<string> = new Set();
 const STEP_A_PHASE = 0.1;
 
 /**
- * Arms swing AGAINST the leg on the same side — half a stride apart.
+ * The arms keep the sheet's own timing. Do not "fix" them to swing against
+ * the leg on the same side.
  *
- * The sheet drives the left arm and the left leg from the same `koaStepA`,
- * and the right arm and right leg from the same `koaStepB`, so each arm
- * swings in lockstep with the leg below it. That is the one thing a run
- * cannot do: sample it and the same-side pair reads identical at every
- * frame. Offsetting the arms by half a cycle keeps every authored curve,
- * amplitude and easing exactly as drawn, and only moves WHEN they happen.
+ * That looks like the textbook correction — a runner's arm opposes the leg
+ * below it — but this camera is barely turned off front, and here it
+ * reverses the direction of travel. The left arm is the largest moving mass
+ * in the frame. On the sheet's timing its hand sweeps from x≈98 to x≈60
+ * (backwards) exactly while the body is at its lowest and driving off the
+ * ground, which is what pushes the figure right. Offset by half a stride it
+ * sweeps forward through that same beat and the whole run reads right-to-
+ * left. Verified by tracing the hand's screen travel against the bob.
  */
-const ARM_OPPOSE = 0.5;
 
 const HEAD_DY = 11;
 const hy = (y: number) => y - HEAD_DY;
@@ -632,7 +634,7 @@ export function KoaFigure({
           <G transform={`translate(${TURN.armLeftDx},0) rotate(${TURN.armLeftRotate} ${TURN.armLeftOx} ${TURN.armLeftOy})`}>
             <Rot
               v={run}
-              phase={STEP_A_PHASE + ARM_OPPOSE}
+              phase={STEP_A_PHASE}
               from={-22}
               to={24}
               ox={PIVOTS.armLeft.x}
@@ -640,7 +642,7 @@ export function KoaFigure({
               <Path d={BODY.armRunLeft} fill={C.body} />
             </Rot>
           </G>
-          <Rot v={run} phase={ARM_OPPOSE} from={16} to={-17} ox={PIVOTS.armRight.x} oy={PIVOTS.armRight.y}>
+          <Rot v={run} from={16} to={-17} ox={PIVOTS.armRight.x} oy={PIVOTS.armRight.y}>
             <Path d={BODY.armRunRight} fill={C.body} />
           </Rot>
           <Path d={BODY.armRightCrease} fill={C.shade} opacity={0.55} />

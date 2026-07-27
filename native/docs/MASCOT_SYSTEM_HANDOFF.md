@@ -209,13 +209,16 @@ rank-up confetti, room lighting reacting to rank/energy.
   Running, the sheet's Koa reads as a bouncing jog: limbs tucked under a
   barely-turned body, sold by the bob, the speed lines, the dust and the
   sweat rather than by a wide stride.
-  What IS fixed in the run is only how the limbs are timed against each
-  other. The sheet drives the left arm and the left leg from the same
-  `koaStepA`, and the right pair from the same `koaStepB`, so each arm
-  swings in lockstep with the leg beneath it — sample any frame and the
-  same-side pair is identical to the degree. A run cannot do that, so the
-  arms are offset half a stride (`ARM_OPPOSE`). Every authored curve,
-  amplitude and easing is untouched; only WHEN each one happens moved.
+  **Do not "fix" the arms to swing against the leg on the same side.** It
+  is the textbook correction and it was tried: the sheet drives the left
+  arm and left leg from the same `koaStepA`, so each arm is in lockstep
+  with the leg below it. Offsetting the arms half a stride reversed the
+  apparent direction of travel — this camera is barely turned off front,
+  the left arm is the largest moving mass in frame, and on the sheet's
+  timing its hand sweeps backwards (x≈98→60) exactly while the body is
+  lowest and driving off the ground. Offset, it sweeps forward through that
+  beat and the run reads right-to-left. Trace the hand's screen travel
+  against the bob before touching arm timing.
   One real porting bug came out of it and is fixed: `koaStepA` carries
   `animation-delay: 1.35s` on a 1.5s loop, so its phase is **+0.1**, not
   +0.9 — a delay winds the clock back. At +0.9 the left limbs ran 17° out

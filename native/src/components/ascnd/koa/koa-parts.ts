@@ -259,11 +259,17 @@ export const BODY = {
     'M136 256 C 128 262 125 271 124.5 284 C 124.5 287 126.4 287 126.7 284 ' +
     'C 127.4 272 131 264 139 259 Z',
 
-  /** TORSO */
+  /**
+   * TORSO — the shoulders are pulled in 11% from the sheet (108 units wide
+   * at y=182 → 96), tapering back to nothing by the waist. The sheet's
+   * upper body reads heavy directly under that big head; the waist, hips
+   * and everything below are untouched, and the arms still overlap the
+   * body at their attachment so no seam opens up. Shared by every pose.
+   */
   torsoFront:
-    'M120 140 C 96 140 72 154 66 182 C 63 200 63 224 67 244 ' +
+    'M120 141 C 99 141 78 156 72 183 C 66 201 63 224 67 244 ' +
     'C 71 264 92 279 120 279 C 148 279 169 264 173 244 ' +
-    'C 177 224 177 200 174 182 C 168 154 144 140 120 140 Z',
+    'C 177 224 174 201 168 183 C 162 156 141 141 120 141 Z',
   belly:
     'M120 188 C 142 188 155 202 155 223 C 155 244 148 263 134 268 ' +
     'C 126 271 114 271 106 268 C 92 263 85 244 85 223 C 85 202 98 188 120 188 Z',
