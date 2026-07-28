@@ -16,37 +16,37 @@ import { YogaMat } from '@/components/ascnd/studio/yoga-mat';
  *
  * Order matters: plant and shaker on the top board, the heavy things low.
  */
-const TOP = 268;
-const BOTTOM = 396;
+const TOP = 250;
+const BOTTOM = 392;
 
 /** y of each board, and its half-width — the taper */
 const BOARDS: [number, number][] = [
-  [TOP, 38],
-  [TOP + 50, 45],
-  [TOP + 100, 52],
+  [TOP, 44],
+  [TOP + 50, 52],
+  [TOP + 100, 60],
 ];
 
 export function Shelf() {
   return (
     <>
-      <Path d={`M 24 ${BOTTOM} L 36 ${TOP}`} stroke={C.secondary} strokeWidth={6} strokeLinecap="round" fill="none" />
-      <Path d={`M 120 ${BOTTOM} L 108 ${TOP}`} stroke={C.secondary} strokeWidth={6} strokeLinecap="round" fill="none" />
+      <Path d={`M 12 ${BOTTOM} L 26 ${TOP}`} stroke={C.secondary} strokeWidth={6} strokeLinecap="round" fill="none" />
+      <Path d={`M 132 ${BOTTOM} L 118 ${TOP}`} stroke={C.secondary} strokeWidth={6} strokeLinecap="round" fill="none" />
 
       {BOARDS.map(([y, hw], i) => (
         <Rect key={i} x={72 - hw} y={y} width={hw * 2} height={6} rx={3} fill={C.secondary} />
       ))}
 
       {/* top board — the things Koa looks after */}
-      <Plant x={52} y={BOARDS[0][0]} s={0.62} />
-      <Shaker x={90} y={BOARDS[0][0]} s={0.72} />
+      <Plant x={41} y={BOARDS[0][0]} s={0.72} />
+      <Shaker x={84} y={BOARDS[0][0]} s={0.72} />
 
       {/* middle — the pair it lifts most */}
-      <Dumbbell x={50} y={BOARDS[1][0] - 9} s={0.9} />
-      <Dumbbell x={94} y={BOARDS[1][0] - 9} s={0.9} />
+      <Dumbbell x={46} y={BOARDS[1][0] - 9} s={1} />
+      <Dumbbell x={98} y={BOARDS[1][0] - 9} s={1} />
 
       {/* bottom — heavy, and the mat */}
-      <Kettlebell x={44} y={BOARDS[2][0]} s={0.95} />
-      <YogaMat x={95} y={BOARDS[2][0]} s={0.95} />
+      <Kettlebell x={40} y={BOARDS[2][0]} s={1.1} />
+      <YogaMat x={100} y={BOARDS[2][0]} s={1.1} />
     </>
   );
 }

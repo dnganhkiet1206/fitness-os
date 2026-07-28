@@ -8,10 +8,10 @@ import { C } from '@/components/ascnd/studio/palette';
  *
  * The bar is seven pips because a streak is counted in days, not in percent.
  */
-const X = 268;
-const Y = 238;
-const W = 100;
-const H = 66;
+const X = 270;
+const Y = 245;
+const W = 102;
+const H = 62;
 const DAYS = 7;
 const DONE = 4;
 

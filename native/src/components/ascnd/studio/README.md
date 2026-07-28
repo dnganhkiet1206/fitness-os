@@ -5,8 +5,14 @@ part of this scene; `STAGE_MARK` in `palette.ts` is where its feet go, and
 both the scene and the figure are placed from that one number.
 
 ```bash
-node tools/koa-studio/preview.mjs studio.png   # renders the real components
+node tools/koa-studio/preview.mjs <dir>/studio.png   # renders the real components
+node tools/koa-studio/compare.mjs  <dir> --shot      # holds it to the design
 ```
+
+`compare.mjs` wants the design screenshot as `<dir>/ref.png`. It finds each
+landmark by what its colour *is* — gold, purple, green, lit sky — rather
+than by an exact hex, because the reference is a painted render whose values
+do not match the palette, and reports the gap in points.
 
 The preview bundles the actual `.tsx` with `react-native-svg` swapped for a
 stub of tag names and walks the element tree the components return, so it is
@@ -23,9 +29,39 @@ the components and not a copy of them that can drift.
 | Depth from scale, overlap and brightness only | no perspective transform anywhere |
 | Every object is its own component | one file each, placed by `(x, y)` |
 
-Current cost: **115 shapes, ~10KB of SVG**, all static — it draws once and
+Current cost: **143 shapes, ~14KB of SVG**, all static — it draws once and
 then costs nothing per frame, which is what lets it sit under a character
 that does animate.
+
+## Held to the design, measured
+
+Every landmark now lands within **4pt** of the design screenshot, and the
+wall/floor line within 12pt. Worth keeping in mind when changing anything:
+
+| landmark | design | studio |
+|---|---|---|
+| podium ring | x57 y382 275×141 | x57 y382 277×141 |
+| lamp mouth | x168 y61 55×5 | x167 y62 56×8 |
+| neon sign | x24 y129 84×80 | x23 y129 86×84 |
+| streak card | x270 y245 102×62 | x269 y245 103×63 |
+| shelf plant | x26 y220 29×24 | x27 y219 29×21 |
+| floor plant | x263 y310 107×38 | x262 y310 107×37 |
+| window sky | x272 y95 95×117 | x271 y94 97×119 |
+
+Three of those were real design errors the eye had passed over: the podium
+was 57pt out of shape (far too flat — 0.29 tall for its width where the
+design carries 0.51), the room had no wall/floor line at all, and the two
+plants are not one plant at two scales — the shelf carries a compact bush
+at 1.2 wide for its height, the floor a broad spray on stems at 2.8.
+
+## Where the design and the brief disagree
+
+The screenshot is a painted render: soft shadows, gradient foliage, leaf
+midribs picked out in a lighter green. The brief rules out blur, texture and
+detail, and asks for few anchor points. Those cannot both be satisfied, so
+the studio matches **silhouette, proportion, position and tonal weight** and
+does not chase brush work. Where a value looks flat next to the reference,
+that is the brief winning on purpose.
 
 ## Layout
 

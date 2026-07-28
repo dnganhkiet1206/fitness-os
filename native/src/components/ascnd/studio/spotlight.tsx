@@ -11,7 +11,7 @@ import { C, STAGE_MARK } from '@/components/ascnd/studio/palette';
  */
 const CX = STAGE_MARK.x;
 const MOUTH_Y = 66;
-const MOUTH_R = 31;
+const MOUTH_R = 28;
 
 export function Spotlight() {
   return (
@@ -19,8 +19,8 @@ export function Spotlight() {
       <Defs>
         <LinearGradient id="studioCone" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={C.white} stopOpacity={0.15} />
-          <Stop offset="0.55" stopColor={C.white} stopOpacity={0.06} />
-          <Stop offset="1" stopColor={C.white} stopOpacity={0} />
+          <Stop offset="0.62" stopColor={C.white} stopOpacity={0.085} />
+          <Stop offset="1" stopColor={C.white} stopOpacity={0.02} />
         </LinearGradient>
       </Defs>
 
@@ -29,7 +29,7 @@ export function Spotlight() {
 
       {/* the light, drawn before the shade so the shade caps it */}
       <Path
-        d={`M ${CX - MOUTH_R + 3} ${MOUTH_Y} L ${CX + MOUTH_R - 3} ${MOUTH_Y} L ${CX + 118} 448 L ${CX - 118} 448 Z`}
+        d={`M ${CX - MOUTH_R + 3} ${MOUTH_Y} L ${CX + MOUTH_R - 3} ${MOUTH_Y} L ${CX + 132} 466 L ${CX - 132} 466 Z`}
         fill="url(#studioCone)"
       />
 
@@ -39,8 +39,8 @@ export function Spotlight() {
             L ${CX + MOUTH_R} ${MOUTH_Y} C ${CX + 27} 52 ${CX + 17} 40 ${CX} 40 Z`}
         fill={C.secondary}
       />
-      <Ellipse cx={CX} cy={MOUTH_Y} rx={MOUTH_R} ry={6} fill={C.highlight} />
-      <Ellipse cx={CX} cy={MOUTH_Y} rx={23} ry={4} fill={C.white} opacity={0.55} />
+      <Ellipse cx={CX} cy={MOUTH_Y} rx={MOUTH_R} ry={4} fill={C.highlight} />
+      <Ellipse cx={CX} cy={MOUTH_Y} rx={20} ry={2.4} fill={C.white} opacity={0.55} />
     </>
   );
 }

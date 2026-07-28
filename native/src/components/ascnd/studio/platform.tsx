@@ -14,9 +14,9 @@ import { C, STAGE_MARK } from '@/components/ascnd/studio/palette';
  */
 const CX = STAGE_MARK.x;
 const CY = STAGE_MARK.y;
-const RX = 145;
-const RY = 40;
-const DEPTH = 26;
+const RX = 136;
+const RY = 68;
+const DEPTH = 22;
 
 export function Platform() {
   return (
@@ -29,7 +29,7 @@ export function Platform() {
       </Defs>
 
       {/* 1 — the floor takes the weight */}
-      <Ellipse cx={CX} cy={CY + 34} rx={RX + 34} ry={RY + 10} fill={C.shadow} />
+      <Ellipse cx={CX} cy={CY + 22} rx={RX + 32} ry={RY + 4} fill={C.shadow} />
 
       {/* 2 — the cylinder: one side wall, one top face */}
       <Path
@@ -39,13 +39,13 @@ export function Platform() {
         fill={C.primary}
       />
       <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={C.secondary} />
-      <Ellipse cx={CX} cy={CY} rx={RX - 13} ry={RY - 6} fill={C.bgBottom} />
+      <Ellipse cx={CX} cy={CY} rx={RX - 12} ry={RY - 8} fill={C.bgBottom} />
       {/* the lamp lands here — a pool, not a highlight */}
-      <Ellipse cx={CX} cy={CY} rx={RX - 13} ry={RY - 6} fill="url(#studioPool)" />
+      <Ellipse cx={CX} cy={CY} rx={RX - 12} ry={RY - 8} fill="url(#studioPool)" />
 
       {/* 3 — the ring, glow first */}
-      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="none" stroke={C.highlight} strokeWidth={11} opacity={0.18} />
-      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="none" stroke={C.highlight} strokeWidth={4} />
+      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="none" stroke={C.highlight} strokeWidth={14} opacity={0.2} />
+      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="none" stroke={C.highlight} strokeWidth={5} />
     </>
   );
 }

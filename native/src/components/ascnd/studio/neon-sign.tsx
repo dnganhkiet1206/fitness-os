@@ -8,9 +8,9 @@ import { C } from '@/components/ascnd/studio/palette';
  * light source competing with the lamp.
  */
 const X = 24;
-const Y = 122;
-const W = 94;
-const H = 84;
+const Y = 130;
+const W = 84;
+const H = 82;
 
 export function NeonSign() {
   return (
@@ -26,14 +26,14 @@ export function NeonSign() {
         fill={C.highlight}
       />
 
-      <Text x={X + W / 2} y={Y + 55} fontSize={11} fontWeight="800" textAnchor="middle">
+      <Text x={X + W / 2} y={Y + 54} fontSize={9.5} fontWeight="800" textAnchor="middle">
         <TSpan fill={C.highlight}>WIN </TSpan>
         <TSpan fill={C.white}>TODAY</TSpan>
       </Text>
-      <Text x={X + W / 2} y={Y + 68} fill={C.white} fontSize={11} fontWeight="800" textAnchor="middle">
+      <Text x={X + W / 2} y={Y + 66} fill={C.white} fontSize={9.5} fontWeight="800" textAnchor="middle">
         STRONGER
       </Text>
-      <Text x={X + W / 2} y={Y + 80} fill={C.white} fontSize={11} fontWeight="800" textAnchor="middle">
+      <Text x={X + W / 2} y={Y + 78} fill={C.white} fontSize={9.5} fontWeight="800" textAnchor="middle">
         TOMORROW
       </Text>
     </>

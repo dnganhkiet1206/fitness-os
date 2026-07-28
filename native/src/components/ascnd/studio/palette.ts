@@ -37,7 +37,7 @@ export const STUDIO_H = 844;
  * The figure is placed from this, so the scene and the character cannot
  * drift apart.
  */
-export const STAGE_MARK = { x: 195, y: 414 };
+export const STAGE_MARK = { x: 195, y: 452 };
 
 /** the scene is drawn in the top of the artboard; below it is app content */
-export const SCENE_BOTTOM = 470;
+export const SCENE_BOTTOM = 500;

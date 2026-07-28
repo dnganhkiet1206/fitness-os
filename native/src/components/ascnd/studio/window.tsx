@@ -8,15 +8,15 @@ import { C } from '@/components/ascnd/studio/palette';
  * The moon is a crescent cut with a single path rather than two overlapping
  * circles, so it works over a gradient sky. The skyline is six rectangles.
  */
-const X = 268;
-const Y = 88;
-const W = 100;
-const H = 126;
+const X = 272;
+const Y = 95;
+const W = 95;
+const H = 117;
 const IN = 6;
 
 /** x, width, height — measured up from the sill */
 const CITY: [number, number, number][] = [
-  [0, 14, 26], [15, 10, 17], [26, 16, 34], [43, 12, 22], [56, 18, 30], [75, 13, 20],
+  [0, 14, 34], [15, 10, 23], [26, 16, 44], [43, 12, 29], [56, 18, 39], [75, 13, 26],
 ];
 /** x, y within the sky box */
 const STARS: [number, number, number][] = [
@@ -34,8 +34,11 @@ export function StudioWindow() {
       <Defs>
         <LinearGradient id="studioSky" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={C.bgTop} />
-          <Stop offset="0.55" stopColor={C.accent} stopOpacity={0.55} />
-          <Stop offset="1" stopColor={C.soft} stopOpacity={0.75} />
+          <Stop offset="0.5" stopColor={C.accent} stopOpacity={0.6} />
+          {/* the reference warms toward the horizon; the palette's one warm
+              colour does it at low strength without becoming a sunset */}
+          <Stop offset="0.86" stopColor={C.highlight} stopOpacity={0.34} />
+          <Stop offset="1" stopColor={C.highlight} stopOpacity={0.16} />
         </LinearGradient>
       </Defs>
 

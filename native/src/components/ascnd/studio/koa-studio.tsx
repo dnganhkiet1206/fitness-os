@@ -1,6 +1,7 @@
 import Svg, { Ellipse } from 'react-native-svg';
 
 import { Background } from '@/components/ascnd/studio/background';
+import { Floor } from '@/components/ascnd/studio/floor';
 import { NeonSign } from '@/components/ascnd/studio/neon-sign';
 import { C, STAGE_MARK, STUDIO_H, STUDIO_W } from '@/components/ascnd/studio/palette';
 import { Plant } from '@/components/ascnd/studio/plant';
@@ -54,12 +55,13 @@ export function KoaStudio({
       {/* the lamp lights the room before anything stands in it */}
       <Spotlight />
 
-      {/* floor line: everything below this reads as standing on the ground */}
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 30} rx={215} ry={62} fill={C.shadow} opacity={0.28} />
+      {/* the ground, and the light on it */}
+      <Floor />
+      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 6} rx={215} ry={62} fill={C.shadow} opacity={0.2} />
 
       <Shelf />
-      <Plant x={296} y={392} s={1.25} />
-      <YogaBall x={352} y={398} r={28} />
+      <Plant x={316} y={397} s={1.81} kind="spray" />
+      <YogaBall x={352} y={400} r={30} />
 
       <Platform />
     </Svg>
