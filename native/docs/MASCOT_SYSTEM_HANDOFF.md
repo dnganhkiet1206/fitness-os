@@ -94,13 +94,15 @@ The emotion side:
 - **`/koa-sheet`** — the DEV review screen: every expression, every pose,
   all 70 items, tap to wear. Reached from the DEV bar in the Mascot Room;
   nothing links to it in a production build. Only the hero animates.
-- **The Stage — Koa Studio.** `components/ascnd/studio/` is the room: a
-  static SVG scene of thirteen components built to the user's "Koa Studio"
-  brief and held to their design screenshot by
+- **The Stage — Koa Studio.** `components/ascnd/studio/` is the room: an
+  SVG scene built to the user's "Koa Studio" brief and held to their design
+  screenshot by
   `tools/koa-studio/compare.mjs` (every landmark within 4pt).
   `stage-renderer.tsx` is now only what the scene is not — where the
-  character stands, the poke, the fade into the page. The buddy is placed
-  from `STAGE_MARK`, the same number the scene composes itself around.
+  character stands, the poke, the fade into the page, and the live versions
+  of the room's moving parts. The buddy is placed from `STAGE_MARK`, the
+  same number the scene composes itself around. It was a still scene until
+  2026-07-28; it now drifts, breathes and glows — see rule 10.
 - **Gamification** (context, do not redo): rank ladder, Today's Energy
   ring, Rank Journey, coin-burst and rank-up confetti, stage lighting off
   rank and energy.
@@ -175,6 +177,16 @@ The emotion side:
    user's phone. Gate loops on screen focus and app state, and prefer one
    clock over many.
 
+   **The studio is no longer a static scene.** That rule was lifted by the
+   user on 2026-07-28: the room may move, and it does — drifting motes, a
+   breathing beam, a stage glow. Do not put the old rule back, and do not
+   remove those on the grounds that the room should be still. What survives
+   is this rule, which the room's two clocks obey: one shared value each,
+   derived on the UI thread into a group `matrix` or `opacity`, both gated
+   on screen focus by `StageRenderer`, and periods (26s and 7.3s) chosen so
+   they do not fall into step. `components/ascnd/studio/README.md` carries
+   the detail.
+
 **Working rules**
 
 11. `cd native && npx tsc --noEmit` before every commit (ignore the
@@ -182,6 +194,15 @@ The emotion side:
 12. Develop on `claude/ios-fitness-rebuild-omgulr`. It is now the only
     working branch — see "The repository" below. Do not merge `main` into
     it.
+
+    **More than one agent works this branch.** Fetch before starting and
+    rebase rather than force-push: a session pushed three studio commits
+    mid-flight on 2026-07-28, and rebasing onto them was the whole of the
+    fix. Two of those revised work from this side with better measurements,
+    which is the point of the arrangement — but it also means **do not
+    delete or rewrite someone else's work without asking the user first.**
+    Where two edits landed on one comment block the result was unreadable,
+    so read what you are merging into rather than assuming it is yours.
 13. Commit trailer: `Co-Authored-By:` and the `Claude-Session:` line.
     Never put the model id in a commit, a PR or a code comment.
 

@@ -108,3 +108,20 @@ export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; 
     </>
   );
 }
+
+/**
+ * The glow the stage gives back, as geometry and a resting strength.
+ *
+ * Exported rather than inlined so `light-drift.tsx` can breathe it without
+ * restating where it sits — the same split as `Cones` and `Lamp`. The glow
+ * belongs to the scene, so a still of the room has it; only the breathing is
+ * animated.
+ */
+export const STAGE_GLOW = { cx: CX, cy: CY - 2, rx: 124, ry: 26 };
+
+export const stageGlowOpacity = (energy = 0.5) =>
+  0.06 + Math.max(0, Math.min(1, energy)) * 0.05;
+
+export function StageGlow({ glow = C.highlight, energy = 0.5 }: { glow?: string; energy?: number }) {
+  return <Ellipse {...STAGE_GLOW} fill={glow} opacity={stageGlowOpacity(energy)} />;
+}

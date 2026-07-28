@@ -87,12 +87,40 @@ is wrong.
 | Depth from scale, overlap and brightness only | no perspective transform anywhere |
 | Every object is its own component | one file each, placed by `(x, y)` |
 | The scene imports no Reanimated | `preview.mjs` bundles it with esbuild and would fail |
+| ~~The scene never moves~~ | **lifted by the user, 2026-07-28** — see below |
 
-Current cost: **190 shapes, ~20KB of SVG**. Everything but the motes is
-static — the scene draws once and then costs nothing per frame, which is
-what lets it sit under a character that does animate, and the motes are
-three group matrices off one shared value. `preview.mjs` prints both numbers
+Current cost: **191 shapes, ~20KB of SVG**. `preview.mjs` prints both numbers
 on every run; if they have moved, this line is what is stale.
+
+## The room moves now
+
+**"The studio is a static scene" was a rule here until 2026-07-28, when the
+user lifted it.** The room may move. Do not restore the old rule, and do not
+take the motes, the breathing beam or the stage glow out on the grounds that
+the scene should be still — ask first.
+
+What has *not* changed is the reason the rule existed. This sits under a
+character running its own 30fps clock, on a phone. So every moving part
+obeys the same three constraints:
+
+- **One clock each, and only two in the room** — `motes-drift.tsx` at 26s and
+  `light-drift.tsx` at 7.3s. The periods are deliberately unrelated so the
+  two never fall into step and start reading as a single pulse.
+- **Derived on the UI thread**, through `useAnimatedProps` into a group
+  `matrix` or `opacity`. Nothing crosses to JS per frame.
+- **Gated on screen focus.** `StageRenderer` passes the live versions only
+  while the screen is focused, so the clocks stop with the screen rather than
+  running behind it.
+
+The moving parts are passed *into* `KoaStudio` as nodes rather than imported
+by it — `motes`, `light`, `stageGlow` — and it draws a static original for
+each when they are absent. That is the boundary the Reanimated rule above
+needs, and it is also what lets `preview.mjs` render a still of the room.
+
+The lamp hangs 12 units lower than the design's, at the user's direction, and
+the beam's gradient reaches 0.62 rather than 0.58 for the same reason. **The
+landmark table's `lamp mouth` row is knowingly out of date because of it** —
+that is a deliberate change, not drift to be corrected.
 
 ## Held to the design, measured
 

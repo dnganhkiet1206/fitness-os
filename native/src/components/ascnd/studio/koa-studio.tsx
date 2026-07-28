@@ -7,7 +7,7 @@ import { NeonSign } from '@/components/ascnd/studio/neon-sign';
 import { Motes } from '@/components/ascnd/studio/motes';
 import { C, STAGE_MARK, STUDIO_H, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
 import { Plant } from '@/components/ascnd/studio/plant';
-import { Platform } from '@/components/ascnd/studio/platform';
+import { Platform, StageGlow } from '@/components/ascnd/studio/platform';
 import { Shelf } from '@/components/ascnd/studio/shelf';
 import { Spotlight } from '@/components/ascnd/studio/spotlight';
 import { StreakCard } from '@/components/ascnd/studio/streak-card';
@@ -38,6 +38,8 @@ export function KoaStudio({
   skin = 'default',
   energy = 0.5,
   motes,
+  light,
+  stageGlow,
 }: {
   width: number;
   height: number;
@@ -60,6 +62,14 @@ export function KoaStudio({
    * the scene should show.
    */
   motes?: ReactNode;
+  /**
+   * The lamp with its beam breathing — `<LiveLight />` from
+   * `light-drift.tsx`. Omit it and the static `Spotlight` is drawn, which is
+   * what `preview.mjs` gets. Same boundary as `motes`, same reason.
+   */
+  light?: ReactNode;
+  /** the stage's glow, breathing — `<LiveStageGlow />`; the still one otherwise */
+  stageGlow?: ReactNode;
 }) {
   const s = STUDIO_SKINS[skin] ?? STUDIO_SKINS.default;
   return (
@@ -84,12 +94,13 @@ export function KoaStudio({
           out at 145 and it read as a dark plaque rather than a lit sign */}
       <Vignette />
       <NeonSign />
-      <Spotlight />
+      {light ?? <Spotlight />}
       {/* the air, after the vignette that would otherwise paint it out */}
       {motes ?? <Motes />}
       <FloorLight glow={s.glow} energy={energy} />
 
       <Platform glow={s.glow} energy={energy} />
+      {stageGlow ?? <StageGlow glow={s.glow} energy={energy} />}
     </Svg>
   );
 }

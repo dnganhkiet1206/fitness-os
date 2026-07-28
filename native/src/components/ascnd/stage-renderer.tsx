@@ -15,8 +15,9 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
 import { KoaStudio } from '@/components/ascnd/studio/koa-studio';
+import { LiveLight, LiveStageGlow } from '@/components/ascnd/studio/light-drift';
 import { DriftingMotes } from '@/components/ascnd/studio/motes-drift';
-import { SCENE_BOTTOM, STAGE_MARK, STUDIO_W } from '@/components/ascnd/studio/palette';
+import { SCENE_BOTTOM, STAGE_MARK, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
 import { triggerMascotAction, useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
@@ -159,6 +160,8 @@ export function StageRenderer({
           energy={energy}
           streak={streak}
           motes={animated ? <DriftingMotes /> : undefined}
+          light={animated ? <LiveLight /> : undefined}
+          stageGlow={animated ? <LiveStageGlow glow={STUDIO_SKINS[themeKey ?? 'default']?.glow} energy={energy} /> : undefined}
         />
       </View>
 
