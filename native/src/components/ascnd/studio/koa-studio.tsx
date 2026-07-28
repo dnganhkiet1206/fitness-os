@@ -1,6 +1,6 @@
 import Svg, { Ellipse } from 'react-native-svg';
 
-import { Background } from '@/components/ascnd/studio/background';
+import { Background, Motes } from '@/components/ascnd/studio/background';
 import { FloorLight, FloorPlane, Vignette } from '@/components/ascnd/studio/floor';
 import { NeonSign } from '@/components/ascnd/studio/neon-sign';
 import { C, STAGE_MARK, STUDIO_H, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
@@ -67,6 +67,8 @@ export function KoaStudio({
       {/* everything above falls into shadow; everything below is the light */}
       <Vignette />
       <Spotlight />
+      {/* the air, after the vignette that would otherwise paint it out */}
+      <Motes />
       <FloorLight glow={s.glow} energy={energy} />
 
       <Platform glow={s.glow} energy={energy} />

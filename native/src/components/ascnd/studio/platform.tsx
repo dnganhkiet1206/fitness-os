@@ -45,11 +45,22 @@ export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; 
             L ${CX + RX} ${CY} A ${RX} ${RY} 0 0 1 ${CX - RX} ${CY} Z`}
         fill={C.primary}
       />
+      {/* The side takes a second pass of the contact shadow. The top face is
+          lit and the side is not, and that difference is the only thing
+          making this read as a solid rather than a disc lying on the floor —
+          so it is worth widening. The top ellipse is drawn after, so this
+          only darkens what stays visible. */}
+      <Path
+        d={`M ${CX - RX} ${CY} L ${CX - RX} ${CY + DEPTH}
+            A ${RX} ${RY} 0 0 0 ${CX + RX} ${CY + DEPTH}
+            L ${CX + RX} ${CY} A ${RX} ${RY} 0 0 1 ${CX - RX} ${CY} Z`}
+        fill={C.shadow}
+      />
       {/* The top face is a lit surface and the floor is not — that is the
           whole reason the podium reads as solid. Left at the floor's own
           tone it came out a hoop with the ground showing through. */}
       <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={C.secondary} />
-      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={C.white} opacity={0.05} />
+      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={C.white} opacity={0.11} />
       {/* a line, not a second disc: filling the middle back in with the
           floor's own colour left the podium reading as a hoop */}
       <Ellipse

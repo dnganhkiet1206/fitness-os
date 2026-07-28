@@ -87,7 +87,7 @@ is wrong.
 | Depth from scale, overlap and brightness only | no perspective transform anywhere |
 | Every object is its own component | one file each, placed by `(x, y)` |
 
-Current cost: **154 shapes, ~16KB of SVG**, all static — it draws once and
+Current cost: **172 shapes, ~18KB of SVG**, all static — it draws once and
 then costs nothing per frame, which is what lets it sit under a character
 that does animate. `preview.mjs` prints both numbers on every run; if they
 have moved, this line is what is stale.
@@ -157,6 +157,7 @@ This is what the room is, more than its coordinates are:
 | … halfway down | −14.9 | −10 |
 | props against the wall | 47 · 56 · 52 | 59 · 70 · 54 |
 | stage centre | 39.3 | 40.3 |
+| podium face ÷ its side | — | 3.96 (was 2.80) |
 | vignette (corners ÷ centre) | 0.61 | 0.71 |
 
 The first three rows were re-measured on 2026-07-28 with a stand-in
@@ -202,6 +203,27 @@ Two places, both left on the brief's side on purpose:
 
 Where a value looks flat next to the reference, that is the brief winning on
 purpose.
+
+## The air, and the podium's face
+
+Seventeen neon motes hang in the room at 3–5%, in `background.tsx` but drawn
+**after** `Vignette` and `Spotlight` rather than with the white dust: the
+vignette reaches full `bgTop` at the corners, so anything in `Background` is
+painted out exactly where these are meant to read.
+
+At that opacity a mote only reads where it is brighter than what is behind
+it. Two of the first placements failed: a warm one inside the beam's bright
+upper cone measured 7 luminance units **darker** than the light around it —
+a speck of dirt, not dust — and one on the window frame moved the pixel by
+1.5. They go on wall and floor now, never on a lit prop and never inside the
+beam above y≈210, and each is measured at +3.5 to +7.1 against a median of
+its surroundings.
+
+The podium's top face was lifted from 0.05 to 0.11 white and its side takes
+a second pass of the contact shadow, so face ÷ side went 2.80 → 3.96. That
+difference is the only thing making the podium read as a solid rather than a
+disc lying on the floor, which is why it is worth measuring rather than
+eyeballing.
 
 ## Layout
 
