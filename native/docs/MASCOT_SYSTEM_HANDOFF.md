@@ -3,11 +3,15 @@
 **Read this first if you are continuing the mascot work.** It is the goal,
 the shape of the thing as it actually is, the rules, and what is open.
 
-This document was rewritten on 2026-07-27. Four earlier directions —
-pre-rendered AI art, Lottie, a rigged Rive character, and a real-time 3D
-GLB — are gone, along with the rules that served them. Do not mine the git
-history for those rules; they were written for a system that no longer
-exists.
+This document was rewritten on 2026-07-27 and updated on 2026-07-28. Four
+earlier directions — pre-rendered AI art, Lottie, a rigged Rive character,
+and a real-time 3D GLB — are gone, along with the rules that served them.
+Do not mine the git history for those rules; they were written for a system
+that no longer exists.
+
+If you are picking this up cold, read "The repository" and the 2026-07-28
+note after §5 before running any git command — the branch layout changed,
+and one claim this document used to make about it was false.
 
 ---
 
@@ -121,6 +125,7 @@ The emotion side:
 | The photoreal gym room (`room-renderer.tsx`, `config/room/`) | Zero call sites — `StageRenderer` replaced it, and photoreal props clash with a flat-vector character. The art in `assets/room/` is kept for the user. |
 | The old themed stage (the hand-drawn wall / spotlight / podium / props in `stage-renderer.tsx`, `config/stage/`, `lib/stage-layout.ts`, `docs/HERO_STAGE_LAYOUT_SPEC.md`) | Replaced by Koa Studio. **Read the note below before reviving any of it.** |
 | `koa-parts.ts`, `koa-anim.tsx` | The hand-drawn Koa, superseded by the import. |
+| The imported Mascot Room backdrop (`koa/koa-room.tsx`, `koa/room-scene.ts`, `--room` in `import-koa.py`, the room half of `verify.mjs`) | Never mounted by anything. Koa Studio is the stage. See the 2026-07-28 note below for how that was established. |
 
 ---
 
@@ -174,10 +179,9 @@ The emotion side:
 
 11. `cd native && npx tsc --noEmit` before every commit (ignore the
     pre-existing TS5101 baseUrl warning).
-12. Develop on `claude/ios-fitness-rebuild-omgulr`; ff-merge into
-    `claude/ios-fitness-rebuild-fiyl9k` and push both. `main` and the
-    `devin/*` branches are a **different project** (a Vite/Capacitor web
-    app) with unrelated history — do not merge across.
+12. Develop on `claude/ios-fitness-rebuild-omgulr`. It is now the only
+    working branch — see "The repository" below. Do not merge `main` into
+    it.
 13. Commit trailer: `Co-Authored-By:` and the `Claude-Session:` line.
     Never put the model id in a commit, a PR or a code comment.
 
@@ -206,6 +210,87 @@ the studio's composition, not the old one's.
 The three stage skins survived: `STUDIO_SKINS` in `studio/palette.ts`
 shifts the wall and the warm colour, so `stage_night` / `stage_sunset` /
 `stage_champion` still change the room.
+
+---
+
+### The repository
+
+Two projects share this repo, and only one is alive.
+
+`native/` is the app: Expo, and where all work happens. The repo **root**
+holds the old Vite/Capacitor web app — `index.html`, `vite.config.ts`,
+`src/`, `ios/App`, `tailwind.config.ts` and the rest. The user has ported
+everything to native and no longer develops the web app. It is kept on
+purpose, as a reference to compare against while the port settles, and
+will be deleted in one deliberate pass before this branch merges to `main`.
+
+Two traps follow from that, both of which have already cost time:
+
+- **`src/` at the root is deleted on this branch, and that is correct.**
+  Commit `75b7208` removed all 190 files of it. Its message only describes
+  the studio components it added, so the deletion reads as an accident —
+  `index.html` still loads `/src/main.tsx`, `package.json` still runs vite.
+  It is not an accident. Do not restore it. If the root web app looks
+  broken, that is because it is dead, not because something needs fixing.
+- **`main` is the old web app.** Its commits after the split are Lovable
+  edits to `src/pages/MascotLab.tsx`, `src/App.tsx` and the Vite tsconfigs.
+  Merging `main` into this branch resurrects `src/`. Don't.
+
+### 2026-07-28 — branch consolidation, and the dead-room sweep
+
+**Branches.** Everything now lives on `claude/ios-fitness-rebuild-omgulr`.
+`claude/native-logging-input-design-1ziiu3` was merged into it (its eight
+Koa commits, so its history survives its deletion) and these five are
+redundant, each containing zero commits that omgulr lacks:
+`claude/ios-fitness-rebuild-fiyl9k` (was byte-identical to omgulr),
+`claude/native-logging-input-design-1ziiu3`, and the three `devin/*`
+branches. They were slated for deletion; the environment's git proxy
+refuses ref deletions, so the user deletes them by hand. If they are still
+on the remote, that is why — they are not live work.
+
+That merge conflicted add/add on `koa-figure.tsx`, because the two branches
+had grown separate mascots from one parent. **The import-based figure won**
+and is what rule 1 protects; the other branch's hand-drawn version and its
+`koa-parts.ts` were dropped, which is the second time `koa-parts.ts` has
+been deleted for the same reason. If it reappears, it is a merge dragging
+it back, not new work.
+
+**An earlier version of this document claimed `main` and `devin/*` were "a
+different project with unrelated history". That was wrong**, and the way it
+was wrong is worth knowing: the working copy was a **shallow clone**, so
+`git merge-base` found no common ancestor and every branch looked orphaned,
+with omgulr appearing to hold 50 commits instead of its real 569. Run
+`git rev-parse --is-shallow-repository` before drawing any conclusion from
+history, and `git fetch --unshallow` first if it says true. The devin
+branches are in fact fully contained in omgulr.
+
+**The dead room.** `koa/koa-room.tsx` and its generated `koa/room-scene.ts`
+drew a room imported from the design export's Mascot Room page. The stage
+draws `KoaStudio` instead, so they were removed. Three independent checks
+established they were dead, and the method is reusable for the rest of the
+sweep:
+
+1. `git log -S KoaRoom` over the whole repository returns exactly one
+   commit — `249667f`, the one that added it. The name is never referenced
+   again, so no screen ever mounted it.
+2. Walking imports from all 38 `src/app` routes (expo-router is
+   file-based, so every file there is an entry point) reaches 142 files.
+   `koa-room.tsx` was not among them, and `room-scene.ts` was imported by
+   `koa-room.tsx` alone. After the deletion the reachable set was still the
+   same 142, which is the check that proves nothing live lost an import.
+3. `249667f` landed 2026-07-27; the studio replacing it landed the next
+   day, and `stage-renderer.tsx` renders `KoaStudio`.
+
+Deleting the two files alone would have broken the tooling, which is the
+part worth copying: `verify.mjs` built `room-scene.ts` through esbuild and
+imported the result, so it would have failed on the missing file. The
+`--room` mode came out of `import-koa.py` in the same change, along with
+`VIEWBOX`, which only that mode read. `opsMat` stayed — the character check
+still uses it; only `roomNode` and `matrixTransformOf` went with the room.
+
+**`vector-mascot.tsx` was examined and kept.** It looks like the same
+vintage of dead code and is not: `mascot-figure.tsx` falls back to it for
+every character that is not Koa. Rule 7, not an oversight.
 
 ---
 
@@ -240,6 +325,18 @@ act on these; raise them when a design pass lands.
 5. **Sheet §1 turnaround.** The sheet shows side and back views; no path
    data exists for them in the export yet.
 6. **`coat` needs a weather source** — location + a free weather API.
+7. **Fifteen files outside the mascot system are unreachable from any
+   route**, mostly Expo starter-template leftovers: `game-icons.tsx`,
+   `readiness-ring.tsx`, `themed-text.tsx`, `themed-view.tsx`,
+   `ui/collapsible.tsx`, `hint-row.tsx`, `external-link.tsx`,
+   `web-badge.tsx`, `use-theme.ts` and the `animated-icon` / `app-tabs` /
+   `use-color-scheme` families. The user has cleared removing superseded
+   code **when it can be proved dead**, so use the three checks above
+   before touching any of them — and note one caveat the import walk gets
+   wrong: `.web.tsx` / `.web.ts` variants are chosen by Metro's platform
+   resolution, and `css-modules.d.ts` is ambient, so none of those are
+   reached by an import even when they are live. They need checking by
+   hand, not by the graph.
 
 ---
 
