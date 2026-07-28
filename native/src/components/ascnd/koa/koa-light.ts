@@ -103,6 +103,63 @@ const STOPS = [0, 0.05, 0.15, 0.35, 0.65, 1];
 const SHADOW_GREY = '#AEB6BF';
 const SHADOW = '#120C18';
 
+/* ── the rim ──────────────────────────────────────────────────────────── */
+
+/**
+ * The line the lamp draws along the top of a form.
+ *
+ * Not a glow and not an outline: a glow spreads, an outline goes all the way
+ * round, and a rim light is the top contour only — the part of the surface
+ * turned toward the lamp. So it is a stroke whose paint fades out over the
+ * first sixth of the shape's own height, in `objectBoundingBox` units, which
+ * is what lets one gradient serve every shape whatever its size or position.
+ * On a round form that first sixth is the arc within about 43° of the apex.
+ *
+ * It is a second stroke-only pass of the same shape rather than a replacement
+ * for the shape's own stroke, so the artwork's hairline outline survives — and
+ * because it sits beside the shape inside the same group, it inherits every
+ * transform and every animation for free.
+ *
+ * `RIM_WIDTH` is in viewBox units on a 240-wide board that draws at 128, so
+ * 1.8 is a little under a point on screen. Wider stops being a highlight and
+ * starts being a stroke.
+ */
+export const RIM_GRADIENT = 'koaRim';
+export const RIM_WIDTH = 1.6;
+/** the lamp is #FFC24D; this is that colour coming off a near-white surface */
+export const RIM_COLOUR = '#FFE9B8';
+export const RIM_STOPS: [number, number][] = [
+  [0, 1],
+  [0.07, 0.45],
+  [0.16, 0],
+  [1, 0],
+];
+
+/**
+ * Which shapes take one.
+ *
+ * By name, not by size, because a rim only means anything on a *silhouette*
+ * edge. `belly` is as large as anything here and sits inside the torso, so a
+ * rim along its top would be a bright line across the middle of the body; the
+ * inner ears are the same. Nor can containment decide it — the ear's box sits
+ * inside the head's and the ear is very much a silhouette.
+ *
+ * The list covers every pose: `torso_front_run` is the running body, and the
+ * arms only exist as separate shapes while the character is standing.
+ */
+const RIM_IDS = new Set([
+  'head_front',
+  'ear_left',
+  'ear_right',
+  'torso_front',
+  'torso_front_run',
+  'arm_left_upper',
+  'arm_right_upper',
+]);
+
+/** true when this element should carry a rim light */
+export const hasRim = (n: Node): boolean => !!n.id && RIM_IDS.has(n.id);
+
 /* ── coordinate systems ───────────────────────────────────────────────── */
 
 type M = [number, number, number, number, number, number];

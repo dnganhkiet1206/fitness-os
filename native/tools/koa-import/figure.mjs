@@ -23,7 +23,7 @@ writeFileSync(
   entry,
   `export { NODES, KEYFRAMES } from '@/components/ascnd/koa/koa-scene';
    export { koaFlags } from '@/components/ascnd/koa/koa-flags';
-   export { litProps, shadeAt, rampsFor } from '@/components/ascnd/koa/koa-light';
+   export { litProps, shadeAt, rampsFor, hasRim, RIM_GRADIENT, RIM_WIDTH, RIM_COLOUR, RIM_STOPS } from '@/components/ascnd/koa/koa-light';
 `,
 );
 execFileSync(
@@ -31,7 +31,8 @@ execFileSync(
   ['esbuild', entry, '--bundle', '--format=esm', '--tsconfig=tsconfig.json', `--outfile=${path.join(dir, 'koa.js')}`],
   { stdio: 'inherit' },
 );
-const { NODES, koaFlags, litProps, shadeAt, rampsFor } = await import(pathToFileURL(path.join(dir, 'koa.js')));
+const K = await import(pathToFileURL(path.join(dir, 'koa.js')));
+const { NODES, koaFlags, litProps, shadeAt, rampsFor, hasRim, RIM_GRADIENT, RIM_WIDTH, RIM_COLOUR, RIM_STOPS } = K;
 
 /* ── the same static render `verify.mjs` uses, minus the animation ────── */
 
@@ -67,9 +68,16 @@ function render(n, flags, lit) {
   if (n.t === 'defs') return `<defs>${kids}</defs>`;
   if (n.t === 'clipPath') return `<clipPath id="${n.id}">${kids}</clipPath>`;
   const a = lit ? litProps(n, { ...(n.a || {}) }) : n.a || {};
-  const attr = Object.entries(a).map(([k, v]) => `${k}="${v}"`).join(' ');
+  const show = (o) => Object.entries(o).map(([k, v]) => `${k}="${v}"`).join(' ');
+  const attr = show(a);
   const isShape = n.t !== 'g';
-  const body = isShape ? `<${n.t} ${attr}/>` : kids;
+  // override, do not append: a repeated attribute keeps its *first* value in
+  // SVG, so appending `fill="none"` to a tag that already has a fill silently
+  // draws the shape again instead of its rim
+  const rim = lit && hasRim(n)
+    ? `<${n.t} ${show({ ...a, fill: 'none', stroke: `url(#${RIM_GRADIENT})`, 'stroke-width': RIM_WIDTH })}/>`
+    : '';
+  const body = isShape ? `<${n.t} ${attr}/>${rim}` : kids;
   const m = opsMat([...(n.tr ? [['t', n.tr[0], n.tr[1]]] : []), ...(n.tf || [])],
                    n.o ? n.o[0] : 0, n.o ? n.o[1] : 0);
   const g = isShape ? '' : attr;
@@ -82,7 +90,10 @@ const RAMPS = rampsFor(koaFlags('happy', 'idle', undefined));
 const defs =
   '<defs>' + RAMPS.map((r) =>
     `<linearGradient id="${r.id}" gradientUnits="userSpaceOnUse" x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}">` +
-    r.stops.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('') + '</linearGradient>').join('') + '</defs>';
+    r.stops.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('') + '</linearGradient>').join('') +
+  `<linearGradient id="${RIM_GRADIENT}" x1="0" y1="0" x2="0" y2="1">` +
+  RIM_STOPS.map(([o, a]) => `<stop offset="${o}" stop-color="${RIM_COLOUR}" stop-opacity="${a}"/>`).join('') +
+  '</linearGradient></defs>';
 const svg = (lit) =>
   `<svg viewBox="0 0 240 300" width="240" height="300" xmlns="http://www.w3.org/2000/svg">` +
   (lit ? defs : '') +
@@ -115,5 +126,47 @@ const page = await browser.newPage({ viewport: { width: 570, height: 360 }, devi
 await page.goto(pathToFileURL(html).href);
 await page.waitForTimeout(200);
 await page.screenshot({ path: OUT });
+
+/**
+ * Where the lamp *adds* light — the rim, found by difference rather than by
+ * sampling points, because a 1.6-unit line is easy to miss with a probe and
+ * easy to believe you have drawn when you have not. An earlier run reported
+ * nothing on the ears and the head: the tool was appending `fill="none"` to a
+ * tag that already had a fill, and a repeated attribute keeps its *first*
+ * value in SVG, so every rim was a second copy of its own shape.
+ */
+const bands = await page.evaluate(() => {
+  const svgs = [...document.querySelectorAll('svg')];
+  const draw = (svg) => new Promise((res) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = 240; c.height = 300;
+      const g = c.getContext('2d');
+      g.drawImage(img, 0, 0);
+      res(g.getImageData(0, 0, 240, 300).data);
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg.outerHTML)));
+  });
+  return Promise.all(svgs.map(draw)).then(([a, b]) => {
+    const L = (d, i) => 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+    const rows = {};
+    let onBody = 0;
+    let offBody = 0;
+    for (let y = 0; y < 300; y++) for (let x = 0; x < 240; x++) {
+      const i = (y * 240 + x) * 4;
+      const av = L(a, i), d = L(b, i) - av;
+      if (d <= 6) continue;
+      const k = Math.floor(y / 10) * 10;
+      rows[k] = (rows[k] || 0) + 1;
+      if (av > 120) onBody = Math.max(onBody, d); else offBody = Math.max(offBody, d);
+    }
+    return { rows, onBody, offBody };
+  });
+});
+console.log(`\nviền sáng: đỉnh +${bands.onBody.toFixed(0)} trên thân, +${bands.offBody.toFixed(0)} ngoài nền`);
+for (const [y, n] of Object.entries(bands.rows).sort((p, q) => p[0] - q[0])) {
+  if (n > 20) console.log(`  y${String(y).padStart(3)} ${'#'.repeat(Math.min(60, Math.round(n / 6)))}`);
+}
 await browser.close();
 console.log(`\n${OUT}`);

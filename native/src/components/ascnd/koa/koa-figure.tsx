@@ -16,7 +16,15 @@ import {
   type Worn,
 } from '@/components/ascnd/koa/koa-flags';
 import { CLOCK_RESET, stepClock } from '@/components/ascnd/koa/figure-clock';
-import { litProps, rampsFor } from '@/components/ascnd/koa/koa-light';
+import {
+  hasRim,
+  litProps,
+  rampsFor,
+  RIM_COLOUR,
+  RIM_GRADIENT,
+  RIM_STOPS,
+  RIM_WIDTH,
+} from '@/components/ascnd/koa/koa-light';
 import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
   KEYFRAMES,
@@ -368,7 +376,14 @@ function RenderNode({
   const body = isShape ? (
     (() => {
       const Shape = SHAPES[n.t];
-      return <Shape {...own} />;
+      if (!hasRim(n)) return <Shape {...own} />;
+      // the rim is the same shape again, stroke only — see `koa-light.ts`
+      return (
+        <>
+          <Shape {...own} />
+          <Shape {...own} fill="none" stroke={`url(#${RIM_GRADIENT})`} strokeWidth={RIM_WIDTH} />
+        </>
+      );
     })()
   ) : n.t === 'g' ? (
     kids
@@ -523,6 +538,11 @@ export function KoaFigure({
               ))}
             </LinearGradient>
           ))}
+          <LinearGradient id={RIM_GRADIENT} x1="0" y1="0" x2="0" y2="1">
+            {RIM_STOPS.map(([o, a]) => (
+              <Stop key={o} offset={o} stopColor={RIM_COLOUR} stopOpacity={a} />
+            ))}
+          </LinearGradient>
         </Defs>
         {tree}
       </Svg>

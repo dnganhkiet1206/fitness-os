@@ -83,6 +83,38 @@ node tools/koa-import/patches.mjs            # exits non-zero if one shows
 That checks it across all sixty pose × expression combinations using the
 browser's own bounding boxes, so it does not rest on this module's arithmetic.
 
+**The rim light is a second stroke, not a glow.** A glow spreads and an
+outline goes all the way round; a rim is the top contour only. So each of the
+seven silhouette shapes — head, both ears, the torso, both upper arms — is
+drawn a second time, stroke only, in a gradient that fades out over the first
+sixth of that shape's *own* height. `objectBoundingBox` units are what let one
+gradient serve every shape whatever its size or where it sits; on a round form
+that first sixth is the arc within about 43° of the apex. The copy sits beside
+the shape inside the same group, so it inherits every transform and animation
+for free.
+
+It goes by name and not by size, because a rim only means anything on a
+silhouette edge. `belly` is as large as anything here and sits inside the
+torso, so a rim along its top would be a bright line across the middle of the
+body. Containment cannot decide it either — the ear's box is inside the head's
+and the ear is very much a silhouette.
+
+`figure.mjs` finds it by differencing the two renders rather than by sampling
+points, and prints where the light lands and how much it adds:
+
+```
+viền sáng: đỉnh +105 trên thân, +255 ngoài nền
+  y 20 ####...   y 30 ####...   y 40 ####...   y 50 ##..   y170 #
+```
+
+A 1.6-unit line is easy to miss with a probe and easy to believe you have
+drawn when you have not. The first run of this reported nothing on the ears or
+the head, and the cause was in the tool: it appended `fill="none"` to a tag
+that already carried a fill, and **a repeated attribute keeps its first value
+in SVG**, so every rim was rendering as a second copy of its own shape. React
+does the opposite — later props win — so the component was right and the
+preview was wrong, which is the second time that has happened here.
+
 **The shadow is not a light grey.** `#AEB6BF` at low opacity is what the export
 uses for the contact shadow, and it was drawn for a white page — light grey
 over white darkens. On the podium's dark plum it *lightens*: measured, a smudge
