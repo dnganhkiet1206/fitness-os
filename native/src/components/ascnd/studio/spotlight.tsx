@@ -54,11 +54,35 @@ export function Spotlight() {
   return (
     <>
       <Defs>
+        {/* The beam used to read as several colours stacked up, and the cause
+            was not the stops but the strength. A warm at low alpha over a
+            blue-purple wall does not look like a faint warm — it sweeps
+            blue → purple → magenta as the alpha climbs, because the warm's
+            blue channel (77) is barely above the wall's while its red runs
+            away. The old cone never got strong enough to leave that sweep:
+            hue down the middle went 312 · 270 · 261 at y 110/140/170, so the
+            *bright* half of the beam was magenta and purple, with no part of
+            it reading gold.
+
+            So the top half is now bright enough to be its own colour — gold
+            at y 110/140/170 measures 25 · 32 · 24 — and the sweep is pushed
+            into the dim lower half where it is not read as colour. The crown
+            is white rather than highlight because the design's light is
+            bright *and* only slightly warm: pure highlight at this strength
+            measured R−B +24 against the design's +8.1.
+
+            Held to the design's own numbers (README, "The lighting,
+            measured"): luminance down the beam 61.1 · 50 · 34.1 · 33.3
+            against 61 · 49 · 36 · 31, warmth +12 at the shade against +8.1
+            and −10 halfway against −14.9. Re-measure before changing a stop;
+            the profile is what the room is, more than its coordinates are. */}
         <LinearGradient id="studioCone" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={C.highlight} stopOpacity={0.19} />
-          <Stop offset="0.28" stopColor={C.highlight} stopOpacity={0.075} />
-          <Stop offset="0.66" stopColor={C.white} stopOpacity={0.035} />
-          <Stop offset="1" stopColor={C.white} stopOpacity={0} />
+          <Stop offset="0" stopColor={C.white} stopOpacity={0.30} />
+          <Stop offset="0.14" stopColor={C.highlight} stopOpacity={0.24} />
+          <Stop offset="0.28" stopColor={C.highlight} stopOpacity={0.175} />
+          <Stop offset="0.45" stopColor={C.highlight} stopOpacity={0.082} />
+          <Stop offset="0.7" stopColor={C.highlight} stopOpacity={0.045} />
+          <Stop offset="1" stopColor={C.highlight} stopOpacity={0} />
         </LinearGradient>
       </Defs>
 

@@ -152,16 +152,33 @@ This is what the room is, more than its coordinates are:
 
 | | design | studio |
 |---|---|---|
-| beam down the middle | 61 · 49 · 36 · 31 | 54 · 45 · 41 · 41 |
-| warmth at the lamp (R−B) | +8.1 | +10.9 |
-| … halfway down | −14.9 | −3.8 |
+| beam down the middle | 61 · 49 · 36 · 31 | 61.1 · 50 · 34.1 · 33.3 |
+| warmth at the lamp (R−B) | +8.1 | +12 |
+| … halfway down | −14.9 | −10 |
 | props against the wall | 47 · 56 · 52 | 59 · 70 · 54 |
 | stage centre | 39.3 | 40.3 |
 | vignette (corners ÷ centre) | 0.61 | 0.71 |
 
+The first three rows were re-measured on 2026-07-28 with a stand-in
+sampler — median-of-3 down the beam at y 110/170/250/320 on a `preview.mjs`
+render — because `ref.png` is not in the repo and `light.mjs` cannot run
+without it. It agreed with the design column closely enough to tune
+against, but **re-confirm these three with `light.mjs`** the next time the
+screenshot is to hand. The bottom three rows are still light.mjs's.
+
 Three of those were the whole problem. The beam **did not fall off at all**
 (61 · 58 · 55) and was **cold** (−22 at the lamp, where the design is +8),
-so it read as a grey wedge rather than a lamp. And the props stood at
+so it read as a grey wedge rather than a lamp.
+
+The correction after that went too far the other way and left the cone too
+weak to have a colour of its own. A warm at low alpha over this wall does
+not read as a faint warm: it sweeps blue → purple → magenta as the alpha
+climbs, because `highlight`'s blue channel is barely above the wall's while
+its red runs away. Hue down the middle measured 312 · 270 · 261 at
+y 110/140/170 — the **bright** half of the beam was magenta and purple and
+none of it was gold, which is what "the light has several colours in it"
+looks like on a phone. It measures 25 · 32 · 24 there now, and the sweep
+sits in the dim lower half where it does not read as colour. And the props stood at
 **95–106 against a wall of 29–58** — twice the design's — so the room was
 flat and the character was no longer the brightest thing in it. `Vignette`
 in `floor.tsx` is what fixes the last one: it goes over the wall and
