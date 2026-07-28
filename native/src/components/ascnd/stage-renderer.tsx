@@ -15,8 +15,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
 import { KoaStudio } from '@/components/ascnd/studio/koa-studio';
-import { LiveLight, LiveStageGlow } from '@/components/ascnd/studio/light-drift';
-import { DriftingMotes } from '@/components/ascnd/studio/motes-drift';
+import { StudioLive } from '@/components/ascnd/studio/studio-live';
 import { SCENE_BOTTOM, STAGE_MARK, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
 import { triggerMascotAction, useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
@@ -159,10 +158,22 @@ export function StageRenderer({
           skin={themeKey}
           energy={energy}
           streak={streak}
-          motes={animated ? <DriftingMotes /> : undefined}
-          light={animated ? <LiveLight /> : undefined}
-          stageGlow={animated ? <LiveStageGlow glow={STUDIO_SKINS[themeKey ?? 'default']?.glow} energy={energy} /> : undefined}
+          live={animated}
         />
+        {/* The moving parts, on their own canvas directly over the studio.
+            Animating them inside it redrew all of its shapes every frame; see
+            studio-live.tsx. It has to be absolutely positioned — as a plain
+            sibling it lays out *below* the studio rather than on top of it. */}
+        {animated ? (
+          <View style={StyleSheet.absoluteFill}>
+            <StudioLive
+              width={sw}
+              height={H}
+              glow={STUDIO_SKINS[themeKey ?? 'default']?.glow}
+              energy={energy}
+            />
+          </View>
+        ) : null}
       </View>
 
       {/* the buddy, on the mark the scene is built around */}

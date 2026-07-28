@@ -52,7 +52,13 @@ const BEAM_SWING = 0.075;
 /** the stage glow breathes wider than the beam — it is the softer of the two */
 const GLOW_SWING = 0.22;
 
-function useLightClock(): SharedValue<number> {
+/**
+ * The one clock the light and the stage glow share.
+ *
+ * They used to take one each, which is two invalidation sources at 60fps for
+ * one visual idea. `studio-live.tsx` owns it now and hands it to both.
+ */
+export function useLightClock(): SharedValue<number> {
   const t = useSharedValue(0);
   useEffect(() => {
     t.value = 0;
@@ -73,8 +79,7 @@ function useLightClock(): SharedValue<number> {
  * would let the wall show through it, which is why `Lamp` is drawn outside
  * the animated group rather than inside it.
  */
-export function LiveLight() {
-  const t = useLightClock();
+export function LiveLight({ t }: { t: SharedValue<number> }) {
   const props = useAnimatedProps<{ opacity: number }>(() => {
     const a = 2 * Math.PI * t.value;
     return { opacity: 1 + BEAM_SWING * (Math.sin(a) + Math.sin(3 * a) / 3) };
@@ -99,8 +104,15 @@ export function LiveLight() {
  * it leaves the lamp, and a stage that swells in perfect lockstep with its
  * own lamp reads as one flat flicker rather than as a room.
  */
-export function LiveStageGlow({ glow = C.highlight, energy = 0.5 }: { glow?: string; energy?: number }) {
-  const t = useLightClock();
+export function LiveStageGlow({
+  t,
+  glow = C.highlight,
+  energy = 0.5,
+}: {
+  t: SharedValue<number>;
+  glow?: string;
+  energy?: number;
+}) {
   const base = stageGlowOpacity(energy);
   const props = useAnimatedProps<{ opacity: number }>(() => {
     const a = 2 * Math.PI * (t.value - 0.08);

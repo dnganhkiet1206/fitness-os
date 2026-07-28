@@ -89,7 +89,7 @@ is wrong.
 | The scene imports no Reanimated | `preview.mjs` bundles it with esbuild and would fail |
 | ~~The scene never moves~~ | **lifted by the user, 2026-07-28** — see below |
 
-Current cost: **191 shapes, ~20KB of SVG**. `preview.mjs` prints both numbers
+Current cost: **181 shapes, ~19KB of SVG**. `preview.mjs` prints both numbers
 on every run; if they have moved, this line is what is stale.
 
 ## The room moves now
@@ -104,18 +104,36 @@ character running its own 30fps clock, on a phone. So every moving part
 obeys the same three constraints:
 
 - **One clock each, and only two in the room** — `motes-drift.tsx` at 26s and
-  `light-drift.tsx` at 7.3s. The periods are deliberately unrelated so the
-  two never fall into step and start reading as a single pulse.
+  `light-drift.tsx` at 7.3s, the latter shared by the beam and the stage
+  glow. The periods are deliberately unrelated so the two never fall into
+  step and start reading as a single pulse.
+- **Nothing animates inside `KoaStudio`'s canvas.** `react-native-svg`
+  rasterises a whole `<Svg>` again whenever any child prop changes, so an
+  animated group in there redraws every shape in the room, every frame, over
+  full-canvas gradients, under a character already running its own 30fps
+  clock. That is exactly what the first version did and the Mascot Room went
+  visibly laggy. The moving parts live in `studio-live.tsx`, a second canvas
+  laid directly over the studio, where the same animations touch ~26 shapes
+  and the studio's own canvas goes back to never redrawing. **`StageRenderer`
+  must position that overlay absolutely** — as a plain sibling it lays out
+  below the studio instead of on top of it.
 - **Derived on the UI thread**, through `useAnimatedProps` into a group
   `matrix` or `opacity`. Nothing crosses to JS per frame.
 - **Gated on screen focus.** `StageRenderer` passes the live versions only
   while the screen is focused, so the clocks stop with the screen rather than
   running behind it.
 
-The moving parts are passed *into* `KoaStudio` as nodes rather than imported
-by it — `motes`, `light`, `stageGlow` — and it draws a static original for
-each when they are absent. That is the boundary the Reanimated rule above
-needs, and it is also what lets `preview.mjs` render a still of the room.
+`KoaStudio` takes a `live` flag and leaves the beam, the motes and the glow
+out when the overlay is drawing them, so nothing is drawn twice. Off — which
+is the default, and what `preview.mjs` gets — it draws the whole scene in one
+canvas exactly as before. That is also the boundary the Reanimated rule above
+needs: the studio imports none of it.
+
+Lifting those three above `FloorLight` and `Platform` costs nothing visible,
+and that was checked rather than assumed: the beam's gradient is fully
+transparent by y325 while the podium's top edge is at y381, and no mote sits
+inside the podium's box. **Re-check both if the beam's tail is carried lower
+or a mote is moved down.**
 
 The lamp hangs 12 units lower than the design's, at the user's direction, and
 the beam's gradient reaches 0.62 rather than 0.58 for the same reason. **The
@@ -381,7 +399,7 @@ purpose.
 
 ## The air, and the podium's face
 
-Twenty-two neon motes hang in the room at 7–11%, in `motes.tsx` but drawn
+Twelve neon motes hang in the room at 7–11%, in `motes.tsx` but drawn
 **after** `Vignette` and `Spotlight` rather than with the white dust: the
 vignette reaches full `bgTop` at the corners, so anything in `Background` is
 painted out exactly where these are meant to read.
@@ -393,7 +411,9 @@ dirt, not dust — and one on the window frame moved the pixel by 1.5. They go
 on wall and floor now, never on a lit prop and never inside the beam above
 y≈210, and each is measured at +3.3 to +15.3 against a median of its
 surroundings. They were first drawn at 3–5%, which measured +3.5 to +7.1 and
-read as too faint on device; re-measure if they move again.
+read as too faint on device; then twenty-two at 7–11%, which read as dirty
+rather than as air. Twelve is the count the user settled on — keep it sparse,
+and re-measure if any moves.
 
 **They drift, and that makes them the one thing here that moves.** The
 motion is three group matrices off a single shared value, derived on the UI

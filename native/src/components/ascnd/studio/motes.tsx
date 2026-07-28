@@ -3,13 +3,14 @@ import { Circle } from 'react-native-svg';
 import { C } from '@/components/ascnd/studio/palette';
 
 /**
- * Neon motes — the room's own colours hanging in the air, and the only thing
- * in the studio that moves.
+ * Neon motes — the room's own colours hanging in the air.
  *
- * Drawn *after* `Vignette` and `Spotlight`, not with the white dust in
- * `background.tsx`: the vignette reaches full `bgTop` at the corners, so
- * anything placed in `Background` is painted out exactly where these are
- * meant to read.
+ * Twelve of them. There were twenty-two and the room read as dirty rather
+ * than as air, so this is the count the user settled on; keep it sparse.
+ *
+ * They belong *above* `Vignette`, which reaches full `bgTop` at the corners
+ * and would paint out exactly the ones meant to read there. When the room is
+ * live they are drawn in the overlay canvas instead — see `studio-live.tsx`.
  *
  * A mote only reads where it is **brighter than what is behind it**, which
  * is why the placements are measured rather than eyeballed. Two of the first
@@ -27,17 +28,12 @@ import { C } from '@/components/ascnd/studio/palette';
 export type Mote = [x: number, y: number, r: number, opacity: number, fill: string];
 
 export const MOTES: Mote[] = [
-  [58, 96, 1.6, 0.11, C.soft], [136, 62, 1.3, 0.09, C.accent],
-  [256, 96, 1.5, 0.11, C.soft], [128, 112, 1.4, 0.09, C.highlight],
+  [58, 96, 1.6, 0.11, C.soft], [256, 96, 1.5, 0.11, C.soft],
+  [128, 112, 1.4, 0.09, C.highlight], [34, 116, 1.4, 0.09, C.soft],
   [118, 172, 1.6, 0.09, C.soft], [258, 176, 1.4, 0.11, C.accent],
-  [44, 200, 1.5, 0.09, C.soft], [352, 226, 1.4, 0.09, C.accent],
-  [150, 232, 1.7, 0.11, C.soft], [232, 252, 1.4, 0.09, C.highlight],
-  [250, 316, 1.5, 0.11, C.soft], [146, 340, 1.3, 0.07, C.accent],
-  [36, 360, 1.6, 0.11, C.soft], [222, 356, 1.4, 0.09, C.accent],
-  [96, 224, 1.5, 0.09, C.highlight], [40, 412, 1.4, 0.09, C.soft],
-  [380, 268, 1.5, 0.09, C.accent], [34, 116, 1.4, 0.09, C.soft],
-  [120, 140, 1.3, 0.07, C.accent], [270, 140, 1.4, 0.09, C.soft],
-  [264, 62, 1.3, 0.07, C.highlight], [382, 214, 1.4, 0.09, C.accent],
+  [44, 200, 1.5, 0.09, C.soft], [96, 224, 1.5, 0.09, C.highlight],
+  [352, 226, 1.4, 0.09, C.accent], [150, 232, 1.7, 0.11, C.soft],
+  [250, 316, 1.5, 0.11, C.soft], [36, 360, 1.6, 0.11, C.soft],
 ];
 
 export function Specks({ list }: { list: Mote[] }) {

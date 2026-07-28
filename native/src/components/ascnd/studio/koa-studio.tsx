@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import Svg, { Ellipse } from 'react-native-svg';
 
 import { Background } from '@/components/ascnd/studio/background';
@@ -37,9 +36,7 @@ export function KoaStudio({
   streak,
   skin = 'default',
   energy = 0.5,
-  motes,
-  light,
-  stageGlow,
+  live = false,
 }: {
   width: number;
   height: number;
@@ -50,26 +47,14 @@ export function KoaStudio({
   /** 0..1 — how much light the room gives back today */
   energy?: number;
   /**
-   * The drifting motes, for a screen that wants them — `<DriftingMotes />`
-   * from `motes-drift.tsx`, passed in rather than imported.
+   * True when `StudioLive` is drawing the room's moving parts on its own
+   * canvas above this one — see `studio-live.tsx`. The three of them are
+   * then left out here so they are not drawn twice.
    *
-   * This module must not reach Reanimated: `preview.mjs` and `stage.mjs`
-   * bundle the scene with esbuild, and Reanimated pulls in `react-native`,
-   * whose Flow syntax esbuild will not parse. Keeping the drift on the
-   * caller's side of the boundary is what keeps the room verifiable.
-   *
-   * Omit it and the motes are drawn at rest, which is what every still of
-   * the scene should show.
+   * Off by default, so a still of the room, and `preview.mjs`, get the whole
+   * scene in one canvas exactly as before.
    */
-  motes?: ReactNode;
-  /**
-   * The lamp with its beam breathing — `<LiveLight />` from
-   * `light-drift.tsx`. Omit it and the static `Spotlight` is drawn, which is
-   * what `preview.mjs` gets. Same boundary as `motes`, same reason.
-   */
-  light?: ReactNode;
-  /** the stage's glow, breathing — `<LiveStageGlow />`; the still one otherwise */
-  stageGlow?: ReactNode;
+  live?: boolean;
 }) {
   const s = STUDIO_SKINS[skin] ?? STUDIO_SKINS.default;
   return (
@@ -94,13 +79,13 @@ export function KoaStudio({
           out at 145 and it read as a dark plaque rather than a lit sign */}
       <Vignette />
       <NeonSign />
-      {light ?? <Spotlight />}
+      {live ? null : <Spotlight />}
       {/* the air, after the vignette that would otherwise paint it out */}
-      {motes ?? <Motes />}
+      {live ? null : <Motes />}
       <FloorLight glow={s.glow} energy={energy} />
 
       <Platform glow={s.glow} energy={energy} />
-      {stageGlow ?? <StageGlow glow={s.glow} energy={energy} />}
+      {live ? null : <StageGlow glow={s.glow} energy={energy} />}
     </Svg>
   );
 }

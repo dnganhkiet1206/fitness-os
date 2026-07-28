@@ -184,8 +184,17 @@ The emotion side:
    is this rule, which the room's two clocks obey: one shared value each,
    derived on the UI thread into a group `matrix` or `opacity`, both gated
    on screen focus by `StageRenderer`, and periods (26s and 7.3s) chosen so
-   they do not fall into step. `components/ascnd/studio/README.md` carries
-   the detail.
+   they do not fall into step.
+
+   **And one more, learned the hard way: never animate inside a big `<Svg>`.**
+   `react-native-svg` rasterises a whole canvas again whenever any child prop
+   changes, so an animated group invalidates up to the root. Putting the
+   room's motion inside `KoaStudio` redrew all ~190 of its shapes every
+   frame, over full-canvas gradients, under a character already running its
+   own 30fps clock — the Mascot Room went visibly laggy the moment it landed.
+   The moving parts are a second canvas over the studio now
+   (`studio-live.tsx`) and touch ~26 shapes.
+   `components/ascnd/studio/README.md` carries the detail.
 
 **Working rules**
 
