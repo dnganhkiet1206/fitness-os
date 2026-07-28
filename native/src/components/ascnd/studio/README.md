@@ -385,6 +385,21 @@ far edge across the widest, flattest part of the curve. It is two arcs now, at
 a different reason: the design's is *bright*, 68 against a face of 42–44, and
 this had drawn a dark one.
 
+## Touching the buddy is haptic only
+
+A tap used to wave the character and nod the stage. Both read as a sticker
+being tapped rather than a companion being touched: the pose swap is a cut to
+a different drawing, and the nod is the whole figure rocking as one rigid
+piece. Removed at the user's direction, 2026-07-28 — a touch should be felt,
+not performed.
+
+The wave still fires as a greeting the first time the buddy appears in a
+session, and `celebrate` still fires from `celebration-host.tsx`; those are
+events the app initiates, not a reaction to being prodded. If a visible
+reaction to touch goes back in, it has to come from inside the rig — an ear
+flick, the cheek pop the hand-drawn figure had — and not from a transform on
+the container.
+
 ## Nothing is drawn over the buddy
 
 There was a soft ellipse here for one commit — lit air in front of the

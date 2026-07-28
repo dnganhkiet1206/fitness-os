@@ -19,7 +19,7 @@ import { PlantsCanvas } from '@/components/ascnd/studio/plants-live';
 import { StudioLive } from '@/components/ascnd/studio/studio-live';
 import { moonPhase } from '@/components/ascnd/studio/window';
 import { SCENE_BOTTOM, STAGE_MARK, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
-import { triggerMascotAction, useMascotEmotion } from '@/hooks/use-mascot-emotion';
+import { useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
 
@@ -130,13 +130,21 @@ export function StageRenderer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flexSignal]);
 
-  // A poke waves and nods the stage. The character's own reaction to a
-  // touch (the cheek pop) went with the hand-drawn figure; re-adding it
-  // means a layer on top of the generated tree.
+  /**
+   * A poke is haptic only.
+   *
+   * It used to wave the character and nod the stage. Both read as a sticker
+   * being tapped rather than as a companion being touched: the pose swap is a
+   * cut to a different drawing, and the nod is the whole figure rocking as one
+   * rigid piece. Removed at the user's direction, 2026-07-28 — a touch should
+   * be felt, not performed.
+   *
+   * If a visible reaction goes back in, it has to come from inside the rig —
+   * an ear flick, the cheek pop the hand-drawn figure had — not from a
+   * transform on the container.
+   */
   const poke = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    triggerMascotAction('wave');
-    acknowledge();
   };
 
   const charStyle = useAnimatedStyle(() => ({
