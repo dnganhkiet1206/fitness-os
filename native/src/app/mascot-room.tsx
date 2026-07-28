@@ -165,7 +165,6 @@ export default function MascotRoomScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const insets = useSafeAreaInsets();
-  const headerInset = insets.top + 44; // floating header height — cards clear it
   const { mascot, message, mood } = useMascot();
   // A stack screen stays mounted under whatever is pushed on top of it, so
   // without this the room keeps animating behind the shop, the settings
@@ -345,14 +344,7 @@ export default function MascotRoomScreen() {
           level={level}
           accent={rank.color}
           energy={energyCount / ENERGY_SIGNALS.length}
-          xp={intoLevel}
-          xpMax={LEVEL_XP}
           streak={streak}
-          questCount={questDoneCount}
-          questTotal={DAILY_QUESTS.length}
-          streakLabel={i18n.nStageStreak}
-          questLabel={i18n.nStageQuests}
-          topInset={headerInset}
           animated={focused}
         />
         <CoinBurst trigger={burst.id} amount={burst.amount} />

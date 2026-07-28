@@ -90,9 +90,13 @@ The emotion side:
 - **`/koa-sheet`** — the DEV review screen: every expression, every pose,
   all 70 items, tap to wear. Reached from the DEV bar in the Mascot Room;
   nothing links to it in a production build. Only the hero animates.
-- **The Stage** — `stage-renderer.tsx` over `config/stage/*.json`, with
-  aura, particles and event motion. The user intends to replace it with an
-  idea suited to the vector character; it is untouched and waiting.
+- **The Stage — Koa Studio.** `components/ascnd/studio/` is the room: a
+  static SVG scene of thirteen components built to the user's "Koa Studio"
+  brief and held to their design screenshot by
+  `tools/koa-studio/compare.mjs` (every landmark within 4pt).
+  `stage-renderer.tsx` is now only what the scene is not — where the
+  character stands, the poke, the fade into the page. The buddy is placed
+  from `STAGE_MARK`, the same number the scene composes itself around.
 - **Gamification** (context, do not redo): rank ladder, Today's Energy
   ring, Rank Journey, coin-burst and rank-up confetti, stage lighting off
   rank and energy.
@@ -115,6 +119,7 @@ The emotion side:
 | Lottie (`mascot-lottie.ts`, `lottie-react-native`) | Registry empty by design. |
 | Pre-rendered art (`mascot-images.ts`, 9 `koa-*.webp/png`, `scripts/remove-bg.py`) | Unreachable: Koa short-circuits ahead of it and nothing else was registered. |
 | The photoreal gym room (`room-renderer.tsx`, `config/room/`) | Zero call sites — `StageRenderer` replaced it, and photoreal props clash with a flat-vector character. The art in `assets/room/` is kept for the user. |
+| The old themed stage (the hand-drawn wall / spotlight / podium / props in `stage-renderer.tsx`, `config/stage/`, `lib/stage-layout.ts`, `docs/HERO_STAGE_LAYOUT_SPEC.md`) | Replaced by Koa Studio. **Read the note below before reviving any of it.** |
 | `koa-parts.ts`, `koa-anim.tsx` | The hand-drawn Koa, superseded by the import. |
 
 ---
@@ -178,6 +183,32 @@ The emotion side:
 
 ---
 
+### What went with the old stage, and what that costs
+
+`HERO_STAGE_LAYOUT_SPEC.md` was marked canonical, and it is gone because
+the design it specified is gone. Its promise was worth more than its code
+and is **not** met by the studio, so it should be a deliberate decision
+rather than something noticed later:
+
+- The old stage had a **layout engine**: zones, occupancy, collision,
+  priority and exclusive groups, so a future shop item could be registered
+  and place itself in the room with no layout edit. Koa Studio is a fixed
+  composition — a new prop means editing the scene.
+- Its goal was "a gym room the player owns and grows over years". The new
+  brief says the opposite in as many words: *"Không biến thành phòng gym.
+  Đây là một fitness studio"*, every object must serve gameplay, and the
+  space around the character must stay empty.
+
+Those are incompatible, and the newer brief won. If room-furnishing ever
+becomes a shop mechanic again, the engine has to come back — but against
+the studio's composition, not the old one's.
+
+The three stage skins survived: `STUDIO_SKINS` in `studio/palette.ts`
+shifts the wall and the warm colour, so `stage_night` / `stage_sunset` /
+`stage_champion` still change the room.
+
+---
+
 ## 6. Open — parked, ask the user when they are ready
 
 The user is still designing and asked to be left alone until then. Do NOT
@@ -199,8 +230,10 @@ act on these; raise them when a design pass lands.
    `mascot-figure.tsx` bridges the three that overlap. Open: prices,
    unlock rules, and a season/theme field — a third of the catalogue is
    Tết / Christmas / Halloween.
-3. **The stage.** The user said they would replace it with an idea suited
-   to the mascot.
+3. **Room items as a shop mechanic.** The studio is a fixed composition, so
+   the old stage's auto-placing layout engine has no equivalent. If future
+   shop items should furnish the room, that needs designing against the
+   studio.
 4. **Expressions with no trigger.** `surprised` and `angry` are drawn but
    nothing in `baseEmotion()` produces them; `run` is reachable only from
    the DEV picker.

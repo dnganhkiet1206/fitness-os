@@ -3,14 +3,16 @@
  *
  * Put `ref.png` (the design) and `studio.png` (from preview.mjs) in one
  * folder and this measures each landmark in both, in 390×844 points, and
- * prints the disagreement. Eyeballing a render against a mockup is how the
- * podium ended up 57pt out of shape while looking broadly right.
+ * prints the disagreement.
  *
  *   node tools/koa-studio/preview.mjs <dir>/studio.png
- *   node tools/koa-studio/compare.mjs <dir> [--shot]
+ *   node tools/koa-studio/compare.mjs  <dir> [--shot]
  *
  * `--shot` also writes compare.png: reference, render, and the two at 50%
- * over each other, which is what catches the things a bounding box cannot.
+ * over each other, which catches what a bounding box cannot.
+ *
+ * Read the last block, not the table, for anything that glows. A box takes
+ * the glow in with the object.
  */
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -94,6 +96,36 @@ const SCAN = ([sel, marks, H]) => {
   });
 };
 
+/**
+ * A bounding box takes in a glow. The podium's ring throws one, and a warm
+ * pool on the floor besides, so its box measured 141pt tall where the ring
+ * itself is 61 — and this scene was built with a podium twice as deep as
+ * the design's before a column scan caught it. Anything that glows gets
+ * measured down a line instead.
+ */
+const RUNS = ([sel, xpt, kind]) => {
+  const img = document.querySelector(sel);
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  const cx = c.getContext('2d');
+  cx.drawImage(img, 0, 0);
+  const d = cx.getImageData(0, 0, c.width, c.height).data;
+  const S = c.height / 844;
+  const PX = Math.round(xpt * (c.width / 390));
+  const out = [];
+  let on = false;
+  let st = 0;
+  for (let y = 340; y < 580; y++) {
+    const i = (Math.round(y * S) * c.width + PX) * 4;
+    const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+    const hit = kind === 'gold' && r > 170 && g > 110 && g < 230 && b < 140 && r - b > 85;
+    if (hit && !on) { on = true; st = y; }
+    else if (!hit && on) { on = false; out.push([st, y - 1]); }
+  }
+  return out;
+};
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
 await page.setContent(
@@ -125,6 +157,13 @@ for (let i = 0; i < REF.length; i++) {
   console.log(`${a.name.padEnd(15)}${fmt(a).padEnd(24)}${fmt(b).padEnd(24)}${delta}`);
 }
 console.log(`\nlệch lớn nhất: ${worst}pt`);
+
+const ra = await page.evaluate(RUNS, ['#ref', 195, 'gold']);
+const rb = await page.evaluate(RUNS, ['#mine', 195, 'gold']);
+const ring = (r) => (r.length >= 2 ? `đỉnh y${r[0][0]} · đáy y${r[r.length - 1][1]} → ry ${((r[r.length - 1][1] - r[0][0]) / 2).toFixed(1)}` : 'không đọc được');
+console.log(`\nvành bục, quét cột giữa (không tính quầng):`);
+console.log(`  GỐC       ${ring(ra)}`);
+console.log(`  BẢN DỰNG  ${ring(rb)}`);
 
 if (process.argv.includes('--shot')) {
   const p2 = await browser.newPage({ viewport: { width: 1180, height: 900 } });

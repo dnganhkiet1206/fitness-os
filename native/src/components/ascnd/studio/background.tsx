@@ -18,13 +18,13 @@ const DUST: [number, number, number, number][] = [
   [200, 148, 1.0, 0.05], [140, 62, 0.9, 0.04],
 ];
 
-export function Background() {
+export function Background({ wall }: { wall?: [string, string] }) {
   return (
     <>
       <Defs>
         <LinearGradient id="studioBg" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={C.bgTop} />
-          <Stop offset="1" stopColor={C.bgBottom} />
+          <Stop offset="0" stopColor={wall ? wall[0] : C.bgTop} />
+          <Stop offset="1" stopColor={wall ? wall[1] : C.bgBottom} />
         </LinearGradient>
       </Defs>
       <Rect x={0} y={0} width={STUDIO_W} height={STUDIO_H} fill="url(#studioBg)" />

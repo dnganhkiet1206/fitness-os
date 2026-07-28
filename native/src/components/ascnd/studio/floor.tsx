@@ -21,7 +21,8 @@ import { C, STAGE_MARK, STUDIO_H, STUDIO_W } from '@/components/ascnd/studio/pal
  */
 const HORIZON = 360;
 
-export function Floor() {
+export function Floor({ glow = C.highlight, energy = 0.5 }: { glow?: string; energy?: number }) {
+  const e = Math.max(0, Math.min(1, energy));
   return (
     <>
       <Defs>
@@ -38,9 +39,9 @@ export function Floor() {
       <Rect x={0} y={HORIZON} width={STUDIO_W} height={STUDIO_H - HORIZON} fill="url(#studioFloor)" />
       <Rect x={0} y={HORIZON} width={STUDIO_W} height={STUDIO_H - HORIZON} fill="url(#studioFloorSide)" />
       {/* what the lamp puts on the ground */}
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 4} rx={196} ry={72} fill={C.white} opacity={0.035} />
+      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 4} rx={196} ry={54} fill={C.white} opacity={0.025 + e * 0.03} />
       {/* and what the ring spills back */}
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 10} rx={168} ry={62} fill={C.highlight} opacity={0.05} />
+      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 10} rx={182} ry={62} fill={glow} opacity={0.07 + e * 0.06} />
     </>
   );
 }

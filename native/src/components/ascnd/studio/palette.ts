@@ -28,6 +28,19 @@ export const C = {
   white: '#FFFFFF',
 } as const;
 
+/**
+ * Room skins. The studio is one design with one palette; a skin shifts the
+ * wall and the warm colour and leaves everything else alone, which is enough
+ * to read as a different room and keeps the shop's stage unlocks meaning
+ * something now that the old themed stage is gone.
+ */
+export const STUDIO_SKINS: Record<string, { wall: [string, string]; glow: string }> = {
+  default: { wall: [C.bgTop, C.bgBottom], glow: C.highlight },
+  night: { wall: ['#0B0E1E', '#141833'], glow: C.soft },
+  sunset: { wall: ['#1D1430', '#2A1B3D'], glow: C.highlight },
+  champion: { wall: ['#151228', '#241C3E'], glow: '#FFD97A' },
+};
+
 /** the artboard the scene is drawn on */
 export const STUDIO_W = 390;
 export const STUDIO_H = 844;
@@ -37,7 +50,7 @@ export const STUDIO_H = 844;
  * The figure is placed from this, so the scene and the character cannot
  * drift apart.
  */
-export const STAGE_MARK = { x: 195, y: 452 };
+export const STAGE_MARK = { x: 195, y: 412 };
 
 /** the scene is drawn in the top of the artboard; below it is app content */
-export const SCENE_BOTTOM = 500;
+export const SCENE_BOTTOM = 476;

@@ -3,7 +3,7 @@ import Svg, { Ellipse } from 'react-native-svg';
 import { Background } from '@/components/ascnd/studio/background';
 import { Floor } from '@/components/ascnd/studio/floor';
 import { NeonSign } from '@/components/ascnd/studio/neon-sign';
-import { C, STAGE_MARK, STUDIO_H, STUDIO_W } from '@/components/ascnd/studio/palette';
+import { C, STAGE_MARK, STUDIO_H, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
 import { Plant } from '@/components/ascnd/studio/plant';
 import { Platform } from '@/components/ascnd/studio/platform';
 import { Shelf } from '@/components/ascnd/studio/shelf';
@@ -33,19 +33,26 @@ export function KoaStudio({
   width,
   height,
   streak,
+  skin = 'default',
+  energy = 0.5,
 }: {
   width: number;
   height: number;
   /** days lit on the wall card */
   streak?: number;
+  /** a stage unlock from the shop — shifts the wall and the warm colour */
+  skin?: string;
+  /** 0..1 — how much light the room gives back today */
+  energy?: number;
 }) {
+  const s = STUDIO_SKINS[skin] ?? STUDIO_SKINS.default;
   return (
     <Svg
       width={width}
       height={height}
       viewBox={`0 0 ${STUDIO_W} ${STUDIO_H}`}
       preserveAspectRatio="xMidYMin slice">
-      <Background />
+      <Background wall={s.wall} />
 
       {/* wall */}
       <NeonSign />
@@ -56,14 +63,14 @@ export function KoaStudio({
       <Spotlight />
 
       {/* the ground, and the light on it */}
-      <Floor />
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 6} rx={215} ry={62} fill={C.shadow} opacity={0.2} />
+      <Floor glow={s.glow} energy={energy} />
+      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 6} rx={205} ry={50} fill={C.shadow} opacity={0.2} />
 
       <Shelf />
       <Plant x={316} y={397} s={1.81} kind="spray" />
       <YogaBall x={352} y={400} r={30} />
 
-      <Platform />
+      <Platform glow={s.glow} energy={energy} />
     </Svg>
   );
 }
