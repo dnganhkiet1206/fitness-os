@@ -432,6 +432,39 @@ The pattern worth copying: all three were found by holding the code against
 a claim already written down — a screenshot, a comment, a prop name — rather
 than by judging the render by eye.
 
+### Two more room passes, and the one lesson that transfers
+
+Detail and numbers for both are in `components/ascnd/studio/README.md`;
+what belongs here is the part that will bite again elsewhere.
+
+**The beam read as several colours mixed together, and the stops were not
+the cause.** Removing them changed nothing. A warm at low alpha over this
+blue-purple wall does not look like a faint warm — it sweeps blue → purple →
+magenta as the alpha climbs, because `highlight`'s blue channel sits barely
+above the wall's while its red runs away. The old cone was never strong
+enough to leave that sweep: hue down the middle measured 312 · 270 · 261 at
+y 110/140/170, so the *bright* half of the beam was magenta and purple with
+no part of it gold. It reads 25 · 32 · 24 there now. **A translucent warm
+over a cool ground has no colour of its own until it is strong enough; the
+fix for "wrong colour" was strength, not hue.**
+
+**Motes, and why they were measured.** Seventeen neon specks at 3–5% now
+hang in the room. At that opacity a mote only reads where it is *brighter
+than what is behind it*, which two placements failed: a warm one inside the
+beam's bright cone came out 7 luminance units darker than the light around
+it — a speck of dirt, not dust — and one on the window frame moved the pixel
+by 1.5. **Anything drawn at single-digit opacity has to be checked against
+its own local background, not against the page.**
+
+The podium's face was lifted and its side darkened so face ÷ side went
+2.80 → 3.96; that difference is the only thing making it read as a solid
+rather than a disc on the floor.
+
+Both passes were tuned against numbers, not taste — the beam against the
+design column already in the studio README, the motes and the podium against
+their own measured surroundings. Neither touched text, so neither carries
+the preview-versus-device risk above.
+
 ---
 
 ## 6. Open — parked, ask the user when they are ready
