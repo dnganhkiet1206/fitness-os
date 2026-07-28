@@ -403,19 +403,25 @@ purpose.
 
 ## The air, and the podium's face
 
-Nine motes hang **inside the lamp's beam** at 6–12%, in `motes.tsx`. The room's
-air is only visible where light crosses it, so they are not scattered over the
-walls: each sits within the cone's half-width at its own height — 30 units at
-y95 widening to 100 at y305, where the gradient has faded out. Their radii run
-0.9 to 2.4 on purpose; one speck size reads as a pattern, and dust has none.
+Nine motes hang **inside the lamp's beam** at 8.5–10%, in `motes.tsx`. The
+room's air is only visible where light crosses it, so they are not scattered
+over the walls: each sits within the cone's half-width at its own height — 30
+units at y95 widening to 100 at y305, where the gradient has faded out. Their
+radii run 0.7 to 1.8 on purpose; one speck size reads as a pattern, and dust
+has none.
+
+They are all `highlight`, the lamp's own colour, so the dust is lit by the
+beam rather than sitting in it as neutral specks. **The tint follows the
+light**: near the mouth they measure R−B +34 · +35 · +23, plainly warm, and by
+the foot they read −6 to −16, because the beam has cooled to the wall's colour
+by then and a mote this faint cannot warm what is behind it. Forcing that back
+by raising their opacity only makes them brighter, not warmer.
 
 A mote only reads where it is brighter than what is behind it, which inside a
-lit beam rules the warm out near the top: an early gold mote up in the bright
-cone measured 7 luminance units **darker** than the light around it, which
-looks like dirt on the lens. The high ones are white and the low ones, where
-the beam has faded toward the wall, carry the room's colours. Each is measured
-at +10 to +15 against a median of its surroundings — they were briefly at
-+30 to +99, which read as stars rather than dust.
+lit beam is not free: an early gold mote up in the bright cone measured 7
+luminance units **darker** than the light around it, which looks like dirt on
+the lens. Each is measured at +12 to +16 against a median of its surroundings
+— they were briefly at +30 to +99, which read as stars rather than dust.
 
 **They drift up and down.** Dust in a beam rises and settles rather than
 sliding sideways, so the vertical term carries the motion and the horizontal

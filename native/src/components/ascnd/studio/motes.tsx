@@ -14,14 +14,21 @@ import { C } from '@/components/ascnd/studio/palette';
  * The radii are deliberately uneven, 0.9 to 2.4. A uniform speck size reads
  * as a pattern; dust does not have one.
  *
- * **Colour follows brightness, not taste.** A mote only reads where it is
- * brighter than what is behind it, and inside a lit beam that rules the warm
- * out near the top: an early gold mote up in the bright cone measured 7
- * luminance units *darker* than the light around it, which looks like dirt on
- * the lens. So the high ones are white and the low ones, where the beam has
- * faded towards the wall, can afford the room's own colours. Every position
- * here is measured against a median of its surroundings; re-measure if any
- * moves.
+ * **They are the lamp's colour, and the tint follows the light.** All nine are
+ * `highlight`, so dust in the beam is lit by the beam rather than sitting in
+ * it as neutral specks. What that measures as depends on where a mote is:
+ * near the mouth they come out at R−B +34 · +35 · +23, plainly warm, and by
+ * the foot they read −6, because the beam has cooled to the wall's own colour
+ * by then and a mote at this strength cannot warm what is behind it. Raising
+ * the low ones to force it back only makes them brighter, not warmer, which
+ * is a worse trade — they are dust, not lights.
+ *
+ * **Strength is measured, not chosen.** A mote only reads where it is
+ * brighter than what is behind it, and inside a lit beam that is not free: an
+ * early gold mote up in the bright cone measured 7 luminance units *darker*
+ * than the light around it, which looks like dirt on the lens. Every one here
+ * sits at +12 to +16 against a median of its surroundings. They were briefly
+ * at +30 to +99, which read as stars. Re-measure if any moves.
  *
  * They are drawn in the overlay canvas, never inside `KoaStudio` — see
  * `studio-live.tsx` for why that boundary exists.
@@ -29,15 +36,15 @@ import { C } from '@/components/ascnd/studio/palette';
 export type Mote = [x: number, y: number, r: number, opacity: number, fill: string];
 
 export const MOTES: Mote[] = [
-  [178, 95, 0.9, 0.07, C.white],
-  [210, 112, 1.6, 0.07, C.white],
-  [168, 140, 1.1, 0.07, C.white],
-  [225, 165, 2.2, 0.065, C.white],
-  [150, 190, 1.3, 0.06, C.white],
-  [240, 215, 1.0, 0.12, C.soft],
-  [175, 245, 2.4, 0.12, C.soft],
-  [252, 275, 1.4, 0.08, C.highlight],
-  [140, 305, 1.8, 0.08, C.highlight],
+  [178, 95, 0.7, 0.1, C.highlight],
+  [210, 112, 1.2, 0.1, C.highlight],
+  [168, 140, 0.85, 0.1, C.highlight],
+  [225, 165, 1.65, 0.095, C.highlight],
+  [150, 190, 1.0, 0.09, C.highlight],
+  [240, 215, 0.8, 0.09, C.highlight],
+  [175, 245, 1.8, 0.09, C.highlight],
+  [252, 275, 1.05, 0.085, C.highlight],
+  [140, 305, 1.35, 0.085, C.highlight],
 ];
 
 export function Specks({ list }: { list: Mote[] }) {
