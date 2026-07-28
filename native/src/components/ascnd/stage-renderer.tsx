@@ -14,6 +14,7 @@ import Animated, {
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
+import { BeamHaze } from '@/components/ascnd/studio/beam-haze';
 import { KoaStudio } from '@/components/ascnd/studio/koa-studio';
 import { PlantsCanvas } from '@/components/ascnd/studio/plants-live';
 import { StudioLive } from '@/components/ascnd/studio/studio-live';
@@ -230,6 +231,14 @@ export function StageRenderer({
             />
           </Animated.View>
         </Pressable>
+      </View>
+
+      {/* The lamp's last pass, and the only one that goes over the buddy: the
+          lit air between the viewer and the character. Everything else the
+          light does is behind the figure, which is what had the beam and Koa
+          reading as two layers. See beam-haze.tsx. */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <BeamHaze width={sw} height={H} />
       </View>
 
       {/* the stage has no frame: every edge dissolves into the page */}
