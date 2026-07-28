@@ -16,8 +16,8 @@ import {
 /**
  * The SVG vocabulary the design exports use, mapped to react-native-svg.
  *
- * Shared by the character (`koa-figure.tsx`) and the room backdrop
- * (`koa-room.tsx`) so a tag or an attribute only has to be taught once.
+ * Used by the character (`koa-figure.tsx`): a tag or an attribute is taught
+ * here once, so anything else drawn from an export can share it.
  */
 
 export const SHAPES: Record<string, React.ComponentType<Record<string, unknown>>> = {

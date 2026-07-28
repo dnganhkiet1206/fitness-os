@@ -43,7 +43,7 @@ const out = mkdtempSync(path.join(tmpdir(), 'koa-verify-'));
 execFileSync(
   'npx',
   ['esbuild', 'src/components/ascnd/koa/koa-scene.ts', 'src/components/ascnd/koa/koa-flags.ts',
-   'src/components/ascnd/koa/room-scene.ts', '--format=esm', `--outdir=${out}`],
+   '--format=esm', `--outdir=${out}`],
   { stdio: 'ignore' },
 );
 const { KEYFRAMES, NODES } = await import(pathToFileURL(path.join(out, 'koa-scene.js')));
@@ -226,81 +226,6 @@ const COLLECT = `(() => {
   });
   return out;
 })()`;
-
-const COLLECT_ROOM = `(() => {
-  const key = (el) => el.tagName + '|' + (el.getAttribute('d') || el.textContent.trim() ||
-    ['cx','cy','rx','ry','r','x','y','x1','y1','x2','y2','width','height','offset'].map(a=>el.getAttribute(a)??'').join(','));
-  const out = [];
-  document.querySelectorAll('svg path, svg ellipse, svg circle, svg rect, svg line, svg text, svg polygon, svg polyline').forEach((el) => {
-    const b = el.getBoundingClientRect();
-    let op = 1;
-    for (let n = el; n && n.tagName !== 'BODY'; n = n.parentElement) op *= +getComputedStyle(n).opacity;
-    const cs = getComputedStyle(el);
-    out.push([key(el), +b.x.toFixed(1), +b.y.toFixed(1), +b.width.toFixed(1), +b.height.toFixed(1),
-              +op.toFixed(2), cs.fill, cs.stroke, cs.strokeWidth]);
-  });
-  return out;
-})()`;
-
-/** mirror of koa-room.tsx */
-function roomNode(n) {
-  const kids = (n.kids || []).map(roomNode).join('');
-  if (n.t === 'defs') return `<defs>${kids}</defs>`;
-  if (n.t === 'clipPath') return `<clipPath id="${n.id}">${kids}</clipPath>`;
-  const a = Object.entries(n.a || {}).map(([k, v]) => `${k}="${v}"`).join(' ');
-  const id = n.id ? ` id="${n.id}"` : '';
-  if (n.t !== 'g') return n.x ? `<${n.t}${id} ${a}>${n.x}</${n.t}>` : `<${n.t}${id} ${a}/>`;
-  const t = n.tf?.length ? ` transform="${matrixTransformOf(n.tf)}"` : '';
-  return a || t || id ? `<g${id} ${a}${t}>${kids}</g>` : kids;
-}
-const matrixTransformOf = (ops) => `matrix(${opsMat(ops).join(' ')})`;
-
-/* ── the room page takes a different check ────────────────────────────── */
-
-// the character export switches layers with <sc-if>; the room page has none
-if (!raw.includes('<sc-if')) {
-  const { ROOM_NODES, ROOM_VIEWBOX } = await import(pathToFileURL(path.join(out, 'room-scene.js')));
-  // the design's own scene: the page's biggest <svg>, the same one the
-  // importer picks
-  let design = '';
-  for (let at = 0; ; ) {
-    const i = raw.indexOf('<svg', at);
-    if (i < 0) break;
-    const j = raw.indexOf('</svg>', i) + 6;
-    const cand = raw.slice(i, j);
-    if (cand.split('<').length > design.split('<').length) design = cand;
-    at = j;
-  }
-  const port =
-    `<svg viewBox="${ROOM_VIEWBOX}" width="720" height="680" xmlns="http://www.w3.org/2000/svg">` +
-    ROOM_NODES.map(roomNode).join('') +
-    `</svg>`;
-  const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 720, height: 680 } });
-  const grab = async (svg) => {
-    await page.setContent(`<html><body style="margin:0;background:#0b0d12">${svg}</body></html>`);
-    return page.evaluate(COLLECT_ROOM);
-  };
-  const A = await grab(design.replace('<svg ', '<svg width="720" height="680" '));
-  const B = await grab(port);
-  await browser.close();
-  let n = 0;
-  if (A.length !== B.length) {
-    console.log(`số hình: thiết kế ${A.length} · port ${B.length}`);
-    n++;
-  } else
-    for (let i = 0; i < A.length; i++) {
-      const a = A[i];
-      const b = B[i];
-      if (a[0] !== b[0]) { console.log(`thứ tự: ${a[0].slice(0, 40)} vs ${b[0].slice(0, 40)}`); n++; break; }
-      const d = Math.max(...[1, 2, 3, 4].map((k) => Math.abs(a[k] - b[k])));
-      if (d > 0.6) { console.log(`${d.toFixed(1)}px ${a[0].slice(0, 44)}`); n++; }
-      else if (Math.abs(a[5] - b[5]) > 0.04) { console.log(`opacity ${a[5]}→${b[5]} ${a[0].slice(0, 40)}`); n++; }
-      else for (const k of [6, 7, 8]) if (a[k] !== b[k]) { console.log(`${a[k]} → ${b[k]} ${a[0].slice(0, 36)}`); n++; break; }
-    }
-  console.log(`\nphòng: ${A.length} hình, ${n} lệch`);
-  process.exit(n ? 1 : 0);
-}
 
 /* ── the flags, against the export's own logic ────────────────────────── */
 

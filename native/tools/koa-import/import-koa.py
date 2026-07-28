@@ -19,9 +19,6 @@ any design update instead of hand-transcribing:
 import json, math, re, sys
 from xml.etree import ElementTree as ET
 
-# `--room` imports a static scene (the Mascot Room backdrop) instead of the
-# character: same tree walk, no flags, no keyframes.
-ROOM = '--room' in sys.argv
 argv = [a for a in sys.argv[1:] if not a.startswith('--')]
 SRC, OUT = argv[0], argv[1]
 raw = open(SRC, encoding='utf-8').read()
@@ -98,7 +95,7 @@ def link(frames, name):
 
 MIXED = []
 
-style_css = '' if ROOM else raw[raw.find('<style>') + 7: raw.find('</style>')]
+style_css = raw[raw.find('<style>') + 7: raw.find('</style>')]
 KEYFRAMES = {}
 for name, body in re.findall(r'@keyframes (\w+) \{(.*?)\}\s*(?=@keyframes|\Z)', style_css, re.S):
     # One track per property, not one list of frames. CSS animates each
@@ -120,22 +117,7 @@ for name, body in re.findall(r'@keyframes (\w+) \{(.*?)\}\s*(?=@keyframes|\Z)', 
     KEYFRAMES[name] = track
 
 # ── SVG tree ──────────────────────────────────────────────────────────────
-if ROOM:
-    # the page holds several <svg>s (the scene, a legend, a thumbnail); the
-    # scene is the one with the most elements
-    best, at = '', 0
-    while True:
-        i = raw.find('<svg', at)
-        if i < 0: break
-        j = raw.find('</svg>', i) + 6
-        cand = raw[i:j]
-        if cand.count('<') > best.count('<'): best = cand
-        at = j
-    svg = best
-    m = re.search(r'viewBox="([^"]+)"', svg)
-    VIEWBOX = m.group(1) if m else '0 0 360 340'
-else:
-    svg = raw[raw.find('<svg'): raw.find('</svg>') + 6]
+svg = raw[raw.find('<svg'): raw.find('</svg>') + 6]
 # <sc-if value="{{ flag }}"> is not valid XML on its own; make it an element
 svg = re.sub(r'<sc-if value="\{\{\s*(\w+)\s*\}\}"[^>]*>', r'<scif flag="\1">', svg)
 svg = svg.replace('</sc-if>', '</scif>')
@@ -212,26 +194,6 @@ KEYFRAMES = {k: v for k, v in KEYFRAMES.items() if k in used}
 
 def ts(o):  # compact, stable JSON for a TS literal
     return json.dumps(o, separators=(',', ':'), ensure_ascii=False)
-
-if ROOM:
-    open(OUT, 'w', encoding='utf-8').write(f'''/**
- * GENERATED — do not edit by hand.
- *
- * Source: the Mascot Room page of the design export.
- * Regenerate: python3 tools/koa-import/import-koa.py --room <Mascot Room ….html> {OUT.split('/')[-1]}
- *
- * The room backdrop: a static SVG scene, no flags and no animation, so this
- * is the tree and nothing else. `koa-room.tsx` draws it.
- */
-
-import type {{ Node }} from '@/components/ascnd/koa/koa-scene';
-
-export const ROOM_VIEWBOX = '{VIEWBOX}';
-
-export const ROOM_NODES: Node[] = {ts(NODES)};
-''')
-    print(f'room: {len(NODES)} nodes(top)  viewBox {VIEWBOX}  bytes: {len(open(OUT,encoding="utf-8").read())}')
-    sys.exit(0)
 
 open(OUT, 'w', encoding='utf-8').write(f'''/**
  * GENERATED — do not edit by hand.
