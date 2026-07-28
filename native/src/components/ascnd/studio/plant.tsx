@@ -1,4 +1,4 @@
-import { G, Path, Rect } from 'react-native-svg';
+import { Ellipse, G, Path, Rect } from 'react-native-svg';
 
 import { C } from '@/components/ascnd/studio/palette';
 
@@ -110,6 +110,9 @@ export function PlantFoliage({ kind = 'bush' }: { kind?: PlantKind }) {
 export function PlantPot() {
   return (
     <>
+      {/* what the pot stands on. Without it the floor plant measured |Δ| 5.8
+          against the ground it sits on and looked pasted onto it. */}
+      <Ellipse cx={0} cy={0} rx={11} ry={3.2} fill={C.shadow} opacity={0.32} />
       <Path d={`M-9 ${POT_Y} L 9 ${POT_Y} L 7 0 L -7 0 Z`} fill={C.accent} />
       <Path d={`M-9 ${POT_Y} L 9 ${POT_Y} L 7 0 L -7 0 Z`} fill={C.primary} opacity={0.34} />
       <Path d={`M 2 ${POT_Y} L 9 ${POT_Y} L 7 0 L 1 0 Z`} fill={C.primary} opacity={0.3} />

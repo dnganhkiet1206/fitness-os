@@ -190,6 +190,12 @@ export function StudioWindow({
           the bars are cut *out* of the glass. Built in `secondary` they came
           out at 43 against a sky of 30 — a lit cross over a dark hole, which
           is the same bright-frame mistake as the outline was. */}
+      {/* Contact shadow, not an outline. The frame is `primary` and the wall
+          behind it reads within 2 units of it, so the box had no edge at all —
+          measured at |Δ| 2.3. A stroke is what the design does *not* have (see
+          above), and it would brighten the box; darkening the wall just behind
+          it separates the two without touching either colour. */}
+      <Rect x={X - 1} y={Y + 3} width={W + 2} height={H} rx={13} fill={C.shadow} opacity={0.3} />
       <Rect x={X} y={Y} width={W} height={H} rx={12} fill={C.primary} />
       <Rect x={sx} y={sy} width={sw} height={sh} rx={7} fill="url(#studioSky)" />
 

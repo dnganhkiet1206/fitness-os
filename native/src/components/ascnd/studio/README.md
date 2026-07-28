@@ -89,7 +89,7 @@ is wrong.
 | The scene imports no Reanimated | `preview.mjs` bundles it with esbuild and would fail |
 | ~~The scene never moves~~ | **lifted by the user, 2026-07-28** — see below |
 
-Current cost: **181 shapes, ~19KB of SVG**. `preview.mjs` prints both numbers
+Current cost: **185 shapes, ~20KB of SVG**. `preview.mjs` prints both numbers
 on every run; if they have moved, this line is what is stale.
 
 ## The room moves now
@@ -162,6 +162,31 @@ The lamp hangs 12 units lower than the design's, at the user's direction, and
 the beam's gradient reaches 0.62 rather than 0.58 for the same reason. **The
 landmark table's `lamp mouth` row is knowingly out of date because of it** —
 that is a deliberate change, not drift to be corrected.
+
+## Definition comes from shadow, not from outlines
+
+Measuring each prop against the wall right behind it found three that had no
+edge at all: the streak card at |Δ| 0.4, the window at 1.2, and the floor
+plant against the ground it stands on. They are the correct *colours* — the
+panels are `primary` because that is what the design's interiors measure — so
+the fix cannot be to lighten them, and it cannot be a stroke either: the
+design has none, and three boxes each ringed in light is what made this wall
+look cluttered in the first place.
+
+**A contact shadow separates them without touching either colour**: a
+slightly larger rounded rect in `shadow` at 0.3, offset three units down,
+behind the box. The card's edge went 0.4 → 6.1 and the window's 1.2 → 6.8.
+The pots got the same treatment and the plant's ground went 23 → 18 under it.
+
+**The neon sign is the exception, and it was tried.** Its panel is translucent
+— `secondary` at 0.55 — so a shadow behind it shows straight through and
+darkens the sign along with the wall; the edge measured *down*, 28.1 → 25.7.
+It was removed again. If a box is translucent, a shadow behind it is not
+separation, it is tint.
+
+Measure this at the shadow band itself, three units under the box. Sampling
+the wall further out reports no change at all and looks like the shadow is not
+drawing — that happened twice while this was being fitted.
 
 ## Held to the design, measured
 

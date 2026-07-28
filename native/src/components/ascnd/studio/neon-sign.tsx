@@ -80,6 +80,11 @@ export function NeonSign() {
         </LinearGradient>
       </Defs>
 
+      {/* No contact shadow here, unlike the window and the streak card. This
+          panel is translucent — `secondary` at 0.55 — so a shadow behind it
+          shows straight through and darkens the sign along with the wall. It
+          measured the edge *down*, 28.1 to 25.7. The sign does not need one:
+          it is lit and it keeps a stroke, so it already separates. */}
       <Rect x={X} y={Y} width={W} height={H} rx={11} fill={C.secondary} opacity={0.55} />
       <Rect x={X} y={Y} width={W} height={H} rx={11} fill="none" stroke={C.soft} strokeWidth={5} opacity={0.05} />
       <Rect x={X} y={Y} width={W} height={H} rx={11} fill="none" stroke="url(#studioNeonEdge)" strokeWidth={1.4} />
