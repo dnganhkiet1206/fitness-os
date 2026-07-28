@@ -133,40 +133,47 @@ The emotion side:
    `node tools/koa-import/verify.mjs <Koa.dc.html>`; a change to
    `koa-figure.tsx` or `import-koa.py` that cannot be shown to keep it at
    zero is not finished.
-3. **The export is the truth, including its mistakes.** If the browser
+3. **A drawing that never moves looks perfectly correct.** `verify.mjs`
+   compares geometry and is blind to a stopped clock — the character froze
+   twice before anyone had a way to see it. Anything touching the clock or
+   the focus gating must keep `node tools/koa-import/clock.test.mjs` green,
+   and the rule that found the second freeze is worth remembering on its
+   own: a frame callback's `timeSinceFirstFrame` **restarts at 0 on every
+   re-activation**, so it is not a clock and must never be treated as one.
+4. **The export is the truth, including its mistakes.** If the browser
    renders something you think is wrong, the app must still match it, and
    the fix belongs in the design tool. Do not "improve" the design in the
    port.
-4. **Do not change the character's proportions.** The user said so
+5. **Do not change the character's proportions.** The user said so
    explicitly about the arms and legs; treat it as covering the whole
    figure.
-5. **Anything of ours layered on the character goes on top of the
+6. **Anything of ours layered on the character goes on top of the
    generated tree**, never inside generated data — the next import wipes
    it otherwise. That is what happened to the gaze, the cheek pop and the
    lash-line blink.
 
 **About the system**
 
-6. **One rendering path.** Koa is code-drawn vector; other characters fall
+7. **One rendering path.** Koa is code-drawn vector; other characters fall
    back to the generic vector figure. Do not add an asset pipeline,
    provider chain or binary format back. Give a new character art by
    giving it Koa's treatment.
-7. **Do not bake clothing into poses** — outfits stay per-slot overlays,
+8. **Do not bake clothing into poses** — outfits stay per-slot overlays,
    swapped independently.
-8. **All logic in TypeScript**, assets as data, no GUI in the loop.
-9. **Keep the room cool.** Anything that runs per frame is paid for on the
+9. **All logic in TypeScript**, assets as data, no GUI in the loop.
+10. **Keep the room cool.**  Anything that runs per frame is paid for on the
    user's phone. Gate loops on screen focus and app state, and prefer one
    clock over many.
 
 **Working rules**
 
-10. `cd native && npx tsc --noEmit` before every commit (ignore the
+11. `cd native && npx tsc --noEmit` before every commit (ignore the
     pre-existing TS5101 baseUrl warning).
-11. Develop on `claude/ios-fitness-rebuild-omgulr`; ff-merge into
+12. Develop on `claude/ios-fitness-rebuild-omgulr`; ff-merge into
     `claude/ios-fitness-rebuild-fiyl9k` and push both. `main` and the
     `devin/*` branches are a **different project** (a Vite/Capacitor web
     app) with unrelated history — do not merge across.
-12. Commit trailer: `Co-Authored-By:` and the `Claude-Session:` line.
+13. Commit trailer: `Co-Authored-By:` and the `Claude-Session:` line.
     Never put the model id in a commit, a PR or a code comment.
 
 ---

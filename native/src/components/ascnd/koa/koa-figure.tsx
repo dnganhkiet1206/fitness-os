@@ -15,6 +15,7 @@ import {
   type KoaPose,
   type Worn,
 } from '@/components/ascnd/koa/koa-flags';
+import { CLOCK_RESET, stepClock } from '@/components/ascnd/koa/figure-clock';
 import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
   KEYFRAMES,
@@ -458,13 +459,10 @@ export function KoaFigure({
   // component also renders outside the navigator (the unlock celebration),
   // where a focus hook would throw.
   const clock = useSharedValue(0);
-  const last = useSharedValue(0);
+  const last = useSharedValue(CLOCK_RESET);
   const frameCb = useFrameCallback((frame) => {
     'worklet';
-    const t = frame.timeSinceFirstFrame;
-    if (t - last.value < FRAME_MS) return;
-    last.value = t;
-    clock.value = t;
+    stepClock(clock, last, frame.timeSinceFirstFrame, FRAME_MS);
   }, false);
 
   const active = useRef(false);
@@ -476,6 +474,9 @@ export function KoaFigure({
       const on = animated && AppState.currentState !== 'background';
       if (on === active.current) return;
       active.current = on;
+      // the callback's `timeSinceFirstFrame` restarts at 0 on every
+      // activation, so the previous run's total must not be carried in
+      if (on) last.value = CLOCK_RESET;
       frameCb.setActive(on);
     };
     apply();
@@ -487,7 +488,7 @@ export function KoaFigure({
         frameCb.setActive(false);
       }
     };
-  }, [animated, frameCb]);
+  }, [animated, frameCb, last]);
 
   // The tree is ~90 elements at rest and 130 mid-run, and it only depends on
   // the flags. Rebuilding it every time a parent re-renders — the Stage does
