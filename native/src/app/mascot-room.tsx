@@ -308,7 +308,9 @@ export default function MascotRoomScreen() {
       back
       transparentHeader
       contentScrollEnabled={!stageActive}
-      title={mascot.name}
+      // The name is set into the podium's front face instead — see
+      // `studio/stage-label.tsx`. The header keeps its chevron and coin pill.
+      title=""
       headerRight={
         <Pressable
           // Hidden test faucet: long-press the coin pill for +500 coins

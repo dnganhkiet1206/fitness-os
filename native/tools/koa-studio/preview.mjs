@@ -78,7 +78,9 @@ function render(node) {
     : `<${type}${attrs ? ' ' + attrs : ''}/>`;
 }
 
-const svg = render(KoaStudio({ width: 390, height: 844, streak: 4 }))
+// `label` is part of the scene now — the companion's name is set into the
+// podium's front face rather than shown as the screen's header title
+const svg = render(KoaStudio({ width: 390, height: 844, streak: 4, label: 'Koa' }))
   .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
 
 // next to the PNG as well, so stage.mjs can find it without guessing

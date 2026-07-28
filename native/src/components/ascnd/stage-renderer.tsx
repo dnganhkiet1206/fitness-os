@@ -158,6 +158,7 @@ export function StageRenderer({
           skin={themeKey}
           energy={energy}
           streak={streak}
+          label={mascot.name}
           live={animated}
         />
         {/* The moving parts, on their own canvas directly over the studio.

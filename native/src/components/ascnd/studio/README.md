@@ -89,7 +89,7 @@ is wrong.
 | The scene imports no Reanimated | `preview.mjs` bundles it with esbuild and would fail |
 | ~~The scene never moves~~ | **lifted by the user, 2026-07-28** — see below |
 
-Current cost: **181 shapes, ~19KB of SVG**. `preview.mjs` prints both numbers
+Current cost: **180 shapes, ~19KB of SVG**. `preview.mjs` prints both numbers
 on every run; if they have moved, this line is what is stale.
 
 ## The room moves now
@@ -443,6 +443,22 @@ a second pass of the contact shadow, so face ÷ side went 2.80 → 3.96. That
 difference is the only thing making the podium read as a solid rather than a
 disc lying on the floor, which is why it is worth measuring rather than
 eyeballing.
+
+## The name is part of the stage
+
+The companion's name is set into the podium's front face (`stage-label.tsx`),
+not shown as the screen's header title — `mascot-room.tsx` passes `title=""`
+and the header keeps only its chevron and coin pill. Down in the room, in the
+room's own colour, it reads as something the stage was built with rather than
+a label laid over it.
+
+Keep it in `glow`: that is the ring's colour too, so a skin changes both
+together. The halo is a wide stroke at low opacity under a sharp fill — the
+same two passes the neon sign uses, and still only `<Text>`.
+
+Its `Y` sits on the front face, which at the centre runs from the ring at 443
+to the bottom arc at about 467. **Move the podium and the label has to move
+with it.**
 
 ## Layout
 

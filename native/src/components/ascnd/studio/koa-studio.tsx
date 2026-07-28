@@ -8,6 +8,7 @@ import { C, STAGE_MARK, STUDIO_H, STUDIO_SKINS, STUDIO_W } from '@/components/as
 import { Plant } from '@/components/ascnd/studio/plant';
 import { Platform, StageGlow } from '@/components/ascnd/studio/platform';
 import { Shelf } from '@/components/ascnd/studio/shelf';
+import { StageLabel } from '@/components/ascnd/studio/stage-label';
 import { Spotlight } from '@/components/ascnd/studio/spotlight';
 import { StreakCard } from '@/components/ascnd/studio/streak-card';
 import { StudioWindow } from '@/components/ascnd/studio/window';
@@ -36,6 +37,7 @@ export function KoaStudio({
   streak,
   skin = 'default',
   energy = 0.5,
+  label,
   live = false,
 }: {
   width: number;
@@ -46,6 +48,11 @@ export function KoaStudio({
   skin?: string;
   /** 0..1 — how much light the room gives back today */
   energy?: number;
+  /**
+   * The companion's name, set into the podium's front face rather than shown
+   * as the screen's header title — see `stage-label.tsx`.
+   */
+  label?: string;
   /**
    * True when `StudioLive` is drawing the room's moving parts on its own
    * canvas above this one — see `studio-live.tsx`. The motes and the stage
@@ -90,6 +97,7 @@ export function KoaStudio({
 
       <Platform glow={s.glow} energy={energy} />
       {live ? null : <StageGlow glow={s.glow} energy={energy} />}
+      {label ? <StageLabel label={label} glow={s.glow} /> : null}
     </Svg>
   );
 }
