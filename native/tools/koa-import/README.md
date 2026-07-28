@@ -105,6 +105,22 @@ the global ramp gives the ear about eight points of falloff — it covers 70 of
 the board's 255 — and reading as top-lit is the ear's own business, not the
 figure's.
 
+**The bounce off the ring costs nothing and gets no pass.** The stage has a
+lit gold ring round it, so the undersides — soles, low belly, the edge of a
+hand — take a little of that gold back rather than sitting in plain shadow.
+The ramp already paints every colour from the crown down, so the bounce is a
+warm bias on its lower stops: the ring's colour mixed in at up to five percent
+below the chest. Red-minus-blue down the figure, before and after:
+
+| | crown | cheek | upper belly | low belly | hand edge | sole |
+|---|---|---|---|---|---|---|
+| flat | −16 | −16 | −12 | −12 | −16 | −16 |
+| lit | −16 | −14 | −8 | −4 | −10 | −5 |
+
+Luminance moves by under half a unit — it is a hue shift, not more light. A
+pass of its own would have cost gradients and shapes to arrive at the same
+pixels.
+
 **The rim light is a second stroke, not a glow.** A glow spreads and an
 outline goes all the way round; a rim is the top contour only. So each of the
 seven silhouette shapes — head, both ears, the torso, both upper arms — is

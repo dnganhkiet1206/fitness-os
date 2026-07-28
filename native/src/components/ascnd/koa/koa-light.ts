@@ -92,6 +92,29 @@ export function shadeAt(y: number): number {
 const STOPS = [0, 0.05, 0.15, 0.35, 0.65, 1];
 
 /**
+ * The gold the podium's ring throws back up.
+ *
+ * The stage has a lit ring round it, so the undersides of the figure — the
+ * soles, the low belly, the edge of a hand — do not sit in plain shadow: they
+ * take a little of that gold back. It is worth almost nothing and it is worth
+ * doing, which is a fair description of most bounce light.
+ *
+ * It needs no pass of its own. The ramp already paints every colour from the
+ * crown down, so the bounce is a warm bias on its lower stops: mix the ring's
+ * colour in at up to five percent below the chest. At the foot that moves
+ * (168, 175, 181) to (172, 174, 176) — the same luminance to within half a
+ * unit, and warm instead of blue. A pass would have cost gradients and shapes
+ * to arrive at the same pixels.
+ */
+const BOUNCE_COLOUR = '#FFC24D';
+const BOUNCE_TOP = 170;
+const BOUNCE_MAX = 0.05;
+
+function bounceAt(y: number): number {
+  return BOUNCE_MAX * clamp01((y - BOUNCE_TOP) / (Y_BOT - BOUNCE_TOP));
+}
+
+/**
  * The export's shadow grey, and what it becomes.
  *
  * `#AEB6BF` is a *light* grey drawn at low opacity — it was designed for a
@@ -295,14 +318,27 @@ function invert(m: M, x: number, y: number): [number, number] {
 /** `#rgb`, `#rrggbb` — anything else (a gradient ref, `none`) is left alone */
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
-function scale(hex: string, k: number): string {
+const channels = (hex: string): [number, number, number] => {
   const h = hex.slice(1);
   const w = h.length === 3;
-  const p = (i: number) => {
-    const s = w ? h[i].repeat(2) : h.slice(i * 2, i * 2 + 2);
-    return Math.max(0, Math.min(255, Math.round(parseInt(s, 16) * k)));
-  };
-  return `#${[p(0), p(1), p(2)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+  const p = (i: number) => parseInt(w ? h[i].repeat(2) : h.slice(i * 2, i * 2 + 2), 16);
+  return [p(0), p(1), p(2)];
+};
+
+/** the colour at height `y`: the lamp's falloff, then the ring's bounce */
+function paint(hex: string, y: number): string {
+  const k = shadeAt(y);
+  const b = bounceAt(y);
+  const c = channels(hex);
+  const g = channels(BOUNCE_COLOUR);
+  return `#${c
+    .map((v, i) => {
+      const lit = v * k * (1 - b) + g[i] * b;
+      return Math.max(0, Math.min(255, Math.round(lit)))
+        .toString(16)
+        .padStart(2, '0');
+    })
+    .join('')}`;
 }
 
 export interface LightRamp {
@@ -349,7 +385,7 @@ function rampFor(colour: string, space: string): string {
     y1,
     x2,
     y2,
-    stops: STOPS.map((o) => [o, scale(colour, shadeAt(Y_TOP + o * (Y_BOT - Y_TOP)))]),
+    stops: STOPS.map((o) => [o, paint(colour, Y_TOP + o * (Y_BOT - Y_TOP))]),
   });
   RAMP.set(key, id);
   return id;
