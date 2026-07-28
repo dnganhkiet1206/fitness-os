@@ -336,7 +336,7 @@ export default function MascotRoomScreen() {
         onTouchCancel={() => setStageActive(false)}>
         <MascotScene
           mascot={mascot}
-          ownedGym={equippedOutfits}
+          ownedGym={owned}
           equippedOutfits={equippedOutfits}
           celebrateSignal={celebrate}
           flexSignal={flex}

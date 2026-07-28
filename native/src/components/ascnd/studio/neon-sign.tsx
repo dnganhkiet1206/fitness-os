@@ -26,8 +26,12 @@ export function NeonSign() {
         fill={C.highlight}
       />
 
+      {/* The gap is a non-breaking space, not a plain one. A trailing " " in
+          the TSpan survived the browser preview and collapsed on device, so
+          the sign read WINTODAY on the phone and WIN TODAY everywhere the
+          scene was checked. U+00A0 is a glyph with an advance in both. */}
       <Text x={X + W / 2} y={Y + 54} fontSize={9.5} fontWeight="800" textAnchor="middle">
-        <TSpan fill={C.highlight}>WIN </TSpan>
+        <TSpan fill={C.highlight}>{'WIN\u00A0'}</TSpan>
         <TSpan fill={C.white}>TODAY</TSpan>
       </Text>
       <Text x={X + W / 2} y={Y + 66} fill={C.white} fontSize={9.5} fontWeight="800" textAnchor="middle">

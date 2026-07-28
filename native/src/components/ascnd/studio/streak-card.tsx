@@ -17,6 +17,10 @@ const DONE = 4;
 
 export function StreakCard({ days = DONE }: { days?: number }) {
   const lit = Math.max(0, Math.min(DAYS, days));
+  // The bar caps at seven pips; the number does not, so a long streak still
+  // reads. Three digits at 22 would reach the flame, which starts at X+52.
+  const count = Math.max(0, Math.round(days));
+  const countSize = count >= 100 ? 15 : count >= 10 ? 19 : 22;
   return (
     <>
       <Rect x={X} y={Y} width={W} height={H} rx={11} fill={C.secondary} />
@@ -25,8 +29,8 @@ export function StreakCard({ days = DONE }: { days?: number }) {
       <Text x={X + W / 2} y={Y + 17} fill={C.soft} fontSize={9} fontWeight="800" textAnchor="middle">
         STREAK
       </Text>
-      <Text x={X + 34} y={Y + 42} fill={C.white} fontSize={22} fontWeight="800" textAnchor="middle">
-        {String(DAYS)}
+      <Text x={X + 34} y={Y + 42} fill={C.white} fontSize={countSize} fontWeight="800" textAnchor="middle">
+        {String(count)}
       </Text>
 
       {/* flame */}
