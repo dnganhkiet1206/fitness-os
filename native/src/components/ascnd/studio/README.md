@@ -57,15 +57,24 @@ and a browser and `react-native-svg` disagree about whitespace: the sign's
 `<TSpan>WIN </TSpan>` kept its trailing space here and lost it on the phone,
 so the room read `WIN TODAY` in every check and `WINTODAY` on device.
 
-A no-break space does **not** fix it — that was tried on device first. Each
-span's width comes from `CTLineGetBoundsWithOptions`, CoreText leaves
-trailing whitespace out of a line's width, and `whitespaceCharacterSet` is
-Unicode Zs, so U+00A0 is treated the same. `neon-sign.tsx` holds the gap
-with `dx` instead, and corrects `x` by half of it because that measured
-advance does not count `dx` either.
+Three versions of that gap were tried on device before one held. A trailing
+space measures as nothing, because `RNSVGTSpan` sizes each span with
+`CTLineGetBoundsWithOptions` and CoreText leaves trailing whitespace out of
+a line's width. U+00A0 is no escape — `whitespaceCharacterSet` is Unicode
+Zs, which contains it. `dx` reads correct all the way down (Fabric maps it,
+the glyph context accumulates it, the draw applies it) and still did not
+show up on the phone.
 
-Put no layout in whitespace inside SVG text. When the preview and a device
-shot differ on text, the preview is the one that is wrong.
+What holds is not sharing a `<Text>`: WIN and TODAY are two `<Text>`
+elements at fixed `x`, anchored `end` and `start` — the same primitive as
+the STRONGER and TOMORROW lines that always rendered correctly. Centring
+the pair then needs the difference of their widths, which `LEAN` carries;
+re-measure it if the words or the size change.
+
+Put no layout in whitespace inside SVG text, and prefer separate positioned
+`<Text>` over `TSpan` when two runs must sit a known distance apart. When
+the preview and a device shot differ on text, the preview is the one that
+is wrong.
 
 ## The rules this scene is held to
 
@@ -78,7 +87,7 @@ shot differ on text, the preview is the one that is wrong.
 | Depth from scale, overlap and brightness only | no perspective transform anywhere |
 | Every object is its own component | one file each, placed by `(x, y)` |
 
-Current cost: **153 shapes, ~16KB of SVG**, all static — it draws once and
+Current cost: **154 shapes, ~16KB of SVG**, all static — it draws once and
 then costs nothing per frame, which is what lets it sit under a character
 that does animate. `preview.mjs` prints both numbers on every run; if they
 have moved, this line is what is stale.

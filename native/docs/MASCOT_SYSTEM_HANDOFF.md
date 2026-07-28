@@ -389,12 +389,29 @@ coordinates — but it renders in a **browser**, and a browser and
   against it. A no-break space does not escape this — `NSCharacterSet
   whitespaceCharacterSet` is Unicode category Zs, which contains U+00A0.
 
-  The fix is `dx`, the one route that never goes through text measurement.
-  Its own catch: that same advance sums the spans' measured widths and does
-  not count `dx`, so a `textAnchor="middle"` line sits half a gap off
-  centre unless `x` is corrected by `-GAP / 2` — which is what
-  `neon-sign.tsx` now does. **Never carry layout in whitespace inside SVG
-  text.**
+  `dx` was tried next and **also failed on device**, which is the part worth
+  remembering, because the code says it should work: the Fabric props map
+  `dx` to `deltaX` (`RNSVGFabricConversions.h`), `pushGlyphContext` passes
+  it down, `nextDeltaX` accumulates into `mDX_`, and the draw applies it as
+  `offset + (x + dx) * side`. It reads correct end to end and the phone
+  still ran the words together.
+
+  **What works is not sharing a `<Text>` at all.** `neon-sign.tsx` now draws
+  WIN and TODAY as two independent `<Text>` elements at fixed `x`, one
+  `textAnchor="end"` and one `"start"` — the same primitive as the STRONGER
+  and TOMORROW lines under them, which had always rendered correctly on the
+  same screen. Nothing about the gap depends on how a renderer measures a
+  string any more.
+
+  The cost is centring the pair by hand. Only the *difference* of the two
+  widths matters, and `LEAN` in that file carries it, measured in the
+  preview at 9.5/800: WIN 20.06, TODAY 33.27. **Re-measure it if the words
+  or the font size change** — a wrong `LEAN` shifts the line against the two
+  below it and is visible; a wrong `GAP` is not.
+
+  **Never carry layout in whitespace inside SVG text**, and prefer separate
+  positioned `<Text>` over `TSpan` whenever two runs must sit a known
+  distance apart.
 - Treat any text difference between the preview and a device shot as the
   preview being wrong, not the phone. Shapes are the other way round.
 

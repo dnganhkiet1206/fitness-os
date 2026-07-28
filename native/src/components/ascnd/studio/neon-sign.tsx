@@ -1,4 +1,4 @@
-import { Path, Rect, Text, TSpan } from 'react-native-svg';
+import { Path, Rect, Text } from 'react-native-svg';
 
 import { C } from '@/components/ascnd/studio/palette';
 
@@ -11,8 +11,29 @@ const X = 24;
 const Y = 130;
 const W = 84;
 const H = 82;
-/** the space between WIN and TODAY, in artboard units — see the note below */
+/**
+ * WIN and TODAY are two independent <Text> elements, not one <Text> split
+ * into TSpans, because on device nothing put a gap between two spans.
+ *
+ * A trailing " " measured as nothing: RNSVGTSpan sizes each span with
+ * CTLineGetBoundsWithOptions and CoreText leaves trailing whitespace out of
+ * a line's width. U+00A0 was no escape either — whitespaceCharacterSet is
+ * Unicode Zs, which contains it. `dx` should have worked (the Fabric props
+ * map it, and the glyph context accumulates it) and still did not on the
+ * device. Three tries, so the sign now uses only what is demonstrably
+ * working on that screen: a <Text> with an `x` and a `textAnchor`, exactly
+ * what STRONGER and TOMORROW below are.
+ *
+ * SPLIT is the right edge of WIN. Centring the pair by hand needs the two
+ * widths, and only their *difference* survives a change of font: measured
+ * at 9.5/800, WIN is 20.06 and TODAY 33.27, so the midpoint of the pair
+ * sits LEAN left of the split. Re-measure both if the string or the size
+ * changes; a wrong LEAN shifts this line against the two below it, which is
+ * visible, while a wrong GAP is not.
+ */
 const GAP = 2.6;
+const LEAN = -6.6;
+const SPLIT = X + W / 2 + LEAN - GAP / 2;
 
 export function NeonSign() {
   return (
@@ -28,24 +49,23 @@ export function NeonSign() {
         fill={C.highlight}
       />
 
-      {/* The gap between the two colours is geometry, not a character.
-          RNSVGTSpan measures each span with CTLineGetBoundsWithOptions, and
-          CoreText leaves trailing whitespace out of a line's width \u2014 so a
-          trailing " " measures as nothing and TODAY starts flush against
-          WIN. U+00A0 does not help: NSCharacterSet whitespaceCharacterSet
-          is Unicode Zs, which contains it. Both were tried on device; the
-          sign read WINTODAY both times while the browser preview showed the
-          gap. `dx` is the only version that does not go through text
-          measurement.
-
-          The anchor needs the same correction: that advance is the sum of
-          the spans' measured widths and does not count `dx`, so a centred
-          line would sit half a gap left of centre. */}
-      <Text x={X + W / 2 - GAP / 2} y={Y + 54} fontSize={9.5} fontWeight="800" textAnchor="middle">
-        <TSpan fill={C.highlight}>WIN</TSpan>
-        <TSpan fill={C.white} dx={GAP}>
-          TODAY
-        </TSpan>
+      <Text
+        x={SPLIT}
+        y={Y + 54}
+        fill={C.highlight}
+        fontSize={9.5}
+        fontWeight="800"
+        textAnchor="end">
+        WIN
+      </Text>
+      <Text
+        x={SPLIT + GAP}
+        y={Y + 54}
+        fill={C.white}
+        fontSize={9.5}
+        fontWeight="800"
+        textAnchor="start">
+        TODAY
       </Text>
       <Text x={X + W / 2} y={Y + 66} fill={C.white} fontSize={9.5} fontWeight="800" textAnchor="middle">
         STRONGER
