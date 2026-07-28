@@ -37,6 +37,54 @@ Nothing else in `src/components/ascnd/koa/` is generated.
    the running pose rebuilt from scratch, wrongly, and it hid four separate
    CSS rules being broken at once.
 
+## The lamp
+
+`koa-light.ts` shades the figure, and it is *not* generated — the export has
+one flat colour per surface, and a character lit the same from its ears to its
+feet reads as pasted onto the room rather than standing in it. Every fill gets
+multiplied once, when the tree is built, by how much of the studio's lamp
+reaches that part.
+
+```bash
+node tools/koa-import/figure.mjs <out.png>   # both figures, and the profile
+```
+
+Measured on the composite, against the same points unlit:
+
+| | crown | ear | cheek | upper body | lower body | feet |
+|---|---|---|---|---|---|---|
+| unlit | 198 | 220 | 212 | 220 | 220 | 194 |
+| lit | 190 | 210 | 203 | 177 | 177 | 144 |
+| | 96% | 95% | 96% | 81% | 81% | 74% |
+
+Two things about it are worth knowing before changing it.
+
+**It is in the fills because there is nowhere else to put it.** A gradient
+painted over the figure and clipped to it is the obvious approach and SVG
+cannot do it: `clip-path` wants a shape, and `mask` wants the figure drawn a
+second time inside the mask, which doubles ~130 animated elements on a screen
+that already had to be pulled back for heat. An unclipped rectangle is not an
+option either — the figure's `Svg` is transparent, so it would sit over the
+room as a visible pane.
+
+**Some shapes exist only to be invisible.** `head_top_fur` is three paths: two
+tufts that stick out of the skull, and `M99 38 L141 38 L141 66 L99 66 Z` — a
+plain rectangle in the head's own colour, there to hide where the tufts are
+rooted. It costs nothing while every fill is identical, and the moment they
+are not it is a grey rectangle across the forehead. So a shape sealed inside a
+larger one of the same colour takes that shape's shade. The test is
+containment and not overlap on purpose: an arm is the same colour as the torso
+and overlaps it, and the step between them is the only thing separating the
+two.
+
+```bash
+node tools/koa-import/patches.mjs            # exits non-zero if one shows
+```
+
+That checks it across all sixty pose × expression combinations using the
+browser's own bounding boxes, so it does not rest on this module's path
+arithmetic being right.
+
 ## What the importer understands
 
 `<sc-if value="{{ flag }}">` → a conditional group · `{{ binding }}` in a

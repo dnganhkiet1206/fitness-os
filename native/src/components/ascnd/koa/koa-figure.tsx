@@ -16,6 +16,7 @@ import {
   type Worn,
 } from '@/components/ascnd/koa/koa-flags';
 import { CLOCK_RESET, stepClock } from '@/components/ascnd/koa/figure-clock';
+import { litProps } from '@/components/ascnd/koa/koa-light';
 import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
   KEYFRAMES,
@@ -358,7 +359,8 @@ function RenderNode({
   // presentation attributes belong to the layer whether it is a shape or a
   // group — a `<g fill="none" stroke="#AEB6BF">` is what makes its children
   // strokes rather than black fills
-  const own = attrs(n.a, drivesOp);
+  // the studio's lamp, folded into the fills — see `koa-light.ts`
+  const own = litProps(n, attrs(n.a, drivesOp));
   const ownOpacity = drivesOp && n.a?.opacity != null ? Number(n.a.opacity) : 1;
   const isShape = !!SHAPES[n.t];
   const gProps = isShape ? {} : own;
