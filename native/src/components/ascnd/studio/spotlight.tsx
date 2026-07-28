@@ -54,35 +54,35 @@ export function Spotlight() {
   return (
     <>
       <Defs>
-        {/* The beam used to read as several colours stacked up, and the cause
-            was not the stops but the strength. A warm at low alpha over a
+        {/* Two things had to be true at once here, and they were found in
+            that order.
+
+            **Strength.** The beam used to read as several colours stacked
+            up, and the cause was not the stops. A warm at low alpha over a
             blue-purple wall does not look like a faint warm — it sweeps
             blue → purple → magenta as the alpha climbs, because the warm's
-            blue channel (77) is barely above the wall's while its red runs
+            blue channel (77) sits barely above the wall's while its red runs
             away. The old cone never got strong enough to leave that sweep:
             hue down the middle went 312 · 270 · 261 at y 110/140/170, so the
-            *bright* half of the beam was magenta and purple, with no part of
-            it reading gold.
+            bright half of the beam was magenta and purple with no part of it
+            reading gold. It reads 25 · 32 · 24 there now.
 
-            So the top half is now bright enough to be its own colour — gold
-            at y 110/140/170 measures 25 · 32 · 24 — and the sweep is pushed
-            into the dim lower half where it is not read as colour. The crown
-            is white rather than highlight because the design's light is
-            bright *and* only slightly warm: pure highlight at this strength
-            measured R−B +24 against the design's +8.1.
+            **And a tail that ends.** Below about y290 the design's beam has
+            no colour left to give — down its middle the saturation climbs
+            34 · 43 · 47 · 50 while the hue settles on the wall's own 234, so
+            what looks like a beam low down is the vignette leaving the
+            centre alone, not light. Carrying gold to the foot held the
+            luminance and took the room's middle to 13% saturation against
+            the design's 47, so the gradient is cut at 0.58.
 
-            Held to the design's own numbers (README, "The lighting,
-            The tail is cut at 0.58 — about y290 — because below that the
-            design's beam has no colour left to give: down its middle the
-            saturation climbs 34 · 43 · 47 · 50 while the hue settles on the
-            wall's own 234, so what looks like a beam low down is the vignette
-            leaving the centre alone, not light. Carrying gold to the foot at
-            0.045 held the luminance and took the room's middle to 13%
-            saturation against the design's 47.
-
-            against 61 · 49 · 36 · 31, warmth +12 at the shade against +8.1
-            and −10 halfway against −14.9. Re-measure before changing a stop;
-            the profile is what the room is, more than its coordinates are. */}
+            Measured down the middle at y 110/170/250/320 against the design
+            column in the README: luminance 57.8 · 40.9 · 24.6 · 25 against
+            61 · 49 · 36 · 31, warmth +18 at the shade against +8.1 and −34
+            halfway against −14.9. The tail cut is what pulls the lower two
+            below the design and the warmth apart from it; that was the
+            deliberate trade for the saturation. Re-measure before changing a
+            stop — the profile is what the room is, more than its coordinates
+            are. */}
         <LinearGradient id="studioCone" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={C.highlight} stopOpacity={0.25} />
           <Stop offset="0.1" stopColor={C.highlight} stopOpacity={0.26} />

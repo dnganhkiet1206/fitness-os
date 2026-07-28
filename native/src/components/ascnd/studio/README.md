@@ -88,7 +88,7 @@ is wrong.
 | Every object is its own component | one file each, placed by `(x, y)` |
 | The scene imports no Reanimated | `preview.mjs` bundles it with esbuild and would fail |
 
-Current cost: **COUNT shapes, ~SIZE of SVG**. Everything but the motes is
+Current cost: **190 shapes, ~20KB of SVG**. Everything but the motes is
 static — the scene draws once and then costs nothing per frame, which is
 what lets it sit under a character that does animate, and the motes are
 three group matrices off one shared value. `preview.mjs` prints both numbers
@@ -363,7 +363,7 @@ first placements failed that: a warm one inside the beam's bright upper cone
 measured 7 luminance units **darker** than the light around it — a speck of
 dirt, not dust — and one on the window frame moved the pixel by 1.5. They go
 on wall and floor now, never on a lit prop and never inside the beam above
-y≈210, and each is measured at +6.1 to +15.5 against a median of its
+y≈210, and each is measured at +3.3 to +15.3 against a median of its
 surroundings. They were first drawn at 3–5%, which measured +3.5 to +7.1 and
 read as too faint on device; re-measure if they move again.
 
