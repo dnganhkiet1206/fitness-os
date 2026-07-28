@@ -86,11 +86,13 @@ is wrong.
 | Centre stays empty | nothing is drawn between x 120–270 above the podium |
 | Depth from scale, overlap and brightness only | no perspective transform anywhere |
 | Every object is its own component | one file each, placed by `(x, y)` |
+| The scene imports no Reanimated | `preview.mjs` bundles it with esbuild and would fail |
 
-Current cost: **185 shapes, ~19KB of SVG**, all static — it draws once and
-then costs nothing per frame, which is what lets it sit under a character
-that does animate. `preview.mjs` prints both numbers on every run; if they
-have moved, this line is what is stale.
+Current cost: **COUNT shapes, ~SIZE of SVG**. Everything but the motes is
+static — the scene draws once and then costs nothing per frame, which is
+what lets it sit under a character that does animate, and the motes are
+three group matrices off one shared value. `preview.mjs` prints both numbers
+on every run; if they have moved, this line is what is stale.
 
 ## Held to the design, measured
 
@@ -351,18 +353,33 @@ purpose.
 
 ## The air, and the podium's face
 
-Seventeen neon motes hang in the room at 3–5%, in `background.tsx` but drawn
+Twenty-two neon motes hang in the room at 7–11%, in `motes.tsx` but drawn
 **after** `Vignette` and `Spotlight` rather than with the white dust: the
 vignette reaches full `bgTop` at the corners, so anything in `Background` is
 painted out exactly where these are meant to read.
 
-At that opacity a mote only reads where it is brighter than what is behind
-it. Two of the first placements failed: a warm one inside the beam's bright
-upper cone measured 7 luminance units **darker** than the light around it —
-a speck of dirt, not dust — and one on the window frame moved the pixel by
-1.5. They go on wall and floor now, never on a lit prop and never inside the
-beam above y≈210, and each is measured at +3.5 to +7.1 against a median of
-its surroundings.
+A mote only reads where it is brighter than what is behind it. Two of the
+first placements failed that: a warm one inside the beam's bright upper cone
+measured 7 luminance units **darker** than the light around it — a speck of
+dirt, not dust — and one on the window frame moved the pixel by 1.5. They go
+on wall and floor now, never on a lit prop and never inside the beam above
+y≈210, and each is measured at +6.1 to +15.5 against a median of its
+surroundings. They were first drawn at 3–5%, which measured +3.5 to +7.1 and
+read as too faint on device; re-measure if they move again.
+
+**They drift, and that makes them the one thing here that moves.** The
+motion is three group matrices off a single shared value, derived on the UI
+thread with no per-frame work in JS, over a 26s cycle whose terms are whole
+numbers of cycles so the loop closes without a seam. `StageRenderer` only
+passes them while the screen is focused, so the clock stops with the screen.
+
+`DriftingMotes` lives in its own file, `motes-drift.tsx`, and `koa-studio.tsx`
+takes it as a `motes` prop rather than importing it. That is not style:
+Reanimated pulls in `react-native`, whose Flow syntax esbuild will not parse,
+so one import of it inside the scene takes `preview.mjs` and `stage.mjs` down
+with it — which is exactly what happened on the first attempt. **Keep the
+studio's module graph free of Reanimated.** Omit the prop and the motes draw
+at rest, which is what every still of the scene shows.
 
 The podium's top face was lifted from 0.05 to 0.11 white and its side takes
 a second pass of the contact shadow, so face ÷ side went 2.80 → 3.96. That

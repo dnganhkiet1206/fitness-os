@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react';
 import Svg, { Ellipse } from 'react-native-svg';
 
-import { Background, Motes } from '@/components/ascnd/studio/background';
+import { Background } from '@/components/ascnd/studio/background';
 import { FloorLight, FloorPlane, Vignette } from '@/components/ascnd/studio/floor';
 import { NeonSign } from '@/components/ascnd/studio/neon-sign';
+import { Motes } from '@/components/ascnd/studio/motes';
 import { C, STAGE_MARK, STUDIO_H, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
 import { Plant } from '@/components/ascnd/studio/plant';
 import { Platform } from '@/components/ascnd/studio/platform';
@@ -35,6 +37,7 @@ export function KoaStudio({
   streak,
   skin = 'default',
   energy = 0.5,
+  motes,
 }: {
   width: number;
   height: number;
@@ -44,6 +47,19 @@ export function KoaStudio({
   skin?: string;
   /** 0..1 — how much light the room gives back today */
   energy?: number;
+  /**
+   * The drifting motes, for a screen that wants them — `<DriftingMotes />`
+   * from `motes-drift.tsx`, passed in rather than imported.
+   *
+   * This module must not reach Reanimated: `preview.mjs` and `stage.mjs`
+   * bundle the scene with esbuild, and Reanimated pulls in `react-native`,
+   * whose Flow syntax esbuild will not parse. Keeping the drift on the
+   * caller's side of the boundary is what keeps the room verifiable.
+   *
+   * Omit it and the motes are drawn at rest, which is what every still of
+   * the scene should show.
+   */
+  motes?: ReactNode;
 }) {
   const s = STUDIO_SKINS[skin] ?? STUDIO_SKINS.default;
   return (
@@ -70,7 +86,7 @@ export function KoaStudio({
       <NeonSign />
       <Spotlight />
       {/* the air, after the vignette that would otherwise paint it out */}
-      <Motes />
+      {motes ?? <Motes />}
       <FloorLight glow={s.glow} energy={energy} />
 
       <Platform glow={s.glow} energy={energy} />

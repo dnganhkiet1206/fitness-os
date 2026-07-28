@@ -15,6 +15,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
 import { KoaStudio } from '@/components/ascnd/studio/koa-studio';
+import { DriftingMotes } from '@/components/ascnd/studio/motes-drift';
 import { SCENE_BOTTOM, STAGE_MARK, STUDIO_W } from '@/components/ascnd/studio/palette';
 import { triggerMascotAction, useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
@@ -151,7 +152,14 @@ export function StageRenderer({
   return (
     <View style={[styles.scene, { height: H }]} onLayout={onLayout}>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <KoaStudio width={sw} height={H} skin={themeKey} energy={energy} streak={streak} />
+        <KoaStudio
+          width={sw}
+          height={H}
+          skin={themeKey}
+          energy={energy}
+          streak={streak}
+          motes={animated ? <DriftingMotes /> : undefined}
+        />
       </View>
 
       {/* the buddy, on the mark the scene is built around */}
