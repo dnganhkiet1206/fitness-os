@@ -41,49 +41,58 @@ Nothing else in `src/components/ascnd/koa/` is generated.
 
 `koa-light.ts` shades the figure, and it is *not* generated — the export has
 one flat colour per surface, and a character lit the same from its ears to its
-feet reads as pasted onto the room rather than standing in it. Every fill gets
-multiplied once, when the tree is built, by how much of the studio's lamp
-reaches that part.
+feet reads as pasted onto the room rather than standing in it.
 
 ```bash
 node tools/koa-import/figure.mjs <out.png>   # both figures, and the profile
 ```
 
-Measured on the composite, against the same points unlit:
+Measured on the render, against the same points unlit:
 
-| | crown | ear | cheek | upper body | lower body | feet |
-|---|---|---|---|---|---|---|
-| unlit | 198 | 220 | 212 | 220 | 220 | 194 |
-| lit | 190 | 210 | 203 | 177 | 177 | 144 |
-| | 96% | 95% | 96% | 81% | 81% | 74% |
+| | crown | ear top | ear foot | cheek | chin | shoulder | belly | leg | shadow |
+|---|---|---|---|---|---|---|---|---|---|
+| lit ÷ flat | 104% | 102% | 96% | 95% | 91% | 90% | 88% | 85% | 21% |
 
-Two things about it are worth knowing before changing it.
+Three things about it are worth knowing before changing it.
 
-**It is in the fills because there is nowhere else to put it.** A gradient
-painted over the figure and clipped to it is the obvious approach and SVG
-cannot do it: `clip-path` wants a shape, and `mask` wants the figure drawn a
-second time inside the mask, which doubles ~130 animated elements on a screen
-that already had to be pulled back for heat. An unclipped rectangle is not an
-option either — the figure's `Svg` is transparent, so it would sit over the
-room as a visible pane.
+**It may not make anything dimmer overall.** A lamp adds light; it does not
+take the white out of a white mascot. The first version multiplied every fill
+by a factor of at most 1 and turned the koala grey — a different character,
+not a lit one. The ramp starts *above* 1, so the crown and the ears come out
+brighter than the artwork and only the lower body goes under.
 
-**Some shapes exist only to be invisible.** `head_top_fur` is three paths: two
-tufts that stick out of the skull, and `M99 38 L141 38 L141 66 L99 66 Z` — a
-plain rectangle in the head's own colour, there to hide where the tufts are
-rooted. It costs nothing while every fill is identical, and the moment they
-are not it is a grey rectangle across the forehead. So a shape sealed inside a
-larger one of the same colour takes that shape's shade. The test is
-containment and not overlap on purpose: an arm is the same colour as the torso
-and overlaps it, and the step between them is the only thing separating the
-two.
+**One factor per element cannot shade anything.** An ear is a single path, so
+a per-element factor makes it a flat tone with its top and bottom identical.
+What an ear needs is 105 at the top and 95 at the bottom, and that is a
+gradient *inside* one shape. Each colour is a vertical gradient in **user
+space** running the height of the figure — one gradient per colour per
+coordinate system, ten to fifteen for a given pose, built once at module load
+and filtered per pose by `rampsFor(flags)`.
+
+Working in user space rather than per element is also what makes it seamless.
+The export contains shapes whose only job is to be invisible: `head_top_fur`
+is two tufts plus `M99 38 L141 38 L141 66 L99 66 Z`, a plain rectangle in the
+head's own colour hiding where the tufts are rooted. Give it a fill of its own
+and it is a grey patch on the forehead — an earlier pass drew exactly that.
+Painted from the head's own ramp at the head's own coordinates, it cannot be.
 
 ```bash
 node tools/koa-import/patches.mjs            # exits non-zero if one shows
 ```
 
 That checks it across all sixty pose × expression combinations using the
-browser's own bounding boxes, so it does not rest on this module's path
-arithmetic being right.
+browser's own bounding boxes, so it does not rest on this module's arithmetic.
+
+**The shadow is not a light grey.** `#AEB6BF` at low opacity is what the export
+uses for the contact shadow, and it was drawn for a white page — light grey
+over white darkens. On the podium's dark plum it *lightens*: measured, a smudge
+of 108 on a surface of 50. `koa-light.ts` remaps that one colour to a near-black
+plum, and gives it no ramp, because a shadow is the absence of light.
+
+One thing a browser preview cannot settle: whether `react-native-svg` resolves
+`userSpaceOnUse` inside a nested transformed group the way the spec says. Most
+of the figure sits at identity, where there is nothing to resolve; a limb is
+where to look first if the device disagrees.
 
 ## What the importer understands
 

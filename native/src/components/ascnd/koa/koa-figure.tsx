@@ -6,7 +6,7 @@ import Animated, {
   useSharedValue,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { ClipPath, Defs, G, type GProps } from 'react-native-svg';
+import Svg, { ClipPath, Defs, G, LinearGradient, Stop, type GProps } from 'react-native-svg';
 
 import {
   koaFlags,
@@ -16,7 +16,7 @@ import {
   type Worn,
 } from '@/components/ascnd/koa/koa-flags';
 import { CLOCK_RESET, stepClock } from '@/components/ascnd/koa/figure-clock';
-import { litProps } from '@/components/ascnd/koa/koa-light';
+import { litProps, rampsFor } from '@/components/ascnd/koa/koa-light';
 import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
   KEYFRAMES,
@@ -496,6 +496,9 @@ export function KoaFigure({
   // the flags. Rebuilding it every time a parent re-renders — the Stage does
   // so on every emotion, energy and XP change — is pure waste, and the clock
   // drives the motion without React seeing any of it.
+  // the lamp's gradients, on the same terms as the tree: only what this pose
+  // uses, rebuilt only when the flags change
+  const ramps = useMemo(() => rampsFor(flags), [flags]);
   const tree = useMemo(
     () => NODES.map((n, i) => <RenderNode key={i} n={n} flags={flags} clock={clock} live={animated} />),
     [flags, clock, animated],
@@ -504,6 +507,23 @@ export function KoaFigure({
   return (
     <View style={{ width: size, height }} pointerEvents="none">
       <Svg width={size} height={height} viewBox={KOA_VIEWBOX} preserveAspectRatio="xMidYMax meet">
+        {/* the lamp — one vertical ramp per colour, see `koa-light.ts` */}
+        <Defs>
+          {ramps.map((r) => (
+            <LinearGradient
+              key={r.id}
+              id={r.id}
+              gradientUnits="userSpaceOnUse"
+              x1={r.x1}
+              y1={r.y1}
+              x2={r.x2}
+              y2={r.y2}>
+              {r.stops.map(([o, c]) => (
+                <Stop key={o} offset={o} stopColor={c} />
+              ))}
+            </LinearGradient>
+          ))}
+        </Defs>
         {tree}
       </Svg>
     </View>

@@ -23,7 +23,7 @@ writeFileSync(
   entry,
   `export { NODES, KEYFRAMES } from '@/components/ascnd/koa/koa-scene';
    export { koaFlags } from '@/components/ascnd/koa/koa-flags';
-   export { litProps, shadeOf } from '@/components/ascnd/koa/koa-light';
+   export { litProps, shadeAt, rampsFor } from '@/components/ascnd/koa/koa-light';
 `,
 );
 execFileSync(
@@ -31,7 +31,7 @@ execFileSync(
   ['esbuild', entry, '--bundle', '--format=esm', '--tsconfig=tsconfig.json', `--outfile=${path.join(dir, 'koa.js')}`],
   { stdio: 'inherit' },
 );
-const { NODES, koaFlags, litProps, shadeOf } = await import(pathToFileURL(path.join(dir, 'koa.js')));
+const { NODES, koaFlags, litProps, shadeAt, rampsFor } = await import(pathToFileURL(path.join(dir, 'koa.js')));
 
 /* ── the same static render `verify.mjs` uses, minus the animation ────── */
 
@@ -78,33 +78,27 @@ function render(n, flags, lit) {
 }
 
 const flags = koaFlags('happy', 'idle', undefined);
+const RAMPS = rampsFor(koaFlags('happy', 'idle', undefined));
+const defs =
+  '<defs>' + RAMPS.map((r) =>
+    `<linearGradient id="${r.id}" gradientUnits="userSpaceOnUse" x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}">` +
+    r.stops.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('') + '</linearGradient>').join('') + '</defs>';
 const svg = (lit) =>
   `<svg viewBox="0 0 240 300" width="240" height="300" xmlns="http://www.w3.org/2000/svg">` +
+  (lit ? defs : '') +
   NODES.map((n) => render(n, flags, lit)).join('') +
   `</svg>`;
 
 /* ── what the lamp gives each part ────────────────────────────────────── */
 
-// the real elements, not sample points — this is what actually gets drawn
-const PARTS = [
-  ['chỏm đầu', 'head_top_fur'], ['tai', 'ear_left'], ['đầu', 'head_front'],
-  ['thân', 'torso_front'], ['bụng', 'belly'], ['tay', 'arm_left_upper'],
-  ['chân', 'leg_left_lower'],
+// the ramp at the heights the parts actually occupy, as a % of the artwork
+const BANDS = [
+  ['đỉnh tai', 40], ['chân tai', 110], ['đỉnh đầu', 34], ['cằm', 168],
+  ['vai', 180], ['bụng', 215], ['chân', 255], ['bàn chân', 275],
 ];
-const found = new Map();
-(function scan(ns) {
-  for (const n of ns) {
-    if (n.id) found.set(n.id, n);
-    if (n.kids) scan(n.kids);
-  }
-})(NODES);
-console.log('ánh sáng từng bộ phận');
-for (const [label, id] of PARTS) {
-  let n = found.get(id);
-  let k = n ? shadeOf(n) : undefined;
-  // a group carries its parts; take the first child that has a shade
-  if (k === undefined && n && n.kids) for (const c of n.kids) if ((k = shadeOf(c)) !== undefined) break;
-  console.log(`  ${label.padEnd(10)} ${k === undefined ? '—' : Math.round(k * 100) + '%'}`);
+console.log(`${RAMPS.length} dải sáng — ánh sáng theo chiều cao`);
+for (const [label, y] of BANDS) {
+  console.log(`  ${label.padEnd(10)} ${Math.round(shadeAt(y) * 100)}%`);
 }
 
 const { chromium } = createRequire(import.meta.url)('playwright');
