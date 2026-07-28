@@ -90,10 +90,20 @@ transform and animation. Four of them, in this order:
 
 | pass | what | units |
 |---|---|---|
-| ramp | the top-to-bottom falloff, on the fill | user space |
+| ramp | the top-to-bottom falloff, and the ring's bounce, on the fill | user space |
 | glow | the hot spot on the skull | user space |
 | form | the ear's own top-lit / underside-dark | the shape's box |
+| body | the same across the shoulders, at a third of the reach | the shape's box |
 | rim | the line on the upper contour, on the stroke | the shape's box |
+
+`body` is separate from `form` because the torso and the upper arms are three
+or four times the height of an ear: the ear's amplitude spread over them
+fights the figure's own ramp and takes the belly too dark. The shoulders want
+only the top eighth lifted, which is the part of the body a lamp straight
+overhead can see.
+
+Measured on the composite against the flat artwork: skull 106%, forehead 104%,
+ear top 104%, ear foot 96%, shoulder edge 103%, chest 89%, belly 87%, leg 85%.
 
 Which units each uses is not a style choice. **User space when two shapes must
 agree**, the shape's own box when a shape is being modelled *as a shape*. The
@@ -104,6 +114,16 @@ patch. The ear's modelling is box-relative because that is the whole point:
 the global ramp gives the ear about eight points of falloff — it covers 70 of
 the board's 255 — and reading as top-lit is the ear's own business, not the
 figure's.
+
+**Nothing stands in for light between the viewer and the character.** A soft
+ellipse over the buddy lived here for one commit, to stop the beam and the
+figure reading as two layers. It measured well and it looked wrong: at that
+size a falloff stops reading as light and starts reading as an *object*, a
+pale shape parked behind the mascot. Removed at the user's direction. What the
+lamp does to the character it does on the character, and what it does to the
+floor is the pool and the contact shadow — if the layers still separate,
+strengthen those. Measured beside the figure at shoulder height, the air is
+25 · 25 · 25 · 25 against a far wall of 24: no glow at any distance.
 
 **The bounce off the ring costs nothing and gets no pass.** The stage has a
 lit gold ring round it, so the undersides — soles, low belly, the edge of a

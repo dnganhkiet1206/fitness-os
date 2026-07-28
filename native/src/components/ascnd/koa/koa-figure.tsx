@@ -17,11 +17,14 @@ import {
 } from '@/components/ascnd/koa/koa-flags';
 import { CLOCK_RESET, stepClock } from '@/components/ascnd/koa/figure-clock';
 import {
+  BODY_GRADIENT,
+  BODY_STOPS,
   FORM_GRADIENT,
   FORM_STOPS,
   glowsFor,
   GLOW_COLOUR,
   GLOW_STOPS,
+  hasBody,
   hasForm,
   hasGlow,
   hasRim,
@@ -391,12 +394,13 @@ function RenderNode({
       // `koa-light.ts`. Order: the hot spot and the ear's own modelling sit
       // under the rim, which is the last thing the light does.
       const glow = hasGlow(n);
-      if (!glow && !hasForm(n) && !hasRim(n)) return <Shape {...own} />;
+      if (!glow && !hasForm(n) && !hasBody(n) && !hasRim(n)) return <Shape {...own} />;
       return (
         <>
           <Shape {...own} />
           {glow ? <Shape {...own} fill={`url(#${glow})`} stroke="none" /> : null}
           {hasForm(n) ? <Shape {...own} fill={`url(#${FORM_GRADIENT})`} stroke="none" /> : null}
+          {hasBody(n) ? <Shape {...own} fill={`url(#${BODY_GRADIENT})`} stroke="none" /> : null}
           {hasRim(n) ? (
             <Shape {...own} fill="none" stroke={`url(#${RIM_GRADIENT})`} strokeWidth={RIM_WIDTH} />
           ) : null}
@@ -566,6 +570,11 @@ export function KoaFigure({
           ))}
           <LinearGradient id={FORM_GRADIENT} x1="0" y1="0" x2="0" y2="1">
             {FORM_STOPS.map(([o, c, a]) => (
+              <Stop key={o} offset={o} stopColor={c} stopOpacity={a} />
+            ))}
+          </LinearGradient>
+          <LinearGradient id={BODY_GRADIENT} x1="0" y1="0" x2="0" y2="1">
+            {BODY_STOPS.map(([o, c, a]) => (
               <Stop key={o} offset={o} stopColor={c} stopOpacity={a} />
             ))}
           </LinearGradient>

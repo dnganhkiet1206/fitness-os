@@ -385,34 +385,20 @@ far edge across the widest, flattest part of the curve. It is two arcs now, at
 a different reason: the design's is *bright*, 68 against a face of 42–44, and
 this had drawn a dark one.
 
-## The one thing drawn over the buddy
+## Nothing is drawn over the buddy
 
-`beam-haze.tsx`. Everything else the lamp does — the beam, the pool, and every
-pass `koa-light.ts` puts on the figure — is *behind* the character in the
-stacking order, so the beam passed behind at full strength on both sides and
-Koa sat in front of it as a cut-out. Scanning across the air at shoulder
-height, before and after:
+There was a soft ellipse here for one commit — lit air in front of the
+character, meant to stop the beam and Koa reading as two layers. It measured
+well and it looked wrong: **at that size a falloff stops reading as light and
+starts reading as an object**, a pale shape parked behind the mascot. Removed
+at the user's direction, 2026-07-28.
 
-```
-before   25  25  25  25 [Koa]  25  25      ← the same as the far wall
-after    25  28  31  32 [Koa]  32  31      ← lit, and falling off outward
-```
-
-and directly above the head, 24 → 36 in light and −34 → −20 in warmth. The
-character's own luminance does not move — a wash cannot brighten something
-already brighter than itself — but its warmth goes −16 → −1, which is the
-difference between standing under the light and standing in it.
-
-It is one soft ellipse, warm, peaking under eight percent, taller than it is
-wide so it reads as the beam wrapping the figure rather than a halo round it.
-A slab of the actual cone would be truer and does not work: the cone is wider
-than the character at every height it covers, so a slab of it is a flat wash,
-and a flat wash over a transparent canvas is a visible rectangle laid across
-the room. A falloff has no edges to show.
-
-**`light.mjs` does not see it.** That tool renders the studio, and the haze is
-part of how the stage composes the studio with the buddy — if a number here
-disagrees with a screenshot of the app around the character, this is why.
+The rule that replaces it: **the beam is one continuous cone from the lamp to
+the stage, and nothing else in this room is allowed to stand in for light.**
+What the lamp does to the character it does *on* the character —
+`koa-light.ts` — and what it does to the floor is the pool and the contact
+shadow. If the two still read as separate layers, strengthen those; do not put
+a glow back between them.
 
 ## The lighting, measured
 

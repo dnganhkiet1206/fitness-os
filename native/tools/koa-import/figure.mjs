@@ -32,7 +32,7 @@ execFileSync(
   { stdio: 'inherit' },
 );
 const { NODES, koaFlags, L } = await import(pathToFileURL(path.join(dir, 'koa.js')));
-const { litProps, shadeAt, rampsFor, glowsFor, hasRim, hasGlow, hasForm } = L;
+const { litProps, shadeAt, rampsFor, glowsFor, hasRim, hasGlow, hasForm, hasBody } = L;
 
 /* ── the same static render `verify.mjs` uses, minus the animation ────── */
 
@@ -79,6 +79,7 @@ function render(n, flags, lit) {
   const extras = !lit ? '' :
     (glow ? pass({ fill: `url(#${glow})`, stroke: 'none' }) : '') +
     (hasForm(n) ? pass({ fill: `url(#${L.FORM_GRADIENT})`, stroke: 'none' }) : '') +
+    (hasBody(n) ? pass({ fill: `url(#${L.BODY_GRADIENT})`, stroke: 'none' }) : '') +
     (hasRim(n) ? pass({ fill: 'none', stroke: `url(#${L.RIM_GRADIENT})`, 'stroke-width': L.RIM_WIDTH }) : '');
   const body = isShape ? `<${n.t} ${attr}/>${extras}` : kids;
   const m = opsMat([...(n.tr ? [['t', n.tr[0], n.tr[1]]] : []), ...(n.tf || [])],
@@ -100,6 +101,9 @@ const defs =
     '</radialGradient>').join('') +
   `<linearGradient id="${L.FORM_GRADIENT}" x1="0" y1="0" x2="0" y2="1">` +
   L.FORM_STOPS.map(([o, c, al]) => `<stop offset="${o}" stop-color="${c}" stop-opacity="${al}"/>`).join('') +
+  '</linearGradient>' +
+  `<linearGradient id="${L.BODY_GRADIENT}" x1="0" y1="0" x2="0" y2="1">` +
+  L.BODY_STOPS.map(([o, c, al]) => `<stop offset="${o}" stop-color="${c}" stop-opacity="${al}"/>`).join('') +
   '</linearGradient>' +
   `<radialGradient id="${L.SHADOW_GRADIENT}">` +
   L.SHADOW_STOPS.map(([o, al]) => `<stop offset="${o}" stop-color="${L.SHADOW_COLOUR}" stop-opacity="${al}"/>`).join('') +

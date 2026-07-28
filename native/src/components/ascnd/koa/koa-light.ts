@@ -200,8 +200,8 @@ export const GLOW_COLOUR = '#FFFFFF';
 /** centre and radius on the 240 × 300 board — above the middle of the skull */
 export const GLOW_C: [number, number, number] = [120, 76, 62];
 export const GLOW_STOPS: [number, number][] = [
-  [0, 0.11],
-  [0.55, 0.05],
+  [0, 0.17],
+  [0.55, 0.075],
   [1, 0],
 ];
 const GLOW_IDS = new Set(['head_front', 'head_top_fur']);
@@ -219,12 +219,36 @@ const GLOW_IDS = new Set(['head_front', 'head_top_fur']);
  */
 export const FORM_GRADIENT = 'koaForm';
 export const FORM_STOPS: [number, string, number][] = [
-  [0, '#FFFFFF', 0.15],
+  [0, '#FFFFFF', 0.25],
   [0.4, '#FFFFFF', 0],
   [0.58, '#1A1420', 0],
-  [1, '#1A1420', 0.17],
+  [1, '#1A1420', 0.22],
 ];
 const FORM_IDS = new Set(['ear_left', 'ear_right']);
+
+/**
+ * The same idea across the shoulders, at half the strength.
+ *
+ * The torso and the upper arms are three or four times the height of an ear,
+ * so the ear's amplitude spread over them fights the figure's own ramp and
+ * takes the belly too dark. What the shoulders need is only the top eighth
+ * lifted: the lamp is straight overhead, so that is the one part of the body
+ * turned toward it.
+ */
+export const BODY_GRADIENT = 'koaBody';
+export const BODY_STOPS: [number, string, number][] = [
+  [0, '#FFFFFF', 0.28],
+  [0.12, '#FFFFFF', 0.12],
+  [0.28, '#FFFFFF', 0.03],
+  [0.45, '#FFFFFF', 0],
+  [1, '#FFFFFF', 0],
+];
+const BODY_IDS = new Set([
+  'torso_front',
+  'torso_front_run',
+  'arm_left_upper',
+  'arm_right_upper',
+]);
 
 /* ── the shadow on the podium ─────────────────────────────────────────── */
 
@@ -241,11 +265,11 @@ const FORM_IDS = new Set(['ear_left', 'ear_right']);
  */
 export const SHADOW_GRADIENT = 'koaShadowSoft';
 /** across, and along — a pool under an overhead lamp is rounder than a disc */
-export const SHADOW_SPREAD: [number, number] = [1.85, 2.3];
+export const SHADOW_SPREAD: [number, number] = [2, 2.5];
 export const SHADOW_STOPS: [number, number][] = [
-  [0, 0.95],
-  [0.45, 0.62],
-  [0.78, 0.2],
+  [0, 1],
+  [0.4, 0.78],
+  [0.72, 0.3],
   [1, 0],
 ];
 
@@ -359,6 +383,7 @@ const SPACE = new Map<Node, string>();
 /** the head's hot spot, once per coordinate system it is needed in */
 const GLOW = new Map<Node, string>();
 const FORM = new Set<Node>();
+const BODY = new Set<Node>();
 export interface GlowSpot {
   id: string;
   cx: number;
@@ -423,6 +448,8 @@ export function glowsFor(flags: Flags): GlowSpot[] {
 export const hasGlow = (n: Node): string | undefined => GLOW.get(n);
 /** true when this element carries the ear's own top-lit / underside shading */
 export const hasForm = (n: Node): boolean => FORM.has(n);
+/** true when this element takes the shoulders' lighter version of it */
+export const hasBody = (n: Node): boolean => BODY.has(n);
 
 // Built eagerly, not on first paint: `koa-figure.tsx` renders `<Defs>` before
 // it renders the tree that would populate a lazy table, so a lazy table is
@@ -442,6 +469,7 @@ export const hasForm = (n: Node): boolean => FORM.has(n);
       GLOW.set(n, glowFor(key));
     }
     if (n.id && FORM_IDS.has(n.id)) FORM.add(n);
+    if (n.id && BODY_IDS.has(n.id)) BODY.add(n);
     const ids: string[] = [];
     for (const p of [n.a?.fill, n.a?.stroke]) {
       if (typeof p === 'string' && HEX.test(p) && p.toUpperCase() !== SHADOW_GREY) ids.push(rampFor(p, key));
