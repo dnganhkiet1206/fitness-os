@@ -9,10 +9,10 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import { Circle, G, Line, type CircleProps, type GProps } from 'react-native-svg';
+import { Circle, ClipPath, Defs, G, Line, Rect, type CircleProps, type GProps } from 'react-native-svg';
 
 import { C } from '@/components/ascnd/studio/palette';
-import { STAR_POINTS } from '@/components/ascnd/studio/window';
+import { GLASS, MULLIONS, STAR_POINTS } from '@/components/ascnd/studio/window';
 
 /**
  * What moves in the window: the stars twinkling, and a shooting star.
@@ -38,10 +38,14 @@ const AnimatedG = Animated.createAnimatedComponent(
  * One cycle for the sky, in ms.
  *
  * Long, because the shooting star has to be rare — it shows for about a
- * second of this, once. Unrelated to the light's 7.3s and the motes' 26s so
+ * second of this, once, so the streak comes round roughly every three
+ * quarters of a minute. Unrelated to the light's 7.3s and the motes' 26s so
  * the three never fall into step.
+ *
+ * The blink rates below are scaled with it, so lengthening this makes the
+ * streak rarer without slowing the twinkle.
  */
-const PERIOD = 19000;
+const PERIOD = 45000;
 
 /**
  * How often each star blinks, in cycles.
@@ -49,7 +53,7 @@ const PERIOD = 19000;
  * Coprime-ish so no two stars ever blink together, which is what stops the
  * window reading as one flashing panel.
  */
-const BLINK = [2, 3, 5, 7, 11, 13];
+const BLINK = [5, 7, 11, 13, 17, 19];
 
 export function useSkyClock(): SharedValue<number> {
   const t = useSharedValue(0);
@@ -77,11 +81,31 @@ function Star({ x, y, r, n, t }: { x: number; y: number; r: number; n: number; t
   return <AnimatedCircle cx={x} cy={y} r={r} fill={C.white} animatedProps={props} />;
 }
 
-export function TwinklingStars({ t }: { t: SharedValue<number> }) {
+/**
+ * The sky, behind the window it belongs to.
+ *
+ * Everything the overlay draws sits above the whole room, so without this the
+ * stars and the streak would be in front of the frame and the glazing bars
+ * rather than behind them — a star sat on a bar and the shooting star crossed
+ * one before this was here. The clip keeps them inside the glass, and the bars
+ * are drawn again on top so they occlude properly.
+ */
+export function LiveSky({ t }: { t: SharedValue<number> }) {
   return (
     <>
-      {STAR_POINTS.map(([x, y, r], i) => (
-        <Star key={i} x={x} y={y} r={r} n={BLINK[i % BLINK.length]} t={t} />
+      <Defs>
+        <ClipPath id="studioGlass">
+          <Rect x={GLASS.x} y={GLASS.y} width={GLASS.w} height={GLASS.h} rx={GLASS.r} />
+        </ClipPath>
+      </Defs>
+      <G clipPath="url(#studioGlass)">
+        {STAR_POINTS.map(([x, y, r], i) => (
+          <Star key={i} x={x} y={y} r={r} n={BLINK[i % BLINK.length]} t={t} />
+        ))}
+        <ShootingStar t={t} />
+      </G>
+      {MULLIONS.map(([x, y, w, h], i) => (
+        <Rect key={i} x={x} y={y} width={w} height={h} fill={C.primary} />
       ))}
     </>
   );
@@ -92,19 +116,19 @@ export function TwinklingStars({ t }: { t: SharedValue<number> }) {
 /**
  * Where it runs, in artboard units.
  *
- * Both ends and the tail stay inside the glass — the sky box is x 278–361,
- * y 101–206, and the tail reaches 14 units back up-left of the head, so the
- * start sits at least that far inside. That is why there is no clip path
- * here: keeping it in bounds by construction is cheaper than one. **Check it
- * again if these move.**
+ * It starts just outside the glass and leaves past the far edge — `LiveSky`
+ * clips it, so it enters and exits rather than winking on in mid-air, and it
+ * cannot stray onto the frame however these move. The clip is what makes that
+ * safe; an earlier version relied on keeping the head *and its 14-unit tail*
+ * inside by arithmetic, and the tail still crossed the glazing bar.
  */
-const FROM = { x: 296, y: 110 };
-const TO = { x: 350, y: 136 };
-/** the fraction of the cycle it is visible for — about a second in nineteen */
-const SHOW = 0.06;
+const FROM = { x: 282, y: 97 };
+const TO = { x: 372, y: 141 };
+/** the fraction of the cycle it is visible for — about a second in forty-five */
+const SHOW = 0.025;
 const AT = 0.72;
 
-export function ShootingStar({ t }: { t: SharedValue<number> }) {
+function ShootingStar({ t }: { t: SharedValue<number> }) {
   const props = useAnimatedProps<{ matrix: number[]; opacity: number }>(() => {
     const u = Math.min(1, Math.max(0, (t.value - AT) / SHOW));
     // nothing to draw for most of the cycle, and the ends fade rather than

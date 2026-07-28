@@ -58,9 +58,16 @@ const CITY: [number, number, number][] = [
   // one silhouette or a row of sticks.
   [2, 12, 10], [19, 9, 27], [36, 4, 42], [48, 11, 9], [70, 5, 18],
 ];
-/** x, y within the sky box */
+/**
+ * x, y within the sky box.
+ *
+ * **Keep them off the glazing bars.** The bars run x 318–321 and y 152–155 in
+ * artboard units; a star at 52 down sat on the horizontal one, and because the
+ * live copies are drawn in the overlay — above everything — it did not go
+ * behind the bar, it sat on top of it.
+ */
 const STARS: [number, number, number][] = [
-  [58, 16, 1.1], [70, 30, 0.8], [22, 40, 0.9], [78, 52, 1.0], [46, 12, 0.8], [12, 22, 0.7],
+  [58, 16, 1.1], [70, 30, 0.8], [22, 40, 0.9], [78, 44, 1.0], [46, 12, 0.8], [12, 22, 0.7],
 ];
 
 const SX = X + IN;
@@ -75,8 +82,19 @@ const SH = H - IN * 2;
  */
 export const STAR_POINTS: [number, number, number][] = STARS.map(([x, y, r]) => [SX + x, SY + y, r]);
 
-/** the sky box, for anything the overlay wants to keep inside the glass */
-export const SKY = { x: SX, y: SY, w: SW, h: SH };
+/** the glass, for anything the overlay needs to clip to it */
+export const GLASS = { x: SX, y: SY, w: SW, h: SH, r: 7 };
+
+/**
+ * The glazing bars, so the overlay can draw them over its own stars and its
+ * shooting star. Anything drawn on the overlay is above the whole room, so
+ * without these the sky would be in front of the window rather than behind
+ * it. x, y, width, height.
+ */
+export const MULLIONS: [number, number, number, number][] = [
+  [X + W / 2 - 1.5, SY, 3, SH],
+  [SX, Y + H / 2 - 1.5, SW, 3],
+];
 
 /** one synodic month, in days */
 const SYNODIC = 29.530588853;

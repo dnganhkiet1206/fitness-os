@@ -464,10 +464,19 @@ not vanish outright for the days around new.
 
 Phase changes over days, not frames, so this is geometry in the scene and
 costs nothing. What moves is in `sky-live.tsx` and is tiny: the six stars
-twinkle, and a shooting star crosses for about a second in every nineteen.
-Star blink rates are coprime so no two ever fire together, and the streak's
-travel and its 14-unit tail are kept inside the glass by construction rather
-than by a clip path — **re-check that if either end moves.**
+twinkle, and a shooting star crosses for about a second in every forty-five.
+Star blink rates are coprime so no two ever fire together.
+
+**The overlay draws above the whole room, so the sky needs putting back
+behind its own window.** Without that a star sits *on* a glazing bar instead
+of behind it, and the streak crosses one — both happened. `LiveSky` clips its
+contents to the glass and redraws the two bars on top, so keep new stars off
+`GLASS`'s bars anyway and let the clip handle the streak, which now enters and
+leaves past the edges rather than winking on in mid-air.
+
+`preview.mjs` passes no phase, so a still of the room shows the default young
+crescent rather than tonight's moon — deliberate, so the snapshot does not
+change from one day to the next.
 
 ## The name is part of the stage
 
