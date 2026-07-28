@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -127,7 +127,7 @@ export function SwayingPlants() {
  * layers drift apart. Still when the screen is not focused, so the clock stops
  * with it.
  */
-export function PlantsCanvas({
+function PlantsCanvasInner({
   width,
   height,
   animated,
@@ -147,3 +147,9 @@ export function PlantsCanvas({
     </Svg>
   );
 }
+
+/**
+ * Memoised for the same reason as the other two canvases: its props are
+ * primitives and the stage re-renders far more often than they change.
+ */
+export const PlantsCanvas = memo(PlantsCanvasInner);

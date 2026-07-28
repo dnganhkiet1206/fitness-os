@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -134,7 +134,10 @@ export function MascotCelebrationModal({ mascot, onClose }: { mascot: MascotDef;
   const pop = useSharedValue(0);
   const spin = useSharedValue(0);
   const confetti = useSharedValue(0);
-  const pieces = useRef(makePieces()).current;
+  // `useRef(makePieces())` evaluated its argument on *every* render and kept
+  // only the first result, so each render built 26 piece objects and threw
+  // them away. useMemo runs it once.
+  const pieces = useMemo(makePieces, []);
   const closing = useRef(false);
 
   useEffect(() => {

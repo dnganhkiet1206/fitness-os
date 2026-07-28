@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { Dimensions, type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -45,6 +45,20 @@ import type { MascotDef } from '@/lib/mascots';
  */
 
 /** the studio, cropped to the room; the rest of its artboard is app content */
+/**
+ * The room's canvases, memoised.
+ *
+ * Every prop they take is a primitive, and this component re-renders on each
+ * emotion tick, each poke and each celebration signal — without this, all
+ * three rebuilt their whole element trees, some two hundred SVG nodes, for
+ * nothing.
+ *
+ * `KoaStudio` is wrapped here rather than in its own file on purpose:
+ * `preview.mjs` bundles that file and calls the export directly, and `memo()`
+ * returns an object rather than a function, which breaks the tool outright.
+ */
+const Studio = memo(KoaStudio);
+
 const ASPECT = SCENE_BOTTOM / STUDIO_W;
 /**
  * Koa's drawn width, in artboard units.
@@ -89,6 +103,18 @@ export function StageRenderer({
   const emotion = useMascotEmotion();
   const [sw, setSw] = useState(Dimensions.get('window').width - 32);
   const onLayout = (ev: LayoutChangeEvent) => setSw(ev.nativeEvent.layout.width);
+
+  /**
+   * The moon, fixed for as long as the screen is open.
+   *
+   * `moonPhase()` is a function of the clock, so calling it inline returned a
+   * *different float on every render* — 0.480713847 then 0.480713853 sixteen
+   * milliseconds later. That is never equal to itself, so it defeats any
+   * memo below it and rebuilds the window's canvas on every emotion tick and
+   * every poke. The moon does not move visibly within a session, so pinning
+   * it at mount costs nothing and makes the prop stable.
+   */
+  const phase = useMemo(() => moonPhase(), []);
 
   const k = sw / STUDIO_W;
   const H = Math.round(sw * ASPECT);
@@ -166,13 +192,13 @@ export function StageRenderer({
             that moves needs a canvas to itself — but they also have to stay
             under the vignette, which the front half carries. See
             plants-live.tsx. */}
-        <KoaStudio
+        <Studio
           width={sw}
           height={H}
           skin={themeKey}
           energy={energy}
           streak={streak}
-          moonPhase={moonPhase()}
+          moonPhase={phase}
           live={animated}
           layer="back"
         />
@@ -180,7 +206,7 @@ export function StageRenderer({
           <PlantsCanvas width={sw} height={H} animated={animated} />
         </View>
         <View style={StyleSheet.absoluteFill}>
-          <KoaStudio
+          <Studio
             width={sw}
             height={H}
             skin={themeKey}

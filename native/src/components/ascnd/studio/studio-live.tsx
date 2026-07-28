@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Svg from 'react-native-svg';
 
 import { LampPulse, LiveStageGlow, useLightClock } from '@/components/ascnd/studio/light-drift';
@@ -33,7 +34,7 @@ import { STUDIO_H, STUDIO_W } from '@/components/ascnd/studio/palette';
  * The viewBox, size and `preserveAspectRatio` must stay identical to
  * `KoaStudio`'s or the two layers drift apart.
  */
-export function StudioLive({
+function StudioLiveInner({
   width,
   height,
   glow,
@@ -61,3 +62,10 @@ export function StudioLive({
     </Svg>
   );
 }
+
+/**
+ * Memoised: every prop is a primitive, and `StageRenderer` re-renders on each
+ * emotion tick, poke and celebration signal — without this, each of those
+ * rebuilt this canvas's whole element tree for nothing.
+ */
+export const StudioLive = memo(StudioLiveInner);

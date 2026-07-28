@@ -30,6 +30,12 @@ import { YogaBall } from '@/components/ascnd/studio/yoga-ball';
  * Everything in it is something the app already talks about: the streak, the
  * plant that grows with habit, the equipment. Nothing is here only to fill
  * space.
+ *
+ * **This must stay a plain function.** `preview.mjs` bundles it with esbuild
+ * and calls it directly, with no React runtime — wrapping it in `memo()`
+ * makes it an object and the preview dies with "KoaStudio is not a function".
+ * It *is* memoised, in `stage-renderer.tsx`, on the consumer's side of that
+ * boundary. Same reason this file imports no Reanimated.
  */
 export function KoaStudio({
   width,
