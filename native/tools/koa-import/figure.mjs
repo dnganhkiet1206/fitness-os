@@ -23,7 +23,7 @@ writeFileSync(
   entry,
   `export { NODES, KEYFRAMES } from '@/components/ascnd/koa/koa-scene';
    export { koaFlags } from '@/components/ascnd/koa/koa-flags';
-   export { litProps, shadeAt, rampsFor, hasRim, RIM_GRADIENT, RIM_WIDTH, RIM_COLOUR, RIM_STOPS } from '@/components/ascnd/koa/koa-light';
+   export * as L from '@/components/ascnd/koa/koa-light';
 `,
 );
 execFileSync(
@@ -31,8 +31,8 @@ execFileSync(
   ['esbuild', entry, '--bundle', '--format=esm', '--tsconfig=tsconfig.json', `--outfile=${path.join(dir, 'koa.js')}`],
   { stdio: 'inherit' },
 );
-const K = await import(pathToFileURL(path.join(dir, 'koa.js')));
-const { NODES, koaFlags, litProps, shadeAt, rampsFor, hasRim, RIM_GRADIENT, RIM_WIDTH, RIM_COLOUR, RIM_STOPS } = K;
+const { NODES, koaFlags, L } = await import(pathToFileURL(path.join(dir, 'koa.js')));
+const { litProps, shadeAt, rampsFor, glowsFor, hasRim, hasGlow, hasForm } = L;
 
 /* ── the same static render `verify.mjs` uses, minus the animation ────── */
 
@@ -74,10 +74,13 @@ function render(n, flags, lit) {
   // override, do not append: a repeated attribute keeps its *first* value in
   // SVG, so appending `fill="none"` to a tag that already has a fill silently
   // draws the shape again instead of its rim
-  const rim = lit && hasRim(n)
-    ? `<${n.t} ${show({ ...a, fill: 'none', stroke: `url(#${RIM_GRADIENT})`, 'stroke-width': RIM_WIDTH })}/>`
-    : '';
-  const body = isShape ? `<${n.t} ${attr}/>${rim}` : kids;
+  const pass = (extra) => `<${n.t} ${show({ ...a, ...extra })}/>`;
+  const glow = lit && hasGlow(n);
+  const extras = !lit ? '' :
+    (glow ? pass({ fill: `url(#${glow})`, stroke: 'none' }) : '') +
+    (hasForm(n) ? pass({ fill: `url(#${L.FORM_GRADIENT})`, stroke: 'none' }) : '') +
+    (hasRim(n) ? pass({ fill: 'none', stroke: `url(#${L.RIM_GRADIENT})`, 'stroke-width': L.RIM_WIDTH }) : '');
+  const body = isShape ? `<${n.t} ${attr}/>${extras}` : kids;
   const m = opsMat([...(n.tr ? [['t', n.tr[0], n.tr[1]]] : []), ...(n.tf || [])],
                    n.o ? n.o[0] : 0, n.o ? n.o[1] : 0);
   const g = isShape ? '' : attr;
@@ -91,8 +94,18 @@ const defs =
   '<defs>' + RAMPS.map((r) =>
     `<linearGradient id="${r.id}" gradientUnits="userSpaceOnUse" x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}">` +
     r.stops.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('') + '</linearGradient>').join('') +
-  `<linearGradient id="${RIM_GRADIENT}" x1="0" y1="0" x2="0" y2="1">` +
-  RIM_STOPS.map(([o, a]) => `<stop offset="${o}" stop-color="${RIM_COLOUR}" stop-opacity="${a}"/>`).join('') +
+  glowsFor(koaFlags('happy', 'idle', undefined)).map((g) =>
+    `<radialGradient id="${g.id}" gradientUnits="userSpaceOnUse" cx="${g.cx}" cy="${g.cy}" r="${g.r}">` +
+    L.GLOW_STOPS.map(([o, al]) => `<stop offset="${o}" stop-color="${L.GLOW_COLOUR}" stop-opacity="${al}"/>`).join('') +
+    '</radialGradient>').join('') +
+  `<linearGradient id="${L.FORM_GRADIENT}" x1="0" y1="0" x2="0" y2="1">` +
+  L.FORM_STOPS.map(([o, c, al]) => `<stop offset="${o}" stop-color="${c}" stop-opacity="${al}"/>`).join('') +
+  '</linearGradient>' +
+  `<radialGradient id="${L.SHADOW_GRADIENT}">` +
+  L.SHADOW_STOPS.map(([o, al]) => `<stop offset="${o}" stop-color="${L.SHADOW_COLOUR}" stop-opacity="${al}"/>`).join('') +
+  '</radialGradient>' +
+  `<linearGradient id="${L.RIM_GRADIENT}" x1="0" y1="0" x2="0" y2="1">` +
+  L.RIM_STOPS.map(([o, al]) => `<stop offset="${o}" stop-color="${L.RIM_COLOUR}" stop-opacity="${al}"/>`).join('') +
   '</linearGradient></defs>';
 const svg = (lit) =>
   `<svg viewBox="0 0 240 300" width="240" height="300" xmlns="http://www.w3.org/2000/svg">` +

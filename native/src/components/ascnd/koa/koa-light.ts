@@ -101,7 +101,7 @@ const STOPS = [0, 0.05, 0.15, 0.35, 0.65, 1];
  * poured over Koa". It takes no ramp either; a shadow is the absence of light.
  */
 const SHADOW_GREY = '#AEB6BF';
-const SHADOW = '#120C18';
+export const SHADOW_COLOUR = '#120C18';
 
 /* ── the rim ──────────────────────────────────────────────────────────── */
 
@@ -159,6 +159,76 @@ const RIM_IDS = new Set([
 
 /** true when this element should carry a rim light */
 export const hasRim = (n: Node): boolean => !!n.id && RIM_IDS.has(n.id);
+
+/* ── the hot spot on the head ─────────────────────────────────────────── */
+
+/**
+ * The small bright patch a spotlight leaves on the top of a round head.
+ *
+ * A second pass of the head's own shapes filled with a soft radial, so it is
+ * clipped to the head and needs no geometry of its own. In **user space**, not
+ * the shape's box, for the reason the ramps are: `head_top_fur` includes a
+ * plain rectangle in the head's colour drawn after the head, and a
+ * box-relative gradient would map differently onto it and cut a notch out of
+ * the patch. In user space the two agree exactly.
+ */
+export const GLOW_GRADIENT = 'koaGlow';
+export const GLOW_COLOUR = '#FFFFFF';
+/** centre and radius on the 240 × 300 board — above the middle of the skull */
+export const GLOW_C: [number, number, number] = [120, 76, 62];
+export const GLOW_STOPS: [number, number][] = [
+  [0, 0.11],
+  [0.55, 0.05],
+  [1, 0],
+];
+const GLOW_IDS = new Set(['head_front', 'head_top_fur']);
+
+/* ── the ears ─────────────────────────────────────────────────────────── */
+
+/**
+ * The ear is the nearest thing on the figure to the lamp and the global ramp
+ * cannot say so: it covers 70 of the board's 255 points, so it takes about
+ * eight points of a ramp that has the whole body to spend. Reading as "top
+ * lit, underside in shadow" is the ear's own business, so this pass is in the
+ * shape's **own box** — white over the upper third, dark under the lower
+ * third, nothing across the middle. One gradient, both ears, whatever size
+ * they are drawn at.
+ */
+export const FORM_GRADIENT = 'koaForm';
+export const FORM_STOPS: [number, string, number][] = [
+  [0, '#FFFFFF', 0.15],
+  [0.4, '#FFFFFF', 0],
+  [0.58, '#1A1420', 0],
+  [1, '#1A1420', 0.17],
+];
+const FORM_IDS = new Set(['ear_left', 'ear_right']);
+
+/* ── the shadow on the podium ─────────────────────────────────────────── */
+
+/**
+ * Wider, and soft at the edge.
+ *
+ * The export draws a flat ellipse 64 × 9 at one opacity — a hard-edged disc,
+ * which is what a shadow looks like when the light is a point and the floor is
+ * paper. Under a broad lamp on a podium it wants to be wider than the figure
+ * and to have no edge at all. There is no blur to reach for (a filter is a
+ * rasterised pass), so the softness is a radial: dense in the middle, nothing
+ * by the rim. The spread multiplies whatever the export drew, so the ellipse's
+ * own breathing animation still reads.
+ */
+export const SHADOW_GRADIENT = 'koaShadowSoft';
+/** across, and along — a pool under an overhead lamp is rounder than a disc */
+export const SHADOW_SPREAD: [number, number] = [1.85, 2.3];
+export const SHADOW_STOPS: [number, number][] = [
+  [0, 0.95],
+  [0.45, 0.62],
+  [0.78, 0.2],
+  [1, 0],
+];
+
+/** true when this element is one of the export's shadow shapes */
+export const isShadow = (n: Node): boolean =>
+  typeof n.a?.fill === 'string' && n.a.fill.toUpperCase() === SHADOW_GREY;
 
 /* ── coordinate systems ───────────────────────────────────────────────── */
 
@@ -250,6 +320,17 @@ const ALL: LightRamp[] = [];
 const RAMP = new Map<string, string>();
 /** which coordinate system each element is in */
 const SPACE = new Map<Node, string>();
+/** the head's hot spot, once per coordinate system it is needed in */
+const GLOW = new Map<Node, string>();
+const FORM = new Set<Node>();
+export interface GlowSpot {
+  id: string;
+  cx: number;
+  cy: number;
+  r: number;
+}
+const GLOWS: GlowSpot[] = [];
+const GLOW_BY_SPACE = new Map<string, string>();
 const SPACE_MAT = new Map<string, M>();
 /** which gradients each element wants, so a pose can ask for only its own */
 const USES = new Map<Node, string[]>();
@@ -274,24 +355,65 @@ function rampFor(colour: string, space: string): string {
   return id;
 }
 
+function glowFor(space: string): string {
+  const found = GLOW_BY_SPACE.get(space);
+  if (found) return found;
+  const m = SPACE_MAT.get(space) as M;
+  const [cx, cy] = invert(m, GLOW_C[0], GLOW_C[1]);
+  // a circle stays a circle under the rig's rotations and uniform scales; the
+  // radius only needs the scale back out of it
+  const s = Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2])) || 1;
+  const id = `${GLOW_GRADIENT}${GLOWS.length}`;
+  GLOWS.push({ id, cx, cy, r: GLOW_C[2] / s });
+  GLOW_BY_SPACE.set(space, id);
+  return id;
+}
+
+/** the hot-spot gradients a pose needs, alongside its ramps */
+export function glowsFor(flags: Flags): GlowSpot[] {
+  const want = new Set<string>();
+  (function walk(nodes: Node[]) {
+    for (const n of nodes) {
+      if (n.if && !flags[n.if]) continue;
+      const g = GLOW.get(n);
+      if (g) want.add(g);
+      if (n.kids) walk(n.kids);
+    }
+  })(NODES);
+  return GLOWS.filter((g) => want.has(g.id));
+}
+
+/** true when this element carries the head's hot spot */
+export const hasGlow = (n: Node): string | undefined => GLOW.get(n);
+/** true when this element carries the ear's own top-lit / underside shading */
+export const hasForm = (n: Node): boolean => FORM.has(n);
+
 // Built eagerly, not on first paint: `koa-figure.tsx` renders `<Defs>` before
 // it renders the tree that would populate a lazy table, so a lazy table is
 // empty exactly when it is needed and every fill resolves to a dangling
 // reference. Once, at module load.
-(function walk(nodes: Node[], parent: M) {
+(function walk(nodes: Node[], parent: M, glowing: boolean) {
   for (const n of nodes) {
     const m = mul(parent, localMat(n));
     const key = m.map((v) => v.toFixed(3)).join(',');
     if (!SPACE_MAT.has(key)) SPACE_MAT.set(key, m);
     SPACE.set(n, key);
+    // the hot spot is inherited: `head_top_fur` is a group, and it is the
+    // paths inside it that have to carry the pass or the filler rectangle
+    // punches a hole in it
+    const lit = glowing || (!!n.id && GLOW_IDS.has(n.id));
+    if (lit && n.t !== 'g' && typeof n.a?.fill === 'string' && HEX.test(n.a.fill)) {
+      GLOW.set(n, glowFor(key));
+    }
+    if (n.id && FORM_IDS.has(n.id)) FORM.add(n);
     const ids: string[] = [];
     for (const p of [n.a?.fill, n.a?.stroke]) {
       if (typeof p === 'string' && HEX.test(p) && p.toUpperCase() !== SHADOW_GREY) ids.push(rampFor(p, key));
     }
     if (ids.length) USES.set(n, ids);
-    if (n.kids) walk(n.kids, m);
+    if (n.kids) walk(n.kids, m, lit);
   }
-})(NODES, ID);
+})(NODES, ID, false);
 
 /* ── applying it ──────────────────────────────────────────────────────── */
 
@@ -329,9 +451,17 @@ export function litProps<T extends Record<string, string | number>>(n: Node, pro
   for (const key of ['fill', 'stroke'] as const) {
     const v = props[key];
     if (typeof v !== 'string' || !HEX.test(v)) continue;
-    const paint = v.toUpperCase() === SHADOW_GREY ? SHADOW : `url(#${rampFor(v, space)})`;
+    const paint =
+      v.toUpperCase() === SHADOW_GREY ? `url(#${SHADOW_GRADIENT})` : `url(#${rampFor(v, space)})`;
     if (out === props) out = { ...props };
     (out as Record<string, string | number>)[key] = paint;
+  }
+  if (isShadow(n)) {
+    if (out === props) out = { ...props };
+    const o = out as Record<string, string | number>;
+    if (typeof o.rx === 'number') o.rx *= SHADOW_SPREAD[0];
+    if (typeof o.ry === 'number') o.ry *= SHADOW_SPREAD[1];
+    if (typeof o.r === 'number') o.r *= SHADOW_SPREAD[0];
   }
   return out;
 }

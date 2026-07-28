@@ -83,6 +83,28 @@ node tools/koa-import/patches.mjs            # exits non-zero if one shows
 That checks it across all sixty pose × expression combinations using the
 browser's own bounding boxes, so it does not rest on this module's arithmetic.
 
+**Each thing the lamp does is one more pass of a shape it already has.** The
+same shape drawn again with a different paint is clipped to itself for free,
+carries no geometry, and sits inside the same group so it inherits every
+transform and animation. Four of them, in this order:
+
+| pass | what | units |
+|---|---|---|
+| ramp | the top-to-bottom falloff, on the fill | user space |
+| glow | the hot spot on the skull | user space |
+| form | the ear's own top-lit / underside-dark | the shape's box |
+| rim | the line on the upper contour, on the stroke | the shape's box |
+
+Which units each uses is not a style choice. **User space when two shapes must
+agree**, the shape's own box when a shape is being modelled *as a shape*. The
+head's hot spot is in user space because `head_top_fur` includes a plain
+rectangle in the head's colour drawn on top of the head, and a box-relative
+gradient maps onto that rectangle differently and punches a notch out of the
+patch. The ear's modelling is box-relative because that is the whole point:
+the global ramp gives the ear about eight points of falloff — it covers 70 of
+the board's 255 — and reading as top-lit is the ear's own business, not the
+figure's.
+
 **The rim light is a second stroke, not a glow.** A glow spreads and an
 outline goes all the way round; a rim is the top contour only. So each of the
 seven silhouette shapes — head, both ears, the torso, both upper arms — is
@@ -115,11 +137,22 @@ in SVG**, so every rim was rendering as a second copy of its own shape. React
 does the opposite — later props win — so the component was right and the
 preview was wrong, which is the second time that has happened here.
 
-**The shadow is not a light grey.** `#AEB6BF` at low opacity is what the export
-uses for the contact shadow, and it was drawn for a white page — light grey
-over white darkens. On the podium's dark plum it *lightens*: measured, a smudge
-of 108 on a surface of 50. `koa-light.ts` remaps that one colour to a near-black
-plum, and gives it no ramp, because a shadow is the absence of light.
+**The shadow is not a light grey, and it has no edge.** `#AEB6BF` at low
+opacity is what the export uses for the contact shadow, and it was drawn for a
+white page — light grey over white darkens. On the podium's dark plum it
+*lightens*. Scanning across it on the podium, before and after:
+
+```
+before   62  62  62  62  62 115 115 115 115 115 115  62  62  62
+after    62  62  60  55  51  47  41  41  41  41  47  51  56  60
+```
+
+A brighter patch with a hard edge on both sides, against a pool that is
+darker than the floor and fades into it. The colour is remapped to a
+near-black plum with no ramp on it — a shadow is the absence of light — the
+ellipse is spread 1.85 × 2.3, and the softness is a radial gradient, since a
+blur here means an SVG filter and a rasterised pass. The spread multiplies
+whatever the export animates the ellipse to, so its breathing still reads.
 
 One thing a browser preview cannot settle: whether `react-native-svg` resolves
 `userSpaceOnUse` inside a nested transformed group the way the spec says. Most

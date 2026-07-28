@@ -6,7 +6,7 @@ import Animated, {
   useSharedValue,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { ClipPath, Defs, G, LinearGradient, Stop, type GProps } from 'react-native-svg';
+import Svg, { ClipPath, Defs, G, LinearGradient, RadialGradient, Stop, type GProps } from 'react-native-svg';
 
 import {
   koaFlags,
@@ -17,6 +17,13 @@ import {
 } from '@/components/ascnd/koa/koa-flags';
 import { CLOCK_RESET, stepClock } from '@/components/ascnd/koa/figure-clock';
 import {
+  FORM_GRADIENT,
+  FORM_STOPS,
+  glowsFor,
+  GLOW_COLOUR,
+  GLOW_STOPS,
+  hasForm,
+  hasGlow,
   hasRim,
   litProps,
   rampsFor,
@@ -24,6 +31,9 @@ import {
   RIM_GRADIENT,
   RIM_STOPS,
   RIM_WIDTH,
+  SHADOW_COLOUR,
+  SHADOW_GRADIENT,
+  SHADOW_STOPS,
 } from '@/components/ascnd/koa/koa-light';
 import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
@@ -376,12 +386,20 @@ function RenderNode({
   const body = isShape ? (
     (() => {
       const Shape = SHAPES[n.t];
-      if (!hasRim(n)) return <Shape {...own} />;
-      // the rim is the same shape again, stroke only — see `koa-light.ts`
+      // Each extra pass is the same shape again with a different paint, so it
+      // is clipped to the shape for free and needs no geometry — see
+      // `koa-light.ts`. Order: the hot spot and the ear's own modelling sit
+      // under the rim, which is the last thing the light does.
+      const glow = hasGlow(n);
+      if (!glow && !hasForm(n) && !hasRim(n)) return <Shape {...own} />;
       return (
         <>
           <Shape {...own} />
-          <Shape {...own} fill="none" stroke={`url(#${RIM_GRADIENT})`} strokeWidth={RIM_WIDTH} />
+          {glow ? <Shape {...own} fill={`url(#${glow})`} stroke="none" /> : null}
+          {hasForm(n) ? <Shape {...own} fill={`url(#${FORM_GRADIENT})`} stroke="none" /> : null}
+          {hasRim(n) ? (
+            <Shape {...own} fill="none" stroke={`url(#${RIM_GRADIENT})`} strokeWidth={RIM_WIDTH} />
+          ) : null}
         </>
       );
     })()
@@ -514,6 +532,7 @@ export function KoaFigure({
   // the lamp's gradients, on the same terms as the tree: only what this pose
   // uses, rebuilt only when the flags change
   const ramps = useMemo(() => rampsFor(flags), [flags]);
+  const glows = useMemo(() => glowsFor(flags), [flags]);
   const tree = useMemo(
     () => NODES.map((n, i) => <RenderNode key={i} n={n} flags={flags} clock={clock} live={animated} />),
     [flags, clock, animated],
@@ -538,6 +557,23 @@ export function KoaFigure({
               ))}
             </LinearGradient>
           ))}
+          {glows.map((g) => (
+            <RadialGradient key={g.id} id={g.id} gradientUnits="userSpaceOnUse" cx={g.cx} cy={g.cy} r={g.r}>
+              {GLOW_STOPS.map(([o, a]) => (
+                <Stop key={o} offset={o} stopColor={GLOW_COLOUR} stopOpacity={a} />
+              ))}
+            </RadialGradient>
+          ))}
+          <LinearGradient id={FORM_GRADIENT} x1="0" y1="0" x2="0" y2="1">
+            {FORM_STOPS.map(([o, c, a]) => (
+              <Stop key={o} offset={o} stopColor={c} stopOpacity={a} />
+            ))}
+          </LinearGradient>
+          <RadialGradient id={SHADOW_GRADIENT}>
+            {SHADOW_STOPS.map(([o, a]) => (
+              <Stop key={o} offset={o} stopColor={SHADOW_COLOUR} stopOpacity={a} />
+            ))}
+          </RadialGradient>
           <LinearGradient id={RIM_GRADIENT} x1="0" y1="0" x2="0" y2="1">
             {RIM_STOPS.map(([o, a]) => (
               <Stop key={o} offset={o} stopColor={RIM_COLOUR} stopOpacity={a} />
