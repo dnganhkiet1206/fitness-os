@@ -200,6 +200,11 @@ The emotion side:
    is not the cost; covered area is.** The beam is static again and only
    small things move: a glow at the lamp's mouth, nine motes, the stage's
    glow. Never animate anything that covers a large part of the screen.
+
+   The room is layered for the same reason: `back` → plants → `front` →
+   overlay, four canvases, because the plants sway *and* have to stay under
+   the vignette. Anything that needs to move at a particular depth wants its
+   own canvas at that depth rather than a place on the top overlay.
    `components/ascnd/studio/README.md` carries the detail.
 
 **Working rules**

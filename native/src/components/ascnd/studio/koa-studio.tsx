@@ -5,8 +5,8 @@ import { FloorLight, FloorPlane, Vignette } from '@/components/ascnd/studio/floo
 import { NeonSign } from '@/components/ascnd/studio/neon-sign';
 import { Motes } from '@/components/ascnd/studio/motes';
 import { C, STAGE_MARK, STUDIO_H, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
-import { Plant } from '@/components/ascnd/studio/plant';
 import { Platform, StageGlow } from '@/components/ascnd/studio/platform';
+import { StudioPlants } from '@/components/ascnd/studio/plants';
 import { Shelf } from '@/components/ascnd/studio/shelf';
 import { StageLabel } from '@/components/ascnd/studio/stage-label';
 import { Spotlight } from '@/components/ascnd/studio/spotlight';
@@ -40,6 +40,7 @@ export function KoaStudio({
   label,
   moonPhase,
   live = false,
+  layer,
 }: {
   width: number;
   height: number;
@@ -66,6 +67,18 @@ export function KoaStudio({
    * scene in one canvas exactly as before.
    */
   live?: boolean;
+  /**
+   * Which half of the room to draw, when the plants are being drawn on a
+   * canvas of their own between them — `StageRenderer` stacks
+   * `back` → plants → `front`.
+   *
+   * Leave it off and the whole scene comes out in one canvas, which is what
+   * a still and `preview.mjs` want. The split exists because the plants sway
+   * and anything that moves needs its own canvas, but they also have to stay
+   * *under* the vignette, which takes about a third out of them where they
+   * stand. See `plants-live.tsx`.
+   */
+  layer?: 'back' | 'front';
 }) {
   const s = STUDIO_SKINS[skin] ?? STUDIO_SKINS.default;
   return (
@@ -74,33 +87,44 @@ export function KoaStudio({
       height={height}
       viewBox={`0 0 ${STUDIO_W} ${STUDIO_H}`}
       preserveAspectRatio="xMidYMin slice">
-      <Background wall={s.wall} />
-      <FloorPlane />
+      {layer !== 'front' ? (
+        <>
+          <Background wall={s.wall} />
+          <FloorPlane />
 
-      {/* the room: wall furniture, then what stands on the floor */}
-      <StudioWindow moonPhase={moonPhase} live={live} />
-      <StreakCard days={streak} />
-      <Shelf />
-      <Plant x={316} y={397} s={1.81} kind="spray" />
-      <YogaBall x={352} y={400} r={30} />
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 6} rx={205} ry={50} fill={C.shadow} opacity={0.036} />
+          {/* the room: wall furniture, then what stands on the floor */}
+          <StudioWindow moonPhase={moonPhase} live={live} />
+          <StreakCard days={streak} />
+          <Shelf />
+        </>
+      ) : null}
 
-      {/* everything above falls into shadow; everything below is the light,
-          and the neon sign is a light — under the vignette its lettering came
-          out at 145 and it read as a dark plaque rather than a lit sign */}
-      <Vignette />
-      <NeonSign />
-      {/* the beam never animates — it covers most of the screen, and that
-          is what made the phone hot. Only small shapes move; see
-          studio-live.tsx */}
-      <Spotlight />
-      {/* the air, after the vignette that would otherwise paint it out */}
-      {live ? null : <Motes />}
-      <FloorLight glow={s.glow} energy={energy} />
+      {/* drawn on their own canvas when the room is stacked — see `layer` */}
+      {layer === undefined ? <StudioPlants /> : null}
 
-      <Platform glow={s.glow} energy={energy} />
-      {live ? null : <StageGlow glow={s.glow} energy={energy} />}
-      {label ? <StageLabel label={label} glow={s.glow} /> : null}
+      {layer !== 'back' ? (
+        <>
+          <YogaBall x={352} y={400} r={30} />
+          <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 6} rx={205} ry={50} fill={C.shadow} opacity={0.036} />
+
+          {/* everything above falls into shadow; everything below is the light,
+              and the neon sign is a light — under the vignette its lettering came
+              out at 145 and it read as a dark plaque rather than a lit sign */}
+          <Vignette />
+          <NeonSign />
+          {/* the beam never animates — it covers most of the screen, and that
+              is what made the phone hot. Only small shapes move; see
+              studio-live.tsx */}
+          <Spotlight />
+          {/* the air, after the vignette that would otherwise paint it out */}
+          {live ? null : <Motes />}
+          <FloorLight glow={s.glow} energy={energy} />
+
+          <Platform glow={s.glow} energy={energy} />
+          {live ? null : <StageGlow glow={s.glow} energy={energy} />}
+          {label ? <StageLabel label={label} glow={s.glow} /> : null}
+        </>
+      ) : null}
     </Svg>
   );
 }

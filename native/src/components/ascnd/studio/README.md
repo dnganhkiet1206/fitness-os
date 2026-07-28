@@ -130,7 +130,26 @@ obeys the same three constraints:
 
 `KoaStudio` takes a `live` flag and leaves the motes and the glow out when
 the overlay is drawing them, so nothing is drawn twice. The beam is drawn
-there either way — it is far too large an area to animate. Off — which
+there either way — it is far too large an area to animate.
+
+**The room is three canvases while it is live**, not one, and that is the
+plants' doing. They sway, so they need a canvas to themselves — but they also
+have to stay *under* the vignette, which takes about a third out of both where
+they stand (0.32 for the floor plant, 0.33 for the shelf one). Drawn up on the
+main overlay they jump that much brighter, which is far more visible than the
+sway. So `StageRenderer` stacks `layer="back"` → `PlantsCanvas` →
+`layer="front"` → `StudioLive`, and `KoaStudio` with no `layer` draws the
+whole scene in one canvas for stills and for `preview.mjs`. **Every one of
+those canvases must carry the same viewBox, size and `preserveAspectRatio`**
+or the layers drift apart.
+
+Only the foliage moves; `plant.tsx` splits into `PlantFoliage` and `PlantPot`
+for that reason, because a pot that rocks with its own plant reads as an
+earthquake rather than a draught. The two sway at different rates and their
+gusts fall at different points in the cycle — a room where every leaf moves
+together is a room in a wind tunnel — and the envelope is a raised cosine
+cubed, so each plant is still for most of the cycle and then moves for a few
+seconds. Off — which
 is the default, and what `preview.mjs` gets — it draws the whole scene in one
 canvas exactly as before. That is also the boundary the Reanimated rule above
 needs: the studio imports none of it.

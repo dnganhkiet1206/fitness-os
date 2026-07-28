@@ -60,25 +60,29 @@ function blade(oy: number, tx: number, ty: number, b: number) {
 const rib = (oy: number, tx: number, ty: number) =>
   `M0 ${oy} Q ${tx * 0.5} ${oy + (ty - oy) * 0.5} ${tx} ${ty}`;
 
-export function Plant({
-  x,
-  y,
-  s = 1,
-  kind = 'bush',
-}: {
-  x: number;
-  y: number;
-  s?: number;
-  kind?: 'bush' | 'spray';
-}) {
+/**
+ * The pivot a plant sways about, in local units: the pot's rim. Leaves bend
+ * from where they leave the soil, not from the floor.
+ */
+export const PLANT_PIVOT = POT_Y;
+
+export type PlantKind = 'bush' | 'spray';
+
+/**
+ * Stem and leaves, without the pot.
+ *
+ * Split out so `plants-live.tsx` can sway the foliage while the pot holds
+ * still — a pot that rocks with its own plant reads as an earthquake. Local
+ * coordinates: the caller places and scales it.
+ */
+export function PlantFoliage({ kind = 'bush' }: { kind?: PlantKind }) {
   const leaves = kind === 'spray' ? SPRAY : BUSH;
   const oy = ORIGIN[kind];
   return (
-    <G transform={`translate(${x} ${y}) scale(${s})`}>
+    <>
       {kind === 'spray' && (
         <Path d={`M0 ${POT_Y} L 0 ${oy}`} stroke={C.plant} strokeWidth={1.1} opacity={0.4} fill="none" />
       )}
-
       {leaves.map(([tx, ty, b, tone], i) => (
         <G key={i}>
           <Path d={blade(oy, tx, ty, b)} fill={C.plant} opacity={tone} />
@@ -91,15 +95,44 @@ export function Plant({
           />
         </G>
       ))}
+    </>
+  );
+}
 
-      {/* Pot: a rim lip, a tapered body, one shaded side.
-          The room is dim, so the props carry a lot of `primary` over the
-          accent — the reference's violet is this palette in shadow, not a
-          darker colour, and the first pass read as bright plastic. */}
+/**
+ * The pot.
+ *
+ * A rim lip, a tapered body, one shaded side. The room is dim, so the props
+ * carry a lot of `primary` over the accent — the reference's violet is this
+ * palette in shadow, not a darker colour, and the first pass read as bright
+ * plastic.
+ */
+export function PlantPot() {
+  return (
+    <>
       <Path d={`M-9 ${POT_Y} L 9 ${POT_Y} L 7 0 L -7 0 Z`} fill={C.accent} />
       <Path d={`M-9 ${POT_Y} L 9 ${POT_Y} L 7 0 L -7 0 Z`} fill={C.primary} opacity={0.34} />
       <Path d={`M 2 ${POT_Y} L 9 ${POT_Y} L 7 0 L 1 0 Z`} fill={C.primary} opacity={0.3} />
       <Rect x={-10} y={POT_Y - 2.4} width={20} height={3.2} rx={1.4} fill={C.accent} />
+    </>
+  );
+}
+
+export function Plant({
+  x,
+  y,
+  s = 1,
+  kind = 'bush',
+}: {
+  x: number;
+  y: number;
+  s?: number;
+  kind?: PlantKind;
+}) {
+  return (
+    <G transform={`translate(${x} ${y}) scale(${s})`}>
+      <PlantFoliage kind={kind} />
+      <PlantPot />
     </G>
   );
 }

@@ -3,7 +3,6 @@ import { Path, Rect } from 'react-native-svg';
 import { Dumbbell } from '@/components/ascnd/studio/dumbbell';
 import { Kettlebell } from '@/components/ascnd/studio/kettlebell';
 import { C } from '@/components/ascnd/studio/palette';
-import { Plant } from '@/components/ascnd/studio/plant';
 import { Shaker } from '@/components/ascnd/studio/shaker';
 import { YogaMat } from '@/components/ascnd/studio/yoga-mat';
 
@@ -36,8 +35,8 @@ export function Shelf() {
         <Rect key={i} x={72 - hw} y={y} width={hw * 2} height={6} rx={3} fill={C.secondary} />
       ))}
 
-      {/* top board — the things Koa looks after */}
-      <Plant x={41} y={BOARDS[0][0]} s={0.72} />
+      {/* top board — the shaker; the plant beside it is drawn by
+          `plants.tsx`, because it sways and so needs its own canvas */}
       <Shaker x={84} y={BOARDS[0][0]} s={0.72} />
 
       {/* middle — the pair it lifts most */}

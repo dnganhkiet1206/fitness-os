@@ -15,6 +15,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
 import { KoaStudio } from '@/components/ascnd/studio/koa-studio';
+import { PlantsCanvas } from '@/components/ascnd/studio/plants-live';
 import { StudioLive } from '@/components/ascnd/studio/studio-live';
 import { moonPhase } from '@/components/ascnd/studio/window';
 import { SCENE_BOTTOM, STAGE_MARK, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
@@ -153,16 +154,35 @@ export function StageRenderer({
   return (
     <View style={[styles.scene, { height: H }]} onLayout={onLayout}>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {/* The room is three canvases, not one: the plants sway, and anything
+            that moves needs a canvas to itself — but they also have to stay
+            under the vignette, which the front half carries. See
+            plants-live.tsx. */}
         <KoaStudio
           width={sw}
           height={H}
           skin={themeKey}
           energy={energy}
           streak={streak}
-          label={mascot.name}
           moonPhase={moonPhase()}
           live={animated}
+          layer="back"
         />
+        <View style={StyleSheet.absoluteFill}>
+          <PlantsCanvas width={sw} height={H} animated={animated} />
+        </View>
+        <View style={StyleSheet.absoluteFill}>
+          <KoaStudio
+            width={sw}
+            height={H}
+            skin={themeKey}
+            energy={energy}
+            streak={streak}
+            label={mascot.name}
+            live={animated}
+            layer="front"
+          />
+        </View>
         {/* The moving parts, on their own canvas directly over the studio.
             Animating them inside it redrew all of its shapes every frame; see
             studio-live.tsx. It has to be absolutely positioned — as a plain
