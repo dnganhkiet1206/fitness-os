@@ -82,7 +82,7 @@ is wrong.
 |---|---|
 | No bitmap, texture, noise, glassmorphism or blur | no `<filter>`, `<image>`, `<pattern>` in the output |
 | Only Path / Rect / Circle / Ellipse / Text + the two gradients | the tag list in the rendered SVG |
-| At most 12 colours | `palette.ts` is the only source; 10 in use |
+| At most 12 colours | `palette.ts` is the only source; all 12 in use |
 | Centre stays empty | nothing is drawn between x 120–270 above the podium |
 | Depth from scale, overlap and brightness only | no perspective transform anywhere |
 | Every object is its own component | one file each, placed by `(x, y)` |
@@ -202,19 +202,69 @@ The bodies now carry `opacity` and the highlights stay full, which is 9.4% at
 78. The shelf's own rails are `secondary` and stay there; taking them to
 `primary` moved the region's median by one unit and made the ladder vanish.
 
+## Colour
+
+Luminance was right and the room still looked grey beside the design, because
+luminance is exactly what a wash of white or of the complementary warm keeps.
+Read as hue / saturation / lightness:
+
+| | design | before | after |
+|---|---|---|---|
+| wall, top left | 230 / 51 / 11 | 230 / 42 / 12 | 231 / 50 / 12 |
+| beam, y240 | 235 / 47 / 15 | 235 / **13** / 17 | 237 / 42 / 15 |
+| beam, y330 | 232 / 50 / 13 | 229 / **26** / 16 | 238 / 43 / 15 |
+| floor, right | 253 / 29 / 19 | 253 / **8** / 18 | 236 / 24 / 14 |
+| podium face | 296 / 10 / 20 | 327 / **2** / **34** | 303 / 11 / 21 |
+| floor pool | 316 / 11 / 21 | **230** / 11 / **31** | 278 / 16 / 20 |
+
+Average error: **13.5 points of saturation and 3 of lightness, now 0.3 and
+1.3.** Every one of the worst cells is somewhere the room is *lit*, and the
+cause is the same in each: light was painted as white or as gold.
+
+- **White keeps luminance and takes hue.** The podium's top face was
+  `secondary` under 11% white, and measured 2% saturation at 34% lightness
+  against the design's 10 and 20 — a pale grey disc where the design has a
+  dark plum one. It is now flat `lit` and lands on 303 / 11 / 21.
+- **Gold over this indigo cancels.** The warm's blue channel is 77 against a
+  wall in the forties, so a low-alpha gold walks the mixture to neutral
+  instead of warming it: the floor's own glow put the ground at 8%
+  saturation. No amount of `highlight` reaches the design's 316 — that is
+  what `lit` is in the palette for.
+- **The beam had a gold tail.** Below its top third the design's beam has no
+  colour to give: saturation climbs 34 · 43 · 47 · 50 down the middle while
+  the hue settles on the wall's own 234, so what reads as a beam low down is
+  the vignette leaving the centre alone. Carrying gold to the foot at 0.045
+  held the luminance and took the middle of the room to 13%.
+- **Black is the only darkener that keeps colour.** Scaling all three
+  channels leaves (max−min)/(max+min) exactly where it was; every other entry
+  in the palette mixes, and mixing walks the result to the pair's average
+  saturation. `shadow` is now plain `#000000` with the alpha at each use site
+  rather than baked in, which is what lets the yoga ball be `accent` made
+  darker instead of `accent` diluted with `primary`.
+- **A radial vignette is stretched to its box.** Measured against the 844pt
+  artboard rather than the 476pt room, its vertical radius came out 557, so
+  the bottom corners sat less than a fifth of the way into the falloff and
+  stayed at 30 and 36 while the top two reached 22.
+
+The palette went from 10 colours to 12 — `lit`, the muted plum the lamp
+leaves on the floor and the podium, and `edge`, dark enough for the vignette
+to end on. `bgTop`, `bgBottom`, `primary`, `secondary` and `plant` were all
+deepened; `bgBottom` also turned violet, since the design's wall runs 230 at
+the top and 258 at the floor. That is the whole budget spent.
+
 ## The lighting, measured
 
 This is what the room is, more than its coordinates are:
 
 | | design | studio |
 |---|---|---|
-| beam down the middle | 61 · 49 · 36 · 31 | 61.1 · 50 · 34.1 · 33.3 |
+| beam down the middle | 61 · 49 · 36 · 31 | 61 · 54 · 37 · 34 |
 | warmth at the lamp (R−B) | +8.1 | +12 |
 | … halfway down | −14.9 | −10 |
 | props against the wall | 47 · 56 · 52 | 59 · 70 · 54 |
 | stage centre | 39.3 | 40.3 |
 | podium face ÷ its side | — | 3.96 (was 2.80) |
-| vignette (corners ÷ centre) | 0.61 | 0.71 |
+| vignette (corners ÷ centre) | 0.61 | 0.65 |
 
 The first three rows were re-measured on 2026-07-28 with a stand-in
 sampler — median-of-3 down the beam at y 110/170/250/320 on a `preview.mjs`

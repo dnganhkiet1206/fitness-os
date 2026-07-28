@@ -29,14 +29,14 @@ export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; 
     <>
       <Defs>
         <RadialGradient id="studioPool" cx="50%" cy="40%" r="66%">
-          <Stop offset="0" stopColor={glow} stopOpacity={0.17} />
-          <Stop offset="0.6" stopColor={glow} stopOpacity={0.09} />
-          <Stop offset="1" stopColor={glow} stopOpacity={0.03} />
+          <Stop offset="0" stopColor={glow} stopOpacity={0.075} />
+          <Stop offset="0.6" stopColor={glow} stopOpacity={0.055} />
+          <Stop offset="1" stopColor={glow} stopOpacity={0.02} />
         </RadialGradient>
       </Defs>
 
       {/* 1 — the floor takes the weight */}
-      <Ellipse cx={CX} cy={CY + 24} rx={RX + 32} ry={RY + 16} fill={C.shadow} />
+      <Ellipse cx={CX} cy={CY + 24} rx={RX + 32} ry={RY + 16} fill={C.shadow} opacity={0.18} />
 
       {/* 2 — the cylinder: one side wall, one top face */}
       <Path
@@ -55,12 +55,18 @@ export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; 
             A ${RX} ${RY} 0 0 0 ${CX + RX} ${CY + DEPTH}
             L ${CX + RX} ${CY} A ${RX} ${RY} 0 0 1 ${CX - RX} ${CY} Z`}
         fill={C.shadow}
+        opacity={0.18}
       />
       {/* The top face is a lit surface and the floor is not — that is the
           whole reason the podium reads as solid. Left at the floor's own
-          tone it came out a hoop with the ground showing through. */}
-      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={C.secondary} />
-      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={C.white} opacity={0.11} />
+          tone it came out a hoop with the ground showing through.
+
+          It is `lit`, flat. Built as `secondary` under 11% white it measured
+          hue 327 at 2% saturation and 34% lightness against the design's
+          296 / 10 / 20 — a pale grey disc where the design has a dark plum
+          one, and the single largest colour error in the room. White is what
+          a lit surface is not: it keeps the luminance and takes the hue. */}
+      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={C.lit} />
       {/* a line, not a second disc: filling the middle back in with the
           floor's own colour left the podium reading as a hoop */}
       <Ellipse

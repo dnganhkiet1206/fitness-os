@@ -6,8 +6,8 @@ import { C } from '@/components/ascnd/studio/palette';
 export function YogaMat({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
   return (
     <G transform={`translate(${x} ${y}) scale(${s})`}>
-      <Rect x={-16} y={-16} width={32} height={16} rx={8} fill={C.accent} opacity={0.62} />
-      <Ellipse cx={-16} cy={-8} rx={4} ry={8} fill={C.soft} opacity={0.55} />
+      <Rect x={-16} y={-16} width={32} height={16} rx={8} fill={C.accent} opacity={0.42} />
+      <Ellipse cx={-16} cy={-8} rx={4} ry={8} fill={C.soft} opacity={0.4} />
       <Ellipse cx={-16} cy={-8} rx={1.6} ry={3.2} fill={C.primary} opacity={0.6} />
     </G>
   );

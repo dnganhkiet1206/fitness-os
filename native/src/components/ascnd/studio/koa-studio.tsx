@@ -61,7 +61,7 @@ export function KoaStudio({
       <Shelf />
       <Plant x={316} y={397} s={1.81} kind="spray" />
       <YogaBall x={352} y={400} r={30} />
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 6} rx={205} ry={50} fill={C.shadow} opacity={0.2} />
+      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 6} rx={205} ry={50} fill={C.shadow} opacity={0.036} />
 
       {/* everything above falls into shadow; everything below is the light,
           and the neon sign is a light — under the vignette its lettering came

@@ -72,16 +72,24 @@ export function Spotlight() {
             measured R−B +24 against the design's +8.1.
 
             Held to the design's own numbers (README, "The lighting,
-            measured"): luminance down the beam 61.1 · 50 · 34.1 · 33.3
+            The tail is cut at 0.58 — about y290 — because below that the
+            design's beam has no colour left to give: down its middle the
+            saturation climbs 34 · 43 · 47 · 50 while the hue settles on the
+            wall's own 234, so what looks like a beam low down is the vignette
+            leaving the centre alone, not light. Carrying gold to the foot at
+            0.045 held the luminance and took the room's middle to 13%
+            saturation against the design's 47.
+
             against 61 · 49 · 36 · 31, warmth +12 at the shade against +8.1
             and −10 halfway against −14.9. Re-measure before changing a stop;
             the profile is what the room is, more than its coordinates are. */}
         <LinearGradient id="studioCone" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={C.white} stopOpacity={0.30} />
-          <Stop offset="0.14" stopColor={C.highlight} stopOpacity={0.24} />
-          <Stop offset="0.28" stopColor={C.highlight} stopOpacity={0.175} />
-          <Stop offset="0.45" stopColor={C.highlight} stopOpacity={0.082} />
-          <Stop offset="0.7" stopColor={C.highlight} stopOpacity={0.045} />
+          <Stop offset="0" stopColor={C.highlight} stopOpacity={0.25} />
+          <Stop offset="0.1" stopColor={C.highlight} stopOpacity={0.26} />
+          <Stop offset="0.18" stopColor={C.highlight} stopOpacity={0.19} />
+          <Stop offset="0.28" stopColor={C.highlight} stopOpacity={0.095} />
+          <Stop offset="0.38" stopColor={C.highlight} stopOpacity={0.03} />
+          <Stop offset="0.5" stopColor={C.highlight} stopOpacity={0} />
           <Stop offset="1" stopColor={C.highlight} stopOpacity={0} />
         </LinearGradient>
       </Defs>

@@ -85,15 +85,15 @@ export function StudioWindow() {
               at about 0.85. Two stops could not hold both ends — the cold top
               and the warm foot pulled against each other and met in the middle
               at −25 · +4, which is a sky that is neither. */}
-          <Stop offset="0.45" stopColor={C.accent} stopOpacity={0.36} />
-          <Stop offset="0.66" stopColor={C.accent} stopOpacity={0.32} />
-          <Stop offset="0.82" stopColor={C.highlight} stopOpacity={0.16} />
-          <Stop offset="0.92" stopColor={C.highlight} stopOpacity={0.4} />
+          <Stop offset="0.45" stopColor={C.accent} stopOpacity={0.28} />
+          <Stop offset="0.66" stopColor={C.accent} stopOpacity={0.25} />
+          <Stop offset="0.82" stopColor={C.highlight} stopOpacity={0.13} />
+          <Stop offset="0.92" stopColor={C.highlight} stopOpacity={0.32} />
           {/* the design's horizon is pink and this palette's one warm colour
               is gold, so the last stop stays under it — full strength, behind
               a skyline that tiled the width, lit only the slivers between the
               towers and they read as gold bars standing on the sill */}
-          <Stop offset="1" stopColor={C.highlight} stopOpacity={0.52} />
+          <Stop offset="1" stopColor={C.highlight} stopOpacity={0.42} />
         </LinearGradient>
       </Defs>
 

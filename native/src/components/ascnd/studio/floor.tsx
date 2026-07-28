@@ -1,6 +1,6 @@
 import { Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { C, STAGE_MARK, STUDIO_H, STUDIO_W } from '@/components/ascnd/studio/palette';
+import { C, SCENE_BOTTOM, STAGE_MARK, STUDIO_H, STUDIO_W } from '@/components/ascnd/studio/palette';
 
 /**
  * The ground, the vignette, and the light on the floor — in three pieces,
@@ -28,6 +28,11 @@ export function FloorPlane() {
           <Stop offset="0.45" stopColor={C.secondary} stopOpacity={0.38} />
           <Stop offset="1" stopColor={C.secondary} stopOpacity={0} />
         </LinearGradient>
+        <LinearGradient id="studioFloorTint" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={C.accent} stopOpacity={0.14} />
+          <Stop offset="0.12" stopColor={C.accent} stopOpacity={0.06} />
+          <Stop offset="0.24" stopColor={C.accent} stopOpacity={0} />
+        </LinearGradient>
         <LinearGradient id="studioFloorSide" x1="0" y1="0" x2="1" y2="0">
           <Stop offset="0" stopColor={C.bgTop} stopOpacity={1} />
           <Stop offset="0.46" stopColor={C.bgTop} stopOpacity={0} />
@@ -35,6 +40,16 @@ export function FloorPlane() {
       </Defs>
       <Rect x={0} y={HORIZON} width={STUDIO_W} height={STUDIO_H - HORIZON} fill="url(#studioFloor)" />
       <Rect x={0} y={HORIZON} width={STUDIO_W} height={STUDIO_H - HORIZON} fill="url(#studioFloorSide)" />
+      {/* The design's floor is violet, not the panels' blue: 253 · 29 · 19
+          against the 238 · 23 · 13 this came out at. `accent` is hue 251, so
+          a thin pass of it turns the ground the right way and lifts it at the
+          same time, rather than spending a colour or dragging `secondary` —
+          which is also the shelf, the shade and the sign — round with it.
+
+          It fades out downward. Flat, it lifted the two bottom corners from
+          25.7 and 32.7 to 29.9 and 36.3 against the design's 25.4 and 25, and
+          the corners are the one place the room has to go dark. */}
+      <Rect x={0} y={HORIZON} width={STUDIO_W} height={STUDIO_H - HORIZON} fill="url(#studioFloorTint)" />
     </>
   );
 }
@@ -51,13 +66,19 @@ export function Vignette() {
   return (
     <>
       <Defs>
-        <RadialGradient id="studioVig" cx="50%" cy="42%" r="66%">
+        <RadialGradient id="studioVig" cx="50%" cy="50%" r="82%">
           <Stop offset="0" stopColor={C.bgTop} stopOpacity={0.02} />
           <Stop offset="0.5" stopColor={C.bgTop} stopOpacity={0.34} />
-          <Stop offset="1" stopColor={C.bgTop} stopOpacity={1} />
+          <Stop offset="1" stopColor={C.edge} stopOpacity={1} />
         </RadialGradient>
       </Defs>
-      <Rect x={0} y={0} width={STUDIO_W} height={STUDIO_H} fill="url(#studioVig)" />
+      {/* `SCENE_BOTTOM`, not `STUDIO_H`. A radial gradient in objectBounding
+          units is stretched to its box, so measuring it against the 844pt
+          artboard gave it a vertical radius of 557 — the room is 476 tall, so
+          its bottom corners sat less than a fifth of the way into the falloff
+          and stayed at 30 and 36 while the top two reached 22. In the design
+          all four are within three units of each other. */}
+      <Rect x={0} y={0} width={STUDIO_W} height={SCENE_BOTTOM} fill="url(#studioVig)" />
     </>
   );
 }
@@ -67,8 +88,10 @@ export function FloorLight({ glow = C.highlight, energy = 0.5 }: { glow?: string
   const e = Math.max(0, Math.min(1, energy));
   return (
     <>
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 4} rx={196} ry={54} fill={C.white} opacity={0.025 + e * 0.03} />
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 10} rx={182} ry={62} fill={glow} opacity={0.07 + e * 0.06} />
+      {/* `lit`, not white — white here put the floor at 8% saturation
+          against the design's 29% while matching its luminance exactly */}
+      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 4} rx={150} ry={44} fill={C.lit} opacity={0.34 + e * 0.14} />
+      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 10} rx={182} ry={62} fill={glow} opacity={0.045 + e * 0.035} />
     </>
   );
 }
