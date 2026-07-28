@@ -11,7 +11,14 @@ node tools/koa-studio/compare.mjs  <dir> --shot      # holds it to the design
 
 ```bash
 node tools/koa-studio/light.mjs <dir>                 # holds it to the lighting
+node tools/koa-studio/stage.mjs  <out.png>            # the stage as the app builds it
 ```
+
+`stage.mjs` imports `STAGE_MARK` and `SCENE_BOTTOM` rather than copying them.
+A throwaway version of it hard-coded the mark, kept the old value when the
+podium moved, and drew the character standing in front of the podium instead
+of on it — the app was right and the preview was lying. Any preview that
+restates a layout constant will eventually do that.
 
 `compare.mjs` wants the design screenshot as `<dir>/ref.png`. It finds each
 landmark by what its colour *is* — gold, purple, green, lit sky — rather

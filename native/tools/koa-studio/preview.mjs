@@ -81,6 +81,8 @@ function render(node) {
 const svg = render(KoaStudio({ width: 390, height: 844, streak: 4 }))
   .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
 
+// next to the PNG as well, so stage.mjs can find it without guessing
+writeFileSync(OUT.replace(/\.png$/, '.svg'), svg);
 writeFileSync(path.join(dir, 'studio.svg'), svg);
 writeFileSync(
   path.join(dir, 'studio.html'),
