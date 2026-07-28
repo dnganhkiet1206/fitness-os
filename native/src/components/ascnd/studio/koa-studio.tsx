@@ -56,7 +56,6 @@ export function KoaStudio({
       <FloorPlane />
 
       {/* the room: wall furniture, then what stands on the floor */}
-      <NeonSign />
       <StudioWindow />
       <StreakCard days={streak} />
       <Shelf />
@@ -64,8 +63,11 @@ export function KoaStudio({
       <YogaBall x={352} y={400} r={30} />
       <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 6} rx={205} ry={50} fill={C.shadow} opacity={0.2} />
 
-      {/* everything above falls into shadow; everything below is the light */}
+      {/* everything above falls into shadow; everything below is the light,
+          and the neon sign is a light — under the vignette its lettering came
+          out at 145 and it read as a dark plaque rather than a lit sign */}
       <Vignette />
+      <NeonSign />
       <Spotlight />
       {/* the air, after the vignette that would otherwise paint it out */}
       <Motes />

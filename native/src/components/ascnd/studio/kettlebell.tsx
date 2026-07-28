@@ -6,9 +6,9 @@ import { C } from '@/components/ascnd/studio/palette';
 export function Kettlebell({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
   return (
     <G transform={`translate(${x} ${y}) scale(${s})`}>
-      <Path d="M-7 -20 C -7 -30 7 -30 7 -20" fill="none" stroke={C.soft} strokeWidth={4} strokeLinecap="round" />
-      <Circle cx={0} cy={-11} r={11} fill={C.accent} />
-      <Circle cx={-3.5} cy={-14} r={4} fill={C.soft} opacity={0.45} />
+      <Path d="M-7 -20 C -7 -30 7 -30 7 -20" fill="none" stroke={C.accent} strokeWidth={4} strokeLinecap="round" />
+      <Circle cx={0} cy={-11} r={11} fill={C.accent} opacity={0.62} />
+      <Circle cx={-3.5} cy={-14} r={3.4} fill={C.soft} opacity={0.75} />
     </G>
   );
 }

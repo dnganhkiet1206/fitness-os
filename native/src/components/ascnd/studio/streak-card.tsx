@@ -7,6 +7,14 @@ import { C } from '@/components/ascnd/studio/palette';
  * one number Koa's day is really about, so it lives in the room.
  *
  * The bar is seven pips because a streak is counted in days, not in percent.
+ *
+ * **No outline.** This is the quietest of the three wall boxes and it is
+ * quiet on both counts: in the design its brightest edge pixel is 56 and that
+ * is the panel itself, not a stroke — scanning the perimeter finds the peak
+ * at the bottom-left corner, where a drawn frame would put it on a straight
+ * run. A purple stroke here read at 73 and made a third lit rectangle on a
+ * wall that only wants one. The panel is `primary` rather than `secondary`
+ * for the same reason: the interior measured 46 against the design's 33.
  */
 const X = 270;
 const Y = 245;
@@ -23,8 +31,7 @@ export function StreakCard({ days = DONE }: { days?: number }) {
   const countSize = count >= 100 ? 15 : count >= 10 ? 19 : 22;
   return (
     <>
-      <Rect x={X} y={Y} width={W} height={H} rx={11} fill={C.secondary} />
-      <Rect x={X} y={Y} width={W} height={H} rx={11} fill="none" stroke={C.accent} strokeWidth={1.4} opacity={0.55} />
+      <Rect x={X} y={Y} width={W} height={H} rx={11} fill={C.primary} />
 
       <Text x={X + W / 2} y={Y + 17} fill={C.soft} fontSize={9} fontWeight="800" textAnchor="middle">
         STREAK
@@ -50,7 +57,9 @@ export function StreakCard({ days = DONE }: { days?: number }) {
           width={8}
           height={4}
           rx={2}
-          fill={i < lit ? C.highlight : C.primary}
+          // `secondary`, not `primary`: the panel is `primary` now, and an
+          // unlit pip the colour of the card it sits on is no pip at all
+          fill={i < lit ? C.highlight : C.secondary}
         />
       ))}
     </>

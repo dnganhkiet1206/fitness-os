@@ -87,7 +87,7 @@ is wrong.
 | Depth from scale, overlap and brightness only | no perspective transform anywhere |
 | Every object is its own component | one file each, placed by `(x, y)` |
 
-Current cost: **172 shapes, ~18KB of SVG**, all static — it draws once and
+Current cost: **183 shapes, ~19KB of SVG**, all static — it draws once and
 then costs nothing per frame, which is what lets it sit under a character
 that does animate. `preview.mjs` prints both numbers on every run; if they
 have moved, this line is what is stale.
@@ -145,6 +145,62 @@ Largest step in luminance between neighbouring samples across the beam:
 
 Measure this with a 3-sample median or the dust reads as an edge: there is a
 speck at exactly (150, 250) and it shows up as a step of 10.
+
+## The three boxes on the wall
+
+The neon sign, the window and the streak card were each drawn as a lit
+rectangle, and together they made the wall look busy. Measuring the perimeter
+of each box and its interior says why:
+
+| | design viền/ruột | before | after |
+|---|---|---|---|
+| neon sign | 48 / 55 | 88 / 40 | 53 / 67 |
+| window | 23 / 34 | 57 / 33 | 24 / 38 |
+| streak card | 21 / 33 | 73 / 46 | 25 / 38 |
+
+**Only the neon sign has an outline.** The window's frame was a purple stroke
+of 57 on all four sides; the design's glass runs a flat 24–27 with no stroke
+at all. The card's was 73; the design's card sits at 19, *below* the wall it
+hangs on, and reads because its content is bright, not because it is ringed.
+
+Two instruments were wrong on the way here, and both produced a confident
+wrong answer:
+
+- **A perimeter maximum finds one pixel.** It reported the design's window at
+  106 on the bottom edge, which looks exactly like a lit sill. It is a single
+  window alight in the skyline that happens to sit on the box line. A gold
+  sill got built before a row scan showed the rest of that edge at 24. Use the
+  **median** — a frame lights its whole perimeter, a speck does not.
+- **A brightest-decile probe finds the same speck.** Sampling the top 12% of
+  each row down the glass showed a horizon climbing to 85 and +62 warm. That
+  was the lit windows again. The row **median** shows the real sky: 33 · 39 ·
+  54 · 65, warming −53 → +23.
+
+The neon sign's perimeter is a gradient, not a stroke of one opacity: round
+the design it runs 42 · 48 · 57 · 70 from quartile to quartile, dim at the top
+and pooling low. This had 74 · 74 · 75 · 75 — the same value on all four
+sides, which is what reads as a drawn frame instead of a sign that glows. It
+is also the one thing on that wall that emits, so `koa-studio.tsx` draws it
+over the `Vignette`; underneath, its white lettering came out at 145.
+
+Its type is set from the design's own scanlines: bolt at 137–156, then bands
+of 255 at 164–172, 178–185 and 191–198, and the box ends at 209 — so H 79,
+three lines on a 13pt rhythm with cap height 8.
+
+The skyline came from the same kind of measurement. What fraction of each row
+is in shadow runs 4% · 5% · 22% · 49% · 76% down the design's glass: the city
+only takes the width in the last ten points, and it was built here as six
+towers covering 78–85% from three times that height. Matching the fractions
+was not enough — seven narrow towers hit the same numbers and still read as a
+row of sticks, because a shadow fraction says nothing about whether it is one
+silhouette or many. Few and wide is the shape.
+
+Equipment on the shelf was lit the same way the boxes were. Above a threshold
+of 60 the design puts **3.3%** of that column, averaging 99 — small bright
+highlights on dark bodies. This had **14.9%** at 78: a broad mid-bright mass.
+The bodies now carry `opacity` and the highlights stay full, which is 9.4% at
+78. The shelf's own rails are `secondary` and stay there; taking them to
+`primary` moved the region's median by one unit and made the ladder vanish.
 
 ## The lighting, measured
 
