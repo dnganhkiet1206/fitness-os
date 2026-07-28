@@ -1,7 +1,7 @@
 import Svg, { Ellipse } from 'react-native-svg';
 
 import { Background } from '@/components/ascnd/studio/background';
-import { Floor } from '@/components/ascnd/studio/floor';
+import { FloorLight, FloorPlane, Vignette } from '@/components/ascnd/studio/floor';
 import { NeonSign } from '@/components/ascnd/studio/neon-sign';
 import { C, STAGE_MARK, STUDIO_H, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
 import { Plant } from '@/components/ascnd/studio/plant';
@@ -53,22 +53,21 @@ export function KoaStudio({
       viewBox={`0 0 ${STUDIO_W} ${STUDIO_H}`}
       preserveAspectRatio="xMidYMin slice">
       <Background wall={s.wall} />
+      <FloorPlane />
 
-      {/* wall */}
+      {/* the room: wall furniture, then what stands on the floor */}
       <NeonSign />
       <StudioWindow />
       <StreakCard days={streak} />
-
-      {/* the lamp lights the room before anything stands in it */}
-      <Spotlight />
-
-      {/* the ground, and the light on it */}
-      <Floor glow={s.glow} energy={energy} />
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 6} rx={205} ry={50} fill={C.shadow} opacity={0.2} />
-
       <Shelf />
       <Plant x={316} y={397} s={1.81} kind="spray" />
       <YogaBall x={352} y={400} r={30} />
+      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 6} rx={205} ry={50} fill={C.shadow} opacity={0.2} />
+
+      {/* everything above falls into shadow; everything below is the light */}
+      <Vignette />
+      <Spotlight />
+      <FloorLight glow={s.glow} energy={energy} />
 
       <Platform glow={s.glow} energy={energy} />
     </Svg>

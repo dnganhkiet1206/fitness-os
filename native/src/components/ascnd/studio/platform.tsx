@@ -24,13 +24,14 @@ const RY = 31;
 const DEPTH = 24;
 
 export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; energy?: number }) {
-  const lit = 0.16 + Math.max(0, Math.min(1, energy)) * 0.18;
+  const lit = 0.1 + Math.max(0, Math.min(1, energy)) * 0.12;
   return (
     <>
       <Defs>
-        <RadialGradient id="studioPool" cx="50%" cy="42%" r="62%">
-          <Stop offset="0" stopColor={glow} stopOpacity={0.1} />
-          <Stop offset="1" stopColor={glow} stopOpacity={0} />
+        <RadialGradient id="studioPool" cx="50%" cy="40%" r="66%">
+          <Stop offset="0" stopColor={glow} stopOpacity={0.17} />
+          <Stop offset="0.6" stopColor={glow} stopOpacity={0.09} />
+          <Stop offset="1" stopColor={glow} stopOpacity={0.03} />
         </RadialGradient>
       </Defs>
 
@@ -44,7 +45,11 @@ export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; 
             L ${CX + RX} ${CY} A ${RX} ${RY} 0 0 1 ${CX - RX} ${CY} Z`}
         fill={C.primary}
       />
+      {/* The top face is a lit surface and the floor is not — that is the
+          whole reason the podium reads as solid. Left at the floor's own
+          tone it came out a hoop with the ground showing through. */}
       <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={C.secondary} />
+      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={C.white} opacity={0.05} />
       {/* a line, not a second disc: filling the middle back in with the
           floor's own colour left the podium reading as a hoop */}
       <Ellipse
@@ -61,8 +66,8 @@ export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; 
       <Ellipse cx={CX} cy={CY} rx={RX - 12} ry={RY - 5} fill="url(#studioPool)" />
 
       {/* 3 — the ring, glow first */}
-      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="none" stroke={glow} strokeWidth={22} opacity={lit} />
-      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="none" stroke={glow} strokeWidth={5} />
+      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="none" stroke={glow} strokeWidth={12} opacity={lit} />
+      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="none" stroke={glow} strokeWidth={2.8} />
     </>
   );
 }

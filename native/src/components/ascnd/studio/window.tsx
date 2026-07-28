@@ -7,6 +7,11 @@ import { C } from '@/components/ascnd/studio/palette';
  *
  * The moon is a crescent cut with a single path rather than two overlapping
  * circles, so it works over a gradient sky. The skyline is six rectangles.
+ *
+ * Kept dim on purpose. Measured across the design's wall the props sit at
+ * 47–56 against a wall of 27–49 — barely above what they hang on. A window
+ * bright enough to be pretty on its own put this column at 106 and stole the
+ * room's focus from the character.
  */
 const X = 272;
 const Y = 95;
@@ -34,11 +39,11 @@ export function StudioWindow() {
       <Defs>
         <LinearGradient id="studioSky" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={C.bgTop} />
-          <Stop offset="0.5" stopColor={C.accent} stopOpacity={0.6} />
+          <Stop offset="0.5" stopColor={C.accent} stopOpacity={0.4} />
           {/* the reference warms toward the horizon; the palette's one warm
               colour does it at low strength without becoming a sunset */}
-          <Stop offset="0.86" stopColor={C.highlight} stopOpacity={0.34} />
-          <Stop offset="1" stopColor={C.highlight} stopOpacity={0.16} />
+          <Stop offset="0.86" stopColor={C.highlight} stopOpacity={0.2} />
+          <Stop offset="1" stopColor={C.highlight} stopOpacity={0.09} />
         </LinearGradient>
       </Defs>
 

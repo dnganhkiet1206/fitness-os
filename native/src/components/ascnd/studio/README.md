@@ -9,10 +9,22 @@ node tools/koa-studio/preview.mjs <dir>/studio.png   # renders the real componen
 node tools/koa-studio/compare.mjs  <dir> --shot      # holds it to the design
 ```
 
+```bash
+node tools/koa-studio/light.mjs <dir>                 # holds it to the lighting
+```
+
 `compare.mjs` wants the design screenshot as `<dir>/ref.png`. It finds each
 landmark by what its colour *is* — gold, purple, green, lit sky — rather
 than by an exact hex, because the reference is a painted render whose values
 do not match the palette, and reports the gap in points.
+
+**`light.mjs` matters more than `compare.mjs`.** The screenshot is not an
+iPhone aspect, so its coordinates are a guide and not a target: the landmark
+table once read 4pt everywhere while the room still looked wrong, because
+the light was wrong. `light.mjs` samples by fraction of the stage box, so it
+does not care about either image's aspect, and it measures the things that
+actually carry: falloff down the beam, warmth at the lamp, how far the props
+sit above the wall, and the vignette.
 
 The preview bundles the actual `.tsx` with `react-native-svg` swapped for a
 stub of tag names and walks the element tree the components return, so it is
@@ -59,6 +71,31 @@ as deep as the real one; scanning down the podium's centre line finds the
 ring itself at 382 and 444, so `ry` is 31, not 68. Anything that glows gets
 measured down a line — `compare.mjs` prints that separately, below the
 table, and that is the number to read.
+
+## The lighting, measured
+
+This is what the room is, more than its coordinates are:
+
+| | design | studio |
+|---|---|---|
+| beam down the middle | 61 · 49 · 36 · 31 | 54 · 45 · 41 · 41 |
+| warmth at the lamp (R−B) | +8.1 | +10.9 |
+| … halfway down | −14.9 | −3.8 |
+| props against the wall | 47 · 56 · 52 | 59 · 70 · 54 |
+| stage centre | 39.3 | 40.3 |
+| vignette (corners ÷ centre) | 0.61 | 0.71 |
+
+Three of those were the whole problem. The beam **did not fall off at all**
+(61 · 58 · 55) and was **cold** (−22 at the lamp, where the design is +8),
+so it read as a grey wedge rather than a lamp. And the props stood at
+**95–106 against a wall of 29–58** — twice the design's — so the room was
+flat and the character was no longer the brightest thing in it. `Vignette`
+in `floor.tsx` is what fixes the last one: it goes over the wall and
+everything standing against it, and under the lamp and the podium.
+
+Still open: the props sit about 1.2× brighter than the design and the
+corners about four luminance units lighter. Pushing further flattens the
+room, so it stopped there.
 
 ## Where the design and the brief disagree
 

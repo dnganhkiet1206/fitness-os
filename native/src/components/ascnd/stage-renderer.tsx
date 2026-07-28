@@ -43,8 +43,14 @@ import type { MascotDef } from '@/lib/mascots';
 
 /** the studio, cropped to the room; the rest of its artboard is app content */
 const ASPECT = SCENE_BOTTOM / STUDIO_W;
-/** Koa's drawn width, in artboard units */
-const HERO_W = 160;
+/**
+ * Koa's drawn width, in artboard units.
+ *
+ * A third of the room's width. The podium's top face is 274 wide and the
+ * gap from it up to the lamp is 346, so a character much past this stops
+ * being something standing in a room and starts being the room.
+ */
+const HERO_W = 128;
 const PAGE = '#070708';
 
 interface Props {

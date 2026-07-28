@@ -1,28 +1,25 @@
-import { Defs, Ellipse, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { C, STAGE_MARK, STUDIO_H, STUDIO_W } from '@/components/ascnd/studio/palette';
 
 /**
- * The floor, and the line where it meets the wall.
+ * The ground, the vignette, and the light on the floor — in three pieces,
+ * because they belong at three different depths.
  *
- * Scanning the reference down a clean column finds a tonal step at y≈360
- * and a floor that is *brighter* than the wall on the lit side (+19) and
- * darker on the far left (−14). The first pass had one gradient from top to
- * bottom and measured a step of 2 — so the room had no ground, and every
- * object in it looked stuck to the wall.
+ * Reading tone off the design rather than positions: the room is lit from
+ * the middle and everything else falls away. Across the wall it runs
+ * 27 · 34 · 47 · 49 · 56 · 52 · 27 from edge to edge, so the props sit only
+ * a little above the wall they hang on. The first pass had them at 95–106
+ * against a wall of 29–58 — twice as bright as the design, which is why the
+ * room read flat and the character stopped being the brightest thing in it.
  *
- * The floor is not evenly lit either: the reference drops 17 on the far left
- * and gains 19 on the far right, because the lamp and the window are both
- * over that way. A horizontal wedge takes the left back down; a flat band
- * would sit at +7 on both sides, which is what the first attempt did.
- *
- * Two ellipses do the rest: the pool the lamp throws, and the warm spill the
- * podium's ring puts back on the floor.
+ * `Vignette` is what fixes that: it goes over the wall and everything
+ * standing against it, and under the lamp and the podium, so the light lands
+ * on top of a room that has already fallen into shadow.
  */
 const HORIZON = 360;
 
-export function Floor({ glow = C.highlight, energy = 0.5 }: { glow?: string; energy?: number }) {
-  const e = Math.max(0, Math.min(1, energy));
+export function FloorPlane() {
   return (
     <>
       <Defs>
@@ -38,9 +35,39 @@ export function Floor({ glow = C.highlight, energy = 0.5 }: { glow?: string; ene
       </Defs>
       <Rect x={0} y={HORIZON} width={STUDIO_W} height={STUDIO_H - HORIZON} fill="url(#studioFloor)" />
       <Rect x={0} y={HORIZON} width={STUDIO_W} height={STUDIO_H - HORIZON} fill="url(#studioFloorSide)" />
-      {/* what the lamp puts on the ground */}
+    </>
+  );
+}
+
+/**
+ * The room falling away from the light.
+ *
+ * The design's corners sit at 0.61 of its centre; a flat wash would kill the
+ * contrast instead of shaping it, so this is radial — nothing in the middle,
+ * heavy at the edges — and it is drawn before the lamp so the beam is not
+ * dimmed by it.
+ */
+export function Vignette() {
+  return (
+    <>
+      <Defs>
+        <RadialGradient id="studioVig" cx="50%" cy="42%" r="66%">
+          <Stop offset="0" stopColor={C.bgTop} stopOpacity={0.02} />
+          <Stop offset="0.5" stopColor={C.bgTop} stopOpacity={0.34} />
+          <Stop offset="1" stopColor={C.bgTop} stopOpacity={1} />
+        </RadialGradient>
+      </Defs>
+      <Rect x={0} y={0} width={STUDIO_W} height={STUDIO_H} fill="url(#studioVig)" />
+    </>
+  );
+}
+
+/** what the lamp puts on the ground, and what the ring spills back */
+export function FloorLight({ glow = C.highlight, energy = 0.5 }: { glow?: string; energy?: number }) {
+  const e = Math.max(0, Math.min(1, energy));
+  return (
+    <>
       <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 4} rx={196} ry={54} fill={C.white} opacity={0.025 + e * 0.03} />
-      {/* and what the ring spills back */}
       <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 10} rx={182} ry={62} fill={glow} opacity={0.07 + e * 0.06} />
     </>
   );

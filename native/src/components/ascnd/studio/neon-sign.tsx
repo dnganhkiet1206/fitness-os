@@ -16,8 +16,8 @@ export function NeonSign() {
   return (
     <>
       <Rect x={X} y={Y} width={W} height={H} rx={11} fill={C.primary} opacity={0.55} />
-      <Rect x={X} y={Y} width={W} height={H} rx={11} fill="none" stroke={C.soft} strokeWidth={5} opacity={0.16} />
-      <Rect x={X} y={Y} width={W} height={H} rx={11} fill="none" stroke={C.soft} strokeWidth={1.6} />
+      <Rect x={X} y={Y} width={W} height={H} rx={11} fill="none" stroke={C.soft} strokeWidth={5} opacity={0.1} />
+      <Rect x={X} y={Y} width={W} height={H} rx={11} fill="none" stroke={C.soft} strokeWidth={1.4} opacity={0.75} />
 
       {/* bolt */}
       <Path
