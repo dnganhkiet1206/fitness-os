@@ -2,6 +2,7 @@ import Svg from 'react-native-svg';
 
 import { LampPulse, LiveStageGlow, useLightClock } from '@/components/ascnd/studio/light-drift';
 import { DriftingMotes } from '@/components/ascnd/studio/motes-drift';
+import { ShootingStar, TwinklingStars, useSkyClock } from '@/components/ascnd/studio/sky-live';
 import { STUDIO_H, STUDIO_W } from '@/components/ascnd/studio/palette';
 
 /**
@@ -44,6 +45,7 @@ export function StudioLive({
   energy?: number;
 }) {
   const t = useLightClock();
+  const sky = useSkyClock();
   return (
     <Svg
       width={width}
@@ -51,6 +53,9 @@ export function StudioLive({
       viewBox={`0 0 ${STUDIO_W} ${STUDIO_H}`}
       preserveAspectRatio="xMidYMin slice"
       pointerEvents="none">
+      {/* the window, over the wall it is set into */}
+      <TwinklingStars t={sky} />
+      <ShootingStar t={sky} />
       <LampPulse t={t} glow={glow} />
       <DriftingMotes />
       <LiveStageGlow t={t} glow={glow} energy={energy} />

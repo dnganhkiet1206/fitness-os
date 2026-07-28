@@ -62,17 +62,87 @@ const CITY: [number, number, number][] = [
 const STARS: [number, number, number][] = [
   [58, 16, 1.1], [70, 30, 0.8], [22, 40, 0.9], [78, 52, 1.0], [46, 12, 0.8], [12, 22, 0.7],
 ];
+
+const SX = X + IN;
+const SY = Y + IN;
+const SW = W - IN * 2;
+const SH = H - IN * 2;
+
+/**
+ * The same stars in artboard coordinates, so `sky-live.tsx` can draw the
+ * twinkling copies without restating where they are. The window omits its own
+ * when the overlay is drawing them.
+ */
+export const STAR_POINTS: [number, number, number][] = STARS.map(([x, y, r]) => [SX + x, SY + y, r]);
+
+/** the sky box, for anything the overlay wants to keep inside the glass */
+export const SKY = { x: SX, y: SY, w: SW, h: SH };
+
+/** one synodic month, in days */
+const SYNODIC = 29.530588853;
+/** a known new moon: 2000-01-06 18:14 UTC */
+const NEW_MOON = Date.UTC(2000, 0, 6, 18, 14) / 86400000;
+
+/**
+ * Where the moon is in its cycle, 0..1 — 0 new, 0.25 first quarter, 0.5 full.
+ *
+ * Arithmetic against a known new moon rather than an API: it is accurate to
+ * within a few hours over decades, which is far past what a 22-unit moon in a
+ * window can show, and it needs no network, no key and no permission.
+ */
+export function moonPhase(at: Date = new Date()): number {
+  const days = at.getTime() / 86400000 - NEW_MOON;
+  return ((days % SYNODIC) + SYNODIC) % SYNODIC / SYNODIC;
+}
+
+/**
+ * The lit part of the moon, as one path.
+ *
+ * Two arcs sharing their endpoints, which is what makes a moon rather than a
+ * lens: the limb is a half circle and the terminator is a half *ellipse*
+ * whose width is `r · |cos(2π·phase)|`. That is the projection of the day/
+ * night line seen from here, so the shape is right at every phase rather than
+ * only at the quarters — it narrows to nothing at new moon and swells to the
+ * full disc at full.
+ *
+ * Which side is lit flips at full moon, and the terminator bows the other way
+ * once the moon is past a quarter, which is the `sweep` pair below.
+ */
+export function moonPath(cx: number, cy: number, r: number, phase: number): string {
+  const k = Math.cos(2 * Math.PI * phase);
+  const rx = Math.max(0.01, r * Math.abs(k));
+  const waxing = phase < 0.5;
+  const limb = waxing ? 1 : 0;
+  // The terminator hugs the *lit* limb while the moon is a crescent and bows
+  // past centre once it is gibbous, so it takes the opposite sweep to the limb
+  // before a quarter and the same one after. Getting this pair the wrong way
+  // round inverts the whole cycle — new draws as full and full draws as
+  // nothing — and it looks plausible enough in code to survive review.
+  const term = k >= 0 ? 1 - limb : limb;
+  return (
+    `M ${cx} ${cy - r} A ${r} ${r} 0 0 ${limb} ${cx} ${cy + r} ` +
+    `A ${rx} ${r} 0 0 ${term} ${cx} ${cy - r} Z`
+  );
+}
 /** x, and height above the sill — the windows that are still on */
 const LIT: [number, number][] = [
   [5, 6], [9, 6], [21, 23], [21, 15], [25, 8], [37, 37], [37, 29],
   [37, 21], [37, 13], [51, 5], [56, 5], [71, 14], [71, 6],
 ];
 
-export function StudioWindow() {
-  const sx = X + IN;
-  const sy = Y + IN;
-  const sw = W - IN * 2;
-  const sh = H - IN * 2;
+export function StudioWindow({
+  moonPhase: phase = 0.18,
+  live = false,
+}: {
+  /** 0..1 through the lunar cycle; the default is a young crescent */
+  moonPhase?: number;
+  /** true when `sky-live.tsx` is drawing the stars, so they are not doubled */
+  live?: boolean;
+} = {}) {
+  const sx = SX;
+  const sy = SY;
+  const sw = SW;
+  const sh = SH;
   const sill = sy + sh;
   return (
     <>
@@ -105,18 +175,19 @@ export function StudioWindow() {
       <Rect x={X} y={Y} width={W} height={H} rx={12} fill={C.primary} />
       <Rect x={sx} y={sy} width={sw} height={sh} rx={7} fill="url(#studioSky)" />
 
-      {STARS.map(([x, y, r], i) => (
-        <Circle key={i} cx={sx + x} cy={sy + y} r={r} fill={C.white} opacity={0.85} />
-      ))}
+      {live
+        ? null
+        : STARS.map(([x, y, r], i) => (
+            <Circle key={i} cx={sx + x} cy={sy + y} r={r} fill={C.white} opacity={0.85} />
+          ))}
 
-      {/* crescent: the full disc, then a bite taken out of it by the sky.
-          Two arcs sharing endpoints — the second bows the other way, which
-          is what makes a moon rather than a lens. */}
-      <Path
-        d={`M ${sx + 30} ${sy + 15} A 11 11 0 1 0 ${sx + 30} ${sy + 37}
-            A 13 13 0 0 1 ${sx + 30} ${sy + 15} Z`}
-        fill={C.soft}
-      />
+      {/* The moon, at whatever phase the date puts it — see `moonPath`.
+          The faint disc under it is the unlit half. Without it the moon
+          disappears outright for the days around new, which is true of the
+          sky and wrong for a window that is one of three things on this wall;
+          it also happens to be what earthshine looks like. */}
+      <Circle cx={sx + 30} cy={sy + 26} r={11} fill={C.soft} opacity={0.1} />
+      <Path d={moonPath(sx + 30, sy + 26, 11, phase)} fill={C.soft} />
 
       {CITY.map(([x, w, h], i) => (
         <Rect key={i} x={sx + x} y={sill - h} width={w} height={h} rx={2} fill={C.primary} />

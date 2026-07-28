@@ -89,7 +89,7 @@ is wrong.
 | The scene imports no Reanimated | `preview.mjs` bundles it with esbuild and would fail |
 | ~~The scene never moves~~ | **lifted by the user, 2026-07-28** — see below |
 
-Current cost: **180 shapes, ~19KB of SVG**. `preview.mjs` prints both numbers
+Current cost: **181 shapes, ~19KB of SVG**. `preview.mjs` prints both numbers
 on every run; if they have moved, this line is what is stale.
 
 ## The room moves now
@@ -443,6 +443,31 @@ a second pass of the contact shadow, so face ÷ side went 2.80 → 3.96. That
 difference is the only thing making the podium read as a solid rather than a
 disc lying on the floor, which is why it is worth measuring rather than
 eyeballing.
+
+## The window has a sky
+
+**The moon keeps the real phase.** `moonPhase()` in `window.tsx` counts
+synodic months from a known new moon — arithmetic, no network, no key, and
+accurate to hours over decades, which is far past what an 11-unit moon can
+show. `moonPath()` draws the lit part as two arcs sharing their endpoints: the
+limb is a half circle, the terminator a half *ellipse* whose width is
+`r·|cos(2π·phase)|`, so the shape is right between the quarters and not only
+at them.
+
+The terminator hugs the lit limb while the moon is a crescent and bows past
+centre once it is gibbous — opposite sweep to the limb before a quarter, the
+same one after. **Getting that pair the wrong way round inverts the whole
+cycle**, drawing new as full and full as nothing, and it looks entirely
+plausible in code; it was written backwards first and only a render of all
+eight phases caught it. A faint disc sits under the lit part so the moon does
+not vanish outright for the days around new.
+
+Phase changes over days, not frames, so this is geometry in the scene and
+costs nothing. What moves is in `sky-live.tsx` and is tiny: the six stars
+twinkle, and a shooting star crosses for about a second in every nineteen.
+Star blink rates are coprime so no two ever fire together, and the streak's
+travel and its 14-unit tail are kept inside the glass by construction rather
+than by a clip path — **re-check that if either end moves.**
 
 ## The name is part of the stage
 

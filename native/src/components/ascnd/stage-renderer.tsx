@@ -16,6 +16,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
 import { KoaStudio } from '@/components/ascnd/studio/koa-studio';
 import { StudioLive } from '@/components/ascnd/studio/studio-live';
+import { moonPhase } from '@/components/ascnd/studio/window';
 import { SCENE_BOTTOM, STAGE_MARK, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
 import { triggerMascotAction, useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
@@ -159,6 +160,7 @@ export function StageRenderer({
           energy={energy}
           streak={streak}
           label={mascot.name}
+          moonPhase={moonPhase()}
           live={animated}
         />
         {/* The moving parts, on their own canvas directly over the studio.

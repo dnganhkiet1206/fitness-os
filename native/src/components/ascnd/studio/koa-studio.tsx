@@ -38,6 +38,7 @@ export function KoaStudio({
   skin = 'default',
   energy = 0.5,
   label,
+  moonPhase,
   live = false,
 }: {
   width: number;
@@ -48,6 +49,8 @@ export function KoaStudio({
   skin?: string;
   /** 0..1 — how much light the room gives back today */
   energy?: number;
+  /** 0..1 through the lunar cycle — `moonPhase()` in `window.tsx` */
+  moonPhase?: number;
   /**
    * The companion's name, set into the podium's front face rather than shown
    * as the screen's header title — see `stage-label.tsx`.
@@ -75,7 +78,7 @@ export function KoaStudio({
       <FloorPlane />
 
       {/* the room: wall furniture, then what stands on the floor */}
-      <StudioWindow />
+      <StudioWindow moonPhase={moonPhase} live={live} />
       <StreakCard days={streak} />
       <Shelf />
       <Plant x={316} y={397} s={1.81} kind="spray" />
