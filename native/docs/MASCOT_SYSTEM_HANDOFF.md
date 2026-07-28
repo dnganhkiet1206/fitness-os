@@ -292,6 +292,36 @@ still uses it; only `roomNode` and `matrixTransformOf` went with the room.
 vintage of dead code and is not: `mascot-figure.tsx` falls back to it for
 every character that is not Koa. Rule 7, not an oversight.
 
+**The rest of the sweep.** Eight more files went the same way, each with no
+importer and its exported names appearing nowhere else in `src/`:
+`animated-icon.tsx` with its `.web.tsx` and `.module.css`, `hint-row.tsx`,
+`web-badge.tsx`, `ui/collapsible.tsx` (the last file in `ui/`, so the
+directory went too), `ascnd/game-icons.tsx` — left over from the old Stage
+pivot — and `ascnd/readiness-ring.tsx`, which `e144dfc` replaced with the
+`ReadinessGauge` that `(tabs)/index.tsx` renders today.
+
+### Eight files look dead to the import walk and are not — do not delete them
+
+This is the trap the sweep nearly fell into, and it will look exactly the
+same to the next reader who walks imports from `src/app`:
+
+| File | Why it is live |
+|---|---|
+| `components/app-tabs.web.tsx` | Metro resolves `@/components/app-tabs` to the `.web` variant on the web target. `(tabs)/_layout.tsx` imports it; the platform, not an import, picks the file. |
+| `components/external-link.tsx`, `components/themed-text.tsx`, `components/themed-view.tsx` | Imported by `app-tabs.web.tsx`, so they are live on web only. |
+| `hooks/use-theme.ts` | Imported by `themed-text.tsx` / `themed-view.tsx`. |
+| `hooks/use-color-scheme.ts`, `hooks/use-color-scheme.web.ts` | Imported by `use-theme.ts`, and the same `.web` resolution applies again. |
+| `src/css-modules.d.ts` | Ambient declaration, never imported. Still needed: `constants/expo-template-theme.ts` does `import '@/global.css'`, which its `declare module '*.css'` covers. |
+
+Deleting any of them breaks `npm run web` without breaking iOS, and `tsc`
+will not catch it. If the project ever drops the web target, they can go
+together — but that is a product decision, not a cleanup.
+
+After this, every file under `native/src` is either reached from a route,
+live on the web target, or an ambient declaration. The app is clean; a
+future `KHÔNG reachable` list that is longer than the eight above means
+something new was added and left unwired.
+
 ---
 
 ## 6. Open — parked, ask the user when they are ready
@@ -325,18 +355,6 @@ act on these; raise them when a design pass lands.
 5. **Sheet §1 turnaround.** The sheet shows side and back views; no path
    data exists for them in the export yet.
 6. **`coat` needs a weather source** — location + a free weather API.
-7. **Fifteen files outside the mascot system are unreachable from any
-   route**, mostly Expo starter-template leftovers: `game-icons.tsx`,
-   `readiness-ring.tsx`, `themed-text.tsx`, `themed-view.tsx`,
-   `ui/collapsible.tsx`, `hint-row.tsx`, `external-link.tsx`,
-   `web-badge.tsx`, `use-theme.ts` and the `animated-icon` / `app-tabs` /
-   `use-color-scheme` families. The user has cleared removing superseded
-   code **when it can be proved dead**, so use the three checks above
-   before touching any of them — and note one caveat the import walk gets
-   wrong: `.web.tsx` / `.web.ts` variants are chosen by Metro's platform
-   resolution, and `css-modules.d.ts` is ambient, so none of those are
-   reached by an import even when they are live. They need checking by
-   hand, not by the graph.
 
 ---
 
