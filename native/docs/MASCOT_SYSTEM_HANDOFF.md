@@ -322,11 +322,18 @@ live on the web target, or an ambient declaration. The app is clean; a
 future `KHÔNG reachable` list that is longer than the eight above means
 something new was added and left unwired.
 
-### Open bug — Koa is missing from the podium on device
+### Not a bug — an empty podium is a reference shot, and the figure is healthy
 
-The user's screenshot of `/mascot-room` on 2026-07-28 shows the studio
-drawing correctly and **the podium empty**, with the DEV picker set to
-`curl`. What was ruled out, so the next session does not repeat it:
+The user sends screenshots of `/mascot-room` with **the podium empty** on
+purpose: with the character out of the way, the shot is a clean reference
+for the room's layout, spacing and shadows. Koa is wired up and does draw on
+device. `stage.mjs` renders an empty podium for a different reason — it only
+draws the figure when it finds `../koa-figure-mirror.js`, which is not in the
+repo. **Neither is a fault to go fixing.**
+
+The measurements below were taken while briefly mistaking one of those shots
+for a bug report. They are kept because they are the baseline for the day the
+figure really does fail, and because re-deriving them costs an hour:
 
 - **The scene data is healthy.** Bundling `koa-scene.ts` + `koa-flags.ts`
   and walking the tree the way `RenderNode` does — skipping any node whose
@@ -346,13 +353,11 @@ drawing correctly and **the podium empty**, with the DEV picker set to
   `stage-renderer.tsx` predate the studio work, and `tsc --noEmit` is
   clean.
 
-So the source is not obviously at fault, which points at the build on the
-device or a runtime failure that TypeScript cannot see. **The cheap
-discriminating test, before touching any code:** the room's DEV bar has a
-`spec sheet →` chip. `/koa-sheet` renders `KoaFigure` directly at size 200
-with no `StageRenderer`, no placement math and no `perspective` /
-`rotateX` / `scale` wrapper; Settings renders it at size 44 with
-`animated={false}`.
+**If the figure ever does go missing, the cheap discriminating test comes
+before any code change:** the room's DEV bar has a `spec sheet →` chip.
+`/koa-sheet` renders `KoaFigure` directly at size 200 with no
+`StageRenderer`, no placement math and no `perspective` / `rotateX` /
+`scale` wrapper; Settings renders it at size 44 with `animated={false}`.
 
 | What you see | Where the fault is |
 |---|---|
@@ -362,6 +367,41 @@ with no `StageRenderer`, no placement math and no `perspective` /
 
 Run that first. Each row points somewhere different, and guessing between
 them is what would cause a wide, wrong change.
+
+### The preview is faithful about geometry, not about text
+
+Comparing the user's device shot against `preview.mjs` turned up three
+defects, and the first one undermines an assumption the whole method rests
+on. `preview.mjs` bundles the real `.tsx`, so it cannot drift on shapes or
+coordinates — but it renders in a **browser**, and a browser and
+`react-native-svg` do not agree about text.
+
+- **Whitespace in a `TSpan` is dropped on device.** The wall sign's gap was
+  a trailing space inside `<TSpan>WIN </TSpan>`. The browser kept it; the
+  phone did not, so the sign read `WINTODAY` on device while every check
+  ever run on this scene showed `WIN TODAY`. It is `'WIN '` now,
+  written as an escape so a formatter cannot trim it back. **Never carry
+  layout in whitespace inside SVG text** — use U+00A0 or `dx`, which are
+  geometry and survive both renderers.
+- Treat any text difference between the preview and a device shot as the
+  preview being wrong, not the phone. Shapes are the other way round.
+
+The other two were plain contradictions, both found by reading the code
+against what it already claims:
+
+- `streak-card.tsx` printed `String(DAYS)` — the pip count, a constant 7 —
+  where the streak belongs, so the card showed `7` over a single lit pip.
+  The pips had always used the real prop; only the number ignored it.
+- `mascot-room.tsx` passed `ownedGym={equippedOutfits}`, so a stage skin
+  someone paid 300–800 coins for did nothing until they also toggled it on.
+  `SHOP_ITEMS` says of those items: *"The highest owned tier is applied
+  automatically"*. `owned` was computed in the same component and already
+  passed to the shop panel — the stage was the one caller reading the wrong
+  set.
+
+The pattern worth copying: all three were found by holding the code against
+a claim already written down — a screenshot, a comment, a prop name — rather
+than by judging the render by eye.
 
 ---
 

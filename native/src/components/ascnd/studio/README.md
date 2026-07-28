@@ -52,6 +52,14 @@ The preview bundles the actual `.tsx` with `react-native-svg` swapped for a
 stub of tag names and walks the element tree the components return, so it is
 the components and not a copy of them that can drift.
 
+**That holds for geometry, not for text.** The preview draws in a browser,
+and a browser and `react-native-svg` disagree about whitespace: the sign's
+`<TSpan>WIN </TSpan>` kept its trailing space here and lost it on the phone,
+so the room read `WIN TODAY` in every check and `WINTODAY` on device. Put no
+layout in whitespace inside SVG text — U+00A0 or `dx` are geometry and both
+renderers honour them. When the preview and a device shot differ on text,
+the preview is the one that is wrong.
+
 ## The rules this scene is held to
 
 | Rule | Where it is checked |
