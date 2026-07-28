@@ -79,6 +79,33 @@ ring itself at 382 and 444, so `ry` is 31, not 68. Anything that glows gets
 measured down a line — `compare.mjs` prints that separately, below the
 table, and that is the number to read.
 
+## The beam's edges
+
+A gradient runs one way, so a single trapezoid keeps the geometry of its
+sides however the light fades down it. Painting the wall colour across the
+shape softens the foot, but that fade is a fixed width and the beam is 50pt
+across at the lamp and 316 at the floor — up by the shade the whole cone sat
+inside the gradient's clear middle and kept two sharp diagonals exactly
+where the light is brightest.
+
+`Spotlight` stacks nine trapezoids sharing an apex instead, each a little
+wider, each carrying the same light at a ninth of the strength. The fade is
+then a proportion of the beam's own width at every height. Widths are packed
+toward the outside (`^0.4`) so the core stays flat and only the outer third
+ramps, which is the profile the design has.
+
+Largest step in luminance between neighbouring samples across the beam:
+
+| y | design | one gradient | nine layers |
+|---|---|---|---|
+| 110 (near the lamp) | 18 | 18 | **2.7** |
+| 170 | 7.7 | 8.3 | **1.3** |
+| 250 | 0.7 | 0.7 | 0.7 |
+| 320 | 1 | 1 | 0.7 |
+
+Measure this with a 3-sample median or the dust reads as an edge: there is a
+speck at exactly (150, 250) and it shows up as a step of 10.
+
 ## The lighting, measured
 
 This is what the room is, more than its coordinates are:

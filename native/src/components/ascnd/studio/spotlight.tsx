@@ -5,9 +5,9 @@ import { C, STAGE_MARK } from '@/components/ascnd/studio/palette';
 /**
  * The pendant lamp and its cone.
  *
- * The cone is a plain trapezoid with a gradient falling to nothing — no
- * blur, which on SVG would mean a filter and a rasterised pass. Its foot
- * lands on the podium so the character reads as lit rather than pasted on.
+ * No blur anywhere — on SVG that means a filter and a rasterised pass, which
+ * the brief rules out. The beam's foot lands on the podium so the character
+ * reads as lit rather than pasted on.
  *
  * It is warm at the lamp and cools on the way down, because that is what the
  * design does: red-minus-blue runs +8 at the shade, −15 halfway, −37 at the
@@ -15,18 +15,40 @@ import { C, STAGE_MARK } from '@/components/ascnd/studio/palette';
  * white wedge measured −22 warmth and barely dimmed at all, which is why the
  * room had a grey wedge in it instead of a lamp.
  *
- * Its sides fade too. A gradient can only run one way, so the beam is two
- * passes of the same trapezoid: the light down it, then the wall colour
- * across it — opaque at both edges, clear in the middle. Without that the
- * cone has two hard diagonals that cut across whatever they cross, which is
- * the one thing in the room that looked drawn rather than lit.
+ * ── the soft edges ──
+ *
+ * The sides are the hard part. A gradient runs one way, so a single
+ * trapezoid keeps the geometry of its edges however the light fades down it.
+ * Painting the wall colour *across* the shape does soften the foot — but the
+ * fade it gives is a fixed width, and the beam is 50pt wide at the lamp and
+ * 316 at the floor. Up by the shade the whole cone sat inside that gradient's
+ * clear middle, so it still had two sharp diagonals exactly where the light
+ * is brightest.
+ *
+ * So the beam is a stack: `LAYERS` trapezoids sharing an apex, each a little
+ * wider than the last, each carrying the same light at a fraction of the
+ * strength. Where they all overlap the beam is full; past the narrowest the
+ * light steps down once per layer. The fade is then a proportion of the
+ * beam's own width at every height, which is the thing one gradient cannot
+ * do — and it is still only paths and a gradient.
+ *
+ * The widths are packed toward the outside (`^0.4`) so the core stays flat
+ * and only the outer third ramps, which is the profile the design has.
  */
 const CX = STAGE_MARK.x;
 const MOUTH_Y = 66;
 const MOUTH_R = 28;
-const CONE =
-  `M ${CX - MOUTH_R + 3} ${MOUTH_Y} L ${CX + MOUTH_R - 3} ${MOUTH_Y}` +
-  ` L ${CX + 158} 476 L ${CX - 158} 476 Z`;
+const FOOT_Y = 476;
+const FOOT_R = 158;
+const LAYERS = 9;
+
+/** widest first, so the narrow bright core lands on top */
+const CONES = Array.from({ length: LAYERS }, (_, i) => {
+  const f = Math.pow((LAYERS - i) / LAYERS, 0.4);
+  const top = (MOUTH_R - 3) * (0.34 + 0.66 * f);
+  const foot = FOOT_R * f;
+  return `M ${CX - top} ${MOUTH_Y} L ${CX + top} ${MOUTH_Y} L ${CX + foot} ${FOOT_Y} L ${CX - foot} ${FOOT_Y} Z`;
+});
 
 export function Spotlight() {
   return (
@@ -38,21 +60,15 @@ export function Spotlight() {
           <Stop offset="0.66" stopColor={C.white} stopOpacity={0.035} />
           <Stop offset="1" stopColor={C.white} stopOpacity={0} />
         </LinearGradient>
-        <LinearGradient id="studioConeEdge" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor={C.bgTop} stopOpacity={0.92} />
-          <Stop offset="0.22" stopColor={C.bgTop} stopOpacity={0.34} />
-          <Stop offset="0.5" stopColor={C.bgTop} stopOpacity={0} />
-          <Stop offset="0.78" stopColor={C.bgTop} stopOpacity={0.34} />
-          <Stop offset="1" stopColor={C.bgTop} stopOpacity={0.92} />
-        </LinearGradient>
       </Defs>
 
       {/* cord */}
       <Rect x={CX - 1} y={0} width={2} height={42} fill={C.accent} opacity={0.55} />
 
       {/* the light, drawn before the shade so the shade caps it */}
-      <Path d={CONE} fill="url(#studioCone)" />
-      <Path d={CONE} fill="url(#studioConeEdge)" />
+      {CONES.map((d, i) => (
+        <Path key={i} d={d} fill="url(#studioCone)" opacity={1 / LAYERS} />
+      ))}
 
       {/* shade */}
       <Path
