@@ -322,6 +322,47 @@ live on the web target, or an ambient declaration. The app is clean; a
 future `KHÔNG reachable` list that is longer than the eight above means
 something new was added and left unwired.
 
+### Open bug — Koa is missing from the podium on device
+
+The user's screenshot of `/mascot-room` on 2026-07-28 shows the studio
+drawing correctly and **the podium empty**, with the DEV picker set to
+`curl`. What was ruled out, so the next session does not repeat it:
+
+- **The scene data is healthy.** Bundling `koa-scene.ts` + `koa-flags.ts`
+  and walking the tree the way `RenderNode` does — skipping any node whose
+  `if` flag is false or whose `animBind` resolves to `opacity:0` — draws
+  52 shapes for (happy, idle), 75 for (strain, lifting), 42 for
+  (grin, idle), 50 for (tired, relaxing) and 76 for (happytired, running).
+  The scene references 106 `if` flags and 19 binds, and `koaFlags()`
+  defines every one of them. Nothing is silently switched off.
+- **The placement math fits.** With `SCENE_BOTTOM` 476, `STUDIO_W` 390,
+  `HERO_W` 128 and `STAGE_MARK` (195, 412), the buddy's box runs from
+  `258k` to `418k` inside a stage `476k` tall — the feet land on the mark,
+  nothing overflows.
+- **Nothing gates it.** `mascot-room.tsx` → `MascotScene` →
+  `StageRenderer` → `MascotBuddy` → `MascotFigure` → `KoaFigure`, with no
+  conditional anywhere on that path, and `DEFAULT_MASCOT_ID` is `koa`.
+- **No recent regression.** The last commits to touch `koa-figure.tsx` and
+  `stage-renderer.tsx` predate the studio work, and `tsc --noEmit` is
+  clean.
+
+So the source is not obviously at fault, which points at the build on the
+device or a runtime failure that TypeScript cannot see. **The cheap
+discriminating test, before touching any code:** the room's DEV bar has a
+`spec sheet →` chip. `/koa-sheet` renders `KoaFigure` directly at size 200
+with no `StageRenderer`, no placement math and no `perspective` /
+`rotateX` / `scale` wrapper; Settings renders it at size 44 with
+`animated={false}`.
+
+| What you see | Where the fault is |
+|---|---|
+| Koa on the spec sheet, not on the podium | `StageRenderer` — placement, or the transform wrapper around the buddy |
+| Koa missing on the spec sheet too, but present at 44px in Settings | the animated path — the clock, `useFrameCallback`, `AnimGroup` |
+| Koa missing everywhere | the figure or `react-native-svg` itself at runtime |
+
+Run that first. Each row points somewhere different, and guessing between
+them is what would cause a wide, wrong change.
+
 ---
 
 ## 6. Open — parked, ask the user when they are ready
@@ -339,19 +380,44 @@ act on these; raise them when a design pass lands.
    The lash-line blink pivot has since become moot: the export's own
    eyelid collapses onto the lash line at y=72, which is what the user
    asked for.
-2. **The shop vs the 70-item wardrobe.** `SHOP_ITEMS` sells five flat
-   outfit keys on head/eyes/neck/waist; the character wears one item per
-   slot across head/face/top/bottom/shoes/back/hand. `WORN_FROM_SHOP` in
-   `mascot-figure.tsx` bridges the three that overlap. Open: prices,
-   unlock rules, and a season/theme field — a third of the catalogue is
-   Tết / Christmas / Halloween.
+2. **The shop vs the 70-item wardrobe — and two items that are sold but
+   never appear.** `SHOP_ITEMS` sells five outfit keys on head / eyes /
+   neck / waist; the character wears one item per slot across head / face /
+   top / bottom / shoes / back / hand. `WORN_FROM_SHOP` in
+   `mascot-figure.tsx` bridges only the three that overlap — `headband`,
+   `cap`, `sunglasses`.
+
+   **`medal` (300 coins) and `belt` (250 coins) therefore render as nothing
+   on Koa.** They cannot be fixed by extending that table: `KOA_ITEMS` has
+   no `neck` or `waist` slot and no medal or belt anywhere in its 70, so
+   there is no art to map them onto. They *do* draw on the other five
+   characters, because `vector-mascot.tsx` hand-draws them — so the two
+   items work on every companion except the one everybody uses. Either the
+   design sheet gains a neck medal and a waist belt, or the shop stops
+   selling them and refunds the people who bought them. Not a code
+   decision.
+
+   Open with it: prices, unlock rules, and a season/theme field — a third
+   of the catalogue is Tết / Christmas / Halloween.
 3. **Room items as a shop mechanic.** The studio is a fixed composition, so
    the old stage's auto-placing layout engine has no equivalent. If future
    shop items should furnish the room, that needs designing against the
    studio.
-4. **Expressions with no trigger.** `surprised` and `angry` are drawn but
-   nothing in `baseEmotion()` produces them; `run` is reachable only from
-   the DEV picker.
+4. **Expressions with no trigger — this is the direction the user picked on
+   2026-07-28, so it is the next piece of work.** Three of the sheet's ten
+   expressions have no route to the screen: `surprised`, `angry` and
+   `confident` (an earlier version of this list missed `confident`). The
+   `STATES` table in `koa-emotion.ts` uses the other seven. `run` is mapped
+   but nothing in `baseEmotion()` produces it either, so it too is
+   reachable only from the DEV picker.
+
+   What is missing is not code but the trigger rules: `EmotionInput` today
+   carries only `mood`, `streak`, `hour`, `onWorkoutScreen`, `isBirthday`
+   and `cold`, and `baseEmotion()` returns one of curl / hat / sleep / coat
+   / happy / sad / tired / idle. Widening it means saying **when** each new
+   expression fires and, for most of them, feeding a signal the engine does
+   not receive yet (a PR, a lapsed streak, a finished session). Ask the
+   user for the rules before inventing them.
 5. **Sheet §1 turnaround.** The sheet shows side and back views; no path
    data exists for them in the export yet.
 6. **`coat` needs a weather source** — location + a free weather API.

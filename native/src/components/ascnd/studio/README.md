@@ -25,6 +25,21 @@ landmark by what its colour *is* — gold, purple, green, lit sky — rather
 than by an exact hex, because the reference is a painted render whose values
 do not match the palette, and reports the gap in points.
 
+**`ref.png` is not in the repository** — it is the user's design screenshot,
+so `compare.mjs` and `light.mjs` cannot run without asking them for it.
+`preview.mjs` and `stage.mjs` need nothing but the components and do run.
+
+These four need `playwright` and `esbuild`, which are not project
+dependencies: `npm i --no-save playwright esbuild`. Pin the version to the
+Chromium already on the machine rather than downloading a browser — the
+build under `PLAYWRIGHT_BROWSERS_PATH` is what decides. Build 1194 wants
+playwright 1.56; a mismatched version fails with "Executable doesn't exist"
+and tells you to run `playwright install`, which is the wrong fix.
+
+`stage.mjs` draws Koa only when it finds `../koa-figure-mirror.js`, which is
+outside the repo. Without it the podium comes out empty, and it says so —
+an empty podium in a `stage.mjs` render is the tool, not the app.
+
 **`light.mjs` matters more than `compare.mjs`.** The screenshot is not an
 iPhone aspect, so its coordinates are a guide and not a target: the landmark
 table once read 4pt everywhere while the room still looked wrong, because
