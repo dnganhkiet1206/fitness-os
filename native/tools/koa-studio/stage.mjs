@@ -71,4 +71,7 @@ await page.goto(pathToFileURL(html).href);
 await page.waitForTimeout(250);
 await page.screenshot({ path: OUT });
 await browser.close();
-console.log(`${OUT} — ${STUDIO_W}×${SCENE_BOTTOM}, mốc đứng (${STAGE_MARK.x}, ${STAGE_MARK.y}), Koa rộng ${size}`);
+console.log(
+  `${OUT} — ${STUDIO_W}×${SCENE_BOTTOM}, mốc đứng (${STAGE_MARK.x}, ${STAGE_MARK.y}), ` +
+    (koa ? `Koa rộng ${size}` : 'phòng trống — không thấy koa-figure-mirror.js'),
+);

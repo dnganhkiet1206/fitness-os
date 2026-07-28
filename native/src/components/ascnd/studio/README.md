@@ -48,9 +48,10 @@ the components and not a copy of them that can drift.
 | Depth from scale, overlap and brightness only | no perspective transform anywhere |
 | Every object is its own component | one file each, placed by `(x, y)` |
 
-Current cost: **143 shapes, ~14KB of SVG**, all static — it draws once and
+Current cost: **153 shapes, ~16KB of SVG**, all static — it draws once and
 then costs nothing per frame, which is what lets it sit under a character
-that does animate.
+that does animate. `preview.mjs` prints both numbers on every run; if they
+have moved, this line is what is stale.
 
 ## Held to the design, measured
 
@@ -156,9 +157,15 @@ the window over the streak card, and the podium is centred at (195, 414).
 brief asks for depth from scale rather than from more artwork. Adding a prop
 to an existing object is preferred over adding another file.
 
-## Not wired in yet
+## Wired in, and what happened to the skins
 
-`StageRenderer` still draws the old podium scene, and it has three
-purchasable stage skins (`stage_night`, `stage_sunset`, `stage_champion`).
-Swapping the studio in without a decision on those would quietly devalue
-things people bought, so that is an open question, not an oversight.
+`StageRenderer` draws this scene — `<KoaStudio width height skin energy
+streak />` is the whole backdrop, and the old podium scene is gone. What is
+left of `stage-renderer.tsx` is only what the scene is not: where the
+character stands, the poke, the fade into the page.
+
+The three purchasable skins survived rather than being devalued.
+`STUDIO_SKINS` in `palette.ts` maps `stage_night` / `stage_sunset` /
+`stage_champion` to a wall gradient and a glow colour, so what people
+bought still changes the room. A new skin is an entry in that table, not a
+new scene.
