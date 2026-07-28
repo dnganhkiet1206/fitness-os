@@ -376,13 +376,25 @@ on. `preview.mjs` bundles the real `.tsx`, so it cannot drift on shapes or
 coordinates — but it renders in a **browser**, and a browser and
 `react-native-svg` do not agree about text.
 
-- **Whitespace in a `TSpan` is dropped on device.** The wall sign's gap was
-  a trailing space inside `<TSpan>WIN </TSpan>`. The browser kept it; the
-  phone did not, so the sign read `WINTODAY` on device while every check
-  ever run on this scene showed `WIN TODAY`. It is `'WIN '` now,
-  written as an escape so a formatter cannot trim it back. **Never carry
-  layout in whitespace inside SVG text** — use U+00A0 or `dx`, which are
-  geometry and survive both renderers.
+- **A `TSpan` cannot end in whitespace on iOS — no character fixes it.**
+  The wall sign's gap was a trailing space inside `<TSpan>WIN </TSpan>`.
+  The browser kept it, the phone did not, so the sign read `WINTODAY` on
+  device while every check ever run on this scene showed `WIN TODAY`.
+
+  Swapping in U+00A0 was tried first and **also failed**. The reason is in
+  `react-native-svg/apple/Text/RNSVGTSpan.mm`: each span's advance comes
+  from `CTLineGetBoundsWithOptions(line, 0)`, and CoreText leaves trailing
+  whitespace out of a line's width, so a span ending in a space measures
+  exactly as wide as one that does not, and the next span starts flush
+  against it. A no-break space does not escape this — `NSCharacterSet
+  whitespaceCharacterSet` is Unicode category Zs, which contains U+00A0.
+
+  The fix is `dx`, the one route that never goes through text measurement.
+  Its own catch: that same advance sums the spans' measured widths and does
+  not count `dx`, so a `textAnchor="middle"` line sits half a gap off
+  centre unless `x` is corrected by `-GAP / 2` — which is what
+  `neon-sign.tsx` now does. **Never carry layout in whitespace inside SVG
+  text.**
 - Treat any text difference between the preview and a device shot as the
   preview being wrong, not the phone. Shapes are the other way round.
 

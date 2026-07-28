@@ -55,10 +55,17 @@ the components and not a copy of them that can drift.
 **That holds for geometry, not for text.** The preview draws in a browser,
 and a browser and `react-native-svg` disagree about whitespace: the sign's
 `<TSpan>WIN </TSpan>` kept its trailing space here and lost it on the phone,
-so the room read `WIN TODAY` in every check and `WINTODAY` on device. Put no
-layout in whitespace inside SVG text — U+00A0 or `dx` are geometry and both
-renderers honour them. When the preview and a device shot differ on text,
-the preview is the one that is wrong.
+so the room read `WIN TODAY` in every check and `WINTODAY` on device.
+
+A no-break space does **not** fix it — that was tried on device first. Each
+span's width comes from `CTLineGetBoundsWithOptions`, CoreText leaves
+trailing whitespace out of a line's width, and `whitespaceCharacterSet` is
+Unicode Zs, so U+00A0 is treated the same. `neon-sign.tsx` holds the gap
+with `dx` instead, and corrects `x` by half of it because that measured
+advance does not count `dx` either.
+
+Put no layout in whitespace inside SVG text. When the preview and a device
+shot differ on text, the preview is the one that is wrong.
 
 ## The rules this scene is held to
 

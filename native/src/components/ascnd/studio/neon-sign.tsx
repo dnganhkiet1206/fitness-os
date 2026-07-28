@@ -11,6 +11,8 @@ const X = 24;
 const Y = 130;
 const W = 84;
 const H = 82;
+/** the space between WIN and TODAY, in artboard units — see the note below */
+const GAP = 2.6;
 
 export function NeonSign() {
   return (
@@ -26,13 +28,24 @@ export function NeonSign() {
         fill={C.highlight}
       />
 
-      {/* The gap is a non-breaking space, not a plain one. A trailing " " in
-          the TSpan survived the browser preview and collapsed on device, so
-          the sign read WINTODAY on the phone and WIN TODAY everywhere the
-          scene was checked. U+00A0 is a glyph with an advance in both. */}
-      <Text x={X + W / 2} y={Y + 54} fontSize={9.5} fontWeight="800" textAnchor="middle">
-        <TSpan fill={C.highlight}>{'WIN\u00A0'}</TSpan>
-        <TSpan fill={C.white}>TODAY</TSpan>
+      {/* The gap between the two colours is geometry, not a character.
+          RNSVGTSpan measures each span with CTLineGetBoundsWithOptions, and
+          CoreText leaves trailing whitespace out of a line's width \u2014 so a
+          trailing " " measures as nothing and TODAY starts flush against
+          WIN. U+00A0 does not help: NSCharacterSet whitespaceCharacterSet
+          is Unicode Zs, which contains it. Both were tried on device; the
+          sign read WINTODAY both times while the browser preview showed the
+          gap. `dx` is the only version that does not go through text
+          measurement.
+
+          The anchor needs the same correction: that advance is the sum of
+          the spans' measured widths and does not count `dx`, so a centred
+          line would sit half a gap left of centre. */}
+      <Text x={X + W / 2 - GAP / 2} y={Y + 54} fontSize={9.5} fontWeight="800" textAnchor="middle">
+        <TSpan fill={C.highlight}>WIN</TSpan>
+        <TSpan fill={C.white} dx={GAP}>
+          TODAY
+        </TSpan>
       </Text>
       <Text x={X + W / 2} y={Y + 66} fill={C.white} fontSize={9.5} fontWeight="800" textAnchor="middle">
         STRONGER
