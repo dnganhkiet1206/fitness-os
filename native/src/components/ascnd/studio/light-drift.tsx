@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { useEffect } from 'react';
 import Animated, {
   cancelAnimation,
@@ -9,11 +8,11 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import { Ellipse, G, type EllipseProps, type GProps } from 'react-native-svg';
+import { Ellipse, type EllipseProps } from 'react-native-svg';
 
 import { C } from '@/components/ascnd/studio/palette';
 import { STAGE_GLOW, stageGlowOpacity } from '@/components/ascnd/studio/platform';
-import { ConeDefs, Cones, Lamp } from '@/components/ascnd/studio/spotlight';
+import { CX, MOUTH_R, MOUTH_Y } from '@/components/ascnd/studio/spotlight';
 
 /**
  * The room's light, alive.
@@ -32,9 +31,6 @@ import { ConeDefs, Cones, Lamp } from '@/components/ascnd/studio/spotlight';
  * instead, and draws its static originals when they are not passed.
  */
 
-const AnimatedG = Animated.createAnimatedComponent(
-  G as unknown as React.ComponentType<GProps & { opacity?: number }>,
-);
 const AnimatedEllipse = Animated.createAnimatedComponent(
   Ellipse as unknown as React.ComponentType<EllipseProps & { opacity?: number }>,
 );
@@ -47,8 +43,8 @@ const AnimatedEllipse = Animated.createAnimatedComponent(
  */
 const PERIOD = 7300;
 
-/** how far the beam's brightness swings either side of nominal */
-const BEAM_SWING = 0.075;
+/** how far the mouth's glow swings either side of its resting strength */
+const PULSE_SWING = 0.16;
 /** the stage glow breathes wider than the beam — it is the softer of the two */
 const GLOW_SWING = 0.22;
 
@@ -69,29 +65,37 @@ export function useLightClock(): SharedValue<number> {
 }
 
 /**
- * The lamp, with the beam breathing under it.
+ * The lamp's mouth, breathing.
  *
- * Two sine terms a cycle apart — `sin(a)` and a third of `sin(3a)` — so the
- * swell is not a metronome. Both are whole numbers of cycles in `t`, so the
- * loop closes on itself with no jump at the seam.
+ * **This is deliberately one small ellipse and not the beam.** The first
+ * version animated the nine-trapezoid cone stack, and even on its own canvas
+ * that meant re-rasterising nine full-height gradient-filled shapes sixty
+ * times a second — the phone ran hot within minutes. Shape *count* is not
+ * what costs; covered area is. So the cone stack stays still, in the studio's
+ * static canvas, and what moves is a glow at the mouth: the eye reads the
+ * lamp as alive, and the fill rate is a few hundred pixels rather than most
+ * of the screen.
  *
- * Only `Cones` moves. The shade is a solid object: modulating its opacity
- * would let the wall show through it, which is why `Lamp` is drawn outside
- * the animated group rather than inside it.
+ * **Do not animate the cones, the vignette, the wall or the floor.** Anything
+ * that covers a large area must stay still.
+ *
+ * Two sine terms a cycle apart so the swell is not a metronome, and both are
+ * whole numbers of cycles in `t` so the loop closes without a seam.
  */
-export function LiveLight({ t }: { t: SharedValue<number> }) {
+export function LampPulse({ glow = C.highlight, t }: { glow?: string; t: SharedValue<number> }) {
   const props = useAnimatedProps<{ opacity: number }>(() => {
     const a = 2 * Math.PI * t.value;
-    return { opacity: 1 + BEAM_SWING * (Math.sin(a) + Math.sin(3 * a) / 3) };
+    return { opacity: 0.3 + PULSE_SWING * (Math.sin(a) + Math.sin(3 * a) / 3) };
   });
   return (
-    <>
-      <ConeDefs />
-      <AnimatedG animatedProps={props}>
-        <Cones />
-      </AnimatedG>
-      <Lamp />
-    </>
+    <AnimatedEllipse
+      cx={CX}
+      cy={MOUTH_Y + 1}
+      rx={MOUTH_R + 6}
+      ry={7}
+      fill={glow}
+      animatedProps={props}
+    />
   );
 }
 

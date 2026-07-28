@@ -3,37 +3,41 @@ import { Circle } from 'react-native-svg';
 import { C } from '@/components/ascnd/studio/palette';
 
 /**
- * Neon motes — the room's own colours hanging in the air.
+ * Motes in the lamp's beam.
  *
- * Twelve of them. There were twenty-two and the room read as dirty rather
- * than as air, so this is the count the user settled on; keep it sparse.
+ * Nine of them, and they live **inside the cone** — the room's air is only
+ * visible where light crosses it, which is why they are not scattered over
+ * the walls any more. Each sits within the beam's half-width at its own
+ * height: 30 units at y95 widening to 100 at y305, where the gradient has
+ * faded out. Move one and check it is still inside that envelope.
  *
- * They belong *above* `Vignette`, which reaches full `bgTop` at the corners
- * and would paint out exactly the ones meant to read there. When the room is
- * live they are drawn in the overlay canvas instead — see `studio-live.tsx`.
+ * The radii are deliberately uneven, 0.9 to 2.4. A uniform speck size reads
+ * as a pattern; dust does not have one.
  *
- * A mote only reads where it is **brighter than what is behind it**, which
- * is why the placements are measured rather than eyeballed. Two of the first
- * ones failed that: a warm mote inside the beam's bright upper cone came out
- * 7 luminance units *darker* than the light around it — a speck of dirt, not
- * dust — and one on the window frame moved the pixel by 1.5. So they sit on
- * wall and floor, never on a lit prop, and never inside the beam above
- * y ≈ 210. They also stay out of the column the character stands in, roughly
- * x 130–260 below y 250.
+ * **Colour follows brightness, not taste.** A mote only reads where it is
+ * brighter than what is behind it, and inside a lit beam that rules the warm
+ * out near the top: an early gold mote up in the bright cone measured 7
+ * luminance units *darker* than the light around it, which looks like dirt on
+ * the lens. So the high ones are white and the low ones, where the beam has
+ * faded towards the wall, can afford the room's own colours. Every position
+ * here is measured against a median of its surroundings; re-measure if any
+ * moves.
  *
- * Only palette colours, and only the two purples plus the warm, so the air
- * belongs to the neon sign and the lamp rather than adding a colour of its
- * own.
+ * They are drawn in the overlay canvas, never inside `KoaStudio` — see
+ * `studio-live.tsx` for why that boundary exists.
  */
 export type Mote = [x: number, y: number, r: number, opacity: number, fill: string];
 
 export const MOTES: Mote[] = [
-  [58, 96, 1.6, 0.11, C.soft], [256, 96, 1.5, 0.11, C.soft],
-  [128, 112, 1.4, 0.09, C.highlight], [34, 116, 1.4, 0.09, C.soft],
-  [118, 172, 1.6, 0.09, C.soft], [258, 176, 1.4, 0.11, C.accent],
-  [44, 200, 1.5, 0.09, C.soft], [96, 224, 1.5, 0.09, C.highlight],
-  [352, 226, 1.4, 0.09, C.accent], [150, 232, 1.7, 0.11, C.soft],
-  [250, 316, 1.5, 0.11, C.soft], [36, 360, 1.6, 0.11, C.soft],
+  [178, 95, 0.9, 0.07, C.white],
+  [210, 112, 1.6, 0.07, C.white],
+  [168, 140, 1.1, 0.07, C.white],
+  [225, 165, 2.2, 0.065, C.white],
+  [150, 190, 1.3, 0.06, C.white],
+  [240, 215, 1.0, 0.12, C.soft],
+  [175, 245, 2.4, 0.12, C.soft],
+  [252, 275, 1.4, 0.08, C.highlight],
+  [140, 305, 1.8, 0.08, C.highlight],
 ];
 
 export function Specks({ list }: { list: Mote[] }) {

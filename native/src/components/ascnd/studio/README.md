@@ -96,7 +96,7 @@ on every run; if they have moved, this line is what is stale.
 
 **"The studio is a static scene" was a rule here until 2026-07-28, when the
 user lifted it.** The room may move. Do not restore the old rule, and do not
-take the motes, the breathing beam or the stage glow out on the grounds that
+take the motes, the lamp's pulse or the stage glow out on the grounds that
 the scene should be still — ask first.
 
 What has *not* changed is the reason the rule existed. This sits under a
@@ -104,8 +104,8 @@ character running its own 30fps clock, on a phone. So every moving part
 obeys the same three constraints:
 
 - **One clock each, and only two in the room** — `motes-drift.tsx` at 26s and
-  `light-drift.tsx` at 7.3s, the latter shared by the beam and the stage
-  glow. The periods are deliberately unrelated so the two never fall into
+  `light-drift.tsx` at 7.3s, the latter shared by the lamp's pulse and the
+  stage glow. The periods are deliberately unrelated so the two never fall into
   step and start reading as a single pulse.
 - **Nothing animates inside `KoaStudio`'s canvas.** `react-native-svg`
   rasterises a whole `<Svg>` again whenever any child prop changes, so an
@@ -113,27 +113,31 @@ obeys the same three constraints:
   full-canvas gradients, under a character already running its own 30fps
   clock. That is exactly what the first version did and the Mascot Room went
   visibly laggy. The moving parts live in `studio-live.tsx`, a second canvas
-  laid directly over the studio, where the same animations touch ~26 shapes
-  and the studio's own canvas goes back to never redrawing. **`StageRenderer`
-  must position that overlay absolutely** — as a plain sibling it lays out
-  below the studio instead of on top of it.
+  laid directly over the studio, and the studio's own canvas goes back to
+  never redrawing. **`StageRenderer` must position that overlay absolutely** —
+  as a plain sibling it lays out below the studio instead of on top of it.
+- **And nothing large animates on the overlay either.** Moving the beam onto
+  its own canvas fixed the lag and the phone still ran hot: nine full-height
+  gradient trapezoids at 60fps. **Shape count is not the cost — covered area
+  is.** The beam is static again and what moves is a glow at the lamp's
+  mouth, nine motes and the stage's glow, all small. Do not animate the
+  cones, the vignette, the wall or the floor.
 - **Derived on the UI thread**, through `useAnimatedProps` into a group
   `matrix` or `opacity`. Nothing crosses to JS per frame.
 - **Gated on screen focus.** `StageRenderer` passes the live versions only
   while the screen is focused, so the clocks stop with the screen rather than
   running behind it.
 
-`KoaStudio` takes a `live` flag and leaves the beam, the motes and the glow
-out when the overlay is drawing them, so nothing is drawn twice. Off — which
+`KoaStudio` takes a `live` flag and leaves the motes and the glow out when
+the overlay is drawing them, so nothing is drawn twice. The beam is drawn
+there either way — it is far too large an area to animate. Off — which
 is the default, and what `preview.mjs` gets — it draws the whole scene in one
 canvas exactly as before. That is also the boundary the Reanimated rule above
 needs: the studio imports none of it.
 
-Lifting those three above `FloorLight` and `Platform` costs nothing visible,
-and that was checked rather than assumed: the beam's gradient is fully
-transparent by y325 while the podium's top edge is at y381, and no mote sits
-inside the podium's box. **Re-check both if the beam's tail is carried lower
-or a mote is moved down.**
+Lifting the motes and the glow above `FloorLight` and `Platform` costs
+nothing visible, and that was checked rather than assumed: no mote sits inside
+the podium's box. **Re-check if one is moved down.**
 
 The lamp hangs 12 units lower than the design's, at the user's direction, and
 the beam's gradient reaches 0.62 rather than 0.58 for the same reason. **The
@@ -399,26 +403,25 @@ purpose.
 
 ## The air, and the podium's face
 
-Twelve neon motes hang in the room at 7–11%, in `motes.tsx` but drawn
-**after** `Vignette` and `Spotlight` rather than with the white dust: the
-vignette reaches full `bgTop` at the corners, so anything in `Background` is
-painted out exactly where these are meant to read.
+Nine motes hang **inside the lamp's beam** at 6–12%, in `motes.tsx`. The room's
+air is only visible where light crosses it, so they are not scattered over the
+walls: each sits within the cone's half-width at its own height — 30 units at
+y95 widening to 100 at y305, where the gradient has faded out. Their radii run
+0.9 to 2.4 on purpose; one speck size reads as a pattern, and dust has none.
 
-A mote only reads where it is brighter than what is behind it. Two of the
-first placements failed that: a warm one inside the beam's bright upper cone
-measured 7 luminance units **darker** than the light around it — a speck of
-dirt, not dust — and one on the window frame moved the pixel by 1.5. They go
-on wall and floor now, never on a lit prop and never inside the beam above
-y≈210, and each is measured at +3.3 to +15.3 against a median of its
-surroundings. They were first drawn at 3–5%, which measured +3.5 to +7.1 and
-read as too faint on device; then twenty-two at 7–11%, which read as dirty
-rather than as air. Twelve is the count the user settled on — keep it sparse,
-and re-measure if any moves.
+A mote only reads where it is brighter than what is behind it, which inside a
+lit beam rules the warm out near the top: an early gold mote up in the bright
+cone measured 7 luminance units **darker** than the light around it, which
+looks like dirt on the lens. The high ones are white and the low ones, where
+the beam has faded toward the wall, carry the room's colours. Each is measured
+at +10 to +15 against a median of its surroundings — they were briefly at
++30 to +99, which read as stars rather than dust.
 
-**They drift, and that makes them the one thing here that moves.** The
-motion is three group matrices off a single shared value, derived on the UI
-thread with no per-frame work in JS, over a 26s cycle whose terms are whole
-numbers of cycles so the loop closes without a seam. `StageRenderer` only
+**They drift up and down.** Dust in a beam rises and settles rather than
+sliding sideways, so the vertical term carries the motion and the horizontal
+one is barely a wobble. Three group matrices off a single shared value,
+derived on the UI thread with no per-frame work in JS, over a 26s cycle whose
+terms are whole numbers of cycles so the loop closes without a seam. `StageRenderer` only
 passes them while the screen is focused, so the clock stops with the screen.
 
 `DriftingMotes` lives in its own file, `motes-drift.tsx`, and `koa-studio.tsx`

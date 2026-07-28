@@ -35,15 +35,15 @@ import { C, STAGE_MARK } from '@/components/ascnd/studio/palette';
  * The widths are packed toward the outside (`^0.4`) so the core stays flat
  * and only the outer third ramps, which is the profile the design has.
  */
-const CX = STAGE_MARK.x;
+export const CX = STAGE_MARK.x;
 /**
  * The lamp hangs 12 units lower than it was, at the user's direction
  * (2026-07-28). The README's landmark table still lists the design's mouth
  * at y61 — that row is now knowingly out of date rather than a defect, so
  * do not "correct" the lamp back to it without asking.
  */
-const MOUTH_Y = 78;
-const MOUTH_R = 28;
+export const MOUTH_Y = 78;
+export const MOUTH_R = 28;
 /** the shade, tied to the mouth so the whole lamp moves as one number */
 const SHADE_TOP = MOUTH_Y - 26;
 const SHADE_MID = MOUTH_Y - 14;

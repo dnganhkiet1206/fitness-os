@@ -48,8 +48,9 @@ export function KoaStudio({
   energy?: number;
   /**
    * True when `StudioLive` is drawing the room's moving parts on its own
-   * canvas above this one — see `studio-live.tsx`. The three of them are
-   * then left out here so they are not drawn twice.
+   * canvas above this one — see `studio-live.tsx`. The motes and the stage
+   * glow are then left out here so they are not drawn twice. The beam stays
+   * either way: it is far too large an area to animate.
    *
    * Off by default, so a still of the room, and `preview.mjs`, get the whole
    * scene in one canvas exactly as before.
@@ -79,7 +80,10 @@ export function KoaStudio({
           out at 145 and it read as a dark plaque rather than a lit sign */}
       <Vignette />
       <NeonSign />
-      {live ? null : <Spotlight />}
+      {/* the beam never animates — it covers most of the screen, and that
+          is what made the phone hot. Only small shapes move; see
+          studio-live.tsx */}
+      <Spotlight />
       {/* the air, after the vignette that would otherwise paint it out */}
       {live ? null : <Motes />}
       <FloorLight glow={s.glow} energy={energy} />

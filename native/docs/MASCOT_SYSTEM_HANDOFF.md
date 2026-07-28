@@ -102,7 +102,7 @@ The emotion side:
   character stands, the poke, the fade into the page, and the live versions
   of the room's moving parts. The buddy is placed from `STAGE_MARK`, the
   same number the scene composes itself around. It was a still scene until
-  2026-07-28; it now drifts, breathes and glows — see rule 10.
+  2026-07-28; it now drifts, pulses and glows — see rule 10.
 - **Gamification** (context, do not redo): rank ladder, Today's Energy
   ring, Rank Journey, coin-burst and rank-up confetti, stage lighting off
   rank and energy.
@@ -179,7 +179,7 @@ The emotion side:
 
    **The studio is no longer a static scene.** That rule was lifted by the
    user on 2026-07-28: the room may move, and it does — drifting motes, a
-   breathing beam, a stage glow. Do not put the old rule back, and do not
+   pulsing lamp, a stage glow. Do not put the old rule back, and do not
    remove those on the grounds that the room should be still. What survives
    is this rule, which the room's two clocks obey: one shared value each,
    derived on the UI thread into a group `matrix` or `opacity`, both gated
@@ -193,7 +193,13 @@ The emotion side:
    frame, over full-canvas gradients, under a character already running its
    own 30fps clock — the Mascot Room went visibly laggy the moment it landed.
    The moving parts are a second canvas over the studio now
-   (`studio-live.tsx`) and touch ~26 shapes.
+   (`studio-live.tsx`).
+
+   That fixed the lag and the phone still ran hot, because the beam moved
+   with them — nine full-height gradient trapezoids at 60fps. **Shape count
+   is not the cost; covered area is.** The beam is static again and only
+   small things move: a glow at the lamp's mouth, nine motes, the stage's
+   glow. Never animate anything that covers a large part of the screen.
    `components/ascnd/studio/README.md` carries the detail.
 
 **Working rules**

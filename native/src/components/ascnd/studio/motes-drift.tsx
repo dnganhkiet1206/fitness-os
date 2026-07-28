@@ -42,11 +42,17 @@ const AnimatedG = Animated.createAnimatedComponent(
 const BANDS = 3;
 /** one full cycle, in ms — slow enough to read as air rather than as motion */
 const PERIOD = 26000;
-/** how far each band travels, in artboard units: [across, down] */
+/**
+ * How far each band travels, in artboard units: [across, down].
+ *
+ * Dust in a beam rises and settles; it does not slide sideways. The vertical
+ * term carries the motion and the horizontal one is barely more than a
+ * wobble, just enough that the three bands do not read as lifts.
+ */
 const SWAY: [number, number][] = [
-  [2.4, 5.6],
-  [3.2, 4.0],
-  [1.8, 6.4],
+  [0.9, 8.5],
+  [1.3, 6.5],
+  [0.7, 10.0],
 ];
 /** bands are offset in the cycle so they never move as one sheet */
 const PHASE = [0, 0.37, 0.71];
