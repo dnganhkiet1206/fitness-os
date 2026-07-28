@@ -23,15 +23,19 @@ const RX = 137;
 const RY = 31;
 const DEPTH = 24;
 
+/** the far half of the rim, and the near half — drawn at different weights */
+const FAR = `M ${CX - RX} ${CY} A ${RX} ${RY} 0 0 1 ${CX + RX} ${CY}`;
+const NEAR = `M ${CX - RX} ${CY} A ${RX} ${RY} 0 0 0 ${CX + RX} ${CY}`;
+
 export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; energy?: number }) {
   const lit = 0.1 + Math.max(0, Math.min(1, energy)) * 0.12;
   return (
     <>
       <Defs>
-        <RadialGradient id="studioPool" cx="50%" cy="40%" r="66%">
-          <Stop offset="0" stopColor={glow} stopOpacity={0.075} />
-          <Stop offset="0.6" stopColor={glow} stopOpacity={0.055} />
-          <Stop offset="1" stopColor={glow} stopOpacity={0.02} />
+        <RadialGradient id="studioPool" cx="50%" cy="28%" r="72%">
+          <Stop offset="0" stopColor={glow} stopOpacity={0.08} />
+          <Stop offset="0.6" stopColor={glow} stopOpacity={0.07} />
+          <Stop offset="1" stopColor={glow} stopOpacity={0.03} />
         </RadialGradient>
       </Defs>
 
@@ -68,23 +72,39 @@ export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; 
           a lit surface is not: it keeps the luminance and takes the hue. */}
       <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill={C.lit} />
       {/* a line, not a second disc: filling the middle back in with the
-          floor's own colour left the podium reading as a hoop */}
+          floor's own colour left the podium reading as a hoop. It is drawn in
+          `glow`, because the design's is a *bright* line — 68 against a face
+          of 42–44 where this had a dark one at 49 against 55. */}
       <Ellipse
         cx={CX}
         cy={CY}
         rx={RX - 14}
-        ry={RY - 6}
+        ry={RY - 9}
         fill="none"
-        stroke={C.primary}
+        stroke={glow}
         strokeWidth={1.4}
-        opacity={0.55}
+        opacity={0.17}
       />
       {/* the lamp lands here — a pool, not a highlight */}
-      <Ellipse cx={CX} cy={CY} rx={RX - 12} ry={RY - 5} fill="url(#studioPool)" />
+      <Ellipse cx={CX} cy={CY} rx={RX - 6} ry={RY - 2} fill="url(#studioPool)" />
 
-      {/* 3 — the ring, glow first */}
-      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="none" stroke={glow} strokeWidth={12} opacity={lit} />
-      <Ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="none" stroke={glow} strokeWidth={2.8} />
+      {/* 3 — the ring, glow first.
+
+          Two arcs, not one ellipse, because the design's ring is not the same
+          weight all the way round. Down its centre line the far edge is a
+          single point of 194 and the near edge three of 200 · 191 · 203 — a
+          band seen almost edge-on at the back and nearly face-on at the front,
+          which is most of what makes the podium read as a disc lying down
+          rather than a hoop drawn on the floor. A uniform 3.4 stroke put a
+          three-point far edge across the widest, flattest part of the ellipse
+          and took the row mean at y380 to 64 against the design's 33.
+
+          Same reason the glow is split: 2.5 points of it above, 4 below.
+          Light pools at the near edge. */}
+      <Path d={FAR} fill="none" stroke={glow} strokeWidth={4} opacity={lit * 1.7} strokeLinecap="round" />
+      <Path d={NEAR} fill="none" stroke={glow} strokeWidth={9} opacity={lit * 1.7} strokeLinecap="round" />
+      <Path d={FAR} fill="none" stroke={glow} strokeWidth={1.6} strokeLinecap="round" />
+      <Path d={NEAR} fill="none" stroke={glow} strokeWidth={3.6} strokeLinecap="round" />
     </>
   );
 }

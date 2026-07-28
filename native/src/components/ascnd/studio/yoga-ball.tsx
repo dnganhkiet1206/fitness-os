@@ -46,7 +46,10 @@ export function YogaBall({ x, y, r = 30 }: { x: number; y: number; r?: number })
           />
         );
       })}
-      <Circle cx={-r * 0.36} cy={-r * 0.4} r={r * 0.2} fill={C.white} opacity={0.09} />
+      {/* `soft`, not white: the design's ball runs 53% saturation from its
+          shadow through to its highlight, and a white catchlight is the one
+          thing on it that would break that */}
+      <Circle cx={-r * 0.36} cy={-r * 0.4} r={r * 0.2} fill={C.soft} opacity={0.22} />
     </G>
   );
 }

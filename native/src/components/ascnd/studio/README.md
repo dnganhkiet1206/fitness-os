@@ -87,7 +87,7 @@ is wrong.
 | Depth from scale, overlap and brightness only | no perspective transform anywhere |
 | Every object is its own component | one file each, placed by `(x, y)` |
 
-Current cost: **183 shapes, ~19KB of SVG**, all static — it draws once and
+Current cost: **185 shapes, ~19KB of SVG**, all static — it draws once and
 then costs nothing per frame, which is what lets it sit under a character
 that does animate. `preview.mjs` prints both numbers on every run; if they
 have moved, this line is what is stale.
@@ -252,6 +252,43 @@ to end on. `bgTop`, `bgBottom`, `primary`, `secondary` and `plant` were all
 deepened; `bgBottom` also turned violet, since the design's wall runs 230 at
 the top and 258 at the floor. That is the whole budget spent.
 
+## The floor and the podium
+
+Averaging every row of both images — a profile neither `light.mjs` nor
+`compare.mjs` looks at — found the largest structural error left in the room,
+in the band from y360 to y396, running 13 to 37 units bright:
+
+| row | 316 | 332 | 348 | 364 | 372 | 380 | 388 | 412 | 436 | 452 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| design | 34 | 29 | 31 | 28 | 25 | 33 | 48 | 46 | 53 | 23 |
+| before | 28 | 37 | 30 | 34 | 45 | 67 | 59 | 45 | 52 | 22 |
+| after | 28 | 37 | 30 | 30 | 33 | 42 | 49 | 46 | 57 | 20 |
+
+Three separate things were wrong in that band.
+
+**The floor was lit from below.** The design's wall reads 34 where it meets
+the ground and its floor 24–30 under it — about nine units *darker* than what
+it meets. Built out of `secondary` this went the other way, 28 on the wall and
+41 · 45 · 49 going down. It is `edge` now: what makes the ground bright is the
+lamp's pool and nothing else.
+
+**The pool was a disc the podium sat on.** Sampling across the design at y420
+gives 38 and 54 at the podium's flanks, and across y372 gives 15–28 — so its
+pool is short and wide and centred low, not tall enough to reach the floor
+above the podium, which is the only place a wide pool shows at all. Cutting it
+narrow enough to fix y372 then left the flanks at 25 against 38; short *and*
+wide is what satisfies both.
+
+**The ring is not one weight all the way round.** Down the design's centre
+line the far edge is a single point of 194 and the near edge three of 200 ·
+191 · 203 — a band seen almost edge-on at the back and nearly face-on at the
+front, which is most of what makes the podium read as a disc lying down rather
+than a hoop drawn on the floor. A uniform ellipse stroke laid a three-point
+far edge across the widest, flattest part of the curve. It is two arcs now, at
+2:3.6, with the glow split the same way. The inner line went the same way for
+a different reason: the design's is *bright*, 68 against a face of 42–44, and
+this had drawn a dark one.
+
 ## The lighting, measured
 
 This is what the room is, more than its coordinates are:
@@ -261,7 +298,7 @@ This is what the room is, more than its coordinates are:
 | beam down the middle | 61 · 49 · 36 · 31 | 61 · 54 · 37 · 34 |
 | warmth at the lamp (R−B) | +8.1 | +12 |
 | … halfway down | −14.9 | −10 |
-| props against the wall | 47 · 56 · 52 | 59 · 70 · 54 |
+| props against the wall | 47 · 56 · 52 | 44 · 54 · 61 |
 | stage centre | 39.3 | 40.3 |
 | podium face ÷ its side | — | 3.96 (was 2.80) |
 | vignette (corners ÷ centre) | 0.61 | 0.65 |
@@ -291,9 +328,11 @@ flat and the character was no longer the brightest thing in it. `Vignette`
 in `floor.tsx` is what fixes the last one: it goes over the wall and
 everything standing against it, and under the lamp and the podium.
 
-Still open: the props sit about 1.2× brighter than the design and the
-corners about four luminance units lighter. Pushing further flattens the
-room, so it stopped there.
+Still open: the yoga ball reads 43% saturation against the design's 53, and
+it cannot be fixed by darkening — `accent` is (123, 97, 255), whose
+(max−min)/(max+min) is 0.449, and black scaling preserves exactly that ratio.
+Reaching 0.53 means a more saturated `accent`, which the shelf equipment does
+not want: it already measures 43 against the design's 37.
 
 ## Where the design and the brief disagree
 

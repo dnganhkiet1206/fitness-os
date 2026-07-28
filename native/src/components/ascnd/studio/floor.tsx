@@ -16,6 +16,16 @@ import { C, SCENE_BOTTOM, STAGE_MARK, STUDIO_H, STUDIO_W } from '@/components/as
  * `Vignette` is what fixes that: it goes over the wall and everything
  * standing against it, and under the lamp and the podium, so the light lands
  * on top of a room that has already fallen into shadow.
+ *
+ * ── the floor is darker than the wall ──
+ *
+ * Averaging every row of both images finds the largest structural error left
+ * in the room here: from y360 to y396 this ran 13 to 37 units bright. Down
+ * the design the wall reads 34 at y316 and its floor 24–30 below the horizon,
+ * so the ground is about nine units *under* what it meets. Built out of
+ * `secondary` this went the other way — 28 on the wall and 41 · 45 · 49 going
+ * down the floor — which is a floor lit from below. It is `edge` now, and
+ * what makes the ground bright is the lamp's pool and nothing else.
  */
 const HORIZON = 360;
 
@@ -24,9 +34,9 @@ export function FloorPlane() {
     <>
       <Defs>
         <LinearGradient id="studioFloor" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={C.secondary} stopOpacity={0.95} />
-          <Stop offset="0.45" stopColor={C.secondary} stopOpacity={0.38} />
-          <Stop offset="1" stopColor={C.secondary} stopOpacity={0} />
+          <Stop offset="0" stopColor={C.edge} stopOpacity={0.75} />
+          <Stop offset="0.45" stopColor={C.edge} stopOpacity={0.5} />
+          <Stop offset="1" stopColor={C.edge} stopOpacity={0} />
         </LinearGradient>
         <LinearGradient id="studioFloorTint" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={C.accent} stopOpacity={0.14} />
@@ -83,15 +93,24 @@ export function Vignette() {
   );
 }
 
-/** what the lamp puts on the ground, and what the ring spills back */
+/**
+ * What the lamp puts on the ground, and what the ring spills back.
+ *
+ * Both ellipses sit *below* the podium's middle on purpose. Reaching above it
+ * they lit the band at y360–385, where the design's floor reads 21–28 across
+ * and this read 36–40 — the one place a wide pool shows, since everywhere
+ * else the podium's own top face covers it. Sampling the design across y420
+ * finds 38 and 58 at the podium's flanks and 15–28 at y372, so its pool is
+ * short and wide and centred low, not a disc the podium happens to sit on.
+ */
 export function FloorLight({ glow = C.highlight, energy = 0.5 }: { glow?: string; energy?: number }) {
   const e = Math.max(0, Math.min(1, energy));
   return (
     <>
       {/* `lit`, not white — white here put the floor at 8% saturation
           against the design's 29% while matching its luminance exactly */}
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 4} rx={150} ry={44} fill={C.lit} opacity={0.34 + e * 0.14} />
-      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 10} rx={182} ry={62} fill={glow} opacity={0.045 + e * 0.035} />
+      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 12} rx={165} ry={26} fill={C.lit} opacity={0.34 + e * 0.14} />
+      <Ellipse cx={STAGE_MARK.x} cy={STAGE_MARK.y + 18} rx={178} ry={32} fill={glow} opacity={0.045 + e * 0.035} />
     </>
   );
 }
