@@ -90,7 +90,26 @@ export const nextRank = (level: number): RankDef | null =>
 export const ENERGY_SIGNALS: QuestKey[] = ['meal', 'workout', 'water', 'sleep', 'steps'];
 
 export const questRefKey = (dateStr: string, key: QuestKey) => `d:${dateStr}:${key}`;
-export const weeklyRefKey = (weekStart: string, challengeKey: string) => `w:${weekStart}:${challengeKey}`;
+/**
+ * The claim key for a weekly bonus.
+ *
+ * **The shape is `w:<challenge row id>`, and it cannot change.** These keys
+ * are already written into `mascot_transactions` for real users, and the
+ * claimed/not-claimed state of every weekly bonus is looked up by exact
+ * string match — a new shape would show every past claim as unclaimed and let
+ * it be claimed again.
+ *
+ * This used to read `(weekStart, challengeKey) => \`w:${weekStart}:${challengeKey}\``,
+ * which is not what the screen writes and never was: nothing imported it,
+ * and `mascot-room.tsx` built its own key inline. A helper describing a
+ * format the database does not contain is worse than none — anyone who used
+ * it to test `claimed.has(...)` would have got `false` for every row. The
+ * screen calls this now, so the two cannot drift apart again.
+ *
+ * The row id is enough on its own: `weekly_challenges` rows are per user and
+ * per week already, so the week is in the id rather than in the key.
+ */
+export const weeklyRefKey = (challengeId: string | number) => `w:${challengeId}`;
 export const buyRefKey = (itemKey: string) => `buy:${itemKey}`;
 
 // ─── Shop ──────────────────────────────────────────────────────────────

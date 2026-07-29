@@ -80,6 +80,7 @@ import {
   levelFromXp,
   nextRank,
   questRefKey,
+  weeklyRefKey,
   rankForLevel,
   streakCoins,
   type QuestKey,
@@ -607,7 +608,7 @@ export default function MascotRoomScreen() {
         <GlassCard style={styles.card}>
           <Text style={styles.cardTitle}>{i18n.nRoomWeeklyBonus}</Text>
           {completedWeekly.map((c) => {
-            const refKey = `w:${c.id}`;
+            const refKey = weeklyRefKey(c.id);
             const isClaimed = claimed.has(refKey);
             const t = CHALLENGE_TEXT[c.challenge_key];
             return (
