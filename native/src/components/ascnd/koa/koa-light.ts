@@ -253,19 +253,40 @@ const BODY_IDS = new Set([
 /* ── the shadow on the podium ─────────────────────────────────────────── */
 
 /**
- * Wider, and soft at the edge.
+ * Soft at the edge — but only as wide as the figure's own box allows.
  *
  * The export draws a flat ellipse 64 × 9 at one opacity — a hard-edged disc,
  * which is what a shadow looks like when the light is a point and the floor is
- * paper. Under a broad lamp on a podium it wants to be wider than the figure
- * and to have no edge at all. There is no blur to reach for (a filter is a
- * rasterised pass), so the softness is a radial: dense in the middle, nothing
- * by the rim. The spread multiplies whatever the export drew, so the ellipse's
- * own breathing animation still reads.
+ * paper. Under a broad lamp on a podium it wants no edge at all, so the
+ * softness is a radial: dense in the middle, nothing by the rim. There is no
+ * blur to reach for; a filter is a rasterised pass. The spread multiplies
+ * whatever the export drew, so the ellipse's own breathing still reads.
+ *
+ * **It may not be wider than 240 × 300, because that is the whole world this
+ * file has.** `KoaFigure` draws into `viewBox="0 0 240 300"` and an SVG
+ * viewport clips: at 2 × 2.5 this ellipse ran from −8 to 248 across and down to
+ * 316, and was cut into a rectangle with hard edges on three sides. That is
+ * what the user saw as "something surrounding the mascot" — not a frame around
+ * it, the shadow's own straight cut. `tools/koa-studio/gaze.mjs` now measures
+ * the figure's bounding box against the viewBox on every run for exactly this.
+ *
+ * The wide, soft pool the stage wants is a **room** shadow and lives in
+ * `studio/platform.tsx`, where there are 476 units to spread in instead of six
+ * below the feet. This one is the dark core that sits inside it — and it is
+ * also the only shadow a picker or a grid gets, which is the other reason it
+ * cannot be the stage's.
  */
 export const SHADOW_GRADIENT = 'koaShadowSoft';
-/** across, and along — a pool under an overhead lamp is rounder than a disc */
-export const SHADOW_SPREAD: [number, number] = [2, 2.5];
+/**
+ * Across, and along.
+ *
+ * Both sized to the box, not to taste. 64 × 1.15 = 74 half-width against the
+ * 120 available, and 9 × 0.66 = 5.9 against the six units of floor between the
+ * ellipse's centre at y=294 and the viewBox's bottom edge. The export's own
+ * ry of 9 reached y=303 and was cut flat — three units of hard edge that
+ * predate every change here, at 45% opacity before the gradient softened it.
+ */
+export const SHADOW_SPREAD: [number, number] = [1.15, 0.66];
 export const SHADOW_STOPS: [number, number][] = [
   [0, 1],
   [0.4, 0.78],

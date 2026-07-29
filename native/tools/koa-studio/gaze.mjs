@@ -96,9 +96,12 @@ const show = (o) => Object.entries(o).map(([k, v]) => `${k}="${v}"`).join(' ');
 const isEyeGroup = (n) => !!n.kids && n.kids.some((k) => k.id === 'pupil_left');
 const isSwapMouth = (n) => n.if && GZ.SWAP_MOUTHS.includes(n.if);
 
-function render(n, flags, t) {
+/** `koaBob` at the extreme of its cycle — rotate(-0.8) about (120,180), up 2.5 */
+const BOB_WORST = mul(opsMat([['t', 0, -2.5]]), opsMat([['r', -0.8, 120, 180]]));
+
+function render(n, flags, t, bob = false) {
   if (n.if && !flags[n.if]) return '';
-  let kids = (n.kids || []).map((k) => render(k, flags, t)).join('');
+  let kids = (n.kids || []).map((k) => render(k, flags, t, bob)).join('');
   if (n.id === 'FACE' && flags.mouthSmile) {
     kids += `<path d="${GZ.SMILE}" stroke="${GZ.SMILE_COLOUR}" stroke-width="${GZ.SMILE_WIDTH}" stroke-linecap="round" fill="none" opacity="${GZ.lookK(t).toFixed(3)}"/>`;
   }
@@ -125,7 +128,17 @@ function render(n, flags, t) {
   let out = m ? `<g ${g} transform="matrix(${m.join(' ')})">${body}</g>` : g ? `<g ${g}>${body}</g>` : body;
 
   // …and the glance on top, exactly where the component puts it
-  if (n.id === 'HEADRIG') out = `<g transform="matrix(${GZ.headMat(t).join(' ')})">${out}</g>`;
+  if (n.id === 'HEADRIG') {
+    // The glance is not the only thing moving the head. `koaBob` is running
+    // underneath it the whole time — a −0.8° roll about (120, 180) and 2.5 up
+    // — and at 90 units from that pivot the roll alone carries the ears 1.3
+    // sideways. A clearance check against the rest pose would have signed off
+    // on a margin the idle animation eats on its own. So the worst case is
+    // measured with the bob at its extreme, composed the way the component
+    // composes it: the glance's group *around* the rig, the bob inside it.
+    const m = mul(GZ.headMat(t), bob ? BOB_WORST : I);
+    out = `<g transform="matrix(${m.join(' ')})">${out}</g>`;
+  }
   else if (isEyeGroup(n)) out = `<g id="EYES" transform="matrix(${GZ.eyeMat(t).join(' ')})">${out}</g>`;
   else if (isSwapMouth(n)) out = `<g opacity="${(1 - GZ.lookK(t)).toFixed(3)}">${out}</g>`;
   return out;
@@ -235,11 +248,11 @@ for (const w of windows) {
 /* ── draw it ──────────────────────────────────────────────────────────── */
 
 const studio = readFileSync(path.join(dir, 's.svg'), 'utf8').replace(/height="844"/, `height="${SCENE_BOTTOM}"`);
-const frame = (t) =>
+const frame = (t, bob = false) =>
   studio.replace(
     '</svg>',
-    `${defs}<g transform="matrix(${FIG.join(' ')}) scale(${SCALE})">` +
-      NODES.map((n) => render(n, flags, t)).join('') +
+    `${defs}<g id="FIGURE" transform="matrix(${FIG.join(' ')}) scale(${SCALE})">` +
+      NODES.map((n) => render(n, flags, t, bob)).join('') +
       `</g>${insects(t)}</svg>`,
   );
 
@@ -262,7 +275,7 @@ const wide = (t) =>
      <div style="transform:scale(${WIDE});transform-origin:0 0">${frame(t)}</div></div>`;
 const head = (t) =>
   `<div style="width:203px;height:232px;overflow:hidden">
-     <div style="transform:scale(${HEAD});transform-origin:0 0;margin-left:${-130 * HEAD}px;margin-top:${-240 * HEAD}px">${frame(t)}</div></div>`;
+     <div style="transform:scale(${HEAD});transform-origin:0 0;margin-left:${-130 * HEAD}px;margin-top:${-240 * HEAD}px">${frame(t, true)}</div></div>`;
 
 // three instants per landing: arriving, settled, leaving — a glance that only
 // works at its peak is a glance that snaps on, which is the thing to catch
@@ -327,6 +340,53 @@ const probe = await page.evaluate(() => {
   }
   return out;
 });
+
+/**
+ * Does the figure still fit inside its own viewBox?
+ *
+ * `KoaFigure` draws into `viewBox="0 0 240 300"`, and **an SVG viewport clips**
+ * — anything the glance pushes past an edge is simply cut off, with a straight
+ * line where the ear used to be. Rolling the head about the neck moves the ears
+ * further than anything else on the figure and moves them *up*, which is the
+ * edge with the least room. The user saw this before this check existed.
+ *
+ * `getBBox()` on the placement group reports in the figure's own units, before
+ * that group's transform, so the numbers below compare directly against
+ * 0 → 240 and 0 → 300 with no scaling to get wrong.
+ */
+const box = await page.evaluate(() =>
+  [...document.querySelectorAll('#FIGURE')].map((g) => {
+    const b = g.getBBox();
+    return [b.x, b.y, b.x + b.width, b.y + b.height];
+  }),
+);
+const rest = box[box.length - 1];
+console.log(
+  `\nkhung hình 240 × 300 — lúc đứng yên nhân vật chiếm ` +
+  `(${rest[0].toFixed(1)}, ${rest[1].toFixed(1)}) → (${rest[2].toFixed(1)}, ${rest[3].toFixed(1)}), ` +
+  `chừa trái ${rest[0].toFixed(1)} phải ${(240 - rest[2]).toFixed(1)} trên ${rest[1].toFixed(1)}`,
+);
+console.log('tràn ra bao nhiêu:');
+let cut = 0;
+box.forEach((b, i) => {
+  const over = [-b[0], -b[1], b[2] - 240, b[3] - 300].map((v) => (v > 0.05 ? v : 0));
+  if (over.some((v) => v > 0)) {
+    cut++;
+    console.log(
+      `  ô ${String(i).padStart(2)}  trái ${over[0].toFixed(1)}  trên ${over[1].toFixed(1)}  ` +
+      `phải ${over[2].toFixed(1)}  dưới ${over[3].toFixed(1)}  ← BỊ CẮT`,
+    );
+  }
+});
+const room = box.reduce(
+  (a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])],
+  [999, 999, -999, -999],
+);
+console.log(
+  `  chỗ trống ít nhất: trái ${room[0].toFixed(1)}  trên ${room[1].toFixed(1)}  ` +
+  `phải ${(240 - room[2]).toFixed(1)}  dưới ${(300 - room[3]).toFixed(1)}` +
+  (cut ? `\n  ${cut}/${box.length} khung bị cắt` : '\n  không khung nào bị cắt'),
+);
 await browser.close();
 
 const base = probe[probe.length - 1];

@@ -37,6 +37,11 @@ export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; 
           <Stop offset="0.6" stopColor={glow} stopOpacity={0.07} />
           <Stop offset="1" stopColor={glow} stopOpacity={0.03} />
         </RadialGradient>
+        <RadialGradient id="studioCast">
+          {CAST_STOPS.map(([o, a]) => (
+            <Stop key={o} offset={o} stopColor={C.shadow} stopOpacity={a} />
+          ))}
+        </RadialGradient>
       </Defs>
 
       {/* 1 — the floor takes the weight */}
@@ -105,9 +110,40 @@ export function Platform({ glow = C.highlight, energy = 0.5 }: { glow?: string; 
       <Path d={NEAR} fill="none" stroke={glow} strokeWidth={9} opacity={lit * 1.7} strokeLinecap="round" />
       <Path d={FAR} fill="none" stroke={glow} strokeWidth={1.6} strokeLinecap="round" />
       <Path d={NEAR} fill="none" stroke={glow} strokeWidth={3.6} strokeLinecap="round" />
+
+      {/* 4 — what the buddy casts on the face it is standing on.
+
+          This is the room's shadow, not the character's, and it is here for a
+          reason that took a bug to find. The figure carries one of its own in
+          `koa-light.ts`, but that one is trapped in a 240 × 300 viewBox with
+          six units of floor below the feet — widened to what a broad overhead
+          lamp actually throws it ran past three edges and the viewport cut it
+          into a rectangle, which read as a box drawn around the mascot.
+
+          A cast shadow belongs to the surface it falls on. Out here it has the
+          whole room, it lands on the podium's lit face where it can be seen,
+          and it stays under the buddy because the buddy is a layer above every
+          studio canvas. The figure's own is now the dark core inside this. */}
+      <Ellipse cx={CX} cy={CY + 3} rx={64} ry={13} fill="url(#studioCast)" opacity={0.5} />
     </>
   );
 }
+
+/**
+ * The cast shadow's falloff.
+ *
+ * Denser in the middle than a linear ramp and reaching zero well before the
+ * rim, so there is no edge anywhere — the same shape `koa-light.ts` uses, for
+ * the same reason. The two are separate constants on purpose: this one is
+ * sized to the podium and that one to the figure's box, and tying them
+ * together is how the clipped-shadow bug would come back.
+ */
+const CAST_STOPS: [number, number][] = [
+  [0, 0.85],
+  [0.35, 0.62],
+  [0.68, 0.25],
+  [1, 0],
+];
 
 /**
  * The glow the stage gives back, as geometry and a resting strength.

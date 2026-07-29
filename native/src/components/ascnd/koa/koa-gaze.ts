@@ -91,17 +91,33 @@ export function gazeAt(t: number): Gaze {
  * into the direction of the look — and that roll is most of what makes it read
  * as interest rather than as tracking.
  *
- * `HEAD_TURN` is a sideways shift, not a yaw. The figure is flat and has no
- * far side to bring round; shifting the whole head a few units toward what it
- * is looking at is the closest a drawing like this gets, and at 4.5 units on a
- * 240-wide board it is under two percent of the width — felt, not seen.
+ * `HEAD_TURN` is a sideways shift, not a yaw. The figure is flat and has no far
+ * side to bring round; shifting the whole head a couple of units toward what it
+ * is looking at is the closest a drawing like this gets. It is small because
+ * there is nowhere to put it — see `HEAD_PIVOT` — and because it is the one
+ * part of the glance that does not have to be seen to be felt.
  */
-export const HEAD_TILT = 5;
-export const HEAD_TURN = 4.5;
+export const HEAD_TILT = 3.6;
+export const HEAD_TURN = 0.9;
 export const HEAD_LIFT = 3;
-export const PUPIL_SHIFT = 3.6;
-/** where the head pivots — the neck, not the middle of the skull */
-export const HEAD_PIVOT: [number, number] = [120, 186];
+export const PUPIL_SHIFT = 4.4;
+
+/**
+ * Where the head pivots: the middle of the skull, not the neck.
+ *
+ * The neck is the anatomically honest answer and it was the first one here.
+ * It is also unusable, because **the export draws the ears to the very edge of
+ * the viewBox** — 8.6 units of clearance either side — and `KoaFigure`'s
+ * viewport clips. A roll about a point 110 units below the ears sweeps them
+ * sideways by ten; a roll about a point level with them barely moves them at
+ * all, because the sideways cost of a rotation is `−Δy · sin θ` and Δy is what
+ * changes. Same angle, same read, a quarter of the travel.
+ *
+ * The user saw the first version as the mascot "losing its frame" when it
+ * tilted. `tools/koa-studio/gaze.mjs` now measures the figure's bounding box
+ * against the viewBox on every run, and this number is why.
+ */
+export const HEAD_PIVOT: [number, number] = [120, 105];
 
 const IDENTITY = [1, 0, 0, 1, 0, 0];
 
@@ -115,8 +131,8 @@ function place(deg: number, cx: number, cy: number, tx: number, ty: number): num
 }
 
 /**
- * The head's own matrix at clock `t` — a roll into the look about the neck,
- * plus a small shift after it.
+ * The head's own matrix at clock `t` — a roll into the look, plus a small shift
+ * after it.
  *
  * Signs: looking left is `x < 0`, and a negative rotation on a y-down board
  * takes the top of the head left, so the crown leans **toward** what it has

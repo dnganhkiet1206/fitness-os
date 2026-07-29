@@ -326,6 +326,37 @@ only place you can see the character is looking at *where the insect actually
 is*, and at that scale a four-degree tilt is two pixels, so the head gets its
 own crop beside it.
 
+### The figure has 6.4 units of room and that is all it has
+
+The first version of the glance shipped with the head clipped. `KoaFigure`
+draws into `viewBox="0 0 240 300"` and **an SVG viewport clips**; the export
+draws the ears to within 8.6 units of the edge, `koaBob` eats 2.2 of that on
+its own, and a roll about the neck spent the remaining 6.4 and then some. The
+user reported it as "something surrounding the mascot" — the frame was real,
+it was the viewBox.
+
+Two things came out of it, and the second matters more than the first.
+
+**The pivot moved from the neck to the middle of the skull.** The sideways cost
+of a roll is `−Δy · sin θ`, so it is the *distance from the pivot to the ears*
+that spends the margin, not the angle. Same 3.6°, a quarter of the travel. What
+was left over went to the pupils, which have six units of white to move in and
+cost nothing.
+
+**The shadow moved out of the figure and into the room.** Widened to what a
+broad overhead lamp actually throws — 2 × 2.5 on a 64 × 9 ellipse — it ran from
+−8 to 248 across and down to 316, and the viewport cut it into a rectangle with
+hard edges on three sides. A cast shadow belongs to the surface it falls on, so
+the wide soft pool is now `Platform`'s, where there are 476 units to spread in
+instead of six below the feet, and it lands on the podium's lit face where it
+can be seen. The figure keeps a small core shadow that fits its box — which is
+also the only shadow a picker or a grid gets, the other reason it could never
+have been the stage's.
+
+`gaze.mjs` now measures the figure's bounding box against the viewBox on every
+run, **with `koaBob` at the extreme of its cycle**. Checking the rest pose would
+have signed off on a margin the idle animation eats by itself.
+
 ## A worklet may only call other worklets
 
 ```bash
