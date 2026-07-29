@@ -12,7 +12,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Circle, ClipPath, Defs, G, Line, Rect, type CircleProps, type GProps } from 'react-native-svg';
 
-import { Cloud, cloudAt, DRIFTS, Rain, RAIN_SPACING, type Drift } from '@/components/ascnd/studio/clouds';
+import {
+  Cloud,
+  cloudAt,
+  DRIFTS,
+  RainSheet,
+  SHEETS,
+  type Drift,
+  type Sheet,
+} from '@/components/ascnd/studio/clouds';
 import { C } from '@/components/ascnd/studio/palette';
 import { GLASS, MULLIONS, STAR_POINTS } from '@/components/ascnd/studio/window';
 
@@ -175,29 +183,69 @@ const SKIES: { cover: number; wet: number; weight: number }[] = [
   { cover: 0.85, wet: 0, weight: 2 },  // overcast
   { cover: 1, wet: 1, weight: 1.6 },   // rain
 ];
-/** how long a sky holds before it is re-rolled, and how long the turn takes */
-const HOLD = 31000;
-const TURN = 7000;
+
+/**
+ * How long a sky holds before it is re-rolled, and how long the turn takes.
+ *
+ * Two and a half minutes, not the half-minute this started at. Weather that
+ * turns every thirty seconds is not weather, it is a slideshow — you cannot
+ * look up, notice it is raining, and still find it raining when you look back.
+ * At this length a session sees one sky or two, and the change is something
+ * that happened while you were doing something else, which is the whole point.
+ *
+ * The turn is long for the same reason and costs nothing: it is one
+ * `withTiming` on two shared values, not a clock.
+ */
+const HOLD = 150000;
+const TURN = 18000;
+
+/**
+ * What a cloud is made of when it is about to rain.
+ *
+ * The first version went from `soft` to `accent` — two light purples a shade
+ * apart, which is "a slightly different colour" in the sense that a
+ * spectrophotometer would agree and nobody else would. A rain cloud is not a
+ * fair-weather cloud in another hue; it is *heavier*. So both the colour and
+ * the weight move: a desaturated slate instead of lavender, at nearly three
+ * times the opacity, which is what turns it from a wisp into a mass that
+ * blocks the stars behind it.
+ *
+ * The colour is the palette's own `primary`, the near-black navy the room's
+ * panels are cut from. A first attempt at #2B3050 measured a perfectly
+ * respectable "darker than the sky" and came out *paler than the fair-weather
+ * cloud* — at 57% over a sky of about #2A2A55 there was not enough between them
+ * to see. Against a night sky a dark cloud has to be dark by a wide margin or
+ * it is just a grey smudge.
+ */
+const RAIN_CLOUD = C.primary;
+const WET_BODY = 2.8;
+
+function pickSky() {
+  const total = SKIES.reduce((n, s) => n + s.weight, 0);
+  let pick = Math.random() * total;
+  for (const s of SKIES) {
+    pick -= s.weight;
+    if (pick <= 0) return s;
+  }
+  return SKIES[0];
+}
 
 function useWeather() {
   const cover = useSharedValue(0.45);
   const wet = useSharedValue(0);
   useEffect(() => {
-    const roll = () => {
-      const total = SKIES.reduce((n, s) => n + s.weight, 0);
-      let pick = Math.random() * total;
-      let sky = SKIES[0];
-      for (const s of SKIES) {
-        pick -= s.weight;
-        if (pick <= 0) {
-          sky = s;
-          break;
-        }
-      }
+    // The first sky is rolled at once and set without a transition, because at
+    // a two-and-a-half-minute hold the alternative is that every session that
+    // has ever been opened begins with the same few clouds and most of them
+    // end before it changes. You walk in on weather already happening.
+    const open = pickSky();
+    cover.value = open.cover;
+    wet.value = open.wet;
+    const id = setInterval(() => {
+      const sky = pickSky();
       cover.value = withTiming(sky.cover, { duration: TURN, easing: Easing.inOut(Easing.quad) });
       wet.value = withTiming(sky.wet, { duration: TURN, easing: Easing.inOut(Easing.quad) });
-    };
-    const id = setInterval(roll, HOLD);
+    }, HOLD);
     return () => clearInterval(id);
   }, [cover, wet]);
   return { cover, wet };
@@ -223,7 +271,14 @@ function DriftingCloud({
 }) {
   const props = useAnimatedProps<{ matrix: number[]; opacity: number; fill: string }>(() => {
     const c = cloudAt(d, t.value, cover.value);
-    return { ...c, fill: interpolateColor(wet.value, [0, 1], [C.soft, C.accent]) };
+    return {
+      matrix: c.matrix,
+      // `cloudAt`'s own opacity still gates it — a cloud the cover has not
+      // brought out yet must stay at zero however wet the sky is, so this
+      // multiplies rather than replaces
+      opacity: Math.min(0.92, c.opacity * (1 + wet.value * (WET_BODY - 1))),
+      fill: interpolateColor(wet.value, [0, 1], [C.soft, RAIN_CLOUD]),
+    };
   });
   return (
     <AnimatedG animatedProps={props}>
@@ -233,21 +288,35 @@ function DriftingCloud({
 }
 
 /**
- * The rain, on the sky's own clock.
+ * The rain: three sheets at three depths, on the sky's own clock.
  *
- * Rain falls in well under a second and the sky clock is 45, so the fall is
- * `t · 62` — sixty-two loops of one drop spacing per cycle, about three
- * quarters of a second each. It needs no clock of its own for the same reason
- * the cloud drift does not: a multiple of a running one is free.
+ * Each slides down by exactly its own tile per loop and wraps, so each is
+ * seamless on its own; the tiles and speeds share no ratio, so the three
+ * together have no period the eye can find. Why a sheet needs a tile taller
+ * than its drop spacing at all is in `clouds.tsx` — it is the only way a
+ * wrapping sheet stops being a comb.
+ *
+ * They need no clock of their own for the same reason the cloud drift does
+ * not: a multiple of a running one is free.
  */
 function FallingRain({ t, wet }: { t: SharedValue<number>; wet: SharedValue<number> }) {
+  return (
+    <>
+      {SHEETS.map((s, i) => (
+        <RainLayer key={i} s={s} t={t} wet={wet} />
+      ))}
+    </>
+  );
+}
+
+function RainLayer({ s, t, wet }: { s: Sheet; t: SharedValue<number>; wet: SharedValue<number> }) {
   const props = useAnimatedProps<{ matrix: number[]; opacity: number }>(() => ({
-    matrix: [1, 0, 0, 1, 0, ((t.value * 62) % 1) * RAIN_SPACING],
-    opacity: wet.value * 0.5,
+    matrix: [1, 0, 0, 1, 0, ((t.value * s.speed) % 1) * s.tile],
+    opacity: wet.value * s.alpha,
   }));
   return (
     <AnimatedG animatedProps={props} stroke={C.soft}>
-      <Rain />
+      <RainSheet s={s} />
     </AnimatedG>
   );
 }

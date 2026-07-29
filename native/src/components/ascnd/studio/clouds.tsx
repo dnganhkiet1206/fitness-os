@@ -79,38 +79,102 @@ export function Cloud({ w = 1 }: { w?: number }) {
   );
 }
 
-/**
- * The rain, as one tile that repeats.
- *
- * Every drop is in a single group, and `sky-live.tsx` slides that group down
- * by exactly `RAIN_SPACING` per loop. The rows are laid out a spacing apart
- * and one extra row is stacked above the glass, so as the bottom row leaves
- * the top one arrives in its place and the loop has no seam. That is the whole
- * reason it can be one animated group rather than one per drop.
- *
- * The columns are offset by an irrational-ish step rather than a grid, or it
- * reads as a curtain being lowered.
- */
-export const RAIN_SPACING = 13;
-const COLUMNS = 9;
+/* ── the rain ─────────────────────────────────────────────────────────── */
 
-export function Rain() {
-  const rows = Math.ceil(GLASS.h / RAIN_SPACING) + 1;
-  const drops: [number, number, number][] = [];
-  for (let c = 0; c < COLUMNS; c++) {
-    // lengths differ by column so it reads as rain rather than as hatching —
-    // every drop the same length is a comb, which is what the first pass drew
-    const len = 3 + ((c * 7) % 5) * 0.55;
-    for (let r = 0; r < rows; r++) {
-      const x = GLASS.x + 2 + (c * (GLASS.w - 4)) / (COLUMNS - 1);
-      const y = GLASS.y - RAIN_SPACING + r * RAIN_SPACING + ((c * 5.7) % RAIN_SPACING);
-      drops.push([x, y, len]);
+/**
+ * Why rain made of one repeating row is always regular.
+ *
+ * A sheet of drops is animated by sliding one group down and wrapping it, and
+ * for the wrap to have no seam **the drop that arrives has to be identical to
+ * the one that left**. With one drop per column per repeat, that forces every
+ * column to be a train of identical drops at identical spacing — which is a
+ * comb, however the columns are jittered against each other. The first version
+ * varied the length per column and the phase per column and was still visibly
+ * a lattice sliding down.
+ *
+ * The way out is to make the *repeat* longer than the spacing. A sheet whose
+ * tile is 34 units tall with two drops in it wraps just as seamlessly, and
+ * inside that tile the two drops are free to differ in length, in weight and in
+ * where they sit — so a column becomes an irregular train rather than a comb.
+ *
+ * The other half is depth. Three sheets, with tiles that share no ratio and
+ * fall at 62, 92 and 128 units a second, and the eye stops being able to find
+ * the period at all. They are drawn back to front: the far sheet is thin and
+ * faint and slow, the near one heavy and quick.
+ */
+export interface Sheet {
+  /** the vertical repeat — also how far the group slides per loop */
+  tile: number;
+  /** loops per sky cycle, chosen so the sheet falls at `tile · speed / 45` u/s */
+  speed: number;
+  columns: number;
+  /** drops per column per tile — more than one is the whole point */
+  per: number;
+  weight: number;
+  /** how long its drops run, as a multiple of the base 2.4–5.0 */
+  reach: number;
+  alpha: number;
+}
+
+/**
+ * Far, middle and near.
+ *
+ * Every property moves together with the depth — thinner, shorter, fainter and
+ * slower as it goes back — because one of them alone reads as a mistake rather
+ * than as distance. The near sheet is the only one you really see, and it is
+ * the smallest: four columns of two.
+ */
+export const SHEETS: Sheet[] = [
+  { tile: 34, speed: 82, columns: 6, per: 2, weight: 0.5, reach: 0.75, alpha: 0.3 },
+  { tile: 41, speed: 101, columns: 6, per: 2, weight: 0.7, reach: 1, alpha: 0.5 },
+  { tile: 27, speed: 213, columns: 4, per: 2, weight: 0.95, reach: 1.25, alpha: 0.7 },
+];
+
+/** a cheap deterministic 0..1 — the drops must be the same on every render */
+function noise(n: number): number {
+  const v = Math.sin(n * 12.9898) * 43758.5453;
+  return v - Math.floor(v);
+}
+
+/**
+ * One sheet of rain.
+ *
+ * Note what the per-drop values are allowed to depend on: the column and the
+ * index *within the tile*, and never the row. A value that varied by row would
+ * put a visible seam at the wrap, which is the one thing this layout exists to
+ * avoid.
+ */
+export function RainSheet({ s }: { s: Sheet }) {
+  const rows = Math.ceil(GLASS.h / s.tile) + 1;
+  const drops: [number, number, number, number][] = [];
+  for (let c = 0; c < s.columns; c++) {
+    const bx = GLASS.x + 3 + (c * (GLASS.w - 6)) / (s.columns - 1);
+    for (let i = 0; i < s.per; i++) {
+      const h = noise(c * 7.3 + i * 31.7);
+      const g = noise(c * 3.1 + i * 17.9);
+      // pushed off its column, so the sheet is not a set of vertical lines
+      const x = bx + (h - 0.5) * 11;
+      const len = (2.4 + g * 2.6) * s.reach;
+      const a = 0.5 + g * 0.5;
+      const off = ((i + 0.35 + 0.5 * h) / s.per) * s.tile;
+      for (let r = 0; r < rows; r++) {
+        drops.push([x, GLASS.y - s.tile + r * s.tile + off, len, a]);
+      }
     }
   }
   return (
     <G>
-      {drops.map(([x, y, len], i) => (
-        <Line key={i} x1={x} y1={y} x2={x - len * 0.26} y2={y + len} strokeWidth={0.85} strokeLinecap="round" />
+      {drops.map(([x, y, len, a], i) => (
+        <Line
+          key={i}
+          x1={x}
+          y1={y}
+          x2={x - len * 0.26}
+          y2={y + len}
+          strokeWidth={s.weight}
+          strokeOpacity={a}
+          strokeLinecap="round"
+        />
       ))}
     </G>
   );

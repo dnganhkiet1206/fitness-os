@@ -141,16 +141,24 @@ node tools/koa-studio/weather.mjs <out.png>
 Clear sky, a few clouds, overcast, and rain — and the clouds are a slightly
 different colour when it is raining.
 
-**A weather change is an event, not a clock.** Clouds drifting is motion;
-the sky turning happens twice a minute, and driving it from a running clock
-would mean a fourth invalidation source ticking at 60fps to change something
-that hardly changes. So it is rolled in JS on a 31-second interval and eased
-across with `withTiming` over seven seconds: nothing per frame while the
-weather holds, one short transition when it turns.
+**A weather change is an event, not a clock.** Clouds drifting is motion; the
+sky turning happens once in a couple of minutes, and driving it from a running
+clock would mean a fourth invalidation source ticking at 60fps to change
+something that hardly changes. So it is rolled in JS on an interval and eased
+across with `withTiming`: nothing per frame while the weather holds, one long
+transition when it turns.
+
+**A sky holds for two and a half minutes**, up from the half-minute this
+started at. Weather that turns every thirty seconds is not weather, it is a
+slideshow — you cannot look up, notice it is raining, and still find it raining
+when you look back. At this length a session sees one sky or two. Which is also
+why the *first* sky is rolled at mount and set with no transition at all:
+otherwise every session ever opened begins with the same few clouds and most of
+them end before it changes. You walk in on weather already happening.
 
 Nothing else needed a clock either. The drift is `t · 0.42` on the sky's own
-45s and the rain is `t · 62` on the same one, which is a fall of about
-three-quarters of a second. **A multiple of a clock you already have is free.**
+45s and each rain sheet is a multiple of the same one. **A multiple of a clock
+you already have is free.**
 
 | sky | clouds | weight |
 |---|---|---|
@@ -164,17 +172,57 @@ not three more of them: each cloud has a cover it starts to appear at and
 fades in over a quarter above it, so the sky thickens rather than switching
 on.
 
-Two things are worth keeping:
+**The colour is on the group and the shapes carry no fill.** That is what lets
+a rain cloud be the same five circles in a different paint rather than a second
+set of them fading in underneath.
 
-- **The colour is on the group and the shapes carry no fill.** That is what
-  lets a rain cloud be the same five circles in a different paint —
-  `interpolateColor` between `soft` and `accent`, 76% lightness down to 69% —
-  rather than a second set of them fading in underneath.
-- **The rain is one animated group.** Every drop is in it and the group slides
-  down by exactly one drop spacing per loop, with a row stacked above the
-  glass so the one that leaves the bottom is replaced as it goes. Drop lengths
-  vary by column; identical lengths read as hatching, which is what the first
-  pass drew.
+### A rain cloud is not a fair cloud in another hue
+
+The first version interpolated `soft` → `accent`: two light purples a shade
+apart, which is "a slightly different colour" in the sense that a
+spectrophotometer would agree and nobody else would. A second attempt at
+`#2B3050` measured a perfectly respectable "darker than the sky" and came out
+*paler than the fair-weather cloud*, because at 57% over a sky of about
+`#2A2A55` there was not enough between them to see.
+
+What was missing is that a rain cloud is **heavier**, not recoloured. Both
+things move now: `soft` → `primary`, the near-black navy the room's panels are
+cut from, at 84% instead of 30% — dense enough to block the stars behind it,
+which is the read. It is not literally black; against a night sky a cloud
+darker than the sky is a cloud nobody can see.
+
+### Why rain made of one repeating row is always regular
+
+A sheet of drops is animated by sliding one group down and wrapping it, and for
+the wrap to have no seam **the drop that arrives has to be identical to the one
+that left**. With one drop per column per repeat, that forces every column to
+be a train of identical drops at identical spacing — a comb, however the
+columns are jittered against each other. The first version varied length by
+column and phase by column and was still visibly a lattice sliding down. This
+is structural: no amount of jitter fixes it, because the jitter is exactly what
+the wrap forbids from varying.
+
+The way out is to make the **repeat longer than the spacing**. A sheet whose
+tile is 34 units tall with two drops in it wraps just as seamlessly, and inside
+that tile the two are free to differ in length, in weight, in opacity and in
+where they sit — so a column becomes an irregular train. The tool reports the
+gaps down a single column for exactly this: one distinct value is a comb, and
+one distinct value is what the old version would have printed.
+
+The other half is depth. Three sheets, tiles sharing no ratio, falling at 62,
+92 and 128 units a second, thinner and shorter and fainter as they go back.
+Every property moves together with the distance, because one of them alone
+reads as a mistake rather than as depth.
+
+```
+ô 34  rơi  62 đv/s  1.0 đv/khung  khoảng cách giọt 11.2–22.8 (12 giá trị)
+ô 41  rơi  92 đv/s  1.5 đv/khung  khoảng cách giọt 13.5–27.5 (12 giá trị)
+ô 27  rơi 128 đv/s  2.1 đv/khung  khoảng cách giọt  8.9–18.1  (8 giá trị)
+```
+
+The per-frame step is in there because it is the other way to get this wrong:
+the previous rain fell at 18 units a second, which on a 96-unit pane is five
+seconds to cross — drizzle in slow motion, and half of why it read as even.
 
 ## The bee and the butterflies
 
