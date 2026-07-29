@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
+import { HERO_W } from '@/components/ascnd/koa/koa-frame';
 import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
 import { KoaStudio } from '@/components/ascnd/studio/koa-studio';
 import { PlantsCanvas } from '@/components/ascnd/studio/plants-live';
@@ -61,14 +62,6 @@ import type { MascotDef } from '@/lib/mascots';
 const Studio = memo(KoaStudio);
 
 const ASPECT = SCENE_BOTTOM / STUDIO_W;
-/**
- * Koa's drawn width, in artboard units.
- *
- * A third of the room's width. The podium's top face is 274 wide and the
- * gap from it up to the lamp is 346, so a character much past this stops
- * being something standing in a room and starts being the room.
- */
-const HERO_W = 128;
 const PAGE = '#070708';
 
 interface Props {

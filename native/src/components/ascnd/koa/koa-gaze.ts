@@ -1,3 +1,4 @@
+import { HERO_W, inset, KOA_ASPECT, KOA_H, KOA_W } from '@/components/ascnd/koa/koa-frame';
 import { perchAt } from '@/components/ascnd/studio/bugs';
 import { STAGE_MARK } from '@/components/ascnd/studio/palette';
 
@@ -17,23 +18,19 @@ import { STAGE_MARK } from '@/components/ascnd/studio/palette';
  *
  * The insects live in the room's 390-wide artboard and the figure in its own
  * 240 × 300 box, so the two have to be brought together somewhere. It is done
- * here, once, from the same constants the stage places the buddy with: the
- * figure's box is `HERO_W` wide with its feet on `STAGE_MARK`, and the head
- * sits at (120, 112) inside it. Restating either of those in a second place is
- * how a preview ends up drawing a character that stands in front of its own
- * podium, which has happened here before.
+ * here, once, from the same constants the stage places the buddy with — both
+ * imported from `koa-frame.ts` rather than restated, because restating either
+ * is how a preview ends up drawing a character standing in front of its own
+ * podium, which has happened here before. The head sits at (120, 112) in the
+ * artwork, and `inset` says where that lands in the box.
  */
 
-/** the figure's rendered width in artboard units — `stage-renderer.tsx`'s */
-const HERO_W = 128;
-const FIG_W = 240;
-const FIG_H = 300;
-/** the head's centre inside the figure's own viewBox */
-const HEAD = [120, 112];
+/** the head's centre inside the figure's own viewBox, once inset */
+const HEAD = inset(120, 112);
 
-/** the head's centre, in artboard units */
-const HEAD_X = STAGE_MARK.x - HERO_W / 2 + (HEAD[0] / FIG_W) * HERO_W;
-const HEAD_Y = STAGE_MARK.y - HERO_W * 1.25 + 6 + (HEAD[1] / FIG_H) * (HERO_W * 1.25);
+/** and the same point in the room's artboard units */
+const HEAD_X = STAGE_MARK.x - HERO_W / 2 + (HEAD[0] / KOA_W) * HERO_W;
+const HEAD_Y = STAGE_MARK.y - HERO_W * KOA_ASPECT + 6 + (HEAD[1] / KOA_H) * (HERO_W * KOA_ASPECT);
 
 /**
  * How far away a thing has to be to pull the eyes all the way over.

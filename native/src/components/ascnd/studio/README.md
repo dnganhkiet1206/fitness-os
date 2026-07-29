@@ -442,14 +442,61 @@ only place you can see the character is looking at *where the insect actually
 is*, and at that scale a four-degree tilt is two pixels, so the head gets its
 own crop beside it.
 
-### The figure has 6.4 units of room and that is all it has
+### Koa does not stand to attention
 
-The first version of the glance shipped with the head clipped. `KoaFigure`
-draws into `viewBox="0 0 240 300"` and **an SVG viewport clips**; the export
-draws the ears to within 8.6 units of the edge, `koaBob` eats 2.2 of that on
-its own, and a roll about the neck spent the remaining 6.4 and then some. The
-user reported it as "something surrounding the mascot" — the frame was real,
-it was the viewBox.
+The export is drawn on a mirror line and it is exact: `leg_left_lower` is
+`leg_right_lower` reflected in x = 120 to the decimal, the arms likewise, and
+`koaEarL` / `koaEarR` are −3.5° and +3.5° of the same animation. Everything
+balances, and a figure in perfect balance reads as a **sticker** — a drawing of
+a character rather than a character standing there.
+
+`koa-pose.ts` breaks the mirror by a few degrees, statically: the body leans 1°
+from the hips, the head cocks 2.5° the *other* way, and the arms and legs drift
+the same direction as each other by different amounts. Never in matched pairs —
+equal-and-opposite is just a second kind of symmetry, and one leg further out
+than the other is what puts the weight on a hip. It is a pose, not a motion: one
+`<G>` per node it touches and nothing per frame. Running, stretching and lifting
+are excluded, because `poseTilt` has already decided where the weight is for
+those.
+
+Measured one at a time, **the arms, the legs and the body cost no clearance at
+all** — they are nowhere near the walls. Only the head does, because rolling it
+widens the ear block on both sides at once. That is what forced the next
+section.
+
+### The figure had 6.4 units of room and it was not enough
+
+The export draws the ears within 8.6 units of its own 240 × 300 viewBox,
+`koaBob` eats 2.2 of that by itself, and **an SVG viewport clips**. Every idea
+that moved the head has been paid for out of what was left: the glance was cut
+from 5° to 3.6° and its pivot moved from the neck to the middle of the skull,
+and then the resting lean arrived with 0.6° of room — not a cocked head, a
+rounding error.
+
+A constraint that has bent two features out of shape is not a constraint, it is
+a bug. `koa-frame.ts` draws the artwork at **93% of its box, anchored at the
+feet**, and the stage asks for a proportionally larger box: `HERO_W` 128 → 138,
+drawn width 138 × 0.93 = 128.3. The character is the same size on screen to
+within a third of a unit and gains eight units of margin on each side. Nothing
+about the artwork changes; only the amount of air around it.
+
+```
+              lúc đứng yên      xấu nhất (liếc + koaBob + tư thế nghỉ)
+trước         8.6 / 8.6         0.8 trái / 4.5 phải
+sau           11.8 / 12.7       6.3 trái / 8.7 phải
+```
+
+`HERO_W` was copied into four places — the stage, the gaze, and two tools, one
+of which documented itself as *importing* it. They all read `koa-frame.ts` now,
+because with an inset in the mix a fifth number would have had to agree with all
+of them, and the failure mode is a character standing in front of its own
+podium.
+
+### What that clearance is spent on
+
+The first version of the glance shipped with the head clipped. The user
+reported it as "something surrounding the mascot" — the frame was real, it was
+the viewBox.
 
 Two things came out of it, and the second matters more than the first.
 

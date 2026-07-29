@@ -58,6 +58,8 @@ import {
   SWAP_MOUTHS,
   type Gaze,
 } from '@/components/ascnd/koa/koa-gaze';
+import { KOA_ASPECT, KOA_INSET_MAT, KOA_VIEWBOX } from '@/components/ascnd/koa/koa-frame';
+import { restsAt, REST_MAT } from '@/components/ascnd/koa/koa-pose';
 import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
   KEYFRAMES,
@@ -97,8 +99,7 @@ const AnimatedG = Animated.createAnimatedComponent(
 const FIGURE_FPS = 30;
 const FRAME_MS = 1000 / FIGURE_FPS;
 
-export const KOA_VIEWBOX = '0 0 240 300';
-export const KOA_ASPECT = 300 / 240;
+export { KOA_ASPECT, KOA_VIEWBOX } from '@/components/ascnd/koa/koa-frame';
 
 /* ── matrices ─────────────────────────────────────────────────────────── */
 
@@ -421,6 +422,7 @@ function RenderNode({
   live,
   gaze,
   swapMouth,
+  rest,
 }: {
   n: Node;
   flags: Flags;
@@ -431,6 +433,8 @@ function RenderNode({
   gaze?: SharedValue<Gaze>;
   /** whether this pose's mouth is one the glance may close */
   swapMouth: boolean;
+  /** whether this pose stands, and so gets the resting lean */
+  rest: boolean;
 }) {
   if (n.if && !flags[n.if]) return null;
 
@@ -444,6 +448,7 @@ function RenderNode({
           live={live}
           gaze={gaze}
           swapMouth={swapMouth}
+          rest={rest}
         />
       ))
     : null;
@@ -572,13 +577,19 @@ function RenderNode({
     return <>{body}</>;
   })();
 
-  if (!gaze) return el;
-  if (n.id === 'HEADRIG') return <GazeHead look={gaze}>{el}</GazeHead>;
-  if (isEyeGroup(n)) return <GazeEyes look={gaze}>{el}</GazeEyes>;
+  // The resting lean goes *inside* the glance, so a look composes on top of a
+  // pose rather than replacing it — and it is a plain `<G>`, static, costing
+  // nothing per frame. See `koa-pose.ts`.
+  const leaned =
+    rest && n.id && REST_MAT[n.id] ? <G transform={REST_MAT[n.id]}>{el}</G> : el;
+
+  if (!gaze) return leaned;
+  if (n.id === 'HEADRIG') return <GazeHead look={gaze}>{leaned}</GazeHead>;
+  if (isEyeGroup(n)) return <GazeEyes look={gaze}>{leaned}</GazeEyes>;
   if (swapMouth && n.if && SWAP_MOUTHS.indexOf(n.if) >= 0) {
-    return <GazeMouth look={gaze}>{el}</GazeMouth>;
+    return <GazeMouth look={gaze}>{leaned}</GazeMouth>;
   }
-  return el;
+  return leaned;
 }
 
 /* ── the figure ───────────────────────────────────────────────────────── */
@@ -681,6 +692,7 @@ export function KoaFigure({
   );
   const look = clockOrNull ? resolved : undefined;
   const swapMouth = SWAP_MOUTHS.some((f) => !!flags[f]);
+  const rest = restsAt(flags);
   const tree = useMemo(
     () =>
       NODES.map((n, i) => (
@@ -692,9 +704,10 @@ export function KoaFigure({
           live={animated}
           gaze={look}
           swapMouth={swapMouth}
+          rest={rest}
         />
       )),
-    [flags, clock, animated, look, swapMouth],
+    [flags, clock, animated, look, swapMouth, rest],
   );
 
   return (
@@ -744,7 +757,9 @@ export function KoaFigure({
             ))}
           </LinearGradient>
         </Defs>
-        {tree}
+        {/* the artwork, inset in its box so the head has room to move —
+            see `koa-frame.ts`. A static group; it costs nothing per frame. */}
+        <G transform={KOA_INSET_MAT}>{tree}</G>
       </Svg>
     </View>
   );

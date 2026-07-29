@@ -20,21 +20,28 @@ const OUT = process.argv[2] ?? 'stage.png';
 const dir = mkdtempSync(path.join(tmpdir(), 'koa-stage-'));
 
 execFileSync('node', ['tools/koa-studio/preview.mjs', path.join(dir, 'studio.png')], { stdio: 'ignore' });
+const entry = path.join(dir, 'e.ts');
+writeFileSync(
+  entry,
+  `export { STAGE_MARK, SCENE_BOTTOM, STUDIO_W } from '@/components/ascnd/studio/palette';
+   export { HERO_W, KOA_ASPECT } from '@/components/ascnd/koa/koa-frame';`,
+);
 execFileSync(
   'npx',
-  ['esbuild', 'src/components/ascnd/studio/palette.ts', '--format=esm', `--outdir=${dir}`],
+  ['esbuild', entry, '--bundle', '--format=esm', '--tsconfig=tsconfig.json',
+   `--outfile=${path.join(dir, 'c.js')}`],
   { stdio: 'ignore' },
 );
-const { STAGE_MARK, SCENE_BOTTOM, STUDIO_W } = await import(pathToFileURL(path.join(dir, 'palette.js')));
-
-/** the one number `stage-renderer.tsx` owns; keep the two in step by hand */
-const HERO_W = 128;
+// `HERO_W` used to be copied here, with a comment saying it was imported. It is
+// imported now — the stage, the gaze and this tool all read `koa-frame.ts`.
+const { STAGE_MARK, SCENE_BOTTOM, STUDIO_W, HERO_W, KOA_ASPECT } =
+  await import(pathToFileURL(path.join(dir, 'c.js')));
 
 const studio = readFileSync(path.join(dir, 'studio.svg'), 'utf8');
 
 const size = HERO_W;
 const left = STAGE_MARK.x - size / 2;
-const top = STAGE_MARK.y - size * 1.25 + 6;
+const top = STAGE_MARK.y - size * KOA_ASPECT + 6;
 
 const require_ = createRequire(import.meta.url);
 const { chromium } = require_('playwright');

@@ -48,9 +48,11 @@ writeFileSync(
   `export * as GZ from '@/components/ascnd/koa/koa-gaze';
    export * as BUG from '@/components/ascnd/studio/bugs';
    export * as L from '@/components/ascnd/koa/koa-light';
+   export { REST_MAT, restsAt } from '@/components/ascnd/koa/koa-pose';
    export { NODES } from '@/components/ascnd/koa/koa-scene';
    export { koaFlags } from '@/components/ascnd/koa/koa-flags';
    export { STAGE_MARK, SCENE_BOTTOM } from '@/components/ascnd/studio/palette';
+   export { HERO_W, KOA_ASPECT, KOA_INSET_MAT } from '@/components/ascnd/koa/koa-frame';
 `,
 );
 execFileSync(
@@ -61,7 +63,8 @@ execFileSync(
   { stdio: 'inherit' },
 );
 const B = await import(pathToFileURL(path.join(dir, 'g.js')));
-const { GZ, BUG, L, NODES, koaFlags, STAGE_MARK, SCENE_BOTTOM } = B;
+const { GZ, BUG, L, NODES, koaFlags, REST_MAT, restsAt, STAGE_MARK, SCENE_BOTTOM } = B;
+const { HERO_W, KOA_ASPECT, KOA_INSET_MAT } = B;
 
 /* ── the figure, statically, with the glance composed on ──────────────── */
 
@@ -127,6 +130,9 @@ function render(n, flags, t, bob = false) {
   const g = isShape ? '' : attr;
   let out = m ? `<g ${g} transform="matrix(${m.join(' ')})">${body}</g>` : g ? `<g ${g}>${body}</g>` : body;
 
+  // the resting lean, then the glance on top — the order the component uses
+  if (RESTS && n.id && REST_MAT[n.id]) out = `<g transform="${REST_MAT[n.id]}">${out}</g>`;
+
   // …and the glance on top, exactly where the component puts it
   if (n.id === 'HEADRIG') {
     // The glance is not the only thing moving the head. `koaBob` is running
@@ -145,6 +151,7 @@ function render(n, flags, t, bob = false) {
 }
 
 const flags = koaFlags('happy', 'idle', undefined);
+const RESTS = restsAt(flags);
 const defs =
   '<defs>' + L.rampsFor(flags).map((r) =>
     `<linearGradient id="${r.id}" gradientUnits="userSpaceOnUse" x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}">` +
@@ -172,9 +179,8 @@ const defs =
  * is how a preview ends up drawing a character standing in front of its own
  * podium.
  */
-const HERO_W = 128;
 const SCALE = HERO_W / 240;
-const FIG = [1, 0, 0, 1, STAGE_MARK.x - HERO_W / 2, STAGE_MARK.y - HERO_W * 1.25 + 6];
+const FIG = [1, 0, 0, 1, STAGE_MARK.x - HERO_W / 2, STAGE_MARK.y - HERO_W * KOA_ASPECT + 6];
 
 /* ── the insects, from their own module ───────────────────────────────── */
 
@@ -252,7 +258,9 @@ const frame = (t, bob = false) =>
   studio.replace(
     '</svg>',
     `${defs}<g id="FIGURE" transform="matrix(${FIG.join(' ')}) scale(${SCALE})">` +
-      NODES.map((n) => render(n, flags, t, bob)).join('') +
+      // the artwork is inset in its box — `koa-frame.ts`, and `koa-figure.tsx`
+      // wraps the same group round the same tree
+      `<g transform="${KOA_INSET_MAT}">${NODES.map((n) => render(n, flags, t, bob)).join('')}</g>` +
       `</g>${insects(t)}</svg>`,
   );
 
@@ -360,11 +368,11 @@ const box = await page.evaluate(() =>
     return [b.x, b.y, b.x + b.width, b.y + b.height];
   }),
 );
-const rest = box[box.length - 1];
+const still = box[box.length - 1];
 console.log(
   `\nkhung hình 240 × 300 — lúc đứng yên nhân vật chiếm ` +
-  `(${rest[0].toFixed(1)}, ${rest[1].toFixed(1)}) → (${rest[2].toFixed(1)}, ${rest[3].toFixed(1)}), ` +
-  `chừa trái ${rest[0].toFixed(1)} phải ${(240 - rest[2]).toFixed(1)} trên ${rest[1].toFixed(1)}`,
+  `(${still[0].toFixed(1)}, ${still[1].toFixed(1)}) → (${still[2].toFixed(1)}, ${still[3].toFixed(1)}), ` +
+  `chừa trái ${still[0].toFixed(1)} phải ${(240 - still[2]).toFixed(1)} trên ${still[1].toFixed(1)}`,
 );
 console.log('tràn ra bao nhiêu:');
 let cut = 0;
