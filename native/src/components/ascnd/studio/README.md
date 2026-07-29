@@ -228,6 +228,20 @@ frame of a scroll is exactly the sort of thing it is meant to save.
 **Any animated surface at the top of a long page has this bug by default.**
 Focus is not visibility.
 
+### The stage no longer locks page scroll (2026-07-29)
+
+The user then reported the top of the page scrolling less smoothly than the
+rest. The cause was not the animation at all: the scene wrapper set a
+`stageActive` flag on any touch, which flipped the ScrollView's
+`scrollEnabled` off "so a gesture on the buddy stays game-only." Turning
+`scrollEnabled` off in the middle of a drag is the one reliable way to make a
+scroll stick, and the stage is at the very top, exactly where a thumb comes
+down. Nothing was gained for it: the buddy's only gesture is a poke, which is
+a tap, and a drag that scrolls the page cancels the `onPress` before it
+fires. The flag and its touch handlers are gone. If a real drag gesture (a
+rotate) is ever added, gate *it* on the buddy with a gesture responder —
+never by disabling the whole page's scroll.
+
 ## The weather in the window
 
 ```bash

@@ -210,9 +210,6 @@ export default function MascotRoomScreen() {
   const [burst, setBurst] = useState({ id: 0, amount: 0 });
   const [shopOpen, setShopOpen] = useState(false);
   const [shopTab, setShopTab] = useState<'outfit' | 'stage'>('stage');
-  // While a touch is on the game stage, lock page scroll so gestures on the
-  // buddy (poke / future rotate) stay game-only and never scroll the page.
-  const [stageActive, setStageActive] = useState(false);
 
   /**
    * Whether the stage is still on screen.
@@ -358,7 +355,6 @@ export default function MascotRoomScreen() {
     <Screen
       back
       transparentHeader
-      contentScrollEnabled={!stageActive}
       onScroll={onPageScroll}
       // 64ms, not 16: this only decides whether the room is on screen at all,
       // and a handler that runs on every frame of a scroll is the sort of
@@ -383,16 +379,21 @@ export default function MascotRoomScreen() {
           <Text style={styles.coinText}>{balance.toLocaleString()}</Text>
         </Pressable>
       }>
-      {/* The room */}
-      <View
-        style={styles.sceneWrap}
-        onLayout={onStageLayout}
-        // The stage is a game surface: as soon as a touch lands here we lock
-        // page scroll, so any gesture on the buddy (poke / future rotate) is
-        // game-only and never scrolls the page. Taps still reach the buddy.
-        onTouchStart={() => setStageActive(true)}
-        onTouchEnd={() => setStageActive(false)}
-        onTouchCancel={() => setStageActive(false)}>
+      {/* The room.
+
+          It does not lock page scroll any more. It used to: a touch here set
+          `stageActive`, which flipped the ScrollView's `scrollEnabled` off so
+          a gesture on the buddy stayed "game-only". But the only gesture the
+          buddy has is a poke, and a poke is a tap — a drag that scrolls the
+          page cancels the `onPress` before it fires, so nothing was being
+          protected. What the lock *did* do was turn `scrollEnabled` off in the
+          middle of any drag that began on the stage, which is the one thing
+          guaranteed to make a scroll stick — and the stage sits at the top of
+          the page, right where a thumb starts. So the top scrolls like the
+          rest of the page now. If a real drag gesture (a rotate) is ever added
+          to the buddy, gate it with a gesture responder on the buddy itself,
+          not by disabling the whole page's scroll. */}
+      <View style={styles.sceneWrap} onLayout={onStageLayout}>
         <MascotScene
           mascot={mascot}
           ownedGym={owned}
