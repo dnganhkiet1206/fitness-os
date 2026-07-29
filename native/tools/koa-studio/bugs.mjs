@@ -95,9 +95,13 @@ for (const [i, r] of B.ROUTES.entries()) {
     if (prev !== null) worst = Math.max(worst, Math.abs(sx - prev));
     prev = sx;
   }
+  const holds = r.stops.filter((s) => s.hold > 0);
+  const total = r.stops.reduce((n, s) => n + s.leg + s.hold, 0);
+  const rest = holds.reduce((n, s) => n + (s.hold / total) * secs, 0);
   console.log(
     `  #${i} bay ${secs.toFixed(1)}s từ giây ${((r.phase * B.BUG_PERIOD) / 1000).toFixed(1)} — ` +
-      `vỗ cánh ${(r.beats / secs).toFixed(1)}Hz, bước lớn nhất giữa 2 khung ${(worst * 100).toFixed(0)}%`,
+      `vỗ cánh ${(r.beats / secs).toFixed(1)}Hz, bước lớn nhất giữa 2 khung ${(worst * 100).toFixed(0)}%` +
+      `, đậu ${holds.length} chỗ tổng ${rest.toFixed(1)}s`,
   );
 }
 

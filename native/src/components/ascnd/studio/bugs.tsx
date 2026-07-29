@@ -4,16 +4,35 @@ import { C } from '@/components/ascnd/studio/palette';
 
 /* ── where they fly ───────────────────────────────────────────────────── */
 
-/** one cycle for all three, in ms — prime-ish against the motes' 26s and the
- *  light's 7.3s, so the three never fall into step */
-export const BUG_PERIOD = 41000;
+/**
+ * One cycle for all three, in ms.
+ *
+ * Prime-ish against the motes' 26s and the light's 7.3s so the three never
+ * fall into step. It went from 41s to 72 when the insects started landing —
+ * a crossing with a pause in it takes twice as long, and at the old period
+ * something would have been on screen most of the time.
+ */
+export const BUG_PERIOD = 72000;
+
+/**
+ * A place on the way, and how long it stays there.
+ *
+ * The first stop in a route is where it comes in from and is never landed on;
+ * every stop after it has a leg leading to it.
+ */
+export interface Stop {
+  /** where, in artboard units */
+  p: [number, number];
+  /** how long the leg *into* here takes, as a share of the crossing */
+  leg: number;
+  /** how long it sits here afterwards. 0 flies straight through */
+  hold: number;
+  /** how far that leg bows off the straight line, perpendicular to it */
+  bow: number;
+}
 
 export interface Route {
-  /** where it enters and where it leaves, in artboard units */
-  from: [number, number];
-  to: [number, number];
-  /** how far the path bows off the straight line, perpendicular to it */
-  bow: number;
+  stops: Stop[];
   /** the fraction of the cycle it is on screen for */
   span: number;
   /** where in the cycle that fraction starts */
@@ -28,49 +47,160 @@ export interface Route {
    * Hz and the largest step between frames for exactly this reason.
    */
   beats: number;
-  /** how far the wings fold, as a fraction of full span */
+  /** how far the wings fold in flight, and how far they fold once settled */
   fold: number;
-  /** how much it bobs on the way across */
-  bob: number;
+  foldHold: number;
+  /** what fraction of the flying beat rate it keeps while perched */
+  holdBeat: number;
+  /** how far it wanders off its own path on the way */
+  wander: number;
   scale: number;
 }
 
 /**
- * The bee goes almost straight and quickly; the butterflies bow harder, drift
- * slower and bob more. That difference is most of what tells the two apart at
- * this size — more than the drawings do.
+ * Where each one goes.
  *
- * They cross the upper half of the room. The studio's "centre stays empty"
- * rule is about furniture, something standing in front of the character, and a
- * bee that takes four seconds to cross is the opposite of that; it is still
- * routed above the mascot's head rather than through it.
+ * ── it lands ──
  *
- * Spans add up to about a third of the cycle and the phases are spread, so the
- * room is empty most of the time — which is what makes them something you
- * notice rather than something that is always there.
+ * A route is a list of places rather than a line from one edge to the other,
+ * and one of them is somewhere in the room the insect actually sits on for a
+ * while: the bee on the shelf's plant, the butterfly on the corner of the neon
+ * sign, the moth on the floor plant. Both are places a real one would pick —
+ * something to stand on, near light.
+ *
+ * ── and it does not fly in a straight line ──
+ *
+ * Three things together, because no one of them is enough. The legs bow
+ * alternately, so the path S-bends rather than arcing once. `wander` adds two
+ * sine terms at 3.7 and 2.3 cycles per crossing — deliberately not a ratio
+ * that closes, so the wobble never repeats within one crossing. And the whole
+ * thing is on an envelope of `sin(π · leg progress)`, which is zero at every
+ * stop: it wanders most in the middle of a leg and settles as it arrives,
+ * which is both what an insect does and what keeps a landing from jittering.
+ *
+ * Two of the three no longer cross the room and leave by the far side. The
+ * moth comes in and goes out on the right; the bee comes in low from the left
+ * and leaves through the top. A route that always ends where you can see it is
+ * heading is the thing that reads as a sprite on a track.
  */
 export const ROUTES: Route[] = [
-  // the bee, left to right across the shelf and out past the window
-  { from: [-14, 232], to: [404, 150], bow: -46, span: 0.09, phase: 0.02, beats: 44, fold: 0.12, bob: 3.4, scale: 1 },
-  // a butterfly back the other way, high
-  { from: [404, 120], to: [-14, 196], bow: 38, span: 0.11, phase: 0.34, beats: 27, fold: 0.62, bob: 5.5, scale: 1 },
-  // and one lower and slower, over the podium's far edge
-  { from: [-14, 268], to: [404, 244], bow: -74, span: 0.12, phase: 0.66, beats: 22, fold: 0.55, bob: 6.5, scale: 0.86 },
+  {
+    // the bee: in low from the left, onto the shelf's plant, then up and out
+    stops: [
+      { p: [-16, 250], leg: 0, hold: 0, bow: 0 },
+      { p: [96, 216], leg: 0.17, hold: 0, bow: -20 },
+      { p: [52, 236], leg: 0.13, hold: 0.2, bow: 16 },
+      { p: [148, 168], leg: 0.19, hold: 0, bow: -26 },
+      { p: [206, -18], leg: 0.31, hold: 0, bow: 30 },
+    ],
+    span: 0.097, phase: 0.02, beats: 84, fold: 0.12, foldHold: 0.2,
+    holdBeat: 0.03, wander: 5, scale: 1,
+  },
+  {
+    // the butterfly: in high from the right, onto the neon sign, then out left
+    stops: [
+      { p: [406, 108], leg: 0, hold: 0, bow: 0 },
+      { p: [292, 148], leg: 0.15, hold: 0, bow: 22 },
+      { p: [198, 112], leg: 0.15, hold: 0, bow: -28 },
+      { p: [110, 152], leg: 0.13, hold: 0.22, bow: 20 },
+      { p: [-16, 214], leg: 0.35, hold: 0, bow: 26 },
+    ],
+    span: 0.125, phase: 0.33, beats: 54, fold: 0.62, foldHold: 0.86,
+    holdBeat: 0.07, wander: 8, scale: 1,
+  },
+  {
+    // the moth: in and out on the right, with the floor plant in between
+    stops: [
+      { p: [406, 292], leg: 0, hold: 0, bow: 0 },
+      { p: [332, 258], leg: 0.18, hold: 0, bow: 20 },
+      { p: [300, 330], leg: 0.14, hold: 0.24, bow: -24 },
+      { p: [354, 262], leg: 0.16, hold: 0, bow: 26 },
+      { p: [406, 142], leg: 0.28, hold: 0, bow: -22 },
+    ],
+    span: 0.132, phase: 0.63, beats: 43, fold: 0.55, foldHold: 0.8,
+    holdBeat: 0.06, wander: 7, scale: 0.86,
+  },
 ];
+
+/* ── the maths ────────────────────────────────────────────────────────── */
+
+/** the whole crossing's length, in the same units the legs and holds use */
+function totalOf(r: Route): number {
+  'worklet';
+  let n = 0;
+  for (let i = 1; i < r.stops.length; i++) n += r.stops[i].leg + r.stops[i].hold;
+  return n;
+}
+
+/**
+ * Where it is at `s` along the crossing, and what the wings are doing.
+ *
+ * `wing` is the accumulated beat *phase*, not a rate, because the rate changes
+ * when it settles: a butterfly at rest opens and closes about once every two
+ * seconds where in flight it beats six times a second. Reading the phase off
+ * the rate directly would jump the wings at every landing. `settle` runs 0 to
+ * 1 over the first and last fifth of a hold, and everything that has to change
+ * between flying and perched rides on it.
+ */
+function walk(r: Route, s: number): { x: number; y: number; wing: number; settle: number } {
+  'worklet';
+  const total = totalOf(r);
+  const rate = r.beats / total;
+  let acc = 0;
+  let wing = 0;
+  for (let i = 1; i < r.stops.length; i++) {
+    const a = r.stops[i - 1].p;
+    const b = r.stops[i].p;
+    const { leg, hold, bow } = r.stops[i];
+    if (s < acc + leg || i === r.stops.length - 1) {
+      const p = leg > 0 ? Math.min(1, (s - acc) / leg) : 1;
+      const dx = b[0] - a[0];
+      const dy = b[1] - a[1];
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const arc = Math.sin(Math.PI * p);
+      const env = arc;
+      const u = s / total;
+      return {
+        x: a[0] + dx * p + (-dy / len) * bow * arc + r.wander * env * Math.sin(2 * Math.PI * u * 3.7),
+        y:
+          a[1] + dy * p + (dx / len) * bow * arc +
+          r.wander * 0.7 * env * Math.sin(2 * Math.PI * u * 2.3 + 1.1),
+        wing: wing + rate * (s - acc),
+        settle: 0,
+      };
+    }
+    wing += rate * leg;
+    acc += leg;
+    if (s < acc + hold) {
+      const k = hold > 0 ? (s - acc) / hold : 1;
+      return {
+        x: b[0],
+        y: b[1],
+        wing: wing + rate * r.holdBeat * (s - acc),
+        settle: Math.min(1, k / 0.2, (1 - k) / 0.2),
+      };
+    }
+    wing += rate * r.holdBeat * hold;
+    acc += hold;
+  }
+  const last = r.stops[r.stops.length - 1].p;
+  return { x: last[0], y: last[1], wing, settle: 0 };
+}
 
 /**
  * One insect's matrix and opacity at clock position `t`, 0..1.
  *
- * `u` runs 0 → 1 across its own window and it is transparent outside it, so
- * nothing is drawn while it is away. Position, heading and wingbeat all come
- * out of the one matrix — `translate · rotate · scale(sx, 1)` — because each
- * animated group is an invalidation source and a group for the wings alone
- * would double the count. The body squashing with them is not something you
- * can see at three points across.
+ * It is transparent outside its own window, so nothing is drawn while it is
+ * away. Position, heading and wingbeat all come out of the one matrix —
+ * `translate · rotate · scale(sx, 1)` — because each animated group is an
+ * invalidation source and a group for the wings alone would double the count.
+ * The body squashing with them is not something you can see at seven points
+ * across.
  *
- * The heading comes from the path's own slope one step on rather than from a
- * constant, so a butterfly on a bowed route banks into the turn instead of
- * sliding sideways through it.
+ * The heading comes from the path's own slope one step on. While it is perched
+ * that slope is zero, and `atan2(0, 0)` is 0 — which would snap a landed
+ * butterfly flat to the horizontal. So a hold keeps the heading it arrived
+ * with, read from just before the leg ended.
  *
  * Marked `worklet` so `bugs-live.tsx` can call it on the UI thread; it is
  * plain arithmetic, which is also what lets `tools/koa-studio/bugs.mjs` draw
@@ -82,31 +212,25 @@ export function flightAt(r: Route, t: number): { matrix: number[]; opacity: numb
   if (cycle > r.span) return { matrix: [1, 0, 0, 1, 0, -9999], opacity: 0 };
   const u = cycle / r.span;
 
-  const dx = r.to[0] - r.from[0];
-  const dy = r.to[1] - r.from[1];
-  const len = Math.sqrt(dx * dx + dy * dy) || 1;
-  const nx = -dy / len;
-  const ny = dx / len;
-  const at = (p: number): [number, number] => {
-    const arc = Math.sin(Math.PI * p);
-    return [
-      r.from[0] + dx * p + nx * r.bow * arc,
-      r.from[1] + dy * p + ny * r.bow * arc + r.bob * Math.sin(2 * Math.PI * p * 3),
-    ];
-  };
-  const [x, y] = at(u);
-  const [x2, y2] = at(u + 0.01);
-  const a = Math.atan2(y2 - y, x2 - x);
+  const total = totalOf(r);
+  const s = u * total;
+  const here = walk(r, s);
+  const d = total * 0.004;
+  // perched: look back to the moment it arrived, not forward into nothing
+  const from = here.settle > 0 ? walk(r, Math.max(0, s - d * 6)) : here;
+  const to = here.settle > 0 ? walk(r, Math.max(0, s - d * 5)) : walk(r, Math.min(total, s + d));
+  const a = Math.atan2(to.y - from.y, to.x - from.x);
   const cos = Math.cos(a);
   const sin = Math.sin(a);
 
-  // a fold that never quite closes, so it keeps its silhouette
-  const sx = 1 - r.fold * (0.5 - 0.5 * Math.cos(2 * Math.PI * u * r.beats));
-  const s = r.scale;
+  // a fold that never quite closes in flight, and nearly does at rest
+  const fold = r.fold + (r.foldHold - r.fold) * here.settle;
+  const sx = 1 - fold * (0.5 - 0.5 * Math.cos(2 * Math.PI * here.wing));
+  const sc = r.scale;
   return {
-    matrix: [cos * sx * s, sin * sx * s, -sin * s, cos * s, x, y],
+    matrix: [cos * sx * sc, sin * sx * sc, -sin * sc, cos * sc, here.x, here.y],
     // in and out at the ends of the window, never a pop
-    opacity: Math.min(1, u / 0.12, (1 - u) / 0.12),
+    opacity: Math.min(1, u / 0.1, (1 - u) / 0.1),
   };
 }
 

@@ -149,12 +149,40 @@ see at seven points across.
 
 They live behind the buddy, on the same overlay as the motes.
 
+**They land, and they do not fly in straight lines.** A route is a list of
+places rather than a line from one edge to the other, and one of them is
+somewhere the insect sits on for a second or two: the bee on the shelf's
+plant, the butterfly on the corner of the neon sign, the moth on the floor
+plant. Both are places a real one would pick — something to stand on, near
+light.
+
+The wander is three things together, because no one of them is enough. The
+legs bow alternately, so the path S-bends rather than arcing once. Two sine
+terms at 3.7 and 2.3 cycles per crossing — deliberately not a ratio that
+closes — push it off its own path. And all of it rides an envelope of `sin(π ·
+leg progress)`, zero at every stop: it wanders most in the middle of a leg and
+settles as it arrives, which is both what an insect does and what keeps a
+landing from jittering. Two of the three no longer leave by the far side
+either; a route that always ends where you can see it is heading is the thing
+that reads as a sprite on a track.
+
+Landing needs two things the flight does not. The wingbeat is carried as an
+accumulated **phase**, not read off a rate, because the rate changes when it
+settles — a butterfly at rest opens and closes about once every two seconds
+where in flight it beats six times a second, and reading the phase off the
+rate directly jumps the wings at every landing. And the heading, which comes
+from the path's slope one step on, is zero while perched: `atan2(0, 0)` is 0,
+which snaps a landed butterfly flat to the horizontal. A hold keeps the
+heading it arrived with instead.
+
 Three things had to be measured rather than eyeballed, and the tool prints all
 three:
 
-- **How often the room is empty.** Spans of 9, 11 and 12 percent at spread
-  phases put something on screen 32% of a 41-second cycle. "Now and then" is a
-  number, and without one it drifts into "always".
+- **How often the room is empty.** 35% of a 72-second cycle. "Now and then" is
+  a number, and without one it drifts into "always". The period went from 41s
+  to 72 when they started landing — a crossing with a pause in it takes twice
+  as long, and at the old one something would have been on screen most of the
+  time.
 - **The wingbeat, in Hz.** `beats` is per *crossing*, not per clock cycle —
   read the other way the first values here put the butterfly at 42Hz and the
   bee at 103, both far past what 60fps can draw. A wing that beats faster than
