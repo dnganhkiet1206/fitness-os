@@ -33,7 +33,18 @@ import {
 import * as Haptics from 'expo-haptics';
 import { router, useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -132,6 +143,17 @@ const RANK_TIER: Record<string, string> = {
   legend: 'platinum',
 };
 
+/**
+ * How far past the stage's bottom edge the room keeps animating, in points.
+ *
+ * The room's clocks restart from zero when it comes back, so they must be
+ * running before any of it is visible — otherwise the lamp's glow and the
+ * plants' lean would snap to their phase-zero values in view. A whole
+ * scroll-event interval's worth of travel is more than enough: at 64ms
+ * between events even a hard flick covers well under this.
+ */
+const STAGE_KEEP_ALIVE = 120;
+
 /** Floating "+N coins" that rises off the scene on every claim */
 function CoinBurst({ trigger, amount }: { trigger: number; amount: number }) {
   const y = useSharedValue(0);
@@ -191,6 +213,39 @@ export default function MascotRoomScreen() {
   // While a touch is on the game stage, lock page scroll so gestures on the
   // buddy (poke / future rotate) stay game-only and never scroll the page.
   const [stageActive, setStageActive] = useState(false);
+
+  /**
+   * Whether the stage is still on screen.
+   *
+   * The room is four canvases and about fifteen animated nodes, and
+   * `react-native-svg` re-rasterises a whole `<Svg>` when any child prop
+   * changes — so while its clocks run, a full-width layer is redrawn sixty
+   * times a second. This page is long: the stage is only the top ~440pt of
+   * it, and everything below (quests, challenges, the level card) is where a
+   * user actually spends their time. Without this the room went on drawing
+   * itself at full rate the whole while, scrolled out of sight, which is
+   * where the heat came from — and it was being redrawn *while the
+   * ScrollView translated it*, which is why this page dropped frames on
+   * scroll when others do not.
+   *
+   * Nothing is lost by stopping: every clock restarts from zero when the
+   * stage comes back, and there is no visible jump because the switch
+   * happens with the stage off screen. The margin below is what guarantees
+   * that — the clocks are running again before the first pixel returns.
+   */
+  const [stageBottom, setStageBottom] = useState(0);
+  const [stageOnScreen, setStageOnScreen] = useState(true);
+
+  const onStageLayout = (ev: LayoutChangeEvent) => {
+    const { y, height } = ev.nativeEvent.layout;
+    setStageBottom(y + height);
+  };
+
+  const onPageScroll = (ev: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (stageBottom <= 0) return;
+    const onScreen = ev.nativeEvent.contentOffset.y < stageBottom + STAGE_KEEP_ALIVE;
+    if (onScreen !== stageOnScreen) setStageOnScreen(onScreen);
+  };
   const [devEmo, setDevEmo] = useState<string | null>(null); // dev-only emotion override
   const welcomeTried = useRef(false);
 
@@ -304,6 +359,11 @@ export default function MascotRoomScreen() {
       back
       transparentHeader
       contentScrollEnabled={!stageActive}
+      onScroll={onPageScroll}
+      // 64ms, not 16: this only decides whether the room is on screen at all,
+      // and a handler that runs on every frame of a scroll is the sort of
+      // thing it is meant to save.
+      scrollEventThrottle={64}
       // The name is set into the podium's front face instead — see
       // `studio/stage-label.tsx`. The header keeps its chevron and coin pill.
       title=""
@@ -326,6 +386,7 @@ export default function MascotRoomScreen() {
       {/* The room */}
       <View
         style={styles.sceneWrap}
+        onLayout={onStageLayout}
         // The stage is a game surface: as soon as a touch lands here we lock
         // page scroll, so any gesture on the buddy (poke / future rotate) is
         // game-only and never scrolls the page. Taps still reach the buddy.
@@ -343,7 +404,7 @@ export default function MascotRoomScreen() {
           accent={rank.color}
           energy={energyCount / ENERGY_SIGNALS.length}
           streak={streak}
-          animated={focused}
+          animated={focused && stageOnScreen}
         />
         <CoinBurst trigger={burst.id} amount={burst.amount} />
       </View>

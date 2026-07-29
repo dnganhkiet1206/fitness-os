@@ -192,13 +192,41 @@ obeys the same three constraints:
   cones, the vignette, the wall or the floor.
 - **Derived on the UI thread**, through `useAnimatedProps` into a group
   `matrix` or `opacity`. Nothing crosses to JS per frame.
-- **Gated on screen focus.** `StageRenderer` passes the live versions only
-  while the screen is focused, so the clocks stop with the screen rather than
-  running behind it.
+- **Gated on being on screen, not merely on focus.** `StageRenderer` takes an
+  `animated` flag and passes the live versions only while it is true.
+  `mascot-room.tsx` passes `focused && stageOnScreen` — see below for why
+  focus alone was not enough.
 
 `KoaStudio` takes a `live` flag and leaves the motes and the glow out when
 the overlay is drawing them, so nothing is drawn twice. The beam is drawn
 there either way — it is far too large an area to animate.
+
+### Focus is not visibility (2026-07-29)
+
+The user reported the room still heating the phone over a long session, and
+this page dropping frames on scroll where other pages do not. The canvas
+split above is most of the answer; this is the rest of it.
+
+`useIsFocused` stays true for a whole screen, and **this screen is long**.
+The stage is its top ~440pt; quests, challenges and the level card are the
+rest, and that is where a user actually spends their time. So every clock in
+the room went on running, and every animated group went on invalidating its
+canvas, for as long as the page stayed open — with the stage scrolled out of
+sight. That is where the heat came from. It was also being redrawn *while
+the ScrollView translated it*, which is the scroll cost, and it is why this
+page in particular dropped frames.
+
+`mascot-room.tsx` measures the stage's bottom edge with `onLayout`, watches
+the scroll offset through `Screen`'s forwarded `onScroll`, and stops the
+clocks once the stage is past it. `STAGE_KEEP_ALIVE` (120pt) is the margin:
+the clocks restart from zero, so they have to be running *before* any of the
+room is visible or the lamp and the plants would snap to their phase-zero
+values in view. `scrollEventThrottle` is 64ms rather than 16 — this only
+decides whether the room is on screen at all, and a handler that runs every
+frame of a scroll is exactly the sort of thing it is meant to save.
+
+**Any animated surface at the top of a long page has this bug by default.**
+Focus is not visibility.
 
 ## The weather in the window
 

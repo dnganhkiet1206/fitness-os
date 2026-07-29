@@ -513,6 +513,44 @@ design column already in the studio README, the motes and the podium against
 their own measured surroundings. Neither touched text, so neither carries
 the preview-versus-device risk above.
 
+### 2026-07-29 — focus is not visibility
+
+The user reported the room still warming the phone over a long session and
+this page alone dropping frames on scroll. Sizing each canvas to what moves
+on it (`live-regions.ts`, and the studio README) is most of the answer. The
+rest is one lesson that will repeat elsewhere in this app.
+
+**`useIsFocused` stays true for a whole screen, and a screen can be much
+longer than what is animating on it.** The Mascot Room's stage is the top
+~440pt of a page whose remainder is quests, challenges and the level card —
+which is where the time is actually spent. Gating on focus meant every clock
+kept running and every animated group kept invalidating its canvas while the
+stage was scrolled out of sight, for as long as the page stayed open. It also
+meant the room was being re-rasterised *while the ScrollView translated it*,
+which is why this page dropped frames when others did not.
+
+The fix is in `mascot-room.tsx`: `onLayout` for the stage's bottom edge,
+`onScroll` (forwarded by `Screen`, throttled to 64ms) for the offset, and
+`animated={focused && stageOnScreen}`. The clocks restart from zero, so they
+are switched back on `STAGE_KEEP_ALIVE` = 120pt early — otherwise the lamp
+and the plants would snap to phase zero in view.
+
+**Anything animated at the top of a long scrolling page has this by
+default.** Check the scroll offset, not the focus flag.
+
+One thing that was tried and dropped, so it is not tried again: cutting the
+clocks to 30fps with `useFrameCallback`. Reanimated does not compare animated
+props before pushing them — `updateProps` calls straight into
+`UpdatePropsManager.update` — so the rate can only be cut where the shared
+value is written, and that does work. It measured 120 → 69.7 canvas
+rasterisations a second. But it was worked out against the *old* full-screen
+canvases; once each canvas is the size of its own content, a 60fps redraw of
+one percent of the screen is cheap, and the remaining upside did not justify
+the risk to the rain and to the bee — `tools/koa-studio/bugs.mjs` puts its
+wingbeat at 11.9Hz, which 30 samples a second would alias into a different
+beat rather than a slower one. **Worth reaching for only if the room ever
+goes back to large canvases.**
+
 ---
 
 ## 6. Open — parked, ask the user when they are ready

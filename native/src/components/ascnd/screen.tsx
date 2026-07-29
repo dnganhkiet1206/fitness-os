@@ -1,7 +1,15 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ChevronLeft } from 'lucide-react-native';
-import { Pressable, ScrollView, StyleSheet, Text, View, type ViewProps } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type ScrollViewProps,
+  type ViewProps,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -33,6 +41,16 @@ interface ScreenProps extends ViewProps {
   /** transparentHeader only — set false to lock page scroll (e.g. while a
    *  fixed game surface at the top is being touched) */
   contentScrollEnabled?: boolean;
+  /**
+   * Forwarded to the page's ScrollView, along with `scrollEventThrottle`.
+   *
+   * `ViewProps` does not carry these, and they already reach the ScrollView
+   * through `...props` — this only makes them typed. `mascot-room` uses them
+   * to stop the studio's clocks once the stage has scrolled out of sight; a
+   * page that does not pass them is unaffected.
+   */
+  onScroll?: ScrollViewProps['onScroll'];
+  scrollEventThrottle?: number;
 }
 
 /**
