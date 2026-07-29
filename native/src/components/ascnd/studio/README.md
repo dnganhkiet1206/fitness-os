@@ -326,6 +326,49 @@ only place you can see the character is looking at *where the insect actually
 is*, and at that scale a four-degree tilt is two pixels, so the head gets its
 own crop beside it.
 
+## A worklet may only call other worklets
+
+```bash
+node tools/koa-studio/worklets.mjs
+```
+
+This shipped broken and it was not close: `gazeAt` clamped through a plain
+three-line `clamp()` helper, and on a phone Reanimated throws the moment a
+worklet reaches a function that is not one —
+
+```
+[Worklets] Tried to synchronously call a Remote Function. Called "clamp" on the UI Runtime.
+```
+
+**No tool in this directory could have seen it.** They all bundle the real
+modules and step them in Node, where a function call is a function call:
+`gaze.mjs` ran `gazeAt` four thousand times and measured the eyes to a tenth of
+a pixel on code that could not run. The room's rule is that "it looks fine" is
+not evidence. This is the case where *it measures fine* is not evidence either,
+and the answer is a check that reads the source rather than running it.
+
+`Math.min` and a nested helper declared inside the worklet's own body are both
+fine. What is not is a helper at module scope without its own directive.
+
+The tool got this wrong twice before it got it right, and both are the same
+mistake — looking *near* a thing instead of *at* it:
+
+- It first decided a function was a worklet if `'worklet'` appeared in the 200
+  characters after its declaration. The very bug it was written to catch went
+  straight through, because the doc-comment on the *next* function said the
+  word.
+- It then tried to find each body by its opening brace, which is not where a
+  body starts when the signature ends in `): { x: number; y: number } {`, or
+  when the parameter is destructured — `function AnimGroup({ clock, … })`. That
+  version called `walk` in `bugs.tsx` a violation and still missed `clamp`.
+
+So comments are stripped first, a declaration owns the text up to the next one,
+and a worklet's reach is the enclosing block found by scanning *back* to the
+brace that opens it. **It runs its own `--self-test` on the original `clamp`
+bug before it says anything about the room** — a check that has never been seen
+to fail is not a check, which is the second time that has been written down on
+this page.
+
 ## Definition comes from shadow, not from outlines
 
 Measuring each prop against the wall right behind it found three that had no

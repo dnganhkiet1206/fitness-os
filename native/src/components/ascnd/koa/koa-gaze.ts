@@ -52,8 +52,6 @@ export interface Gaze {
   k: number;
 }
 
-const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
-
 /**
  * Where Koa is looking at clock position `t`, 0..1.
  *
@@ -61,14 +59,23 @@ const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi 
  * it lands and out as it takes off, and is zero the two thirds of the time
  * nothing is perched. No state, no timers: the same `t` always gives the same
  * look, which is what lets this run on the UI thread beside everything else.
+ *
+ * The clamping is written out rather than being a `clamp()` helper, and that is
+ * not a style choice. **A worklet may only call other worklets.** A plain
+ * module-level arrow function called from here is a *remote function*, and the
+ * UI runtime throws the moment it reaches one — which is what happened the
+ * first time this shipped. `Math.min`/`Math.max` would have been fine; a
+ * three-line helper of our own was not, unless it carries its own `'worklet'`.
  */
 export function gazeAt(t: number): Gaze {
   'worklet';
   const p = perchAt(t);
   if (p.k <= 0) return { x: 0, y: 0, k: 0 };
+  const x = (p.x - HEAD_X) / REACH;
+  const y = (p.y - HEAD_Y) / REACH;
   return {
-    x: clamp((p.x - HEAD_X) / REACH, -1, 1),
-    y: clamp((p.y - HEAD_Y) / REACH, -1, 1),
+    x: x < -1 ? -1 : x > 1 ? 1 : x,
+    y: y < -1 ? -1 : y > 1 ? 1 : y,
     k: p.k,
   };
 }
