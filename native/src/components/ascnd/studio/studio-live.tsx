@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import Svg from 'react-native-svg';
 
+import { FlyingBugs } from '@/components/ascnd/studio/bugs-live';
 import { LampPulse, LiveStageGlow, useLightClock } from '@/components/ascnd/studio/light-drift';
 import { DriftingMotes } from '@/components/ascnd/studio/motes-drift';
 import { LiveSky, useSkyClock } from '@/components/ascnd/studio/sky-live';
@@ -58,6 +59,9 @@ function StudioLiveInner({
       <LiveSky t={sky} />
       <LampPulse t={t} glow={glow} />
       <DriftingMotes />
+      {/* a bee and two butterflies, crossing now and then — the smallest
+          things in the room, one animated group each. See bugs-live.tsx. */}
+      <FlyingBugs />
       <LiveStageGlow t={t} glow={glow} energy={energy} />
     </Svg>
   );

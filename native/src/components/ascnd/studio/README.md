@@ -103,10 +103,10 @@ What has *not* changed is the reason the rule existed. This sits under a
 character running its own 30fps clock, on a phone. So every moving part
 obeys the same three constraints:
 
-- **One clock each, and only two in the room** — `motes-drift.tsx` at 26s and
-  `light-drift.tsx` at 7.3s, the latter shared by the lamp's pulse and the
-  stage glow. The periods are deliberately unrelated so the two never fall into
-  step and start reading as a single pulse.
+- **One clock each, and only three in the room** — `motes-drift.tsx` at 26s,
+  `light-drift.tsx` at 7.3s (shared by the lamp's pulse and the stage glow) and
+  `bugs-live.tsx` at 41s. The periods are deliberately unrelated so they never
+  fall into step and start reading as a single pulse.
 - **Nothing animates inside `KoaStudio`'s canvas.** `react-native-svg`
   rasterises a whole `<Svg>` again whenever any child prop changes, so an
   animated group in there redraws every shape in the room, every frame, over
@@ -131,6 +131,47 @@ obeys the same three constraints:
 `KoaStudio` takes a `live` flag and leaves the motes and the glow out when
 the overlay is drawing them, so nothing is drawn twice. The beam is drawn
 there either way — it is far too large an area to animate.
+
+## The bee and the butterflies
+
+```bash
+node tools/koa-studio/bugs.mjs <out.png> [frames per crossing]
+```
+
+A bee and two butterflies cross the room now and then. They are the smallest
+things in the studio, so the rule about covered area barely applies — three of
+them together cover less than the lamp's mouth. What they cost is
+**invalidation sources**, which is why each is a *single* animated group:
+position, heading and wingbeat all come out of one matrix, `translate ·
+rotate · scale(sx, 1)`. A group for the wings alone would have been tidier and
+doubled the count, and the body squashing with them is not something you can
+see at seven points across.
+
+They live behind the buddy, on the same overlay as the motes.
+
+Three things had to be measured rather than eyeballed, and the tool prints all
+three:
+
+- **How often the room is empty.** Spans of 9, 11 and 12 percent at spread
+  phases put something on screen 32% of a 41-second cycle. "Now and then" is a
+  number, and without one it drifts into "always".
+- **The wingbeat, in Hz.** `beats` is per *crossing*, not per clock cycle —
+  read the other way the first values here put the butterfly at 42Hz and the
+  bee at 103, both far past what 60fps can draw. A wing that beats faster than
+  the frame rate does not look fast, it looks like noise. They run at 11.9,
+  6.0 and 4.5Hz, with the largest step between frames at 7, 19 and 13 percent.
+- **Whether you can see them at all.** Drawn life-size — nine units on a
+  390-wide board — they were there and invisible, and a butterfly in the
+  palette's own purples crossing a purple wall is the worst case of it. They
+  are twice that now, and the second one is a pale moth, white at half
+  strength, which is the only value in the palette that has nothing to do with
+  the room it crosses.
+
+`bugs.tsx` holds the routes, the flight maths and the drawings and imports no
+Reanimated, so `bugs.mjs` steps the *same* `flightAt` the phone runs. The tool
+samples frames inside each insect's own window rather than evenly across the
+cycle: evenly is what the room actually looks like, and two thirds of that
+strip came out empty.
 
 **The room is three canvases while it is live**, not one, and that is the
 plants' doing. They sway, so they need a canvas to themselves — but they also
