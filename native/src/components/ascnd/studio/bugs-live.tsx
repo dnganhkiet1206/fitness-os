@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -90,19 +90,71 @@ export function useBugClock(active = true): SharedValue<number> {
   return t;
 }
 
+/**
+ * Which insects are on screen, as React state rather than as opacity.
+ *
+ * `flightAt` already returns opacity 0 outside an insect's window — but an
+ * invisible animated group is still an animated group: its matrix changes
+ * sixty times a second and every change rasterises the canvas it sits on
+ * again. Their canvas is the whole room, because that is what their routes
+ * cross, so this is the one place where nothing-is-drawn has to mean
+ * nothing-is-mounted. Each is away for about nine tenths of the cycle.
+ *
+ * The schedule is read from **the clock itself**, not from a `Date.now()` taken
+ * at mount. The clock is owned two components up and started in its own effect;
+ * a second timebase would agree at first and then not, and the failure mode is
+ * an insect that unmounts halfway across the room. `t.value` in JS is exactly
+ * what the worklets see.
+ *
+ * It sleeps until the next transition rather than polling: six timers per
+ * seventy-two seconds, and no wakeups in between.
+ */
+function useOnScreen(t: SharedValue<number>): boolean[] {
+  const [on, setOn] = useState<boolean[]>(() => ROUTES.map(() => false));
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      const now = t.value;
+      const next: boolean[] = [];
+      // how far, in cycle units, until the first of them changes state
+      let soonest = 1;
+      for (const r of ROUTES) {
+        const c = (now + 1 - r.phase) % 1;
+        const vis = c <= r.span;
+        next.push(vis);
+        const d = vis ? r.span - c : 1 - c;
+        if (d < soonest) soonest = d;
+      }
+      setOn((was) => (was.every((v, i) => v === next[i]) ? was : next));
+      // a hair past the boundary, so the timer never lands just short of it
+      timer = setTimeout(tick, soonest * BUG_PERIOD + 30);
+    };
+    tick();
+    return () => clearTimeout(timer);
+  }, [t]);
+  return on;
+}
+
 export function FlyingBugs({ t }: { t: SharedValue<number> }) {
+  const on = useOnScreen(t);
   return (
     <>
-      <Flyer r={ROUTES[0]} t={t}>
-        <Bee />
-      </Flyer>
-      <Flyer r={ROUTES[1]} t={t}>
-        <Butterfly tint={C.soft} />
-      </Flyer>
-      <Flyer r={ROUTES[2]} t={t}>
-        {/* a pale moth — see `Butterfly` on why the second one is not purple */}
-        <Butterfly tint={C.white} alpha={0.5} />
-      </Flyer>
+      {on[0] ? (
+        <Flyer r={ROUTES[0]} t={t}>
+          <Bee />
+        </Flyer>
+      ) : null}
+      {on[1] ? (
+        <Flyer r={ROUTES[1]} t={t}>
+          <Butterfly tint={C.soft} />
+        </Flyer>
+      ) : null}
+      {on[2] ? (
+        <Flyer r={ROUTES[2]} t={t}>
+          {/* a pale moth — see `Butterfly` on why the second one is not purple */}
+          <Butterfly tint={C.white} alpha={0.5} />
+        </Flyer>
+      ) : null}
     </>
   );
 }

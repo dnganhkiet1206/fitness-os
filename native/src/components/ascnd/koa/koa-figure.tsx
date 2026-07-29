@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { AppState, View } from 'react-native';
 import Animated, {
   useAnimatedProps,
+  useDerivedValue,
   useFrameCallback,
   useSharedValue,
   type SharedValue,
@@ -48,13 +49,14 @@ import {
   SHADOW_STOPS,
 } from '@/components/ascnd/koa/koa-light';
 import {
-  eyeMat,
-  headMat,
-  lookK,
+  eyeMatOf,
+  gazeAt,
+  headMatOf,
   SMILE,
   SMILE_COLOUR,
   SMILE_WIDTH,
   SWAP_MOUTHS,
+  type Gaze,
 } from '@/components/ascnd/koa/koa-gaze';
 import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
@@ -315,33 +317,33 @@ function AnimGroup({
  * on top of `koaBob` survives the next re-import, where a look folded into it
  * would not.
  *
- * The cost is four extra worklets on the figure, awake for the whole 72s cycle
- * even though the glance itself is on for about a fifteenth of it. They are
- * small — `gazeAt` is three short loops — and gating them on `k` would need a
- * JS round-trip per landing, which is the more expensive of the two.
+ * They take a **resolved look**, not the clock. `gazeAt` walks every insect's
+ * route to find the one sitting still, and four wrappers each calling it is
+ * that walk four times a frame for one answer — so `KoaFigure` resolves it once
+ * into a derived value and these read `.value.k` and friends.
  */
 
-/** the head: a roll into the look about the neck, plus a small shift */
-function GazeHead({ gaze, children }: { gaze: SharedValue<number>; children: ReactNode }) {
-  const props = useAnimatedProps<{ matrix: number[] }>(() => ({ matrix: headMat(gaze.value) }));
+/** the head: a roll into the look, plus a small shift */
+function GazeHead({ look, children }: { look: SharedValue<Gaze>; children: ReactNode }) {
+  const props = useAnimatedProps<{ matrix: number[] }>(() => ({ matrix: headMatOf(look.value) }));
   return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
 }
 
 /** the pupils and their catchlights, which travel further than the head */
-function GazeEyes({ gaze, children }: { gaze: SharedValue<number>; children: ReactNode }) {
-  const props = useAnimatedProps<{ matrix: number[] }>(() => ({ matrix: eyeMat(gaze.value) }));
+function GazeEyes({ look, children }: { look: SharedValue<Gaze>; children: ReactNode }) {
+  const props = useAnimatedProps<{ matrix: number[] }>(() => ({ matrix: eyeMatOf(look.value) }));
   return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
 }
 
 /** the open mouth, on its way out */
-function GazeMouth({ gaze, children }: { gaze: SharedValue<number>; children: ReactNode }) {
-  const props = useAnimatedProps<{ opacity: number }>(() => ({ opacity: 1 - lookK(gaze.value) }));
+function GazeMouth({ look, children }: { look: SharedValue<Gaze>; children: ReactNode }) {
+  const props = useAnimatedProps<{ opacity: number }>(() => ({ opacity: 1 - look.value.k }));
   return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
 }
 
 /** and the closed one, on its way in */
-function GazeSmile({ gaze }: { gaze: SharedValue<number> }) {
-  const props = useAnimatedProps<{ opacity: number }>(() => ({ opacity: lookK(gaze.value) }));
+function GazeSmile({ look }: { look: SharedValue<Gaze> }) {
+  const props = useAnimatedProps<{ opacity: number }>(() => ({ opacity: look.value.k }));
   return (
     <AnimatedG animatedProps={props}>
       <Path d={SMILE} stroke={SMILE_COLOUR} strokeWidth={SMILE_WIDTH} strokeLinecap="round" fill="none" />
@@ -425,8 +427,8 @@ function RenderNode({
   clock: SharedValue<number>;
   /** false → draw the first frame as plain SVG, with no animated components */
   live: boolean;
-  /** the insects' clock, when there is one — see the glance, above */
-  gaze?: SharedValue<number>;
+  /** the resolved look, when this figure is glancing at anything */
+  gaze?: SharedValue<Gaze>;
   /** whether this pose's mouth is one the glance may close */
   swapMouth: boolean;
 }) {
@@ -448,7 +450,7 @@ function RenderNode({
   // the pleased little smile goes inside `#FACE`, so it rides the head's own
   // translate and everything the glance does to the rig above it
   if (gaze && swapMouth && n.id === 'FACE' && kids) {
-    kids = [...kids, <GazeSmile key="gaze-smile" gaze={gaze} />];
+    kids = [...kids, <GazeSmile key="gaze-smile" look={gaze} />];
   }
 
   if (n.t === 'defs') return <Defs>{kids}</Defs>;
@@ -571,10 +573,10 @@ function RenderNode({
   })();
 
   if (!gaze) return el;
-  if (n.id === 'HEADRIG') return <GazeHead gaze={gaze}>{el}</GazeHead>;
-  if (isEyeGroup(n)) return <GazeEyes gaze={gaze}>{el}</GazeEyes>;
+  if (n.id === 'HEADRIG') return <GazeHead look={gaze}>{el}</GazeHead>;
+  if (isEyeGroup(n)) return <GazeEyes look={gaze}>{el}</GazeEyes>;
   if (swapMouth && n.if && SWAP_MOUTHS.indexOf(n.if) >= 0) {
-    return <GazeMouth gaze={gaze}>{el}</GazeMouth>;
+    return <GazeMouth look={gaze}>{el}</GazeMouth>;
   }
   return el;
 }
@@ -664,8 +666,20 @@ export function KoaFigure({
   // uses, rebuilt only when the flags change
   const ramps = useMemo(() => rampsFor(flags), [flags]);
   const glows = useMemo(() => glowsFor(flags), [flags]);
-  // a frozen figure has no clock to glance on, so the glance goes with it
-  const look = animated ? gaze : undefined;
+  /**
+   * The look, resolved once a frame.
+   *
+   * `gazeAt` walks all three insect routes to find whichever one has landed;
+   * the four things the glance moves would each have done that walk on every
+   * frame, for the same answer. One derived value instead — and when there is
+   * no clock to glance on it has no dependency, so the worklet runs once at
+   * mount and never again.
+   */
+  const clockOrNull = animated ? gaze : undefined;
+  const resolved = useDerivedValue<Gaze>(() =>
+    clockOrNull ? gazeAt(clockOrNull.value) : { x: 0, y: 0, k: 0 },
+  );
+  const look = clockOrNull ? resolved : undefined;
   const swapMouth = SWAP_MOUTHS.some((f) => !!flags[f]);
   const tree = useMemo(
     () =>

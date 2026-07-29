@@ -76,6 +76,74 @@ Put no layout in whitespace inside SVG text, and prefer separate positioned
 the preview and a device shot differ on text, the preview is the one that
 is wrong.
 
+## A canvas is the size of what moves on it
+
+```bash
+node tools/koa-studio/budget.mjs
+```
+
+The room dropped frames and heated the phone. This is the third time, and the
+first two fixes are still right — they were just no longer enough.
+
+`react-native-svg` rasterises a whole `<Svg>` again whenever any child prop
+changes, so **the price of one animated group is the area of its canvas times
+everything else on that canvas**. The room was two canvases the size of the
+screen: one for the plants, one for everything else. By the time the weather and
+the insects had landed, the second held about a hundred and ninety shapes — and
+the whole screen was being redrawn sixty times a second so that six stars could
+blink inside a window covering five percent of it.
+
+Three changes, none of which alter a pixel.
+
+**Each idea got a canvas its own size.** The regions are in `live-regions.ts`,
+*derived from the geometry they have to contain* rather than typed — a
+hand-written box silently stops being true the first time a mote moves, and a
+region that no longer contains its content does not warn you, it clips it.
+
+**What cannot be seen is not mounted.** The rain is 148 lines and the sky is dry
+six times in seven; each insect is away for nine tenths of its cycle; a cloud
+below the current cover is drawn at opacity zero. All three were still animated
+groups changing props every frame. They now leave the tree, and both schedules
+are read from **the clock itself** rather than from a `Date.now()` at mount —
+two timebases agree at first and then do not, and the failure mode is an insect
+that unmounts halfway across the room.
+
+**The mascot resolves its glance once a frame.** `gazeAt` walks all three insect
+routes; the four things the look moves were each doing that walk for the same
+answer.
+
+```
+canvas   vùng                  phủ    hình  lúc nào   giá
+sky      87×109 @276,99         5.1%     21  100.0%   1.07
+                                        148   15.1%   1.14
+beam     138×259 @127,59       19.3%     10  100.0%   1.93
+room     390×476 @0,0         100.0%      7   35.4%   2.48
+stage    254×58 @68,381         7.9%      1  100.0%   0.08
+plant0   40×42 @21,213          0.9%     17  100.0%   0.15
+plant1   128×105 @252,300       7.2%     22  100.0%   1.59
+
+trước 226.0 → sau 8.4   (3.7%, nhẹ hơn 27×)
+```
+
+It is a proxy, not milliseconds — but it is the proxy both earlier fixes were
+reasoned from, and the one behind "shape count is not the cost, covered area
+is". The insects' canvas is still the whole room, because a route from one wall
+to the other is what they are; the saving there is entirely the unmounting.
+
+### The half-pixel that nearly cost the whole thing
+
+Splitting is only free if a sub-canvas lands on exactly the pixels the
+full-screen one did. `region · k` is almost never a whole number, so a canvas
+laid out at 118.65pt rasterises against a grid half a pixel off the one the
+whole-room canvas used. A pixel diff of the two layouts at 361pt found **4,940
+of 48,000 inked pixels differing** — a hairline along every edge in the room.
+
+`LiveLayer` therefore snaps the *view* to whole points and solves the viewBox
+back out of it, which keeps `x · k` exact while putting the raster grid back
+where it was. That takes it to **one pixel, at a difference of 7**. The check
+runs on every `budget.mjs`, because it is the only way the split can move
+anything, and "it looks the same" is not how this room is held to anything.
+
 ## The rules this scene is held to
 
 | Rule | Where it is checked |

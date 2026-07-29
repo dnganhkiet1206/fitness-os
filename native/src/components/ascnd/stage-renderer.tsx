@@ -236,7 +236,6 @@ export function StageRenderer({
           <View style={StyleSheet.absoluteFill}>
             <StudioLive
               width={sw}
-              height={H}
               glow={STUDIO_SKINS[themeKey ?? 'default']?.glow}
               energy={energy}
               bugs={bugs}

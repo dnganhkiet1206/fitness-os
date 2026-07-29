@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { G, type GProps } from 'react-native-svg';
 
-import { MOTES, Specks } from '@/components/ascnd/studio/motes';
+import { MOTE_BANDS, MOTE_PHASE, MOTE_SWAY, MOTES, Specks } from '@/components/ascnd/studio/motes';
 
 /**
  * The motes, drifting — the one thing in the studio that moves.
@@ -39,25 +39,10 @@ const AnimatedG = Animated.createAnimatedComponent(
   G as unknown as React.ComponentType<GProps & { matrix?: number[] }>,
 );
 
-const BANDS = 3;
 /** one full cycle, in ms — slow enough to read as air rather than as motion */
 const PERIOD = 26000;
-/**
- * How far each band travels, in artboard units: [across, down].
- *
- * Dust in a beam rises and settles; it does not slide sideways. The vertical
- * term carries the motion and the horizontal one is barely more than a
- * wobble, just enough that the three bands do not read as lifts.
- */
-const SWAY: [number, number][] = [
-  [0.9, 8.5],
-  [1.3, 6.5],
-  [0.7, 10.0],
-];
-/** bands are offset in the cycle so they never move as one sheet */
-const PHASE = [0, 0.37, 0.71];
 
-const bandOf = (i: number) => MOTES.filter((_, k) => k % BANDS === i);
+const bandOf = (i: number) => MOTES.filter((_, k) => k % MOTE_BANDS === i);
 
 /**
  * One band's matrix.
@@ -66,8 +51,8 @@ const bandOf = (i: number) => MOTES.filter((_, k) => k % BANDS === i);
  * so the loop closes on itself and the motes never jump at the seam.
  */
 function Band({ i, t }: { i: number; t: SharedValue<number> }) {
-  const [ax, ay] = SWAY[i];
-  const phase = PHASE[i];
+  const [ax, ay] = MOTE_SWAY[i];
+  const phase = MOTE_PHASE[i];
   const list = bandOf(i);
   const props = useAnimatedProps<{ matrix: number[] }>(() => {
     const a = 2 * Math.PI * (t.value + phase);
@@ -89,7 +74,7 @@ export function DriftingMotes() {
   }, [t]);
   return (
     <>
-      {[0, 1, 2].map((i) => (
+      {MOTE_SWAY.map((_, i) => (
         <Band key={i} i={i} t={t} />
       ))}
     </>

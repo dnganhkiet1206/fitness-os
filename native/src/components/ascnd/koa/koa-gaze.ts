@@ -142,9 +142,8 @@ function place(deg: number, cx: number, cy: number, tx: number, ty: number): num
  * which is why it goes on a group of its own around `#HEADRIG` instead of into
  * the rig's own matrix.
  */
-export function headMat(t: number): number[] {
+export function headMatOf(g: Gaze): number[] {
   'worklet';
-  const g = gazeAt(t);
   if (g.k <= 0) return IDENTITY;
   return place(
     HEAD_TILT * g.x * g.k,
@@ -156,13 +155,31 @@ export function headMat(t: number): number[] {
 }
 
 /** the pupils' matrix — a plain shift, further than the head goes */
-export function eyeMat(t: number): number[] {
+export function eyeMatOf(g: Gaze): number[] {
   'worklet';
-  const g = gazeAt(t);
   if (g.k <= 0) return IDENTITY;
   // less vertically than horizontally: an eye that slides its full travel up
   // shows white under the iris, which reads as alarm rather than as interest
   return [1, 0, 0, 1, PUPIL_SHIFT * g.x * g.k, PUPIL_SHIFT * 0.7 * g.y * g.k];
+}
+
+/**
+ * The same three, from a clock position instead of a look.
+ *
+ * `koa-figure.tsx` does not use these: it resolves `gazeAt` **once** per frame
+ * into a derived value and hands that to all four of the things the glance
+ * moves, because four wrappers each calling `gazeAt` is four walks of every
+ * insect's route for one answer. These exist for the tools, which step a clock
+ * rather than hold a shared value.
+ */
+export function headMat(t: number): number[] {
+  'worklet';
+  return headMatOf(gazeAt(t));
+}
+
+export function eyeMat(t: number): number[] {
+  'worklet';
+  return eyeMatOf(gazeAt(t));
 }
 
 /** how far into the look it is, 0..1 — what the mouths cross-fade on */

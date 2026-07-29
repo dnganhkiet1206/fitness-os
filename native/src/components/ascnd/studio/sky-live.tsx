@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -101,7 +101,7 @@ function Star({ x, y, r, n, t }: { x: number; y: number; r: number; n: number; t
  * are drawn again on top so they occlude properly.
  */
 export function LiveSky({ t }: { t: SharedValue<number> }) {
-  const { cover, wet } = useWeather();
+  const { cover, wet, sky } = useWeather();
   return (
     <>
       <Defs>
@@ -114,11 +114,18 @@ export function LiveSky({ t }: { t: SharedValue<number> }) {
           <Star key={i} x={x} y={y} r={r} n={BLINK[i % BLINK.length]} t={t} />
         ))}
         <ShootingStar t={t} />
-        {/* the weather, over the stars so a cloud covers them */}
-        {DRIFTS.map((d, i) => (
-          <DriftingCloud key={i} d={d} t={t} cover={cover} wet={wet} />
-        ))}
-        <FallingRain t={t} wet={wet} />
+        {/* The weather, over the stars so a cloud covers them.
+            Only what the sky can actually show is mounted. A cloud whose
+            threshold is above the current cover is drawn at opacity 0 —
+            invisible, and still a group whose matrix changes every frame,
+            still forcing this canvas to be redrawn. `sky.cover` is the value
+            being eased *to*, so a cloud appears at the start of a turn rather
+            than at the end of one. */}
+        {DRIFTS.map((d, i) =>
+          sky.cover > d.at ? <DriftingCloud key={i} d={d} t={t} cover={cover} wet={wet} /> : null,
+        )}
+        {/* and the rain, which is 136 lines and off about six times in seven */}
+        {sky.wet > 0 ? <FallingRain t={t} wet={wet} /> : null}
       </G>
       {MULLIONS.map(([x, y, w, h], i) => (
         <Rect key={i} x={x} y={y} width={w} height={h} fill={C.primary} />
@@ -230,25 +237,54 @@ function pickSky() {
   return SKIES[0];
 }
 
+/**
+ * The weather, as two shared values for the drawing and one bit of React state
+ * for what needs to exist at all.
+ *
+ * The shared values ease; the state decides what is mounted. A cloud below the
+ * cover and the rain in a dry sky were being drawn at opacity zero — invisible,
+ * and still animated groups whose props changed sixty times a second, still
+ * forcing the canvas to be rasterised again. The rain alone is 136 lines, off
+ * about six times in seven.
+ *
+ * The state is the **envelope** of the sky it is leaving and the one it is
+ * going to, held for the length of the turn. Dropping to the new sky at once
+ * would cut the rain off mid-fade instead of letting it stop.
+ */
+export interface Sky {
+  cover: number;
+  wet: number;
+}
+
 function useWeather() {
   const cover = useSharedValue(0.45);
   const wet = useSharedValue(0);
+  // The first sky is rolled at once and set without a transition, because at a
+  // two-and-a-half-minute hold the alternative is that every session that has
+  // ever been opened begins with the same few clouds and most of them end
+  // before it changes. You walk in on weather already happening.
+  const [open] = useState(pickSky);
+  const [sky, setSky] = useState<Sky>(open);
+
   useEffect(() => {
-    // The first sky is rolled at once and set without a transition, because at
-    // a two-and-a-half-minute hold the alternative is that every session that
-    // has ever been opened begins with the same few clouds and most of them
-    // end before it changes. You walk in on weather already happening.
-    const open = pickSky();
     cover.value = open.cover;
     wet.value = open.wet;
+    let settle: ReturnType<typeof setTimeout> | undefined;
     const id = setInterval(() => {
-      const sky = pickSky();
-      cover.value = withTiming(sky.cover, { duration: TURN, easing: Easing.inOut(Easing.quad) });
-      wet.value = withTiming(sky.wet, { duration: TURN, easing: Easing.inOut(Easing.quad) });
+      const next = pickSky();
+      cover.value = withTiming(next.cover, { duration: TURN, easing: Easing.inOut(Easing.quad) });
+      wet.value = withTiming(next.wet, { duration: TURN, easing: Easing.inOut(Easing.quad) });
+      setSky((was) => ({ cover: Math.max(was.cover, next.cover), wet: Math.max(was.wet, next.wet) }));
+      clearTimeout(settle);
+      settle = setTimeout(() => setSky(next), TURN + 200);
     }, HOLD);
-    return () => clearInterval(id);
-  }, [cover, wet]);
-  return { cover, wet };
+    return () => {
+      clearInterval(id);
+      clearTimeout(settle);
+    };
+  }, [cover, wet, open]);
+
+  return { cover, wet, sky };
 }
 
 /**

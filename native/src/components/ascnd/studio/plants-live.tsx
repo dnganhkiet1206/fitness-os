@@ -11,6 +11,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { G, type GProps } from 'react-native-svg';
 
+import { PLANT_REGIONS } from '@/components/ascnd/studio/live-regions';
+import { LiveLayer } from '@/components/ascnd/studio/studio-live';
 import { PLANT_PIVOT, PlantFoliage, PlantPot, type PlantKind } from '@/components/ascnd/studio/plant';
 import { PLANTS, StudioPlants } from '@/components/ascnd/studio/plants';
 import { STUDIO_H, STUDIO_W } from '@/components/ascnd/studio/palette';
@@ -55,13 +57,17 @@ const SWAY: { deg: number; rate: number; gust: number; phase: number }[] = [
   { deg: 1.7, rate: 2, gust: 3, phase: 0.41 },
 ];
 
-function useSwayClock(): SharedValue<number> {
+function useSwayClock(active = true): SharedValue<number> {
   const t = useSharedValue(0);
   useEffect(() => {
+    if (!active) {
+      cancelAnimation(t);
+      return;
+    }
     t.value = 0;
     t.value = withRepeat(withTiming(1, { duration: PERIOD, easing: Easing.linear }), -1, false);
     return () => cancelAnimation(t);
-  }, [t]);
+  }, [t, active]);
   return t;
 }
 
@@ -121,11 +127,19 @@ export function SwayingPlants() {
 }
 
 /**
- * The plants' canvas, laid between the room's back and its front.
+ * The plants' canvases, laid between the room's back and its front.
  *
- * The viewBox, size and `preserveAspectRatio` must match `KoaStudio`'s or the
- * layers drift apart. Still when the screen is not focused, so the clock stops
- * with it.
+ * **One canvas per plant while they are moving.** They stand at opposite
+ * corners of the room — (41, 250) on the shelf and (316, 397) on the floor — so
+ * a single canvas holding both is the whole screen, and every sway of one leaf
+ * was redrawing all of it along with the other plant. Split, each redraw covers
+ * about one percent. The regions are derived from the leaf table itself in
+ * `live-regions.ts`; a canvas that does not contain its plant clips it.
+ *
+ * Still — a snapshot, a picker, an unfocused screen — it goes back to one
+ * canvas, because nothing is being redrawn and a single view is cheaper to
+ * mount than three. That one must keep `KoaStudio`'s viewBox, size and
+ * `preserveAspectRatio` or the layers drift apart.
  */
 function PlantsCanvasInner({
   width,
@@ -136,15 +150,28 @@ function PlantsCanvasInner({
   height: number;
   animated?: boolean;
 }) {
+  const t = useSwayClock(animated !== false);
+  if (!animated) {
+    return (
+      <Svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${STUDIO_W} ${STUDIO_H}`}
+        preserveAspectRatio="xMidYMin slice"
+        pointerEvents="none">
+        <StudioPlants />
+      </Svg>
+    );
+  }
+  const k = width / STUDIO_W;
   return (
-    <Svg
-      width={width}
-      height={height}
-      viewBox={`0 0 ${STUDIO_W} ${STUDIO_H}`}
-      preserveAspectRatio="xMidYMin slice"
-      pointerEvents="none">
-      {animated ? <SwayingPlants /> : <StudioPlants />}
-    </Svg>
+    <>
+      {PLANTS.map((p, i) => (
+        <LiveLayer key={i} r={PLANT_REGIONS[i]} k={k}>
+          <Swaying {...p} i={i} t={t} />
+        </LiveLayer>
+      ))}
+    </>
   );
 }
 

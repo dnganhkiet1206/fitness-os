@@ -66,6 +66,32 @@ const rib = (oy: number, tx: number, ty: number) =>
  */
 export const PLANT_PIVOT = POT_Y;
 
+/**
+ * How far a plant reaches from its own origin, in local units.
+ *
+ * Derived from the leaf table rather than measured off a screenshot, because
+ * `live-regions.ts` sizes each plant's canvas from it and **a canvas that does
+ * not contain its plant clips it**. A blade's furthest point is its tip or the
+ * bulge of its bow, whichever is further out; the pot adds its rim at ±10 and
+ * the shadow ellipse under it reaches 3.2 below the origin.
+ */
+export function plantBounds(kind: PlantKind): { x: number; top: number; bottom: number } {
+  const leaves = kind === 'spray' ? SPRAY : BUSH;
+  const oy = ORIGIN[kind];
+  let x = 10;
+  let top = POT_Y - 2.4;
+  for (const [tx, ty, b] of leaves) {
+    const dy = ty - oy;
+    const len = Math.hypot(tx, dy) || 1;
+    // the quadratic's control points — the curve stays inside their hull
+    const cx = Math.abs(tx * 0.5) + Math.abs((-dy / len) * b);
+    const cy = oy + dy * 0.5 - Math.abs((tx / len) * b);
+    x = Math.max(x, Math.abs(tx), cx);
+    top = Math.min(top, ty, cy);
+  }
+  return { x, top, bottom: 3.2 };
+}
+
 export type PlantKind = 'bush' | 'spray';
 
 /**

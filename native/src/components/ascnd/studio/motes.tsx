@@ -47,6 +47,31 @@ export const MOTES: Mote[] = [
   [140, 305, 1.35, 0.085, C.highlight],
 ];
 
+/**
+ * How the motes drift, kept here with the motes themselves.
+ *
+ * The motion is applied in `motes-drift.tsx`, but the *amplitude* is geometry:
+ * `live-regions.ts` sizes the beam's canvas from it, and a canvas that forgets
+ * how far the drift reaches clips the top of it once a cycle. Numbers that two
+ * files have to agree on live in the one that has no Reanimated in it, so both
+ * can read them.
+ *
+ * Dust in a beam rises and settles; it does not slide sideways. The vertical
+ * term carries the motion and the horizontal one is barely more than a wobble,
+ * just enough that the three bands do not read as lifts. `[across, down]`.
+ */
+export const MOTE_SWAY: [number, number][] = [
+  [0.9, 8.5],
+  [1.3, 6.5],
+  [0.7, 10.0],
+];
+export const MOTE_BANDS = MOTE_SWAY.length;
+/** bands are offset in the cycle so they never move as one sheet */
+export const MOTE_PHASE = [0, 0.37, 0.71];
+
+/** the furthest any band travels from where it is drawn, in either axis */
+export const MOTE_REACH = Math.max(...MOTE_SWAY.flat());
+
 export function Specks({ list }: { list: Mote[] }) {
   return (
     <>
