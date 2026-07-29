@@ -53,7 +53,10 @@ function wornFrom(equipped: Set<string> | undefined): Worn {
 }
 
 export function MascotFigure(props: Props) {
-  const { mascot, size = 160, mood = 'neutral', animated = true, emotion: emotionProp } = props;
+  // `mood` is not destructured: this branch does not use it, and the vector
+  // fallback below takes it through `{...props}` with its own 'neutral'
+  // default, so naming it here only left an unused local.
+  const { mascot, size = 160, animated = true, emotion: emotionProp } = props;
 
   // The Emotion Engine drives the image companion; an explicit `emotion` prop
   // (e.g. the unlock celebration) overrides it. Hook runs unconditionally.

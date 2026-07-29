@@ -34,7 +34,6 @@ import * as Haptics from 'expo-haptics';
 import { router, useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -164,7 +163,6 @@ function CoinBurst({ trigger, amount }: { trigger: number; amount: number }) {
 export default function MascotRoomScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const insets = useSafeAreaInsets();
   const { mascot, message, mood } = useMascot();
   // A stack screen stays mounted under whatever is pushed on top of it, so
   // without this the room keeps animating behind the shop, the settings
@@ -299,9 +297,6 @@ export default function MascotRoomScreen() {
 
   const streakRefKey = `d:${today}:streak`;
   const streakBonus = streakCoins(streak);
-
-  // Daily quest progress for the Stage card (how many of today's quests done)
-  const questDoneCount = DAILY_QUESTS.filter((q) => questDone[q.key]).length;
 
   return (
     <Screen

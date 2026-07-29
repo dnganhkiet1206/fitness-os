@@ -129,7 +129,6 @@ export function useMascotEmotion(): MascotEmotion {
         action,
       ),
     // `force` re-runs the memo via a re-render; hour is read fresh inside.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [mood, streak, onWorkoutScreen, action, isBirthday],
   );
 
