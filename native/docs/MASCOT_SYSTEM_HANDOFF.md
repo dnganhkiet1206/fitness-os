@@ -13,6 +13,13 @@ If you are picking this up cold, read "The repository" and the 2026-07-28
 note after §5 before running any git command — the branch layout changed,
 and one claim this document used to make about it was false.
 
+**Before anything ships, read `PRE_RELEASE.md` next to this file.** It
+holds what is fine in test and wrong in production — chiefly that
+`TEST_UNLOCK_ALL` keeps the whole mascot economy in AsyncStorage and off
+Supabase, and that the five AI functions accept the public anon key as
+proof of identity. Neither is a mascot-design question, and both would
+otherwise be found by a user rather than by us.
+
 ---
 
 ## 1. The goal (unchanged, do not lose this)
