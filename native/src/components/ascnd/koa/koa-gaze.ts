@@ -1,0 +1,176 @@
+import { perchAt } from '@/components/ascnd/studio/bugs';
+import { STAGE_MARK } from '@/components/ascnd/studio/palette';
+
+/**
+ * Koa noticing the insects.
+ *
+ * When the bee settles on the shelf's plant or a butterfly on the neon sign,
+ * the head turns a little that way, the eyes go further, and the open grin
+ * closes into a small pleased smile. When they leave, it comes back.
+ *
+ * The whole thing is one number in, three out, and it hangs off the **same
+ * clock the insects use** — `StageRenderer` owns it and hands it to both. On
+ * separate clocks the mascot would be looking at where a butterfly used to be
+ * within about a minute.
+ *
+ * ── the geometry ──
+ *
+ * The insects live in the room's 390-wide artboard and the figure in its own
+ * 240 × 300 box, so the two have to be brought together somewhere. It is done
+ * here, once, from the same constants the stage places the buddy with: the
+ * figure's box is `HERO_W` wide with its feet on `STAGE_MARK`, and the head
+ * sits at (120, 112) inside it. Restating either of those in a second place is
+ * how a preview ends up drawing a character that stands in front of its own
+ * podium, which has happened here before.
+ */
+
+/** the figure's rendered width in artboard units — `stage-renderer.tsx`'s */
+const HERO_W = 128;
+const FIG_W = 240;
+const FIG_H = 300;
+/** the head's centre inside the figure's own viewBox */
+const HEAD = [120, 112];
+
+/** the head's centre, in artboard units */
+const HEAD_X = STAGE_MARK.x - HERO_W / 2 + (HEAD[0] / FIG_W) * HERO_W;
+const HEAD_Y = STAGE_MARK.y - HERO_W * 1.25 + 6 + (HEAD[1] / FIG_H) * (HERO_W * 1.25);
+
+/**
+ * How far away a thing has to be to pull the eyes all the way over.
+ *
+ * Generous on purpose: the shelf's plant is about 150 units off and the neon
+ * sign 120, so both should read as "all the way", and only something almost
+ * underfoot should read as less.
+ */
+const REACH = 150;
+
+export interface Gaze {
+  /** −1..1, where it is looking */
+  x: number;
+  y: number;
+  /** 0..1, how much it is looking at all */
+  k: number;
+}
+
+const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
+
+/**
+ * Where Koa is looking at clock position `t`, 0..1.
+ *
+ * `k` comes straight from the insect's own settle, so the glance eases in as
+ * it lands and out as it takes off, and is zero the two thirds of the time
+ * nothing is perched. No state, no timers: the same `t` always gives the same
+ * look, which is what lets this run on the UI thread beside everything else.
+ */
+export function gazeAt(t: number): Gaze {
+  'worklet';
+  const p = perchAt(t);
+  if (p.k <= 0) return { x: 0, y: 0, k: 0 };
+  return {
+    x: clamp((p.x - HEAD_X) / REACH, -1, 1),
+    y: clamp((p.y - HEAD_Y) / REACH, -1, 1),
+    k: p.k,
+  };
+}
+
+/* ── what the look moves ──────────────────────────────────────────────── */
+
+/**
+ * How far each part goes, in the figure's own units and degrees.
+ *
+ * The eyes go furthest and the head least, which is the order that reads as
+ * *noticing* rather than as turning to face something: an animal glances with
+ * its eyes first and brings its head after. The head also tilts — a small roll
+ * into the direction of the look — and that roll is most of what makes it read
+ * as interest rather than as tracking.
+ *
+ * `HEAD_TURN` is a sideways shift, not a yaw. The figure is flat and has no
+ * far side to bring round; shifting the whole head a few units toward what it
+ * is looking at is the closest a drawing like this gets, and at 4.5 units on a
+ * 240-wide board it is under two percent of the width — felt, not seen.
+ */
+export const HEAD_TILT = 5;
+export const HEAD_TURN = 4.5;
+export const HEAD_LIFT = 3;
+export const PUPIL_SHIFT = 3.6;
+/** where the head pivots — the neck, not the middle of the skull */
+export const HEAD_PIVOT: [number, number] = [120, 186];
+
+const IDENTITY = [1, 0, 0, 1, 0, 0];
+
+/** rotate `deg` about (cx, cy) and then translate, straight to an SVG matrix */
+function place(deg: number, cx: number, cy: number, tx: number, ty: number): number[] {
+  'worklet';
+  const r = (deg * Math.PI) / 180;
+  const c = Math.cos(r);
+  const s = Math.sin(r);
+  return [c, s, -s, c, cx - (c * cx - s * cy) + tx, cy - (s * cx + c * cy) + ty];
+}
+
+/**
+ * The head's own matrix at clock `t` — a roll into the look about the neck,
+ * plus a small shift after it.
+ *
+ * Signs: looking left is `x < 0`, and a negative rotation on a y-down board
+ * takes the top of the head left, so the crown leans **toward** what it has
+ * noticed. Leaning away would read as recoiling from it.
+ *
+ * This composes on top of whatever `koaBob` is doing rather than replacing it,
+ * which is why it goes on a group of its own around `#HEADRIG` instead of into
+ * the rig's own matrix.
+ */
+export function headMat(t: number): number[] {
+  'worklet';
+  const g = gazeAt(t);
+  if (g.k <= 0) return IDENTITY;
+  return place(
+    HEAD_TILT * g.x * g.k,
+    HEAD_PIVOT[0],
+    HEAD_PIVOT[1],
+    HEAD_TURN * g.x * g.k,
+    HEAD_LIFT * g.y * g.k,
+  );
+}
+
+/** the pupils' matrix — a plain shift, further than the head goes */
+export function eyeMat(t: number): number[] {
+  'worklet';
+  const g = gazeAt(t);
+  if (g.k <= 0) return IDENTITY;
+  // less vertically than horizontally: an eye that slides its full travel up
+  // shows white under the iris, which reads as alarm rather than as interest
+  return [1, 0, 0, 1, PUPIL_SHIFT * g.x * g.k, PUPIL_SHIFT * 0.7 * g.y * g.k];
+}
+
+/** how far into the look it is, 0..1 — what the mouths cross-fade on */
+export function lookK(t: number): number {
+  'worklet';
+  return gazeAt(t).k;
+}
+
+/**
+ * The closed smile that replaces the open one.
+ *
+ * Both of the calm mouths in the export are open, with a tongue in them. A
+ * creature that has just noticed something does not grin at it — it closes its
+ * mouth and the corners go up. So the whole open-mouth group fades out as the
+ * look comes on and this fades in: one stroked arc, no fill, in the mouth's own
+ * colour, sitting where the mouth's top edge was.
+ *
+ * `mouthSmile` spans 106 → 134 and `mouthGrin` 104 → 136, and this splits the
+ * difference, so the swap does not move the face under either one.
+ */
+export const SMILE = 'M106.5 129 Q120 141.5 133.5 129';
+export const SMILE_WIDTH = 4.6;
+export const SMILE_COLOUR = '#20242A';
+
+/**
+ * The mouths this may replace, by the export's own flag.
+ *
+ * Only the two calm ones. `mouthBreath` is a koala mid-workout and `mouthGrit`
+ * one straining under a bar — neither is a state in which something glances at
+ * a butterfly, and swapping either for a pleased little smile would read as the
+ * character losing the plot. Under those expressions the glance is the head and
+ * the eyes and nothing else.
+ */
+export const SWAP_MOUTHS = ['mouthSmile', 'mouthGrin'];

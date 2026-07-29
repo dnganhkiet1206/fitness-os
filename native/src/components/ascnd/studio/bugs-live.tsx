@@ -63,13 +63,34 @@ function Flyer({ r, t, children }: { r: Route; t: SharedValue<number>; children:
   return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
 }
 
-export function FlyingBugs() {
+/**
+ * The insects' clock.
+ *
+ * `StageRenderer` owns it rather than this file, because the mascot has to
+ * read it too: it glances at whichever insect is sitting still, and the two
+ * would drift apart within a minute on separate clocks. One clock, two
+ * consumers — see `koa-gaze.ts`.
+ *
+ * `active` is the screen's focus. It has to be a parameter rather than a
+ * mount: this hook now runs a level above the canvas that used to be
+ * conditionally rendered, so without it the clock would keep ticking — and
+ * keep waking every worklet reading it — behind whatever is pushed on top.
+ */
+export function useBugClock(active = true): SharedValue<number> {
   const t = useSharedValue(0);
   useEffect(() => {
+    if (!active) {
+      cancelAnimation(t);
+      return;
+    }
     t.value = 0;
     t.value = withRepeat(withTiming(1, { duration: BUG_PERIOD, easing: Easing.linear }), -1, false);
     return () => cancelAnimation(t);
-  }, [t]);
+  }, [t, active]);
+  return t;
+}
+
+export function FlyingBugs({ t }: { t: SharedValue<number> }) {
   return (
     <>
       <Flyer r={ROUTES[0]} t={t}>

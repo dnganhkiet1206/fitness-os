@@ -234,6 +234,26 @@ export function flightAt(r: Route, t: number): { matrix: number[]; opacity: numb
   };
 }
 
+/**
+ * Whichever insect is sitting still right now, and how settled it is.
+ *
+ * The mascot glances at it — see `koa-gaze.ts`. `settle` already runs 0 → 1 →
+ * 0 across a hold, so the look eases in as the insect lands and out as it
+ * leaves without any state to keep. Nothing is perched for about two thirds of
+ * the cycle, and then `k` is 0 and there is nothing to look at.
+ */
+export function perchAt(t: number): { x: number; y: number; k: number } {
+  'worklet';
+  for (let i = 0; i < ROUTES.length; i++) {
+    const r = ROUTES[i];
+    const cycle = (t + 1 - r.phase) % 1;
+    if (cycle > r.span) continue;
+    const w = walk(r, (cycle / r.span) * totalOf(r));
+    if (w.settle > 0) return { x: w.x, y: w.y, k: w.settle };
+  }
+  return { x: 0, y: 0, k: 0 };
+}
+
 /* ── what they look like ──────────────────────────────────────────────── */
 
 /**

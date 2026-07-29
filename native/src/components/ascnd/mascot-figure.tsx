@@ -1,3 +1,5 @@
+import type { SharedValue } from 'react-native-reanimated';
+
 import { KoaFigure } from '@/components/ascnd/koa/koa-figure';
 import type { Worn } from '@/components/ascnd/koa/koa-flags';
 import { VectorMascot } from '@/components/ascnd/vector-mascot';
@@ -31,6 +33,8 @@ interface Props {
   level?: number;
   equippedOutfits?: Set<string>;
   animated?: boolean;
+  /** the room's insect clock — Koa glances at whichever one has landed */
+  gaze?: SharedValue<number>;
 }
 
 /**
@@ -56,7 +60,7 @@ export function MascotFigure(props: Props) {
   // `mood` is not destructured: this branch does not use it, and the vector
   // fallback below takes it through `{...props}` with its own 'neutral'
   // default, so naming it here only left an unused local.
-  const { mascot, size = 160, animated = true, emotion: emotionProp } = props;
+  const { mascot, size = 160, animated = true, emotion: emotionProp, gaze } = props;
 
   // The Emotion Engine drives the image companion; an explicit `emotion` prop
   // (e.g. the unlock celebration) overrides it. Hook runs unconditionally.
@@ -71,6 +75,7 @@ export function MascotFigure(props: Props) {
         pose={state.pose}
         size={size}
         animated={animated}
+        gaze={gaze}
         worn={{ ...wornFrom(props.equippedOutfits), ...state.outfit }}
       />
     );

@@ -16,6 +16,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { MascotBuddy } from '@/components/ascnd/mascot-buddy';
 import { KoaStudio } from '@/components/ascnd/studio/koa-studio';
 import { PlantsCanvas } from '@/components/ascnd/studio/plants-live';
+import { useBugClock } from '@/components/ascnd/studio/bugs-live';
 import { StudioLive } from '@/components/ascnd/studio/studio-live';
 import { moonPhase } from '@/components/ascnd/studio/window';
 import { SCENE_BOTTOM, STAGE_MARK, STUDIO_SKINS, STUDIO_W } from '@/components/ascnd/studio/palette';
@@ -121,6 +122,16 @@ export function StageRenderer({
   const size = Math.round(HERO_W * k);
   const tired = mood === 'tired';
   const levelScale = Math.min(1 + (level - 1) * 0.012, 1.1);
+
+  /**
+   * The insects' clock, owned here because two things read it.
+   *
+   * The bee and the butterflies fly on it, and the character glances at
+   * whichever of them has landed. On a clock each they would agree for a
+   * minute and then have Koa staring at an empty shelf, so there is one and it
+   * belongs to whatever contains both of them — which is this file.
+   */
+  const bugs = useBugClock(animated);
 
   const nod = useSharedValue(0);
   const settle = useSharedValue(1);
@@ -228,6 +239,7 @@ export function StageRenderer({
               height={H}
               glow={STUDIO_SKINS[themeKey ?? 'default']?.glow}
               energy={energy}
+              bugs={bugs}
             />
           </View>
         ) : null}
@@ -261,6 +273,7 @@ export function StageRenderer({
               accent={accent}
               equippedOutfits={equippedOutfits}
               animated={animated}
+              gaze={bugs}
             />
           </Animated.View>
         </Pressable>

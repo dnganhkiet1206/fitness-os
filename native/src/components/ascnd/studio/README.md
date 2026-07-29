@@ -276,6 +276,56 @@ the beam's gradient reaches 0.62 rather than 0.58 for the same reason. **The
 landmark table's `lamp mouth` row is knowingly out of date because of it** —
 that is a deliberate change, not drift to be corrected.
 
+## Koa notices them
+
+```bash
+node tools/koa-studio/gaze.mjs <out.png>
+```
+
+When one of the insects lands, the character glances at it: the eyes go first,
+the head follows with a small roll toward it, and the open mouth closes into a
+pleased little smile. When the insect leaves, it all comes back. Three times in
+a 72-second cycle, for 1.4 to 2.3 seconds each.
+
+**One clock, two consumers.** `StageRenderer` owns it and hands the same shared
+value to the insects and to the figure. On a clock each they would agree for
+about a minute and then have Koa staring at an empty shelf. `perchAt(t)` in
+`bugs.tsx` returns whichever insect is sitting still, and `gazeAt(t)` in
+`koa-gaze.ts` turns that into a direction and a strength — no state, no timers,
+so the same `t` always gives the same look and it all runs on the UI thread.
+The strength is the insect's own `settle`, which already ramps 0 → 1 → 0 across
+a hold, so the glance eases in as it lands and out as it takes off for free.
+
+The travel is deliberately unequal: eyes 3.6 units, head 4.5 sideways and 5° of
+roll. An animal glances with its eyes and brings its head after, and that order
+is what reads as *noticing* rather than as turning to face something. The roll
+is most of the effect. `HEAD_TURN` is a shift rather than a yaw because the
+figure is flat and has no far side to bring round.
+
+The glance is composed as wrapper groups **around** `#HEADRIG` and the pupils
+rather than folded into their matrices, because `koa-scene.ts` is a generated
+export — a look composed on top of `koaBob` survives the next re-import and one
+folded into it would not. The mouth swap only applies to `mouthSmile` and
+`mouthGrin`; a koala mid-workout under `mouthBreath` does not stop to admire a
+butterfly.
+
+Two things the tool got wrong before it got them right, both worth knowing:
+
+- **The component drops ids** — `n.id` is a field on the node, not an attribute
+  — so the first run's `querySelector('#pupil_left')` matched nothing and it
+  cheerfully reported "correct all three times" having measured nothing at all.
+  A check that cannot fail is not a check.
+- **One pupil is the wrong probe.** A head that rolls left drops its left eye
+  and lifts its right one; that is what a roll *is*. Measuring `#pupil_left`
+  alone mixes the tilt into the vertical reading and called two of the three
+  landings wrong. Between the two eyes the roll cancels vertically and adds
+  horizontally, which is exactly the pair of numbers being asked about.
+
+The tool draws two crops per landing for the same reason: the wide shot is the
+only place you can see the character is looking at *where the insect actually
+is*, and at that scale a four-degree tilt is two pixels, so the head gets its
+own crop beside it.
+
 ## Definition comes from shadow, not from outlines
 
 Measuring each prop against the wall right behind it found three that had no

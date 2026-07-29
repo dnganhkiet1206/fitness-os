@@ -1,3 +1,5 @@
+import type { SharedValue } from 'react-native-reanimated';
+
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
@@ -21,6 +23,14 @@ export interface MascotBuddyProps {
   equippedOutfits?: Set<string>;
   /** false pauses the figure — the room passes screen focus down */
   animated?: boolean;
+  /**
+   * The room's insect clock, when the buddy is standing in the room.
+   *
+   * It is the Stage's rather than the figure's because the insects run off the
+   * same one: on two clocks Koa would be looking at where a butterfly used to
+   * be within about a minute. See `koa-gaze.ts`.
+   */
+  gaze?: SharedValue<number>;
 }
 
 export function MascotBuddy({
@@ -31,6 +41,7 @@ export function MascotBuddy({
   level = 1,
   equippedOutfits,
   animated = true,
+  gaze,
 }: MascotBuddyProps) {
   return (
     <MascotFigure
@@ -41,6 +52,7 @@ export function MascotBuddy({
       level={level}
       equippedOutfits={equippedOutfits}
       animated={animated}
+      gaze={gaze}
     />
   );
 }

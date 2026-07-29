@@ -6,7 +6,16 @@ import Animated, {
   useSharedValue,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { ClipPath, Defs, G, LinearGradient, RadialGradient, Stop, type GProps } from 'react-native-svg';
+import Svg, {
+  ClipPath,
+  Defs,
+  G,
+  LinearGradient,
+  Path,
+  RadialGradient,
+  Stop,
+  type GProps,
+} from 'react-native-svg';
 
 import {
   koaFlags,
@@ -38,6 +47,15 @@ import {
   SHADOW_GRADIENT,
   SHADOW_STOPS,
 } from '@/components/ascnd/koa/koa-light';
+import {
+  eyeMat,
+  headMat,
+  lookK,
+  SMILE,
+  SMILE_COLOUR,
+  SMILE_WIDTH,
+  SWAP_MOUTHS,
+} from '@/components/ascnd/koa/koa-gaze';
 import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
   KEYFRAMES,
@@ -281,6 +299,67 @@ function AnimGroup({
   );
 }
 
+/* ── the glance ───────────────────────────────────────────────────────── */
+
+/**
+ * Koa noticing an insect that has landed somewhere in the room.
+ *
+ * The four pieces below all read the **insects' own clock**, handed down from
+ * `StageRenderer`, and everything they do comes out of `koa-gaze.ts`. Nothing
+ * here holds state and nothing crosses to JS: the same `t` always gives the
+ * same look, so the character and the butterfly cannot drift apart the way
+ * they would on two clocks.
+ *
+ * They are wrappers rather than edits to the rig's own matrices because the
+ * rig is generated — `koa-scene.ts` is the design export — and a look composed
+ * on top of `koaBob` survives the next re-import, where a look folded into it
+ * would not.
+ *
+ * The cost is four extra worklets on the figure, awake for the whole 72s cycle
+ * even though the glance itself is on for about a fifteenth of it. They are
+ * small — `gazeAt` is three short loops — and gating them on `k` would need a
+ * JS round-trip per landing, which is the more expensive of the two.
+ */
+
+/** the head: a roll into the look about the neck, plus a small shift */
+function GazeHead({ gaze, children }: { gaze: SharedValue<number>; children: ReactNode }) {
+  const props = useAnimatedProps<{ matrix: number[] }>(() => ({ matrix: headMat(gaze.value) }));
+  return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
+}
+
+/** the pupils and their catchlights, which travel further than the head */
+function GazeEyes({ gaze, children }: { gaze: SharedValue<number>; children: ReactNode }) {
+  const props = useAnimatedProps<{ matrix: number[] }>(() => ({ matrix: eyeMat(gaze.value) }));
+  return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
+}
+
+/** the open mouth, on its way out */
+function GazeMouth({ gaze, children }: { gaze: SharedValue<number>; children: ReactNode }) {
+  const props = useAnimatedProps<{ opacity: number }>(() => ({ opacity: 1 - lookK(gaze.value) }));
+  return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
+}
+
+/** and the closed one, on its way in */
+function GazeSmile({ gaze }: { gaze: SharedValue<number> }) {
+  const props = useAnimatedProps<{ opacity: number }>(() => ({ opacity: lookK(gaze.value) }));
+  return (
+    <AnimatedG animatedProps={props}>
+      <Path d={SMILE} stroke={SMILE_COLOUR} strokeWidth={SMILE_WIDTH} strokeLinecap="round" fill="none" />
+    </AnimatedG>
+  );
+}
+
+/**
+ * The eyes move as one group, not two.
+ *
+ * `#pupil_left` and `#pupil_right` share a parent with the four catchlight
+ * circles that sit on them. Shifting the pupils alone leaves the highlights
+ * behind, which at this size reads as the eyes coming apart rather than as
+ * them moving — so the group is the unit, and it is found by its children
+ * because the export never gave it an id.
+ */
+const isEyeGroup = (n: Node) => !!n.kids && n.kids.some((k) => k.id === 'pupil_left');
+
 /* ── strings handed down by the logic layer ───────────────────────────── */
 
 function parseOps(css: string): Op[] {
@@ -338,18 +417,39 @@ function RenderNode({
   flags,
   clock,
   live,
+  gaze,
+  swapMouth,
 }: {
   n: Node;
   flags: Flags;
   clock: SharedValue<number>;
   /** false → draw the first frame as plain SVG, with no animated components */
   live: boolean;
+  /** the insects' clock, when there is one — see the glance, above */
+  gaze?: SharedValue<number>;
+  /** whether this pose's mouth is one the glance may close */
+  swapMouth: boolean;
 }) {
   if (n.if && !flags[n.if]) return null;
 
-  const kids = n.kids
-    ? n.kids.map((k, i) => <RenderNode key={i} n={k} flags={flags} clock={clock} live={live} />)
+  let kids = n.kids
+    ? n.kids.map((k, i) => (
+        <RenderNode
+          key={i}
+          n={k}
+          flags={flags}
+          clock={clock}
+          live={live}
+          gaze={gaze}
+          swapMouth={swapMouth}
+        />
+      ))
     : null;
+  // the pleased little smile goes inside `#FACE`, so it rides the head's own
+  // translate and everything the glance does to the rig above it
+  if (gaze && swapMouth && n.id === 'FACE' && kids) {
+    kids = [...kids, <GazeSmile key="gaze-smile" gaze={gaze} />];
+  }
 
   if (n.t === 'defs') return <Defs>{kids}</Defs>;
   if (n.t === 'clipPath') return <ClipPath id={String(n.id ?? '')}>{kids}</ClipPath>;
@@ -413,52 +513,70 @@ function RenderNode({
     <Fragment>{kids}</Fragment>
   );
 
-  if (anim && live) {
-    return (
-      <AnimGroup
-        clock={clock}
-        anim={anim}
-        origin={origin}
-        base={base}
-        over={over}
-        ownOpacity={ownOpacity}
-        gProps={gProps}>
-        {body}
-      </AnimGroup>
-    );
+  /**
+   * The layer as the export draws it, before the glance goes on top.
+   *
+   * A local rather than five returns, because the glance has to wrap whatever
+   * this node turned out to be — animated, frozen, transformed or bare — and
+   * repeating the wrap at each exit is how one of the four branches ends up
+   * without it.
+   */
+  const el: ReactNode = (() => {
+    if (anim && live) {
+      return (
+        <AnimGroup
+          clock={clock}
+          anim={anim}
+          origin={origin}
+          base={base}
+          over={over}
+          ownOpacity={ownOpacity}
+          gProps={gProps}>
+          {body}
+        </AnimGroup>
+      );
+    }
+    if (anim) {
+      // frozen: the clock never leaves 0, so every layer sits where it does at
+      // t=0 — inside its delay that is its own transform, outside it the 0%
+      // keyframe. A grid of thumbnails then costs nothing per frame.
+      const early = anim.delay > 0;
+      const ox = origin ? origin[0] : 0;
+      const oy = origin ? origin[1] : 0;
+      const m = mul(
+        opsMat(base, 0, 0),
+        early
+          ? opsMat(over, ox, oy)
+          : track?.tf?.length
+            ? sampleMat(track.tf, 0, anim.ease, ox, oy)
+            : IDENTITY,
+      );
+      const frozenOp: { opacity?: number } = track?.op?.length
+        ? { opacity: early ? ownOpacity : sampleOp(track.op, 0, anim.ease) }
+        : {};
+      return (
+        <G {...gProps} {...frozenOp} transform={`matrix(${m.join(' ')})`}>
+          {body}
+        </G>
+      );
+    }
+    const t = matrixTransform(base, origin);
+    if (t) return <G {...gProps} transform={t}>{body}</G>;
+    if (Object.keys(gProps).length > 0) return <G {...gProps}>{body}</G>;
+    // A group with no transform, no animation and no attributes draws exactly
+    // what its children draw. The export has ~20 of them per pose — every
+    // `<sc-if>` is one — and each would otherwise be a native view that
+    // costs mounting and layout to do nothing.
+    return <>{body}</>;
+  })();
+
+  if (!gaze) return el;
+  if (n.id === 'HEADRIG') return <GazeHead gaze={gaze}>{el}</GazeHead>;
+  if (isEyeGroup(n)) return <GazeEyes gaze={gaze}>{el}</GazeEyes>;
+  if (swapMouth && n.if && SWAP_MOUTHS.indexOf(n.if) >= 0) {
+    return <GazeMouth gaze={gaze}>{el}</GazeMouth>;
   }
-  if (anim) {
-    // frozen: the clock never leaves 0, so every layer sits where it does at
-    // t=0 — inside its delay that is its own transform, outside it the 0%
-    // keyframe. A grid of thumbnails then costs nothing per frame.
-    const early = anim.delay > 0;
-    const ox = origin ? origin[0] : 0;
-    const oy = origin ? origin[1] : 0;
-    const m = mul(
-      opsMat(base, 0, 0),
-      early
-        ? opsMat(over, ox, oy)
-        : track?.tf?.length
-          ? sampleMat(track.tf, 0, anim.ease, ox, oy)
-          : IDENTITY,
-    );
-    const frozenOp: { opacity?: number } = track?.op?.length
-      ? { opacity: early ? ownOpacity : sampleOp(track.op, 0, anim.ease) }
-      : {};
-    return (
-      <G {...gProps} {...frozenOp} transform={`matrix(${m.join(' ')})`}>
-        {body}
-      </G>
-    );
-  }
-  const t = matrixTransform(base, origin);
-  if (t) return <G {...gProps} transform={t}>{body}</G>;
-  if (Object.keys(gProps).length > 0) return <G {...gProps}>{body}</G>;
-  // A group with no transform, no animation and no attributes draws exactly
-  // what its children draw. The export has ~20 of them per pose — every
-  // `<sc-if>` is one — and each would otherwise be a native view that
-  // costs mounting and layout to do nothing.
-  return <>{body}</>;
+  return el;
 }
 
 /* ── the figure ───────────────────────────────────────────────────────── */
@@ -472,6 +590,14 @@ export interface KoaFigureProps {
   size?: number;
   /** freeze every loop — for static grids and pickers */
   animated?: boolean;
+  /**
+   * The insects' clock, if this figure is standing in the room with them.
+   *
+   * Given one, it glances at whichever of them is sitting still. Left out —
+   * every picker, grid and celebration — the character never looks away from
+   * the viewer, which is what those want anyway.
+   */
+  gaze?: SharedValue<number>;
 }
 
 export function KoaFigure({
@@ -480,6 +606,7 @@ export function KoaFigure({
   worn,
   size = 160,
   animated = true,
+  gaze,
 }: KoaFigureProps) {
   const height = size * KOA_ASPECT;
   // `worn` arrives as a fresh object on most renders, so identity is no use
@@ -537,9 +664,23 @@ export function KoaFigure({
   // uses, rebuilt only when the flags change
   const ramps = useMemo(() => rampsFor(flags), [flags]);
   const glows = useMemo(() => glowsFor(flags), [flags]);
+  // a frozen figure has no clock to glance on, so the glance goes with it
+  const look = animated ? gaze : undefined;
+  const swapMouth = SWAP_MOUTHS.some((f) => !!flags[f]);
   const tree = useMemo(
-    () => NODES.map((n, i) => <RenderNode key={i} n={n} flags={flags} clock={clock} live={animated} />),
-    [flags, clock, animated],
+    () =>
+      NODES.map((n, i) => (
+        <RenderNode
+          key={i}
+          n={n}
+          flags={flags}
+          clock={clock}
+          live={animated}
+          gaze={look}
+          swapMouth={swapMouth}
+        />
+      )),
+    [flags, clock, animated, look, swapMouth],
   );
 
   return (

@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { type SharedValue } from 'react-native-reanimated';
 import Svg from 'react-native-svg';
 
 import { FlyingBugs } from '@/components/ascnd/studio/bugs-live';
@@ -40,11 +41,14 @@ function StudioLiveInner({
   height,
   glow,
   energy,
+  bugs,
 }: {
   width: number;
   height: number;
   glow?: string;
   energy?: number;
+  /** the insects' clock, owned by `StageRenderer` so the mascot shares it */
+  bugs: SharedValue<number>;
 }) {
   const t = useLightClock();
   const sky = useSkyClock();
@@ -61,7 +65,7 @@ function StudioLiveInner({
       <DriftingMotes />
       {/* a bee and two butterflies, crossing now and then — the smallest
           things in the room, one animated group each. See bugs-live.tsx. */}
-      <FlyingBugs />
+      <FlyingBugs t={bugs} />
       <LiveStageGlow t={t} glow={glow} energy={energy} />
     </Svg>
   );
