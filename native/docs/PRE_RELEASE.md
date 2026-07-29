@@ -4,9 +4,13 @@ Written 2026-07-29 from a read of the real configuration, not from memory.
 Every claim below has a file and a line so the next person can re-check it
 in a minute rather than re-derive it in an hour.
 
-Nothing in this file has been fixed. It is a list of what to fix, and none
-of it should be changed without asking the user first (rule 12 of the
-mascot hand-off applies to the whole branch).
+**Status, 2026-07-29 — the code fixes are written; none of them are live.**
+§1, §2a, §2b, §2c, §2d and §2e have landed on this branch and are marked
+FIXED below. They change nothing in production until the functions are
+deployed and the migration applied — see "Deploying the fixes" at the end,
+which is the part that still needs doing. §3, §4 and §5 are untouched and
+need the user's decision first (rule 12 of the mascot hand-off applies to
+the whole branch).
 
 ---
 
@@ -30,9 +34,12 @@ functions need a new provider and a new key, and nothing else does.
 
 ---
 
-## 1. The auth gate on the five AI functions is weaker than it looks
+## 1. The auth gate on the five AI functions is weaker than it looks — FIXED
 
-**Severity: this one costs money.** Fix before any public build.
+**Severity: this one costs money.** Fixed in code; not live until deployed.
+
+Line numbers in this section describe the code **as it was**, so the
+reasoning can still be followed against `git show HEAD~1`.
 
 `supabase/config.toml` sets `verify_jwt = false` for all five functions, so
 the platform does not check the caller. That by itself is fine — Lovable's
@@ -64,30 +71,46 @@ anyway. Anyone holding the anon key can spend Lovable credits.
 And the anon key is public by design: it ships in the app binary and it is
 hard-coded as the fallback at `native/src/integrations/supabase/client.ts:11`.
 
-**The fix is one line per function** — require a real end user, not just a
-valid token:
+### What was done
+
+The gate now lives in one place — `supabase/functions/_shared/guard.ts` —
+and asks the two further questions:
 
 ```ts
-const userId = claimsData?.claims?.sub;
-if (authErr || !userId || claimsData.claims.role !== "authenticated") return 401;
+if (error || !claims?.sub || claims.role !== "authenticated") {
+  return json({ error: "Unauthorized" }, 401);
+}
 ```
 
-Two things worth doing at the same time:
+`sub` is what an anon key lacks; `role` is what separates a user token from
+a project one. All five functions now open with the same three lines:
 
-- `Access-Control-Allow-Origin: "*"` on all five (`ai-coach:5` and the
-  same block in the others). The native app does not need CORS at all;
-  the web app needs one origin. A wildcard means any page on the internet
-  can drive these endpoints from a logged-in user's browser.
-- There is no per-user rate limit in the functions. The gateway's own 429
-  is handled (`ai-coach:150`), but that is Lovable protecting Lovable, not
-  the project protecting its credits.
+```ts
+const caller = await requireUser(req);
+if (caller instanceof Response) return caller;
+const { userId, supabase } = caller;
+```
+
+Two notes on what did *not* change, and why:
+
+- **`verify_jwt = false` stays.** The functions read the header themselves
+  so they can forward the caller's token to PostgREST and keep RLS in
+  force inside the function. Turning the platform gate on would duplicate
+  `requireUser`, not replace it. The client is still built on the anon key
+  with the caller's token attached — never `service_role`.
+- **`Access-Control-Allow-Origin: "*"` stays**, for now. The native app
+  does not use CORS at all and the web app is dead, so there is no correct
+  origin to name yet. Narrow it when the web app's fate is decided; until
+  then the auth gate is what stands between a hostile page and the
+  gateway. Worth revisiting, not urgent.
 
 ---
 
-## 2. Nothing caps what the AI functions can spend
+## 2. Nothing caps what the AI functions can spend — FIXED
 
-**Severity: this is the one that can produce a bill overnight.** §1 is the
-open door; this is what is behind it.
+**Severity: this is the one that can produce a bill overnight.** §1 was the
+open door; this is what was behind it. All five parts are fixed in code and
+none are live until deployed. Line numbers describe the code as it was.
 
 ### 2a. No output cap anywhere
 
@@ -98,9 +121,11 @@ its own. `ai-coach` additionally sets `stream: true` (`ai-coach:143`) and
 returns `response.body` untouched (`ai-coach:166`), so it streams whatever
 comes.
 
-Add a ceiling to each of the five. Even a generous one — 1024 for the
-chat, a few hundred for the nudges — turns an unbounded worst case into a
-known one.
+**Fixed.** Each function declares its own `MAX_TOKENS` next to the reason
+for it and passes it to the gateway: 1024 for the chat, 1500 for the food
+scan's JSON, 1200 for the weekly review, 900 for meal suggestions, 700 for
+the nudges. Sized to what each reply actually is, so a ceiling being hit
+means something has gone wrong rather than a user being cut off.
 
 ### 2b. `ai-coach` is an open general-purpose LLM proxy
 
@@ -122,11 +147,12 @@ at `ai-coach:122-129` (never diagnose, never give medical advice) are not
 enforced against a crafted client. That is a liability question as much
 as a cost one.
 
-Minimum guards, all cheap:
-
-- cap the array (last ~20 messages) and each message's length
-- reject any role that is not `user` or `assistant`
-- cap the total characters forwarded
+**Fixed.** `sanitize()` in `ai-coach/index.ts` is now the only way a client
+message reaches the gateway. It keeps the last `MAX_MESSAGES` (20) turns,
+truncates each to `MAX_CHARS` (4000), and drops anything whose role is not
+`user` or `assistant` — so an injected second `system` message no longer
+exists by the time the array is spread. An empty result is a 400 rather
+than a request. `lang` is narrowed to `"en" | "vi"` in the same pass.
 
 ### 2c. The chat resends its whole history every turn
 
@@ -134,8 +160,15 @@ Minimum guards, all cheap:
 `:160` sends all of it. `loadConversation` (`:92-100`) reads the entire
 stored conversation with **no `limit`**. So turn *n* pays for all *n*
 turns, and the cost of one long conversation grows with the square of its
-length. Truncating to a window on the client and clamping again on the
-server fixes both this and part of 2b.
+length.
+
+**Fixed.** `SEND_WINDOW = 20` in `ai-coach.tsx`: the request now sends
+`newMessages.slice(-SEND_WINDOW)`. `loadConversation` takes
+`HISTORY_LIMIT = 60` newest-first and reverses, so opening an old
+conversation no longer drags all of it into the next request. The screen
+still shows what it loaded; only what travels is bounded. The server clamp
+in 2b is the one that matters — this saves the upload and is what a real
+user actually hits.
 
 ### 2d. `scan-food` takes an image of any size
 
@@ -148,15 +181,49 @@ The app itself is reasonable — `takePictureAsync({ base64: true, quality: 0.5 
 (`scan-food.tsx:68-70`) — but there is no resize, so a full-resolution
 phone photo still arrives as a couple of megabytes of base64 on every
 scan. And the server cannot rely on the app being the caller anyway.
-Cap the decoded size server-side, and downscale on the client before
-sending.
+
+**Fixed server-side.** `MAX_IMAGE_CHARS = 4_000_000` — about 4 MB of
+base64, a little under 3 MB of JPEG, comfortably above what the camera
+sends at `quality: 0.5`. Over it is a 413. `mode` is now checked against
+the three the function actually implements instead of being interpolated
+straight into the prompt, and `lang` is narrowed the same way as in
+`ai-coach`.
+
+**The client-side downscale is not done.** It needs
+`expo-image-manipulator`, which is not in `package.json`, and adding a
+dependency is the user's call. Worth doing — it would cut both the upload
+and the vision cost on every scan — but the server cap is what closes the
+hole, and that is in.
 
 ### 2e. No per-user rate limit
 
 The gateway's own 429 is handled (`ai-coach:150`), but that is Lovable
 protecting Lovable. Nothing here limits how often one user — or one
-script holding the anon key — may call. A counter keyed on the user id
-with a daily ceiling would do.
+script holding the anon key — may call.
+
+**Fixed, and this is the one part that needs a migration.**
+`supabase/migrations/20260729120000_ai_usage_quota.sql` adds
+`public.ai_usage` (a `user_id / day / kind` counter) and
+`public.claim_ai_call(p_kind)`, which takes one call off the day's
+allowance and returns false when it is spent. Each function calls it right
+after the auth gate.
+
+Three design points worth knowing before changing it:
+
+- **The ceilings live in the SQL function, not in its arguments** — 60 a
+  day for the chat, 40 scans, 30 meal suggestions, 30 nudge refreshes, 10
+  weekly reviews. Passing the limit in from the edge function would have
+  let anyone call the RPC directly with their own number. As written,
+  invoking it by hand only burns the caller's own quota.
+- **`ai_usage` has a SELECT policy and no write policy.** All writes go
+  through the `SECURITY DEFINER` function, so a client cannot reset its
+  own counter. `search_path` is pinned, as on `handle_new_user`.
+- **`claimCall` fails open if the RPC is missing.** An unapplied migration
+  must not take the AI offline, and the §1 gate is what stops the
+  anonymous case regardless. The consequence is that **the quota does
+  nothing until the migration is applied** — it will log
+  `claim_ai_call unavailable` and allow the call. Confirm it on the live
+  project, or this section is fixed on paper only.
 
 ---
 
@@ -320,9 +387,13 @@ cat supabase/config.toml
 cat native/src/lib/dev-flags.ts
 sed -n '1,20p' native/src/hooks/use-mascot-room.ts
 
-# no output cap, and no input validation (both should print nothing)
-grep -rn "max_tokens\|max_completion_tokens" supabase/functions/
-grep -rn "messages.slice\|messages.length" supabase/functions/ai-coach/
+# the guards are in place (each should print five, five, five)
+grep -rln "requireUser" supabase/functions/*/index.ts
+grep -rln "claimCall" supabase/functions/*/index.ts
+grep -rln "max_tokens" supabase/functions/*/index.ts
+
+# and the old weak gate is gone everywhere except the note explaining it
+grep -rn "getClaims" supabase/functions/*/index.ts
 
 # RLS: the two lists must match, and the third must be empty
 grep -ho "CREATE TABLE[^(]*" supabase/migrations/*.sql | sed 's/.*public\.//;s/ *$//' | sort -u
@@ -332,15 +403,54 @@ grep -rn "USING (true)\|WITH CHECK (true)" supabase/migrations/
 
 ---
 
-## Suggested order, if the user asks for fixes
+## Deploying the fixes — none of §1 or §2 is live until this is done
 
-1. §1 — the auth gate. One line per function, no behaviour change for
-   real users.
-2. §2a — `max_tokens` on all five. One line per function.
-3. §2b — validate and clamp `messages`. A dozen lines in `ai-coach`.
-4. §2d — a byte cap on `image_base64`, and a client-side downscale.
-5. §2e — a per-user daily counter.
-6. §4 — `TEST_UNLOCK_ALL`, once the economy migration is confirmed live.
-7. §3 — move the economy server-side, before any paid tier.
+The code is on the branch. The running project still has the old
+functions, so **the hole in §1 is open until these are pushed**:
 
-§5 and the `.env` habit need a decision from the user rather than code.
+```bash
+supabase link --project-ref drqgonxrtmomgrftelih     # once
+supabase db push                                     # applies 20260729120000_ai_usage_quota
+supabase functions deploy ai-coach ai-meal-suggest ai-smart-nudges ai-weekly-review scan-food
+```
+
+`db push` will also try to apply `20260718120000_mascot_economy` if that
+has never been applied — see §4, and decide there first.
+
+Order matters slightly: deploy the migration before the functions, so
+quota is enforced from the first request rather than failing open for a
+window.
+
+Then check it actually took, from a signed-out shell — this used to
+return a token stream and must now return 401:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -X POST https://drqgonxrtmomgrftelih.supabase.co/functions/v1/ai-coach \
+  -H "Authorization: Bearer $ANON_KEY" -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"hi"}]}'
+```
+
+And confirm a signed-in user still gets an answer, in the app, on all
+five features — the gate is the kind of change that is silent when it
+works and total when it does not.
+
+---
+
+## What is left
+
+1. **Deploy** — the block above. Nothing in §1 or §2 protects anything
+   until then.
+2. **§4 `TEST_UNLOCK_ALL`**, once the economy migration is confirmed on
+   the live project. Needs the user's go-ahead on what happens to items
+   bought while the flag was on.
+3. **§3 the economy server-side**, before any paid tier. Design work, not
+   a patch.
+4. **§5 `medal` / `belt`** — art, or remove and refund. The user's call.
+5. **§2d client downscale** — needs `expo-image-manipulator` added.
+6. **§6 smaller things** — bucket limits, `.env` in git, the hard-coded
+   URL in `ai-coach.tsx`.
+
+Verified on the branch: `npx tsc --noEmit` in `native/` is clean. ESLint
+could not be run here — the root config wants `@eslint/js`, which the
+install churn described in the mascot hand-off keeps removing.

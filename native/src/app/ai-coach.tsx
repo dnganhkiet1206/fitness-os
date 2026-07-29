@@ -38,6 +38,19 @@ import { supabase } from '@/integrations/supabase/client';
 const CHAT_URL = 'https://drqgonxrtmomgrftelih.supabase.co/functions/v1/ai-coach';
 const ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
 
+/**
+ * How many turns travel with each request.
+ *
+ * Every message costs on every turn it is present for, so sending the whole
+ * conversation each time makes one long chat cost the square of its length.
+ * Twenty turns is more context than a coaching question needs, and it is the
+ * same ceiling the edge function enforces — this only saves the upload.
+ */
+const SEND_WINDOW = 20;
+
+/** How much of a stored conversation is reloaded when it is opened. */
+const HISTORY_LIMIT = 60;
+
 interface Msg {
   role: 'user' | 'assistant';
   content: string;
@@ -90,15 +103,20 @@ export default function AiCoachScreen() {
   const loadConversation = async (id: string) => {
     Haptics.selectionAsync();
     setShowHistory(false);
+    // Newest first with a limit, then reversed — an old conversation could
+    // otherwise be reloaded whole, and every message of it would ride along
+    // on the next request.
     const { data } = await supabase
       .from('ai_messages')
       .select('role, content')
       .eq('conversation_id', id)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: false })
+      .limit(HISTORY_LIMIT);
     convoIdRef.current = id;
     setMessages(
       (data ?? [])
         .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .reverse()
         .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     );
     scrollToEnd();
@@ -157,7 +175,7 @@ export default function AiCoachScreen() {
           Authorization: `Bearer ${session?.access_token}`,
           apikey: ANON_KEY,
         },
-        body: JSON.stringify({ messages: newMessages, lang }),
+        body: JSON.stringify({ messages: newMessages.slice(-SEND_WINDOW), lang }),
       });
 
       if (!resp.ok || !resp.body) {

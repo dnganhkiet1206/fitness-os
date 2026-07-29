@@ -1,10 +1,28 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import {
+  claimCall,
+  corsHeaders,
+  json,
+  quotaExceeded,
+  requireUser,
+} from "../_shared/guard.ts";
+
+/** Output ceiling — the reply is a small JSON object, never prose. */
+const MAX_TOKENS = 1500;
+
+/**
+ * Largest image we will pay to look at, as base64 characters — about 4 MB of
+ * base64, so a little under 3 MB of JPEG.
+ *
+ * Vision cost scales with the image, and the size used to be unchecked: only
+ * "is it non-empty". The app sends `quality: 0.5` from the camera without a
+ * resize, which is comfortably inside this; a caller who is not the app is
+ * the reason the limit exists.
+ */
+const MAX_IMAGE_CHARS = 4_000_000;
+
+const MODES = new Set(["food", "barcode", "label"]);
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -12,38 +30,20 @@ serve(async (req) => {
   }
 
   try {
-    // --- Authentication check ---
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const caller = await requireUser(req);
+    if (caller instanceof Response) return caller;
+    const { supabase } = caller;
 
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    if (!(await claimCall(supabase, "scan-food"))) return quotaExceeded();
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
-    if (authError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    // --- End authentication check ---
+    const body = await req.json();
+    const image_base64 = typeof body?.image_base64 === "string" ? body.image_base64 : "";
+    const lang = body?.lang === "en" ? "en" : "vi";
+    const mode = MODES.has(body?.mode) ? (body.mode as string) : "food";
 
-    const { image_base64, lang, mode } = await req.json();
-    if (!image_base64) {
-      return new Response(JSON.stringify({ error: "No image provided" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!image_base64) return json({ error: "No image provided" }, 400);
+    if (image_base64.length > MAX_IMAGE_CHARS) {
+      return json({ error: "Ảnh quá lớn. Vui lòng chụp lại." }, 413);
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -203,6 +203,7 @@ Additional guidelines:
             type: "function",
             function: { name: "analyze_food" },
           },
+          max_tokens: MAX_TOKENS,
         }),
       }
     );
