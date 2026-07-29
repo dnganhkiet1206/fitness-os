@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import Animated, {
   cancelAnimation,
   Easing,
+  interpolateColor,
   useAnimatedProps,
   useSharedValue,
   withRepeat,
@@ -11,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Circle, ClipPath, Defs, G, Line, Rect, type CircleProps, type GProps } from 'react-native-svg';
 
+import { Cloud, cloudAt, DRIFTS, Rain, RAIN_SPACING, type Drift } from '@/components/ascnd/studio/clouds';
 import { C } from '@/components/ascnd/studio/palette';
 import { GLASS, MULLIONS, STAR_POINTS } from '@/components/ascnd/studio/window';
 
@@ -91,6 +93,7 @@ function Star({ x, y, r, n, t }: { x: number; y: number; r: number; n: number; t
  * are drawn again on top so they occlude properly.
  */
 export function LiveSky({ t }: { t: SharedValue<number> }) {
+  const { cover, wet } = useWeather();
   return (
     <>
       <Defs>
@@ -103,6 +106,11 @@ export function LiveSky({ t }: { t: SharedValue<number> }) {
           <Star key={i} x={x} y={y} r={r} n={BLINK[i % BLINK.length]} t={t} />
         ))}
         <ShootingStar t={t} />
+        {/* the weather, over the stars so a cloud covers them */}
+        {DRIFTS.map((d, i) => (
+          <DriftingCloud key={i} d={d} t={t} cover={cover} wet={wet} />
+        ))}
+        <FallingRain t={t} wet={wet} />
       </G>
       {MULLIONS.map(([x, y, w, h], i) => (
         <Rect key={i} x={x} y={y} width={w} height={h} fill={C.primary} />
@@ -142,6 +150,104 @@ function ShootingStar({ t }: { t: SharedValue<number> }) {
   return (
     <AnimatedG animatedProps={props}>
       <Line x1={0} y1={0} x2={-14} y2={-7} stroke={C.white} strokeWidth={1.2} strokeLinecap="round" />
+    </AnimatedG>
+  );
+}
+
+/* ── the weather ──────────────────────────────────────────────────────── */
+
+/**
+ * The sky changes, and it is not a clock.
+ *
+ * Clouds drifting is motion; the weather turning is an *event*, once every
+ * half-minute or so, and driving it from a running clock would mean a fourth
+ * invalidation source ticking at 60fps to change something that changes twice
+ * a minute. So it is picked in JS and eased across with `withTiming`: nothing
+ * per frame while the weather holds, one short transition when it turns.
+ *
+ * `cover` is how much sky is covered, `wet` whether it is raining. Every cloud
+ * reads both — the second is what makes a rain cloud a slightly different
+ * colour from a fair-weather one, which is the whole ask.
+ */
+const SKIES: { cover: number; wet: number; weight: number }[] = [
+  { cover: 0, wet: 0, weight: 3 },     // clear
+  { cover: 0.45, wet: 0, weight: 4 },  // a few
+  { cover: 0.85, wet: 0, weight: 2 },  // overcast
+  { cover: 1, wet: 1, weight: 1.6 },   // rain
+];
+/** how long a sky holds before it is re-rolled, and how long the turn takes */
+const HOLD = 31000;
+const TURN = 7000;
+
+function useWeather() {
+  const cover = useSharedValue(0.45);
+  const wet = useSharedValue(0);
+  useEffect(() => {
+    const roll = () => {
+      const total = SKIES.reduce((n, s) => n + s.weight, 0);
+      let pick = Math.random() * total;
+      let sky = SKIES[0];
+      for (const s of SKIES) {
+        pick -= s.weight;
+        if (pick <= 0) {
+          sky = s;
+          break;
+        }
+      }
+      cover.value = withTiming(sky.cover, { duration: TURN, easing: Easing.inOut(Easing.quad) });
+      wet.value = withTiming(sky.wet, { duration: TURN, easing: Easing.inOut(Easing.quad) });
+    };
+    const id = setInterval(roll, HOLD);
+    return () => clearInterval(id);
+  }, [cover, wet]);
+  return { cover, wet };
+}
+
+/**
+ * One cloud: position, how solid it is, and what colour.
+ *
+ * The colour is on the group and the shapes underneath carry no fill of their
+ * own, so a rain cloud is the same five circles in a different paint rather
+ * than a second set of them fading in.
+ */
+function DriftingCloud({
+  d,
+  t,
+  cover,
+  wet,
+}: {
+  d: Drift;
+  t: SharedValue<number>;
+  cover: SharedValue<number>;
+  wet: SharedValue<number>;
+}) {
+  const props = useAnimatedProps<{ matrix: number[]; opacity: number; fill: string }>(() => {
+    const c = cloudAt(d, t.value, cover.value);
+    return { ...c, fill: interpolateColor(wet.value, [0, 1], [C.soft, C.accent]) };
+  });
+  return (
+    <AnimatedG animatedProps={props}>
+      <Cloud w={d.w} />
+    </AnimatedG>
+  );
+}
+
+/**
+ * The rain, on the sky's own clock.
+ *
+ * Rain falls in well under a second and the sky clock is 45, so the fall is
+ * `t · 62` — sixty-two loops of one drop spacing per cycle, about three
+ * quarters of a second each. It needs no clock of its own for the same reason
+ * the cloud drift does not: a multiple of a running one is free.
+ */
+function FallingRain({ t, wet }: { t: SharedValue<number>; wet: SharedValue<number> }) {
+  const props = useAnimatedProps<{ matrix: number[]; opacity: number }>(() => ({
+    matrix: [1, 0, 0, 1, 0, ((t.value * 62) % 1) * RAIN_SPACING],
+    opacity: wet.value * 0.5,
+  }));
+  return (
+    <AnimatedG animatedProps={props} stroke={C.soft}>
+      <Rain />
     </AnimatedG>
   );
 }

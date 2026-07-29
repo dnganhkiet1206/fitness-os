@@ -132,6 +132,50 @@ obeys the same three constraints:
 the overlay is drawing them, so nothing is drawn twice. The beam is drawn
 there either way — it is far too large an area to animate.
 
+## The weather in the window
+
+```bash
+node tools/koa-studio/weather.mjs <out.png>
+```
+
+Clear sky, a few clouds, overcast, and rain — and the clouds are a slightly
+different colour when it is raining.
+
+**A weather change is an event, not a clock.** Clouds drifting is motion;
+the sky turning happens twice a minute, and driving it from a running clock
+would mean a fourth invalidation source ticking at 60fps to change something
+that hardly changes. So it is rolled in JS on a 31-second interval and eased
+across with `withTiming` over seven seconds: nothing per frame while the
+weather holds, one short transition when it turns.
+
+Nothing else needed a clock either. The drift is `t · 0.42` on the sky's own
+45s and the rain is `t · 62` on the same one, which is a fall of about
+three-quarters of a second. **A multiple of a clock you already have is free.**
+
+| sky | clouds | weight |
+|---|---|---|
+| clear | 0 | 3 |
+| a few | 2 | 4 |
+| overcast | 3 | 2 |
+| rain | 3 | 1.6 |
+
+"A few" and "overcast" are the *same three clouds* at different thresholds,
+not three more of them: each cloud has a cover it starts to appear at and
+fades in over a quarter above it, so the sky thickens rather than switching
+on.
+
+Two things are worth keeping:
+
+- **The colour is on the group and the shapes carry no fill.** That is what
+  lets a rain cloud be the same five circles in a different paint —
+  `interpolateColor` between `soft` and `accent`, 76% lightness down to 69% —
+  rather than a second set of them fading in underneath.
+- **The rain is one animated group.** Every drop is in it and the group slides
+  down by exactly one drop spacing per loop, with a row stacked above the
+  glass so the one that leaves the bottom is replaced as it goes. Drop lengths
+  vary by column; identical lengths read as hatching, which is what the first
+  pass drew.
+
 ## The bee and the butterflies
 
 ```bash
