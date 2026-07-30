@@ -71,10 +71,10 @@ export const SHOTS = {
   },
   /** the whole dressing room, wardrobe and all */
   wardrobe: {
-    x: ROOM_W - 44,
-    y: SCENE_H - 330,
-    w: ANNEX_W + 44,
-    h: 330,
+    x: ROOM_W - 16,
+    y: 138,
+    w: ANNEX_W + 16,
+    h: 268,
   },
 } satisfies Record<string, Shot>;
 

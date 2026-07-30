@@ -27,7 +27,16 @@ import { C, SCENE_BOTTOM, STAGE_MARK, STUDIO_H, STUDIO_W } from '@/components/as
  * down the floor — which is a floor lit from below. It is `edge` now, and
  * what makes the ground bright is the lamp's pool and nothing else.
  */
-const HORIZON = 360;
+/**
+ * Where the wall meets the floor.
+ *
+ * Exported because the shop's dressing annex is drawn *beside* this room in the
+ * same scene and has to share the line — a floor that steps by even a few units
+ * at the join is the one thing that would give away that the two halves are two
+ * drawings. It was 300 in the first version of the annex, guessed rather than
+ * imported, and the seam was visible in the first render.
+ */
+export const HORIZON = 360;
 
 export function FloorPlane() {
   return (

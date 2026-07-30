@@ -86,13 +86,84 @@ export function KoaStudio({
    */
   layer?: 'back' | 'front';
 }) {
-  const s = STUDIO_SKINS[skin] ?? STUDIO_SKINS.default;
   return (
     <Svg
       width={width}
       height={height}
       viewBox={`0 0 ${STUDIO_W} ${STUDIO_H}`}
       preserveAspectRatio="xMidYMin slice">
+      <StudioContent
+        streak={streak}
+        skin={skin}
+        energy={energy}
+        label={label}
+        moonPhase={moonPhase}
+        live={live}
+        layer={layer}
+      />
+    </Svg>
+  );
+}
+
+/**
+ * The room without its canvas.
+ *
+ * Split out so the shop can put the whole studio *inside* a camera group — a
+ * `<Svg>` cannot be transformed, and the shop's three shots are one animated
+ * matrix on a group that has to contain this. `KoaStudio` is unchanged as far
+ * as everything else is concerned: it is this, in an `<Svg>`.
+ *
+ * Both must stay plain functions. `preview.mjs` bundles them with esbuild and
+ * calls them directly, with no React runtime.
+ */
+export function StudioContent({
+  streak,
+  skin = 'default',
+  energy = 0.5,
+  label,
+  moonPhase,
+  live = false,
+  layer,
+}: {
+  /** days lit on the wall card */
+  streak?: number;
+  /** a stage unlock from the shop — shifts the wall and the warm colour */
+  skin?: string;
+  /** 0..1 — how much light the room gives back today */
+  energy?: number;
+  /** 0..1 through the lunar cycle — `moonPhase()` in `window.tsx` */
+  moonPhase?: number;
+  /**
+   * The companion's name, set into the podium's front face rather than shown
+   * as the screen's header title — see `stage-label.tsx`.
+   */
+  label?: string;
+  /**
+   * True when `StudioLive` is drawing the room's moving parts on its own
+   * canvas above this one — see `studio-live.tsx`. The motes and the stage
+   * glow are then left out here so they are not drawn twice. The beam stays
+   * either way: it is far too large an area to animate.
+   *
+   * Off by default, so a still of the room, and `preview.mjs`, get the whole
+   * scene in one canvas exactly as before.
+   */
+  live?: boolean;
+  /**
+   * Which half of the room to draw, when the plants are being drawn on a
+   * canvas of their own between them — `StageRenderer` stacks
+   * `back` → plants → `front`.
+   *
+   * Leave it off and the whole scene comes out in one canvas, which is what
+   * a still and `preview.mjs` want. The split exists because the plants sway
+   * and anything that moves needs its own canvas, but they also have to stay
+   * *under* the vignette, which takes about a third out of them where they
+   * stand. See `plants-live.tsx`.
+   */
+  layer?: 'back' | 'front';
+}) {
+  const s = STUDIO_SKINS[skin] ?? STUDIO_SKINS.default;
+  return (
+    <>
       {layer !== 'front' ? (
         <>
           <Background wall={s.wall} />
@@ -131,6 +202,6 @@ export function KoaStudio({
           {label ? <StageLabel label={label} glow={s.glow} /> : null}
         </>
       ) : null}
-    </Svg>
+    </>
   );
 }

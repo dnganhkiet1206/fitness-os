@@ -57,7 +57,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { MascotScene } from '@/components/ascnd/mascot-scene';
 import { RankJourney } from '@/components/ascnd/rank-journey';
-import { WardrobeScene } from '@/components/ascnd/shop/wardrobe-scene';
+import { ShopScene } from '@/components/ascnd/shop/shop-scene';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -232,7 +232,7 @@ export default function MascotRoomScreen() {
   const [flex, setFlex] = useState(0);
   const [burst, setBurst] = useState({ id: 0, amount: 0 });
   const [shopOpen, setShopOpen] = useState(false);
-  const [shopTab, setShopTab] = useState<'outfit' | 'stage'>('outfit');
+  const [shopTab, setShopTab] = useState<'outfit' | 'stage' | 'closet'>('outfit');
   // The selected category under the outfit tab ('all' shows everything).
   const [shopCat, setShopCat] = useState<ShopCategory | 'all'>('all');
   const [collectionsOpen, setCollectionsOpen] = useState(false);
@@ -425,8 +425,18 @@ export default function MascotRoomScreen() {
   // seasonal item shows under both.
   const inCategory = (it: ShopItem) =>
     shopCat === 'all' || (shopCat === 'special' ? !!it.special : it.category === shopCat);
-  const shopItems = SHOP_ITEMS.filter(
-    (it) => it.type === shopTab && (shopTab !== 'outfit' || inCategory(it)),
+  /**
+   * The closet is the shop's own grid, filtered to what has been bought.
+   *
+   * Deliberately the same list, the same categories and the same cards — a
+   * wardrobe that presents owned things differently from the way they were sold
+   * makes you learn the catalogue twice. The only difference is that nothing in
+   * it has a price on it, which `ShopGrid` already handles by owning state.
+   */
+  const shopItems = SHOP_ITEMS.filter((it) =>
+    shopTab === 'closet'
+      ? it.type === 'outfit' && owned.has(it.key) && inCategory(it)
+      : it.type === shopTab && (shopTab !== 'outfit' || inCategory(it)),
   ).sort((a, b) => RARITY[a.rarity].order - RARITY[b.rarity].order || a.price - b.price);
 
   // Sets that are complete and not yet claimed — the badge on the collections door
@@ -832,6 +842,7 @@ export default function MascotRoomScreen() {
                 [
                   ['stage', i18n.nRoomStageSkins],
                   ['outfit', i18n.nRoomOutfits],
+                  ['closet', i18n.nRoomCloset],
                 ] as const
               ).map(([key, label]) => (
                 <Pressable
@@ -852,19 +863,24 @@ export default function MascotRoomScreen() {
                 character and the cabinet above the catalogue, and that split is
                 the reason it works: the top half says *this is you*, the bottom
                 half is a list. See `shop/wardrobe-scene.tsx`. */}
-            {shopTab === 'outfit' ? (
-              <View style={styles.shopStage}>
-                <WardrobeScene
-                  mascot={mascot}
-                  size={sheetW}
-                  level={level}
-                  equipped={equippedOutfits}
-                  animated={false}
-                />
-              </View>
-            ) : null}
+            {/* One room, three shots. The tabs do not swap screens — the
+                camera moves: Sân khấu pushes in on the podium, Trang phục comes
+                down to Koa standing on it, Tủ đồ pulls back across the dressing
+                room. See `shop/shop-camera.ts`. */}
+            <View style={styles.shopStage}>
+              <ShopScene
+                shot={shopTab === 'stage' ? 'stage' : shopTab === 'closet' ? 'wardrobe' : 'shop'}
+                mascot={mascot}
+                width={sheetW}
+                height={Math.round(sheetW * 0.82)}
+                level={level}
+                equipped={equippedOutfits}
+                streak={streak}
+                energy={energyCount / ENERGY_SIGNALS.length}
+              />
+            </View>
 
-            {shopTab === 'outfit' ? (
+            {shopTab !== 'stage' ? (
               <CategoryRow
                 current={shopCat}
                 onPick={(c) => {
