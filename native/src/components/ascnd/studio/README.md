@@ -273,12 +273,25 @@ KoaFigure` as `running={!scrolling}`. Changing it does **not** rebuild the
 figure's element tree — that `useMemo` does not depend on it — it only flips
 `frameCb.setActive`, which is the whole point.
 
-The studio's own live layers (sky, motes, lamp, bugs) keep running during a
-scroll. They are small canvases now, so their per-frame cost is minor, and
-their clocks are `withRepeat` loops that cannot pause in place without a phase
-jump. If scroll is ever still not smooth enough, converting those to the
-figure's accumulator clock is the next lever — but it is a bigger change, and
-the buddy was the large uncovered cost.
+The small live layers — sky, motes, lamp, stage glow, plants — keep running
+during a scroll. Each is a few percent of the screen, so redrawing it while
+the ScrollView translates it is cheap, and their `withRepeat` clocks cannot
+pause in place without a phase jump, so leaving them is the better trade.
+
+**The insects are the exception, because their canvas is the whole room.**
+`BUGS = ROOM` in `live-regions.ts` — the bee and butterflies cross everything,
+so that one live layer's redraw is screen-sized, and when an insect happens to
+be flying during a scroll it was the last thing still stuttering. `StudioLive`
+now takes `scrolling` and drops the whole insect layer for the duration; the
+shared bug clock keeps ticking, so on release the insects are back at their
+true positions with no jump (a mid-flight one can reappear at once, which is a
+far smaller thing than a room-sized redraw per scrolled frame). This is why
+the jank was intermittent — it only showed on the ~third of scrolls that
+caught an insect mid-crossing.
+
+Converting the small clocks to the figure's accumulator clock, to pause them
+in place too, is still the next lever if it is ever wanted — but it is a bigger
+change and their cost during a scroll is already small.
 
 ## The weather in the window
 

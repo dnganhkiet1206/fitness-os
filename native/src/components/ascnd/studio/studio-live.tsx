@@ -83,12 +83,15 @@ function StudioLiveInner({
   glow,
   energy,
   bugs,
+  scrolling,
 }: {
   width: number;
   glow?: string;
   energy?: number;
   /** the insects' clock, owned by `StageRenderer` so the mascot shares it */
   bugs: SharedValue<number>;
+  /** the page is mid-scroll — see the insect note below */
+  scrolling?: boolean;
 }) {
   const t = useLightClock();
   const sky = useSkyClock();
@@ -104,12 +107,19 @@ function StudioLiveInner({
         <LampPulse t={t} glow={glow} />
         <DriftingMotes />
       </LiveLayer>
-      {/* a bee and two butterflies. They cross the whole room, so this canvas
-          is the room — and they are unmounted while they are away, which is
-          where the saving comes from instead. See bugs-live.tsx. */}
-      <LiveLayer r={BUGS} k={k}>
-        <FlyingBugs t={bugs} />
-      </LiveLayer>
+      {/* A bee and two butterflies. Their canvas is the whole room, because
+          that is what their routes cross — so it is the one live layer whose
+          redraw is screen-sized, and the one that costs during a scroll. While
+          the page is scrolling the layer comes out entirely; the shared clock
+          keeps running, so on release the insects are back at their true
+          positions with no jump. The small canvases above stay — their redraw
+          is a few percent of the screen and not worth the seam. See
+          bugs-live.tsx. */}
+      {scrolling ? null : (
+        <LiveLayer r={BUGS} k={k}>
+          <FlyingBugs t={bugs} />
+        </LiveLayer>
+      )}
       <LiveLayer r={STAGE} k={k}>
         <LiveStageGlow t={t} glow={glow} energy={energy} />
       </LiveLayer>

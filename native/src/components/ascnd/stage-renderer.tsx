@@ -241,6 +241,7 @@ export function StageRenderer({
               glow={STUDIO_SKINS[themeKey ?? 'default']?.glow}
               energy={energy}
               bugs={bugs}
+              scrolling={scrolling}
             />
           </View>
         ) : null}
