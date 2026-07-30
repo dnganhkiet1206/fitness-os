@@ -144,13 +144,13 @@ const RANK_TIER: Record<string, string> = {
 };
 
 /**
- * How far past the stage's bottom edge the room keeps animating, in points.
+ * How far past the stage's bottom edge it still counts as on screen, in points.
  *
- * The room's clocks restart from zero when it comes back, so they must be
- * running before any of it is visible — otherwise the lamp's glow and the
- * plants' lean would snap to their phase-zero values in view. A whole
- * scroll-event interval's worth of travel is more than enough: at 64ms
- * between events even a hard flick covers well under this.
+ * The mount state is decided at rest from the final offset, and this margin
+ * keeps the room mounted for a little past its own bottom, so settling in a
+ * slight overscroll — or just below the fold — does not unmount and then
+ * remount it. The room's clocks restart from zero on remount, and this keeps
+ * that restart safely out of view.
  */
 const STAGE_KEEP_ALIVE = 120;
 
@@ -216,26 +216,22 @@ export default function MascotRoomScreen() {
   const [buyingKey, setBuyingKey] = useState<string | null>(null);
 
   /**
-   * Whether the stage is still on screen.
+   * Whether the stage is on screen, so the room can unmount once it is not —
+   * a long stretch spent reading the quests below should not keep the room
+   * animating out of sight, which is where the original heat came from.
    *
-   * The room is four canvases and about fifteen animated nodes, and
-   * `react-native-svg` re-rasterises a whole `<Svg>` when any child prop
-   * changes — so while its clocks run, a full-width layer is redrawn sixty
-   * times a second. This page is long: the stage is only the top ~440pt of
-   * it, and everything below (quests, challenges, the level card) is where a
-   * user actually spends their time. Without this the room went on drawing
-   * itself at full rate the whole while, scrolled out of sight, which is
-   * where the heat came from — and it was being redrawn *while the
-   * ScrollView translated it*, which is why this page dropped frames on
-   * scroll when others do not.
-   *
-   * Nothing is lost by stopping: every clock restarts from zero when the
-   * stage comes back, and there is no visible jump because the switch
-   * happens with the stage off screen. The margin below is what guarantees
-   * that — the clocks are running again before the first pixel returns.
+   * **This is only ever changed once a scroll has settled, never mid-scroll.**
+   * The room is already frozen for the whole of a scroll (`scrollPause`), so
+   * keeping it mounted through a flick costs nothing — and unmounting it *while*
+   * the flick is in flight tears down four canvases and their frame callbacks
+   * in the middle of the gesture, which a fast flick felt as a catch. So the
+   * flick just carries the frozen room along, and the mount state is
+   * re-evaluated from the resting position when it stops.
    */
   const [stageBottom, setStageBottom] = useState(0);
   const [stageOnScreen, setStageOnScreen] = useState(true);
+  /** last scroll offset, read at rest to decide the mount state — never renders */
+  const lastY = useRef(0);
 
   /**
    * Whether the page is being scrolled right now — a **shared value**, not React
@@ -263,6 +259,12 @@ export default function MascotRoomScreen() {
     // longer than the 64ms scroll-event throttle, so momentum keeps it alive
     scrollIdle.current = setTimeout(() => {
       scrollPause.value = false;
+      // Only now, at rest, decide whether the room stays mounted — never
+      // mid-flick. React ignores a set to the current value, so this is free
+      // when nothing changed.
+      if (stageBottom > 0) {
+        setStageOnScreen(lastY.current < stageBottom + STAGE_KEEP_ALIVE);
+      }
     }, 120);
   };
 
@@ -276,10 +278,8 @@ export default function MascotRoomScreen() {
   };
 
   const onPageScroll = (ev: NativeSyntheticEvent<NativeScrollEvent>) => {
+    lastY.current = ev.nativeEvent.contentOffset.y;
     markScrolling();
-    if (stageBottom <= 0) return;
-    const onScreen = ev.nativeEvent.contentOffset.y < stageBottom + STAGE_KEEP_ALIVE;
-    if (onScreen !== stageOnScreen) setStageOnScreen(onScreen);
   };
   const [devEmo, setDevEmo] = useState<string | null>(null); // dev-only emotion override
   const welcomeTried = useRef(false);

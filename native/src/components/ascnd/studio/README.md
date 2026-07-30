@@ -217,16 +217,21 @@ the ScrollView translated it*, which is the scroll cost, and it is why this
 page in particular dropped frames.
 
 `mascot-room.tsx` measures the stage's bottom edge with `onLayout`, watches
-the scroll offset through `Screen`'s forwarded `onScroll`, and stops the
-clocks once the stage is past it. `STAGE_KEEP_ALIVE` (120pt) is the margin:
-the clocks restart from zero, so they have to be running *before* any of the
-room is visible or the lamp and the plants would snap to their phase-zero
-values in view. `scrollEventThrottle` is 64ms rather than 16 — this only
-decides whether the room is on screen at all, and a handler that runs every
-frame of a scroll is exactly the sort of thing it is meant to save.
+the scroll offset through `Screen`'s forwarded `onScroll`, and **unmounts the
+room once the stage is off screen — but only once the scroll has settled**,
+never mid-flick. That last part matters: the room is already frozen for the
+whole of a scroll (the shared `scrollPause` below), so keeping it mounted
+through a flick is free, and tearing four canvases and their frame callbacks
+down *during* the gesture is a catch a fast flick can feel. So the flick
+carries the frozen room along and the mount state is re-decided from the
+resting offset. `STAGE_KEEP_ALIVE` (120pt) is the margin that keeps a slight
+overscroll from unmounting and remounting; the clocks restart from zero on
+remount, which this keeps out of view. `scrollEventThrottle` is 64ms rather
+than 16 — the handler only records the offset and pokes the pause, neither of
+which needs every frame.
 
 **Any animated surface at the top of a long page has this bug by default.**
-Focus is not visibility.
+Focus is not visibility — and visibility is decided at rest, not mid-scroll.
 
 ### The stage no longer locks page scroll (2026-07-29)
 
