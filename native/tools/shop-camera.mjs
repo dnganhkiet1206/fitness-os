@@ -40,11 +40,32 @@ execFileSync('npx', ['esbuild', entry, '--bundle', '--format=esm', '--tsconfig=t
   `--outfile=${path.join(dir, 'c.js')}`], { stdio: 'inherit' });
 const B = await import(pathToFileURL(path.join(dir, 'c.js')));
 
-/** the band as `mascot-room.tsx` sizes it: sheet width, 0.82 of it tall */
-const VW = 361 - 32;
-const VH = Math.round(VW * 0.82);
+/**
+ * The band as `shop.tsx` actually sizes it: the page's content width, and
+ * `BAND_ASPECT` of it tall.
+ *
+ * These two used to be `361 - 32` and `× 0.82` — the old bottom sheet's
+ * numbers, carried over when the shop became a page. That viewport exists on no
+ * phone, and it is why this file reported three valid shots for a camera that
+ * was cutting the character's feet off: the close shot is portrait, the band is
+ * landscape, `cameraAt` covers, and at 329×270 the mismatch is small enough to
+ * hide. A check fed the wrong input is worse than no check — it is a green
+ * light on a broken screen.
+ *
+ * 393 is the iPhone 15/16 point width; `spacing.md` is 16.
+ */
+const VW = 393 - 16 * 2;
+const VH = Math.round(VW * B.BAND_ASPECT);
 /** `SS` in shop-scene.tsx */
 const SS = 2;
+
+/** what the band can actually show of a shot, once cover has cropped it */
+const seen = (s, z) => ({
+  x: s.x + (s.w - VW / z) / 2,
+  y: s.y + (s.h - VH / z) / 2,
+  w: VW / z,
+  h: VH / z,
+});
 
 const NAMES = Object.keys(B.SHOTS);
 const overlap = (a, b) =>
@@ -59,10 +80,43 @@ for (const n of NAMES) {
   const inside =
     s.x >= 0 && s.y >= 0 && s.x + s.w <= B.SCENE_W + 0.5 && s.y + s.h <= B.SCENE_H + 0.5;
   const sharp = z <= SS + 0.001;
-  if (!inside || !sharp) bad++;
+  // a shot authored at an aspect the band does not have is a shot whose height
+  // is decorative: cover honours the larger scale, so only its width survives
+  const fits = Math.abs(s.w / s.h - 1 / B.BAND_ASPECT) < 0.01;
+  if (!inside || !sharp || !fits) bad++;
   console.log(
-    `  ${n.padEnd(9)} (${s.x}, ${s.y}) ${s.w}×${s.h}  zoom ${z.toFixed(2)}×  ` +
-    `${inside ? 'trong cảnh' : 'RA NGOÀI CẢNH'}  ${sharp ? 'nét' : `MỜ (quá ${SS}×)`}`,
+    `  ${n.padEnd(9)} (${s.x.toFixed(0)}, ${s.y.toFixed(0)}) ${s.w.toFixed(0)}×${s.h.toFixed(0)}  zoom ${z.toFixed(2)}×  ` +
+    `${inside ? 'trong cảnh' : 'RA NGOÀI CẢNH'}  ${sharp ? 'nét' : `MỜ (quá ${SS}×)`}` +
+    `  ${fits ? 'vừa khung' : `LỆCH KHUNG (chỉ thấy ${seen(s, z).h.toFixed(0)}/${s.h.toFixed(0)} chiều cao)`}`,
+  );
+}
+
+/**
+ * The close shot has to hold the whole character.
+ *
+ * Measured against `FIGURE_BOX` — the same rectangle `shop-scene.tsx` places
+ * him from — and against what is **visible** rather than what the shot
+ * declares. That difference is the entire bug this exists to catch: the old
+ * `shop` shot declared 244 units of height, showed 162, and the 41 units it
+ * quietly cropped off the bottom took Koa's feet with them.
+ */
+{
+  const s = B.SHOTS.shop;
+  const v = seen(s, B.zoomOf(s, VW, VH));
+  const f = B.FIGURE_BOX;
+  const pad = {
+    trái: f.x - v.x,
+    phải: v.x + v.w - (f.x + f.w),
+    trên: f.y - v.y,
+    dưới: v.y + v.h - (f.y + f.h),
+  };
+  const cut = Object.entries(pad).filter(([, n]) => n < 0);
+  if (cut.length) bad++;
+  console.log(
+    `\n  khung "shop" thấy (${v.x.toFixed(0)}, ${v.y.toFixed(0)}) ${v.w.toFixed(0)}×${v.h.toFixed(0)}\n` +
+    `  Koa (${f.x.toFixed(0)}, ${f.y.toFixed(0)}) ${f.w.toFixed(0)}×${f.h.toFixed(0)} — chừa ` +
+    Object.entries(pad).map(([k, n]) => `${k} ${n.toFixed(1)}`).join(', ') +
+    (cut.length ? `  CẮT MẤT ${cut.map(([k]) => k).join(', ')}` : '  đủ chỗ'),
   );
 }
 

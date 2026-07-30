@@ -1118,3 +1118,70 @@ The three purchasable skins survived rather than being devalued.
 `stage_champion` to a wall gradient and a glow colour, so what people
 bought still changes the room. A new skin is an entry in that table, not a
 new scene.
+
+## `matrix` is a native prop, and on web it is nothing at all
+
+The shop's camera was first written the way everything else in this room
+moves: one `<G>` around the whole scene, its `matrix` driven by
+`useAnimatedProps`. On a phone that is correct — `matrix` is the only
+transform `RNSVGGroup` takes natively, which is the entire reason this
+project animates matrices instead of `transform` strings.
+
+On web it does nothing whatsoever. `react-native-svg`'s web renderer
+translates `transform` and the individual `translate` / `scale` / `rotation` /
+`skew` props and passes everything else through untouched, so `matrix` lands
+in the DOM as an attribute SVG has never had and the browser drops it. The
+group measured
+
+```
+matrix="0.951,0,0,0.951,-5.03,-154.13"      getScreenCTM() → [1,0,0,1,16,65]
+```
+
+— the band's own page offset, and not one thing more. Every tab therefore
+showed scene `0,0 → 361 × 282` of a scene whose floor does not begin until
+y 360. **The podium was not misplaced; it had never been on screen.** The
+character looked roughly right the whole time and hid it, because he rides a
+`<View>` and CSS transforms do work.
+
+This matters beyond the browser, because the browser is where this room gets
+looked at. A render nobody can open is a render nobody checks.
+
+The fix is also the cheaper one on the device it ships to. `react-native-svg`
+re-rasterises an entire `<Svg>` when anything under it changes, so animating a
+camera matrix inside one repaints every shape in the room on every frame of
+the zoom — the same cost model that made this room drop frames and heat the
+phone, paid again at the worst possible moment. The scene is now drawn once at
+its own size inside a `<View>` that carries the shot, which is a GPU composite
+of a bitmap that is never touched again. The character sits in that same
+wrapper, so the room and Koa cannot drift apart whatever the camera does.
+
+## A shot whose aspect the band does not have has no height
+
+`cameraAt` **covers** — it takes the larger of the two scales, because the
+scene has no edges to show and scaling to fit would put bars over a picture
+that has more picture behind them. The consequence is that a shot's height is
+honoured only if its aspect already matches the band's. Otherwise the width
+wins and the height is decoration.
+
+The close shot was authored 208 × 244, portrait. The band is 361 × 282,
+landscape. So 244 declared units of height came out as 162 visible ones, the
+missing 82 were cropped evenly top and bottom, and the bottom 41 took the
+character's feet with them — in the one shot that exists to show him.
+
+Two things now make that unrepresentable rather than merely fixed:
+
+- `BAND_ASPECT` is one constant. `shop.tsx` lays the band out from it and
+  `shot()` derives every height from it. There is no longer a place to type a
+  height that disagrees.
+- `FIGURE_BOX` is exported from `shop-camera.ts`, `shop-scene.tsx` places Koa
+  from it, and `tools/shop-camera.mjs` asserts the close shot contains it —
+  against what is **visible after the crop**, not against what the shot
+  declares. That difference was the whole bug.
+
+And the check itself was the reason it survived. It ran `VW = 361 - 32`,
+`VH = VW * 0.82` — the old bottom sheet's numbers, carried over when the shop
+became a page, a viewport no phone has and one where the mismatch is small
+enough to hide. It reported three valid shots for a camera that was cutting a
+character's feet off. **A check fed the wrong input is worse than no check: it
+is a green light on a broken screen.** That is now the third entry on this
+page about a tool that had to be fixed before it could be believed.

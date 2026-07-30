@@ -54,6 +54,30 @@ if (!existsSync(path.join(NATIVE, 'app.json'))) {
   process.exit(2);
 }
 
+/**
+ * `budget.mjs` rasterises the room in a browser, and Playwright is not a
+ * dependency of this app — it is whatever the machine happens to have. When it
+ * is installed globally rather than in `node_modules`, `createRequire` inside
+ * the tool cannot see it and the step dies with a bare `MODULE_NOT_FOUND`
+ * stack, which reads exactly like the room being broken and is nothing of the
+ * kind. Same class of mistake as the `tsconfig.json` above: the check failing
+ * for a reason that has nothing to do with what it checks.
+ *
+ * So the global root is put on `NODE_PATH` when the local one has no
+ * Playwright. If neither has it the step still fails, but it fails saying so.
+ */
+const env = { ...process.env };
+if (!existsSync(path.join(NATIVE, 'node_modules', 'playwright'))) {
+  try {
+    const global = execFileSync('npm', ['root', '-g'], { encoding: 'utf8' }).trim();
+    if (existsSync(path.join(global, 'playwright'))) {
+      env.NODE_PATH = env.NODE_PATH ? `${env.NODE_PATH}:${global}` : global;
+    }
+  } catch {
+    // leave NODE_PATH alone; the step below will say what is missing
+  }
+}
+
 const STEPS = [
   ['kiểu dữ liệu', 'npx', ['tsc', '--noEmit']],
   ['worklet', 'node', ['tools/koa-studio/worklets.mjs']],
@@ -65,7 +89,7 @@ let failed = 0;
 for (const [label, cmd, args] of STEPS) {
   process.stdout.write(`${label.padEnd(14)} `);
   try {
-    const out = execFileSync(cmd, args, { cwd: NATIVE, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    const out = execFileSync(cmd, args, { cwd: NATIVE, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     // the last line each of these prints is its verdict
     const last = out.trim().split('\n').filter(Boolean).pop() ?? '';
     console.log(`OK   ${last.trim()}`);

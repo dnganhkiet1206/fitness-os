@@ -6,6 +6,7 @@ import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from
 
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
+import { BAND_ASPECT } from '@/components/ascnd/shop/shop-camera';
 import { ShopScene } from '@/components/ascnd/shop/shop-scene';
 import { CategoryRow, CollectionRow, ShopGrid } from '@/components/ascnd/shop/shop-grid';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -171,7 +172,7 @@ export default function ShopScreen() {
           shot={SHOT[tab]}
           mascot={mascot}
           width={sceneW}
-          height={Math.round(sceneW * 0.78)}
+          height={Math.round(sceneW * BAND_ASPECT)}
           level={level}
           equipped={equipped}
           streak={streak}

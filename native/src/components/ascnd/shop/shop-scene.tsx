@@ -1,17 +1,13 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import Animated, {
-  useAnimatedProps,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
-import Svg, { G, type GProps } from 'react-native-svg';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Svg from 'react-native-svg';
 
 import { HERO_W } from '@/components/ascnd/koa/koa-frame';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import {
   cameraAt,
+  FIGURE_BOX,
   SCENE_H,
   SCENE_W,
   SHOTS,
@@ -19,7 +15,6 @@ import {
 } from '@/components/ascnd/shop/shop-camera';
 import { DressingRoom } from '@/components/ascnd/studio/dressing';
 import { StudioContent } from '@/components/ascnd/studio/koa-studio';
-import { STAGE_MARK } from '@/components/ascnd/studio/palette';
 import type { MascotDef } from '@/lib/mascots';
 
 /**
@@ -30,26 +25,47 @@ import type { MascotDef } from '@/lib/mascots';
  * you switch — the room is continuous and you travel through it, which is the
  * whole point and the only thing that makes this better than three grids.
  *
+ * ── the camera moves the picture, not the drawing ──
+ *
+ * The scene is drawn once, at its own size, and a `<View>` around it carries the
+ * shot. It is emphatically **not** a `matrix` on a `<G>` inside a band-sized
+ * `<Svg>`, which is what this was first written as, for two independent reasons.
+ *
+ * The first is that it did not work at all on web. `matrix` is a
+ * `react-native-svg` prop, not an SVG attribute; the web renderer's `prepare`
+ * step only translates `transform` and the individual `translate`/`scale`/
+ * `rotation`/`skew` props, so `matrix` lands in the DOM as an attribute no
+ * browser has ever heard of and is dropped. The group measured
+ * `matrix="0.951,0,0,0.951,-5.03,-154.13"` and a `getScreenCTM()` of
+ * `[1,0,0,1,16,65]` — the band's own offset and not one thing more. The room sat
+ * at scene `0,0` through every tab, which put the visible window at
+ * `0 → 361 × 282` on a scene whose floor does not start until y 360. The podium
+ * was never off; it was never on screen.
+ *
+ * The second reason is the one that matters on the phone the app actually ships
+ * to. `react-native-svg` re-rasterises an entire `<Svg>` when any prop under it
+ * changes, so animating a camera matrix inside one repaints every shape in the
+ * room on every frame of the zoom — the exact cost model that made this room
+ * drop frames and heat the device, paid again at the worst moment. Transforming
+ * the wrapping `<View>` is a GPU composite of a bitmap that was rasterised once
+ * and never touched again.
+ *
  * ── the character is not in the SVG ──
  *
- * `MascotFigure` is its own `<Svg>` and cannot be nested in this one, so it
- * rides a `<View>` that carries **the same camera transform**. The wrapper is
- * the scene's size in scene units and the figure sits at `STAGE_MARK` inside
- * it, so the two are placed from the same number and cannot drift — the
- * discipline the whole room is built on.
+ * `MascotFigure` is its own `<Svg>` and cannot be nested in this one, so it sits
+ * inside the same wrapper the scene does, at `FIGURE_BOX` — the rectangle the
+ * `shop` shot is framed around. One transform carries both, so the room and the
+ * character cannot drift apart no matter what the camera does.
  *
- * The wrapper is laid out at `SS` times scene units and scaled back down by the
- * same factor. A `<View>` is rasterised at its layout size and then scaled on
- * the GPU, and the closest shot is a 1.6× push-in; drawn at scene size the
- * character would be resampled *up* and go soft exactly when it is largest.
- * Drawing at 2× and scaling down is always the safe direction.
+ * He is drawn at `SS` times scene units and scaled back down. A `<View>` is
+ * rasterised at its layout size and then scaled on the GPU, and the closest shot
+ * is a 1.36× push-in; drawn at scene size he would be resampled *up* and go soft
+ * exactly when he is largest. The room does not need the same treatment — it is
+ * scenery, it is 12× the area, and the device's own pixel ratio already gives it
+ * more than the 1.36× back.
  */
 
-const AnimatedG = Animated.createAnimatedComponent(
-  G as unknown as React.ComponentType<GProps & { matrix?: number[] }>,
-);
-
-/** how far above scene resolution the figure is drawn — see above */
+/** how far above scene resolution the character is drawn — see above */
 const SS = 2;
 
 /**
@@ -118,30 +134,17 @@ export function ShopScene({
     sh.value = withSpring(to.h, SPRING);
   }, [shot, sx, sy, sw, sh]);
 
-  const camera = useAnimatedProps<{ matrix: number[] }>(() => ({
-    matrix: cameraAt({ x: sx.value, y: sy.value, w: sw.value, h: sh.value }, width, height),
-  }));
-
-  // the same camera, as a view transform. `translate` then `scale` about the
-  // origin composes to exactly `[s, 0, 0, s, tx, ty]`, which is the matrix.
-  const rider = useAnimatedStyle(() => {
+  // `translate` then `scale` about the origin composes to exactly
+  // `[s, 0, 0, s, tx, ty]`, which is the matrix `cameraAt` returns.
+  const camera = useAnimatedStyle(() => {
     const m = cameraAt({ x: sx.value, y: sy.value, w: sw.value, h: sh.value }, width, height);
-    return {
-      transform: [{ translateX: m[4] }, { translateY: m[5] }, { scale: m[0] / SS }],
-    };
+    return { transform: [{ translateX: m[4] }, { translateY: m[5] }, { scale: m[0] }] };
   });
 
   const figure = Math.round(HERO_W * SS);
 
   return (
     <View style={{ width, height, overflow: 'hidden', borderRadius: 18 }}>
-      <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-        <AnimatedG animatedProps={camera}>
-          <StudioContent streak={streak} skin={skin} energy={energy} moonPhase={moonPhase} />
-          <DressingRoom />
-        </AnimatedG>
-      </Svg>
-
       <Animated.View
         pointerEvents="none"
         style={[
@@ -149,28 +152,39 @@ export function ShopScene({
             position: 'absolute',
             left: 0,
             top: 0,
-            width: SCENE_W * SS,
-            height: SCENE_H * SS,
+            width: SCENE_W,
+            height: SCENE_H,
             transformOrigin: '0px 0px',
           },
-          rider,
+          camera,
         ]}>
+        <Svg width={SCENE_W} height={SCENE_H} viewBox={`0 0 ${SCENE_W} ${SCENE_H}`}>
+          <StudioContent streak={streak} skin={skin} energy={energy} moonPhase={moonPhase} />
+          <DressingRoom />
+        </Svg>
+
+        {/* placed from `FIGURE_BOX`, the same rectangle the camera frames the
+            close shot around — so "the shot contains the character" is one
+            number in one file rather than two calculations that agree today */}
         <View
           style={{
             position: 'absolute',
-            left: STAGE_MARK.x * SS - figure / 2,
-            top: STAGE_MARK.y * SS - figure * 1.25 + 6 * SS,
-            width: figure,
+            left: FIGURE_BOX.x,
+            top: FIGURE_BOX.y,
+            width: FIGURE_BOX.w,
+            height: FIGURE_BOX.h,
           }}>
-          {/* Still. This sits above a scrolling list, and a live character
-              behind one is the budget the room spent three fixes getting back. */}
-          <MascotFigure
-            mascot={mascot}
-            size={figure}
-            level={level}
-            equippedOutfits={equipped}
-            animated={false}
-          />
+          <View style={{ width: figure, transform: [{ scale: 1 / SS }], transformOrigin: '0px 0px' }}>
+            {/* Still. This sits above a scrolling list, and a live character
+                behind one is the budget the room spent three fixes getting back. */}
+            <MascotFigure
+              mascot={mascot}
+              size={figure}
+              level={level}
+              equippedOutfits={equipped}
+              animated={false}
+            />
+          </View>
         </View>
       </Animated.View>
     </View>

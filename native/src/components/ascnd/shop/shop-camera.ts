@@ -1,3 +1,4 @@
+import { HERO_W, KOA_ASPECT } from '@/components/ascnd/koa/koa-frame';
 import { SCENE_BOTTOM, STAGE_MARK, STUDIO_W } from '@/components/ascnd/studio/palette';
 
 /**
@@ -44,38 +45,84 @@ export interface Shot {
 }
 
 /**
+ * The band's height as a fraction of its width. `shop.tsx` lays the band out
+ * from this and every shot takes its own height from it, which is the point:
+ * they cannot disagree.
+ *
+ * They did disagree, and it cost Koa his feet. The shots used to carry
+ * hand-written heights — the close one was 208×244, portrait, on a band that is
+ * 361×282, landscape. `cameraAt` **covers**, so the larger of the two scales
+ * wins and only a shot's *width* is ever honoured: 244 declared units of height
+ * came out as 162 visible ones, the missing 82 were cropped evenly off the top
+ * and bottom, and the bottom crop landed 17 units above the soles of a
+ * character the shot exists to show. Nothing in the code was wrong; the framing
+ * simply described a rectangle that could not be displayed.
+ *
+ * So heights stopped being written down. `shot()` derives every one, and
+ * `tools/shop-camera.mjs` asserts against this same constant at the real band
+ * size — the check used to run 329×270, a viewport no phone has, and passed a
+ * framing that was visibly broken.
+ */
+export const BAND_ASPECT = 0.78;
+
+/** a shot, from the three numbers that are actually a choice */
+const shot = (f: { x: number; y: number; w: number }): Shot => ({ ...f, h: f.w * BAND_ASPECT });
+
+/**
+ * Where Koa stands, in scene units.
+ *
+ * `shop-scene.tsx` places the figure from this and the camera frames it from
+ * this, so "the shot contains the character" is checkable instead of hoped for.
+ */
+export const FIGURE_BOX: Shot = {
+  x: STAGE_MARK.x - HERO_W / 2,
+  y: STAGE_MARK.y + 6 - HERO_W * KOA_ASPECT,
+  w: HERO_W,
+  h: HERO_W * KOA_ASPECT,
+};
+
+/**
  * Where each tab stands.
  *
- * Every one is derived from `STAGE_MARK` or from the annex's own width rather
- * than typed, so moving the podium moves the camera with it. A shot written as
- * four literals is a shot that silently stops framing what it was named after —
- * which is the same failure `stage.mjs` was built to catch.
- *
- * The heights are what the aspect is taken from; `cameraAt` covers, so a shot
- * wider than the viewport is cropped at the sides rather than letterboxed.
+ * Every one is derived from `STAGE_MARK`, from `FIGURE_BOX` or from the annex's
+ * own width rather than typed, so moving the podium moves the camera with it. A
+ * shot written as four literals is a shot that silently stops framing what it
+ * was named after — which is the same failure `stage.mjs` was built to catch.
  */
 export const SHOTS = {
-  /** the podium and the light coming down onto it */
-  stage: {
+  /**
+   * The podium, and the beam standing on it.
+   *
+   * Not the lamp — the lamp. Its shade sits at y 52–78 and the podium's base
+   * reaches 455, so a frame holding both would be 405 units tall and, at this
+   * band's aspect, 519 wide inside a room that is 390. It would have to start
+   * 64 units left of the scene's own edge and show 64 units of nothing. The
+   * beam's cone is in frame from the top edge down, which is what actually
+   * lights the podium; the fixture it hangs from is not.
+   */
+  stage: shot({
     x: STAGE_MARK.x - 190,
     y: STAGE_MARK.y - 250,
     w: 380,
-    h: 300,
-  },
-  /** Koa, standing on it — close enough to read an outfit */
-  shop: {
-    x: STAGE_MARK.x - 104,
-    y: STAGE_MARK.y - 214,
-    w: 208,
-    h: 244,
-  },
-  /** the whole dressing room, wardrobe and all */
-  wardrobe: {
-    x: ROOM_W - 16,
-    y: 138,
-    w: ANNEX_W + 16,
-    h: 268,
-  },
+  }),
+  /**
+   * Koa, standing on it — close enough to read an outfit.
+   *
+   * Wide enough to hold `FIGURE_BOX` whole with room over his head and the
+   * podium under his feet. He is 172.5 units tall, so at this band's aspect no
+   * frame narrower than 221 can contain him at all, whatever its stated height.
+   */
+  shop: shot({
+    x: STAGE_MARK.x - 133,
+    y: STAGE_MARK.y - 180.5,
+    w: 266,
+  }),
+  /** the whole dressing room, wardrobe and all, out to the far wall */
+  wardrobe: shot({
+    x: SCENE_W - 316,
+    y: 165,
+    w: 314,
+  }),
 } satisfies Record<string, Shot>;
 
 export type ShotName = keyof typeof SHOTS;
