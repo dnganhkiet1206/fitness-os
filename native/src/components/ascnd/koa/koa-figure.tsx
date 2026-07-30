@@ -92,11 +92,21 @@ const AnimatedG = Animated.createAnimatedComponent(
 );
 
 /**
- * The character is a cartoon; 30 is plenty and it halves every downstream
- * cost — worklet runs, matrix maths and native prop commits all scale off
- * this one number.
+ * The figure's frame rate, as a cap.
+ *
+ * It used to be 30 — a deliberate halving of every downstream cost, since the
+ * clock drives every animated layer's worklet run, matrix maths and native
+ * prop commit. At the user's request (2026-07-29) it now runs at the display's
+ * own rate: 120 is above every current panel, so `FRAME_MS` (8.3ms) sits below
+ * a 120Hz frame (8.3ms) and a 60Hz one (16.7ms) alike, and `stepClock` advances
+ * on every frame. The result is 60fps on a 60Hz screen and 120fps on ProMotion.
+ *
+ * The room's own live layers already run at the display rate (`withRepeat`), so
+ * this brings the character up to match them. It is the one number to turn back
+ * down if a device runs hot — the scroll freeze already takes the figure out of
+ * the budget while the page moves, so the cost is only paid on a still screen.
  */
-const FIGURE_FPS = 30;
+const FIGURE_FPS = 120;
 const FRAME_MS = 1000 / FIGURE_FPS;
 
 export { KOA_ASPECT, KOA_VIEWBOX } from '@/components/ascnd/koa/koa-frame';
@@ -650,8 +660,8 @@ export function KoaFigure({
   // One clock for the whole figure, on the UI thread: 36 loops, one frame
   // callback, nothing crossing to JS.
   // The clock is the whole figure's cost driver: every animated layer
-  // recomputes when it moves. So it ticks at FIGURE_FPS rather than the
-  // display's 60–120, and stops while the app is backgrounded. Screen
+  // recomputes when it moves. It runs at the display's rate (FIGURE_FPS caps
+  // at 120), and stops while the app is backgrounded. Screen
   // focus is handled by the caller through `animated` — a stack screen
   // stays mounted underneath whatever is pushed on top of it, and this
   // component also renders outside the navigator (the unlock celebration),

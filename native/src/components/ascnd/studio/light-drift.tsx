@@ -19,9 +19,9 @@ import { CX, MOUTH_R, MOUTH_Y } from '@/components/ascnd/studio/spotlight';
  *
  * The studio used to be a static scene on principle. That rule was lifted by
  * the user on 2026-07-28 — the room may move now — but the reason behind it
- * has not gone away: this sits under a character running its own 30fps
- * clock, on a phone. So everything here shares **one** shared value, derives
- * from it on the UI thread, and does no per-frame work in JS.
+ * has not gone away: this sits under a character running its own clock at the
+ * display's rate, on a phone. So everything here shares **one** shared value,
+ * derives from it on the UI thread, and does no per-frame work in JS.
  *
  * It lives outside `koa-studio.tsx` for a hard technical reason, not a
  * stylistic one: Reanimated pulls in `react-native`, whose Flow syntax

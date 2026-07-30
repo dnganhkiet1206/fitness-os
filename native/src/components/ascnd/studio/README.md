@@ -168,7 +168,7 @@ take the motes, the lamp's pulse or the stage glow out on the grounds that
 the scene should be still — ask first.
 
 What has *not* changed is the reason the rule existed. This sits under a
-character running its own 30fps clock, on a phone. So every moving part
+character running its own clock at the display's rate, on a phone. So every moving part
 obeys the same three constraints:
 
 - **One clock each, and only three in the room** — `motes-drift.tsx` at 26s,
@@ -178,7 +178,7 @@ obeys the same three constraints:
 - **Nothing animates inside `KoaStudio`'s canvas.** `react-native-svg`
   rasterises a whole `<Svg>` again whenever any child prop changes, so an
   animated group in there redraws every shape in the room, every frame, over
-  full-canvas gradients, under a character already running its own 30fps
+  full-canvas gradients, under a character already running its own display-rate
   clock. That is exactly what the first version did and the Mascot Room went
   visibly laggy. The moving parts live in `studio-live.tsx`, a second canvas
   laid directly over the studio, and the studio's own canvas goes back to
@@ -246,7 +246,7 @@ never by disabling the whole page's scroll.
 
 Still a little rough, the user said. What was left is the character. The room
 is now a set of small canvases that stop when the stage scrolls away, but the
-buddy is a ~120-element SVG on its own 30fps clock, and for the first stretch
+buddy is a ~120-element SVG on its own display-rate clock, and for the first stretch
 of a scroll — while the stage is still on screen — it was re-rasterising every
 frame on the very UI thread the scroll runs on. That contention is what was
 left to feel.

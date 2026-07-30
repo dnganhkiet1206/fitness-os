@@ -20,7 +20,8 @@ import { STUDIO_W } from '@/components/ascnd/studio/palette';
  * changes — an animated group invalidates up to the root. With the motes, the
  * beam and the glow animating *inside* `KoaStudio`, every shape in the room was
  * redrawn each frame, over full-canvas gradients, under a character already
- * running its own 30fps clock. The Mascot Room went visibly laggy.
+ * running its own clock at the display's rate. The Mascot Room went visibly
+ * laggy.
  *
  * Moving them to an overlay fixed the lag and **the phone still ran hot**,
  * because the cone stack came with them: nine full-height gradient-filled
