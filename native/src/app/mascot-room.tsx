@@ -13,17 +13,14 @@ import {
   Glasses,
   Headphones,
   LayoutGrid,
-  Lock,
   Moon,
   Shirt,
   Snowflake,
-  Sparkles,
   Star,
   Store,
   Trophy,
   Utensils,
   Wind,
-  X,
   type LucideIcon,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -57,7 +54,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { MascotScene } from '@/components/ascnd/mascot-scene';
 import { RankJourney } from '@/components/ascnd/rank-journey';
-import { ShopScene } from '@/components/ascnd/shop/shop-scene';
+
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -74,23 +71,17 @@ import {
 } from '@/hooks/use-mascot-room';
 import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
-import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
-  COLLECTIONS,
   DAILY_QUESTS,
   ENERGY_SIGNALS,
   LEVEL_XP,
   RANKS,
-  RARITY,
   SHOP_CATEGORIES,
-  SHOP_ITEMS,
   STREAK_XP,
   WEEKLY_BONUS_COINS,
   WEEKLY_BONUS_XP,
-  collectionProgress,
-  collectionRefKey,
   levelFromXp,
   nextRank,
   questRefKey,
@@ -99,53 +90,11 @@ import {
   streakCoins,
   type Collection,
   type QuestKey,
-  type ShopCategory,
-  type ShopItem,
 } from '@/lib/mascot-room';
 import { toast } from '@/lib/toast';
 
-/** The icon on each shop-category tab (plus "Tất cả"). */
-const CAT_ICON: Record<ShopCategory | 'all', LucideIcon> = {
-  all: LayoutGrid,
-  head: Crown,
-  face: Glasses,
-  body: Shirt,
-  gear: Backpack,
-  special: Sparkles,
-};
 
-/** Fallback icon by Koa slot, for any outfit without its own below. */
-const SLOT_ICON: Record<string, LucideIcon> = {
-  head: Crown,
-  face: Glasses,
-  top: Shirt,
-  bottom: Shirt,
-  shoes: Footprints,
-  back: Backpack,
-  hand: Dumbbell,
-};
 
-/** Per-item icon where a distinctive one reads better than the slot default. */
-const ITEM_ICON: Record<string, LucideIcon> = {
-  head_phones: Headphones,
-  head_santa: Gift,
-  head_witch: Ghost,
-  top_xmas: Snowflake,
-  top_ghost: Ghost,
-  hand_trophy: Trophy,
-  hand_bottle: Droplets,
-  hand_dumbbell: Dumbbell,
-  back_cape: Wind,
-  back_dragonwing: Flame,
-  shoes_glow: Sparkles,
-  shoes_wing: Wind,
-  stage_night: Moon,
-  stage_sunset: Flame,
-  stage_champion: Star,
-};
-
-const iconFor = (item: ShopItem): LucideIcon =>
-  ITEM_ICON[item.key] ?? (item.slot ? SLOT_ICON[item.slot] : Store) ?? Store;
 
 // The five daily signals that power the buddy's energy meter
 const SIGNAL_META: Record<QuestKey, { icon: LucideIcon; color: string; labelKey: 'nRoomSigMeal' | 'nRoomSigWorkout' | 'nRoomSigWater' | 'nRoomSigSleep' | 'nRoomSigSteps' }> = {
@@ -231,15 +180,6 @@ export default function MascotRoomScreen() {
   const [celebrate, setCelebrate] = useState(0);
   const [flex, setFlex] = useState(0);
   const [burst, setBurst] = useState({ id: 0, amount: 0 });
-  const [shopOpen, setShopOpen] = useState(false);
-  const [shopTab, setShopTab] = useState<'outfit' | 'stage' | 'closet'>('outfit');
-  // The selected category under the outfit tab ('all' shows everything).
-  const [shopCat, setShopCat] = useState<ShopCategory | 'all'>('all');
-  const [collectionsOpen, setCollectionsOpen] = useState(false);
-  // Which item's purchase is in flight, so the spinner lands on that card
-  // alone. `buy.isPending` is the mutation's global state — keyed to it, every
-  // unowned card in the grid span a spinner at once the moment one was tapped.
-  const [buyingKey, setBuyingKey] = useState<string | null>(null);
 
   /**
    * Whether the stage is on screen, so the room can unmount once it is not —
@@ -363,31 +303,6 @@ export default function MascotRoomScreen() {
     );
   };
 
-  const buyItem = (item: ShopItem) => {
-    // Level-locked items cannot be bought until the buddy gets there (the card
-    // shows the lock, but guard here too). TEST_UNLOCK_ALL ignores the gate.
-    const lvl = levelFromXp(wallet?.xp ?? 0);
-    if (!TEST_UNLOCK_ALL && item.unlockLevel && lvl < item.unlockLevel) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      toast.warning(i18n.nRoomLockLevel.replace('{n}', String(item.unlockLevel)));
-      return;
-    }
-    if (!TEST_UNLOCK_ALL && balance < item.price) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      toast.warning(i18n.nRoomNotEnough);
-      return;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setBuyingKey(item.key);
-    buy.mutate(item, {
-      onSuccess: () => {
-        setCelebrate((c) => c + 1);
-        toast.success(i18n.nRoomBought);
-      },
-      onError: (e: Error) => toast.error(e.message),
-      onSettled: () => setBuyingKey(null),
-    });
-  };
 
   // First visit: a welcome purse so the shop is playable right away
   // (idempotent via the 'welcome' ref_key — granted exactly once)
@@ -423,26 +338,8 @@ export default function MascotRoomScreen() {
   // first (rarity, then price) so a page reads cheap → dear. "Đặc biệt" is the
   // seasonal shelf (the `special` flag); every other category is by slot, and a
   // seasonal item shows under both.
-  const inCategory = (it: ShopItem) =>
-    shopCat === 'all' || (shopCat === 'special' ? !!it.special : it.category === shopCat);
-  /**
-   * The closet is the shop's own grid, filtered to what has been bought.
-   *
-   * Deliberately the same list, the same categories and the same cards — a
-   * wardrobe that presents owned things differently from the way they were sold
-   * makes you learn the catalogue twice. The only difference is that nothing in
-   * it has a price on it, which `ShopGrid` already handles by owning state.
-   */
-  const shopItems = SHOP_ITEMS.filter((it) =>
-    shopTab === 'closet'
-      ? it.type === 'outfit' && owned.has(it.key) && inCategory(it)
-      : it.type === shopTab && (shopTab !== 'outfit' || inCategory(it)),
-  ).sort((a, b) => RARITY[a.rarity].order - RARITY[b.rarity].order || a.price - b.price);
 
   // Sets that are complete and not yet claimed — the badge on the collections door
-  const setsReady = COLLECTIONS.filter(
-    (c) => collectionProgress(c, owned).complete && !claimed.has(collectionRefKey(c.id)),
-  ).length;
 
   // Live daily energy — how many of the five signals are met today (from
   // real logs, never claims), so the buddy visibly mirrors the day
@@ -615,8 +512,7 @@ export default function MascotRoomScreen() {
           color={colors.metricCyan}
           onPress={() => {
             Haptics.selectionAsync();
-            setShopTab('stage');
-            setShopOpen(true);
+            router.push('/shop?tab=stage');
           }}
         />
         <ActionChip
@@ -625,8 +521,7 @@ export default function MascotRoomScreen() {
           color={colors.metricPurple}
           onPress={() => {
             Haptics.selectionAsync();
-            setShopTab('outfit');
-            setShopOpen(true);
+            router.push('/shop?tab=closet');
           }}
         />
         <ActionChip
@@ -817,170 +712,6 @@ export default function MascotRoomScreen() {
         </GlassCard>
       )}
 
-      {/* Shop — one sheet: tabs, categories, grid, and the collections door */}
-      <Modal
-        visible={shopOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShopOpen(false)}>
-        <View style={styles.sheetBackdropWrap}>
-          <Pressable style={styles.sheetBackdrop} onPress={() => setShopOpen(false)} />
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>{i18n.nRoomShop}</Text>
-              <View style={styles.sheetCoins}>
-                <Icon icon={Coins} size={13} color={colors.readinessYellow} />
-                <Text style={styles.coinText}>{balance.toLocaleString()}</Text>
-              </View>
-              <Pressable hitSlop={10} onPress={() => setShopOpen(false)} style={styles.sheetClose}>
-                <Icon icon={X} size={18} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
-            <View style={styles.tabRow}>
-              {(
-                [
-                  ['stage', i18n.nRoomStageSkins],
-                  ['outfit', i18n.nRoomOutfits],
-                  ['closet', i18n.nRoomCloset],
-                ] as const
-              ).map(([key, label]) => (
-                <Pressable
-                  key={key}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setShopTab(key);
-                  }}
-                  style={[styles.tab, shopTab === key && styles.tabActive]}>
-                  <Text style={[styles.tabText, shopTab === key && styles.tabTextActive]}>
-                    {label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* Koa and the wardrobe it changes in. The reference puts the
-                character and the cabinet above the catalogue, and that split is
-                the reason it works: the top half says *this is you*, the bottom
-                half is a list. See `shop/wardrobe-scene.tsx`. */}
-            {/* One room, three shots. The tabs do not swap screens — the
-                camera moves: Sân khấu pushes in on the podium, Trang phục comes
-                down to Koa standing on it, Tủ đồ pulls back across the dressing
-                room. See `shop/shop-camera.ts`. */}
-            <View style={styles.shopStage}>
-              <ShopScene
-                shot={shopTab === 'stage' ? 'stage' : shopTab === 'closet' ? 'wardrobe' : 'shop'}
-                mascot={mascot}
-                width={sheetW}
-                height={Math.round(sheetW * 0.82)}
-                level={level}
-                equipped={equippedOutfits}
-                streak={streak}
-                energy={energyCount / ENERGY_SIGNALS.length}
-              />
-            </View>
-
-            {shopTab !== 'stage' ? (
-              <CategoryRow
-                current={shopCat}
-                onPick={(c) => {
-                  Haptics.selectionAsync();
-                  setShopCat(c);
-                }}
-                lang={lang}
-                i18n={i18n}
-              />
-            ) : null}
-
-            <ScrollView contentContainerStyle={styles.sheetScroll} showsVerticalScrollIndicator={false}>
-              <ShopGrid
-                items={shopItems}
-                owned={owned}
-                equipped={equippedOutfits}
-                balance={balance}
-                level={level}
-                pendingBuy={buy.isPending}
-                buyingKey={buyingKey}
-                onBuy={buyItem}
-                onToggleEquip={(key, next) => {
-                  Haptics.selectionAsync();
-                  equip.mutate({ itemKey: key, equipped: next });
-                }}
-                lang={lang}
-                i18n={i18n}
-              />
-              {shopItems.length === 0 ? (
-                <Text style={styles.emptyCat}>{i18n.nRoomEmptyCat}</Text>
-              ) : null}
-
-              {shopTab === 'outfit' ? (
-                <Pressable
-                  style={({ pressed }) => [styles.setsBanner, pressed && styles.pressed]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setCollectionsOpen(true);
-                  }}>
-                  <View style={styles.setsChest}>
-                    <Icon icon={Sparkles} size={22} color={colors.metricPurple} />
-                  </View>
-                  <View style={styles.setsBannerText}>
-                    <Text style={styles.setsTitle}>{i18n.nRoomCollections}</Text>
-                    <Text style={styles.setsHint} numberOfLines={1}>
-                      {i18n.nRoomCollectionsHint}
-                    </Text>
-                  </View>
-                  {setsReady > 0 ? (
-                    <View style={styles.setsBadge}>
-                      <Text style={styles.setsBadgeText}>{setsReady}</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.setsChevron}>›</Text>
-                  )}
-                </Pressable>
-              ) : null}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Collections — a set is done when every item in it is owned */}
-      <Modal
-        visible={collectionsOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setCollectionsOpen(false)}>
-        <View style={styles.sheetBackdropWrap}>
-          <Pressable style={styles.sheetBackdrop} onPress={() => setCollectionsOpen(false)} />
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>{i18n.nRoomCollections}</Text>
-              <Pressable
-                hitSlop={10}
-                onPress={() => setCollectionsOpen(false)}
-                style={styles.sheetClose}>
-                <Icon icon={X} size={18} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
-            <ScrollView contentContainerStyle={styles.sheetScroll} showsVerticalScrollIndicator={false}>
-              {COLLECTIONS.map((c) => (
-                <CollectionRow
-                  key={c.id}
-                  c={c}
-                  owned={owned}
-                  claimed={claimed.has(collectionRefKey(c.id))}
-                  pending={claim.isPending}
-                  onClaim={() =>
-                    reward(collectionRefKey(c.id), c.rewardCoins, `set:${c.id}`, c.rewardXp)
-                  }
-                  lang={lang}
-                  i18n={i18n}
-                />
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </Screen>
   );
 }
@@ -1010,193 +741,8 @@ function ActionChip({
   );
 }
 
-/** The category icon row under the outfit tab — "Tất cả" + the five slots. */
-function CategoryRow({
-  current,
-  onPick,
-  lang,
-  i18n,
-}: {
-  current: ShopCategory | 'all';
-  onPick: (c: ShopCategory | 'all') => void;
-  lang: 'vi' | 'en';
-  i18n: ReturnType<typeof useI18n>;
-}) {
-  const cats: { id: ShopCategory | 'all'; label: string }[] = [
-    { id: 'all', label: i18n.nRoomAll },
-    ...SHOP_CATEGORIES.map((c) => ({ id: c.id, label: c.name[lang] })),
-  ];
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.catRow}>
-      {cats.map((c) => {
-        const on = current === c.id;
-        return (
-          <Pressable key={c.id} onPress={() => onPick(c.id)} style={styles.catItem}>
-            <View style={[styles.catIcon, on && styles.catIconOn]}>
-              <Icon
-                icon={CAT_ICON[c.id]}
-                size={20}
-                color={on ? colors.primary : colors.mutedForeground}
-              />
-            </View>
-            <Text style={[styles.catLabel, on && styles.catLabelOn]} numberOfLines={1}>
-              {c.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
-  );
-}
 
-function ShopGrid({
-  items, owned, equipped, balance, level, pendingBuy, buyingKey, onBuy, onToggleEquip, lang, i18n,
-}: {
-  items: ShopItem[];
-  owned: Set<string>;
-  equipped: Set<string>;
-  balance: number;
-  level: number;
-  /** a purchase is in flight — every buy button locks so two cannot race */
-  pendingBuy: boolean;
-  /** the one item that purchase is for — only its button shows the spinner */
-  buyingKey?: string | null;
-  onBuy: (item: ShopItem) => void;
-  onToggleEquip: (key: string, next: boolean) => void;
-  lang: 'vi' | 'en';
-  i18n: ReturnType<typeof useI18n>;
-}) {
-  return (
-    <View style={styles.shopGrid}>
-      {items.map((item) => {
-        const rar = RARITY[item.rarity];
-        const isOwned = owned.has(item.key);
-        const isEquipped = equipped.has(item.key);
-        const price = TEST_UNLOCK_ALL ? 0 : item.price;
-        const affordable = TEST_UNLOCK_ALL || balance >= item.price;
-        const locked =
-          !TEST_UNLOCK_ALL && !isOwned && item.unlockLevel != null && level < item.unlockLevel;
-        return (
-          <GlassCard key={item.key} style={[styles.shopItem, { borderColor: `${rar.color}4d` }]}>
-            <View style={[styles.itemIconWrap, { backgroundColor: `${rar.color}1c` }]}>
-              <Icon icon={iconFor(item)} size={22} color={rar.color} />
-            </View>
-            <Text style={styles.itemName} numberOfLines={1}>{item.name[lang]}</Text>
-            <View style={[styles.rarityBadge, { backgroundColor: `${rar.color}22` }]}>
-              <Text style={[styles.rarityText, { color: rar.color }]} numberOfLines={1}>
-                {rar.name[lang]}
-              </Text>
-            </View>
 
-            {locked ? (
-              <View style={styles.lockBtn}>
-                <Icon icon={Lock} size={11} color={colors.mutedForeground} />
-                <Text style={styles.lockText}>
-                  {i18n.nRoomLockLevel.replace('{n}', String(item.unlockLevel))}
-                </Text>
-              </View>
-            ) : !isOwned ? (
-              <Pressable
-                disabled={pendingBuy}
-                style={({ pressed }) => [
-                  styles.buyBtn,
-                  !affordable && styles.buyBtnPoor,
-                  pressed && styles.pressed,
-                ]}
-                onPress={() => onBuy(item)}>
-                {buyingKey === item.key ? (
-                  <ActivityIndicator size="small" color={colors.primaryForeground} />
-                ) : (
-                  <>
-                    <Icon icon={Coins} size={11} color={affordable ? colors.primaryForeground : colors.mutedForeground} />
-                    <Text style={[styles.buyText, !affordable && styles.buyTextPoor]}>{price}</Text>
-                  </>
-                )}
-              </Pressable>
-            ) : (
-              // Owned: tap to wear / use, tap again to take off. One per slot,
-              // one stage at a time — the mutation handles the exclusion.
-              <Pressable
-                style={({ pressed }) => [
-                  styles.ownedBtn,
-                  isEquipped && styles.wearingBtn,
-                  pressed && styles.pressed,
-                ]}
-                onPress={() => onToggleEquip(item.key, !isEquipped)}>
-                {isEquipped && <Icon icon={Check} size={11} color={colors.readinessGreen} strokeWidth={3} />}
-                <Text style={[styles.ownedText, isEquipped && styles.wearingText]} numberOfLines={1}>
-                  {item.type === 'stage'
-                    ? isEquipped ? i18n.nRoomUsing : i18n.nRoomUse
-                    : isEquipped ? i18n.nRoomWearing : i18n.nRoomOwned}
-                </Text>
-              </Pressable>
-            )}
-          </GlassCard>
-        );
-      })}
-    </View>
-  );
-}
-
-/** One collection: name, reward, a progress bar, and a claim when it's full. */
-function CollectionRow({
-  c, owned, claimed, pending, onClaim, lang, i18n,
-}: {
-  c: Collection;
-  owned: Set<string>;
-  claimed: boolean;
-  pending: boolean;
-  onClaim: () => void;
-  lang: 'vi' | 'en';
-  i18n: ReturnType<typeof useI18n>;
-}) {
-  const { have, total, complete } = collectionProgress(c, owned);
-  return (
-    <GlassCard style={styles.setCard}>
-      <View style={styles.setTop}>
-        <View style={styles.setInfo}>
-          <Text style={styles.setName}>{c.name[lang]}</Text>
-          <View style={styles.questCoins}>
-            <Icon icon={Coins} size={11} color={colors.readinessYellow} />
-            <Text style={styles.questCoinText}>+{c.rewardCoins}</Text>
-            <Text style={styles.questXpText}>+{c.rewardXp} XP</Text>
-          </View>
-        </View>
-        {claimed ? (
-          <View style={styles.claimedChip}>
-            <Icon icon={Check} size={13} color={colors.readinessGreen} strokeWidth={3} />
-            <Text style={styles.claimedText}>{i18n.nRoomSetClaimed}</Text>
-          </View>
-        ) : complete ? (
-          <Pressable
-            disabled={pending}
-            style={({ pressed }) => [styles.claimBtn, pressed && styles.pressed]}
-            onPress={onClaim}>
-            <Text style={styles.claimText}>{i18n.nRoomClaim}</Text>
-          </Pressable>
-        ) : (
-          <Text style={styles.setProgressText}>
-            {i18n.nRoomSetProgress.replace('{a}', String(have)).replace('{b}', String(total))}
-          </Text>
-        )}
-      </View>
-      <View style={styles.setTrack}>
-        <View
-          style={[
-            styles.setFill,
-            {
-              width: `${Math.round((have / total) * 100)}%`,
-              backgroundColor: complete ? colors.readinessGreen : colors.metricPurple,
-            },
-          ]}
-        />
-      </View>
-    </GlassCard>
-  );
-}
 
 const styles = StyleSheet.create({
   coinPill: {
