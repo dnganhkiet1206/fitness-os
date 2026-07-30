@@ -33,6 +33,8 @@ interface Props {
   level?: number;
   equippedOutfits?: Set<string>;
   animated?: boolean;
+  /** pause the figure's clock in place (e.g. while the page scrolls) — see KoaFigure */
+  running?: boolean;
   /** the room's insect clock — Koa glances at whichever one has landed */
   gaze?: SharedValue<number>;
 }
@@ -60,7 +62,7 @@ export function MascotFigure(props: Props) {
   // `mood` is not destructured: this branch does not use it, and the vector
   // fallback below takes it through `{...props}` with its own 'neutral'
   // default, so naming it here only left an unused local.
-  const { mascot, size = 160, animated = true, emotion: emotionProp, gaze } = props;
+  const { mascot, size = 160, animated = true, running = true, emotion: emotionProp, gaze } = props;
 
   // The Emotion Engine drives the image companion; an explicit `emotion` prop
   // (e.g. the unlock celebration) overrides it. Hook runs unconditionally.
@@ -75,6 +77,7 @@ export function MascotFigure(props: Props) {
         pose={state.pose}
         size={size}
         animated={animated}
+        running={running}
         gaze={gaze}
         worn={{ ...wornFrom(props.equippedOutfits), ...state.outfit }}
       />

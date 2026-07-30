@@ -24,6 +24,12 @@ export interface MascotBuddyProps {
   /** false pauses the figure — the room passes screen focus down */
   animated?: boolean;
   /**
+   * Pause the figure's clock in place without changing the drawing — the room
+   * passes `!scrolling` down so the character holds its frame while the page
+   * scrolls rather than re-rasterising every frame. See `KoaFigure`.
+   */
+  running?: boolean;
+  /**
    * The room's insect clock, when the buddy is standing in the room.
    *
    * It is the Stage's rather than the figure's because the insects run off the
@@ -41,6 +47,7 @@ export function MascotBuddy({
   level = 1,
   equippedOutfits,
   animated = true,
+  running = true,
   gaze,
 }: MascotBuddyProps) {
   return (
@@ -52,6 +59,7 @@ export function MascotBuddy({
       level={level}
       equippedOutfits={equippedOutfits}
       animated={animated}
+      running={running}
       gaze={gaze}
     />
   );

@@ -24,6 +24,8 @@ interface Props {
   streak?: number;
   /** false pauses everything on the stage (screen not focused) */
   animated?: boolean;
+  /** the page is mid-scroll — the buddy's clock holds in place. See StageRenderer */
+  scrolling?: boolean;
 }
 
 const STAGE_UNLOCKS: [string, string][] = [
@@ -44,6 +46,7 @@ export function MascotScene({
   energy = 0.5,
   streak,
   animated = true,
+  scrolling = false,
 }: Props) {
   // Highest owned stage skin wins; falls back to the default gym.
   const themeKey = STAGE_UNLOCKS.find(([key]) => ownedGym.has(key))?.[1] ?? 'default';
@@ -60,6 +63,7 @@ export function MascotScene({
       flexSignal={flexSignal}
       streak={streak}
       animated={animated}
+      scrolling={scrolling}
     />
   );
 }

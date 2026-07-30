@@ -233,12 +233,51 @@ export default function MascotRoomScreen() {
   const [stageBottom, setStageBottom] = useState(0);
   const [stageOnScreen, setStageOnScreen] = useState(true);
 
+  /**
+   * Whether the page is being scrolled right now.
+   *
+   * Sizing each canvas to its content and stopping the clocks once the stage
+   * is gone took the heat out, but the first stretch of a scroll — while the
+   * stage is still on screen — was still redrawing the buddy, a ~120-element
+   * SVG, every frame *on the same UI thread the scroll runs on*. That is the
+   * contention a user feels as the top of this page being less smooth than the
+   * rest.
+   *
+   * So the buddy's clock holds in place for the duration of a scroll. It is
+   * translating with the ScrollView anyway, so a paused idle is invisible, and
+   * because the clock only freezes — the drawing does not change to its static
+   * form — there is no snap when the scroll starts or stops. `onScrollBeginDrag`
+   * sets it the instant a drag begins, before the first frame moves; the timer
+   * clears it a breath after the last scroll event, which covers momentum too.
+   */
+  const [scrolling, setScrolling] = useState(false);
+  const scrollingRef = useRef(false);
+  const scrollIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const markScrolling = () => {
+    if (!scrollingRef.current) {
+      scrollingRef.current = true;
+      setScrolling(true);
+    }
+    if (scrollIdle.current) clearTimeout(scrollIdle.current);
+    // longer than the 64ms scroll-event throttle, so momentum keeps it alive
+    scrollIdle.current = setTimeout(() => {
+      scrollingRef.current = false;
+      setScrolling(false);
+    }, 120);
+  };
+
+  useEffect(() => () => {
+    if (scrollIdle.current) clearTimeout(scrollIdle.current);
+  }, []);
+
   const onStageLayout = (ev: LayoutChangeEvent) => {
     const { y, height } = ev.nativeEvent.layout;
     setStageBottom(y + height);
   };
 
   const onPageScroll = (ev: NativeSyntheticEvent<NativeScrollEvent>) => {
+    markScrolling();
     if (stageBottom <= 0) return;
     const onScreen = ev.nativeEvent.contentOffset.y < stageBottom + STAGE_KEEP_ALIVE;
     if (onScreen !== stageOnScreen) setStageOnScreen(onScreen);
@@ -356,9 +395,12 @@ export default function MascotRoomScreen() {
       back
       transparentHeader
       onScroll={onPageScroll}
-      // 64ms, not 16: this only decides whether the room is on screen at all,
-      // and a handler that runs on every frame of a scroll is the sort of
-      // thing it is meant to save.
+      // freeze the buddy the instant a drag begins, before the first frame
+      // translates — waiting for the first onScroll would let a frame or two
+      // through at the start, which is exactly where a scroll is judged.
+      onScrollBeginDrag={markScrolling}
+      // 64ms, not 16: this decides whether the room is on screen and whether a
+      // scroll is in progress, neither of which needs every frame.
       scrollEventThrottle={64}
       // The name is set into the podium's front face instead — see
       // `studio/stage-label.tsx`. The header keeps its chevron and coin pill.
@@ -406,6 +448,7 @@ export default function MascotRoomScreen() {
           energy={energyCount / ENERGY_SIGNALS.length}
           streak={streak}
           animated={focused && stageOnScreen}
+          scrolling={scrolling}
         />
         <CoinBurst trigger={burst.id} amount={burst.amount} />
       </View>

@@ -604,6 +604,24 @@ export interface KoaFigureProps {
   /** freeze every loop — for static grids and pickers */
   animated?: boolean;
   /**
+   * Pause the clock **in place**, without changing what is drawn.
+   *
+   * `animated` and this are not the same switch. `animated=false` draws the
+   * frozen t=0 frame — a different, cheaper tree with no animated groups, for
+   * pickers and grids; going through it mid-motion snaps the figure to that
+   * pose and re-renders. `running=false` leaves the animated tree exactly as
+   * it is and only stops the clock feeding it, so every layer holds the frame
+   * it was on and resumes from there when the clock starts again (the clock
+   * accumulates — see `figure-clock.ts`).
+   *
+   * That is what the Stage needs while the page is scrolling: the character is
+   * translating with the ScrollView anyway, so a paused idle is invisible, and
+   * not re-rasterising this ~120-element SVG every frame is what gives the
+   * scroll its headroom back. Default true, so pickers and celebrations are
+   * unaffected.
+   */
+  running?: boolean;
+  /**
    * The insects' clock, if this figure is standing in the room with them.
    *
    * Given one, it glances at whichever of them is sitting still. Left out —
@@ -619,6 +637,7 @@ export function KoaFigure({
   worn,
   size = 160,
   animated = true,
+  running = true,
   gaze,
 }: KoaFigureProps) {
   const height = size * KOA_ASPECT;
@@ -650,7 +669,10 @@ export function KoaFigure({
       // NOT `=== 'active'`: iOS reports 'unknown' on the first render and
       // then never fires a change event if the app was already frontmost,
       // which left the clock switched off and the figure frozen.
-      const on = animated && AppState.currentState !== 'background';
+      // `running` is the scroll pause — the render path (`live={animated}`)
+      // does not change with it, so the figure holds its current frame rather
+      // than snapping to t=0.
+      const on = animated && running && AppState.currentState !== 'background';
       if (on === active.current) return;
       active.current = on;
       // the callback's `timeSinceFirstFrame` restarts at 0 on every
@@ -667,7 +689,7 @@ export function KoaFigure({
         frameCb.setActive(false);
       }
     };
-  }, [animated, frameCb, last]);
+  }, [animated, running, frameCb, last]);
 
   // The tree is ~90 elements at rest and 130 mid-run, and it only depends on
   // the flags. Rebuilding it every time a parent re-renders — the Stage does

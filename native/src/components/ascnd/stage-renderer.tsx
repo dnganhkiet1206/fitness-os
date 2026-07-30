@@ -79,6 +79,14 @@ interface Props {
   streak?: number;
   /** false pauses the buddy and the stage's own loops (screen not focused) */
   animated?: boolean;
+  /**
+   * The page is mid-scroll. The buddy's clock stops in place for the duration
+   * — the character is translating with the ScrollView, so a paused idle is
+   * invisible, and not re-rasterising the figure every frame is what keeps the
+   * scroll smooth. It freezes in place rather than dropping to the static
+   * frame, so there is no snap when it starts or stops. See `KoaFigure`.
+   */
+  scrolling?: boolean;
 }
 
 export function StageRenderer({
@@ -93,6 +101,7 @@ export function StageRenderer({
   flexSignal = 0,
   streak,
   animated = true,
+  scrolling = false,
 }: Props) {
   const emotion = useMascotEmotion();
   const [sw, setSw] = useState(Dimensions.get('window').width - 32);
@@ -265,6 +274,7 @@ export function StageRenderer({
               accent={accent}
               equippedOutfits={equippedOutfits}
               animated={animated}
+              running={!scrolling}
               gaze={bugs}
             />
           </Animated.View>

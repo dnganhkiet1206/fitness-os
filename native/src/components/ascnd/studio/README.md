@@ -242,6 +242,44 @@ fires. The flag and its touch handlers are gone. If a real drag gesture (a
 rotate) is ever added, gate *it* on the buddy with a gesture responder —
 never by disabling the whole page's scroll.
 
+### The buddy holds still while the page scrolls (2026-07-29)
+
+Still a little rough, the user said. What was left is the character. The room
+is now a set of small canvases that stop when the stage scrolls away, but the
+buddy is a ~120-element SVG on its own 30fps clock, and for the first stretch
+of a scroll — while the stage is still on screen — it was re-rasterising every
+frame on the very UI thread the scroll runs on. That contention is what was
+left to feel.
+
+So the buddy's clock **holds in place** for the duration of a scroll. Two
+things made this clean:
+
+- It is not the same switch as `animated`. `animated=false` draws the frozen
+  t=0 frame — a different, lighter tree for pickers and grids — so toggling it
+  mid-scroll would snap the pose *and* force a re-render at the exact moment
+  you want none. The new `running` flag leaves the animated tree untouched and
+  only stops the clock, so every layer keeps the frame it was on. The figure's
+  clock accumulates rather than copies wall time (`figure-clock.ts`), so it
+  resumes where it paused with no jump — the same property that already lets it
+  survive a blur. `clock.test.mjs` is the proof.
+- The buddy is translating with the ScrollView while it is frozen, so a paused
+  idle is invisible; nobody sees a character stop breathing during a flick.
+
+The signal comes from `mascot-room.tsx`: `onScrollBeginDrag` sets `scrolling`
+the instant a drag starts, before the first frame moves, and a 120ms timer off
+the scroll events clears it once motion stops (covering momentum). It rides the
+prop chain `MascotScene → StageRenderer → MascotBuddy → MascotFigure →
+KoaFigure` as `running={!scrolling}`. Changing it does **not** rebuild the
+figure's element tree — that `useMemo` does not depend on it — it only flips
+`frameCb.setActive`, which is the whole point.
+
+The studio's own live layers (sky, motes, lamp, bugs) keep running during a
+scroll. They are small canvases now, so their per-frame cost is minor, and
+their clocks are `withRepeat` loops that cannot pause in place without a phase
+jump. If scroll is ever still not smooth enough, converting those to the
+figure's accumulator clock is the next lever — but it is a bigger change, and
+the buddy was the large uncovered cost.
+
 ## The weather in the window
 
 ```bash

@@ -50,6 +50,7 @@ interface ScreenProps extends ViewProps {
    * page that does not pass them is unaffected.
    */
   onScroll?: ScrollViewProps['onScroll'];
+  onScrollBeginDrag?: ScrollViewProps['onScrollBeginDrag'];
   scrollEventThrottle?: number;
 }
 
