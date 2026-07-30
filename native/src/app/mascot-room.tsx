@@ -1,33 +1,29 @@
 import {
-  Armchair,
+  Backpack,
   Cat,
   Check,
   Coins,
-  Cylinder,
+  Crown,
   Droplets,
   Dumbbell,
   Flame,
   Footprints,
+  Ghost,
+  Gift,
   Glasses,
-  GraduationCap,
-  Image as ImageIcon,
-  Layers,
+  Headphones,
   LayoutGrid,
-  Lightbulb,
-  Medal,
+  Lock,
   Moon,
-  RectangleHorizontal,
-  RectangleVertical,
-  Ribbon,
-  Shield,
   Shirt,
-  Sprout,
+  Snowflake,
+  Sparkles,
   Star,
   Store,
+  Trophy,
   Utensils,
-  Weight,
+  Wind,
   X,
-  Zap,
   type LucideIcon,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -80,49 +76,74 @@ import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
+  COLLECTIONS,
   DAILY_QUESTS,
   ENERGY_SIGNALS,
   LEVEL_XP,
   RANKS,
+  RARITY,
+  SHOP_CATEGORIES,
   SHOP_ITEMS,
   STREAK_XP,
   WEEKLY_BONUS_COINS,
   WEEKLY_BONUS_XP,
+  collectionProgress,
+  collectionRefKey,
   levelFromXp,
   nextRank,
   questRefKey,
   weeklyRefKey,
   rankForLevel,
   streakCoins,
+  type Collection,
   type QuestKey,
+  type ShopCategory,
   type ShopItem,
 } from '@/lib/mascot-room';
 import { toast } from '@/lib/toast';
 
-const ITEM_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
-  headband: { icon: Ribbon, color: '#e6485c' },
-  cap: { icon: GraduationCap, color: colors.metricBlue },
-  sunglasses: { icon: Glasses, color: colors.foreground },
-  medal: { icon: Medal, color: colors.readinessYellow },
-  belt: { icon: Shield, color: colors.metricOrange },
-  stage_night: { icon: Moon, color: colors.metricPurple },
-  stage_sunset: { icon: Flame, color: colors.metricOrange },
-  stage_champion: { icon: Star, color: colors.readinessYellow },
-  yoga_mat: { icon: RectangleHorizontal, color: colors.metricPurple },
-  kettlebell: { icon: Weight, color: colors.metricOrange },
-  barbell: { icon: Dumbbell, color: colors.metricCyan },
-  dumbbell_rack: { icon: Dumbbell, color: colors.metricOrange },
-  bench: { icon: Armchair, color: '#e6485c' },
-  punching_bag: { icon: Cylinder, color: '#e6485c' },
-  treadmill: { icon: Footprints, color: colors.metricCyan },
-  plant: { icon: Sprout, color: colors.readinessGreen },
-  mirror: { icon: RectangleVertical, color: colors.mutedForeground },
-  neon_sign: { icon: Zap, color: colors.metricCyan },
-  floor_wood: { icon: Layers, color: '#b0793f' },
-  floor_neon: { icon: LayoutGrid, color: colors.metricCyan },
-  wall_led: { icon: Lightbulb, color: colors.metricPurple },
-  wall_frames: { icon: ImageIcon, color: colors.metricBlue },
+/** The icon on each shop-category tab (plus "Tất cả"). */
+const CAT_ICON: Record<ShopCategory | 'all', LucideIcon> = {
+  all: LayoutGrid,
+  head: Crown,
+  face: Glasses,
+  body: Shirt,
+  gear: Backpack,
+  special: Sparkles,
 };
+
+/** Fallback icon by Koa slot, for any outfit without its own below. */
+const SLOT_ICON: Record<string, LucideIcon> = {
+  head: Crown,
+  face: Glasses,
+  top: Shirt,
+  bottom: Shirt,
+  shoes: Footprints,
+  back: Backpack,
+  hand: Dumbbell,
+};
+
+/** Per-item icon where a distinctive one reads better than the slot default. */
+const ITEM_ICON: Record<string, LucideIcon> = {
+  head_phones: Headphones,
+  head_santa: Gift,
+  head_witch: Ghost,
+  top_xmas: Snowflake,
+  top_ghost: Ghost,
+  hand_trophy: Trophy,
+  hand_bottle: Droplets,
+  hand_dumbbell: Dumbbell,
+  back_cape: Wind,
+  back_dragonwing: Flame,
+  shoes_glow: Sparkles,
+  shoes_wing: Wind,
+  stage_night: Moon,
+  stage_sunset: Flame,
+  stage_champion: Star,
+};
+
+const iconFor = (item: ShopItem): LucideIcon =>
+  ITEM_ICON[item.key] ?? (item.slot ? SLOT_ICON[item.slot] : Store) ?? Store;
 
 // The five daily signals that power the buddy's energy meter
 const SIGNAL_META: Record<QuestKey, { icon: LucideIcon; color: string; labelKey: 'nRoomSigMeal' | 'nRoomSigWorkout' | 'nRoomSigWater' | 'nRoomSigSleep' | 'nRoomSigSteps' }> = {
@@ -209,7 +230,10 @@ export default function MascotRoomScreen() {
   const [flex, setFlex] = useState(0);
   const [burst, setBurst] = useState({ id: 0, amount: 0 });
   const [shopOpen, setShopOpen] = useState(false);
-  const [shopTab, setShopTab] = useState<'outfit' | 'stage'>('stage');
+  const [shopTab, setShopTab] = useState<'outfit' | 'stage'>('outfit');
+  // The selected category under the outfit tab ('all' shows everything).
+  const [shopCat, setShopCat] = useState<ShopCategory | 'all'>('all');
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
   // Which item's purchase is in flight, so the spinner lands on that card
   // alone. `buy.isPending` is the mutation's global state — keyed to it, every
   // unowned card in the grid span a spinner at once the moment one was tapped.
@@ -338,6 +362,14 @@ export default function MascotRoomScreen() {
   };
 
   const buyItem = (item: ShopItem) => {
+    // Level-locked items cannot be bought until the buddy gets there (the card
+    // shows the lock, but guard here too). TEST_UNLOCK_ALL ignores the gate.
+    const lvl = levelFromXp(wallet?.xp ?? 0);
+    if (!TEST_UNLOCK_ALL && item.unlockLevel && lvl < item.unlockLevel) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      toast.warning(i18n.nRoomLockLevel.replace('{n}', String(item.unlockLevel)));
+      return;
+    }
     if (!TEST_UNLOCK_ALL && balance < item.price) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       toast.warning(i18n.nRoomNotEnough);
@@ -375,6 +407,19 @@ export default function MascotRoomScreen() {
   const intoLevel = xp % LEVEL_XP;
   const rank = rankForLevel(level);
   const upcomingRank = nextRank(level);
+
+  // The shop grid: the current tab, narrowed to the picked category, common
+  // first (rarity, then price) so a page reads cheap → dear.
+  const shopItems = SHOP_ITEMS.filter(
+    (it) =>
+      it.type === shopTab &&
+      (shopTab !== 'outfit' || shopCat === 'all' || it.category === shopCat),
+  ).sort((a, b) => RARITY[a.rarity].order - RARITY[b.rarity].order || a.price - b.price);
+
+  // Sets that are complete and not yet claimed — the badge on the collections door
+  const setsReady = COLLECTIONS.filter(
+    (c) => collectionProgress(c, owned).complete && !claimed.has(collectionRefKey(c.id)),
+  ).length;
 
   // Live daily energy — how many of the five signals are met today (from
   // real logs, never claims), so the buddy visibly mirrors the day
@@ -749,7 +794,7 @@ export default function MascotRoomScreen() {
         </GlassCard>
       )}
 
-      {/* Shop — a folder: everything lives in one sheet */}
+      {/* Shop — one sheet: tabs, categories, grid, and the collections door */}
       <Modal
         visible={shopOpen}
         transparent
@@ -789,12 +834,26 @@ export default function MascotRoomScreen() {
                 </Pressable>
               ))}
             </View>
+
+            {shopTab === 'outfit' ? (
+              <CategoryRow
+                current={shopCat}
+                onPick={(c) => {
+                  Haptics.selectionAsync();
+                  setShopCat(c);
+                }}
+                lang={lang}
+                i18n={i18n}
+              />
+            ) : null}
+
             <ScrollView contentContainerStyle={styles.sheetScroll} showsVerticalScrollIndicator={false}>
               <ShopGrid
-                items={SHOP_ITEMS.filter((it) => it.type === shopTab)}
+                items={shopItems}
                 owned={owned}
                 equipped={equippedOutfits}
                 balance={balance}
+                level={level}
                 pendingBuy={buy.isPending}
                 buyingKey={buyingKey}
                 onBuy={buyItem}
@@ -805,6 +864,74 @@ export default function MascotRoomScreen() {
                 lang={lang}
                 i18n={i18n}
               />
+              {shopItems.length === 0 ? (
+                <Text style={styles.emptyCat}>{i18n.nRoomEmptyCat}</Text>
+              ) : null}
+
+              {shopTab === 'outfit' ? (
+                <Pressable
+                  style={({ pressed }) => [styles.setsBanner, pressed && styles.pressed]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setCollectionsOpen(true);
+                  }}>
+                  <View style={styles.setsChest}>
+                    <Icon icon={Sparkles} size={22} color={colors.metricPurple} />
+                  </View>
+                  <View style={styles.setsBannerText}>
+                    <Text style={styles.setsTitle}>{i18n.nRoomCollections}</Text>
+                    <Text style={styles.setsHint} numberOfLines={1}>
+                      {i18n.nRoomCollectionsHint}
+                    </Text>
+                  </View>
+                  {setsReady > 0 ? (
+                    <View style={styles.setsBadge}>
+                      <Text style={styles.setsBadgeText}>{setsReady}</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.setsChevron}>›</Text>
+                  )}
+                </Pressable>
+              ) : null}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Collections — a set is done when every item in it is owned */}
+      <Modal
+        visible={collectionsOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCollectionsOpen(false)}>
+        <View style={styles.sheetBackdropWrap}>
+          <Pressable style={styles.sheetBackdrop} onPress={() => setCollectionsOpen(false)} />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>{i18n.nRoomCollections}</Text>
+              <Pressable
+                hitSlop={10}
+                onPress={() => setCollectionsOpen(false)}
+                style={styles.sheetClose}>
+                <Icon icon={X} size={18} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={styles.sheetScroll} showsVerticalScrollIndicator={false}>
+              {COLLECTIONS.map((c) => (
+                <CollectionRow
+                  key={c.id}
+                  c={c}
+                  owned={owned}
+                  claimed={claimed.has(collectionRefKey(c.id))}
+                  pending={claim.isPending}
+                  onClaim={() =>
+                    reward(collectionRefKey(c.id), c.rewardCoins, `set:${c.id}`, c.rewardXp)
+                  }
+                  lang={lang}
+                  i18n={i18n}
+                />
+              ))}
             </ScrollView>
           </View>
         </View>
@@ -838,13 +965,56 @@ function ActionChip({
   );
 }
 
+/** The category icon row under the outfit tab — "Tất cả" + the five slots. */
+function CategoryRow({
+  current,
+  onPick,
+  lang,
+  i18n,
+}: {
+  current: ShopCategory | 'all';
+  onPick: (c: ShopCategory | 'all') => void;
+  lang: 'vi' | 'en';
+  i18n: ReturnType<typeof useI18n>;
+}) {
+  const cats: { id: ShopCategory | 'all'; label: string }[] = [
+    { id: 'all', label: i18n.nRoomAll },
+    ...SHOP_CATEGORIES.map((c) => ({ id: c.id, label: c.name[lang] })),
+  ];
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.catRow}>
+      {cats.map((c) => {
+        const on = current === c.id;
+        return (
+          <Pressable key={c.id} onPress={() => onPick(c.id)} style={styles.catItem}>
+            <View style={[styles.catIcon, on && styles.catIconOn]}>
+              <Icon
+                icon={CAT_ICON[c.id]}
+                size={20}
+                color={on ? colors.primary : colors.mutedForeground}
+              />
+            </View>
+            <Text style={[styles.catLabel, on && styles.catLabelOn]} numberOfLines={1}>
+              {c.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
 function ShopGrid({
-  items, owned, equipped, balance, pendingBuy, buyingKey, onBuy, onToggleEquip, lang, i18n, placedLabel,
+  items, owned, equipped, balance, level, pendingBuy, buyingKey, onBuy, onToggleEquip, lang, i18n,
 }: {
   items: ShopItem[];
   owned: Set<string>;
   equipped: Set<string>;
   balance: number;
+  level: number;
   /** a purchase is in flight — every buy button locks so two cannot race */
   pendingBuy: boolean;
   /** the one item that purchase is for — only its button shows the spinner */
@@ -852,81 +1022,134 @@ function ShopGrid({
   onBuy: (item: ShopItem) => void;
   onToggleEquip: (key: string, next: boolean) => void;
   lang: 'vi' | 'en';
-  i18n: {
-    nRoomBuy: string;
-    nRoomWear: string;
-    nRoomWearing: string;
-    nRoomPlaced: string;
-    nRoomPlace: string;
-    nRoomUse: string;
-    nRoomUsing: string;
-  };
-  placedLabel?: string;
+  i18n: ReturnType<typeof useI18n>;
 }) {
   return (
-    <View style={styles.shopSection}>
-      <View style={styles.shopGrid}>
-        {items.map((item) => {
-          const meta = ITEM_ICONS[item.key];
-          const isOwned = owned.has(item.key);
-          const isEquipped = equipped.has(item.key);
-          const price = TEST_UNLOCK_ALL ? 0 : item.price;
-          const affordable = TEST_UNLOCK_ALL || balance >= item.price;
-          return (
-            <GlassCard key={item.key} style={styles.shopItem}>
-              <View style={[styles.itemIconWrap, { backgroundColor: `${meta.color}1c` }]}>
-                <Icon icon={meta.icon} size={22} color={meta.color} />
+    <View style={styles.shopGrid}>
+      {items.map((item) => {
+        const rar = RARITY[item.rarity];
+        const isOwned = owned.has(item.key);
+        const isEquipped = equipped.has(item.key);
+        const price = TEST_UNLOCK_ALL ? 0 : item.price;
+        const affordable = TEST_UNLOCK_ALL || balance >= item.price;
+        const locked =
+          !TEST_UNLOCK_ALL && !isOwned && item.unlockLevel != null && level < item.unlockLevel;
+        return (
+          <GlassCard key={item.key} style={[styles.shopItem, { borderColor: `${rar.color}4d` }]}>
+            <View style={[styles.itemIconWrap, { backgroundColor: `${rar.color}1c` }]}>
+              <Icon icon={iconFor(item)} size={22} color={rar.color} />
+            </View>
+            <Text style={styles.itemName} numberOfLines={1}>{item.name[lang]}</Text>
+            <View style={[styles.rarityBadge, { backgroundColor: `${rar.color}22` }]}>
+              <Text style={[styles.rarityText, { color: rar.color }]} numberOfLines={1}>
+                {rar.name[lang]}
+              </Text>
+            </View>
+
+            {locked ? (
+              <View style={styles.lockBtn}>
+                <Icon icon={Lock} size={11} color={colors.mutedForeground} />
+                <Text style={styles.lockText}>
+                  {i18n.nRoomLockLevel.replace('{n}', String(item.unlockLevel))}
+                </Text>
               </View>
-              <Text style={styles.itemName} numberOfLines={1}>{item.name[lang]}</Text>
-              {!isOwned ? (
-                <Pressable
-                  disabled={pendingBuy}
-                  style={({ pressed }) => [
-                    styles.buyBtn,
-                    !affordable && styles.buyBtnPoor,
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => onBuy(item)}>
-                  {buyingKey === item.key ? (
-                    <ActivityIndicator size="small" color={colors.primaryForeground} />
-                  ) : (
-                    <>
-                      <Icon icon={Coins} size={11} color={affordable ? colors.primaryForeground : colors.mutedForeground} />
-                      <Text style={[styles.buyText, !affordable && styles.buyTextPoor]}>{price}</Text>
-                    </>
-                  )}
-                </Pressable>
-              ) : (
-                // Owned items toggle on/off — outfits are worn, gym gear
-                // and upgrades are placed in the room (and can be removed).
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.ownedBtn,
-                    isEquipped && styles.wearingBtn,
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => onToggleEquip(item.key, !isEquipped)}>
-                  {isEquipped && <Icon icon={Check} size={11} color={colors.readinessGreen} strokeWidth={3} />}
-                  <Text style={[styles.ownedText, isEquipped && styles.wearingText]}>
-                    {item.type === 'outfit'
-                      ? isEquipped
-                        ? i18n.nRoomWearing
-                        : i18n.nRoomWear
-                      : item.type === 'stage'
-                        ? isEquipped
-                          ? i18n.nRoomUsing
-                          : i18n.nRoomUse
-                        : isEquipped
-                          ? (placedLabel ?? i18n.nRoomPlaced)
-                          : i18n.nRoomPlace}
-                  </Text>
-                </Pressable>
-              )}
-            </GlassCard>
-          );
-        })}
-      </View>
+            ) : !isOwned ? (
+              <Pressable
+                disabled={pendingBuy}
+                style={({ pressed }) => [
+                  styles.buyBtn,
+                  !affordable && styles.buyBtnPoor,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => onBuy(item)}>
+                {buyingKey === item.key ? (
+                  <ActivityIndicator size="small" color={colors.primaryForeground} />
+                ) : (
+                  <>
+                    <Icon icon={Coins} size={11} color={affordable ? colors.primaryForeground : colors.mutedForeground} />
+                    <Text style={[styles.buyText, !affordable && styles.buyTextPoor]}>{price}</Text>
+                  </>
+                )}
+              </Pressable>
+            ) : (
+              // Owned: tap to wear / use, tap again to take off. One per slot,
+              // one stage at a time — the mutation handles the exclusion.
+              <Pressable
+                style={({ pressed }) => [
+                  styles.ownedBtn,
+                  isEquipped && styles.wearingBtn,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => onToggleEquip(item.key, !isEquipped)}>
+                {isEquipped && <Icon icon={Check} size={11} color={colors.readinessGreen} strokeWidth={3} />}
+                <Text style={[styles.ownedText, isEquipped && styles.wearingText]} numberOfLines={1}>
+                  {item.type === 'stage'
+                    ? isEquipped ? i18n.nRoomUsing : i18n.nRoomUse
+                    : isEquipped ? i18n.nRoomWearing : i18n.nRoomOwned}
+                </Text>
+              </Pressable>
+            )}
+          </GlassCard>
+        );
+      })}
     </View>
+  );
+}
+
+/** One collection: name, reward, a progress bar, and a claim when it's full. */
+function CollectionRow({
+  c, owned, claimed, pending, onClaim, lang, i18n,
+}: {
+  c: Collection;
+  owned: Set<string>;
+  claimed: boolean;
+  pending: boolean;
+  onClaim: () => void;
+  lang: 'vi' | 'en';
+  i18n: ReturnType<typeof useI18n>;
+}) {
+  const { have, total, complete } = collectionProgress(c, owned);
+  return (
+    <GlassCard style={styles.setCard}>
+      <View style={styles.setTop}>
+        <View style={styles.setInfo}>
+          <Text style={styles.setName}>{c.name[lang]}</Text>
+          <View style={styles.questCoins}>
+            <Icon icon={Coins} size={11} color={colors.readinessYellow} />
+            <Text style={styles.questCoinText}>+{c.rewardCoins}</Text>
+            <Text style={styles.questXpText}>+{c.rewardXp} XP</Text>
+          </View>
+        </View>
+        {claimed ? (
+          <View style={styles.claimedChip}>
+            <Icon icon={Check} size={13} color={colors.readinessGreen} strokeWidth={3} />
+            <Text style={styles.claimedText}>{i18n.nRoomSetClaimed}</Text>
+          </View>
+        ) : complete ? (
+          <Pressable
+            disabled={pending}
+            style={({ pressed }) => [styles.claimBtn, pressed && styles.pressed]}
+            onPress={onClaim}>
+            <Text style={styles.claimText}>{i18n.nRoomClaim}</Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.setProgressText}>
+            {i18n.nRoomSetProgress.replace('{a}', String(have)).replace('{b}', String(total))}
+          </Text>
+        )}
+      </View>
+      <View style={styles.setTrack}>
+        <View
+          style={[
+            styles.setFill,
+            {
+              width: `${Math.round((have / total) * 100)}%`,
+              backgroundColor: complete ? colors.readinessGreen : colors.metricPurple,
+            },
+          ]}
+        />
+      </View>
+    </GlassCard>
   );
 }
 
@@ -1180,15 +1403,32 @@ const styles = StyleSheet.create({
   tabTextActive: { color: colors.foreground },
   sheetScroll: { paddingBottom: spacing.lg },
 
-  shopSection: { gap: spacing.sm },
+  // Category icon row (outfit tab)
+  catRow: { gap: spacing.md, paddingBottom: spacing.md, paddingHorizontal: 2 },
+  catItem: { alignItems: 'center', gap: 5, width: 56 },
+  catIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  catIconOn: { backgroundColor: 'rgba(124,106,255,0.16)', borderColor: colors.primary },
+  catLabel: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
+  catLabelOn: { color: colors.foreground },
+
   shopGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   shopItem: {
     width: '31%',
     flexGrow: 1,
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 6,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
+    borderWidth: 1,
   },
   itemIconWrap: {
     width: 44,
@@ -1197,7 +1437,70 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  itemName: { ...type.caption, color: colors.foreground, fontWeight: '600' },
+  itemName: { ...type.caption, color: colors.foreground, fontWeight: '600', textAlign: 'center' },
+  rarityBadge: { paddingHorizontal: 8, height: 17, borderRadius: radius.full, justifyContent: 'center' },
+  rarityText: { fontSize: 10, fontWeight: '700' },
+  lockBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    height: 28,
+    minWidth: 64,
+    paddingHorizontal: spacing.sm + 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.secondary,
+  },
+  lockText: { ...type.caption, fontWeight: '700', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  emptyCat: {
+    ...type.footnote,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    paddingVertical: spacing.xl,
+  },
+
+  // Collections banner + rows
+  setsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(124,106,255,0.1)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(124,106,255,0.35)',
+  },
+  setsChest: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(124,106,255,0.16)',
+  },
+  setsBannerText: { flex: 1, minWidth: 0, gap: 2 },
+  setsTitle: { ...type.headline, color: colors.foreground },
+  setsHint: { ...type.caption, color: colors.mutedForeground },
+  setsChevron: { fontSize: 24, color: colors.mutedForeground, marginRight: 4 },
+  setsBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.readinessGreen,
+  },
+  setsBadgeText: { fontSize: 12, fontWeight: '800', color: '#04120c' },
+  setCard: { gap: spacing.sm },
+  setTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  setInfo: { flex: 1, minWidth: 0, gap: 3 },
+  setName: { ...type.body, fontWeight: '700', color: colors.foreground },
+  setProgressText: { ...type.footnote, color: colors.mutedForeground, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  setTrack: { height: 6, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
+  setFill: { height: '100%', borderRadius: 3 },
+
   buyBtn: {
     flexDirection: 'row',
     alignItems: 'center',

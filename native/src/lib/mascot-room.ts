@@ -41,6 +41,11 @@ export const STREAK_XP = 15;
  */
 export const xpForRefKey = (refKey: string): number => {
   if (refKey.startsWith('w:')) return WEEKLY_BONUS_XP;
+  // a completed-collection reward — COLLECTIONS is defined lower in the file,
+  // but this only reads it when called, long after the module has loaded
+  if (refKey.startsWith('set:')) {
+    return COLLECTIONS.find((c) => collectionRefKey(c.id) === refKey)?.rewardXp ?? 0;
+  }
   const m = refKey.match(/^d:\d{4}-\d{2}-\d{2}:(.+)$/);
   if (!m) return 0;
   if (m[1] === 'streak') return STREAK_XP;
@@ -114,58 +119,196 @@ export const buyRefKey = (itemKey: string) => `buy:${itemKey}`;
 
 // ─── Shop ──────────────────────────────────────────────────────────────
 
-export type OutfitSlot = 'head' | 'eyes' | 'neck' | 'waist';
+/**
+ * The outfit items are **Koa's own wardrobe** — the seven slots and their ten
+ * ids each in `koa-flags.ts` (`KOA_ITEMS`), every one of which the figure
+ * already draws. A shop outfit therefore names a `slot` and a `koaId`, and
+ * wearing it is just `worn[slot] = koaId` (see `mascot-figure.tsx`): no lookup
+ * table, and nothing sold that the character cannot show — which is what the
+ * old `medal` / `belt` were, sitting in slots Koa does not have.
+ *
+ * The key is `<slot>_<id>`, so it is stable and readable and can never collide.
+ */
+export type OutfitSlot = 'head' | 'face' | 'top' | 'bottom' | 'shoes' | 'back' | 'hand'; // = KoaSlot
 
-export type ShopItemKey =
-  | 'headband'
-  | 'cap'
-  | 'sunglasses'
-  | 'medal'
-  | 'belt'
-  | 'yoga_mat'
-  | 'dumbbell_rack'
-  | 'barbell'
-  | 'kettlebell'
-  | 'bench'
-  | 'punching_bag'
-  | 'treadmill'
-  | 'mirror'
-  | 'plant'
-  | 'neon_sign'
-  | 'floor_wood'
-  | 'floor_neon'
-  | 'wall_led'
-  | 'wall_frames'
-  | 'stage_night'
-  | 'stage_sunset'
-  | 'stage_champion';
+/** Freeform now — keys are `<slot>_<id>` for outfits and `stage_*` for stages. */
+export type ShopItemKey = string;
+
+/** Rarity, shown as a coloured border + badge. Also orders the grid. */
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
+
+export const RARITY: Record<Rarity, { name: Record<AppLang, string>; color: string; order: number }> = {
+  common: { name: { vi: 'Phổ thông', en: 'Common' }, color: '#20b684', order: 0 },
+  rare: { name: { vi: 'Hiếm', en: 'Rare' }, color: '#3e86ea', order: 1 },
+  epic: { name: { vi: 'Sử thi', en: 'Epic' }, color: '#b07de0', order: 2 },
+  legendary: { name: { vi: 'Huyền thoại', en: 'Legendary' }, color: '#e8ba30', order: 3 },
+};
+
+/** The category tabs under "Trang phục" — the icon row. */
+export type ShopCategory = 'head' | 'face' | 'body' | 'gear' | 'special';
 
 export interface ShopItem {
   key: ShopItemKey;
-  type: 'outfit' | 'gym' | 'upgrade' | 'stage';
+  type: 'outfit' | 'stage';
   /** Outfits in the same slot are mutually exclusive when equipped */
   slot?: OutfitSlot;
+  /** the id within `KOA_ITEMS[slot]` this outfit puts on the character */
+  koaId?: string;
+  /** which tab it shows under (outfits only) */
+  category?: ShopCategory;
+  rarity: Rarity;
   price: number;
+  /** set it belongs to, if any — see `COLLECTIONS` */
+  collection?: string;
+  /** locked until the buddy reaches this level */
+  unlockLevel?: number;
   name: Record<AppLang, string>;
 }
 
+/** shorthand so the catalogue below stays one line per item */
+const o = (
+  slot: OutfitSlot,
+  koaId: string,
+  category: ShopCategory,
+  rarity: Rarity,
+  price: number,
+  vi: string,
+  en: string,
+  extra: { collection?: string; unlockLevel?: number } = {},
+): ShopItem => ({
+  key: `${slot}_${koaId}`,
+  type: 'outfit',
+  slot,
+  koaId,
+  category,
+  rarity,
+  price,
+  name: { vi, en },
+  ...extra,
+});
+
 export const SHOP_ITEMS: ShopItem[] = [
-  // Outfits — worn by the mascot
-  { key: 'headband', type: 'outfit', slot: 'head', price: 100, name: { vi: 'Băng đô', en: 'Headband' } },
-  { key: 'cap', type: 'outfit', slot: 'head', price: 200, name: { vi: 'Nón lưỡi trai', en: 'Cap' } },
-  { key: 'sunglasses', type: 'outfit', slot: 'eyes', price: 150, name: { vi: 'Kính đen', en: 'Sunglasses' } },
-  { key: 'medal', type: 'outfit', slot: 'neck', price: 300, name: { vi: 'Huy chương', en: 'Medal' } },
-  { key: 'belt', type: 'outfit', slot: 'waist', price: 250, name: { vi: 'Đai lực sĩ', en: 'Lifting belt' } },
-  // Stage skins — reskin the whole showcase behind the buddy. One is active
-  // at a time, chosen from the shop; none equipped is the free default. See
-  // `conflictingKeys` / `activeStageKey`.
-  { key: 'stage_night', type: 'stage', price: 300, name: { vi: 'Sân khấu Đêm', en: 'Night Stage' } },
-  { key: 'stage_sunset', type: 'stage', price: 500, name: { vi: 'Sân khấu Hoàng hôn', en: 'Sunset Stage' } },
-  { key: 'stage_champion', type: 'stage', price: 800, name: { vi: 'Sân khấu Vô địch', en: 'Champion Stage' } },
+  // ── Đầu (head) ──
+  o('head', 'band', 'head', 'common', 80, 'Băng đô thể thao', 'Sport Headband'),
+  o('head', 'cap', 'head', 'common', 100, 'Nón lưỡi trai', 'Baseball Cap'),
+  o('head', 'beanie', 'head', 'rare', 150, 'Nón len', 'Knit Beanie'),
+  o('head', 'phones', 'head', 'rare', 200, 'Tai nghe', 'Headphones', { collection: 'runner' }),
+  // ── Mặt (face) ──
+  o('face', 'shades', 'face', 'common', 60, 'Kính đen', 'Sunglasses'),
+  o('face', 'goggles', 'face', 'common', 80, 'Kính bơi', 'Swim Goggles'),
+  o('face', 'mask', 'face', 'common', 60, 'Khẩu trang', 'Face Mask'),
+  o('face', 'heart', 'face', 'rare', 150, 'Kính trái tim', 'Heart Glasses'),
+  o('face', 'vr', 'face', 'epic', 350, 'Kính VR', 'VR Headset'),
+  // ── Thân (top / bottom / shoes) ──
+  o('top', 'tank', 'body', 'common', 100, 'Áo tank top', 'Tank Top', { collection: 'gym' }),
+  o('top', 'tee', 'body', 'common', 80, 'Áo thun', 'T-Shirt'),
+  o('top', 'hoodie', 'body', 'rare', 180, 'Áo hoodie', 'Hoodie'),
+  o('top', 'jersey', 'body', 'rare', 160, 'Áo bóng đá', 'Jersey', { collection: 'runner' }),
+  o('bottom', 'short', 'body', 'common', 80, 'Quần short', 'Shorts', { collection: 'gym' }),
+  o('bottom', 'jogger', 'body', 'common', 100, 'Quần jogger', 'Joggers'),
+  o('bottom', 'legging', 'body', 'rare', 150, 'Quần legging', 'Leggings', { collection: 'runner' }),
+  o('bottom', 'camo', 'body', 'rare', 160, 'Quần rằn ri', 'Camo Pants'),
+  o('shoes', 'sneaker', 'body', 'common', 100, 'Giày sneaker', 'Sneakers', { collection: 'gym' }),
+  o('shoes', 'runner', 'body', 'rare', 200, 'Giày chạy bộ', 'Running Shoes', { collection: 'runner' }),
+  o('shoes', 'glow', 'body', 'epic', 350, 'Giày phát sáng', 'Glow Kicks'),
+  o('shoes', 'wing', 'body', 'legendary', 650, 'Giày có cánh', 'Winged Boots', { unlockLevel: 15 }),
+  // ── Phụ kiện (back / hand) ──
+  o('back', 'backpack', 'gear', 'common', 100, 'Ba lô', 'Backpack'),
+  o('back', 'hydro', 'gear', 'rare', 180, 'Túi nước', 'Hydration Pack', { collection: 'runner' }),
+  o('back', 'cape', 'gear', 'epic', 400, 'Áo choàng', 'Hero Cape'),
+  o('hand', 'bottle', 'gear', 'common', 60, 'Bình nước', 'Water Bottle'),
+  o('hand', 'dumbbell', 'gear', 'common', 80, 'Tạ tay', 'Dumbbell', { collection: 'gym' }),
+  o('hand', 'towel', 'gear', 'common', 60, 'Khăn tập', 'Gym Towel'),
+  o('hand', 'rope', 'gear', 'rare', 140, 'Dây nhảy', 'Jump Rope'),
+  o('hand', 'trophy', 'gear', 'epic', 400, 'Cúp vàng', 'Gold Trophy', { unlockLevel: 10 }),
+  // ── Đặc biệt (seasonal / themed) ──
+  o('head', 'santa', 'special', 'rare', 150, 'Nón Noel', 'Santa Hat', { collection: 'xmas' }),
+  o('top', 'xmas', 'special', 'rare', 180, 'Áo len Noel', 'Xmas Sweater', { collection: 'xmas' }),
+  o('head', 'khanxep', 'special', 'rare', 150, 'Khăn xếp', 'Tet Turban', { collection: 'tet' }),
+  o('top', 'aodai', 'special', 'epic', 350, 'Áo dài', 'Ao Dai', { collection: 'tet' }),
+  o('head', 'witch', 'special', 'rare', 160, 'Nón phù thủy', 'Witch Hat', { collection: 'halloween' }),
+  o('top', 'ghost', 'special', 'rare', 180, 'Áo choàng ma', 'Ghost Cloak', { collection: 'halloween' }),
+  o('back', 'dragonwing', 'special', 'legendary', 800, 'Cánh Rồng', 'Dragon Wings', { unlockLevel: 20 }),
+  // ── Stage skins — reskin the whole showcase behind the buddy. One is active
+  //    at a time, chosen from the shop; none equipped is the free default. See
+  //    `conflictingKeys` / `activeStageKey`. ──
+  { key: 'stage_night', type: 'stage', rarity: 'rare', price: 300, name: { vi: 'Sân khấu Đêm', en: 'Night Stage' } },
+  { key: 'stage_sunset', type: 'stage', rarity: 'epic', price: 500, name: { vi: 'Sân khấu Hoàng hôn', en: 'Sunset Stage' } },
+  { key: 'stage_champion', type: 'stage', rarity: 'legendary', price: 800, name: { vi: 'Sân khấu Vô địch', en: 'Champion Stage' } },
 ];
 
 export const getShopItem = (key: string): ShopItem | undefined =>
   SHOP_ITEMS.find((i) => i.key === key);
+
+/** Category tabs, in the order the icon row shows them (outfits only). */
+export const SHOP_CATEGORIES: { id: ShopCategory; name: Record<AppLang, string> }[] = [
+  { id: 'head', name: { vi: 'Đầu', en: 'Head' } },
+  { id: 'face', name: { vi: 'Mặt', en: 'Face' } },
+  { id: 'body', name: { vi: 'Thân', en: 'Body' } },
+  { id: 'gear', name: { vi: 'Phụ kiện', en: 'Gear' } },
+  { id: 'special', name: { vi: 'Đặc biệt', en: 'Special' } },
+];
+
+/**
+ * A set of outfits; own them all and a one-off reward can be claimed
+ * (ref_key `set:<id>`), which is what makes finishing a look worth it.
+ */
+export interface Collection {
+  id: string;
+  name: Record<AppLang, string>;
+  itemKeys: string[];
+  rewardCoins: number;
+  rewardXp: number;
+}
+
+export const COLLECTIONS: Collection[] = [
+  {
+    id: 'gym',
+    name: { vi: 'Bộ Gym', en: 'Gym Set' },
+    itemKeys: ['head_band', 'top_tank', 'bottom_short', 'shoes_sneaker', 'hand_dumbbell'],
+    rewardCoins: 120,
+    rewardXp: 60,
+  },
+  {
+    id: 'runner',
+    name: { vi: 'Bộ Chạy Bộ', en: 'Runner Set' },
+    itemKeys: ['head_phones', 'top_jersey', 'bottom_legging', 'shoes_runner', 'back_hydro'],
+    rewardCoins: 180,
+    rewardXp: 90,
+  },
+  {
+    id: 'tet',
+    name: { vi: 'Bộ Tết', en: 'Tet Set' },
+    itemKeys: ['head_khanxep', 'top_aodai'],
+    rewardCoins: 120,
+    rewardXp: 60,
+  },
+  {
+    id: 'xmas',
+    name: { vi: 'Bộ Giáng Sinh', en: 'Christmas Set' },
+    itemKeys: ['head_santa', 'top_xmas'],
+    rewardCoins: 120,
+    rewardXp: 60,
+  },
+  {
+    id: 'halloween',
+    name: { vi: 'Bộ Halloween', en: 'Halloween Set' },
+    itemKeys: ['head_witch', 'top_ghost'],
+    rewardCoins: 120,
+    rewardXp: 60,
+  },
+];
+
+export const collectionRefKey = (id: string) => `set:${id}`;
+
+/** How many of a collection's items are owned, and whether it is complete. */
+export const collectionProgress = (
+  c: Collection,
+  owned: Set<string>,
+): { have: number; total: number; complete: boolean } => {
+  const have = c.itemKeys.filter((k) => owned.has(k)).length;
+  return { have, total: c.itemKeys.length, complete: have === c.itemKeys.length };
+};
 
 /**
  * The keys that must switch off when `key` is switched on.

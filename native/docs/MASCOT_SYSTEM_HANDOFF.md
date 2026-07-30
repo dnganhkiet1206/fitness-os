@@ -577,25 +577,30 @@ act on these; raise them when a design pass lands.
    The lash-line blink pivot has since become moot: the export's own
    eyelid collapses onto the lash line at y=72, which is what the user
    asked for.
-2. **The shop vs the 70-item wardrobe — and two items that are sold but
-   never appear.** `SHOP_ITEMS` sells five outfit keys on head / eyes /
-   neck / waist; the character wears one item per slot across head / face /
-   top / bottom / shoes / back / hand. `WORN_FROM_SHOP` in
-   `mascot-figure.tsx` bridges only the three that overlap — `headband`,
-   `cap`, `sunglasses`.
+2. **The shop vs the 70-item wardrobe — RESOLVED 2026-07-29.** The shop used
+   to sell five keys on head / eyes / neck / waist and bridge only three of
+   them to Koa; `medal` and `belt` sat in slots Koa does not have and drew
+   nothing. The user asked for a redesigned shop, so the catalogue was
+   rebuilt on **Koa's own wardrobe**: `SHOP_ITEMS` in `mascot-room.ts` now
+   sells 36 outfits keyed `<slot>_<id>`, each naming a real `KOA_ITEMS`
+   entry, plus the 3 stages. Wearing one is `worn[slot] = koaId` — the
+   `WORN_FROM_SHOP` table is gone, and nothing is sold that the figure cannot
+   draw, so `medal` / `belt` are simply not in the catalogue any more (no
+   refund question in practice — the economy is still `TEST_UNLOCK_ALL` on
+   AsyncStorage, so nobody has spent real coins). Items carry `rarity`,
+   `category`, an optional `collection`, and an optional `unlockLevel`;
+   `COLLECTIONS` defines five sets that pay a one-off `set:<id>` reward when
+   owned in full. The shop UI (categories, rarity borders, 3-col cards,
+   status incl. Locked, collections) is in `mascot-room.tsx`.
 
-   **`medal` (300 coins) and `belt` (250 coins) therefore render as nothing
-   on Koa.** They cannot be fixed by extending that table: `KOA_ITEMS` has
-   no `neck` or `waist` slot and no medal or belt anywhere in its 70, so
-   there is no art to map them onto. They *do* draw on the other five
-   characters, because `vector-mascot.tsx` hand-draws them — so the two
-   items work on every companion except the one everybody uses. Either the
-   design sheet gains a neck medal and a waist belt, or the shop stops
-   selling them and refunds the people who bought them. Not a code
-   decision.
+   Note the key change: any pre-existing inventory row under an old key
+   (`headband`, `cap`, `sunglasses`, `medal`, `belt`) no longer matches a
+   catalogue item and is silently ignored — fine while the economy is local
+   and pre-release, worth a migration if it ever ships with real data.
 
-   Open with it: prices, unlock rules, and a season/theme field — a third
-   of the catalogue is Tết / Christmas / Halloween.
+   Still open here: seasonal items (`santa`, `khanxep`, `witch`, …) are all
+   in the **Special** category and priced as normal rarities; if the shop
+   should gate them to their actual season, that needs a date rule.
 3. **Room items as a shop mechanic.** The studio is a fixed composition, so
    the old stage's auto-placing layout engine has no equivalent. If future
    shop items should furnish the room, that needs designing against the

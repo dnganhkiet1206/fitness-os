@@ -7,6 +7,7 @@ import { useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
 import { koaStateFor } from '@/lib/koa-emotion';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
+import { getShopItem } from '@/lib/mascot-room';
 import type { MascotDef } from '@/lib/mascots';
 
 /**
@@ -40,21 +41,23 @@ interface Props {
 }
 
 /**
- * The shop still sells a flat set of outfit keys; the character now wears one
- * item per slot. Map the ones that have an equivalent — the rest of the
- * catalogue (see assets/mascots/KOA_OUTFIT_CATALOGUE.md) is not in the shop
- * yet, so the shop is what needs extending, not this table.
+ * What the character is wearing, from the equipped shop keys.
+ *
+ * Shop outfits are Koa's own wardrobe items (`SHOP_ITEMS` in `mascot-room.ts`),
+ * so each one already names the slot and the id the figure draws — there is no
+ * mapping table any more, only a direct `worn[slot] = koaId`. Equipping is
+ * one-per-slot (see `conflictingKeys`), so the last write per slot is also the
+ * only one. Stage keys and anything unknown are skipped.
  */
-const WORN_FROM_SHOP: Record<string, Worn> = {
-  headband: { head: 'band' },
-  cap: { head: 'cap' },
-  sunglasses: { face: 'shades' },
-};
-
 function wornFrom(equipped: Set<string> | undefined): Worn {
   if (!equipped) return {};
-  let worn: Worn = {};
-  for (const key of equipped) worn = { ...worn, ...WORN_FROM_SHOP[key] };
+  const worn: Worn = {};
+  for (const key of equipped) {
+    const item = getShopItem(key);
+    if (item?.type === 'outfit' && item.slot && item.koaId) {
+      worn[item.slot] = item.koaId;
+    }
+  }
   return worn;
 }
 
