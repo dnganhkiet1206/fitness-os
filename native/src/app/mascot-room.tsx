@@ -210,6 +210,10 @@ export default function MascotRoomScreen() {
   const [burst, setBurst] = useState({ id: 0, amount: 0 });
   const [shopOpen, setShopOpen] = useState(false);
   const [shopTab, setShopTab] = useState<'outfit' | 'stage'>('stage');
+  // Which item's purchase is in flight, so the spinner lands on that card
+  // alone. `buy.isPending` is the mutation's global state — keyed to it, every
+  // unowned card in the grid span a spinner at once the moment one was tapped.
+  const [buyingKey, setBuyingKey] = useState<string | null>(null);
 
   /**
    * Whether the stage is still on screen.
@@ -345,12 +349,14 @@ export default function MascotRoomScreen() {
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setBuyingKey(item.key);
     buy.mutate(item, {
       onSuccess: () => {
         setCelebrate((c) => c + 1);
         toast.success(i18n.nRoomBought);
       },
       onError: (e: Error) => toast.error(e.message),
+      onSettled: () => setBuyingKey(null),
     });
   };
 
@@ -796,6 +802,7 @@ export default function MascotRoomScreen() {
                 equipped={equippedOutfits}
                 balance={balance}
                 pendingBuy={buy.isPending}
+                buyingKey={buyingKey}
                 onBuy={buyItem}
                 onToggleEquip={(key, next) => {
                   Haptics.selectionAsync();
@@ -838,13 +845,16 @@ function ActionChip({
 }
 
 function ShopGrid({
-  items, owned, equipped, balance, pendingBuy, onBuy, onToggleEquip, lang, i18n, placedLabel,
+  items, owned, equipped, balance, pendingBuy, buyingKey, onBuy, onToggleEquip, lang, i18n, placedLabel,
 }: {
   items: ShopItem[];
   owned: Set<string>;
   equipped: Set<string>;
   balance: number;
+  /** a purchase is in flight — every buy button locks so two cannot race */
   pendingBuy: boolean;
+  /** the one item that purchase is for — only its button shows the spinner */
+  buyingKey?: string | null;
   onBuy: (item: ShopItem) => void;
   onToggleEquip: (key: string, next: boolean) => void;
   lang: 'vi' | 'en';
@@ -883,7 +893,7 @@ function ShopGrid({
                     pressed && styles.pressed,
                   ]}
                   onPress={() => onBuy(item)}>
-                  {pendingBuy ? (
+                  {buyingKey === item.key ? (
                     <ActivityIndicator size="small" color={colors.primaryForeground} />
                   ) : (
                     <>
