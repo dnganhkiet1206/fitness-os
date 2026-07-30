@@ -30,6 +30,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Dimensions,
   ActivityIndicator,
   Modal,
   Pressable,
@@ -56,6 +57,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { MascotScene } from '@/components/ascnd/mascot-scene';
 import { RankJourney } from '@/components/ascnd/rank-journey';
+import { WardrobeScene } from '@/components/ascnd/shop/wardrobe-scene';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -404,6 +406,15 @@ export default function MascotRoomScreen() {
   // Buddy level from quest XP (purchases grant none, so it never drops)
   const xp = wallet?.xp ?? 0;
   const level = levelFromXp(xp);
+  /**
+   * How wide the shop's stage band may draw.
+   *
+   * From the window rather than from a layout pass: the band is inside a
+   * `<Modal>`, which does not report a useful width until after it has
+   * animated in, and a band that resizes on the second frame reads as a jump.
+   * `sheetPad` is the sheet's own horizontal padding, doubled.
+   */
+  const sheetW = Dimensions.get('window').width - spacing.md * 2;
   const intoLevel = xp % LEVEL_XP;
   const rank = rankForLevel(level);
   const upcomingRank = nextRank(level);
@@ -836,6 +847,22 @@ export default function MascotRoomScreen() {
                 </Pressable>
               ))}
             </View>
+
+            {/* Koa and the wardrobe it changes in. The reference puts the
+                character and the cabinet above the catalogue, and that split is
+                the reason it works: the top half says *this is you*, the bottom
+                half is a list. See `shop/wardrobe-scene.tsx`. */}
+            {shopTab === 'outfit' ? (
+              <View style={styles.shopStage}>
+                <WardrobeScene
+                  mascot={mascot}
+                  size={sheetW}
+                  level={level}
+                  equipped={equippedOutfits}
+                  animated={false}
+                />
+              </View>
+            ) : null}
 
             {shopTab === 'outfit' ? (
               <CategoryRow
@@ -1404,6 +1431,7 @@ const styles = StyleSheet.create({
   tabText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
   tabTextActive: { color: colors.foreground },
   sheetScroll: { paddingBottom: spacing.lg },
+  shopStage: { alignItems: 'center', paddingBottom: spacing.sm },
 
   // Category icon row (outfit tab)
   catRow: { gap: spacing.md, paddingBottom: spacing.md, paddingHorizontal: 2 },
