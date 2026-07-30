@@ -76,6 +76,38 @@ Put no layout in whitespace inside SVG text, and prefer separate positioned
 the preview and a device shot differ on text, the preview is the one that
 is wrong.
 
+## Checking it
+
+```bash
+cd native && node tools/check.mjs
+```
+
+Type-check, the worklet-boundary check and the redraw budget, in one command
+with a non-zero exit. The drawing tools are not in it — a screenshot nobody
+opens proves nothing.
+
+**It refuses to run from anywhere but `native/`, and that is the point of it.**
+The repository root is this project's previous life: a Vite web app whose `src/`
+is long gone but whose `tsconfig.json` is still there, still carrying a
+deprecated `baseUrl` and still pointing `@/*` at a directory that does not
+exist. `cd`-ing up one level for a `git` command is enough to leave the working
+directory there, and then
+
+```
+tsconfig.json(5,5): error TS5101: Option 'baseUrl' is deprecated
+```
+
+comes out of a config the app has nothing to do with and reads exactly like the
+build breaking. Half an hour went into that once, and the conclusion written
+down at the time — "the whole verification toolchain is down" — was wrong;
+nothing was wrong. A check whose result depends on where you were standing is
+not a check.
+
+The other half of that hour was `npx` fetching `esbuild` while several tools ran
+at once, which fails one of them with an unresolved `@/…` and then works on the
+next try. If a tool fails to bundle and its neighbour does not, run it again
+before believing it.
+
 ## A canvas is the size of what moves on it
 
 ```bash
