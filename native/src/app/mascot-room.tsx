@@ -409,11 +409,13 @@ export default function MascotRoomScreen() {
   const upcomingRank = nextRank(level);
 
   // The shop grid: the current tab, narrowed to the picked category, common
-  // first (rarity, then price) so a page reads cheap → dear.
+  // first (rarity, then price) so a page reads cheap → dear. "Đặc biệt" is the
+  // seasonal shelf (the `special` flag); every other category is by slot, and a
+  // seasonal item shows under both.
+  const inCategory = (it: ShopItem) =>
+    shopCat === 'all' || (shopCat === 'special' ? !!it.special : it.category === shopCat);
   const shopItems = SHOP_ITEMS.filter(
-    (it) =>
-      it.type === shopTab &&
-      (shopTab !== 'outfit' || shopCat === 'all' || it.category === shopCat),
+    (it) => it.type === shopTab && (shopTab !== 'outfit' || inCategory(it)),
   ).sort((a, b) => RARITY[a.rarity].order - RARITY[b.rarity].order || a.price - b.price);
 
   // Sets that are complete and not yet claimed — the badge on the collections door

@@ -144,7 +144,14 @@ export const RARITY: Record<Rarity, { name: Record<AppLang, string>; color: stri
   legendary: { name: { vi: 'Huyền thoại', en: 'Legendary' }, color: '#e8ba30', order: 3 },
 };
 
-/** The category tabs under "Trang phục" — the icon row. */
+/**
+ * The category tabs under "Trang phục" — the icon row.
+ *
+ * `head`/`face`/`body`/`gear` are an item's home tab, grouped by slot. `special`
+ * is not a home — it is a **second** shelf a seasonal item also shows on (the
+ * `special` flag), so a Santa hat lives under both Đầu and Đặc biệt rather than
+ * being pulled out of its slot.
+ */
 export type ShopCategory = 'head' | 'face' | 'body' | 'gear' | 'special';
 
 export interface ShopItem {
@@ -154,8 +161,10 @@ export interface ShopItem {
   slot?: OutfitSlot;
   /** the id within `KOA_ITEMS[slot]` this outfit puts on the character */
   koaId?: string;
-  /** which tab it shows under (outfits only) */
+  /** the item's home tab, by slot (outfits only): head / face / body / gear */
   category?: ShopCategory;
+  /** also shows on the Đặc biệt tab — the seasonal / themed pieces */
+  special?: boolean;
   rarity: Rarity;
   price: number;
   /** set it belongs to, if any — see `COLLECTIONS` */
@@ -174,7 +183,7 @@ const o = (
   price: number,
   vi: string,
   en: string,
-  extra: { collection?: string; unlockLevel?: number } = {},
+  extra: { collection?: string; unlockLevel?: number; special?: boolean } = {},
 ): ShopItem => ({
   key: `${slot}_${koaId}`,
   type: 'outfit',
@@ -221,14 +230,15 @@ export const SHOP_ITEMS: ShopItem[] = [
   o('hand', 'towel', 'gear', 'common', 60, 'Khăn tập', 'Gym Towel'),
   o('hand', 'rope', 'gear', 'rare', 140, 'Dây nhảy', 'Jump Rope'),
   o('hand', 'trophy', 'gear', 'epic', 400, 'Cúp vàng', 'Gold Trophy', { unlockLevel: 10 }),
-  // ── Đặc biệt (seasonal / themed) ──
-  o('head', 'santa', 'special', 'rare', 150, 'Nón Noel', 'Santa Hat', { collection: 'xmas' }),
-  o('top', 'xmas', 'special', 'rare', 180, 'Áo len Noel', 'Xmas Sweater', { collection: 'xmas' }),
-  o('head', 'khanxep', 'special', 'rare', 150, 'Khăn xếp', 'Tet Turban', { collection: 'tet' }),
-  o('top', 'aodai', 'special', 'epic', 350, 'Áo dài', 'Ao Dai', { collection: 'tet' }),
-  o('head', 'witch', 'special', 'rare', 160, 'Nón phù thủy', 'Witch Hat', { collection: 'halloween' }),
-  o('top', 'ghost', 'special', 'rare', 180, 'Áo choàng ma', 'Ghost Cloak', { collection: 'halloween' }),
-  o('back', 'dragonwing', 'special', 'legendary', 800, 'Cánh Rồng', 'Dragon Wings', { unlockLevel: 20 }),
+  // ── Đặc biệt (seasonal / themed) — each keeps its slot home *and* the
+  //    Special shelf (special: true), so a Santa hat is under Đầu too. ──
+  o('head', 'santa', 'head', 'rare', 150, 'Nón Noel', 'Santa Hat', { collection: 'xmas', special: true }),
+  o('top', 'xmas', 'body', 'rare', 180, 'Áo len Noel', 'Xmas Sweater', { collection: 'xmas', special: true }),
+  o('head', 'khanxep', 'head', 'rare', 150, 'Khăn xếp', 'Tet Turban', { collection: 'tet', special: true }),
+  o('top', 'aodai', 'body', 'epic', 350, 'Áo dài', 'Ao Dai', { collection: 'tet', special: true }),
+  o('head', 'witch', 'head', 'rare', 160, 'Nón phù thủy', 'Witch Hat', { collection: 'halloween', special: true }),
+  o('top', 'ghost', 'body', 'rare', 180, 'Áo choàng ma', 'Ghost Cloak', { collection: 'halloween', special: true }),
+  o('back', 'dragonwing', 'gear', 'legendary', 800, 'Cánh Rồng', 'Dragon Wings', { unlockLevel: 20, special: true }),
   // ── Stage skins — reskin the whole showcase behind the buddy. One is active
   //    at a time, chosen from the shop; none equipped is the free default. See
   //    `conflictingKeys` / `activeStageKey`. ──
