@@ -10,6 +10,7 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -80,13 +81,14 @@ interface Props {
   /** false pauses the buddy and the stage's own loops (screen not focused) */
   animated?: boolean;
   /**
-   * The page is mid-scroll. The buddy's clock stops in place for the duration
-   * — the character is translating with the ScrollView, so a paused idle is
-   * invisible, and not re-rasterising the figure every frame is what keeps the
-   * scroll smooth. It freezes in place rather than dropping to the static
-   * frame, so there is no snap when it starts or stops. See `KoaFigure`.
+   * The page is mid-scroll, as a shared value the page writes from its scroll
+   * callbacks. Everything that animates in the room reads it on the UI thread —
+   * the buddy's clock and every one of the room's loop clocks — and holds its
+   * current frame for the duration, so the whole scene freezes on the frame the
+   * drag begins with no React render in between and resumes with no jump. See
+   * `useLoopClock` and `KoaFigure`.
    */
-  scrolling?: boolean;
+  scrollPause?: SharedValue<boolean>;
 }
 
 export function StageRenderer({
@@ -101,7 +103,7 @@ export function StageRenderer({
   flexSignal = 0,
   streak,
   animated = true,
-  scrolling = false,
+  scrollPause,
 }: Props) {
   const emotion = useMascotEmotion();
   const [sw, setSw] = useState(Dimensions.get('window').width - 32);
@@ -133,7 +135,7 @@ export function StageRenderer({
    * minute and then have Koa staring at an empty shelf, so there is one and it
    * belongs to whatever contains both of them — which is this file.
    */
-  const bugs = useBugClock(animated);
+  const bugs = useBugClock(scrollPause);
 
   const nod = useSharedValue(0);
   const settle = useSharedValue(1);
@@ -216,7 +218,7 @@ export function StageRenderer({
           layer="back"
         />
         <View style={StyleSheet.absoluteFill}>
-          <PlantsCanvas width={sw} height={H} animated={animated} scrolling={scrolling} />
+          <PlantsCanvas width={sw} height={H} animated={animated} pause={scrollPause} />
         </View>
         <View style={StyleSheet.absoluteFill}>
           <Studio
@@ -241,7 +243,7 @@ export function StageRenderer({
               glow={STUDIO_SKINS[themeKey ?? 'default']?.glow}
               energy={energy}
               bugs={bugs}
-              scrolling={scrolling}
+              pause={scrollPause}
             />
           </View>
         ) : null}
@@ -275,7 +277,7 @@ export function StageRenderer({
               accent={accent}
               equippedOutfits={equippedOutfits}
               animated={animated}
-              running={!scrolling}
+              scrollPause={scrollPause}
               gaze={bugs}
             />
           </Animated.View>

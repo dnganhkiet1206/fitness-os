@@ -1,3 +1,5 @@
+import { type SharedValue } from 'react-native-reanimated';
+
 import { StageRenderer } from '@/components/ascnd/stage-renderer';
 import type { MascotMood } from '@/hooks/use-mascot';
 import { activeStageKey } from '@/lib/mascot-room';
@@ -25,8 +27,8 @@ interface Props {
   streak?: number;
   /** false pauses everything on the stage (screen not focused) */
   animated?: boolean;
-  /** the page is mid-scroll — the buddy's clock holds in place. See StageRenderer */
-  scrolling?: boolean;
+  /** the page's mid-scroll shared value — the whole scene holds in place. See StageRenderer */
+  scrollPause?: SharedValue<boolean>;
 }
 
 /** stage item key → studio skin name (see `STUDIO_SKINS`) */
@@ -47,7 +49,7 @@ export function MascotScene({
   energy = 0.5,
   streak,
   animated = true,
-  scrolling = false,
+  scrollPause,
 }: Props) {
   // The stage the player has equipped drives the theme; none equipped is the
   // free default. This is what makes the shop's "Use" a real choice — the room
@@ -68,7 +70,7 @@ export function MascotScene({
       flexSignal={flexSignal}
       streak={streak}
       animated={animated}
-      scrolling={scrolling}
+      scrollPause={scrollPause}
     />
   );
 }

@@ -251,48 +251,45 @@ of a scroll — while the stage is still on screen — it was re-rasterising eve
 frame on the very UI thread the scroll runs on. That contention is what was
 left to feel.
 
-So the buddy's clock **holds in place** for the duration of a scroll. Two
-things made this clean:
+So the whole scene's clocks **hold in place** for the duration of a scroll,
+and it is done without a single React render. Three things made it clean, and
+they came in three passes as the user reported each remaining bit of stutter:
 
-- It is not the same switch as `animated`. `animated=false` draws the frozen
-  t=0 frame — a different, lighter tree for pickers and grids — so toggling it
-  mid-scroll would snap the pose *and* force a re-render at the exact moment
-  you want none. The new `running` flag leaves the animated tree untouched and
-  only stops the clock, so every layer keeps the frame it was on. The figure's
-  clock accumulates rather than copies wall time (`figure-clock.ts`), so it
-  resumes where it paused with no jump — the same property that already lets it
-  survive a blur. `clock.test.mjs` is the proof.
-- The buddy is translating with the ScrollView while it is frozen, so a paused
-  idle is invisible; nobody sees a character stop breathing during a flick.
+- **Freeze, don't switch off.** Pausing is not the same as `animated=false`.
+  `animated=false` draws the frozen t=0 frame — a different, lighter tree for
+  pickers and grids — so toggling it mid-scroll would snap the pose *and* force
+  a re-render at the exact moment you want none. Pausing leaves the animated
+  tree untouched and only stops the clock feeding it, so every layer keeps the
+  frame it was on. Every clock here accumulates rather than copies wall time
+  (`figure-clock.ts` for the buddy, `loop-clock.ts` for the room), so it
+  resumes where it paused with no jump — the same property that already lets
+  the buddy survive a blur. `clock.test.mjs` is the proof for the figure.
+- **One signal, on the UI thread.** The pause is a **shared value**, not React
+  state. `mascot-room.tsx` writes it straight from the scroll callbacks —
+  `onScrollBeginDrag` sets it the instant a drag begins, before the first frame
+  moves, and a 120ms timer clears it a breath after the last scroll event
+  (covering momentum). It rides the prop chain `MascotScene → StageRenderer`
+  down to the buddy (`MascotBuddy → MascotFigure → KoaFigure`, read in the
+  figure's frame callback) and to every room clock (`useLightClock`,
+  `useSkyClock`, `DriftingMotes`, `useSwayClock`, `useBugClock`, all through
+  `useLoopClock`). Nothing is conditionally *rendered* on it, so it never
+  triggers a render. An earlier version drove it through `useState`, and
+  re-rendering the whole page twice a scroll — at the start and the stop — was
+  the last of the stutter the user could feel.
+- **Invisible anyway.** Everything in the room is translating with the
+  ScrollView while it is frozen, so a held frame is not something you can see;
+  nobody notices a character stop breathing, or a mote stop drifting, during a
+  flick.
 
-The signal comes from `mascot-room.tsx`: `onScrollBeginDrag` sets `scrolling`
-the instant a drag starts, before the first frame moves, and a 120ms timer off
-the scroll events clears it once motion stops (covering momentum). It rides the
-prop chain `MascotScene → StageRenderer → MascotBuddy → MascotFigure →
-KoaFigure` as `running={!scrolling}`. Changing it does **not** rebuild the
-figure's element tree — that `useMemo` does not depend on it — it only flips
-`frameCb.setActive`, which is the whole point.
-
-The small live layers — sky, motes, lamp, stage glow, plants — freeze in place
-too. They were left running at first, on the reasoning that each is only a few
-percent of the screen; but a handful of them repainting every frame on the UI
-thread the scroll runs on still added up, and the room stayed slightly rough
-under a scroll. Their `withRepeat` clocks could not pause without losing their
-phase, so they are now built on `loop-clock.ts` instead — the same linear 0→1
-loop, drawn the same, but on an accumulator that `paused` holds exactly where
-it is and releases with no jump (`useLightClock`, `useSkyClock`,
-`DriftingMotes`, `useSwayClock` all take it; the weather's own `withTiming`
-transitions are event-driven and left alone). So while the page scrolls the
-whole room holds a single frame — nothing repaints, everything just
-translates — and picks up untouched on release.
-
-**The insects go one further and leave the tree, because their canvas is the
-whole room.** `BUGS = ROOM` in `live-regions.ts` — the bee and butterflies
-cross everything, so freezing that layer in place would still hand the
-compositor a screen-sized cached bitmap to move. `StudioLive` drops the insect
-layer entirely for the duration instead; the shared bug clock keeps ticking, so
-on release they are back at their true positions (a mid-flight one can reappear
-at once, a far smaller thing than a room-sized layer).
+This includes the insects, whose canvas is the whole room (`BUGS = ROOM` in
+`live-regions.ts`, because the bee and butterflies cross everything). An
+in-between version *unmounted* that layer during a scroll — the redraw is
+screen-sized, so dropping it helped — but remounting it on release rasterised
+the whole room once, a small hitch exactly at the stop. Holding its shared
+clock instead makes it a frozen bitmap the compositor just translates, with
+nothing to rasterise at either end. The weather's own `withTiming` transitions
+are event-driven (a turn every few minutes), not a per-frame clock, so they
+are left alone.
 
 ## The weather in the window
 

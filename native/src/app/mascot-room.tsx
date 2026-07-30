@@ -238,36 +238,31 @@ export default function MascotRoomScreen() {
   const [stageOnScreen, setStageOnScreen] = useState(true);
 
   /**
-   * Whether the page is being scrolled right now.
+   * Whether the page is being scrolled right now — a **shared value**, not React
+   * state, on purpose.
    *
-   * Sizing each canvas to its content and stopping the clocks once the stage
-   * is gone took the heat out, but the first stretch of a scroll — while the
-   * stage is still on screen — was still redrawing the buddy, a ~120-element
-   * SVG, every frame *on the same UI thread the scroll runs on*. That is the
-   * contention a user feels as the top of this page being less smooth than the
-   * rest.
+   * Everything that animates in the room reads it on the UI thread and holds its
+   * current frame while it is true (the buddy's clock and every one of the
+   * room's loop clocks). Writing it from the scroll callbacks freezes the whole
+   * scene on the frame the drag begins with **no React render** — an earlier
+   * version drove this through `useState`, and re-rendering the whole page twice
+   * a scroll (start and stop) was the last of the stutter. Nothing here is
+   * conditionally rendered on it, so a shared value is all it needs to be.
    *
-   * So the buddy's clock holds in place for the duration of a scroll. It is
-   * translating with the ScrollView anyway, so a paused idle is invisible, and
-   * because the clock only freezes — the drawing does not change to its static
-   * form — there is no snap when the scroll starts or stops. `onScrollBeginDrag`
-   * sets it the instant a drag begins, before the first frame moves; the timer
-   * clears it a breath after the last scroll event, which covers momentum too.
+   * `onScrollBeginDrag` sets it the instant a drag begins, before the first
+   * frame moves; the timer clears it a breath after the last scroll event,
+   * which covers momentum too. The scene freezes and resumes with no jump — the
+   * clocks are accumulators (see `loop-clock.ts`).
    */
-  const [scrolling, setScrolling] = useState(false);
-  const scrollingRef = useRef(false);
+  const scrollPause = useSharedValue(false);
   const scrollIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const markScrolling = () => {
-    if (!scrollingRef.current) {
-      scrollingRef.current = true;
-      setScrolling(true);
-    }
+    scrollPause.value = true;
     if (scrollIdle.current) clearTimeout(scrollIdle.current);
     // longer than the 64ms scroll-event throttle, so momentum keeps it alive
     scrollIdle.current = setTimeout(() => {
-      scrollingRef.current = false;
-      setScrolling(false);
+      scrollPause.value = false;
     }, 120);
   };
 
@@ -453,7 +448,7 @@ export default function MascotRoomScreen() {
           energy={energyCount / ENERGY_SIGNALS.length}
           streak={streak}
           animated={focused && stageOnScreen}
-          scrolling={scrolling}
+          scrollPause={scrollPause}
         />
         <CoinBurst trigger={burst.id} amount={burst.amount} />
       </View>

@@ -46,10 +46,10 @@ const GLOW_SWING = 0.22;
  * They used to take one each, which is two invalidation sources at 60fps for
  * one visual idea. `studio-live.tsx` owns it now and hands it to both.
  *
- * `paused` holds it in place while the page scrolls — see `useLoopClock`.
+ * `pause` holds it in place while the page scrolls — see `useLoopClock`.
  */
-export function useLightClock(paused = false): SharedValue<number> {
-  return useLoopClock(PERIOD, paused);
+export function useLightClock(pause?: SharedValue<boolean>): SharedValue<number> {
+  return useLoopClock(PERIOD, pause);
 }
 
 /**

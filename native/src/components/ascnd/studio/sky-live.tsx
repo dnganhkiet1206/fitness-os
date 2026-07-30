@@ -64,10 +64,10 @@ const PERIOD = 45000;
  */
 const BLINK = [5, 7, 11, 13, 17, 19];
 
-/** `paused` holds the sky — stars, shooting star, cloud and rain drift all read
+/** `pause` holds the sky — stars, shooting star, cloud and rain drift all read
  *  this one clock — while the page scrolls. See `useLoopClock`. */
-export function useSkyClock(paused = false): SharedValue<number> {
-  return useLoopClock(PERIOD, paused);
+export function useSkyClock(pause?: SharedValue<boolean>): SharedValue<number> {
+  return useLoopClock(PERIOD, pause);
 }
 
 /**

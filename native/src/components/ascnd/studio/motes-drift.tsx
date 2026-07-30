@@ -57,8 +57,8 @@ function Band({ i, t }: { i: number; t: SharedValue<number> }) {
   );
 }
 
-export function DriftingMotes({ paused = false }: { paused?: boolean }) {
-  const t = useLoopClock(PERIOD, paused);
+export function DriftingMotes({ pause }: { pause?: SharedValue<boolean> }) {
+  const t = useLoopClock(PERIOD, pause);
   return (
     <>
       {MOTE_SWAY.map((_, i) => (

@@ -51,12 +51,13 @@ const SWAY: { deg: number; rate: number; gust: number; phase: number }[] = [
 ];
 
 /**
- * `active` is whether the plants are drawn swaying at all (a picker or an
- * unfocused screen draws them still); `paused` holds the sway in place while
- * the page scrolls. Either one stops the clock — see `useLoopClock`.
+ * `pause` holds the sway in place while the page scrolls — see `useLoopClock`.
+ * When the plants are drawn still instead (a picker, an unfocused screen) the
+ * canvas renders `StudioPlants` and this clock's output goes unread, so it does
+ * not need its own gate for that case.
  */
-function useSwayClock(active = true, paused = false): SharedValue<number> {
-  return useLoopClock(PERIOD, !active || paused);
+function useSwayClock(pause?: SharedValue<boolean>): SharedValue<number> {
+  return useLoopClock(PERIOD, pause);
 }
 
 /**
@@ -133,14 +134,14 @@ function PlantsCanvasInner({
   width,
   height,
   animated,
-  scrolling,
+  pause,
 }: {
   width: number;
   height: number;
   animated?: boolean;
-  scrolling?: boolean;
+  pause?: SharedValue<boolean>;
 }) {
-  const t = useSwayClock(animated !== false, scrolling);
+  const t = useSwayClock(pause);
   if (!animated) {
     return (
       <Svg

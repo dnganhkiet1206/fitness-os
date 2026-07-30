@@ -1,17 +1,10 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedProps,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedProps, type SharedValue } from 'react-native-reanimated';
 import { G, type GProps } from 'react-native-svg';
 
 import { Bee, BUG_PERIOD, Butterfly, flightAt, ROUTES, type Route } from '@/components/ascnd/studio/bugs';
+import { useLoopClock } from '@/components/ascnd/studio/loop-clock';
 import { C } from '@/components/ascnd/studio/palette';
 
 /**
@@ -71,23 +64,14 @@ function Flyer({ r, t, children }: { r: Route; t: SharedValue<number>; children:
  * would drift apart within a minute on separate clocks. One clock, two
  * consumers — see `koa-gaze.ts`.
  *
- * `active` is the screen's focus. It has to be a parameter rather than a
- * mount: this hook now runs a level above the canvas that used to be
- * conditionally rendered, so without it the clock would keep ticking — and
- * keep waking every worklet reading it — behind whatever is pushed on top.
+ * `pause` holds it — freezing the insects mid-flight — while the page scrolls.
+ * Their canvas is the whole room, so rather than redraw it every scrolled
+ * frame it simply holds: the frozen bitmap is cheap to translate, and there is
+ * no reset when the scroll ends, unlike unmounting and remounting the layer.
+ * See `useLoopClock`.
  */
-export function useBugClock(active = true): SharedValue<number> {
-  const t = useSharedValue(0);
-  useEffect(() => {
-    if (!active) {
-      cancelAnimation(t);
-      return;
-    }
-    t.value = 0;
-    t.value = withRepeat(withTiming(1, { duration: BUG_PERIOD, easing: Easing.linear }), -1, false);
-    return () => cancelAnimation(t);
-  }, [t, active]);
-  return t;
+export function useBugClock(pause?: SharedValue<boolean>): SharedValue<number> {
+  return useLoopClock(BUG_PERIOD, pause);
 }
 
 /**

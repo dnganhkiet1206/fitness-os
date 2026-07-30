@@ -84,22 +84,24 @@ function StudioLiveInner({
   glow,
   energy,
   bugs,
-  scrolling,
+  pause,
 }: {
   width: number;
   glow?: string;
   energy?: number;
   /** the insects' clock, owned by `StageRenderer` so the mascot shares it */
   bugs: SharedValue<number>;
-  /** the page is mid-scroll — see the insect note below */
-  scrolling?: boolean;
+  /** the page is mid-scroll, as a shared value — every clock below holds on it */
+  pause?: SharedValue<boolean>;
 }) {
-  // Every loop clock holds in place while the page scrolls, so these small
-  // canvases stop redrawing under the ScrollView instead of repainting each
-  // one every frame on the thread the scroll runs on. They resume untouched —
-  // the clocks are accumulators, see loop-clock.ts.
-  const t = useLightClock(scrolling);
-  const sky = useSkyClock(scrolling);
+  // Every loop clock holds in place while the page scrolls, so these canvases
+  // stop redrawing under the ScrollView instead of repainting each one every
+  // frame on the thread the scroll runs on. `pause` is a shared value read on
+  // the UI thread, so the freeze lands the frame the drag begins with no React
+  // render in between; the clocks are accumulators, so they resume untouched.
+  // See loop-clock.ts.
+  const t = useLightClock(pause);
+  const sky = useSkyClock(pause);
   const k = width / STUDIO_W;
   return (
     <>
@@ -110,21 +112,16 @@ function StudioLiveInner({
       {/* the lamp's mouth and the motes in its beam, which overlap */}
       <LiveLayer r={BEAM} k={k}>
         <LampPulse t={t} glow={glow} />
-        <DriftingMotes paused={scrolling} />
+        <DriftingMotes pause={pause} />
       </LiveLayer>
-      {/* A bee and two butterflies. Their canvas is the whole room, because
-          that is what their routes cross — so it is the one live layer whose
-          redraw is screen-sized, and the one that costs during a scroll. While
-          the page is scrolling the layer comes out entirely; the shared clock
-          keeps running, so on release the insects are back at their true
-          positions with no jump. The small canvases above stay — their redraw
-          is a few percent of the screen and not worth the seam. See
-          bugs-live.tsx. */}
-      {scrolling ? null : (
-        <LiveLayer r={BUGS} k={k}>
-          <FlyingBugs t={bugs} />
-        </LiveLayer>
-      )}
+      {/* A bee and two butterflies. Their canvas is the whole room, because that
+          is what their routes cross, so its redraw is screen-sized — but the
+          shared bug clock holds on `pause` like the rest, so during a scroll
+          this layer is a frozen bitmap the compositor just translates, not a
+          per-frame redraw. See bugs-live.tsx. */}
+      <LiveLayer r={BUGS} k={k}>
+        <FlyingBugs t={bugs} />
+      </LiveLayer>
       <LiveLayer r={STAGE} k={k}>
         <LiveStageGlow t={t} glow={glow} energy={energy} />
       </LiveLayer>

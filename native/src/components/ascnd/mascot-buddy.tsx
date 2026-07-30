@@ -25,10 +25,10 @@ export interface MascotBuddyProps {
   animated?: boolean;
   /**
    * Pause the figure's clock in place without changing the drawing — the room
-   * passes `!scrolling` down so the character holds its frame while the page
-   * scrolls rather than re-rasterising every frame. See `KoaFigure`.
+   * passes its scroll shared value down so the character holds its frame while
+   * the page scrolls rather than re-rasterising every frame. See `KoaFigure`.
    */
-  running?: boolean;
+  scrollPause?: SharedValue<boolean>;
   /**
    * The room's insect clock, when the buddy is standing in the room.
    *
@@ -47,7 +47,7 @@ export function MascotBuddy({
   level = 1,
   equippedOutfits,
   animated = true,
-  running = true,
+  scrollPause,
   gaze,
 }: MascotBuddyProps) {
   return (
@@ -59,7 +59,7 @@ export function MascotBuddy({
       level={level}
       equippedOutfits={equippedOutfits}
       animated={animated}
-      running={running}
+      scrollPause={scrollPause}
       gaze={gaze}
     />
   );
