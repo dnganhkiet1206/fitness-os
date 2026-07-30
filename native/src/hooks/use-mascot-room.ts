@@ -4,7 +4,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
-import { buyRefKey, getShopItem, xpForRefKey, type ShopItem } from '@/lib/mascot-room';
+import {
+  buyRefKey,
+  conflictingKeys,
+  getShopItem,
+  xpForRefKey,
+  type ShopItem,
+  type ShopItemKey,
+} from '@/lib/mascot-room';
 import { useAuth } from './use-auth';
 
 /**
@@ -148,10 +155,8 @@ export function useClaimReward() {
   });
 }
 
-const SAME_SLOT_POOL = ['headband', 'cap', 'sunglasses', 'medal', 'belt'] as const;
-
 /** Buy a shop item: inventory row first (unique blocks re-buys), then the
- *  spend row. Outfits auto-equip on purchase. */
+ *  spend row. The piece auto-equips, pushing off whatever it conflicts with. */
 export function useBuyItem() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -161,16 +166,14 @@ export function useBuyItem() {
         // Local test economy: free, instant, no Supabase needed
         let rows = await readLocal<LocalInv>(LOCAL_INV_KEY);
         if (!rows.some((r) => r.item_key === item.key)) {
-          if (item.type === 'outfit' && item.slot) {
-            const slotKeys = SAME_SLOT_POOL.filter((k) => getShopItem(k)?.slot === item.slot);
+          // The new piece is worn/used at once, so its rivals switch off — the
+          // other hat in its slot, or the stage that was showing.
+          const conflicts = conflictingKeys(item.key);
+          if (conflicts.length) {
             rows = rows.map((r) =>
-              slotKeys.includes(r.item_key as (typeof SAME_SLOT_POOL)[number])
-                ? { ...r, equipped: false }
-                : r,
+              conflicts.includes(r.item_key as ShopItemKey) ? { ...r, equipped: false } : r,
             );
           }
-          // New purchases go in equipped/placed right away, but stay
-          // toggleable from the shop (gym gear + upgrades can be removed).
           rows.push({ item_key: item.key, equipped: true });
           await writeLocal(LOCAL_INV_KEY, rows);
         }
@@ -189,10 +192,8 @@ export function useBuyItem() {
         ref_key: buyRefKey(item.key),
       });
       if (txError) throw txError;
-      // Wearing the new piece unequips others in the same slot
-      if (item.type === 'outfit' && item.slot) {
-        await unequipSameSlot(user!.id, item.key, item.slot);
-      }
+      // Wearing the new piece switches off whatever it conflicts with
+      await unequipConflicts(user!.id, item.key);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['mascot_wallet', user?.id] });
@@ -201,36 +202,33 @@ export function useBuyItem() {
   });
 }
 
-async function unequipSameSlot(userId: string, keepKey: string, slot: string) {
-  const sameSlotKeys = SAME_SLOT_POOL.filter(
-    (k) => k !== keepKey && getShopItem(k)?.slot === slot,
-  );
-  if (sameSlotKeys.length === 0) return;
+/** Switch off everything that conflicts with `keepKey` — one outfit per slot,
+ *  one stage at a time. See `conflictingKeys`. */
+async function unequipConflicts(userId: string, keepKey: string) {
+  const keys = conflictingKeys(keepKey);
+  if (keys.length === 0) return;
   await supabase
     .from('mascot_inventory')
     .update({ equipped: false })
     .eq('user_id', userId)
-    .in('item_key', sameSlotKeys);
+    .in('item_key', keys);
 }
 
-/** Toggle wearing an owned outfit (one per slot) */
+/** Toggle wearing an owned item — one outfit per slot, one stage at a time. */
 export function useToggleEquip() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ itemKey, equipped }: { itemKey: string; equipped: boolean }) => {
-      const item = getShopItem(itemKey);
       if (TEST_UNLOCK_ALL) {
         let rows = await readLocal<LocalInv>(LOCAL_INV_KEY);
-        if (equipped && item?.slot) {
-          const slotKeys = SAME_SLOT_POOL.filter(
-            (k) => k !== itemKey && getShopItem(k)?.slot === item.slot,
-          );
-          rows = rows.map((r) =>
-            slotKeys.includes(r.item_key as (typeof SAME_SLOT_POOL)[number])
-              ? { ...r, equipped: false }
-              : r,
-          );
+        if (equipped) {
+          const conflicts = conflictingKeys(itemKey);
+          if (conflicts.length) {
+            rows = rows.map((r) =>
+              conflicts.includes(r.item_key as ShopItemKey) ? { ...r, equipped: false } : r,
+            );
+          }
         }
         rows = rows.map((r) => (r.item_key === itemKey ? { ...r, equipped } : r));
         await writeLocal(LOCAL_INV_KEY, rows);
@@ -242,7 +240,7 @@ export function useToggleEquip() {
         .eq('user_id', user!.id)
         .eq('item_key', itemKey);
       if (error) throw error;
-      if (equipped && item?.slot) await unequipSameSlot(user!.id, itemKey, item.slot);
+      if (equipped) await unequipConflicts(user!.id, itemKey);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['mascot_inventory', user?.id] }),
   });

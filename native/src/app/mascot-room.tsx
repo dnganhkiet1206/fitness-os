@@ -444,7 +444,6 @@ export default function MascotRoomScreen() {
       <View style={styles.sceneWrap} onLayout={onStageLayout}>
         <MascotScene
           mascot={mascot}
-          ownedGym={owned}
           equippedOutfits={equippedOutfits}
           celebrateSignal={celebrate}
           flexSignal={flex}

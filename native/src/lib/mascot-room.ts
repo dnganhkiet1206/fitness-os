@@ -156,8 +156,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   { key: 'sunglasses', type: 'outfit', slot: 'eyes', price: 150, name: { vi: 'Kính đen', en: 'Sunglasses' } },
   { key: 'medal', type: 'outfit', slot: 'neck', price: 300, name: { vi: 'Huy chương', en: 'Medal' } },
   { key: 'belt', type: 'outfit', slot: 'waist', price: 250, name: { vi: 'Đai lực sĩ', en: 'Lifting belt' } },
-  // Stage skins — reskin the whole showcase behind the buddy. The highest
-  // owned tier is applied automatically (aurora is the free default).
+  // Stage skins — reskin the whole showcase behind the buddy. One is active
+  // at a time, chosen from the shop; none equipped is the free default. See
+  // `conflictingKeys` / `activeStageKey`.
   { key: 'stage_night', type: 'stage', price: 300, name: { vi: 'Sân khấu Đêm', en: 'Night Stage' } },
   { key: 'stage_sunset', type: 'stage', price: 500, name: { vi: 'Sân khấu Hoàng hôn', en: 'Sunset Stage' } },
   { key: 'stage_champion', type: 'stage', price: 800, name: { vi: 'Sân khấu Vô địch', en: 'Champion Stage' } },
@@ -165,3 +166,41 @@ export const SHOP_ITEMS: ShopItem[] = [
 
 export const getShopItem = (key: string): ShopItem | undefined =>
   SHOP_ITEMS.find((i) => i.key === key);
+
+/**
+ * The keys that must switch off when `key` is switched on.
+ *
+ * Two exclusion groups, derived from the catalogue rather than hand-listed so
+ * they cannot drift as it grows: **one outfit per slot** (a second hat pushes
+ * the first off), and **one stage at a time** (the room shows a single skin).
+ * Anything with neither a slot nor the stage type conflicts with nothing.
+ */
+export const conflictingKeys = (key: string): ShopItemKey[] => {
+  const item = getShopItem(key);
+  if (!item) return [];
+  if (item.type === 'stage') {
+    return SHOP_ITEMS.filter((i) => i.type === 'stage' && i.key !== key).map((i) => i.key);
+  }
+  if (item.type === 'outfit' && item.slot) {
+    return SHOP_ITEMS.filter(
+      (i) => i.type === 'outfit' && i.slot === item.slot && i.key !== key,
+    ).map((i) => i.key);
+  }
+  return [];
+};
+
+/**
+ * Which stage skin the room should draw, from the equipped set — or `null` for
+ * the free default.
+ *
+ * Once equipping enforces the one-stage rule this set holds at most one stage,
+ * and the reduce is moot. It is a `reduce` on price rather than a `find` for
+ * the transition only: a user who bought several stages under the old build
+ * has them all flagged equipped, and picking the dearest keeps showing exactly
+ * what they saw before until their first deliberate pick trims the set to one.
+ */
+export const activeStageKey = (equipped: Set<string>): ShopItemKey | null => {
+  const stages = SHOP_ITEMS.filter((i) => i.type === 'stage' && equipped.has(i.key));
+  if (stages.length === 0) return null;
+  return stages.reduce((a, b) => (b.price > a.price ? b : a)).key;
+};

@@ -474,7 +474,16 @@ against what it already claims:
   `SHOP_ITEMS` says of those items: *"The highest owned tier is applied
   automatically"*. `owned` was computed in the same component and already
   passed to the shop panel — the stage was the one caller reading the wrong
-  set.
+  set. **(Superseded 2026-07-29 — see below.)**
+
+  On 2026-07-29 the user chose to make the stage a real choice instead:
+  `MascotScene` now reads `activeStageKey(equipped)`, the shop's "Use / Using"
+  toggle equips exactly one stage at a time (`conflictingKeys` treats all
+  stages as one exclusion group, the same machinery outfits use per slot), and
+  none equipped is the free default. The "highest owned wins" rule — and the
+  `ownedGym` prop — are gone. A user who bought several stages under the old
+  build still sees the dearest one until their first deliberate pick, because
+  `activeStageKey` breaks a multi-equipped tie by price.
 
 The pattern worth copying: all three were found by holding the code against
 a claim already written down — a screenshot, a comment, a prop name — rather

@@ -1,19 +1,20 @@
 import { StageRenderer } from '@/components/ascnd/stage-renderer';
 import type { MascotMood } from '@/hooks/use-mascot';
+import { activeStageKey } from '@/lib/mascot-room';
 import type { MascotDef } from '@/lib/mascots';
 
 /**
  * The mascot showcase — a thin adapter over `StageRenderer`, which draws Koa
  * Studio with the buddy standing in it.
  *
- * Its one job is turning owned shop unlocks into a room skin. A skin shifts
- * the studio's wall and its warm colour; the design itself does not change,
- * which is what let the old themed stage go without the three stage items in
- * the shop losing their meaning.
+ * Its one job is turning the equipped stage skin into a room theme. A skin
+ * shifts the studio's wall and its warm colour; the design itself does not
+ * change, which is what let the old themed stage go without the three stage
+ * items in the shop losing their meaning.
  */
 interface Props {
   mascot: MascotDef;
-  ownedGym: Set<string>;
+  /** the equipped set (outfits and the one active stage) */
   equippedOutfits: Set<string>;
   celebrateSignal: number;
   flexSignal?: number;
@@ -28,15 +29,15 @@ interface Props {
   scrolling?: boolean;
 }
 
-const STAGE_UNLOCKS: [string, string][] = [
-  ['stage_champion', 'champion'],
-  ['stage_sunset', 'sunset'],
-  ['stage_night', 'night'],
-];
+/** stage item key → studio skin name (see `STUDIO_SKINS`) */
+const STAGE_THEME: Record<string, string> = {
+  stage_champion: 'champion',
+  stage_sunset: 'sunset',
+  stage_night: 'night',
+};
 
 export function MascotScene({
   mascot,
-  ownedGym,
   equippedOutfits,
   celebrateSignal,
   flexSignal = 0,
@@ -48,8 +49,12 @@ export function MascotScene({
   animated = true,
   scrolling = false,
 }: Props) {
-  // Highest owned stage skin wins; falls back to the default gym.
-  const themeKey = STAGE_UNLOCKS.find(([key]) => ownedGym.has(key))?.[1] ?? 'default';
+  // The stage the player has equipped drives the theme; none equipped is the
+  // free default. This is what makes the shop's "Use" a real choice — the room
+  // used to just show the dearest one owned, so buying a lower skin was moot
+  // and its toggle did nothing.
+  const active = activeStageKey(equippedOutfits);
+  const themeKey = (active && STAGE_THEME[active]) ?? 'default';
   return (
     <StageRenderer
       mascot={mascot}
