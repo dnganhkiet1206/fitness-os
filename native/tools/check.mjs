@@ -58,6 +58,7 @@ const STEPS = [
   ['kiểu dữ liệu', 'npx', ['tsc', '--noEmit']],
   ['worklet', 'node', ['tools/koa-studio/worklets.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
+  ['camera shop', 'node', ['tools/shop-camera.mjs']],
 ];
 
 let failed = 0;

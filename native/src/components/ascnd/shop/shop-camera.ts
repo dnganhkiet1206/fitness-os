@@ -97,20 +97,11 @@ export function cameraAt(shot: Shot, vw: number, vh: number): number[] {
 }
 
 /**
- * A shot part-way between two, for the move itself.
+ * How far a shot's zoom is, on a `vw × vh` viewport.
  *
- * Interpolating the *shot* and then building one matrix — rather than
- * interpolating two matrices term by term — is what makes the push-in read as a
- * camera. Lerping matrices lerps the scale linearly, and a linear scale between
- * a wide shot and a close one spends most of the move already close; lerping
- * the rect keeps the framing sensible the whole way through.
+ * `shop-scene.tsx` draws the character at a fixed supersample and scales it
+ * down; this is the number that says the supersample is enough.
  */
-export function shotBetween(a: Shot, b: Shot, t: number): Shot {
-  'worklet';
-  return {
-    x: a.x + (b.x - a.x) * t,
-    y: a.y + (b.y - a.y) * t,
-    w: a.w + (b.w - a.w) * t,
-    h: a.h + (b.h - a.h) * t,
-  };
+export function zoomOf(shot: Shot, vw: number, vh: number): number {
+  return Math.max(vw / shot.w, vh / shot.h);
 }

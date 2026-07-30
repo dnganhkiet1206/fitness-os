@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
+  withSpring,
 } from 'react-native-reanimated';
 import Svg, { G, type GProps } from 'react-native-svg';
 
@@ -15,9 +14,7 @@ import {
   cameraAt,
   SCENE_H,
   SCENE_W,
-  shotBetween,
   SHOTS,
-  type Shot,
   type ShotName,
 } from '@/components/ascnd/shop/shop-camera';
 import { DressingRoom } from '@/components/ascnd/studio/dressing';
@@ -55,8 +52,21 @@ const AnimatedG = Animated.createAnimatedComponent(
 /** how far above scene resolution the figure is drawn — see above */
 const SS = 2;
 
-/** how long a camera move takes */
-const MOVE = 620;
+/**
+ * How the camera moves.
+ *
+ * A spring, and not because it should bounce — this one does not. `damping` is
+ * set past critical (ζ ≈ 1.2), so it eases in, eases out and never overshoots,
+ * which for a zoom is the difference between a camera and a yo-yo.
+ *
+ * The reason it is a spring at all is **interruption**. Tap a second tab while
+ * the first move is still running and `withSpring` re-targets from the value the
+ * camera is at *and the velocity it is carrying*; a `withTiming` restarted from
+ * 0 cannot do either. The first version jumped on every mid-move tap, and the
+ * cheap fix — reading the live position and lerping from there — still stopped
+ * the camera dead at the moment of the tap before re-accelerating.
+ */
+const SPRING = { damping: 26, stiffness: 120, mass: 1 } as const;
 
 export function ShopScene({
   shot,
@@ -82,32 +92,40 @@ export function ShopScene({
   moonPhase?: number;
 }) {
   /**
-   * The move, as a pair of shots and a number between them.
+   * The shot itself is the animated thing — four springs, one per edge.
    *
-   * `shotBetween` interpolates the *rect* and `cameraAt` builds one matrix from
-   * it, rather than lerping two matrices — a linear scale between a wide shot
+   * Not a progress number between a stored pair. A pair needs somewhere to put
+   * "where we started", and on an interrupted move the honest answer is a
+   * position no `SHOTS` entry holds; storing the old *target* instead is
+   * precisely the jump. Springing the rect removes the question — there is no
+   * start to remember, only a current value and a target, and re-targeting
+   * mid-flight is the one thing springs are for.
+   *
+   * The rect is what is interpolated and `cameraAt` builds one matrix from it,
+   * rather than interpolating two matrices: a linear scale between a wide shot
    * and a close one spends most of the move already close.
    */
-  const from = useRef<ShotName>(shot);
-  const [pair, setPair] = useState<[Shot, Shot]>([SHOTS[shot], SHOTS[shot]]);
-  const t = useSharedValue(1);
+  const sx = useSharedValue(SHOTS[shot].x);
+  const sy = useSharedValue(SHOTS[shot].y);
+  const sw = useSharedValue(SHOTS[shot].w);
+  const sh = useSharedValue(SHOTS[shot].h);
 
   useEffect(() => {
-    if (from.current === shot) return;
-    setPair([SHOTS[from.current], SHOTS[shot]]);
-    from.current = shot;
-    t.value = 0;
-    t.value = withTiming(1, { duration: MOVE, easing: Easing.inOut(Easing.cubic) });
-  }, [shot, t]);
+    const to = SHOTS[shot];
+    sx.value = withSpring(to.x, SPRING);
+    sy.value = withSpring(to.y, SPRING);
+    sw.value = withSpring(to.w, SPRING);
+    sh.value = withSpring(to.h, SPRING);
+  }, [shot, sx, sy, sw, sh]);
 
   const camera = useAnimatedProps<{ matrix: number[] }>(() => ({
-    matrix: cameraAt(shotBetween(pair[0], pair[1], t.value), width, height),
+    matrix: cameraAt({ x: sx.value, y: sy.value, w: sw.value, h: sh.value }, width, height),
   }));
 
   // the same camera, as a view transform. `translate` then `scale` about the
   // origin composes to exactly `[s, 0, 0, s, tx, ty]`, which is the matrix.
   const rider = useAnimatedStyle(() => {
-    const m = cameraAt(shotBetween(pair[0], pair[1], t.value), width, height);
+    const m = cameraAt({ x: sx.value, y: sy.value, w: sw.value, h: sh.value }, width, height);
     return {
       transform: [{ translateX: m[4] }, { translateY: m[5] }, { scale: m[0] / SS }],
     };
