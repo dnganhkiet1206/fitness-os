@@ -94,8 +94,12 @@ function StudioLiveInner({
   /** the page is mid-scroll — see the insect note below */
   scrolling?: boolean;
 }) {
-  const t = useLightClock();
-  const sky = useSkyClock();
+  // Every loop clock holds in place while the page scrolls, so these small
+  // canvases stop redrawing under the ScrollView instead of repainting each
+  // one every frame on the thread the scroll runs on. They resume untouched —
+  // the clocks are accumulators, see loop-clock.ts.
+  const t = useLightClock(scrolling);
+  const sky = useSkyClock(scrolling);
   const k = width / STUDIO_W;
   return (
     <>
@@ -106,7 +110,7 @@ function StudioLiveInner({
       {/* the lamp's mouth and the motes in its beam, which overlap */}
       <LiveLayer r={BEAM} k={k}>
         <LampPulse t={t} glow={glow} />
-        <DriftingMotes />
+        <DriftingMotes paused={scrolling} />
       </LiveLayer>
       {/* A bee and two butterflies. Their canvas is the whole room, because
           that is what their routes cross — so it is the one live layer whose

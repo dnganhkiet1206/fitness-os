@@ -1,17 +1,10 @@
 import * as React from 'react';
-import { memo, useEffect } from 'react';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedProps,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated';
+import { memo } from 'react';
+import Animated, { useAnimatedProps, type SharedValue } from 'react-native-reanimated';
 import Svg, { G, type GProps } from 'react-native-svg';
 
 import { PLANT_REGIONS } from '@/components/ascnd/studio/live-regions';
+import { useLoopClock } from '@/components/ascnd/studio/loop-clock';
 import { LiveLayer } from '@/components/ascnd/studio/studio-live';
 import { PLANT_PIVOT, PlantFoliage, PlantPot, type PlantKind } from '@/components/ascnd/studio/plant';
 import { PLANTS, StudioPlants } from '@/components/ascnd/studio/plants';
@@ -57,18 +50,13 @@ const SWAY: { deg: number; rate: number; gust: number; phase: number }[] = [
   { deg: 1.7, rate: 2, gust: 3, phase: 0.41 },
 ];
 
-function useSwayClock(active = true): SharedValue<number> {
-  const t = useSharedValue(0);
-  useEffect(() => {
-    if (!active) {
-      cancelAnimation(t);
-      return;
-    }
-    t.value = 0;
-    t.value = withRepeat(withTiming(1, { duration: PERIOD, easing: Easing.linear }), -1, false);
-    return () => cancelAnimation(t);
-  }, [t, active]);
-  return t;
+/**
+ * `active` is whether the plants are drawn swaying at all (a picker or an
+ * unfocused screen draws them still); `paused` holds the sway in place while
+ * the page scrolls. Either one stops the clock — see `useLoopClock`.
+ */
+function useSwayClock(active = true, paused = false): SharedValue<number> {
+  return useLoopClock(PERIOD, !active || paused);
 }
 
 /**
@@ -145,12 +133,14 @@ function PlantsCanvasInner({
   width,
   height,
   animated,
+  scrolling,
 }: {
   width: number;
   height: number;
   animated?: boolean;
+  scrolling?: boolean;
 }) {
-  const t = useSwayClock(animated !== false);
+  const t = useSwayClock(animated !== false, scrolling);
   if (!animated) {
     return (
       <Svg

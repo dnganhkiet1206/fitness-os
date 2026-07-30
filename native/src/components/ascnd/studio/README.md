@@ -273,25 +273,26 @@ KoaFigure` as `running={!scrolling}`. Changing it does **not** rebuild the
 figure's element tree — that `useMemo` does not depend on it — it only flips
 `frameCb.setActive`, which is the whole point.
 
-The small live layers — sky, motes, lamp, stage glow, plants — keep running
-during a scroll. Each is a few percent of the screen, so redrawing it while
-the ScrollView translates it is cheap, and their `withRepeat` clocks cannot
-pause in place without a phase jump, so leaving them is the better trade.
+The small live layers — sky, motes, lamp, stage glow, plants — freeze in place
+too. They were left running at first, on the reasoning that each is only a few
+percent of the screen; but a handful of them repainting every frame on the UI
+thread the scroll runs on still added up, and the room stayed slightly rough
+under a scroll. Their `withRepeat` clocks could not pause without losing their
+phase, so they are now built on `loop-clock.ts` instead — the same linear 0→1
+loop, drawn the same, but on an accumulator that `paused` holds exactly where
+it is and releases with no jump (`useLightClock`, `useSkyClock`,
+`DriftingMotes`, `useSwayClock` all take it; the weather's own `withTiming`
+transitions are event-driven and left alone). So while the page scrolls the
+whole room holds a single frame — nothing repaints, everything just
+translates — and picks up untouched on release.
 
-**The insects are the exception, because their canvas is the whole room.**
-`BUGS = ROOM` in `live-regions.ts` — the bee and butterflies cross everything,
-so that one live layer's redraw is screen-sized, and when an insect happens to
-be flying during a scroll it was the last thing still stuttering. `StudioLive`
-now takes `scrolling` and drops the whole insect layer for the duration; the
-shared bug clock keeps ticking, so on release the insects are back at their
-true positions with no jump (a mid-flight one can reappear at once, which is a
-far smaller thing than a room-sized redraw per scrolled frame). This is why
-the jank was intermittent — it only showed on the ~third of scrolls that
-caught an insect mid-crossing.
-
-Converting the small clocks to the figure's accumulator clock, to pause them
-in place too, is still the next lever if it is ever wanted — but it is a bigger
-change and their cost during a scroll is already small.
+**The insects go one further and leave the tree, because their canvas is the
+whole room.** `BUGS = ROOM` in `live-regions.ts` — the bee and butterflies
+cross everything, so freezing that layer in place would still hand the
+compositor a screen-sized cached bitmap to move. `StudioLive` drops the insect
+layer entirely for the duration instead; the shared bug clock keeps ticking, so
+on release they are back at their true positions (a mid-flight one can reappear
+at once, a far smaller thing than a room-sized layer).
 
 ## The weather in the window
 

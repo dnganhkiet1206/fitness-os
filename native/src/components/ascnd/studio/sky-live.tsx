@@ -1,12 +1,10 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import Animated, {
-  cancelAnimation,
   Easing,
   interpolateColor,
   useAnimatedProps,
   useSharedValue,
-  withRepeat,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -21,6 +19,7 @@ import {
   type Drift,
   type Sheet,
 } from '@/components/ascnd/studio/clouds';
+import { useLoopClock } from '@/components/ascnd/studio/loop-clock';
 import { C } from '@/components/ascnd/studio/palette';
 import { GLASS, MULLIONS, STAR_POINTS } from '@/components/ascnd/studio/window';
 
@@ -65,14 +64,10 @@ const PERIOD = 45000;
  */
 const BLINK = [5, 7, 11, 13, 17, 19];
 
-export function useSkyClock(): SharedValue<number> {
-  const t = useSharedValue(0);
-  useEffect(() => {
-    t.value = 0;
-    t.value = withRepeat(withTiming(1, { duration: PERIOD, easing: Easing.linear }), -1, false);
-    return () => cancelAnimation(t);
-  }, [t]);
-  return t;
+/** `paused` holds the sky — stars, shooting star, cloud and rain drift all read
+ *  this one clock — while the page scrolls. See `useLoopClock`. */
+export function useSkyClock(paused = false): SharedValue<number> {
+  return useLoopClock(PERIOD, paused);
 }
 
 /**

@@ -216,7 +216,7 @@ export function StageRenderer({
           layer="back"
         />
         <View style={StyleSheet.absoluteFill}>
-          <PlantsCanvas width={sw} height={H} animated={animated} />
+          <PlantsCanvas width={sw} height={H} animated={animated} scrolling={scrolling} />
         </View>
         <View style={StyleSheet.absoluteFill}>
           <Studio

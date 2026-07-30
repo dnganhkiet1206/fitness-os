@@ -1,15 +1,7 @@
-import { useEffect } from 'react';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedProps,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedProps, type SharedValue } from 'react-native-reanimated';
 import { Ellipse, type EllipseProps } from 'react-native-svg';
 
+import { useLoopClock } from '@/components/ascnd/studio/loop-clock';
 import { C } from '@/components/ascnd/studio/palette';
 import { STAGE_GLOW, stageGlowOpacity } from '@/components/ascnd/studio/platform';
 import { CX, MOUTH_R, MOUTH_Y } from '@/components/ascnd/studio/spotlight';
@@ -53,15 +45,11 @@ const GLOW_SWING = 0.22;
  *
  * They used to take one each, which is two invalidation sources at 60fps for
  * one visual idea. `studio-live.tsx` owns it now and hands it to both.
+ *
+ * `paused` holds it in place while the page scrolls — see `useLoopClock`.
  */
-export function useLightClock(): SharedValue<number> {
-  const t = useSharedValue(0);
-  useEffect(() => {
-    t.value = 0;
-    t.value = withRepeat(withTiming(1, { duration: PERIOD, easing: Easing.linear }), -1, false);
-    return () => cancelAnimation(t);
-  }, [t]);
-  return t;
+export function useLightClock(paused = false): SharedValue<number> {
+  return useLoopClock(PERIOD, paused);
 }
 
 /**

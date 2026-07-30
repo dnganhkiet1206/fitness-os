@@ -1,16 +1,8 @@
 import * as React from 'react';
-import { useEffect } from 'react';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedProps,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedProps, type SharedValue } from 'react-native-reanimated';
 import { G, type GProps } from 'react-native-svg';
 
+import { useLoopClock } from '@/components/ascnd/studio/loop-clock';
 import { MOTE_BANDS, MOTE_PHASE, MOTE_SWAY, MOTES, Specks } from '@/components/ascnd/studio/motes';
 
 /**
@@ -65,13 +57,8 @@ function Band({ i, t }: { i: number; t: SharedValue<number> }) {
   );
 }
 
-export function DriftingMotes() {
-  const t = useSharedValue(0);
-  useEffect(() => {
-    t.value = 0;
-    t.value = withRepeat(withTiming(1, { duration: PERIOD, easing: Easing.linear }), -1, false);
-    return () => cancelAnimation(t);
-  }, [t]);
+export function DriftingMotes({ paused = false }: { paused?: boolean }) {
+  const t = useLoopClock(PERIOD, paused);
   return (
     <>
       {MOTE_SWAY.map((_, i) => (
