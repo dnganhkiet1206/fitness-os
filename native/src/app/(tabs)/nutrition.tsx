@@ -9,16 +9,13 @@ import Animated from 'react-native-reanimated';
 import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
 import { NutritionCard } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, RecentFoodCard } from '@/components/ascnd/food-cards';
-import { GlassCard, PremiumSurface } from '@/components/ascnd/glass-card';
+import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LogMealFab } from '@/components/ascnd/log-meal-fab';
 import { QuickStats } from '@/components/ascnd/quick-stats';
 import { Screen } from '@/components/ascnd/screen';
-import { PremiumBackdrop } from '@/components/ascnd/theme-backdrop';
 import { TodayMeals } from '@/components/ascnd/today-meals';
-import { TopEdgeBlur } from '@/components/ascnd/top-edge-blur';
-import { colors, radius, spacing } from '@/constants/ascnd';
-import { button, control, text as premiumText } from '@/constants/premium-theme';
+import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -80,7 +77,7 @@ export default function NutritionScreen() {
   const SeeMore = () => (
     <Pressable style={({ pressed }) => [styles.seeMore, pressed && styles.pressedDim]} onPress={seeMore}>
       <Text style={styles.seeMoreText}>{lang === 'vi' ? 'Xem thêm' : 'See all'}</Text>
-      <Icon icon={ChevronRight} size={15} color={premiumText.secondary} />
+      <Icon icon={ChevronRight} size={15} color={colors.primary} />
     </Pressable>
   );
 
@@ -123,7 +120,7 @@ export default function NutritionScreen() {
             Haptics.selectionAsync();
             router.push({ pathname: '/food-editor', params: { id: f.id } });
           }}>
-          <Icon icon={Pencil} size={15} color={premiumText.hint} />
+          <Icon icon={Pencil} size={15} color={colors.mutedForeground} />
         </Pressable>
       )}
       <Pressable
@@ -135,7 +132,7 @@ export default function NutritionScreen() {
         <Icon
           icon={Star}
           size={16}
-          color={f.is_favorite ? colors.readinessYellow : premiumText.hint}
+          color={f.is_favorite ? colors.readinessYellow : colors.mutedForeground}
           strokeWidth={f.is_favorite ? 2.5 : 2}
         />
       </Pressable>
@@ -146,24 +143,7 @@ export default function NutritionScreen() {
     // The FAB is a sibling of the page, not a child: `Screen`'s root *is* the
     // scroll view, so anything inside it scrolls away with the diary.
     <View style={styles.root}>
-      {/*
-        Dark Gray Premium, on trial here before it goes app-wide.
-
-        The backdrop is a sibling of `Screen` and sits *under* it, so it stays
-        still while the page scrolls over it — a background that scrolled with
-        the content would give away that it is a drawing rather than a surface.
-        `transparentBackground` stops the scaffold painting `colors.background`
-        on top of it.
-
-        `PremiumSurface` re-skins every `GlassCard` below it, which is how the
-        calorie card, the quick stats and the meal list pick the theme up
-        without any of those shared components being edited. Both wrappers are
-        scoped to this page: Today, Workouts and Progress are untouched.
-      */}
-      <PremiumBackdrop />
-      <PremiumSurface>
       <Screen
-        transparentBackground
         title={i18n.nutritionTitle}
         headerRight={
           <View style={styles.headerButtons}>
@@ -176,7 +156,7 @@ export default function NutritionScreen() {
                 hitSlop={8}
                 style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
                 onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>
-                <Icon icon={b.icon} size={17} color={premiumText.secondary} />
+                <Icon icon={b.icon} size={17} color={colors.mutedForeground} />
               </Pressable>
             ))}
           </View>
@@ -192,7 +172,7 @@ export default function NutritionScreen() {
               key={t.key}
               style={[styles.tab, tab === t.key && styles.tabActive]}
               onPress={() => { Haptics.selectionAsync(); setTab(t.key); }}>
-              <Icon icon={t.icon} size={13} color={tab === t.key ? premiumText.primary : premiumText.hint} />
+              <Icon icon={t.icon} size={13} color={tab === t.key ? colors.foreground : colors.mutedForeground} />
               <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
             </Pressable>
           ))}
@@ -237,7 +217,7 @@ export default function NutritionScreen() {
             />
 
             <View style={styles.sectionHeadRow}>
-              <Icon icon={Utensils} size={13} color={premiumText.secondary} />
+              <Icon icon={Utensils} size={13} color={colors.primary} />
               <Text style={styles.microTitle}>{lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}</Text>
             </View>
             <TodayMeals meals={today ?? []} i18n={i18n} lang={lang} />
@@ -247,11 +227,11 @@ export default function NutritionScreen() {
             {/* Search + add custom food (web: search flex-1 + Add button) */}
             <View style={styles.searchRow}>
               <View style={styles.searchWrap}>
-                <Icon icon={Search} size={15} color={premiumText.hint} />
+                <Icon icon={Search} size={15} color={colors.mutedForeground} />
                 <TextInput
                   style={styles.searchInput}
                   placeholder={i18n.nutritionSearchFood}
-                  placeholderTextColor={premiumText.hint}
+                  placeholderTextColor={colors.mutedForeground}
                   value={search}
                   onChangeText={setSearch}
                   autoCorrect={false}
@@ -263,7 +243,7 @@ export default function NutritionScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push('/food-editor');
                 }}>
-                <Icon icon={Plus} size={14} color={button.primaryFg} strokeWidth={2.5} />
+                <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
                 <Text style={styles.addFoodText}>{i18n.foodAddCustom}</Text>
               </Pressable>
             </View>
@@ -285,7 +265,7 @@ export default function NutritionScreen() {
               <>
                 {/* My foods — 4 most recent as cards, "See all" opens the full list */}
                 <View style={styles.sectionHeadRow}>
-                  <Icon icon={Utensils} size={13} color={premiumText.secondary} />
+                  <Icon icon={Utensils} size={13} color={colors.primary} />
                   <Text style={styles.microTitle}>{lang === 'vi' ? 'Danh sách thực phẩm' : 'My Foods'}</Text>
                 </View>
                 {myFoods && myFoods.length > 0 ? (
@@ -317,7 +297,7 @@ export default function NutritionScreen() {
                 {recents && recents.length > 0 && (
                   <>
                     <View style={styles.sectionHeadRow}>
-                      <Icon icon={ClipboardList} size={13} color={premiumText.hint} />
+                      <Icon icon={ClipboardList} size={13} color={colors.mutedForeground} />
                       <Text style={styles.microTitle}>{i18n.nutritionRecent}</Text>
                     </View>
                     <Animated.View style={styles.cardList} entering={rise(2)}>
@@ -337,7 +317,7 @@ export default function NutritionScreen() {
             {({ pressed }) => (
               <GlassCard style={[styles.listCard, pressed && styles.pressedDim]}>
                 <View style={styles.sectionHead}>
-                  <Icon icon={Utensils} size={13} color={premiumText.hint} />
+                  <Icon icon={Utensils} size={13} color={colors.mutedForeground} />
                   <Text style={styles.microTitle}>{i18n.nutritionMealPlan}</Text>
                 </View>
                 <Text style={styles.emptyText}>{i18n.nMealPlans} →</Text>
@@ -346,11 +326,6 @@ export default function NutritionScreen() {
           </Pressable>
         )}
       </Screen>
-      </PremiumSurface>
-      {/* Over the page, so scrolled content softens as it goes under the notch.
-          Rendered after `Screen` for that reason — and only a safe-area strip
-          tall, so the title and the cards are never inside it at rest. */}
-      <TopEdgeBlur />
       {/* Logging lives here now, on the diary tab where the day is. The old
           full-width bar at the end of the meal list is gone. */}
       {tab === 'today' ? <LogMealFab i18n={i18n} /> : null}
@@ -358,25 +333,13 @@ export default function NutritionScreen() {
   );
 }
 
-/**
- * Page-local surfaces, on the premium theme.
- *
- * Only the styles this file owns. Everything drawn by a shared component keeps
- * its own look except for the card surface, which `PremiumSurface` swaps — see
- * the wrapper in the tree above.
- *
- * The pattern throughout: controls go *darker* than the page (`control.track`)
- * and the selected thing inside them goes *lighter* (`control.active`). The
- * previous values were all translucent light fills, which is the only direction
- * that works on a near-black page and the wrong one on charcoal.
- */
 const styles = StyleSheet.create({
   headerButtons: { flexDirection: 'row', gap: spacing.sm },
   iconBtn: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: control.active,
+    backgroundColor: colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -389,13 +352,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
-    color: premiumText.hint,
+    color: colors.mutedForeground,
   },
 
   root: { flex: 1 },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: control.track,
+    backgroundColor: 'rgba(24,24,27,0.6)',
     borderRadius: radius.sm,
     padding: 3,
     gap: 3,
@@ -409,9 +372,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
   },
-  tabActive: { backgroundColor: control.active },
-  tabText: { fontSize: 12, fontWeight: '500', color: premiumText.hint },
-  tabTextActive: { color: premiumText.primary },
+  tabActive: { backgroundColor: colors.accent },
+  tabText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
+  tabTextActive: { color: colors.foreground },
 
   logChip: {
     flexDirection: 'row',
@@ -421,10 +384,10 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: control.hairline,
-    backgroundColor: control.track,
+    borderColor: 'rgba(43,43,49,0.3)',
+    backgroundColor: 'rgba(24,24,27,0.2)',
   },
-  logChipText: { fontSize: 13, fontWeight: '500', color: premiumText.secondary },
+  logChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
 
   searchRow: { flexDirection: 'row', gap: spacing.sm },
   searchWrap: {
@@ -435,12 +398,10 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: control.hairline,
-    backgroundColor: control.track,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(24,24,27,0.3)',
     paddingHorizontal: spacing.md - 4,
   },
-  // The brief's primary button: near-white with dark text, in place of the
-  // brand silver. The single loudest change on the page.
   addFoodBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -448,10 +409,10 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: spacing.md - 2,
     borderRadius: radius.sm,
-    backgroundColor: button.primaryBg,
+    backgroundColor: colors.primary,
   },
-  addFoodText: { fontSize: 12, fontWeight: '600', color: button.primaryFg },
-  searchInput: { flex: 1, color: premiumText.primary, fontSize: 15, height: '100%' },
+  addFoodText: { fontSize: 12, fontWeight: '600', color: colors.primaryForeground },
+  searchInput: { flex: 1, color: colors.foreground, fontSize: 15, height: '100%' },
 
   listCard: { gap: spacing.sm + 2 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -464,11 +425,11 @@ const styles = StyleSheet.create({
     gap: 2,
     height: 40,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: control.hairline,
-    backgroundColor: control.track,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    backgroundColor: glass.bg,
   },
-  seeMoreText: { fontSize: 13, fontWeight: '600', color: premiumText.secondary },
+  seeMoreText: { fontSize: 13, fontWeight: '600', color: colors.primary },
   foodCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -477,13 +438,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: control.hairline,
-    backgroundColor: control.track,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(24,24,27,0.3)',
   },
   foodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
   foodInfo: { flex: 1, minWidth: 0, gap: 2 },
-  foodName: { fontSize: 14, fontWeight: '500', color: premiumText.primary },
-  foodBrand: { fontSize: 12, fontWeight: '400', color: premiumText.hint },
-  foodMacros: { fontSize: 11, fontFamily: 'Menlo', color: premiumText.hint, fontVariant: ['tabular-nums'] },
-  emptyText: { fontSize: 12, color: premiumText.hint, textAlign: 'center', paddingVertical: spacing.sm },
+  foodName: { fontSize: 14, fontWeight: '500', color: colors.foreground },
+  foodBrand: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
+  foodMacros: { fontSize: 11, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  emptyText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.sm },
 });

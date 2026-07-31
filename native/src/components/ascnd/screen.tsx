@@ -76,23 +76,13 @@ interface ScreenProps extends ViewProps {
   onScroll?: ScrollViewProps['onScroll'];
   onScrollBeginDrag?: ScrollViewProps['onScrollBeginDrag'];
   scrollEventThrottle?: number;
-  /**
-   * Drop the page's own opaque background so something behind it shows through.
-   *
-   * `Screen` paints `colors.background` on the scroll view, which is right for
-   * a flat page and wrong for one with a layered backdrop — the fill would
-   * cover it. A page that renders `PremiumBackdrop` behind this scaffold sets
-   * this so the backdrop is what you see.
-   */
-  transparentBackground?: boolean;
 }
 
 /**
  * Page scaffold matching the web app's two header patterns.
  */
-export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, contentScrollEnabled = true, transparentBackground, children, style, ...props }: ScreenProps) {
+export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, contentScrollEnabled = true, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
-  const clear = transparentBackground ? styles.clear : null;
 
   /**
    * Lend this page's scroll view to the tab bar, so tapping the tab you are
@@ -134,10 +124,10 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
     if (transparentHeader) {
       // Header floats over a full-bleed hero; content starts at the very top.
       return (
-        <View style={[styles.root, clear]}>
+        <View style={styles.root}>
           <ScrollView
             ref={scroller}
-            style={[styles.scroller, clear]}
+            style={styles.scroller}
             contentContainerStyle={[styles.subContentFlush, { paddingBottom: insets.bottom + spacing.xl }, style]}
             contentInsetAdjustmentBehavior="never"
             scrollEnabled={contentScrollEnabled}
@@ -158,12 +148,12 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
     }
 
     return (
-      <View style={[styles.root, clear]}>
+      <View style={styles.root}>
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
         <View style={[styles.pageHeader, { paddingTop: insets.top }]}>{headerBar}</View>
         <ScrollView
           ref={scroller}
-          style={[styles.scroller, clear]}
+          style={styles.scroller}
           contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
           contentInsetAdjustmentBehavior="never"
           automaticallyAdjustKeyboardInsets
@@ -179,7 +169,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
   return (
     <ScrollView
       ref={scroller}
-      style={[styles.scroller, clear]}
+      style={styles.scroller}
       contentContainerStyle={[
         styles.content,
         { paddingTop: insets.top + spacing.sm, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
@@ -207,8 +197,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   scroller: { flex: 1, backgroundColor: colors.background },
-  /** `transparentBackground` — let whatever the page put behind the scaffold show */
-  clear: { backgroundColor: 'transparent' },
 
   // Sub-page header (web PageHeader)
   pageHeader: {
