@@ -103,7 +103,22 @@ function GroupHeader({ icon, title }: { icon: string; title: string }) {
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const { data: profile } = useProfile();
-  const { data: dailyLog } = useDailyLog();
+  /**
+   * `isPending` is what stops the page shifting under you as it loads.
+   *
+   * Nearly every widget picks between a short "nothing logged" card and a much
+   * taller real one — the readiness gauge alone is a 208pt ring against a ~100pt
+   * placeholder. Rendering the placeholders first and swapping them as the query
+   * lands moves everything below by a couple of hundred points, which is the
+   * page drifting. The widgets are held back until there is an answer, so each
+   * one mounts once at its final height and the cascade runs on a layout that
+   * does not move afterwards.
+   *
+   * The wait is not felt in practice: the query cache is persisted to storage
+   * (see `query-client`), so on any warm start the data is already there and
+   * this is false on the first render.
+   */
+  const { data: dailyLog, isPending: dayPending } = useDailyLog();
   const { data: sleep } = useTodaySleep();
   const { data: waterMl } = useTodayWater();
   const { available: healthAvailable, sync: healthSync } = useHealthSync();
@@ -376,8 +391,12 @@ export default function TodayScreen() {
           )}
 
           {/* Hero widgets (web heroWidgets: readiness, activity) — cards
-              cascade in with a light spring on mount (iOS feel) */}
-          {config.heroWidgets.map((key, i) => (
+              cascade in with a light spring on mount (iOS feel).
+
+              Held back until today's log has resolved, so each card mounts
+              once at its final height instead of starting as a placeholder
+              and growing — see `dayPending`. */}
+          {dayPending ? null : config.heroWidgets.map((key, i) => (
             <Animated.View
               key={key}
               entering={FadeInDown.springify().damping(26).stiffness(180).delay(i * 70)}>
@@ -386,7 +405,7 @@ export default function TodayScreen() {
           ))}
 
           {/* Grouped widgets, user-configurable order */}
-          {config.groups.map((group, gi) => (
+          {dayPending ? null : config.groups.map((group, gi) => (
             <View key={group.id} style={styles.group}>
               <GroupHeader icon={group.icon} title={group.title[lang] ?? group.title.en} />
               {group.widgets.map((key, wi) => (
