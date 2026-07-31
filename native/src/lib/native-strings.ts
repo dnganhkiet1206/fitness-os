@@ -231,6 +231,15 @@ const en = {
   nPhotoAdd: 'Add progress photo',
   nPhotoCapture: 'Capture',
 
+  // Today's diary — collapsed meal cards + quick stats
+  nDiaryItems: '{n} items',
+  nDiaryItemsOne: '1 item',
+  nDiaryEntries: '{n} meals',
+  nQuickCalories: 'Calories',
+  nQuickProtein: 'Protein',
+  nQuickWeight: 'Weight',
+  nQuickWater: 'Water',
+
   // Meal builder
   nMealItems: 'Items',
   nMealNoItems: 'Search, scan, or add a food to start',
@@ -551,6 +560,15 @@ const vi: typeof en = {
   nPhotoDelete: 'Xoá ảnh?',
   nPhotoAdd: 'Thêm ảnh tiến trình',
   nPhotoCapture: 'Chụp',
+
+  // Today's diary — collapsed meal cards + quick stats
+  nDiaryItems: '{n} món',
+  nDiaryItemsOne: '1 món',
+  nDiaryEntries: '{n} bữa',
+  nQuickCalories: 'Calo',
+  nQuickProtein: 'Protein',
+  nQuickWeight: 'Cân nặng',
+  nQuickWater: 'Nước',
 
   // Meal builder
   nMealItems: 'Các món',

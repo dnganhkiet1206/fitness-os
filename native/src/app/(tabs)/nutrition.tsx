@@ -11,13 +11,16 @@ import { NutritionCard } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { QuickStats } from '@/components/ascnd/quick-stats';
 import { Screen } from '@/components/ascnd/screen';
 import { TodayMeals } from '@/components/ascnd/today-meals';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { useTodayWeight } from '@/hooks/use-fitness-data';
 import { dedupeSeedShadows, useFavoriteFoods, useMyFoods, useRecentFoods, useToggleFavoriteFood, useTodayLog, type FoodItemRow } from '@/hooks/use-nutrition';
+import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile } from '@/hooks/useTodayData';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,6 +59,13 @@ export default function NutritionScreen() {
   const kcal = Math.round(Number(dailyLog?.kcal) || 0);
   const calorieTarget = calorieTargetFor(profile);
   const macros = macroTargetsFor(profile);
+
+  // Quick stats. Weight falls back to the profile's last known figure — the
+  // tile should say what you weigh, not "—" on every day you have not stepped
+  // on the scales, which is most of them.
+  const { data: todayWeight } = useTodayWeight();
+  const { data: waterMl } = useTodayWater();
+  const weightKg = todayWeight ?? (profile?.weight_kg != null ? Number(profile.weight_kg) : null);
 
   const { data: myFoods } = useMyFoods();
   const { data: favorites } = useFavoriteFoods();
@@ -195,6 +205,18 @@ export default function NutritionScreen() {
             carbs={{ current: Number(dailyLog?.carbs_g) || 0, target: macros.carbs }}
             fat={{ current: Number(dailyLog?.fat_g) || 0, target: macros.fat }}
             fiber={{ current: Number(dailyLog?.fiber_g) || 0, target: macros.fiber }}
+          />
+
+          {/* The four numbers a day is judged by, right under the hero card */}
+          <QuickStats
+            kcal={kcal}
+            calorieTarget={calorieTarget}
+            protein={Number(dailyLog?.protein_g) || 0}
+            proteinTarget={macros.protein}
+            weightKg={weightKg}
+            waterMl={waterMl ?? 0}
+            waterTargetMl={Number(profile?.water_target_ml) || 2500}
+            i18n={i18n}
           />
 
           <View style={styles.sectionHeadRow}>
