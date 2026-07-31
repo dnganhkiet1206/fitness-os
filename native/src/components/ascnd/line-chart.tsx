@@ -21,6 +21,20 @@ interface LineChartProps {
 /**
  * Minimal smooth line chart (SVG): gradient fill, end-point dot, min/max
  * labels. Deliberately dependency-free — enough for trend surfaces.
+ *
+ * **x is time, not sample number.** It used to be `width · i / (n − 1)`, which
+ * draws every reading the same distance apart however far apart they actually
+ * were: two weigh-ins a day apart looked exactly as far apart as two ninety
+ * days apart, and the shape of the line was a shape the data never had. Now
+ * each point sits where its date falls between the first and the last, so a
+ * gap in logging reads as a gap.
+ *
+ * Series that *are* evenly spaced (a daily readiness trend) are unaffected —
+ * for them the two mappings are the same number. Points whose dates do not
+ * parse fall back to even spacing rather than collapsing onto each other.
+ *
+ * The smoothing is safe to keep: the control points share their endpoints' y,
+ * so the curve never bulges past a value that was recorded.
  */
 export function LineChart({ points, color = colors.primary, height = 140, unit = '', emptyLabel = 'Not enough data yet' }: LineChartProps) {
   const [width, setWidth] = useState(0);
@@ -41,7 +55,23 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   const padY = 12;
   const chartH = height - padY * 2;
 
-  const x = (i: number) => (width * i) / (points.length - 1);
+  /**
+   * Where each reading sits horizontally, by its date.
+   *
+   * `YYYY-MM-DD` at local midnight, the same parse the rest of the app uses.
+   * If any date is unusable, or every reading landed on the same day, there is
+   * no time axis to lay out against and it falls back to even spacing.
+   */
+  const times = points.map((p) => new Date(`${p.date}T00:00:00`).getTime());
+  const usable = times.every((t) => Number.isFinite(t));
+  const t0 = times[0];
+  const tN = times[times.length - 1];
+  const byTime = usable && tN > t0;
+  const xs = points.map((_, i) =>
+    byTime ? (width * (times[i] - t0)) / (tN - t0) : (width * i) / (points.length - 1),
+  );
+
+  const x = (i: number) => xs[i];
   const y = (v: number) => padY + chartH * (1 - (v - min) / span);
 
   let path = `M ${x(0)} ${y(values[0])}`;
