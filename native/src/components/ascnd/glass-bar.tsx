@@ -18,6 +18,21 @@ import { StyleSheet, View } from 'react-native';
  * for those controls to remain tappable — iOS does not deliver touches outside
  * a view's bounds.
  *
+ * ── no tint ──
+ *
+ * `tintColor` is explicitly clear. Left unset, `GlassView` takes the system
+ * default, which is a colour — that is the film that kept showing up over the
+ * glass: not a layer of ours, the material's own tint. `clear` is the
+ * see-through end of the style scale but it is not untinted by itself.
+ *
+ * What is left is the part that is actually glass: the blur and the way it
+ * bends what passes underneath. Nothing is coloured, so nothing can look
+ * laid-on.
+ *
+ * `colorScheme` stays `dark` even with no tint. It picks which material the
+ * system builds the effect from, and `auto` would follow the phone's
+ * appearance — on a light-mode phone that is a pale material over a dark app.
+ *
  * ── no fade ──
  *
  * The pane ends where it ends. Two attempts at softening that edge are worth
@@ -57,6 +72,7 @@ export function GlassBar({ height }: {
       <GlassView
         style={styles.fill}
         glassEffectStyle="clear"
+        tintColor="rgba(0,0,0,0)"
         colorScheme="dark"
         isInteractive={false}
         pointerEvents="none"
