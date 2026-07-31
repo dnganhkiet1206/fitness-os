@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AmbientLight } from '@/components/ascnd/ambient-light';
+import { GlassBar } from '@/components/ascnd/glass-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { TopEdgeBlur } from '@/components/ascnd/top-edge-blur';
 import { BottomTabInset } from '@/constants/expo-template-theme';
@@ -42,6 +43,17 @@ import { handleTabScroll } from '@/lib/tab-bar-visibility';
  * If a specific page ever genuinely needs anchoring (a chat-style list that
  * prepends), put it on that list, not on this scaffold.
  */
+
+/**
+ * Height of the fixed header bar, matching UIKit's navigation bar.
+ *
+ * Named because it is now load-bearing in two places at once: the bar's own
+ * height, and the top padding the content needs to clear it. The two are the
+ * same number by definition — a literal in each place is a number that can
+ * drift, and a sub-page whose first card hides under the bar is not obviously
+ * a padding bug when you look at it.
+ */
+const HEADER_H = 44;
 
 interface ScreenProps extends ViewProps {
   title: string;
@@ -154,30 +166,51 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
     }
 
     /*
-     * The one layout with no notch blur, on purpose.
+     * Sub-page header — a real glass bar the content scrolls underneath.
      *
-     * Here the header is a solid glass bar stacked *above* the scroll view
-     * rather than over it — it already owns the safe-area inset, and nothing
-     * ever passes under the status bar for a blur to act on. A strip here would
-     * have nothing to soften and would only lay a second pane of glass over the
-     * first, lightening the bar for no reason.
+     * It used to sit *above* the scroll view in the layout flow, holding its
+     * own 44pt of space with a 6% white fill. That fill looked like frosted
+     * glass only because nothing was ever behind it: the page simply started
+     * below the bar, so there was nothing to frost. It also meant these pages
+     * were the one place in the app where nothing passed under the status bar,
+     * and so the one place with no notch treatment at all.
+     *
+     * Now the bar overlays the content and `GlassBar` gives it an actual
+     * backdrop blur, so text softens and dims as it slides beneath — the same
+     * thing the notch strip does on the other two layouts, except the bar
+     * covers the safe-area inset as well, which is why there is no separate
+     * `TopEdgeBlur` here. One pane of glass, doing both jobs.
+     *
+     * Nothing moves. The content's top padding gains exactly the height the bar
+     * used to occupy in flow (`insets.top + HEADER_H`), so every sub-page opens
+     * looking identical to before; the difference only appears once you scroll.
      */
+    const headerH = insets.top + HEADER_H;
     return (
       <View style={styles.root}>
         <AmbientLight />
-        {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
-        <View style={[styles.pageHeader, { paddingTop: insets.top }]}>{headerBar}</View>
         <ScrollView
           ref={scroller}
           style={styles.scroller}
-          contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
+          contentContainerStyle={[
+            styles.subContent,
+            { paddingTop: headerH + spacing.stack, paddingBottom: insets.bottom + spacing.xl },
+            style,
+          ]}
           contentInsetAdjustmentBehavior="never"
+          // Keep the scroll bar out from under the bar it would run beneath
+          scrollIndicatorInsets={{ top: headerH }}
           automaticallyAdjustKeyboardInsets
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           {...props}>
           {children}
         </ScrollView>
+        {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
+        <View style={[styles.pageHeader, { paddingTop: insets.top }]} pointerEvents="box-none">
+          <GlassBar />
+          {headerBar}
+        </View>
       </View>
     );
   }
@@ -232,14 +265,20 @@ const styles = StyleSheet.create({
    */
   scroller: { flex: 1, backgroundColor: 'transparent' },
 
-  // Sub-page header (web PageHeader)
+  // Sub-page header (web PageHeader) — overlays the content; `GlassBar` fills
+  // it, so the background comes from the blur rather than from a colour here
   pageHeader: {
-    backgroundColor: glass.bg,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
     borderBottomWidth: glass.borderWidth,
     borderBottomColor: glass.border,
+    overflow: 'hidden',
   },
   pageHeaderRow: {
-    height: 44,
+    height: HEADER_H,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 4,
