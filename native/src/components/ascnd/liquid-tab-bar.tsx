@@ -32,6 +32,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { scrollActiveToTop } from '@/lib/scroll-to-top';
 import { resetTabBar, tabBarVisible } from '@/lib/tab-bar-visibility';
 
 const TAB_ICONS: Record<string, LucideIcon> = {
@@ -97,10 +98,18 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   const go = (routeName: string, index: number) => {
     const active = state.index === index;
     Haptics.impactAsync(active ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
-    if (!active) {
+    if (active) {
+      // Tapping the tab you are already on goes back to the top of it — the
+      // platform convention, and the only way up a long page short of a long
+      // flick. The focused `Screen` lends its scroll view for this; see
+      // `lib/scroll-to-top`. Bring the bar back with it, since a scroll to the
+      // top would have shown it anyway.
+      scrollActiveToTop();
       resetTabBar();
-      navigation.navigate(routeName);
+      return;
     }
+    resetTabBar();
+    navigation.navigate(routeName);
   };
 
   // Scroll-aware hide/show (web autoHide behavior)

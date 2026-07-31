@@ -1,6 +1,7 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ChevronLeft } from 'lucide-react-native';
+import { useCallback, useRef } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -15,7 +16,30 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ascnd/icon';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, glass, spacing, type } from '@/constants/ascnd';
+import { setActiveScroller } from '@/lib/scroll-to-top';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
+
+/**
+ * Keep what you are looking at where it is when content *above* it resizes.
+ *
+ * These pages are built from cards that swap between a short empty state and a
+ * much taller loaded one the moment a query resolves — the readiness gauge, the
+ * sleep card and the nutrition ring all do it on Today alone. Every one of
+ * those swaps changes the height of the content above wherever you happen to be
+ * reading, and the page jumps under your thumb. It looked intermittent because
+ * the query cache is persisted: on a warm start the data is already there and
+ * nothing swaps, so it only showed on a cold start or after a refetch.
+ *
+ * `maintainVisibleContentPosition` makes the scroll view compensate: when
+ * content above the viewport grows or shrinks, it shifts the offset by the same
+ * amount so the visible content does not move. `minIndexForVisible: 0` anchors
+ * from the first child, which is what a page of stacked cards wants. It costs
+ * nothing when nothing resizes, and it is one prop here instead of a
+ * hand-measured `minHeight` on every placeholder in the app.
+ *
+ * Hoisted to a constant so it is not a fresh object on every render.
+ */
+const KEEP_POSITION = { minIndexForVisible: 0 } as const;
 
 interface ScreenProps extends ViewProps {
   title: string;
@@ -60,6 +84,24 @@ interface ScreenProps extends ViewProps {
 export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, contentScrollEnabled = true, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
 
+  /**
+   * Lend this page's scroll view to the tab bar, so tapping the tab you are
+   * already on returns to the top. Claimed on focus and released on blur, so
+   * the slot always points at the page in front of you — see `scroll-to-top`.
+   *
+   * Every branch below gets the ref, not just the tab layout: a pushed page is
+   * not reachable from the tab bar today, but a scaffold that only sometimes
+   * supports its own affordance is the kind of thing that surprises the next
+   * person to use it.
+   */
+  const scroller = useRef<ScrollView>(null);
+  useFocusEffect(
+    useCallback(() => {
+      setActiveScroller(() => scroller.current?.scrollTo({ y: 0, animated: true }));
+      return () => setActiveScroller(null);
+    }, []),
+  );
+
   if (back) {
     const headerBar = (
       <View style={styles.pageHeaderRow}>
@@ -84,9 +126,11 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
       return (
         <View style={styles.root}>
           <ScrollView
+            ref={scroller}
             style={styles.scroller}
             contentContainerStyle={[styles.subContentFlush, { paddingBottom: insets.bottom + spacing.xl }, style]}
             contentInsetAdjustmentBehavior="never"
+            maintainVisibleContentPosition={KEEP_POSITION}
             scrollEnabled={contentScrollEnabled}
             automaticallyAdjustKeyboardInsets
             keyboardShouldPersistTaps="handled"
@@ -109,9 +153,11 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
         <View style={[styles.pageHeader, { paddingTop: insets.top }]}>{headerBar}</View>
         <ScrollView
+          ref={scroller}
           style={styles.scroller}
           contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
           contentInsetAdjustmentBehavior="never"
+          maintainVisibleContentPosition={KEEP_POSITION}
           automaticallyAdjustKeyboardInsets
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
@@ -124,6 +170,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
 
   return (
     <ScrollView
+      ref={scroller}
       style={styles.scroller}
       contentContainerStyle={[
         styles.content,
@@ -131,6 +178,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         style,
       ]}
       contentInsetAdjustmentBehavior="never"
+      maintainVisibleContentPosition={KEEP_POSITION}
       automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
