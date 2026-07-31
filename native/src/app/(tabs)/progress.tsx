@@ -9,6 +9,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
+import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -38,6 +39,14 @@ export default function ProgressScreen() {
 
   const { data: profile } = useProfile();
   const { data: weight } = useWeightHistory(90);
+  /**
+   * Every weigh-in, for the changes card's "All Time" row and its 90-day one.
+   *
+   * A separate query from the chart's 90 days rather than widening that one:
+   * the chart is a 90-day chart by design, and ten years of points would both
+   * change what it shows and cost more to draw. Cached under its own key.
+   */
+  const { data: weightAll } = useWeightHistory(3650);
   const { data: photos } = useProgressPhotos();
   const { data: measurements } = useBodyMeasurements();
 
@@ -45,6 +54,7 @@ export default function ProgressScreen() {
   const wl = weightLabel(wUnit);
   // Stored kg; chart + tiles show the user's unit (BMI stays metric)
   const weightData = (weight ?? []).map((d) => ({ ...d, value: displayWeight(d.value, wUnit) }));
+  const allWeight = (weightAll ?? []).map((d) => ({ ...d, value: displayWeight(d.value, wUnit) }));
   const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].value : null;
   const startWeight = weightData.length > 0 ? weightData[0].value : null;
   const weightDelta = currentWeight != null && startWeight != null ? currentWeight - startWeight : null;
@@ -213,6 +223,13 @@ export default function ProgressScreen() {
             <Text style={styles.microTitle}>{i18n.progressWeightChart}</Text>
             <LineChart points={weightData} color={colors.readinessGreen} height={180} unit={wl} emptyLabel={i18n.nNotEnoughData} />
           </GlassCard>
+          </Animated.View>
+
+          {/* The chart says what shape the trend is; this says whether you are
+              up or down over each window, which is what people weigh
+              themselves to find out. */}
+          <Animated.View entering={rise(3)}>
+            <WeightChanges points={allWeight} unit={wl} goal={profile?.goal} i18n={i18n} />
           </Animated.View>
         </>
       )}
