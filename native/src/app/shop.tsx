@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { Coins, Sparkles, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -70,6 +70,14 @@ import { toast } from '@/lib/toast';
  * names are the shot names, so there is no table mapping one to the other and
  * no way for the two to disagree.
  */
+/**
+ * How long Koa looks at what just went on him.
+ *
+ * One full sway of `DRESS_PERIOD` and a little either side for the blend, so
+ * the pose gets to complete a cycle rather than being cut off mid-lean.
+ */
+const DRESS_HOLD = 4200;
+
 const TABS = ['overview', 'stage', 'outfit', 'closet'] as const;
 type Tab = (typeof TABS)[number];
 
@@ -106,6 +114,11 @@ export default function ShopScreen() {
   // indexes into changes — an index kept across a filter change points at a
   // different thing than the one that was on screen.
   const [index, setIndex] = useState(0);
+  // See `dressing`, below — the pose is a reaction to a garment going on, so it
+  // needs to fire again when the same one is re-worn, which a key alone cannot
+  // say. Bumped on every equip.
+  const [wearTick, setWearTick] = useState(0);
+  const [dressing, setDressing] = useState(false);
   const [collectionsOpen, setCollectionsOpen] = useState(false);
   // Which item's purchase is in flight, so the spinner lands on that card alone
   const [buyingKey, setBuyingKey] = useState<string | null>(null);
@@ -152,6 +165,35 @@ export default function ShopScreen() {
 
   /** move the pager, and keep it inside a list that may have just changed */
   const pick = (next: number) => setIndex(items.length === 0 ? 0 : next % items.length);
+
+  /**
+   * Koa reacts when a garment goes on him, and only then.
+   *
+   * Not while a tab is open — that made the pose a costume he was stuck in for
+   * as long as you were on the screen. Putting something on is an event, so
+   * this is one: a few seconds of looking down at what just appeared, then back
+   * to the idle he does in the Mascot Room.
+   *
+   * It fires on the browsed outfit changing as well as on the wear button,
+   * because browsing *does* put the thing on him — that is the whole point of
+   * the preview, and a reaction that ignored it would be reacting to the
+   * paperwork rather than to the clothes. Stages are not clothes and do not
+   * trigger it.
+   */
+  const dressKey = browsing && browsing.type === 'outfit' ? browsing.key : null;
+  const dressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!dressKey) {
+      setDressing(false);
+      return;
+    }
+    setDressing(true);
+    if (dressTimer.current) clearTimeout(dressTimer.current);
+    dressTimer.current = setTimeout(() => setDressing(false), DRESS_HOLD);
+    return () => {
+      if (dressTimer.current) clearTimeout(dressTimer.current);
+    };
+  }, [dressKey, wearTick]);
 
   const setsReady = COLLECTIONS.filter(
     (c) => collectionProgress(c, owned).complete && !claimed.has(collectionRefKey(c.id)),
@@ -230,6 +272,7 @@ export default function ShopScreen() {
           level={level}
           equipped={preview}
           skin={previewStage ?? undefined}
+          dress={dressing}
         />
       </View>
 
@@ -285,6 +328,9 @@ export default function ShopScreen() {
             onBuy={buyItem}
             onToggleEquip={(key, next) => {
               Haptics.selectionAsync();
+              // Wearing is the event the pose is a reaction to. Taking off is
+              // not — there is nothing new to look down at.
+              if (next) setWearTick((n) => n + 1);
               equip.mutate({ itemKey: key, equipped: next });
             }}
             lang={lang}

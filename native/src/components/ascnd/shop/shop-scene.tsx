@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import Svg from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { HERO_W } from '@/components/ascnd/koa/koa-frame';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
@@ -74,6 +74,9 @@ import type { MascotDef } from '@/lib/mascots';
 /** how far above scene resolution the whole scene is drawn — see above */
 const SS = 2;
 
+/** the page the scene fades into — `stage-renderer.tsx`'s own constant */
+const PAGE = '#070708';
+
 /**
  * How the camera moves.
  *
@@ -99,6 +102,7 @@ export function ShopScene({
   equipped,
   skin,
   energy = 0.5,
+  dress = false,
 }: {
   shot: ShotName;
   mascot: MascotDef;
@@ -108,12 +112,16 @@ export function ShopScene({
   equipped?: Set<string>;
   skin?: string;
   energy?: number;
+  /**
+   * Playing the dressing reaction.
+   *
+   * It used to be `shot === 'closet'` — derived here, so opening a tab put him
+   * in the pose and kept him there. That is a costume, not a reaction. It is
+   * the page's call now, and the page raises it when a garment actually lands
+   * on him. Everywhere else, every tab, he idles.
+   */
+  dress?: boolean;
 }) {
-  // Getting dressed is what the "Tủ đồ" shot is *of*, so the pose belongs to
-  // the shot rather than to a prop the page has to remember to pass. Every
-  // other shot leaves him idling, which is the Emotion Engine's business and
-  // the same thing he does in the Mascot Room.
-  const dress = shot === 'closet';
   /**
    * The shot itself is the animated thing — four springs, one per edge.
    *
@@ -193,6 +201,39 @@ export function ShopScene({
             />
         </View>
       </Animated.View>
+
+      {/* The room's floor runs into the page rather than stopping on a line.
+          The same two gradients the Mascot Room's stage uses, and for the same
+          reason: the scene is the top of a scrolling page, not a picture with a
+          border, and a hard bottom edge is what makes it look like one.
+
+          It sits *outside* the camera group, so it stays put while the camera
+          moves — a fade that panned with the room would be a grey shape sliding
+          across the floor. */}
+      <Svg
+        width={width}
+        height={height}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none">
+        <Defs>
+          <LinearGradient id="shopFadeV" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={PAGE} stopOpacity={0} />
+            {/* 0.83, not 0.74. A longer ramp swallowed the podium's base and
+                the room read as dissolving rather than as running off the
+                bottom of the picture. */}
+            <Stop offset="0.83" stopColor={PAGE} stopOpacity={0} />
+            <Stop offset="1" stopColor={PAGE} stopOpacity={1} />
+          </LinearGradient>
+          <LinearGradient id="shopFadeH" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor={PAGE} stopOpacity={0.55} />
+            <Stop offset="0.09" stopColor={PAGE} stopOpacity={0} />
+            <Stop offset="0.91" stopColor={PAGE} stopOpacity={0} />
+            <Stop offset="1" stopColor={PAGE} stopOpacity={0.55} />
+          </LinearGradient>
+        </Defs>
+        <Rect x={0} y={0} width={width} height={height} fill="url(#shopFadeH)" />
+        <Rect x={0} y={0} width={width} height={height} fill="url(#shopFadeV)" />
+      </Svg>
     </View>
   );
 }

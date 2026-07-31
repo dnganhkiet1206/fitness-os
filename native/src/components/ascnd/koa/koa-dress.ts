@@ -142,28 +142,31 @@ export type DressPart = 'body' | 'head' | 'armL' | 'armR' | 'footL' | 'footR' | 
  * one place it wraps a node, and so the phase relationships between the parts
  * live together where they can be read as a single piece of movement.
  */
-export function dressMat(part: DressPart, t: number): number[] {
+export function dressMat(part: DressPart, t: number, k = 1): number[] {
   'worklet';
   const a = ((t % DRESS_PERIOD) / DRESS_PERIOD) * Math.PI * 2;
   const sway = Math.sin(a);
 
-  if (part === 'body') return mat(SWAY_BODY * sway, PIVOT.body[0], PIVOT.body[1], 0, 0);
+  if (part === 'body') return mat(k * SWAY_BODY * sway, PIVOT.body[0], PIVOT.body[1], 0, 0);
   if (part === 'head') {
-    return mat(SWAY_HEAD * Math.sin(a - HEAD_LAG), PIVOT.head[0], PIVOT.head[1], 0, HEAD_BOW);
+    return mat(k * SWAY_HEAD * Math.sin(a - HEAD_LAG), PIVOT.head[0], PIVOT.head[1], 0, k * HEAD_BOW);
   }
-  if (part === 'eyes') return [1, 0, 0, 1, 0, EYES_DOWN];
+  if (part === 'eyes') return [1, 0, 0, 1, 0, k * EYES_DOWN];
   if (part === 'armL') {
-    return mat(ARM_RAISE + ARM_FLUTTER * Math.sin(a * 2), PIVOT.armL[0], PIVOT.armL[1], 0, 0);
+    return mat(k * (ARM_RAISE + ARM_FLUTTER * Math.sin(a * 2)), PIVOT.armL[0], PIVOT.armL[1], 0, 0);
   }
   if (part === 'armR') {
-    return mat(-(ARM_RAISE + ARM_FLUTTER * Math.sin(a * 2)), PIVOT.armR[0], PIVOT.armR[1], 0, 0);
+    return mat(-k * (ARM_RAISE + ARM_FLUTTER * Math.sin(a * 2)), PIVOT.armR[0], PIVOT.armR[1], 0, 0);
   }
   // The feet alternate: the one on the side he is leaning *away* from comes up,
   // which is what a weight shift looks like. `max(0, ±sway)` gives each foot
   // half the cycle down flat and half of it rising, rather than both bobbing.
   const lift = part === 'footL' ? Math.max(0, sway) : Math.max(0, -sway);
-  return [1, 0, 0, 1, 0, -FOOT_LIFT * lift];
+  return [1, 0, 0, 1, 0, -k * FOOT_LIFT * lift];
 }
+
+/** how long the blend in and out takes */
+export const DRESS_BLEND = 400;
 
 /**
  * Which part a node is, by `id` — everything except the arms.

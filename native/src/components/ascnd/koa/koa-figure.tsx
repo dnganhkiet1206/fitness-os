@@ -1,10 +1,11 @@
-import { Fragment, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState, View } from 'react-native';
 import Animated, {
   useAnimatedProps,
   useDerivedValue,
   useFrameCallback,
   useSharedValue,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import Svg, {
@@ -61,6 +62,7 @@ import {
 import { KOA_ASPECT, KOA_INSET_MAT, KOA_VIEWBOX } from '@/components/ascnd/koa/koa-frame';
 import {
   DRESS_ARM_AT,
+  DRESS_BLEND,
   DRESS_BY_ID,
   dressMat,
   type DressPart,
@@ -360,15 +362,20 @@ function GazeHead({ look, children }: { look: SharedValue<Gaze>; children: React
 function DressG({
   part,
   clock,
+  blend,
   live,
   children,
 }: {
   part: DressPart;
   clock: SharedValue<number>;
+  /** 0 → the pose is not there at all; 1 → full. See `koa-dress.ts`. */
+  blend: SharedValue<number>;
   live: boolean;
   children: ReactNode;
 }) {
-  const props = useAnimatedProps<{ matrix: number[] }>(() => ({ matrix: dressMat(part, clock.value) }));
+  const props = useAnimatedProps<{ matrix: number[] }>(() => ({
+    matrix: dressMat(part, clock.value, blend.value),
+  }));
   // frozen: the same first frame every other layer draws at t=0, so a still
   // figure is one plain `<G>` rather than an animated component doing nothing
   if (!live) return <G transform={`matrix(${dressMat(part, 0).join(' ')})`}>{children}</G>;
@@ -469,6 +476,7 @@ function RenderNode({
   swapMouth,
   rest,
   dress,
+  blend,
   armPart,
 }: {
   n: Node;
@@ -482,8 +490,10 @@ function RenderNode({
   swapMouth: boolean;
   /** whether this pose stands, and so gets the resting lean */
   rest: boolean;
-  /** whether the figure is trying clothes on — see `koa-dress.ts` */
+  /** whether the dressing pose's wrappers are mounted — see `koa-dress.ts` */
   dress: boolean;
+  /** how much of that pose is showing, 0 → 1, so it can fade in and out */
+  blend: SharedValue<number>;
   /**
    * Which arm this node belongs to, when its parent is `ARMS`.
    *
@@ -507,6 +517,7 @@ function RenderNode({
           swapMouth={swapMouth}
           rest={rest}
           dress={dress}
+          blend={blend}
           armPart={dress && n.id === 'ARMS' ? DRESS_ARM_AT[i] : undefined}
         />
       ))
@@ -647,9 +658,9 @@ function RenderNode({
   // moves. `rest` is off whenever this is on, so the two never stack.
   const part = dress ? (armPart ?? (n.id ? DRESS_BY_ID[n.id] : undefined)) : undefined;
   const moved = part ? (
-    <DressG part={part} clock={clock} live={live}>{leaned}</DressG>
+    <DressG part={part} clock={clock} blend={blend} live={live}>{leaned}</DressG>
   ) : dress && isEyeGroup(n) ? (
-    <DressG part="eyes" clock={clock} live={live}>{leaned}</DressG>
+    <DressG part="eyes" clock={clock} blend={blend} live={live}>{leaned}</DressG>
   ) : (
     leaned
   );
@@ -820,9 +831,30 @@ export function KoaFigure({
   );
   const look = clockOrNull ? resolved : undefined;
   const swapMouth = SWAP_MOUTHS.some((f) => !!flags[f]);
+  /**
+   * The dressing pose fades in and out rather than being switched.
+   *
+   * `blend` is the amount showing and every number in `dressMat` scales by it,
+   * so 0 is the identity matrix and there is no separate transition to keep in
+   * step with the pose. `mounted` is what keeps the wrappers in the tree while
+   * that fade runs *out* — dropping them the instant `dress` goes false would
+   * cut from mid-sway back to idle, which is the jump the fade exists to avoid.
+   */
+  const blend = useSharedValue(dress ? 1 : 0);
+  const [mounted, setMounted] = useState(dress);
+  useEffect(() => {
+    blend.value = withTiming(dress ? 1 : 0, { duration: DRESS_BLEND });
+    if (dress) {
+      setMounted(true);
+      return;
+    }
+    const t = setTimeout(() => setMounted(false), DRESS_BLEND);
+    return () => clearTimeout(t);
+  }, [dress, blend]);
+
   // The resting lean and the dressing pose drive the same nodes, so they never
   // both apply: one is a still figure's asymmetry, the other is a moving one's.
-  const rest = restsAt(flags) && !dress;
+  const rest = restsAt(flags) && !mounted;
   const tree = useMemo(
     () =>
       NODES.map((n, i) => (
@@ -835,10 +867,11 @@ export function KoaFigure({
           gaze={look}
           swapMouth={swapMouth}
           rest={rest}
-          dress={dress}
+          dress={mounted}
+          blend={blend}
         />
       )),
-    [flags, clock, animated, look, swapMouth, rest, dress],
+    [flags, clock, animated, look, swapMouth, rest, mounted, blend],
   );
 
   return (
