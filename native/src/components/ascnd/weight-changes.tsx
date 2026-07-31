@@ -1,6 +1,6 @@
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Line } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -53,18 +53,13 @@ interface Row {
   key: string;
   label: string;
   delta: number;
-  samples: WeightPoint[];
-  /** the window's left edge in ms, so x can be time and not sample number */
-  from: number;
-  to: number;
+  /** how many readings the window holds — under two, there is nothing to draw */
+  count: number;
 }
 
 const SPARK_W = 44;
 const SPARK_H = 22;
-const SPARK_PAD = 2;
-
-/** `YYYY-MM-DD` at local midnight — the same parse the rest of the app uses */
-const ms = (iso: string) => new Date(`${iso}T00:00:00`).getTime();
+const SPARK_PAD = 3;
 
 /**
  * A window's samples, oldest first.
@@ -81,52 +76,34 @@ function windowSamples(points: WeightPoint[], days: number | null): WeightPoint[
 }
 
 /**
- * The polyline for one window — or `null` when there is nothing to draw.
+ * One straight stroke saying which way the window went.
  *
- * Three rules, all of them about not drawing things that are not true:
+ * At the user's direction this is not a plot of every reading — it is a glyph
+ * for the row's own number: **up if the weight rose, down if it fell, level if
+ * it held.** At 44×22 a real time-series is a smudge anyway, and the row
+ * already prints the exact figure beside it; what the eye wants from the box
+ * is the direction.
  *
- * - **x is time, not sample number.** Spacing points evenly puts two readings
- *   a day apart at the same distance as two ninety days apart, which is a
- *   different shape from the one that happened. Each point sits where its date
- *   falls in the window.
- * - **y is a scale shared by every row** (`lo`/`hi` from all the data the card
- *   has), so the rows are comparable. Fitting each row to its own min and max
- *   made a 0.1 kg wobble over three days look exactly like a 3 kg fall over
- *   ninety — the most misleading thing a sparkline can do.
- * - **fewer than two points draws no line.** One reading is a dot, none is
- *   nothing at all. The old version drew a flat line through the middle of the
- *   box whenever a window was empty, which is a picture of a weight that held
- *   steady — a claim about days that were never measured.
+ * The one thing it still owes the data is **proportion**. The stroke's rise is
+ * scaled by this row's change against the largest change on the card, so the
+ * biggest mover spans the box and a tenth of that leans a tenth as far. A
+ * fixed 45° for every row would say every window moved the same amount.
+ *
+ * `null` when the window holds fewer than two readings: nothing was measured,
+ * so there is no direction to claim. That is the case that used to draw a flat
+ * line through the middle — a picture of a steady weight on days nobody
+ * weighed themselves.
  */
-function sparkPath(row: Row, lo: number, hi: number): string | null {
-  if (row.samples.length < 2) return null;
-  const span = hi - lo;
-  const dur = row.to - row.from || 1;
-  const y = (v: number) =>
-    // no variation anywhere in the data: draw it level, in the middle
-    span === 0
-      ? SPARK_H / 2
-      : SPARK_PAD + (SPARK_H - SPARK_PAD * 2) * (1 - (v - lo) / span);
-  const x = (iso: string) =>
-    Math.max(0, Math.min(1, (ms(iso) - row.from) / dur)) * SPARK_W;
-  return row.samples
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(p.date).toFixed(1)} ${y(p.value).toFixed(1)}`)
-    .join(' ');
-}
-
-/** The single reading a window has, as a dot — there is no line to draw. */
-function sparkDot(row: Row, lo: number, hi: number): { cx: number; cy: number } | null {
-  if (row.samples.length !== 1) return null;
-  const p = row.samples[0];
-  const span = hi - lo;
-  const dur = row.to - row.from || 1;
-  return {
-    cx: Math.max(0, Math.min(1, (ms(p.date) - row.from) / dur)) * SPARK_W,
-    cy:
-      span === 0
-        ? SPARK_H / 2
-        : SPARK_PAD + (SPARK_H - SPARK_PAD * 2) * (1 - (p.value - lo) / span),
-  };
+function sparkLine(row: Row, maxDelta: number): { x1: number; y1: number; x2: number; y2: number } | null {
+  if (row.count < 2) return null;
+  const mid = SPARK_H / 2;
+  const reach = (SPARK_H - SPARK_PAD * 2) / 2;
+  // share of the biggest change on the card, 0..1
+  const frac = maxDelta > 0 ? Math.min(1, Math.abs(row.delta) / maxDelta) : 0;
+  const rise = reach * frac;
+  const dir = row.delta > EPSILON ? -1 : row.delta < -EPSILON ? 1 : 0;
+  // dir is -1 for a rise because SVG y grows downwards
+  return { x1: SPARK_PAD, y1: mid - dir * rise, x2: SPARK_W - SPARK_PAD, y2: mid + dir * rise };
 }
 
 export function WeightChanges({
@@ -143,7 +120,6 @@ export function WeightChanges({
   goal?: string | null;
   i18n: ReturnType<typeof useI18n>;
 }) {
-  const now = Date.now();
   const rows: Row[] = WINDOWS.map((days) => {
     const samples = windowSamples(points, days);
     const delta =
@@ -152,28 +128,19 @@ export function WeightChanges({
       key: days == null ? 'all' : String(days),
       label: days == null ? i18n.nWcAllTime : i18n.nWcDays.replace('{n}', String(days)),
       delta,
-      samples,
-      // A fixed window spans its whole length even when the readings sit in one
-      // corner of it — that gap is information: it says when you did not weigh
-      // yourself. All-time starts at the first reading, because there is no
-      // "before" to leave room for.
-      from: days == null ? ms(points[0]?.date ?? '') : now - days * 86400000,
-      to: now,
+      count: samples.length,
     };
   });
 
   /**
-   * One vertical scale for every row, taken from all the data the card holds.
+   * The biggest move on the card, which every stroke is drawn against.
    *
-   * This is what makes the sparklines comparable: the 3-day row and the
-   * all-time row are drawn against the same kilograms, so a small change looks
-   * small. Fitting each row to its own range — the obvious thing, and what this
-   * did at first — made every row fill the box regardless of how much had
-   * actually moved.
+   * One scale for all six rows is what keeps them comparable: the row that
+   * moved most spans its box, and a row that moved a tenth as much leans a
+   * tenth as far. Scaling each row to itself would have every stroke at the
+   * same angle and say nothing.
    */
-  const allValues = points.map((p) => p.value);
-  const lo = allValues.length ? Math.min(...allValues) : 0;
-  const hi = allValues.length ? Math.max(...allValues) : 0;
+  const maxDelta = Math.max(...rows.map((r) => Math.abs(r.delta)), 0);
 
   if (points.length === 0) {
     return (
@@ -201,27 +168,25 @@ export function WeightChanges({
             : bad
               ? colors.metricOrange
               : colors.metricBlue;
-        const d = sparkPath(r, lo, hi);
-        const dot = sparkDot(r, lo, hi);
+        const stroke = sparkLine(r, maxDelta);
         return (
           <View key={r.key} style={styles.row}>
             <Text style={styles.rowLabel}>{r.label}</Text>
-            {/* Nothing measured in this window means nothing drawn — the box
-                stays empty rather than showing a line that was never weighed. */}
+            {/* One stroke: up if it rose, down if it fell, level if it held —
+                and nothing at all when the window holds under two readings,
+                because then there is no direction to claim. */}
             <Svg width={SPARK_W} height={SPARK_H} style={styles.spark}>
-              {d ? (
-                <Path
-                  d={d}
-                  stroke={flat ? colors.mutedForeground : tint}
-                  strokeWidth={1.8}
+              {stroke ? (
+                <Line
+                  x1={stroke.x1}
+                  y1={stroke.y1}
+                  x2={stroke.x2}
+                  y2={stroke.y2}
+                  stroke={tint}
+                  strokeWidth={2}
                   strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
                   opacity={flat ? 0.6 : 1}
                 />
-              ) : null}
-              {dot ? (
-                <Circle cx={dot.cx} cy={dot.cy} r={2} fill={colors.mutedForeground} />
               ) : null}
             </Svg>
             <Text style={styles.rowValue}>
