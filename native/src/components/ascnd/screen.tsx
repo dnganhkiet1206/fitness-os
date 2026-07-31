@@ -13,10 +13,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AmbientLight } from '@/components/ascnd/ambient-light';
 import { GlassBar } from '@/components/ascnd/glass-bar';
 import { Icon } from '@/components/ascnd/icon';
-import { TopEdgeBlur } from '@/components/ascnd/top-edge-blur';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { setActiveScroller } from '@/lib/scroll-to-top';
@@ -56,11 +54,14 @@ import { handleTabScroll } from '@/lib/tab-bar-visibility';
 const HEADER_H = 44;
 
 /**
- * How far past the bar the glass keeps going while it fades out.
+ * How far below the status bar the glass keeps thinning before it is gone.
  *
- * It fits inside the gap the content already leaves below the header
- * (`spacing.stack`, 20pt), so adding the tail moves nothing on the page — the
- * glass simply stops ending in a line and starts ending in nothing.
+ * The pane is full strength across `insets.top` — the band the Dynamic Island
+ * sits in — and gone by `insets.top + HEADER_FADE`. It no longer runs the
+ * height of the header: the chevron and the title stand on the page itself.
+ *
+ * On sub-pages the tail fits inside the 20pt gap the content already leaves
+ * below the header, so it costs no layout.
  */
 const HEADER_FADE = 18;
 
@@ -148,7 +149,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
       // Header floats over a full-bleed hero; content starts at the very top.
       return (
         <View style={styles.root}>
-          <AmbientLight top={insets.top + HEADER_H} />
           <ScrollView
             ref={scroller}
             style={styles.scroller}
@@ -163,7 +163,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           </ScrollView>
           {/* Between the content and the floating header, so the hero softens
               under the notch while the chevron and the title stay sharp. */}
-          <TopEdgeBlur />
+          <GlassBar height={insets.top} fade={HEADER_FADE} />
           <View
             style={[styles.pageHeaderFloat, { paddingTop: insets.top }]}
             pointerEvents="box-none"
@@ -184,22 +184,19 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
      * were the one place in the app where nothing passed under the status bar,
      * and so the one place with no notch treatment at all.
      *
-     * Now the bar overlays the content and `GlassBar` gives it an actual
-     * backdrop blur, so text softens and dims as it slides beneath — the same
-     * thing the notch strip does on the other two layouts, except the bar
-     * covers the safe-area inset as well, which is why there is no separate
-     * `TopEdgeBlur` here. One pane of glass, doing both jobs.
+     * Now the bar overlays the content, and `GlassBar` puts a real backdrop
+     * blur across the status bar band above it, so what scrolls up past the
+     * Dynamic Island softens instead of running into it sharp. Every layout
+     * uses the same pane at the same height — the header simply happens to
+     * have a chevron and a title below it.
      *
      * Nothing moves. The content's top padding gains exactly the height the bar
      * used to occupy in flow (`insets.top + HEADER_H`), so every sub-page opens
      * looking identical to before; the difference only appears once you scroll.
      */
     const headerH = insets.top + HEADER_H;
-    // The bar is drawn taller than it reads, and the extra is where it fades
-    const glassH = headerH + HEADER_FADE;
     return (
       <View style={styles.root}>
-        <AmbientLight top={headerH} />
         <ScrollView
           ref={scroller}
           style={styles.scroller}
@@ -218,10 +215,8 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           {children}
         </ScrollView>
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
-        <View
-          style={[styles.pageHeader, { paddingTop: insets.top, height: glassH }]}
-          pointerEvents="box-none">
-          <GlassBar fadeFrom={headerH / glassH} />
+        <View style={[styles.pageHeader, { paddingTop: insets.top }]} pointerEvents="box-none">
+          <GlassBar height={insets.top} fade={HEADER_FADE} />
           {headerBar}
         </View>
       </View>
@@ -236,7 +231,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
    */
   return (
     <View style={styles.root}>
-      <AmbientLight top={insets.top} />
       <ScrollView
         ref={scroller}
         style={styles.scroller}
@@ -261,7 +255,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         </View>
         {children}
       </ScrollView>
-      <TopEdgeBlur />
+      <GlassBar height={insets.top} fade={HEADER_FADE} />
     </View>
   );
 }
@@ -271,16 +265,17 @@ const styles = StyleSheet.create({
   /**
    * Transparent, not `colors.background`.
    *
-   * The wrapper behind it paints the page colour and `AmbientLight` sits on
-   * top of that; an opaque scroll view would cover the light with the very
-   * fill it is meant to lift. Nothing changes visually where the light has
-   * faded out — same colour, one layer down.
+   * The wrapper behind it already paints the page colour, so this would only
+   * be painting it a second time — and painting over anything the scaffold
+   * ever puts between the two. Nothing looks different; there is one fewer
+   * opaque layer in the way.
    */
   scroller: { flex: 1, backgroundColor: 'transparent' },
 
   /**
-   * Sub-page header (web PageHeader) — overlays the content; `GlassBar` fills
-   * it, so the background comes from the blur rather than from a colour here.
+   * Sub-page header (web PageHeader) — overlays the content. No background of
+   * its own: `GlassBar` covers the status bar band at the top of it, and the
+   * chevron and title below that sit on the page.
    *
    * No bottom border. The glass fades out over its last stretch instead, and a
    * hairline across that fade would put back exactly the edge the fade exists

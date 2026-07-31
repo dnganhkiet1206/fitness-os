@@ -1,107 +1,106 @@
-import MaskedView from '@react-native-masked-view/masked-view';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 /**
- * The glass backing for a bar that content scrolls underneath.
+ * A pane of glass across the top of a page, thinning out to nothing.
  *
  * A real backdrop blur, not a translucent fill. The difference only matters
- * once something is behind it — and that is exactly the situation this exists
+ * once something is behind it — and that is the whole situation this exists
  * for. The app's usual recipe (a 6% white fill over the page) looks like
  * frosted glass only because nothing is ever behind it but the page colour;
  * put a paragraph under it and the paragraph reads straight through.
  *
- * ── clear, not frosted ──
+ * ── it covers the Dynamic Island's band, and stops ──
  *
- * `clear` is the see-through end of the Liquid Glass scale: it bends and
- * softens what is behind it without laying a pane of tint over it, so the page
- * still reads as one surface with a bar resting on it rather than as two
- * stacked panels. `regular` — a full frosted panel — was the first choice here
- * on the grounds that a bar has to hide what slides under it, but that is the
- * argument for a toolbar, and this bar carries a chevron and a title, not
- * controls that need a solid ground to sit on.
+ * `height` is the status bar inset, not the header's height. The chevron and
+ * the title below it stand on the page itself. The pane takes its own height
+ * rather than filling its parent because the parent has to stay full height
+ * for those controls to remain tappable — iOS does not deliver touches outside
+ * a view's bounds.
  *
- * The trade is real and worth naming: over busy content the title has less to
- * separate it from what is passing beneath. The bottom hairline and the title's
- * own weight are what hold it apart.
+ * ── the fade is the glass thinning, not something drawn over it ──
  *
- * ── no edge ──
+ * `fade` is a tail below `height` where the glass gets weaker until it is gone.
+ * It is built by stacking panes of decreasing height at partial opacity: each
+ * composites over the last, so the strength steps down as you pass the bottom
+ * of each one. Opacity on a glass view weakens the *effect*, so every step is
+ * closer to plain page than the step above it, and the end of the tail is
+ * plain page exactly.
  *
- * The bar used to end in a hairline. A hairline is a line, and a line is the
- * loudest thing you can put at the bottom of something that is meant to be
- * barely there — it draws the bar's outline for you and turns a pane of glass
- * into a panel bolted to the top of the page.
+ * The first version masked a single pane with a gradient instead. That is
+ * smoother on paper, and in practice it put a dark band under the bar: a mask
+ * over a visual-effect layer does not give you glass that thins, it gives you
+ * glass with something laid across it. Stacking draws nothing — there is no
+ * layer in here that has a colour.
  *
- * So the glass fades out instead. `fadeFrom` is where along the bar the fade
- * starts, as a fraction: full strength behind the chevron and the title, then
- * away to nothing over a short tail below them, with no edge anywhere. The
- * fade lives inside the header's own height, so nothing on the page moves to
- * make room for it.
+ * Three steps rather than eight, because each extra pane is another live blur
+ * to composite, and on `clear` glass the steps sit between states that are
+ * already nearly identical.
  *
- * ── the fallback is opaque, and cannot not be ──
+ * ── with no Liquid Glass it renders nothing ──
  *
- * `GlassView` is the Liquid Glass API and there is no glass to render before
- * iOS 26. Transparency there would not be glass, it would be a hole: no blur
- * means content slides under the bar at full sharpness and collides with the
- * title. So the fallback stays a solid fill — `FALLBACK` is the colour the bar
- * has always been, the page background with the 6% white glass fill composited
- * onto it, so on an older system the bar looks exactly as it did before and
- * only the blur is missing.
+ * Deliberate, and a change from the earlier solid-colour stand-in. There is no
+ * blur before iOS 26, and everything that can stand in for one is a flat fill:
+ * a dark fill is the dark band that was objected to, and a light fill is the
+ * white haze objected to before that. A pane of glass that cannot be glass is
+ * better as nothing — the page keeps its own colour and nothing is laid over
+ * the top of it.
+ *
+ * The cost is real and worth stating: on those systems content scrolls up to
+ * the status bar sharp, with no softening. That is the honest floor without a
+ * blur primitive, and the only way past it is shipping one (`expo-blur`),
+ * which needs a native rebuild.
  */
 
-/** #070708 with `glass.bg` (6% white) flattened onto it */
-const FALLBACK = '#161617';
+/** how the tail steps down: fraction of the tail, and that pane's opacity */
+const FADE_STEPS = [
+  { of: 1, opacity: 0.35 },
+  { of: 0.55, opacity: 0.5 },
+] as const;
 
-export function GlassBar({ fadeFrom }: {
-  /**
-   * Where the fade begins, 0–1 down the bar. Omit for a bar with a hard bottom
-   * edge — nothing in the app wants that today, but a masked layer costs a
-   * whole extra compositing pass, so it stays opt-in.
-   */
-  fadeFrom?: number;
+export function GlassBar({ height, fade = 0 }: {
+  /** full-strength height in points — the status bar band */
+  height: number;
+  /** tail below it over which the glass thins to nothing */
+  fade?: number;
 }) {
-  const backing = isLiquidGlassAvailable() ? (
-    <GlassView
-      style={styles.fill}
-      glassEffectStyle="clear"
-      colorScheme="dark"
-      isInteractive={false}
-      pointerEvents="none"
-    />
-  ) : (
-    <View style={[styles.fill, styles.solid]} pointerEvents="none" />
-  );
-
-  if (fadeFrom == null) return backing;
+  // Nothing, rather than something that is not glass
+  if (!isLiquidGlassAvailable() || height <= 0) return null;
 
   return (
-    <MaskedView
-      style={styles.fill}
-      pointerEvents="none"
-      maskElement={
-        // Alpha only, so the colour is arbitrary. Solid down to `fadeFrom`,
-        // then out. The middle stop pulls the ramp below linear: the eye finds
-        // the end of a straight ramp easily, and finding it is exactly the
-        // edge this exists to get rid of.
-        <Svg width="100%" height="100%" preserveAspectRatio="none">
-          <Defs>
-            <LinearGradient id="barFade" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor="#fff" stopOpacity={1} />
-              <Stop offset={fadeFrom} stopColor="#fff" stopOpacity={1} />
-              <Stop offset={fadeFrom + (1 - fadeFrom) * 0.5} stopColor="#fff" stopOpacity={0.4} />
-              <Stop offset="1" stopColor="#fff" stopOpacity={0} />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#barFade)" />
-        </Svg>
-      }>
-      {backing}
-    </MaskedView>
+    <>
+      {/* Weakest and tallest first, so the stronger panes composite on top */}
+      {fade > 0 &&
+        FADE_STEPS.map((s) => (
+          <Pane key={s.of} height={height + fade * s.of} opacity={s.opacity} />
+        ))}
+      <Pane height={height} opacity={1} />
+    </>
+  );
+}
+
+function Pane({ height, opacity }: { height: number; opacity: number }) {
+  return (
+    <View style={[styles.pane, { height, opacity }]} pointerEvents="none">
+      <GlassView
+        style={styles.fill}
+        glassEffectStyle="clear"
+        colorScheme="dark"
+        isInteractive={false}
+        pointerEvents="none"
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Anchored to the top of its parent, at its own height rather than filling it
+  pane: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   fill: {
     position: 'absolute',
     top: 0,
@@ -109,5 +108,4 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  solid: { backgroundColor: FALLBACK },
 });
