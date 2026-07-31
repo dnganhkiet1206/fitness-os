@@ -23,12 +23,81 @@ import { convertLength, displayLength, displayWeight, formatHeight, weightLabel 
 
 type Tab = 'weight' | 'measurements' | 'photos';
 
-/** BMI category — same thresholds/colours as the web Progress page */
+/**
+ * The BMI scale, in one place.
+ *
+ * Thresholds and colours are the WHO bands the web Progress page already used.
+ * They now live in a single table because four things have to agree about them
+ * — the badge, the number's category, the widths of the coloured bar, and the
+ * legend under it — and four hand-written copies is how they drift apart.
+ *
+ * `to` is the upper bound of the band. `BMI_MIN`/`BMI_MAX` are only the ends of
+ * the drawn bar, not medical limits: a BMI of 12 or 55 still reads Underweight
+ * or Obese, its dot just parks at the end of the track.
+ *
+ * ── why the widths are computed ──
+ *
+ * Each segment's flex is its own width *in BMI units*, so the bar is a linear
+ * ruler from 15 to 40 and the marker — placed at `(bmi − 15) / 25` — lands
+ * exactly on a band's edge when the BMI is on that edge. The old code hard-coded
+ * `flex: 1` for the first band where the maths wanted 3.5/2.5 = 1.4, which made
+ * the 18.5 boundary sit ~3.6% left of where the dot crossed it: a BMI of 18.4
+ * could be drawn inside the green. Deriving the widths makes that class of
+ * mismatch impossible.
+ */
+const BMI_MIN = 15;
+const BMI_MAX = 40;
+
+const BMI_ZONES = [
+  {
+    to: 18.5,
+    vi: 'Thiếu cân',
+    en: 'Underweight',
+    range: '< 18.5',
+    color: colors.metricBlue,
+    fill: 'rgba(62,134,234,0.4)',
+  },
+  {
+    to: 25,
+    vi: 'Bình thường',
+    en: 'Normal',
+    range: '18.5 – 24.9',
+    color: colors.readinessGreen,
+    fill: 'rgba(32,182,132,0.4)',
+  },
+  {
+    to: 30,
+    vi: 'Thừa cân',
+    en: 'Overweight',
+    range: '25 – 29.9',
+    color: colors.readinessYellow,
+    fill: 'rgba(232,186,48,0.4)',
+  },
+  {
+    to: BMI_MAX,
+    vi: 'Béo phì',
+    en: 'Obese',
+    range: '≥ 30',
+    color: colors.readinessRed,
+    fill: 'rgba(220,40,40,0.3)',
+  },
+] as const;
+
+/** How wide each band is on the 15–40 track, in BMI units */
+const zoneSpan = (i: number) => BMI_ZONES[i].to - (i === 0 ? BMI_MIN : BMI_ZONES[i - 1].to);
+
+/** Where a BMI sits along the track, 0–100 — clamped at both ends */
+const bmiPos = (v: number) => Math.max(0, Math.min(100, ((v - BMI_MIN) / (BMI_MAX - BMI_MIN)) * 100));
+
+/** Which band a BMI falls in. The last one is open-ended, so it has no test. */
+function bmiZoneIndex(v: number) {
+  for (let i = 0; i < BMI_ZONES.length - 1; i++) if (v < BMI_ZONES[i].to) return i;
+  return BMI_ZONES.length - 1;
+}
+
 function bmiCategory(v: number, vi: boolean) {
-  if (v < 18.5) return { label: vi ? 'Thiếu cân' : 'Underweight', color: colors.metricBlue };
-  if (v < 25) return { label: vi ? 'Bình thường' : 'Normal', color: colors.readinessGreen };
-  if (v < 30) return { label: vi ? 'Thừa cân' : 'Overweight', color: colors.readinessYellow };
-  return { label: vi ? 'Béo phì' : 'Obese', color: colors.readinessRed };
+  const z = BMI_ZONES[bmiZoneIndex(v)];
+  return { label: vi ? z.vi : z.en, color: z.color };
 }
 
 export default function ProgressScreen() {
@@ -66,7 +135,8 @@ export default function ProgressScreen() {
   const heightM = profile?.height_cm ? Number(profile.height_cm) / 100 : null;
   const bmi = currentKg != null && heightM ? currentKg / (heightM * heightM) : null;
   const cat = bmi != null ? bmiCategory(bmi, vi) : null;
-  const bmiPct = bmi != null ? Math.max(0, Math.min(100, ((bmi - 15) / 25) * 100)) : 0;
+  const bmiZone = bmi != null ? bmiZoneIndex(bmi) : -1;
+  const bmiPct = bmi != null ? bmiPos(bmi) : 0;
 
   const tabs: { key: Tab; label: string; icon: typeof Scale }[] = [
     { key: 'weight', label: i18n.progressWeight, icon: Scale },
@@ -182,23 +252,52 @@ export default function ProgressScreen() {
             </View>
             {bmi != null && cat ? (
               <>
+                {/* The number stays white so it reads as a measurement; the
+                    badge, the marker and the legend carry the colour. */}
                 <View style={styles.bmiValueRow}>
-                  <Text style={[styles.bmiValue, { color: cat.color }]}>{bmi.toFixed(1)}</Text>
+                  <Text style={styles.bmiValue}>{bmi.toFixed(1)}</Text>
                   <Text style={styles.bmiUnit}>kg/m²</Text>
                 </View>
                 <View>
                   <View style={styles.bmiScale}>
-                    <View style={[styles.bmiSeg, { flex: 1, backgroundColor: 'rgba(62,134,234,0.4)' }]} />
-                    <View style={[styles.bmiSeg, { flex: 2.6, backgroundColor: 'rgba(32,182,132,0.4)' }]} />
-                    <View style={[styles.bmiSeg, { flex: 2, backgroundColor: 'rgba(232,186,48,0.4)' }]} />
-                    <View style={[styles.bmiSeg, { flex: 4, backgroundColor: 'rgba(220,40,40,0.3)' }]} />
+                    {BMI_ZONES.map((z, i) => (
+                      <View key={z.en} style={[styles.bmiSeg, { flex: zoneSpan(i), backgroundColor: z.fill }]} />
+                    ))}
                     <View style={[styles.bmiDot, { left: `${bmiPct}%`, backgroundColor: cat.color }]} />
                   </View>
+                  {/* Boundary numbers sit at the boundaries — each one is placed
+                      at its own position on the track, not spread evenly. */}
                   <View style={styles.bmiTicks}>
-                    {['15', '18.5', '25', '30', '40'].map((tick) => (
-                      <Text key={tick} style={styles.bmiTick}>{tick}</Text>
+                    {[BMI_MIN, ...BMI_ZONES.map((z) => z.to)].map((tick, i, arr) => (
+                      <Text
+                        key={tick}
+                        style={[
+                          styles.bmiTick,
+                          { left: `${bmiPos(tick)}%` },
+                          i === 0 && styles.bmiTickFirst,
+                          i === arr.length - 1 && styles.bmiTickLast,
+                        ]}>
+                        {tick}
+                      </Text>
                     ))}
                   </View>
+                </View>
+
+                {/* What each colour on the bar actually means, with its range —
+                    the bar alone never said where one band ends. */}
+                <View style={styles.bmiLegend}>
+                  {BMI_ZONES.map((z, i) => {
+                    const on = i === bmiZone;
+                    return (
+                      <View key={z.en} style={styles.legendRow}>
+                        <View style={[styles.legendDot, { backgroundColor: z.color, opacity: on ? 1 : 0.55 }]} />
+                        <Text style={[styles.legendName, on && styles.legendNameOn]} numberOfLines={1}>
+                          {vi ? z.vi : z.en}
+                        </Text>
+                        <Text style={[styles.legendRange, on && styles.legendRangeOn]}>{z.range}</Text>
+                      </View>
+                    );
+                  })}
                 </View>
                 <Text style={styles.bmiInfo}>
                   {vi ? 'Cân nặng' : 'Weight'}: <Text style={styles.bmiInfoStrong}>{currentWeight}{wl}</Text>
@@ -397,7 +496,14 @@ const styles = StyleSheet.create({
   bmiBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
   bmiBadgeText: { fontSize: 10, fontWeight: '500' },
   bmiValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
-  bmiValue: { fontSize: 36, fontFamily: 'Menlo', fontWeight: '700', letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
+  bmiValue: {
+    fontSize: 36,
+    fontFamily: 'Menlo',
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
+  },
   bmiUnit: { fontSize: 12, color: colors.mutedForeground },
   bmiScale: { height: 8, borderRadius: 4, flexDirection: 'row', overflow: 'visible', backgroundColor: 'rgba(24,24,27,0.4)' },
   bmiSeg: { height: '100%' },
@@ -411,8 +517,35 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.background,
   },
-  bmiTicks: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  bmiTick: { fontSize: 9, fontFamily: 'Menlo', color: colors.mutedForeground },
+  // Ticks are absolutely placed at their own BMI position on the 15–40 track.
+  // The box is a fixed 36 wide, pulled back half its width so the text centres
+  // on the boundary; the two ends anchor flush instead so they cannot clip.
+  bmiTicks: { height: 13, marginTop: 6 },
+  bmiTick: {
+    position: 'absolute',
+    width: 36,
+    marginLeft: -18,
+    textAlign: 'center',
+    fontSize: 9,
+    fontFamily: 'Menlo',
+    color: colors.mutedForeground,
+  },
+  bmiTickFirst: { marginLeft: 0, textAlign: 'left' },
+  bmiTickLast: { marginLeft: -36, textAlign: 'right' },
+
+  // Legend: colour, band name, and the range it covers
+  bmiLegend: { gap: 5 },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendName: { flex: 1, fontSize: 11, color: colors.mutedForeground },
+  legendNameOn: { color: colors.foreground, fontWeight: '600' },
+  legendRange: {
+    fontSize: 11,
+    fontFamily: 'Menlo',
+    color: colors.mutedForeground,
+    fontVariant: ['tabular-nums'],
+  },
+  legendRangeOn: { color: colors.foreground },
   bmiInfo: { fontSize: 10, color: colors.mutedForeground },
   bmiInfoStrong: { fontFamily: 'Menlo', color: colors.foreground },
 
