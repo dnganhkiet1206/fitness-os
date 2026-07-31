@@ -20,26 +20,26 @@ import { setActiveScroller } from '@/lib/scroll-to-top';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
 /**
- * Keep what you are looking at where it is when content *above* it resizes.
+ * ── do not reintroduce `maintainVisibleContentPosition` here ──
  *
- * These pages are built from cards that swap between a short empty state and a
- * much taller loaded one the moment a query resolves — the readiness gauge, the
- * sleep card and the nutrition ring all do it on Today alone. Every one of
- * those swaps changes the height of the content above wherever you happen to be
- * reading, and the page jumps under your thumb. It looked intermittent because
- * the query cache is persisted: on a warm start the data is already there and
- * nothing swaps, so it only showed on a cold start or after a refetch.
+ * It was added to all three scroll views in this file to stop pages drifting
+ * while they loaded. It did not fix the drift, and it broke scrolling.
  *
- * `maintainVisibleContentPosition` makes the scroll view compensate: when
- * content above the viewport grows or shrinks, it shifts the offset by the same
- * amount so the visible content does not move. `minIndexForVisible: 0` anchors
- * from the first child, which is what a page of stacked cards wants. It costs
- * nothing when nothing resizes, and it is one prop here instead of a
- * hand-measured `minHeight` on every placeholder in the app.
+ * The drift was never a content-above-the-viewport problem: Today swaps a
+ * ~100pt widget placeholder for a 208pt ring gauge the moment the daily log
+ * resolves, and that is what moved the page. It is fixed at the source by
+ * holding the widgets back until `useDailyLog` settles (`dayPending` in
+ * `(tabs)/index.tsx`), so nothing changes height under your thumb.
  *
- * Hoisted to a constant so it is not a fresh object on every render.
+ * What the prop *did* do is what the user reported as "cuộn không có điểm
+ * dừng": on iOS it re-adjusts `contentOffset` on every layout pass, so a page
+ * never settles at the end of its content — the scroll keeps being nudged and
+ * there is no stop. Applying it blanket-wise to every page in the app made
+ * that true everywhere.
+ *
+ * If a specific page ever genuinely needs anchoring (a chat-style list that
+ * prepends), put it on that list, not on this scaffold.
  */
-const KEEP_POSITION = { minIndexForVisible: 0 } as const;
 
 interface ScreenProps extends ViewProps {
   title: string;
@@ -130,7 +130,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
             style={styles.scroller}
             contentContainerStyle={[styles.subContentFlush, { paddingBottom: insets.bottom + spacing.xl }, style]}
             contentInsetAdjustmentBehavior="never"
-            maintainVisibleContentPosition={KEEP_POSITION}
             scrollEnabled={contentScrollEnabled}
             automaticallyAdjustKeyboardInsets
             keyboardShouldPersistTaps="handled"
@@ -157,7 +156,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           style={styles.scroller}
           contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
           contentInsetAdjustmentBehavior="never"
-          maintainVisibleContentPosition={KEEP_POSITION}
           automaticallyAdjustKeyboardInsets
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
@@ -178,7 +176,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         style,
       ]}
       contentInsetAdjustmentBehavior="never"
-      maintainVisibleContentPosition={KEEP_POSITION}
       automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
