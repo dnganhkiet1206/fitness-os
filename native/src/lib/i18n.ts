@@ -672,6 +672,12 @@ interface Translations {
   dcNutritionTitle: string;
   dcNutritionTarget: string;
   dcNutritionRemaining: string;
+  /** eaten past the target */
+  dcNutritionSurplus: string;
+  /** still under the target — the same number as "remaining", named for the diet */
+  dcNutritionDeficit: string;
+  /** exactly on target, so neither word applies */
+  dcNutritionOnTarget: string;
   dcSleepTitle: string;
   dcSleepTarget: string;
   dcSleepQuality: string;
@@ -1360,6 +1366,9 @@ const vi: Translations = {
   dcNutritionTitle: 'Dinh Dưỡng',
   dcNutritionTarget: 'Mục tiêu',
   dcNutritionRemaining: 'Còn lại',
+  dcNutritionSurplus: 'Thặng dư',
+  dcNutritionDeficit: 'Thâm hụt',
+  dcNutritionOnTarget: 'Vừa đủ mục tiêu',
   dcSleepTitle: 'Giấc Ngủ',
   dcSleepTarget: 'Mục tiêu',
   dcSleepQuality: 'Chất lượng',
@@ -2045,6 +2054,9 @@ const en: Translations = {
   dcNutritionTitle: 'Nutrition',
   dcNutritionTarget: 'Target',
   dcNutritionRemaining: 'Remaining',
+  dcNutritionSurplus: 'Surplus',
+  dcNutritionDeficit: 'Deficit',
+  dcNutritionOnTarget: 'On target',
   dcSleepTitle: 'Sleep',
   dcSleepTarget: 'Target',
   dcSleepQuality: 'Quality',

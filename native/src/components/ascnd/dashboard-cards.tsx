@@ -108,6 +108,58 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
   const i18n = useI18n();
   const calPct = Math.min((kcal / (calorieTarget || 1)) * 100, 100);
 
+  /**
+   * How far today sits from the target, signed.
+   *
+   * Positive is a surplus (eaten past the target), negative a deficit. The
+   * "remaining" line above it already shows what is left, but it clamps at
+   * zero — so once the target is passed it reads 0 and says nothing about by
+   * how much. This is the line that keeps counting, and it is what a cut or a
+   * bulk is actually steered by.
+   */
+  const delta = kcal - calorieTarget;
+  const over = delta > 0;
+  // Landing exactly on the target is neither, and printing "deficit −0" for it
+  // is the sort of thing a user reads as a bug.
+  const onTarget = delta === 0;
+
+  /**
+   * The ring's three states, which are not the same question as the text above.
+   *
+   *  - **under** the target — still filling up. Grey: nothing has been achieved
+   *    yet and nothing is wrong either, so the ring stays quiet rather than
+   *    congratulating a half-eaten day in warm orange.
+   *  - **on target, or over by no more than the allowance** — the good band.
+   *    This keeps the card's existing amber/orange gradient.
+   *  - **past the allowance** — red. Genuinely over, and it should look it.
+   *
+   * The allowance is a share of the target rather than a flat number, so it
+   * scales with the person: 8% is ±176 kcal on a 2,200 target, about a snack,
+   * which is the resolution food logging is honest to anyway. One constant to
+   * change if it should be tighter or looser.
+   */
+  const SURPLUS_ALLOWANCE = 0.08;
+  const overBudget = delta > calorieTarget * SURPLUS_ALLOWANCE;
+  const inBand = !overBudget && kcal >= calorieTarget;
+
+  const ringGradient: [string, string] = overBudget
+    ? ['#e6485c', colors.readinessRed]
+    : inBand
+      ? ['#f59e0b', '#f17b27']
+      : ['#4a4a52', '#6b6b6b'];
+  const ringIconColor = overBudget
+    ? colors.readinessRed
+    : inBand
+      ? colors.metricOrange
+      : colors.mutedForeground;
+
+  // the delta line follows the same three states, so the card speaks once
+  const deltaColor = overBudget
+    ? colors.readinessRed
+    : inBand
+      ? colors.metricOrange
+      : colors.mutedForeground;
+
   const macros = [
     { label: 'Protein', ...protein, icon: ProteinIcon, color: colors.primary, bar: ['#f59e0b', '#ecc94b'] as [string, string] },
     { label: 'Carbs', ...carbs, icon: CarbIcon, color: colors.metricBlue, bar: ['#3e86ea', '#8d52e0'] as [string, string] },
@@ -125,9 +177,9 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
         <SmallRing
           pct={calPct}
           gradId="nutri-cal"
-          gradient={['#f59e0b', '#f17b27']}
+          gradient={ringGradient}
           icon={Flame}
-          iconColor={colors.metricOrange}
+          iconColor={ringIconColor}
           value={kcal.toLocaleString()}
           unit="kcal"
         />
@@ -138,15 +190,25 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
           <Text style={styles.sideLine}>
             {i18n.dcNutritionRemaining}: <Text style={styles.sideMono}>{Math.max(calorieTarget - kcal, 0).toLocaleString()}</Text> kcal
           </Text>
-          <View style={styles.sideBarRow}>
-            <Text
-              style={[
-                styles.sidePct,
-                { color: calPct >= 90 ? colors.readinessGreen : calPct >= 50 ? colors.readinessYellow : colors.mutedForeground },
-              ]}>
-              {Math.round(calPct)}%
+          {/* Signed distance from the target — the one line that keeps counting
+              once "remaining" has bottomed out at zero. */}
+          {onTarget ? (
+            <Text style={[styles.sideLine, { color: deltaColor }]}>{i18n.dcNutritionOnTarget}</Text>
+          ) : (
+            <Text style={styles.sideLine}>
+              {over ? i18n.dcNutritionSurplus : i18n.dcNutritionDeficit}:{' '}
+              <Text style={[styles.sideMono, { color: deltaColor }]}>
+                {over ? '+' : '−'}
+                {Math.abs(delta).toLocaleString()}
+              </Text>{' '}
+              kcal
             </Text>
-            <ProgressBar pct={calPct} color={colors.metricOrange} height={4} style={styles.sideBarTrack} />
+          )}
+          {/* The percentage and its bar follow the ring, so the card does not
+              call the same day green here and red there. */}
+          <View style={styles.sideBarRow}>
+            <Text style={[styles.sidePct, { color: deltaColor }]}>{Math.round(calPct)}%</Text>
+            <ProgressBar pct={calPct} color={deltaColor} height={4} style={styles.sideBarTrack} />
           </View>
         </View>
       </View>
