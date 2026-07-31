@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 
 export interface FoodItemRow {
   id: string;
@@ -218,5 +219,101 @@ export function useToggleFavoriteFood() {
       // Un-favoriting a seed row is a no-op: it was never favoritable
     },
     onSuccess: () => invalidateFoodQueries(queryClient),
+  });
+}
+
+/* ── today's log ──────────────────────────────────────────────────────── */
+
+export interface LoggedItem {
+  id: string;
+  food_name: string;
+  servings: number;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+}
+
+export interface LoggedMeal {
+  id: string;
+  meal_type: string;
+  at: string;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  items: LoggedItem[];
+}
+
+/**
+ * What was eaten today, meal by meal, with the foods inside each one.
+ *
+ * Named `useTodayLog` and not `useTodayMeals` because that name is taken, by a
+ * hook in `useTodayData.ts` that returns something different. Two exports with
+ * one name in two files is a trap for whoever autocompletes next.
+ *
+ * `useTodayMeals` already reads today's `meal_entries`,
+ * but only the entries — the totals that feed the rings. This is the other
+ * half: the `meal_entry_items` rows that say *what* those totals were made of,
+ * which is the thing the Nutrition tab was missing and the reason it read as a
+ * food catalogue rather than as a food diary.
+ *
+ * Two queries rather than a join, because the client's row-level filters apply
+ * per table and the item rows carry no date of their own — they are dated by
+ * the entry they belong to. Fetching the entries first and then their items by
+ * id keeps "today" defined in exactly one place.
+ *
+ * The stored numbers are per *logged serving*, already multiplied — see
+ * `log-meal.tsx`, which writes `kcal * servings`. Nothing is divided back here:
+ * a diary shows what was eaten, not what one portion of it would have been.
+ */
+export function useTodayLog() {
+  const { user } = useAuth();
+  const dateStr = localDateStr();
+  return useQuery({
+    queryKey: ['today_meals_detail', user?.id, dateStr],
+    enabled: !!user,
+    queryFn: async (): Promise<LoggedMeal[]> => {
+      const { data: entries, error } = await supabase
+        .from('meal_entries')
+        .select('id, meal_type, date_time, total_kcal, total_protein_g, total_carbs_g, total_fat_g')
+        .eq('user_id', user!.id)
+        .gte('date_time', `${dateStr}T00:00:00`)
+        .lt('date_time', `${dateStr}T23:59:59.999`)
+        .order('date_time', { ascending: true });
+      if (error) throw error;
+      if (!entries || entries.length === 0) return [];
+
+      const { data: items } = await supabase
+        .from('meal_entry_items')
+        .select('id, meal_entry_id, food_name, servings, kcal, protein_g, carbs_g, fat_g')
+        .in('meal_entry_id', entries.map((e) => e.id));
+
+      const byEntry = new Map<string, LoggedItem[]>();
+      for (const it of items ?? []) {
+        const list = byEntry.get(it.meal_entry_id) ?? [];
+        list.push({
+          id: it.id,
+          food_name: it.food_name,
+          servings: Number(it.servings) || 1,
+          kcal: Math.round(Number(it.kcal) || 0),
+          protein_g: Math.round(Number(it.protein_g) || 0),
+          carbs_g: Math.round(Number(it.carbs_g) || 0),
+          fat_g: Math.round(Number(it.fat_g) || 0),
+        });
+        byEntry.set(it.meal_entry_id, list);
+      }
+
+      return entries.map((e) => ({
+        id: e.id,
+        meal_type: e.meal_type,
+        at: e.date_time,
+        kcal: Math.round(Number(e.total_kcal) || 0),
+        protein_g: Math.round(Number(e.total_protein_g) || 0),
+        carbs_g: Math.round(Number(e.total_carbs_g) || 0),
+        fat_g: Math.round(Number(e.total_fat_g) || 0),
+        items: byEntry.get(e.id) ?? [],
+      }));
+    },
   });
 }

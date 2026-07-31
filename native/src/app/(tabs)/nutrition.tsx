@@ -7,31 +7,55 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
+import { NutritionCard } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
+import { TodayMeals } from '@/components/ascnd/today-meals';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { dedupeSeedShadows, useFavoriteFoods, useMyFoods, useRecentFoods, useToggleFavoriteFood, type FoodItemRow } from '@/hooks/use-nutrition';
+import { dedupeSeedShadows, useFavoriteFoods, useMyFoods, useRecentFoods, useToggleFavoriteFood, useTodayLog, type FoodItemRow } from '@/hooks/use-nutrition';
+import { useDailyLog, useProfile } from '@/hooks/useTodayData';
+import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { supabase } from '@/integrations/supabase/client';
 
-type Tab = 'foods' | 'plans';
+type Tab = 'today' | 'foods' | 'plans';
 
 /**
- * Nutrition tab — faithful port of the web /nutrition page: Foods |
- * Meal Plans segments; Foods = search + favorites (star toggle) +
- * recent foods with kcal.
+ * Nutrition — a diary first, a library second.
+ *
+ * It was a faithful port of the web `/nutrition` page: Foods | Meal Plans, and
+ * Foods meant search, favourites and recents. Everything on it was useful and
+ * none of it answered the question people actually arrive with. You tap the
+ * calorie ring on the dashboard because you want to know **what you have
+ * eaten**, and the page opened on a catalogue of foods you might eat one day.
+ *
+ * So there is a third segment, `Hôm nay`, it comes first, and it is the
+ * default. It holds the same `NutritionCard` the dashboard draws — the
+ * component itself, not a copy, so the ring here and the ring there cannot
+ * disagree — and under it every meal logged today with the foods inside it.
+ *
+ * **Nothing was removed.** Search, add-a-food, the AI suggestions, My Foods,
+ * favourites, recents and Meal Plans are all still here, under `Thực phẩm` and
+ * `Meal Plan`. The change is which of the three you land on.
  */
 export default function NutritionScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>('foods');
+  const [tab, setTab] = useState<Tab>('today');
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
+
+  const { data: today } = useTodayLog();
+  const { data: dailyLog } = useDailyLog();
+  const { data: profile } = useProfile();
+  const kcal = Math.round(Number(dailyLog?.kcal) || 0);
+  const calorieTarget = calorieTargetFor(profile);
+  const macros = macroTargetsFor(profile);
 
   const { data: myFoods } = useMyFoods();
   const { data: favorites } = useFavoriteFoods();
@@ -132,6 +156,7 @@ export default function NutritionScreen() {
       {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
       <View style={styles.tabBar}>
         {[
+          { key: 'today' as const, label: lang === 'vi' ? 'Hôm nay' : 'Today', icon: ClipboardList },
           { key: 'foods' as const, label: i18n.nutritionFoods, icon: Search },
           { key: 'plans' as const, label: i18n.nutritionMealPlan, icon: Utensils },
         ].map((t) => (
@@ -145,18 +170,39 @@ export default function NutritionScreen() {
         ))}
       </View>
 
-      {/* Log meal quick chip (native entry) */}
-      <Pressable
-        style={({ pressed }) => [styles.logChip, pressed && styles.pressed]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/log-meal');
-        }}>
-        <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
-        <Text style={styles.logChipText}>{i18n.nLogMealBtn}</Text>
-      </Pressable>
+      {/* Log meal — kept on the library and plan segments, where there is no
+          other way to start one. `Hôm nay` has its own, under the diary. */}
+      {tab !== 'today' ? (
+        <Pressable
+          style={({ pressed }) => [styles.logChip, pressed && styles.pressed]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/log-meal');
+          }}>
+          <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
+          <Text style={styles.logChipText}>{i18n.nLogMealBtn}</Text>
+        </Pressable>
+      ) : null}
 
-      {tab === 'foods' ? (
+      {tab === 'today' ? (
+        <>
+          {/* The dashboard's own card. Same component, same numbers — the ring
+              on Today and the ring here are one thing rendered twice. */}
+          <NutritionCard
+            kcal={kcal}
+            calorieTarget={calorieTarget}
+            protein={{ current: Number(dailyLog?.protein_g) || 0, target: macros.protein }}
+            carbs={{ current: Number(dailyLog?.carbs_g) || 0, target: macros.carbs }}
+            fat={{ current: Number(dailyLog?.fat_g) || 0, target: macros.fat }}
+          />
+
+          <View style={styles.sectionHeadRow}>
+            <Icon icon={Utensils} size={13} color={colors.primary} />
+            <Text style={styles.microTitle}>{lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}</Text>
+          </View>
+          <TodayMeals meals={today ?? []} i18n={i18n} lang={lang} />
+        </>
+      ) : tab === 'foods' ? (
         <>
           {/* Search + add custom food (web: search flex-1 + Add button) */}
           <View style={styles.searchRow}>

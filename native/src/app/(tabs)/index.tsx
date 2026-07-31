@@ -65,6 +65,7 @@ import { useTodayWater } from '@/hooks/use-water';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { getLocale } from '@/lib/i18n';
+import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
 /**
@@ -157,12 +158,10 @@ export default function TodayScreen() {
 
   // Nutrition
   const kcal = Math.round(Number(dailyLog?.kcal) || 0);
-  const calorieTarget = Math.round(Number(profile?.tdee_target_kcal) || 2200);
-  const macroTargets = {
-    protein: Number(profile?.macro_protein_g) || 150,
-    carbs: Number(profile?.macro_carbs_g) || 250,
-    fat: Number(profile?.macro_fat_g) || 70,
-  };
+  // Shared with the Nutrition tab, which draws the same card — see
+  // `lib/macro-targets.ts`.
+  const calorieTarget = calorieTargetFor(profile);
+  const macroTargets = macroTargetsFor(profile);
 
   // Sleep
   const stages = sleep
@@ -234,20 +233,27 @@ export default function TodayScreen() {
       case 'steps':
         return <StepsWidget steps={steps} target={stepsGoal} labels={{ title: lang === 'vi' ? 'Bước đi' : 'Steps' }} />;
       case 'nutrition':
-        return kcal > 0 ? (
-          <NutritionCard
-            kcal={kcal}
-            calorieTarget={calorieTarget}
-            protein={{ current: Number(dailyLog?.protein_g) || 0, target: macroTargets.protein }}
-            carbs={{ current: Number(dailyLog?.carbs_g) || 0, target: macroTargets.carbs }}
-            fat={{ current: Number(dailyLog?.fat_g) || 0, target: macroTargets.fat }}
-          />
-        ) : (
-          <Pressable onPress={() => router.push('/log-meal')}>
-            <GlassCard style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>{i18n.dashNutrition}</Text>
-              <Text style={styles.emptyMsg}>{i18n.dashNutritionMsg}</Text>
-            </GlassCard>
+        // Both states open the Nutrition tab, whose first segment is the day's
+        // diary — the numbers on this card, and under them the meals they came
+        // from. The card used to be inert when it had something to say and a
+        // shortcut to `/log-meal` only when it was empty, which is backwards:
+        // the moment you want more detail is the moment there *is* detail.
+        return (
+          <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/nutrition'); }}>
+            {kcal > 0 ? (
+              <NutritionCard
+                kcal={kcal}
+                calorieTarget={calorieTarget}
+                protein={{ current: Number(dailyLog?.protein_g) || 0, target: macroTargets.protein }}
+                carbs={{ current: Number(dailyLog?.carbs_g) || 0, target: macroTargets.carbs }}
+                fat={{ current: Number(dailyLog?.fat_g) || 0, target: macroTargets.fat }}
+              />
+            ) : (
+              <GlassCard style={styles.emptyCard}>
+                <Text style={styles.emptyTitle}>{i18n.dashNutrition}</Text>
+                <Text style={styles.emptyMsg}>{i18n.dashNutritionMsg}</Text>
+              </GlassCard>
+            )}
           </Pressable>
         );
       case 'water':
