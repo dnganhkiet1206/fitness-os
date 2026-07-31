@@ -240,6 +240,16 @@ const en = {
   nQuickWeight: 'Weight',
   nQuickWater: 'Water',
 
+  // Log-meal floating button
+  nAddCamera: 'Scan a meal',
+  nAddCameraHint: 'Point the camera at your plate',
+  nAddBarcode: 'Barcode',
+  nAddBarcodeHint: 'Packaged food',
+  nAddSearch: 'Search food',
+  nAddSearchHint: 'From the library',
+  nAddManual: 'Enter manually',
+  nAddManualHint: 'Type the numbers',
+
   // Meal builder
   nMealItems: 'Items',
   nMealNoItems: 'Search, scan, or add a food to start',
@@ -569,6 +579,16 @@ const vi: typeof en = {
   nQuickProtein: 'Protein',
   nQuickWeight: 'Cân nặng',
   nQuickWater: 'Nước',
+
+  // Log-meal floating button
+  nAddCamera: 'Quét bữa ăn',
+  nAddCameraHint: 'Hướng camera vào đĩa thức ăn',
+  nAddBarcode: 'Mã vạch',
+  nAddBarcodeHint: 'Thực phẩm đóng gói',
+  nAddSearch: 'Tìm món',
+  nAddSearchHint: 'Từ thư viện',
+  nAddManual: 'Nhập tay',
+  nAddManualHint: 'Tự điền số liệu',
 
   // Meal builder
   nMealItems: 'Các món',

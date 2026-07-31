@@ -1,12 +1,12 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ChevronDown, ChevronUp, Plus, UtensilsCrossed } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, UtensilsCrossed } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { colors, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import type { LoggedItem, LoggedMeal } from '@/hooks/use-nutrition';
 
@@ -135,19 +135,13 @@ export function TodayMeals({
 
   return (
     <View style={styles.list}>
+      {/* No "log a meal" button down here any more — it was a full-width bar
+          at the end of the longest list on the tab, and it offered only the
+          manual form. The floating ⊕ (`LogMealFab`) costs no height and opens
+          all four ways in. */}
       {groups.map((g) => (
         <MealCard key={g.type} g={g} label={label[g.type] ?? g.type} i18n={i18n} />
       ))}
-
-      <Pressable
-        style={({ pressed }) => [styles.add, pressed && styles.pressed]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/log-meal');
-        }}>
-        <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
-        <Text style={styles.addText}>{i18n.nLogMealBtn}</Text>
-      </Pressable>
     </View>
   );
 }
@@ -243,15 +237,5 @@ const styles = StyleSheet.create({
   itemKcal: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
   emptyText: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
-  add: {
-    height: 44,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  addText: { ...type.headline, color: colors.primaryForeground },
   pressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
 });

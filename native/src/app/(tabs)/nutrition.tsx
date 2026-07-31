@@ -11,6 +11,7 @@ import { NutritionCard } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { LogMealFab } from '@/components/ascnd/log-meal-fab';
 import { QuickStats } from '@/components/ascnd/quick-stats';
 import { Screen } from '@/components/ascnd/screen';
 import { TodayMeals } from '@/components/ascnd/today-meals';
@@ -145,190 +146,197 @@ export default function NutritionScreen() {
   );
 
   return (
-    <Screen
-      title={i18n.nutritionTitle}
-      headerRight={
-        <View style={styles.headerButtons}>
+    // The FAB is a sibling of the page, not a child: `Screen`'s root *is* the
+    // scroll view, so anything inside it scrolls away with the diary.
+    <View style={styles.root}>
+      <Screen
+        title={i18n.nutritionTitle}
+        headerRight={
+          <View style={styles.headerButtons}>
+            {[
+              { icon: Pill, route: '/supplements' as const },
+              { icon: ShoppingCart, route: '/grocery' as const },
+            ].map((b) => (
+              <Pressable
+                key={b.route}
+                hitSlop={8}
+                style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+                onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>
+                <Icon icon={b.icon} size={17} color={colors.mutedForeground} />
+              </Pressable>
+            ))}
+          </View>
+        }>
+        {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
+        <View style={styles.tabBar}>
           {[
-            { icon: Pill, route: '/supplements' as const },
-            { icon: ShoppingCart, route: '/grocery' as const },
-          ].map((b) => (
+            { key: 'today' as const, label: lang === 'vi' ? 'Hôm nay' : 'Today', icon: ClipboardList },
+            { key: 'foods' as const, label: i18n.nutritionFoods, icon: Search },
+            { key: 'plans' as const, label: i18n.nutritionMealPlan, icon: Utensils },
+          ].map((t) => (
             <Pressable
-              key={b.route}
-              hitSlop={8}
-              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-              onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>
-              <Icon icon={b.icon} size={17} color={colors.mutedForeground} />
+              key={t.key}
+              style={[styles.tab, tab === t.key && styles.tabActive]}
+              onPress={() => { Haptics.selectionAsync(); setTab(t.key); }}>
+              <Icon icon={t.icon} size={13} color={tab === t.key ? colors.foreground : colors.mutedForeground} />
+              <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
             </Pressable>
           ))}
         </View>
-      }>
-      {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
-      <View style={styles.tabBar}>
-        {[
-          { key: 'today' as const, label: lang === 'vi' ? 'Hôm nay' : 'Today', icon: ClipboardList },
-          { key: 'foods' as const, label: i18n.nutritionFoods, icon: Search },
-          { key: 'plans' as const, label: i18n.nutritionMealPlan, icon: Utensils },
-        ].map((t) => (
+
+        {/* Log meal — kept on the library and plan segments, where there is no
+            other way to start one. `Hôm nay` has its own, under the diary. */}
+        {tab !== 'today' ? (
           <Pressable
-            key={t.key}
-            style={[styles.tab, tab === t.key && styles.tabActive]}
-            onPress={() => { Haptics.selectionAsync(); setTab(t.key); }}>
-            <Icon icon={t.icon} size={13} color={tab === t.key ? colors.foreground : colors.mutedForeground} />
-            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
+            style={({ pressed }) => [styles.logChip, pressed && styles.pressed]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/log-meal');
+            }}>
+            <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
+            <Text style={styles.logChipText}>{i18n.nLogMealBtn}</Text>
           </Pressable>
-        ))}
-      </View>
+        ) : null}
 
-      {/* Log meal — kept on the library and plan segments, where there is no
-          other way to start one. `Hôm nay` has its own, under the diary. */}
-      {tab !== 'today' ? (
-        <Pressable
-          style={({ pressed }) => [styles.logChip, pressed && styles.pressed]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/log-meal');
-          }}>
-          <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
-          <Text style={styles.logChipText}>{i18n.nLogMealBtn}</Text>
-        </Pressable>
-      ) : null}
+        {tab === 'today' ? (
+          <>
+            {/* The dashboard's own card. Same component, same numbers — the ring
+                on Today and the ring here are one thing rendered twice. */}
+            <NutritionCard
+              kcal={kcal}
+              calorieTarget={calorieTarget}
+              protein={{ current: Number(dailyLog?.protein_g) || 0, target: macros.protein }}
+              carbs={{ current: Number(dailyLog?.carbs_g) || 0, target: macros.carbs }}
+              fat={{ current: Number(dailyLog?.fat_g) || 0, target: macros.fat }}
+              fiber={{ current: Number(dailyLog?.fiber_g) || 0, target: macros.fiber }}
+            />
 
-      {tab === 'today' ? (
-        <>
-          {/* The dashboard's own card. Same component, same numbers — the ring
-              on Today and the ring here are one thing rendered twice. */}
-          <NutritionCard
-            kcal={kcal}
-            calorieTarget={calorieTarget}
-            protein={{ current: Number(dailyLog?.protein_g) || 0, target: macros.protein }}
-            carbs={{ current: Number(dailyLog?.carbs_g) || 0, target: macros.carbs }}
-            fat={{ current: Number(dailyLog?.fat_g) || 0, target: macros.fat }}
-            fiber={{ current: Number(dailyLog?.fiber_g) || 0, target: macros.fiber }}
-          />
+            {/* The four numbers a day is judged by, right under the hero card */}
+            <QuickStats
+              kcal={kcal}
+              calorieTarget={calorieTarget}
+              protein={Number(dailyLog?.protein_g) || 0}
+              proteinTarget={macros.protein}
+              weightKg={weightKg}
+              waterMl={waterMl ?? 0}
+              waterTargetMl={Number(profile?.water_target_ml) || 2500}
+              i18n={i18n}
+            />
 
-          {/* The four numbers a day is judged by, right under the hero card */}
-          <QuickStats
-            kcal={kcal}
-            calorieTarget={calorieTarget}
-            protein={Number(dailyLog?.protein_g) || 0}
-            proteinTarget={macros.protein}
-            weightKg={weightKg}
-            waterMl={waterMl ?? 0}
-            waterTargetMl={Number(profile?.water_target_ml) || 2500}
-            i18n={i18n}
-          />
-
-          <View style={styles.sectionHeadRow}>
-            <Icon icon={Utensils} size={13} color={colors.primary} />
-            <Text style={styles.microTitle}>{lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}</Text>
-          </View>
-          <TodayMeals meals={today ?? []} i18n={i18n} lang={lang} />
-        </>
-      ) : tab === 'foods' ? (
-        <>
-          {/* Search + add custom food (web: search flex-1 + Add button) */}
-          <View style={styles.searchRow}>
-            <View style={styles.searchWrap}>
-              <Icon icon={Search} size={15} color={colors.mutedForeground} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder={i18n.nutritionSearchFood}
-                placeholderTextColor={colors.mutedForeground}
-                value={search}
-                onChangeText={setSearch}
-                autoCorrect={false}
-              />
+            <View style={styles.sectionHeadRow}>
+              <Icon icon={Utensils} size={13} color={colors.primary} />
+              <Text style={styles.microTitle}>{lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}</Text>
             </View>
-            <Pressable
-              style={({ pressed }) => [styles.addFoodBtn, pressed && styles.pressed]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/food-editor');
-              }}>
-              <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
-              <Text style={styles.addFoodText}>{i18n.foodAddCustom}</Text>
-            </Pressable>
-          </View>
-
-          {/* AI meal suggestions (web AiMealSuggestButton) */}
-          <AiMealSuggest />
-
-          {debounced.length >= 2 && results && (
-            <GlassCard style={styles.listCard}>
-              {results.length > 0 ? (
-                results.map((f) => <FoodRow key={f.id} f={f} />)
-              ) : (
-                <Text style={styles.emptyText}>{i18n.nNoExercisesFound}</Text>
-              )}
-            </GlassCard>
-          )}
-
-          {debounced.length < 2 && (
-            <>
-              {/* My foods — 4 most recent as cards, "See all" opens the full list */}
-              <View style={styles.sectionHeadRow}>
-                <Icon icon={Utensils} size={13} color={colors.primary} />
-                <Text style={styles.microTitle}>{lang === 'vi' ? 'Danh sách thực phẩm' : 'My Foods'}</Text>
+            <TodayMeals meals={today ?? []} i18n={i18n} lang={lang} />
+          </>
+        ) : tab === 'foods' ? (
+          <>
+            {/* Search + add custom food (web: search flex-1 + Add button) */}
+            <View style={styles.searchRow}>
+              <View style={styles.searchWrap}>
+                <Icon icon={Search} size={15} color={colors.mutedForeground} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder={i18n.nutritionSearchFood}
+                  placeholderTextColor={colors.mutedForeground}
+                  value={search}
+                  onChangeText={setSearch}
+                  autoCorrect={false}
+                />
               </View>
-              {myFoods && myFoods.length > 0 ? (
-                <Animated.View style={styles.cardList} entering={rise(0)}>
-                  {myFoods.slice(0, 4).map((f) => <FoodCard key={f.id} f={f} />)}
-                  {myFoods.length > 4 && <SeeMore />}
-                </Animated.View>
-              ) : (
-                <Text style={styles.emptyText}>
-                  {lang === 'vi' ? 'Chưa có thực phẩm — bấm Thêm để tạo' : 'No foods yet — tap Add to create'}
-                </Text>
-              )}
+              <Pressable
+                style={({ pressed }) => [styles.addFoodBtn, pressed && styles.pressed]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/food-editor');
+                }}>
+                <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
+                <Text style={styles.addFoodText}>{i18n.foodAddCustom}</Text>
+              </Pressable>
+            </View>
 
-              {/* Favorites — starred foods as cards */}
-              {favorites && favorites.length > 0 && (
-                <>
-                  <View style={styles.sectionHeadRow}>
-                    <Icon icon={Star} size={13} color={colors.readinessYellow} />
-                    <Text style={styles.microTitle}>{i18n.nutritionFavorites}</Text>
-                  </View>
-                  <Animated.View style={styles.cardList} entering={rise(1)}>
-                    {favorites.map((f) => <FoodCard key={f.id} f={f} />)}
-                  </Animated.View>
-                </>
-              )}
+            {/* AI meal suggestions (web AiMealSuggestButton) */}
+            <AiMealSuggest />
 
-              {/* Recent — logged foods as cards; + adds to My Foods (hidden if
-                  the food is already saved) */}
-              {recents && recents.length > 0 && (
-                <>
-                  <View style={styles.sectionHeadRow}>
-                    <Icon icon={ClipboardList} size={13} color={colors.mutedForeground} />
-                    <Text style={styles.microTitle}>{i18n.nutritionRecent}</Text>
-                  </View>
-                  <Animated.View style={styles.cardList} entering={rise(2)}>
-                    {recents.slice(0, 4).map((r, i) => (
-                      <RecentFoodCard key={i} r={r} saved={myFoodNames.has(r.food_name.toLowerCase())} />
-                    ))}
-                    {recents.length > 4 && <SeeMore />}
+            {debounced.length >= 2 && results && (
+              <GlassCard style={styles.listCard}>
+                {results.length > 0 ? (
+                  results.map((f) => <FoodRow key={f.id} f={f} />)
+                ) : (
+                  <Text style={styles.emptyText}>{i18n.nNoExercisesFound}</Text>
+                )}
+              </GlassCard>
+            )}
+
+            {debounced.length < 2 && (
+              <>
+                {/* My foods — 4 most recent as cards, "See all" opens the full list */}
+                <View style={styles.sectionHeadRow}>
+                  <Icon icon={Utensils} size={13} color={colors.primary} />
+                  <Text style={styles.microTitle}>{lang === 'vi' ? 'Danh sách thực phẩm' : 'My Foods'}</Text>
+                </View>
+                {myFoods && myFoods.length > 0 ? (
+                  <Animated.View style={styles.cardList} entering={rise(0)}>
+                    {myFoods.slice(0, 4).map((f) => <FoodCard key={f.id} f={f} />)}
+                    {myFoods.length > 4 && <SeeMore />}
                   </Animated.View>
-                </>
-              )}
-            </>
-          )}
-        </>
-      ) : (
-        <Pressable
-          onPress={() => { Haptics.selectionAsync(); router.push('/meal-plans'); }}>
-          {({ pressed }) => (
-            <GlassCard style={[styles.listCard, pressed && styles.pressedDim]}>
-              <View style={styles.sectionHead}>
-                <Icon icon={Utensils} size={13} color={colors.mutedForeground} />
-                <Text style={styles.microTitle}>{i18n.nutritionMealPlan}</Text>
-              </View>
-              <Text style={styles.emptyText}>{i18n.nMealPlans} →</Text>
-            </GlassCard>
-          )}
-        </Pressable>
-      )}
-    </Screen>
+                ) : (
+                  <Text style={styles.emptyText}>
+                    {lang === 'vi' ? 'Chưa có thực phẩm — bấm Thêm để tạo' : 'No foods yet — tap Add to create'}
+                  </Text>
+                )}
+
+                {/* Favorites — starred foods as cards */}
+                {favorites && favorites.length > 0 && (
+                  <>
+                    <View style={styles.sectionHeadRow}>
+                      <Icon icon={Star} size={13} color={colors.readinessYellow} />
+                      <Text style={styles.microTitle}>{i18n.nutritionFavorites}</Text>
+                    </View>
+                    <Animated.View style={styles.cardList} entering={rise(1)}>
+                      {favorites.map((f) => <FoodCard key={f.id} f={f} />)}
+                    </Animated.View>
+                  </>
+                )}
+
+                {/* Recent — logged foods as cards; + adds to My Foods (hidden if
+                    the food is already saved) */}
+                {recents && recents.length > 0 && (
+                  <>
+                    <View style={styles.sectionHeadRow}>
+                      <Icon icon={ClipboardList} size={13} color={colors.mutedForeground} />
+                      <Text style={styles.microTitle}>{i18n.nutritionRecent}</Text>
+                    </View>
+                    <Animated.View style={styles.cardList} entering={rise(2)}>
+                      {recents.slice(0, 4).map((r, i) => (
+                        <RecentFoodCard key={i} r={r} saved={myFoodNames.has(r.food_name.toLowerCase())} />
+                      ))}
+                      {recents.length > 4 && <SeeMore />}
+                    </Animated.View>
+                  </>
+                )}
+              </>
+            )}
+          </>
+        ) : (
+          <Pressable
+            onPress={() => { Haptics.selectionAsync(); router.push('/meal-plans'); }}>
+            {({ pressed }) => (
+              <GlassCard style={[styles.listCard, pressed && styles.pressedDim]}>
+                <View style={styles.sectionHead}>
+                  <Icon icon={Utensils} size={13} color={colors.mutedForeground} />
+                  <Text style={styles.microTitle}>{i18n.nutritionMealPlan}</Text>
+                </View>
+                <Text style={styles.emptyText}>{i18n.nMealPlans} →</Text>
+              </GlassCard>
+            )}
+          </Pressable>
+        )}
+      </Screen>
+      {/* Logging lives here now, on the diary tab where the day is. The old
+          full-width bar at the end of the meal list is gone. */}
+      {tab === 'today' ? <LogMealFab i18n={i18n} /> : null}
+    </View>
   );
 }
 
@@ -354,6 +362,7 @@ const styles = StyleSheet.create({
     color: colors.mutedForeground,
   },
 
+  root: { flex: 1 },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: 'rgba(24,24,27,0.6)',
