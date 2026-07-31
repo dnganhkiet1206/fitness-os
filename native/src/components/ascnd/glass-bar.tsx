@@ -1,83 +1,54 @@
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
-import { StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { StyleSheet } from 'react-native';
 
 /**
- * A pane of glass across the top of a page.
+ * A blur across the top of a page — the status bar band.
  *
- * A real backdrop blur, not a translucent fill. The difference only matters
- * once something is behind it — and that is the whole situation this exists
- * for. The app's usual recipe (a 6% white fill over the page) looks like
- * frosted glass only because nothing is ever behind it but the page colour;
- * put a paragraph under it and the paragraph reads straight through.
+ * Content scrolling up past the Dynamic Island softens instead of running into
+ * it sharp. Nothing is drawn: no fill, no tint, no border. The only thing here
+ * is the blur.
  *
- * ── it covers the Dynamic Island's band, and stops ──
+ * ── why this is not `expo-glass-effect` ──
  *
- * `height` is the status bar inset, not the header's height. The chevron and
- * the title below it stand on the page itself. The pane takes its own height
- * rather than filling its parent because the parent has to stay full height
- * for those controls to remain tappable — iOS does not deliver touches outside
- * a view's bounds.
+ * It was, and that was the wrong primitive. `GlassView` renders a
+ * `UIGlassEffect`, and Liquid Glass is a *lens*: a translucent body with a
+ * bright specular rim, drawn as an object sitting on the page. That rim is the
+ * "viền dưới" and the body is the "trắng mờ" — both are what the effect is,
+ * not something layered over it, which is why no combination of props removed
+ * them. `glassEffectStyle="clear"` only picks a thinner lens, and
+ * `tintColor` set to fully clear only removes the colour the material adds on
+ * top of a body that is still there.
  *
- * ── no tint ──
+ * `BlurView` renders a `UIBlurEffect`. That is not an object, it is a
+ * treatment of what is behind it — no body, no rim, no edge highlight. It is
+ * what every app doing this before iOS 26 used, and what a header that is
+ * meant to be invisible needs.
  *
- * `tintColor` is explicitly clear. Left unset, `GlassView` takes the system
- * default, which is a colour — that is the film that kept showing up over the
- * glass: not a layer of ours, the material's own tint. `clear` is the
- * see-through end of the style scale but it is not untinted by itself.
+ * ── the material ──
  *
- * What is left is the part that is actually glass: the blur and the way it
- * bends what passes underneath. Nothing is coloured, so nothing can look
- * laid-on.
+ * `systemUltraThinMaterialDark` is the most transparent of the dark system
+ * materials: almost all of what is behind it comes through, just softened. The
+ * `…Dark` variant is pinned rather than plain `dark` so the material never
+ * follows the phone's appearance — a light material over this app is the pale
+ * film that started all of this.
  *
- * `colorScheme` stays `dark` even with no tint. It picks which material the
- * system builds the effect from, and `auto` would follow the phone's
- * appearance — on a light-mode phone that is a pale material over a dark app.
- *
- * ── no fade ──
- *
- * The pane ends where it ends. Two attempts at softening that edge are worth
- * recording so neither gets tried again:
- *
- *   - A gradient mask over the pane. Put a dark band under the bar: a mask on
- *     a visual-effect layer does not thin the glass, it lays something across
- *     it.
- *   - Panes of decreasing height stacked at partial opacity. No colour
- *     anywhere, but several live blurs compositing over each other, and the
- *     result was worse than the edge it was hiding.
- *
- * One pane, one edge, nothing drawn on top of it.
- *
- * ── with no Liquid Glass it renders nothing ──
- *
- * Deliberate, and a change from the earlier solid-colour stand-in. There is no
- * blur before iOS 26, and everything that can stand in for one is a flat fill:
- * a dark fill reads as a dark band, a light fill as a white haze. A pane of
- * glass that cannot be glass is better as nothing — the page keeps its own
- * colour and nothing is laid over the top of it.
- *
- * The cost is worth stating: on those systems content scrolls up to the status
- * bar sharp, with no softening. That is the honest floor without a blur
- * primitive, and the only way past it is shipping one (`expo-blur`), which
- * needs a native rebuild.
+ * `intensity` is the blur radius, not the opacity. 40 is enough to make moving
+ * text unreadable — which is the whole job — without turning the band into a
+ * smear that reads as a panel.
  */
 export function GlassBar({ height }: {
-  /** how tall the pane is, in points — the status bar band */
+  /** how tall the blur is, in points — the status bar band */
   height: number;
 }) {
-  // Nothing, rather than something that is not glass
-  if (!isLiquidGlassAvailable() || height <= 0) return null;
+  if (height <= 0) return null;
 
   return (
-    <View style={[styles.pane, { height }]} pointerEvents="none">
-      <GlassView
-        style={styles.fill}
-        glassEffectStyle="clear"
-        tintColor="rgba(0,0,0,0)"
-        colorScheme="dark"
-        isInteractive={false}
-        pointerEvents="none"
-      />
-    </View>
+    <BlurView
+      style={[styles.pane, { height }]}
+      tint="systemUltraThinMaterialDark"
+      intensity={40}
+      pointerEvents="none"
+    />
   );
 }
 
@@ -88,12 +59,5 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-  },
-  fill: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
   },
 });
