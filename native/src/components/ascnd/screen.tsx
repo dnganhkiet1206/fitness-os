@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
+import { TopEdgeBlur } from '@/components/ascnd/top-edge-blur';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, glass, spacing, type } from '@/constants/ascnd';
 import { setActiveScroller } from '@/lib/scroll-to-top';
@@ -137,6 +138,9 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
             {...props}>
             {children}
           </ScrollView>
+          {/* Between the content and the floating header, so the hero softens
+              under the notch while the chevron and the title stay sharp. */}
+          <TopEdgeBlur />
           <View
             style={[styles.pageHeaderFloat, { paddingTop: insets.top }]}
             pointerEvents="box-none"
@@ -147,6 +151,15 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
       );
     }
 
+    /*
+     * The one layout with no notch blur, on purpose.
+     *
+     * Here the header is a solid glass bar stacked *above* the scroll view
+     * rather than over it — it already owns the safe-area inset, and nothing
+     * ever passes under the status bar for a blur to act on. A strip here would
+     * have nothing to soften and would only lay a second pane of glass over the
+     * first, lightening the bar for no reason.
+     */
     return (
       <View style={styles.root}>
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
@@ -166,31 +179,40 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
     );
   }
 
+  /*
+   * A tab page scrolls all the way up to the status bar, so it is the layout
+   * the notch blur exists for. The scroll view used to be this branch's root;
+   * it now sits in a wrapper purely so the strip has somewhere to hang that is
+   * not inside the scroll (anything inside would scroll away with the diary).
+   */
   return (
-    <ScrollView
-      ref={scroller}
-      style={styles.scroller}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + spacing.sm, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
-        style,
-      ]}
-      contentInsetAdjustmentBehavior="never"
-      automaticallyAdjustKeyboardInsets
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
-      onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}
-      scrollEventThrottle={16}
-      {...props}>
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-          <Text style={styles.title}>{title}</Text>
+    <View style={styles.root}>
+      <ScrollView
+        ref={scroller}
+        style={styles.scroller}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + spacing.sm, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
+          style,
+        ]}
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={16}
+        {...props}>
+        <View style={styles.header}>
+          <View style={styles.headerText}>
+            {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+            <Text style={styles.title}>{title}</Text>
+          </View>
+          {headerRight}
         </View>
-        {headerRight}
-      </View>
-      {children}
-    </ScrollView>
+        {children}
+      </ScrollView>
+      <TopEdgeBlur />
+    </View>
   );
 }
 
