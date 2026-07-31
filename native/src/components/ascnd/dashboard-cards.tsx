@@ -151,15 +151,26 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
         </View>
       </View>
 
-      {/* Four tiles wrap to two rows; three stay on one. `flexWrap` with a
-          `minWidth` rather than a column count, so the row that has fibre in it
-          does not need a second layout written for it. */}
+      {/**
+        * Four tiles are a 2 × 2; three are one row of three.
+        *
+        * The first attempt was `flexWrap` with a fixed `flexBasis`, which let
+        * the three that fit sit on the first row and dropped fibre onto a
+        * second one on its own, full width. Four tiles in two sizes is not a
+        * grid, it is three tiles and an afterthought — so the basis is chosen
+        * from how many there are rather than from how many happen to fit.
+        *
+        * 47 % and not 50: two tiles plus the gap between them have to add up to
+        * less than the row, and `flexGrow` opens them back out to fill it.
+        */}
       <View style={styles.macroGrid}>
         {macros.map((m) => {
           const pct = Math.min((m.current / (m.target || 1)) * 100, 100);
           const Glyph = m.icon;
           return (
-            <View key={m.label} style={styles.macroTile}>
+            <View
+              key={m.label}
+              style={[styles.macroTile, { flexBasis: macros.length === 4 ? '47%' : 0 }]}>
               <View style={styles.macroHead}>
                 {/* the macro's own colour, on the tile's own background — see
                     `macro-icons.tsx` for why the accent needs the second one */}
@@ -370,10 +381,13 @@ const styles = StyleSheet.create({
 
   // macros
   macroGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 4 },
+  // the icon sits on the label's line, not above it — a tile whose label is two
+  // lines tall is a tile a size bigger than the one beside it
   macroHead: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   macroTile: {
+    // `flexBasis` comes from the call site: 47% when there are four, 0 when
+    // there are three. See `NutritionCard`.
     flexGrow: 1,
-    flexBasis: 88,
     gap: 8,
     backgroundColor: 'rgba(24,24,27,0.2)',
     borderRadius: radius.sm,
