@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AmbientLight } from '@/components/ascnd/ambient-light';
 import { Icon } from '@/components/ascnd/icon';
 import { TopEdgeBlur } from '@/components/ascnd/top-edge-blur';
 import { BottomTabInset } from '@/constants/expo-template-theme';
@@ -126,6 +127,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
       // Header floats over a full-bleed hero; content starts at the very top.
       return (
         <View style={styles.root}>
+          <AmbientLight />
           <ScrollView
             ref={scroller}
             style={styles.scroller}
@@ -162,6 +164,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
      */
     return (
       <View style={styles.root}>
+        <AmbientLight />
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
         <View style={[styles.pageHeader, { paddingTop: insets.top }]}>{headerBar}</View>
         <ScrollView
@@ -187,6 +190,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
    */
   return (
     <View style={styles.root}>
+      <AmbientLight />
       <ScrollView
         ref={scroller}
         style={styles.scroller}
@@ -218,7 +222,15 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  scroller: { flex: 1, backgroundColor: colors.background },
+  /**
+   * Transparent, not `colors.background`.
+   *
+   * The wrapper behind it paints the page colour and `AmbientLight` sits on
+   * top of that; an opaque scroll view would cover the light with the very
+   * fill it is meant to lift. Nothing changes visually where the light has
+   * faded out — same colour, one layer down.
+   */
+  scroller: { flex: 1, backgroundColor: 'transparent' },
 
   // Sub-page header (web PageHeader)
   pageHeader: {
