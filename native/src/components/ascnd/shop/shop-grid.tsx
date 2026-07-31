@@ -1,14 +1,12 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Backpack, Check, Coins, Crown, Droplets, Dumbbell, Flame, Footprints, Ghost, Gift, Glasses, Headphones, LayoutGrid, Lock, Moon, Shirt, Snowflake, Sparkles, Star, Store, Trophy, Wind, type LucideIcon } from 'lucide-react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Backpack, Check, Coins, Crown, Droplets, Dumbbell, Flame, Footprints, Ghost, Gift, Glasses, Headphones, LayoutGrid, Moon, Shirt, Snowflake, Sparkles, Star, Store, Trophy, Wind, type LucideIcon } from 'lucide-react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
-import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import {
   collectionProgress,
-  RARITY,
   SHOP_CATEGORIES,
   type Collection,
   type ShopCategory,
@@ -16,7 +14,11 @@ import {
 } from '@/lib/mascot-room';
 
 /**
- * The shop's own pieces: the category rail, the item grid, and a collection row.
+ * The shop's own pieces: the category rail, a collection row, and the icon
+ * every item is drawn with.
+ *
+ * The item grid used to live here too. It is gone: the shop shows one item at a
+ * time now, worn, with a chevron on each side — see `shop-pager.tsx`.
  *
  * Moved out of `mascot-room.tsx` when the shop became a route of its own. They
  * were never the room's — the room only ever opened a sheet over itself — and a
@@ -69,7 +71,7 @@ const ITEM_ICON: Record<string, LucideIcon> = {
 };
 
 
-const iconFor = (item: ShopItem): LucideIcon =>
+export const iconFor = (item: ShopItem): LucideIcon =>
   ITEM_ICON[item.key] ?? (item.slot ? SLOT_ICON[item.slot] : Store) ?? Store;
 
 export function CategoryRow({
@@ -110,95 +112,6 @@ export function CategoryRow({
         );
       })}
     </ScrollView>
-  );
-}
-
-export function ShopGrid({
-  items, owned, equipped, balance, level, pendingBuy, buyingKey, onBuy, onToggleEquip, lang, i18n,
-}: {
-  items: ShopItem[];
-  owned: Set<string>;
-  equipped: Set<string>;
-  balance: number;
-  level: number;
-  /** a purchase is in flight — every buy button locks so two cannot race */
-  pendingBuy: boolean;
-  /** the one item that purchase is for — only its button shows the spinner */
-  buyingKey?: string | null;
-  onBuy: (item: ShopItem) => void;
-  onToggleEquip: (key: string, next: boolean) => void;
-  lang: 'vi' | 'en';
-  i18n: ReturnType<typeof useI18n>;
-}) {
-  return (
-    <View style={styles.shopGrid}>
-      {items.map((item) => {
-        const rar = RARITY[item.rarity];
-        const isOwned = owned.has(item.key);
-        const isEquipped = equipped.has(item.key);
-        const price = TEST_UNLOCK_ALL ? 0 : item.price;
-        const affordable = TEST_UNLOCK_ALL || balance >= item.price;
-        const locked =
-          !TEST_UNLOCK_ALL && !isOwned && item.unlockLevel != null && level < item.unlockLevel;
-        return (
-          <GlassCard key={item.key} style={[styles.shopItem, { borderColor: `${rar.color}4d` }]}>
-            <View style={[styles.itemIconWrap, { backgroundColor: `${rar.color}1c` }]}>
-              <Icon icon={iconFor(item)} size={22} color={rar.color} />
-            </View>
-            <Text style={styles.itemName} numberOfLines={1}>{item.name[lang]}</Text>
-            <View style={[styles.rarityBadge, { backgroundColor: `${rar.color}22` }]}>
-              <Text style={[styles.rarityText, { color: rar.color }]} numberOfLines={1}>
-                {rar.name[lang]}
-              </Text>
-            </View>
-
-            {locked ? (
-              <View style={styles.lockBtn}>
-                <Icon icon={Lock} size={11} color={colors.mutedForeground} />
-                <Text style={styles.lockText}>
-                  {i18n.nRoomLockLevel.replace('{n}', String(item.unlockLevel))}
-                </Text>
-              </View>
-            ) : !isOwned ? (
-              <Pressable
-                disabled={pendingBuy}
-                style={({ pressed }) => [
-                  styles.buyBtn,
-                  !affordable && styles.buyBtnPoor,
-                  pressed && styles.pressed,
-                ]}
-                onPress={() => onBuy(item)}>
-                {buyingKey === item.key ? (
-                  <ActivityIndicator size="small" color={colors.primaryForeground} />
-                ) : (
-                  <>
-                    <Icon icon={Coins} size={11} color={affordable ? colors.primaryForeground : colors.mutedForeground} />
-                    <Text style={[styles.buyText, !affordable && styles.buyTextPoor]}>{price}</Text>
-                  </>
-                )}
-              </Pressable>
-            ) : (
-              // Owned: tap to wear / use, tap again to take off. One per slot,
-              // one stage at a time — the mutation handles the exclusion.
-              <Pressable
-                style={({ pressed }) => [
-                  styles.ownedBtn,
-                  isEquipped && styles.wearingBtn,
-                  pressed && styles.pressed,
-                ]}
-                onPress={() => onToggleEquip(item.key, !isEquipped)}>
-                {isEquipped && <Icon icon={Check} size={11} color={colors.readinessGreen} strokeWidth={3} />}
-                <Text style={[styles.ownedText, isEquipped && styles.wearingText]} numberOfLines={1}>
-                  {item.type === 'stage'
-                    ? isEquipped ? i18n.nRoomUsing : i18n.nRoomUse
-                    : isEquipped ? i18n.nRoomWearing : i18n.nRoomOwned}
-                </Text>
-              </Pressable>
-            )}
-          </GlassCard>
-        );
-      })}
-    </View>
   );
 }
 

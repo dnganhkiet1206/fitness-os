@@ -8,7 +8,8 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { BAND_ASPECT } from '@/components/ascnd/shop/shop-camera';
 import { ShopScene } from '@/components/ascnd/shop/shop-scene';
-import { CategoryRow, CollectionRow, ShopGrid } from '@/components/ascnd/shop/shop-grid';
+import { CategoryRow, CollectionRow } from '@/components/ascnd/shop/shop-grid';
+import { ShopPager } from '@/components/ascnd/shop/shop-pager';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascot } from '@/hooks/use-mascot';
@@ -21,6 +22,7 @@ import {
 } from '@/hooks/use-mascot-room';
 import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import {
+  activeStageKey,
   collectionProgress,
   collectionRefKey,
   COLLECTIONS,
@@ -100,6 +102,10 @@ export default function ShopScreen() {
   // the initial tab only — re-reading the param would fight the user's taps
   const [tab, setTab] = useState<Tab>(() => asTab(wanted));
   const [cat, setCat] = useState<ShopCategory | 'all'>('all');
+  // Which item the pager is on. Reset by `pick`, below, whenever the list it
+  // indexes into changes — an index kept across a filter change points at a
+  // different thing than the one that was on screen.
+  const [index, setIndex] = useState(0);
   const [collectionsOpen, setCollectionsOpen] = useState(false);
   // Which item's purchase is in flight, so the spinner lands on that card alone
   const [buyingKey, setBuyingKey] = useState<string | null>(null);
@@ -125,6 +131,27 @@ export default function ShopScreen() {
       ? it.type === 'outfit' && owned.has(it.key) && inCategory(it)
       : it.type === tab && (tab !== 'outfit' || inCategory(it)),
   ).sort((a, b) => RARITY[a.rarity].order - RARITY[b.rarity].order || a.price - b.price);
+
+  /**
+   * The item under the pager, and what the room shows because of it.
+   *
+   * **Browsing dresses the character.** This is the whole reason the grid went:
+   * you are looking at the outfit on Koa, on a lit podium, rather than at a
+   * thumbnail in a box — and the buy button is a decision made after seeing it.
+   * Nothing is written anywhere; it is the equipped set with one key added for
+   * the render, so leaving the tab leaves him exactly as he was.
+   *
+   * A stage previews the same way, through the room's skin rather than through
+   * what he is wearing.
+   */
+  const browsing = items[Math.min(index, items.length - 1)];
+  const preview =
+    browsing && browsing.type === 'outfit' ? new Set([...equipped, browsing.key]) : equipped;
+  const previewStage =
+    browsing && browsing.type === 'stage' ? browsing.key : activeStageKey(equipped);
+
+  /** move the pager, and keep it inside a list that may have just changed */
+  const pick = (next: number) => setIndex(items.length === 0 ? 0 : next % items.length);
 
   const setsReady = COLLECTIONS.filter(
     (c) => collectionProgress(c, owned).complete && !claimed.has(collectionRefKey(c.id)),
@@ -201,7 +228,8 @@ export default function ShopScreen() {
           width={sceneW}
           height={Math.round(sceneW * BAND_ASPECT)}
           level={level}
-          equipped={equipped}
+          equipped={preview}
+          skin={previewStage ?? undefined}
         />
       </View>
 
@@ -219,6 +247,7 @@ export default function ShopScreen() {
             onPress={() => {
               Haptics.selectionAsync();
               setTab(key);
+              setIndex(0);
             }}
             style={[styles.tab, tab === key && styles.tabActive]}>
             <Text style={[styles.tabText, tab === key && styles.tabTextActive]}>{label}</Text>
@@ -232,6 +261,7 @@ export default function ShopScreen() {
           onPick={(c) => {
             Haptics.selectionAsync();
             setCat(c);
+            setIndex(0);
           }}
           lang={lang}
           i18n={i18n}
@@ -239,25 +269,28 @@ export default function ShopScreen() {
       ) : null}
 
       {SELLS[tab] ? (
-        <>
-      <ShopGrid
-        items={items}
-        owned={owned}
-        equipped={equipped}
-        balance={balance}
-        level={level}
-        pendingBuy={buy.isPending}
-        buyingKey={buyingKey}
-        onBuy={buyItem}
-        onToggleEquip={(key, next) => {
-          Haptics.selectionAsync();
-          equip.mutate({ itemKey: key, equipped: next });
-        }}
-        lang={lang}
-        i18n={i18n}
-      />
-      {items.length === 0 ? <Text style={styles.emptyCat}>{i18n.nRoomEmptyCat}</Text> : null}
-        </>
+        items.length === 0 ? (
+          <Text style={styles.emptyCat}>{i18n.nRoomEmptyCat}</Text>
+        ) : (
+          <ShopPager
+            items={items}
+            index={Math.min(index, items.length - 1)}
+            onIndex={pick}
+            owned={owned}
+            equipped={equipped}
+            balance={balance}
+            level={level}
+            pendingBuy={buy.isPending}
+            buyingKey={buyingKey}
+            onBuy={buyItem}
+            onToggleEquip={(key, next) => {
+              Haptics.selectionAsync();
+              equip.mutate({ itemKey: key, equipped: next });
+            }}
+            lang={lang}
+            i18n={i18n}
+          />
+        )
       ) : (
         <Text style={styles.overviewHint}>{i18n.nRoomOverviewHint}</Text>
       )}
