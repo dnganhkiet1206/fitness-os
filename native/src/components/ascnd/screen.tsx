@@ -18,7 +18,7 @@ import { GlassBar } from '@/components/ascnd/glass-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { TopEdgeBlur } from '@/components/ascnd/top-edge-blur';
 import { BottomTabInset } from '@/constants/expo-template-theme';
-import { colors, glass, spacing, type } from '@/constants/ascnd';
+import { colors, spacing, type } from '@/constants/ascnd';
 import { setActiveScroller } from '@/lib/scroll-to-top';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
@@ -54,6 +54,15 @@ import { handleTabScroll } from '@/lib/tab-bar-visibility';
  * a padding bug when you look at it.
  */
 const HEADER_H = 44;
+
+/**
+ * How far past the bar the glass keeps going while it fades out.
+ *
+ * It fits inside the gap the content already leaves below the header
+ * (`spacing.stack`, 20pt), so adding the tail moves nothing on the page — the
+ * glass simply stops ending in a line and starts ending in nothing.
+ */
+const HEADER_FADE = 18;
 
 interface ScreenProps extends ViewProps {
   title: string;
@@ -186,6 +195,8 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
      * looking identical to before; the difference only appears once you scroll.
      */
     const headerH = insets.top + HEADER_H;
+    // The bar is drawn taller than it reads, and the extra is where it fades
+    const glassH = headerH + HEADER_FADE;
     return (
       <View style={styles.root}>
         <AmbientLight top={headerH} />
@@ -207,8 +218,10 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           {children}
         </ScrollView>
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
-        <View style={[styles.pageHeader, { paddingTop: insets.top }]} pointerEvents="box-none">
-          <GlassBar />
+        <View
+          style={[styles.pageHeader, { paddingTop: insets.top, height: glassH }]}
+          pointerEvents="box-none">
+          <GlassBar fadeFrom={headerH / glassH} />
           {headerBar}
         </View>
       </View>
@@ -265,17 +278,21 @@ const styles = StyleSheet.create({
    */
   scroller: { flex: 1, backgroundColor: 'transparent' },
 
-  // Sub-page header (web PageHeader) — overlays the content; `GlassBar` fills
-  // it, so the background comes from the blur rather than from a colour here
+  /**
+   * Sub-page header (web PageHeader) — overlays the content; `GlassBar` fills
+   * it, so the background comes from the blur rather than from a colour here.
+   *
+   * No bottom border. The glass fades out over its last stretch instead, and a
+   * hairline across that fade would put back exactly the edge the fade exists
+   * to remove. `overflow` is left alone for the same reason: clipping is an
+   * edge too.
+   */
   pageHeader: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 20,
-    borderBottomWidth: glass.borderWidth,
-    borderBottomColor: glass.border,
-    overflow: 'hidden',
   },
   pageHeaderRow: {
     height: HEADER_H,

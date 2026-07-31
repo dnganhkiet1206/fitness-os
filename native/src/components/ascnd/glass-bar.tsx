@@ -1,5 +1,7 @@
+import MaskedView from '@react-native-masked-view/masked-view';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { StyleSheet, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 /**
  * The glass backing for a bar that content scrolls underneath.
@@ -24,6 +26,19 @@ import { StyleSheet, View } from 'react-native';
  * separate it from what is passing beneath. The bottom hairline and the title's
  * own weight are what hold it apart.
  *
+ * ── no edge ──
+ *
+ * The bar used to end in a hairline. A hairline is a line, and a line is the
+ * loudest thing you can put at the bottom of something that is meant to be
+ * barely there — it draws the bar's outline for you and turns a pane of glass
+ * into a panel bolted to the top of the page.
+ *
+ * So the glass fades out instead. `fadeFrom` is where along the bar the fade
+ * starts, as a fraction: full strength behind the chevron and the title, then
+ * away to nothing over a short tail below them, with no edge anywhere. The
+ * fade lives inside the header's own height, so nothing on the page moves to
+ * make room for it.
+ *
  * ── the fallback is opaque, and cannot not be ──
  *
  * `GlassView` is the Liquid Glass API and there is no glass to render before
@@ -38,11 +53,15 @@ import { StyleSheet, View } from 'react-native';
 /** #070708 with `glass.bg` (6% white) flattened onto it */
 const FALLBACK = '#161617';
 
-export function GlassBar() {
-  if (!isLiquidGlassAvailable()) {
-    return <View style={[styles.fill, styles.solid]} pointerEvents="none" />;
-  }
-  return (
+export function GlassBar({ fadeFrom }: {
+  /**
+   * Where the fade begins, 0–1 down the bar. Omit for a bar with a hard bottom
+   * edge — nothing in the app wants that today, but a masked layer costs a
+   * whole extra compositing pass, so it stays opt-in.
+   */
+  fadeFrom?: number;
+}) {
+  const backing = isLiquidGlassAvailable() ? (
     <GlassView
       style={styles.fill}
       glassEffectStyle="clear"
@@ -50,6 +69,35 @@ export function GlassBar() {
       isInteractive={false}
       pointerEvents="none"
     />
+  ) : (
+    <View style={[styles.fill, styles.solid]} pointerEvents="none" />
+  );
+
+  if (fadeFrom == null) return backing;
+
+  return (
+    <MaskedView
+      style={styles.fill}
+      pointerEvents="none"
+      maskElement={
+        // Alpha only, so the colour is arbitrary. Solid down to `fadeFrom`,
+        // then out. The middle stop pulls the ramp below linear: the eye finds
+        // the end of a straight ramp easily, and finding it is exactly the
+        // edge this exists to get rid of.
+        <Svg width="100%" height="100%" preserveAspectRatio="none">
+          <Defs>
+            <LinearGradient id="barFade" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#fff" stopOpacity={1} />
+              <Stop offset={fadeFrom} stopColor="#fff" stopOpacity={1} />
+              <Stop offset={fadeFrom + (1 - fadeFrom) * 0.5} stopColor="#fff" stopOpacity={0.4} />
+              <Stop offset="1" stopColor="#fff" stopOpacity={0} />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#barFade)" />
+        </Svg>
+      }>
+      {backing}
+    </MaskedView>
   );
 }
 
