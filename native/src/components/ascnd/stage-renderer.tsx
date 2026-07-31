@@ -106,7 +106,23 @@ export function StageRenderer({
   scrollPause,
 }: Props) {
   const emotion = useMascotEmotion();
-  const [sw, setSw] = useState(Dimensions.get('window').width - 32);
+  /**
+   * The stage's width, measured — with a first guess of the **full** window.
+   *
+   * The guess used to be `width - 32`, the page's padded width, but the room is
+   * full-bleed: `sceneWrap` cancels that padding with a negative margin, so the
+   * real width is the whole window. Guessing 32pt narrow made `H` 39pt short on
+   * an iPhone, and the scene grew by that much the moment `onLayout` corrected
+   * it — shoving everything below it down a step every time the page mounted.
+   * That is the drift.
+   *
+   * The container no longer takes its height from this at all (see
+   * `styles.scene`, which derives it from the real width with `aspectRatio`),
+   * so a wrong guess could not move the page again even if a future caller
+   * were padded. This keeps the *canvases* right on the first paint too, so
+   * nothing pops.
+   */
+  const [sw, setSw] = useState(Dimensions.get('window').width);
   const onLayout = (ev: LayoutChangeEvent) => setSw(ev.nativeEvent.layout.width);
 
   /**
@@ -201,7 +217,7 @@ export function StageRenderer({
   }));
 
   return (
-    <View style={[styles.scene, { height: H }]} onLayout={onLayout}>
+    <View style={styles.scene} onLayout={onLayout}>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {/* The room is three canvases, not one: the plants sway, and anything
             that moves needs a canvas to itself — but they also have to stay
@@ -308,7 +324,24 @@ export function StageRenderer({
 }
 
 const styles = StyleSheet.create({
-  scene: { overflow: 'hidden', backgroundColor: PAGE },
+  /**
+   * The room's box.
+   *
+   * **Its height comes from `aspectRatio`, not from measured state.** It used
+   * to be `height: Math.round(sw * ASPECT)`, where `sw` began as a guess and
+   * was corrected by `onLayout` — so the scene changed height one frame after
+   * mount and pushed the whole page down with it. `aspectRatio` lets the layout
+   * derive the height from the real width in the *same* pass: no second pass,
+   * nothing below it moves, and it cannot drift again if the padding around it
+   * ever changes. RN's `aspectRatio` is width ÷ height, which is the reciprocal
+   * of `ASPECT`.
+   */
+  scene: {
+    overflow: 'hidden',
+    backgroundColor: PAGE,
+    width: '100%',
+    aspectRatio: STUDIO_W / SCENE_BOTTOM,
+  },
   zzz: { position: 'absolute', bottom: '100%', right: -6, flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
   zzzBig: { fontSize: 19, fontWeight: '800', color: '#dfe6f5', fontStyle: 'italic' },
   zzzMid: { fontSize: 14, fontWeight: '800', color: '#b7c2d6', fontStyle: 'italic', marginBottom: 8 },
