@@ -53,18 +53,6 @@ import { handleTabScroll } from '@/lib/tab-bar-visibility';
  */
 const HEADER_H = 44;
 
-/**
- * How far below the status bar the glass keeps thinning before it is gone.
- *
- * The pane is full strength across `insets.top` — the band the Dynamic Island
- * sits in — and gone by `insets.top + HEADER_FADE`. It no longer runs the
- * height of the header: the chevron and the title stand on the page itself.
- *
- * On sub-pages the tail fits inside the 20pt gap the content already leaves
- * below the header, so it costs no layout.
- */
-const HEADER_FADE = 18;
-
 interface ScreenProps extends ViewProps {
   title: string;
   /** Optional line above the large title (date, context) */
@@ -163,7 +151,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           </ScrollView>
           {/* Between the content and the floating header, so the hero softens
               under the notch while the chevron and the title stay sharp. */}
-          <GlassBar height={insets.top} fade={HEADER_FADE} />
+          <GlassBar height={insets.top} />
           <View
             style={[styles.pageHeaderFloat, { paddingTop: insets.top }]}
             pointerEvents="box-none"
@@ -216,7 +204,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         </ScrollView>
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
         <View style={[styles.pageHeader, { paddingTop: insets.top }]} pointerEvents="box-none">
-          <GlassBar height={insets.top} fade={HEADER_FADE} />
+          <GlassBar height={insets.top} />
           {headerBar}
         </View>
       </View>
@@ -255,7 +243,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         </View>
         {children}
       </ScrollView>
-      <GlassBar height={insets.top} fade={HEADER_FADE} />
+      <GlassBar height={insets.top} />
     </View>
   );
 }

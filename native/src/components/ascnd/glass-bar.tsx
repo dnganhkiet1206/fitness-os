@@ -2,7 +2,7 @@ import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { StyleSheet, View } from 'react-native';
 
 /**
- * A pane of glass across the top of a page, thinning out to nothing.
+ * A pane of glass across the top of a page.
  *
  * A real backdrop blur, not a translucent fill. The difference only matters
  * once something is behind it — and that is the whole situation this exists
@@ -18,70 +18,42 @@ import { StyleSheet, View } from 'react-native';
  * for those controls to remain tappable — iOS does not deliver touches outside
  * a view's bounds.
  *
- * ── the fade is the glass thinning, not something drawn over it ──
+ * ── no fade ──
  *
- * `fade` is a tail below `height` where the glass gets weaker until it is gone.
- * It is built by stacking panes of decreasing height at partial opacity: each
- * composites over the last, so the strength steps down as you pass the bottom
- * of each one. Opacity on a glass view weakens the *effect*, so every step is
- * closer to plain page than the step above it, and the end of the tail is
- * plain page exactly.
+ * The pane ends where it ends. Two attempts at softening that edge are worth
+ * recording so neither gets tried again:
  *
- * The first version masked a single pane with a gradient instead. That is
- * smoother on paper, and in practice it put a dark band under the bar: a mask
- * over a visual-effect layer does not give you glass that thins, it gives you
- * glass with something laid across it. Stacking draws nothing — there is no
- * layer in here that has a colour.
+ *   - A gradient mask over the pane. Put a dark band under the bar: a mask on
+ *     a visual-effect layer does not thin the glass, it lays something across
+ *     it.
+ *   - Panes of decreasing height stacked at partial opacity. No colour
+ *     anywhere, but several live blurs compositing over each other, and the
+ *     result was worse than the edge it was hiding.
  *
- * Three steps rather than eight, because each extra pane is another live blur
- * to composite, and on `clear` glass the steps sit between states that are
- * already nearly identical.
+ * One pane, one edge, nothing drawn on top of it.
  *
  * ── with no Liquid Glass it renders nothing ──
  *
  * Deliberate, and a change from the earlier solid-colour stand-in. There is no
  * blur before iOS 26, and everything that can stand in for one is a flat fill:
- * a dark fill is the dark band that was objected to, and a light fill is the
- * white haze objected to before that. A pane of glass that cannot be glass is
- * better as nothing — the page keeps its own colour and nothing is laid over
- * the top of it.
+ * a dark fill reads as a dark band, a light fill as a white haze. A pane of
+ * glass that cannot be glass is better as nothing — the page keeps its own
+ * colour and nothing is laid over the top of it.
  *
- * The cost is real and worth stating: on those systems content scrolls up to
- * the status bar sharp, with no softening. That is the honest floor without a
- * blur primitive, and the only way past it is shipping one (`expo-blur`),
- * which needs a native rebuild.
+ * The cost is worth stating: on those systems content scrolls up to the status
+ * bar sharp, with no softening. That is the honest floor without a blur
+ * primitive, and the only way past it is shipping one (`expo-blur`), which
+ * needs a native rebuild.
  */
-
-/** how the tail steps down: fraction of the tail, and that pane's opacity */
-const FADE_STEPS = [
-  { of: 1, opacity: 0.35 },
-  { of: 0.55, opacity: 0.5 },
-] as const;
-
-export function GlassBar({ height, fade = 0 }: {
-  /** full-strength height in points — the status bar band */
+export function GlassBar({ height }: {
+  /** how tall the pane is, in points — the status bar band */
   height: number;
-  /** tail below it over which the glass thins to nothing */
-  fade?: number;
 }) {
   // Nothing, rather than something that is not glass
   if (!isLiquidGlassAvailable() || height <= 0) return null;
 
   return (
-    <>
-      {/* Weakest and tallest first, so the stronger panes composite on top */}
-      {fade > 0 &&
-        FADE_STEPS.map((s) => (
-          <Pane key={s.of} height={height + fade * s.of} opacity={s.opacity} />
-        ))}
-      <Pane height={height} opacity={1} />
-    </>
-  );
-}
-
-function Pane({ height, opacity }: { height: number; opacity: number }) {
-  return (
-    <View style={[styles.pane, { height, opacity }]} pointerEvents="none">
+    <View style={[styles.pane, { height }]} pointerEvents="none">
       <GlassView
         style={styles.fill}
         glassEffectStyle="clear"
