@@ -27,6 +27,21 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
  * a linear ramp than at seeing the ramp itself. Bending it down early makes the
  * bottom of the gradient asymptotic and the edge disappears.
  *
+ * ── it starts below the chrome ──
+ *
+ * `top` is where the light begins, and every layout passes the height of
+ * whatever glass sits above it. This is not cosmetic bookkeeping: the light's
+ * peak used to land at y=0, which is exactly where the header bar and the notch
+ * strip are, and clear glass shows what is behind it faithfully — so the
+ * brightest 4% of the page was being read straight through the glass as a white
+ * film laid over it. The glass looked tinted; it was only being honest about
+ * the light underneath.
+ *
+ * With the offset there is nothing but page colour behind the glass, so it
+ * reads as clear, and the light blooms just below — which is also the more
+ * sensible reading of it: light falls on the page, not on the chrome resting
+ * on top of the page.
+ *
  * ── on cost ──
  *
  * One `Rect`, and every prop on it is a constant. `react-native-svg`
@@ -35,9 +50,9 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
  * It sits outside the scroll view, so it does not move — light that scrolled
  * with the content would give away that it is a drawing.
  */
-export function AmbientLight() {
+export function AmbientLight({ top = 0 }: { top?: number }) {
   return (
-    <View style={styles.light} pointerEvents="none">
+    <View style={[styles.light, { top }]} pointerEvents="none">
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <Defs>
           <LinearGradient id="ambient" x1="0" y1="0" x2="0" y2="1">
@@ -55,7 +70,6 @@ export function AmbientLight() {
 const styles = StyleSheet.create({
   light: {
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
     // Over half the page: a short gradient reads as a band at the top, a long

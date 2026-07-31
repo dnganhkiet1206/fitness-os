@@ -139,7 +139,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
       // Header floats over a full-bleed hero; content starts at the very top.
       return (
         <View style={styles.root}>
-          <AmbientLight />
+          <AmbientLight top={insets.top + HEADER_H} />
           <ScrollView
             ref={scroller}
             style={styles.scroller}
@@ -188,7 +188,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
     const headerH = insets.top + HEADER_H;
     return (
       <View style={styles.root}>
-        <AmbientLight />
+        <AmbientLight top={headerH} />
         <ScrollView
           ref={scroller}
           style={styles.scroller}
@@ -223,7 +223,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
    */
   return (
     <View style={styles.root}>
-      <AmbientLight />
+      <AmbientLight top={insets.top} />
       <ScrollView
         ref={scroller}
         style={styles.scroller}
