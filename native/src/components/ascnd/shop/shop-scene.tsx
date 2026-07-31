@@ -13,17 +13,16 @@ import {
   SHOTS,
   type ShotName,
 } from '@/components/ascnd/shop/shop-camera';
-import { DressingRoom } from '@/components/ascnd/studio/dressing';
-import { StudioContent } from '@/components/ascnd/studio/koa-studio';
+import { ShopRoom } from '@/components/ascnd/shop/shop-room';
 import type { MascotDef } from '@/lib/mascots';
 
 /**
  * One room, and a camera that moves between the shop's tabs.
  *
- * `x 0 → 390` is the Mascot Room itself, unchanged, and the dressing annex is
- * beside it; the tabs are three places to stand in it. Nothing unmounts when
- * you switch — the room is continuous and you travel through it, which is the
- * whole point and the only thing that makes this better than three grids.
+ * The room is a fitting room — see `shop-room.tsx` — and the tabs are three
+ * places to stand in it. Nothing unmounts when you switch; the room is
+ * continuous and you travel through it, which is the whole point and the only
+ * thing that makes this better than three grids.
  *
  * ── the camera moves the picture, not the drawing ──
  *
@@ -91,10 +90,8 @@ export function ShopScene({
   height,
   level,
   equipped,
-  streak,
   skin,
   energy = 0.5,
-  moonPhase,
 }: {
   shot: ShotName;
   mascot: MascotDef;
@@ -102,10 +99,8 @@ export function ShopScene({
   height: number;
   level?: number;
   equipped?: Set<string>;
-  streak?: number;
   skin?: string;
   energy?: number;
-  moonPhase?: number;
 }) {
   /**
    * The shot itself is the animated thing — four springs, one per edge.
@@ -159,8 +154,7 @@ export function ShopScene({
           camera,
         ]}>
         <Svg width={SCENE_W} height={SCENE_H} viewBox={`0 0 ${SCENE_W} ${SCENE_H}`}>
-          <StudioContent streak={streak} skin={skin} energy={energy} moonPhase={moonPhase} />
-          <DressingRoom />
+          <ShopRoom skin={skin} energy={energy} />
         </Svg>
 
         {/* placed from `FIGURE_BOX`, the same rectangle the camera frames the

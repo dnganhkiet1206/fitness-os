@@ -1,6 +1,7 @@
 import { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 
 import { C } from '@/components/ascnd/studio/palette';
+import { WARDROBE_H, WARDROBE_W } from '@/components/ascnd/studio/wardrobe-box';
 
 /**
  * The wardrobe Koa changes in.
@@ -38,8 +39,7 @@ import { C } from '@/components/ascnd/studio/palette';
  * places and scales it.
  */
 
-export const WARDROBE_W = 168;
-export const WARDROBE_H = 196;
+export { WARDROBE_H, WARDROBE_W };
 
 /** the carcass, and the interior cut inside it */
 const SHELL =

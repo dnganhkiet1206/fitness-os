@@ -1185,3 +1185,57 @@ enough to hide. It reported three valid shots for a camera that was cutting a
 character's feet off. **A check fed the wrong input is worse than no check: it
 is a green light on a broken screen.** That is now the third entry on this
 page about a tool that had to be fixed before it could be believed.
+
+## The shop is its own room now
+
+The shop's scene was this room with a dressing annex built onto its right-hand
+edge, and every seam was papered over one at a time. The annex imported
+`HORIZON` rather than guessing it, so the floor line matched. It filled its
+ground with `url(#studioFloor)` and `url(#studioFloorTint)` — the same two
+paints over the same band, which an `objectBoundingBox` gradient makes
+identical. It ran its skirting forty units back across the join. Its vignette
+started dark exactly where this room's ended, so there was no step in the
+light.
+
+It still read as two pictures, because the thing giving it away was never the
+seam. The left half was a gym — poster, neon sign, city window, equipment
+shelf, yoga ball — and the right half was a wardrobe. **No amount of matched
+floor makes one room out of two subjects.** That is the whole lesson, and it
+cost a full round of seam-chasing to learn: when something reads as two
+drawings, check what the two halves are *about* before checking where they
+meet.
+
+So the shop got its own room, built around one subject: a place you try clothes
+on. `shop-room.tsx`, 750 wide, one wall gradient, one floor, one vignette. What
+came over from here is what the user asked for and nothing else — the podium,
+the lamp above it, and Koa standing on it. Not copies: `Platform`, `Spotlight`
+and `FloorLight` are these components, drawing from this `STAGE_MARK`, so the
+podium there and the podium here cannot drift apart. `dressing.tsx` is gone.
+
+The prop that does the work is the curtain behind the podium. Without it the
+stage bay is a podium against a blank wall and the two ends look like two rooms
+again, just without the seam; with it, Koa is standing in front of a fitting-room
+curtain and the wardrobe down the wall is obviously part of the same place.
+
+### The bay a tab is named after has to be *in* that tab
+
+Three framing bugs came out of the first render of that room, and all three
+were the same bug: a rectangle nobody had written down.
+
+- The rug's left rim reached x 370 and the wardrobe's left edge x 384, against
+  a "Sân khấu" shot that runs out to 385. Both appeared in the *stage* tab as
+  unexplained shapes at the frame's edge. A prop poking into the other tab's
+  frame does not read as "the room continues" — there is nothing beside it to
+  say what it belongs to.
+- The fitting bay's frame started at y 148, and the wall rail's hooks and both
+  light fittings sit above the wardrobe's crown. The tab opened on a rail with
+  no bar and two cones of light with no lamps, which reads as smudges.
+- `tools/shop-camera.mjs` checked the wardrobe and the mirror, and passed.
+
+The third is the one worth writing down. The check named two props and the two
+it did not name were the two that broke — so the prop list is now a function
+over `shop-plan.ts` covering the rail, the pucks, the rug and the stool as
+well, and there is a second assertion that no bay prop starts left of where the
+stage shot ends. **What a check does not name, it does not check**, which is
+the fourth entry on this page about a tool that had to be fixed before it could
+be believed.

@@ -15,7 +15,6 @@ import { useMascot } from '@/hooks/use-mascot';
 import {
   useBuyItem,
   useClaimReward,
-  useDailyStreak,
   useMascotInventory,
   useMascotWallet,
   useToggleEquip,
@@ -51,10 +50,11 @@ import { toast } from '@/lib/toast';
  *
  * ── one room, three shots ──
  *
- * The tabs are not three screens. `ShopScene` holds the Mascot Room and the
- * dressing annex as one continuous scene and the tab moves a camera through it:
- * Sân khấu onto the podium, Trang phục down to Koa standing on it, Tủ đồ back
- * across the dressing room. See `shop/shop-camera.ts`.
+ * The tabs are not three screens. `ShopScene` holds one fitting room — podium,
+ * curtain, wardrobe and mirror —
+ * and the tab moves a camera through it: Sân khấu onto the podium, Trang phục
+ * down to Koa standing on it, Tủ đồ across to the wardrobe. See
+ * `shop/shop-room.tsx` for the room and `shop/shop-camera.ts` for the shots.
  */
 
 type Tab = 'stage' | 'outfit' | 'closet';
@@ -80,7 +80,6 @@ export default function ShopScreen() {
 
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();
-  const { data: streak = 0 } = useDailyStreak();
   const buy = useBuyItem();
   const equip = useToggleEquip();
   const claim = useClaimReward();
@@ -175,7 +174,6 @@ export default function ShopScreen() {
           height={Math.round(sceneW * BAND_ASPECT)}
           level={level}
           equipped={equipped}
-          streak={streak}
         />
       </View>
 

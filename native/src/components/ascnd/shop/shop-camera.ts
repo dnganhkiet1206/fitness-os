@@ -1,41 +1,35 @@
 import { HERO_W, KOA_ASPECT } from '@/components/ascnd/koa/koa-frame';
-import { SCENE_BOTTOM, STAGE_MARK, STUDIO_W } from '@/components/ascnd/studio/palette';
+import { BAY, SHOP_H, SHOP_W, STAGE_MARK } from '@/components/ascnd/shop/shop-plan';
 
 /**
  * One room, three shots — the camera the shop's tabs move.
  *
  * The tabs stop being three screens and become three places to stand in one
- * scene: pick "Sân khấu" and the camera pushes in on the podium, "Cửa hàng" and
- * it comes down to Koa standing on it, "Tủ đồ" and it pulls back across the
- * whole dressing room. Nothing unmounts and nothing cross-fades; the room is
- * continuous and you are moving through it, which is the entire idea and the
- * only reason it is worth more than three grids.
+ * fitting room: pick "Sân khấu" and the camera pushes in on the podium and the
+ * curtain behind it, "Cửa hàng" and it comes down to Koa standing on it, "Tủ
+ * đồ" and it pans down the wall to the wardrobe. Nothing unmounts and nothing
+ * cross-fades; the room is continuous and you are moving through it, which is
+ * the entire idea and the only reason it is worth more than three grids.
  *
  * ── the artboard ──
  *
- * The Mascot Room is 390 wide and 476 tall to the floor, and it is kept exactly
- * as it is: `x 0 → 390` of this scene **is** that room, unchanged, so the stage
- * shots frame the real thing rather than a copy of it. The dressing annex is
- * built to the right of it, from 390 to `SCENE_W`, sharing the same floor line
- * and the same wall.
+ * `shop-plan.ts` is the floor plan and this file only frames it. Every shot is
+ * derived from a landmark in there — the podium's mark, the fitting bay's own
+ * rectangle — so moving a prop moves the camera that was pointed at it. A shot
+ * written as four literals is a shot that silently stops framing what it was
+ * named after.
  *
- * That is what makes this cheap. There is no second stage to keep in step with
- * the first, and `STAGE_MARK` still means what it has always meant.
+ * ── the camera is a transform, not a viewBox ──
  *
- * ── the camera is a matrix, not a viewBox ──
- *
- * `viewBox` is a string on the root `<Svg>` and Reanimated cannot drive it;
- * `matrix` on a group is the one transform `RNSVGGroup` takes natively, which
- * every moving thing in this project already rides on. So the whole scene sits
- * inside one group and the shot is that group's matrix. A camera move is then a
- * single animated prop — no unmount, no re-render, nothing crossing to JS.
+ * `viewBox` is a string on the root `<Svg>` and Reanimated cannot drive it. The
+ * scene is drawn once at its own size inside a `<View>`, and the shot is that
+ * view's transform: one animated style, no unmount, and — unlike a `matrix` on
+ * a `<G>` — it both works on web and leaves the SVG canvas rasterised exactly
+ * once. See the header of `shop-scene.tsx`.
  */
 
-/** the dressing annex begins where the Mascot Room ends */
-export const ROOM_W = STUDIO_W;
-export const ANNEX_W = 268;
-export const SCENE_W = ROOM_W + ANNEX_W;
-export const SCENE_H = SCENE_BOTTOM;
+export const SCENE_W = SHOP_W;
+export const SCENE_H = SHOP_H;
 
 export interface Shot {
   x: number;
@@ -84,21 +78,22 @@ export const FIGURE_BOX: Shot = {
 /**
  * Where each tab stands.
  *
- * Every one is derived from `STAGE_MARK`, from `FIGURE_BOX` or from the annex's
- * own width rather than typed, so moving the podium moves the camera with it. A
- * shot written as four literals is a shot that silently stops framing what it
- * was named after — which is the same failure `stage.mjs` was built to catch.
+ * Every one is derived from `STAGE_MARK` or from `BAY` in the floor plan rather
+ * than typed, so moving the podium or the wardrobe moves the camera that was
+ * pointed at it. A shot written as four literals is a shot that silently stops
+ * framing what it was named after — the same failure `stage.mjs` was built to
+ * catch.
  */
 export const SHOTS = {
   /**
-   * The podium, and the beam standing on it.
+   * The podium, the curtain behind it, and the beam standing on it.
    *
-   * Not the lamp — the lamp. Its shade sits at y 52–78 and the podium's base
-   * reaches 455, so a frame holding both would be 405 units tall and, at this
-   * band's aspect, 519 wide inside a room that is 390. It would have to start
-   * 64 units left of the scene's own edge and show 64 units of nothing. The
-   * beam's cone is in frame from the top edge down, which is what actually
-   * lights the podium; the fixture it hangs from is not.
+   * Not the lamp itself — its shade sits at y 52 and the podium's base reaches
+   * 455, so a frame holding both would be 405 units tall and, at this band's
+   * aspect, 519 wide inside a bay that is 390. It would have to start 64 units
+   * left of the room's own wall and show 64 units of nothing. The beam's cone
+   * is in frame from the top edge down, which is what actually lights the
+   * podium; the fixture it hangs from is not.
    */
   stage: shot({
     x: STAGE_MARK.x - 190,
@@ -117,11 +112,11 @@ export const SHOTS = {
     y: STAGE_MARK.y - 180.5,
     w: 266,
   }),
-  /** the whole dressing room, wardrobe and all, out to the far wall */
+  /** the fitting bay: wardrobe, mirror, stool and rug, exactly as planned */
   wardrobe: shot({
-    x: SCENE_W - 316,
-    y: 165,
-    w: 314,
+    x: BAY.x,
+    y: BAY.y,
+    w: BAY.w,
   }),
 } satisfies Record<string, Shot>;
 

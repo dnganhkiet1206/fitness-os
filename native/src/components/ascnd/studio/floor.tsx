@@ -30,11 +30,12 @@ import { C, SCENE_BOTTOM, STAGE_MARK, STUDIO_H, STUDIO_W } from '@/components/as
 /**
  * Where the wall meets the floor.
  *
- * Exported because the shop's dressing annex is drawn *beside* this room in the
- * same scene and has to share the line — a floor that steps by even a few units
- * at the join is the one thing that would give away that the two halves are two
- * drawings. It was 300 in the first version of the annex, guessed rather than
- * imported, and the seam was visible in the first render.
+ * Exported because the shop's fitting room shares it. That room used to be this
+ * one with a dressing annex bolted to its right edge, and importing the horizon
+ * rather than guessing it — 300, in the first version — was what stopped the
+ * floor stepping at the join. The annex is gone and the shop is one room of its
+ * own now, but it still stands the podium on this line, so the two rooms' floors
+ * are still the same number.
  */
 export const HORIZON = 360;
 

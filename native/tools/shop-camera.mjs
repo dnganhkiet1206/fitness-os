@@ -35,7 +35,11 @@ import { pathToFileURL } from 'node:url';
 
 const dir = mkdtempSync(path.join(tmpdir(), 'shopcam-'));
 const entry = path.join(dir, 'e.ts');
-writeFileSync(entry, `export * from '@/components/ascnd/shop/shop-camera';`);
+writeFileSync(
+  entry,
+  `export * from '@/components/ascnd/shop/shop-camera';\n` +
+    `export * as PLAN from '@/components/ascnd/shop/shop-plan';\n`,
+);
 execFileSync('npx', ['esbuild', entry, '--bundle', '--format=esm', '--tsconfig=tsconfig.json',
   `--outfile=${path.join(dir, 'c.js')}`], { stdio: 'inherit' });
 const B = await import(pathToFileURL(path.join(dir, 'c.js')));
@@ -118,6 +122,92 @@ for (const n of NAMES) {
     Object.entries(pad).map(([k, n]) => `${k} ${n.toFixed(1)}`).join(', ') +
     (cut.length ? `  CẮT MẤT ${cut.map(([k]) => k).join(', ')}` : '  đủ chỗ'),
   );
+}
+
+/**
+ * The "Tủ đồ" shot has to hold the furniture it is named after.
+ *
+ * Same shape of check as the one above and for the same reason: the tab exists
+ * to show the wardrobe, so "the wardrobe is in the wardrobe shot" is a fact the
+ * build should know rather than something a screenshot happens to confirm. Both
+ * pieces come out of `shop-plan.ts`, which is also where the room draws them
+ * from, so moving one moves both sides of this test at once.
+ */
+{
+  const P = B.PLAN;
+  const s = B.SHOTS.wardrobe;
+  const v = seen(s, B.zoomOf(s, VW, VH));
+  console.log(`\n  khung "tủ đồ" thấy (${v.x.toFixed(0)}, ${v.y.toFixed(0)}) ${v.w.toFixed(0)}×${v.h.toFixed(0)}`);
+  for (const [n, r] of Object.entries(bayProps(P))) {
+    const pad = [r.x - v.x, v.x + v.w - (r.x + r.w), r.y - v.y, v.y + v.h - (r.y + r.h)];
+    const ok = pad.every((p) => p >= 0);
+    if (!ok) bad++;
+    console.log(
+      `  ${n.padEnd(9)} (${r.x.toFixed(0)}, ${r.y.toFixed(0)}) ${r.w.toFixed(0)}×${r.h.toFixed(0)} — chừa ` +
+      pad.map((p) => p.toFixed(1)).join(', ') +
+      (ok ? '  đủ chỗ' : '  BỊ CẮT'),
+    );
+  }
+}
+
+/**
+ * Nothing in the fitting bay may show up in the stage shot.
+ *
+ * The two bays are one room and the camera pans between them, which is the
+ * point — but a prop that pokes into the *other* tab's frame does not read as
+ * "the room continues". It reads as a stray shape at the edge of the picture,
+ * because there is nothing beside it to explain what it belongs to. The rug's
+ * left rim and the wardrobe's left edge both did this at 370 and 384, against a
+ * stage shot that runs out to 385.
+ *
+ * The podium's own floor shadow is the other side of the same rule and is
+ * checked with it: it reaches x 364, so the bay has to start clear of that or
+ * the "Tủ đồ" tab opens on a smear of the podium.
+ */
+{
+  const P = B.PLAN;
+  const stage = seen(B.SHOTS.stage, B.zoomOf(B.SHOTS.stage, VW, VH));
+  const edge = stage.x + stage.w;
+  console.log(`\n  khung "sân khấu" hết ở x ${edge.toFixed(0)}; bóng bục tới x 364`);
+  for (const [n, r] of Object.entries(bayProps(P))) {
+    const clear = r.x - edge;
+    const ok = clear >= 0;
+    if (!ok) bad++;
+    console.log(
+      `  ${n.padEnd(9)} bắt đầu ở x ${r.x.toFixed(0)} — cách ${clear.toFixed(1)}` +
+      (ok ? '  ngoài khung' : '  THÒ VÀO KHUNG SÂN KHẤU'),
+    );
+  }
+  const gap = P.BAY.x - 364;
+  if (gap < 0) bad++;
+  console.log(`  khoang tủ bắt đầu ở x ${P.BAY.x} — cách bóng bục ${gap.toFixed(1)}` + (gap < 0 ? '  ĐÈ LÊN BỤC' : '  đủ xa'));
+}
+
+/**
+ * Everything the fitting bay holds, as rectangles.
+ *
+ * Including the things that hang *above* the wardrobe, which is the whole
+ * reason this is a function and not two entries: the first version listed the
+ * wardrobe and the mirror, passed, and the render came back with the wall
+ * rail's bar and both light fittings sliced off the top of the frame. What a
+ * check does not name, it does not check.
+ */
+function bayProps(P) {
+  return {
+    tủ: { x: P.CLOSET.x, y: P.CLOSET.y, w: P.CLOSET.w, h: P.CLOSET.h },
+    gương: { x: P.MIRROR.x, y: P.MIRROR.y, w: P.MIRROR.w, h: P.MIRROR.h },
+    // the bar, its hooks, and the two garments hanging off it
+    'thanh treo': { x: P.WALL_RAIL.x, y: P.WALL_RAIL.y - 5, w: P.WALL_RAIL.w, h: 5 + 43 },
+    // the housings, which sit above the light they throw
+    đèn: {
+      x: P.PUCKS[0] - 10,
+      y: P.PUCK_Y - 9,
+      w: P.PUCKS[P.PUCKS.length - 1] - P.PUCKS[0] + 20,
+      h: 9,
+    },
+    thảm: { x: P.RUG.cx - P.RUG.rx, y: P.RUG.cy - P.RUG.ry, w: P.RUG.rx * 2, h: P.RUG.ry * 2 },
+    ghế: { x: P.STOOL_X - 22, y: P.SHOP_FLOOR - 33, w: 44, h: 38 },
+  };
 }
 
 const mid0 = (s) => [s.x + s.w / 2, s.y + s.h / 2];
