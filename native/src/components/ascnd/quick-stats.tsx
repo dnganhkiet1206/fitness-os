@@ -1,4 +1,4 @@
-import { Beef, Droplets, Flame, Scale } from 'lucide-react-native';
+import { Beef, Droplets, Flame } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -7,18 +7,24 @@ import { colors, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 
 /**
- * The four numbers a day is actually judged by, in one row under the hero card.
+ * The numbers a day of eating is judged by, in one row under the hero card.
  *
  * The calorie card above says a great deal about calories and nothing about
- * anything else, and the answers to "how much protein / how much water / what
- * do I weigh" were each a tab or a screen away. They are one line each, they
- * change daily, and they are what somebody opening the tab wants confirmed —
- * so they sit together, above the diary, where the eye lands first.
+ * anything else, and "how much protein / how much water" were each a tab or a
+ * screen away. They are one line each, they change daily, and they are what
+ * somebody opening the tab wants confirmed — so they sit together, above the
+ * diary, where the eye lands first.
  *
- * **Read-only on purpose.** Every one of these has a place it is logged
- * properly; a row that both reports and edits would need four different
- * affordances in four small boxes. This reports, and the screens that log
- * remain the screens that log.
+ * **Weight is deliberately not here** (removed at the user's request,
+ * 2026-07-29). It was the odd one out: the other three are things you *did*
+ * today and can still change before bed, while weight is a measurement with no
+ * daily target, logged on a different rhythm and read as a trend rather than a
+ * number. It belongs with progress, not with a meal diary.
+ *
+ * **Read-only on purpose.** Each of these has a place it is logged properly; a
+ * row that both reports and edits would need three different affordances in
+ * three small boxes. This reports, and the screens that log remain the screens
+ * that log.
  *
  * The value is the headline and the target is the small print beside it, so a
  * glance answers "am I near it" without doing arithmetic. `null` reads as `—`
@@ -44,7 +50,6 @@ export function QuickStats({
   calorieTarget,
   protein,
   proteinTarget,
-  weightKg,
   waterMl,
   waterTargetMl,
   i18n,
@@ -53,8 +58,6 @@ export function QuickStats({
   calorieTarget: number;
   protein: number;
   proteinTarget: number;
-  /** today's weigh-in, or the profile's last known weight; null if neither */
-  weightKg: number | null;
   waterMl: number;
   waterTargetMl: number;
   i18n: ReturnType<typeof useI18n>;
@@ -77,17 +80,6 @@ export function QuickStats({
       value: Math.round(protein),
       target: proteinTarget,
       unit: 'g',
-    },
-    {
-      key: 'weight',
-      icon: Scale,
-      color: colors.metricPurple,
-      label: i18n.nQuickWeight,
-      value: weightKg,
-      // a weight has no daily target — the goal weight lives in Progress
-      target: null,
-      unit: 'kg',
-      decimals: 1,
     },
     {
       key: 'water',

@@ -237,7 +237,6 @@ const en = {
   nDiaryEntries: '{n} meals',
   nQuickCalories: 'Calories',
   nQuickProtein: 'Protein',
-  nQuickWeight: 'Weight',
   nQuickWater: 'Water',
 
   // Log-meal floating button
@@ -577,7 +576,6 @@ const vi: typeof en = {
   nDiaryEntries: '{n} bữa',
   nQuickCalories: 'Calo',
   nQuickProtein: 'Protein',
-  nQuickWeight: 'Cân nặng',
   nQuickWater: 'Nước',
 
   // Log-meal floating button
