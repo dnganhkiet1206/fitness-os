@@ -13,6 +13,7 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { CarbIcon, FatIcon, FiberIcon, ProteinIcon } from '@/components/ascnd/macro-icons';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { colors, radius, spacing } from '@/constants/ascnd';
@@ -96,16 +97,24 @@ interface NutritionCardProps {
   protein: { current: number; target: number };
   carbs: { current: number; target: number };
   fat: { current: number; target: number };
+  /**
+   * Optional — the card predates it and callers that have no fibre to show
+   * still get the three tiles they always did.
+   */
+  fiber?: { current: number; target: number };
 }
 
-export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat }: NutritionCardProps) {
+export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber }: NutritionCardProps) {
   const i18n = useI18n();
   const calPct = Math.min((kcal / (calorieTarget || 1)) * 100, 100);
 
   const macros = [
-    { label: 'Protein', ...protein, color: colors.primary, bar: ['#f59e0b', '#ecc94b'] as [string, string] },
-    { label: 'Carbs', ...carbs, color: colors.metricBlue, bar: ['#3e86ea', '#8d52e0'] as [string, string] },
-    { label: 'Fat', ...fat, color: colors.metricOrange, bar: ['#f17b27', '#dc2828'] as [string, string] },
+    { label: 'Protein', ...protein, icon: ProteinIcon, color: colors.primary, bar: ['#f59e0b', '#ecc94b'] as [string, string] },
+    { label: 'Carbs', ...carbs, icon: CarbIcon, color: colors.metricBlue, bar: ['#3e86ea', '#8d52e0'] as [string, string] },
+    { label: 'Fat', ...fat, icon: FatIcon, color: colors.metricOrange, bar: ['#f17b27', '#dc2828'] as [string, string] },
+    ...(fiber
+      ? [{ label: 'Fiber', ...fiber, icon: FiberIcon, color: colors.readinessGreen, bar: ['#3ecf8e', '#2f9e6b'] as [string, string] }]
+      : []),
   ];
 
   return (
@@ -142,12 +151,21 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat }: Nutr
         </View>
       </View>
 
+      {/* Four tiles wrap to two rows; three stay on one. `flexWrap` with a
+          `minWidth` rather than a column count, so the row that has fibre in it
+          does not need a second layout written for it. */}
       <View style={styles.macroGrid}>
         {macros.map((m) => {
           const pct = Math.min((m.current / (m.target || 1)) * 100, 100);
+          const Glyph = m.icon;
           return (
             <View key={m.label} style={styles.macroTile}>
-              <Text style={styles.macroLabel}>{m.label}</Text>
+              <View style={styles.macroHead}>
+                {/* the macro's own colour, on the tile's own background — see
+                    `macro-icons.tsx` for why the accent needs the second one */}
+                <Glyph size={14} color={m.color} cut={colors.background} />
+                <Text style={styles.macroLabel}>{m.label}</Text>
+              </View>
               <Text style={styles.macroValue}>
                 {Math.round(m.current)}
                 <Text style={styles.macroTarget}>/{m.target}g</Text>
@@ -351,9 +369,11 @@ const styles = StyleSheet.create({
   timeArrow: { fontSize: 12, color: colors.mutedForeground },
 
   // macros
-  macroGrid: { flexDirection: 'row', gap: spacing.sm + 4 },
+  macroGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 4 },
+  macroHead: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   macroTile: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 88,
     gap: 8,
     backgroundColor: 'rgba(24,24,27,0.2)',
     borderRadius: radius.sm,

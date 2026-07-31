@@ -247,6 +247,7 @@ export default function TodayScreen() {
                 protein={{ current: Number(dailyLog?.protein_g) || 0, target: macroTargets.protein }}
                 carbs={{ current: Number(dailyLog?.carbs_g) || 0, target: macroTargets.carbs }}
                 fat={{ current: Number(dailyLog?.fat_g) || 0, target: macroTargets.fat }}
+                fiber={{ current: Number(dailyLog?.fiber_g) || 0, target: macroTargets.fiber }}
               />
             ) : (
               <GlassCard style={styles.emptyCard}>

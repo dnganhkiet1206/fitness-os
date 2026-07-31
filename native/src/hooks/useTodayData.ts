@@ -173,6 +173,10 @@ export function useInvalidateToday() {
     queryClient.invalidateQueries({ queryKey: ['readiness_history', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['nudges', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['today_meals', user?.id, dateStr] });
+    // The Nutrition tab's diary. Adding a query and not adding it here is
+    // invisible until somebody logs a meal and the list they are looking at
+    // does not change — which is exactly how this was found.
+    queryClient.invalidateQueries({ queryKey: ['today_meals_detail', user?.id, dateStr] });
     queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
     // Lifetime workout/meal counters — drives mascot unlocks, so a fresh
     // log can pop the unlock celebration right away

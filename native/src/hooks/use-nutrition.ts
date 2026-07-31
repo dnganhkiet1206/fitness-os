@@ -270,6 +270,27 @@ export interface LoggedMeal {
 export function useTodayLog() {
   const { user } = useAuth();
   const dateStr = localDateStr();
+
+  /**
+   * The local day, as two absolute instants.
+   *
+   * `date_time` is a `timestamptz`, and a bare `2026-07-31T00:00:00` sent
+   * against one is read in the *server's* zone — UTC. At UTC+7 that window is
+   * 07:00 today to 07:00 tomorrow in local terms, so anything eaten before
+   * seven in the morning lands in yesterday and a breakfast logged at six never
+   * appears. `setHours(0,0,0,0)` then `toISOString()` gives the real instants
+   * either side of the local day, whatever the zone.
+   *
+   * The rest of the app still compares date strings this way — `useTodayMeals`,
+   * `useTodaySleep`, `useTodayBiometrics`. They have the same edge and are not
+   * touched here; that is a change to make deliberately rather than as a side
+   * effect of adding a diary.
+   */
+  const from = new Date();
+  from.setHours(0, 0, 0, 0);
+  const to = new Date(from);
+  to.setDate(to.getDate() + 1);
+
   return useQuery({
     queryKey: ['today_meals_detail', user?.id, dateStr],
     enabled: !!user,
@@ -278,8 +299,8 @@ export function useTodayLog() {
         .from('meal_entries')
         .select('id, meal_type, date_time, total_kcal, total_protein_g, total_carbs_g, total_fat_g')
         .eq('user_id', user!.id)
-        .gte('date_time', `${dateStr}T00:00:00`)
-        .lt('date_time', `${dateStr}T23:59:59.999`)
+        .gte('date_time', from.toISOString())
+        .lt('date_time', to.toISOString())
         .order('date_time', { ascending: true });
       if (error) throw error;
       if (!entries || entries.length === 0) return [];

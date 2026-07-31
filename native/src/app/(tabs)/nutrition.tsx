@@ -194,6 +194,7 @@ export default function NutritionScreen() {
             protein={{ current: Number(dailyLog?.protein_g) || 0, target: macros.protein }}
             carbs={{ current: Number(dailyLog?.carbs_g) || 0, target: macros.carbs }}
             fat={{ current: Number(dailyLog?.fat_g) || 0, target: macros.fat }}
+            fiber={{ current: Number(dailyLog?.fiber_g) || 0, target: macros.fiber }}
           />
 
           <View style={styles.sectionHeadRow}>

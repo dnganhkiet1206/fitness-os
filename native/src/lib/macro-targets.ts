@@ -17,6 +17,7 @@ export interface MacroProfile {
   macro_protein_g?: number | string | null;
   macro_carbs_g?: number | string | null;
   macro_fat_g?: number | string | null;
+  macro_fiber_g?: number | string | null;
 }
 
 export const calorieTargetFor = (p: MacroProfile | undefined | null): number =>
@@ -26,4 +27,7 @@ export const macroTargetsFor = (p: MacroProfile | undefined | null) => ({
   protein: Number(p?.macro_protein_g) || 150,
   carbs: Number(p?.macro_carbs_g) || 250,
   fat: Number(p?.macro_fat_g) || 70,
+  // 30g is the usual adult guideline and what the column defaults to when the
+  // onboarding maths has not run
+  fiber: Number(p?.macro_fiber_g) || 30,
 });
