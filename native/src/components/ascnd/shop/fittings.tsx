@@ -1,7 +1,8 @@
 import { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
-import { CURTAIN, PUCK_Y } from '@/components/ascnd/shop/shop-plan';
+import { CURTAIN } from '@/components/ascnd/shop/shop-plan';
 import { C } from '@/components/ascnd/studio/palette';
+import { WARDROBE_INNER } from '@/components/ascnd/studio/wardrobe';
 
 /**
  * What a fitting room is made of.
@@ -9,10 +10,14 @@ import { C } from '@/components/ascnd/studio/palette';
  * Everything here is drawn in the room's own coordinates or from its own
  * top-left, and everything obeys the same two rules the studio obeys: depth
  * comes from a contact shadow rather than an outline, and the warm edge on a
- * prop faces whichever light is nearest it. There are two lights in this room —
- * the lamp over the podium at x 195, and the pair of pucks over the wardrobe —
- * so props on the left take their highlight from the left and props in the
- * fitting bay take theirs from above.
+ * prop faces whichever light is nearest it.
+ *
+ * There are two lights. The lamp hangs over the podium at x 195, and the
+ * wardrobe lights its own inside. The wardrobe used to be lit by a pair of
+ * pucks on the wall above it, which stopped working the moment the drape became
+ * the whole wall: a ceiling fixture floating in front of a curtain has nothing
+ * to be mounted on. A lit display cabinet needs no ceiling and is what a shop
+ * would have anyway.
  */
 
 /* ── the drape behind the podium ──────────────────────────────────────── */
@@ -119,22 +124,26 @@ export function Curtain() {
       />
 
       {/* the rod, and the two finials that stop it being a pipe */}
+      {/* The rod runs wall to wall, and its finials sit *inside* the room. They
+          used to be twelve units past each end, which was fine when the drape
+          was a panel in the middle of a wider room and put both of them off the
+          artboard the moment it became the wall itself. */}
       <Rect
-        x={CURTAIN.x0 - 12}
+        x={CURTAIN.x0}
         y={CURTAIN.rod - 3}
-        width={CURTAIN.x1 - CURTAIN.x0 + 24}
+        width={CURTAIN.x1 - CURTAIN.x0}
         height={5}
         rx={2.5}
         fill={C.secondary}
       />
       <Path
-        d={`M ${CURTAIN.x0 - 12} ${CURTAIN.rod - 3} L ${CURTAIN.x1 + 12} ${CURTAIN.rod - 3}`}
+        d={`M ${CURTAIN.x0} ${CURTAIN.rod - 3} L ${CURTAIN.x1} ${CURTAIN.rod - 3}`}
         stroke={C.highlight}
         strokeWidth={1}
         opacity={0.3}
       />
-      <Circle cx={CURTAIN.x0 - 13} cy={CURTAIN.rod - 0.5} r={4} fill={C.highlight} opacity={0.55} />
-      <Circle cx={CURTAIN.x1 + 13} cy={CURTAIN.rod - 0.5} r={4} fill={C.highlight} opacity={0.55} />
+      <Circle cx={CURTAIN.x0 + 7} cy={CURTAIN.rod - 0.5} r={4} fill={C.highlight} opacity={0.55} />
+      <Circle cx={CURTAIN.x1 - 7} cy={CURTAIN.rod - 0.5} r={4} fill={C.highlight} opacity={0.55} />
     </G>
   );
 }
@@ -157,9 +166,9 @@ export function Mirror({ x, y, w, h }: { x: number; y: number; w: number; h: num
     <G transform={`translate(${x} ${y + h})`}>
       <Defs>
         <LinearGradient id="shopGlass" x1="0.2" y1="0" x2="0.8" y2="1">
-          <Stop offset="0" stopColor={C.soft} stopOpacity={0.32} />
-          <Stop offset="0.45" stopColor={C.white} stopOpacity={0.13} />
-          <Stop offset="1" stopColor={C.accent} stopOpacity={0.2} />
+          <Stop offset="0" stopColor={C.soft} stopOpacity={0.42} />
+          <Stop offset="0.45" stopColor={C.white} stopOpacity={0.2} />
+          <Stop offset="1" stopColor={C.accent} stopOpacity={0.26} />
         </LinearGradient>
       </Defs>
       <Ellipse cx={w / 2} cy={2} rx={w * 0.6} ry={6} fill={C.shadow} opacity={0.34} />
@@ -187,37 +196,6 @@ export function Mirror({ x, y, w, h }: { x: number; y: number; w: number; h: num
   );
 }
 
-/** a wall rail with two things left on it, so the room looks used */
-export function WallRail({ x, y, w }: { x: number; y: number; w: number }) {
-  return (
-    <G transform={`translate(${x} ${y})`}>
-      <Rect x={0} y={0} width={w} height={2.6} rx={1.3} fill={C.soft} opacity={0.4} />
-      {[w * 0.28, w * 0.66].map((hx, i) => (
-        <G key={hx} transform={`translate(${hx} 1)`}>
-          <Path
-            d="M 0 0 Q 0 -4 3 -4 M 0 1 L -9 8 M 0 1 L 9 8 M -9 8 L 9 8"
-            stroke={C.soft}
-            strokeWidth={1.1}
-            strokeLinecap="round"
-            fill="none"
-            opacity={0.6}
-          />
-          {/* `soft` and `accent`, not `secondary`. The pair used to be one
-              bright garment and one in `secondary`, and against this wall the
-              second one measured almost nothing — a hanger with a hole under
-              it. Both are lit now; they differ in hue, not in whether they
-              are visible. */}
-          <Path
-            d="M -8 8 Q -12 10 -13 14 L -14 24 L -9 26 L -9 40 Q 0 43 9 40 L 9 26 L 14 24 L 13 14 Q 12 10 8 8 L 4 7 Q 0 11 -4 7 Z"
-            fill={i === 0 ? C.accent : C.soft}
-            opacity={i === 0 ? 0.9 : 0.72}
-          />
-        </G>
-      ))}
-    </G>
-  );
-}
-
 /** the stool you sit on to put shoes on */
 export function Stool({ x, y }: { x: number; y: number }) {
   return (
@@ -238,66 +216,27 @@ export function Stool({ x, y }: { x: number; y: number }) {
 }
 
 /**
- * A puck light over the wardrobe, and the wash it throws down.
+ * The light inside the wardrobe.
  *
- * The room's lamp is at x 195 and the wardrobe is three hundred units away from
- * it, so without these the "Tủ đồ" tab pushes in on the darkest corner of the
- * room. Two small fixtures are also what a shop actually puts over a display
- * unit, which is the reason this looks right rather than merely bright.
- *
- * The wash is a trapezoid under a gradient, the same construction the podium's
- * beam uses — one shape, no filter, and it stays a vector.
+ * Drawn over the carcass's own interior path, in the room's coordinates, and
+ * drawn *after* the vignette — a glow painted under the thing that darkens the
+ * room is a glow that has already been darkened. Brightest at the arch and
+ * falling away down the back panel, because a cabinet light is at the top of
+ * the cabinet.
  */
-export function Puck({ x, reach }: { x: number; reach: number }) {
+export function ClosetGlow({ x, y, scale }: { x: number; y: number; scale: number }) {
   return (
-    <G>
-      <Path
-        d={`M ${x - 7} ${PUCK_Y} L ${x + 7} ${PUCK_Y} L ${x + 30} ${PUCK_Y + reach} L ${x - 30} ${PUCK_Y + reach} Z`}
-        fill="url(#shopPuck)"
-      />
-      <Rect x={x - 9} y={PUCK_Y - 9} width={18} height={9} rx={3} fill={C.secondary} />
-      <Rect x={x - 10} y={PUCK_Y - 1.5} width={20} height={3} rx={1.5} fill={C.highlight} opacity={0.85} />
-    </G>
-  );
-}
-
-export function PuckDefs() {
-  return (
-    <Defs>
-      <LinearGradient id="shopPuck" x1="0" y1="0" x2="0" y2="1">
-        <Stop offset="0" stopColor={C.highlight} stopOpacity={0.17} />
-        <Stop offset="0.45" stopColor={C.highlight} stopOpacity={0.06} />
-        <Stop offset="1" stopColor={C.highlight} stopOpacity={0} />
-      </LinearGradient>
-    </Defs>
-  );
-}
-
-/** what the fitting bay stands on */
-export function Rug({ cx, cy, rx, ry }: { cx: number; cy: number; rx: number; ry: number }) {
-  return (
-    <G>
-      <Ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={C.accent} opacity={0.11} />
-      <Ellipse
-        cx={cx}
-        cy={cy}
-        rx={rx}
-        ry={ry}
-        fill="none"
-        stroke={C.soft}
-        strokeWidth={1.2}
-        opacity={0.22}
-      />
-      <Ellipse
-        cx={cx}
-        cy={cy}
-        rx={rx - 12}
-        ry={ry - 4}
-        fill="none"
-        stroke={C.soft}
-        strokeWidth={0.8}
-        opacity={0.14}
-      />
+    <G transform={`translate(${x} ${y}) scale(${scale})`}>
+      <Defs>
+        <LinearGradient id="shopClosetLit" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={C.highlight} stopOpacity={0.2} />
+          <Stop offset="0.35" stopColor={C.highlight} stopOpacity={0.08} />
+          <Stop offset="1" stopColor={C.highlight} stopOpacity={0.02} />
+        </LinearGradient>
+      </Defs>
+      <Path d={WARDROBE_INNER} fill="url(#shopClosetLit)" />
+      {/* the strip itself, tucked under the arch */}
+      <Rect x={30} y={30} width={108} height={2.6} rx={1.3} fill={C.highlight} opacity={0.7} />
     </G>
   );
 }

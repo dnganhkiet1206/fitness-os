@@ -1,65 +1,63 @@
-import { Defs, Ellipse, G, LinearGradient, Rect, RadialGradient, Stop } from 'react-native-svg';
+import { Defs, G, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { Curtain, Mirror, Puck, PuckDefs, Rug, Stool, WallRail } from '@/components/ascnd/shop/fittings';
+import { ClosetGlow, Curtain, Mirror, Stool } from '@/components/ascnd/shop/fittings';
 import {
-  BAY,
   CLOSET,
-  CURTAIN,
+  CLOSET_SCALE,
   MIRROR,
-  PUCK_Y,
-  PUCKS,
-  RUG,
   SHOP_FLOOR,
   SHOP_H,
   SHOP_W,
   STOOL_X,
-  WALL_RAIL,
 } from '@/components/ascnd/shop/shop-plan';
-import { C, STAGE_MARK, STUDIO_SKINS } from '@/components/ascnd/studio/palette';
 import { FloorLight } from '@/components/ascnd/studio/floor';
+import { C, STAGE_MARK, STUDIO_SKINS } from '@/components/ascnd/studio/palette';
 import { Platform, StageGlow } from '@/components/ascnd/studio/platform';
 import { Spotlight } from '@/components/ascnd/studio/spotlight';
 import { Wardrobe } from '@/components/ascnd/studio/wardrobe';
 
 /**
- * The fitting room — one room, drawn once.
+ * The fitting room — one room, drawn once, 390 × 476.
  *
- * ── what this replaced, and why ──
+ * ── what this replaced, and why, twice ──
  *
- * The shop's scene used to be the Mascot Room with a dressing annex built onto
- * its right-hand edge. Every seam was papered over one at a time: the annex
- * imported `HORIZON` so the floor line matched, it reused `url(#studioFloor)`
- * so the ground was the same paint, it ran its skirting back across the join.
- * It still read as two pictures, because the thing giving it away was never the
- * seam. It was that the left half was a gym — poster, neon sign, city window,
- * equipment shelf, yoga ball — and the right half was a wardrobe, and no
+ * It started as the Mascot Room with a dressing annex built onto its right
+ * edge. Every seam was papered over one at a time: the annex imported the
+ * horizon so the floor line matched, filled its ground with the studio's own
+ * two paints over the same band, ran its skirting back across the join. It
+ * still read as two pictures, because the thing giving it away was never the
+ * seam — the left half was a gym and the right half was a wardrobe, and no
  * amount of matched floor makes one room out of two subjects.
  *
- * So the room was rebuilt around a single subject: a place you try clothes on.
- * One wall gradient across all 750 units, one floor, one vignette that knows
- * both lit areas. What came over from the Mascot Room is what the user asked
- * for and nothing more — the podium, the lamp above it, and Koa standing on it.
- * Not copies: `Platform`, `Spotlight` and `FloorLight` are the same components
- * drawing from the same `STAGE_MARK`, so the podium here and the podium there
- * cannot drift apart.
+ * The replacement was one room about one subject, and it was 750 wide. That was
+ * the second mistake and a subtler one: the shop's band is the shape of the
+ * Mascot Room's stage, which is portrait, and **a portrait band can only show a
+ * whole room that is portrait too**. "Toàn cảnh" of a 750-wide room would have
+ * been two fifths of a room. See `shop-plan.ts` for the arithmetic; what it
+ * lands on is that the room has to be 390 across — the Mascot Room's own width.
+ * The same room shape, refurnished.
+ *
+ * What came over from the Mascot Room is what was asked for and nothing more —
+ * the podium, the lamp above it, and Koa standing on it. Not copies: `Platform`,
+ * `Spotlight` and `FloorLight` are those components drawing from that
+ * `STAGE_MARK`, so the podium here and the podium there cannot drift apart.
  *
  * ── the order things are drawn in ──
  *
  * Back to front, and the vignette is not last. It goes over the wall and
- * everything standing against it, and *under* the two light sources — the same
- * rule the studio follows, and the reason the lamp reads as a light rather than
- * as a pale shape on a dim wall. Anything that emits goes after it; anything
- * that is merely lit goes before.
+ * everything standing against it, and *under* every light — the same rule the
+ * studio follows, and the reason the lamp reads as a light rather than as a
+ * pale shape on a dim wall. Anything that emits goes after it; anything merely
+ * lit goes before. The wardrobe's own glow is the clearest case: painted before
+ * the vignette it is a warm patch that has been darkened; painted after it, the
+ * cabinet is lit.
  *
- * ── two lights, not one ──
+ * ── the drape is the whole wall ──
  *
- * The lamp hangs over the podium at x 195. The wardrobe is three hundred units
- * down the wall from it, which is most of a room away, so the fitting bay has
- * its own pair of pucks. A single centred vignette would have been wrong here
- * for the same reason a single light is: this room has two places worth looking
- * at and the dark belongs *between* them, not at both ends of an evenly lit
- * wall. `shopVigX` is shaped to that — heavy at both edges, heavy again in the
- * gap at the middle, open over each bay.
+ * It costs no horizontal budget, because every other prop stands in front of
+ * it, and that is the only reason a wardrobe, a mirror and a stool fit in a
+ * room this narrow beside a podium 274 units across. It is also the prop that
+ * makes this a changing room rather than a stage with furniture near it.
  */
 
 export function ShopRoom({ skin = 'default', energy = 0.5 }: { skin?: string; energy?: number }) {
@@ -71,10 +69,10 @@ export function ShopRoom({ skin = 'default', energy = 0.5 }: { skin?: string; en
           <Stop offset="0" stopColor={s.wall[0]} />
           <Stop offset="1" stopColor={s.wall[1]} />
         </LinearGradient>
-        {/* The studio's floor recipe, widened. Those stops are the answer to a
-            measured problem — the ground has to read about nine units *under*
-            the wall it meets, and built from `secondary` it went the other way
-            — so they are reused rather than re-derived. */}
+        {/* The studio's floor recipe. Those stops are the answer to a measured
+            problem — the ground has to read about nine units *under* the wall
+            it meets, and built from `secondary` it went the other way — so they
+            are reused rather than re-derived. */}
         <LinearGradient id="shopFloor" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={C.edge} stopOpacity={0.75} />
           <Stop offset="0.45" stopColor={C.edge} stopOpacity={0.5} />
@@ -85,27 +83,14 @@ export function ShopRoom({ skin = 'default', energy = 0.5 }: { skin?: string; en
           <Stop offset="0.12" stopColor={C.accent} stopOpacity={0.06} />
           <Stop offset="0.24" stopColor={C.accent} stopOpacity={0} />
         </LinearGradient>
-        {/* the dark is at the two ends and in the gap between the bays */}
-        <LinearGradient id="shopVigX" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor={C.edge} stopOpacity={0.95} />
-          <Stop offset="0.07" stopColor={C.edge} stopOpacity={0.28} />
-          <Stop offset="0.27" stopColor={C.edge} stopOpacity={0.06} />
-          <Stop offset="0.5" stopColor={C.edge} stopOpacity={0.44} />
-          <Stop offset="0.72" stopColor={C.edge} stopOpacity={0.12} />
-          <Stop offset="0.94" stopColor={C.edge} stopOpacity={0.34} />
-          <Stop offset="1" stopColor={C.edge} stopOpacity={0.92} />
-        </LinearGradient>
-        <LinearGradient id="shopVigY" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={C.edge} stopOpacity={0.6} />
-          <Stop offset="0.26" stopColor={C.edge} stopOpacity={0.04} />
-          <Stop offset="0.82" stopColor={C.edge} stopOpacity={0.04} />
-          <Stop offset="1" stopColor={C.edge} stopOpacity={0.38} />
-        </LinearGradient>
-        {/* the corner where the wall turns — one soft edge is enough to stop
-            the room being a flat backdrop with things in front of it */}
-        <RadialGradient id="shopCorner" cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor={C.edge} stopOpacity={0.3} />
-          <Stop offset="1" stopColor={C.edge} stopOpacity={0} />
+        {/* One room, one light, one vignette — radial, the way the studio has
+            it. The 750-wide version needed a shaped horizontal ramp because it
+            had two lit ends with dark between them; this room has a single
+            centre and the corners fall away from it. */}
+        <RadialGradient id="shopVig" cx="50%" cy="50%" r="82%">
+          <Stop offset="0" stopColor={C.bgTop} stopOpacity={0.02} />
+          <Stop offset="0.5" stopColor={C.bgTop} stopOpacity={0.34} />
+          <Stop offset="1" stopColor={C.edge} stopOpacity={1} />
         </RadialGradient>
       </Defs>
 
@@ -113,47 +98,21 @@ export function ShopRoom({ skin = 'default', energy = 0.5 }: { skin?: string; en
       <Rect x={0} y={0} width={SHOP_W} height={SHOP_H} fill="url(#shopWall)" />
       <Rect x={0} y={SHOP_FLOOR} width={SHOP_W} height={SHOP_H - SHOP_FLOOR} fill="url(#shopFloor)" />
       <Rect x={0} y={SHOP_FLOOR} width={SHOP_W} height={SHOP_H - SHOP_FLOOR} fill="url(#shopFloorTint)" />
-      {/* one unbroken skirting the length of the room — the line that says
-          "one room" more plainly than anything else in here */}
-      <Rect x={0} y={SHOP_FLOOR - 5} width={SHOP_W} height={5} fill={C.primary} opacity={0.85} />
-      <Rect
-        x={0}
-        y={SHOP_FLOOR - 5.8}
-        width={SHOP_W}
-        height={0.9}
-        fill={C.highlight}
-        opacity={0.09}
-      />
 
-      {/* ── the stage bay ── */}
+      {/* ── what stands against it ── */}
       <Curtain />
-
-      {/* ── the fitting bay ── */}
-      <PuckDefs />
-      <WallRail {...WALL_RAIL} />
-      <G transform={`translate(${CLOSET.x} ${CLOSET.y})`}>
+      <G transform={`translate(${CLOSET.x} ${CLOSET.y}) scale(${CLOSET_SCALE})`}>
         <Wardrobe />
       </G>
       <Mirror {...MIRROR} />
       <Stool x={STOOL_X} y={SHOP_FLOOR} />
 
       {/* ── the room falls away, and then the lights are put back on ── */}
-      <Rect x={0} y={0} width={SHOP_W} height={SHOP_H} fill="url(#shopVigX)" />
-      <Rect x={0} y={0} width={SHOP_W} height={SHOP_H} fill="url(#shopVigY)" />
-      <Ellipse cx={CURTAIN.x1 + 6} cy={SHOP_H / 2} rx={70} ry={SHOP_H * 0.6} fill="url(#shopCorner)" />
+      <Rect x={0} y={0} width={SHOP_W} height={SHOP_H} fill="url(#shopVig)" />
 
-      {/* the wash reaches thirty units past the wardrobe's crown, so the light
-          lands *on* it rather than stopping in the air above it */}
-      {PUCKS.map((x) => (
-        <Puck key={x} x={x} reach={CLOSET.y - PUCK_Y + 30} />
-      ))}
+      <ClosetGlow x={CLOSET.x} y={CLOSET.y} scale={CLOSET_SCALE} />
       <Spotlight />
       <FloorLight glow={s.glow} energy={energy} />
-
-      {/* the rug goes over the floor light, because it is a thing lying on the
-          floor and the pool is on the floor under it */}
-      <Rug {...RUG} />
-
       <Platform glow={s.glow} energy={energy} />
       <StageGlow glow={s.glow} energy={energy} />
     </G>
@@ -161,4 +120,4 @@ export function ShopRoom({ skin = 'default', energy = 0.5 }: { skin?: string; en
 }
 
 /** re-exported so `shop-scene.tsx` has one import for the room and its size */
-export { SHOP_H, SHOP_W, STAGE_MARK, BAY };
+export { SHOP_H, SHOP_W, STAGE_MARK };

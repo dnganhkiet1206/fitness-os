@@ -1239,3 +1239,61 @@ well, and there is a second assertion that no bay prop starts left of where the
 stage shot ends. **What a check does not name, it does not check**, which is
 the fourth entry on this page about a tool that had to be fixed before it could
 be believed.
+
+
+## A portrait band can only show a portrait room
+
+The shop opens on the whole fitting room, and its scene sits in a band the same
+shape as this room's stage: `sw` wide by `sw × 476/390` tall. Portrait.
+
+That single fact fixes the fitting room's width, and it took building the room
+twice to see it. **Cover honours the larger of the two scales, so a whole-room
+shot fills a portrait band only if the room is portrait too.** The height was
+never free — the wall meets the floor at 360 and the podium stands at 412, both
+inherited from here and both unmovable without moving this room as well — so
+476 is fixed and the width follows: 476 ÷ 1.2205 = 390. The first fitting room
+was 750 across and a full-height view of it could only ever have shown two
+fifths of its width. "Toàn cảnh" would have been a lie in the tab bar.
+
+390 being this room's own width is not a coincidence and is the nicest part of
+the answer: the shop is this room's shape, refurnished. Walking through the door
+lands you somewhere the same size as where you left.
+
+### What fits in 390 once a 274-wide podium is standing in it
+
+Almost nothing, along the floor. The podium's shadow reaches 338 across, so
+every prop stands *against the wall* above y 360 and the podium sits downstage
+in front of them — which is what a fitting room looks like anyway.
+
+The drape is what makes it work. Hung as the whole wall rather than as a panel
+somewhere on it, it costs no horizontal budget at all, because every other prop
+stands in front of it. That is the only reason a wardrobe, a mirror and a stool
+all fit. It is also the prop that makes the place a changing room instead of a
+stage with furniture near it, which is worth more than any of them.
+
+### The character has to be able to leave the frame
+
+Koa stands in the middle of a 390-wide room, from x 126 to 264. **There is
+nowhere in the room to put a 200-wide rectangle that misses him.** "Tủ đồ"
+opened on a beautifully centred wardrobe with half a koala's head across the
+right third of the frame at 1.8×, and no amount of moving furniture was ever
+going to fix it — the geometry forbids it.
+
+So he fades. Not a per-tab flag: the opacity is the fraction of `FIGURE_BOX`
+the camera's current rect contains, smoothstepped from 0.75 to 0.95, which
+makes it a property of where the camera *is* rather than of which tab was
+tapped. He dissolves during the pan instead of blinking at the end of it, a
+shot that frames him keeps him without having to say so, and shots added later
+get the behaviour for nothing.
+
+### Bounding boxes are not where the ink stops
+
+The wardrobe's shot was set to end at y 380, one unit above the podium's rim
+ellipse at 381, and it opened with a gold smear along the bottom of the frame
+anyway. The rim is *stroked*: the glow pass under it is four units wide, so the
+topmost inked pixel of the podium is at 379, two units above its geometry.
+
+Both the shot and the check that guards it now use the ink, not the ellipse.
+That is the same mistake as the figure's shadow being clipped by a viewBox
+sized to the figure's own path — twice now, a shape has been measured by where
+its geometry ends rather than by where its paint does.

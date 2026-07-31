@@ -17,7 +17,6 @@ import {
   Shirt,
   Snowflake,
   Star,
-  Store,
   Trophy,
   Utensils,
   Wind,
@@ -504,24 +503,21 @@ export default function MascotRoomScreen() {
         </View>
       </GlassCard>
 
-      {/* Quick actions — the shop lives behind one button now */}
+      {/* Quick actions.
+
+          One door, not two. "Cửa hàng" and "Tủ đồ" used to be separate chips
+          landing on separate tabs, which asked people to choose between two
+          things before they had seen either. They are two corners of one
+          fitting room — so the chip opens the room, and the room's own four
+          tabs pick the corner. */}
       <View style={styles.chipRow}>
         <ActionChip
-          icon={Store}
-          label={i18n.nRoomShop}
-          color={colors.metricCyan}
-          onPress={() => {
-            Haptics.selectionAsync();
-            router.push('/shop?tab=stage');
-          }}
-        />
-        <ActionChip
           icon={Shirt}
-          label={i18n.nRoomWardrobe}
+          label={i18n.nRoomDressing}
           color={colors.metricPurple}
           onPress={() => {
             Haptics.selectionAsync();
-            router.push('/shop?tab=closet');
+            router.push('/shop');
           }}
         />
         <ActionChip

@@ -44,8 +44,18 @@ export { WARDROBE_H, WARDROBE_W };
 /** the carcass, and the interior cut inside it */
 const SHELL =
   'M 4 62 Q 4 14 84 14 Q 164 14 164 62 L 164 182 Q 164 189 157 189 L 11 189 Q 4 189 4 182 Z';
-const INNER =
+/**
+ * Exported so the room can *light* it.
+ *
+ * The wash has to be drawn after the room's vignette — the vignette goes over
+ * everything standing against the wall, and a glow painted under it is a glow
+ * that has been dimmed by the thing it is meant to overcome. Redrawing this
+ * exact shape is what keeps the light inside the arch instead of putting a
+ * rectangle of warm over a curved opening.
+ */
+export const WARDROBE_INNER =
   'M 17 64 Q 17 27 84 27 Q 151 27 151 64 L 151 158 L 17 158 Z';
+const INNER = WARDROBE_INNER;
 
 /**
  * Where the two boards and the hanging rail sit.

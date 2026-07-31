@@ -19,10 +19,10 @@ import type { MascotDef } from '@/lib/mascots';
 /**
  * One room, and a camera that moves between the shop's tabs.
  *
- * The room is a fitting room — see `shop-room.tsx` — and the tabs are three
+ * The room is a fitting room — see `shop-room.tsx` — and the tabs are four
  * places to stand in it. Nothing unmounts when you switch; the room is
  * continuous and you travel through it, which is the whole point and the only
- * thing that makes this better than three grids.
+ * thing that makes this better than four grids.
  *
  * ── the camera moves the picture, not the drawing ──
  *
@@ -38,8 +38,8 @@ import type { MascotDef } from '@/lib/mascots';
  * `matrix="0.951,0,0,0.951,-5.03,-154.13"` and a `getScreenCTM()` of
  * `[1,0,0,1,16,65]` — the band's own offset and not one thing more. The room sat
  * at scene `0,0` through every tab, which put the visible window at
- * `0 → 361 × 282` on a scene whose floor does not start until y 360. The podium
- * was never off; it was never on screen.
+ * a window on the scene's top-left corner, on a room whose floor does not start
+ * until y 360. The podium was never off; it was never on screen.
  *
  * The second reason is the one that matters on the phone the app actually ships
  * to. `react-native-svg` re-rasterises an entire `<Svg>` when any prop under it
@@ -53,15 +53,15 @@ import type { MascotDef } from '@/lib/mascots';
  *
  * `MascotFigure` is its own `<Svg>` and cannot be nested in this one, so it sits
  * inside the same wrapper the scene does, at `FIGURE_BOX` — the rectangle the
- * `shop` shot is framed around. One transform carries both, so the room and the
- * character cannot drift apart no matter what the camera does.
+ * `outfit` shot is framed around. One transform carries both, so the room and
+ * the character cannot drift apart no matter what the camera does.
  *
  * He is drawn at `SS` times scene units and scaled back down. A `<View>` is
  * rasterised at its layout size and then scaled on the GPU, and the closest shot
- * is a 1.36× push-in; drawn at scene size he would be resampled *up* and go soft
- * exactly when he is largest. The room does not need the same treatment — it is
- * scenery, it is 12× the area, and the device's own pixel ratio already gives it
- * more than the 1.36× back.
+ * that holds him is a 1.72× push-in; drawn at scene size he would be resampled
+ * *up* and go soft exactly when he is largest. The room does not need the same
+ * treatment — it is scenery, it is eight times the area, and the device's own
+ * pixel ratio already gives it more than the 1.72× back.
  */
 
 /** how far above scene resolution the character is drawn — see above */
@@ -136,6 +136,36 @@ export function ShopScene({
     return { transform: [{ translateX: m[4] }, { translateY: m[5] }, { scale: m[0] }] };
   });
 
+  /**
+   * Koa fades out when the camera stops being pointed at him.
+   *
+   * The room is 390 across and he stands in the middle of it, from x 126 to
+   * 264. Every shot narrow enough to be a close-up of anything therefore
+   * overlaps him — the wardrobe's shot is 200 wide and there is nowhere in the
+   * room to put a 200-wide rectangle that misses him. "Tủ đồ" opened on a
+   * wardrobe with half a koala's head across the right third of the frame at
+   * 1.8× magnification, and no amount of moving furniture fixes that.
+   *
+   * So it is not a per-tab flag. It is the fraction of `FIGURE_BOX` the shot
+   * actually contains, which is a property of wherever the camera happens to
+   * be: full while it holds him, gone once it holds less than three quarters of
+   * him, and smoothstepped between so he dissolves *during* the pan rather than
+   * blinking at the end of it. Shots added later get the behaviour for free,
+   * and a shot that frames him keeps him without having to say so.
+   *
+   * The arithmetic is written out rather than factored into a helper — this
+   * runs on the UI thread, and a worklet may only call other worklets.
+   */
+  const figureFade = useAnimatedStyle(() => {
+    const ox =
+      Math.max(0, Math.min(sx.value + sw.value, FIGURE_BOX.x + FIGURE_BOX.w) - Math.max(sx.value, FIGURE_BOX.x));
+    const oy =
+      Math.max(0, Math.min(sy.value + sh.value, FIGURE_BOX.y + FIGURE_BOX.h) - Math.max(sy.value, FIGURE_BOX.y));
+    const held = (ox * oy) / (FIGURE_BOX.w * FIGURE_BOX.h);
+    const t = Math.max(0, Math.min(1, (held - 0.75) / 0.2));
+    return { opacity: t * t * (3 - 2 * t) };
+  });
+
   const figure = Math.round(HERO_W * SS);
 
   return (
@@ -160,14 +190,17 @@ export function ShopScene({
         {/* placed from `FIGURE_BOX`, the same rectangle the camera frames the
             close shot around — so "the shot contains the character" is one
             number in one file rather than two calculations that agree today */}
-        <View
-          style={{
-            position: 'absolute',
-            left: FIGURE_BOX.x,
-            top: FIGURE_BOX.y,
-            width: FIGURE_BOX.w,
-            height: FIGURE_BOX.h,
-          }}>
+        <Animated.View
+          style={[
+            {
+              position: 'absolute',
+              left: FIGURE_BOX.x,
+              top: FIGURE_BOX.y,
+              width: FIGURE_BOX.w,
+              height: FIGURE_BOX.h,
+            },
+            figureFade,
+          ]}>
           <View style={{ width: figure, transform: [{ scale: 1 / SS }], transformOrigin: '0px 0px' }}>
             {/* Still. This sits above a scrolling list, and a live character
                 behind one is the budget the room spent three fixes getting back. */}
@@ -179,7 +212,7 @@ export function ShopScene({
               animated={false}
             />
           </View>
-        </View>
+        </Animated.View>
       </Animated.View>
     </View>
   );

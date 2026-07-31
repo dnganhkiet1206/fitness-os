@@ -1,9 +1,9 @@
 /**
- * The shop's three shots, checked rather than eyeballed.
+ * The shop's four shots, checked rather than eyeballed.
  *
  *   node tools/shop-camera.mjs
  *
- * Three invariants, each tied to a decision that would fail silently:
+ * Each invariant is tied to a decision that would otherwise fail silently:
  *
  * - **Every shot is inside the scene.** `cameraAt` covers, so a shot that runs
  *   past the artboard shows nothing — not a black bar, just the last thing
@@ -105,7 +105,7 @@ for (const n of NAMES) {
  * quietly cropped off the bottom took Koa's feet with them.
  */
 {
-  const s = B.SHOTS.shop;
+  const s = B.SHOTS.outfit;
   const v = seen(s, B.zoomOf(s, VW, VH));
   const f = B.FIGURE_BOX;
   const pad = {
@@ -117,7 +117,7 @@ for (const n of NAMES) {
   const cut = Object.entries(pad).filter(([, n]) => n < 0);
   if (cut.length) bad++;
   console.log(
-    `\n  khung "shop" thấy (${v.x.toFixed(0)}, ${v.y.toFixed(0)}) ${v.w.toFixed(0)}×${v.h.toFixed(0)}\n` +
+    `\n  khung "trang phục" thấy (${v.x.toFixed(0)}, ${v.y.toFixed(0)}) ${v.w.toFixed(0)}×${v.h.toFixed(0)}\n` +
     `  Koa (${f.x.toFixed(0)}, ${f.y.toFixed(0)}) ${f.w.toFixed(0)}×${f.h.toFixed(0)} — chừa ` +
     Object.entries(pad).map(([k, n]) => `${k} ${n.toFixed(1)}`).join(', ') +
     (cut.length ? `  CẮT MẤT ${cut.map(([k]) => k).join(', ')}` : '  đủ chỗ'),
@@ -125,89 +125,67 @@ for (const n of NAMES) {
 }
 
 /**
- * The "Tủ đồ" shot has to hold the furniture it is named after.
+ * "Toàn cảnh" has to be the whole room, exactly.
  *
- * Same shape of check as the one above and for the same reason: the tab exists
- * to show the wardrobe, so "the wardrobe is in the wardrobe shot" is a fact the
- * build should know rather than something a screenshot happens to confirm. Both
- * pieces come out of `shop-plan.ts`, which is also where the room draws them
- * from, so moving one moves both sides of this test at once.
+ * This is the shot the shop opens on and the reason the room is 390 wide
+ * rather than 750: a portrait band shows a whole room only if the room has the
+ * band's aspect. If the two ever drift apart the overview starts cropping
+ * silently — a wall running off the edge looks like a framing choice, not like
+ * a bug — so it is asserted rather than trusted.
  */
 {
   const P = B.PLAN;
-  const s = B.SHOTS.wardrobe;
+  const s = B.SHOTS.overview;
   const v = seen(s, B.zoomOf(s, VW, VH));
-  console.log(`\n  khung "tủ đồ" thấy (${v.x.toFixed(0)}, ${v.y.toFixed(0)}) ${v.w.toFixed(0)}×${v.h.toFixed(0)}`);
-  for (const [n, r] of Object.entries(bayProps(P))) {
-    const pad = [r.x - v.x, v.x + v.w - (r.x + r.w), r.y - v.y, v.y + v.h - (r.y + r.h)];
-    const ok = pad.every((p) => p >= 0);
-    if (!ok) bad++;
-    console.log(
-      `  ${n.padEnd(9)} (${r.x.toFixed(0)}, ${r.y.toFixed(0)}) ${r.w.toFixed(0)}×${r.h.toFixed(0)} — chừa ` +
-      pad.map((p) => p.toFixed(1)).join(', ') +
-      (ok ? '  đủ chỗ' : '  BỊ CẮT'),
-    );
-  }
+  const off = [Math.abs(v.x), Math.abs(v.y), Math.abs(v.w - P.SHOP_W), Math.abs(v.h - P.SHOP_H)];
+  const ok = off.every((n) => n < 1);
+  if (!ok) bad++;
+  console.log(
+    `\n  "toàn cảnh" thấy (${v.x.toFixed(1)}, ${v.y.toFixed(1)}) ${v.w.toFixed(1)}×${v.h.toFixed(1)}` +
+    `  — phòng là ${P.SHOP_W}×${P.SHOP_H}` +
+    (ok ? '  trọn phòng' : `  LỆCH ${off.map((n) => n.toFixed(1)).join(', ')}`),
+  );
 }
 
 /**
- * Nothing in the fitting bay may show up in the stage shot.
+ * "Tủ đồ" has to hold the wardrobe, and has to stop above the podium.
  *
- * The two bays are one room and the camera pans between them, which is the
- * point — but a prop that pokes into the *other* tab's frame does not read as
- * "the room continues". It reads as a stray shape at the edge of the picture,
- * because there is nothing beside it to explain what it belongs to. The rug's
- * left rim and the wardrobe's left edge both did this at 370 and 384, against a
- * stage shot that runs out to 385.
- *
- * The podium's own floor shadow is the other side of the same rule and is
- * checked with it: it reaches x 364, so the bay has to start clear of that or
- * the "Tủ đồ" tab opens on a smear of the podium.
+ * The first half is the same check the close shot gets, for the same reason:
+ * a tab named after a piece of furniture should contain it. The second half is
+ * particular to a room this small — the podium's top rim begins at y 381 and
+ * it is 274 units across, so a wardrobe shot reaching any lower opens with the
+ * podium's dark bulk lying across the foot of the frame.
  */
 {
   const P = B.PLAN;
-  const stage = seen(B.SHOTS.stage, B.zoomOf(B.SHOTS.stage, VW, VH));
-  const edge = stage.x + stage.w;
-  console.log(`\n  khung "sân khấu" hết ở x ${edge.toFixed(0)}; bóng bục tới x 364`);
-  for (const [n, r] of Object.entries(bayProps(P))) {
-    const clear = r.x - edge;
-    const ok = clear >= 0;
-    if (!ok) bad++;
-    console.log(
-      `  ${n.padEnd(9)} bắt đầu ở x ${r.x.toFixed(0)} — cách ${clear.toFixed(1)}` +
-      (ok ? '  ngoài khung' : '  THÒ VÀO KHUNG SÂN KHẤU'),
-    );
-  }
-  const gap = P.BAY.x - 364;
-  if (gap < 0) bad++;
-  console.log(`  khoang tủ bắt đầu ở x ${P.BAY.x} — cách bóng bục ${gap.toFixed(1)}` + (gap < 0 ? '  ĐÈ LÊN BỤC' : '  đủ xa'));
-}
-
-/**
- * Everything the fitting bay holds, as rectangles.
- *
- * Including the things that hang *above* the wardrobe, which is the whole
- * reason this is a function and not two entries: the first version listed the
- * wardrobe and the mirror, passed, and the render came back with the wall
- * rail's bar and both light fittings sliced off the top of the frame. What a
- * check does not name, it does not check.
- */
-function bayProps(P) {
-  return {
-    tủ: { x: P.CLOSET.x, y: P.CLOSET.y, w: P.CLOSET.w, h: P.CLOSET.h },
-    gương: { x: P.MIRROR.x, y: P.MIRROR.y, w: P.MIRROR.w, h: P.MIRROR.h },
-    // the bar, its hooks, and the two garments hanging off it
-    'thanh treo': { x: P.WALL_RAIL.x, y: P.WALL_RAIL.y - 5, w: P.WALL_RAIL.w, h: 5 + 43 },
-    // the housings, which sit above the light they throw
-    đèn: {
-      x: P.PUCKS[0] - 10,
-      y: P.PUCK_Y - 9,
-      w: P.PUCKS[P.PUCKS.length - 1] - P.PUCKS[0] + 20,
-      h: 9,
-    },
-    thảm: { x: P.RUG.cx - P.RUG.rx, y: P.RUG.cy - P.RUG.ry, w: P.RUG.rx * 2, h: P.RUG.ry * 2 },
-    ghế: { x: P.STOOL_X - 22, y: P.SHOP_FLOOR - 33, w: 44, h: 38 },
+  const s = B.SHOTS.closet;
+  const v = seen(s, B.zoomOf(s, VW, VH));
+  const f = { x: P.CLOSET.x, y: P.CLOSET.y, w: P.CLOSET.w, h: P.CLOSET.h };
+  const pad = {
+    trái: f.x - v.x,
+    phải: v.x + v.w - (f.x + f.w),
+    trên: f.y - v.y,
+    dưới: v.y + v.h - (f.y + f.h),
   };
+  const cut = Object.entries(pad).filter(([, n]) => n < 0);
+  if (cut.length) bad++;
+  console.log(
+    `\n  khung "tủ đồ" thấy (${v.x.toFixed(0)}, ${v.y.toFixed(0)}) ${v.w.toFixed(0)}×${v.h.toFixed(0)}\n` +
+    `  tủ (${f.x.toFixed(0)}, ${f.y.toFixed(0)}) ${f.w.toFixed(0)}×${f.h.toFixed(0)} — chừa ` +
+    Object.entries(pad).map(([k, n]) => `${k} ${n.toFixed(1)}`).join(', ') +
+    (cut.length ? `  CẮT MẤT ${cut.map(([k]) => k).join(', ')}` : '  đủ chỗ'),
+  );
+  // The podium's topmost *ink*, not its topmost geometry: the rim ellipse tops
+  // out at STAGE_MARK.y − 31, and the glow stroked along it is 4 wide, so two
+  // more units of gold sit above that. Checking the ellipse alone passed a
+  // frame that opened with a gold smear across its foot.
+  const RIM = P.STAGE_MARK.y - 31 - 2;
+  const clear = RIM - (v.y + v.h);
+  if (clear < 0) bad++;
+  console.log(
+    `  đáy khung ở y ${(v.y + v.h).toFixed(0)}; mép quầng bục ở y ${RIM} — cách ${clear.toFixed(1)}` +
+    (clear < 0 ? '  DÍNH BỤC' : '  không dính bục'),
+  );
 }
 
 const mid0 = (s) => [s.x + s.w / 2, s.y + s.h / 2];
@@ -256,5 +234,5 @@ for (const a of NAMES) {
 }
 console.log(`  xa nhất ${worst.toFixed(0)} đơn vị cảnh — trên ${B.SCENE_W} đơn vị bề ngang`);
 
-console.log(bad === 0 ? '\nba khung đều hợp lệ' : `\n${bad} lỗi`);
+console.log(bad === 0 ? `\n${NAMES.length} khung đều hợp lệ` : `\n${bad} lỗi`);
 process.exit(bad === 0 ? 0 : 1);

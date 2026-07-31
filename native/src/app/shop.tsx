@@ -33,13 +33,16 @@ import {
 import { toast } from '@/lib/toast';
 
 /**
- * The shop, as a page.
+ * The dressing room, as a page.
  *
  * It was a bottom sheet over the Mascot Room, and a sheet is the wrong shape
- * for it: the room kept rendering underneath, the scene had to fit in 78% of
- * the screen, and the three tabs had nowhere to be but a pill row squeezed
- * above a grid. A page gets the whole viewport, and the camera gets somewhere
- * to move.
+ * for it: the room kept rendering underneath, the scene had to fit in a strip,
+ * and the tabs had nowhere to be but a pill row squeezed above a grid. A page
+ * gets the whole viewport, and the camera gets somewhere to move.
+ *
+ * The band is `BAND_ASPECT` of its width, which is the Mascot Room's stage
+ * shape — so walking through the door lands you on a room the same size as the
+ * one you left, and "Toàn cảnh" fills it exactly.
  *
  * ── it owns its own data ──
  *
@@ -48,30 +51,39 @@ import { toast } from '@/lib/toast';
  * alternative — threading a dozen values and four mutations through navigation
  * params — would have been a second copy of the truth.
  *
- * ── one room, three shots ──
+ * ── one room, four shots ──
  *
- * The tabs are not three screens. `ShopScene` holds one fitting room — podium,
- * curtain, wardrobe and mirror —
- * and the tab moves a camera through it: Sân khấu onto the podium, Trang phục
- * down to Koa standing on it, Tủ đồ across to the wardrobe. See
+ * The tabs are not four screens. `ShopScene` holds one fitting room — drape,
+ * podium, wardrobe, mirror — and the tab moves a camera through it: Toàn cảnh
+ * is the doorway, Sân khấu pushes in on the podium, Trang phục comes down to
+ * Koa standing on it, Tủ đồ pans across to the wardrobe. See
  * `shop/shop-room.tsx` for the room and `shop/shop-camera.ts` for the shots.
  */
 
-type Tab = 'stage' | 'outfit' | 'closet';
+/**
+ * The four places to stand, in the order they are offered.
+ *
+ * `overview` first because it is where the room opens and where the other three
+ * are chosen from — it is the doorway, not a fourth kind of shopping. The tab
+ * names are the shot names, so there is no table mapping one to the other and
+ * no way for the two to disagree.
+ */
+const TABS = ['overview', 'stage', 'outfit', 'closet'] as const;
+type Tab = (typeof TABS)[number];
 
-/** which way the camera looks for each tab */
-const SHOT = { stage: 'stage', outfit: 'shop', closet: 'wardrobe' } as const;
+/** which of them put a grid under the room */
+const SELLS: Record<Tab, boolean> = { overview: false, stage: true, outfit: true, closet: true };
 
 /**
  * Which tab a caller asked for, if it asked for a real one.
  *
- * The room has two doors into this page — "Cửa hàng" and "Tủ đồ" — and they
- * should land where they say. A query string is whatever the URL holds, so it
- * is checked against the tabs rather than cast to one; an unknown value opens
- * the shop instead of rendering a page with no grid on it.
+ * The Mascot Room's door lands here with no parameter at all and gets the
+ * overview, which is the point of the overview. A query string is otherwise
+ * whatever the URL holds, so it is checked against the tabs rather than cast to
+ * one.
  */
 const asTab = (v: unknown): Tab =>
-  v === 'stage' || v === 'closet' || v === 'outfit' ? v : 'outfit';
+  (TABS as readonly string[]).includes(v as string) ? (v as Tab) : 'overview';
 
 export default function ShopScreen() {
   const i18n = useI18n();
@@ -165,10 +177,10 @@ export default function ShopScreen() {
   const sceneW = Dimensions.get('window').width - spacing.md * 2;
 
   return (
-    <Screen title={i18n.nRoomShop} back headerRight={<Coin balance={balance} />}>
+    <Screen title={i18n.nRoomDressing} back headerRight={<Coin balance={balance} />}>
       <View style={styles.stage}>
         <ShopScene
-          shot={SHOT[tab]}
+          shot={tab}
           mascot={mascot}
           width={sceneW}
           height={Math.round(sceneW * BAND_ASPECT)}
@@ -180,6 +192,7 @@ export default function ShopScreen() {
       <View style={styles.tabRow}>
         {(
           [
+            ['overview', i18n.nRoomOverview],
             ['stage', i18n.nRoomStageSkins],
             ['outfit', i18n.nRoomOutfits],
             ['closet', i18n.nRoomCloset],
@@ -197,7 +210,7 @@ export default function ShopScreen() {
         ))}
       </View>
 
-      {tab !== 'stage' ? (
+      {tab === 'outfit' || tab === 'closet' ? (
         <CategoryRow
           current={cat}
           onPick={(c) => {
@@ -209,6 +222,8 @@ export default function ShopScreen() {
         />
       ) : null}
 
+      {SELLS[tab] ? (
+        <>
       <ShopGrid
         items={items}
         owned={owned}
@@ -226,6 +241,10 @@ export default function ShopScreen() {
         i18n={i18n}
       />
       {items.length === 0 ? <Text style={styles.emptyCat}>{i18n.nRoomEmptyCat}</Text> : null}
+        </>
+      ) : (
+        <Text style={styles.overviewHint}>{i18n.nRoomOverviewHint}</Text>
+      )}
 
       {tab === 'outfit' ? (
         <Pressable
@@ -414,5 +433,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   tabText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
+  overviewHint: {
+    ...type.footnote,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
   tabTextActive: { color: colors.foreground },
 });

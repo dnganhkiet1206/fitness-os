@@ -1,4 +1,4 @@
-import { STAGE_MARK } from '@/components/ascnd/studio/palette';
+import { SCENE_BOTTOM, STAGE_MARK, STUDIO_W } from '@/components/ascnd/studio/palette';
 import { WARDROBE_H, WARDROBE_W } from '@/components/ascnd/studio/wardrobe-box';
 
 /**
@@ -9,94 +9,93 @@ import { WARDROBE_H, WARDROBE_W } from '@/components/ascnd/studio/wardrobe-box';
  * camera *looks* are the same fact stated once. It also keeps `shop-camera.ts`
  * bundleable on its own, which `tools/shop-camera.mjs` depends on.
  *
- * ── why the room was rebuilt ──
+ * ── why the room is exactly the Mascot Room's footprint ──
  *
- * The first version was the Mascot Room with a dressing annex bolted to its
- * right edge, and it read as exactly that: two drawings sharing a floor line.
- * Two wall gradients meeting at x 390, the studio's radial vignette ending dead
- * on that seam, the left half furnished as a gym — poster, neon sign, window,
- * equipment shelf, yoga ball — and the right half furnished as a wardrobe. No
- * amount of matching the skirting hides that the two halves are about different
- * things.
+ * The shop opens on a full view of the whole room and the tabs push in from
+ * there, and the scene sits in a band the same shape as the Mascot Room's
+ * stage: `sw` wide by `sw × 476/390` tall, which is portrait.
  *
- * So this is one room. One wall gradient across the whole width, one floor, one
- * vignette that knows where both lit areas are, and one subject: a place you
- * try clothes on. What came over from the Mascot Room is what the user asked
- * for and nothing else — the podium, the lamp above it, and Koa standing on it.
- * `STAGE_MARK` is still the Mascot Room's own, unmoved, so `Platform`,
- * `Spotlight` and `FloorLight` are the same components drawing the same
- * geometry in both places rather than a copy that has to be kept in step.
+ * A portrait band shows a whole room only if the room is the same shape as the
+ * band. The height is not free — the wall meets the floor at 360 and the podium
+ * stands at 412, both inherited from the Mascot Room and both unmovable without
+ * moving that room too — so 476 is fixed, and the width follows: 476 ÷ 1.2205 =
+ * **390**. Any wider and "Toàn cảnh" is a lie: the first fitting room was 750
+ * across, and a full-height view of it could only ever have shown two fifths of
+ * its width.
  *
- * ── the two bays ──
+ * That the number is the Mascot Room's own width is not a coincidence and is
+ * worth saying out loud — this is the same room shape, refurnished. Walking
+ * into the shop should feel like walking into the room next door.
  *
- * The podium is at x 195 and its floor shadow reaches x 364, which settles the
- * layout: there is no usable room to its left, so the fitting bay goes to its
- * right and the camera's long move is a pan across the room. The curtain hangs
- * behind the podium — the one prop that says "changing room" at a glance and
- * the reason the stage bay does not need a gym's worth of furniture to stop
- * looking bare.
+ * ── what came over from the Mascot Room ──
+ *
+ * The podium, the lamp above it, and Koa. `STAGE_MARK` is the Mascot Room's
+ * own, unmoved, so `Platform`, `Spotlight` and `FloorLight` are the same
+ * components drawing the same geometry in both places rather than a copy that
+ * has to be kept in step.
+ *
+ * ── how 390 units are spent ──
+ *
+ * The podium is 274 across and its floor shadow 338, so it takes nearly the
+ * whole width and leaves only the wall above y 360 to furnish. Everything
+ * therefore stands *against the wall*, with the podium downstage in front of
+ * it — which is what a fitting room looks like anyway.
+ *
+ * The drape runs the full width rather than occupying part of it. It is the one
+ * prop that says "changing room", and hung as a wall it costs no horizontal
+ * budget at all, because every other prop stands in front of it. That is the
+ * only reason a wardrobe, a mirror and a stool all fit in a room this narrow.
  */
 
-/** the room */
-export const SHOP_W = 750;
-export const SHOP_H = 476;
+/** the room — the Mascot Room's footprint, refurnished */
+export const SHOP_W = STUDIO_W;
+export const SHOP_H = SCENE_BOTTOM;
 /** where the wall meets the floor — the Mascot Room's own horizon */
 export const SHOP_FLOOR = 360;
 
 /**
- * The drape behind the podium: rod, hem, and how wide it hangs.
+ * The drape, across the whole wall.
+ *
+ * The rod hangs at 72, which is behind the lamp — its shade runs 52 to 78, so
+ * the two overlap and the lamp reads as hanging in front of the rail. That
+ * overlap is the point. At 96 the rail cleared the lamp entirely and left the
+ * top fifth of the overview as bare wall with a cord through it.
  *
  * The hem is eight units *past* the floor line, not on it. Stopped dead on the
  * horizon the cloth read as a painted backdrop with the floor starting under
- * it — a hard horizontal edge running the width of the stage bay. Curtains
- * break on the floor; those eight units and the shadow in front of them are
- * the whole difference between hanging cloth and a flat.
+ * it — a hard horizontal edge running the width of the room. Curtains break on
+ * the floor; those eight units and the shadow in front of them are the whole
+ * difference between hanging cloth and a flat.
  */
-export const CURTAIN = { x0: 22, x1: 352, rod: 104, hem: SHOP_FLOOR + 8 };
+export const CURTAIN = { x0: 0, x1: SHOP_W, rod: 72, hem: SHOP_FLOOR + 8 };
 
 /**
- * The fitting bay — everything you change in front of.
+ * The wardrobe, and why it stands where it does.
  *
- * `x → x + w` is also what the "Tủ đồ" shot frames, so a prop moved out of the
- * bay moves out of the tab that exists to show it. `tools/shop-camera.mjs`
- * checks that the wardrobe and the mirror are both inside what the camera can
- * actually see of it.
+ * `x` is not a preference — it is what centres the wardrobe in its own shot.
+ * "Tủ đồ" frames a 200-wide rectangle and no shot can start left of x 0, so the
+ * furthest left the camera can centre is x 100. The wardrobe is 148 across at
+ * this scale, so it sits at 100 − 74 = 26 and the tab opens with it dead
+ * centre. Anywhere further left and the tab frames a wardrobe pinned against
+ * one edge with empty room beside it.
  *
- * Two constraints fix where it starts and how tall it is, and the first render
- * broke both:
- *
- * - **It begins clear of the podium.** The podium's floor shadow reaches x 364,
- *   and the "Sân khấu" shot runs out to 385 — so anything in the bay left of
- *   385 appears in the *stage* tab as an unexplained shape at the frame's edge.
- *   The rug's left rim did exactly that.
- * - **It is tall enough for the things hanging above the wardrobe.** The wall
- *   rail's hooks and the two pucks sit above the carcass, and a bay top of 148
- *   sliced through both: a rail with no bar and two cones of light with no
- *   fixtures, which reads as smudges rather than as lamps.
+ * It is scaled down a little. At full size it is 168 of the room's 390, and
+ * with a 274-wide podium already in front of it there was no width left for the
+ * mirror to be more than a sliver.
  */
-export const BAY = { x: 380, y: 122, w: 366 };
-
-/** the wardrobe, standing on the floor at the bay's left */
+export const CLOSET_SCALE = 0.88;
 export const CLOSET = {
-  x: 404,
-  y: SHOP_FLOOR - WARDROBE_H,
-  w: WARDROBE_W,
-  h: WARDROBE_H,
+  x: 26,
+  y: SHOP_FLOOR - WARDROBE_H * CLOSET_SCALE,
+  w: WARDROBE_W * CLOSET_SCALE,
+  h: WARDROBE_H * CLOSET_SCALE,
 };
 
-/** the full-length mirror, at the bay's right */
-export const MIRROR = { x: 660, w: 66, h: 150, y: SHOP_FLOOR - 150 };
+/** the full-length mirror, against the wall at the other end */
+export const MIRROR = { x: 302, w: 58, h: 142, y: SHOP_FLOOR - 142 };
 
-/** the wall rail above the mirror, and the stool between the two */
-export const WALL_RAIL = { x: 648, y: 154, w: 88 };
-export const STOOL_X = 620;
-
-/** what they all stand on */
-export const RUG = { cx: 545, cy: SHOP_FLOOR + 20, rx: 150, ry: 20 };
-
-/** the two pucks that light the wardrobe — the podium's lamp is far away */
-export const PUCKS = [CLOSET.x + 44, CLOSET.x + WARDROBE_W - 44];
-export const PUCK_Y = 138;
+/** the stool you sit on to put shoes on, in the gap between the two */
+export const STOOL_X = 278;
 
 /** re-exported so the camera has one import for the room's landmarks */
 export { STAGE_MARK };
