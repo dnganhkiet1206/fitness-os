@@ -56,15 +56,22 @@ import type { MascotDef } from '@/lib/mascots';
  * `outfit` shot is framed around. One transform carries both, so the room and
  * the character cannot drift apart no matter what the camera does.
  *
- * He is drawn at `SS` times scene units and scaled back down. A `<View>` is
- * rasterised at its layout size and then scaled on the GPU, and the closest shot
- * that holds him is a 1.72× push-in; drawn at scene size he would be resampled
- * *up* and go soft exactly when he is largest. The room does not need the same
- * treatment — it is scenery, it is eight times the area, and the device's own
- * pixel ratio already gives it more than the 1.72× back.
+ * ── everything is drawn at `SS` and scaled down, room included ──
+ *
+ * A `<View>` is rasterised once at its **layout** size and the GPU scales that
+ * bitmap; it is not re-drawn when an ancestor's transform changes. So a scene
+ * laid out at 390 units wide and then magnified 1.97× by the closest shot is a
+ * bitmap magnified 1.97×, and it looks it — on a real device the character came
+ * out soft, which is what prompted this.
+ *
+ * The wrapper is therefore laid out at `SS` times scene units and the camera
+ * scales by `m[0] / SS`. The widest shot is 1:1 and the closest is a very
+ * slight *reduction*, which is always the safe direction. The room pays for it
+ * in one rasterisation of a larger canvas — a cost paid once, at mount, on a
+ * scene where nothing inside the SVG ever changes.
  */
 
-/** how far above scene resolution the character is drawn — see above */
+/** how far above scene resolution the whole scene is drawn — see above */
 const SS = 2;
 
 /**
@@ -102,6 +109,11 @@ export function ShopScene({
   skin?: string;
   energy?: number;
 }) {
+  // Getting dressed is what the "Tủ đồ" shot is *of*, so the pose belongs to
+  // the shot rather than to a prop the page has to remember to pass. Every
+  // other shot leaves him idling, which is the Emotion Engine's business and
+  // the same thing he does in the Mascot Room.
+  const dress = shot === 'closet';
   /**
    * The shot itself is the animated thing — four springs, one per edge.
    *
@@ -133,43 +145,14 @@ export function ShopScene({
   // `[s, 0, 0, s, tx, ty]`, which is the matrix `cameraAt` returns.
   const camera = useAnimatedStyle(() => {
     const m = cameraAt({ x: sx.value, y: sy.value, w: sw.value, h: sh.value }, width, height);
-    return { transform: [{ translateX: m[4] }, { translateY: m[5] }, { scale: m[0] }] };
-  });
-
-  /**
-   * Koa fades out when the camera stops being pointed at him.
-   *
-   * The room is 390 across and he stands in the middle of it, from x 126 to
-   * 264. Every shot narrow enough to be a close-up of anything therefore
-   * overlaps him — the wardrobe's shot is 200 wide and there is nowhere in the
-   * room to put a 200-wide rectangle that misses him. "Tủ đồ" opened on a
-   * wardrobe with half a koala's head across the right third of the frame at
-   * 1.8× magnification, and no amount of moving furniture fixes that.
-   *
-   * So it is not a per-tab flag. It is the fraction of `FIGURE_BOX` the shot
-   * actually contains, which is a property of wherever the camera happens to
-   * be: full while it holds him, gone once it holds less than three quarters of
-   * him, and smoothstepped between so he dissolves *during* the pan rather than
-   * blinking at the end of it. Shots added later get the behaviour for free,
-   * and a shot that frames him keeps him without having to say so.
-   *
-   * The arithmetic is written out rather than factored into a helper — this
-   * runs on the UI thread, and a worklet may only call other worklets.
-   */
-  const figureFade = useAnimatedStyle(() => {
-    const ox =
-      Math.max(0, Math.min(sx.value + sw.value, FIGURE_BOX.x + FIGURE_BOX.w) - Math.max(sx.value, FIGURE_BOX.x));
-    const oy =
-      Math.max(0, Math.min(sy.value + sh.value, FIGURE_BOX.y + FIGURE_BOX.h) - Math.max(sy.value, FIGURE_BOX.y));
-    const held = (ox * oy) / (FIGURE_BOX.w * FIGURE_BOX.h);
-    const t = Math.max(0, Math.min(1, (held - 0.75) / 0.2));
-    return { opacity: t * t * (3 - 2 * t) };
+    // `/ SS` because the wrapper is laid out at SS times scene units — see above
+    return { transform: [{ translateX: m[4] }, { translateY: m[5] }, { scale: m[0] / SS }] };
   });
 
   const figure = Math.round(HERO_W * SS);
 
   return (
-    <View style={{ width, height, overflow: 'hidden', borderRadius: 18 }}>
+    <View style={{ width, height, overflow: 'hidden' }}>
       <Animated.View
         pointerEvents="none"
         style={[
@@ -177,42 +160,38 @@ export function ShopScene({
             position: 'absolute',
             left: 0,
             top: 0,
-            width: SCENE_W,
-            height: SCENE_H,
+            width: SCENE_W * SS,
+            height: SCENE_H * SS,
             transformOrigin: '0px 0px',
           },
           camera,
         ]}>
-        <Svg width={SCENE_W} height={SCENE_H} viewBox={`0 0 ${SCENE_W} ${SCENE_H}`}>
+        <Svg width={SCENE_W * SS} height={SCENE_H * SS} viewBox={`0 0 ${SCENE_W} ${SCENE_H}`}>
           <ShopRoom skin={skin} energy={energy} />
         </Svg>
 
         {/* placed from `FIGURE_BOX`, the same rectangle the camera frames the
             close shot around — so "the shot contains the character" is one
             number in one file rather than two calculations that agree today */}
-        <Animated.View
-          style={[
-            {
-              position: 'absolute',
-              left: FIGURE_BOX.x,
-              top: FIGURE_BOX.y,
-              width: FIGURE_BOX.w,
-              height: FIGURE_BOX.h,
-            },
-            figureFade,
-          ]}>
-          <View style={{ width: figure, transform: [{ scale: 1 / SS }], transformOrigin: '0px 0px' }}>
-            {/* Still. This sits above a scrolling list, and a live character
-                behind one is the budget the room spent three fixes getting back. */}
+        <View
+          style={{
+            position: 'absolute',
+            left: FIGURE_BOX.x * SS,
+            top: FIGURE_BOX.y * SS,
+            width: figure,
+          }}>
+            {/* Alive, and idling exactly as he does in the Mascot Room — one
+                clock on the UI thread driving 36 loops, which is what that room
+                spent three fixes getting down to. `dress` swaps the idle for
+                the dressing pose on the shot that is about it. */}
             <MascotFigure
               mascot={mascot}
               size={figure}
               level={level}
               equippedOutfits={equipped}
-              animated={false}
+              dress={dress}
             />
-          </View>
-        </Animated.View>
+        </View>
       </Animated.View>
     </View>
   );

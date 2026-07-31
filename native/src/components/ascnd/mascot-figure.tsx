@@ -38,6 +38,14 @@ interface Props {
   scrollPause?: SharedValue<boolean>;
   /** the room's insect clock — Koa glances at whichever one has landed */
   gaze?: SharedValue<number>;
+  /**
+   * Trying clothes on — the shop's dressing pose.
+   *
+   * Koa only. It overrides whatever the Emotion Engine was saying, because for
+   * as long as somebody is looking at an outfit, what the character feels about
+   * today's step count is not the subject.
+   */
+  dress?: boolean;
 }
 
 /**
@@ -65,7 +73,7 @@ export function MascotFigure(props: Props) {
   // `mood` is not destructured: this branch does not use it, and the vector
   // fallback below takes it through `{...props}` with its own 'neutral'
   // default, so naming it here only left an unused local.
-  const { mascot, size = 160, animated = true, scrollPause, emotion: emotionProp, gaze } = props;
+  const { mascot, size = 160, animated = true, scrollPause, emotion: emotionProp, gaze, dress } = props;
 
   // The Emotion Engine drives the image companion; an explicit `emotion` prop
   // (e.g. the unlock celebration) overrides it. Hook runs unconditionally.
@@ -76,8 +84,9 @@ export function MascotFigure(props: Props) {
     const state = koaStateFor(emotion);
     return (
       <KoaFigure
-        expression={state.expression}
-        pose={state.pose}
+        expression={dress ? 'happy' : state.expression}
+        pose={dress ? 'idle' : state.pose}
+        dress={dress}
         size={size}
         animated={animated}
         scrollPause={scrollPause}

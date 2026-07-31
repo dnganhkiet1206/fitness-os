@@ -1,5 +1,5 @@
 import { HERO_W, KOA_ASPECT } from '@/components/ascnd/koa/koa-frame';
-import { SHOP_H, SHOP_W, STAGE_MARK } from '@/components/ascnd/shop/shop-plan';
+import { CLOSET, SHOP_H, SHOP_W, STAGE_MARK, STAGE_X } from '@/components/ascnd/shop/shop-plan';
 
 /**
  * One room, four shots — the camera the shop's tabs move.
@@ -73,7 +73,7 @@ const shot = (f: { x: number; y: number; w: number }): Shot => ({ ...f, h: f.w *
  * this, so "the shot contains the character" is checkable instead of hoped for.
  */
 export const FIGURE_BOX: Shot = {
-  x: STAGE_MARK.x - HERO_W / 2,
+  x: STAGE_X - HERO_W / 2,
   y: STAGE_MARK.y + 6 - HERO_W * KOA_ASPECT,
   w: HERO_W,
   h: HERO_W * KOA_ASPECT,
@@ -112,7 +112,7 @@ export const SHOTS = {
    * The beam's cone is in frame from the top edge down, which is what actually
    * lights the podium; the fixture it hangs from is what "Toàn cảnh" is for.
    */
-  stage: shot({ x: STAGE_MARK.x - 145, y: 114, w: 290 }),
+  stage: shot({ x: STAGE_X - 145, y: 114, w: 290 }),
   /**
    * Koa, standing on it — close enough to read an outfit.
    *
@@ -121,18 +121,27 @@ export const SHOTS = {
    * to stay under `SS` or he is resampled *up* and goes soft exactly when he is
    * largest. At 210 wide that is 1.72× against a supersample of 2.
    */
-  outfit: shot({ x: STAGE_MARK.x - 105, y: 218, w: 210 }),
+  outfit: shot({ x: STAGE_X - 105, y: 218, w: 210 }),
   /**
-   * The wardrobe.
+   * Getting dressed: Koa **and** the wardrobe, both whole.
    *
-   * Its bottom edge stops above y 379 — not 381. The rim's *ellipse* tops out
-   * at 381, but it is stroked, and the glow pass under it is four units wide,
-   * so the topmost inked pixel of the podium is two units higher than its
-   * geometry. A frame ending at 380 cleared the rim by a unit and still opened
-   * with a gold smear along the bottom of the picture. Bounding boxes are not
-   * where the ink stops.
+   * A two-shot, and it is the widest framing after the overview — which looks
+   * like the wrong order for a tab list until you measure it. Koa stands at
+   * 81 → 219 and the wardrobe at 236 → 384, so the pair spans 303 of the room's
+   * 390. There is no tighter rectangle that holds both; a shot of two things
+   * costs what the two things occupy.
+   *
+   * It went through a half-in framing first — the wardrobe cropped at the right
+   * edge, on the argument that the tab is about the character and the furniture
+   * is scenery. The user wanted both in, which is the plainer reading of a tab
+   * called "Tủ đồ" and is also the one that shows the thing the clothes come
+   * out of next to the one wearing them.
+   *
+   * He is still well left of the frame's centre, because the room puts him
+   * there — and that off-centre is what keeps this from being the outfit shot
+   * with more air around it.
    */
-  closet: shot({ x: 0, y: 128, w: 200 }),
+  closet: shot({ x: 74, y: 92, w: 312 }),
 } satisfies Record<string, Shot>;
 
 export type ShotName = keyof typeof SHOTS;

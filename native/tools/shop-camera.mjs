@@ -148,43 +148,47 @@ for (const n of NAMES) {
 }
 
 /**
- * "Tủ đồ" has to hold the wardrobe, and has to stop above the podium.
+ * "Tủ đồ" is a shot of the character, and this checks the composition rather
+ * than the contents.
  *
- * The first half is the same check the close shot gets, for the same reason:
- * a tab named after a piece of furniture should contain it. The second half is
- * particular to a room this small — the podium's top rim begins at y 381 and
- * it is 274 units across, so a wardrobe shot reaching any lower opens with the
- * podium's dark bulk lying across the foot of the frame.
+ * This has been rewritten twice as the tab's intent moved — first from "zoom
+ * into the wardrobe" to "a shot of Koa with the wardrobe half in", then to the
+ * two-shot it is now. Both times the old assertions were deleted rather than
+ * loosened, because a check kept alive past the design it described is a check
+ * that reports on something nobody is building any more.
+ *
+ * What it asserts now:
+ *
+ * - **Koa is in frame whole.** He is half the subject.
+ * - **The wardrobe is in frame whole.** It is the other half, and the tab is
+ *   named after it.
+ * - **Koa is left of the frame's centre.** Centred, this is the outfit shot
+ *   with more air around it, and there is no reason for two tabs to hold the
+ *   same picture.
  */
 {
   const P = B.PLAN;
   const s = B.SHOTS.closet;
   const v = seen(s, B.zoomOf(s, VW, VH));
-  const f = { x: P.CLOSET.x, y: P.CLOSET.y, w: P.CLOSET.w, h: P.CLOSET.h };
-  const pad = {
-    trái: f.x - v.x,
-    phải: v.x + v.w - (f.x + f.w),
-    trên: f.y - v.y,
-    dưới: v.y + v.h - (f.y + f.h),
-  };
-  const cut = Object.entries(pad).filter(([, n]) => n < 0);
-  if (cut.length) bad++;
+  const f = B.FIGURE_BOX;
+  const w = { x: P.CLOSET.x, w: P.CLOSET.w };
+
+  const pad = [f.x - v.x, v.x + v.w - (f.x + f.w), f.y - v.y, v.y + v.h - (f.y + f.h)];
+  const whole = pad.every((n) => n >= 0);
+  const wPad = [w.x - v.x, v.x + v.w - (w.x + w.w), P.CLOSET.y - v.y, v.y + v.h - (P.CLOSET.y + P.CLOSET.h)];
+  const wWhole = wPad.every((n) => n >= 0);
+  const offCentre = f.x + f.w / 2 - (v.x + v.w / 2);
+  const left = offCentre < -10;
+  if (!whole || !wWhole || !left) bad++;
+
   console.log(
     `\n  khung "tủ đồ" thấy (${v.x.toFixed(0)}, ${v.y.toFixed(0)}) ${v.w.toFixed(0)}×${v.h.toFixed(0)}\n` +
-    `  tủ (${f.x.toFixed(0)}, ${f.y.toFixed(0)}) ${f.w.toFixed(0)}×${f.h.toFixed(0)} — chừa ` +
-    Object.entries(pad).map(([k, n]) => `${k} ${n.toFixed(1)}`).join(', ') +
-    (cut.length ? `  CẮT MẤT ${cut.map(([k]) => k).join(', ')}` : '  đủ chỗ'),
-  );
-  // The podium's topmost *ink*, not its topmost geometry: the rim ellipse tops
-  // out at STAGE_MARK.y − 31, and the glow stroked along it is 4 wide, so two
-  // more units of gold sit above that. Checking the ellipse alone passed a
-  // frame that opened with a gold smear across its foot.
-  const RIM = P.STAGE_MARK.y - 31 - 2;
-  const clear = RIM - (v.y + v.h);
-  if (clear < 0) bad++;
-  console.log(
-    `  đáy khung ở y ${(v.y + v.h).toFixed(0)}; mép quầng bục ở y ${RIM} — cách ${clear.toFixed(1)}` +
-    (clear < 0 ? '  DÍNH BỤC' : '  không dính bục'),
+    `  Koa — chừa ${pad.map((n) => n.toFixed(1)).join(', ')}` +
+    (whole ? '  trọn người' : '  BỊ CẮT') + '\n' +
+    `  tủ — chừa ${wPad.map((n) => n.toFixed(1)).join(', ')}` +
+    (wWhole ? '  trọn tủ' : '  BỊ CẮT') + '\n' +
+    `  Koa lệch trái ${(-offCentre).toFixed(0)} đv so với tâm khung` +
+    (left ? '  lệch tâm' : '  QUÁ GIỮA'),
   );
 }
 

@@ -171,13 +171,29 @@ export default function ShopScreen() {
     );
   };
 
-  // The scene's width, from the window rather than a layout pass: it is the
-  // first thing on the page and a band that resizes on the second frame reads
-  // as a jump.
-  const sceneW = Dimensions.get('window').width - spacing.md * 2;
+  /**
+   * The scene is the full width of the window, edge to edge.
+   *
+   * From the window rather than from a layout pass: it is the first thing on
+   * the page, and a band that resizes on the second frame reads as a jump.
+   *
+   * `spacing.md` is subtracted nowhere. The page's content is padded by that
+   * much and the scene cancels it with a negative margin, which is the same
+   * thing the Mascot Room does with its own stage — a room with a gutter down
+   * each side is a picture of a room, not a room.
+   */
+  const sceneW = Dimensions.get('window').width;
 
   return (
-    <Screen title={i18n.nRoomDressing} back headerRight={<Coin balance={balance} />}>
+    <Screen
+      title={i18n.nRoomDressing}
+      back
+      // The header floats over the scene rather than sitting above it, so the
+      // room runs to the top of the screen and the chevron and the coin pill
+      // sit on its ceiling — which is empty wall, and the reason the drape's
+      // rail hangs at y 72 rather than at the very top.
+      transparentHeader
+      headerRight={<Coin balance={balance} />}>
       <View style={styles.stage}>
         <ShopScene
           shot={tab}
@@ -324,7 +340,9 @@ function Coin({ balance }: { balance: number }) {
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', paddingBottom: spacing.md },
+  // Edge to edge: the page pads its content by `spacing.md` and this takes it
+  // back, the same way the Mascot Room's `sceneWrap` does.
+  stage: { marginHorizontal: -spacing.md, marginBottom: spacing.xs },
   setsBanner: {
     flexDirection: 'row',
     alignItems: 'center',

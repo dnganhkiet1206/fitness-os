@@ -36,10 +36,17 @@ import { WARDROBE_H, WARDROBE_W } from '@/components/ascnd/studio/wardrobe-box';
  *
  * ── how 390 units are spent ──
  *
- * The podium is 274 across and its floor shadow 338, so it takes nearly the
- * whole width and leaves only the wall above y 360 to furnish. Everything
- * therefore stands *against the wall*, with the podium downstage in front of
- * it — which is what a fitting room looks like anyway.
+ * The stage is on the left and the wardrobe on the right, which is the layout
+ * asked for and is also the only one that stops them colliding. The podium is
+ * 274 across; centred, it left the character standing at x 126–264 with the
+ * wardrobe unavoidably behind him. Pushed left to 150 he stands at 81–219 and
+ * the wardrobe starts at 236 — they clear each other by seventeen units, and
+ * the camera gets two genuinely separate places to point at instead of two
+ * crops of the same pile.
+ *
+ * Everything else stands *against the wall* above y 360, with the podium
+ * downstage in front of it, because the podium's floor shadow is 338 across and
+ * there is no floor left to put anything on.
  *
  * The drape runs the full width rather than occupying part of it. It is the one
  * prop that says "changing room", and hung as a wall it costs no horizontal
@@ -49,6 +56,18 @@ import { WARDROBE_H, WARDROBE_W } from '@/components/ascnd/studio/wardrobe-box';
 
 /** the room — the Mascot Room's footprint, refurnished */
 export const SHOP_W = STUDIO_W;
+/**
+ * Where the podium stands in *this* room, and how far that is from where it
+ * stands in the Mascot Room.
+ *
+ * `STAGE_MARK` is the Mascot Room's own and is not moved — `Platform`,
+ * `Spotlight` and `FloorLight` are the same components drawing the same
+ * geometry in both rooms, and moving the mark would move the room next door.
+ * The shop shifts the whole stage group by `STAGE_DX` instead, which is one
+ * translate on one group and leaves every one of those components untouched.
+ */
+export const STAGE_X = 150;
+export const STAGE_DX = STAGE_X - STAGE_MARK.x;
 export const SHOP_H = SCENE_BOTTOM;
 /** where the wall meets the floor — the Mascot Room's own horizon */
 export const SHOP_FLOOR = 360;
@@ -70,32 +89,37 @@ export const SHOP_FLOOR = 360;
 export const CURTAIN = { x0: 0, x1: SHOP_W, rod: 72, hem: SHOP_FLOOR + 8 };
 
 /**
- * The wardrobe, and why it stands where it does.
+ * The wardrobe, against the right-hand wall.
  *
- * `x` is not a preference — it is what centres the wardrobe in its own shot.
- * "Tủ đồ" frames a 200-wide rectangle and no shot can start left of x 0, so the
- * furthest left the camera can centre is x 100. The wardrobe is 148 across at
- * this scale, so it sits at 100 − 74 = 26 and the tab opens with it dead
- * centre. Anywhere further left and the tab frames a wardrobe pinned against
- * one edge with empty room beside it.
+ * Six units off it, which puts its left edge at 236 — seventeen clear of the
+ * character at 219. That gap is the whole reason the stage moved left, and it
+ * is what lets the "Tủ đồ" shot hold Koa *and* the wardrobe in one frame
+ * without either being a crop of the other.
  *
  * It is scaled down a little. At full size it is 168 of the room's 390, and
- * with a 274-wide podium already in front of it there was no width left for the
+ * with a 274-wide podium already in the room there was no width left for the
  * mirror to be more than a sliver.
  */
 export const CLOSET_SCALE = 0.88;
 export const CLOSET = {
-  x: 26,
+  x: SHOP_W - WARDROBE_W * CLOSET_SCALE - 6,
   y: SHOP_FLOOR - WARDROBE_H * CLOSET_SCALE,
   w: WARDROBE_W * CLOSET_SCALE,
   h: WARDROBE_H * CLOSET_SCALE,
 };
 
-/** the full-length mirror, against the wall at the other end */
-export const MIRROR = { x: 302, w: 58, h: 142, y: SHOP_FLOOR - 142 };
+/**
+ * The full-length mirror, at the far left.
+ *
+ * Behind the stage rather than beside it: the podium's rim starts at y 381 and
+ * the mirror ends at 360, so they share x without ever touching. It is the one
+ * prop in the room that can be put *behind* something, which in a room this
+ * full is worth a lot.
+ */
+export const MIRROR = { x: 6, w: 58, h: 142, y: SHOP_FLOOR - 142 };
 
-/** the stool you sit on to put shoes on, in the gap between the two */
-export const STOOL_X = 278;
+/** the stool, in the gap between the stage and the wardrobe */
+export const STOOL_X = 226;
 
 /** re-exported so the camera has one import for the room's landmarks */
 export { STAGE_MARK };

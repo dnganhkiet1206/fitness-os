@@ -8,6 +8,7 @@ import {
   SHOP_FLOOR,
   SHOP_H,
   SHOP_W,
+  STAGE_DX,
   STOOL_X,
 } from '@/components/ascnd/shop/shop-plan';
 import { FloorLight } from '@/components/ascnd/studio/floor';
@@ -51,6 +52,14 @@ import { Wardrobe } from '@/components/ascnd/studio/wardrobe';
  * lit goes before. The wardrobe's own glow is the clearest case: painted before
  * the vignette it is a warm patch that has been darkened; painted after it, the
  * cabinet is lit.
+ *
+ * ── the stage is on the left ──
+ *
+ * Not because the left is better, but because a 274-wide podium centred in a
+ * 390-wide room leaves the character standing at x 126–264 with the wardrobe
+ * unavoidably behind him. Pushed left he stands at 81–219, the wardrobe starts
+ * at 236, and the camera gets two genuinely separate things to point at rather
+ * than two crops of the same pile.
  *
  * ── the drape is the whole wall ──
  *
@@ -111,10 +120,18 @@ export function ShopRoom({ skin = 'default', energy = 0.5 }: { skin?: string; en
       <Rect x={0} y={0} width={SHOP_W} height={SHOP_H} fill="url(#shopVig)" />
 
       <ClosetGlow x={CLOSET.x} y={CLOSET.y} scale={CLOSET_SCALE} />
-      <Spotlight />
-      <FloorLight glow={s.glow} energy={energy} />
-      <Platform glow={s.glow} energy={energy} />
-      <StageGlow glow={s.glow} energy={energy} />
+
+      {/* The whole stage — lamp, beam, floor pool, podium — on one translate.
+          Every one of these four components is the Mascot Room's, drawing from
+          the Mascot Room's `STAGE_MARK`; the shop wants the stage further left
+          and moving the mark would have moved the room next door with it. One
+          group transform, and the two rooms still share the geometry. */}
+      <G transform={`translate(${STAGE_DX} 0)`}>
+        <Spotlight />
+        <FloorLight glow={s.glow} energy={energy} />
+        <Platform glow={s.glow} energy={energy} />
+        <StageGlow glow={s.glow} energy={energy} />
+      </G>
     </G>
   );
 }

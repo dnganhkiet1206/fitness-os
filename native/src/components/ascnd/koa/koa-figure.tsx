@@ -59,6 +59,12 @@ import {
   type Gaze,
 } from '@/components/ascnd/koa/koa-gaze';
 import { KOA_ASPECT, KOA_INSET_MAT, KOA_VIEWBOX } from '@/components/ascnd/koa/koa-frame';
+import {
+  DRESS_ARM_AT,
+  DRESS_BY_ID,
+  dressMat,
+  type DressPart,
+} from '@/components/ascnd/koa/koa-dress';
 import { restsAt, REST_MAT } from '@/components/ascnd/koa/koa-pose';
 import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
@@ -340,6 +346,35 @@ function GazeHead({ look, children }: { look: SharedValue<Gaze>; children: React
   return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
 }
 
+/**
+ * One part of the dressing pose.
+ *
+ * A wrapper, for the same reason the glance is one: `koa-scene.ts` is the
+ * design export, and a pose composed *on top of* the rig survives the next
+ * re-import where a pose folded into it would not.
+ *
+ * `matrix` is the only transform `RNSVGGroup` animates natively, which is why
+ * every moving part of this figure rides one — and why, on web, all of them
+ * including this hold their t=0 frame. See `koa-dress.ts`.
+ */
+function DressG({
+  part,
+  clock,
+  live,
+  children,
+}: {
+  part: DressPart;
+  clock: SharedValue<number>;
+  live: boolean;
+  children: ReactNode;
+}) {
+  const props = useAnimatedProps<{ matrix: number[] }>(() => ({ matrix: dressMat(part, clock.value) }));
+  // frozen: the same first frame every other layer draws at t=0, so a still
+  // figure is one plain `<G>` rather than an animated component doing nothing
+  if (!live) return <G transform={`matrix(${dressMat(part, 0).join(' ')})`}>{children}</G>;
+  return <AnimatedG animatedProps={props}>{children}</AnimatedG>;
+}
+
 /** the pupils and their catchlights, which travel further than the head */
 function GazeEyes({ look, children }: { look: SharedValue<Gaze>; children: ReactNode }) {
   const props = useAnimatedProps<{ matrix: number[] }>(() => ({ matrix: eyeMatOf(look.value) }));
@@ -433,6 +468,8 @@ function RenderNode({
   gaze,
   swapMouth,
   rest,
+  dress,
+  armPart,
 }: {
   n: Node;
   flags: Flags;
@@ -445,6 +482,16 @@ function RenderNode({
   swapMouth: boolean;
   /** whether this pose stands, and so gets the resting lean */
   rest: boolean;
+  /** whether the figure is trying clothes on — see `koa-dress.ts` */
+  dress: boolean;
+  /**
+   * Which arm this node belongs to, when its parent is `ARMS`.
+   *
+   * The arms carry shading paths with no `id`, so the only way to move them
+   * with the arm they shade is by their position in that group. The parent
+   * works it out and hands it down; nothing else in the tree ever sets it.
+   */
+  armPart?: DressPart;
 }) {
   if (n.if && !flags[n.if]) return null;
 
@@ -459,6 +506,8 @@ function RenderNode({
           gaze={gaze}
           swapMouth={swapMouth}
           rest={rest}
+          dress={dress}
+          armPart={dress && n.id === 'ARMS' ? DRESS_ARM_AT[i] : undefined}
         />
       ))
     : null;
@@ -593,13 +642,25 @@ function RenderNode({
   const leaned =
     rest && n.id && REST_MAT[n.id] ? <G transform={REST_MAT[n.id]}>{el}</G> : el;
 
-  if (!gaze) return leaned;
-  if (n.id === 'HEADRIG') return <GazeHead look={gaze}>{leaned}</GazeHead>;
-  if (isEyeGroup(n)) return <GazeEyes look={gaze}>{leaned}</GazeEyes>;
+  // The dressing pose goes outside the resting lean and inside the glance, the
+  // same place in the stack the lean itself occupies — it *is* a lean, one that
+  // moves. `rest` is off whenever this is on, so the two never stack.
+  const part = dress ? (armPart ?? (n.id ? DRESS_BY_ID[n.id] : undefined)) : undefined;
+  const moved = part ? (
+    <DressG part={part} clock={clock} live={live}>{leaned}</DressG>
+  ) : dress && isEyeGroup(n) ? (
+    <DressG part="eyes" clock={clock} live={live}>{leaned}</DressG>
+  ) : (
+    leaned
+  );
+
+  if (!gaze) return moved;
+  if (n.id === 'HEADRIG') return <GazeHead look={gaze}>{moved}</GazeHead>;
+  if (isEyeGroup(n)) return <GazeEyes look={gaze}>{moved}</GazeEyes>;
   if (swapMouth && n.if && SWAP_MOUTHS.indexOf(n.if) >= 0) {
-    return <GazeMouth look={gaze}>{leaned}</GazeMouth>;
+    return <GazeMouth look={gaze}>{moved}</GazeMouth>;
   }
-  return leaned;
+  return moved;
 }
 
 /* ── the figure ───────────────────────────────────────────────────────── */
@@ -607,6 +668,14 @@ function RenderNode({
 export interface KoaFigureProps {
   expression?: KoaExpression;
   pose?: KoaPose;
+  /**
+   * Trying clothes on.
+   *
+   * Not a `KoaPose`: that type is the design export's list and this pose is
+   * the app's own. It composes on top of whichever pose is set — in practice
+   * `idle`, whose arms and legs are the ones it moves. See `koa-dress.ts`.
+   */
+  dress?: boolean;
   /** one item per slot: head / face / top / bottom / shoes / back / hand */
   worn?: Worn;
   /** rendered width in px (height = width × 1.25) */
@@ -645,6 +714,7 @@ export interface KoaFigureProps {
 export function KoaFigure({
   expression = 'happy',
   pose = 'idle',
+  dress = false,
   worn,
   size = 160,
   animated = true,
@@ -655,8 +725,27 @@ export function KoaFigure({
   // `worn` arrives as a fresh object on most renders, so identity is no use
   // as a dependency — but there are only ever seven slots in it.
   const wornKey = worn ? JSON.stringify(worn) : '';
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const flags = useMemo(() => koaFlags(expression, pose, worn), [expression, pose, wornKey]);
+  const flags = useMemo(() => {
+    const f = koaFlags(expression, pose, worn);
+    /**
+     * The dressing mouth is an "o", at the user's direction.
+     *
+     * It is an override rather than an expression because no expression in the
+     * sheet is the combination this wants: `surprised` carries the "o" but also
+     * brings wide eyes and raised brows, which is alarm rather than interest.
+     * What the pose needs is `happy`'s eyes and brows with `surprised`'s mouth
+     * — the small "oh" of noticing what you have on — and three flags say that
+     * exactly where a tenth expression would have to be drawn, named and kept
+     * in step with the export.
+     */
+    if (dress) {
+      f.mouthSmile = false;
+      f.mouthGrin = false;
+      f.mouthO = true;
+    }
+    return f;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expression, pose, wornKey, dress]);
 
   // One clock for the whole figure, on the UI thread: 36 loops, one frame
   // callback, nothing crossing to JS.
@@ -731,7 +820,9 @@ export function KoaFigure({
   );
   const look = clockOrNull ? resolved : undefined;
   const swapMouth = SWAP_MOUTHS.some((f) => !!flags[f]);
-  const rest = restsAt(flags);
+  // The resting lean and the dressing pose drive the same nodes, so they never
+  // both apply: one is a still figure's asymmetry, the other is a moving one's.
+  const rest = restsAt(flags) && !dress;
   const tree = useMemo(
     () =>
       NODES.map((n, i) => (
@@ -744,9 +835,10 @@ export function KoaFigure({
           gaze={look}
           swapMouth={swapMouth}
           rest={rest}
+          dress={dress}
         />
       )),
-    [flags, clock, animated, look, swapMouth, rest],
+    [flags, clock, animated, look, swapMouth, rest, dress],
   );
 
   return (
