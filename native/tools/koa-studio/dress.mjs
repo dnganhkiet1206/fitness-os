@@ -69,22 +69,21 @@ if (!arms) {
   bad++;
 } else {
   const kids = arms.kids ?? [];
-  const want = { 0: 'arm_left_upper', 1: 'arm_right_upper' };
   const ids = kids.map((k) => k.id ?? '—');
-  // 4 and 5 are the shading slivers: no id, a fill, and a real opacity
+  // 4 and 5 are the shading slivers the pose hides: no id, a fill, and a real
+  // opacity. If they ever stop being those, the pose is hiding the wrong thing.
   const sliver = (k) => !k.id && k.a && k.a.fill && (k.a.opacity ?? 1) > 0.2;
   const ok =
     kids.length === 6 &&
-    kids[0].id === want[0] &&
-    kids[1].id === want[1] &&
-    sliver(kids[4]) &&
-    sliver(kids[5]);
+    kids[0].id === 'arm_left_upper' &&
+    kids[1].id === 'arm_right_upper' &&
+    B.DRESS_ARM_HIDE.every((i) => sliver(kids[i]));
   if (!ok) bad++;
   console.log(
     `nhóm ARMS có ${kids.length} con: ${ids.join(', ')}\n` +
       (ok
-        ? '  đúng thứ tự koa-dress.ts giả định (0,4 = tay trái · 1,5 = tay phải)\n'
-        : '  SAI THỨ TỰ — DRESS_ARM_AT trong koa-dress.ts đang trỏ nhầm chỗ\n'),
+        ? `  0,1 là hai cánh tay · ${B.DRESS_ARM_HIDE.join(',')} là vệt bóng bị ẩn — đúng như koa-dress.ts giả định\n`
+        : '  SAI THỨ TỰ — DRESS_ARM_AT / DRESS_ARM_HIDE đang trỏ nhầm chỗ\n'),
   );
 }
 
@@ -98,10 +97,11 @@ if (!arms) {
  * mostly the pivot's own offset — it read 128 → 175 for an arm swinging seven
  * degrees. A matrix component is not a measurement of anything a viewer sees.
  */
-const PARTS = ['body', 'head', 'armL', 'armR', 'footL', 'footR', 'eyes'];
+const PARTS = ['hop', 'body', 'head', 'armL', 'armR', 'footL', 'footR', 'eyes'];
 const STEPS = 96;
 
 const PROBE = {
+  hop: [120, 240],
   body: [120, 200],
   head: [120, 96],
   // the far end of each arm path, which is what a raise actually moves
@@ -172,6 +172,11 @@ for (const part of PARTS) {
  * points included, which bounds the curves loosely and errs toward saying
  * there is less room than there is. `koa-frame.ts` insets the whole figure by
  * `KOA_INSET`, so what has to fit is the inset point.
+ *
+ * The hop is composed in. It lifts the whole figure five units and the head is
+ * already the closest thing to the top of the frame, so measuring the head's
+ * own matrix alone answers a question nobody asked. Both are translations and
+ * rotations, so composing them is one multiply.
  *
  * This exists because the viewBox has clipped this character twice: the ears on
  * a head tilt, and the shadow on a widened spread. A new pose that rotates the
@@ -249,7 +254,17 @@ if (!head || pts.length === 0) {
   let side = '';
   for (let i = 0; i < STEPS; i++) {
     const t = (i / STEPS) * B.DRESS_PERIOD;
-    const m = B.dressMat(part, t);
+    const d = B.dressMat(part, t);
+    const h = B.dressMat('hop', t);
+    // h ∘ d, both of the form [a b c d e f]
+    const m = [
+      h[0] * d[0] + h[2] * d[1],
+      h[1] * d[0] + h[3] * d[1],
+      h[0] * d[2] + h[2] * d[3],
+      h[1] * d[2] + h[3] * d[3],
+      h[0] * d[4] + h[2] * d[5] + h[4],
+      h[1] * d[4] + h[3] * d[5] + h[5],
+    ];
     for (const [x, y] of pts) {
       const [ix, iy] = B.inset(m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]);
       const edges = [

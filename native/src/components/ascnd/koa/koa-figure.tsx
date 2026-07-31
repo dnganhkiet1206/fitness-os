@@ -62,6 +62,7 @@ import {
 import { KOA_ASPECT, KOA_INSET_MAT, KOA_VIEWBOX } from '@/components/ascnd/koa/koa-frame';
 import {
   DRESS_ARM_AT,
+  DRESS_ARM_HIDE,
   DRESS_BLEND,
   DRESS_BY_ID,
   dressMat,
@@ -478,6 +479,7 @@ function RenderNode({
   dress,
   blend,
   armPart,
+  armHidden,
 }: {
   n: Node;
   flags: Flags;
@@ -502,8 +504,17 @@ function RenderNode({
    * works it out and hands it down; nothing else in the tree ever sets it.
    */
   armPart?: DressPart;
+  /**
+   * An arm-shading crease, while the arms are raised.
+   *
+   * Drawn for an arm hanging straight down, so at 34° it is a hard line lying
+   * across the shape rather than a fold in it. There is no id to reach it by
+   * and no version of it that is right at that angle, so it is dropped.
+   */
+  armHidden?: boolean;
 }) {
   if (n.if && !flags[n.if]) return null;
+  if (armHidden) return null;
 
   let kids = n.kids
     ? n.kids.map((k, i) => (
@@ -519,6 +530,7 @@ function RenderNode({
           dress={dress}
           blend={blend}
           armPart={dress && n.id === 'ARMS' ? DRESS_ARM_AT[i] : undefined}
+          armHidden={dress && n.id === 'ARMS' && DRESS_ARM_HIDE.indexOf(i) >= 0}
         />
       ))
     : null;
@@ -745,14 +757,18 @@ export function KoaFigure({
      * sheet is the combination this wants: `surprised` carries the "o" but also
      * brings wide eyes and raised brows, which is alarm rather than interest.
      * What the pose needs is `happy`'s eyes and brows with `surprised`'s mouth
-     * — the small "oh" of noticing what you have on — and three flags say that
-     * exactly where a tenth expression would have to be drawn, named and kept
-     * in step with the export.
+     * and `delighted`'s hearts — the small "oh" of noticing what you have on,
+     * and liking it. Four flags say that exactly, where an eleventh expression
+     * would have to be drawn, named and kept in step with the export.
      */
     if (dress) {
       f.mouthSmile = false;
       f.mouthGrin = false;
       f.mouthO = true;
+      // `delighted`'s own two hearts, which float up on a 2200ms loop — the
+      // same period the pose runs at, so the bounce and the hearts share a
+      // beat. Cheaper and more legible than anything a transform can say.
+      f.showHearts = true;
     }
     return f;
     // eslint-disable-next-line react-hooks/exhaustive-deps

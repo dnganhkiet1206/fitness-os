@@ -44,16 +44,18 @@
 /**
  * One full sway, there and back.
  *
- * 3400ms, up from 2400. The brief for this pose ended up being "nhẹ nhàng thôi,
- * giống như nó đang nhìn xem mình đang mặc gì" — gentle, like somebody checking
- * what they have on — and gentle is mostly a matter of time. The same
- * amplitudes over a longer period read as calm; over a short one they read as
- * fidgeting.
+ * 2200ms, which is `koaHeart`'s own duration — the hearts and the bounce share
+ * a beat rather than drifting against each other.
+ *
+ * It went 2400 → 3400 → 2200. 3400 was for "nhẹ nhàng thôi", and slowing it did
+ * make it calm; it also made it placid, which is not the same as pleased. The
+ * gentleness now comes from small amplitudes rather than from a long period,
+ * which leaves room for the bounce to be quick.
  */
-export const DRESS_PERIOD = 3400;
+export const DRESS_PERIOD = 2200;
 
 /** how far the body leans at the end of a sway, in degrees */
-const SWAY_BODY = 1.8;
+const SWAY_BODY = 1.6;
 /**
  * The head leans further than the body and slightly later — a head follows a
  * body.
@@ -69,7 +71,7 @@ const SWAY_BODY = 1.8;
  * The pose was fine. The instrument was not, and tuning artwork to satisfy a
  * broken instrument would have quietly cost a degree of the movement asked for.
  */
-const SWAY_HEAD = 2.6;
+const SWAY_HEAD = 2.4;
 const HEAD_LAG = 0.34;
 /** how far the head dips to look down at what it is wearing */
 const HEAD_BOW = 3.5;
@@ -104,10 +106,18 @@ const EYES_DOWN = 3.4;
  * being rocked.
  */
 const ARM_RAISE = 34;
-const ARM_FLUTTER = 5;
+const ARM_FLUTTER = 10;
 
-/** how far a foot comes off the podium — barely, a weight shift and no more */
-const FOOT_LIFT = 1.6;
+/**
+ * The hop, and the legs tucking under it.
+ *
+ * Twice per cycle — `max(0, sin 2a)` gives two rises with a beat of rest
+ * between them, which is a bounce; a plain sine is a float. The feet come up a
+ * little further than the body at the top, so the legs read as tucking rather
+ * than as the whole figure being lifted by a wire.
+ */
+const HOP = 5;
+const FOOT_TUCK = 2.2;
 
 /** the pivots, matching `koa-pose.ts` — the export's own `o` values */
 const PIVOT = {
@@ -133,7 +143,7 @@ function mat(deg: number, px: number, py: number, tx: number, ty: number): numbe
 }
 
 /** which parts this pose drives */
-export type DressPart = 'body' | 'head' | 'armL' | 'armR' | 'footL' | 'footR' | 'eyes';
+export type DressPart = 'hop' | 'body' | 'head' | 'armL' | 'armR' | 'footL' | 'footR' | 'eyes';
 
 /**
  * The matrix for one part at time `t`.
@@ -146,23 +156,24 @@ export function dressMat(part: DressPart, t: number, k = 1): number[] {
   'worklet';
   const a = ((t % DRESS_PERIOD) / DRESS_PERIOD) * Math.PI * 2;
   const sway = Math.sin(a);
+  const bounce = Math.max(0, Math.sin(a * 2));
 
+  if (part === 'hop') return [1, 0, 0, 1, 0, -k * HOP * bounce];
   if (part === 'body') return mat(k * SWAY_BODY * sway, PIVOT.body[0], PIVOT.body[1], 0, 0);
   if (part === 'head') {
     return mat(k * SWAY_HEAD * Math.sin(a - HEAD_LAG), PIVOT.head[0], PIVOT.head[1], 0, k * HEAD_BOW);
   }
   if (part === 'eyes') return [1, 0, 0, 1, 0, k * EYES_DOWN];
+  // The paws flick on the bounce rather than on a rhythm of their own — one
+  // beat through the whole figure is what stops it reading as several loops
+  // that happen to be playing at once.
   if (part === 'armL') {
-    return mat(k * (ARM_RAISE + ARM_FLUTTER * Math.sin(a * 2)), PIVOT.armL[0], PIVOT.armL[1], 0, 0);
+    return mat(k * (ARM_RAISE + ARM_FLUTTER * bounce), PIVOT.armL[0], PIVOT.armL[1], 0, 0);
   }
   if (part === 'armR') {
-    return mat(-k * (ARM_RAISE + ARM_FLUTTER * Math.sin(a * 2)), PIVOT.armR[0], PIVOT.armR[1], 0, 0);
+    return mat(-k * (ARM_RAISE + ARM_FLUTTER * bounce), PIVOT.armR[0], PIVOT.armR[1], 0, 0);
   }
-  // The feet alternate: the one on the side he is leaning *away* from comes up,
-  // which is what a weight shift looks like. `max(0, ±sway)` gives each foot
-  // half the cycle down flat and half of it rising, rather than both bobbing.
-  const lift = part === 'footL' ? Math.max(0, sway) : Math.max(0, -sway);
-  return [1, 0, 0, 1, 0, -k * FOOT_LIFT * lift];
+  return [1, 0, 0, 1, 0, -k * FOOT_TUCK * bounce];
 }
 
 /** how long the blend in and out takes */
@@ -176,6 +187,7 @@ export const DRESS_BLEND = 400;
  * `ARMS`.
  */
 export const DRESS_BY_ID: Record<string, DressPart> = {
+  POSERIG: 'hop',
   BODYRIG: 'body',
   HEADRIG: 'head',
   leg_left_lower: 'footL',
@@ -183,15 +195,26 @@ export const DRESS_BY_ID: Record<string, DressPart> = {
 };
 
 /**
- * Where the arm parts sit inside the `ARMS` group.
+ * Which child of `ARMS` is which arm.
  *
- * Index → which arm. 2 and 3 are the export's two zero-width, zero-opacity
- * stroke paths and are left alone; moving something invisible is work for
- * nothing, and listing them would suggest they mattered.
+ * Only the two arm paths. 2 and 3 are the export's zero-width, zero-opacity
+ * strokes — moving something invisible is work for nothing.
  */
 export const DRESS_ARM_AT: Record<number, DressPart> = {
   0: 'armL',
   1: 'armR',
-  4: 'armL',
-  5: 'armR',
 };
+
+/**
+ * The two arm-shading slivers, which this pose **hides** rather than moves.
+ *
+ * They are creases drawn down the outside of an arm that is hanging straight
+ * down. Rotated up with the arm they came out as a hard line lying across it —
+ * shading for a shape that is no longer in that shape. There is no id on either
+ * of them and no version of them that is right at 34°, so for as long as the
+ * arms are raised they are simply not drawn.
+ *
+ * This is why the pose is a wrapper and not an edit to the rig: nothing here
+ * touches the Mascot Room, where the arms hang and the creases are correct.
+ */
+export const DRESS_ARM_HIDE = [4, 5];
