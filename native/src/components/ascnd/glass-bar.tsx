@@ -1,5 +1,25 @@
-import { BlurView } from 'expo-blur';
 import { StyleSheet } from 'react-native';
+
+type BlurModule = typeof import('expo-blur');
+
+/**
+ * `expo-blur` is a native module, so it only exists once the app has been
+ * rebuilt. Guarded the same way HealthKit is in `lib/health.ts`: `BlurView`
+ * pulls in its native view manager at import, which throws on a binary that
+ * predates the dependency, and a page scaffold is the last place in the app
+ * that should be able to take a screen down.
+ *
+ * Until the rebuild the bar renders nothing, which is what it did before this
+ * existed. Note this only covers the *native* half — Metro still has to be
+ * able to resolve the package, so `npm install` is not optional.
+ */
+let Blur: BlurModule | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  Blur = require('expo-blur') as BlurModule;
+} catch {
+  Blur = null; // binary built before expo-blur was added
+}
 
 /**
  * A blur across the top of a page — the status bar band.
@@ -40,7 +60,8 @@ export function GlassBar({ height }: {
   /** how tall the blur is, in points — the status bar band */
   height: number;
 }) {
-  if (height <= 0) return null;
+  if (!Blur || height <= 0) return null;
+  const { BlurView } = Blur;
 
   return (
     <BlurView
