@@ -6,6 +6,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
+import { localDaysAgoStr } from '@/lib/local-date';
 
 /**
  * How the weight has moved, over each window that matters.
@@ -24,11 +25,23 @@ import type { useI18n } from '@/hooks/use-app-settings';
  *
  * ── what a window's number means ──
  *
- * The **first and last samples inside the window**, subtracted. Not "today
- * minus the reading nearest 7 days ago", which invents a comparison against a
- * day that may have no reading at all. A window with fewer than two readings
- * has nothing to compare and reads 0.0 / no change — which is honest: nothing
- * was measured, so nothing is known to have moved.
+ * **The latest reading, minus what you weighed when the window opened.**
+ *
+ * That baseline is the most recent reading *at or before* the window's start —
+ * carried forward, because a weight does not stop existing between weigh-ins.
+ * If nothing was logged before the window opened, the baseline is the earliest
+ * reading there is, which makes that window the whole history.
+ *
+ * The first version compared the first and last readings *inside* the window
+ * instead, and it was wrong in the way that matters: weigh in weekly and every
+ * short window holds one reading or none, so 3/7/14 day sat at `0.0 · no
+ * change` forever while the weight was plainly moving. Comparing against the
+ * last known weight before the window answers the question the row asks —
+ * "how much have I changed since then" — with the best evidence available.
+ *
+ * With one reading in total there is still nothing to compare, and every row
+ * reads 0.0. When logging is sparse several rows can show the same number:
+ * that is honest — nothing was measured in between to tell them apart.
  *
  * ── the stroke ──
  *
@@ -66,17 +79,29 @@ const SPARK_H = 22;
 const SPARK_PAD = 3;
 
 /**
- * A window's samples, oldest first.
+ * How much the weight has moved since `days` ago — `null` for all time.
  *
- * Dates are `YYYY-MM-DD`, so a string compare is a date compare and there is no
- * need to parse anything — and no timezone to get wrong.
+ * `points` is oldest first. Dates are `YYYY-MM-DD`, so a string compare is a
+ * date compare: no parsing, and nothing for a timezone to get wrong.
+ *
+ * The cutoff comes from `localDaysAgoStr`, not `toISOString()`. The latter
+ * converts to UTC first, so at 01:00 in Hanoi "3 days ago" came out as four
+ * days ago — the windows were quietly a day wide of what they said.
  */
-function windowSamples(points: WeightPoint[], days: number | null): WeightPoint[] {
-  if (days == null) return points;
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
-  const iso = cutoff.toISOString().slice(0, 10);
-  return points.filter((p) => p.date >= iso);
+function deltaSince(points: WeightPoint[], days: number | null): number {
+  if (points.length < 2) return 0;
+  const latest = points[points.length - 1].value;
+  if (days == null) return latest - points[0].value;
+
+  const cutoff = localDaysAgoStr(days);
+  // the last weight known before the window opened, carried forward
+  let baseline: number | null = null;
+  for (const p of points) {
+    if (p.date <= cutoff) baseline = p.value;
+    else break;
+  }
+  // nothing logged before it opened: the window covers everything there is
+  return latest - (baseline ?? points[0].value);
 }
 
 /**
@@ -117,16 +142,11 @@ export function WeightChanges({
   goal?: string | null;
   i18n: ReturnType<typeof useI18n>;
 }) {
-  const rows: Row[] = WINDOWS.map((days) => {
-    const samples = windowSamples(points, days);
-    const delta =
-      samples.length >= 2 ? samples[samples.length - 1].value - samples[0].value : 0;
-    return {
-      key: days == null ? 'all' : String(days),
-      label: days == null ? i18n.nWcAllTime : i18n.nWcDays.replace('{n}', String(days)),
-      delta,
-    };
-  });
+  const rows: Row[] = WINDOWS.map((days) => ({
+    key: days == null ? 'all' : String(days),
+    label: days == null ? i18n.nWcAllTime : i18n.nWcDays.replace('{n}', String(days)),
+    delta: deltaSince(points, days),
+  }));
 
   if (points.length === 0) {
     return (
