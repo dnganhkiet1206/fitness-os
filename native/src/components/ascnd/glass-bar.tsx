@@ -2,7 +2,7 @@ import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { StyleSheet, View } from 'react-native';
 
 /**
- * The frosted backing for a bar that content scrolls underneath.
+ * The glass backing for a bar that content scrolls underneath.
  *
  * A real backdrop blur, not a translucent fill. The difference only matters
  * once something is behind it — and that is exactly the situation this exists
@@ -10,17 +10,29 @@ import { StyleSheet, View } from 'react-native';
  * frosted glass only because nothing is ever behind it but the page colour;
  * put a paragraph under it and the paragraph reads straight through.
  *
- * ── the fallback is opaque, deliberately ──
+ * ── clear, not frosted ──
+ *
+ * `clear` is the see-through end of the Liquid Glass scale: it bends and
+ * softens what is behind it without laying a pane of tint over it, so the page
+ * still reads as one surface with a bar resting on it rather than as two
+ * stacked panels. `regular` — a full frosted panel — was the first choice here
+ * on the grounds that a bar has to hide what slides under it, but that is the
+ * argument for a toolbar, and this bar carries a chevron and a title, not
+ * controls that need a solid ground to sit on.
+ *
+ * The trade is real and worth naming: over busy content the title has less to
+ * separate it from what is passing beneath. The bottom hairline and the title's
+ * own weight are what hold it apart.
+ *
+ * ── the fallback is opaque, and cannot not be ──
  *
  * `GlassView` is the Liquid Glass API and there is no glass to render before
- * iOS 26. Everywhere else in the app an unavailable effect can degrade to
- * something fainter, but not here: a bar with text sliding under it has to
- * hide that text or it is unreadable, so the fallback is a solid fill rather
- * than a weaker translucency.
- *
- * `FALLBACK` is the colour the bar has always been — the page background with
- * the 6% white glass fill composited onto it — so on an older system the bar
- * looks exactly as it did before, and only the blur is missing.
+ * iOS 26. Transparency there would not be glass, it would be a hole: no blur
+ * means content slides under the bar at full sharpness and collides with the
+ * title. So the fallback stays a solid fill — `FALLBACK` is the colour the bar
+ * has always been, the page background with the 6% white glass fill composited
+ * onto it, so on an older system the bar looks exactly as it did before and
+ * only the blur is missing.
  */
 
 /** #070708 with `glass.bg` (6% white) flattened onto it */
@@ -33,7 +45,7 @@ export function GlassBar() {
   return (
     <GlassView
       style={styles.fill}
-      glassEffectStyle="regular"
+      glassEffectStyle="clear"
       colorScheme="dark"
       isInteractive={false}
       pointerEvents="none"
