@@ -197,6 +197,20 @@ export function ShopScene({
               size={figure}
               level={level}
               equippedOutfits={equipped}
+              /**
+               * Idle, always — the Emotion Engine does not get a say in here.
+               *
+               * Left to the engine, the dressing room showed whatever the day
+               * had earned: `tired` and `sleep` both map to `relaxing`, which
+               * is Koa sitting down. A sitting character in a fitting room
+               * hides the clothes you came to look at, and `curl` and `run`
+               * are no better — this is a room for standing still in while
+               * somebody dresses you.
+               *
+               * `idle` is `{ happy, idle }` in `koa-emotion.ts`, so this pins
+               * both the pose and the face without inventing either.
+               */
+              emotion="idle"
               dress={dress}
             />
         </View>

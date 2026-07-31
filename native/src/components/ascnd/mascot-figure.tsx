@@ -84,6 +84,13 @@ export function MascotFigure(props: Props) {
     const state = koaStateFor(emotion);
     return (
       <KoaFigure
+        /**
+         * The dressing reaction stands and looks pleased whatever the engine
+         * was saying — a half-lidded `tired` face or a seated `relaxing` pose
+         * is not somebody admiring a new outfit. Callers that want idle for
+         * other reasons pin `emotion` instead; this only covers the pose's own
+         * requirements so `dress` works wherever it is passed.
+         */
         expression={dress ? 'happy' : state.expression}
         pose={dress ? 'idle' : state.pose}
         dress={dress}
