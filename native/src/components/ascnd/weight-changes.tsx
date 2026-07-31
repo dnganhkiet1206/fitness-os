@@ -30,6 +30,12 @@ import type { useI18n } from '@/hooks/use-app-settings';
  * has nothing to compare and reads 0.0 / no change — which is honest: nothing
  * was measured, so nothing is known to have moved.
  *
+ * ── the stroke ──
+ *
+ * Three shapes, and only three: up to the right for a rise, down to the right
+ * for a fall, level for neither. It is a glyph for the row's own number, not a
+ * plot of the readings behind it — see `sparkLine`.
+ *
  * ── the colour ──
  *
  * Up is not bad and down is not good; it depends on what the person is doing.
@@ -53,8 +59,6 @@ interface Row {
   key: string;
   label: string;
   delta: number;
-  /** how many readings the window holds — under two, there is nothing to draw */
-  count: number;
 }
 
 const SPARK_W = 44;
@@ -76,34 +80,27 @@ function windowSamples(points: WeightPoint[], days: number | null): WeightPoint[
 }
 
 /**
- * One straight stroke saying which way the window went.
+ * One straight stroke, left to right, in exactly three shapes.
  *
- * At the user's direction this is not a plot of every reading — it is a glyph
- * for the row's own number: **up if the weight rose, down if it fell, level if
- * it held.** At 44×22 a real time-series is a smudge anyway, and the row
- * already prints the exact figure beside it; what the eye wants from the box
- * is the direction.
+ * Specified by the user: **up** when the weight rose, **down** when it fell,
+ * **level** when it did not. Nothing else — no proportional slope, no plot of
+ * the readings. At 44×22 the box is a direction indicator, and the exact
+ * figure is printed beside it in the same row, so the glyph only has to answer
+ * "which way".
  *
- * The one thing it still owes the data is **proportion**. The stroke's rise is
- * scaled by this row's change against the largest change on the card, so the
- * biggest mover spans the box and a tenth of that leans a tenth as far. A
- * fixed 45° for every row would say every window moved the same amount.
- *
- * `null` when the window holds fewer than two readings: nothing was measured,
- * so there is no direction to claim. That is the case that used to draw a flat
- * line through the middle — a picture of a steady weight on days nobody
- * weighed themselves.
+ * It is a picture of the row's own number rather than of the days behind it,
+ * which is why a window with too few readings still draws level: the row says
+ * `0.0 · no change`, and the stroke agrees with the row.
  */
-function sparkLine(row: Row, maxDelta: number): { x1: number; y1: number; x2: number; y2: number } | null {
-  if (row.count < 2) return null;
+function sparkLine(delta: number): { x1: number; y1: number; x2: number; y2: number } {
+  const top = SPARK_PAD;
+  const bottom = SPARK_H - SPARK_PAD;
+  const x1 = SPARK_PAD;
+  const x2 = SPARK_W - SPARK_PAD;
+  if (delta > EPSILON) return { x1, y1: bottom, x2, y2: top }; // rose: up to the right
+  if (delta < -EPSILON) return { x1, y1: top, x2, y2: bottom }; // fell: down to the right
   const mid = SPARK_H / 2;
-  const reach = (SPARK_H - SPARK_PAD * 2) / 2;
-  // share of the biggest change on the card, 0..1
-  const frac = maxDelta > 0 ? Math.min(1, Math.abs(row.delta) / maxDelta) : 0;
-  const rise = reach * frac;
-  const dir = row.delta > EPSILON ? -1 : row.delta < -EPSILON ? 1 : 0;
-  // dir is -1 for a rise because SVG y grows downwards
-  return { x1: SPARK_PAD, y1: mid - dir * rise, x2: SPARK_W - SPARK_PAD, y2: mid + dir * rise };
+  return { x1, y1: mid, x2, y2: mid };
 }
 
 export function WeightChanges({
@@ -128,19 +125,8 @@ export function WeightChanges({
       key: days == null ? 'all' : String(days),
       label: days == null ? i18n.nWcAllTime : i18n.nWcDays.replace('{n}', String(days)),
       delta,
-      count: samples.length,
     };
   });
-
-  /**
-   * The biggest move on the card, which every stroke is drawn against.
-   *
-   * One scale for all six rows is what keeps them comparable: the row that
-   * moved most spans its box, and a row that moved a tenth as much leans a
-   * tenth as far. Scaling each row to itself would have every stroke at the
-   * same angle and say nothing.
-   */
-  const maxDelta = Math.max(...rows.map((r) => Math.abs(r.delta)), 0);
 
   if (points.length === 0) {
     return (
@@ -168,26 +154,23 @@ export function WeightChanges({
             : bad
               ? colors.metricOrange
               : colors.metricBlue;
-        const stroke = sparkLine(r, maxDelta);
+        const stroke = sparkLine(r.delta);
         return (
           <View key={r.key} style={styles.row}>
             <Text style={styles.rowLabel}>{r.label}</Text>
-            {/* One stroke: up if it rose, down if it fell, level if it held —
-                and nothing at all when the window holds under two readings,
-                because then there is no direction to claim. */}
+            {/* Three shapes only: up to the right if it rose, down to the right
+                if it fell, level if it did not. */}
             <Svg width={SPARK_W} height={SPARK_H} style={styles.spark}>
-              {stroke ? (
-                <Line
-                  x1={stroke.x1}
-                  y1={stroke.y1}
-                  x2={stroke.x2}
-                  y2={stroke.y2}
-                  stroke={tint}
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  opacity={flat ? 0.6 : 1}
-                />
-              ) : null}
+              <Line
+                x1={stroke.x1}
+                y1={stroke.y1}
+                x2={stroke.x2}
+                y2={stroke.y2}
+                stroke={tint}
+                strokeWidth={2}
+                strokeLinecap="round"
+                opacity={flat ? 0.6 : 1}
+              />
             </Svg>
             <Text style={styles.rowValue}>
               {Math.abs(r.delta).toFixed(1)} {unit}
