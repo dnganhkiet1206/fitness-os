@@ -25,6 +25,22 @@ import { displayVolume, volumeLabel } from '@/lib/units';
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const TRACK = '#17171c';
 
+/**
+ * How far past a target still counts as hitting it.
+ *
+ * A share of the target rather than a flat number, so it scales with the
+ * person: 10% is 220 kcal on a 2,200 target, or 7g on a 70g fat target. That is
+ * the resolution food logging is honest to anyway — the label on a packet and
+ * the size of a portion are both rougher than a tenth — so a day inside this
+ * band is not a day that went differently, and colouring it as one teaches
+ * people to distrust the colour.
+ *
+ * One constant for the calorie ring and for all four macro tiles. They are the
+ * same judgement about the same data, and two numbers that mean the same thing
+ * are two numbers that will disagree eventually.
+ */
+const SURPLUS_ALLOWANCE = 0.1;
+
 /** The web's card micro-title: 12px semibold uppercase, wide tracking */
 export function MicroTitle({ children }: { children: React.ReactNode }) {
   return <Text style={styles.microTitle}>{children}</Text>;
@@ -340,12 +356,15 @@ function MacroSwap({
   index,
   current,
   target,
+  color,
   i18n,
 }: {
   showLeft: boolean;
   index: number;
   current: number;
   target: number;
+  /** the macro's own colour — what a surplus inside the allowance is drawn in */
+  color: string;
   i18n: ReturnType<typeof useI18n>;
 }) {
   const eatenNow = Math.round(current);
@@ -363,6 +382,22 @@ function MacroSwap({
    */
   const leftWord = over ? i18n.dcMacroOver : left === 0 ? i18n.dcMacroDone : i18n.dcMacroLeft;
   const leftNum = `${over ? '+' : ''}${Math.abs(left)}`;
+
+  /**
+   * A surplus is red only once it is past the allowance.
+   *
+   * Every gram over used to be, and four macros are four chances to go a little
+   * over, so an ordinary day lit up in warnings. Red that appears on an ordinary
+   * day is red nobody reads on the day it matters. Inside the allowance the
+   * figure takes the macro's own colour instead: still visibly not the muted
+   * grey of "eaten", still plainly a surplus, and not an alarm.
+   *
+   * The same `SURPLUS_ALLOWANCE` the calorie ring uses, on purpose — a card that
+   * calls 105% of calories fine and 102% of carbs a problem is a card arguing
+   * with itself.
+   */
+  const overHard = current > target * (1 + SURPLUS_ALLOWANCE);
+  const overStyle = { color: overHard ? colors.readinessRed : color };
 
   const swap = useSharedValue(showLeft ? 1 : 0);
   useEffect(() => {
@@ -407,9 +442,9 @@ function MacroSwap({
           <Text style={styles.macroTarget}>/{target}g</Text>
         </Animated.Text>
         <Animated.Text
-          style={[styles.macroValue, styles.macroSwapAbs, over && styles.macroOver, headIn]}>
+          style={[styles.macroValue, styles.macroSwapAbs, over && overStyle, headIn]}>
           {leftNum}
-          <Text style={[styles.macroTarget, over && styles.macroOver]}>g</Text>
+          <Text style={[styles.macroTarget, over && overStyle]}>g</Text>
         </Animated.Text>
       </View>
 
@@ -441,7 +476,7 @@ function MacroSwap({
             away and nothing surprising to report.
           */}
           {over ? (
-            <Text style={styles.macroOver}>
+            <Text style={overStyle}>
               {' · '}
               {leftNum}g {leftWord}
             </Text>
@@ -461,7 +496,7 @@ function MacroSwap({
           so the line does not appear to change weight as it crosses over.
         */}
         <Animated.Text
-          style={[styles.macroNote, styles.macroSwapAbs, over && styles.macroOver, noteIn]}>
+          style={[styles.macroNote, styles.macroSwapAbs, over && overStyle, noteIn]}>
           {leftWord}
         </Animated.Text>
       </View>
@@ -524,14 +559,8 @@ export function NutritionCard({
    *    This keeps the card's existing amber/orange gradient.
    *  - **past the allowance** — red. Genuinely over, and it should look it.
    *
-   * The allowance is a share of the target rather than a flat number, so it
-   * scales with the person: 10% is ±220 kcal on a 2,200 target, about a snack,
-   * which is the resolution food logging is honest to anyway — the label on a
-   * packet and the size of a portion are both rougher than that, so a day
-   * inside this band is not a day that went differently. One constant to
-   * change if it should be tighter or looser.
+   * The allowance is `SURPLUS_ALLOWANCE`, shared with the macro tiles below.
    */
-  const SURPLUS_ALLOWANCE = 0.10;
   const overBudget = delta > calorieTarget * SURPLUS_ALLOWANCE;
   const inBand = !overBudget && kcal >= calorieTarget;
 
@@ -697,6 +726,10 @@ export function NutritionCard({
                 index={i}
                 current={m.current}
                 target={m.target}
+                // the bar's colour, not the icon's: protein's icon is the card's
+                // pale `primary` while its bar is amber, and amber is the one a
+                // reader would name if asked what colour protein is here
+                color={m.bar[0]}
                 i18n={i18n}
               />
               {/* The bar does not switch with the number: filled-so-far and
@@ -1051,7 +1084,6 @@ const styles = StyleSheet.create({
   // than the tile's own `gap` puts the bar below them
   macroLines: { gap: 2 },
   macroNote: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  macroOver: { color: colors.readinessRed },
   cardPressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
   macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'hidden' },
   macroBarFill: { height: '100%', borderRadius: 2 },
