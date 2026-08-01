@@ -25,14 +25,27 @@ import { colors } from '@/constants/ascnd';
  * memoised, and the two callbacks are `useCallback`ed by the parent. An inline
  * arrow anywhere here would defeat the whole thing silently.
  *
- * ── it coasts ──
+ * ── it coasts, but only so far ──
  *
- * `decelerationRate` is normal, not fast. Fast is the right setting for a
- * pager, where a flick should move one card and stop; here it killed the
- * throw, so the ruler stopped dead under the finger instead of running on and
- * settling. `snapToInterval` still lands it on an exact tick — iOS picks the
- * snap from where the momentum was going to end, so the glide is kept and only
- * the last few points are adjusted.
+ * `decelerationRate` is a number, because neither of the two names was usable.
+ *
+ * `fast` (0.9) is the setting for a pager, where a flick moves one card and
+ * stops. It killed the throw: the ruler stopped dead under the finger instead
+ * of running on and settling.
+ *
+ * `normal` (0.998) is the setting for a page of content, where a flick is
+ * meant to travel a long way. On a ruler it is a disaster, and this is the
+ * version that drifted off somewhere: a tick is 12pt and half a kilogram, so
+ * an ordinary flick carries a couple of thousand points — a hundred and sixty
+ * ticks, eighty kilograms — and the target being nudged is gone off the end of
+ * the scale. It also outruns the renderer, so what you watch while it travels
+ * is an empty strip.
+ *
+ * 0.975 sits between them: a flick glides a few dozen ticks and settles, which
+ * is far enough to feel thrown and near enough to still be a choice.
+ * `snapToInterval` lands it on an exact tick either way — iOS picks the snap
+ * from where the momentum was heading, so only the last few points are
+ * adjusted.
  *
  * The window is deliberately generous. Each tick is two plain views with no
  * text or image in it, so rendering a few screens' worth either side is
@@ -96,7 +109,9 @@ export const Ruler = memo(function Ruler({
       showsHorizontalScrollIndicator={false}
       // Lands on an exact tick without cutting the throw short
       snapToInterval={TICK_W}
-      decelerationRate="normal"
+      // Between iOS's "fast" (0.9, no throw at all) and "normal" (0.998, about
+      // eighty kilograms per flick) — see the note above
+      decelerationRate={0.975}
       onContentSizeChange={onContentSizeChange}
       onScroll={onScroll}
       // Every frame. A tick is 12pt, so a slow drag crosses one in a couple of
