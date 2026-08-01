@@ -57,7 +57,7 @@ const BMI_ZONES = [
     en: 'Underweight',
     range: '< 18.5',
     color: colors.metricBlue,
-    fill: 'rgba(62,134,234,0.4)',
+    fill: 'rgba(59,166,255,0.4)',
   },
   {
     to: 25,
@@ -65,7 +65,7 @@ const BMI_ZONES = [
     en: 'Normal',
     range: '18.5 – 24.9',
     color: colors.readinessGreen,
-    fill: 'rgba(32,182,132,0.4)',
+    fill: 'rgba(43,245,168,0.4)',
   },
   {
     to: 30,
@@ -73,7 +73,7 @@ const BMI_ZONES = [
     en: 'Overweight',
     range: '25 – 29.9',
     color: colors.readinessYellow,
-    fill: 'rgba(232,186,48,0.4)',
+    fill: 'rgba(255,217,61,0.4)',
   },
   {
     to: BMI_MAX,
@@ -81,7 +81,7 @@ const BMI_ZONES = [
     en: 'Obese',
     range: '≥ 30',
     color: colors.readinessRed,
-    fill: 'rgba(220,40,40,0.3)',
+    fill: 'rgba(255,59,92,0.3)',
   },
 ] as const;
 

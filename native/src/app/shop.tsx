@@ -440,9 +440,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 2,
     height: 30,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(232,186,48,0.12)',
+    backgroundColor: 'rgba(255,217,61,0.12)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(232,186,48,0.35)',
+    borderColor: 'rgba(255,217,61,0.35)',
   },
   coinText: { ...type.footnote, fontWeight: '700', color: colors.readinessYellow, fontVariant: ['tabular-nums'] },
   emptyCat: {

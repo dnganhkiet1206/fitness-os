@@ -70,11 +70,11 @@ export interface RankDef {
 
 export const RANKS: RankDef[] = [
   { key: 'rookie', minLevel: 1, name: { vi: 'Tập sự', en: 'Rookie' }, color: '#8b93a4' },
-  { key: 'active', minLevel: 5, name: { vi: 'Năng động', en: 'Active' }, color: '#20b684' },
-  { key: 'prime', minLevel: 10, name: { vi: 'Sung sức', en: 'Prime' }, color: '#3e86ea' },
+  { key: 'active', minLevel: 5, name: { vi: 'Năng động', en: 'Active' }, color: '#2bf5a8' },
+  { key: 'prime', minLevel: 10, name: { vi: 'Sung sức', en: 'Prime' }, color: '#3ba6ff' },
   { key: 'peak', minLevel: 20, name: { vi: 'Đỉnh cao', en: 'Peak' }, color: '#b07de0' },
   { key: 'apex', minLevel: 35, name: { vi: 'Tối thượng', en: 'Apex' }, color: '#e08a3a' },
-  { key: 'legend', minLevel: 55, name: { vi: 'Huyền thoại', en: 'Legend' }, color: '#e8ba30' },
+  { key: 'legend', minLevel: 55, name: { vi: 'Huyền thoại', en: 'Legend' }, color: '#ffd93d' },
 ];
 
 /** Highest rank whose minLevel the buddy has reached */
@@ -138,10 +138,10 @@ export type ShopItemKey = string;
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 
 export const RARITY: Record<Rarity, { name: Record<AppLang, string>; color: string; order: number }> = {
-  common: { name: { vi: 'Phổ thông', en: 'Common' }, color: '#20b684', order: 0 },
-  rare: { name: { vi: 'Hiếm', en: 'Rare' }, color: '#3e86ea', order: 1 },
+  common: { name: { vi: 'Phổ thông', en: 'Common' }, color: '#2bf5a8', order: 0 },
+  rare: { name: { vi: 'Hiếm', en: 'Rare' }, color: '#3ba6ff', order: 1 },
   epic: { name: { vi: 'Sử thi', en: 'Epic' }, color: '#b07de0', order: 2 },
-  legendary: { name: { vi: 'Huyền thoại', en: 'Legendary' }, color: '#e8ba30', order: 3 },
+  legendary: { name: { vi: 'Huyền thoại', en: 'Legendary' }, color: '#ffd93d', order: 3 },
 };
 
 /**

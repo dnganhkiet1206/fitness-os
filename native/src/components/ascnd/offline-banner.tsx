@@ -38,9 +38,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingBottom: 6,
-    backgroundColor: 'rgba(232,186,48,0.14)',
+    backgroundColor: 'rgba(255,217,61,0.14)',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(232,186,48,0.35)',
+    borderBottomColor: 'rgba(255,217,61,0.35)',
   },
   text: { ...type.caption, color: colors.readinessYellow, fontWeight: '600' },
 });

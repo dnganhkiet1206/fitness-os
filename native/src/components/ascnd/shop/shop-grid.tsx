@@ -274,6 +274,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderWidth: 1,
   },
-  wearingBtn: { backgroundColor: 'rgba(32,182,132,0.14)' },
+  wearingBtn: { backgroundColor: 'rgba(43,245,168,0.14)' },
   wearingText: { color: colors.readinessGreen },
 });

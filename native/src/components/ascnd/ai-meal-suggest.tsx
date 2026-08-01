@@ -103,7 +103,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
                 <Text style={[styles.macro, styles.macroKcal]}>{meal.kcal} kcal</Text>
                 <Text style={[styles.macro, { color: colors.primary }]}>P{meal.protein_g}g</Text>
                 <Text style={[styles.macro, { color: '#ef7c26' }]}>C{meal.carbs_g}g</Text>
-                <Text style={[styles.macro, { color: '#8d52e0' }]}>F{meal.fat_g}g</Text>
+                <Text style={[styles.macro, { color: '#b45cff' }]}>F{meal.fat_g}g</Text>
               </View>
             </View>
             <View style={styles.cardMeta}>

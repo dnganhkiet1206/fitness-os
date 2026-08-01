@@ -91,9 +91,9 @@ export function ActivityRingsCard({ move, exercise, stand, size = 160 }: Props) 
   const i18n = useI18n();
 
   const rings = [
-    { key: 'move', label: i18n.dcActivityMove, unit: i18n.dcActivityKcal, colors: ['#f59e0b', '#f17b27'] as [string, string], data: move },
-    { key: 'exercise', label: i18n.dcActivityExercise, unit: i18n.dcActivityMin, colors: ['#20b684', '#17cf59'] as [string, string], data: exercise },
-    { key: 'stand', label: i18n.dcActivitySteps, unit: i18n.dcActivityStepsUnit, colors: ['#3e86ea', '#18c2dc'] as [string, string], data: stand },
+    { key: 'move', label: i18n.dcActivityMove, unit: i18n.dcActivityKcal, colors: ['#ffc53d', '#ff9130'] as [string, string], data: move },
+    { key: 'exercise', label: i18n.dcActivityExercise, unit: i18n.dcActivityMin, colors: ['#2bf5a8', '#3dff7a'] as [string, string], data: exercise },
+    { key: 'stand', label: i18n.dcActivitySteps, unit: i18n.dcActivityStepsUnit, colors: ['#3ba6ff', '#22e3ff'] as [string, string], data: stand },
   ];
 
   const center = size / 2;

@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(241,123,39,0.12)',
+    backgroundColor: 'rgba(255,145,48,0.12)',
   },
   rpeText: { fontSize: 10, fontWeight: '600', color: colors.metricOrange, fontVariant: ['tabular-nums'] },
   weeklyBtn: {

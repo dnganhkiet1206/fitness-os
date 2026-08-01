@@ -341,8 +341,8 @@ const AWARD_ICON: Record<string, LucideIcon> = {
 const TIER_COLOR: Record<string, string> = {
   bronze: '#c47b3d',
   silver: '#c7cad1',
-  gold: '#e8ba30',
-  platinum: '#8d52e0',
+  gold: '#ffd93d',
+  platinum: '#b45cff',
 };
 
 export function RecentAwardsCard() {
@@ -429,9 +429,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 3,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(232,186,48,0.15)',
+    backgroundColor: 'rgba(255,217,61,0.15)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(232,186,48,0.2)',
+    borderColor: 'rgba(255,217,61,0.2)',
   },
   prText: { fontSize: 12, fontWeight: '700', color: colors.readinessYellow },
   latestRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     left: '40%',
     right: '35%',
     borderRadius: 4,
-    backgroundColor: 'rgba(32,182,132,0.12)',
+    backgroundColor: 'rgba(43,245,168,0.12)',
   },
   acwrIndicator: {
     position: 'absolute',
@@ -512,12 +512,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(232,186,48,0.1)',
+    backgroundColor: 'rgba(255,217,61,0.1)',
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: spacing.sm + 2,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(232,186,48,0.2)',
+    borderColor: 'rgba(255,217,61,0.2)',
   },
   painText: { flex: 1, fontSize: 12, color: colors.readinessYellow },
 
@@ -533,9 +533,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 4,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(32,182,132,0.1)',
+    backgroundColor: 'rgba(43,245,168,0.1)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(32,182,132,0.2)',
+    borderColor: 'rgba(43,245,168,0.2)',
   },
   doneText: { fontSize: 12, fontWeight: '600', color: colors.readinessGreen },
   notYetRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },

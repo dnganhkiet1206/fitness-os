@@ -24,9 +24,9 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const TRACK = '#17171c';
 
 const GRADIENTS: Record<string, [string, string]> = {
-  green: ['#20b684', '#17cf59'],
-  yellow: ['#f59e0b', '#ecc94b'],
-  red: ['#dc2828', '#e61a66'],
+  green: ['#2bf5a8', '#3dff7a'],
+  yellow: ['#ffb800', '#ffd93d'],
+  red: ['#ff3b5c', '#ff2d8a'],
 };
 
 const STATUS_COLOR: Record<string, string> = {

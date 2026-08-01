@@ -50,7 +50,7 @@ export default function RemindersScreen() {
       <GlassCard>
         <View style={styles.rowHead}>
           <View style={styles.rowTitleWrap}>
-            <View style={[styles.iconBadge, { backgroundColor: 'rgba(62,134,234,0.14)' }]}>
+            <View style={[styles.iconBadge, { backgroundColor: 'rgba(59,166,255,0.14)' }]}>
               <Icon icon={Droplets} size={16} color={colors.metricBlue} />
             </View>
             <Text style={styles.rowTitle}>{i18n.nReminderWater}</Text>
@@ -126,7 +126,7 @@ export default function RemindersScreen() {
 const styles = StyleSheet.create({
   intro: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   introText: { ...type.footnote, color: colors.mutedForeground, flex: 1 },
-  warnCard: { backgroundColor: 'rgba(232,186,48,0.1)' },
+  warnCard: { backgroundColor: 'rgba(255,217,61,0.1)' },
   warnText: { ...type.footnote, color: colors.readinessYellow },
   rowHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   rowTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 },

@@ -40,8 +40,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
 const TIER_CONFIG: Record<string, { color: string; dim: string; label: string }> = {
   bronze: { color: '#c47b3d', dim: 'rgba(196,123,61,0.12)', label: 'Bronze' },
   silver: { color: '#c7cad1', dim: 'rgba(199,202,209,0.12)', label: 'Silver' },
-  gold: { color: '#e8ba30', dim: 'rgba(232,186,48,0.12)', label: 'Gold' },
-  platinum: { color: '#8d52e0', dim: 'rgba(141,82,224,0.12)', label: 'Platinum' },
+  gold: { color: '#ffd93d', dim: 'rgba(255,217,61,0.12)', label: 'Gold' },
+  platinum: { color: '#b45cff', dim: 'rgba(180,92,255,0.12)', label: 'Platinum' },
 };
 
 const TIERS = ['platinum', 'gold', 'silver', 'bronze'] as const;
@@ -174,7 +174,7 @@ export default function AwardsScreen() {
       {/* Hero: medal tile + progress ring (web) */}
       <View style={styles.hero}>
         <View style={styles.heroTile}>
-          <Icon icon={Medal} size={30} color="#e8ba30" />
+          <Icon icon={Medal} size={30} color="#ffd93d" />
         </View>
         <Text style={styles.heroCount}>
           {i18n.awardsEarned} <Text style={styles.heroCountNum}>{earnedCount}</Text> / {totalCount}{' '}
@@ -184,8 +184,8 @@ export default function AwardsScreen() {
           <Svg width={80} height={80} viewBox="0 0 80 80">
             <Defs>
               <SvgGradient id="awards-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#e8ba30" />
-                <Stop offset="100%" stopColor="#f17b27" />
+                <Stop offset="0%" stopColor="#ffd93d" />
+                <Stop offset="100%" stopColor="#ff9130" />
               </SvgGradient>
             </Defs>
             <Circle cx={40} cy={40} r={R} fill="none" stroke="#17171c" strokeWidth={4} />
@@ -249,12 +249,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: radius.lg,
-    backgroundColor: 'rgba(232,186,48,0.12)',
+    backgroundColor: 'rgba(255,217,61,0.12)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(232,186,48,0.25)',
+    borderColor: 'rgba(255,217,61,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#e8ba30',
+    shadowColor: '#ffd93d',
     shadowOpacity: 0.2,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 0 },
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressPct: { ...type.mono, fontSize: 17, fontWeight: '700', color: '#e8ba30' },
+  progressPct: { ...type.mono, fontSize: 17, fontWeight: '700', color: '#ffd93d' },
 
   tierSection: { gap: spacing.sm + 4 },
   tierHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

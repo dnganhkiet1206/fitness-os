@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(220,40,40,0.4)',
+    borderColor: 'rgba(255,59,92,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
   },

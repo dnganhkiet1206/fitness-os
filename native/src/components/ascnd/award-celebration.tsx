@@ -50,8 +50,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
 const TIER_CONFIG: Record<string, { color: string; glow: string; label: string }> = {
   bronze: { color: '#c47b3d', glow: 'rgba(196,123,61,0.5)', label: 'Bronze' },
   silver: { color: '#c7cad1', glow: 'rgba(199,202,209,0.5)', label: 'Silver' },
-  gold: { color: '#e8ba30', glow: 'rgba(232,186,48,0.6)', label: 'Gold' },
-  platinum: { color: '#8d52e0', glow: 'rgba(141,82,224,0.6)', label: 'Platinum' },
+  gold: { color: '#ffd93d', glow: 'rgba(255,217,61,0.6)', label: 'Gold' },
+  platinum: { color: '#b45cff', glow: 'rgba(180,92,255,0.6)', label: 'Platinum' },
 };
 
 export interface CelebrationAward {

@@ -27,19 +27,44 @@ export const colors = {
   goldLight: '#c7cad1',
   champagne: '#9fa3ad',
 
+  /**
+   * ── the signalling colours are neon ──
+   *
+   * Everything below carries meaning — a state, a metric, a warning — as
+   * opposed to the surfaces and text above it, which carry none and are
+   * unchanged. Each is the same hue it was, with chroma and luminance pushed
+   * up until it reads as emitted light rather than pigment. On a near-black
+   * page that is what makes a colour legible at a glance: there is nothing to
+   * reflect, so a muted colour has only its own brightness to work with.
+   *
+   * It happens to fix a real contrast problem. Every one of these went *up*
+   * against `background`, and `readinessRed`/`destructive` at 4.20:1 had been
+   * under the 4.5:1 that small text wants — the colour the app uses to say
+   * something is wrong was the one hardest to read:
+   *
+   *   green   7.75 → 14.12    blue    5.56 →  7.75
+   *   yellow 11.02 → 14.62    purple  4.23 →  5.67
+   *   red     4.20 →  5.78    cyan    9.39 → 12.94
+   *                           orange  7.29 →  8.96
+   *
+   * The brand silver (`primary`, `goldLight`, `champagne`) is deliberately
+   * left alone. It is an identity, not a signal, and a neon brand colour would
+   * compete with every one of these for attention.
+   */
+
   // Semantic
-  destructive: '#dc2828',
+  destructive: '#ff3b5c',
 
   // Readiness
-  readinessGreen: '#20b684',
-  readinessYellow: '#e8ba30',
-  readinessRed: '#dc2828',
+  readinessGreen: '#2bf5a8',
+  readinessYellow: '#ffd93d',
+  readinessRed: '#ff3b5c',
 
   // Metrics
-  metricBlue: '#3e86ea',
-  metricPurple: '#8d52e0',
-  metricCyan: '#18c2dc',
-  metricOrange: '#f17b27',
+  metricBlue: '#3ba6ff',
+  metricPurple: '#b45cff',
+  metricCyan: '#22e3ff',
+  metricOrange: '#ff9130',
 } as const;
 
 /**

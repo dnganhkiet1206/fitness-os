@@ -30,6 +30,10 @@ export function MicroTitle({ children }: { children: React.ReactNode }) {
 }
 
 /** 100pt progress ring with icon + mono value in the middle (web pattern) */
+/**
+ * @param over  a second lap, drawn inside the ring, for whatever went past
+ *              100%. Omitted or zero and nothing is drawn — see `NutritionCard`.
+ */
 function SmallRing({
   pct,
   gradId,
@@ -38,6 +42,7 @@ function SmallRing({
   iconColor,
   value,
   unit,
+  over,
 }: {
   pct: number;
   gradId: string;
@@ -46,18 +51,51 @@ function SmallRing({
   iconColor: string;
   value: string;
   unit?: string;
+  over?: { pct: number; color: string };
 }) {
   const R = 40;
   const CIRC = 2 * Math.PI * R;
+  /**
+   * The overshoot arc sits on its own smaller radius rather than being drawn
+   * over the main one.
+   *
+   * Concentric, it reads as a second lap — the ring filled, and then this kept
+   * going. Laid on the same radius it would just be the outer ring changing
+   * colour partway round, which is the one thing it must not look like: the
+   * main ring's colour already means something (under target / on target /
+   * past the allowance) and a second colour on the same stroke would be read
+   * as part of that scale.
+   *
+   * Thinner too, so the ring you are meant to read first stays the loudest,
+   * and set far enough in that the two strokes never look like one thick one.
+   */
+  const R_OVER = R - 14;
+  const CIRC_OVER = 2 * Math.PI * R_OVER;
+
   const progress = useSharedValue(0);
+  const overProgress = useSharedValue(0);
   useEffect(() => {
     progress.value = withDelay(
       200,
       withTiming(Math.min(pct, 100) / 100, { duration: 1200, easing: Easing.bezier(0.16, 1, 0.3, 1) }),
     );
   }, [pct, progress]);
+  useEffect(() => {
+    // Starts after the main ring has had a moment, so the two are read in
+    // order: the day filled up, and then it went past.
+    overProgress.value = withDelay(
+      700,
+      withTiming(Math.min(over?.pct ?? 0, 100) / 100, {
+        duration: 1000,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+      }),
+    );
+  }, [over?.pct, overProgress]);
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRC - progress.value * CIRC,
+  }));
+  const overAnimatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: CIRC_OVER - overProgress.value * CIRC_OVER,
   }));
   return (
     <View style={styles.smallRingWrap}>
@@ -68,17 +106,30 @@ function SmallRing({
             <Stop offset="100%" stopColor={c1} />
           </LinearGradient>
         </Defs>
-        <Circle cx="50" cy="50" r={R} fill="none" stroke={TRACK} strokeWidth={6} />
+        <Circle cx="50" cy="50" r={R} fill="none" stroke={TRACK} strokeWidth={9} />
         <AnimatedCircle
           cx="50" cy="50" r={R}
           fill="none"
           stroke={`url(#${gradId})`}
-          strokeWidth={6}
+          strokeWidth={9}
           strokeLinecap="round"
           strokeDasharray={`${CIRC}`}
           animatedProps={animatedProps}
           transform="rotate(-90 50 50)"
         />
+        {/* The overshoot lap — only present when there is something over */}
+        {over && over.pct > 0 ? (
+          <AnimatedCircle
+            cx="50" cy="50" r={R_OVER}
+            fill="none"
+            stroke={over.color}
+            strokeWidth={4.5}
+            strokeLinecap="round"
+            strokeDasharray={`${CIRC_OVER}`}
+            animatedProps={overAnimatedProps}
+            transform="rotate(-90 50 50)"
+          />
+        ) : null}
       </Svg>
       <View style={styles.smallRingCenter} pointerEvents="none">
         <Icon icon={icon} size={16} color={iconColor} />
@@ -142,10 +193,17 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
   const overBudget = delta > calorieTarget * SURPLUS_ALLOWANCE;
   const inBand = !overBudget && kcal >= calorieTarget;
 
+  /**
+   * The overshoot lap: how far past the target the day went, as a share of the
+   * target. Capped at a full extra lap — eating double is as far as the ring
+   * can say, and the surplus line prints the real figure anyway.
+   */
+  const overPct = calorieTarget > 0 ? Math.min((Math.max(delta, 0) / calorieTarget) * 100, 100) : 0;
+
   const ringGradient: [string, string] = overBudget
     ? ['#e6485c', colors.readinessRed]
     : inBand
-      ? ['#f59e0b', '#f17b27']
+      ? ['#ffc53d', '#ff9130']
       : ['#4a4a52', '#6b6b6b'];
   const ringIconColor = overBudget
     ? colors.readinessRed
@@ -162,8 +220,8 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
 
   const macros = [
     { label: 'Protein', ...protein, icon: ProteinIcon, color: colors.primary, bar: ['#f59e0b', '#ecc94b'] as [string, string] },
-    { label: 'Carbs', ...carbs, icon: CarbIcon, color: colors.metricBlue, bar: ['#3e86ea', '#8d52e0'] as [string, string] },
-    { label: 'Fat', ...fat, icon: FatIcon, color: colors.metricOrange, bar: ['#f17b27', '#dc2828'] as [string, string] },
+    { label: 'Carbs', ...carbs, icon: CarbIcon, color: colors.metricBlue, bar: ['#3ba6ff', '#b45cff'] as [string, string] },
+    { label: 'Fat', ...fat, icon: FatIcon, color: colors.metricOrange, bar: ['#ff9130', '#ff3b5c'] as [string, string] },
     ...(fiber
       ? [{ label: 'Fiber', ...fiber, icon: FiberIcon, color: colors.readinessGreen, bar: ['#3ecf8e', '#2f9e6b'] as [string, string] }]
       : []),
@@ -182,6 +240,7 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
           iconColor={ringIconColor}
           value={kcal.toLocaleString()}
           unit="kcal"
+          over={{ pct: overPct, color: colors.readinessRed }}
         />
         <View style={styles.ringSide}>
           <Text style={styles.sideLine}>
@@ -204,10 +263,11 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
               kcal
             </Text>
           )}
-          {/* The percentage and its bar follow the ring, so the card does not
-              call the same day green here and red there. */}
+          {/* The bar follows the ring, so the card does not call the same day
+              green here and red there. No percentage beside it any more: the
+              ring is the percentage, drawn, and the figure it was repeating is
+              already on the card three other ways. */}
           <View style={styles.sideBarRow}>
-            <Text style={[styles.sidePct, { color: deltaColor }]}>{Math.round(calPct)}%</Text>
             <ProgressBar pct={calPct} color={deltaColor} height={4} style={styles.sideBarTrack} />
           </View>
         </View>
@@ -289,7 +349,7 @@ export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, s
         <SmallRing
           pct={pct}
           gradId="sleep-ring"
-          gradient={['#8d52e0', '#18c2dc']}
+          gradient={['#b45cff', '#22e3ff']}
           icon={Moon}
           iconColor={colors.metricPurple}
           value={`${hours}h${String(mins).padStart(2, '0')}m`}
@@ -387,7 +447,7 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
   return (
     <CompactWidget
       icon={Droplets}
-      iconColor="#38bdf8"
+      iconColor="#3ba6ff"
       iconBg="rgba(14,165,233,0.1)"
       label={labels.title}
       valueText={`${displayVolume(ml, unit)} / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
@@ -402,7 +462,7 @@ export function StepsWidget({ steps, target, labels }: { steps: number; target: 
   return (
     <CompactWidget
       icon={Footprints}
-      iconColor="#4ade80"
+      iconColor="#2bf5a8"
       iconBg="rgba(34,197,94,0.1)"
       label={labels.title}
       valueText={`${steps.toLocaleString()} / ${target.toLocaleString()}`}
@@ -433,7 +493,6 @@ const styles = StyleSheet.create({
   sideMono: { fontFamily: 'Menlo', color: colors.foreground, fontVariant: ['tabular-nums'] },
   sideMonoStrong: { fontSize: 14, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
   sideBarRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  sidePct: { fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
   sideBarTrack: { flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'hidden' },
   sideBarFill: { height: '100%', borderRadius: 2, backgroundColor: colors.metricOrange },
   qualityRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },

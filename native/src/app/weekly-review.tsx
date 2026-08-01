@@ -367,8 +367,8 @@ export default function WeeklyReviewScreen() {
 
   const REC_STYLE = {
     warning: { color: '#dc2f2f', bg: 'rgba(220,47,47,0.1)', icon: AlertTriangle },
-    success: { color: colors.readinessGreen, bg: 'rgba(32,182,132,0.1)', icon: CheckCircle2 },
-    info: { color: colors.metricBlue, bg: 'rgba(62,134,234,0.1)', icon: Activity },
+    success: { color: colors.readinessGreen, bg: 'rgba(43,245,168,0.1)', icon: CheckCircle2 },
+    info: { color: colors.metricBlue, bg: 'rgba(59,166,255,0.1)', icon: Activity },
   } as const;
 
   const readinessPoints = chartData
@@ -446,7 +446,7 @@ export default function WeeklyReviewScreen() {
           <Animated.View entering={rise(2)}>
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.weeklyReviewSleepChart}</Text>
-            <WeekBars data={chartData.map((c) => c.sleep_h)} color="#8d52e0" target={targets.sleepH} unit="h" days={DAYS} />
+            <WeekBars data={chartData.map((c) => c.sleep_h)} color="#b45cff" target={targets.sleepH} unit="h" days={DAYS} />
           </GlassCard>
           </Animated.View>
           <Animated.View entering={rise(3)}>
@@ -460,7 +460,7 @@ export default function WeeklyReviewScreen() {
           <Animated.View entering={rise(4)}>
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.weeklyReviewReadinessChart}</Text>
-            <LineChart points={readinessPoints} color="#e8ba30" height={140} />
+            <LineChart points={readinessPoints} color="#ffd93d" height={140} />
           </GlassCard>
           </Animated.View>
 
