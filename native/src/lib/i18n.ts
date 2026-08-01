@@ -677,6 +677,7 @@ interface Translations {
   dcMacroLeft: string;
   dcMacroDone: string;
   dcMacroOver: string;
+  dcMacroEaten: string;
   /** eaten past the target */
   dcNutritionSurplus: string;
   /** still under the target — the same number as "remaining", named for the diet */
@@ -1375,6 +1376,7 @@ const vi: Translations = {
   dcMacroLeft: 'còn lại',
   dcMacroDone: 'đủ',
   dcMacroOver: 'dư',
+  dcMacroEaten: 'đã ăn',
   dcNutritionSurplus: 'Thặng dư',
   dcNutritionDeficit: 'Thâm hụt',
   dcNutritionOnTarget: 'Vừa đủ mục tiêu',
@@ -2067,6 +2069,7 @@ const en: Translations = {
   dcMacroLeft: 'left',
   dcMacroDone: 'done',
   dcMacroOver: 'over',
+  dcMacroEaten: 'eaten',
   dcNutritionSurplus: 'Surplus',
   dcNutritionDeficit: 'Deficit',
   dcNutritionOnTarget: 'On target',

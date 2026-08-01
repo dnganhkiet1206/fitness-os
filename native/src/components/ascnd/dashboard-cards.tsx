@@ -10,7 +10,6 @@ import Animated, {
   useSharedValue,
   withDelay,
   withTiming,
-  type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
@@ -178,11 +177,15 @@ function SmallRing({
             // has no edge, and at these opacities each additional step costs
             // nothing but buys another rung of the ramp. The alphas fall off
             // faster than the widths grow, which is roughly what a blur does.
+            //
+            // The alphas came down by about a third from where they started:
+            // a halo that is bright enough to notice *as a halo* has stopped
+            // being the edge of the ring and become a second ring.
             [
-              { w: W + 10, o: 0.05 },
-              { w: W + 7.5, o: 0.07 },
-              { w: W + 5, o: 0.1 },
-              { w: W + 2.5, o: 0.14 },
+              { w: W + 10, o: 0.035 },
+              { w: W + 7.5, o: 0.05 },
+              { w: W + 5, o: 0.07 },
+              { w: W + 2.5, o: 0.095 },
             ].map((g) => (
               <AnimatedCircle
                 key={g.w}
@@ -280,83 +283,136 @@ interface NutritionCardProps {
 }
 
 /**
- * A macro tile's number, in its two readings.
+ * A macro tile's two numbers, and which of them is the headline.
  *
- * Closed, a tile says what has been eaten against the target — `92/150g`. That
- * is the honest summary and it is the wrong number to act on: nobody plans the
- * rest of the day out of "92", they plan it out of "58 to go". Tapping the card
- * swaps every tile to the second reading at once.
+ * Closed, a tile leads with what has been eaten against the target —
+ * `92/150g` — and says what is left underneath. Tapping the card promotes the
+ * other one: `58g left` becomes the big number and `eaten 92g` drops to the
+ * caption. Neither reading is ever gone, which is why the swap is worth having
+ * at all — the tile is not hiding half of itself, it is deciding which half you
+ * are currently planning from. Nobody plans the rest of the day out of "92",
+ * they plan it out of "58 to go"; nobody checks whether they hit their protein
+ * out of "58 to go" either.
  *
- * ── both texts are always mounted ──
+ * Both lines are present in both states, so the tile's height never changes and
+ * nothing below it reflows when you tap.
+ *
+ * ── both readings are always mounted ──
  *
  * The obvious build is one `<Text>` whose content changes on tap. Then the
- * number can only cut, because there is nothing to cross-fade *to* — and a
- * tile that hard-cuts between two similar numbers looks like a glitch rather
- * than a change of mind. So both readings render, one in flow (which is what
- * gives the row its height) and one absolutely on top of it, and `swap` fades
- * and slides between them: the outgoing number lifts away, the incoming one
- * settles up into its place. Nothing reflows, because the box never changes
- * size.
+ * number can only cut, because there is nothing to cross-fade *to* — and a tile
+ * that hard-cuts between two similar numbers looks like a glitch rather than a
+ * change of mind. So each line renders twice, one copy in flow (which is what
+ * gives the row its height) and one absolutely on top of it, and `swap` moves
+ * between them.
  *
- * ── past the target ──
+ * ── how it moves ──
  *
- * A surplus is the one case where "left" is not a thing that is left, so it is
- * printed as what it is — `+12g over` — in the red this card already uses for
- * eating past a target. Fibre and protein surpluses are not failures, but a
- * per-macro exception is a rule nobody can predict from the outside; the tile
- * states the fact and the colour stays consistent across the card.
+ * Everything travels the same way: up. The outgoing number lifts out of the top
+ * of the tile while the incoming one rises into its place from below, which is
+ * an odometer rather than a dissolve, and it is the difference between a value
+ * that *changed* and two values that happened to overlap. It shrinks very
+ * slightly on the way out and settles back to full size on the way in, so the
+ * arriving number reads as the one in front.
+ *
+ * The fades are phased rather than mirrored: the outgoing copy is gone by 55%
+ * and the incoming one does not start until 45%, leaving a moment where the
+ * tile is nearly empty. Mirrored fades put both numbers at half opacity on top
+ * of each other, which reads as a smear.
+ *
+ * ── and they do not all move at once ──
+ *
+ * Each tile is `index * 55ms` behind the one before it. Four tiles flipping on
+ * the same frame is a screen redrawing; four tiles flipping in sequence is one
+ * gesture travelling across the card. The whole run is under a quarter second
+ * so it never feels like waiting.
  */
 function MacroSwap({
-  swap,
+  showLeft,
+  index,
   current,
   target,
   i18n,
 }: {
-  swap: SharedValue<number>;
+  showLeft: boolean;
+  index: number;
   current: number;
   target: number;
   i18n: ReturnType<typeof useI18n>;
 }) {
+  const eatenNow = Math.round(current);
   const left = Math.round(target - current);
   const over = left < 0;
 
   /**
-   * The two fades are phased, not mirrored.
+   * What is left, as a phrase: `58g left`, `0g done`, `+12g over`.
    *
-   * Fading one out at exactly the rate the other fades in puts both numbers at
-   * half opacity on top of each other for the middle of the transition, and two
-   * superimposed half-visible numbers read as a smear rather than as a swap. So
-   * the outgoing one is gone by 55% and the incoming one does not start until
-   * 45%: there is a brief moment where the tile is nearly empty, and that gap is
-   * what makes the eye read it as one number leaving and another arriving.
-   *
-   * The clamping is written out inside each worklet rather than shared through
-   * a helper — a worklet may only call other worklets, and one small expression
-   * is not worth a second `'worklet'` directive to get wrong.
+   * A surplus is the one case where "left" is not a thing that is left, so it
+   * is printed as what it is, in the red this card already uses for eating past
+   * a target. Fibre and protein surpluses are not failures, but a per-macro
+   * exception is a rule nobody can predict from the outside; the tile states
+   * the fact and the colour stays consistent across the card.
    */
-  const eaten = useAnimatedStyle(() => ({
+  const leftWord = over ? i18n.dcMacroOver : left === 0 ? i18n.dcMacroDone : i18n.dcMacroLeft;
+  const leftNum = `${over ? '+' : ''}${Math.abs(left)}`;
+
+  const swap = useSharedValue(showLeft ? 1 : 0);
+  useEffect(() => {
+    swap.value = withDelay(
+      index * 55,
+      withTiming(showLeft ? 1 : 0, { duration: 320, easing: Easing.bezier(0.22, 1, 0.36, 1) }),
+    );
+  }, [showLeft, index, swap]);
+
+  /**
+   * Four styles rather than two shared between four views.
+   *
+   * Reanimated ties an animated style to the component it is applied to;
+   * handing one result to two components is not something it promises to keep
+   * working, and the failure would be one line silently not animating. The
+   * clamping is written out inside each worklet for the same reason a helper
+   * would need its own `'worklet'` directive — a worklet may only call other
+   * worklets, and one small expression is not worth getting that wrong.
+   */
+  const headOut = useAnimatedStyle(() => ({
     opacity: 1 - Math.min(Math.max(swap.value / 0.55, 0), 1),
-    transform: [{ translateY: -10 * swap.value }],
+    transform: [{ translateY: -12 * swap.value }, { scale: 1 - 0.04 * swap.value }],
   }));
-  const rest = useAnimatedStyle(() => ({
+  const headIn = useAnimatedStyle(() => ({
     opacity: Math.min(Math.max((swap.value - 0.45) / 0.55, 0), 1),
-    transform: [{ translateY: 10 * (1 - swap.value) }],
+    transform: [{ translateY: 12 * (1 - swap.value) }, { scale: 0.96 + 0.04 * swap.value }],
+  }));
+  const noteOut = useAnimatedStyle(() => ({
+    opacity: 1 - Math.min(Math.max(swap.value / 0.55, 0), 1),
+    transform: [{ translateY: -8 * swap.value }],
+  }));
+  const noteIn = useAnimatedStyle(() => ({
+    opacity: Math.min(Math.max((swap.value - 0.45) / 0.55, 0), 1),
+    transform: [{ translateY: 8 * (1 - swap.value) }],
   }));
 
   return (
-    <View>
-      <Animated.Text style={[styles.macroValue, eaten]}>
-        {Math.round(current)}
-        <Text style={styles.macroTarget}>/{target}g</Text>
-      </Animated.Text>
-      <Animated.Text
-        style={[styles.macroValue, styles.macroSwapAbs, over && styles.macroOver, rest]}>
-        {over ? '+' : ''}
-        {Math.abs(left)}
-        <Text style={[styles.macroTarget, over && styles.macroOver]}>
-          g {over ? i18n.dcMacroOver : left === 0 ? i18n.dcMacroDone : i18n.dcMacroLeft}
-        </Text>
-      </Animated.Text>
+    <View style={styles.macroLines}>
+      <View>
+        <Animated.Text style={[styles.macroValue, headOut]}>
+          {eatenNow}
+          <Text style={styles.macroTarget}>/{target}g</Text>
+        </Animated.Text>
+        <Animated.Text
+          style={[styles.macroValue, styles.macroSwapAbs, over && styles.macroOver, headIn]}>
+          {leftNum}
+          <Text style={[styles.macroTarget, over && styles.macroOver]}>g {leftWord}</Text>
+        </Animated.Text>
+      </View>
+
+      <View>
+        <Animated.Text style={[styles.macroNote, over && styles.macroOver, noteOut]}>
+          {leftNum}g {leftWord}
+        </Animated.Text>
+        <Animated.Text style={[styles.macroNote, styles.macroSwapAbs, noteIn]}>
+          {i18n.dcMacroEaten} {eatenNow}g
+        </Animated.Text>
+      </View>
     </View>
   );
 }
@@ -402,10 +458,16 @@ export function NutritionCard({
    *    without carrying a verdict: it is the only value on the card that is not
    *    already spoken for by a meaning, so it reads as "in progress" rather
    *    than as good or bad. Neon white rather than paper white: it ramps into a
-   *    faint icy `#d8f3ff` and carries a glow, because a flat white band on a
-   *    flat dark card is a sticker. A real tube is white in the middle and cool
-   *    at its edges, and that cool cast is most of what makes white read as lit
+   *    cool `#b9dcf0` and carries a glow, because a flat white band on a flat
+   *    dark card is a sticker. A real tube is white in the middle and cool at
+   *    its edges, and that cool cast is most of what makes white read as lit
    *    rather than as painted.
+   *
+   *    It is not pure `#ffffff` any more. A 12pt band of maximum white is the
+   *    brightest thing the screen can produce, sitting on the darkest — that is
+   *    not a lit ring, it is a light source, and the numbers inside it have to
+   *    compete with it to be read. `#eaf1fb` is a stop down: still the
+   *    brightest thing on the card, no longer the brightest thing available.
    *  - **on target, or over by no more than the allowance** — the good band.
    *    This keeps the card's existing amber/orange gradient.
    *  - **past the allowance** — red. Genuinely over, and it should look it.
@@ -432,7 +494,7 @@ export function NutritionCard({
     ? ['#e6485c', colors.readinessRed]
     : inBand
       ? ['#ffc53d', '#ff9130']
-      : ['#ffffff', '#d8f3ff'];
+      : ['#eaf1fb', '#b9dcf0'];
   const ringIconColor = overBudget
     ? colors.readinessRed
     : inBand
@@ -445,7 +507,7 @@ export function NutritionCard({
    * than as neon, and it would put light around the two states that mean
    * something rather than the one that means "still going".
    */
-  const ringGlow = !overBudget && !inBand ? '#bfeaff' : undefined;
+  const ringGlow = !overBudget && !inBand ? '#9fd8f5' : undefined;
 
   // the delta line follows the same three states, so the card speaks once
   const deltaColor = overBudget
@@ -455,18 +517,15 @@ export function NutritionCard({
       : colors.foreground;
 
   /**
-   * Which reading the tiles are showing, and the value the tiles animate on.
+   * Which reading the tiles are showing.
    *
-   * State drives the animation rather than the other way round — the shared
-   * value is a consequence of `showLeft`, so a re-render for any other reason
-   * (a fresh log landing, the language changing) cannot leave the tiles fading
-   * one way while the card believes the other.
+   * Just the boolean — each tile owns the shared value it animates on, because
+   * they no longer move together. State drives the animation rather than the
+   * other way round, so a re-render for any other reason (a fresh log landing,
+   * the language changing) cannot leave a tile fading one way while the card
+   * believes the other.
    */
   const [showLeft, setShowLeft] = useState(false);
-  const swap = useSharedValue(0);
-  useEffect(() => {
-    swap.value = withTiming(showLeft ? 1 : 0, { duration: 260, easing: Easing.out(Easing.cubic) });
-  }, [showLeft, swap]);
 
   const macros = [
     { label: 'Protein', ...protein, icon: ProteinIcon, color: colors.primary, bar: ['#f59e0b', '#ecc94b'] as [string, string] },
@@ -513,6 +572,11 @@ export function NutritionCard({
             <Text style={styles.sideLine}>
               {i18n.dcNutritionTarget}: <Text style={styles.sideMono}>{calorieTarget.toLocaleString()}</Text> kcal
             </Text>
+            {/* A separator, so the row is two facts rather than one run-on
+                phrase: the target, then how much of it today covered. Without
+                it "2,200 kcal 70% goal" is read once as a single number and
+                then again, properly, on the second look. */}
+            <Text style={styles.sideSlash}>/</Text>
             <Text style={[styles.sidePct, { color: deltaColor }]}>
               {i18n.dcNutritionPctOfGoal.replace('{x}', String(pctOfTarget))}
             </Text>
@@ -550,7 +614,7 @@ export function NutritionCard({
         * less than the row, and `flexGrow` opens them back out to fill it.
         */}
       <View style={styles.macroGrid}>
-        {macros.map((m) => {
+        {macros.map((m, i) => {
           const pct = Math.min((m.current / (m.target || 1)) * 100, 100);
           const Glyph = m.icon;
           return (
@@ -563,7 +627,13 @@ export function NutritionCard({
                 <Glyph size={14} color={m.color} cut={colors.background} />
                 <Text style={styles.macroLabel}>{m.label}</Text>
               </View>
-              <MacroSwap swap={swap} current={m.current} target={m.target} i18n={i18n} />
+              <MacroSwap
+                showLeft={showLeft}
+                index={i}
+                current={m.current}
+                target={m.target}
+                i18n={i18n}
+              />
               {/* The bar does not switch with the number: filled-so-far and
                   left-to-go are the same bar read from opposite ends, and
                   flipping it would only make the tile look like it had changed
@@ -872,7 +942,10 @@ const styles = StyleSheet.create({
   // ring — the target, what is left, and how far past it the day has gone —
   // and at 12 they were caption-sized next to a 16pt number in the ring.
   sideLine: { fontSize: 14, color: colors.mutedForeground },
-  sideTargetRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  // `gap: 6` rather than `spacing.sm` — the slash needs to sit closer to both
+  // sides than the two facts sat from each other, or it reads as a third item
+  sideTargetRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  sideSlash: { fontSize: 13, color: colors.border },
   sidePct: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
   sideMono: { fontFamily: 'Menlo', color: colors.foreground, fontVariant: ['tabular-nums'] },
   sideMonoStrong: { fontSize: 14, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
@@ -904,6 +977,10 @@ const styles = StyleSheet.create({
   // the second reading, stacked on the first — `left: 0, right: 0` so it wraps
   // and aligns exactly like the text underneath it rather than shrink-wrapping
   macroSwapAbs: { position: 'absolute', left: 0, right: 0, top: 0 },
+  // headline and caption read as one block, so they sit closer to each other
+  // than the tile's own `gap` puts the bar below them
+  macroLines: { gap: 2 },
+  macroNote: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   macroOver: { color: colors.readinessRed },
   cardPressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
   macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'hidden' },
