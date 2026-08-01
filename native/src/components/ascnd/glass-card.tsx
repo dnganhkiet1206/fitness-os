@@ -4,27 +4,68 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { glass, spacing } from '@/constants/ascnd';
 
 /**
- * Card surface — a faithful match of the web app's `.metric-card` /
- * `.glass-card`: a 6% white glass fill, a 0.5px 12% white hairline border,
- * a 20px radius, and the web's `::before` specular sheen kept very subtle
- * (a soft top glare that fades out). No drop shadow: on the near-black page
- * the web's shadow is essentially invisible, and RN renders shadows as a
- * hard halo on dark, which reads unnatural — the depth comes from the fill,
- * hairline border and sheen, like the web.
+ * Card surface — the web app's `.metric-card` / `.glass-card`: a 6% white
+ * glass fill, a 0.5px 12% white hairline border and a 20px radius, with a
+ * diagonal gradient across the face.
+ *
+ * ── the gradient ──
+ *
+ * The fill on its own is one flat value, which is the same problem the page
+ * background had: a real surface is never the same brightness across its whole
+ * area, because the light reaching one corner of it is not the light reaching
+ * the other. A card that is uniformly 6% white reads as a rectangle of paint.
+ *
+ * So the face runs light at the top-left and dark at the bottom-right. That
+ * diagonal is not arbitrary — it is the direction of the room's key light,
+ * which `AmbientLight` places just past the top-left corner of the page. Every
+ * card catches it from the same side, which is why they look lit rather than
+ * merely shaded.
+ *
+ * ── two gradients, not one ──
+ *
+ * A single gradient from white through to black would have to pass through
+ * near-zero alpha in the middle, and interpolating white→black across that
+ * lays a grey haze over the centre of the card. Two rects, each fading to
+ * fully transparent, never interpolate between the two colours at all.
+ *
+ * ── on the numbers ──
+ *
+ * 8% white and 8% black at the extremes, both gone by the middle. Against a
+ * page around #131314 that is roughly #24 at the lit corner and #0f at the
+ * far one — a difference you would not measure and would notice if it were
+ * missing. The darkening matters as much as the lightening: it is what
+ * separates the card's bottom edge from the page without a border there to do
+ * it.
+ *
+ * ── no drop shadow ──
+ *
+ * Still true, and still for the original reason: RN renders shadows on dark as
+ * a hard halo rather than a soft falloff. The depth comes from the gradient,
+ * the hairline border and the bright top edge.
  */
 export function GlassCard({ style, children, ...props }: ViewProps) {
   return (
     <View style={[styles.card, style]} {...props}>
-      {/* Specular sheen — soft top glare, clipped to the rounded corners */}
-      <View style={styles.sheen} pointerEvents="none">
+      {/* The lit face, clipped to the rounded corners */}
+      <View style={styles.face} pointerEvents="none">
         <Svg width="100%" height="100%" preserveAspectRatio="none">
           <Defs>
-            <LinearGradient id="glassSheen" x1="0" y1="0" x2="0" y2="0.6">
-              <Stop offset="0" stopColor="#ffffff" stopOpacity={0.05} />
+            {/* Light in from the top-left, gone by the middle */}
+            <LinearGradient id="cardLit" x1="0" y1="0" x2="0.7" y2="1">
+              <Stop offset="0" stopColor="#ffffff" stopOpacity={0.08} />
+              <Stop offset="0.45" stopColor="#ffffff" stopOpacity={0.015} />
               <Stop offset="1" stopColor="#ffffff" stopOpacity={0} />
             </LinearGradient>
+            {/* And falling away to the bottom-right, on its own rect so the two
+                never interpolate through each other */}
+            <LinearGradient id="cardShade" x1="1" y1="1" x2="0.35" y2="0">
+              <Stop offset="0" stopColor="#000000" stopOpacity={0.08} />
+              <Stop offset="0.45" stopColor="#000000" stopOpacity={0.015} />
+              <Stop offset="1" stopColor="#000000" stopOpacity={0} />
+            </LinearGradient>
           </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#glassSheen)" />
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#cardLit)" />
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#cardShade)" />
         </Svg>
       </View>
       {/* Bright inner top edge (--glass-inner-shadow) */}
@@ -43,7 +84,7 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
     overflow: 'hidden',
   },
-  sheen: {
+  face: {
     position: 'absolute',
     top: 0,
     left: 0,
