@@ -285,16 +285,22 @@ interface NutritionCardProps {
 /**
  * A macro tile's two numbers, and which of them is the headline.
  *
- * Closed, a tile leads with what has been eaten against the target —
- * `92/150g` — and says what is left underneath, `58g left`. Tapping the card
- * promotes the remainder: `58g` becomes the big figure and `left` becomes the
- * caption naming it. Nobody plans the rest of the day out of "92", they plan it
- * out of "58 to go".
+ * Each side is a figure with the word for it underneath: `92/150g` over
+ * `eaten`, and — tapped — `58g` over `left`. Nobody plans the rest of the day
+ * out of "92", they plan it out of "58 to go", and nobody checks whether they
+ * hit their protein out of "58 to go" either. One tile, one number at a time,
+ * and the tap decides which question it is answering.
  *
- * The word travels down rather than up with its number. A headline reading
- * `58g left` mixes 18pt and 12pt on one line, which is a sentence that happens
- * to start with a number; `58g` above `left` is a number with a label, and the
- * figure is easier to find at exactly the moment the tile exists to show it.
+ * The caption names the headline rather than carrying a second figure. It once
+ * read `58g left` under the eaten number, which left the tap with nothing to
+ * reveal — both numbers were already on the tile and flipping it only changed
+ * which one was set in 18pt.
+ *
+ * The word also travels *down* with its number rather than up beside it. A
+ * headline reading `58g left` mixes 18pt and 12pt on one line, which is a
+ * sentence that happens to start with a number; `58g` above `left` is a number
+ * with a label, and the figure is easier to find at exactly the moment the tile
+ * exists to show it.
  *
  * Both lines are present in both states, so the tile's height never changes and
  * nothing below it reflows when you tap.
@@ -408,9 +414,17 @@ function MacroSwap({
       </View>
 
       <View>
-        <Animated.Text style={[styles.macroNote, over && styles.macroOver, noteOut]}>
-          {leftNum}g {leftWord}
-        </Animated.Text>
+        {/*
+          The label for the headline above it, not a second figure.
+
+          This said `58g left` — the remainder, spelled out under the eaten
+          figure — which meant the tap had nothing to reveal: both numbers were
+          already on the tile and flipping it only changed which one was set in
+          18pt. Naming the headline instead makes the two sides symmetric,
+          `92/150g` over `eaten` and `58g` over `left`, and gives the tap
+          something to be for.
+        */}
+        <Animated.Text style={[styles.macroNote, noteOut]}>{i18n.dcMacroEaten}</Animated.Text>
         {/*
           The word only, sitting where the caption always sits.
 
