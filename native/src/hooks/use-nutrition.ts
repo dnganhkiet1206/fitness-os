@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 
 export interface FoodItemRow {
@@ -226,6 +227,15 @@ export function useToggleFavoriteFood() {
 
 export interface LoggedItem {
   id: string;
+  /**
+   * The `meal_entries` row this food belongs to.
+   *
+   * Carried on the item because the diary merges meals of the same type into
+   * one card, so by the time a row is on screen it has been separated from the
+   * entry it came from — and editing or deleting it has to re-total that entry,
+   * not whichever one the card happens to be grouped under.
+   */
+  entry_id: string;
   food_name: string;
   servings: number;
   kcal: number;
@@ -315,6 +325,7 @@ export function useTodayLog() {
         const list = byEntry.get(it.meal_entry_id) ?? [];
         list.push({
           id: it.id,
+          entry_id: it.meal_entry_id,
           food_name: it.food_name,
           servings: Number(it.servings) || 1,
           kcal: Math.round(Number(it.kcal) || 0),
@@ -337,4 +348,144 @@ export function useTodayLog() {
       }));
     },
   });
+}
+
+/* ── editing what is already logged ───────────────────────────────────── */
+
+/**
+ * Re-total one meal entry from the item rows it still has, and delete it if it
+ * has none left.
+ *
+ * Both mutations below need this and neither can skip it. `daily_logs` — which
+ * is what the calorie ring and every macro tile read — is rebuilt from
+ * `meal_entries.total_*`, not from the items. Change an item without changing
+ * its parent's totals and the diary and the ring disagree about the same food:
+ * the row is gone from the list and its calories are still in the ring, which
+ * looks like the delete silently failed.
+ *
+ * The totals are re-read from the database rather than adjusted by the delta
+ * the caller happens to know. A subtraction is only right if the number it
+ * starts from was right, and this is the one place that can establish that for
+ * itself. It costs one extra round trip on an operation a user does a few times
+ * a day.
+ *
+ * An entry with no items is removed rather than zeroed. A `meal_entries` row is
+ * the meal; a meal with nothing in it is not an empty meal, it is a meal that
+ * did not happen, and leaving it behind puts a "Breakfast · 0 kcal" card in the
+ * diary that nothing can clear.
+ */
+async function resyncMealEntry(entryId: string) {
+  const { data: rest, error } = await supabase
+    .from('meal_entry_items')
+    .select('kcal, protein_g, carbs_g, fat_g, fiber_g')
+    .eq('meal_entry_id', entryId);
+  if (error) throw error;
+
+  if (!rest || rest.length === 0) {
+    const { error: delError } = await supabase.from('meal_entries').delete().eq('id', entryId);
+    if (delError) throw delError;
+    return;
+  }
+
+  const sum = (k: 'kcal' | 'protein_g' | 'carbs_g' | 'fat_g' | 'fiber_g') =>
+    Math.round(rest.reduce((s, r) => s + (Number(r[k]) || 0), 0));
+
+  const { error: upError } = await supabase
+    .from('meal_entries')
+    .update({
+      total_kcal: sum('kcal'),
+      total_protein_g: sum('protein_g'),
+      total_carbs_g: sum('carbs_g'),
+      total_fat_g: sum('fat_g'),
+      total_fiber_g: sum('fiber_g'),
+    })
+    .eq('id', entryId);
+  if (upError) throw upError;
+}
+
+/** Remove one logged food from today's diary. */
+export function useDeleteMealItem() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ itemId, entryId }: { itemId: string; entryId: string }) => {
+      const { error } = await supabase.from('meal_entry_items').delete().eq('id', itemId);
+      if (error) throw error;
+      await resyncMealEntry(entryId);
+      await recomputeDailyLog(user!.id, localDateStr());
+    },
+    onSuccess: () => invalidateLogQueries(qc, user?.id),
+  });
+}
+
+/**
+ * Change how many servings of a logged food were eaten.
+ *
+ * The stored numbers are per *logged serving* — `log-meal.tsx` writes
+ * `kcal * servings` — so there is no per-serving figure on the row to multiply
+ * by the new count. Everything is scaled by the ratio between the new count and
+ * the old one instead, which is the same arithmetic and needs nothing the row
+ * does not already carry.
+ *
+ * `fiber_g` is scaled along with the rest even though the diary never shows it:
+ * the daily log totals it, and a macro that only some code paths maintain is a
+ * macro that drifts.
+ */
+export function useUpdateMealItemServings() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      itemId,
+      entryId,
+      servings,
+    }: {
+      itemId: string;
+      entryId: string;
+      servings: number;
+    }) => {
+      const { data: row, error: readError } = await supabase
+        .from('meal_entry_items')
+        .select('servings, kcal, protein_g, carbs_g, fat_g, fiber_g')
+        .eq('id', itemId)
+        .single();
+      if (readError) throw readError;
+
+      const was = Number(row.servings) || 1;
+      const k = servings / was;
+      const { error } = await supabase
+        .from('meal_entry_items')
+        .update({
+          servings,
+          kcal: Math.round((Number(row.kcal) || 0) * k),
+          protein_g: Math.round((Number(row.protein_g) || 0) * k),
+          carbs_g: Math.round((Number(row.carbs_g) || 0) * k),
+          fat_g: Math.round((Number(row.fat_g) || 0) * k),
+          fiber_g: Math.round((Number(row.fiber_g) || 0) * k),
+        })
+        .eq('id', itemId);
+      if (error) throw error;
+
+      await resyncMealEntry(entryId);
+      await recomputeDailyLog(user!.id, localDateStr());
+    },
+    onSuccess: () => invalidateLogQueries(qc, user?.id),
+  });
+}
+
+/**
+ * Everything that changes when a logged food does.
+ *
+ * `useInvalidateToday` is a hook and cannot be called from inside a mutation's
+ * callback, so the keys it shares are repeated here. They are the same keys —
+ * if one list grows a member the other has to as well, which is exactly how the
+ * diary came to not refresh after a meal was logged.
+ */
+function invalidateLogQueries(qc: ReturnType<typeof useQueryClient>, userId?: string) {
+  const dateStr = localDateStr();
+  qc.invalidateQueries({ queryKey: ['today_meals_detail', userId, dateStr] });
+  qc.invalidateQueries({ queryKey: ['today_meals', userId, dateStr] });
+  qc.invalidateQueries({ queryKey: ['daily_log', userId, dateStr] });
+  qc.invalidateQueries({ queryKey: ['readiness_history', userId] });
+  qc.invalidateQueries({ queryKey: ['recent_foods', userId] });
 }

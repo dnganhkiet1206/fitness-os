@@ -1,14 +1,29 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ChevronDown, ChevronUp, UtensilsCrossed } from 'lucide-react-native';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ChevronDown,
+  ChevronUp,
+  Minus,
+  Pencil,
+  Plus,
+  Trash2,
+  UtensilsCrossed,
+} from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, spacing, type } from '@/constants/ascnd';
+
+import { colors, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
-import type { LoggedItem, LoggedMeal } from '@/hooks/use-nutrition';
+import { toast } from '@/lib/toast';
+import {
+  useDeleteMealItem,
+  useUpdateMealItemServings,
+  type LoggedItem,
+  type LoggedMeal,
+} from '@/hooks/use-nutrition';
 
 /**
  * What was eaten today, meal by meal.
@@ -112,6 +127,43 @@ export function TodayMeals({
 
   const groups = groupByType(meals);
 
+  const del = useDeleteMealItem();
+  const edit = useUpdateMealItemServings();
+  const [editing, setEditing] = useState<LoggedItem | null>(null);
+
+  /**
+   * Deleting asks first, and asks with the food's name in the question.
+   *
+   * "Are you sure?" is a question nobody can answer wrongly *or* correctly —
+   * it does not say what is about to go. Naming the row means a mistap on the
+   * wrong line is caught by reading the alert rather than by noticing the ring
+   * move afterwards.
+   */
+  const confirmDelete = (it: LoggedItem) => {
+    Alert.alert(
+      i18n.nItemDelete,
+      i18n.nItemDeleteMsg.replace('{name}', it.food_name),
+      [
+        { text: i18n.cancel, style: 'cancel' },
+        {
+          text: i18n.delete,
+          style: 'destructive',
+          onPress: () =>
+            del.mutate(
+              { itemId: it.id, entryId: it.entry_id },
+              {
+                onSuccess: () => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  toast.success(i18n.deleted);
+                },
+                onError: (e: Error) => toast.error(e.message),
+              },
+            ),
+        },
+      ],
+    );
+  };
+
   if (groups.length === 0) {
     return (
       <Pressable
@@ -140,8 +192,40 @@ export function TodayMeals({
           manual form. The floating ⊕ (`LogMealFab`) costs no height and opens
           all four ways in. */}
       {groups.map((g) => (
-        <MealCard key={g.type} g={g} label={label[g.type] ?? g.type} i18n={i18n} />
+        <MealCard
+          key={g.type}
+          g={g}
+          label={label[g.type] ?? g.type}
+          i18n={i18n}
+          onEdit={setEditing}
+          onDelete={confirmDelete}
+        />
       ))}
+
+      <EditServingsSheet
+        item={editing}
+        i18n={i18n}
+        busy={edit.isPending}
+        onClose={() => setEditing(null)}
+        onSave={(servings) => {
+          if (!editing) return;
+          if (servings === editing.servings) {
+            setEditing(null);
+            return;
+          }
+          edit.mutate(
+            { itemId: editing.id, entryId: editing.entry_id, servings },
+            {
+              onSuccess: () => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                toast.success(i18n.nItemUpdated);
+                setEditing(null);
+              },
+              onError: (e: Error) => toast.error(e.message),
+            },
+          );
+        }}
+      />
     </View>
   );
 }
@@ -157,10 +241,14 @@ function MealCard({
   g,
   label,
   i18n,
+  onEdit,
+  onDelete,
 }: {
   g: MealGroup;
   label: string;
   i18n: ReturnType<typeof useI18n>;
+  onEdit: (it: LoggedItem) => void;
+  onDelete: (it: LoggedItem) => void;
 }) {
   const [open, setOpen] = useState(false);
   const count = g.items.length;
@@ -206,10 +294,160 @@ function MealCard({
                 </Text>
               </View>
               <Text style={styles.itemKcal}>{it.kcal}</Text>
+              {/*
+                Edit and remove, on the row itself.
+
+                Not a swipe and not a long-press. Both are invisible until
+                guessed, and this list is already behind a tap to expand the
+                meal — a gesture hidden inside something hidden is a feature
+                only its author finds. The two buttons cost a little width on a
+                row that had spare, and they say what is possible without being
+                tried.
+
+                44 × 44 hit targets around 16pt glyphs: the drawn icon is small
+                enough not to compete with the food's name, and `hitSlop` makes
+                it a thumb-sized target anyway.
+              */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={i18n.nItemEdit}
+                hitSlop={10}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  onEdit(it);
+                }}
+                style={({ pressed }) => [styles.rowBtn, pressed && styles.pressed]}>
+                <Icon icon={Pencil} size={15} color={colors.mutedForeground} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={i18n.nItemDelete}
+                hitSlop={10}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onDelete(it);
+                }}
+                style={({ pressed }) => [styles.rowBtn, pressed && styles.pressed]}>
+                {/* Muted, not red. A destructive glyph on every row of a list
+                    that is not about deleting makes deletion the loudest thing
+                    on the card — three foods drew three red marks and the eye
+                    went to them before the food. The two actions are already
+                    told apart by their shapes, and the red belongs on the
+                    confirm dialog's button, where it is about to mean
+                    something. */}
+                <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+              </Pressable>
             </View>
           ))
         : null}
     </GlassCard>
+  );
+}
+
+/**
+ * How many servings of one logged food — a small sheet over the diary.
+ *
+ * Servings and not the macros themselves. The numbers on a logged row are the
+ * food's own figures multiplied by a count, so editing them directly would let
+ * a portion of rice carry a protein figure no portion of rice has, and the
+ * next thing that reads it (the recent-foods list, which divides back out to
+ * one serving) would spread that fiction to every future log of the same food.
+ * The count is the thing that was actually a guess, and correcting it rescales
+ * everything consistently.
+ *
+ * Steppers rather than a text field: the realistic range is a few halves
+ * either side of one, the keyboard would cover the sheet, and there is no
+ * partially-typed state to guard against. `0.5` steps because half a portion is
+ * a thing people eat and a third is not something anyone measures.
+ */
+function EditServingsSheet({
+  item,
+  i18n,
+  onClose,
+  onSave,
+  busy,
+}: {
+  item: LoggedItem | null;
+  i18n: ReturnType<typeof useI18n>;
+  onClose: () => void;
+  onSave: (servings: number) => void;
+  busy: boolean;
+}) {
+  const [servings, setServings] = useState(1);
+
+  // Re-seed each time a different row opens the sheet. Without this the
+  // stepper keeps whatever the last row left in it.
+  useEffect(() => {
+    if (item) setServings(item.servings || 1);
+  }, [item]);
+
+  if (!item) return null;
+
+  // What the row will say once saved — the same ratio the mutation applies, so
+  // the preview and the result cannot disagree.
+  const k = servings / (item.servings || 1);
+  const step = (d: number) => {
+    const next = Math.round((servings + d) * 2) / 2;
+    if (next < 0.5 || next > 20) return;
+    Haptics.selectionAsync();
+    setServings(next);
+  };
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.scrim} onPress={onClose}>
+        {/* The card swallows taps so pressing inside it does not dismiss */}
+        <Pressable style={styles.sheet} onPress={() => {}}>
+          <Text style={styles.sheetTitle} numberOfLines={2}>
+            {item.food_name}
+          </Text>
+          <Text style={styles.sheetSub}>{i18n.nItemServings}</Text>
+
+          <View style={styles.stepper}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.nServingsLess}
+              onPress={() => step(-0.5)}
+              style={({ pressed }) => [styles.stepBtn, pressed && styles.pressed]}>
+              <Icon icon={Minus} size={18} color={colors.foreground} />
+            </Pressable>
+            <Text style={styles.stepValue}>{servings % 1 === 0 ? servings : servings.toFixed(1)}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.nServingsMore}
+              onPress={() => step(0.5)}
+              style={({ pressed }) => [styles.stepBtn, pressed && styles.pressed]}>
+              <Icon icon={Plus} size={18} color={colors.foreground} />
+            </Pressable>
+          </View>
+
+          <Text style={styles.sheetPreview}>
+            {Math.round(item.kcal * k)} kcal · P{Math.round(item.protein_g * k)} · C
+            {Math.round(item.carbs_g * k)} · F{Math.round(item.fat_g * k)}
+          </Text>
+
+          <View style={styles.sheetActions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onClose}
+              style={({ pressed }) => [styles.sheetBtn, pressed && styles.pressed]}>
+              <Text style={styles.sheetBtnText}>{i18n.cancel}</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy}
+              onPress={() => onSave(servings)}
+              style={({ pressed }) => [
+                styles.sheetBtn,
+                styles.sheetBtnPrimary,
+                (pressed || busy) && styles.pressed,
+              ]}>
+              <Text style={[styles.sheetBtnText, styles.sheetBtnTextPrimary]}>{i18n.save}</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -238,4 +476,59 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
   emptyText: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
   pressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
+
+  // ── per-row edit / delete ──
+  rowBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+
+  // ── the servings sheet ──
+  scrim: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  sheet: {
+    width: '100%',
+    maxWidth: 340,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: '#1b1b1f',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  sheetTitle: { ...type.headline, color: colors.foreground, textAlign: 'center' },
+  sheetSub: { ...type.caption, color: colors.mutedForeground },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingVertical: spacing.xs },
+  stepBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  stepValue: {
+    minWidth: 64,
+    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
+  },
+  sheetPreview: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  sheetActions: { flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch', marginTop: spacing.xs },
+  sheetBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  sheetBtnPrimary: { backgroundColor: colors.primary },
+  sheetBtnText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  sheetBtnTextPrimary: { color: '#111' },
 });
