@@ -43,6 +43,32 @@ import { handleTabScroll } from '@/lib/tab-bar-visibility';
  */
 
 /**
+ * ── do not put `automaticallyAdjustKeyboardInsets` back on these ──
+ *
+ * It was on all three scroll views, and it is what made pages scroll on past
+ * the end of their content into empty space.
+ *
+ * On iOS it works by adding to the scroll view's bottom `contentInset` when
+ * the keyboard appears, and it does not survive
+ * `contentInsetAdjustmentBehavior="never"` — which every branch here sets,
+ * because these pages lay out their own safe-area padding. The inset it adds
+ * is not reliably taken back off, so each appearance of the keyboard leaves
+ * more room below the content to scroll into.
+ *
+ * It was first narrowed to the six pages that have a text input, on the
+ * assumption that the other nineteen were collateral. Nutrition was one of the
+ * six and went on doing it, which is what settled the question: the prop is
+ * the fault, not the number of pages carrying it.
+ *
+ * What is lost: nothing scrolls itself up when the keyboard covers it. Every
+ * text field on these pages sits near the top — a search box under the tab
+ * bar, the first field of a short form — so none of them are behind it. If a
+ * form ever grows long enough for that to stop being true, wrap that form's
+ * fields in a `KeyboardAvoidingView`; do not put this prop back on the
+ * scaffold.
+ */
+
+/**
  * Height of the fixed header bar, matching UIKit's navigation bar.
  *
  * Only the bar's own height now — while the bar overlaid the content this also
@@ -86,30 +112,12 @@ interface ScreenProps extends ViewProps {
   onScroll?: ScrollViewProps['onScroll'];
   onScrollBeginDrag?: ScrollViewProps['onScrollBeginDrag'];
   scrollEventThrottle?: number;
-  /**
-   * Let the keyboard push the page up — off by default.
-   *
-   * `automaticallyAdjustKeyboardInsets` was on for every page, and it is the
-   * leading suspect for the scroll that never reaches an end. On iOS it works
-   * by adding to the scroll view's bottom `contentInset` when the keyboard
-   * appears, and it does not sit well with
-   * `contentInsetAdjustmentBehavior="never"` — which every branch here sets,
-   * because these pages lay out their own safe-area padding. The inset it adds
-   * is not reliably taken back off, so each appearance of the keyboard can
-   * leave more empty space below the content to scroll into, on a page that
-   * may have no text field on it at all.
-   *
-   * Nineteen of the twenty-five pages built on this scaffold have no text
-   * input anywhere, so for them the prop could only ever cost. It is opt-in
-   * now, and set on the six that need it.
-   */
-  keyboardInsets?: boolean;
 }
 
 /**
  * Page scaffold matching the web app's two header patterns.
  */
-export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, contentScrollEnabled = true, keyboardInsets = false, children, style, ...props }: ScreenProps) {
+export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, contentScrollEnabled = true, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
 
   /**
@@ -160,7 +168,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
             contentContainerStyle={[styles.subContentFlush, { paddingBottom: insets.bottom + spacing.xl }, style]}
             contentInsetAdjustmentBehavior="never"
             scrollEnabled={contentScrollEnabled}
-            automaticallyAdjustKeyboardInsets={keyboardInsets}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             {...props}>
@@ -194,7 +201,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           style={styles.scroller}
           contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
           contentInsetAdjustmentBehavior="never"
-          automaticallyAdjustKeyboardInsets={keyboardInsets}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           {...props}>
@@ -222,7 +228,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           style,
         ]}
         contentInsetAdjustmentBehavior="never"
-        automaticallyAdjustKeyboardInsets={keyboardInsets}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}

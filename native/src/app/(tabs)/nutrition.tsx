@@ -142,7 +142,7 @@ export default function NutritionScreen() {
     // The FAB is a sibling of the page, not a child: `Screen`'s root *is* the
     // scroll view, so anything inside it scrolls away with the diary.
     <View style={styles.root}>
-      <Screen keyboardInsets
+      <Screen
         title={i18n.nutritionTitle}
         headerRight={
           <View style={styles.headerButtons}>

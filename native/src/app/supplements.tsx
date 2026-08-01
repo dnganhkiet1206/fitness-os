@@ -67,7 +67,7 @@ export default function SupplementsScreen() {
   };
 
   return (
-    <Screen keyboardInsets
+    <Screen
       back
       title={i18n.nSupplements}
       headerRight={

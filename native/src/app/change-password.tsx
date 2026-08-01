@@ -56,15 +56,16 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <Screen keyboardInsets back title={i18n.settingsChangePassword}>
+    <Screen back title={i18n.settingsChangePassword}>
       {/*
         A plain View, not a ScrollView.
 
         `Screen` already is one, and a vertical scroll view nested inside
         another vertical scroll view has no height to be bounded by: the outer
         one offers it unlimited space, so it reports whatever it likes and the
-        page scrolls without ever reaching an end. `keyboardInsets` on the
-        `Screen` above does the keyboard job the inner one was here for.
+        page scrolls without ever reaching an end. The fields are near the top
+        of a short form, so nothing needs to scroll out from under the
+        keyboard.
       */}
       <View style={styles.content}>
           <View style={styles.field}>
