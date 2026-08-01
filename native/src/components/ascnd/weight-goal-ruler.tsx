@@ -25,31 +25,37 @@ import { colors } from '@/constants/ascnd';
  * memoised, and the two callbacks are `useCallback`ed by the parent. An inline
  * arrow anywhere here would defeat the whole thing silently.
  *
- * ── it does not coast at all ──
+ * ── how far it coasts ──
  *
- * The ruler moves with the finger and stops when the finger lifts. No throw,
- * no travel after release: `disableIntervalMomentum` makes it settle on the
- * tick nearest where you let go, and `decelerationRate` is `fast` so what
- * little momentum is left dies immediately.
+ * A short glide, and the number is chosen rather than named.
  *
- * This was arrived at from the other end, and the middle ground is the part
- * worth not repeating. `normal` (iOS 0.998) is the setting for a page of
- * content, where a flick should travel; on a ruler an ordinary flick carries a
- * couple of thousand points, which at this scale is five hundred ticks and
- * fifty kilograms — so the target being nudged ends up off the end of the
- * scale, and the throw outruns the renderer on the way, leaving an empty strip
- * to watch. A hand-picked 0.975 in between glided a few dozen ticks, which is
- * better and still moves the value further than anyone asked it to.
+ * iOS deceleration is a per-frame multiplier, so the distance a flick travels
+ * scales with roughly `1 / (1 − rate)`. That is 10 for `fast` (0.9) and 500
+ * for `normal` (0.998) — the two named settings are a factor of fifty apart,
+ * with nothing in between, which is why this ended up as a literal.
  *
- * The reason momentum is wrong here at all: a scroll view is normally
- * navigating something bigger than the screen, where speed is the point. This
- * is a control being set to one number. Throwing it is not a faster way to
- * choose — it is a way to lose the number you had.
+ * Both extremes were tried here and both were wrong. `normal` sent a flick a
+ * couple of thousand points, fifty kilograms at this scale, past the end of
+ * the scale and outrunning the renderer on the way, so what you watched while
+ * it travelled was an empty strip. Then `disableIntervalMomentum` removed the
+ * glide entirely, which stops it running away and leaves it feeling stuck to
+ * the finger: a dial with no weight to it.
  *
- * The window is still generous, now that nothing can outrun it. Each tick is
- * two plain views with no text or image in it, so keeping a few screens' worth
- * either side rendered costs almost nothing and a fast drag never reaches an
- * unrendered edge.
+ * 0.94 is 1.7× `fast`. A flick coasts on the order of a hundred points —
+ * twenty-odd ticks, a couple of units — which is enough to read as a slide and
+ * still lands somewhere you meant. `snapToInterval` finishes it on an exact
+ * tick: iOS picks the snap from where the momentum was heading, so only the
+ * last few points are adjusted.
+ *
+ * The scale is what makes this liveable now. At 4pt a tick, a hundred points
+ * of coast is twenty-five marks going past — visibly a slide. The same coast
+ * at the old 12pt tick was eight marks, which is why `fast` read as no glide
+ * at all back then.
+ *
+ * The window is generous to match. Each tick is two plain views with no text
+ * or image in it, so keeping several screens' worth either side rendered costs
+ * almost nothing, and a coast of a hundred points never reaches an unrendered
+ * edge.
  */
 
 /**
@@ -116,10 +122,9 @@ export const Ruler = memo(function Ruler({
       getItemLayout={getItemLayout}
       contentContainerStyle={contentContainerStyle}
       showsHorizontalScrollIndicator={false}
-      // Settle on the tick nearest where the finger lifted, and nowhere else
+      // A short glide, then an exact tick — see the note above
       snapToInterval={TICK_W}
-      disableIntervalMomentum
-      decelerationRate="fast"
+      decelerationRate={0.94}
       onContentSizeChange={onContentSizeChange}
       onScroll={onScroll}
       // Every frame. A tick is 12pt, so a slow drag crosses one in a couple of
