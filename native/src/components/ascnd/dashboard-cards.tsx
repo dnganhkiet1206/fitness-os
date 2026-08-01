@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Droplets, Flame, Footprints, Moon, Star, Sunrise, type LucideIcon } from 'lucide-react-native';
+import { Droplets, Flame, Footprints, Moon, Star, Sunrise, Target, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useId, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -577,9 +577,22 @@ export function NutritionCard({
                 it "2,200 kcal 70% goal" is read once as a single number and
                 then again, properly, on the second look. */}
             <Text style={styles.sideSlash}>/</Text>
-            <Text style={[styles.sidePct, { color: deltaColor }]}>
-              {i18n.dcNutritionPctOfGoal.replace('{x}', String(pctOfTarget))}
-            </Text>
+            {/*
+              The word "goal" is now the target glyph.
+
+              It was the longest thing on the busiest line and it was the least
+              informative: the number beside it is a percentage of *something*,
+              and on a card headed NUTRITION with a target on the same line
+              there is only one thing it can be a percentage of. The icon says
+              it in a tenth of the width, and it takes the same colour as the
+              number so the pair still reads as one fact.
+
+              13pt, matching `sidePct`'s size rather than the 16 an icon
+              usually gets here — it is punctuation for the number, not a thing
+              of its own to look at.
+            */}
+            <Text style={[styles.sidePct, { color: deltaColor }]}>{pctOfTarget}%</Text>
+            <Icon icon={Target} size={13} color={deltaColor} />
           </View>
           <Text style={styles.sideLine}>
             {i18n.dcNutritionRemaining}: <Text style={styles.sideMono}>{Math.max(calorieTarget - kcal, 0).toLocaleString()}</Text> kcal
@@ -943,8 +956,13 @@ const styles = StyleSheet.create({
   // and at 12 they were caption-sized next to a 16pt number in the ring.
   sideLine: { fontSize: 14, color: colors.mutedForeground },
   // `gap: 6` rather than `spacing.sm` — the slash needs to sit closer to both
-  // sides than the two facts sat from each other, or it reads as a third item
-  sideTargetRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  // sides than the two facts sat from each other, or it reads as a third item.
+  //
+  // Centred, not baseline-aligned: an icon has no baseline to align to, and
+  // `alignItems: 'baseline'` on a row containing one drops it to the bottom of
+  // the row. The two texts are 14 and 13pt, close enough that centring them
+  // costs nothing visible.
+  sideTargetRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sideSlash: { fontSize: 13, color: colors.border },
   sidePct: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
   sideMono: { fontFamily: 'Menlo', color: colors.foreground, fontVariant: ['tabular-nums'] },
