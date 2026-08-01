@@ -424,7 +424,29 @@ function MacroSwap({
           `92/150g` over `eaten` and `58g` over `left`, and gives the tap
           something to be for.
         */}
-        <Animated.Text style={[styles.macroNote, noteOut]}>{i18n.dcMacroEaten}</Animated.Text>
+        <Animated.Text style={[styles.macroNote, noteOut]}>
+          {i18n.dcMacroEaten}
+          {/*
+            Past the target, the caption also carries the surplus.
+
+            `120/114g` contains the fact that six grams went over and makes you
+            do the subtraction to get it, which is the one piece of arithmetic
+            this tile exists to save. It was only visible on the flipped side,
+            so the state you most want spelled out was the state you had to tap
+            for. The label stays in front of it — the number above is still the
+            eaten figure, and dropping "eaten" would leave the surplus looking
+            like the headline's caption.
+
+            Only when over. A macro that is under has its remainder one tap
+            away and nothing surprising to report.
+          */}
+          {over ? (
+            <Text style={styles.macroOver}>
+              {' · '}
+              {leftNum}g {leftWord}
+            </Text>
+          ) : null}
+        </Animated.Text>
         {/*
           The word only, sitting where the caption always sits.
 
