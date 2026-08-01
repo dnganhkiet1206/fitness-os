@@ -14,10 +14,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AmbientLight } from '@/components/ascnd/ambient-light';
-import { GlassBar } from '@/components/ascnd/glass-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { BottomTabInset } from '@/constants/expo-template-theme';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { colors, glass, spacing, type } from '@/constants/ascnd';
 import { setActiveScroller } from '@/lib/scroll-to-top';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
@@ -46,11 +45,9 @@ import { handleTabScroll } from '@/lib/tab-bar-visibility';
 /**
  * Height of the fixed header bar, matching UIKit's navigation bar.
  *
- * Named because it is now load-bearing in two places at once: the bar's own
- * height, and the top padding the content needs to clear it. The two are the
- * same number by definition — a literal in each place is a number that can
- * drift, and a sub-page whose first card hides under the bar is not obviously
- * a padding bug when you look at it.
+ * Only the bar's own height now — while the bar overlaid the content this also
+ * had to be the content's top padding, and the two had to agree. It stays a
+ * constant because a magic 44 in a stylesheet is a number nobody can look up.
  */
 const HEADER_H = 44;
 
@@ -151,9 +148,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
             {...props}>
             {children}
           </ScrollView>
-          {/* Between the content and the floating header, so the hero softens
-              under the notch while the chevron and the title stay sharp. */}
-          <GlassBar height={insets.top} />
           <View
             style={[styles.pageHeaderFloat, { paddingTop: insets.top }]}
             pointerEvents="box-none"
@@ -165,51 +159,29 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
     }
 
     /*
-     * Sub-page header — a real glass bar the content scrolls underneath.
+     * Sub-page header — a solid bar above the scroll view, in layout flow.
      *
-     * It used to sit *above* the scroll view in the layout flow, holding its
-     * own 44pt of space with a 6% white fill. That fill looked like frosted
-     * glass only because nothing was ever behind it: the page simply started
-     * below the bar, so there was nothing to frost. It also meant these pages
-     * were the one place in the app where nothing passed under the status bar,
-     * and so the one place with no notch treatment at all.
-     *
-     * Now the bar overlays the content, and `GlassBar` puts a real backdrop
-     * blur across the status bar band above it, so what scrolls up past the
-     * Dynamic Island softens instead of running into it sharp. Every layout
-     * uses the same pane at the same height — the header simply happens to
-     * have a chevron and a title below it.
-     *
-     * Nothing moves. The content's top padding gains exactly the height the bar
-     * used to occupy in flow (`insets.top + HEADER_H`), so every sub-page opens
-     * looking identical to before; the difference only appears once you scroll.
+     * It briefly overlaid the content instead, with a blur behind it so text
+     * softened as it slid underneath. The blur is gone, and an overlaying bar
+     * with nothing behind it is just a title with content running through it,
+     * so the bar owns its 44pt again and the page starts below it.
      */
-    const headerH = insets.top + HEADER_H;
     return (
       <View style={styles.root}>
         <AmbientLight />
+        {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
+        <View style={[styles.pageHeader, { paddingTop: insets.top }]}>{headerBar}</View>
         <ScrollView
           ref={scroller}
           style={styles.scroller}
-          contentContainerStyle={[
-            styles.subContent,
-            { paddingTop: headerH + spacing.stack, paddingBottom: insets.bottom + spacing.xl },
-            style,
-          ]}
+          contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
           contentInsetAdjustmentBehavior="never"
-          // Keep the scroll bar out from under the bar it would run beneath
-          scrollIndicatorInsets={{ top: headerH }}
           automaticallyAdjustKeyboardInsets
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           {...props}>
           {children}
         </ScrollView>
-        {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
-        <View style={[styles.pageHeader, { paddingTop: insets.top }]} pointerEvents="box-none">
-          <GlassBar height={insets.top} />
-          {headerBar}
-        </View>
       </View>
     );
   }
@@ -247,7 +219,6 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         </View>
         {children}
       </ScrollView>
-      <GlassBar height={insets.top} />
     </View>
   );
 }
@@ -264,22 +235,11 @@ const styles = StyleSheet.create({
    */
   scroller: { flex: 1, backgroundColor: 'transparent' },
 
-  /**
-   * Sub-page header (web PageHeader) — overlays the content. No background of
-   * its own: `GlassBar` covers the status bar band at the top of it, and the
-   * chevron and title below that sit on the page.
-   *
-   * No bottom border. The glass fades out over its last stretch instead, and a
-   * hairline across that fade would put back exactly the edge the fade exists
-   * to remove. `overflow` is left alone for the same reason: clipping is an
-   * edge too.
-   */
+  // Sub-page header (web PageHeader)
   pageHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 20,
+    backgroundColor: glass.bg,
+    borderBottomWidth: glass.borderWidth,
+    borderBottomColor: glass.border,
   },
   pageHeaderRow: {
     height: HEADER_H,
