@@ -286,13 +286,15 @@ interface NutritionCardProps {
  * A macro tile's two numbers, and which of them is the headline.
  *
  * Closed, a tile leads with what has been eaten against the target —
- * `92/150g` — and says what is left underneath. Tapping the card promotes the
- * other one: `58g left` becomes the big number and `eaten 92g` drops to the
- * caption. Neither reading is ever gone, which is why the swap is worth having
- * at all — the tile is not hiding half of itself, it is deciding which half you
- * are currently planning from. Nobody plans the rest of the day out of "92",
- * they plan it out of "58 to go"; nobody checks whether they hit their protein
- * out of "58 to go" either.
+ * `92/150g` — and says what is left underneath, `58g left`. Tapping the card
+ * promotes the remainder: `58g` becomes the big figure and `left` becomes the
+ * caption naming it. Nobody plans the rest of the day out of "92", they plan it
+ * out of "58 to go".
+ *
+ * The word travels down rather than up with its number. A headline reading
+ * `58g left` mixes 18pt and 12pt on one line, which is a sentence that happens
+ * to start with a number; `58g` above `left` is a number with a label, and the
+ * figure is easier to find at exactly the moment the tile exists to show it.
  *
  * Both lines are present in both states, so the tile's height never changes and
  * nothing below it reflows when you tap.
@@ -401,7 +403,7 @@ function MacroSwap({
         <Animated.Text
           style={[styles.macroValue, styles.macroSwapAbs, over && styles.macroOver, headIn]}>
           {leftNum}
-          <Text style={[styles.macroTarget, over && styles.macroOver]}>g {leftWord}</Text>
+          <Text style={[styles.macroTarget, over && styles.macroOver]}>g</Text>
         </Animated.Text>
       </View>
 
@@ -409,8 +411,22 @@ function MacroSwap({
         <Animated.Text style={[styles.macroNote, over && styles.macroOver, noteOut]}>
           {leftNum}g {leftWord}
         </Animated.Text>
-        <Animated.Text style={[styles.macroNote, styles.macroSwapAbs, noteIn]}>
-          {i18n.dcMacroEaten} {eatenNow}g
+        {/*
+          The word only, sitting where the caption always sits.
+
+          Flipped, the tile leads with the bare figure and names it
+          underneath — `58g` over `left` — rather than carrying the word up
+          into the headline as `58g left`. Two lines of one size each is a
+          number with a label; one line mixing 18pt and 12pt is a sentence
+          that happens to start with a number, and it made the figure harder
+          to find at exactly the moment the tile exists to show it.
+
+          Same size and colour as the caption on the other side of the swap,
+          so the line does not appear to change weight as it crosses over.
+        */}
+        <Animated.Text
+          style={[styles.macroNote, styles.macroSwapAbs, over && styles.macroOver, noteIn]}>
+          {leftWord}
         </Animated.Text>
       </View>
     </View>
