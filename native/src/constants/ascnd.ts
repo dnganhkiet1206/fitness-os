@@ -50,11 +50,41 @@ export const colors = {
  * blur is visually a no-op).
  */
 export const glass = {
+  /**
+   * The translucent fill, still used by the smaller surfaces *inside* a card —
+   * a food row, the gauge's inner well, the search field. Those sit on the
+   * card rather than on the page, so 6 % white over what is behind them is
+   * exactly right and they are not what changed here.
+   */
   bg: 'rgba(255,255,255,0.06)',
+  /**
+   * The card's surface, top to bottom.
+   *
+   * Opaque, and that is the change: it was `rgba(255,255,255,0.06)` over the
+   * page, which is a card six levels lighter than what it sits on. Nothing with
+   * that little contrast has an edge — no shadow can sit under it and the only
+   * thing separating one card from the next was a hairline.
+   */
+  top: '#2B2B2B',
+  bottom: '#202020',
   border: 'rgba(255,255,255,0.12)',
   highlight: 'rgba(255,255,255,0.08)',
   borderWidth: 0.5,
   radius: 20,
+  /**
+   * The ambient shadow: wide, faint, barely offset.
+   *
+   * Ambient rather than a drop — light in a room comes from everywhere and
+   * leaves a soft darkening all round rather than a hard shape below. The
+   * radius is more than twice the offset, which is the whole difference between
+   * the two, and 0.5 opacity spread over 22 points is a fraction of a level per
+   * pixel at the edge.
+   */
+  shadowY: 8,
+  shadowRadius: 22,
+  shadowOpacity: 0.5,
+  /** Android draws from one number and picks its own falloff */
+  elevation: 10,
 } as const;
 
 export const radius = {
