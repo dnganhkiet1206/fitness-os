@@ -144,6 +144,19 @@ export function WeightGoalDialog({
   const placed = useRef(false);
 
   /**
+   * The last index a haptic was fired for.
+   *
+   * A ref, and this is the whole reason the clicks did not track the notches.
+   * `onScroll` used to compare against `index` from state — a value captured
+   * when the handler was created. React does not necessarily re-render between
+   * two scroll events, so several events in a row could see the same stale
+   * `index`: crossing three ticks fired once, and coming back across the same
+   * tick fired again. A ref is written synchronously inside the handler, so
+   * every event compares against what the one before it actually saw.
+   */
+  const clicked = useRef(seedIndex);
+
+  /**
    * Reseed on every open, not once on mount.
    *
    * The screen stays mounted between openings, so without this it would come
@@ -156,6 +169,7 @@ export function WeightGoalDialog({
       return;
     }
     setIndex(seedIndex);
+    clicked.current = seedIndex;
   }, [visible, seedIndex]);
 
   /**
@@ -165,6 +179,7 @@ export function WeightGoalDialog({
   const onContentSizeChange = () => {
     if (placed.current) return;
     list.current?.scrollToOffset({ offset: seedIndex * TICK_W, animated: false });
+    clicked.current = seedIndex;
     placed.current = true;
   };
 
@@ -172,13 +187,18 @@ export function WeightGoalDialog({
     // Layout settling is not the user choosing a number
     if (!placed.current) return;
     const next = Math.max(0, Math.min(count - 1, Math.round(e.nativeEvent.contentOffset.x / TICK_W)));
-    if (next !== index) {
-      setIndex(next);
-      // One tap per tick, the way a real dial feels. `selectionAsync` is the
-      // light click iOS uses for pickers — an impact would be a thud, several
-      // times a second, for the whole length of a drag.
-      Haptics.selectionAsync();
-    }
+    if (next === clicked.current) return;
+    clicked.current = next;
+    setIndex(next);
+    // One click per tick, the way a real dial feels. `selectionAsync` is what
+    // iOS uses for pickers — an impact would be a thud, several times a
+    // second, for the whole length of a drag.
+    //
+    // A fast flick crosses several ticks between frames and still gets one
+    // click. That is the ceiling, not a shortcut: the Taptic Engine cannot
+    // play them faster than about one every 30ms, and queueing more only
+    // makes them arrive late and out of step with the ruler.
+    Haptics.selectionAsync();
   };
 
   const value = valueAt(index);
@@ -237,9 +257,10 @@ export function WeightGoalDialog({
               contentContainerStyle={{ paddingHorizontal: (width - TICK_W) / 2 }}
               onContentSizeChange={onContentSizeChange}
               onScroll={onScroll}
-              // 16ms: a tick is 12pt, and a fast flick covers several of them
-              // between frames — anything slower drops haptics and skips values
-              scrollEventThrottle={16}
+              // Every frame. A tick is 12pt, and a slow drag crosses one in a
+              // couple of frames — anything coarser turns the clicks into
+              // clusters with gaps between them.
+              scrollEventThrottle={1}
               renderItem={({ item }) => (
                 <View style={styles.tickSlot}>
                   <View style={[styles.tick, item % MAJOR_EVERY === 0 && styles.tickMajor]} />

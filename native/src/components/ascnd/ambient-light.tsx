@@ -2,16 +2,16 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 /**
- * Two lamps in a dark room, seen through frosted glass.
+ * Three lamps in a dark room, seen through frosted glass.
  *
  * The page background is one flat fill, and a flat fill is the one thing a
  * real surface never is. This is the light in the room it sits in.
  *
- * ── why two, and why different colours ──
+ * ── why several, and why different colours ──
  *
- * A single white source can only make the page *lighter* somewhere. Two
- * sources at different colour temperatures make it lighter somewhere and a
- * different colour somewhere else, and that second thing is what actually
+ * A single white source can only make the page *lighter* somewhere. Sources at
+ * different colour temperatures make it lighter somewhere and a different
+ * colour somewhere else, and that second thing is what actually
  * reads as depth: a surface tells you where the light is by how its colour
  * shifts across it, not just by how bright it is.
  *
@@ -21,14 +21,28 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
  * it, and everything agreeing is exactly why the page reads flat. The key
  * light disagrees on purpose.
  *
- *   key   warm 3000K, above the top-left      → #1a1715, R−B +4
- *   fill  cool bounce, low and to the right   → #0c0e11, R−B −4
- *   between them                              → neutral
- *   untouched                                 → #070708
+ *   key     warm 3000K, above the top-left    → #1a1715, R−B +4
+ *   fill    cool bounce, low and to the right → #0c0e11, R−B −4
+ *   ambient neutral, the middle of the screen → lifts, does not tint
+ *   corners                                   → #070708
  *
  * Eight levels of colour temperature across the page, and about nineteen of
  * brightness. Nobody will name either colour. They will notice the page has a
  * near side and a far side.
+ *
+ * ── the ambient one is in the middle, and it is neutral ──
+ *
+ * The key and the fill are placed off opposite corners, which is what gives
+ * the page its near side and far side — and it leaves the centre almost
+ * untouched. Worked out against the falloff, the middle of the screen was
+ * getting about half a percent from the two of them combined: the brightest
+ * part of the page was its edges, and the part everybody actually looks at was
+ * the darkest thing on it.
+ *
+ * So a third pool sits in the centre. Neutral white on purpose: the key is
+ * warm and the fill is cool, and a third colour in between them would be a
+ * third opinion about what temperature the room is. Its job is to lift, not to
+ * tint — content sits in the light instead of on top of a hole.
  *
  * ── the fill is a fill ──
  *
@@ -52,14 +66,16 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
  *
  * ── it is dimmer than it looks written down ──
  *
- * 7.5% and 3.5%. The peak lands around #1a1715, which sounds like nothing and
- * is roughly the difference between a room with a lamp on and a room without
- * one. Turning it up is how this gets cheap: past about 10% it stops being
- * light in the room and becomes a coloured blob on the page.
+ * 7.5%, 3.5% and 4.5%. The brightest point on the page lands around #1a1715
+ * and the centre around #131314, against #070708 in the corners — which sounds
+ * like nothing, and is roughly the difference between a room with a lamp on
+ * and a room without one. Turning any of them up is how this gets cheap: past
+ * about 10% a pool stops being light in the room and becomes a blob on the
+ * page.
  *
  * ── on cost ──
  *
- * Two `Rect`s in one `<Svg>`, and every prop on them is a constant.
+ * Three `Rect`s in one `<Svg>`, and every prop on them is a constant.
  * `react-native-svg` re-rasterises an `<Svg>` when a child prop changes;
  * nothing here ever changes, so it is drawn once per page mount and composited
  * from then on. It sits outside the scroll view, so it does not move — light
@@ -71,6 +87,15 @@ const KEY = { color: '#ffd9b3', peak: 0.075, cx: 0.28, cy: -0.05, rx: 1, ry: 0.5
 
 /** cool bounce, low and right — half the key, and never on top of it */
 const FILL = { color: '#9fc4ff', peak: 0.035, cx: 0.95, cy: 0.72, rx: 0.85, ry: 0.5 };
+
+/**
+ * Neutral ambient, centred where content sits.
+ *
+ * Placed low enough (0.45) and narrow enough vertically that its own falloff
+ * has run out before it reaches the key's — the two never stack into a bright
+ * spot. The brightest point anywhere on the page stays around 7%.
+ */
+const CENTRE = { color: '#ffffff', peak: 0.045, cx: 0.5, cy: 0.45, rx: 0.9, ry: 0.45 };
 
 /** shared falloff: steep, then a long tail that never quite lands */
 const CURVE = [
@@ -100,9 +125,11 @@ export function AmbientLight() {
         <Defs>
           <Pool id="lightKey" s={KEY} />
           <Pool id="lightFill" s={FILL} />
+          <Pool id="lightCentre" s={CENTRE} />
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#lightKey)" />
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#lightFill)" />
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#lightCentre)" />
       </Svg>
     </View>
   );
