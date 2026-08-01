@@ -1,14 +1,16 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Droplets, Flame, Footprints, Moon, Star, Sunrise, type LucideIcon } from 'lucide-react-native';
-import { useEffect } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
+  useAnimatedStyle,
   useSharedValue,
   withDelay,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
@@ -63,13 +65,14 @@ export function MicroTitle({ children }: { children: React.ReactNode }) {
  */
 function SmallRing({
   pct,
-  gradId,
+  gradId: gradPrefix,
   gradient: [c0, c1],
   icon,
   iconColor,
   value,
   unit,
   over = 0,
+  glow,
 }: {
   pct: number;
   gradId: string;
@@ -80,6 +83,18 @@ function SmallRing({
   unit?: string;
   /** percent past the target, 0 for none — drawn as an overlapping second lap */
   over?: number;
+  /**
+   * Colour of the halo cast around the arc, or none.
+   *
+   * There is no filter to do this with: `react-native-svg` declares the filter
+   * primitives and leaves them unimplemented on native, so `feGaussianBlur` and
+   * `feDropShadow` both render nothing. What a blur would have produced is
+   * approximated the same way the over-lap's shadow is — extra copies of the
+   * arc underneath the real one, wider and fainter the further out they go.
+   * Two steps is enough to stop it looking like a second ring drawn round the
+   * first; one is a hard-edged outline, which is the opposite of a glow.
+   */
+  glow?: string;
 }) {
   // Thick, in the Move-ring proportion: the stroke is most of the difference
   // between the outer edge and the hole, so the ring reads as a band of colour
@@ -87,6 +102,19 @@ function SmallRing({
   const R = 37;
   const W = 12;
   const CIRC = 2 * Math.PI * R;
+
+  /**
+   * The gradient's id, made unique per mounted ring.
+   *
+   * `gradId` used to be the id itself, which meant two rings built from the
+   * same caller shared one `<Defs>` entry — and an SVG id is document-global,
+   * so the *first* definition wins and every later ring silently paints in the
+   * first one's colours. That is invisible until the two rings are meant to
+   * differ, at which point the wrong one looks merely wrong rather than broken.
+   * The caller's string stays as a readable prefix; `useId` makes it unique.
+   */
+  const uid = useId();
+  const gradId = `${gradPrefix}-${uid.replace(/:/g, '')}`;
 
   /**
    * How far each shadow arc leads the lap's cap, as a fraction of a turn, with
@@ -140,6 +168,36 @@ function SmallRing({
           </LinearGradient>
         </Defs>
         <Circle cx="50" cy="50" r={R} fill="none" stroke={TRACK} strokeWidth={W} />
+        {glow
+          ? // Widest and faintest first. `W + 10` puts the outer edge at 48 in a
+            // 100 box — the halo has to stay inside the viewBox or it is not a
+            // falloff, it is a cut.
+            //
+            // Four steps, not two. Two produced a pair of visible concentric
+            // bands with their own edges: a glow's whole character is that it
+            // has no edge, and at these opacities each additional step costs
+            // nothing but buys another rung of the ramp. The alphas fall off
+            // faster than the widths grow, which is roughly what a blur does.
+            [
+              { w: W + 10, o: 0.05 },
+              { w: W + 7.5, o: 0.07 },
+              { w: W + 5, o: 0.1 },
+              { w: W + 2.5, o: 0.14 },
+            ].map((g) => (
+              <AnimatedCircle
+                key={g.w}
+                cx="50" cy="50" r={R}
+                fill="none"
+                stroke={glow}
+                strokeOpacity={g.o}
+                strokeWidth={g.w}
+                strokeLinecap="round"
+                strokeDasharray={`${CIRC}`}
+                animatedProps={animatedProps}
+                transform="rotate(-90 50 50)"
+              />
+            ))
+          : null}
         <AnimatedCircle
           cx="50" cy="50" r={R}
           fill="none"
@@ -210,9 +268,108 @@ interface NutritionCardProps {
    * still get the three tiles they always did.
    */
   fiber?: { current: number; target: number };
+  /**
+   * Whether tapping the card swaps the macro tiles to "still to eat".
+   *
+   * Off by default, and deliberately: on the dashboard this card already sits
+   * inside a `Pressable` that opens the Nutrition tab, and a tap target inside
+   * a tap target means the outer one never fires. The dashboard's job is to get
+   * you *to* the numbers; the toggle belongs where the numbers already are.
+   */
+  interactive?: boolean;
 }
 
-export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber }: NutritionCardProps) {
+/**
+ * A macro tile's number, in its two readings.
+ *
+ * Closed, a tile says what has been eaten against the target — `92/150g`. That
+ * is the honest summary and it is the wrong number to act on: nobody plans the
+ * rest of the day out of "92", they plan it out of "58 to go". Tapping the card
+ * swaps every tile to the second reading at once.
+ *
+ * ── both texts are always mounted ──
+ *
+ * The obvious build is one `<Text>` whose content changes on tap. Then the
+ * number can only cut, because there is nothing to cross-fade *to* — and a
+ * tile that hard-cuts between two similar numbers looks like a glitch rather
+ * than a change of mind. So both readings render, one in flow (which is what
+ * gives the row its height) and one absolutely on top of it, and `swap` fades
+ * and slides between them: the outgoing number lifts away, the incoming one
+ * settles up into its place. Nothing reflows, because the box never changes
+ * size.
+ *
+ * ── past the target ──
+ *
+ * A surplus is the one case where "left" is not a thing that is left, so it is
+ * printed as what it is — `+12g over` — in the red this card already uses for
+ * eating past a target. Fibre and protein surpluses are not failures, but a
+ * per-macro exception is a rule nobody can predict from the outside; the tile
+ * states the fact and the colour stays consistent across the card.
+ */
+function MacroSwap({
+  swap,
+  current,
+  target,
+  i18n,
+}: {
+  swap: SharedValue<number>;
+  current: number;
+  target: number;
+  i18n: ReturnType<typeof useI18n>;
+}) {
+  const left = Math.round(target - current);
+  const over = left < 0;
+
+  /**
+   * The two fades are phased, not mirrored.
+   *
+   * Fading one out at exactly the rate the other fades in puts both numbers at
+   * half opacity on top of each other for the middle of the transition, and two
+   * superimposed half-visible numbers read as a smear rather than as a swap. So
+   * the outgoing one is gone by 55% and the incoming one does not start until
+   * 45%: there is a brief moment where the tile is nearly empty, and that gap is
+   * what makes the eye read it as one number leaving and another arriving.
+   *
+   * The clamping is written out inside each worklet rather than shared through
+   * a helper — a worklet may only call other worklets, and one small expression
+   * is not worth a second `'worklet'` directive to get wrong.
+   */
+  const eaten = useAnimatedStyle(() => ({
+    opacity: 1 - Math.min(Math.max(swap.value / 0.55, 0), 1),
+    transform: [{ translateY: -10 * swap.value }],
+  }));
+  const rest = useAnimatedStyle(() => ({
+    opacity: Math.min(Math.max((swap.value - 0.45) / 0.55, 0), 1),
+    transform: [{ translateY: 10 * (1 - swap.value) }],
+  }));
+
+  return (
+    <View>
+      <Animated.Text style={[styles.macroValue, eaten]}>
+        {Math.round(current)}
+        <Text style={styles.macroTarget}>/{target}g</Text>
+      </Animated.Text>
+      <Animated.Text
+        style={[styles.macroValue, styles.macroSwapAbs, over && styles.macroOver, rest]}>
+        {over ? '+' : ''}
+        {Math.abs(left)}
+        <Text style={[styles.macroTarget, over && styles.macroOver]}>
+          g {over ? i18n.dcMacroOver : left === 0 ? i18n.dcMacroDone : i18n.dcMacroLeft}
+        </Text>
+      </Animated.Text>
+    </View>
+  );
+}
+
+export function NutritionCard({
+  kcal,
+  calorieTarget,
+  protein,
+  carbs,
+  fat,
+  fiber,
+  interactive = false,
+}: NutritionCardProps) {
   const i18n = useI18n();
   const calPct = Math.min((kcal / (calorieTarget || 1)) * 100, 100);
   /** the same share, uncapped — the ring stops at a turn, this does not */
@@ -236,19 +393,31 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
   /**
    * The ring's three states, which are not the same question as the text above.
    *
-   *  - **under** the target — still filling up. Grey: nothing has been achieved
-   *    yet and nothing is wrong either, so the ring stays quiet rather than
-   *    congratulating a half-eaten day in warm orange.
+   *  - **under** the target — still filling up. White. Nothing has been
+   *    achieved yet and nothing is wrong either, so it must not be the good
+   *    band's amber (that would congratulate a half-eaten day) nor red. It was
+   *    `#4a4a52 → #6b6b6b`, which said all of that correctly and said it in
+   *    the colour of a disabled control — the ring is the biggest thing on the
+   *    card and for most of the day it read as switched off. White is bright
+   *    without carrying a verdict: it is the only value on the card that is not
+   *    already spoken for by a meaning, so it reads as "in progress" rather
+   *    than as good or bad. Neon white rather than paper white: it ramps into a
+   *    faint icy `#d8f3ff` and carries a glow, because a flat white band on a
+   *    flat dark card is a sticker. A real tube is white in the middle and cool
+   *    at its edges, and that cool cast is most of what makes white read as lit
+   *    rather than as painted.
    *  - **on target, or over by no more than the allowance** — the good band.
    *    This keeps the card's existing amber/orange gradient.
    *  - **past the allowance** — red. Genuinely over, and it should look it.
    *
    * The allowance is a share of the target rather than a flat number, so it
-   * scales with the person: 8% is ±176 kcal on a 2,200 target, about a snack,
-   * which is the resolution food logging is honest to anyway. One constant to
+   * scales with the person: 10% is ±220 kcal on a 2,200 target, about a snack,
+   * which is the resolution food logging is honest to anyway — the label on a
+   * packet and the size of a portion are both rougher than that, so a day
+   * inside this band is not a day that went differently. One constant to
    * change if it should be tighter or looser.
    */
-  const SURPLUS_ALLOWANCE = 0.08;
+  const SURPLUS_ALLOWANCE = 0.10;
   const overBudget = delta > calorieTarget * SURPLUS_ALLOWANCE;
   const inBand = !overBudget && kcal >= calorieTarget;
 
@@ -263,19 +432,41 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
     ? ['#e6485c', colors.readinessRed]
     : inBand
       ? ['#ffc53d', '#ff9130']
-      : ['#4a4a52', '#6b6b6b'];
+      : ['#ffffff', '#d8f3ff'];
   const ringIconColor = overBudget
     ? colors.readinessRed
     : inBand
       ? colors.metricOrange
-      : colors.mutedForeground;
+      : colors.foreground;
+
+  /**
+   * Only the white ring glows. Amber and red are already saturated enough to
+   * carry themselves off a dark card; a halo on them would read as bloom rather
+   * than as neon, and it would put light around the two states that mean
+   * something rather than the one that means "still going".
+   */
+  const ringGlow = !overBudget && !inBand ? '#bfeaff' : undefined;
 
   // the delta line follows the same three states, so the card speaks once
   const deltaColor = overBudget
     ? colors.readinessRed
     : inBand
       ? colors.metricOrange
-      : colors.mutedForeground;
+      : colors.foreground;
+
+  /**
+   * Which reading the tiles are showing, and the value the tiles animate on.
+   *
+   * State drives the animation rather than the other way round — the shared
+   * value is a consequence of `showLeft`, so a re-render for any other reason
+   * (a fresh log landing, the language changing) cannot leave the tiles fading
+   * one way while the card believes the other.
+   */
+  const [showLeft, setShowLeft] = useState(false);
+  const swap = useSharedValue(0);
+  useEffect(() => {
+    swap.value = withTiming(showLeft ? 1 : 0, { duration: 260, easing: Easing.out(Easing.cubic) });
+  }, [showLeft, swap]);
 
   const macros = [
     { label: 'Protein', ...protein, icon: ProteinIcon, color: colors.primary, bar: ['#f59e0b', '#ecc94b'] as [string, string] },
@@ -286,7 +477,7 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
       : []),
   ];
 
-  return (
+  const card = (
     <GlassCard style={styles.stackCard}>
       <MicroTitle>{i18n.dcNutritionTitle}</MicroTitle>
 
@@ -297,6 +488,7 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
           gradient={ringGradient}
           icon={Flame}
           iconColor={ringIconColor}
+          glow={ringGlow}
           value={kcal.toLocaleString()}
           unit="kcal"
           over={overPct}
@@ -371,16 +563,31 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
                 <Glyph size={14} color={m.color} cut={colors.background} />
                 <Text style={styles.macroLabel}>{m.label}</Text>
               </View>
-              <Text style={styles.macroValue}>
-                {Math.round(m.current)}
-                <Text style={styles.macroTarget}>/{m.target}g</Text>
-              </Text>
+              <MacroSwap swap={swap} current={m.current} target={m.target} i18n={i18n} />
+              {/* The bar does not switch with the number: filled-so-far and
+                  left-to-go are the same bar read from opposite ends, and
+                  flipping it would only make the tile look like it had changed
+                  measurement. */}
               <ProgressBar pct={pct} color={m.bar[0]} height={4} style={styles.macroBarTrack} delay={320} />
             </View>
           );
         })}
       </View>
     </GlassCard>
+  );
+
+  if (!interactive) return card;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => {
+        Haptics.selectionAsync();
+        setShowLeft((v) => !v);
+      }}
+      style={({ pressed }) => (pressed ? styles.cardPressed : undefined)}>
+      {card}
+    </Pressable>
   );
 }
 
@@ -480,6 +687,88 @@ export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, s
 
 // ─── Water / Steps compact widgets (web WaterWidget / StepsWidget) ─────
 
+/**
+ * The compact widgets' badge, with the day's progress drawn round it.
+ *
+ * These cards carried the figure twice already — the value line ("1.4 / 2.5 L")
+ * and the percentage on the right — and neither of them is a *shape*. The big
+ * cards get a ring you can read at arm's length without reading a number; the
+ * water card got a rounded square with a droplet in it, which is decoration
+ * where the ring should be.
+ *
+ * So the badge becomes the ring: same 40pt footprint, same icon in the middle,
+ * with the track and the arc drawn round it. Nothing else on the row moves, and
+ * the percentage stays — the ring answers "roughly how far", the number answers
+ * "exactly how far", and a glance wants the first one.
+ *
+ * The stroke is 4 at 40pt, where the nutrition ring is 12 at 100. Proportionally
+ * thinner on purpose: this ring circles an icon rather than enclosing a value,
+ * and a Move-ring band at this size would close up the hole and swallow it.
+ */
+function MiniRing({
+  pct,
+  icon,
+  color,
+  gradient,
+  bg,
+}: {
+  pct: number;
+  icon: LucideIcon;
+  color: string;
+  gradient: [string, string];
+  bg: string;
+}) {
+  const SIZE = 40;
+  const W = 4;
+  const R = (SIZE - W) / 2;
+  const CIRC = 2 * Math.PI * R;
+
+  const uid = useId();
+  const gradId = `mini-${uid.replace(/:/g, '')}`;
+
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withDelay(
+      200,
+      withTiming(Math.min(pct, 100) / 100, { duration: 1100, easing: Easing.bezier(0.16, 1, 0.3, 1) }),
+    );
+  }, [pct, progress]);
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: CIRC - progress.value * CIRC,
+  }));
+
+  return (
+    <View style={styles.miniRing}>
+      <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={gradient[0]} />
+            <Stop offset="100%" stopColor={gradient[1]} />
+          </LinearGradient>
+        </Defs>
+        {/* The tinted disc the icon used to sit on, now inside the ring */}
+        <Circle cx={SIZE / 2} cy={SIZE / 2} r={R - W / 2} fill={bg} />
+        <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={TRACK} strokeWidth={W} />
+        <AnimatedCircle
+          cx={SIZE / 2}
+          cy={SIZE / 2}
+          r={R}
+          fill="none"
+          stroke={`url(#${gradId})`}
+          strokeWidth={W}
+          strokeLinecap="round"
+          strokeDasharray={`${CIRC}`}
+          animatedProps={animatedProps}
+          transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
+        />
+      </Svg>
+      <View style={styles.miniRingCenter} pointerEvents="none">
+        <Icon icon={icon} size={18} color={color} />
+      </View>
+    </View>
+  );
+}
+
 function CompactWidget({
   icon,
   iconColor,
@@ -488,6 +777,7 @@ function CompactWidget({
   valueText,
   pct,
   onPress,
+  ring,
 }: {
   icon: LucideIcon;
   iconColor: string;
@@ -496,6 +786,12 @@ function CompactWidget({
   valueText: string;
   pct: number;
   onPress: () => void;
+  /**
+   * Draw the badge as a progress ring in these two colours instead of a plain
+   * tile. Opt-in rather than automatic: the steps widget shares this component
+   * and has not been asked for one.
+   */
+  ring?: [string, string];
 }) {
   return (
     <Pressable
@@ -505,9 +801,13 @@ function CompactWidget({
       }}>
       {({ pressed }) => (
         <GlassCard style={[styles.compactCard, pressed && styles.pressedDim]}>
-          <View style={[styles.compactIcon, { backgroundColor: iconBg }]}>
-            <Icon icon={icon} size={20} color={iconColor} />
-          </View>
+          {ring ? (
+            <MiniRing pct={pct} icon={icon} color={iconColor} gradient={ring} bg={iconBg} />
+          ) : (
+            <View style={[styles.compactIcon, { backgroundColor: iconBg }]}>
+              <Icon icon={icon} size={20} color={iconColor} />
+            </View>
+          )}
           <View style={styles.compactInfo}>
             <Text style={styles.compactLabel}>{label}</Text>
             <Text style={styles.compactValue}>{valueText}</Text>
@@ -527,6 +827,7 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
       icon={Droplets}
       iconColor="#3ba6ff"
       iconBg="rgba(14,165,233,0.1)"
+      ring={['#3ba6ff', '#22e3ff']}
       label={labels.title}
       valueText={`${displayVolume(ml, unit)} / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
       pct={pct}
@@ -600,6 +901,11 @@ const styles = StyleSheet.create({
   macroLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
   macroValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
   macroTarget: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
+  // the second reading, stacked on the first — `left: 0, right: 0` so it wraps
+  // and aligns exactly like the text underneath it rather than shrink-wrapping
+  macroSwapAbs: { position: 'absolute', left: 0, right: 0, top: 0 },
+  macroOver: { color: colors.readinessRed },
+  cardPressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
   macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'hidden' },
   macroBarFill: { height: '100%', borderRadius: 2 },
 
@@ -615,6 +921,13 @@ const styles = StyleSheet.create({
   compactCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, padding: spacing.md },
   pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   compactIcon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  miniRing: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  miniRingCenter: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   compactInfo: { flex: 1, minWidth: 0, gap: 2 },
   compactLabel: { fontSize: 12, color: colors.mutedForeground },
   compactValue: { fontSize: 14, fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },

@@ -196,6 +196,7 @@ export default function NutritionScreen() {
             {/* The dashboard's own card. Same component, same numbers — the ring
                 on Today and the ring here are one thing rendered twice. */}
             <NutritionCard
+              interactive
               kcal={kcal}
               calorieTarget={calorieTarget}
               protein={{ current: Number(dailyLog?.protein_g) || 0, target: macros.protein }}

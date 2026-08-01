@@ -673,6 +673,10 @@ interface Translations {
   dcNutritionTarget: string;
   dcNutritionPctOfGoal: string;
   dcNutritionRemaining: string;
+  /** macro tiles, tapped: still to eat / exactly met / eaten past */
+  dcMacroLeft: string;
+  dcMacroDone: string;
+  dcMacroOver: string;
   /** eaten past the target */
   dcNutritionSurplus: string;
   /** still under the target — the same number as "remaining", named for the diet */
@@ -1368,6 +1372,9 @@ const vi: Translations = {
   dcNutritionTarget: 'Mục tiêu',
   dcNutritionPctOfGoal: '{x}% mục tiêu',
   dcNutritionRemaining: 'Còn lại',
+  dcMacroLeft: 'còn lại',
+  dcMacroDone: 'đủ',
+  dcMacroOver: 'dư',
   dcNutritionSurplus: 'Thặng dư',
   dcNutritionDeficit: 'Thâm hụt',
   dcNutritionOnTarget: 'Vừa đủ mục tiêu',
@@ -2057,6 +2064,9 @@ const en: Translations = {
   dcNutritionTarget: 'Target',
   dcNutritionPctOfGoal: '{x}% goal',
   dcNutritionRemaining: 'Remaining',
+  dcMacroLeft: 'left',
+  dcMacroDone: 'done',
+  dcMacroOver: 'over',
   dcNutritionSurplus: 'Surplus',
   dcNutritionDeficit: 'Deficit',
   dcNutritionOnTarget: 'On target',
