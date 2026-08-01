@@ -1,67 +1,76 @@
 import { StyleSheet, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 /**
- * Ambient light — a 4% wash at the top of the page, fading to nothing.
+ * A lamp behind frosted glass, in a dark room.
  *
- * The background is a single flat fill, and a single flat fill is the one thing
- * a real surface never is. Every dark Apple screen has a light in it somewhere:
- * you cannot point at it, and you cannot un-see the difference when it is
- * missing — the page stops looking like a surface and starts looking like a
- * hole with content floating in it.
+ * The page background is one flat fill, and a flat fill is the one thing a
+ * real surface never is. This is the light in the room it sits in: a source
+ * just above the top of the screen, spilling down and out, dimmer the further
+ * it gets, gone before the bottom.
  *
- * This is that layer and nothing else. It does not change a single colour
- * token: the background is still `colors.background`, the cards are still the
- * same glass. It only stops the top of the page from being exactly as dark as
- * the bottom.
+ * ── it is a pool, not a wash ──
  *
- * ── the numbers ──
+ * The first attempt at this was a vertical gradient: 4% white at the top,
+ * fading down. It failed, and the reason is worth keeping. A top-to-bottom
+ * ramp has no source — every point on a given row is exactly as bright as
+ * every other point on that row, which is what a *tint* looks like, not what
+ * light looks like. Light comes from somewhere. It falls off in every
+ * direction at once, so the corners go dark before the middle does, and that
+ * difference across the width is the entire reason a room reads as a room.
  *
- * 4% white at the very top, gone by 55% of the page. That is the middle of the
- * 3–5% the brief asks for, and it is deliberately not tunable per screen: an
- * ambient light that is brighter on one page than the next is a light the user
- * *can* see, which defeats it.
+ * So it is radial, centred above the top edge. The source itself is never on
+ * screen — you see the spill, not the bulb, which is what "through frosted
+ * glass" means: the light has already been diffused by the time it arrives.
  *
- * The falloff has a middle stop. A straight ramp from 4% to 0 leaves a faint
- * horizontal edge where it lands — the eye is far better at finding the end of
- * a linear ramp than at seeing the ramp itself. Bending it down early makes the
- * bottom of the gradient asymptotic and the edge disappears.
+ * ── the falloff ──
  *
- * ── it starts below the chrome ──
+ * Five stops, curving down steeply at first and then flattening into a long
+ * tail. Two stops would be a linear ramp, and a linear ramp ends: there is a
+ * radius where it hits zero and stops, and the eye finds that ring
+ * immediately. Real falloff never quite arrives at zero, and it is the long
+ * dim tail — the part you cannot see — that keeps the bright part from having
+ * an outline.
  *
- * `top` is where the light begins, and every layout passes the height of
- * whatever glass sits above it. This is not cosmetic bookkeeping: the light's
- * peak used to land at y=0, which is exactly where the header bar and the notch
- * strip are, and clear glass shows what is behind it faithfully — so the
- * brightest 4% of the page was being read straight through the glass as a white
- * film laid over it. The glass looked tinted; it was only being honest about
- * the light underneath.
+ * `rx` is wider than the screen for the same reason: the pool has to run off
+ * both sides, or its edges are on screen and it reads as a shape someone drew.
  *
- * With the offset there is nothing but page colour behind the glass, so it
- * reads as clear, and the light blooms just below — which is also the more
- * sensible reading of it: light falls on the page, not on the chrome resting
- * on top of the page.
+ * ── it is dimmer than it looks written down ──
+ *
+ * 7% at the very centre, over a background at #070708. That is about #1c1c1d
+ * at the brightest point, which sounds like nothing and is roughly the
+ * difference between a room with a lamp on and a room without one. Turning it
+ * up is the way to make it look cheap: past about 10% it stops being light in
+ * the room and starts being a grey blob on the page.
  *
  * ── on cost ──
  *
  * One `Rect`, and every prop on it is a constant. `react-native-svg`
  * re-rasterises an `<Svg>` when a child prop changes; nothing here ever
- * changes, so this is drawn once per page mount and composited from then on.
- * It sits outside the scroll view, so it does not move — light that scrolled
- * with the content would give away that it is a drawing.
+ * changes, so it is drawn once per page mount and composited from then on. It
+ * sits outside the scroll view, so it does not move — light that scrolled with
+ * the content would give away that it is a drawing.
  */
-export function AmbientLight({ top = 0 }: { top?: number }) {
+export function AmbientLight() {
   return (
-    <View style={[styles.light, { top }]} pointerEvents="none">
+    <View style={styles.light} pointerEvents="none">
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <Defs>
-          <LinearGradient id="ambient" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#ffffff" stopOpacity={0.04} />
-            <Stop offset="0.45" stopColor="#ffffff" stopOpacity={0.011} />
+          {/*
+            Centred above the top edge (`cy` is negative) so the brightest part
+            of the pool is off screen and what reaches the page is already the
+            falloff. Radii are fractions of the page, per axis — `rx` past 1
+            runs the pool off both sides.
+          */}
+          <RadialGradient id="roomLight" cx={0.5} cy={-0.04} rx={1.15} ry={0.62} gradientUnits="objectBoundingBox">
+            <Stop offset="0" stopColor="#ffffff" stopOpacity={0.07} />
+            <Stop offset="0.25" stopColor="#ffffff" stopOpacity={0.042} />
+            <Stop offset="0.5" stopColor="#ffffff" stopOpacity={0.02} />
+            <Stop offset="0.75" stopColor="#ffffff" stopOpacity={0.007} />
             <Stop offset="1" stopColor="#ffffff" stopOpacity={0} />
-          </LinearGradient>
+          </RadialGradient>
         </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#ambient)" />
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#roomLight)" />
       </Svg>
     </View>
   );
@@ -70,10 +79,11 @@ export function AmbientLight({ top = 0 }: { top?: number }) {
 const styles = StyleSheet.create({
   light: {
     position: 'absolute',
+    top: 0,
     left: 0,
     right: 0,
-    // Over half the page: a short gradient reads as a band at the top, a long
-    // one reads as the room the page is in.
-    height: '55%',
+    // The full page. The pool's own falloff decides where the light ends —
+    // clipping the layer early would put the edge back that the tail removes.
+    bottom: 0,
   },
 });

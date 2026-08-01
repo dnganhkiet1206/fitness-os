@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AmbientLight } from '@/components/ascnd/ambient-light';
 import { GlassBar } from '@/components/ascnd/glass-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { BottomTabInset } from '@/constants/expo-template-theme';
@@ -137,6 +138,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
       // Header floats over a full-bleed hero; content starts at the very top.
       return (
         <View style={styles.root}>
+          <AmbientLight />
           <ScrollView
             ref={scroller}
             style={styles.scroller}
@@ -185,6 +187,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
     const headerH = insets.top + HEADER_H;
     return (
       <View style={styles.root}>
+        <AmbientLight />
         <ScrollView
           ref={scroller}
           style={styles.scroller}
@@ -219,6 +222,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
    */
   return (
     <View style={styles.root}>
+      <AmbientLight />
       <ScrollView
         ref={scroller}
         style={styles.scroller}
