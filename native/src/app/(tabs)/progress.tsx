@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Camera, Medal, Minus, Plus, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
+import { Camera, ChevronRight, Medal, Plus, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -10,6 +10,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
+import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -20,7 +21,7 @@ import { useProfile } from '@/hooks/useTodayData';
 import { useWeightGoal } from '@/hooks/use-weight-goal';
 import { getLocale } from '@/lib/i18n';
 import { parseLocalDate } from '@/lib/local-date';
-import { convertLength, displayLength, displayWeight, formatHeight, weightLabel, weightToKg } from '@/lib/units';
+import { convertLength, displayLength, displayWeight, formatHeight, weightLabel } from '@/lib/units';
 
 type Tab = 'weight' | 'measurements' | 'photos';
 
@@ -106,6 +107,7 @@ export default function ProgressScreen() {
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
   const [tab, setTab] = useState<Tab>('weight');
+  const [goalOpen, setGoalOpen] = useState(false);
 
   const { data: profile } = useProfile();
   const { data: weight } = useWeightHistory(90);
@@ -135,17 +137,11 @@ export default function ProgressScreen() {
   const currentKg = (weight ?? []).length > 0 ? (weight ?? [])[(weight ?? []).length - 1].value : null;
 
   /**
-   * Target weight. Stored in kg, drawn in whatever unit the chart is in.
-   *
-   * The stepper moves by one unit *as displayed* — 1 kg, or 1 lb — rather than
-   * by a fixed number of kilograms, so a pound-user's button does not move the
-   * target by 2.2 of their own units per press. The arithmetic therefore has
-   * to round-trip through the display unit and back.
+   * Target weight — stored in kg, shown in whatever unit the chart is in.
+   * The sheet does the reverse conversion when it saves.
    */
   const { goalKg, setGoalKg } = useWeightGoal();
   const goalDisplay = goalKg != null ? displayWeight(goalKg, wUnit) : null;
-  const nudgeGoalKg = (steps: number) =>
-    weightToKg((goalDisplay ?? displayWeight(currentKg ?? 70, wUnit)) + steps, wUnit);
   const heightM = profile?.height_cm ? Number(profile.height_cm) / 100 : null;
   const bmi = currentKg != null && heightM ? currentKg / (heightM * heightM) : null;
   const cat = bmi != null ? bmiCategory(bmi, vi) : null;
@@ -359,65 +355,38 @@ export default function ProgressScreen() {
               goalLabel={i18n.nWeightGoal}
             />
             {/*
-              Setting the target. A stepper rather than a text field: it is the
-              same control the steps goal uses, it needs no keyboard over a
-              chart, and a weight target moves in small nudges rather than
-              being retyped.
-
-              The first tap has nothing to step from, so it starts at the
-              current weight — the only number on screen that is certainly in
-              the right neighbourhood.
+              One button, one sheet. The row used to be a stepper; a target
+              weight is a number people arrive already knowing, and stepping
+              to it from the current weight is a lot of taps for something
+              they could type.
             */}
-            <View style={styles.goalRow}>
-              <Text style={styles.goalLabel}>{i18n.nWeightGoal}</Text>
-              {goalDisplay == null ? (
-                <Pressable
-                  style={({ pressed }) => [styles.goalSet, pressed && styles.pressed]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setGoalKg(currentKg ?? 70);
-                  }}>
-                  <Icon icon={Target} size={13} color={colors.primary} />
-                  <Text style={styles.goalSetText}>{i18n.nWeightGoalSet}</Text>
-                </Pressable>
-              ) : (
-                <>
-                  <Pressable
-                    hitSlop={6}
-                    style={({ pressed }) => [styles.goalBtn, pressed && styles.pressed]}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setGoalKg(nudgeGoalKg(-1));
-                    }}>
-                    <Icon icon={Minus} size={14} color={colors.foreground} />
-                  </Pressable>
-                  <Text style={styles.goalValue}>
-                    {goalDisplay.toFixed(1)}
-                    {wl}
-                  </Text>
-                  <Pressable
-                    hitSlop={6}
-                    style={({ pressed }) => [styles.goalBtn, pressed && styles.pressed]}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setGoalKg(nudgeGoalKg(1));
-                    }}>
-                    <Icon icon={Plus} size={14} color={colors.foreground} />
-                  </Pressable>
-                  <Pressable
-                    hitSlop={6}
-                    style={({ pressed }) => [styles.goalClear, pressed && styles.pressed]}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setGoalKg(null);
-                    }}>
-                    <Text style={styles.goalClearText}>{i18n.nWeightGoalClear}</Text>
-                  </Pressable>
-                </>
-              )}
-            </View>
+            <Pressable
+              style={({ pressed }) => [styles.goalRow, pressed && styles.pressed]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setGoalOpen(true);
+              }}>
+              <Icon icon={Target} size={14} color={colors.primary} />
+              <Text style={styles.goalLabel}>{i18n.nWeightGoalTitle}</Text>
+              <Text style={goalDisplay == null ? styles.goalUnset : styles.goalValue}>
+                {goalDisplay == null
+                  ? i18n.nWeightGoalSet
+                  : `${goalDisplay.toFixed(1)}${wl}`}
+              </Text>
+              <Icon icon={ChevronRight} size={15} color={colors.mutedForeground} />
+            </Pressable>
           </GlassCard>
           </Animated.View>
+
+          <WeightGoalDialog
+            visible={goalOpen}
+            goalKg={goalKg}
+            currentKg={currentKg}
+            unit={wUnit}
+            i18n={i18n}
+            onSave={setGoalKg}
+            onClose={() => setGoalOpen(false)}
+          />
 
           {/* The chart says what shape the trend is; this says whether you are
               up or down over each window, which is what people weigh
@@ -588,28 +557,21 @@ const styles = StyleSheet.create({
   // Weight-chart goal
   chartHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   goalToGo: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
-  goalLabel: { flex: 1, fontSize: 11, color: colors.mutedForeground },
-  goalBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+  goalRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md - 4,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(24,24,27,0.3)',
   },
-  goalValue: {
-    minWidth: 62,
-    textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.foreground,
-    fontVariant: ['tabular-nums'],
-  },
-  goalClear: { paddingHorizontal: spacing.xs, paddingVertical: 2 },
-  goalClearText: { fontSize: 11, color: colors.mutedForeground },
-  goalSet: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  goalSetText: { fontSize: 12, fontWeight: '600', color: colors.primary },
+  goalLabel: { flex: 1, fontSize: 13, color: colors.foreground },
+  goalValue: { fontSize: 13, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
+  goalUnset: { fontSize: 12, fontWeight: '600', color: colors.primary },
 
   // BMI card
   bmiCard: { gap: spacing.md },

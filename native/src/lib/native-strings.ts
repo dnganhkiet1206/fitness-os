@@ -251,6 +251,9 @@ const en = {
   // Weight goal (Progress weight chart)
   nWeightGoal: 'Goal',
   nWeightGoalSet: 'Set a target weight',
+  nWeightGoalTitle: 'Target weight',
+  nWeightGoalSave: 'Save',
+  nWeightGoalRange: 'Between {min} and {max}',
   nWeightGoalClear: 'Clear',
   nWeightGoalToGo: '{x} to go',
   nWeightGoalReached: 'Target reached',
@@ -606,6 +609,9 @@ const vi: typeof en = {
   // Weight goal (Progress weight chart)
   nWeightGoal: 'Mục tiêu',
   nWeightGoalSet: 'Đặt cân nặng mục tiêu',
+  nWeightGoalTitle: 'Cân nặng mục tiêu',
+  nWeightGoalSave: 'Lưu',
+  nWeightGoalRange: 'Từ {min} đến {max}',
   nWeightGoalClear: 'Xoá',
   nWeightGoalToGo: 'còn {x}',
   nWeightGoalReached: 'Đã đạt mục tiêu',
