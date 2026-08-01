@@ -41,9 +41,9 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
  *
  * Spacers at both ends, each half the screen wide, are what let the first and
  * last values reach the middle. They are padding on the content container
- * rather than list items, so item offsets stay `index × TICK_W` and
- * `getItemLayout` — which is what makes `initialScrollIndex` land accurately —
- * needs no correction for them.
+ * rather than list items, so item offsets stay `index × TICK_W` — the offset
+ * of the tick under the mark is exactly `index × TICK_W`, with the padding
+ * accounted for by the viewport rather than by the arithmetic.
  *
  * ── the number comes from the scroll position ──
  *
@@ -51,6 +51,28 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
  * keeps rest positions on exact ticks, so the reading can never sit between
  * two values. Nothing is committed while dragging: `Done` writes, backing out
  * leaves the stored target alone.
+ *
+ * ── getting it to the right place on the first open ──
+ *
+ * Harder than it looks, and it was wrong: the ruler opened somewhere arbitrary
+ * and dragged from there, so the number under the mark meant nothing.
+ *
+ * `initialScrollIndex` is the obvious tool and it is the broken one here. It
+ * positions using `getItemLayout`, whose offsets are item-relative and know
+ * nothing about the half-screen of container padding on each end, so it lands
+ * short by that padding — and it runs against a list the modal has not
+ * finished laying out, during a slide animation, which is how it ends up
+ * nowhere in particular.
+ *
+ * `onContentSizeChange` is the reliable signal instead: it fires once the
+ * content has actually been measured, which is the first moment a scroll
+ * offset means anything. Positioning happens there, once per open, guarded by
+ * a ref.
+ *
+ * Until that has happened `onScroll` is ignored entirely. Otherwise the
+ * layout's own transient offsets get read as the user choosing values —
+ * which is where the phantom movement came from, and a burst of haptics with
+ * it.
  *
  * ── it works in the display unit ──
  *
@@ -113,6 +135,15 @@ export function WeightGoalDialog({
   const [index, setIndex] = useState(seedIndex);
 
   /**
+   * Whether the ruler has been put where it belongs for this opening.
+   *
+   * A ref, not state: it gates `onScroll`, which fires far more often than
+   * anything should re-render, and flipping it must not itself cause a render
+   * in the middle of a drag.
+   */
+  const placed = useRef(false);
+
+  /**
    * Reseed on every open, not once on mount.
    *
    * The screen stays mounted between openings, so without this it would come
@@ -120,20 +151,32 @@ export function WeightGoalDialog({
    * by backing out rather than saved.
    */
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      placed.current = false;
+      return;
+    }
     setIndex(seedIndex);
-    // The list is not laid out on the same tick the modal becomes visible
-    const t = setTimeout(() => {
-      list.current?.scrollToOffset({ offset: seedIndex * TICK_W, animated: false });
-    }, 0);
-    return () => clearTimeout(t);
   }, [visible, seedIndex]);
 
+  /**
+   * The content has been measured — now an offset means something. Position
+   * the ruler and start listening to it.
+   */
+  const onContentSizeChange = () => {
+    if (placed.current) return;
+    list.current?.scrollToOffset({ offset: seedIndex * TICK_W, animated: false });
+    placed.current = true;
+  };
+
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    // Layout settling is not the user choosing a number
+    if (!placed.current) return;
     const next = Math.max(0, Math.min(count - 1, Math.round(e.nativeEvent.contentOffset.x / TICK_W)));
     if (next !== index) {
       setIndex(next);
-      // One tap per tick, the way a real dial feels
+      // One tap per tick, the way a real dial feels. `selectionAsync` is the
+      // light click iOS uses for pickers — an impact would be a thud, several
+      // times a second, for the whole length of a drag.
       Haptics.selectionAsync();
     }
   };
@@ -191,9 +234,11 @@ export function WeightGoalDialog({
               snapToInterval={TICK_W}
               decelerationRate="fast"
               getItemLayout={(_, i) => ({ length: TICK_W, offset: TICK_W * i, index: i })}
-              initialScrollIndex={seedIndex}
               contentContainerStyle={{ paddingHorizontal: (width - TICK_W) / 2 }}
+              onContentSizeChange={onContentSizeChange}
               onScroll={onScroll}
+              // 16ms: a tick is 12pt, and a fast flick covers several of them
+              // between frames — anything slower drops haptics and skips values
               scrollEventThrottle={16}
               renderItem={({ item }) => (
                 <View style={styles.tickSlot}>
