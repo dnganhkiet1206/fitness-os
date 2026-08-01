@@ -10,7 +10,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { CarbIcon, FatIcon, FiberIcon, ProteinIcon } from '@/components/ascnd/macro-icons';
@@ -29,10 +29,35 @@ export function MicroTitle({ children }: { children: React.ReactNode }) {
   return <Text style={styles.microTitle}>{children}</Text>;
 }
 
-/** 100pt progress ring with icon + mono value in the middle (web pattern) */
 /**
- * @param over  a second lap, drawn inside the ring, for whatever went past
- *              100%. Omitted or zero and nothing is drawn — see `NutritionCard`.
+ * 100pt progress ring with icon + mono value in the middle (web pattern).
+ *
+ * ── going past 100% ──
+ *
+ * `over` is how far the value went past the target, as a percentage of it, and
+ * it is drawn the way Apple's Move ring draws it: a second lap **on the same
+ * stroke**, from twelve o'clock, overlapping the ring already there.
+ *
+ * The first version put it on a smaller concentric radius instead. That is
+ * legible, and it is a different idea — it reads as a second, separate
+ * measurement rather than as one measurement that kept going. Overlapping is
+ * what says "round again".
+ *
+ * Which raises the problem the shadow solves: laid directly over a ring of the
+ * same colour, the lap is invisible. So a dark arc is drawn a few degrees
+ * *longer* than the lap and underneath it, and what shows past the coloured
+ * cap is a shadow cast onto the ring below. It is the only depth cue available
+ * — `react-native-svg` declares the filter primitives but leaves them
+ * unimplemented on native, so `feDropShadow` renders nothing.
+ *
+ * The arrow at twelve o'clock is the other half of the tell, and it is there
+ * for the case the shadow cannot cover: a lap of nearly a full turn puts the
+ * cap back near the start, where a shadow alone would be easy to miss. It is
+ * punched in the page colour so it reads as a hole in the stroke.
+ *
+ * The lap uses the ring's own gradient, not a colour of its own. It is the
+ * same measurement continuing, and the ring's colour already carries a
+ * meaning that a second colour on the same stroke would be read as part of.
  */
 function SmallRing({
   pct,
@@ -42,7 +67,7 @@ function SmallRing({
   iconColor,
   value,
   unit,
-  over,
+  over = 0,
 }: {
   pct: number;
   gradId: string;
@@ -51,26 +76,18 @@ function SmallRing({
   iconColor: string;
   value: string;
   unit?: string;
-  over?: { pct: number; color: string };
+  /** percent past the target, 0 for none — drawn as an overlapping second lap */
+  over?: number;
 }) {
-  const R = 40;
+  // Thick, in the Move-ring proportion: the stroke is most of the difference
+  // between the outer edge and the hole, so the ring reads as a band of colour
+  // rather than as a line drawn round a circle.
+  const R = 37;
+  const W = 12;
   const CIRC = 2 * Math.PI * R;
-  /**
-   * The overshoot arc sits on its own smaller radius rather than being drawn
-   * over the main one.
-   *
-   * Concentric, it reads as a second lap — the ring filled, and then this kept
-   * going. Laid on the same radius it would just be the outer ring changing
-   * colour partway round, which is the one thing it must not look like: the
-   * main ring's colour already means something (under target / on target /
-   * past the allowance) and a second colour on the same stroke would be read
-   * as part of that scale.
-   *
-   * Thinner too, so the ring you are meant to read first stays the loudest,
-   * and set far enough in that the two strokes never look like one thick one.
-   */
-  const R_OVER = R - 14;
-  const CIRC_OVER = 2 * Math.PI * R_OVER;
+
+  /** how far the shadow leads the lap's cap, as a fraction of a turn (~7°) */
+  const SHADOW_LEAD = 0.02;
 
   const progress = useSharedValue(0);
   const overProgress = useSharedValue(0);
@@ -82,21 +99,25 @@ function SmallRing({
   }, [pct, progress]);
   useEffect(() => {
     // Starts after the main ring has had a moment, so the two are read in
-    // order: the day filled up, and then it went past.
+    // order: the day filled up, and then it went round again.
     overProgress.value = withDelay(
       700,
-      withTiming(Math.min(over?.pct ?? 0, 100) / 100, {
-        duration: 1000,
-        easing: Easing.bezier(0.16, 1, 0.3, 1),
-      }),
+      withTiming(Math.min(over, 100) / 100, { duration: 1000, easing: Easing.bezier(0.16, 1, 0.3, 1) }),
     );
-  }, [over?.pct, overProgress]);
+  }, [over, overProgress]);
+
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRC - progress.value * CIRC,
   }));
   const overAnimatedProps = useAnimatedProps(() => ({
-    strokeDashoffset: CIRC_OVER - overProgress.value * CIRC_OVER,
+    strokeDashoffset: CIRC - overProgress.value * CIRC,
   }));
+  const shadowAnimatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: CIRC - Math.min(overProgress.value + SHADOW_LEAD, 1) * CIRC,
+  }));
+
+  const lapped = over > 0;
+
   return (
     <View style={styles.smallRingWrap}>
       <Svg width={100} height={100} viewBox="0 0 100 100">
@@ -106,29 +127,50 @@ function SmallRing({
             <Stop offset="100%" stopColor={c1} />
           </LinearGradient>
         </Defs>
-        <Circle cx="50" cy="50" r={R} fill="none" stroke={TRACK} strokeWidth={9} />
+        <Circle cx="50" cy="50" r={R} fill="none" stroke={TRACK} strokeWidth={W} />
         <AnimatedCircle
           cx="50" cy="50" r={R}
           fill="none"
           stroke={`url(#${gradId})`}
-          strokeWidth={9}
+          strokeWidth={W}
           strokeLinecap="round"
           strokeDasharray={`${CIRC}`}
           animatedProps={animatedProps}
           transform="rotate(-90 50 50)"
         />
-        {/* The overshoot lap — only present when there is something over */}
-        {over && over.pct > 0 ? (
-          <AnimatedCircle
-            cx="50" cy="50" r={R_OVER}
-            fill="none"
-            stroke={over.color}
-            strokeWidth={4.5}
-            strokeLinecap="round"
-            strokeDasharray={`${CIRC_OVER}`}
-            animatedProps={overAnimatedProps}
-            transform="rotate(-90 50 50)"
-          />
+        {lapped ? (
+          <>
+            {/* Runs a few degrees ahead of the lap; what shows past the
+                coloured cap is the shadow it casts on the ring below */}
+            <AnimatedCircle
+              cx="50" cy="50" r={R}
+              fill="none"
+              stroke="rgba(0,0,0,0.45)"
+              strokeWidth={W}
+              strokeLinecap="round"
+              strokeDasharray={`${CIRC}`}
+              animatedProps={shadowAnimatedProps}
+              transform="rotate(-90 50 50)"
+            />
+            <AnimatedCircle
+              cx="50" cy="50" r={R}
+              fill="none"
+              stroke={`url(#${gradId})`}
+              strokeWidth={W}
+              strokeLinecap="round"
+              strokeDasharray={`${CIRC}`}
+              animatedProps={overAnimatedProps}
+              transform="rotate(-90 50 50)"
+            />
+            {/* Punched in the page colour, centred on the stroke at the top */}
+            <Path
+              // Shaft + chevron, symmetric about the top of the ring: spans
+              // x 45.8–54.2 (centred on 50) and y ±3.9 around 50−R, so it sits
+              // inside a 12pt stroke with room either side.
+              d={`M 45.8 ${50 - R - 0.5} h 5.4 l -2 -2.4 l 1.2 -1 l 3.8 3.9 l -3.8 3.9 l -1.2 -1 l 2 -2.4 h -5.4 z`}
+              fill={colors.background}
+            />
+          </>
         ) : null}
       </Svg>
       <View style={styles.smallRingCenter} pointerEvents="none">
@@ -240,8 +282,14 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
           iconColor={ringIconColor}
           value={kcal.toLocaleString()}
           unit="kcal"
-          over={{ pct: overPct, color: colors.readinessRed }}
+          over={overPct}
         />
+        {/*
+          Text only. This column used to end with a percentage and a progress
+          bar, and both were the ring again in a second form — a bar that fills
+          as the ring fills, in the ring's own colour, right beside it. The
+          numbers that are not in the ring (target, remaining, surplus) stayed.
+        */}
         <View style={styles.ringSide}>
           <Text style={styles.sideLine}>
             {i18n.dcNutritionTarget}: <Text style={styles.sideMono}>{calorieTarget.toLocaleString()}</Text> kcal
@@ -263,13 +311,6 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
               kcal
             </Text>
           )}
-          {/* The bar follows the ring, so the card does not call the same day
-              green here and red there. No percentage beside it any more: the
-              ring is the percentage, drawn, and the figure it was repeating is
-              already on the card three other ways. */}
-          <View style={styles.sideBarRow}>
-            <ProgressBar pct={calPct} color={deltaColor} height={4} style={styles.sideBarTrack} />
-          </View>
         </View>
       </View>
 
@@ -354,6 +395,12 @@ export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, s
           iconColor={colors.metricPurple}
           value={`${hours}h${String(mins).padStart(2, '0')}m`}
         />
+        {/*
+          Text only. This column used to end with a percentage and a progress
+          bar, and both were the ring again in a second form — a bar that fills
+          as the ring fills, in the ring's own colour, right beside it. The
+          numbers that are not in the ring (target, remaining, surplus) stayed.
+        */}
         <View style={styles.ringSide}>
           <Text style={styles.sideLine}>
             {i18n.dcSleepTarget}: <Text style={styles.sideMono}>{targetHours}h</Text>
@@ -492,8 +539,6 @@ const styles = StyleSheet.create({
   sideLine: { fontSize: 12, color: colors.mutedForeground },
   sideMono: { fontFamily: 'Menlo', color: colors.foreground, fontVariant: ['tabular-nums'] },
   sideMonoStrong: { fontSize: 14, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  sideBarRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  sideBarTrack: { flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'hidden' },
   sideBarFill: { height: '100%', borderRadius: 2, backgroundColor: colors.metricOrange },
   qualityRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   timesRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
