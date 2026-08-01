@@ -1,16 +1,15 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import {
-  ChevronDown,
-  ChevronUp,
-  Minus,
-  Pencil,
-  Plus,
-  Trash2,
-  UtensilsCrossed,
-} from 'lucide-react-native';
+import { ChevronDown, Minus, Pencil, Plus, Trash2, UtensilsCrossed } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -55,6 +54,11 @@ import {
  * the totals added up and the entry count beside the item count, so `1,632
  * kcal · 2 meals · 8 items` is the whole of breakfast in one line.
  */
+
+/** One duration and one curve for everything an opening card moves: its
+ *  height, its chevron and its rows. Three timings would drift apart. */
+const OPEN_MS = 260;
+const OPEN_EASE = Easing.out(Easing.cubic);
 
 /** the six `meal_type` values `log-meal.tsx` writes, in the order a day runs */
 const ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'preworkout', 'postworkout'];
@@ -251,6 +255,50 @@ function MealCard({
   onDelete: (it: LoggedItem) => void;
 }) {
   const [open, setOpen] = useState(false);
+
+  /**
+   * The chevron turns; it does not get swapped.
+   *
+   * It was two icons, `ChevronDown` and `ChevronUp`, exchanged on tap — which
+   * is a cut, and a cut between two glyphs that differ only in which way they
+   * point reads as a flicker. One glyph rotating through 180° is the same
+   * information and it shows the card doing the thing rather than reporting
+   * that it is done.
+   */
+  const turn = useSharedValue(0);
+  useEffect(() => {
+    turn.value = withTiming(open ? 1 : 0, { duration: OPEN_MS, easing: OPEN_EASE });
+  }, [open, turn]);
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 180}deg` }] }));
+
+  /**
+   * The card opens by animating a real height, not by animating its layout.
+   *
+   * The obvious build is Reanimated's `LinearTransition` on the card, and it
+   * looks right until you watch what is under it. Measured on an open: the card
+   * below jumped straight to its final position on the first frame while this
+   * one grew over a quarter second, so a 94px hole opened between them and
+   * slowly closed. `layout` animates the view it is on; it did not carry the
+   * sibling with it.
+   *
+   * Animating a height does, because a height is a layout value — whatever is
+   * below is pushed down by exactly as much as this card has grown, on every
+   * frame, for free.
+   *
+   * The cost is that the rows stay mounted while closed, clipped by a zero-high
+   * box, so there is something to measure. Three or four rows of text per meal
+   * is a cheap thing to keep around, and it buys a measurement that is always
+   * current — a card whose content changed while closed (a row deleted from
+   * another screen) opens to the right height rather than to the height it had
+   * last time it was open.
+   */
+  const [bodyH, setBodyH] = useState(0);
+  const grow = useSharedValue(0);
+  useEffect(() => {
+    grow.value = withTiming(open ? 1 : 0, { duration: OPEN_MS, easing: OPEN_EASE });
+  }, [open, grow]);
+  const body = useAnimatedStyle(() => ({ height: grow.value * bodyH }));
+
   const count = g.items.length;
   const countText =
     count === 1 ? i18n.nDiaryItemsOne : i18n.nDiaryItems.replace('{n}', String(count));
@@ -276,71 +324,135 @@ function MealCard({
         <Text style={styles.mealKcal}>
           {g.kcal.toLocaleString()} <Text style={styles.unit}>kcal</Text>
         </Text>
-        <Icon icon={open ? ChevronUp : ChevronDown} size={18} color={colors.mutedForeground} />
+        <Animated.View style={chevron}>
+          <Icon icon={ChevronDown} size={18} color={colors.mutedForeground} />
+        </Animated.View>
       </Pressable>
 
-      {open
-        ? g.items.map((it) => (
-            <View key={it.id} style={styles.item}>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName} numberOfLines={1}>
-                  {it.food_name}
-                  {/* Only when it is not one portion. "×1" on every line is
-                      noise that makes the one line that says ×2 harder to see. */}
-                  {it.servings !== 1 ? <Text style={styles.serving}>  ×{it.servings}</Text> : null}
-                </Text>
-                <Text style={styles.itemMacros}>
-                  P{it.protein_g} · C{it.carbs_g} · F{it.fat_g}
-                </Text>
-              </View>
-              <Text style={styles.itemKcal}>{it.kcal}</Text>
-              {/*
-                Edit and remove, on the row itself.
-
-                Not a swipe and not a long-press. Both are invisible until
-                guessed, and this list is already behind a tap to expand the
-                meal — a gesture hidden inside something hidden is a feature
-                only its author finds. The two buttons cost a little width on a
-                row that had spare, and they say what is possible without being
-                tried.
-
-                44 × 44 hit targets around 16pt glyphs: the drawn icon is small
-                enough not to compete with the food's name, and `hitSlop` makes
-                it a thumb-sized target anyway.
-              */}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={i18n.nItemEdit}
-                hitSlop={10}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  onEdit(it);
-                }}
-                style={({ pressed }) => [styles.rowBtn, pressed && styles.pressed]}>
-                <Icon icon={Pencil} size={15} color={colors.mutedForeground} />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={i18n.nItemDelete}
-                hitSlop={10}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onDelete(it);
-                }}
-                style={({ pressed }) => [styles.rowBtn, pressed && styles.pressed]}>
-                {/* Muted, not red. A destructive glyph on every row of a list
-                    that is not about deleting makes deletion the loudest thing
-                    on the card — three foods drew three red marks and the eye
-                    went to them before the food. The two actions are already
-                    told apart by their shapes, and the red belongs on the
-                    confirm dialog's button, where it is about to mean
-                    something. */}
-                <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
-              </Pressable>
-            </View>
-          ))
-        : null}
+      {/*
+        Always mounted, clipped to an animated height. The inner View is what
+        gets measured, and it lays out at its natural size however short the box
+        around it currently is.
+      */}
+      <Animated.View style={[styles.body, body]} pointerEvents={open ? 'auto' : 'none'}>
+        <View onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
+          {g.items.map((it, i) => (
+            <MealRow
+              key={it.id}
+              it={it}
+              grow={grow}
+              index={i}
+              count={g.items.length}
+              i18n={i18n}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </View>
+      </Animated.View>
     </GlassCard>
+  );
+}
+
+/**
+ * One food in an open meal.
+ *
+ * Its own component because it needs its own animated style, and a hook cannot
+ * be called from inside a `map`.
+ *
+ * ── the stagger comes off the card's own progress ──
+ *
+ * `entering` would be the shorter way to write this and it does not work here:
+ * the rows never unmount, so an entering animation fires once, on first render,
+ * and never again. Instead each row reads the same `grow` the card's height
+ * reads, through a window of its own — row `i` starts at `i × step` and takes
+ * the next 0.55 of the card's travel to arrive.
+ *
+ * `step` shrinks as the list grows so the last row always lands with the card
+ * rather than after it. Four items step by 0.12; a twelve-item lunch steps by
+ * 0.04 and still finishes on time.
+ *
+ * Only on the way open. Closing runs the same numbers backwards, which fades
+ * the rows out in reverse — and that is right: the last row to arrive is the
+ * first to go, so the list rolls back up the way it rolled down.
+ */
+function MealRow({
+  it,
+  grow,
+  index,
+  count,
+  i18n,
+  onEdit,
+  onDelete,
+}: {
+  it: LoggedItem;
+  grow: SharedValue<number>;
+  index: number;
+  count: number;
+  i18n: ReturnType<typeof useI18n>;
+  onEdit: (it: LoggedItem) => void;
+  onDelete: (it: LoggedItem) => void;
+}) {
+  const step = Math.min(0.12, 0.45 / Math.max(1, count - 1));
+  const from = index * step;
+
+  const style = useAnimatedStyle(() => {
+    const t = Math.min(Math.max((grow.value - from) / 0.55, 0), 1);
+    return { opacity: t, transform: [{ translateY: (1 - t) * 10 }] };
+  });
+
+  return (
+    <Animated.View style={[styles.item, style]}>
+      <View style={styles.itemInfo}>
+        <Text style={styles.itemName} numberOfLines={1}>
+          {it.food_name}
+          {/* Only when it is not one portion. "×1" on every line is
+              noise that makes the one line that says ×2 harder to see. */}
+          {it.servings !== 1 ? <Text style={styles.serving}>  ×{it.servings}</Text> : null}
+        </Text>
+        <Text style={styles.itemMacros}>
+          P{it.protein_g} · C{it.carbs_g} · F{it.fat_g}
+        </Text>
+      </View>
+      <Text style={styles.itemKcal}>{it.kcal}</Text>
+      {/*
+        Edit and remove, on the row itself.
+
+        Not a swipe and not a long-press. Both are invisible until guessed, and
+        this list is already behind a tap to expand the meal — a gesture hidden
+        inside something hidden is a feature only its author finds. The two
+        buttons cost a little width on a row that had spare, and they say what
+        is possible without being tried.
+      */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={i18n.nItemEdit}
+        hitSlop={10}
+        onPress={() => {
+          Haptics.selectionAsync();
+          onEdit(it);
+        }}
+        style={({ pressed }) => [styles.rowBtn, pressed && styles.pressed]}>
+        <Icon icon={Pencil} size={15} color={colors.mutedForeground} />
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={i18n.nItemDelete}
+        hitSlop={10}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onDelete(it);
+        }}
+        style={({ pressed }) => [styles.rowBtn, pressed && styles.pressed]}>
+        {/* Muted, not red. A destructive glyph on every row of a list that is
+            not about deleting makes deletion the loudest thing on the card —
+            three foods drew three red marks and the eye went to them before the
+            food. The two actions are already told apart by their shapes, and
+            the red belongs on the confirm dialog's button, where it is about to
+            mean something. */}
+        <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -454,6 +566,9 @@ function EditServingsSheet({
 const styles = StyleSheet.create({
   list: { gap: spacing.sm },
   meal: { gap: 2, paddingVertical: spacing.md },
+  // clipped, so the rows inside can lay out at full height while the box around
+  // them is still opening
+  body: { overflow: 'hidden' },
   mealHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   mealHeadText: { flex: 1, minWidth: 0, gap: 2 },
   mealName: { ...type.headline, color: colors.foreground },

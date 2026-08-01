@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent, type ViewProps } from 'react-native';
+import Animated, { type AnimatedProps } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { glass, spacing } from '@/constants/ascnd';
@@ -67,7 +68,28 @@ import { glass, spacing } from '@/constants/ascnd';
  * a hard halo rather than a soft falloff. The depth comes from the gradient,
  * the hairline border and the bright top edge.
  */
-export function GlassCard({ style, children, ...props }: ViewProps) {
+/**
+ * `layout`, `entering` and `exiting` are Reanimated's, passed straight through.
+ *
+ * A card that changes height — a meal opening in the diary, a log unfolding —
+ * otherwise snaps to its new size while its contents fade in, which reads as
+ * two unrelated things happening rather than one thing opening. A card that
+ * appears in a list wants to arrive rather than blink into place.
+ *
+ * All three are opt-in. Most cards never move, and an animation on a card that
+ * does not move is a wrapper doing nothing.
+ */
+type GlassCardProps = ViewProps &
+  Pick<AnimatedProps<ViewProps>, 'layout' | 'entering' | 'exiting'>;
+
+export function GlassCard({
+  style,
+  children,
+  layout,
+  entering,
+  exiting,
+  ...props
+}: GlassCardProps) {
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
 
   const measure = (e: LayoutChangeEvent) => {
@@ -78,7 +100,12 @@ export function GlassCard({ style, children, ...props }: ViewProps) {
   };
 
   return (
-    <View style={[styles.card, style]} {...props}>
+    <Animated.View
+      style={[styles.card, style]}
+      layout={layout}
+      entering={entering}
+      exiting={exiting}
+      {...props}>
       {/*
         The lit face, clipped to the rounded corners.
 
@@ -114,7 +141,7 @@ export function GlassCard({ style, children, ...props }: ViewProps) {
       {/* Bright inner top edge (--glass-inner-shadow) */}
       <View style={styles.topLine} pointerEvents="none" />
       {children}
-    </View>
+    </Animated.View>
   );
 }
 

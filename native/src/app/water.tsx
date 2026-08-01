@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { ChevronDown, ChevronUp, Droplets, Minus, PencilLine, Plus } from 'lucide-react-native';
-import { useState } from 'react';
+import { ChevronDown, Droplets, Minus, PencilLine, Plus } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -11,6 +11,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { ChartBar } from '@/components/ascnd/chart-bar';
@@ -81,6 +90,14 @@ export default function WaterScreen() {
    * it to be pushed away, and it is the detail the screen exists to show.
    */
   const [logsOpen, setLogsOpen] = useState(true);
+
+  // Same turning chevron as the diary's meal cards — one glyph rotating rather
+  // than two glyphs swapped, so the header shows the fold happening.
+  const turn = useSharedValue(1);
+  useEffect(() => {
+    turn.value = withTiming(logsOpen ? 1 : 0, { duration: 240, easing: Easing.out(Easing.cubic) });
+  }, [logsOpen, turn]);
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 180}deg` }] }));
 
   const target = Number(profile?.water_target_ml) || 2500;
   const todayMl = total ?? 0;
@@ -203,16 +220,21 @@ export default function WaterScreen() {
                 ? i18n.nWaterEntriesOne
                 : i18n.nWaterEntries.replace('{n}', String(logs.length))}
             </Text>
-            <Icon
-              icon={logsOpen ? ChevronUp : ChevronDown}
-              size={18}
-              color={colors.mutedForeground}
-            />
+            <Animated.View style={chevron}>
+              <Icon icon={ChevronDown} size={18} color={colors.mutedForeground} />
+            </Animated.View>
           </Pressable>
 
+          {/* One card in after another on the way open, all out together on the
+              way closed — see `today-meals.tsx` for why the stagger is one-way */}
           {logsOpen
-            ? logs.map((l) => (
-                <GlassCard key={l.id} style={styles.logCard}>
+            ? logs.map((l, i) => (
+                <GlassCard
+                  key={l.id}
+                  style={styles.logCard}
+                  entering={FadeInDown.duration(220).delay(i * 40).easing(Easing.out(Easing.cubic))}
+                  exiting={FadeOut.duration(110)}
+                  layout={LinearTransition.duration(260)}>
                   <View style={styles.logIcon}>
                     <Icon icon={Droplets} size={16} color={colors.metricBlue} />
                   </View>
