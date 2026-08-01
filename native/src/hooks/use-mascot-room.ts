@@ -234,14 +234,53 @@ export function useToggleEquip() {
         await writeLocal(LOCAL_INV_KEY, rows);
         return;
       }
-      const { error } = await supabase
-        .from('mascot_inventory')
-        .update({ equipped })
-        .eq('user_id', user!.id)
-        .eq('item_key', itemKey);
+      // The two writes touch disjoint rows — `conflictingKeys` excludes the key
+      // being switched on — so they have no reason to queue behind each other.
+      const [{ error }] = await Promise.all([
+        supabase
+          .from('mascot_inventory')
+          .update({ equipped })
+          .eq('user_id', user!.id)
+          .eq('item_key', itemKey),
+        equipped ? unequipConflicts(user!.id, itemKey) : Promise.resolve(),
+      ]);
       if (error) throw error;
-      if (equipped) await unequipConflicts(user!.id, itemKey);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['mascot_inventory', user?.id] }),
+    /**
+     * The mascot changes clothes on the tap, not on the reply.
+     *
+     * Dressing is the one place in the app where the result of the tap *is* the
+     * screen — you press "wear" to see it worn — and waiting a round trip to
+     * find out reads as the button having missed. The cache already knows
+     * everything needed to answer: which item, on or off, and which others come
+     * off with it.
+     *
+     * The rule is the same one the server applies, and the same one the offline
+     * `TEST_UNLOCK_ALL` branch above applies, so all three agree about what the
+     * wardrobe looks like a moment from now.
+     */
+    onMutate: async ({ itemKey, equipped }) => {
+      const key = ['mascot_inventory', user?.id];
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<LocalInv[]>(key);
+      if (previous) {
+        const conflicts = equipped ? conflictingKeys(itemKey) : [];
+        qc.setQueryData<LocalInv[]>(
+          key,
+          previous.map((r) =>
+            r.item_key === itemKey
+              ? { ...r, equipped }
+              : conflicts.includes(r.item_key as ShopItemKey)
+                ? { ...r, equipped: false }
+                : r,
+          ),
+        );
+      }
+      return { key, previous };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(ctx.key, ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['mascot_inventory', user?.id] }),
   });
 }

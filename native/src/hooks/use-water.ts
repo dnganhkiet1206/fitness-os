@@ -7,6 +7,54 @@ import { useAuth } from './use-auth';
 
 const today = () => localDateStr();
 
+/**
+ * A logged mouthful of water, as the two queries that show it see it.
+ *
+ * `today_water` is the day's total and `today_water_logs` is the list; a tap
+ * changes both, and both are patched before the network is asked. Adding water
+ * is the most-tapped button in the app and the round trip was the only reason
+ * it ever felt like it had not registered.
+ */
+type WaterLog = { id: string; amount_ml: number; logged_at: string };
+
+async function patchWater(
+  qc: ReturnType<typeof useQueryClient>,
+  userId: string | undefined,
+  dateStr: string,
+  edit: (logs: WaterLog[]) => WaterLog[],
+) {
+  const totalKey = ['today_water', userId, dateStr];
+  const logsKey = ['today_water_logs', userId, dateStr];
+  // or a refetch already in flight lands after this and undoes it
+  await Promise.all([
+    qc.cancelQueries({ queryKey: totalKey }),
+    qc.cancelQueries({ queryKey: logsKey }),
+  ]);
+
+  const prevTotal = qc.getQueryData<number>(totalKey);
+  const prevLogs = qc.getQueryData<WaterLog[]>(logsKey);
+
+  if (prevLogs) {
+    const next = edit(prevLogs);
+    qc.setQueryData(logsKey, next);
+    // The total is re-derived from the list rather than nudged by the delta, so
+    // the two cannot end up telling different stories about the same tap.
+    qc.setQueryData(
+      totalKey,
+      next.reduce((n, l) => n + Number(l.amount_ml), 0),
+    );
+  }
+  return { totalKey, logsKey, prevTotal, prevLogs };
+}
+
+type WaterCtx = Awaited<ReturnType<typeof patchWater>>;
+
+function rollbackWater(qc: ReturnType<typeof useQueryClient>, ctx?: WaterCtx) {
+  if (!ctx) return;
+  if (ctx.prevLogs !== undefined) qc.setQueryData(ctx.logsKey, ctx.prevLogs);
+  if (ctx.prevTotal !== undefined) qc.setQueryData(ctx.totalKey, ctx.prevTotal);
+}
+
 export function useTodayWater() {
   const { user } = useAuth();
   const dateStr = today();
@@ -40,8 +88,19 @@ export function useAddWater() {
       });
       if (error) throw error;
     },
+    onMutate: (amountMl) =>
+      patchWater(queryClient, user?.id, dateStr, (logs) => [
+        // Newest first, matching the query's own order. The id is a placeholder
+        // — the refetch replaces the row wholesale, and nothing keys off it in
+        // the moment it exists.
+        { id: `optimistic-${Date.now()}`, amount_ml: amountMl, logged_at: new Date().toISOString() },
+        ...logs,
+      ]),
+    onError: (_e, _vars, ctx) => rollbackWater(queryClient, ctx),
     onSuccess: () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['today_water', user?.id, dateStr] });
       queryClient.invalidateQueries({ queryKey: ['today_water_logs', user?.id, dateStr] });
       queryClient.invalidateQueries({ queryKey: ['water_week', user?.id] });
@@ -70,8 +129,12 @@ export function useRemoveLastWater() {
       const { error } = await supabase.from('water_logs').delete().eq('id', last.id);
       if (error) throw error;
     },
+    onMutate: () => patchWater(queryClient, user?.id, dateStr, (logs) => logs.slice(1)),
+    onError: (_e, _vars, ctx) => rollbackWater(queryClient, ctx),
     onSuccess: () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['today_water', user?.id, dateStr] });
       queryClient.invalidateQueries({ queryKey: ['today_water_logs', user?.id, dateStr] });
       queryClient.invalidateQueries({ queryKey: ['water_week', user?.id] });

@@ -325,7 +325,24 @@ export function useUpdateChallengeProgress() {
       weekEnd.setDate(weekEnd.getDate() + 7);
       const weekEndStr = localDateStr(weekEnd);
 
-      for (const ch of challenges) {
+      /**
+       * Every challenge at once, then the celebrations in order.
+       *
+       * This was a `for … of` with two round trips inside it — a read to work
+       * out where the challenge stands and a write to store it — so a week with
+       * five active challenges spent ten sequential trips before the screen
+       * moved. Nothing in one iteration is an input to any other: each reads its
+       * own table and writes its own row.
+       *
+       * The celebrations are the reason this is not simply `Promise.all` over
+       * the whole body. Fired from inside parallel work they would pop in
+       * whatever order the network happened to settle, and two arriving on the
+       * same frame stack on top of each other. So each iteration *returns* what
+       * to celebrate and the celebrating happens after, in the order the
+       * challenges were listed.
+       */
+      const parties = await Promise.all(
+        challenges.map(async (ch) => {
         let newValue = 0;
 
         if (ch.challenge_key.startsWith('workouts_')) {
@@ -400,18 +417,23 @@ export function useUpdateChallengeProgress() {
           })
           .eq('id', ch.id);
 
-        if (isCompleted && ch.reward_title) {
-          const t = CHALLENGE_TEXT[ch.challenge_key];
-          const rewardTitle = t ? t.reward[lang] : ch.reward_title;
-          const challengeTitle = t ? t.title[lang] : ch.title;
-          const doneLabel = lang === 'vi' ? 'Hoàn thành thử thách' : 'Challenge complete';
-          fireCelebration({
-            title: rewardTitle,
-            description: `${doneLabel}: ${challengeTitle}`,
-            icon: ch.icon ?? 'trophy',
-            tier: ch.reward_tier ?? 'bronze',
-          });
-        }
+        // Built here, inside the branch that has already established there is
+        // a reward to name. Carrying the row out to read later would lose that
+        // narrowing, and `reward_title` is nullable.
+        if (!isCompleted || !ch.reward_title) return null;
+        const t = CHALLENGE_TEXT[ch.challenge_key];
+        const doneLabel = lang === 'vi' ? 'Hoàn thành thử thách' : 'Challenge complete';
+        return {
+          title: t ? t.reward[lang] : ch.reward_title,
+          description: `${doneLabel}: ${t ? t.title[lang] : ch.title}`,
+          icon: ch.icon ?? 'trophy',
+          tier: ch.reward_tier ?? 'bronze',
+        };
+        }),
+      );
+
+      for (const party of parties) {
+        if (party) fireCelebration(party);
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['weekly-challenges'] }),

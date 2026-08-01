@@ -403,6 +403,58 @@ async function resyncMealEntry(entryId: string) {
   if (upError) throw upError;
 }
 
+/**
+ * Edit the cached diary in place, and hand back what it was.
+ *
+ * Both mutations below take three round trips before the server agrees —
+ * the write, the parent entry's re-total, and the day's recompute — and the
+ * list has no reason to sit still for any of them. The row is already gone
+ * from the user's point of view; the network is catching up, not deciding.
+ *
+ * `cancelQueries` first, or an in-flight refetch that started before the tap
+ * can land after this edit and put the row back.
+ *
+ * The returned snapshot is the rollback. If the write fails the list has to
+ * go back to exactly what it showed, not to whatever a refetch would produce
+ * — those are the same thing when the server is reachable and very much not
+ * when it is the reason the write failed.
+ */
+async function patchDiary(
+  qc: ReturnType<typeof useQueryClient>,
+  userId: string | undefined,
+  edit: (items: LoggedItem[]) => LoggedItem[],
+) {
+  const key = ['today_meals_detail', userId, localDateStr()];
+  await qc.cancelQueries({ queryKey: key });
+  const previous = qc.getQueryData<LoggedMeal[]>(key);
+  if (previous) {
+    qc.setQueryData<LoggedMeal[]>(
+      key,
+      previous
+        .map((meal) => {
+          const items = edit(meal.items);
+          // Totals are re-derived here too. Leaving the meal's header showing
+          // the old figure while its items change is a card disagreeing with
+          // itself, which reads as the delete having half-worked.
+          const sum = (k: 'kcal' | 'protein_g' | 'carbs_g' | 'fat_g') =>
+            Math.round(items.reduce((n, it) => n + it[k], 0));
+          return {
+            ...meal,
+            items,
+            kcal: sum('kcal'),
+            protein_g: sum('protein_g'),
+            carbs_g: sum('carbs_g'),
+            fat_g: sum('fat_g'),
+          };
+        })
+        // an entry whose last item just went is a meal that did not happen —
+        // the server deletes the row, so the cache must drop it too
+        .filter((meal) => meal.items.length > 0),
+    );
+  }
+  return { key, previous };
+}
+
 /** Remove one logged food from today's diary. */
 export function useDeleteMealItem() {
   const { user } = useAuth();
@@ -414,7 +466,12 @@ export function useDeleteMealItem() {
       await resyncMealEntry(entryId);
       await recomputeDailyLog(user!.id, localDateStr());
     },
-    onSuccess: () => invalidateLogQueries(qc, user?.id),
+    onMutate: ({ itemId }) =>
+      patchDiary(qc, user?.id, (items) => items.filter((it) => it.id !== itemId)),
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(ctx.key, ctx.previous);
+    },
+    onSettled: () => invalidateLogQueries(qc, user?.id),
   });
 }
 
@@ -469,7 +526,27 @@ export function useUpdateMealItemServings() {
       await resyncMealEntry(entryId);
       await recomputeDailyLog(user!.id, localDateStr());
     },
-    onSuccess: () => invalidateLogQueries(qc, user?.id),
+    onMutate: ({ itemId, servings }) =>
+      patchDiary(qc, user?.id, (items) =>
+        items.map((it) => {
+          if (it.id !== itemId) return it;
+          // the same ratio the server will apply, so the optimistic figures and
+          // the refetched ones agree rather than flicker past each other
+          const k = servings / (it.servings || 1);
+          return {
+            ...it,
+            servings,
+            kcal: Math.round(it.kcal * k),
+            protein_g: Math.round(it.protein_g * k),
+            carbs_g: Math.round(it.carbs_g * k),
+            fat_g: Math.round(it.fat_g * k),
+          };
+        }),
+      ),
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(ctx.key, ctx.previous);
+    },
+    onSettled: () => invalidateLogQueries(qc, user?.id),
   });
 }
 
