@@ -10,7 +10,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { CarbIcon, FatIcon, FiberIcon, ProteinIcon } from '@/components/ascnd/macro-icons';
@@ -44,16 +44,18 @@ export function MicroTitle({ children }: { children: React.ReactNode }) {
  * what says "round again".
  *
  * Which raises the problem the shadow solves: laid directly over a ring of the
- * same colour, the lap is invisible. So a dark arc is drawn a few degrees
+ * same colour, the lap is invisible. So dark arcs are drawn a few degrees
  * *longer* than the lap and underneath it, and what shows past the coloured
  * cap is a shadow cast onto the ring below. It is the only depth cue available
  * — `react-native-svg` declares the filter primitives but leaves them
  * unimplemented on native, so `feDropShadow` renders nothing.
  *
- * The arrow at twelve o'clock is the other half of the tell, and it is there
- * for the case the shadow cannot cover: a lap of nearly a full turn puts the
- * cap back near the start, where a shadow alone would be easy to miss. It is
- * punched in the page colour so it reads as a hole in the stroke.
+ * Two of them, at different lengths and opacities, because one is a hard-edged
+ * dark crescent: a real shadow has no outline. The longer, fainter arc puts a
+ * step of falloff past the darker one, which at this size is the difference
+ * between a shadow and a mark. Short, as well — the lap is what should be
+ * noticed, and a shadow big enough to see on its own is a shadow that has
+ * become part of the drawing.
  *
  * The lap uses the ring's own gradient, not a colour of its own. It is the
  * same measurement continuing, and the ring's colour already carries a
@@ -86,8 +88,15 @@ function SmallRing({
   const W = 12;
   const CIRC = 2 * Math.PI * R;
 
-  /** how far the shadow leads the lap's cap, as a fraction of a turn (~7°) */
-  const SHADOW_LEAD = 0.02;
+  /**
+   * How far each shadow arc leads the lap's cap, as a fraction of a turn, with
+   * the opacity that goes with it. ~3° and ~6° — small enough to sit under the
+   * cap rather than trail behind it as a visible tail.
+   */
+  const SHADOWS = [
+    { lead: 0.017, opacity: 0.16 },
+    { lead: 0.008, opacity: 0.3 },
+  ] as const;
 
   const progress = useSharedValue(0);
   const overProgress = useSharedValue(0);
@@ -112,8 +121,11 @@ function SmallRing({
   const overAnimatedProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRC - overProgress.value * CIRC,
   }));
-  const shadowAnimatedProps = useAnimatedProps(() => ({
-    strokeDashoffset: CIRC - Math.min(overProgress.value + SHADOW_LEAD, 1) * CIRC,
+  const shadowFar = useAnimatedProps(() => ({
+    strokeDashoffset: CIRC - Math.min(overProgress.value + SHADOWS[0].lead, 1) * CIRC,
+  }));
+  const shadowNear = useAnimatedProps(() => ({
+    strokeDashoffset: CIRC - Math.min(overProgress.value + SHADOWS[1].lead, 1) * CIRC,
   }));
 
   const lapped = over > 0;
@@ -140,16 +152,27 @@ function SmallRing({
         />
         {lapped ? (
           <>
-            {/* Runs a few degrees ahead of the lap; what shows past the
-                coloured cap is the shadow it casts on the ring below */}
+            {/* Two arcs a few degrees ahead of the lap, fainter the further
+                they reach; what shows past the coloured cap is the shadow it
+                casts on the ring below. Longest and faintest first. */}
             <AnimatedCircle
               cx="50" cy="50" r={R}
               fill="none"
-              stroke="rgba(0,0,0,0.45)"
+              stroke={`rgba(0,0,0,${SHADOWS[0].opacity})`}
               strokeWidth={W}
               strokeLinecap="round"
               strokeDasharray={`${CIRC}`}
-              animatedProps={shadowAnimatedProps}
+              animatedProps={shadowFar}
+              transform="rotate(-90 50 50)"
+            />
+            <AnimatedCircle
+              cx="50" cy="50" r={R}
+              fill="none"
+              stroke={`rgba(0,0,0,${SHADOWS[1].opacity})`}
+              strokeWidth={W}
+              strokeLinecap="round"
+              strokeDasharray={`${CIRC}`}
+              animatedProps={shadowNear}
               transform="rotate(-90 50 50)"
             />
             <AnimatedCircle
@@ -161,14 +184,6 @@ function SmallRing({
               strokeDasharray={`${CIRC}`}
               animatedProps={overAnimatedProps}
               transform="rotate(-90 50 50)"
-            />
-            {/* Punched in the page colour, centred on the stroke at the top */}
-            <Path
-              // Shaft + chevron, symmetric about the top of the ring: spans
-              // x 45.8–54.2 (centred on 50) and y ±3.9 around 50−R, so it sits
-              // inside a 12pt stroke with room either side.
-              d={`M 45.8 ${50 - R - 0.5} h 5.4 l -2 -2.4 l 1.2 -1 l 3.8 3.9 l -3.8 3.9 l -1.2 -1 l 2 -2.4 h -5.4 z`}
-              fill={colors.background}
             />
           </>
         ) : null}
