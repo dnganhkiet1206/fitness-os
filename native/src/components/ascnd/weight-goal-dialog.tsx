@@ -13,7 +13,6 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Icon } from '@/components/ascnd/icon';
 import { Ruler, RULER_H, TICK_W } from '@/components/ascnd/weight-goal-ruler';
@@ -276,23 +275,7 @@ export function WeightGoalDialog({
               onContentSizeChange={onContentSizeChange}
             />
 
-            {/* Edge fade, so the ruler runs off the sides instead of being cut */}
-            <View style={styles.fade} pointerEvents="none">
-              <Svg width="100%" height="100%" preserveAspectRatio="none">
-                <Defs>
-                  <LinearGradient id="rulerFade" x1="0" y1="0" x2="1" y2="0">
-                    <Stop offset="0" stopColor={colors.background} stopOpacity={1} />
-                    <Stop offset="0.28" stopColor={colors.background} stopOpacity={0} />
-                    <Stop offset="0.72" stopColor={colors.background} stopOpacity={0} />
-                    <Stop offset="1" stopColor={colors.background} stopOpacity={1} />
-                  </LinearGradient>
-                </Defs>
-                <Rect x="0" y="0" width="100%" height="100%" fill="url(#rulerFade)" />
-              </Svg>
-            </View>
-
-            {/* The mark the ruler is read against — above the fade, so it stays
-                at full strength while the ticks around it dim */}
+            {/* The mark the ruler is read against */}
             <View style={styles.needle} pointerEvents="none" />
           </View>
         </View>
@@ -351,8 +334,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
 
+  /*
+   * No edge treatment. A gradient of the page colour used to sit over the
+   * ends, on the theory that the ruler should fade out rather than stop at the
+   * screen edge. In practice it covered nearly a third of the strip at each
+   * side in near-black, which reads as two panels laid over the ruler rather
+   * than as the ruler receding. The marks now simply run to the edges.
+   */
   ruler: { height: RULER_H, alignSelf: 'stretch', justifyContent: 'center' },
-  fade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   // Taller than the whole-unit marks and wider than any of them, so the ruler
   // is read against it rather than it being mistaken for one more tick
   needle: {
