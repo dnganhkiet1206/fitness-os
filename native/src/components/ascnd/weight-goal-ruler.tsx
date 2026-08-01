@@ -34,13 +34,12 @@ import { colors } from '@/constants/ascnd';
  *
  * This was arrived at from the other end, and the middle ground is the part
  * worth not repeating. `normal` (iOS 0.998) is the setting for a page of
- * content, where a flick should travel; on a ruler where a tick is 12pt and
- * half a kilogram, an ordinary flick carries a couple of thousand points —
- * a hundred and sixty ticks, eighty kilograms — so the target being nudged
- * ends up off the end of the scale, and the throw outruns the renderer on the
- * way, leaving an empty strip to watch. A hand-picked 0.975 in between glided
- * a few dozen ticks, which is better and still moves the value further than
- * anyone asked it to.
+ * content, where a flick should travel; on a ruler an ordinary flick carries a
+ * couple of thousand points, which at this scale is five hundred ticks and
+ * fifty kilograms — so the target being nudged ends up off the end of the
+ * scale, and the throw outruns the renderer on the way, leaving an empty strip
+ * to watch. A hand-picked 0.975 in between glided a few dozen ticks, which is
+ * better and still moves the value further than anyone asked it to.
  *
  * The reason momentum is wrong here at all: a scroll view is normally
  * navigating something bigger than the screen, where speed is the point. This
@@ -53,10 +52,20 @@ import { colors } from '@/constants/ascnd';
  * unrendered edge.
  */
 
-/** points between ticks — the drag distance of one step */
-export const TICK_W = 12;
+/**
+ * Points between ticks — how far the finger travels for one tenth of a unit.
+ *
+ * 4, which puts a whole kilogram 40pt apart and about ten of them on screen.
+ * There is a real trade here and it is worth naming: finer values mean more
+ * ticks mean more dragging for the same distance travelled, unless the ticks
+ * get narrower. At the old half-kilo steps a kilogram was 24pt; a tenth-kilo
+ * ruler at the same 12pt tick would have made it 120, which is five times the
+ * work to move the same amount. 4pt gets most of that back while leaving the
+ * ticks far enough apart to read as separate marks rather than as a smear.
+ */
+export const TICK_W = 4;
 
-/** every Nth tick is drawn tall */
+/** every Nth tick is drawn tall — a whole unit, at a tenth per tick */
 const MAJOR_EVERY = 10;
 
 export const Ruler = memo(function Ruler({
@@ -127,6 +136,8 @@ const RULER_H = 74;
 
 const styles = StyleSheet.create({
   slot: { width: TICK_W, alignItems: 'center', justifyContent: 'flex-end', height: RULER_H },
-  tick: { width: 1.5, height: 22, borderRadius: 1, backgroundColor: colors.foreground, opacity: 0.35 },
-  tickMajor: { height: 40, opacity: 0.7 },
+  // 1pt at 4pt spacing: a hairline with three times its own width of gap, so
+  // the ruler reads as marks. Any thicker and it closes up into a grey band.
+  tick: { width: 1, height: 18, backgroundColor: colors.foreground, opacity: 0.3 },
+  tickMajor: { width: 1.5, height: 34, opacity: 0.7 },
 });

@@ -35,10 +35,10 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
  * ── the ruler is a list, and it lives in its own file ──
  *
  * A `FlatList`, so only the ticks near the viewport exist at any moment. Drawn
- * instead, the full 30–300 kg range at half-kilo steps is 541 marks across
- * four thousand points of width — one enormous rasterised texture to scroll a
- * window across. Windowing makes the range free: pounds needs twelve hundred
- * ticks and costs exactly the same.
+ * instead, the full 30–300 kg range at tenth-of-a-kilo steps is 2 701 marks
+ * across eleven thousand points of width — one enormous rasterised texture to
+ * scroll a window across. Windowing makes the range free: pounds needs six
+ * thousand ticks and costs exactly the same.
  *
  * It is `memo`ised in `weight-goal-ruler`, and separate for a reason: this
  * screen `setState`s on every scroll frame so the big number can follow the
@@ -82,10 +82,11 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
  *
  * ── it works in the display unit ──
  *
- * The ruler is laid out in whatever unit the app shows, and converted to
- * kilograms on save. The step is half a unit for kilograms and a whole one for
- * pounds, so a tick is about the same real distance either way — half a pound
- * is a finer grain than anyone sets a goal to.
+ * The ruler is laid out in whatever unit the app shows and converted to
+ * kilograms on save, a tenth of a unit per tick either way. A tenth of a pound
+ * is finer than a tenth of a kilogram, which is harmless — the store keeps two
+ * decimal places of a kilogram, so no two ticks can round onto the same
+ * stored value.
  */
 
 /** the range the store clamps to, in kg */
@@ -116,20 +117,27 @@ export function WeightGoalDialog({
   const wl = weightLabel(unit);
   const list = useRef<FlatList<number>>(null);
 
-  // Half a kilogram, or a whole pound — roughly the same real distance
-  const step = unit === 'kg' ? 0.5 : 1;
-  const min = Math.ceil(displayWeight(MIN_KG, unit) / step) * step;
-  const max = Math.floor(displayWeight(MAX_KG, unit) / step) * step;
-  const count = Math.round((max - min) / step) + 1;
+  /**
+   * One tick is a tenth of a unit — 50, 50.1, … 50.9, 51.
+   *
+   * The arithmetic is done in tenths as whole numbers rather than in steps of
+   * `0.1`, because there are 2 700 of them between 30 and 300 kg and floating
+   * point does not survive that: `30 / 0.1` is already 299.999…, and adding a
+   * tenth to itself a few thousand times drifts far enough to land the ruler
+   * between values. Integers cannot drift; the division back to a real number
+   * happens once, at the end.
+   */
+  const min10 = Math.ceil(displayWeight(MIN_KG, unit) * 10);
+  const max10 = Math.floor(displayWeight(MAX_KG, unit) * 10);
+  const count = max10 - min10 + 1;
 
-  const valueAt = useCallback((i: number) => Math.round((min + i * step) * 10) / 10, [min, step]);
+  const valueAt = useCallback((i: number) => (min10 + i) / 10, [min10]);
 
   /** where the ruler opens: the existing target, else today's weight, else 70kg */
   const seedIndex = useMemo(() => {
     const seedKg = goalKg ?? currentKg ?? 70;
-    const raw = (displayWeight(seedKg, unit) - min) / step;
-    return Math.max(0, Math.min(count - 1, Math.round(raw)));
-  }, [goalKg, currentKg, unit, min, step, count]);
+    return Math.max(0, Math.min(count - 1, Math.round(displayWeight(seedKg, unit) * 10) - min10));
+  }, [goalKg, currentKg, unit, min10, count]);
 
   const [index, setIndex] = useState(seedIndex);
 
@@ -186,18 +194,33 @@ export function WeightGoalDialog({
     // Layout settling is not the user choosing a number
     if (!placed.current) return;
     const next = Math.max(0, Math.min(count - 1, Math.round(e.nativeEvent.contentOffset.x / TICK_W)));
-    if (next === clicked.current) return;
+    const prev = clicked.current;
+    if (next === prev) return;
     clicked.current = next;
     setIndex(next);
-    // One click per tick, the way a real dial feels. `selectionAsync` is what
-    // iOS uses for pickers — an impact would be a thud, several times a
-    // second, for the whole length of a drag.
-    //
-    // A fast flick crosses several ticks between frames and still gets one
-    // click. That is the ceiling, not a shortcut: the Taptic Engine cannot
-    // play them faster than about one every 30ms, and queueing more only
-    // makes them arrive late and out of step with the ruler.
-    Haptics.selectionAsync();
+
+    /*
+     * Two feels, because a tick is a tenth now.
+     *
+     * Every tick gets the light picker click. Drag slowly and you feel each
+     * tenth, which is the point of them being there.
+     *
+     * Crossing a whole unit gets something firmer. At any real dragging speed
+     * the tenths arrive faster than the Taptic Engine will play them — it
+     * manages about one every 30ms — so on their own they degrade into a buzz
+     * that no longer corresponds to anything. Whole units are ten times
+     * further apart, so they survive that ceiling and keep giving the drag a
+     * structure you can feel.
+     *
+     * The test is a crossing, not equality: a fast drag steps over several
+     * ticks between frames and can pass a whole unit without ever landing on
+     * it.
+     */
+    if (Math.floor(next / 10) !== Math.floor(prev / 10)) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } else {
+      Haptics.selectionAsync();
+    }
   }, [count]);
 
   const value = valueAt(index);
@@ -211,7 +234,7 @@ export function WeightGoalDialog({
    */
   const currentDisplay = currentKg != null ? displayWeight(currentKg, unit) : null;
   const intent =
-    currentDisplay == null || Math.abs(value - currentDisplay) < step / 2
+    currentDisplay == null || Math.abs(value - currentDisplay) < 0.05
       ? i18n.nWeightGoalMaintain
       : value > currentDisplay
         ? i18n.nWeightGoalGain
@@ -237,8 +260,11 @@ export function WeightGoalDialog({
 
         <View style={styles.stage}>
           <Text style={styles.intent}>{intent}</Text>
+          {/* Always a decimal. Dropping it on whole numbers would change the
+              string's width every tenth tick, and the number is centred — so
+              it would twitch left and right the whole way through a drag. */}
           <Text style={styles.value}>
-            {value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)} {wl}
+            {value.toFixed(1)} {wl}
           </Text>
 
           <View style={styles.ruler}>

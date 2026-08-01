@@ -65,7 +65,14 @@ function subscribe(cb: () => void) {
   return () => listeners.delete(cb);
 }
 
-/** `null` clears the goal; anything else is clamped and rounded to 0.1 kg */
+/**
+ * `null` clears the goal; anything else is clamped and rounded to 0.01 kg.
+ *
+ * Two decimal places, not one, because the picker steps in tenths of the
+ * *display* unit — and a tenth of a pound is 0.045 kg. Rounded to 0.1 kg, two
+ * adjacent ticks on a pound ruler would store the same number and the picker
+ * would jump to a different value than the one it was left on.
+ */
 export function setWeightGoalKg(value: number | null) {
   if (value == null) {
     goalState = null;
@@ -73,7 +80,7 @@ export function setWeightGoalKg(value: number | null) {
     AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
     return;
   }
-  const clamped = Math.round(Math.max(MIN_KG, Math.min(MAX_KG, value)) * 10) / 10;
+  const clamped = Math.round(Math.max(MIN_KG, Math.min(MAX_KG, value)) * 100) / 100;
   goalState = clamped;
   emit();
   AsyncStorage.setItem(STORAGE_KEY, String(clamped)).catch(() => {});
