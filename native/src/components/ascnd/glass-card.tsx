@@ -1,4 +1,5 @@
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent, type ViewProps } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { glass, spacing } from '@/constants/ascnd';
@@ -37,6 +38,29 @@ import { glass, spacing } from '@/constants/ascnd';
  * separates the card's bottom edge from the page without a border there to do
  * it.
  *
+ * ── the face is measured, not sized in percent ──
+ *
+ * `<Svg width="100%" height="100%">` with `<Rect width="100%">` inside it is
+ * the obvious way to make the face fill the card, and it is wrong the moment
+ * the card changes size. A percentage is resolved against the frame the SVG was
+ * last laid out and drawn at; grow the card — open a meal in the diary, unfold
+ * the water log — and the gradient keeps the height it had when it was closed.
+ * What you see is a horizontal seam across the card where the lit face stops
+ * and bare fill begins.
+ *
+ * So the card measures itself and hands the face real pixels. `onLayout` fires
+ * on every size change, the numbers reaching `<Svg>` change with it, and there
+ * is nothing left to resolve against a stale frame. Nothing is drawn until the
+ * first measurement — one frame of flat fill, which is what the card looked like
+ * before the gradient existed and is invisible next to a card appearing.
+ *
+ * It cannot loop: the face is absolutely positioned, so what it renders can
+ * never change the box being measured.
+ *
+ * Web hid this one. There `<svg width="100%">` is sized by CSS and always
+ * fills — measured at 359 × 171 inside a 359 × 171 card, expanded, no seam.
+ * It is the native renderer that holds onto the old frame.
+ *
  * ── no drop shadow ──
  *
  * Still true, and still for the original reason: RN renders shadows on dark as
@@ -44,11 +68,29 @@ import { glass, spacing } from '@/constants/ascnd';
  * the hairline border and the bright top edge.
  */
 export function GlassCard({ style, children, ...props }: ViewProps) {
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+
+  const measure = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    // Only on a real change — `onLayout` fires for reasons other than resizing,
+    // and setting state to the same numbers re-renders every card for nothing.
+    setSize((prev) => (prev && prev.w === width && prev.h === height ? prev : { w: width, h: height }));
+  };
+
   return (
     <View style={[styles.card, style]} {...props}>
-      {/* The lit face, clipped to the rounded corners */}
-      <View style={styles.face} pointerEvents="none">
-        <Svg width="100%" height="100%" preserveAspectRatio="none">
+      {/*
+        The lit face, clipped to the rounded corners.
+
+        Measured here rather than on the card: this View is exactly the box the
+        gradient fills, while the card's own layout includes its border. Measure
+        the card and the SVG comes out two pixels wider than the box showing it
+        — clipped, so harmless, and wrong for no reason. It also leaves the
+        caller's own `onLayout` alone.
+      */}
+      <View style={styles.face} pointerEvents="none" onLayout={measure}>
+        {size ? (
+        <Svg width={size.w} height={size.h}>
           <Defs>
             {/* Light in from the top-left, gone by the middle */}
             <LinearGradient id="cardLit" x1="0" y1="0" x2="0.7" y2="1">
@@ -64,9 +106,10 @@ export function GlassCard({ style, children, ...props }: ViewProps) {
               <Stop offset="1" stopColor="#000000" stopOpacity={0} />
             </LinearGradient>
           </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#cardLit)" />
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#cardShade)" />
+          <Rect x="0" y="0" width={size.w} height={size.h} fill="url(#cardLit)" />
+          <Rect x="0" y="0" width={size.w} height={size.h} fill="url(#cardShade)" />
         </Svg>
+        ) : null}
       </View>
       {/* Bright inner top edge (--glass-inner-shadow) */}
       <View style={styles.topLine} pointerEvents="none" />
