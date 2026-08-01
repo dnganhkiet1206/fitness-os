@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Camera, Medal, Plus, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
+import { Camera, Medal, Minus, Plus, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -17,9 +17,10 @@ import { useBodyMeasurements, useWeightHistory } from '@/hooks/use-fitness-data'
 import { useProgressPhotos } from '@/hooks/use-progress-photos';
 import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
+import { useWeightGoal } from '@/hooks/use-weight-goal';
 import { getLocale } from '@/lib/i18n';
 import { parseLocalDate } from '@/lib/local-date';
-import { convertLength, displayLength, displayWeight, formatHeight, weightLabel } from '@/lib/units';
+import { convertLength, displayLength, displayWeight, formatHeight, weightLabel, weightToKg } from '@/lib/units';
 
 type Tab = 'weight' | 'measurements' | 'photos';
 
@@ -132,6 +133,19 @@ export default function ProgressScreen() {
     ((profile?.goal === 'bulk' && weightDelta > 0) || (profile?.goal === 'cut' && weightDelta < 0));
 
   const currentKg = (weight ?? []).length > 0 ? (weight ?? [])[(weight ?? []).length - 1].value : null;
+
+  /**
+   * Target weight. Stored in kg, drawn in whatever unit the chart is in.
+   *
+   * The stepper moves by one unit *as displayed* — 1 kg, or 1 lb — rather than
+   * by a fixed number of kilograms, so a pound-user's button does not move the
+   * target by 2.2 of their own units per press. The arithmetic therefore has
+   * to round-trip through the display unit and back.
+   */
+  const { goalKg, setGoalKg } = useWeightGoal();
+  const goalDisplay = goalKg != null ? displayWeight(goalKg, wUnit) : null;
+  const nudgeGoalKg = (steps: number) =>
+    weightToKg((goalDisplay ?? displayWeight(currentKg ?? 70, wUnit)) + steps, wUnit);
   const heightM = profile?.height_cm ? Number(profile.height_cm) / 100 : null;
   const bmi = currentKg != null && heightM ? currentKg / (heightM * heightM) : null;
   const cat = bmi != null ? bmiCategory(bmi, vi) : null;
@@ -316,11 +330,92 @@ export default function ProgressScreen() {
           </GlassCard>
           </Animated.View>
 
-          {/* Weight chart */}
+          {/* Weight chart, with the target drawn across it */}
           <Animated.View entering={rise(2)}>
           <GlassCard style={styles.chartCard}>
-            <Text style={styles.microTitle}>{i18n.progressWeightChart}</Text>
-            <LineChart points={weightData} color={colors.readinessGreen} height={180} unit={wl} emptyLabel={i18n.nNotEnoughData} />
+            <View style={styles.chartHead}>
+              <Text style={styles.microTitle}>{i18n.progressWeightChart}</Text>
+              {/* How far off the target is, in the same unit as the chart.
+                  Only shown once there is both a target and a weight to
+                  compare it against — otherwise there is nothing to say. */}
+              {goalDisplay != null && currentWeight != null ? (
+                <Text style={styles.goalToGo}>
+                  {Math.abs(currentWeight - goalDisplay) < 0.05
+                    ? i18n.nWeightGoalReached
+                    : i18n.nWeightGoalToGo.replace(
+                        '{x}',
+                        `${Math.abs(currentWeight - goalDisplay).toFixed(1)}${wl}`,
+                      )}
+                </Text>
+              ) : null}
+            </View>
+            <LineChart
+              points={weightData}
+              color={colors.readinessGreen}
+              height={180}
+              unit={wl}
+              emptyLabel={i18n.nNotEnoughData}
+              goal={goalDisplay}
+              goalLabel={i18n.nWeightGoal}
+            />
+            {/*
+              Setting the target. A stepper rather than a text field: it is the
+              same control the steps goal uses, it needs no keyboard over a
+              chart, and a weight target moves in small nudges rather than
+              being retyped.
+
+              The first tap has nothing to step from, so it starts at the
+              current weight — the only number on screen that is certainly in
+              the right neighbourhood.
+            */}
+            <View style={styles.goalRow}>
+              <Text style={styles.goalLabel}>{i18n.nWeightGoal}</Text>
+              {goalDisplay == null ? (
+                <Pressable
+                  style={({ pressed }) => [styles.goalSet, pressed && styles.pressed]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setGoalKg(currentKg ?? 70);
+                  }}>
+                  <Icon icon={Target} size={13} color={colors.primary} />
+                  <Text style={styles.goalSetText}>{i18n.nWeightGoalSet}</Text>
+                </Pressable>
+              ) : (
+                <>
+                  <Pressable
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.goalBtn, pressed && styles.pressed]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setGoalKg(nudgeGoalKg(-1));
+                    }}>
+                    <Icon icon={Minus} size={14} color={colors.foreground} />
+                  </Pressable>
+                  <Text style={styles.goalValue}>
+                    {goalDisplay.toFixed(1)}
+                    {wl}
+                  </Text>
+                  <Pressable
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.goalBtn, pressed && styles.pressed]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setGoalKg(nudgeGoalKg(1));
+                    }}>
+                    <Icon icon={Plus} size={14} color={colors.foreground} />
+                  </Pressable>
+                  <Pressable
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.goalClear, pressed && styles.pressed]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setGoalKg(null);
+                    }}>
+                    <Text style={styles.goalClearText}>{i18n.nWeightGoalClear}</Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
           </GlassCard>
           </Animated.View>
 
@@ -489,6 +584,32 @@ const styles = StyleSheet.create({
   tile: { flex: 1, alignItems: 'center', gap: 3, padding: spacing.sm + 4 },
   tileLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.4, color: colors.mutedForeground },
   tileValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
+
+  // Weight-chart goal
+  chartHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  goalToGo: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
+  goalLabel: { flex: 1, fontSize: 11, color: colors.mutedForeground },
+  goalBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary,
+  },
+  goalValue: {
+    minWidth: 62,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
+  },
+  goalClear: { paddingHorizontal: spacing.xs, paddingVertical: 2 },
+  goalClearText: { fontSize: 11, color: colors.mutedForeground },
+  goalSet: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  goalSetText: { fontSize: 12, fontWeight: '600', color: colors.primary },
 
   // BMI card
   bmiCard: { gap: spacing.md },

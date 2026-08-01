@@ -248,6 +248,13 @@ const en = {
   nWcDecrease: 'Decrease',
   nWcNoData: 'Log your weight to see changes here',
 
+  // Weight goal (Progress weight chart)
+  nWeightGoal: 'Goal',
+  nWeightGoalSet: 'Set a target weight',
+  nWeightGoalClear: 'Clear',
+  nWeightGoalToGo: '{x} to go',
+  nWeightGoalReached: 'Target reached',
+
   // Log-meal floating button
   nAddCamera: 'Scan a meal',
   nAddCameraHint: 'Point the camera at your plate',
@@ -595,6 +602,13 @@ const vi: typeof en = {
   nWcIncrease: 'Tăng',
   nWcDecrease: 'Giảm',
   nWcNoData: 'Ghi cân nặng để xem thay đổi ở đây',
+
+  // Weight goal (Progress weight chart)
+  nWeightGoal: 'Mục tiêu',
+  nWeightGoalSet: 'Đặt cân nặng mục tiêu',
+  nWeightGoalClear: 'Xoá',
+  nWeightGoalToGo: 'còn {x}',
+  nWeightGoalReached: 'Đã đạt mục tiêu',
 
   // Log-meal floating button
   nAddCamera: 'Quét bữa ăn',

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Line, Path, Stop, Text as SvgText } from 'react-native-svg';
 
 import { colors, spacing, type } from '@/constants/ascnd';
 
@@ -16,6 +16,17 @@ interface LineChartProps {
   /** Unit suffix for min/max labels (e.g. "kg") */
   unit?: string;
   emptyLabel?: string;
+  /**
+   * A target to mark with a horizontal line, in the same unit as `points`.
+   *
+   * The scale stretches to include it, so the line is always on the chart even
+   * when the target is far from anything recorded — a goal drawn off the top
+   * edge is a goal you cannot see how far away you are from, which is the only
+   * question it exists to answer.
+   */
+  goal?: number | null;
+  /** short caption printed above the goal line, e.g. "Goal" */
+  goalLabel?: string;
 }
 
 /**
@@ -36,7 +47,7 @@ interface LineChartProps {
  * The smoothing is safe to keep: the control points share their endpoints' y,
  * so the curve never bulges past a value that was recorded.
  */
-export function LineChart({ points, color = colors.primary, height = 140, unit = '', emptyLabel = 'Not enough data yet' }: LineChartProps) {
+export function LineChart({ points, color = colors.primary, height = 140, unit = '', emptyLabel = 'Not enough data yet', goal, goalLabel }: LineChartProps) {
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
@@ -49,8 +60,12 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   }
 
   const values = points.map((p) => p.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  // The goal joins the extent, not the data: it moves where the line sits on
+  // the chart without ever becoming a point on it.
+  const hasGoal = goal != null && Number.isFinite(goal);
+  const extent = hasGoal ? [...values, goal] : values;
+  const min = Math.min(...extent);
+  const max = Math.max(...extent);
   const span = max - min || 1;
   const padY = 12;
   const chartH = height - padY * 2;
@@ -95,6 +110,39 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                 <Stop offset="1" stopColor={color} stopOpacity="0" />
               </LinearGradient>
             </Defs>
+            {/*
+              The goal, under the series so a reading never disappears behind
+              it. Dashed and dim on purpose: it is a line nobody measured, and
+              it should not compete with the one they did.
+            */}
+            {hasGoal && (
+              <>
+                <Line
+                  x1={0}
+                  y1={y(goal)}
+                  x2={width}
+                  y2={y(goal)}
+                  stroke={colors.mutedForeground}
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                  opacity={0.75}
+                />
+                {goalLabel ? (
+                  <SvgText
+                    x={2}
+                    // Above the line, unless the line is near the top and there
+                    // is no room — then below it, so the caption is never
+                    // clipped by the edge of the chart.
+                    y={y(goal) - 5 < 10 ? y(goal) + 12 : y(goal) - 5}
+                    fill={colors.mutedForeground}
+                    fontSize={9}
+                    opacity={0.9}>
+                    {goalLabel} {Math.round(goal * 10) / 10}
+                    {unit ? ` ${unit}` : ''}
+                  </SvgText>
+                ) : null}
+              </>
+            )}
             <Path d={fillPath} fill="url(#fill)" />
             <Path d={path} stroke={color} strokeWidth={2.5} fill="none" strokeLinecap="round" />
             <Circle
