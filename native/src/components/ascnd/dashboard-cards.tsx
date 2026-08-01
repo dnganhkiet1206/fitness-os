@@ -310,7 +310,8 @@ interface NutritionCardProps {
  * The caption names the headline rather than carrying a second figure. It once
  * read `58g left` under the eaten number, which left the tap with nothing to
  * reveal — both numbers were already on the tile and flipping it only changed
- * which one was set in 18pt.
+ * which one was set in 18pt. The exception is a macro past its target, where
+ * the caption reports the surplus rather than naming anything: see below.
  *
  * The word also travels *down* with its number rather than up beside it. A
  * headline reading `58g left` mixes 18pt and 12pt on one line, which is a
@@ -459,28 +460,28 @@ function MacroSwap({
           `92/150g` over `eaten` and `58g` over `left`, and gives the tap
           something to be for.
         */}
-        <Animated.Text style={[styles.macroNote, noteOut]}>
-          {i18n.dcMacroEaten}
-          {/*
-            Past the target, the caption also carries the surplus.
+        {/*
+          Under the target this names the headline — "eaten". Past it, the
+          caption gives up the label and reports the surplus instead.
 
-            `120/114g` contains the fact that six grams went over and makes you
-            do the subtraction to get it, which is the one piece of arithmetic
-            this tile exists to save. It was only visible on the flipped side,
-            so the state you most want spelled out was the state you had to tap
-            for. The label stays in front of it — the number above is still the
-            eaten figure, and dropping "eaten" would leave the surplus looking
-            like the headline's caption.
+          `378/250g` contains the fact that a hundred and twenty-eight grams
+          went over and makes you do the subtraction to get it, which is the one
+          piece of arithmetic this tile exists to save.
 
-            Only when over. A macro that is under has its remainder one tap
-            away and nothing surprising to report.
-          */}
-          {over ? (
-            <Text style={overStyle}>
-              {' · '}
-              {leftNum}g {leftWord}
-            </Text>
-          ) : null}
+          It read `eaten · +128g over goal`, keeping the label in front. That
+          fits in English and does not fit in Vietnamese: `đã ăn · +128g vượt
+          mục tiêu` wraps to a second line, the tile grows, and the progress
+          bars across a row stop lining up — a layout that is correct in the
+          language it was written in and broken in the one the app is used in.
+          Cutting the label is the right thing anyway. "Eaten" is inferable from
+          the `378/250g` directly above it, and the surplus is not inferable
+          from anything.
+
+          Only when over: a macro that is under has its remainder one tap away
+          and nothing surprising to report.
+        */}
+        <Animated.Text style={[styles.macroNote, over && overStyle, noteOut]}>
+          {over ? `${leftNum}g ${leftWord}` : i18n.dcMacroEaten}
         </Animated.Text>
         {/*
           The word only, sitting where the caption always sits.
