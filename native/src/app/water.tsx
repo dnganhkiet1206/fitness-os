@@ -1,6 +1,16 @@
 import * as Haptics from 'expo-haptics';
-import { Minus, Plus } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChevronDown, ChevronUp, Droplets, Minus, PencilLine, Plus } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { ChartBar } from '@/components/ascnd/chart-bar';
@@ -19,6 +29,17 @@ import { displayVolume, volumeLabel, volumeToMl } from '@/lib/units';
 const QUICK_ML = [250, 500, 750];
 const QUICK_OZ = [8, 12, 16];
 
+/**
+ * The most anyone drinks in one sitting, in the display unit.
+ *
+ * Not a safety rail — it is a typo rail. The three presets are all three digits
+ * in millilitres, so a slipped keystroke reads as a plausible number rather than
+ * as nonsense: 2500 instead of 250 is a day's target logged as one glass, and
+ * nothing downstream would flag it. Two litres in one go is already generous for
+ * a genuine entry, so anything past it is worth a second look before it lands.
+ */
+const MAX_ONE_GO = { ml: 2000, oz: 68 } as const;
+
 export default function WaterScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -30,6 +51,36 @@ export default function WaterScreen() {
   const { data: week } = useWaterWeek();
   const addWater = useAddWater();
   const removeLast = useRemoveLastWater();
+
+  /**
+   * Manual entry.
+   *
+   * The three presets cover a glass, a bottle and a big bottle, and nothing
+   * else: a 330ml can, a 600ml bottle, half a cup left in the glass. Rounding
+   * those to the nearest preset is not logging water, it is guessing at it —
+   * and the guess compounds across a day into a figure the ring reports as
+   * fact. Anything that is not one of the three had no way in at all.
+   *
+   * The text is kept as a string rather than a number so a half-typed value is
+   * representable. Parsing on every keystroke turns "" into `NaN` and "0.5"
+   * into `0` on the way past the decimal point, and the field fights the person
+   * using it.
+   */
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualText, setManualText] = useState('');
+
+  /**
+   * The day's entries, open by default and foldable away.
+   *
+   * They were rows inside one card, which reads as a table — fine for three
+   * entries and a wall by the time somebody has been drinking properly all day.
+   * A card each gives every entry its own edge, and once they are cards the
+   * list is long enough that being able to fold it stops being a nicety.
+   *
+   * Open by default because it is the bottom of the screen with nothing under
+   * it to be pushed away, and it is the detail the screen exists to show.
+   */
+  const [logsOpen, setLogsOpen] = useState(true);
 
   const target = Number(profile?.water_target_ml) || 2500;
   const todayMl = total ?? 0;
@@ -79,7 +130,35 @@ export default function WaterScreen() {
             </Pressable>
           ))}
         </View>
+
+        {/* Anything the three presets do not cover */}
+        <Pressable
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.customBtn, pressed && styles.pressed]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            setManualText('');
+            setManualOpen(true);
+          }}>
+          <Icon icon={PencilLine} size={15} color={colors.mutedForeground} />
+          <Text style={styles.customText}>{i18n.nWaterCustom}</Text>
+        </Pressable>
       </GlassCard>
+
+      <ManualWaterSheet
+        visible={manualOpen}
+        value={manualText}
+        onChange={setManualText}
+        unitLabel={vl}
+        max={vUnit === 'oz' ? MAX_ONE_GO.oz : MAX_ONE_GO.ml}
+        i18n={i18n}
+        busy={addWater.isPending}
+        onClose={() => setManualOpen(false)}
+        onSave={(amount) => {
+          addWater.mutate(volumeToMl(amount, vUnit));
+          setManualOpen(false);
+        }}
+      />
 
       {/* 7-day chart */}
       <GlassCard>
@@ -101,23 +180,175 @@ export default function WaterScreen() {
         </View>
       </GlassCard>
 
-      {/* Today's log entries */}
+      {/* Today's log entries — one card each, foldable */}
       {logs && logs.length > 0 && (
-        <GlassCard>
-          <Text style={styles.cardTitle}>{i18n.nTodayLogs}</Text>
-          <View style={styles.logList}>
-            {logs.map((l) => (
-              <View key={l.id} style={styles.logRow}>
-                <Text style={styles.logAmount}>{displayVolume(Number(l.amount_ml), vUnit)} {vl}</Text>
-                <Text style={styles.logTime}>
-                  {new Date(l.logged_at).toLocaleTimeString(lang === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </GlassCard>
+        <View style={styles.logSection}>
+          {/*
+            A bare section header rather than another card. The entries below it
+            are cards now, and a card holding a row of cards is a box inside a
+            box — the heading belongs to the group, not to a surface of its own.
+          */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              Haptics.selectionAsync();
+              setLogsOpen((v) => !v);
+            }}
+            style={({ pressed }) => [styles.logHead, pressed && styles.pressed]}>
+            <Text style={styles.cardTitle}>{i18n.nTodayLogs}</Text>
+            {/* The count stays visible folded, so the header still says how much
+                is behind it rather than just that something is */}
+            <Text style={styles.logCount}>
+              {logs.length === 1
+                ? i18n.nWaterEntriesOne
+                : i18n.nWaterEntries.replace('{n}', String(logs.length))}
+            </Text>
+            <Icon
+              icon={logsOpen ? ChevronUp : ChevronDown}
+              size={18}
+              color={colors.mutedForeground}
+            />
+          </Pressable>
+
+          {logsOpen
+            ? logs.map((l) => (
+                <GlassCard key={l.id} style={styles.logCard}>
+                  <View style={styles.logIcon}>
+                    <Icon icon={Droplets} size={16} color={colors.metricBlue} />
+                  </View>
+                  <Text style={styles.logAmount}>
+                    {displayVolume(Number(l.amount_ml), vUnit)} <Text style={styles.logUnit}>{vl}</Text>
+                  </Text>
+                  <Text style={styles.logTime}>
+                    {new Date(l.logged_at).toLocaleTimeString(lang === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </GlassCard>
+              ))
+            : null}
+        </View>
       )}
     </Screen>
+  );
+}
+
+/**
+ * Type an amount in.
+ *
+ * A numeric keypad and one field. No stepper: the amounts this exists for are
+ * the ones the presets miss, which are arbitrary — 330, 180, 600 — and stepping
+ * to an arbitrary number is worse than typing it.
+ *
+ * ── what counts as a number ──
+ *
+ * Commas and full stops both appear as the decimal separator depending on the
+ * keyboard the device offers, so the comma is normalised before parsing rather
+ * than rejected. Everything else that is not a digit or a separator is dropped
+ * as it is typed, because `keyboardType` is a suggestion — a hardware keyboard,
+ * a paste, or an Android IME can all put letters in a numeric field.
+ *
+ * ── the ceiling ──
+ *
+ * Over `max` the sheet says so and will not save. Silently clamping would log a
+ * number the person did not enter, which is worse than the typo: they would
+ * have no reason to look again.
+ *
+ * ── the keyboard ──
+ *
+ * `KeyboardAvoidingView` on iOS only. Android resizes the window itself, and
+ * running both lifts the sheet twice.
+ */
+function ManualWaterSheet({
+  visible,
+  value,
+  onChange,
+  unitLabel,
+  max,
+  i18n,
+  busy,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  value: string;
+  onChange: (v: string) => void;
+  unitLabel: string;
+  max: number;
+  i18n: ReturnType<typeof useI18n>;
+  busy: boolean;
+  onClose: () => void;
+  onSave: (amount: number) => void;
+}) {
+  const amount = Number(value.replace(',', '.'));
+  const valid = Number.isFinite(amount) && amount > 0 && amount <= max;
+  const tooMuch = Number.isFinite(amount) && amount > max;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={styles.scrimFill}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Pressable style={styles.scrim} onPress={onClose}>
+          {/* the card swallows taps so pressing inside it does not dismiss */}
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <Text style={styles.sheetTitle}>{i18n.nWaterCustomTitle}</Text>
+
+            {/*
+              The field is a surface, and its width is set rather than left to
+              the platform.
+
+              An unstyled `TextInput` has no intrinsic width on native and takes
+              the browser's default `size` on web — about twenty characters,
+              which at 34pt is wider than the sheet containing it. It rendered
+              as a white band across the whole screen with the number clipped off
+              the right edge. Two lines of style, and neither platform gets to
+              decide.
+            */}
+            <View style={styles.inputField}>
+              <TextInput
+                value={value}
+                onChangeText={(t) => onChange(t.replace(/[^0-9.,]/g, ''))}
+                keyboardType="decimal-pad"
+                inputMode="decimal"
+                autoFocus
+                selectTextOnFocus
+                placeholder="0"
+                placeholderTextColor={colors.mutedForeground}
+                style={styles.input}
+                maxLength={6}
+              />
+              <Text style={styles.inputUnit}>{unitLabel}</Text>
+            </View>
+
+            {/* Reserved whether or not it is showing, so the sheet does not
+                jump taller the moment the number goes out of range */}
+            <Text style={[styles.sheetWarn, !tooMuch && styles.sheetWarnHidden]}>
+              {i18n.nWaterTooMuch.replace('{x}', `${max} ${unitLabel}`)}
+            </Text>
+
+            <View style={styles.sheetActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={onClose}
+                style={({ pressed }) => [styles.sheetBtn, pressed && styles.pressed]}>
+                <Text style={styles.sheetBtnText}>{i18n.cancel}</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={!valid || busy}
+                onPress={() => onSave(amount)}
+                style={({ pressed }) => [
+                  styles.sheetBtn,
+                  styles.sheetBtnPrimary,
+                  (!valid || busy) && styles.sheetBtnDisabled,
+                  pressed && styles.pressed,
+                ]}>
+                <Text style={[styles.sheetBtnText, styles.sheetBtnTextPrimary]}>{i18n.save}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -148,9 +379,91 @@ const styles = StyleSheet.create({
   barColTrack: { width: '60%', height: 104, justifyContent: 'flex-end', backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden' },
   barColFill: { width: '100%', borderRadius: 4 },
   barColLabel: { ...type.caption, color: colors.mutedForeground },
-  logList: { marginTop: spacing.sm, gap: spacing.xs },
-  logRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs },
-  logAmount: { ...type.body, color: colors.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  logSection: { gap: spacing.sm },
+  logHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
+  logCount: { ...type.footnote, color: colors.mutedForeground, flex: 1, textAlign: 'right' },
+  logCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2, paddingVertical: spacing.sm + 4 },
+  logIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.sm,
+    backgroundColor: 'rgba(14,165,233,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logAmount: { ...type.body, color: colors.foreground, fontWeight: '600', fontVariant: ['tabular-nums'], flex: 1 },
+  logUnit: { ...type.footnote, fontWeight: '400', color: colors.mutedForeground },
   logTime: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
+
+  // ── manual entry ──
+  customBtn: {
+    marginTop: spacing.sm,
+    height: 42,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs + 2,
+  },
+  customText: { ...type.footnote, fontWeight: '600', color: colors.mutedForeground },
+  scrimFill: { flex: 1 },
+  scrim: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  sheet: {
+    width: '100%',
+    maxWidth: 340,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: '#1b1b1f',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  sheetTitle: { ...type.headline, color: colors.foreground, textAlign: 'center' },
+  inputField: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  input: {
+    width: 132,
+    textAlign: 'right',
+    fontSize: 34,
+    fontWeight: '700',
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
+    padding: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+  },
+  inputUnit: { ...type.body, color: colors.mutedForeground },
+  sheetWarn: { ...type.caption, color: colors.readinessRed, textAlign: 'center' },
+  sheetWarnHidden: { opacity: 0 },
+  sheetActions: { flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch', marginTop: spacing.xs },
+  sheetBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  sheetBtnPrimary: { backgroundColor: colors.metricBlue },
+  sheetBtnDisabled: { opacity: 0.4 },
+  sheetBtnText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  sheetBtnTextPrimary: { color: '#04121f' },
 });

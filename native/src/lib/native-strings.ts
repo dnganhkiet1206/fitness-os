@@ -221,6 +221,12 @@ const en = {
   nTodayLogs: 'Today’s log',
   nStepsGoal: 'Goal {x}',
   nQuickAdd: 'Quick add',
+  // manual entry, for the amounts the presets do not cover
+  nWaterCustom: 'Another amount',
+  nWaterEntries: '{n} entries',
+  nWaterEntriesOne: '1 entry',
+  nWaterCustomTitle: 'How much did you drink?',
+  nWaterTooMuch: 'That is more than {x} in one go — check the number',
 
   // Progress photos
   nPhotoFront: 'Front',
@@ -590,6 +596,12 @@ const vi: typeof en = {
   nTodayLogs: 'Nhật ký hôm nay',
   nStepsGoal: 'Mục tiêu {x}',
   nQuickAdd: 'Thêm nhanh',
+  // manual entry, for the amounts the presets do not cover
+  nWaterCustom: 'Lượng khác',
+  nWaterEntries: '{n} lần',
+  nWaterEntriesOne: '1 lần',
+  nWaterCustomTitle: 'Bạn đã uống bao nhiêu?',
+  nWaterTooMuch: 'Nhiều hơn {x} trong một lần — kiểm tra lại số nhé',
 
   // Progress photos
   nPhotoFront: 'Trước',
