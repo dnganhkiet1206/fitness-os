@@ -138,12 +138,29 @@ export const Ruler = memo(function Ruler({
   );
 });
 
-const RULER_H = 74;
+/**
+ * Height of the whole ruler strip.
+ *
+ * Exported because the screen has to size its own container and its needle to
+ * match — the two were separate constants that happened to agree, which is a
+ * pair of numbers waiting to drift apart.
+ */
+export const RULER_H = 96;
 
 const styles = StyleSheet.create({
   slot: { width: TICK_W, alignItems: 'center', justifyContent: 'flex-end', height: RULER_H },
-  // 1pt at 4pt spacing: a hairline with three times its own width of gap, so
-  // the ruler reads as marks. Any thicker and it closes up into a grey band.
-  tick: { width: 1, height: 18, backgroundColor: colors.foreground, opacity: 0.3 },
-  tickMajor: { width: 1.5, height: 34, opacity: 0.7 },
+  /*
+   * Tall marks, thin marks.
+   *
+   * Height is what makes the ruler read as an instrument rather than a strip
+   * of texture, and it is free: the marks are further apart vertically, not
+   * horizontally, so nothing about the drag changes.
+   *
+   * Width is not free. At 4pt spacing a 1pt mark has three times its own width
+   * of gap around it, which is what keeps it a mark; take it to 2 and the
+   * ruler closes up into a grey band. Only the whole-unit marks are widened,
+   * and they are one in ten.
+   */
+  tick: { width: 1, height: 28, backgroundColor: colors.foreground, opacity: 0.3 },
+  tickMajor: { width: 2, height: 50, opacity: 0.7 },
 });

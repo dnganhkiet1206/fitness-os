@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Icon } from '@/components/ascnd/icon';
-import { Ruler, TICK_W } from '@/components/ascnd/weight-goal-ruler';
+import { Ruler, RULER_H, TICK_W } from '@/components/ascnd/weight-goal-ruler';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import type { WeightUnit } from '@/lib/units';
@@ -325,8 +325,6 @@ export function WeightGoalDialog({
   );
 }
 
-const RULER_H = 74;
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
 
@@ -355,12 +353,14 @@ const styles = StyleSheet.create({
 
   ruler: { height: RULER_H, alignSelf: 'stretch', justifyContent: 'center' },
   fade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  // Taller than the whole-unit marks and wider than any of them, so the ruler
+  // is read against it rather than it being mistaken for one more tick
   needle: {
     position: 'absolute',
     alignSelf: 'center',
     bottom: 0,
-    width: 2.5,
-    height: 54,
+    width: 3,
+    height: 68,
     borderRadius: 1.5,
     backgroundColor: colors.foreground,
   },
