@@ -22,77 +22,60 @@ try {
 }
 
 /**
- * Progressive blur across the top of a page.
+ * One transparent blur across the top of a page — the status bar band.
  *
- * Strongest at the very top and weakening downward until it is gone, with no
- * bar, no fill, no border and no edge. Content scrolling up past the Dynamic
- * Island dissolves rather than sliding under a panel.
+ * Content scrolling up past the Dynamic Island softens instead of running into
+ * it sharp. Nothing is drawn: no fill, no tint of our own, no border. One
+ * layer, and the only thing it does is blur.
  *
- * ── why it is stacked, not masked ──
+ * ── how it stays transparent ──
  *
- * The obvious way to fade a blur is one layer under a gradient mask. That was
- * tried and it put a dark band under the header: masking a `UIVisualEffectView`
- * can cost it its backdrop, and an effect view with no backdrop draws its
- * material colour flat — for a dark material, a dark bar.
- *
- * So the gradient is built out of the blur itself. Every layer starts at the
- * top and each is shorter than the last, so the top of the strip is covered by
- * all of them and the bottom of the tail by only the tallest. Blur compounds
- * where layers overlap, which is what produces the ramp. No layer is masked,
- * so every one keeps its own backdrop, and nothing anywhere has a colour of
- * its own to leak.
- *
- * ── why the layers are weak ──
- *
- * `intensity` in `expo-blur` is the `fractionComplete` of a paused animator
- * from "no effect" to the full material — it scales the blur radius *and* the
- * material's tint together, in step. That is what makes stacking safe: at 11
- * each, six layers reach a strong blur at the top while the tint only ever
- * accumulates to about half of one full pane of `systemUltraThinMaterial`.
- * Six layers at full strength would be a solid dark bar.
- *
- * Six is also why the ramp does not read as steps: over a 14pt tail the bands
- * are barely two points each, and consecutive bands differ by one of the
- * weakest blurs the system can draw.
- *
- * ── the material ──
+ * Two settings, and both matter.
  *
  * `systemUltraThinMaterialDark` is the most transparent of the dark system
- * materials. The `…Dark` variant is pinned rather than plain `dark` so it never
- * follows the phone's appearance — a light material over this app is a pale
- * film, which is the thing this has been chased away from twice.
+ * materials — nearly all of what is behind it comes through. The `…Dark`
+ * variant is pinned rather than plain `dark` so it never follows the phone's
+ * appearance; a light material over this app is a pale film, which is what
+ * this has had to be chased away from more than once.
+ *
+ * `intensity` is not opacity. Reading `expo-blur`'s Swift, it is the
+ * `fractionComplete` of a paused animator running from "no effect" to the full
+ * material, so it scales the blur radius *and* the material's tint together.
+ * At 30 the tint is under a third of an already-faint material — the band
+ * looks like the page, only out of focus — while the radius is still enough to
+ * take the edge off text moving underneath.
+ *
+ * Turning this up does not make a better blur, it makes a grey bar.
+ *
+ * ── things tried here that did not work ──
+ *
+ * Kept so none of them comes back:
+ *
+ *   - `expo-glass-effect`. `UIGlassEffect` is a lens, not a blur: a
+ *     translucent body with a bright specular rim, drawn as an object on the
+ *     page. The rim and the body are what the effect *is*, so no combination
+ *     of `glassEffectStyle` and `tintColor` removed them.
+ *   - A gradient mask, to fade the bottom edge. Masking a
+ *     `UIVisualEffectView` can cost it its backdrop, and an effect view with
+ *     no backdrop draws its material colour flat — a dark band under the
+ *     header.
+ *   - Stacking panes of decreasing height to build that fade out of the blur
+ *     itself. It works, and it is six live effect views for an edge.
  */
-
-/** how many panes build the ramp */
-const LAYERS = 6;
-
-/** each pane's share of the material — see the note on stacking above */
-const LAYER_INTENSITY = 11;
-
-export function GlassBar({ height, fade = 0 }: {
-  /** fully-blurred band at the top, in points — the status bar */
+export function GlassBar({ height }: {
+  /** how tall the blur is, in points — the status bar band */
   height: number;
-  /** distance below it over which the blur thins away to nothing */
-  fade?: number;
 }) {
   if (!Blur || height <= 0) return null;
   const { BlurView } = Blur;
 
   return (
-    <>
-      {Array.from({ length: LAYERS }, (_, i) => (
-        <BlurView
-          key={i}
-          // Tallest first. Every pane starts at the top, so the count of panes
-          // covering a given row is what sets the blur there: all of them
-          // across `height`, tapering to one by the end of the tail.
-          style={[styles.pane, { height: height + (fade * (LAYERS - 1 - i)) / (LAYERS - 1) }]}
-          tint="systemUltraThinMaterialDark"
-          intensity={LAYER_INTENSITY}
-          pointerEvents="none"
-        />
-      ))}
-    </>
+    <BlurView
+      style={[styles.pane, { height }]}
+      tint="systemUltraThinMaterialDark"
+      intensity={30}
+      pointerEvents="none"
+    />
   );
 }
 

@@ -54,16 +54,6 @@ import { handleTabScroll } from '@/lib/tab-bar-visibility';
  */
 const HEADER_H = 44;
 
-/**
- * How far below the status bar the blur takes to thin away to nothing.
- *
- * Short on purpose. On a tab page the large title sits at `insets.top + 8`, so
- * a longer tail would be softening the title while the page is standing still.
- * At 14 only its first few points are inside the ramp, and by then the ramp is
- * down to its weakest pane.
- */
-const HEADER_FADE = 14;
-
 interface ScreenProps extends ViewProps {
   title: string;
   /** Optional line above the large title (date, context) */
@@ -163,7 +153,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           </ScrollView>
           {/* Between the content and the floating header, so the hero softens
               under the notch while the chevron and the title stay sharp. */}
-          <GlassBar height={insets.top} fade={HEADER_FADE} />
+          <GlassBar height={insets.top} />
           <View
             style={[styles.pageHeaderFloat, { paddingTop: insets.top }]}
             pointerEvents="box-none"
@@ -217,7 +207,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         </ScrollView>
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
         <View style={[styles.pageHeader, { paddingTop: insets.top }]} pointerEvents="box-none">
-          <GlassBar height={insets.top} fade={HEADER_FADE} />
+          <GlassBar height={insets.top} />
           {headerBar}
         </View>
       </View>
@@ -257,7 +247,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         </View>
         {children}
       </ScrollView>
-      <GlassBar height={insets.top} fade={HEADER_FADE} />
+      <GlassBar height={insets.top} />
     </View>
   );
 }
