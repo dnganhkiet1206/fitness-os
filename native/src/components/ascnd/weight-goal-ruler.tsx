@@ -25,32 +25,32 @@ import { colors } from '@/constants/ascnd';
  * memoised, and the two callbacks are `useCallback`ed by the parent. An inline
  * arrow anywhere here would defeat the whole thing silently.
  *
- * ── it coasts, but only so far ──
+ * ── it does not coast at all ──
  *
- * `decelerationRate` is a number, because neither of the two names was usable.
+ * The ruler moves with the finger and stops when the finger lifts. No throw,
+ * no travel after release: `disableIntervalMomentum` makes it settle on the
+ * tick nearest where you let go, and `decelerationRate` is `fast` so what
+ * little momentum is left dies immediately.
  *
- * `fast` (0.9) is the setting for a pager, where a flick moves one card and
- * stops. It killed the throw: the ruler stopped dead under the finger instead
- * of running on and settling.
+ * This was arrived at from the other end, and the middle ground is the part
+ * worth not repeating. `normal` (iOS 0.998) is the setting for a page of
+ * content, where a flick should travel; on a ruler where a tick is 12pt and
+ * half a kilogram, an ordinary flick carries a couple of thousand points —
+ * a hundred and sixty ticks, eighty kilograms — so the target being nudged
+ * ends up off the end of the scale, and the throw outruns the renderer on the
+ * way, leaving an empty strip to watch. A hand-picked 0.975 in between glided
+ * a few dozen ticks, which is better and still moves the value further than
+ * anyone asked it to.
  *
- * `normal` (0.998) is the setting for a page of content, where a flick is
- * meant to travel a long way. On a ruler it is a disaster, and this is the
- * version that drifted off somewhere: a tick is 12pt and half a kilogram, so
- * an ordinary flick carries a couple of thousand points — a hundred and sixty
- * ticks, eighty kilograms — and the target being nudged is gone off the end of
- * the scale. It also outruns the renderer, so what you watch while it travels
- * is an empty strip.
+ * The reason momentum is wrong here at all: a scroll view is normally
+ * navigating something bigger than the screen, where speed is the point. This
+ * is a control being set to one number. Throwing it is not a faster way to
+ * choose — it is a way to lose the number you had.
  *
- * 0.975 sits between them: a flick glides a few dozen ticks and settles, which
- * is far enough to feel thrown and near enough to still be a choice.
- * `snapToInterval` lands it on an exact tick either way — iOS picks the snap
- * from where the momentum was heading, so only the last few points are
- * adjusted.
- *
- * The window is deliberately generous. Each tick is two plain views with no
- * text or image in it, so rendering a few screens' worth either side is
- * cheap, and it is what stops a hard flick outrunning the renderer and
- * showing gaps.
+ * The window is still generous, now that nothing can outrun it. Each tick is
+ * two plain views with no text or image in it, so keeping a few screens' worth
+ * either side rendered costs almost nothing and a fast drag never reaches an
+ * unrendered edge.
  */
 
 /** points between ticks — the drag distance of one step */
@@ -107,11 +107,10 @@ export const Ruler = memo(function Ruler({
       getItemLayout={getItemLayout}
       contentContainerStyle={contentContainerStyle}
       showsHorizontalScrollIndicator={false}
-      // Lands on an exact tick without cutting the throw short
+      // Settle on the tick nearest where the finger lifted, and nowhere else
       snapToInterval={TICK_W}
-      // Between iOS's "fast" (0.9, no throw at all) and "normal" (0.998, about
-      // eighty kilograms per flick) — see the note above
-      decelerationRate={0.975}
+      disableIntervalMomentum
+      decelerationRate="fast"
       onContentSizeChange={onContentSizeChange}
       onScroll={onScroll}
       // Every frame. A tick is 12pt, so a slow drag crosses one in a couple of
