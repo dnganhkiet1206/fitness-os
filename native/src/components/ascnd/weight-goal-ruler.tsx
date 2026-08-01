@@ -27,7 +27,7 @@ import { colors } from '@/constants/ascnd';
  *
  * ── how far it coasts ──
  *
- * A short glide, and the number is chosen rather than named.
+ * The number is chosen rather than named.
  *
  * iOS deceleration is a per-frame multiplier, so the distance a flick travels
  * scales with roughly `1 / (1 − rate)`. That is 10 for `fast` (0.9) and 500
@@ -41,21 +41,22 @@ import { colors } from '@/constants/ascnd';
  * glide entirely, which stops it running away and leaves it feeling stuck to
  * the finger: a dial with no weight to it.
  *
- * 0.94 is 1.7× `fast`. A flick coasts on the order of a hundred points —
- * twenty-odd ticks, a couple of units — which is enough to read as a slide and
- * still lands somewhere you meant. `snapToInterval` finishes it on an exact
- * tick: iOS picks the snap from where the momentum was heading, so only the
- * last few points are adjusted.
+ * 0.97 is 3.3× `fast`, and it was reached by stepping up rather than down:
+ * 0.94 (1.7×) coasted a couple of units and still read as stiff. A flick now
+ * carries on the order of two hundred points — fifty ticks, about five units —
+ * which is a throw you can feel, and a twentieth of what `normal` was doing.
+ * `snapToInterval` finishes it on an exact tick: iOS picks the snap from where
+ * the momentum was heading, so only the last few points are adjusted.
  *
- * The scale is what makes this liveable now. At 4pt a tick, a hundred points
- * of coast is twenty-five marks going past — visibly a slide. The same coast
- * at the old 12pt tick was eight marks, which is why `fast` read as no glide
- * at all back then.
+ * The tick scale is what makes this safe. At 4pt a tick, two hundred points of
+ * coast is fifty marks going past — plainly a slide — while the value has only
+ * moved five units. The same coast at the old 12pt half-unit tick would have
+ * been sixteen marks and eight units: less to look at, and more damage done.
  *
  * The window is generous to match. Each tick is two plain views with no text
  * or image in it, so keeping several screens' worth either side rendered costs
- * almost nothing, and a coast of a hundred points never reaches an unrendered
- * edge.
+ * almost nothing, and a coast of two hundred points never reaches an
+ * unrendered edge.
  */
 
 /**
@@ -122,9 +123,9 @@ export const Ruler = memo(function Ruler({
       getItemLayout={getItemLayout}
       contentContainerStyle={contentContainerStyle}
       showsHorizontalScrollIndicator={false}
-      // A short glide, then an exact tick — see the note above
+      // A real glide, then an exact tick — see the note above
       snapToInterval={TICK_W}
-      decelerationRate={0.94}
+      decelerationRate={0.97}
       onContentSizeChange={onContentSizeChange}
       onScroll={onScroll}
       // Every frame. A tick is 12pt, so a slow drag crosses one in a couple of
