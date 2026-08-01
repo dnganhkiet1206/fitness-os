@@ -671,6 +671,7 @@ interface Translations {
   dcActivityStepsUnit: string;
   dcNutritionTitle: string;
   dcNutritionTarget: string;
+  dcNutritionPctOfGoal: string;
   dcNutritionRemaining: string;
   /** eaten past the target */
   dcNutritionSurplus: string;
@@ -1365,6 +1366,7 @@ const vi: Translations = {
   dcActivityStepsUnit: 'bước',
   dcNutritionTitle: 'Dinh Dưỡng',
   dcNutritionTarget: 'Mục tiêu',
+  dcNutritionPctOfGoal: '{x}% mục tiêu',
   dcNutritionRemaining: 'Còn lại',
   dcNutritionSurplus: 'Thặng dư',
   dcNutritionDeficit: 'Thâm hụt',
@@ -2053,6 +2055,7 @@ const en: Translations = {
   dcActivityStepsUnit: 'steps',
   dcNutritionTitle: 'Nutrition',
   dcNutritionTarget: 'Target',
+  dcNutritionPctOfGoal: '{x}% goal',
   dcNutritionRemaining: 'Remaining',
   dcNutritionSurplus: 'Surplus',
   dcNutritionDeficit: 'Deficit',

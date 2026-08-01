@@ -215,6 +215,8 @@ interface NutritionCardProps {
 export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber }: NutritionCardProps) {
   const i18n = useI18n();
   const calPct = Math.min((kcal / (calorieTarget || 1)) * 100, 100);
+  /** the same share, uncapped — the ring stops at a turn, this does not */
+  const pctOfTarget = Math.round((kcal / (calorieTarget || 1)) * 100);
 
   /**
    * How far today sits from the target, signed.
@@ -306,9 +308,23 @@ export function NutritionCard({ kcal, calorieTarget, protein, carbs, fat, fiber 
           numbers that are not in the ring (target, remaining, surplus) stayed.
         */}
         <View style={styles.ringSide}>
-          <Text style={styles.sideLine}>
-            {i18n.dcNutritionTarget}: <Text style={styles.sideMono}>{calorieTarget.toLocaleString()}</Text> kcal
-          </Text>
+          {/*
+            The target, and beside it how much of it the day has actually
+            covered.
+
+            Uncapped, unlike the ring: the ring can only draw one turn plus a
+            lap, and this is the number that keeps counting — 111% says
+            something a full ring cannot. It takes the ring's colour, so the
+            two never disagree about whether the day is fine.
+          */}
+          <View style={styles.sideTargetRow}>
+            <Text style={styles.sideLine}>
+              {i18n.dcNutritionTarget}: <Text style={styles.sideMono}>{calorieTarget.toLocaleString()}</Text> kcal
+            </Text>
+            <Text style={[styles.sidePct, { color: deltaColor }]}>
+              {i18n.dcNutritionPctOfGoal.replace('{x}', String(pctOfTarget))}
+            </Text>
+          </View>
           <Text style={styles.sideLine}>
             {i18n.dcNutritionRemaining}: <Text style={styles.sideMono}>{Math.max(calorieTarget - kcal, 0).toLocaleString()}</Text> kcal
           </Text>
@@ -551,7 +567,12 @@ const styles = StyleSheet.create({
   smallRingUnit: { fontSize: 9, color: colors.mutedForeground },
   ringRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   ringSide: { flex: 1, gap: 6 },
-  sideLine: { fontSize: 12, color: colors.mutedForeground },
+  // 14, not 12. These three lines are the card's whole read-out beside the
+  // ring — the target, what is left, and how far past it the day has gone —
+  // and at 12 they were caption-sized next to a 16pt number in the ring.
+  sideLine: { fontSize: 14, color: colors.mutedForeground },
+  sideTargetRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  sidePct: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
   sideMono: { fontFamily: 'Menlo', color: colors.foreground, fontVariant: ['tabular-nums'] },
   sideMonoStrong: { fontSize: 14, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
   sideBarFill: { height: '100%', borderRadius: 2, backgroundColor: colors.metricOrange },
