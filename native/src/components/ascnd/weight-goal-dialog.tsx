@@ -2,13 +2,13 @@ import * as Haptics from 'expo-haptics';
 import { ArrowLeft } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  FlatList,
   Modal,
   Pressable,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
+  type FlatList,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Icon } from '@/components/ascnd/icon';
+import { Ruler, TICK_W } from '@/components/ascnd/weight-goal-ruler';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import type { WeightUnit } from '@/lib/units';
@@ -31,19 +32,24 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
  * side, and how far one nudge moves you — and a text field shows none of it.
  * It also never opens a keyboard over the thing you are trying to look at.
  *
- * ── the ruler is a list, not a drawing ──
+ * ── the ruler is a list, and it lives in its own file ──
  *
- * A `FlatList`, so only the forty-odd ticks near the viewport exist at any
- * moment. Drawn instead, the full 30–300 kg range at half-kilo steps is 541
- * marks across four thousand points of width — one enormous rasterised texture
- * to scroll a window across. Windowing makes the range free: pounds needs
- * twelve hundred ticks and costs exactly the same.
+ * A `FlatList`, so only the ticks near the viewport exist at any moment. Drawn
+ * instead, the full 30–300 kg range at half-kilo steps is 541 marks across
+ * four thousand points of width — one enormous rasterised texture to scroll a
+ * window across. Windowing makes the range free: pounds needs twelve hundred
+ * ticks and costs exactly the same.
  *
- * Spacers at both ends, each half the screen wide, are what let the first and
- * last values reach the middle. They are padding on the content container
- * rather than list items, so item offsets stay `index × TICK_W` — the offset
- * of the tick under the mark is exactly `index × TICK_W`, with the padding
- * accounted for by the viewport rather than by the arithmetic.
+ * It is `memo`ised in `weight-goal-ruler`, and separate for a reason: this
+ * screen `setState`s on every scroll frame so the big number can follow the
+ * drag, and while the list was in here that re-rendered hundreds of ticks
+ * sixty times a second. Everything handed to it — including `onScroll` and
+ * `onContentSizeChange` below — has to keep its identity between renders or
+ * the split buys nothing.
+ *
+ * Its ends are container padding, not spacer items, so item offsets stay
+ * `index × TICK_W`: the tick under the mark is exactly `index × TICK_W`, with
+ * the padding accounted for by the viewport rather than by the arithmetic.
  *
  * ── the number comes from the scroll position ──
  *
@@ -86,12 +92,6 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 const MIN_KG = 30;
 const MAX_KG = 300;
 
-/** points between ticks — the drag distance of one step */
-const TICK_W = 12;
-
-/** every Nth tick is drawn tall */
-const MAJOR_EVERY = 10;
-
 export function WeightGoalDialog({
   visible,
   goalKg,
@@ -122,7 +122,6 @@ export function WeightGoalDialog({
   const max = Math.floor(displayWeight(MAX_KG, unit) / step) * step;
   const count = Math.round((max - min) / step) + 1;
 
-  const indices = useMemo(() => Array.from({ length: count }, (_, i) => i), [count]);
   const valueAt = useCallback((i: number) => Math.round((min + i * step) * 10) / 10, [min, step]);
 
   /** where the ruler opens: the existing target, else today's weight, else 70kg */
@@ -176,14 +175,14 @@ export function WeightGoalDialog({
    * The content has been measured — now an offset means something. Position
    * the ruler and start listening to it.
    */
-  const onContentSizeChange = () => {
+  const onContentSizeChange = useCallback(() => {
     if (placed.current) return;
     list.current?.scrollToOffset({ offset: seedIndex * TICK_W, animated: false });
     clicked.current = seedIndex;
     placed.current = true;
-  };
+  }, [seedIndex]);
 
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     // Layout settling is not the user choosing a number
     if (!placed.current) return;
     const next = Math.max(0, Math.min(count - 1, Math.round(e.nativeEvent.contentOffset.x / TICK_W)));
@@ -199,7 +198,7 @@ export function WeightGoalDialog({
     // play them faster than about one every 30ms, and queueing more only
     // makes them arrive late and out of step with the ruler.
     Haptics.selectionAsync();
-  };
+  }, [count]);
 
   const value = valueAt(index);
 
@@ -243,29 +242,12 @@ export function WeightGoalDialog({
           </Text>
 
           <View style={styles.ruler}>
-            <FlatList
-              ref={list}
-              data={indices}
-              horizontal
-              keyExtractor={(i) => String(i)}
-              showsHorizontalScrollIndicator={false}
-              // Rest positions land on exact ticks, so the reading can never
-              // sit between two values
-              snapToInterval={TICK_W}
-              decelerationRate="fast"
-              getItemLayout={(_, i) => ({ length: TICK_W, offset: TICK_W * i, index: i })}
-              contentContainerStyle={{ paddingHorizontal: (width - TICK_W) / 2 }}
-              onContentSizeChange={onContentSizeChange}
+            <Ruler
+              count={count}
+              width={width}
+              listRef={list}
               onScroll={onScroll}
-              // Every frame. A tick is 12pt, and a slow drag crosses one in a
-              // couple of frames — anything coarser turns the clicks into
-              // clusters with gaps between them.
-              scrollEventThrottle={1}
-              renderItem={({ item }) => (
-                <View style={styles.tickSlot}>
-                  <View style={[styles.tick, item % MAJOR_EVERY === 0 && styles.tickMajor]} />
-                </View>
-              )}
+              onContentSizeChange={onContentSizeChange}
             />
 
             {/* Edge fade, so the ruler runs off the sides instead of being cut */}
@@ -346,9 +328,6 @@ const styles = StyleSheet.create({
   },
 
   ruler: { height: RULER_H, alignSelf: 'stretch', justifyContent: 'center' },
-  tickSlot: { width: TICK_W, alignItems: 'center', justifyContent: 'flex-end', height: RULER_H },
-  tick: { width: 1.5, height: 22, borderRadius: 1, backgroundColor: colors.foreground, opacity: 0.35 },
-  tickMajor: { height: 40, opacity: 0.7 },
   fade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   needle: {
     position: 'absolute',
