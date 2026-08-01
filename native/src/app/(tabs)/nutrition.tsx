@@ -7,12 +7,11 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
-import { NutritionCard } from '@/components/ascnd/dashboard-cards';
+import { NutritionCard, WaterWidget } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LogMealFab } from '@/components/ascnd/log-meal-fab';
-import { QuickStats } from '@/components/ascnd/quick-stats';
 import { Screen } from '@/components/ascnd/screen';
 import { TodayMeals } from '@/components/ascnd/today-meals';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
@@ -205,15 +204,24 @@ export default function NutritionScreen() {
               fiber={{ current: Number(dailyLog?.fiber_g) || 0, target: macros.fiber }}
             />
 
-            {/* The numbers a day of eating is judged by, under the hero card */}
-            <QuickStats
-              kcal={kcal}
-              calorieTarget={calorieTarget}
-              protein={Number(dailyLog?.protein_g) || 0}
-              proteinTarget={macros.protein}
-              waterMl={waterMl ?? 0}
-              waterTargetMl={Number(profile?.water_target_ml) || 2500}
-              i18n={i18n}
+            {/*
+              Water — Today's widget, not a copy of it.
+
+              The row that used to sit here also carried calories and protein,
+              and both were already answered a few points above: the ring is
+              the calories, and protein is one of the four macro tiles inside
+              the same card. Water was the only thing on it that the hero card
+              does not say.
+
+              So it is `WaterWidget`, the component Today renders, reading the
+              same `useTodayWater` query and opening the same `/water` screen.
+              Logging a glass on either tab moves both, because there is only
+              one of them.
+            */}
+            <WaterWidget
+              ml={waterMl ?? 0}
+              targetMl={Number(profile?.water_target_ml) || 2500}
+              labels={{ title: lang === 'vi' ? 'Nước uống' : 'Water' }}
             />
 
             <View style={styles.sectionHeadRow}>
