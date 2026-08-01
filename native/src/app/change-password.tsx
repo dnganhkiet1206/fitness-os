@@ -4,10 +4,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -59,9 +56,17 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <Screen back title={i18n.settingsChangePassword}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <Screen keyboardInsets back title={i18n.settingsChangePassword}>
+      {/*
+        A plain View, not a ScrollView.
+
+        `Screen` already is one, and a vertical scroll view nested inside
+        another vertical scroll view has no height to be bounded by: the outer
+        one offers it unlimited space, so it reports whatever it likes and the
+        page scrolls without ever reaching an end. `keyboardInsets` on the
+        `Screen` above does the keyboard job the inner one was here for.
+      */}
+      <View style={styles.content}>
           <View style={styles.field}>
             <Text style={styles.label}>{i18n.settingsNewPassword}</Text>
             <TextInput
@@ -108,8 +113,7 @@ export default function ChangePasswordScreen() {
               <Text style={styles.buttonText}>{i18n.settingsChangePassword}</Text>
             )}
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </View>
     </Screen>
   );
 }
