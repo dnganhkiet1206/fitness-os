@@ -492,6 +492,11 @@ export default function ProgressScreen() {
               emptyLabel={i18n.nNotEnoughData}
               goal={goalDisplay}
               goalLabel={i18n.nWeightGoal}
+              // The weight history is the one chart people read values off, so
+              // it gets the axes; the biometric sparklines stay sparklines.
+              grid
+              ambient
+              locale={getLocale(lang)}
             />
             {/*
               One button, one sheet. The row used to be a stepper; a target

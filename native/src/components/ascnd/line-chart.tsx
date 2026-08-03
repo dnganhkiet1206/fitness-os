@@ -1,6 +1,16 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Line, Path, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  LinearGradient,
+  Line,
+  Path,
+  RadialGradient,
+  Rect,
+  Stop,
+  Text as SvgText,
+} from 'react-native-svg';
 
 import { colors, spacing, type } from '@/constants/ascnd';
 
@@ -27,6 +37,68 @@ interface LineChartProps {
   goal?: number | null;
   /** short caption printed above the goal line, e.g. "Goal" */
   goalLabel?: string;
+  /**
+   * Draw it as a read-off chart rather than a sparkline: dashed gridlines at
+   * round values, those values down the left, dates along the bottom.
+   *
+   * Opt-in because it changes the *scale*. The gridlines are only worth having
+   * at round numbers, which means rounding the extent outward to reach them —
+   * so a series from 51.5 to 57.4 is drawn on a 50-to-60 axis and its curve
+   * occupies less of the height. That is right for a weight history somebody
+   * reads values off, and wrong for the 90pt sparklines on the biometrics
+   * screen, where the only question is which way the line is going.
+   */
+  grid?: boolean;
+  /** A pool of the line's own colour behind the middle of the plot. */
+  ambient?: boolean;
+  /** BCP-47 tag for the date axis — pass `getLocale(lang)`. */
+  locale?: string;
+}
+
+/**
+ * Round values to hang gridlines on, covering `[lo, hi]`.
+ *
+ * A gridline is only useful if the number beside it is one a person would say.
+ * The steps below are the ones weight and the biometrics actually move in; the
+ * loop takes the first that covers the range in three intervals or fewer, so an
+ * eight-kilo span gets 5s and a fifty-kilo span gets 20s without either being
+ * written down anywhere.
+ *
+ * Three, not four: with a goal of 60 over a 51.5–57.4 history, four intervals
+ * produce 50 / 52.5 / 55 / 57.5 / 60 and three produce 50 / 55 / 60. Half-kilo
+ * gridlines are precision the reading does not have.
+ *
+ * Both ends are pushed out to the step, which is what puts the top and bottom
+ * gridlines exactly on the edges of the plot instead of floating just inside
+ * it.
+ */
+const TICK_STEPS = [0.1, 0.2, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100] as const;
+
+export function niceTicks(lo: number, hi: number, want = 3): { ticks: number[]; min: number; max: number } {
+  const span = Math.max(hi - lo, 1e-6);
+  const step = TICK_STEPS.find((s) => span / s <= want) ?? TICK_STEPS[TICK_STEPS.length - 1];
+  let min = Math.floor(lo / step) * step;
+  let max = Math.ceil(hi / step) * step;
+
+  /*
+    A flat series still needs an axis with two ends.
+
+    Every reading identical — three weigh-ins all at 70.0, no goal set — rounds
+    to `min === max`, which is one gridline, a span of zero, and a line drawn
+    along the very bottom of the plot. Opening it out by a step each way puts
+    the flat line in the middle of a chart that reads 69.5 / 70 / 70.5, which is
+    both true and legible.
+  */
+  if (max - min < step / 2) {
+    min -= step;
+    max += step;
+  }
+  const ticks: number[] = [];
+  // Counted rather than accumulated: `for (v = min; v <= max; v += step)` drifts
+  // on 0.1 and 2.5 and can stop one line short of the top of its own axis.
+  const n = Math.round((max - min) / step);
+  for (let i = 0; i <= n; i++) ticks.push(Math.round((min + i * step) * 1e6) / 1e6);
+  return { ticks, min, max };
 }
 
 /**
@@ -47,9 +119,21 @@ interface LineChartProps {
  * The smoothing is safe to keep: the control points share their endpoints' y,
  * so the curve never bulges past a value that was recorded.
  */
-export function LineChart({ points, color = colors.primary, height = 140, unit = '', emptyLabel = 'Not enough data yet', goal, goalLabel }: LineChartProps) {
+export function LineChart({ points, color = colors.primary, height = 140, unit = '', emptyLabel = 'Not enough data yet', goal, goalLabel, grid = false, ambient = false, locale }: LineChartProps) {
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
+
+  /*
+    Unique ids, because SVG ids are document-global.
+
+    Both of these were hard-coded strings. `biometrics.tsx:109` renders a
+    `LineChart` per metric inside a `.map()`, each with its own colour, so five
+    charts declared five gradients called "fill" and every one of them drew
+    whichever colour mounted last. It looked like a palette decision.
+  */
+  const uid = useId();
+  const fillId = `lcFill-${uid}`;
+  const glowId = `lcGlow-${uid}`;
 
   if (points.length < 2) {
     return (
@@ -64,11 +148,28 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   // the chart without ever becoming a point on it.
   const hasGoal = goal != null && Number.isFinite(goal);
   const extent = hasGoal ? [...values, goal] : values;
-  const min = Math.min(...extent);
-  const max = Math.max(...extent);
+  const rawMin = Math.min(...extent);
+  const rawMax = Math.max(...extent);
+
+  // With gridlines the extent rounds outward so the lines land on numbers
+  // worth printing; without them the series keeps the full height it had.
+  const scale = grid ? niceTicks(rawMin, rawMax) : { ticks: [], min: rawMin, max: rawMax };
+  const min = scale.min;
+  const max = scale.max;
   const span = max - min || 1;
   const padY = 12;
   const chartH = height - padY * 2;
+
+  /*
+    A left gutter for the values, and only when they are drawn.
+
+    The reference puts them outside the plot rather than over it: a number
+    sitting on the line it labels is unreadable exactly when the line is
+    interesting. Everything below measures x from `padX`, so the goal line, the
+    curve and the dots all start clear of them without any of them knowing why.
+  */
+  const padX = grid ? 34 : 0;
+  const plotW = Math.max(0, width - padX);
 
   /**
    * Where each reading sits horizontally, by its date.
@@ -83,11 +184,31 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   const tN = times[times.length - 1];
   const byTime = usable && tN > t0;
   const xs = points.map((_, i) =>
-    byTime ? (width * (times[i] - t0)) / (tN - t0) : (width * i) / (points.length - 1),
+    padX + (byTime ? (plotW * (times[i] - t0)) / (tN - t0) : (plotW * i) / (points.length - 1)),
   );
 
   const x = (i: number) => xs[i];
   const y = (v: number) => padY + chartH * (1 - (v - min) / span);
+
+  /*
+    Five date columns, evenly spaced in *time*.
+
+    Not one per reading — a year of weigh-ins would print a hundred overlapping
+    dates — and not one per pixel either. Five is what the reference uses and
+    what fits: first, last, and three between, each a real instant on the axis
+    so the vertical rule under a label is where that date actually falls.
+  */
+  const DATE_COLS = 5;
+  const cols =
+    grid && byTime
+      ? Array.from({ length: DATE_COLS }, (_, i) => {
+          const f = i / (DATE_COLS - 1);
+          return { x: padX + plotW * f, t: t0 + (tN - t0) * f };
+        })
+      : [];
+
+  const dateText = (t: number) =>
+    new Date(t).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 
   let path = `M ${x(0)} ${y(values[0])}`;
   for (let i = 1; i < values.length; i++) {
@@ -95,9 +216,13 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
     const cx = (x(i - 1) + x(i)) / 2;
     path += ` C ${cx} ${y(values[i - 1])}, ${cx} ${y(values[i])}, ${x(i)} ${y(values[i])}`;
   }
-  const fillPath = `${path} L ${x(values.length - 1)} ${height} L 0 ${height} Z`;
+  const fillPath = `${path} L ${x(values.length - 1)} ${height} L ${padX} ${height} Z`;
 
   const fmt = (v: number) => `${Math.round(v * 10) / 10}${unit ? ` ${unit}` : ''}`;
+  // Gridline labels are bare numbers: the unit is already in the card's title
+  // and repeating it four times down the side is four times the ink for none of
+  // the meaning.
+  const tickText = (v: number) => `${Math.round(v * 10) / 10}`;
 
   return (
     <View onLayout={onLayout}>
@@ -105,11 +230,62 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
         <>
           <Svg width={width} height={height}>
             <Defs>
-              <LinearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+              <LinearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="0" stopColor={color} stopOpacity="0.25" />
                 <Stop offset="1" stopColor={color} stopOpacity="0" />
               </LinearGradient>
+              {/*
+                The pool in the middle. Five stops, not two: a linear ramp
+                reaches zero at a definite radius and the eye finds that ring
+                immediately. `feGaussianBlur` is declared by react-native-svg
+                and does nothing on native, so this is the only way to get soft
+                light — the same technique as `ambient-light.tsx`.
+              */}
+              <RadialGradient id={glowId} cx="0.5" cy="0.5" rx="0.6" ry="0.75">
+                <Stop offset="0" stopColor={color} stopOpacity={0.14} />
+                <Stop offset="0.3" stopColor={color} stopOpacity={0.077} />
+                <Stop offset="0.55" stopColor={color} stopOpacity={0.035} />
+                <Stop offset="0.8" stopColor={color} stopOpacity={0.011} />
+                <Stop offset="1" stopColor={color} stopOpacity={0} />
+              </RadialGradient>
             </Defs>
+
+            {ambient ? (
+              <Rect x={padX} y={0} width={plotW} height={height} fill={`url(#${glowId})`} />
+            ) : null}
+
+            {/* Value gridlines, dashed and under everything. They are a
+                backdrop to read against, not marks on the chart. */}
+            {grid
+              ? scale.ticks.map((t) => (
+                  <Line
+                    key={`h${t}`}
+                    x1={padX}
+                    x2={width}
+                    y1={y(t)}
+                    y2={y(t)}
+                    stroke={colors.foreground}
+                    strokeOpacity={0.1}
+                    strokeWidth={0.5}
+                    strokeDasharray={[3, 4]}
+                  />
+                ))
+              : null}
+
+            {/* Date rules — fainter than the value lines, because a date is
+                where you look after you have read a value, not before. */}
+            {cols.slice(1, -1).map((c) => (
+              <Line
+                key={`v${c.x}`}
+                x1={c.x}
+                x2={c.x}
+                y1={0}
+                y2={height}
+                stroke={colors.foreground}
+                strokeOpacity={0.06}
+                strokeWidth={0.5}
+              />
+            ))}
             {/*
               The goal, under the series so a reading never disappears behind
               it. Dashed and dim on purpose: it is a line nobody measured, and
@@ -118,7 +294,7 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
             {hasGoal && (
               <>
                 <Line
-                  x1={0}
+                  x1={padX}
                   y1={y(goal)}
                   x2={width}
                   y2={y(goal)}
@@ -129,7 +305,7 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                 />
                 {goalLabel ? (
                   <SvgText
-                    x={2}
+                    x={padX + 2}
                     // Above the line, unless the line is near the top and there
                     // is no room — then below it, so the caption is never
                     // clipped by the edge of the chart.
@@ -143,8 +319,28 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                 ) : null}
               </>
             )}
-            <Path d={fillPath} fill="url(#fill)" />
-            <Path d={path} stroke={color} strokeWidth={2.5} fill="none" strokeLinecap="round" />
+            {/* No area fill under a gridded chart: a filled region and a
+                dashed grid are two backgrounds arguing, and the fill is the one
+                carrying no information. */}
+            {grid ? null : <Path d={fillPath} fill={`url(#${fillId})`} />}
+            <Path
+              d={path}
+              stroke={color}
+              strokeWidth={grid ? 3 : 2.5}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {/* Every reading gets a dot when the grid is on — that is what says
+                which parts of the curve were measured and which were drawn
+                between measurements. */}
+            {grid
+              ? values.map((v, i) =>
+                  i === values.length - 1 ? null : (
+                    <Circle key={`p${points[i].date}-${i}`} cx={x(i)} cy={y(v)} r={3} fill={color} />
+                  ),
+                )
+              : null}
             <Circle
               cx={x(values.length - 1)}
               cy={y(values[values.length - 1])}
@@ -154,11 +350,41 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
               strokeWidth={2}
             />
           </Svg>
-          <View style={styles.labels}>
-            <Text style={styles.label}>{fmt(min)}</Text>
-            <Text style={[styles.label, styles.labelStrong]}>{fmt(values[values.length - 1])}</Text>
-            <Text style={styles.label}>{fmt(max)}</Text>
-          </View>
+
+          {/* Values down the left, each centred on its own gridline */}
+          {grid
+            ? scale.ticks.map((t) => (
+                <Text key={`t${t}`} style={[styles.axisValue, { top: y(t) - 7, width: padX - 6 }]}>
+                  {tickText(t)}
+                </Text>
+              ))
+            : null}
+
+          {grid && cols.length > 0 ? (
+            <View style={styles.dateRow}>
+              {cols.map((c, i) => (
+                <Text
+                  key={c.t}
+                  style={[
+                    styles.dateText,
+                    // The end labels anchor to the edges instead of centring,
+                    // so neither runs off the side of the card.
+                    { left: c.x },
+                    i === 0 && styles.dateFirst,
+                    i === cols.length - 1 && styles.dateLast,
+                  ]}
+                  numberOfLines={1}>
+                  {dateText(c.t)}
+                </Text>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.labels}>
+              <Text style={styles.label}>{fmt(min)}</Text>
+              <Text style={[styles.label, styles.labelStrong]}>{fmt(values[values.length - 1])}</Text>
+              <Text style={styles.label}>{fmt(max)}</Text>
+            </View>
+          )}
         </>
       )}
     </View>
@@ -265,6 +491,26 @@ const styles = StyleSheet.create({
     ...type.footnote,
     color: colors.mutedForeground,
   },
+  // Absolutely placed at its own gridline's y, right-aligned into the gutter.
+  axisValue: {
+    position: 'absolute',
+    left: 0,
+    ...type.caption,
+    color: colors.mutedForeground,
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
+  dateRow: { height: 16, marginTop: 4 },
+  dateText: {
+    position: 'absolute',
+    ...type.caption,
+    color: colors.mutedForeground,
+    width: 64,
+    marginLeft: -32,
+    textAlign: 'center',
+  },
+  dateFirst: { marginLeft: 0, textAlign: 'left' },
+  dateLast: { marginLeft: -64, textAlign: 'right' },
   labels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
