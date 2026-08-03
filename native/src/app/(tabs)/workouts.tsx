@@ -1,10 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { CalendarDays, ChevronRight, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
+import { CalendarDays, ChevronDown, ChevronRight, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { rise } from '@/lib/entrance';
 
@@ -18,13 +23,15 @@ import { useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-libra
 import { useUnits } from '@/hooks/use-units';
 import { getLocale } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
-import { displayWeight, weightLabel } from '@/lib/units';
+import { displayWeight, weightLabel, type WeightUnit } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 
 interface TplExercise {
+  exerciseName?: string;
   sets?: number;
   reps?: number;
   weight?: number;
+  rpe?: number;
 }
 
 function volume(exercises: unknown): number {
@@ -32,6 +39,146 @@ function volume(exercises: unknown): number {
   return (exercises as TplExercise[]).reduce(
     (s, e) => s + (e.sets || 0) * (e.reps || 0) * (e.weight || 0),
     0,
+  );
+}
+
+/** Same duration and curve as the diary's meal cards — one behaviour to learn. */
+const OPEN_MS = 260;
+const OPEN_EASE = Easing.out(Easing.cubic);
+
+/**
+ * A saved template, and what is actually in it.
+ *
+ * ── the chevron was a promise nothing kept ──
+ *
+ * The card showed a name, a count of exercises and a volume figure, with a
+ * `ChevronRight` at the end of the row. That glyph says "there is more, tap
+ * here" — and it was not a button, and nothing happened. The only way to see
+ * what a template contained was to remember, or to build it again.
+ *
+ * A count is the one thing about a routine that does not help: "6 exercises"
+ * is true of every push day anybody has ever written. What you need to know
+ * before starting one is which six.
+ *
+ * ── opening in place, not navigating ──
+ *
+ * The exercises are four short rows. Pushing a screen to show four rows costs a
+ * transition each way and a place in the back stack, and lands somewhere you
+ * then have to leave to compare against the next template. So the card grows,
+ * the way the diary's meals do, with the same timing and the same rotating
+ * chevron — `ChevronDown` now, since the card no longer claims to go anywhere.
+ *
+ * Its own component because hooks cannot live inside a `.map`.
+ */
+function TemplateCard({
+  tpl,
+  index,
+  wUnit,
+  wl,
+  i18n,
+  onDelete,
+}: {
+  tpl: { id: string; name: string; type?: string | null; exercises?: unknown };
+  index: number;
+  wUnit: WeightUnit;
+  wl: string;
+  i18n: ReturnType<typeof useI18n>;
+  onDelete: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const raw = tpl.exercises;
+  const exs: TplExercise[] = Array.isArray(raw) ? (raw as TplExercise[]) : [];
+
+  const turn = useSharedValue(0);
+  const grow = useSharedValue(0);
+  useEffect(() => {
+    turn.value = withTiming(open ? 1 : 0, { duration: OPEN_MS, easing: OPEN_EASE });
+    grow.value = withTiming(open ? 1 : 0, { duration: OPEN_MS, easing: OPEN_EASE });
+  }, [open, turn, grow]);
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 180}deg` }] }));
+
+  /*
+    Measured while closed, clipped to nothing.
+
+    The rows stay mounted inside a zero-high box so there is always something to
+    measure, which means a template edited elsewhere opens to its new height
+    rather than to the height it had the last time it was open.
+  */
+  const [bodyH, setBodyH] = useState(0);
+  const body = useAnimatedStyle(() => ({ height: grow.value * bodyH }));
+
+  return (
+    <Animated.View entering={rise(index)}>
+      <GlassCard style={styles.tplCard}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open, disabled: exs.length === 0 }}
+          /*
+            Guarded here rather than with `disabled`.
+
+            The delete button is a `Pressable` inside this one, and whether RN's
+            `disabled` blocks a nested pressable is a detail I could not verify
+            without a device. Returning early cannot: an empty template does
+            nothing when tapped, and its delete button keeps working either way.
+          */
+          onPress={() => {
+            if (exs.length === 0) return;
+            Haptics.selectionAsync();
+            setOpen((v) => !v);
+          }}
+          style={({ pressed }) => [styles.tplRow, pressed && styles.pressed]}>
+          <View style={styles.tplInfo}>
+            <View style={styles.tplTitleRow}>
+              <Icon icon={Dumbbell} size={16} color={colors.primary} />
+              <Text style={styles.tplName} numberOfLines={1}>{tpl.name}</Text>
+              {tpl.type ? (
+                <View style={styles.typeBadge}>
+                  <Text style={styles.typeText}>{tpl.type}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.tplMeta}>
+              {exs.length} {i18n.workoutsExercises} · {i18n.workoutsVolume}: {Math.round(displayWeight(volume(exs), wUnit)).toLocaleString()} {wl}
+            </Text>
+          </View>
+          <View style={styles.tplActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.a11yDelete}
+              hitSlop={8}
+              onPress={() => onDelete(tpl.id)}>
+              <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+            </Pressable>
+            {/* No chevron on an empty template: there is nothing to open, and a
+                control that does nothing is what this card had before. */}
+            {exs.length > 0 ? (
+              <Animated.View style={chevron}>
+                <Icon icon={ChevronDown} size={16} color={colors.mutedForeground} />
+              </Animated.View>
+            ) : null}
+          </View>
+        </Pressable>
+
+        <Animated.View style={[styles.tplBody, body]}>
+          <View onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
+            {exs.map((e, i) => (
+              <View key={`${e.exerciseName ?? 'x'}-${i}`} style={styles.exRow}>
+                <Text style={styles.exName} numberOfLines={1}>
+                  {e.exerciseName || i18n.workoutsExercises}
+                </Text>
+                {/* "3 × 10" and then the load, because sets and reps are the
+                    shape of the work and the weight is how hard it is. A
+                    bodyweight movement carries no number rather than a zero. */}
+                <Text style={styles.exSets}>
+                  {e.sets ?? 0} × {e.reps ?? 0}
+                  {e.weight ? `  ·  ${Math.round(displayWeight(e.weight, wUnit))} ${wl}` : ''}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </Animated.View>
+      </GlassCard>
+    </Animated.View>
   );
 }
 
@@ -154,38 +301,17 @@ export default function WorkoutsScreen() {
 
       {/* Template cards (web glass-card rows) */}
       {templates && templates.length > 0 ? (
-        templates.map((t, i) => {
-          const raw = (t as { exercises?: unknown }).exercises;
-          const exs: TplExercise[] = Array.isArray(raw) ? (raw as TplExercise[]) : [];
-          return (
-            <Animated.View key={t.id} entering={rise(i)}>
-            <GlassCard style={styles.tplCard}>
-              <View style={styles.tplRow}>
-                <View style={styles.tplInfo}>
-                  <View style={styles.tplTitleRow}>
-                    <Icon icon={Dumbbell} size={16} color={colors.primary} />
-                    <Text style={styles.tplName} numberOfLines={1}>{t.name}</Text>
-                    {t.type ? (
-                      <View style={styles.typeBadge}>
-                        <Text style={styles.typeText}>{t.type}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <Text style={styles.tplMeta}>
-                    {exs.length} {i18n.workoutsExercises} · {i18n.workoutsVolume}: {Math.round(displayWeight(volume(exs), wUnit)).toLocaleString()} {wl}
-                  </Text>
-                </View>
-                <View style={styles.tplActions}>
-                  <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={8} onPress={() => confirmDelete(t.id)}>
-                    <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
-                  </Pressable>
-                  <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-                </View>
-              </View>
-            </GlassCard>
-            </Animated.View>
-          );
-        })
+        templates.map((t, i) => (
+          <TemplateCard
+            key={t.id}
+            tpl={t}
+            index={i}
+            wUnit={wUnit}
+            wl={wl}
+            i18n={i18n}
+            onDelete={confirmDelete}
+          />
+        ))
       ) : templatesFailed ? (
         <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
       ) : (
@@ -303,6 +429,18 @@ const styles = StyleSheet.create({
   },
   logChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
   tplCard: { padding: spacing.md },
+  tplBody: { overflow: 'hidden' },
+  exRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    marginTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  exName: { fontSize: 13, color: colors.foreground, flex: 1, minWidth: 0 },
+  exSets: { fontSize: 12, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   tplRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   tplInfo: { flex: 1, minWidth: 0, gap: 4 },
   tplTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
