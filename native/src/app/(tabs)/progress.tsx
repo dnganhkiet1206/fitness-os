@@ -2,9 +2,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Camera, ChevronRight, Medal, Plus, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useId, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -40,19 +41,49 @@ type Tab = 'weight' | 'measurements' | 'photos';
  * the drawn bar, not medical limits: a BMI of 12 or 55 still reads Underweight
  * or Obese, its dot just parks at the end of the track.
  *
- * ── why the widths are computed ──
+ * ── every position on the bar is derived, never written down ──
  *
- * Each segment's flex is its own width *in BMI units*, so the bar is a linear
- * ruler from 15 to 40 and the marker — placed at `(bmi − 15) / 25` — lands
- * exactly on a band's edge when the BMI is on that edge. The old code hard-coded
- * `flex: 1` for the first band where the maths wanted 3.5/2.5 = 1.4, which made
- * the 18.5 boundary sit ~3.6% left of where the dot crossed it: a BMI of 18.4
- * could be drawn inside the green. Deriving the widths makes that class of
- * mismatch impossible.
+ * The bar is a linear ruler from 15 to 40, so a colour boundary, a tick and the
+ * marker all come out of `bmiPos`. The first version hard-coded `flex: 1` for
+ * the opening band where the maths wanted 3.5/2.5 = 1.4, which put the 18.5
+ * boundary ~3.6% left of where the dot crossed it — a BMI of 18.4 could be drawn
+ * inside the green. One source for the geometry makes that impossible rather
+ * than merely fixed.
  */
 const BMI_MIN = 15;
 const BMI_MAX = 40;
 
+/**
+ * The four bands, and why each one has its own opacity.
+ *
+ * They used to share 0.4 — except red, which was 0.3 for no recorded reason.
+ * Equal alpha is not equal weight. Composited over `#070708` and measured as
+ * WCAG relative luminance, the four came out:
+ *
+ *   blue 0.0576   green 0.1017   yellow 0.1065   red 0.0248
+ *
+ * a spread of **4.3×**. Yellow and green shouted, red all but disappeared, and
+ * the bar read as four unrelated blocks because that is what it was. Nothing
+ * about it was a decision; it was four numbers chosen one at a time.
+ *
+ * The opacities below are solved, not picked: each is the alpha that lands its
+ * colour on a luminance of 0.085 over this background, so the spread is now
+ * 1.05×. The bar reads as one object whose hue changes along it, which is what
+ * a scale is.
+ *
+ * To re-check after any change to these or to `background`:
+ *
+ *     node -e "
+ *     const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+ *     const lin=c=>{c/=255;return c<=0.03928?c/12.92:((c+0.055)/1.055)**2.4};
+ *     const L=([r,g,b])=>0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);
+ *     const bg=hex('#070708');
+ *     for (const [c,a] of [['#3ba6ff',.49],['#2bf5a8',.36],['#ffd93d',.36],['#ff3b5c',.59]])
+ *       console.log(c, L(hex(c).map((v,i)=>v*a+bg[i]*(1-a))).toFixed(4));"
+ *
+ * `color` is the full-strength hue and is unchanged — it carries the badge, the
+ * marker and the legend dot, where it sits on its own and needs no help.
+ */
 const BMI_ZONES = [
   {
     to: 18.5,
@@ -60,15 +91,15 @@ const BMI_ZONES = [
     en: 'Underweight',
     range: '< 18.5',
     color: colors.metricBlue,
-    fill: 'rgba(59,166,255,0.4)',
+    alpha: 0.49,
   },
   {
     to: 25,
-    vi: 'Bình thường',
-    en: 'Normal',
+    vi: 'Lành mạnh',
+    en: 'Healthy',
     range: '18.5 – 24.9',
     color: colors.readinessGreen,
-    fill: 'rgba(43,245,168,0.4)',
+    alpha: 0.36,
   },
   {
     to: 30,
@@ -76,7 +107,7 @@ const BMI_ZONES = [
     en: 'Overweight',
     range: '25 – 29.9',
     color: colors.readinessYellow,
-    fill: 'rgba(255,217,61,0.4)',
+    alpha: 0.36,
   },
   {
     to: BMI_MAX,
@@ -84,12 +115,51 @@ const BMI_ZONES = [
     en: 'Obese',
     range: '≥ 30',
     color: colors.readinessRed,
-    fill: 'rgba(255,59,92,0.3)',
+    alpha: 0.59,
   },
 ] as const;
 
-/** How wide each band is on the 15–40 track, in BMI units */
-const zoneSpan = (i: number) => BMI_ZONES[i].to - (i === 0 ? BMI_MIN : BMI_ZONES[i - 1].to);
+/**
+ * How far either side of a boundary the two colours blend, in BMI units.
+ *
+ * Zero would keep the four hard edges the bar had, which is honest and looks
+ * like four buttons. A wide blend would be prettier and would smear where
+ * "overweight" begins across two whole points of BMI.
+ *
+ * 0.9 leaves every band solid across most of its width — the narrowest,
+ * underweight at 15–18.5, stays one flat colour for 74% of itself — while the
+ * bar stops looking assembled. The thresholds themselves are not softened
+ * anywhere it matters: the tick numbers, the legend ranges and the marker are
+ * all still placed at the exact boundary.
+ */
+const BMI_BLEND = 0.9;
+const BMI_BAR_H = 8;
+
+/**
+ * The gradient stops, built from the same `bmiPos` the ticks and the marker use.
+ *
+ * Not from hard-coded percentages. That is the mistake the note above records:
+ * four segments at 25% each put the 18.5 boundary 3.6% left of where the dot
+ * crossed it, so a BMI of 18.4 sat in the wrong colour. Deriving the stops from
+ * `bmiPos` means the colour changes where the number says it does, and no later
+ * edit to `BMI_MIN`/`BMI_MAX` can pull the two apart.
+ *
+ * Each band contributes two stops — one just inside each of its edges — and SVG
+ * interpolates across the `2 × BMI_BLEND` gap between neighbours.
+ */
+function bmiStops() {
+  const out: { at: number; color: string; alpha: number }[] = [];
+  BMI_ZONES.forEach((z, i) => {
+    const lo = i === 0 ? BMI_MIN : BMI_ZONES[i - 1].to;
+    // The outer two edges are the ends of the track, so nothing is blended past
+    // them — a bar that fades out at its own tips reads as unfinished.
+    const from = i === 0 ? lo : lo + BMI_BLEND;
+    const to = i === BMI_ZONES.length - 1 ? z.to : z.to - BMI_BLEND;
+    out.push({ at: bmiPos(from), color: z.color, alpha: z.alpha });
+    out.push({ at: bmiPos(to), color: z.color, alpha: z.alpha });
+  });
+  return out;
+}
 
 /** Where a BMI sits along the track, 0–100 — clamped at both ends */
 const bmiPos = (v: number) => Math.max(0, Math.min(100, ((v - BMI_MIN) / (BMI_MAX - BMI_MIN)) * 100));
@@ -165,6 +235,8 @@ export default function ProgressScreen() {
   const cat = bmi != null ? bmiCategory(bmi, vi) : null;
   const bmiZone = bmi != null ? bmiZoneIndex(bmi) : -1;
   const bmiPct = bmi != null ? bmiPos(bmi) : 0;
+  const [bmiW, setBmiW] = useState(0);
+  const bmiGrad = `bmiScale-${useId()}`;
 
   const tabs: { key: Tab; label: string; icon: typeof Scale }[] = [
     { key: 'weight', label: i18n.progressWeight, icon: Scale },
@@ -298,10 +370,48 @@ export default function ProgressScreen() {
                   <Text style={styles.bmiUnit}>kg/m²</Text>
                 </View>
                 <View>
-                  <View style={styles.bmiScale}>
-                    {BMI_ZONES.map((z, i) => (
-                      <View key={z.en} style={[styles.bmiSeg, { flex: zoneSpan(i), backgroundColor: z.fill }]} />
-                    ))}
+                  {/*
+                    One bar with a hue that changes along it, not four blocks.
+
+                    Drawn in SVG rather than as flex children because the caps
+                    have to be round and the marker has to escape upward: the
+                    container carried `borderRadius: 4` and `overflow: 'visible'`
+                    together, so the radius clipped nothing and both ends of the
+                    bar were square. A rounded `<Rect>` inside the SVG rounds the
+                    bar; the marker stays an ordinary view on top of it and can
+                    still hang over the edge.
+
+                    Width is measured rather than given as `100%` — an `<Svg>`
+                    percentage resolves against the last laid-out frame, so the
+                    first paint after a size change draws at the old width.
+                  */}
+                  <View style={styles.bmiScale} onLayout={(e) => setBmiW(e.nativeEvent.layout.width)}>
+                    {bmiW > 0 ? (
+                      <Svg width={bmiW} height={BMI_BAR_H}>
+                        <Defs>
+                          {/* `useId`: SVG ids are document-global, and this
+                              screen already draws other gradients. */}
+                          <LinearGradient id={bmiGrad} x1="0" y1="0" x2="1" y2="0">
+                            {bmiStops().map((s, i) => (
+                              <Stop
+                                key={`${s.at}-${i}`}
+                                offset={`${s.at}%`}
+                                stopColor={s.color}
+                                stopOpacity={s.alpha}
+                              />
+                            ))}
+                          </LinearGradient>
+                        </Defs>
+                        <Rect
+                          x={0}
+                          y={0}
+                          width={bmiW}
+                          height={BMI_BAR_H}
+                          rx={BMI_BAR_H / 2}
+                          fill={`url(#${bmiGrad})`}
+                        />
+                      </Svg>
+                    ) : null}
                     <View style={[styles.bmiDot, { left: `${bmiPct}%`, backgroundColor: cat.color }]} />
                   </View>
                   {/* Boundary numbers sit at the boundaries — each one is placed
@@ -637,8 +747,10 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   bmiUnit: { fontSize: 12, color: colors.mutedForeground },
-  bmiScale: { height: 8, borderRadius: 4, flexDirection: 'row', overflow: 'visible', backgroundColor: 'rgba(24,24,27,0.4)' },
-  bmiSeg: { height: '100%' },
+  // No radius here: the rounded ends belong to the `<Rect>`, which is what
+  // `overflow: 'visible'` — needed so the marker can hang above — always
+  // prevented this container from clipping.
+  bmiScale: { height: BMI_BAR_H, justifyContent: 'center', overflow: 'visible' },
   bmiDot: {
     position: 'absolute',
     top: -3,
