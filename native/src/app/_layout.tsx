@@ -9,6 +9,7 @@ import { CelebrationHost } from '@/components/ascnd/celebration-host';
 import { MascotUnlockCelebration } from '@/components/ascnd/mascot-unlock';
 import { NeonToastHost } from '@/components/ascnd/neon-toast';
 import { OfflineBanner } from '@/components/ascnd/offline-banner';
+import { useReducedMotionSync } from '@/hooks/use-reduced-motion';
 import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { colors } from '@/constants/ascnd';
 import { AppLockProvider } from '@/hooks/use-app-lock';
@@ -110,6 +111,9 @@ function Gate() {
 /** Wraps the app in the biometric lock gate (needs i18n for the prompt). */
 function LockedApp() {
   const i18n = useI18n();
+  // Keeps `reduceMotionSV` current for the two frame clocks that Reanimated's
+  // own reduce-motion handling cannot reach — see `use-reduced-motion.ts`.
+  useReducedMotionSync();
   return (
     <AppLockProvider prompt={i18n.nLockPrompt}>
       <Gate />

@@ -1,5 +1,7 @@
 import { useFrameCallback, useSharedValue, type SharedValue } from 'react-native-reanimated';
 
+import { reduceMotionSV } from '@/hooks/use-reduced-motion';
+
 /**
  * A 0→1 loop clock that can pause **in place**.
  *
@@ -46,8 +48,10 @@ export function useLoopClock(period: number, pause?: SharedValue<boolean>): Shar
     }
     const dt = now - last.value;
     last.value = now;
-    // scroll hold, or a gap too large to be a real frame (background resume)
-    if ((pause && pause.value) || dt > 200) return;
+    // Reduced motion, a scroll hold, or a gap too large to be a real frame
+    // (background resume). `useFrameCallback` gets no reduce-motion handling
+    // from Reanimated — unlike `withTiming` and friends — so it is checked here.
+    if (reduceMotionSV.value || (pause && pause.value) || dt > 200) return;
     t.value = (t.value + dt / period) % 1;
   });
 

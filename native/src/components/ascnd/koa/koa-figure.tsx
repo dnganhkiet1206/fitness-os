@@ -69,6 +69,7 @@ import {
   type DressPart,
 } from '@/components/ascnd/koa/koa-dress';
 import { restsAt, REST_MAT } from '@/components/ascnd/koa/koa-pose';
+import { reduceMotionSV } from '@/hooks/use-reduced-motion';
 import { attrs, SHAPES } from '@/components/ascnd/koa/svg-shapes';
 import {
   KEYFRAMES,
@@ -792,7 +793,12 @@ export function KoaFigure({
     // `last` current, so the clock resumes without a jump and the render path
     // (`live={animated}`) never changes — the figure holds its frame rather
     // than snapping to t=0.
-    if (scrollPause && scrollPause.value) {
+    // Reduced motion is a pause that never lifts. It takes the same path as
+    // the scroll hold — keep `last` current so nothing lurches if the setting
+    // is turned back off — because a figure holding its frame is what this
+    // clock already knows how to do. `useFrameCallback` is outside Reanimated's
+    // reduce-motion handling, so this is the only place it can be honoured.
+    if (reduceMotionSV.value || (scrollPause && scrollPause.value)) {
       last.value = frame.timeSinceFirstFrame;
       return;
     }
