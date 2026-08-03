@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
+import { offlineNow } from '@/lib/offline';
 
 export interface FoodItemRow {
   id: string;
@@ -425,6 +426,9 @@ async function patchDiary(
   edit: (items: LoggedItem[]) => LoggedItem[],
 ) {
   const key = ['today_meals_detail', userId, localDateStr()];
+  // See `@/lib/offline`: a paused write is never rolled back, so patching now
+  // would leave a row deleted on screen and present on the server.
+  if (offlineNow()) return { key, previous: undefined };
   await qc.cancelQueries({ queryKey: key });
   const previous = qc.getQueryData<LoggedMeal[]>(key);
   if (previous) {

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
+import { offlineNow } from '@/lib/offline';
 import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
 
@@ -25,6 +26,11 @@ async function patchWater(
 ) {
   const totalKey = ['today_water', userId, dateStr];
   const logsKey = ['today_water_logs', userId, dateStr];
+
+  // Offline the write is paused, never fails, and so is never rolled back —
+  // the patch would sit in the persisted cache as water nobody drank. See
+  // `@/lib/offline`.
+  if (offlineNow()) return { totalKey, logsKey, prevTotal: undefined, prevLogs: undefined };
   // or a refetch already in flight lands after this and undoes it
   await Promise.all([
     qc.cancelQueries({ queryKey: totalKey }),

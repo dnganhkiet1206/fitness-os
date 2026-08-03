@@ -198,6 +198,7 @@ const en = {
   nDeleteAccountFailed: 'Could not delete the account. Nothing was removed.',
   a11yPrevItem: 'Previous item',
   a11yNextItem: 'Next item',
+  a11yAddWater: 'Add {x} {unit}',
   // AI edge functions — one message per distinct cause, so wiring a new
   // Supabase project up tells you what is missing instead of "it failed"
   aiNotDeployed: 'This AI feature is not set up on the server yet.',
@@ -638,6 +639,7 @@ const vi: typeof en = {
   nDeleteAccountFailed: 'Không xoá được tài khoản. Chưa có gì bị xoá.',
   a11yPrevItem: 'Món trước',
   a11yNextItem: 'Món sau',
+  a11yAddWater: 'Thêm {x} {unit}',
   // AI edge functions — one message per distinct cause, so wiring a new
   // Supabase project up tells you what is missing instead of "it failed"
   aiNotDeployed: 'Tính năng AI này chưa được cài trên máy chủ.',

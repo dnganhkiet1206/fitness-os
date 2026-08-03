@@ -139,6 +139,17 @@ export default function WaterScreen() {
           {QUICK.map((amount) => (
             <Pressable
               key={amount}
+              /*
+                The visible label is a bare number, so the accessible name was
+                "8" — a screen reader says the amount and not the unit, nor what
+                pressing it does. `tools/tap-targets.mjs` cannot catch this: the
+                button *has* text, so it passes the icon-only rule. A name that
+                exists but says nothing is its own failure.
+              */
+              accessibilityRole="button"
+              accessibilityLabel={i18n.a11yAddWater
+                .replace('{x}', String(amount))
+                .replace('{unit}', vl)}
               style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

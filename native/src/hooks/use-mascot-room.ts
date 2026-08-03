@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
+import { offlineNow } from '@/lib/offline';
 import {
   buyRefKey,
   conflictingKeys,
@@ -261,6 +262,9 @@ export function useToggleEquip() {
      */
     onMutate: async ({ itemKey, equipped }) => {
       const key = ['mascot_inventory', user?.id];
+      // See `@/lib/offline` — dressing Koa in something the server never heard
+      // about is the same class of lie as logging water that was not drunk.
+      if (offlineNow()) return { key, previous: undefined };
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<LocalInv[]>(key);
       if (previous) {
