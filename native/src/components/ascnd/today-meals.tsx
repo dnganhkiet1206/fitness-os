@@ -168,6 +168,16 @@ export function TodayMeals({
     );
   };
 
+  /*
+    An empty list here always means an empty day.
+
+    It did not used to. A failed read also left `meals` empty, so "Nothing
+    logged today — tap to log a meal" was said about days the app simply could
+    not read — and the person acts on it either way, logging a meal they already
+    logged and leaving the ring to count it twice. The caller now decides: the
+    Nutrition tab does not mount this component at all when its query failed,
+    and shows one notice for the whole segment instead.
+  */
   if (groups.length === 0) {
     return (
       <Pressable

@@ -139,6 +139,11 @@ const en = {
   nTipsLoading: 'Reading your trends…',
   nTipsRefresh: 'Refresh',
   nTipsEmpty: 'Log more to unlock tips',
+  // read failed — deliberately not the same words as an empty day
+  nLoadFailed: 'Could not load today',
+  nLoadFailedHint: 'Your data is safe. The app just could not reach it.',
+  nRetry: 'Try again',
+  nDiaryLoadFailed: 'Could not load your meals',
   nNoSupplements: 'No supplements yet',
   nNoSupplementsHint: 'Add your stack in the web app — the checklist syncs here',
   nExercises: 'Exercise Library',
@@ -516,6 +521,11 @@ const vi: typeof en = {
   nTipsLoading: 'Đang đọc xu hướng…',
   nTipsRefresh: 'Làm mới',
   nTipsEmpty: 'Ghi thêm để mở khoá gợi ý',
+  // read failed — deliberately not the same words as an empty day
+  nLoadFailed: 'Không tải được dữ liệu hôm nay',
+  nLoadFailedHint: 'Dữ liệu của bạn vẫn an toàn, chỉ là app chưa lấy được.',
+  nRetry: 'Thử lại',
+  nDiaryLoadFailed: 'Không tải được các bữa ăn',
   nNoSupplements: 'Chưa có supplement nào',
   nNoSupplementsHint: 'Thêm stack của bạn trên bản web — checklist sẽ đồng bộ về đây',
   nExercises: 'Thư viện bài tập',

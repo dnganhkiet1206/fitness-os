@@ -60,6 +60,7 @@ import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
@@ -118,7 +119,7 @@ export default function TodayScreen() {
    * (see `query-client`), so on any warm start the data is already there and
    * this is false on the first render.
    */
-  const { data: dailyLog, isPending: dayPending } = useDailyLog();
+  const { data: dailyLog, isPending: dayPending, isError: dayFailed } = useDailyLog();
   const { data: sleep } = useTodaySleep();
   const { data: waterMl } = useTodayWater();
   const { available: healthAvailable, sync: healthSync } = useHealthSync();
@@ -396,7 +397,20 @@ export default function TodayScreen() {
               Held back until today's log has resolved, so each card mounts
               once at its final height instead of starting as a placeholder
               and growing — see `dayPending`. */}
-          {dayPending ? null : config.heroWidgets.map((key, i) => (
+          {/*
+            Three states, not two.
+
+            `dayPending` already hid the widgets while the day was loading. What
+            it could not do is tell a failed read from an empty one: on failure
+            `isPending` goes false and `data` stays undefined, so every widget
+            fell through to its zero case and the page said `0 kcal` with
+            complete confidence. Nothing on screen distinguished that from a day
+            nobody had logged yet, and the reasonable thing to do about it — log
+            the meal again — is the wrong thing.
+          */}
+          {dayFailed ? <LoadFailed i18n={i18n} onRetry={onRefresh} busy={refreshing} /> : null}
+
+          {dayPending || dayFailed ? null : config.heroWidgets.map((key, i) => (
             <Animated.View
               key={key}
               entering={FadeInDown.springify().damping(26).stiffness(180).delay(i * 70)}>
@@ -405,7 +419,7 @@ export default function TodayScreen() {
           ))}
 
           {/* Grouped widgets, user-configurable order */}
-          {dayPending ? null : config.groups.map((group, gi) => (
+          {dayPending || dayFailed ? null : config.groups.map((group, gi) => (
             <View key={group.id} style={styles.group}>
               <GroupHeader icon={group.icon} title={group.title[lang] ?? group.title.en} />
               {group.widgets.map((key, wi) => (

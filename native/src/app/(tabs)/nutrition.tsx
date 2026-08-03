@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -13,6 +13,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LogMealFab } from '@/components/ascnd/log-meal-fab';
 import { Screen } from '@/components/ascnd/screen';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodayMeals } from '@/components/ascnd/today-meals';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
@@ -52,14 +53,42 @@ export default function NutritionScreen() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
 
-  const { data: today } = useTodayLog();
-  const { data: dailyLog } = useDailyLog();
+  const { data: today, isError: diaryFailed } = useTodayLog();
+  const { data: dailyLog, isError: dayFailed } = useDailyLog();
   const { data: profile } = useProfile();
+
+  /**
+   * One retry for the whole tab, not a refetch of the query that reported.
+   *
+   * This screen reads a dozen queries and one failure usually means several —
+   * the ring's day, the diary, the water total all go through the same
+   * connection. Refetching only the one that raised its hand would repair a
+   * corner of the page and leave the rest still lying.
+   */
+  const queryClient = useQueryClient();
+  const [retrying, setRetrying] = useState(false);
+  const retry = useCallback(async () => {
+    setRetrying(true);
+    await queryClient.invalidateQueries();
+    setRetrying(false);
+  }, [queryClient]);
+
   const kcal = Math.round(Number(dailyLog?.kcal) || 0);
   const calorieTarget = calorieTargetFor(profile);
   const macros = macroTargetsFor(profile);
 
-  const { data: waterMl } = useTodayWater();
+  const { data: waterMl, isError: waterFailed } = useTodayWater();
+
+  /**
+   * One message for the segment, not one per widget.
+   *
+   * These three reads go down the same connection and in practice fail
+   * together, so a card per source stacked the identical sentence three times.
+   * The notice is shown once at the top; below it each widget is drawn only if
+   * *its own* source came back, so a partial failure still shows what is known
+   * and never shows a zero it cannot stand behind.
+   */
+  const todayFailed = dayFailed || diaryFailed || waterFailed;
 
   const { data: myFoods } = useMyFoods();
   const { data: favorites } = useFavoriteFoods();
@@ -193,8 +222,16 @@ export default function NutritionScreen() {
 
         {tab === 'today' ? (
           <>
-            {/* The dashboard's own card. Same component, same numbers — the ring
-                on Today and the ring here are one thing rendered twice. */}
+            {/*
+              The ring reads `daily_logs`. When that read fails the card draws a
+              confident `0 kcal / 2,200`, which is the same picture as a day
+              nobody has eaten on — so the card is replaced rather than dressed
+              up. A wrong number with a warning beside it is still a wrong
+              number, and this one is the largest thing on the screen.
+            */}
+            {todayFailed ? <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} /> : null}
+
+            {dayFailed ? null : (
             <NutritionCard
               interactive
               kcal={kcal}
@@ -204,6 +241,7 @@ export default function NutritionScreen() {
               fat={{ current: Number(dailyLog?.fat_g) || 0, target: macros.fat }}
               fiber={{ current: Number(dailyLog?.fiber_g) || 0, target: macros.fiber }}
             />
+            )}
 
             {/*
               Water — Today's widget, not a copy of it.
@@ -219,17 +257,33 @@ export default function NutritionScreen() {
               Logging a glass on either tab moves both, because there is only
               one of them.
             */}
-            <WaterWidget
-              ml={waterMl ?? 0}
-              targetMl={Number(profile?.water_target_ml) || 2500}
-              labels={{ title: lang === 'vi' ? 'Nước uống' : 'Water' }}
-            />
+            {waterFailed ? null : (
+              <WaterWidget
+                ml={waterMl ?? 0}
+                targetMl={Number(profile?.water_target_ml) || 2500}
+                labels={{ title: lang === 'vi' ? 'Nước uống' : 'Water' }}
+              />
+            )}
 
-            <View style={styles.sectionHeadRow}>
-              <Icon icon={Utensils} size={13} color={colors.primary} />
-              <Text style={styles.microTitle}>{lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}</Text>
-            </View>
-            <TodayMeals meals={today ?? []} i18n={i18n} lang={lang} />
+            {/*
+              Heading and list go together.
+
+              The notice at the top of the segment already says why the diary is
+              missing, so repeating it here would be noise — but leaving the
+              heading behind is its own small lie: "Today's meals" over an empty
+              space promises a list that is not coming.
+            */}
+            {diaryFailed ? null : (
+              <>
+                <View style={styles.sectionHeadRow}>
+                  <Icon icon={Utensils} size={13} color={colors.primary} />
+                  <Text style={styles.microTitle}>
+                    {lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}
+                  </Text>
+                </View>
+                <TodayMeals meals={today ?? []} i18n={i18n} lang={lang} />
+              </>
+            )}
           </>
         ) : tab === 'foods' ? (
           <>
