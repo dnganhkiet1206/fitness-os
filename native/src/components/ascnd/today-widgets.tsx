@@ -13,7 +13,7 @@ import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-f
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
 import { useProfile } from '@/hooks/useTodayData';
 import { useUnits } from '@/hooks/use-units';
-import { callAi, EDGE_FUNCTIONS } from '@/lib/ai';
+import { callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 
@@ -263,7 +263,7 @@ export function SmartTipsCard() {
 
   const nudges = useMutation({
     mutationFn: async () => {
-      const res = await callAi<{ nudges?: Nudge[] }>(EDGE_FUNCTIONS.smartNudges, {
+      const res = await callEdge<{ nudges?: Nudge[] }>(EDGE_FUNCTIONS.smartNudges, {
         lang,
         date: localDateStr(),
       });

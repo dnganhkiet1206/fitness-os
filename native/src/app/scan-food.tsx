@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { AI_FAILURE_KEY, callAi, EDGE_FUNCTIONS } from '@/lib/ai';
+import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { setPendingScan, type ScannedFood } from '@/lib/scan-bridge';
 
 type ScanMode = 'food' | 'label';
@@ -73,7 +73,7 @@ export default function ScanFoodScreen() {
       setPreview(photo?.uri ?? null);
       setPhase('analyzing');
 
-      const res = await callAi<{ items?: RawItem[] }>(EDGE_FUNCTIONS.scanFood, {
+      const res = await callEdge<{ items?: RawItem[] }>(EDGE_FUNCTIONS.scanFood, {
         image_base64: photo?.base64,
         lang,
         mode,

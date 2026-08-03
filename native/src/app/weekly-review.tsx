@@ -28,7 +28,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { AI_FAILURE_KEY, callAi, EDGE_FUNCTIONS } from '@/lib/ai';
+import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
@@ -226,7 +226,7 @@ export default function WeeklyReviewScreen() {
 
   const analyze = useMutation({
     mutationFn: async () => {
-      const res = await callAi<AIAnalysis>(EDGE_FUNCTIONS.weeklyReview, {
+      const res = await callEdge<AIAnalysis>(EDGE_FUNCTIONS.weeklyReview, {
         week_start: startStr,
         lang,
       });

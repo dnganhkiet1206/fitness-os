@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { EDGE_FUNCTIONS, type EdgeFunction } from '@/lib/backend';
+import { AI_FAILURE_KEY, classify, type EdgeFailure } from '@/lib/edge-failure';
 
 /**
  * One way to call an AI edge function, and one vocabulary for how it can fail.
@@ -43,57 +44,14 @@ import { EDGE_FUNCTIONS, type EdgeFunction } from '@/lib/backend';
  * the distinction. A returned union makes the caller state which it is.
  */
 
-export type AiFailure =
-  /** no function by that name in this project — deploy it */
-  | 'not-deployed'
-  /** the function ran and failed; usually a missing model key on a new project */
-  | 'provider-error'
-  /** not signed in, or the session expired */
-  | 'unauthorised'
-  /** never reached the server */
-  | 'offline'
-  /** reached it, came back in a shape we do not understand */
-  | 'unknown';
+export type { EdgeFailure };
+/** AI-facing copy for each failure. Account deletion has its own set — reusing
+ *  these would put "This AI feature is not set up" on a deletion failure. */
+export { AI_FAILURE_KEY };
 
-export type AiResult<T> =
+export type EdgeResult<T> =
   | { ok: true; data: T }
-  | { ok: false; failure: AiFailure; fn: EdgeFunction; raw: string };
-
-/** Message keys, so a caller that shows something shows the right something. */
-export const AI_FAILURE_KEY: Record<AiFailure, 'aiNotDeployed' | 'aiProviderError' | 'aiSignedOut' | 'aiOffline' | 'aiUnknown'> = {
-  'not-deployed': 'aiNotDeployed',
-  'provider-error': 'aiProviderError',
-  unauthorised: 'aiSignedOut',
-  offline: 'aiOffline',
-  unknown: 'aiUnknown',
-};
-
-/**
- * Pull a status code out of whatever the client handed back.
- *
- * `FunctionsHttpError` carries a `Response`; `FunctionsFetchError` carries
- * nothing because there was no response. Neither is guaranteed by a type, so
- * this reads defensively and falls through to `unknown` rather than asserting
- * a shape it cannot check.
- */
-function statusOf(err: unknown): number | null {
-  const ctx = (err as { context?: { status?: number } } | null)?.context;
-  if (ctx && typeof ctx.status === 'number') return ctx.status;
-  const status = (err as { status?: number } | null)?.status;
-  return typeof status === 'number' ? status : null;
-}
-
-function classify(err: unknown): AiFailure {
-  const status = statusOf(err);
-  if (status === 404) return 'not-deployed';
-  if (status === 401 || status === 403) return 'unauthorised';
-  if (status !== null && status >= 500) return 'provider-error';
-  const msg = String((err as { message?: string } | null)?.message ?? err ?? '');
-  // Nothing came back at all — `FunctionsFetchError`, or a bare TypeError from
-  // fetch. Both mean the request never landed.
-  if (/failed to (send|fetch)|network|fetch failed/i.test(msg)) return 'offline';
-  return 'unknown';
-}
+  | { ok: false; failure: EdgeFailure; fn: EdgeFunction; raw: string };
 
 /**
  * Call an edge function.
@@ -103,10 +61,10 @@ function classify(err: unknown): AiFailure {
  * conditionally — and a call that silently omits the header comes back 401,
  * which used to be indistinguishable from every other failure.
  */
-export async function callAi<T>(
+export async function callEdge<T>(
   fn: EdgeFunction,
   body: Record<string, unknown>,
-): Promise<AiResult<T>> {
+): Promise<EdgeResult<T>> {
   try {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;

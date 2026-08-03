@@ -35,7 +35,7 @@ const URL_RE = /https:\/\/[a-z0-9]+\.supabase\.co/g;
 const INVOKE_RE = /functions\s*\.\s*invoke\s*\(/g;
 
 const URL_HOME = path.join('src', 'lib', 'backend.ts');
-const INVOKE_HOME = path.join('src', 'lib', 'ai.ts');
+const INVOKE_HOME = path.join('src', 'lib', 'edge.ts');
 
 /**
  * Prove the patterns still match before trusting a clean run.
@@ -48,7 +48,7 @@ const SELF_TEST = [
   [URL_RE, "const CHAT_URL = 'https://drqgonxrtmomgrftelih.supabase.co/functions/v1/ai-coach';", true],
   [URL_RE, "const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;", false],
   [INVOKE_RE, "await supabase.functions.invoke('ai-meal-suggest', {", true],
-  [INVOKE_RE, 'await callAi(EDGE_FUNCTIONS.mealSuggest, { lang });', false],
+  [INVOKE_RE, 'await callEdge(EDGE_FUNCTIONS.mealSuggest, { lang });', false],
 ];
 for (const [re, line, shouldFlag] of SELF_TEST) {
   if (new RegExp(re.source).test(line) !== shouldFlag) {
@@ -82,7 +82,7 @@ for (const file of walk(SRC)) {
   }
   if (rel !== INVOKE_HOME) {
     for (const m of code.matchAll(INVOKE_RE)) {
-      problems.push(`${at(m.index)}  gọi thẳng functions.invoke — dùng callAi() trong ${INVOKE_HOME}`);
+      problems.push(`${at(m.index)}  gọi thẳng functions.invoke — dùng callEdge() trong ${INVOKE_HOME}`);
     }
   }
 }

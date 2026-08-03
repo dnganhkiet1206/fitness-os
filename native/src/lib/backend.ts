@@ -66,6 +66,13 @@ export const EDGE_FUNCTIONS = {
   weeklyReview: 'ai-weekly-review',
   smartNudges: 'ai-smart-nudges',
   coach: 'ai-coach',
+  /**
+   * Not AI. Deleting an account means deleting the *auth* user, and no client
+   * key can do that — it needs the service role, which must never ship in an
+   * app. So it is a function like the others, and it is on this list because
+   * this list is the deployment checklist.
+   */
+  deleteAccount: 'delete-account',
 } as const;
 
 export type EdgeFunction = (typeof EDGE_FUNCTIONS)[keyof typeof EDGE_FUNCTIONS];

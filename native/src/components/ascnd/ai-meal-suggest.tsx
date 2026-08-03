@@ -7,7 +7,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { AI_FAILURE_KEY, callAi, EDGE_FUNCTIONS } from '@/lib/ai';
+import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { localDateStr } from '@/lib/local-date';
 
 interface MealSuggestion {
@@ -38,9 +38,9 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
     if (!session || loading) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLoading(true);
-    // `callAi` names the reason; the alert used to say "failed" for a function
+    // `callEdge` names the reason; the alert used to say "failed" for a function
     // that was never deployed, a missing model key and an expired session alike.
-    const res = await callAi<{ suggestions?: MealSuggestion[] }>(EDGE_FUNCTIONS.mealSuggest, {
+    const res = await callEdge<{ suggestions?: MealSuggestion[] }>(EDGE_FUNCTIONS.mealSuggest, {
       meal_type: mealType || 'any',
       lang,
       date: localDateStr(),

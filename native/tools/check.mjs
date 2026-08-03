@@ -84,6 +84,7 @@ const STEPS = [
   ['backend', 'node', ['tools/backend-config.mjs']],
   ['vùng chạm', 'node', ['tools/tap-targets.mjs']],
   ['kinh tế', 'node', ['tools/economy.mjs']],
+  ['lỗi edge', 'node', ['tools/edge-failure.mjs']],
   ['worklet', 'node', ['tools/koa-studio/worklets.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
   ['camera shop', 'node', ['tools/shop-camera.mjs']],

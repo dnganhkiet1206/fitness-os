@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Bell, ChevronRight, KeyRound, Lock, Upload } from 'lucide-react-native';
+import { Bell, ChevronRight, KeyRound, Lock, Trash2, Upload } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -18,8 +18,62 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
+import { callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 
-const EXPORT_TABLES = ['weight_logs', 'daily_logs', 'meal_entries', 'workout_sessions', 'sleep_logs'] as const;
+/**
+ * Everything the account owns, for the export.
+ *
+ * It was five tables. The privacy policy promises the user can "tải dữ liệu",
+ * and the five left out meals item-by-item, water, biometrics, measurements,
+ * supplements, photos, challenges and Koa's wardrobe — most of what a person
+ * would actually want back. An export that quietly omits two thirds of the
+ * data is worse than no export, because it looks like the whole of it.
+ *
+ * Ordered so a human reading the JSON meets the day-to-day logs first.
+ */
+const EXPORT_TABLES = [
+  'profiles',
+  'daily_logs',
+  'meal_entries',
+  'workout_sessions',
+  'sleep_logs',
+  'weight_logs',
+  'water_logs',
+  'biometric_samples',
+  'body_measurements',
+  'supplements',
+  'supplement_intake_logs',
+  'food_items',
+  'progress_photos',
+  'weekly_challenges',
+  'mascot_inventory',
+  'mascot_transactions',
+] as const;
+
+/**
+ * Rows per table per request.
+ *
+ * There was a flat `.limit(500)` and no paging, so a year of meals stopped at
+ * five hundred and the file said nothing about it. Now the loop keeps asking
+ * until a page comes back short — the export is the whole of it or it fails
+ * loudly, never a silent two thirds.
+ */
+const EXPORT_PAGE = 1000;
+
+/**
+ * The one table that is not user-scoped.
+ *
+ * `meal_entry_items` carries no `user_id` — it belongs to a `meal_entry`, which
+ * belongs to a user. TypeScript caught it: the generic loop filters on
+ * `user_id`, and the union of table types has no such column in common once
+ * this one is in the list. Without the type it would have thrown at runtime,
+ * inside a `try` that reports "Export failed" and says nothing else.
+ *
+ * Left out of the export it would take the contents of every meal with it —
+ * the part a person actually wants back — so it is fetched by its parents' ids
+ * instead.
+ */
+const ITEMS_TABLE = 'meal_entry_items';
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
@@ -46,16 +100,39 @@ export default function SettingsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setExporting(true);
     try {
-      const all: Record<string, unknown[]> = {};
-      for (const table of EXPORT_TABLES) {
-        const { data } = await supabase
-          .from(table)
+      // The tables are independent, so they are fetched together rather than
+      // one after another — seventeen sequential round trips is most of a
+      // minute on a phone, with a spinner and no explanation.
+      const pairs = await Promise.all(
+        EXPORT_TABLES.map(async (table) => {
+          const rows: unknown[] = [];
+          for (let from = 0; ; from += EXPORT_PAGE) {
+            const { data, error } = await supabase
+              .from(table)
+              .select('*')
+              .eq('user_id', user.id)
+              .range(from, from + EXPORT_PAGE - 1);
+            if (error) throw error;
+            rows.push(...(data ?? []));
+            if (!data || data.length < EXPORT_PAGE) break;
+          }
+          return [table, rows] as const;
+        }),
+      );
+      const all: Record<string, unknown[]> = Object.fromEntries(pairs);
+
+      const entryIds = (all.meal_entries as { id: string }[]).map((e) => e.id);
+      const items: unknown[] = [];
+      // `.in()` on a long list becomes a long URL, so the ids go in batches
+      for (let i = 0; i < entryIds.length; i += 200) {
+        const { data, error } = await supabase
+          .from(ITEMS_TABLE)
           .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(500);
-        all[table] = data ?? [];
+          .in('meal_entry_id', entryIds.slice(i, i + 200));
+        if (error) throw error;
+        items.push(...(data ?? []));
       }
+      all[ITEMS_TABLE] = items;
       const json = JSON.stringify(all, null, 2);
       await Share.share({
         title: `ASCND export ${localDateStr()}`,
@@ -66,6 +143,69 @@ export default function SettingsScreen() {
     } finally {
       setExporting(false);
     }
+  };
+
+  /**
+   * Delete the account.
+   *
+   * ── why this exists ──
+   *
+   * It did not, and two separate things said it must. The app's own privacy
+   * policy (`legal-content.ts`) promises "Xoá tài khoản: Xoá hoàn toàn tài
+   * khoản và toàn bộ dữ liệu" — a commitment shipped in the product with no
+   * way to honour it. And App Store Review Guideline 5.1.1(v) requires any app
+   * offering account creation to offer account deletion *inside the app*; a
+   * build without it is rejected, not merely criticised.
+   *
+   * ── why it goes through an edge function ──
+   *
+   * Deleting rows is not deleting an account. The auth user has to go too, and
+   * `auth.admin.deleteUser` needs the service role key, which must never ship
+   * in a client. So the app asks the server, and the server does it.
+   *
+   * That means it can fail in a way the user must not misread: if the function
+   * is not deployed, nothing is deleted, and saying "deleted" would be the
+   * worst possible lie on this particular screen. `not-deployed` gets its own
+   * message, and every other failure says plainly that nothing was removed.
+   *
+   * ── two taps, and the export sits above it ──
+   *
+   * `Alert` confirms with the consequence spelled out rather than "Are you
+   * sure?", and the destructive button is the second one. The export row is
+   * directly above by design: the moment someone reaches for deletion is the
+   * moment to remind them their data can be taken with them.
+   */
+  const [deleting, setDeleting] = useState(false);
+  const confirmDeleteAccount = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Alert.alert(i18n.nDeleteAccountTitle, i18n.nDeleteAccountBody, [
+      { text: i18n.nCancel, style: 'cancel' },
+      {
+        text: i18n.nDeleteAccountConfirm,
+        style: 'destructive',
+        onPress: async () => {
+          if (deleting) return;
+          setDeleting(true);
+          const res = await callEdge(EDGE_FUNCTIONS.deleteAccount, {});
+          setDeleting(false);
+          if (!res.ok) {
+            Alert.alert(
+              'ASCND',
+              res.failure === 'not-deployed'
+                ? i18n.nDeleteAccountNotSetUp
+                : i18n.nDeleteAccountFailed,
+            );
+            return;
+          }
+          // The account is gone; the session and the cached copy of its data
+          // must go with it, or the next launch reads a dead user out of the
+          // persisted cache and shows their meals to whoever signs in next.
+          await signOut();
+          router.dismissAll();
+          Alert.alert('ASCND', i18n.nDeleteAccountDone);
+        },
+      },
+    ]);
   };
 
   const confirmSignOut = () => {
@@ -337,6 +477,27 @@ export default function SettingsScreen() {
         <Text style={styles.signOutText}>{i18n.nSignOut}</Text>
       </Pressable>
       </Animated.View>
+
+      {/* Last on the screen, and the only row in red — it is the one action
+          here that cannot be undone. */}
+      <Animated.View entering={rise(10)}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={i18n.nDeleteAccount}
+        disabled={deleting}
+        style={({ pressed }) => [styles.deleteAccount, (pressed || deleting) && styles.pressed]}
+        onPress={confirmDeleteAccount}>
+        {deleting ? (
+          <ActivityIndicator color={colors.readinessRed} size="small" />
+        ) : (
+          <Icon icon={Trash2} size={15} color={colors.readinessRed} />
+        )}
+        <View style={styles.deleteAccountText}>
+          <Text style={styles.deleteAccountTitle}>{i18n.nDeleteAccount}</Text>
+          <Text style={styles.cardHint}>{i18n.nDeleteAccountDesc}</Text>
+        </View>
+      </Pressable>
+      </Animated.View>
     </Screen>
   );
 }
@@ -457,6 +618,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  signOutText: { ...type.headline, color: colors.destructive },
+  /*
+    Not destructive, so not red.
+
+    Signing out was already the app's only red control, which read fine on its
+    own. It stops reading fine the moment a genuinely irreversible action sits
+    directly beneath it: two red rows in a row, and the eye cannot tell which
+    one erases everything. Apple's HIG reserves the destructive role for
+    actions that cannot be undone, and signing out is undone by signing in.
+
+    Red now means exactly one thing on this screen.
+  */
+  signOutText: { ...type.headline, color: colors.foreground },
+  deleteAccount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,59,92,0.35)',
+    marginTop: spacing.sm,
+  },
+  deleteAccountText: { flex: 1 },
+  deleteAccountTitle: { fontSize: 15, fontWeight: '600', color: colors.readinessRed },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

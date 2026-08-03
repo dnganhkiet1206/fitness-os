@@ -186,6 +186,16 @@ const en = {
   a11yMoveUp: 'Move up',
   a11yMoveDown: 'Move down',
   a11ySleepQuality: 'Sleep quality {x} of 5',
+  // ── deleting an account ──
+  nDeleteAccount: 'Delete account',
+  nDeleteAccountDesc: 'Permanently removes your account and everything in it',
+  nDeleteAccountTitle: 'Delete your account?',
+  nDeleteAccountBody:
+    'This erases your meals, workouts, sleep, weight and Koa’s wardrobe. It cannot be undone. Export your data first if you want to keep it.',
+  nDeleteAccountConfirm: 'Delete everything',
+  nDeleteAccountDone: 'Your account has been deleted.',
+  nDeleteAccountNotSetUp: 'Account deletion is not available on this server yet.',
+  nDeleteAccountFailed: 'Could not delete the account. Nothing was removed.',
   a11yPrevItem: 'Previous item',
   a11yNextItem: 'Next item',
   // AI edge functions — one message per distinct cause, so wiring a new
@@ -616,6 +626,16 @@ const vi: typeof en = {
   a11yMoveUp: 'Chuyển lên',
   a11yMoveDown: 'Chuyển xuống',
   a11ySleepQuality: 'Chất lượng giấc ngủ {x} trên 5',
+  // ── xoá tài khoản ──
+  nDeleteAccount: 'Xoá tài khoản',
+  nDeleteAccountDesc: 'Xoá vĩnh viễn tài khoản và toàn bộ dữ liệu trong đó',
+  nDeleteAccountTitle: 'Xoá tài khoản của bạn?',
+  nDeleteAccountBody:
+    'Thao tác này xoá sạch bữa ăn, buổi tập, giấc ngủ, cân nặng và tủ đồ của Koa. Không thể hoàn tác. Hãy xuất dữ liệu trước nếu bạn muốn giữ lại.',
+  nDeleteAccountConfirm: 'Xoá tất cả',
+  nDeleteAccountDone: 'Tài khoản của bạn đã được xoá.',
+  nDeleteAccountNotSetUp: 'Máy chủ chưa bật chức năng xoá tài khoản.',
+  nDeleteAccountFailed: 'Không xoá được tài khoản. Chưa có gì bị xoá.',
   a11yPrevItem: 'Món trước',
   a11yNextItem: 'Món sau',
   // AI edge functions — one message per distinct cause, so wiring a new
