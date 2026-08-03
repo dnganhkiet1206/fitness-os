@@ -6,6 +6,7 @@ import { CalendarDays, ChevronDown, ChevronRight, Dumbbell, Flame, Plus, Trash2 
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
+  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -90,22 +91,10 @@ function TemplateCard({
   const exs: TplExercise[] = Array.isArray(raw) ? (raw as TplExercise[]) : [];
 
   const turn = useSharedValue(0);
-  const grow = useSharedValue(0);
   useEffect(() => {
     turn.value = withTiming(open ? 1 : 0, { duration: OPEN_MS, easing: OPEN_EASE });
-    grow.value = withTiming(open ? 1 : 0, { duration: OPEN_MS, easing: OPEN_EASE });
-  }, [open, turn, grow]);
+  }, [open, turn]);
   const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 180}deg` }] }));
-
-  /*
-    Measured while closed, clipped to nothing.
-
-    The rows stay mounted inside a zero-high box so there is always something to
-    measure, which means a template edited elsewhere opens to its new height
-    rather than to the height it had the last time it was open.
-  */
-  const [bodyH, setBodyH] = useState(0);
-  const body = useAnimatedStyle(() => ({ height: grow.value * bodyH }));
 
   return (
     <Animated.View entering={rise(index)}>
@@ -159,10 +148,32 @@ function TemplateCard({
           </View>
         </Pressable>
 
-        <Animated.View style={[styles.tplBody, body]}>
-          <View onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
-            {exs.map((e, i) => (
-              <View key={`${e.exerciseName ?? 'x'}-${i}`} style={styles.exRow}>
+        {/*
+          Mounted only when open, rather than kept in a clipped box.
+
+          The first version animated a measured height, the way the diary's meal
+          cards do. It did not show anything, and I could not find out why from
+          reading the two — they are structurally the same. Rather than keep
+          guessing at a measurement I cannot observe without a device, this drops
+          the measurement: rows that are mounted are laid out, and there is no
+          box that can be zero high while holding them.
+
+          The card still pushes the cards below it down, because adding rows is a
+          real layout change. A `LinearTransition` on the card would have been
+          the tidier-looking answer and is the wrong one — it animates the card
+          and leaves its siblings where they were, which was measured on this
+          project at a 94px hole.
+
+          The movement is per row instead: each slides in on a short stagger, so
+          opening reads as the list arriving rather than as the card snapping to
+          a new size.
+        */}
+        {open
+          ? exs.map((e, i) => (
+              <Animated.View
+                key={`${e.exerciseName ?? 'x'}-${i}`}
+                entering={FadeInDown.duration(OPEN_MS).delay(Math.min(i, 8) * 35)}
+                style={styles.exRow}>
                 <Text style={styles.exName} numberOfLines={1}>
                   {e.exerciseName || i18n.workoutsExercises}
                 </Text>
@@ -173,10 +184,9 @@ function TemplateCard({
                   {e.sets ?? 0} × {e.reps ?? 0}
                   {e.weight ? `  ·  ${Math.round(displayWeight(e.weight, wUnit))} ${wl}` : ''}
                 </Text>
-              </View>
-            ))}
-          </View>
-        </Animated.View>
+              </Animated.View>
+            ))
+          : null}
       </GlassCard>
     </Animated.View>
   );
@@ -429,7 +439,6 @@ const styles = StyleSheet.create({
   },
   logChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
   tplCard: { padding: spacing.md },
-  tplBody: { overflow: 'hidden' },
   exRow: {
     flexDirection: 'row',
     alignItems: 'center',
