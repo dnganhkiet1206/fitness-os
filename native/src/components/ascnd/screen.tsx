@@ -99,8 +99,15 @@ interface ScreenProps extends ViewProps {
   transparentHeader?: boolean;
   /** report the header height (insets.top + 44) so content can offset under it */
   onHeaderHeight?: (h: number) => void;
-  /** transparentHeader only — set false to lock page scroll (e.g. while a
-   *  fixed game surface at the top is being touched) */
+  /**
+   * Set false to lock the page while something on it is being dragged.
+   *
+   * It used to be honoured only by the floating-header layout, which made it a
+   * prop that silently did nothing on every other page. The weight chart's
+   * scrubber is why that mattered: on iOS a ScrollView pans with a *native*
+   * gesture recogniser, so a child refusing to give up the JS responder does
+   * not stop it. Nothing in the responder system can. The page has to be told.
+   */
   contentScrollEnabled?: boolean;
   /**
    * Forwarded to the page's ScrollView, along with `scrollEventThrottle`.
@@ -205,6 +212,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           style={styles.scroller}
           contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
           contentInsetAdjustmentBehavior="never"
+          scrollEnabled={contentScrollEnabled}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           {...props}>
@@ -232,6 +240,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           style,
         ]}
         contentInsetAdjustmentBehavior="never"
+        scrollEnabled={contentScrollEnabled}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}

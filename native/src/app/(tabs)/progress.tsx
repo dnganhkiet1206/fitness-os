@@ -245,6 +245,16 @@ export default function ProgressScreen() {
     on which button was last pressed.
   */
   const [range, setRange] = useState<RangeKey>('all');
+
+  /*
+    The page holds still while the chart is being scrubbed.
+
+    It cannot be done inside the chart. On iOS a ScrollView pans with a native
+    gesture recogniser that never asks the JS responder system for permission,
+    so a child refusing to yield the responder stops other JS responders and
+    nothing else — the page kept scrolling out from under the reading.
+  */
+  const [scrubbing, setScrubbing] = useState(false);
   const rangeDays = RANGES.find((r) => r.key === range)?.days ?? null;
   const chartPoints =
     rangeDays == null
@@ -325,6 +335,7 @@ export default function ProgressScreen() {
 
   return (
     <Screen
+      contentScrollEnabled={!scrubbing}
       title={i18n.progressTitle}
       headerRight={
         <View style={styles.headerButtons}>
@@ -535,6 +546,7 @@ export default function ProgressScreen() {
               grid
               ambient
               locale={getLocale(lang)}
+              onScrubbing={setScrubbing}
             />
 
             {/*
