@@ -92,6 +92,8 @@ export function LogMealFab({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
   return (
     <>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={i18n.a11yLogMeal}
         onPress={() => toggle(true)}
         style={({ pressed }) => [
           styles.fab,

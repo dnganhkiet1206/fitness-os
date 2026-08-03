@@ -200,6 +200,8 @@ export default function FoodEditorSheet() {
         <View style={styles.actionsRow}>
           {isEdit && (
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.a11yDelete}
               style={({ pressed }) => [styles.deleteBtn, pressed && styles.pressed]}
               onPress={confirmDelete}
               disabled={remove.isPending || saved}>

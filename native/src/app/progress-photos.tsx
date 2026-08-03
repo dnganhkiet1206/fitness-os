@@ -52,6 +52,8 @@ export default function ProgressPhotosScreen() {
       title={i18n.progressPhotos}
       headerRight={
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yAdd}
           hitSlop={8}
           style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
           onPress={() => {
@@ -170,7 +172,7 @@ function CaptureView({
   return (
     <View style={styles.captureRoot}>
       <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" />
-      <Pressable style={[styles.closeBtn, { top: insets.top + spacing.sm }]} hitSlop={8} onPress={onClose}>
+      <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yClose} style={[styles.closeBtn, { top: insets.top + spacing.sm }]} hitSlop={8} onPress={onClose}>
         <Icon icon={X} size={16} color="#fff" />
       </Pressable>
 

@@ -386,6 +386,8 @@ export default function LogMealSheet() {
             autoCorrect={false}
           />
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yScanFood}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -394,6 +396,8 @@ export default function LogMealSheet() {
             <Icon icon={Camera} size={20} color={colors.foreground} />
           </Pressable>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yScanBarcode}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -468,6 +472,10 @@ export default function LogMealSheet() {
                     </Text>
                   </View>
                   <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={i18n.a11yAdd}
+                    // 40pt drawn; 2 of slop reaches 44
+                    hitSlop={2}
                     style={({ pressed }) => [styles.addChip, pressed && styles.pressed]}
                     onPress={() => addSuggestion(s)}>
                     <Icon icon={Plus} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
@@ -542,15 +550,15 @@ export default function LogMealSheet() {
                     </Text>
                   </Pressable>
                   <View style={styles.stepper}>
-                    <Pressable hitSlop={6} style={styles.stepBtn} onPress={() => updateServings(idx, -0.5)}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDecrease} hitSlop={8} style={styles.stepBtn} onPress={() => updateServings(idx, -0.5)}>
                       <Icon icon={Minus} size={16} color={colors.foreground} />
                     </Pressable>
                     <Text style={styles.stepValue}>{it.servings}</Text>
-                    <Pressable hitSlop={6} style={styles.stepBtn} onPress={() => updateServings(idx, 0.5)}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yIncrease} hitSlop={8} style={styles.stepBtn} onPress={() => updateServings(idx, 0.5)}>
                       <Icon icon={Plus} size={16} color={colors.foreground} />
                     </Pressable>
                   </View>
-                  <Pressable hitSlop={8} onPress={() => removeItem(idx)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={8} onPress={() => removeItem(idx)}>
                     <Icon icon={X} size={15} color={colors.mutedForeground} />
                   </Pressable>
                 </View>

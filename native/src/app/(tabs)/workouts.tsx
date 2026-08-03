@@ -118,7 +118,7 @@ export default function WorkoutsScreen() {
                   </Text>
                 </View>
                 <View style={styles.tplActions}>
-                  <Pressable hitSlop={8} onPress={() => confirmDelete(t.id)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={8} onPress={() => confirmDelete(t.id)}>
                     <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
                   </Pressable>
                   <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />

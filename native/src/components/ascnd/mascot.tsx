@@ -22,6 +22,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useMascot } from '@/hooks/use-mascot';
 import { useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
 import { levelFromXp } from '@/lib/mascot-room';
+import { useI18n } from '@/hooks/use-app-settings';
 
 /**
  * Floating fitness companion — "2.5D": the emoji artwork is animated in
@@ -35,6 +36,7 @@ import { levelFromXp } from '@/lib/mascot-room';
  * tab loses focus; an unwatched buddy costs nothing.
  */
 export function Mascot() {
+  const i18n = useI18n();
   const focused = useIsFocused();
   const { enabled, mascot, message, mood } = useMascot();
   const { data: wallet } = useMascotWallet();
@@ -219,7 +221,7 @@ export function Mascot() {
           style={[styles.bubble, bubbleStyle]}
           pointerEvents={bubbleVisible ? 'auto' : 'none'}>
           <Text style={styles.bubbleText}>{message}</Text>
-          <Pressable hitSlop={10} onPress={() => setBubbleVisible(false)} style={styles.bubbleClose}>
+          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDismiss} hitSlop={10} onPress={() => setBubbleVisible(false)} style={styles.bubbleClose}>
             <Icon icon={X} size={11} color={colors.mutedForeground} />
           </Pressable>
         </Animated.View>

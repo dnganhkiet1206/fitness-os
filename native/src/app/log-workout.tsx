@@ -203,7 +203,7 @@ export default function LogWorkoutSheet() {
                   value={s.rpe}
                   onChangeText={(v) => updateSet(idx, 'rpe', v)}
                 />
-                <Pressable hitSlop={8} onPress={() => removeSet(idx)} style={styles.removeSet}>
+                <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={8} onPress={() => removeSet(idx)} style={styles.removeSet}>
                   <Icon icon={X} size={14} color={colors.mutedForeground} />
                 </Pressable>
               </View>

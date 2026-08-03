@@ -154,6 +154,8 @@ export default function ScanFoodScreen() {
         <View style={styles.scrim} />
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yClose}
           style={[styles.closeBtn, { top: insets.top + spacing.sm }]}
           hitSlop={8}
           onPress={() => router.back()}>
@@ -189,6 +191,8 @@ export default function ScanFoodScreen() {
                         </Text>
                       </View>
                       <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={i18n.a11yClose}
                         hitSlop={8}
                         onPress={() => {
                           Haptics.selectionAsync();
@@ -234,6 +238,8 @@ export default function ScanFoodScreen() {
       <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
 
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={i18n.a11yClose}
         style={[styles.closeBtn, { top: insets.top + spacing.sm }]}
         hitSlop={8}
         onPress={() => router.back()}>

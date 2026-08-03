@@ -125,6 +125,8 @@ export default function WaterScreen() {
         <View style={styles.quickRow}>
           {/* Undo last entry (web: minus button) */}
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yRemove}
             style={({ pressed }) => [
               styles.undoBtn,
               (!logs || logs.length === 0) && styles.undoDisabled,

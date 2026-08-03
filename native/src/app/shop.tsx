@@ -382,6 +382,8 @@ export default function ShopScreen() {
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{i18n.nRoomCollections}</Text>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={i18n.a11yClose}
                 hitSlop={10}
                 onPress={() => setCollectionsOpen(false)}
                 style={styles.sheetClose}>

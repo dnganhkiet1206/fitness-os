@@ -62,6 +62,8 @@ export default function BiometricsScreen() {
       title={i18n.biometricsTitle}
       headerRight={
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yAdd}
           hitSlop={8}
           style={({ pressed }) => [styles.logBtn, pressed && styles.pressed]}
           onPress={() => {

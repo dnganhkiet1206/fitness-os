@@ -383,6 +383,8 @@ export default function WeeklyReviewScreen() {
       {/* Week navigation (web) */}
       <View style={styles.weekNav}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yPrevWeek}
           hitSlop={8}
           style={({ pressed }) => [styles.weekBtn, pressed && styles.pressed]}
           onPress={() => {
@@ -394,6 +396,8 @@ export default function WeeklyReviewScreen() {
         </Pressable>
         <Text style={styles.weekLabel}>{rangeLabel}</Text>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yNextWeek}
           hitSlop={8}
           disabled={weekOffset >= 0}
           style={({ pressed }) => [styles.weekBtn, weekOffset >= 0 && styles.disabled, pressed && styles.pressed]}

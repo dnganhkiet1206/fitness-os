@@ -76,6 +76,8 @@ export default function GroceryScreen() {
             returnKeyType="done"
           />
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yAdd}
             style={({ pressed }) => [styles.addBtn, !draft.trim() && styles.disabled, pressed && styles.pressed]}
             disabled={!draft.trim()}
             onPress={submit}>
@@ -123,7 +125,7 @@ export default function GroceryScreen() {
                     {it.name}
                     {it.quantity ? <Text style={styles.qty}>  ×{it.quantity}</Text> : null}
                   </Text>
-                  <Pressable hitSlop={10} onPress={() => remove.mutate(it.id)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={10} onPress={() => remove.mutate(it.id)}>
                     <Icon icon={X} size={15} color={colors.mutedForeground} />
                   </Pressable>
                 </View>

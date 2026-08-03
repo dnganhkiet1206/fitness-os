@@ -254,7 +254,7 @@ export default function MealPlansScreen() {
                         .join(' · ')}
                     </Text>
                   </View>
-                  <Pressable hitSlop={10} onPress={() => confirmDelete(p.id, p.name)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={10} onPress={() => confirmDelete(p.id, p.name)}>
                     <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
                   </Pressable>
                   <Icon icon={openId === p.id ? ChevronDown : ChevronRight} size={20} color={colors.mutedForeground} />
@@ -274,6 +274,8 @@ export default function MealPlansScreen() {
                         </Text>
                         <Text style={styles.itemKcal}>{Math.round(Number(it.kcal))} kcal</Text>
                         <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={i18n.a11yRemove}
                           hitSlop={8}
                           onPress={() => deleteItem.mutate({ id: it.id, planId: p.id })}>
                           <Icon icon={X} size={14} color={colors.mutedForeground} />
@@ -334,7 +336,7 @@ export default function MealPlansScreen() {
                           onChangeText={setFoodQuery}
                           autoCorrect={false}
                         />
-                        <Pressable hitSlop={8} onPress={() => { Haptics.selectionAsync(); setAddOpen(false); setFoodQuery(''); }}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yClose} hitSlop={8} onPress={() => { Haptics.selectionAsync(); setAddOpen(false); setFoodQuery(''); }}>
                           <Icon icon={X} size={15} color={colors.mutedForeground} />
                         </Pressable>
                       </View>

@@ -539,11 +539,15 @@ export function OnboardingFlow() {
         {step === 5 && (
           <Animated.View entering={FadeIn.duration(220)} style={styles.termsRow}>
             <Pressable
+              accessibilityRole="checkbox"
+              accessibilityLabel={i18n.a11yAcceptTerms}
+              accessibilityState={{ checked: termsAccepted }}
               onPress={() => {
                 Haptics.selectionAsync();
                 setTermsAccepted((v) => !v);
               }}
-              hitSlop={8}
+              // 20pt drawn; 12 of slop reaches 44
+              hitSlop={12}
               style={[styles.checkbox, termsAccepted && styles.checkboxActive]}>
               {termsAccepted && <Icon icon={Check} size={13} color={colors.primaryForeground} />}
             </Pressable>
@@ -616,6 +620,8 @@ export function OnboardingFlow() {
               {legalDoc?.title}
             </Text>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.a11yClose}
               hitSlop={8}
               style={({ pressed }) => [styles.legalClose, pressed && styles.pressed]}
               onPress={() => {

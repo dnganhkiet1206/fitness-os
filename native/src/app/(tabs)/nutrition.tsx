@@ -143,6 +143,8 @@ export default function NutritionScreen() {
       {/* Own foods are editable (web: pencil when user_id matches) */}
       {f.user_id === user?.id && (
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yEdit}
           hitSlop={10}
           onPress={() => {
             Haptics.selectionAsync();
@@ -152,6 +154,8 @@ export default function NutritionScreen() {
         </Pressable>
       )}
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={i18n.a11yFavourite}
         hitSlop={10}
         onPress={() => {
           Haptics.selectionAsync();
@@ -176,11 +180,13 @@ export default function NutritionScreen() {
         headerRight={
           <View style={styles.headerButtons}>
             {[
-              { icon: Pill, route: '/supplements' as const },
-              { icon: ShoppingCart, route: '/grocery' as const },
+              { icon: Pill, route: '/supplements' as const, label: i18n.nSupplements },
+              { icon: ShoppingCart, route: '/grocery' as const, label: i18n.nGrocery },
             ].map((b) => (
               <Pressable
                 key={b.route}
+                accessibilityRole="button"
+                accessibilityLabel={b.label}
                 hitSlop={8}
                 style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
                 onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>

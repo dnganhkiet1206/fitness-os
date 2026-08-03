@@ -252,15 +252,15 @@ export default function AiCoachScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
-        <Pressable hitSlop={8} style={styles.headerBtn} onPress={() => router.back()}>
+        <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yBack} hitSlop={8} style={styles.headerBtn} onPress={() => router.back()}>
           <Icon icon={ChevronLeft} size={24} color={colors.foreground} />
         </Pressable>
         <Text style={styles.headerTitle}>{i18n.aiCoachTitle}</Text>
         <View style={styles.headerRight}>
-          <Pressable hitSlop={8} style={styles.headerBtn} onPress={() => { Haptics.selectionAsync(); setShowHistory((v) => !v); }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yHistory} hitSlop={8} style={styles.headerBtn} onPress={() => { Haptics.selectionAsync(); setShowHistory((v) => !v); }}>
             <Icon icon={History} size={19} color={colors.foreground} />
           </Pressable>
-          <Pressable hitSlop={8} style={styles.headerBtn} onPress={newChat}>
+          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yNewChat} hitSlop={8} style={styles.headerBtn} onPress={newChat}>
             <Icon icon={Plus} size={20} color={colors.foreground} />
           </Pressable>
         </View>
@@ -290,7 +290,10 @@ export default function AiCoachScreen() {
                     })}
                   </Text>
                   <Pressable
-                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={i18n.a11yDelete}
+                    // 26pt drawn; 9 of slop reaches the 44pt HIG floor
+              hitSlop={9}
                     style={({ pressed }) => [styles.historyDelete, pressed && { opacity: 0.6 }]}
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -381,6 +384,8 @@ export default function AiCoachScreen() {
             onSubmitEditing={() => send()}
           />
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11ySend}
             style={({ pressed }) => [
               styles.sendBtn,
               (!input.trim() || isLoading) && styles.sendDisabled,

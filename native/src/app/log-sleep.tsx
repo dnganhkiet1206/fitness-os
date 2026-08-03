@@ -151,6 +151,9 @@ export default function LogSleepSheet() {
           return (
             <Pressable
               key={q.value}
+              accessibilityRole="button"
+              accessibilityLabel={i18n.a11ySleepQuality.replace('{x}', String(q.value))}
+              accessibilityState={{ selected: active }}
               onPress={() => {
                 Haptics.selectionAsync();
                 setQuality(q.value);

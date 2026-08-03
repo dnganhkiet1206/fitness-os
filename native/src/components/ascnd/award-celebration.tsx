@@ -28,6 +28,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { enqueueAward } from '@/lib/celebration-queue';
+import { useI18n } from '@/hooks/use-app-settings';
 
 /**
  * Global award celebration — port of the web AwardCelebrationOverlay.
@@ -117,6 +118,7 @@ function ConfettiPiece({ progress, piece }: { progress: SharedValue<number>; pie
 }
 
 export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAward; onClose: () => void }) {
+  const i18n = useI18n();
   const { lang } = useAppSettings();
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
   const AwardIcon = ICON_MAP[award.icon] ?? Trophy;
@@ -172,7 +174,7 @@ export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAw
         ))}
 
         <Animated.View style={[styles.card, { shadowColor: tier.color }, cardStyle]}>
-          <Pressable style={styles.closeBtn} hitSlop={8} onPress={dismiss}>
+          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDismiss} style={styles.closeBtn} hitSlop={8} onPress={dismiss}>
             <Icon icon={X} size={16} color={colors.mutedForeground} />
           </Pressable>
 

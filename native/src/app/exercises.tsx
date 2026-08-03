@@ -161,7 +161,7 @@ export default function ExercisesScreen() {
                   {e.equipment ? <Text style={styles.equipment}>{e.equipment}</Text> : null}
                   {/* Only user-created exercises are deletable (seeds are shared) */}
                   {e.user_id === user?.id && (
-                    <Pressable hitSlop={10} onPress={() => confirmDelete(e.id, e.name)}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={10} onPress={() => confirmDelete(e.id, e.name)}>
                       <Icon icon={Trash2} size={14} color={colors.mutedForeground} />
                     </Pressable>
                   )}

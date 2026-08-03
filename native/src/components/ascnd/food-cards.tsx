@@ -51,6 +51,8 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
         </Text>
       </View>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={i18n.a11yFavourite}
         hitSlop={8}
         onPress={() => {
           Haptics.selectionAsync();
@@ -58,7 +60,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
         }}>
         <Icon icon={Star} size={17} color={f.is_favorite ? colors.readinessYellow : colors.mutedForeground} strokeWidth={f.is_favorite ? 2.5 : 2} />
       </Pressable>
-      <Pressable hitSlop={8} onPress={confirmDelete}>
+      <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={8} onPress={confirmDelete}>
         <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
       </Pressable>
     </Pressable>
@@ -67,6 +69,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
 
 /** A recently-logged food as a card; + saves it into My Foods (hidden if already saved). */
 export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) {
+  const i18n = useI18n();
   const createFood = useCreateFoodItem();
 
   const quickAdd = () => {
@@ -93,6 +96,8 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
       </View>
       {!saved && (
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yAdd}
           hitSlop={8}
           disabled={createFood.isPending}
           style={({ pressed }) => pressed && styles.pressed}

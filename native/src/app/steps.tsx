@@ -53,6 +53,8 @@ export default function StepsScreen() {
         {/* Goal stepper (web Settings inline editor, ±500) */}
         <View style={styles.goalRow}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yDecrease}
             hitSlop={6}
             style={({ pressed }) => [styles.goalBtn, pressed && styles.pressed]}
             onPress={() => {
@@ -63,6 +65,8 @@ export default function StepsScreen() {
           </Pressable>
           <Text style={styles.goalValue}>{GOAL.toLocaleString()}</Text>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yIncrease}
             hitSlop={6}
             style={({ pressed }) => [styles.goalBtn, pressed && styles.pressed]}
             onPress={() => {

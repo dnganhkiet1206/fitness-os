@@ -66,6 +66,7 @@ function MedalCard({
   lang: AppLang;
   index: number;
 }) {
+  const i18n = useI18n();
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
   const AwardIcon = ICON_MAP[award.icon] ?? Trophy;
   const isEarned = !!earned;
@@ -137,7 +138,7 @@ function MedalCard({
               year: 'numeric',
             })}
           </Text>
-          <Pressable hitSlop={8} style={({ pressed }) => pressed && styles.pressed} onPress={share}>
+          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yShare} hitSlop={8} style={({ pressed }) => pressed && styles.pressed} onPress={share}>
             <Icon icon={Share2} size={14} color={colors.mutedForeground} />
           </Pressable>
         </View>

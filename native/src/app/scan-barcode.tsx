@@ -105,6 +105,8 @@ export default function ScanBarcodeScreen() {
         {status === 'looking-up' && <ActivityIndicator color="#fff" style={{ marginTop: spacing.sm }} />}
       </View>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={i18n.a11yClose}
         style={[styles.closeBtn, { top: insets.top + spacing.sm }]}
         hitSlop={8}
         onPress={() => router.back()}>

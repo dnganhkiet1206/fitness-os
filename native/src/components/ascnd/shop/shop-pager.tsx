@@ -94,7 +94,7 @@ export function ShopPager({
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
-        <Arrow dir="left" onPress={() => step(-1)} disabled={items.length < 2} />
+        <Arrow i18n={i18n} dir="left" onPress={() => step(-1)} disabled={items.length < 2} />
 
         <View style={styles.plate}>
           <View style={[styles.iconWrap, { backgroundColor: `${rar.color}1c` }]}>
@@ -113,7 +113,7 @@ export function ShopPager({
           </View>
         </View>
 
-        <Arrow dir="right" onPress={() => step(1)} disabled={items.length < 2} />
+        <Arrow i18n={i18n} dir="right" onPress={() => step(1)} disabled={items.length < 2} />
       </View>
 
       {/* Pips, capped. Past a dozen they stop being countable and start being a
@@ -181,16 +181,21 @@ export function ShopPager({
  * the smallest part of what has to be hittable.
  */
 function Arrow({
+  i18n,
   dir,
   onPress,
   disabled,
 }: {
+  i18n: ReturnType<typeof useI18n>;
   dir: 'left' | 'right';
   onPress: () => void;
   disabled: boolean;
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={dir === 'left' ? i18n.a11yPrevItem : i18n.a11yNextItem}
+      accessibilityState={{ disabled }}
       disabled={disabled}
       hitSlop={8}
       onPress={onPress}

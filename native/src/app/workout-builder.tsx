@@ -234,7 +234,7 @@ export default function WorkoutBuilderSheet() {
               <View key={idx} style={styles.exCard}>
                 <View style={styles.exHead}>
                   <Text style={styles.exName} numberOfLines={1}>{ex.exerciseName}</Text>
-                  <Pressable hitSlop={8} onPress={() => removeEx(idx)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={8} onPress={() => removeEx(idx)}>
                     <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
                   </Pressable>
                 </View>

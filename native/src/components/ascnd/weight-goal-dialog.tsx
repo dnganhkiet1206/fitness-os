@@ -244,6 +244,8 @@ export function WeightGoalDialog({
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yBack}
             hitSlop={8}
             style={({ pressed }) => [styles.back, pressed && styles.pressed]}
             onPress={() => {

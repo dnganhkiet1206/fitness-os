@@ -319,6 +319,9 @@ export default function TodayScreen() {
         </View>
         <View style={styles.headerButtons}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={editMode ? i18n.a11yDoneEditing : i18n.a11yEditLayout}
+            accessibilityState={{ selected: editMode }}
             style={({ pressed }) => [styles.squareBtn, editMode && styles.squareBtnActive, pressed && styles.pressed]}
             onPress={() => {
               Haptics.selectionAsync();
@@ -334,6 +337,8 @@ export default function TodayScreen() {
           {!editMode && (
             <>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={i18n.a11yAskCoach}
                 style={({ pressed }) => [styles.squareBtn, pressed && styles.pressed]}
                 onPress={() => {
                   Haptics.selectionAsync();
@@ -342,6 +347,8 @@ export default function TodayScreen() {
                 <Icon icon={Sparkles} size={20} color="rgba(237,237,237,0.7)" />
               </Pressable>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={i18n.a11ySettings}
                 style={({ pressed }) => [styles.squareBtn, pressed && styles.pressed]}
                 onPress={() => {
                   Haptics.selectionAsync();
@@ -452,16 +459,19 @@ export default function TodayScreen() {
                 <Text style={styles.editGroupTitle}>{group.title[lang] ?? group.title.en}</Text>
                 <ArrowBtn
                   icon={ChevronUp}
+                  label={i18n.a11yMoveUp}
                   disabled={gi === 0}
                   onPress={() => moveGroup(gi, -1)}
                 />
                 <ArrowBtn
                   icon={ChevronDown}
+                  label={i18n.a11yMoveDown}
                   disabled={gi === config.groups.length - 1}
                   onPress={() => moveGroup(gi, 1)}
                 />
                 <ArrowBtn
                   icon={Trash2}
+                  label={i18n.a11yDelete}
                   disabled={config.groups.length <= 1}
                   onPress={() => removeGroup(group.id)}
                 />
@@ -478,11 +488,13 @@ export default function TodayScreen() {
                     </Text>
                     <ArrowBtn
                       icon={ChevronUp}
+                      label={i18n.a11yMoveUp}
                       disabled={wi === 0}
                       onPress={() => moveWidget(group.id, wi, -1)}
                     />
                     <ArrowBtn
                       icon={ChevronDown}
+                      label={i18n.a11yMoveDown}
                       disabled={wi === group.widgets.length - 1}
                       onPress={() => moveWidget(group.id, wi, 1)}
                     />
@@ -506,6 +518,8 @@ export default function TodayScreen() {
               }}
             />
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.a11yAdd}
               style={({ pressed }) => [
                 styles.addGroupBtn,
                 !newGroupName.trim() && styles.editDisabled,
@@ -540,16 +554,23 @@ export default function TodayScreen() {
 
 function ArrowBtn({
   icon,
+  label,
   disabled,
   onPress,
 }: {
   icon: typeof ChevronUp;
+  /** "Move up" / "Move down" — a chevron alone says nothing to a reader */
+  label: string;
   disabled?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable
-      hitSlop={4}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      // 30pt drawn; 7 of slop brings the target to 44, the HIG floor
+      hitSlop={7}
       disabled={disabled}
       style={({ pressed }) => [styles.arrowBtn, disabled && styles.editDisabled, pressed && styles.pressed]}
       onPress={() => {

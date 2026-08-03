@@ -134,7 +134,18 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
     const IconCmp = TAB_ICONS[routeName] ?? Home;
     return (
       <Animated.View key={routeName} layout={LinearTransition.springify().stiffness(350).damping(28)}>
+        {/*
+          The label is drawn only for the active tab — that is the design, and
+          it left every inactive tab with no text anywhere in the tree, so a
+          screen reader announced the app's primary navigation as four unnamed
+          buttons. `accessibilityLabel` supplies the name whether or not it is
+          painted, and `role`/`state` let the reader say "Nutrition, tab, 2 of
+          4, selected" instead of "button".
+        */}
         <Pressable
+          accessibilityRole="tab"
+          accessibilityLabel={labels[routeName]}
+          accessibilityState={{ selected: active, disabled }}
           disabled={disabled}
           onPress={() => go(routeName, index)}
           style={({ pressed }) => [styles.tab, pressed && !disabled && styles.pressed]}>
@@ -159,6 +170,9 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
 
   const centerButton = (onPress: () => void) => (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={aiOpen ? i18n.a11yCloseCoach : i18n.a11yAskCoach}
+      accessibilityState={{ expanded: aiOpen }}
       onPress={onPress}
       style={({ pressed }) => [styles.aiBtn, aiOpen && styles.aiBtnOpen, pressed && styles.pressed]}>
       <Animated.View style={[styles.aiIcon, sparklesStyle]}>

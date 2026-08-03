@@ -201,13 +201,15 @@ export default function ProgressScreen() {
       headerRight={
         <View style={styles.headerButtons}>
           {[
-            { icon: Sparkles, route: '/weekly-review' as const },
-            { icon: Target, route: '/smart-goals' as const },
-            { icon: Swords, route: '/challenges' as const },
-            { icon: Medal, route: '/awards' as const },
+            { icon: Sparkles, route: '/weekly-review' as const, label: i18n.nWeeklyReview },
+            { icon: Target, route: '/smart-goals' as const, label: i18n.navSmartGoals },
+            { icon: Swords, route: '/challenges' as const, label: i18n.nChallenges },
+            { icon: Medal, route: '/awards' as const, label: i18n.nAwards },
           ].map((b) => (
             <Pressable
               key={b.route}
+              accessibilityRole="button"
+              accessibilityLabel={b.label}
               hitSlop={8}
               style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
               onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>

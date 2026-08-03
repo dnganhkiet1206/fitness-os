@@ -72,6 +72,9 @@ export default function SupplementsScreen() {
       title={i18n.nSupplements}
       headerRight={
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={adding ? i18n.a11yClose : i18n.a11yAdd}
+          accessibilityState={{ expanded: adding }}
           hitSlop={8}
           style={({ pressed }) => [styles.headerAdd, adding && styles.headerAddOn, pressed && styles.pressed]}
           onPress={() => {
@@ -143,6 +146,12 @@ export default function SupplementsScreen() {
             <GlassCard style={styles.itemCard}>
               <View style={styles.row}>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={i18n.a11yCheckOff}
+                  accessibilityState={{ checked: s.taken }}
+                  // 24pt drawn and no slop at all — the smallest target in the
+                  // app, and a daily one
+                  hitSlop={10}
                   style={[styles.checkbox, s.taken && styles.checkboxOn]}
                   onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
                   {s.taken && <Icon icon={Check} size={15} color="#fff" strokeWidth={3} />}
@@ -155,7 +164,7 @@ export default function SupplementsScreen() {
                     {[s.dose_text, timingLabel(s.timing)].filter(Boolean).join(' · ')}
                   </Text>
                 </Pressable>
-                <Pressable hitSlop={8} onPress={() => confirmDelete(s.id, s.name)}>
+                <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={8} onPress={() => confirmDelete(s.id, s.name)}>
                   <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
                 </Pressable>
               </View>

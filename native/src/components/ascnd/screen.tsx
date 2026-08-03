@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AmbientLight } from '@/components/ascnd/ambient-light';
 import { Icon } from '@/components/ascnd/icon';
 import { BottomTabInset } from '@/constants/expo-template-theme';
+import { useI18n } from '@/hooks/use-app-settings';
 import { colors, glass, spacing, type } from '@/constants/ascnd';
 import { setActiveScroller } from '@/lib/scroll-to-top';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
@@ -119,6 +120,7 @@ interface ScreenProps extends ViewProps {
  */
 export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, contentScrollEnabled = true, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
+  const i18n = useI18n();
 
   /**
    * Lend this page's scroll view to the tab bar, so tapping the tab you are
@@ -142,6 +144,8 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
     const headerBar = (
       <View style={styles.pageHeaderRow}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yBack}
           hitSlop={8}
           style={({ pressed }) => [styles.backBtn, pressed && styles.backPressed]}
           onPress={() => {
