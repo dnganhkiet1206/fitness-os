@@ -13,7 +13,7 @@ import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBodyMeasurements, useWeightHistory } from '@/hooks/use-fitness-data';
@@ -22,12 +22,32 @@ import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
 import { useWeightGoal } from '@/hooks/use-weight-goal';
 import { getLocale } from '@/lib/i18n';
-import { parseLocalDate } from '@/lib/local-date';
+import { localDaysAgoStr, parseLocalDate } from '@/lib/local-date';
 import { convertLength, displayLength, displayWeight, formatHeight, weightLabel } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { WeightLogList } from '@/components/ascnd/weight-log-list';
 
 type Tab = 'weight' | 'measurements' | 'photos';
+
+/**
+ * How far back the weight chart reaches.
+ *
+ * Week, month, year, everything. No "day" segment: a day holds at most one
+ * weigh-in, so it would draw a single point and the chart would say there is
+ * not enough data — an option that can only ever disappoint is worse than no
+ * option.
+ *
+ * `days: null` means all of it, which is whatever `useWeightHistory(3650)`
+ * returned; ten years is the practical limit of the query, not a claim.
+ */
+const RANGES = [
+  { key: 'week', days: 7, label: 'nRangeWeek' },
+  { key: 'month', days: 30, label: 'nRangeMonth' },
+  { key: 'year', days: 365, label: 'nRangeYear' },
+  { key: 'all', days: null, label: 'nRangeAll' },
+] as const;
+
+type RangeKey = (typeof RANGES)[number]['key'];
 
 /**
  * The BMI scale, in one place.
@@ -215,6 +235,24 @@ export default function ProgressScreen() {
   // Stored kg; chart + tiles show the user's unit (BMI stays metric)
   const weightData = (weight ?? []).map((d) => ({ ...d, value: displayWeight(d.value, wUnit) }));
   const allWeight = (weightAll ?? []).map((d) => ({ ...d, value: displayWeight(d.value, wUnit) }));
+
+  /*
+    The chart's own window, filtered from the full history rather than fetched.
+
+    `weightData` stays the 90-day series every other number on this tab is
+    defined against — the records count, the start weight, the log list. Moving
+    those with the chart's range would mean "Start" changing meaning depending
+    on which button was last pressed.
+  */
+  const [range, setRange] = useState<RangeKey>('all');
+  const rangeDays = RANGES.find((r) => r.key === range)?.days ?? null;
+  const chartPoints =
+    rangeDays == null
+      ? allWeight
+      : (() => {
+          const from = localDaysAgoStr(rangeDays);
+          return allWeight.filter((d) => d.date >= from);
+        })();
   const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].value : null;
   const startWeight = weightData.length > 0 ? weightData[0].value : null;
   const weightDelta = currentWeight != null && startWeight != null ? currentWeight - startWeight : null;
@@ -485,8 +523,8 @@ export default function ProgressScreen() {
               ) : null}
             </View>
             <LineChart
-              points={weightData}
-              color={colors.readinessGreen}
+              points={chartPoints}
+              color={colors.metricBeige}
               height={180}
               unit={wl}
               emptyLabel={i18n.nNotEnoughData}
@@ -498,6 +536,39 @@ export default function ProgressScreen() {
               ambient
               locale={getLocale(lang)}
             />
+
+            {/*
+              How far back the chart reaches.
+
+              It filters `allWeight`, which the changes card already fetches, so
+              switching range costs nothing — no query, no spinner, no chance of
+              a range that fails to load. The other numbers in this card are
+              unaffected on purpose: "how far to target" is about the newest
+              reading, not about the window it happens to be drawn in.
+            */}
+            <View style={styles.rangeRow}>
+              {RANGES.map((r) => {
+                const on = r.key === range;
+                return (
+                  <Pressable
+                    key={r.key}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    style={({ pressed }) => [
+                      styles.rangeBtn,
+                      on && styles.rangeBtnOn,
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setRange(r.key);
+                    }}>
+                    <Text style={[styles.rangeText, on && styles.rangeTextOn]}>{i18n[r.label]}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
             {/*
               One button, one sheet. The row used to be a stepper; a target
               weight is a number people arrive already knowing, and stepping
@@ -755,6 +826,20 @@ const styles = StyleSheet.create({
   // No radius here: the rounded ends belong to the `<Rect>`, which is what
   // `overflow: 'visible'` — needed so the marker can hang above — always
   // prevented this container from clipping.
+  rangeRow: {
+    flexDirection: 'row',
+    gap: 2,
+    marginTop: spacing.sm,
+    padding: 2,
+    borderRadius: radius.sm,
+    backgroundColor: 'rgba(24,24,27,0.5)',
+  },
+  // 34pt tall inside a 4pt-padded row: the touch target is the full segment
+  // width, and seven-plus points wide is well past the 44pt floor.
+  rangeBtn: { flex: 1, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm - 2 },
+  rangeBtnOn: { backgroundColor: 'rgba(255,255,255,0.09)' },
+  rangeText: { ...type.footnote, color: colors.mutedForeground },
+  rangeTextOn: { color: colors.foreground, fontWeight: '600' },
   bmiScale: { height: BMI_BAR_H, justifyContent: 'center', overflow: 'visible' },
   bmiDot: {
     position: 'absolute',

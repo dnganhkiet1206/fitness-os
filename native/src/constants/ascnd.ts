@@ -80,6 +80,19 @@ export const colors = {
   metricPurple: '#b45cff',
   metricCyan: '#22e3ff',
   metricOrange: '#ff9130',
+  /**
+   * Neon beige — the weight history's line.
+   *
+   * The only warm colour in the metrics. It is here because the weight chart
+   * draws its ambient pool in the line's own colour, and a warm glow reads as
+   * light falling on the page while a white one reads as a white shape on it.
+   * It is close to the 3000K key in `ambient-light.tsx` (#ffd9b3) on purpose,
+   * so the chart agrees with the light the page is already lit by.
+   *
+   * 16.59:1 on `background` — above the green it replaced (14.12:1), so this
+   * is a legibility gain as well as a warmer one.
+   */
+  metricBeige: '#ffe6bd',
 } as const;
 
 /**

@@ -1,5 +1,11 @@
 import { useId, useState } from 'react';
-import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+} from 'react-native';
 import Svg, {
   Circle,
   Defs,
@@ -12,7 +18,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
-import { colors, spacing, type } from '@/constants/ascnd';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 
 export interface ChartPoint {
   date: string;
@@ -72,6 +78,10 @@ interface LineChartProps {
  * gridlines exactly on the edges of the plot instead of floating just inside
  * it.
  */
+/** the scrub readout chip — fixed so it can be clamped before it is laid out */
+const SCRUB_W = 96;
+const SCRUB_H = 38;
+
 const TICK_STEPS = [0.1, 0.2, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100] as const;
 
 export function niceTicks(lo: number, hi: number, want = 3): { ticks: number[]; min: number; max: number } {
@@ -134,6 +144,9 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   const uid = useId();
   const fillId = `lcFill-${uid}`;
   const glowId = `lcGlow-${uid}`;
+
+  /** index of the reading being pointed at, or none */
+  const [scrub, setScrub] = useState<number | null>(null);
 
   if (points.length < 2) {
     return (
@@ -224,8 +237,79 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   // the meaning.
   const tickText = (v: number) => `${Math.round(v * 10) / 10}`;
 
+  /*
+    Scrubbing: hold anywhere on the plot and slide to read the series.
+
+    ── the built-in responder, not a gesture library ──
+
+    `react-native-gesture-handler` is installed but nothing in the app uses it,
+    and `Gesture.Pan` needs a `GestureHandlerRootView` wrapped around the app.
+    Adding a provider at the root to put a readout on one chart is a change to
+    every screen for the benefit of one. The responder system is in RN core,
+    needs nothing, and a horizontal scrubber is exactly what it is for.
+
+    ── giving the touch back to the scroll view ──
+
+    This chart lives most of the way down a long scrolling page, so a finger
+    landing on it is at least as likely to mean "scroll" as "read". Claiming the
+    touch on start makes the tap work; `onResponderTerminationRequest` returning
+    true is what then lets the ScrollView take it away the moment the drag turns
+    out to be vertical. Without that line the chart would be a 180pt band the
+    page cannot be scrolled through.
+
+    ── it stays after the finger lifts ──
+
+    A finger covers the reading it is pointing at, so a readout that vanished on
+    release could only ever be seen around the edge of a thumb. It persists, and
+    the next touch moves it.
+  */
+  const nearest = (localX: number) => {
+    let best = 0;
+    for (let i = 1; i < xs.length; i++) {
+      if (Math.abs(xs[i] - localX) < Math.abs(xs[best] - localX)) best = i;
+    }
+    return best;
+  };
+  const scrubbable = grid;
+  const at = scrub != null ? points[scrub] : null;
+  const track = (e: GestureResponderEvent) => setScrub(nearest(e.nativeEvent.locationX));
+
+  const responder = scrubbable
+    ? {
+        onStartShouldSetResponder: () => true,
+        onMoveShouldSetResponder: () => true,
+        onResponderGrant: track,
+        onResponderMove: track,
+        // Yes — let the page scroll if this turns out to be a vertical drag.
+        onResponderTerminationRequest: () => true,
+      }
+    : {};
+
+  /* Where the readout chip sits: above the picked point, clamped into the plot
+     so neither end of the series pushes it off the card. */
+  const chip = at
+    ? {
+        left: Math.max(padX, Math.min(width - SCRUB_W, x(scrub!) - SCRUB_W / 2)),
+        top: Math.max(0, Math.min(height - SCRUB_H, y(at.value) - SCRUB_H - 10)),
+      }
+    : null;
+
   return (
-    <View onLayout={onLayout}>
+    <View
+      onLayout={onLayout}
+      /*
+        One name for the whole series, because a drag scrubber cannot be
+        operated by a screen reader at all. Naming the range and the latest
+        value is the reading somebody would otherwise be denied entirely.
+      */
+      accessible={scrubbable}
+      accessibilityRole={scrubbable ? 'image' : undefined}
+      accessibilityLabel={
+        scrubbable
+          ? `${points.length} · ${fmt(rawMin)} – ${fmt(rawMax)} · ${fmt(values[values.length - 1])}`
+          : undefined
+      }
+      {...responder}>
       {width > 0 && (
         <>
           <Svg width={width} height={height}>
@@ -235,13 +319,26 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                 <Stop offset="1" stopColor={color} stopOpacity="0" />
               </LinearGradient>
               {/*
-                The pool in the middle. Five stops, not two: a linear ramp
-                reaches zero at a definite radius and the eye finds that ring
-                immediately. `feGaussianBlur` is declared by react-native-svg
-                and does nothing on native, so this is the only way to get soft
-                light — the same technique as `ambient-light.tsx`.
+                A pool of light, placed off-centre on purpose.
+
+                Dead centre with equal radii is a symmetry nothing physical has:
+                it reads as a vignette somebody applied rather than as a lamp
+                somewhere. Sitting it up and to the left, and making it wider
+                than it is tall, gives the card a near corner and a far one.
+
+                The direction is not arbitrary. `ambient-light.tsx` puts the
+                page's key light at `cx 0.28, cy −0.05` — above and left, just
+                off the top corner. A pool leaning the other way would be a
+                second light source contradicting the first, which is the thing
+                the eye notices even when it cannot say why.
+
+                Five stops, not two: a linear ramp reaches zero at a definite
+                radius and the eye finds that ring immediately.
+                `feGaussianBlur` is declared by react-native-svg and does
+                nothing on native, so stacking stops is the only soft light
+                available.
               */}
-              <RadialGradient id={glowId} cx="0.5" cy="0.5" rx="0.6" ry="0.75">
+              <RadialGradient id={glowId} cx="0.37" cy="0.36" rx="0.78" ry="0.6">
                 <Stop offset="0" stopColor={color} stopOpacity={0.14} />
                 <Stop offset="0.3" stopColor={color} stopOpacity={0.077} />
                 <Stop offset="0.55" stopColor={color} stopOpacity={0.035} />
@@ -349,6 +446,32 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
               stroke={colors.background}
               strokeWidth={2}
             />
+
+            {/* The scrubber: a rule down the whole plot so the reading can be
+                lined up against the gridlines, and a ringed dot on the point
+                itself so it is clear which reading is being named. */}
+            {at ? (
+              <>
+                <Line
+                  x1={x(scrub!)}
+                  x2={x(scrub!)}
+                  y1={0}
+                  y2={height}
+                  stroke={color}
+                  strokeOpacity={0.45}
+                  strokeWidth={1}
+                />
+                <Circle cx={x(scrub!)} cy={y(at.value)} r={7} fill={color} fillOpacity={0.22} />
+                <Circle
+                  cx={x(scrub!)}
+                  cy={y(at.value)}
+                  r={4}
+                  fill={color}
+                  stroke={colors.background}
+                  strokeWidth={1.5}
+                />
+              </>
+            ) : null}
           </Svg>
 
           {/* Values down the left, each centred on its own gridline */}
@@ -359,6 +482,19 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                 </Text>
               ))
             : null}
+
+          {at && chip ? (
+            <View style={[styles.scrubChip, chip]} pointerEvents="none">
+              <Text style={styles.scrubValue}>{fmt(at.value)}</Text>
+              <Text style={styles.scrubDate}>
+                {new Date(`${at.date}T00:00:00`).toLocaleDateString(locale, {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </Text>
+            </View>
+          ) : null}
 
           {grid && cols.length > 0 ? (
             <View style={styles.dateRow}>
@@ -500,6 +636,25 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontVariant: ['tabular-nums'],
   },
+  scrubChip: {
+    position: 'absolute',
+    width: SCRUB_W,
+    height: SCRUB_H,
+    borderRadius: radius.sm,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    // Opaque: this sits over the line it is describing.
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrubValue: {
+    ...type.footnote,
+    fontWeight: '700',
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
+  },
+  scrubDate: { ...type.caption, color: colors.mutedForeground },
   dateRow: { height: 16, marginTop: 4 },
   dateText: {
     position: 'absolute',
