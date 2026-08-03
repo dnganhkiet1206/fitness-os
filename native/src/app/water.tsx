@@ -22,16 +22,15 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
-import { ChartBar } from '@/components/ascnd/chart-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
+import { WaterChart } from '@/components/ascnd/water-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { useProfile } from '@/hooks/useTodayData';
 import { useAddWater, useRemoveLastWater, useTodayWater, useTodayWaterLogs, useWaterWeek } from '@/hooks/use-water';
-import { parseLocalDate } from '@/lib/local-date';
 import { displayVolume, volumeLabel, volumeToMl } from '@/lib/units';
 
 // Quick-add amounts in the display unit (converted to ml on tap)
@@ -102,7 +101,6 @@ export default function WaterScreen() {
   const target = Number(profile?.water_target_ml) || 2500;
   const todayMl = total ?? 0;
   const pct = Math.min(100, (todayMl / target) * 100);
-  const maxWeek = Math.max(target, ...(week ?? []).map((d) => d.total));
 
   const QUICK = vUnit === 'oz' ? QUICK_OZ : QUICK_ML;
   // ml → "1.80 L" (metric) or "61 oz" (imperial)
@@ -192,22 +190,7 @@ export default function WaterScreen() {
 
       {/* 7-day chart */}
       <GlassCard>
-        <Text style={styles.cardTitle}>{i18n.nLast7Days}</Text>
-        <View style={styles.chart}>
-          {(week ?? []).map((d, i) => {
-            const h = maxWeek > 0 ? (d.total / maxWeek) * 100 : 0;
-            const met = d.total >= target;
-            const dayLetter = parseLocalDate(d.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'short' });
-            return (
-              <View key={d.date} style={styles.barCol}>
-                <View style={styles.barColTrack}>
-                  <ChartBar heightPct={Math.max(3, h)} color={met ? colors.metricBlue : colors.secondary} delay={i * 55} />
-                </View>
-                <Text style={styles.barColLabel}>{dayLetter}</Text>
-              </View>
-            );
-          })}
-        </View>
+        <WaterChart days={week ?? []} target={target} unit={vUnit} lang={lang} i18n={i18n} />
       </GlassCard>
 
       {/* Today's log entries — one card each, foldable */}
@@ -394,7 +377,6 @@ const styles = StyleSheet.create({
   bigValue: { ...type.largeTitle, ...type.mono, color: colors.foreground },
   pct: { ...type.title, color: colors.metricBlue, fontVariant: ['tabular-nums'] },
   barTrack: { height: 10, borderRadius: 5, backgroundColor: colors.background, overflow: 'hidden', marginTop: spacing.md },
-  barFill: { height: '100%', borderRadius: 5, backgroundColor: colors.metricBlue },
   quickLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '600', marginTop: spacing.md },
   quickRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   quickBtn: { flex: 1, height: 46, borderRadius: radius.md, backgroundColor: colors.secondary, flexDirection: 'row', gap: 2, alignItems: 'center', justifyContent: 'center' },
@@ -409,11 +391,6 @@ const styles = StyleSheet.create({
   },
   undoDisabled: { opacity: 0.35 },
   quickText: { ...type.headline, color: colors.foreground },
-  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, height: 130, marginTop: spacing.md },
-  barCol: { flex: 1, alignItems: 'center', gap: 6 },
-  barColTrack: { width: '60%', height: 104, justifyContent: 'flex-end', backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden' },
-  barColFill: { width: '100%', borderRadius: 4 },
-  barColLabel: { ...type.caption, color: colors.mutedForeground },
   logSection: { gap: spacing.sm },
   logHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
   logCount: { ...type.footnote, color: colors.mutedForeground, flex: 1, textAlign: 'right' },
