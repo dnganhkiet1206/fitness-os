@@ -1,5 +1,6 @@
+import * as Haptics from 'expo-haptics';
 import { useEffect, useId, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -9,9 +10,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Line, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { colors, spacing, type } from '@/constants/ascnd';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
-import { parseLocalDate } from '@/lib/local-date';
+import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { displayVolume } from '@/lib/units';
 import { axisLabel, scaleTop } from '@/lib/water-scale';
 
@@ -81,17 +82,76 @@ const CURVE = [
   { at: 1, of: 0 },
 ] as const;
 
-/** widths and opacities of the three fake-blur layers behind each bar */
+/**
+ * Widths and opacities of the three fake-blur layers behind each bar.
+ *
+ * The spread is unchanged and only the opacities came down — the softness of a
+ * glow is the width of its falloff, so narrowing these would have made the halo
+ * tighter rather than fainter, which is a different thing and not what was
+ * asked for.
+ *
+ * They stack, so what the eye reads is the composite, not any one line. Within
+ * 2px of a bar all three overlap: `1 − (1−a)(1−b)(1−c)` was 23% blue and is now
+ * 15%. Worth writing down because tuning the brightest ring by adjusting one
+ * layer is how it ends up brighter than before.
+ */
 const HALO = [
-  { grow: 7, o: 0.05 },
-  { grow: 4.5, o: 0.08 },
-  { grow: 2, o: 0.12 },
+  { grow: 7, o: 0.03 },
+  { grow: 4.5, o: 0.05 },
+  { grow: 2, o: 0.075 },
 ] as const;
 
 const PLOT_H = 150;
 const AXIS_W = 40;
+/** the read-out chip — fixed so it can be clamped inside the plot before layout */
+const CALLOUT_W = 76;
+const CALLOUT_H = 40;
 const GROW_MS = 720;
 const GROW_EASE = Easing.bezier(0.16, 1, 0.3, 1);
+
+/** A volume in the unit on screen: "1.75L" or "59 oz". */
+function volumeText(ml: number, unit: 'ml' | 'oz'): string {
+  return unit === 'oz' ? `${Math.round(displayVolume(ml, 'oz'))} oz` : `${(ml / 1000).toFixed(2)}L`;
+}
+
+/** A day, named. `long` for the screen reader, `short` for the chip. */
+function dayLabel(date: string, lang: 'vi' | 'en', form: 'short' | 'long'): string {
+  return parseLocalDate(date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US',
+    form === 'long'
+      ? { weekday: 'long', day: 'numeric', month: 'long' }
+      : { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+/**
+ * How lit a bar is, as one number built from three independent facts.
+ *
+ * Three separate `opacity` expressions scattered through the render is how a
+ * combination nobody thought about — a faded, unmet, past day — ends up at four
+ * percent and invisible. Multiplied here, the floor is knowable and is written
+ * down below.
+ *
+ *   today, target met      1.000    ← the brightest thing on the chart
+ *   today, short           0.625
+ *   past, target met       0.720
+ *   past, short            0.450    ← the value the whole chart used before
+ *
+ * The factors are 0.72 and 0.625 rather than rounder-looking numbers because
+ * their product has to land exactly on 0.45: a past day that missed target is
+ * the case that already existed, and it should not shift because two new
+ * dimensions were added around it. With `faded` on top the floor is 0.180,
+ * which is the dimmest anything on this chart can be.
+ *
+ * `today` is the strongest of the three because it is the only one the person
+ * can still change. A week is read to answer "where am I now", and the column
+ * that answers it should not be the same weight as six that are finished.
+ *
+ * `faded` multiplies whatever came out of that by 0.4 — so a picked column
+ * keeps its own reading while the rest recede, rather than every column being
+ * flattened to one dim value and the selection having to shout over it.
+ */
+function brightness({ today, met, faded }: { today: boolean; met: boolean; faded: boolean }) {
+  return (today ? 1 : 0.72) * (met ? 1 : 0.625) * (faded ? 0.4 : 1);
+}
 
 function Bar({
   x,
@@ -99,6 +159,8 @@ function Bar({
   value,
   ceilingMl,
   met,
+  today,
+  faded,
   index,
   gradId,
 }: {
@@ -107,6 +169,10 @@ function Bar({
   value: number;
   ceilingMl: number;
   met: boolean;
+  /** the day still being lived — brighter than the six behind it */
+  today: boolean;
+  /** another column is picked, so this one steps back */
+  faded: boolean;
   index: number;
   gradId: string;
 }) {
@@ -142,9 +208,7 @@ function Bar({
 
   // Rounded like a capsule, capped so a short bar does not turn into a lozenge
   const r = Math.min(w / 2, 5);
-  // A day under target keeps the same colour and loses some of its light —
-  // grey next to neon reads as a broken bar rather than a quiet one.
-  const dim = met ? 1 : 0.45;
+  const dim = brightness({ today, met, faded });
 
   return (
     <>
@@ -188,6 +252,17 @@ export function WaterChart({
   */
   const [w, setW] = useState(0);
 
+  /** the day whose value is being shown, or none */
+  const [picked, setPicked] = useState<string | null>(null);
+
+  /*
+    Today is found by date, not by position.
+
+    `useWaterWeek` happens to return today last, and relying on that would make
+    the brightest column on the chart a property of a loop in another file.
+  */
+  const todayStr = localDateStr();
+
   /*
     `useId`, because SVG ids are document-global.
 
@@ -211,6 +286,35 @@ export function WaterChart({
   // Bars sit in the middle of their slot with air on both sides, so the dashed
   // tick at the slot's edge stays a tick rather than becoming a bar's outline.
   const barW = Math.max(4, slot * 0.42);
+
+  /*
+    Where the read-out goes, and why it is clamped.
+
+    It sits above the picked bar, so it rises with the value and never covers
+    the bar it describes. Sunday's chip would otherwise run off the right edge
+    of the card and Monday's off the left, so `left` is clamped into the plot —
+    which means the chip stops being centred on the bar at the two ends. That
+    is the right trade: a chip half off the screen is unreadable, and one nudged
+    twenty points sideways is still obviously attached to the only highlighted
+    column on the chart.
+
+    `bottom` is measured from the foot of the plot because that is where the
+    bars are anchored, and it is capped so a full-height day does not push the
+    chip out through the top of the card.
+  */
+  const pick = (() => {
+    if (!picked || slot === 0) return null;
+    const i = days.findIndex((d) => d.date === picked);
+    if (i < 0) return null;
+    const day = days[i];
+    const barTop = top.ml > 0 ? Math.min(1, day.total / top.ml) * PLOT_H : 0;
+    const centre = i * slot + slot / 2;
+    return {
+      day,
+      left: Math.max(0, Math.min(plotW - CALLOUT_W, centre - CALLOUT_W / 2)),
+      bottom: Math.min(barTop + 8, PLOT_H - CALLOUT_H),
+    };
+  })();
 
   return (
     <View>
@@ -274,11 +378,60 @@ export function WaterChart({
                 value={d.total}
                 ceilingMl={top.ml}
                 met={d.total >= target}
+                today={d.date === todayStr}
+                faded={picked !== null && picked !== d.date}
                 index={i}
                 gradId={barGrad}
               />
             ))}
           </Svg>
+        ) : null}
+
+        {/*
+          Tap zones, not taps on the bars.
+
+          A bar is `slot * 0.42` wide — about seventeen points — and an empty
+          day has no bar at all, so hit-testing the drawing would make the
+          thinnest columns the hardest to ask about and the empty ones
+          impossible. Each zone is the full slot, the full height of the plot,
+          and they are flush against each other, so every point over the chart
+          belongs to exactly one day and no tap lands on nothing.
+
+          The zones are narrower than the 44pt an isolated control needs —
+          roughly 41 on a 390pt screen. That floor is about controls with dead
+          space around them, where a near miss does nothing; here a near miss
+          selects the neighbouring day, which is visible, wrong in the smallest
+          possible way, and corrected by tapping again. Making them 44 would
+          mean showing six days instead of seven.
+        */}
+        {w > 0 ? (
+          <View style={[styles.zones, { width: plotW }]}>
+            {days.map((d) => (
+              <Pressable
+                key={d.date}
+                accessibilityRole="button"
+                accessibilityState={{ selected: picked === d.date }}
+                // The chart had no accessible values at all — a screen reader
+                // met seven unlabelled shapes. This is the reading of it.
+                accessibilityLabel={`${dayLabel(d.date, lang, 'long')}, ${volumeText(d.total, unit)}`}
+                style={styles.zone}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setPicked((p) => (p === d.date ? null : d.date));
+                }}
+              />
+            ))}
+          </View>
+        ) : null}
+
+        {/* The read-out, over the picked column */}
+        {pick ? (
+          <View
+            style={[styles.callout, { left: pick.left, bottom: pick.bottom }]}
+            pointerEvents="none">
+            <Text style={styles.calloutValue}>{volumeText(pick.day.total, unit)}</Text>
+            <Text style={styles.calloutDay}>{dayLabel(pick.day.date, lang, 'short')}</Text>
+          </View>
         ) : null}
 
         {/* Values on the right, the way Health puts them — out of the way of
@@ -295,7 +448,7 @@ export function WaterChart({
       {/* Day letters, each centred under its own slot */}
       <View style={[styles.dayRow, { width: plotW }]}>
         {days.map((d) => (
-          <Text key={d.date} style={styles.dayText}>
+          <Text key={d.date} style={[styles.dayText, d.date === todayStr && styles.dayToday]}>
             {parseLocalDate(d.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
               weekday: 'short',
             })}
@@ -333,6 +486,31 @@ const styles = StyleSheet.create({
   // Nudged up by half a line so each label sits *on* its gridline rather than
   // hanging under it — the top and bottom ones would otherwise clip the plot.
   axisText: { ...type.caption, color: colors.mutedForeground, marginVertical: -4 },
+  // Flush columns over the plot: every point belongs to exactly one day.
+  zones: { position: 'absolute', left: 0, top: 0, height: PLOT_H, flexDirection: 'row' },
+  zone: { flex: 1, height: '100%' },
+  callout: {
+    position: 'absolute',
+    width: CALLOUT_W,
+    height: CALLOUT_H,
+    borderRadius: radius.sm,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    // Opaque, not the glass fill — this sits over the bars it describes, and a
+    // translucent chip with a neon column behind it is unreadable.
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calloutValue: {
+    ...type.footnote,
+    fontWeight: '700',
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
+  },
+  calloutDay: { ...type.caption, color: colors.mutedForeground },
   dayRow: { flexDirection: 'row', marginTop: 2 },
   dayText: { ...type.caption, color: colors.mutedForeground, flex: 1, textAlign: 'center' },
+  // Today reads out of the row the same way its bar does out of the chart.
+  dayToday: { color: colors.foreground, fontWeight: '700' },
 });
