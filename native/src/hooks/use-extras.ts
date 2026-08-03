@@ -6,6 +6,7 @@ import { useAppSettings } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
 import { AWARD_TEXT, CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr, localDayRangeISO, parseLocalDate } from '@/lib/local-date';
+import { CHALLENGE_REWARD, challengeRefKey } from '@/lib/mascot-room';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
 
@@ -408,14 +409,50 @@ export function useUpdateChallengeProgress() {
         }
 
         const isCompleted = newValue >= ch.target_value;
-        await supabase
-          .from('weekly_challenges')
-          .update({
-            current_value: Math.min(newValue, ch.target_value),
-            completed: isCompleted,
-            completed_at: isCompleted ? new Date().toISOString() : null,
-          })
-          .eq('id', ch.id);
+        const capped = Math.min(newValue, ch.target_value);
+
+        /*
+          Write only when something moved.
+
+          This now runs whenever Today comes into focus, not only when the
+          Challenges screen is opened, so most runs find nothing changed. An
+          unconditional update makes every one of those three writes for no
+          reason — and it rewrites `completed_at` on each pass, quietly moving
+          the moment a challenge was finished.
+        */
+        if (capped !== ch.current_value || isCompleted !== ch.completed) {
+          await supabase
+            .from('weekly_challenges')
+            .update({
+              current_value: capped,
+              completed: isCompleted,
+              completed_at: isCompleted ? new Date().toISOString() : null,
+            })
+            .eq('id', ch.id);
+        }
+
+        /*
+          And pay for it.
+
+          Finishing a challenge used to fire a celebration and nothing else,
+          while the daily quests beside it ran a closed loop into the shop —
+          two reward systems, and the ornamental one asks for the harder thing.
+
+          Only on the pass that completes it, and the ledger row is idempotent
+          on `ref_key` besides. The `!ch.completed` guard is not the safety —
+          the unique key is — it just saves a round trip on every later focus.
+        */
+        if (isCompleted && !ch.completed) {
+          const tier = ch.reward_tier ?? 'bronze';
+          const reward = CHALLENGE_REWARD[tier] ?? CHALLENGE_REWARD.bronze;
+          const { error: payError } = await supabase.from('mascot_transactions').insert({
+            user_id: user.id,
+            amount: reward.coins,
+            reason: `challenge ${ch.challenge_key}`,
+            ref_key: challengeRefKey(tier, weekStart, ch.challenge_key),
+          });
+          if (payError && !payError.message.includes('duplicate')) throw payError;
+        }
 
         // Built here, inside the branch that has already established there is
         // a reward to name. Carrying the row out to read later would lose that
@@ -436,7 +473,11 @@ export function useUpdateChallengeProgress() {
         if (party) fireCelebration(party);
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['weekly-challenges'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['weekly-challenges'] });
+      // a completion moved the wallet, and the buddy's XP is derived from it
+      queryClient.invalidateQueries({ queryKey: ['mascot_wallet', user?.id] });
+    },
   });
 }
 

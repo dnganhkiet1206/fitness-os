@@ -41,6 +41,8 @@ export const STREAK_XP = 15;
  */
 export const xpForRefKey = (refKey: string): number => {
   if (refKey.startsWith('w:')) return WEEKLY_BONUS_XP;
+  // `ch:<tier>:<week>:<key>` — priced by the tier written into the key
+  if (refKey.startsWith('ch:')) return CHALLENGE_REWARD[refKey.split(':')[1]]?.xp ?? 0;
   // a completed-collection reward — COLLECTIONS is defined lower in the file,
   // but this only reads it when called, long after the module has loaded
   if (refKey.startsWith('set:')) {
@@ -116,6 +118,48 @@ export const questRefKey = (dateStr: string, key: QuestKey) => `d:${dateStr}:${k
  */
 export const weeklyRefKey = (challengeId: string | number) => `w:${challengeId}`;
 export const buyRefKey = (itemKey: string) => `buy:${itemKey}`;
+
+/**
+ * What finishing a weekly challenge is worth.
+ *
+ * It was worth nothing. A challenge fired a celebration, set `completed` and
+ * paid no coins and no XP, while the daily quests beside it ran a closed loop
+ * into the shop. Two reward systems, one of them ornamental — and the
+ * ornamental one asks for the harder thing.
+ *
+ * ── the numbers, and how they were picked ──
+ *
+ * A challenge is roughly a week of holding a behaviour: five workouts, seven
+ * nights logged, 50,000 steps. That is strictly harder than any daily quest,
+ * whose best is 25 coins for one workout. So bronze pays about one workout,
+ * gold about three.
+ *
+ * Measured against the whole economy rather than chosen by feel. A player
+ * doing every daily quest and holding a full streak earns 700 a week; three
+ * challenges add 155, which is +22%. The shop is 39 items and 8,530 coins, so
+ * a perfect player goes from 12.2 weeks to 10.0 to own everything. The loop
+ * keeps its length — that mattered more than the size of the reward, because
+ * the shop running dry is the end of the loop, not the reward for finishing it.
+ *
+ * One table to change if the balance is wrong.
+ */
+export const CHALLENGE_REWARD: Record<string, { coins: number; xp: number }> = {
+  bronze: { coins: 25, xp: 25 },
+  silver: { coins: 50, xp: 50 },
+  gold: { coins: 80, xp: 80 },
+  platinum: { coins: 120, xp: 120 },
+};
+
+/**
+ * The ledger key for a finished challenge.
+ *
+ * The tier is *in the key* rather than looked up, so `xpForRefKey` can price a
+ * past claim without importing the challenge pool — which lives in a hook and
+ * would drag React into this file. It also means a claim stays worth what it
+ * was worth on the day it was earned, even if the table above changes later.
+ */
+export const challengeRefKey = (tier: string, weekStart: string, key: string) =>
+  `ch:${tier}:${weekStart}:${key}`;
 
 // ─── Shop ──────────────────────────────────────────────────────────────
 

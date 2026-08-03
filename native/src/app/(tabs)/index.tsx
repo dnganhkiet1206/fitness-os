@@ -55,7 +55,7 @@ import {
   TrainingCard,
   WorkoutStatusCard,
 } from '@/components/ascnd/today-widgets-2';
-import { useCheckAwards } from '@/hooks/use-extras';
+import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -155,6 +155,38 @@ export default function TodayScreen() {
         awardCheckInFlight.current = false;
       });
     }, [awardsReady, checkAndGrant]),
+  );
+
+  /**
+   * Weekly challenge progress, on the same focus as awards.
+   *
+   * It only ever ran from the Challenges screen, which is one tap inside the
+   * Progress tab. So a week of five workouts left the challenge sitting at
+   * zero until the user happened to go and look — and then it jumped from 0 to
+   * done and celebrated, which is a reward for opening a screen rather than
+   * for the week that earned it. Awards were already checked here; challenges
+   * are its sibling and were not.
+   *
+   * The run is cheap now: the per-challenge reads go out together, and a pass
+   * that finds nothing changed writes nothing at all. The in-flight guard is
+   * the same one awards use — focus fires on every return from a log sheet.
+   */
+  const challengeRunInFlight = useRef(false);
+  const challengeProgress = useUpdateChallengeProgress();
+  useFocusEffect(
+    useCallback(() => {
+      if (challengeRunInFlight.current) return;
+      challengeRunInFlight.current = true;
+      challengeProgress
+        .mutateAsync()
+        .catch(() => {})
+        .finally(() => {
+          challengeRunInFlight.current = false;
+        });
+      // `challengeProgress` is a fresh object each render; depending on it
+      // would re-run this on every render rather than on every focus.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
   );
 
   const now = new Date();
