@@ -55,10 +55,13 @@ export const USING_CONFIGURED_BACKEND = SUPABASE_URL !== DEFAULT_URL;
  * Every edge function the app calls, in one place.
  *
  * Not a convenience — a checklist. Connecting a new project means deploying
- * exactly these five, and a name that exists in the app but not in the project
+ * exactly these six, and a name that exists in the app but not in the project
  * fails at the moment a user taps the feature rather than at deploy time. This
- * list is what `ai.ts` reports against, so a missing deployment says which
+ * list is what `edge.ts` reports against, so a missing deployment says which
  * function is missing.
+ *
+ * Five of them have source in `supabase/functions/`; `delete-account` does not
+ * and has to be written — see `docs/connecting-a-backend.md` §3.
  */
 export const EDGE_FUNCTIONS = {
   mealSuggest: 'ai-meal-suggest',

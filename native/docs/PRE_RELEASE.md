@@ -22,7 +22,7 @@ knowing which is which before touching either.
 | Piece | Where it lives | Evidence |
 | --- | --- | --- |
 | Supabase project `drqgonxrtmomgrftelih` | created by Lovable, shared by the web app and the native app | `supabase/config.toml:1`; `native/src/integrations/supabase/client.ts:8`; root `.env` |
-| 17 migrations named `<timestamp>_<uuid>.sql` | written by Lovable | `supabase/migrations/` |
+| 16 migrations named `<timestamp>_<uuid>.sql` | written by Lovable | `supabase/migrations/` — the other two, `mascot_economy` and `ai_usage_quota`, are hand-written |
 | The AI | **not** OpenAI or Anthropic — every call goes to Lovable's gateway | `https://ai.gateway.lovable.dev/v1/chat/completions` in all five functions |
 | The model behind the gateway | `google/gemini-3-flash-preview`, and `google/gemini-2.5-flash` for vision | `ai-coach:138`, `ai-meal-suggest:77`, `ai-smart-nudges:83`, `ai-weekly-review:79`, `scan-food:122` |
 | The credential | `LOVABLE_API_KEY` only — there is no `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` anywhere in the repo | `Deno.env.get("LOVABLE_API_KEY")` at line 13 of each function (49 in `scan-food`) |
@@ -320,17 +320,30 @@ is.
   `.gitignore` has no rule for it. It holds only publishable values
   today, so nothing is leaked; the danger is the habit. The next person
   who adds a real secret to that file will publish it without noticing.
-- **The anon key is hard-coded as a fallback** (`client.ts:11`). It is
-  safe to ship — RLS governs access — but if it is ever rotated, a build
-  without `EXPO_PUBLIC_SUPABASE_KEY` set will silently use the dead one.
-  Consider making the env var required at release.
+- **The anon key is hard-coded as a fallback** — FIXED in place, not
+  removed. It moved out of `client.ts` into `src/lib/backend.ts:42`, which
+  is now the only file holding a project address, and `describeBackend()`
+  reports `usingConfigured` so a build running on the fallback can be told
+  apart from one running on `.env`. It is still a fallback: safe to ship
+  (RLS governs access), but if the key is ever rotated, a build without
+  `EXPO_PUBLIC_SUPABASE_KEY` will silently use the dead one. Consider
+  making the env var required at release.
 - **The root web app is dead on purpose** and is kept only for
   side-by-side comparison. The user's plan is one final cleanup pass
   before merging to `main`. It still carries Lovable's README and `.env`,
   so it must go before the repo is public.
-- **`ai-coach.tsx:38` hard-codes the function URL** rather than using
-  `supabase.functions.invoke`, because it needs SSE streaming. If the
-  project ref ever changes, that line will not follow the client.
+- **`ai-coach.tsx` hard-codes the function URL** — FIXED. It still cannot
+  use `supabase.functions.invoke` (it needs SSE streaming), but it now
+  builds the URL with `functionUrl(EDGE_FUNCTIONS.coach)` from
+  `src/lib/backend.ts`, so it follows the client. `tools/backend-config.mjs`
+  fails the build if a project URL reappears anywhere else. The same edit
+  fixed a live bug next to it: the file read
+  `process.env.EXPO_PUBLIC_SUPABASE_KEY ?? ''`, an empty string on any
+  clone without a `.env`, so the coach 401'd while every other feature
+  worked.
+- **`supabase/config.toml:1` also carries the project ref**, and the CLI
+  follows that rather than the app's `.env`. Changing projects means
+  changing both — noted in `docs/connecting-a-backend.md` §1b.
 
 ---
 
@@ -448,8 +461,14 @@ works and total when it does not.
    a patch.
 4. **§5 `medal` / `belt`** — art, or remove and refund. The user's call.
 5. **§2d client downscale** — needs `expo-image-manipulator` added.
-6. **§6 smaller things** — bucket limits, `.env` in git, the hard-coded
-   URL in `ai-coach.tsx`.
+6. **§6 smaller things** — bucket limits and `.env` in git are still open
+   (`git ls-files .env` still finds it, and `.gitignore` still has no rule
+   for it). The `ai-coach.tsx` URL is done.
+7. **`delete-account` does not exist yet** — no directory in
+   `supabase/functions/`, no entry in `config.toml`. The app's Settings
+   screen already calls it and already says "the server has not enabled
+   this yet" on a 404, so nothing is broken today; it is a release
+   blocker, not a bug. Spec in `docs/connecting-a-backend.md` §3.
 
 Verified on the branch: `npx tsc --noEmit` in `native/` is clean. ESLint
 could not be run here — the root config wants `@eslint/js`, which the
