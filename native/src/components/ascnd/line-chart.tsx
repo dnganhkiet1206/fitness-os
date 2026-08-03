@@ -1,4 +1,5 @@
-import { useId, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import { useId, useRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -147,6 +148,19 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
 
   /** index of the reading being pointed at, or none */
   const [scrub, setScrub] = useState<number | null>(null);
+  /** the same index, readable within a frame — see `track` below */
+  const lastScrub = useRef<number | null>(null);
+  /*
+    Where the drag began, and which way it turned out to go.
+
+    Up here with the other hooks, not down beside the handlers that use them.
+    The `points.length < 2` return is a few lines below, so a `useRef` declared
+    after it is skipped entirely on a chart with too little data — the hook
+    order changes between renders and React tears the component down. `tsc` has
+    nothing to say about it: the types are all fine.
+  */
+  const track0 = useRef<{ x: number; y: number } | null>(null);
+  const axis = useRef<'h' | 'v' | null>(null);
 
   if (points.length < 2) {
     return (
@@ -271,17 +285,81 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
     return best;
   };
   const scrubbable = grid;
-  const at = scrub != null ? points[scrub] : null;
-  const track = (e: GestureResponderEvent) => setScrub(nearest(e.nativeEvent.locationX));
+  /*
+    Bounds-checked, because the series can change underneath a live selection.
 
+    The range buttons swap `points` for a shorter array while an index is held.
+    Without the length test the indicator would keep pointing at slot 40 of a
+    five-point week and name whatever reading now sits there — a wrong date
+    against a wrong weight, which is worse than showing nothing. Out of range
+    means the reading is not in this window, so it clears.
+  */
+  const at = scrub != null && scrub < points.length ? points[scrub] : null;
+
+  /*
+    Move to a reading, and tick when it changes.
+
+    `selectionAsync` is the picker-wheel tap, which is what this is: the finger
+    slides continuously and the selection lands on one reading at a time, so
+    each landing gets the same small confirmation a wheel detent does. It fires
+    on *change*, not on movement — a haptic on every `onResponderMove` is
+    sixty a second, which stops being feedback and becomes a vibration.
+
+    The last index is kept in a ref rather than read from state: `setScrub`
+    does not update `scrub` until the next render, so two moves inside one frame
+    would both compare against the stale value and double-tick.
+  */
+  const track = (e: GestureResponderEvent) => {
+    const i = nearest(e.nativeEvent.locationX);
+    if (i !== lastScrub.current) {
+      lastScrub.current = i;
+      Haptics.selectionAsync();
+      setScrub(i);
+    }
+  };
+
+  /*
+    Hand the touch back only while the drag might still be a scroll.
+
+    This started as an unconditional `() => true`, which is the bug that makes a
+    scrubber unusable: a vertical ScrollView asks for the touch as soon as the
+    finger travels past its slop, and saying yes every time means a horizontal
+    drag gets taken away part-way across and the indicator stops dead. It looks
+    like the chart only lets you reach the middle.
+
+    So the direction is decided once, on the first movement past four points,
+    and after that a horizontal drag refuses to give the touch up while a
+    vertical one still hands it over. Before the decision the answer stays yes,
+    which is what keeps the page scrollable from a finger that landed here.
+  */
   const responder = scrubbable
     ? {
         onStartShouldSetResponder: () => true,
         onMoveShouldSetResponder: () => true,
-        onResponderGrant: track,
-        onResponderMove: track,
-        // Yes — let the page scroll if this turns out to be a vertical drag.
-        onResponderTerminationRequest: () => true,
+        onResponderGrant: (e: GestureResponderEvent) => {
+          track0.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+          axis.current = null;
+          lastScrub.current = null;
+          track(e);
+        },
+        onResponderMove: (e: GestureResponderEvent) => {
+          const s = track0.current;
+          if (s && axis.current === null) {
+            const dx = Math.abs(e.nativeEvent.pageX - s.x);
+            const dy = Math.abs(e.nativeEvent.pageY - s.y);
+            if (dx > 4 || dy > 4) axis.current = dx >= dy ? 'h' : 'v';
+          }
+          if (axis.current !== 'v') track(e);
+        },
+        onResponderTerminationRequest: () => axis.current !== 'h',
+        onResponderRelease: () => {
+          track0.current = null;
+          axis.current = null;
+        },
+        onResponderTerminate: () => {
+          track0.current = null;
+          axis.current = null;
+        },
       }
     : {};
 
