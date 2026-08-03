@@ -199,6 +199,12 @@ const en = {
   a11yPrevItem: 'Previous item',
   a11yNextItem: 'Next item',
   a11yAddWater: 'Add {x} {unit}',
+  // ── weight history, and correcting it ──
+  nWeightHistory: 'Logged weights',
+  nWeightEntries: '{n} entries',
+  nWeightEntriesOne: '1 entry',
+  nDeleteWeight: 'Remove this weight',
+  nDeleteWeightMsg: 'Remove the {x} entry? The chart and your BMI will be recalculated.',
   // AI edge functions — one message per distinct cause, so wiring a new
   // Supabase project up tells you what is missing instead of "it failed"
   aiNotDeployed: 'This AI feature is not set up on the server yet.',
@@ -640,6 +646,12 @@ const vi: typeof en = {
   a11yPrevItem: 'Món trước',
   a11yNextItem: 'Món sau',
   a11yAddWater: 'Thêm {x} {unit}',
+  // ── lịch sử cân nặng và sửa sai ──
+  nWeightHistory: 'Cân nặng đã ghi',
+  nWeightEntries: '{n} lần',
+  nWeightEntriesOne: '1 lần',
+  nDeleteWeight: 'Xoá số cân này',
+  nDeleteWeightMsg: 'Xoá bản ghi {x}? Biểu đồ và BMI sẽ được tính lại.',
   // AI edge functions — one message per distinct cause, so wiring a new
   // Supabase project up tells you what is missing instead of "it failed"
   aiNotDeployed: 'Tính năng AI này chưa được cài trên máy chủ.',

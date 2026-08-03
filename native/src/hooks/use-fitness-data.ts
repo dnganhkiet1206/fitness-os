@@ -52,6 +52,47 @@ export function useLogWeight() {
   });
 }
 
+/**
+ * Remove one day's weight.
+ *
+ * ── why this is needed at all ──
+ *
+ * `useLogWeight` upserts on `(user_id, date)`, so today's number can be
+ * corrected by logging it again. Any earlier day cannot: there is no way to
+ * enter a weight for a past date, and so no way to fix one. A slip of 75 → 175
+ * is permanent, and it does not sit quietly — it sets the chart's scale, the
+ * change stat and the BMI reading, so one wrong number makes every weight
+ * around it unreadable.
+ *
+ * ── deleting by date, not by id ──
+ *
+ * `(user_id, date)` is unique — it is what `useLogWeight`'s upsert conflicts on
+ * — so a date identifies exactly one row. That keeps `useWeightHistory`'s
+ * `select` as it is; asking it for an `id` as well would change the shape every
+ * consumer of that query already destructures.
+ */
+export function useDeleteWeight() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (date: string) => {
+      const { error } = await supabase
+        .from('weight_logs')
+        .delete()
+        .eq('user_id', user!.id)
+        .eq('date', date);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      // Both keys, and both without the `days` suffix so every window is
+      // invalidated — the tab reads a 90-day and a 3650-day history at once,
+      // and refreshing one would leave the other showing the deleted day.
+      qc.invalidateQueries({ queryKey: ['weight_log', user?.id] });
+      qc.invalidateQueries({ queryKey: ['weight_history', user?.id] });
+    },
+  });
+}
+
 export function useWorkoutSessions(days = 14) {
   const { user } = useAuth();
   return useQuery({

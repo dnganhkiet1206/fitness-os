@@ -24,6 +24,7 @@ import { getLocale } from '@/lib/i18n';
 import { parseLocalDate } from '@/lib/local-date';
 import { convertLength, displayLength, displayWeight, formatHeight, weightLabel } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { WeightLogList } from '@/components/ascnd/weight-log-list';
 
 type Tab = 'weight' | 'measurements' | 'photos';
 
@@ -421,6 +422,20 @@ export default function ProgressScreen() {
               themselves to find out. */}
           <Animated.View entering={rise(3)}>
             <WeightChanges points={allWeight} unit={wl} goal={profile?.goal} i18n={i18n} />
+          </Animated.View>
+
+          {/*
+            The numbers behind the line, and the only way to remove one.
+            `useLogWeight` upserts on (user_id, date), so today can be corrected
+            by logging again — no earlier day can, and a wrong one sets the
+            chart's scale and the BMI band for every day around it.
+
+            Already in the display unit: `weightData` converts once above, and
+            converting again here is how two figures on one screen come to
+            disagree by a rounding step.
+          */}
+          <Animated.View entering={rise(4)}>
+            <WeightLogList points={weightData} unit={wl} i18n={i18n} lang={lang} />
           </Animated.View>
         </>
       )}
