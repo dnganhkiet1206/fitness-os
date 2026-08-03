@@ -6,6 +6,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
+import { toast } from '@/lib/toast';
 import {
   useCreateFoodItem,
   useDeleteFoodItem,
@@ -28,7 +29,25 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
         style: 'destructive',
         onPress: () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          deleteFood.mutate(f.id);
+          /*
+            Say when it did not work.
+
+            This called `mutate` with no `onError`, so a failed delete did
+            nothing at all: the alert closed, the card stayed, and there was no
+            way to tell a refusal from a slow network. The food editor's copy of
+            this same action already reports (`food-editor.tsx:118`); this one
+            was simply missed.
+
+            It is not hypothetical. Until the FK migration is applied, deleting
+            a food that sits in a meal plan is refused by the database — see
+            `20260803120000_meal_plan_item_food_fk.sql`. An expired session and
+            a dropped connection land here too, and all three used to look
+            identical to a delete that worked.
+          */
+          deleteFood.mutate(f.id, {
+            onSuccess: () => toast.success(i18n.foodDeleted),
+            onError: (e: Error) => toast.error(e.message),
+          });
         },
       },
     ]);

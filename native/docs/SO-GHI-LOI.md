@@ -87,15 +87,17 @@ thì vẫn nằm ở đây.
 Những mục này tôi nói ra mà **không** kiểm từ nguồn. Chúng có thể đúng. Chúng
 không được dùng để biện minh cho một thay đổi nào.
 
-### B1. "App Store Review Guideline 5.1.1(v)"
+*Rà 2026-08-03: B1 và B3 đã kiểm được và rời khỏi nhóm này — B1 đúng, B3 hoá ra
+là lỗi thật và nặng hơn tôi nghĩ. Giữ lại tiêu đề gạch ngang thay vì xoá, để
+lần sau không ai mất công kiểm lại từ đầu. Tỉ lệ 1 đúng / 1 sai trên hai mục là
+lý do nhóm B tồn tại: đoán thì 50%, kiểm thì 100%.*
 
-Trích từ trí nhớ, **chưa từng mở trang guideline**. Đã đánh dấu như vậy ngay
-trong `docs/connecting-a-backend.md` §3. Kiểm tại
-https://developer.apple.com/app-store/review/guidelines/ trước khi nộp.
+### ~~B1. "App Store Review Guideline 5.1.1(v)"~~ — ĐÃ KIỂM 2026-08-03, ĐÚNG
 
-Lưu ý: việc app **nên** có nút xoá tài khoản vẫn đúng độc lập với điều khoản
-này, vì chính sách quyền riêng tư của app đã hứa điều đó. Nên A6 không phụ
-thuộc vào B1.
+Đã đọc trang guideline. Nguyên văn mục 5.1.1(v) *Account Sign-In*: *"If your
+app supports account creation, you must also offer account deletion within the
+app."* Trích dẫn cũ đúng. Đã bỏ phần ghi chú "nhớ lại" trong
+`docs/connecting-a-backend.md` §3 và thay bằng nguyên văn kèm ngày đọc.
 
 ### B2. "Playwright khớp route theo thứ tự đăng ký ngược"
 
@@ -104,17 +106,24 @@ handler cụ thể đăng ký trước), không đọc trong tài liệu nào. N
 hiện tượng đã gặp và công cụ đo đã được viết lại để không phụ thuộc vào nó nữa.
 **Không** được dùng làm cơ sở cho một công cụ đo mới.
 
-### B3. Thứ tự Postgres xử lý `NO ACTION` khi xoá tài khoản
+### ~~B3. Thứ tự Postgres xử lý `NO ACTION` khi xoá tài khoản~~ — ĐÃ CHẠY THỬ, LÀ LỖI THẬT, ĐÃ SỬA
 
-`meal_plan_items.food_id` trỏ tới `food_items(id)` **không khai `ON DELETE`**,
-nên nhận mặc định `NO ACTION`, trong khi cả hai bảng đều bị cascade trong cùng
-một lệnh `DELETE FROM auth.users`. Tôi không kiểm chứng được Postgres xử lý ra
-sao ở đây.
+Chạy thử trên PostgreSQL 16.13 dựng từ đúng DDL trong `supabase/migrations/`:
+`NO ACTION` được kiểm ở **cuối lệnh**, và dòng tham chiếu vẫn còn ở thời điểm
+đó. `DELETE FROM auth.users` **hỏng hẳn**, không phụ thuộc thứ tự chèn.
 
-**Không được** "sửa trước cho chắc" bằng cách thêm `ON DELETE CASCADE` — đó là
-một migration đổi ràng buộc toàn vẹn dựa trên một nỗi lo chưa được kiểm. Cách
-đúng: thử `delete-account` trên project thật và đọc lỗi. Hàm đã được đặc tả để
-trả non-2xx nếu hỏng, nên trường hợp xấu nhất là một câu báo lỗi rõ ràng.
+Nghiêm trọng hơn: cùng ràng buộc đó chặn cả việc **xoá một món ăn đang nằm
+trong kế hoạch bữa ăn** — một thao tác người dùng làm được ngay hôm nay
+(`meal-plans.tsx:95` ghi `food_item_id`). Đã sửa bằng
+`20260803120000_meal_plan_item_food_fk.sql` (SET NULL, khớp với bảng anh em
+`meal_entry_items` vốn đã khai như vậy từ migration đầu tiên).
+
+**Bài học về cách kiểm, không phải về Postgres:** lần chạy đầu bộ thử của tôi
+báo `= n` (đã SET NULL) *trước khi* áp migration, tức là "không có lỗi". Lý do:
+glob quét `supabase/migrations/*.sql` nuốt luôn file migration tôi **vừa viết
+xong**. Bộ thử đã áp bản sửa rồi mới đo. Kiểm một bản sửa thì tập "trước" phải
+được dựng từ mọi thứ **trừ** bản sửa đó — nếu không, mọi bản sửa đều trông như
+không cần thiết.
 
 ### B4. `hrv_history_28d` không gộp theo ngày
 

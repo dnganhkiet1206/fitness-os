@@ -175,12 +175,15 @@ checklist, không phải tiện ích:
 ### `delete-account` — bắt buộc để lên App Store
 
 Đây là function **duy nhất không phải AI** trong danh sách, và là function
-**không được bỏ qua**: App Store Review Guideline 5.1.1(v) yêu cầu mọi app cho
-tạo tài khoản phải cho xoá tài khoản ngay trong app.
-*(Nguồn: nhớ lại, chưa mở lại trang guideline để đối chiếu — hãy kiểm tra bản
-mới nhất tại https://developer.apple.com/app-store/review/guidelines/ trước khi
-nộp. Việc app có nút xoá tài khoản thì đằng nào cũng đúng, vì chính sách quyền
-riêng tư của app đã hứa điều đó.)*
+**không được bỏ qua**. App Store Review Guideline **5.1.1(v) — Account
+Sign-In**, đọc từ https://developer.apple.com/app-store/review/guidelines/
+ngày 2026-08-03, nguyên văn:
+
+> If your app supports account creation, you must also offer account deletion
+> within the app.
+
+Không phải góp ý, là điều kiện. Chính sách quyền riêng tư của app cũng đã hứa
+điều này.
 
 Client không thể tự xoá vì `auth.admin.deleteUser` cần service role key — thứ
 không bao giờ được nằm trong app. Function cần:
@@ -211,12 +214,13 @@ không bao giờ được nằm trong app. Function cần:
    `routine_days`→`workout_templates`. Danh sách xoá tay chính là thứ sẽ mục
    ruỗng: thêm bảng mới mà quên thêm vào danh sách thì dữ liệu ở lại, im lặng.
 
-   Một chỗ cần thử trên project thật: `meal_plan_items.food_id` trỏ tới
-   `food_items(id)` **không khai báo `ON DELETE`** nên nhận mặc định `NO ACTION`,
-   trong khi cả hai bảng đều bị cascade trong cùng một lệnh. Tôi không kiểm
-   chứng được thứ tự Postgres xử lý ở đây nên không khẳng định nó chạy hay
-   không — chỉ cần bước 4 đọc lỗi thật thay vì giả định thành công, thì trường
-   hợp xấu nhất là một câu báo lỗi rõ ràng chứ không phải xoá nửa vời.
+   **Cần `20260803120000_meal_plan_item_food_fk.sql` đã được `db push`.** Trước
+   migration đó, `meal_plan_items.food_item_id` trỏ tới `food_items(id)` không
+   khai `ON DELETE` nên nhận mặc định `NO ACTION`, và
+   `DELETE FROM auth.users` **hỏng hẳn** với SQLSTATE 23503 cho bất kỳ ai từng
+   thêm một món vào kế hoạch bữa ăn. Dựng lại đúng DDL trong `supabase/migrations/`
+   trên PostgreSQL 16.13 để kiểm: trước migration cả hai lệnh xoá đều lỗi, sau
+   migration cả hai đều xong sạch.
 
 4. Trả 2xx **chỉ khi mọi bước trên không lỗi**. App chỉ đăng xuất và xoá cache
    khi nhận được 2xx; mọi trường hợp khác app nói rõ **chưa có gì bị xoá**, nên
