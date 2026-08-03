@@ -1,9 +1,7 @@
 import * as Haptics from 'expo-haptics';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import Animated, {
   Easing,
-  FadeIn,
-  FadeOut,
   useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
@@ -119,6 +117,47 @@ const SNAP_MS = 190;
 const FADE_MS = 140;
 const SNAP_EASE = Easing.out(Easing.cubic);
 
+/**
+ * The drawn curve as a list of points, for the marker to ride.
+ *
+ * The path is a chain of cubics whose control points share their endpoints' y
+ * (`C mid y0, mid y1, x1 y1`). Finding y for a given x on that exactly means
+ * inverting a cubic; sampling it and interpolating between samples is a few
+ * lines, has no failure mode, and is wrong by less than the width of the line.
+ *
+ * The sample count per segment shrinks as the series grows, so the array handed
+ * to the worklet stays around 120 points whether the chart is showing a week or
+ * ten years. At the dense end each segment collapses to its endpoints, which is
+ * exactly right: with readings a couple of pixels apart the curve between them
+ * and a straight line between them are the same thing on screen.
+ */
+function sampleCurve(
+  xs: readonly number[],
+  ys: readonly number[],
+): { x: number; y: number }[] {
+  const segs = Math.max(1, xs.length - 1);
+  const per = Math.max(1, Math.round(120 / segs));
+  const out: { x: number; y: number }[] = [{ x: xs[0], y: ys[0] }];
+  for (let i = 1; i < xs.length; i++) {
+    const x0 = xs[i - 1];
+    const x1 = xs[i];
+    const y0 = ys[i - 1];
+    const y1 = ys[i];
+    const mid = (x0 + x1) / 2;
+    for (let k = 1; k <= per; k++) {
+      const t = k / per;
+      const u = 1 - t;
+      // Bezier with P1 = (mid, y0) and P2 = (mid, y1) — the same control points
+      // the path string is built from, so the samples sit on the drawn line.
+      out.push({
+        x: u * u * u * x0 + 3 * u * u * t * mid + 3 * u * t * t * mid + t * t * t * x1,
+        y: u * u * u * y0 + 3 * u * u * t * y0 + 3 * u * t * t * y1 + t * t * t * y1,
+      });
+    }
+  }
+  return out;
+}
+
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -131,13 +170,17 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
  * and React tears the component down — which `tsc` has nothing to say about.
  * Down here the hook belongs to a component that either renders or does not.
  */
-function ScrubLine({ at, height, color }: { at: SharedValue<number>; height: number; color: string }) {
-  // Fades in rather than appearing. A full-height rule arriving at once on a
-  // dark card reads as a flash; over 140ms it reads as something being placed.
-  const show = useSharedValue(0);
-  useEffect(() => {
-    show.value = withTiming(1, { duration: FADE_MS });
-  }, [show]);
+function ScrubLine({
+  at,
+  show,
+  height,
+  color,
+}: {
+  at: SharedValue<number>;
+  show: SharedValue<number>;
+  height: number;
+  color: string;
+}) {
   const props = useAnimatedProps(() => ({
     x1: at.value,
     x2: at.value,
@@ -147,38 +190,65 @@ function ScrubLine({ at, height, color }: { at: SharedValue<number>; height: num
 }
 
 /**
- * The marker on the selected reading.
- *
- * It moves between readings rather than jumping. The rule is continuous and the
- * marker is not — it can only ever be on a real weigh-in — so without this the
- * two parts of one indicator behave like two different things: one gliding
- * under the finger, one teleporting behind it.
- *
- * `SNAP_MS` is shared with the settle so a hop between readings mid-drag and
- * the landing at the end of one are the same movement at the same speed.
+ * The marker, riding the drawn line under the rule.
  */
-function ScrubDot({ px, py, color }: { px: number; py: number; color: string }) {
-  const cx = useSharedValue(px);
-  const cy = useSharedValue(py);
-  const show = useSharedValue(0);
-  useEffect(() => {
-    cx.value = withTiming(px, { duration: SNAP_MS, easing: SNAP_EASE });
-    cy.value = withTiming(py, { duration: SNAP_MS, easing: SNAP_EASE });
-  }, [px, py, cx, cy]);
-  useEffect(() => {
-    show.value = withTiming(1, { duration: FADE_MS });
-  }, [show]);
+function ScrubDot({
+  at,
+  show,
+  curve,
+  color,
+}: {
+  at: SharedValue<number>;
+  show: SharedValue<number>;
+  /** the drawn line, sampled — see `sampleCurve` */
+  curve: readonly { x: number; y: number }[];
+  color: string;
+}) {
+  /*
+    The marker rides the line at the rule's own x.
+
+    It sat on the nearest reading and hopped, which made the two halves of one
+    indicator behave like different things: one gliding under the finger, one
+    jumping behind it. Now both read `at`, so they cannot come apart — including
+    through the settle, where the marker travels the same path at the same time
+    because it is following the same value rather than being animated alongside
+    it.
+
+    It is a marker on a line the chart already draws, not a claim about a
+    measurement. The curve between two weigh-ins is already on screen; putting a
+    dot on it says nothing new. The *number* still comes from a real reading —
+    see the chip.
+  */
+  const yAt = (px: number) => {
+    'worklet';
+    if (curve.length === 0) return 0;
+    if (px <= curve[0].x) return curve[0].y;
+    const last = curve[curve.length - 1];
+    if (px >= last.x) return last.y;
+    // Linear scan: the sample count is capped at ~120 and this runs once per
+    // frame on the UI thread, where a branchy binary search is not obviously
+    // cheaper and is much easier to get wrong at the ends.
+    for (let i = 1; i < curve.length; i++) {
+      if (px <= curve[i].x) {
+        const a = curve[i - 1];
+        const b = curve[i];
+        const span = b.x - a.x;
+        return span <= 0 ? b.y : a.y + ((px - a.x) / span) * (b.y - a.y);
+      }
+    }
+    return last.y;
+  };
 
   const halo = useAnimatedProps(() => ({
-    cx: cx.value,
-    cy: cy.value,
+    cx: at.value,
+    cy: yAt(at.value),
     // Grows into place as it fades in, so the marker arrives rather than blinks
     r: 7 * show.value,
     fillOpacity: 0.22 * show.value,
   }));
   const core = useAnimatedProps(() => ({
-    cx: cx.value,
-    cy: cy.value,
+    cx: at.value,
+    cy: yAt(at.value),
     r: 4 * show.value,
   }));
 
@@ -203,26 +273,35 @@ function ScrubDot({ px, py, color }: { px: number; py: number; color: string }) 
  */
 function ScrubChip({
   at,
+  show,
   min,
   max,
   top,
   children,
 }: {
   at: SharedValue<number>;
+  show: SharedValue<number>;
   min: number;
   max: number;
   top: number;
   children: React.ReactNode;
 }) {
+  /*
+    Opacity from the same shared value as the rule and the marker, rather than
+    Reanimated's `entering`/`exiting`.
+
+    Those run on mount and unmount, and the indicator does not unmount until
+    after its exit has played — so a chip fading on `exiting` would sit at full
+    strength through the whole fade and then start its own. One value means the
+    three parts arrive and leave together, which is what makes them read as one
+    thing.
+  */
   const style = useAnimatedStyle(() => ({
+    opacity: show.value,
     transform: [{ translateX: Math.max(min, Math.min(max, at.value - SCRUB_W / 2)) }],
   }));
   return (
-    <Animated.View
-      style={[styles.scrubChip, { top }, style]}
-      entering={FadeIn.duration(FADE_MS)}
-      exiting={FadeOut.duration(FADE_MS)}
-      pointerEvents="none">
+    <Animated.View style={[styles.scrubChip, { top }, style]} pointerEvents="none">
       {children}
     </Animated.View>
   );
@@ -318,6 +397,21 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
    * drawing is animated — the reading itself is already decided.
    */
   const rulerX = useSharedValue(0);
+  /**
+   * How visible the indicator is: 1 while a finger is down, 0 otherwise.
+   *
+   * The readout used to stay after release. It does not any more — it belongs
+   * to the touch, and a chart that keeps a stale reading pinned to it is a
+   * chart that has to be dismissed.
+   *
+   * It is a *fade*, not a removal, because the settle happens at the same
+   * moment: the rule glides onto the reading while it goes, so the last thing
+   * seen is the indicator arriving where it belongs rather than blinking out
+   * from wherever the finger stopped.
+   */
+  const fade = useSharedValue(0);
+  /** clears the indicator once the fade has played; cancelled by a new touch */
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (points.length < 2) {
     return (
@@ -402,6 +496,7 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   }
   const fillPath = `${path} L ${x(values.length - 1)} ${height} L ${padX} ${height} Z`;
 
+
   const fmt = (v: number) => `${Math.round(v * 10) / 10}${unit ? ` ${unit}` : ''}`;
   // Gridline labels are bare numbers: the unit is already in the card's title
   // and repeating it four times down the side is four times the ink for none of
@@ -442,6 +537,8 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
     return best;
   };
   const scrubbable = grid;
+  // Only built when something is going to ride it.
+  const curve = scrubbable ? sampleCurve(xs, values.map(y)) : [];
 
   /*
     The reading is derived, never stored.
@@ -503,6 +600,22 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   };
 
   /*
+    Lift the finger: settle, fade, then stop drawing it.
+
+    The unmount waits for the fade rather than racing it — clearing the state
+    immediately would take the indicator away mid-animation and there would be
+    nothing left to fade. The timer is cancelled by the next touch, so a quick
+    second tap picks the indicator back up instead of having it vanish
+    underneath.
+  */
+  const release = () => {
+    settle();
+    fade.value = withTiming(0, { duration: FADE_MS });
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setScrubX(null), FADE_MS);
+  };
+
+  /*
     The chart keeps the touch. The page does not move under it.
 
     ── the three versions this went through ──
@@ -541,7 +654,9 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
         onStartShouldSetResponderCapture: () => true,
         onMoveShouldSetResponderCapture: () => true,
         onResponderGrant: (e: GestureResponderEvent) => {
+          if (hideTimer.current) clearTimeout(hideTimer.current);
           lastScrub.current = null;
+          fade.value = withTiming(1, { duration: FADE_MS });
           onScrubbing?.(true);
           track(e);
         },
@@ -550,11 +665,11 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
            scroll recogniser — `onScrubbing` is what handles that. */
         onResponderTerminationRequest: () => false,
         onResponderRelease: () => {
-          settle();
+          release();
           onScrubbing?.(false);
         },
         onResponderTerminate: () => {
-          settle();
+          release();
           onScrubbing?.(false);
         },
       }
@@ -740,11 +855,11 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                 {/* The rule is where the finger is — it slides across the empty
                     stretches instead of waiting for the next reading, and
                     settles onto the reading when the finger lifts. */}
-                <ScrubLine at={rulerX} height={height} color={color} />
+                <ScrubLine at={rulerX} show={fade} height={height} color={color} />
                 {/* The dot is on the reading the chip is naming, which is a
                     real one. It is never more than half a gap from the rule,
                     and the date in the chip says which reading it is. */}
-                <ScrubDot px={x(scrubI!)} py={y(at.value)} color={color} />
+                <ScrubDot at={rulerX} show={fade} curve={curve} color={color} />
               </>
             ) : null}
           </Svg>
@@ -759,7 +874,7 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
             : null}
 
           {at && chip ? (
-            <ScrubChip at={rulerX} min={chip.min} max={chip.max} top={chip.top}>
+            <ScrubChip at={rulerX} show={fade} min={chip.min} max={chip.max} top={chip.top}>
               <Text style={styles.scrubValue}>{fmt(at.value)}</Text>
               <Text style={styles.scrubDate}>
                 {new Date(`${at.date}T00:00:00`).toLocaleDateString(locale, {
