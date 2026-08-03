@@ -18,7 +18,22 @@ export const colors = {
 
   // Text
   foreground: '#ededed',
-  mutedForeground: '#6b6b6b',
+  /**
+   * Secondary text — captions, units, macro labels, timestamps.
+   *
+   * Was `#6b6b6b`, which measures 3.39:1 against a card surface (`glass.bg`,
+   * 6% white over the page) and 3.78:1 against the page itself. WCAG 2.1 SC
+   * 1.4.3 asks 4.5:1 for text at this size, so it failed AA everywhere it was
+   * used — and after `foreground` it is the most-used colour in the app.
+   *
+   * `#828282` is the smallest step that clears it: 4.71:1 on a card, 5.24:1 on
+   * the page. The gap to `foreground` (15.45:1) stays wide enough that the two
+   * still read as different ranks, which is the job this colour actually has.
+   *
+   * Measured rather than eyeballed. Eyeballing in a dark room on a good screen
+   * is how it arrived at 3.39 in the first place.
+   */
+  mutedForeground: '#828282',
   secondaryForeground: '#999999',
 
   // Brand (premium silver)
