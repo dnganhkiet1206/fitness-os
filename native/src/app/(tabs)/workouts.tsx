@@ -1,3 +1,5 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { CalendarDays, ChevronRight, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
@@ -16,6 +18,7 @@ import { useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-libra
 import { useUnits } from '@/hooks/use-units';
 import { getLocale } from '@/lib/i18n';
 import { displayWeight, weightLabel } from '@/lib/units';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 
 interface TplExercise {
   sets?: number;
@@ -42,8 +45,22 @@ export default function WorkoutsScreen() {
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
   const vi = lang === 'vi';
-  const { data: templates } = useWorkoutTemplates();
+  const { data: templates, isError: templatesFailed } = useWorkoutTemplates();
+  // Recent sessions needs no failure notice of its own: the block only renders
+  // when there are sessions, so a failed read makes it absent rather than
+  // wrong — and it fails alongside the templates above it, which do say so.
   const { data: sessions } = useWorkoutSessions(14);
+
+  /**
+   * One retry for the tab — the same gesture as pull-to-refresh, as a button.
+   */
+  const queryClient = useQueryClient();
+  const [retrying, setRetrying] = useState(false);
+  const retry = useCallback(async () => {
+    setRetrying(true);
+    await queryClient.invalidateQueries();
+    setRetrying(false);
+  }, [queryClient]);
   const del = useDeleteWorkoutTemplate();
 
   const confirmDelete = (id: string) => {
@@ -54,12 +71,23 @@ export default function WorkoutsScreen() {
     ]);
   };
 
+  /*
+    "Templates (0)" and "No templates yet — tap + to create your first" is
+    encouragement for a new account and a lie about one whose templates simply
+    did not load. Acting on it means rebuilding routines that already exist.
+
+    The header row stays: its buttons open Exercises, the builder and the log
+    screen, none of which depend on the read that failed. Taking away working
+    navigation because a list did not arrive would be a second problem.
+  */
   return (
     <Screen title={i18n.workoutsTitle}>
       {/* "Templates (N)" + actions row (web) */}
       <View style={styles.actionsRow}>
         <Text style={styles.sectionLabel}>
-          {i18n.workoutsTemplates} ({templates?.length ?? 0})
+          {/* No count while the read is broken — "(0)" is a claim */}
+          {i18n.workoutsTemplates}
+          {templatesFailed ? '' : ` (${templates?.length ?? 0})`}
         </Text>
         <View style={styles.actionButtons}>
           <Pressable
@@ -128,6 +156,8 @@ export default function WorkoutsScreen() {
             </Animated.View>
           );
         })
+      ) : templatesFailed ? (
+        <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
       ) : (
         <View style={styles.empty}>
           <Icon icon={Dumbbell} size={48} color="rgba(107,107,107,0.35)" />

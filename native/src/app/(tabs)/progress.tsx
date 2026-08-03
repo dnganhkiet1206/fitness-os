@@ -1,7 +1,8 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Camera, ChevronRight, Medal, Plus, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -22,6 +23,7 @@ import { useWeightGoal } from '@/hooks/use-weight-goal';
 import { getLocale } from '@/lib/i18n';
 import { parseLocalDate } from '@/lib/local-date';
 import { convertLength, displayLength, displayWeight, formatHeight, weightLabel } from '@/lib/units';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 
 type Tab = 'weight' | 'measurements' | 'photos';
 
@@ -110,7 +112,22 @@ export default function ProgressScreen() {
   const [goalOpen, setGoalOpen] = useState(false);
 
   const { data: profile } = useProfile();
-  const { data: weight } = useWeightHistory(90);
+
+  /**
+   * One retry for the tab, as on Nutrition.
+   *
+   * Every segment here reads through the same connection, so repairing only the
+   * query that raised its hand would fix a corner of the page. This is the
+   * pull-to-refresh gesture as a button — one behaviour to learn, not two.
+   */
+  const queryClient = useQueryClient();
+  const [retrying, setRetrying] = useState(false);
+  const retry = useCallback(async () => {
+    setRetrying(true);
+    await queryClient.invalidateQueries();
+    setRetrying(false);
+  }, [queryClient]);
+  const { data: weight, isError: weightFailed } = useWeightHistory(90);
   /**
    * Every weigh-in, for the changes card's "All Time" row and its 90-day one.
    *
@@ -119,8 +136,8 @@ export default function ProgressScreen() {
    * change what it shows and cost more to draw. Cached under its own key.
    */
   const { data: weightAll } = useWeightHistory(3650);
-  const { data: photos } = useProgressPhotos();
-  const { data: measurements } = useBodyMeasurements();
+  const { data: photos, isError: photosFailed } = useProgressPhotos();
+  const { data: measurements, isError: measurementsFailed } = useBodyMeasurements();
 
   const { weight: wUnit, height: lHUnit } = useUnits();
   const wl = weightLabel(wUnit);
@@ -231,7 +248,16 @@ export default function ProgressScreen() {
         ))}
       </View>
 
-      {tab === 'weight' && (
+      {/*
+        `—` and `0 records` and "not enough data" are all true of an account
+        with no weights in it, and all false of one the app could not read.
+        The reading is the same either way, and the thing a person does about
+        it — go and log a weight they already logged — is wrong in one case.
+      */}
+      {tab === 'weight' && weightFailed && (
+        <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
+      )}
+      {tab === 'weight' && !weightFailed && (
         <>
           {/* Stat tiles: current / change / records */}
           <Animated.View style={styles.tileRow} entering={rise(0)}>
@@ -399,7 +425,10 @@ export default function ProgressScreen() {
         </>
       )}
 
-      {tab === 'measurements' && (
+      {tab === 'measurements' && measurementsFailed && (
+        <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
+      )}
+      {tab === 'measurements' && !measurementsFailed && (
         <>
           {/* Web: right-aligned "Add measurement" button opening the input dialog */}
           <Pressable
@@ -479,7 +508,10 @@ export default function ProgressScreen() {
         </>
       )}
 
-      {tab === 'photos' && (
+      {tab === 'photos' && photosFailed && (
+        <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
+      )}
+      {tab === 'photos' && !photosFailed && (
         <>
           <Pressable
             style={({ pressed }) => [styles.photoCta, pressed && styles.pressed]}

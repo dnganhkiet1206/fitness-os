@@ -140,7 +140,10 @@ const en = {
   nTipsRefresh: 'Refresh',
   nTipsEmpty: 'Log more to unlock tips',
   // read failed — deliberately not the same words as an empty day
-  nLoadFailed: 'Could not load today',
+  // Segment-neutral on purpose: this card appears on Progress and Workouts too,
+  // and "Could not load today" is wrong on a screen showing three months of
+  // weight history.
+  nLoadFailed: 'Could not load your data',
   nLoadFailedHint: 'Your data is safe. The app just could not reach it.',
   nRetry: 'Try again',
   // ── screen-reader names for icon-only buttons ──
@@ -571,7 +574,8 @@ const vi: typeof en = {
   nTipsRefresh: 'Làm mới',
   nTipsEmpty: 'Ghi thêm để mở khoá gợi ý',
   // read failed — deliberately not the same words as an empty day
-  nLoadFailed: 'Không tải được dữ liệu hôm nay',
+  // Cố ý không nhắc "hôm nay": thẻ này còn hiện ở Tiến trình và Buổi tập.
+  nLoadFailed: 'Không tải được dữ liệu',
   nLoadFailedHint: 'Dữ liệu của bạn vẫn an toàn, chỉ là app chưa lấy được.',
   nRetry: 'Thử lại',
   // ── tên cho trình đọc màn hình, nút chỉ có icon ──
