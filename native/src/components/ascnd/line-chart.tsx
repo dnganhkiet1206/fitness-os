@@ -163,17 +163,6 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   const [scrubX, setScrubX] = useState<number | null>(null);
   /** last reading the rule was nearest, so the tick fires on change only */
   const lastScrub = useRef<number | null>(null);
-  /*
-    Where the drag began, and which way it turned out to go.
-
-    Up here with the other hooks, not down beside the handlers that use them.
-    The `points.length < 2` return is a few lines below, so a `useRef` declared
-    after it is skipped entirely on a chart with too little data — the hook
-    order changes between renders and React tears the component down. `tsc` has
-    nothing to say about it: the types are all fine.
-  */
-  const track0 = useRef<{ x: number; y: number } | null>(null);
-  const axis = useRef<'h' | 'v' | null>(null);
 
   if (points.length < 2) {
     return (
@@ -338,47 +327,50 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   };
 
   /*
-    Hand the touch back only while the drag might still be a scroll.
+    The chart keeps the touch. The page does not move under it.
 
-    This started as an unconditional `() => true`, which is the bug that makes a
-    scrubber unusable: a vertical ScrollView asks for the touch as soon as the
-    finger travels past its slop, and saying yes every time means a horizontal
-    drag gets taken away part-way across and the indicator stops dead. It looks
-    like the chart only lets you reach the middle.
+    ── the three versions this went through ──
 
-    So the direction is decided once, on the first movement past four points,
-    and after that a horizontal drag refuses to give the touch up while a
-    vertical one still hands it over. Before the decision the answer stays yes,
-    which is what keeps the page scrollable from a finger that landed here.
+    First `onResponderTerminationRequest: () => true`, which hands the touch to
+    anyone who asks — and a vertical ScrollView asks as soon as the finger
+    passes its slop, on any drag. The indicator moved a little way across and
+    stopped dead, as though the chart only let you reach the middle.
+
+    Then a direction test: decide on the first movement past four points, keep
+    the touch if it was horizontal, hand it over if it was vertical. That fixed
+    the stopping, and left a worse thing behind. Nobody drags a scrubber in a
+    straight line. A drag that starts a few degrees off vertical, or drifts
+    there halfway across, loses the reading *and* scrolls the page out from
+    under the chart being read — and which of the two happens depends on an
+    angle nobody was aiming at.
+
+    So now it never lets go. Touch the plot and it is a scrubber, at any angle,
+    for as long as the finger is down.
+
+    ── the cost, stated plainly ──
+
+    A finger that lands on this chart cannot scroll the page. That is a real
+    loss of 180 points of a long screen, and it is the right trade: the chart is
+    the one thing on the tab you interact with by dragging, everything around it
+    scrolls, and a control that works only when approached at the correct angle
+    is worse than one that needs the finger put somewhere else.
   */
   const responder = scrubbable
     ? {
         onStartShouldSetResponder: () => true,
         onMoveShouldSetResponder: () => true,
+        // Capture too, so the gesture is claimed before an ancestor can take
+        // it — `onStartShouldSetResponder` alone loses to a parent that
+        // captures first.
+        onStartShouldSetResponderCapture: () => true,
+        onMoveShouldSetResponderCapture: () => true,
         onResponderGrant: (e: GestureResponderEvent) => {
-          track0.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
-          axis.current = null;
           lastScrub.current = null;
           track(e);
         },
-        onResponderMove: (e: GestureResponderEvent) => {
-          const s = track0.current;
-          if (s && axis.current === null) {
-            const dx = Math.abs(e.nativeEvent.pageX - s.x);
-            const dy = Math.abs(e.nativeEvent.pageY - s.y);
-            if (dx > 4 || dy > 4) axis.current = dx >= dy ? 'h' : 'v';
-          }
-          if (axis.current !== 'v') track(e);
-        },
-        onResponderTerminationRequest: () => axis.current !== 'h',
-        onResponderRelease: () => {
-          track0.current = null;
-          axis.current = null;
-        },
-        onResponderTerminate: () => {
-          track0.current = null;
-          axis.current = null;
-        },
+        onResponderMove: track,
+        /* Never. This is the whole of the separation. */
+        onResponderTerminationRequest: () => false,
       }
     : {};
 
