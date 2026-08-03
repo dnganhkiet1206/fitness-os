@@ -13,7 +13,7 @@ import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-f
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
 import { useProfile } from '@/hooks/useTodayData';
 import { useUnits } from '@/hooks/use-units';
-import { supabase } from '@/integrations/supabase/client';
+import { callAi, EDGE_FUNCTIONS } from '@/lib/ai';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 
@@ -263,14 +263,15 @@ export function SmartTipsCard() {
 
   const nudges = useMutation({
     mutationFn: async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const { data, error } = await supabase.functions.invoke('ai-smart-nudges', {
-        body: { lang, date: localDateStr() },
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      const res = await callAi<{ nudges?: Nudge[] }>(EDGE_FUNCTIONS.smartNudges, {
+        lang,
+        date: localDateStr(),
       });
-      if (error) throw error;
-      return (data?.nudges ?? []) as Nudge[];
+      // Nudges are a bonus, not a task the user asked for, so a failure here
+      // stays quiet — but it still fails rather than pretending to zero tips,
+      // so the card can say "none right now" only when that is true.
+      if (!res.ok) throw new Error(res.failure);
+      return res.data?.nudges ?? [];
     },
   });
 

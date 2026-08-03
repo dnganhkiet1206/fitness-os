@@ -28,6 +28,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { AI_FAILURE_KEY, callAi, EDGE_FUNCTIONS } from '@/lib/ai';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
@@ -225,12 +226,14 @@ export default function WeeklyReviewScreen() {
 
   const analyze = useMutation({
     mutationFn: async () => {
-      const resp = await supabase.functions.invoke('ai-weekly-review', {
-        body: { week_start: startStr, lang },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+      const res = await callAi<AIAnalysis>(EDGE_FUNCTIONS.weeklyReview, {
+        week_start: startStr,
+        lang,
       });
-      if (resp.error) throw new Error(resp.error.message ?? 'Analysis failed');
-      return resp.data as AIAnalysis;
+      // The alert this feeds used to print the raw client message, which for a
+      // missing function reads `Edge Function returned a non-2xx status code`.
+      if (!res.ok) throw new Error(i18n[AI_FAILURE_KEY[res.failure]]);
+      return res.data;
     },
     onSuccess: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
     onError: (e: Error) => Alert.alert('ASCND', e.message),

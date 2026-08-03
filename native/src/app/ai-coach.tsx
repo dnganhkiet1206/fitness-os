@@ -34,9 +34,22 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { EDGE_FUNCTIONS, functionUrl, SUPABASE_ANON_KEY } from '@/lib/backend';
 
-const CHAT_URL = 'https://drqgonxrtmomgrftelih.supabase.co/functions/v1/ai-coach';
-const ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
+/**
+ * The coach streams, so it cannot go through `supabase.functions.invoke` and
+ * builds its own request. Both halves of that request now come from
+ * `@/lib/backend` instead of being written out here.
+ *
+ * The key mattered more than the URL. It read
+ * `process.env.EXPO_PUBLIC_SUPABASE_KEY ?? ''` — an **empty string** whenever
+ * no `.env` was present, while the Supabase client next to it had a working
+ * fallback. So on a fresh clone every other feature worked and the coach alone
+ * answered 401, which reads as "the coach is broken" rather than "the key is
+ * missing". One source for both, and that cannot happen again.
+ */
+const CHAT_URL = functionUrl(EDGE_FUNCTIONS.coach);
+const ANON_KEY = SUPABASE_ANON_KEY;
 
 /**
  * How many turns travel with each request.

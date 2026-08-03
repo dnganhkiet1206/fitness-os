@@ -53,3 +53,6 @@ example
 /bugs.png
 /weather.png
 /stage.png
+
+# local backend config — never commit real keys
+.env

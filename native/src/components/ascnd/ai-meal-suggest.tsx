@@ -5,9 +5,9 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'rea
 
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useAppSettings } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { supabase } from '@/integrations/supabase/client';
+import { AI_FAILURE_KEY, callAi, EDGE_FUNCTIONS } from '@/lib/ai';
 import { localDateStr } from '@/lib/local-date';
 
 interface MealSuggestion {
@@ -28,6 +28,7 @@ interface MealSuggestion {
  */
 export function AiMealSuggest({ mealType }: { mealType?: string }) {
   const { session } = useAuth();
+  const i18n = useI18n();
   const { lang } = useAppSettings();
   const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,19 +38,20 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
     if (!session || loading) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLoading(true);
-    try {
-      const resp = await supabase.functions.invoke('ai-meal-suggest', {
-        body: { meal_type: mealType || 'any', lang, date: localDateStr() },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (resp.error) throw resp.error;
-      setSuggestions((resp.data?.suggestions as MealSuggestion[]) ?? []);
+    // `callAi` names the reason; the alert used to say "failed" for a function
+    // that was never deployed, a missing model key and an expired session alike.
+    const res = await callAi<{ suggestions?: MealSuggestion[] }>(EDGE_FUNCTIONS.mealSuggest, {
+      meal_type: mealType || 'any',
+      lang,
+      date: localDateStr(),
+    });
+    if (res.ok) {
+      setSuggestions(res.data?.suggestions ?? []);
       setExpanded(null);
-    } catch {
-      Alert.alert('ASCND', lang === 'vi' ? 'Không thể lấy gợi ý' : 'Failed to get suggestions');
-    } finally {
-      setLoading(false);
+    } else {
+      Alert.alert('ASCND', i18n[AI_FAILURE_KEY[res.failure]]);
     }
+    setLoading(false);
   };
 
   if (suggestions.length === 0) {

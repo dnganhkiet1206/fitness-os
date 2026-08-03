@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { supabase } from '@/integrations/supabase/client';
+import { AI_FAILURE_KEY, callAi, EDGE_FUNCTIONS } from '@/lib/ai';
 import { setPendingScan, type ScannedFood } from '@/lib/scan-bridge';
 
 type ScanMode = 'food' | 'label';
@@ -73,15 +73,22 @@ export default function ScanFoodScreen() {
       setPreview(photo?.uri ?? null);
       setPhase('analyzing');
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const { data, error: fnError } = await supabase.functions.invoke('scan-food', {
-        body: { image_base64: photo?.base64, lang, mode },
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      const res = await callAi<{ items?: RawItem[] }>(EDGE_FUNCTIONS.scanFood, {
+        image_base64: photo?.base64,
+        lang,
+        mode,
       });
-      if (fnError) throw fnError;
+      if (!res.ok) {
+        // Named, not generic: a scan that fails because the function was never
+        // deployed and one that fails because the photo was dark used to read
+        // the same, and only one of them is worth retrying with a better photo.
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError(i18n[AI_FAILURE_KEY[res.failure]]);
+        setPhase('review');
+        return;
+      }
 
-      const found = normalize((data?.items ?? []) as RawItem[]).filter((i) => i.kcal > 0);
+      const found = normalize((res.data?.items ?? []) as RawItem[]).filter((i) => i.kcal > 0);
       if (found.length === 0) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         setError(i18n.nScanNoFood);

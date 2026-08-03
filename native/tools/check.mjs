@@ -81,6 +81,7 @@ if (!existsSync(path.join(NATIVE, 'node_modules', 'playwright'))) {
 const STEPS = [
   ['kiểu dữ liệu', 'npx', ['tsc', '--noEmit']],
   ['cửa sổ ngày', 'node', ['tools/day-window.mjs']],
+  ['backend', 'node', ['tools/backend-config.mjs']],
   ['worklet', 'node', ['tools/koa-studio/worklets.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
   ['camera shop', 'node', ['tools/shop-camera.mjs']],

@@ -24,6 +24,7 @@ import { dedupeSeedShadows, useFavoriteFoods, useRecentFoods } from '@/hooks/use
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
+import { AI_FAILURE_KEY, callAi, EDGE_FUNCTIONS } from '@/lib/ai';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 import { consumePendingScan } from '@/lib/scan-bridge';
@@ -240,14 +241,11 @@ export default function LogMealSheet() {
 
   const aiSuggest = useMutation({
     mutationFn: async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const { data, error } = await supabase.functions.invoke('ai-meal-suggest', {
-        body: { meal_type: mealType },
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      const res = await callAi<{ suggestions?: AiSuggestion[] }>(EDGE_FUNCTIONS.mealSuggest, {
+        meal_type: mealType,
       });
-      if (error) throw error;
-      return (data?.suggestions ?? []) as AiSuggestion[];
+      if (!res.ok) throw new Error(i18n[AI_FAILURE_KEY[res.failure]]);
+      return res.data?.suggestions ?? [];
     },
     onSuccess: (s) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

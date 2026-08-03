@@ -143,6 +143,13 @@ const en = {
   nLoadFailed: 'Could not load today',
   nLoadFailedHint: 'Your data is safe. The app just could not reach it.',
   nRetry: 'Try again',
+  // AI edge functions — one message per distinct cause, so wiring a new
+  // Supabase project up tells you what is missing instead of "it failed"
+  aiNotDeployed: 'This AI feature is not set up on the server yet.',
+  aiProviderError: 'The AI service could not answer. Try again in a moment.',
+  aiSignedOut: 'Please sign in again to use AI features.',
+  aiOffline: 'No connection — AI needs the internet.',
+  aiUnknown: 'Something went wrong with the AI request.',
   nDiaryLoadFailed: 'Could not load your meals',
   nNoSupplements: 'No supplements yet',
   nNoSupplementsHint: 'Add your stack in the web app — the checklist syncs here',
@@ -525,6 +532,13 @@ const vi: typeof en = {
   nLoadFailed: 'Không tải được dữ liệu hôm nay',
   nLoadFailedHint: 'Dữ liệu của bạn vẫn an toàn, chỉ là app chưa lấy được.',
   nRetry: 'Thử lại',
+  // AI edge functions — one message per distinct cause, so wiring a new
+  // Supabase project up tells you what is missing instead of "it failed"
+  aiNotDeployed: 'Tính năng AI này chưa được cài trên máy chủ.',
+  aiProviderError: 'Dịch vụ AI chưa trả lời được. Thử lại sau một lát nhé.',
+  aiSignedOut: 'Bạn cần đăng nhập lại để dùng tính năng AI.',
+  aiOffline: 'Không có kết nối — AI cần internet.',
+  aiUnknown: 'Có lỗi khi gọi AI.',
   nDiaryLoadFailed: 'Không tải được các bữa ăn',
   nNoSupplements: 'Chưa có supplement nào',
   nNoSupplementsHint: 'Thêm stack của bạn trên bản web — checklist sẽ đồng bộ về đây',
