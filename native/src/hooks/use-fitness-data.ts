@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
+import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
+import { useInvalidateToday } from './useTodayData';
 
 function daysAgoISO(days: number): string {
   const d = new Date();
@@ -89,6 +91,100 @@ export function useDeleteWeight() {
       // and refreshing one would leave the other showing the deleted day.
       qc.invalidateQueries({ queryKey: ['weight_log', user?.id] });
       qc.invalidateQueries({ queryKey: ['weight_history', user?.id] });
+    },
+  });
+}
+
+/**
+ * Remove one logged session.
+ *
+ * ── why this is needed at all ──
+ *
+ * `log-workout.tsx` **inserts**; it does not upsert on anything. A double tap
+ * on Save, or a set entered at 100kg instead of 10, is a row that cannot be
+ * touched again from anywhere in the app. And unlike a stray weight — which is
+ * wrong on one chart — a session's `volume_load` is an input to five things:
+ *
+ *   - today's `daily_logs.volume_load` (`daily-log-service.ts:56`)
+ *   - the 7-day and 28-day load windows, i.e. the acute:chronic ratio the
+ *     readiness score is built on (`daily-log-service.ts:96,101`)
+ *   - the lifetime workout count that unlocks mascots (`use-mascot.tsx:24`)
+ *   - award thresholds at 1 / 10 / 50 / 100 (`use-extras.ts:148`)
+ *   - the `workouts_N` weekly challenges (`use-extras.ts:351`)
+ *
+ * One phantom session therefore does not just add a row: it tells somebody they
+ * are more fatigued than they are, on the screen they use to decide whether to
+ * train.
+ *
+ * ── recompute the session's own day, not today ──
+ *
+ * `recomputeDailyLog` takes the date to rebuild, and the list reaches back
+ * fourteen days. Passing `localDateStr()` would rebuild today from data that
+ * did not change and leave the day that *did* change holding a total for a
+ * session that no longer exists. The date comes from the row's `date_time`,
+ * read in local time for the same reason every other window here is.
+ *
+ * ── what deliberately does not move ──
+ *
+ * Awards already earned are not revoked: they record that something happened,
+ * and the app has no notion of un-happening one. Weekly challenge progress
+ * *does* fall back — `use-extras.ts:427` writes the recounted value and clears
+ * `completed_at` — which raises the obvious question of whether delete → re-log
+ * pays the reward twice. It cannot: the ledger row's `ref_key` is
+ * `challengeRefKey(tier, weekStart, challenge_key)`, deterministic for the week
+ * and unique per user, so the second insert is a duplicate and is swallowed
+ * (`use-extras.ts:444`). Checked rather than assumed, because this is the one
+ * place where a delete could turn into money.
+ */
+export function useDeleteWorkoutSession() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const invalidateToday = useInvalidateToday();
+  return useMutation({
+    mutationFn: async ({ id, date_time }: { id: string; date_time: string }) => {
+      const { error } = await supabase
+        .from('workout_sessions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user!.id);
+      if (error) throw error;
+
+      const day = localDateStr(new Date(date_time));
+      await recomputeDailyLog(user!.id, day);
+
+      /*
+        And today as well, when the session was not today's.
+
+        `recomputeDailyLog` rebuilds the day it is given, but two of its inputs
+        are not about that day at all: `training_load_7d` and
+        `training_load_28d` are windows anchored at `new Date()`
+        (`daily-log-service.ts:29-32`), and they are what the acute:chronic
+        ratio behind the readiness score is computed from. Removing a session
+        from last Tuesday therefore changes *today's* readiness — and rebuilding
+        only Tuesday would leave the Today screen showing a score derived from a
+        session that no longer exists.
+
+        Every day in between is left alone deliberately. Fixing those would mean
+        up to fourteen rebuilds of eleven reads each, and a past day's readiness
+        is already an artefact of when it happened to be computed rather than a
+        fact about that day. That is a separate question. Leaving today wrong
+        when one more call fixes it is not.
+      */
+      const todayStr = localDateStr();
+      if (day !== todayStr) await recomputeDailyLog(user!.id, todayStr);
+    },
+    onSuccess: (_r, { date_time }) => {
+      // Today's keys — the sessions list, the recent-workouts widget, readiness
+      // history and the mascot counters all live in here.
+      invalidateToday();
+      // And the day that was actually rebuilt, which `useInvalidateToday` only
+      // covers when the deleted session happened to be today's.
+      qc.invalidateQueries({
+        queryKey: ['daily_log', user?.id, localDateStr(new Date(date_time))],
+      });
+      // Progress is recounted on the next Today focus; this stops the number
+      // already on screen from being served from cache in the meantime.
+      qc.invalidateQueries({ queryKey: ['weekly-challenges'] });
     },
   });
 }

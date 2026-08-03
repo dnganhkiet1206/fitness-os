@@ -205,6 +205,9 @@ const en = {
   nWeightEntriesOne: '1 entry',
   nDeleteWeight: 'Remove this weight',
   nDeleteWeightMsg: 'Remove the {x} entry? The chart and your BMI will be recalculated.',
+  // ── logged sessions, and correcting them ──
+  nDeleteSession: 'Remove this session',
+  nDeleteSessionMsg: 'Remove {x}? Your training load and readiness will be recalculated.',
   // AI edge functions — one message per distinct cause, so wiring a new
   // Supabase project up tells you what is missing instead of "it failed"
   aiNotDeployed: 'This AI feature is not set up on the server yet.',
@@ -652,6 +655,9 @@ const vi: typeof en = {
   nWeightEntriesOne: '1 lần',
   nDeleteWeight: 'Xoá số cân này',
   nDeleteWeightMsg: 'Xoá bản ghi {x}? Biểu đồ và BMI sẽ được tính lại.',
+  // ── buổi tập đã ghi và sửa sai ──
+  nDeleteSession: 'Xoá buổi tập này',
+  nDeleteSessionMsg: 'Xoá {x}? Khối lượng tập và điểm sẵn sàng sẽ được tính lại.',
   // AI edge functions — one message per distinct cause, so wiring a new
   // Supabase project up tells you what is missing instead of "it failed"
   aiNotDeployed: 'Tính năng AI này chưa được cài trên máy chủ.',

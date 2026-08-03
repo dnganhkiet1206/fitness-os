@@ -13,10 +13,11 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useWorkoutSessions } from '@/hooks/use-fitness-data';
+import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
 import { getLocale } from '@/lib/i18n';
+import { toast } from '@/lib/toast';
 import { displayWeight, weightLabel } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 
@@ -62,12 +63,41 @@ export default function WorkoutsScreen() {
     setRetrying(false);
   }, [queryClient]);
   const del = useDeleteWorkoutTemplate();
+  const delSession = useDeleteWorkoutSession();
 
   const confirmDelete = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(i18n.nDeleteTemplate, '', [
       { text: i18n.nCancel, style: 'cancel' },
       { text: i18n.nDeleteTemplate, style: 'destructive', onPress: () => del.mutate(id) },
+    ]);
+  };
+
+  /**
+   * Name what goes. Two sessions in a week are often the same template on
+   * different days, so the name alone does not identify one — the date is what
+   * makes a mistap catchable by reading the alert rather than by noticing the
+   * chart afterwards.
+   */
+  const confirmDeleteSession = (id: string, date_time: string, label: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(i18n.nDeleteSession, i18n.nDeleteSessionMsg.replace('{x}', label), [
+      { text: i18n.cancel, style: 'cancel' },
+      {
+        text: i18n.delete,
+        style: 'destructive',
+        onPress: () =>
+          delSession.mutate(
+            { id, date_time },
+            {
+              onSuccess: () => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                toast.success(i18n.deleted);
+              },
+              onError: (e: Error) => toast.error(e.message),
+            },
+          ),
+      },
     ]);
   };
 
@@ -175,14 +205,17 @@ export default function WorkoutsScreen() {
             {vi ? 'Buổi tập gần đây' : 'Recent sessions'} ({sessions.length})
           </Text>
           <GlassCard style={styles.sessionsCard}>
-            {sessions.map((s, i) => (
+            {sessions.map((s, i) => {
+              const name = s.template_name || 'Workout';
+              const day = new Date(s.date_time).toLocaleDateString(getLocale(lang), {
+                weekday: 'short', day: 'numeric', month: 'short',
+              });
+              return (
               <View key={s.id} style={[styles.sessionRow, i > 0 && styles.sessionBorder]}>
                 <View style={styles.sessionInfo}>
-                  <Text style={styles.sessionName} numberOfLines={1}>{s.template_name || 'Workout'}</Text>
+                  <Text style={styles.sessionName} numberOfLines={1}>{name}</Text>
                   <Text style={styles.sessionMeta}>
-                    {new Date(s.date_time).toLocaleDateString(getLocale(lang), {
-                      weekday: 'short', day: 'numeric', month: 'short',
-                    })}
+                    {day}
                     {s.volume_load != null ? `  ·  ${Math.round(displayWeight(Number(s.volume_load), wUnit)).toLocaleString()} ${wl}` : ''}
                   </Text>
                 </View>
@@ -192,8 +225,20 @@ export default function WorkoutsScreen() {
                     <Text style={styles.rpeText}>RPE {s.session_rpe}</Text>
                   </View>
                 )}
+                {/* Muted, like the template rows above — a red glyph on every
+                    line would make deleting the loudest thing in a list that
+                    exists to show the training happened. */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={i18n.a11yDelete}
+                  hitSlop={10}
+                  onPress={() => confirmDeleteSession(s.id, s.date_time, `${name} · ${day}`)}
+                  style={({ pressed }) => [styles.sessionDel, pressed && styles.pressed]}>
+                  <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+                </Pressable>
               </View>
-            ))}
+              );
+            })}
           </GlassCard>
         </Animated.View>
       )}
@@ -296,6 +341,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,145,48,0.12)',
   },
   rpeText: { fontSize: 10, fontWeight: '600', color: colors.metricOrange, fontVariant: ['tabular-nums'] },
+  // 28pt of ink with hitSlop 10 on top — 48pt of target, past the 44pt minimum
+  sessionDel: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   weeklyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
