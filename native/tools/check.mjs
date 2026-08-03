@@ -86,6 +86,7 @@ const STEPS = [
   ['kinh tế', 'node', ['tools/economy.mjs']],
   ['lỗi edge', 'node', ['tools/edge-failure.mjs']],
   ['worklet', 'node', ['tools/koa-studio/worklets.mjs']],
+  ['ánh sáng nền', 'node', ['tools/ambient.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
   ['camera shop', 'node', ['tools/shop-camera.mjs']],
   ['tư thế mặc đồ', 'node', ['tools/koa-studio/dress.mjs']],

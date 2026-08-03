@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AmbientLight } from '@/components/ascnd/ambient-light';
 import { Icon } from '@/components/ascnd/icon';
 import { MarkdownLite } from '@/components/ascnd/markdown-lite';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -247,8 +248,22 @@ export default function AiCoachScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
+    /*
+      The other full page with no room light. Sheets deliberately do without —
+      they are `colors.card` and sit in front of the page — but this is pushed
+      on the stack with `colors.background`, like every `<Screen>` page, and
+      those all have it.
+
+      The light is a sibling of the keyboard-avoiding view, not inside it, so
+      it keeps the whole screen while the chat shrinks. A room does not get
+      shorter when a keyboard opens.
+    */
+    <View style={styles.root}>
+      <AmbientLight />
+      <KeyboardAvoidingView
+      // Transparent — the wrapper paints the page colour now, and painting it
+      // again here would cover the light.
+      style={styles.kav}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top }]}>
@@ -405,12 +420,15 @@ export default function AiCoachScreen() {
           </Text>
         </View>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
+  // Transparent so `AmbientLight` behind it in the wrapper is not painted over.
+  kav: { flex: 1, backgroundColor: 'transparent' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

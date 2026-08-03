@@ -32,6 +32,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActivityRingsCard } from '@/components/ascnd/activity-rings';
+import { AmbientLight } from '@/components/ascnd/ambient-light';
 import {
   NutritionCard,
   SleepCard,
@@ -329,8 +330,24 @@ export default function TodayScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.root}
+    /*
+      Today is the one tab that does not go through `<Screen>` — it builds its
+      own scroll view because of the edit-mode layout — and so it was the one
+      tab with no room light. Every other page has had three pools behind it;
+      this one was a flat fill, next to cards whose highlights are drawn to
+      agree with a key light at the top-left that was not there.
+
+      Same shape as `screen.tsx`'s tab branch: the light sits in a wrapper
+      *outside* the scroll view, so it stays put while the content moves. Light
+      that scrolled with the cards would read as a drawing.
+    */
+    <View style={styles.root}>
+      <AmbientLight />
+      <ScrollView
+      // Transparent, not `styles.root` as before. The wrapper already paints
+      // the page colour; painting it again here would paint straight over the
+      // light and this change would do nothing at all.
+      style={styles.scroller}
       contentContainerStyle={[
         styles.content,
         { paddingTop: insets.top + 12, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
@@ -580,7 +597,8 @@ export default function TodayScreen() {
           </Pressable>
         </>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -616,6 +634,9 @@ function ArrowBtn({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
+  // See the note at the top of the return — transparent so `AmbientLight`,
+  // which sits behind this in the wrapper, is not painted over.
+  scroller: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: spacing.md, gap: spacing.md },
 
   // Header (web: date 13px muted / greeting 22px bold, name silver)
