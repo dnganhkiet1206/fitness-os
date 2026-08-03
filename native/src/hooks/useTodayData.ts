@@ -1,9 +1,31 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { localDateStr } from '@/lib/local-date';
+import { localDateStr, localDayRangeISO } from '@/lib/local-date';
 import { useAuth } from './use-auth';
 
 const today = () => localDateStr();
+/**
+ * The local day as two absolute instants, for the `timestamptz` columns.
+ *
+ * Every window below used to be built as `` `${dateStr}T00:00:00` `` — a date
+ * string with no zone — and Postgres reads one of those in the *server's* zone,
+ * which is UTC. At UTC+7 that makes "today" run from 07:00 this morning to
+ * 06:59 tomorrow in local terms: a meal eaten at six, a biometric sample taken
+ * at six, and — worst of all — a night whose `waketime` is before seven all
+ * fall outside the day they belong to. Waking before 7am is not an edge case.
+ *
+ * The damage was not only a missing card. `daily_logs` is rebuilt by
+ * `daily-log-service`, which already used this helper, so the dashboard's sleep
+ * card and the readiness score computed from the same night disagreed. And
+ * `useTodayMeals` feeds `use-mascot.tsx`, which is what decides whether the
+ * "log a meal" quest paid out — so an early breakfast silently cost coins and
+ * XP.
+ *
+ * `localDayRangeISO` was written when this same bug was found in the nutrition
+ * diary and fixed there only. `tools/check.mjs` now fails the build on a bare
+ * date string next to a `timestamptz` filter, so it cannot be fixed in one
+ * place and left in another again.
+ */
 
 export function useProfile() {
   const { user } = useAuth();
@@ -48,12 +70,13 @@ export function useTodaySleep() {
     queryKey: ['today_sleep', user?.id, dateStr],
     enabled: !!user,
     queryFn: async () => {
+      const day = localDayRangeISO(dateStr);
       const { data, error } = await supabase
         .from('sleep_logs')
         .select('*')
         .eq('user_id', user!.id)
-        .gte('waketime', `${dateStr}T00:00:00`)
-        .lt('waketime', `${dateStr}T23:59:59.999`)
+        .gte('waketime', day.start)
+        .lt('waketime', day.end)
         .order('waketime', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -88,12 +111,13 @@ export function useTodayBiometrics() {
     queryKey: ['today_bio', user?.id, dateStr],
     enabled: !!user,
     queryFn: async () => {
+      const day = localDayRangeISO(dateStr);
       const { data, error } = await supabase
         .from('biometric_samples')
         .select('*')
         .eq('user_id', user!.id)
-        .gte('date_time', `${dateStr}T00:00:00`)
-        .lt('date_time', `${dateStr}T23:59:59.999`)
+        .gte('date_time', day.start)
+        .lt('date_time', day.end)
         .order('date_time', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -192,12 +216,13 @@ export function useTodayMeals() {
     queryKey: ['today_meals', user?.id, dateStr],
     enabled: !!user,
     queryFn: async () => {
+      const day = localDayRangeISO(dateStr);
       const { data, error } = await supabase
         .from('meal_entries')
         .select('*')
         .eq('user_id', user!.id)
-        .gte('date_time', `${dateStr}T00:00:00`)
-        .lt('date_time', `${dateStr}T23:59:59.999`)
+        .gte('date_time', day.start)
+        .lt('date_time', day.end)
         .order('date_time', { ascending: false });
       if (error) throw error;
       return data ?? [];
