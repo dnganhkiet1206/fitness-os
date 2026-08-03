@@ -146,9 +146,22 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
   const fillId = `lcFill-${uid}`;
   const glowId = `lcGlow-${uid}`;
 
-  /** index of the reading being pointed at, or none */
-  const [scrub, setScrub] = useState<number | null>(null);
-  /** the same index, readable within a frame — see `track` below */
+  /**
+   * Where the finger is, in pixels — not which reading it is nearest.
+   *
+   * Storing the index made the indicator snap from reading to reading, so on a
+   * year with eight weigh-ins it sat still through most of the drag and jumped
+   * between them. The rule holding its own x moves with the finger everywhere,
+   * including across the long empty stretches that are most of a weight
+   * history.
+   *
+   * The *reading* is derived from it, and stays a real reading. A weight
+   * interpolated for a day nobody stepped on a scale is a number the app would
+   * be making up, and it would be printed next to a date to make it look
+   * recorded.
+   */
+  const [scrubX, setScrubX] = useState<number | null>(null);
+  /** last reading the rule was nearest, so the tick fires on change only */
   const lastScrub = useRef<number | null>(null);
   /*
     Where the drag began, and which way it turned out to go.
@@ -285,16 +298,18 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
     return best;
   };
   const scrubbable = grid;
-  /*
-    Bounds-checked, because the series can change underneath a live selection.
 
-    The range buttons swap `points` for a shorter array while an index is held.
-    Without the length test the indicator would keep pointing at slot 40 of a
-    five-point week and name whatever reading now sits there — a wrong date
-    against a wrong weight, which is worse than showing nothing. Out of range
-    means the reading is not in this window, so it clears.
+  /*
+    The reading is derived, never stored.
+
+    An index kept in state goes stale the moment the range buttons swap `points`
+    for a shorter array: a week view would keep pointing at slot 40 and name
+    whatever now sits there, a wrong date against a wrong weight. Recomputing
+    from the pixel every render means the selection follows the data instead of
+    outliving it.
   */
-  const at = scrub != null && scrub < points.length ? points[scrub] : null;
+  const scrubI = scrubX != null ? nearest(scrubX) : null;
+  const at = scrubI != null ? points[scrubI] : null;
 
   /*
     Move to a reading, and tick when it changes.
@@ -305,16 +320,20 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
     on *change*, not on movement — a haptic on every `onResponderMove` is
     sixty a second, which stops being feedback and becomes a vibration.
 
-    The last index is kept in a ref rather than read from state: `setScrub`
-    does not update `scrub` until the next render, so two moves inside one frame
-    would both compare against the stale value and double-tick.
+    The last index is kept in a ref rather than derived from state: `setScrubX`
+    does not update `scrubX` until the next render, so two moves inside one
+    frame would both compare against the stale pixel and tick twice for one
+    change of reading.
   */
   const track = (e: GestureResponderEvent) => {
-    const i = nearest(e.nativeEvent.locationX);
+    // Clamped to the plot: the rule has no business over the value gutter, and
+    // past either end there is no more series to point at.
+    const px = Math.max(padX, Math.min(width, e.nativeEvent.locationX));
+    setScrubX(px);
+    const i = nearest(px);
     if (i !== lastScrub.current) {
       lastScrub.current = i;
       Haptics.selectionAsync();
-      setScrub(i);
     }
   };
 
@@ -365,12 +384,16 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
 
   /* Where the readout chip sits: above the picked point, clamped into the plot
      so neither end of the series pushes it off the card. */
-  const chip = at
-    ? {
-        left: Math.max(padX, Math.min(width - SCRUB_W, x(scrub!) - SCRUB_W / 2)),
-        top: Math.max(0, Math.min(height - SCRUB_H, y(at.value) - SCRUB_H - 10)),
-      }
-    : null;
+  const chip =
+    at && scrubX != null
+      ? {
+          // Centred on the rule, not on the dot, so the chip and the thing the
+          // finger is holding move together. Clamped into the plot so neither
+          // end of the series pushes it off the card.
+          left: Math.max(padX, Math.min(width - SCRUB_W, scrubX - SCRUB_W / 2)),
+          top: Math.max(0, Math.min(height - SCRUB_H, y(at.value) - SCRUB_H - 10)),
+        }
+      : null;
 
   return (
     <View
@@ -528,20 +551,25 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
             {/* The scrubber: a rule down the whole plot so the reading can be
                 lined up against the gridlines, and a ringed dot on the point
                 itself so it is clear which reading is being named. */}
-            {at ? (
+            {at && scrubX != null ? (
               <>
+                {/* The rule is where the finger is — it slides across the empty
+                    stretches instead of waiting for the next reading. */}
                 <Line
-                  x1={x(scrub!)}
-                  x2={x(scrub!)}
+                  x1={scrubX}
+                  x2={scrubX}
                   y1={0}
                   y2={height}
                   stroke={color}
                   strokeOpacity={0.45}
                   strokeWidth={1}
                 />
-                <Circle cx={x(scrub!)} cy={y(at.value)} r={7} fill={color} fillOpacity={0.22} />
+                {/* The dot is on the reading the chip is naming, which is a
+                    real one. It is never more than half a gap from the rule,
+                    and the date in the chip says which reading it is. */}
+                <Circle cx={x(scrubI!)} cy={y(at.value)} r={7} fill={color} fillOpacity={0.22} />
                 <Circle
-                  cx={x(scrub!)}
+                  cx={x(scrubI!)}
                   cy={y(at.value)}
                   r={4}
                   fill={color}
