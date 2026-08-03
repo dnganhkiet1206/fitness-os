@@ -452,6 +452,12 @@ works and total when it does not.
 
 ## What is left
 
+Everything below is a release blocker for this file's own subject. The wider
+register — what is proven, what is only suspected, and what has been checked
+and is *not* a bug — lives in **`docs/SO-GHI-LOI.md`**, along with the rule
+that nothing gets "fixed" until both the defect and the fix are proven.
+
+
 1. **Deploy** — the block above. Nothing in §1 or §2 protects anything
    until then.
 2. **§4 `TEST_UNLOCK_ALL`**, once the economy migration is confirmed on
