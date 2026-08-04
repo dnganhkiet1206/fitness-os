@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ChevronLeft } from 'lucide-react-native';
-import { Fragment, useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -142,50 +142,40 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
    */
   const scroller = useRef<ScrollView>(null);
 
-  /**
-   * Replay the page's entrance animations when you come back to the tab.
-   *
-   * ── why they stopped ──
+  /*
+   * ── an entrance cannot be replayed on a page that is already on screen ──
    *
    * Reanimated's `entering` runs on mount, and a `UITabBarController` mounts
-   * each tab once and keeps it. So the cascade the cards were built with —
-   * `rise(i)` on every card of Nutrition, Workouts and Progress — played on
-   * the first visit of the session and never again.
+   * each tab once and keeps it, so `rise(i)` on the cards plays on the first
+   * visit of a session and never again. Two attempts to bring it back are
+   * recorded here because both failed the same way, and the reason is not a
+   * setting anyone can tune:
    *
-   * Today looked like it still worked, which is what made this confusing. It
-   * does not use this scaffold's replay; its widgets are behind `dayPending`,
-   * so a refetch takes them out of the tree and puts them back, and the
-   * cascade comes along for the ride. An accident, on one page out of five.
+   *   - a fade on focus, 0 to 1 — one frame of an empty page before it starts,
+   *     on every tab change
+   *   - a `key` on a `Fragment` around the content, remounting it so the
+   *     `entering` animations re-run — the same empty frame, then the cascade
    *
-   * ── how it comes back ──
+   * Both blink because `FadeInDown` begins at invisible. That is right when a
+   * screen is arriving from nothing, which is what the old JS navigator did —
+   * it mounted the tab on entry, so the page genuinely was not there yet. It
+   * is wrong on a page that is already drawn: replaying an entrance there has
+   * to un-draw it first.
    *
-   * A `key` on a `Fragment` around the page's content. Changing it remounts
-   * the subtree, which is the only thing that re-runs an `entering`
-   * animation — Reanimated has no "play it again".
+   * So the cards animate once, on the visit that mounts them, and tab changes
+   * are instant. Which is also what iOS does.
    *
-   * A `Fragment` rather than a `View` because the content container lays its
-   * children out with `gap`: any real box here would collapse the whole page
-   * into one flex child and the spacing between every card with it.
+   * Today looks like an exception and is not doing anything different — its
+   * widgets sit behind `dayPending`, so a refetch takes them out of the tree
+   * and puts them back, and the cascade comes along for the ride.
    *
-   * ── what it costs ──
-   *
-   * The content is rebuilt on each return, so component state *inside* the
-   * cards resets — a meal you had expanded is collapsed when you come back.
-   * The page component itself is untouched, so which segment you were on and
-   * every query's cache survive. The header stays outside the `Fragment` too,
-   * so the title does not flash on each visit.
-   *
-   * The first focus is skipped: the children have just mounted and animated,
-   * and re-keying there would throw that away and do it twice.
+   * If tab changes should have motion, it has to be an animation that starts
+   * from the page as it is — a small settle, not an entrance — which is a
+   * different effect, not this one replayed.
    */
-  const visits = useRef(0);
-  const [visit, setVisit] = useState(0);
-
   useFocusEffect(
     useCallback(() => {
       setActiveScroller(() => scroller.current?.scrollTo({ y: 0, animated: true }));
-      visits.current += 1;
-      if (visits.current > 1) setVisit((v) => v + 1);
       return () => setActiveScroller(null);
     }, []),
   );
@@ -308,7 +298,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           </View>
           {headerRight}
         </View>
-        <Fragment key={visit}>{children}</Fragment>
+        {children}
       </ScrollView>
       <StatusScrim />
     </View>
