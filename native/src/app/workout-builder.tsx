@@ -15,12 +15,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import Animated, { Easing, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
-import { restLabel, WorkoutSetSheet } from '@/components/ascnd/workout-set-sheet';
+import { restLabel, WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
@@ -172,6 +171,102 @@ function inferType(groups: Set<MuscleArtKey>): TemplateType {
   if (within(groups, new Set<MuscleArtKey>([...LOWER, 'abs']))) return 'lower';
   if (within(groups, new Set<MuscleArtKey>([...PUSH, ...PULL, 'abs']))) return 'upper';
   return 'full_body';
+}
+
+/**
+ * Naming a movement the library does not have yet.
+ *
+ * A face of the builder rather than a sheet over it. It was a sheet twice — a
+ * `Modal`, then an absolute overlay — and both times the panel failed to appear
+ * while everything around it worked, because this screen is itself presented as
+ * a modal and things that float inside one are fragile here.
+ *
+ * The chips wrap instead of scrolling sideways. On a sheet there was no room and
+ * a horizontal strip was the only way to fit eleven muscles; with the screen to
+ * itself, all eleven can simply be visible, and a chip you can see is worth more
+ * than one you have to go looking for.
+ */
+function NewExercisePane({
+  i18n,
+  name,
+  onName,
+  muscle,
+  onMuscle,
+  equipment,
+  onEquipment,
+  busy,
+  onCreate,
+  bottom,
+}: {
+  i18n: ReturnType<typeof useI18n>;
+  name: string;
+  onName: (v: string) => void;
+  muscle: string;
+  onMuscle: (v: string) => void;
+  equipment: string;
+  onEquipment: (v: string) => void;
+  busy: boolean;
+  onCreate: () => void;
+  /** the home-indicator inset, for the footer */
+  bottom: number;
+}) {
+  const chip = (value: string, current: string, set: (v: string) => void) => (
+    <Pressable
+      key={value}
+      accessibilityRole="button"
+      accessibilityState={{ selected: current === value }}
+      onPress={() => {
+        Haptics.selectionAsync();
+        set(value);
+      }}
+      style={[styles.chip, current === value && styles.chipOn]}>
+      <Text style={[styles.chipText, current === value && styles.chipTextOn]}>{value}</Text>
+    </Pressable>
+  );
+
+  return (
+    <>
+      <ScrollView
+        style={styles.list}
+        contentContainerStyle={styles.reviewContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag">
+        <TextInput
+          style={styles.input}
+          placeholder={i18n.nExerciseName}
+          placeholderTextColor={colors.mutedForeground}
+          value={name}
+          onChangeText={onName}
+          autoFocus
+          returnKeyType="done"
+        />
+
+        <Text style={styles.sectionLabel}>{i18n.nMuscleGroup}</Text>
+        <View style={styles.typeWrap}>{MUSCLES.map((m) => chip(m, muscle, onMuscle))}</View>
+
+        <Text style={styles.sectionLabel}>{i18n.nEquipment}</Text>
+        <View style={styles.typeWrap}>{EQUIPMENT.map((e) => chip(e, equipment, onEquipment))}</View>
+      </ScrollView>
+
+      <View style={[styles.footer, { paddingBottom: bottom + spacing.sm }]}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={!name.trim() || busy}
+          onPress={onCreate}
+          style={({ pressed }) => [
+            styles.primary,
+            (!name.trim() || busy) && styles.disabled,
+            pressed && styles.pressed,
+          ]}>
+          {busy ? (
+            <ActivityIndicator color={colors.primaryForeground} />
+          ) : (
+            <Text style={styles.primaryText}>{i18n.nCreateExercise}</Text>
+          )}
+        </Pressable>
+      </View>
+    </>
+  );
 }
 
 export default function WorkoutBuilderSheet() {
@@ -340,6 +435,50 @@ export default function WorkoutBuilderSheet() {
     );
   };
 
+  /**
+   * Which of the builder's four faces is on screen.
+   *
+   * The two sheets used to be overlays floating over the picker — a `Modal`
+   * first, then an absolutely-positioned view — and both failed on this stack in
+   * ways that looked identical from the outside: the page dimmed, the keyboard
+   * came up, and the panel was not there. This screen is itself presented as a
+   * modal, which is what makes overlays inside it fragile.
+   *
+   * They are steps now. Nothing floats: each face is the ordinary contents of an
+   * ordinary column, laid out by the one keyboard-avoider that already wraps the
+   * screen, with the header's back button carrying the way out. There is no
+   * absolute positioning left to get wrong.
+   *
+   * It is also the better shape. Naming a movement and prescribing an exercise
+   * are each a whole job with a form of their own; giving them the screen is
+   * what the two-step flow was already doing for picking and reviewing.
+   */
+  const mode = creating
+    ? 'new-exercise'
+    : editing !== null && items[editing]
+      ? 'edit-set'
+      : step === 1
+        ? 'pick'
+        : 'review';
+
+  /** the back button's job, which is different on each face */
+  const goBack = () => {
+    Haptics.selectionAsync();
+    if (mode === 'new-exercise') setCreating(false);
+    else if (mode === 'edit-set') setEditing(null);
+    else if (mode === 'review') setStep(1);
+    else router.back();
+  };
+
+  const subtitle =
+    mode === 'new-exercise'
+      ? i18n.nCreateExercise
+      : mode === 'edit-set'
+        ? items[editing!].exerciseName
+        : mode === 'pick'
+          ? i18n.nWbStepPick
+          : i18n.nWbStepReview;
+
   const typeLabel = (t: TemplateType): string =>
     ({
       push: i18n.nWbTypePush,
@@ -355,169 +494,163 @@ export default function WorkoutBuilderSheet() {
     })[t];
 
   return (
-    /*
-      The overlays are siblings of the keyboard-avoider, not children of it.
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* ── header: the step you are on, and the way back out of it ── */}
+      <View style={styles.header}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={mode === 'pick' ? i18n.a11yClose : i18n.a11yBack}
+          hitSlop={8}
+          onPress={goBack}
+          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}>
+          <Icon icon={mode === 'pick' ? X : ArrowLeft} size={18} color={colors.foreground} />
+        </Pressable>
 
-      They were inside, and the sheet came up *underneath the keyboard*: with
-      `behavior="padding"` the avoider adds its own bottom padding, and an
-      absolutely-positioned child resolves `bottom: 0` against the padding box —
-      so `bottom: 0` was the bottom of the keyboard-sized padding rather than the
-      top of it. The backdrop dimmed, the field took focus, and the panel itself
-      sat off-screen.
+        <View style={styles.headerTitle}>
+          <Text style={styles.title}>{i18n.nWbTitle}</Text>
+          <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+        </View>
 
-      Out here the overlay covers the whole screen, and each sheet does its own
-      keyboard avoidance from inside.
-    */
-    <View style={styles.root}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {/* ── header: the step you are on, and the way back out of it ── */}
-        <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={step === 1 ? i18n.a11yClose : i18n.a11yBack}
-            hitSlop={8}
-            onPress={() => {
-              Haptics.selectionAsync();
-              if (step === 2) setStep(1);
-              else router.back();
-            }}
-            style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}>
-            <Icon icon={step === 1 ? X : ArrowLeft} size={18} color={colors.foreground} />
-          </Pressable>
+        {/* Balances the button so the title sits centred */}
+        <View style={styles.headerBtn} />
+      </View>
 
-          <View style={styles.headerTitle}>
-            <Text style={styles.title}>{i18n.nWbTitle}</Text>
-            <Text style={styles.subtitle}>
-              {step === 1 ? i18n.nWbStepPick : i18n.nWbStepReview}
-            </Text>
+      {/* Two segments, the one you are on lit. It is the cheapest way to say
+          "this is short" — the old form gave no sense of how much was left. */}
+      <View style={styles.progress}>
+        <View style={styles.segOn} />
+        <View style={step === 2 ? styles.segOn : styles.segOff} />
+      </View>
+
+      {mode === 'new-exercise' ? (
+        <NewExercisePane
+          i18n={i18n}
+          name={cName}
+          onName={setCName}
+          muscle={cMuscle}
+          onMuscle={setCMuscle}
+          equipment={cEquip}
+          onEquipment={setCEquip}
+          busy={addExercise.isPending}
+          onCreate={createCustom}
+          bottom={insets.bottom}
+        />
+      ) : mode === 'edit-set' ? (
+        <>
+          <WorkoutSetPanel
+            item={items[editing!]}
+            index={editing!}
+            total={items.length}
+            unit={wUnit}
+            i18n={i18n}
+            onChange={(values) => patch(editing!, values)}
+            onMove={(to) => move(editing!, to)}
+            onRemove={() => removeAt(editing!)}
+          />
+          <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setEditing(null)}
+              style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+              <Text style={styles.primaryText}>{i18n.nWbDone}</Text>
+            </Pressable>
           </View>
-
-          {/* Balances the button so the title sits centred */}
-          <View style={styles.headerBtn} />
-        </View>
-
-        {/* Two segments, the one you are on lit. It is the cheapest way to say
-            "this is short" — the old form gave no sense of how much was left. */}
-        <View style={styles.progress}>
-          <View style={styles.segOn} />
-          <View style={step === 2 ? styles.segOn : styles.segOff} />
-        </View>
-
-        {step === 1 ? (
-          <>
-            <View style={styles.pickerHead}>
-              <View style={styles.searchBox}>
-                <Icon icon={Search} size={16} color={colors.mutedForeground} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder={i18n.exercisesSearch}
-                  placeholderTextColor={colors.mutedForeground}
-                  value={search}
-                  onChangeText={setSearch}
-                  autoCorrect={false}
-                  returnKeyType="search"
-                />
-                {search.length > 0 ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={i18n.a11yClose}
-                    hitSlop={8}
-                    onPress={() => setSearch('')}>
-                    <Icon icon={X} size={15} color={colors.mutedForeground} />
-                  </Pressable>
-                ) : null}
-              </View>
-
-              {/*
-                The body parts, as a filter rather than a destination.
-
-                The Workouts tab uses the same ten diagrams as a way *into* the
-                library; here they narrow the list in place, because leaving the
-                builder to browse and coming back would lose what you had picked.
-              */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.groupStrip}
-                keyboardShouldPersistTaps="handled">
+        </>
+      ) : mode === 'pick' ? (
+        <>
+          <View style={styles.pickerHead}>
+            <View style={styles.searchBox}>
+              <Icon icon={Search} size={16} color={colors.mutedForeground} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={i18n.exercisesSearch}
+                placeholderTextColor={colors.mutedForeground}
+                value={search}
+                onChangeText={setSearch}
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+              {search.length > 0 ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityState={{ selected: group === null }}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setGroup(null);
-                  }}
-                  style={[styles.groupTile, group === null && styles.groupTileOn]}>
-                  <View style={styles.allDot}>
-                    <Text style={styles.allCount}>{(exercises ?? []).length}</Text>
-                  </View>
-                  <Text style={[styles.groupName, group === null && styles.groupNameOn]}>
-                    {i18n.nWbAll}
-                  </Text>
+                  accessibilityLabel={i18n.a11yClose}
+                  hitSlop={8}
+                  onPress={() => setSearch('')}>
+                  <Icon icon={X} size={15} color={colors.mutedForeground} />
                 </Pressable>
-
-                {GROUPS.map((g) => (
-                  <Pressable
-                    key={g.key}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: group === g.key }}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setGroup((cur) => (cur === g.key ? null : g.key));
-                    }}
-                    style={[styles.groupTile, group === g.key && styles.groupTileOn]}>
-                    <MuscleArt group={g.key} size={34} />
-                    <Text style={[styles.groupName, group === g.key && styles.groupNameOn]}>
-                      {label(g)}
-                    </Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
+              ) : null}
             </View>
 
-            <FlatList
-              data={visible}
-              keyExtractor={(e) => e.id}
-              style={styles.list}
-              contentContainerStyle={styles.listContent}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              ListEmptyComponent={
-                isLoading ? (
-                  <ActivityIndicator color={colors.mutedForeground} style={styles.empty} />
-                ) : (
-                  <View style={styles.empty}>
-                    <Text style={styles.emptyText}>
-                      {search.trim()
-                        ? i18n.nWbNoMatch.replace('{x}', search.trim())
-                        : (exercises ?? []).length === 0
-                          ? i18n.nWbLibraryEmpty
-                          : i18n.nNoExercisesFound}
-                    </Text>
-                    {/* The dead end becomes the way forward: what you searched
-                        for is what the new exercise is called. */}
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setCName(search.trim());
-                        setCreating(true);
-                      }}
-                      style={({ pressed }) => [styles.emptyCta, pressed && styles.pressed]}>
-                      <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
-                      <Text style={styles.emptyCtaText}>
-                        {search.trim()
-                          ? i18n.nWbCreateNamed.replace('{x}', search.trim())
-                          : i18n.nCreateExercise}
-                      </Text>
-                    </Pressable>
-                  </View>
-                )
-              }
-              ListFooterComponent={
-                visible.length > 0 ? (
+            {/*
+              The body parts, as a filter rather than a destination.
+
+              The Workouts tab uses the same ten diagrams as a way *into* the
+              library; here they narrow the list in place, because leaving the
+              builder to browse and coming back would lose what you had picked.
+            */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.groupStrip}
+              keyboardShouldPersistTaps="handled">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: group === null }}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setGroup(null);
+                }}
+                style={[styles.groupTile, group === null && styles.groupTileOn]}>
+                <View style={styles.allDot}>
+                  <Text style={styles.allCount}>{(exercises ?? []).length}</Text>
+                </View>
+                <Text style={[styles.groupName, group === null && styles.groupNameOn]}>
+                  {i18n.nWbAll}
+                </Text>
+              </Pressable>
+
+              {GROUPS.map((g) => (
+                <Pressable
+                  key={g.key}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: group === g.key }}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setGroup((cur) => (cur === g.key ? null : g.key));
+                  }}
+                  style={[styles.groupTile, group === g.key && styles.groupTileOn]}>
+                  <MuscleArt group={g.key} size={34} />
+                  <Text style={[styles.groupName, group === g.key && styles.groupNameOn]}>
+                    {label(g)}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+
+          <FlatList
+            data={visible}
+            keyExtractor={(e) => e.id}
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            ListEmptyComponent={
+              isLoading ? (
+                <ActivityIndicator color={colors.mutedForeground} style={styles.empty} />
+              ) : (
+                <View style={styles.empty}>
+                  <Text style={styles.emptyText}>
+                    {search.trim()
+                      ? i18n.nWbNoMatch.replace('{x}', search.trim())
+                      : (exercises ?? []).length === 0
+                        ? i18n.nWbLibraryEmpty
+                        : i18n.nNoExercisesFound}
+                  </Text>
+                  {/* The dead end becomes the way forward: what you searched
+                      for is what the new exercise is called. */}
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => {
@@ -525,294 +658,194 @@ export default function WorkoutBuilderSheet() {
                       setCName(search.trim());
                       setCreating(true);
                     }}
-                    style={({ pressed }) => [styles.newRow, pressed && styles.pressed]}>
-                    <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
-                    <Text style={styles.newRowText}>{i18n.nCreateExercise}</Text>
-                  </Pressable>
-                ) : null
-              }
-              renderItem={({ item: e }) => {
-                const on = chosen.has(e.id);
-                return (
-                  <Pressable
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: on }}
-                    onPress={() => toggle(e)}
-                    style={({ pressed }) => [styles.exRow, on && styles.exRowOn, pressed && styles.pressed]}>
-                    {/* A fixed slot, because `MuscleArt` draws nothing for a
-                        group it has no diagram for — without it those rows would
-                        start 38pt to the left of the ones around them. */}
-                    <View style={styles.art}>
-                      <MuscleArt group={e.muscle_group ?? ''} size={30} />
-                    </View>
-                    <View style={styles.exText}>
-                      <Text style={styles.exName} numberOfLines={1}>{e.name}</Text>
-                      <Text style={styles.exMeta} numberOfLines={1}>
-                        {[e.muscle_group, e.equipment].filter(Boolean).join(' · ')}
-                      </Text>
-                    </View>
-                    <View style={[styles.tick, on && styles.tickOn]}>
-                      {on ? <Icon icon={Check} size={14} color={colors.primaryForeground} strokeWidth={3} /> : null}
-                    </View>
-                  </Pressable>
-                );
-              }}
-            />
-
-            <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
-              <Text style={styles.footerCount}>
-                {items.length > 0
-                  ? i18n.nWbSelected.replace('{n}', String(items.length))
-                  : i18n.nWbPickHint}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                disabled={items.length === 0}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setStep(2);
-                }}
-                style={({ pressed }) => [
-                  styles.primary,
-                  items.length === 0 && styles.disabled,
-                  pressed && items.length > 0 && styles.pressed,
-                ]}>
-                <Text style={styles.primaryText}>{i18n.nWbNext}</Text>
-                <Icon icon={ChevronRight} size={18} color={colors.primaryForeground} />
-              </Pressable>
-            </View>
-          </>
-        ) : (
-          <>
-            <ScrollView
-              style={styles.list}
-              contentContainerStyle={styles.reviewContent}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag">
-              <TextInput
-                style={styles.nameInput}
-                value={shownName}
-                onChangeText={(t) => {
-                  setNameTouched(true);
-                  setName(t);
-                }}
-                placeholder={i18n.nTemplateName}
-                placeholderTextColor={colors.mutedForeground}
-                returnKeyType="done"
-              />
-              <Text style={styles.nameHint}>{i18n.nWbNameHint}</Text>
-
-              <Text style={styles.summary}>
-                {i18n.nWbSummary
-                  .replace('{n}', String(items.length))
-                  .replace('{s}', String(totals.sets))
-                  .replace('{m}', String(totals.minutes))}
-              </Text>
-
-              <Text style={styles.sectionLabel}>{i18n.nWbType}</Text>
-              <View style={styles.typeWrap}>
-                {TYPES.map((t) => (
-                  <Pressable
-                    key={t}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: tType === t }}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setPickedType(t);
-                    }}
-                    style={[styles.chip, tType === t && styles.chipOn]}>
-                    <Text style={[styles.chipText, tType === t && styles.chipTextOn]}>
-                      {typeLabel(t)}
+                    style={({ pressed }) => [styles.emptyCta, pressed && styles.pressed]}>
+                    <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+                    <Text style={styles.emptyCtaText}>
+                      {search.trim()
+                        ? i18n.nWbCreateNamed.replace('{x}', search.trim())
+                        : i18n.nCreateExercise}
                     </Text>
                   </Pressable>
-                ))}
-              </View>
-
-              <Text style={styles.sectionLabel}>{i18n.workoutsExercisesAdded}</Text>
-              {items.map((ex, idx) => (
+                </View>
+              )
+            }
+            ListFooterComponent={
+              visible.length > 0 ? (
                 <Pressable
-                  key={ex.exerciseId}
                   accessibilityRole="button"
-                  accessibilityLabel={`${ex.exerciseName}, ${ex.sets} × ${ex.reps}`}
                   onPress={() => {
                     Haptics.selectionAsync();
-                    setEditing(idx);
+                    setCName(search.trim());
+                    setCreating(true);
                   }}
-                  style={({ pressed }) => [styles.planRow, pressed && styles.pressed]}>
-                  {/* The number is the order, and the order is part of the plan */}
-                  <View style={styles.ordinal}>
-                    <Text style={styles.ordinalText}>{idx + 1}</Text>
+                  style={({ pressed }) => [styles.newRow, pressed && styles.pressed]}>
+                  <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
+                  <Text style={styles.newRowText}>{i18n.nCreateExercise}</Text>
+                </Pressable>
+              ) : null
+            }
+            renderItem={({ item: e }) => {
+              const on = chosen.has(e.id);
+              return (
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: on }}
+                  onPress={() => toggle(e)}
+                  style={({ pressed }) => [styles.exRow, on && styles.exRowOn, pressed && styles.pressed]}>
+                  {/* A fixed slot, because `MuscleArt` draws nothing for a
+                      group it has no diagram for — without it those rows would
+                      start 38pt to the left of the ones around them. */}
+                  <View style={styles.art}>
+                    <MuscleArt group={e.muscle_group ?? ''} size={30} />
                   </View>
                   <View style={styles.exText}>
-                    <Text style={styles.exName} numberOfLines={1}>{ex.exerciseName}</Text>
-                    {/* The prescription as a sentence, not five boxes */}
+                    <Text style={styles.exName} numberOfLines={1}>{e.name}</Text>
                     <Text style={styles.exMeta} numberOfLines={1}>
-                      {ex.sets} × {ex.reps}
-                      {ex.weight ? `  ·  ${displayWeight(ex.weight, wUnit)} ${wl}` : ''}
-                      {`  ·  ${restLabel(ex.restSeconds ?? 90)}`}
+                      {[e.muscle_group, e.equipment].filter(Boolean).join(' · ')}
                     </Text>
                   </View>
-                  <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+                  <View style={[styles.tick, on && styles.tickOn]}>
+                    {on ? <Icon icon={Check} size={14} color={colors.primaryForeground} strokeWidth={3} /> : null}
+                  </View>
+                </Pressable>
+              );
+            }}
+          />
+
+          <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+            <Text style={styles.footerCount}>
+              {items.length > 0
+                ? i18n.nWbSelected.replace('{n}', String(items.length))
+                : i18n.nWbPickHint}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              disabled={items.length === 0}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setStep(2);
+              }}
+              style={({ pressed }) => [
+                styles.primary,
+                items.length === 0 && styles.disabled,
+                pressed && items.length > 0 && styles.pressed,
+              ]}>
+              <Text style={styles.primaryText}>{i18n.nWbNext}</Text>
+              <Icon icon={ChevronRight} size={18} color={colors.primaryForeground} />
+            </Pressable>
+          </View>
+        </>
+      ) : (
+        <>
+          <ScrollView
+            style={styles.list}
+            contentContainerStyle={styles.reviewContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag">
+            <TextInput
+              style={styles.nameInput}
+              value={shownName}
+              onChangeText={(t) => {
+                setNameTouched(true);
+                setName(t);
+              }}
+              placeholder={i18n.nTemplateName}
+              placeholderTextColor={colors.mutedForeground}
+              returnKeyType="done"
+            />
+            <Text style={styles.nameHint}>{i18n.nWbNameHint}</Text>
+
+            <Text style={styles.summary}>
+              {i18n.nWbSummary
+                .replace('{n}', String(items.length))
+                .replace('{s}', String(totals.sets))
+                .replace('{m}', String(totals.minutes))}
+            </Text>
+
+            <Text style={styles.sectionLabel}>{i18n.nWbType}</Text>
+            <View style={styles.typeWrap}>
+              {TYPES.map((t) => (
+                <Pressable
+                  key={t}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: tType === t }}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setPickedType(t);
+                  }}
+                  style={[styles.chip, tType === t && styles.chipOn]}>
+                  <Text style={[styles.chipText, tType === t && styles.chipTextOn]}>
+                    {typeLabel(t)}
+                  </Text>
                 </Pressable>
               ))}
+            </View>
 
+            <Text style={styles.sectionLabel}>{i18n.workoutsExercisesAdded}</Text>
+            {items.map((ex, idx) => (
               <Pressable
+                key={ex.exerciseId}
                 accessibilityRole="button"
+                accessibilityLabel={`${ex.exerciseName}, ${ex.sets} × ${ex.reps}`}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  setStep(1);
+                  setEditing(idx);
                 }}
-                style={({ pressed }) => [styles.newRow, pressed && styles.pressed]}>
-                <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
-                <Text style={styles.newRowText}>{i18n.nWbAddMore}</Text>
+                style={({ pressed }) => [styles.planRow, pressed && styles.pressed]}>
+                {/* The number is the order, and the order is part of the plan */}
+                <View style={styles.ordinal}>
+                  <Text style={styles.ordinalText}>{idx + 1}</Text>
+                </View>
+                <View style={styles.exText}>
+                  <Text style={styles.exName} numberOfLines={1}>{ex.exerciseName}</Text>
+                  {/* The prescription as a sentence, not five boxes */}
+                  <Text style={styles.exMeta} numberOfLines={1}>
+                    {ex.sets} × {ex.reps}
+                    {ex.weight ? `  ·  ${displayWeight(ex.weight, wUnit)} ${wl}` : ''}
+                    {`  ·  ${restLabel(ex.restSeconds ?? 90)}`}
+                  </Text>
+                </View>
+                <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
               </Pressable>
-            </ScrollView>
+            ))}
 
-            <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
-              <Pressable
-                accessibilityRole="button"
-                disabled={items.length === 0 || addTemplate.isPending}
-                onPress={save}
-                style={({ pressed }) => [
-                  styles.primary,
-                  (items.length === 0 || addTemplate.isPending) && styles.disabled,
-                  pressed && styles.pressed,
-                ]}>
-                {addTemplate.isPending ? (
-                  <ActivityIndicator color={colors.primaryForeground} />
-                ) : (
-                  <Text style={styles.primaryText}>{i18n.nWbSave}</Text>
-                )}
-              </Pressable>
-            </View>
-          </>
-        )}
-      </KeyboardAvoidingView>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                Haptics.selectionAsync();
+                setStep(1);
+              }}
+              style={({ pressed }) => [styles.newRow, pressed && styles.pressed]}>
+              <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
+              <Text style={styles.newRowText}>{i18n.nWbAddMore}</Text>
+            </Pressable>
+          </ScrollView>
 
-      {/*
-        Mounted only while open, so each opening starts from the exercise's
-        stored numbers — the steppers inside own their values, and that is only
-        safe if nothing outside can change them mid-edit.
-      */}
-      {editing !== null && items[editing] ? (
-        <WorkoutSetSheet
-          item={items[editing]}
-          index={editing}
-          total={items.length}
-          unit={wUnit}
-          i18n={i18n}
-          onChange={(values) => patch(editing, values)}
-          onMove={(to) => move(editing, to)}
-          onRemove={() => removeAt(editing)}
-          onClose={() => setEditing(null)}
-        />
-      ) : null}
-
-      {/*
-        ── a movement the library does not have yet ──
-
-        An overlay in this screen's own tree rather than a `Modal`, and mounted
-        only while open. It was a `Modal`, and tapping the button did nothing at
-        all: this screen is itself presented as a modal (`_layout` gives it
-        `presentation: 'modal'`), and a `Modal` opened from inside one renders
-        blank on this RN / react-native-screens combination — the same new-arch
-        bug `_layout` already records against formSheet detents. It fails
-        silently, so the button simply looked dead.
-      */}
-      {creating ? (
-        <View style={styles.overlay}>
-          <Pressable
-            style={styles.backdrop}
-            accessibilityLabel={i18n.a11yClose}
-            onPress={() => setCreating(false)}
-          />
-          {/* `box-none` so the dimmed area behind the panel still takes the tap
-              that closes it — this fills the overlay to do its keyboard work. */}
-          <KeyboardAvoidingView
-            style={styles.sheetHolder}
-            pointerEvents="box-none"
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <Animated.View
-              entering={SlideInDown.duration(240).easing(Easing.out(Easing.cubic))}
-              style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
-              <View style={styles.grabber} />
-              <Text style={styles.sheetTitle}>{i18n.nCreateExercise}</Text>
-
-              <TextInput
-                style={styles.input}
-                placeholder={i18n.nExerciseName}
-                placeholderTextColor={colors.mutedForeground}
-                value={cName}
-                onChangeText={setCName}
-                autoFocus
-              />
-
-              <Text style={styles.sectionLabel}>{i18n.nMuscleGroup}</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipRow}
-                keyboardShouldPersistTaps="handled">
-                {MUSCLES.map((m) => (
-                  <Pressable
-                    key={m}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setCMuscle(m);
-                    }}
-                    style={[styles.chip, cMuscle === m && styles.chipOn]}>
-                    <Text style={[styles.chipText, cMuscle === m && styles.chipTextOn]}>{m}</Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-
-              <Text style={styles.sectionLabel}>{i18n.nEquipment}</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipRow}
-                keyboardShouldPersistTaps="handled">
-                {EQUIPMENT.map((eq) => (
-                  <Pressable
-                    key={eq}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setCEquip(eq);
-                    }}
-                    style={[styles.chip, cEquip === eq && styles.chipOn]}>
-                    <Text style={[styles.chipText, cEquip === eq && styles.chipTextOn]}>{eq}</Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-
-              <Pressable
-                accessibilityRole="button"
-                disabled={!cName.trim() || addExercise.isPending}
-                onPress={createCustom}
-                style={({ pressed }) => [
-                  styles.primary,
-                  (!cName.trim() || addExercise.isPending) && styles.disabled,
-                  pressed && styles.pressed,
-                ]}>
-                {addExercise.isPending ? (
-                  <ActivityIndicator color={colors.primaryForeground} />
-                ) : (
-                  <Text style={styles.primaryText}>{i18n.nCreateExercise}</Text>
-                )}
-              </Pressable>
-            </Animated.View>
-          </KeyboardAvoidingView>
-        </View>
-      ) : null}
-    </View>
+          <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={items.length === 0 || addTemplate.isPending}
+              onPress={save}
+              style={({ pressed }) => [
+                styles.primary,
+                (items.length === 0 || addTemplate.isPending) && styles.disabled,
+                pressed && styles.pressed,
+              ]}>
+              {addTemplate.isPending ? (
+                <ActivityIndicator color={colors.primaryForeground} />
+              ) : (
+                <Text style={styles.primaryText}>{i18n.nWbSave}</Text>
+              )}
+            </Pressable>
+          </View>
+        </>
+      )}
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.card },
-  flex: { flex: 1 },
-  /* Pins the panel to the bottom of whatever space the keyboard leaves. */
-  sheetHolder: { flex: 1, justifyContent: 'flex-end' },
 
   header: {
     flexDirection: 'row',
@@ -996,42 +1029,6 @@ const styles = StyleSheet.create({
   primaryText: { ...type.headline, color: colors.primaryForeground },
   disabled: { opacity: 0.4 },
 
-  /* See the note at the sheet's mount point: this screen is presented as a
-     modal, and a `Modal` inside one renders blank here. */
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 40,
-    elevation: 40,
-  },
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  sheet: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    gap: spacing.sm,
-  },
-  grabber: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    marginBottom: spacing.xs,
-  },
-  sheetTitle: { ...type.title2, color: colors.foreground },
   input: {
     height: 48,
     borderRadius: radius.md,

@@ -1,9 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { ChevronDown, ChevronUp, Minus, Plus, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated, { Easing, SlideInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -14,7 +12,7 @@ import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/u
 /**
  * How one exercise is prescribed — sets, reps, load, rest and effort.
  *
- * ── why this is a sheet and not five boxes in a row ──
+ * ── why this is a page of its own and not five boxes in a row ──
  *
  * The builder used to put all five on one line inside every exercise card:
  * `Sets | Reps | kg | RPE | Rest`, each a bordered text field. On a 390pt
@@ -23,10 +21,22 @@ import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/u
  * equal weight — RPE and rest, which most people set once and never touch, drew
  * exactly as loudly as sets and reps, which are the whole prescription.
  *
- * So the card outside shows the prescription as a sentence — `3 × 10 · 60 kg` —
+ * So the row outside shows the prescription as a sentence — `3 × 10 · 60 kg` —
  * and the editing happens here, one row per value, with room for a name and a
  * hint. It is the shape Apple's Fitness and Health use for the same job: a
  * summary you read, and a focused place you go to change it.
+ *
+ * ── a face of the builder, not a sheet over it ──
+ *
+ * It was a `Modal` first, then an absolutely-positioned overlay, and both failed
+ * the same way on this stack: the page dimmed, the keyboard came up, and the
+ * panel was not on screen. The builder is itself presented as a modal, which is
+ * what makes anything floating inside it fragile.
+ *
+ * So it is plain contents in a plain column now, laid out by the keyboard
+ * avoider that already wraps the builder, with the header's back button as the
+ * way out and Done in the builder's own footer. Nothing here is positioned
+ * absolutely, so there is nothing left to position wrongly.
  *
  * ── steppers, and still typable ──
  *
@@ -158,7 +168,7 @@ function Row({
   );
 }
 
-export function WorkoutSetSheet({
+export function WorkoutSetPanel({
   item,
   index,
   total,
@@ -167,7 +177,6 @@ export function WorkoutSetSheet({
   onChange,
   onMove,
   onRemove,
-  onClose,
 }: {
   item: TemplateExercise;
   index: number;
@@ -177,193 +186,130 @@ export function WorkoutSetSheet({
   onChange: (patch: Partial<TemplateExercise>) => void;
   onMove: (to: number) => void;
   onRemove: () => void;
-  onClose: () => void;
 }) {
-  const insets = useSafeAreaInsets();
   const wl = weightLabel(unit);
 
   return (
-    <View style={styles.overlay}>
-      {/* Tapping the dimmed page behind the sheet closes it — the standard way
-          out of a sheet, and the reason there is no cancel button. Nothing here
-          is staged: every change is already applied to the workout. */}
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={i18n.a11yClose} />
+    <ScrollView
+      style={styles.body}
+      contentContainerStyle={styles.bodyContent}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag">
+      <Text style={styles.name} numberOfLines={2}>{item.exerciseName}</Text>
+      <Text style={styles.position}>
+        {index + 1} / {total}
+      </Text>
 
-      {/* The rows are text fields, so the panel has to clear the keyboard.
-          `box-none` keeps the dimmed area behind it tappable. */}
-      <KeyboardAvoidingView
-        style={styles.holder}
-        pointerEvents="box-none"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Animated.View
-          entering={SlideInDown.duration(240).easing(Easing.out(Easing.cubic))}
-          style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
-          <View style={styles.grabber} />
+      <Row label={i18n.nWbSets}>
+        <Stepper
+          initial={item.sets}
+          min={1}
+          max={20}
+          step={1}
+          a11yLabel={i18n.nWbSets}
+          onChange={(n) => onChange({ sets: n })}
+        />
+      </Row>
 
-          <Text style={styles.name} numberOfLines={2}>{item.exerciseName}</Text>
-          <Text style={styles.position}>
-            {index + 1} / {total}
-          </Text>
+      <Row label={i18n.nWbReps}>
+        <Stepper
+          initial={item.reps}
+          min={1}
+          max={100}
+          step={1}
+          a11yLabel={i18n.nWbReps}
+          onChange={(n) => onChange({ reps: n })}
+        />
+      </Row>
 
-          <Row label={i18n.nWbSets}>
-            <Stepper
-              initial={item.sets}
-              min={1}
-              max={20}
-              step={1}
-              a11yLabel={i18n.nWbSets}
-              onChange={(n) => onChange({ sets: n })}
-            />
-          </Row>
+      {/*
+        Stepped in the unit on screen and stored in kilograms, like every
+        other weight in the app. 2.5 is the step because that is the smallest
+        plate pair on a bar; in pounds it is 5, for the same reason.
+      */}
+      <Row label={`${i18n.nWbLoad} (${wl})`} hint={item.weight ? undefined : i18n.nWbBodyweight}>
+        <Stepper
+          initial={displayWeight(item.weight, unit)}
+          min={0}
+          max={unit === 'kg' ? 500 : 1100}
+          step={unit === 'kg' ? 2.5 : 5}
+          decimals={1}
+          a11yLabel={i18n.nWbLoad}
+          onChange={(n) => onChange({ weight: tidy(weightToKg(n, unit)) })}
+        />
+      </Row>
 
-          <Row label={i18n.nWbReps}>
-            <Stepper
-              initial={item.reps}
-              min={1}
-              max={100}
-              step={1}
-              a11yLabel={i18n.nWbReps}
-              onChange={(n) => onChange({ reps: n })}
-            />
-          </Row>
+      <Row label={i18n.nWbRest} hint={restLabel(item.restSeconds ?? 90)}>
+        <Stepper
+          initial={item.restSeconds ?? 90}
+          min={0}
+          max={600}
+          step={15}
+          a11yLabel={i18n.nWbRest}
+          onChange={(n) => onChange({ restSeconds: n })}
+        />
+      </Row>
 
-          {/*
-            Stepped in the unit on screen and stored in kilograms, like every
-            other weight in the app. 2.5 is the step because that is the smallest
-            plate pair on a bar; in pounds it is 5, for the same reason.
-          */}
-          <Row label={`${i18n.nWbLoad} (${wl})`} hint={item.weight ? undefined : i18n.nWbBodyweight}>
-            <Stepper
-              initial={displayWeight(item.weight, unit)}
-              min={0}
-              max={unit === 'kg' ? 500 : 1100}
-              step={unit === 'kg' ? 2.5 : 5}
-              decimals={1}
-              a11yLabel={i18n.nWbLoad}
-              onChange={(n) => onChange({ weight: tidy(weightToKg(n, unit)) })}
-            />
-          </Row>
+      <Row label={i18n.nWbEffort} hint={i18n.nWbEffortHint}>
+        <Stepper
+          initial={item.rpe ?? 7}
+          min={5}
+          max={10}
+          step={1}
+          a11yLabel={i18n.nWbEffort}
+          onChange={(n) => onChange({ rpe: n })}
+        />
+      </Row>
 
-          <Row label={i18n.nWbRest} hint={restLabel(item.restSeconds ?? 90)}>
-            <Stepper
-              initial={item.restSeconds ?? 90}
-              min={0}
-              max={600}
-              step={15}
-              a11yLabel={i18n.nWbRest}
-              onChange={(n) => onChange({ restSeconds: n })}
-            />
-          </Row>
+      <View style={styles.actions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.nWbMoveUp}
+          disabled={index === 0}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onMove(index - 1);
+          }}
+          style={({ pressed }) => [styles.action, index === 0 && styles.stepOff, pressed && styles.pressed]}>
+          <Icon icon={ChevronUp} size={16} color={colors.foreground} />
+          <Text style={styles.actionText}>{i18n.nWbMoveUp}</Text>
+        </Pressable>
 
-          <Row label={i18n.nWbEffort} hint={i18n.nWbEffortHint}>
-            <Stepper
-              initial={item.rpe ?? 7}
-              min={5}
-              max={10}
-              step={1}
-              a11yLabel={i18n.nWbEffort}
-              onChange={(n) => onChange({ rpe: n })}
-            />
-          </Row>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.nWbMoveDown}
+          disabled={index >= total - 1}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onMove(index + 1);
+          }}
+          style={({ pressed }) => [
+            styles.action,
+            index >= total - 1 && styles.stepOff,
+            pressed && styles.pressed,
+          ]}>
+          <Icon icon={ChevronDown} size={16} color={colors.foreground} />
+          <Text style={styles.actionText}>{i18n.nWbMoveDown}</Text>
+        </Pressable>
+      </View>
 
-          <View style={styles.actions}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={i18n.nWbMoveUp}
-              disabled={index === 0}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onMove(index - 1);
-              }}
-              style={({ pressed }) => [styles.action, index === 0 && styles.stepOff, pressed && styles.pressed]}>
-              <Icon icon={ChevronUp} size={16} color={colors.foreground} />
-              <Text style={styles.actionText}>{i18n.nWbMoveUp}</Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={i18n.nWbMoveDown}
-              disabled={index >= total - 1}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onMove(index + 1);
-              }}
-              style={({ pressed }) => [
-                styles.action,
-                index >= total - 1 && styles.stepOff,
-                pressed && styles.pressed,
-              ]}>
-              <Icon icon={ChevronDown} size={16} color={colors.foreground} />
-              <Text style={styles.actionText}>{i18n.nWbMoveDown}</Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              onRemove();
-            }}
-            style={({ pressed }) => [styles.remove, pressed && styles.pressed]}>
-            <Icon icon={Trash2} size={15} color={colors.destructive} />
-            <Text style={styles.removeText}>{i18n.nWbRemove}</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={onClose}
-            style={({ pressed }) => [styles.done, pressed && styles.pressed]}>
-            <Text style={styles.doneText}>{i18n.nWbDone}</Text>
-          </Pressable>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </View>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onRemove();
+        }}
+        style={({ pressed }) => [styles.remove, pressed && styles.pressed]}>
+        <Icon icon={Trash2} size={15} color={colors.destructive} />
+        <Text style={styles.removeText}>{i18n.nWbRemove}</Text>
+      </Pressable>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  /*
-    An overlay inside the screen, not a `Modal`.
-
-    The builder is itself presented as a modal (`_layout` gives it
-    `presentation: 'modal'`), and a `Modal` opened from inside one of those
-    renders blank on this RN / react-native-screens combination — the same
-    new-arch bug `_layout` already records against formSheet detents. It fails
-    silently: the state flips, nothing appears, and the button looks dead.
-
-    Nothing here needs a separate window anyway. It covers the screen it belongs
-    to, and being in the same tree means the slide-in can be Reanimated's rather
-    than the platform's.
-  */
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    // Above the list it covers, on both platforms
-    zIndex: 40,
-    elevation: 40,
-  },
-  /* Pins the panel to the bottom of whatever space the keyboard leaves. */
-  holder: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)' },
-  sheet: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    gap: spacing.xs,
-  },
-  grabber: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    marginBottom: spacing.sm,
-  },
+  body: { flex: 1 },
+  bodyContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs },
   name: { ...type.title2, color: colors.foreground },
   position: { ...type.caption, color: colors.mutedForeground, marginBottom: spacing.sm },
 
@@ -424,13 +370,5 @@ const styles = StyleSheet.create({
   },
   removeText: { ...type.footnote, color: colors.destructive, fontWeight: '600' },
 
-  done: {
-    height: 52,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
-  doneText: { ...type.headline, color: colors.primaryForeground },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });
