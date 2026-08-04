@@ -97,15 +97,15 @@ const NATIVE_BLUR = Platform.OS === 'ios';
  * `expo-blur` implements intensity by holding a `UIViewPropertyAnimator` at
  * `fractionComplete`, which scales the blur radius *and* the material's own
  * tint together, so a low number is not a weak frost but a fraction of a full
- * one. Twenty-four is enough to break up a digit sliding under the clock and
- * not enough to notice on a still screen; the mask below takes it down from
- * there to nothing.
+ * one. Thirty is enough to break up a digit sliding under the clock without
+ * turning the strip into a panel; the mask below takes it down from there to
+ * nothing.
  *
  * Fifty is the default and far too much. The numbers people reach for when
  * they want the effect to be obvious — 60, 80, 100 — are what make a backdrop
  * read as an overlay.
  */
-const INTENSITY = 24;
+const INTENSITY = 30;
 
 /**
  * `systemUltraThinMaterialDark`, not `dark`.
@@ -119,6 +119,22 @@ const INTENSITY = 24;
  * light trait.
  */
 const TINT = 'systemUltraThinMaterialDark' as const;
+
+/**
+ * How far past the status bar the blur keeps going, in points.
+ *
+ * It used to stop level with the inset, on the reasoning that blurring further
+ * down would soften the large title where it sits at rest — and the page is
+ * meant to be sharp. That reasoning holds for a blur that *ends*; for one that
+ * fades, the question is only how much is left by the time it gets there.
+ *
+ * At 22 the mask is down to about a seventh of full strength where the title
+ * begins, of a blur that is a third of a full material to start with. What
+ * that buys is the fade having somewhere to happen: over the inset alone it
+ * has about sixty points, and a third of those are under the clock at nearly
+ * full strength, which leaves the falloff crowded into the last stretch.
+ */
+const BLUR_DROP = 22;
 
 /**
  * How far the gradient runs, in points.
@@ -170,7 +186,7 @@ export function StatusScrim() {
       */}
       {NATIVE_BLUR ? (
         <MaskedView
-          style={[styles.blur, { height: insets.top }]}
+          style={[styles.blur, { height: insets.top + BLUR_DROP }]}
           maskElement={
             /*
               The mask is the fade. Alpha here is how much of the blurred
@@ -179,16 +195,23 @@ export function StatusScrim() {
               bottom of the status bar — one effect view, one gradient, no
               steps anywhere in it.
 
-              Three stops rather than two: a straight ramp reaches zero at a
-              definite row and the eye finds that row. Holding it higher
-              through the middle and letting it fall away late leaves no line
-              to find.
+              Four stops rather than two: a straight ramp reaches zero at a
+              definite row and the eye finds that row. Held high through the
+              first half, then falling away in two steps of its own, it has no
+              row anywhere that differs from its neighbour by enough to see.
+
+              The shape is also what keeps the extra length cheap. By the
+              status bar's own bottom edge the mask is at about a quarter, and
+              by the top of the large title at about a seventh — enough to go
+              on softening something scrolling past, not enough to be doing
+              anything to a page standing still.
             */
             <Svg style={StyleSheet.absoluteFill}>
               <Defs>
                 <LinearGradient id={mid} x1="0" y1="0" x2="0" y2="1">
                   <Stop offset="0" stopColor="#fff" stopOpacity="1" />
-                  <Stop offset="0.55" stopColor="#fff" stopOpacity="0.45" />
+                  <Stop offset="0.45" stopColor="#fff" stopOpacity="0.6" />
+                  <Stop offset="0.78" stopColor="#fff" stopOpacity="0.18" />
                   <Stop offset="1" stopColor="#fff" stopOpacity="0" />
                 </LinearGradient>
               </Defs>
