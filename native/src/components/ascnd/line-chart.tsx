@@ -28,6 +28,7 @@ import Svg, {
 } from 'react-native-svg';
 
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { onCurve, sampleCurve, yOnCurve, type CurvePoint } from '@/lib/curve';
 
 export interface ChartPoint {
   date: string;
@@ -117,47 +118,6 @@ const SNAP_MS = 190;
 const FADE_MS = 140;
 const SNAP_EASE = Easing.out(Easing.cubic);
 
-/**
- * The drawn curve as a list of points, for the marker to ride.
- *
- * The path is a chain of cubics whose control points share their endpoints' y
- * (`C mid y0, mid y1, x1 y1`). Finding y for a given x on that exactly means
- * inverting a cubic; sampling it and interpolating between samples is a few
- * lines, has no failure mode, and is wrong by less than the width of the line.
- *
- * The sample count per segment shrinks as the series grows, so the array handed
- * to the worklet stays around 120 points whether the chart is showing a week or
- * ten years. At the dense end each segment collapses to its endpoints, which is
- * exactly right: with readings a couple of pixels apart the curve between them
- * and a straight line between them are the same thing on screen.
- */
-function sampleCurve(
-  xs: readonly number[],
-  ys: readonly number[],
-): { x: number; y: number }[] {
-  const segs = Math.max(1, xs.length - 1);
-  const per = Math.max(1, Math.round(120 / segs));
-  const out: { x: number; y: number }[] = [{ x: xs[0], y: ys[0] }];
-  for (let i = 1; i < xs.length; i++) {
-    const x0 = xs[i - 1];
-    const x1 = xs[i];
-    const y0 = ys[i - 1];
-    const y1 = ys[i];
-    const mid = (x0 + x1) / 2;
-    for (let k = 1; k <= per; k++) {
-      const t = k / per;
-      const u = 1 - t;
-      // Bezier with P1 = (mid, y0) and P2 = (mid, y1) — the same control points
-      // the path string is built from, so the samples sit on the drawn line.
-      out.push({
-        x: u * u * u * x0 + 3 * u * u * t * mid + 3 * u * t * t * mid + t * t * t * x1,
-        y: u * u * u * y0 + 3 * u * u * t * y0 + 3 * u * t * t * y1 + t * t * t * y1,
-      });
-    }
-  }
-  return out;
-}
-
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -201,7 +161,7 @@ function ScrubDot({
   at: SharedValue<number>;
   show: SharedValue<number>;
   /** the drawn line, sampled — see `sampleCurve` */
-  curve: readonly { x: number; y: number }[];
+  curve: readonly CurvePoint[];
   color: string;
 }) {
   /*
@@ -219,36 +179,16 @@ function ScrubDot({
     dot on it says nothing new. The *number* still comes from a real reading —
     see the chip.
   */
-  const yAt = (px: number) => {
-    'worklet';
-    if (curve.length === 0) return 0;
-    if (px <= curve[0].x) return curve[0].y;
-    const last = curve[curve.length - 1];
-    if (px >= last.x) return last.y;
-    // Linear scan: the sample count is capped at ~120 and this runs once per
-    // frame on the UI thread, where a branchy binary search is not obviously
-    // cheaper and is much easier to get wrong at the ends.
-    for (let i = 1; i < curve.length; i++) {
-      if (px <= curve[i].x) {
-        const a = curve[i - 1];
-        const b = curve[i];
-        const span = b.x - a.x;
-        return span <= 0 ? b.y : a.y + ((px - a.x) / span) * (b.y - a.y);
-      }
-    }
-    return last.y;
-  };
-
   const halo = useAnimatedProps(() => ({
     cx: at.value,
-    cy: yAt(at.value),
+    cy: yOnCurve(curve, at.value),
     // Grows into place as it fades in, so the marker arrives rather than blinks
     r: 7 * show.value,
     fillOpacity: 0.22 * show.value,
   }));
   const core = useAnimatedProps(() => ({
     cx: at.value,
-    cy: yAt(at.value),
+    cy: yOnCurve(curve, at.value),
     r: 4 * show.value,
   }));
 
@@ -644,15 +584,37 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
     scrolls, and a control that works only when approached at the correct angle
     is worse than one that needs the finger put somewhere else.
   */
+  /*
+    Only a touch that lands on the line becomes a scrub.
+
+    Taking any touch in the plot meant a finger that came down here on the way
+    past — which is most of them, on a page this long — was captured, the page
+    was locked, and a scroll turned into a reading nobody asked for.
+
+    The test is against the drawn curve, not a rectangle: within `HIT_BAND` of
+    the line at that x. Everywhere else in the card is the page's again.
+
+    `onMoveShouldSetResponder` is false on purpose. A touch that began somewhere
+    else is already a scroll in progress, and claiming it mid-flight is the
+    exact interruption this is meant to end.
+  */
+  const onLine = (e: GestureResponderEvent) => {
+    if (!scrubbable || width === 0) return false;
+    const px = e.nativeEvent.locationX;
+    const py = e.nativeEvent.locationY;
+    if (px < padX || px > width || py < 0 || py > height) return false;
+    return onCurve(curve, px, py);
+  };
+
   const responder = scrubbable
     ? {
-        onStartShouldSetResponder: () => true,
-        onMoveShouldSetResponder: () => true,
+        onStartShouldSetResponder: onLine,
+        onMoveShouldSetResponder: () => false,
         // Capture too, so the gesture is claimed before an ancestor can take
         // it — `onStartShouldSetResponder` alone loses to a parent that
         // captures first.
-        onStartShouldSetResponderCapture: () => true,
-        onMoveShouldSetResponderCapture: () => true,
+        onStartShouldSetResponderCapture: onLine,
+        onMoveShouldSetResponderCapture: () => false,
         onResponderGrant: (e: GestureResponderEvent) => {
           if (hideTimer.current) clearTimeout(hideTimer.current);
           lastScrub.current = null;
