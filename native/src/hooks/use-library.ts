@@ -244,7 +244,12 @@ export function useWorkoutTemplates() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workout_templates')
-        .select('id, name, type, exercises')
+        // `created_at` is what the Workouts tab sorts on — it shows the three
+        // you made most recently, and a routine you wrote this morning being
+        // filed under "A" is not a reason to see it first. The order below
+        // stays alphabetical because the routine planner's picker reads this
+        // same query and a picker is a list you scan by name.
+        .select('id, name, type, exercises, created_at')
         .eq('user_id', user!.id)
         .order('name');
       if (error) throw error;
