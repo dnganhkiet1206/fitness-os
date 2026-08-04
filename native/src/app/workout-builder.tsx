@@ -19,7 +19,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
-import { restLabel, WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
+import { WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
+import { DEFAULT_REST, restLabel } from '@/lib/prescription';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAddWorkoutTemplate, useExercises, type TemplateExercise } from '@/hooks/use-library';
@@ -262,7 +263,7 @@ export default function WorkoutBuilderSheet() {
     let seconds = 0;
     for (const it of items) {
       sets += it.sets;
-      seconds += it.sets * (it.reps * 3 + (it.restSeconds ?? 90));
+      seconds += it.sets * (it.reps * 3 + (it.restSeconds ?? DEFAULT_REST));
     }
     return { sets, minutes: Math.max(1, Math.round(seconds / 60)) };
   }, [items]);
@@ -669,7 +670,7 @@ export default function WorkoutBuilderSheet() {
                   <Text style={styles.exMeta} numberOfLines={1}>
                     {ex.sets} × {ex.reps}
                     {ex.weight ? `  ·  ${displayWeight(ex.weight, wUnit)} ${wl}` : ''}
-                    {`  ·  ${restLabel(ex.restSeconds ?? 90)}`}
+                    {`  ·  ${restLabel(ex.restSeconds ?? DEFAULT_REST)}`}
                   </Text>
                 </View>
                 <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />

@@ -7,6 +7,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import type { TemplateExercise } from '@/hooks/use-library';
+import { DEFAULT_REST, DEFAULT_RPE, restLabel } from '@/lib/prescription';
 import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/units';
 
 /**
@@ -54,14 +55,6 @@ import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/u
  * library the project does not carry, so the move is two buttons on the thing
  * being moved, disabled at the ends.
  */
-
-/** Rest as a person says it: `45s`, `1:30`. */
-export function restLabel(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 /** Two decimal places, so 2.5-kg steps cannot drift into 82.50000000000001 */
@@ -239,9 +232,9 @@ export function WorkoutSetPanel({
         />
       </Row>
 
-      <Row label={i18n.nWbRest} hint={restLabel(item.restSeconds ?? 90)}>
+      <Row label={i18n.nWbRest} hint={restLabel(item.restSeconds ?? DEFAULT_REST)}>
         <Stepper
-          initial={item.restSeconds ?? 90}
+          initial={item.restSeconds ?? DEFAULT_REST}
           min={0}
           max={600}
           step={15}
@@ -252,7 +245,7 @@ export function WorkoutSetPanel({
 
       <Row label={i18n.nWbEffort} hint={i18n.nWbEffortHint}>
         <Stepper
-          initial={item.rpe ?? 7}
+          initial={item.rpe ?? DEFAULT_RPE}
           min={5}
           max={10}
           step={1}

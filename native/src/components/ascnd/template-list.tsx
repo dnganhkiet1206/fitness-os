@@ -15,6 +15,13 @@ import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { rise } from '@/lib/entrance';
+import {
+  DEFAULT_REST,
+  DEFAULT_RPE,
+  repsInReserve,
+  restLabel,
+  uniformValue,
+} from '@/lib/prescription';
 import { displayWeight, type WeightUnit } from '@/lib/units';
 
 /**
@@ -34,6 +41,38 @@ export interface TplExercise {
   reps?: number;
   weight?: number;
   rpe?: number;
+  restSeconds?: number;
+}
+
+/**
+ * Rest and effort, spelled out.
+ *
+ * ── they were being thrown away at the door ──
+ *
+ * The builder asks for both — a rest row and an effort row on every exercise —
+ * and stores both. The card then showed sets, reps and load and nothing else,
+ * so the two values you had to stop and think about were the two that never
+ * came back. Setting them was, in effect, filling in a form that is filed
+ * somewhere you cannot read.
+ *
+ * ── said in words, because neither number speaks for itself ──
+ *
+ * `1:30` is not obviously a duration until it is called rest, and `8` is not a
+ * quantity of anything — it is a position on a scale of how hard the last rep
+ * should be. So the effort carries its gloss: how many reps you should still
+ * have in you when you stop. That is the form you can act on while you are
+ * under the bar, and it is the standard reading of the scale.
+ */
+export function prescriptionLine(
+  i18n: ReturnType<typeof useI18n>,
+  rest: number,
+  rpe: number,
+): string {
+  const restText = rest <= 0 ? i18n.nTplNoRest : i18n.nTplRest.replace('{x}', restLabel(rest));
+  const left = repsInReserve(rpe);
+  const gloss =
+    left === 0 ? i18n.nTplRirNone : left === 1 ? i18n.nTplRirOne : i18n.nTplRir.replace('{n}', String(left));
+  return `${restText}  ·  ${i18n.nTplEffort.replace('{x}', String(rpe))} — ${gloss}`;
 }
 
 export interface Template {
@@ -137,6 +176,23 @@ export function TemplateRow({
   const raw = tpl.exercises;
   const exs: TplExercise[] = Array.isArray(raw) ? (raw as TplExercise[]) : [];
 
+  /*
+    Said once for the workout, or once per exercise — never both.
+
+    A workout built and saved without touching either row has the same 90
+    seconds and the same effort 7 on all six exercises, and printing that six
+    times is six lines that say nothing and one line that would have. Stated at
+    the top it is a property of the workout, which is what it is; and the
+    template where they genuinely differ is then the one that reads differently,
+    which is the whole point of showing them.
+
+    Rest and effort are judged separately, because a workout can easily hold
+    one rest throughout and a heavier effort on the compound at the front.
+  */
+  const oneRest = uniformValue(exs, (e) => e.restSeconds, DEFAULT_REST);
+  const oneRpe = uniformValue(exs, (e) => e.rpe, DEFAULT_RPE);
+  const sharedLine = oneRest !== null && oneRpe !== null ? prescriptionLine(i18n, oneRest, oneRpe) : null;
+
   const turn = useSharedValue(0);
   useEffect(() => {
     turn.value = withTiming(open ? 1 : 0, { duration: OPEN_MS, easing: OPEN_EASE });
@@ -176,6 +232,14 @@ export function TemplateRow({
             <Text style={styles.tplMeta}>
               {exs.length} {i18n.workoutsExercises} · {i18n.workoutsVolume}: {Math.round(displayWeight(volume(exs), wUnit)).toLocaleString()} {wl}
             </Text>
+            {/*
+              On the face of the card, not inside the fold.
+
+              This is the line the whole change is for: it has to be readable
+              without tapping anything, or it is in the same place it was
+              before — stored, and invisible.
+            */}
+            {sharedLine ? <Text style={styles.tplRx}>{sharedLine}</Text> : null}
           </View>
           <View style={styles.tplActions}>
             <Pressable
@@ -220,17 +284,29 @@ export function TemplateRow({
               <Animated.View
                 key={`${e.exerciseName ?? 'x'}-${i}`}
                 entering={FadeInDown.duration(OPEN_MS).delay(Math.min(i, 8) * 35)}
-                style={styles.exRow}>
-                <Text style={styles.exName} numberOfLines={1}>
-                  {e.exerciseName || i18n.workoutsExercises}
-                </Text>
-                {/* "3 × 10" and then the load, because sets and reps are the
-                    shape of the work and the weight is how hard it is. A
-                    bodyweight movement carries no number rather than a zero. */}
-                <Text style={styles.exSets}>
-                  {e.sets ?? 0} × {e.reps ?? 0}
-                  {e.weight ? `  ·  ${Math.round(displayWeight(e.weight, wUnit))} ${wl}` : ''}
-                </Text>
+                style={styles.exBlock}>
+                <View style={styles.exRow}>
+                  <Text style={styles.exName} numberOfLines={1}>
+                    {e.exerciseName || i18n.workoutsExercises}
+                  </Text>
+                  {/* "3 × 10" and then the load, because sets and reps are the
+                      shape of the work and the weight is how hard it is. A
+                      bodyweight movement carries no number rather than a zero. */}
+                  <Text style={styles.exSets}>
+                    {e.sets ?? 0} × {e.reps ?? 0}
+                    {e.weight ? `  ·  ${Math.round(displayWeight(e.weight, wUnit))} ${wl}` : ''}
+                  </Text>
+                </View>
+                {/*
+                  Only when the workout does not have one answer for both — the
+                  card already said it in that case, and saying it again under
+                  every exercise is how a detail that matters becomes wallpaper.
+                */}
+                {sharedLine ? null : (
+                  <Text style={styles.exRx}>
+                    {prescriptionLine(i18n, e.restSeconds ?? DEFAULT_REST, e.rpe ?? DEFAULT_RPE)}
+                  </Text>
+                )}
               </Animated.View>
             ))
           : null}
@@ -307,19 +383,42 @@ const styles = StyleSheet.create({
   typeText: { fontSize: 10, color: colors.mutedForeground, textTransform: 'capitalize' },
   tplMeta: { fontSize: 12, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   tplActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
-  /* A rule under the header, because the exercises are inside the card with it
-     and need something to separate them from it. This is a line *within* one
-     card, not between two, so it cannot be mistaken for a card boundary. */
-  exRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  /* The prescription on the face of the card, under the count and volume.
+     Same size and colour as the line above it because it is the same kind of
+     fact — what this workout is — and a brighter one would make rest and
+     effort look more important than the exercises they belong to. */
+  tplRx: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    fontVariant: ['tabular-nums'],
+    marginTop: 1,
+  },
+  /* A rule above each exercise, because they are inside the card with the
+     header and need something to separate them from it. This is a line
+     *within* one card, not between two, so it cannot be mistaken for a card
+     boundary.
+
+     It sits on the block rather than on the name row: the block is one
+     exercise — its name, its sets, and its rest and effort when those differ
+     from exercise to exercise — and a rule between an exercise and its own
+     second line would cut it in half. */
+  exBlock: {
     paddingTop: spacing.sm,
     marginTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },
+  exRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   exName: { fontSize: 13, color: colors.foreground, flex: 1, minWidth: 0 },
   exSets: { fontSize: 12, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  /* Dimmer than the sets line and indented by nothing: it is a note about the
+     row above it, not a second row. */
+  exRx: {
+    fontSize: 11,
+    color: colors.mutedForeground,
+    opacity: 0.75,
+    fontVariant: ['tabular-nums'],
+    marginTop: 3,
+  },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

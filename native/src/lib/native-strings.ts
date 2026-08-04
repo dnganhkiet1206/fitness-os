@@ -314,6 +314,14 @@ const en = {
   nWbRest: 'Rest between sets',
   nWbEffort: 'Effort',
   nWbEffortHint: 'How the last rep should feel. 10 is failure.',
+
+  // Saved workout card — rest and effort read back
+  nTplRest: 'Rest {x}',
+  nTplNoRest: 'No rest',
+  nTplEffort: 'Effort {x}/10',
+  nTplRir: '{n} reps left',
+  nTplRirOne: '1 rep left',
+  nTplRirNone: 'all-out',
   nWbMoveUp: 'Move earlier',
   nWbMoveDown: 'Move later',
   nWbRemove: 'Remove from workout',
@@ -810,6 +818,14 @@ const vi: typeof en = {
   nWbRest: 'Nghỉ giữa các set',
   nWbEffort: 'Độ gắng sức',
   nWbEffortHint: 'Rep cuối nên nặng cỡ nào. 10 là hết sức.',
+
+  // Saved workout card — rest and effort read back
+  nTplRest: 'Nghỉ {x}',
+  nTplNoRest: 'Không nghỉ',
+  nTplEffort: 'Gắng sức {x}/10',
+  nTplRir: 'còn {n} rep',
+  nTplRirOne: 'còn 1 rep',
+  nTplRirNone: 'hết sức',
   nWbMoveUp: 'Đưa lên trước',
   nWbMoveDown: 'Đưa xuống sau',
   nWbRemove: 'Bỏ khỏi buổi tập',

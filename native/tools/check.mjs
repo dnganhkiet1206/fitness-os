@@ -79,6 +79,16 @@ if (!existsSync(path.join(NATIVE, 'node_modules', 'playwright'))) {
 }
 
 const STEPS = [
+  /*
+    First, because `tsc` is downstream of it.
+
+    `router.d.ts` is written by the dev server and gitignored, so on any
+    checkout where `expo start` has not run since a page was added, typed
+    routes report a perfectly good `router.push('/templates')` as an error
+    listing 157 other routes. That reads exactly like a routing mistake and is
+    a stale generated file — the same class as the tsconfig above.
+  */
+  ['route đã sinh', 'node', ['tools/typed-routes.mjs']],
   ['kiểu dữ liệu', 'npx', ['tsc', '--noEmit']],
   ['cửa sổ ngày', 'node', ['tools/day-window.mjs']],
   ['backend', 'node', ['tools/backend-config.mjs']],
@@ -90,6 +100,7 @@ const STEPS = [
   ['trục nước', 'node', ['tools/water-scale.mjs']],
   ['đường cân nặng', 'node', ['tools/curve.mjs']],
   ['nhóm cơ', 'node', ['tools/muscle-map.mjs']],
+  ['nghỉ/gắng sức', 'node', ['tools/prescription.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
   ['camera shop', 'node', ['tools/shop-camera.mjs']],
