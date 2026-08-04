@@ -11,6 +11,7 @@ import {
   type ScrollViewProps,
   type ViewProps,
 } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AmbientLight } from '@/components/ascnd/ambient-light';
@@ -141,11 +142,31 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
    * person to use it.
    */
   const scroller = useRef<ScrollView>(null);
+
+  /**
+   * A short fade when a tab comes into focus.
+   *
+   * A `UITabBarController` swaps its views instantly — that is what iOS does,
+   * and every tab bar on the phone does it — but this app's tabs had been
+   * arriving with their cards cascading in, because the old navigator was
+   * mounting each one fresh. The native one keeps all five alive, so nothing
+   * mounts on the second visit and the change reads as a cut.
+   *
+   * 160ms on the page's own opacity. It is on the wrapper, not the content, so
+   * it cannot disturb the `gap` between cards the way an extra view around
+   * them would; and it is short enough to be a transition rather than a wait —
+   * a tab bar's whole appeal is that it is instant.
+   */
+  const fade = useSharedValue(1);
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
+
   useFocusEffect(
     useCallback(() => {
       setActiveScroller(() => scroller.current?.scrollTo({ y: 0, animated: true }));
+      fade.value = 0;
+      fade.value = withTiming(1, { duration: 160 });
       return () => setActiveScroller(null);
-    }, []),
+    }, [fade]),
   );
 
   if (back) {
@@ -242,7 +263,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
    * and cover nothing at all.
    */
   return (
-    <View style={styles.root}>
+    <Animated.View style={[styles.root, fadeStyle]}>
       <AmbientLight />
       <ScrollView
         ref={scroller}
@@ -269,7 +290,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         {children}
       </ScrollView>
       <StatusScrim />
-    </View>
+    </Animated.View>
   );
 }
 

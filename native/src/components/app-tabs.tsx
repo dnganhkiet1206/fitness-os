@@ -26,6 +26,17 @@ import { resetTabBar, useTabBarHidden } from '@/lib/tab-bar-visibility';
  * the way out — invisible now, and waiting for you the next time you came
  * back to it.
  */
+/**
+ * The page colour, behind every tab's content.
+ *
+ * The old navigator set this through `screenOptions.sceneStyle` and the switch
+ * to `NativeTabs` dropped it, which left each tab's container with no
+ * background of its own. What shows through in the gap between one tab's view
+ * going away and the next one drawing is then whatever the system's default
+ * is — a pale flash on a dark app, on every single tab change.
+ */
+const CONTENT = { backgroundColor: colors.background } as const;
+
 const scrollToTopOnRetap = ({ navigation }: { navigation: { isFocused: () => boolean } }) => ({
   tabPress: () => {
     // A tab you arrive at starts with its bar showing, whatever the last page
@@ -126,22 +137,22 @@ export default function AppTabs() {
       */
       hidden={hidden}
       minimizeBehavior="never">
-      <NativeTabs.Trigger name="index" listeners={scrollToTopOnRetap}>
+      <NativeTabs.Trigger name="index" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
         <NativeTabs.Trigger.Icon sf="house" />
         <NativeTabs.Trigger.Label>{i18n.navToday}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="nutrition" listeners={scrollToTopOnRetap}>
+      <NativeTabs.Trigger name="nutrition" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
         <NativeTabs.Trigger.Icon sf="fork.knife" />
         <NativeTabs.Trigger.Label>{i18n.navNutrition}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="workouts" listeners={scrollToTopOnRetap}>
+      <NativeTabs.Trigger name="workouts" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
         <NativeTabs.Trigger.Icon sf="dumbbell" />
         <NativeTabs.Trigger.Label>{i18n.navWorkouts}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="progress" listeners={scrollToTopOnRetap}>
+      <NativeTabs.Trigger name="progress" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
         <NativeTabs.Trigger.Icon sf="chart.line.uptrend.xyaxis" />
         <NativeTabs.Trigger.Label>{i18n.navProgress}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
@@ -154,7 +165,7 @@ export default function AppTabs() {
         bar. It is here because it was asked for, and the cost is worth naming:
         one of five equal slots now goes to a screen people open rarely.
       */}
-      <NativeTabs.Trigger name="settings" listeners={scrollToTopOnRetap}>
+      <NativeTabs.Trigger name="settings" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
         <NativeTabs.Trigger.Icon sf="gearshape" />
         <NativeTabs.Trigger.Label>{i18n.settingsTitle}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
