@@ -66,19 +66,43 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 const NATIVE_BLUR = Platform.OS === 'ios';
 
 /**
- * How hard the blur is, out of 100.
+ * The blur is a ramp, not a slab: barely there where content enters the strip
+ * from below, hardest at the very top edge.
  *
- * `expo-blur` implements this by holding a `UIViewPropertyAnimator` at
- * `fractionComplete`, which scales the blur radius *and* the material's own
- * tint together — so a low number is not a weak frost, it is a fraction of one.
- * Twenty-two is enough to break up a digit sliding under the clock and not
- * enough to notice on a still screen.
+ * ── how the ramp is built ──
  *
- * Fifty is the default and is far too much; the numbers people reach for when
- * they want the effect to be obvious — 60, 80, 100 — are what make a backdrop
- * read as an overlay.
+ * By stacking. Every pane is anchored to the top of the screen and each is
+ * shorter than the last, so the number of panes covering a row rises the
+ * further up you go — one at the bottom of the blur, all four at the top edge
+ * — and blur compounds where they overlap.
+ *
+ * A gradient mask over one pane is the obvious alternative and it cannot be
+ * used: masking a `UIVisualEffectView` can cost it its backdrop, and an effect
+ * view with no backdrop draws its material colour flat. That is a dark band
+ * across the strip — the exact failure this file was rebuilt to get away from.
+ * Nothing here is masked, so every pane keeps its own backdrop.
+ *
+ * ── what it costs ──
+ *
+ * Blur radius compounds as `√n`, and the material's tint compounds as
+ * `1 − (1 − p)ⁿ`. So four panes at 11 reach the radius one pane at 22 had —
+ * `11 × √4 = 22` — but carry 37% of the material where the single pane carried
+ * 22%. That is the price of the gradient, and it is why `GRADIENT_TOP` below
+ * came down: the extra darkening the material now supplies at the top is taken
+ * back off the black wash, so the top of the strip is no darker overall than
+ * the flat version was.
+ *
+ * Four panes, not eight. Each is another live `UIVisualEffectView` compositing
+ * every frame, and over a status bar of about sixty points the bands are
+ * fifteen points each — a step in blur radius small enough to read as a ramp.
+ *
+ * `expo-blur` implements intensity by holding a `UIViewPropertyAnimator` at
+ * `fractionComplete`, which is why the two compound differently: it scales the
+ * radius and the tint together, so a low number is not a weak frost but a
+ * fraction of a full one.
  */
-const INTENSITY = 22;
+const PANES = 4;
+const PANE_INTENSITY = 11;
 
 /**
  * `systemUltraThinMaterialDark`, not `dark`.
@@ -107,6 +131,19 @@ const TINT = 'systemUltraThinMaterialDark' as const;
  */
 const fadeHeight = (top: number) => Math.max(88, top + 34);
 
+/**
+ * How dark the wash starts, at the very top.
+ *
+ * Was 0.12, against a flat blur carrying 22% of the material. The stacked ramp
+ * carries 37% at the top, so 0.07 here keeps the total darkening where it was
+ * tuned — the strip did not get heavier when the blur became a gradient, the
+ * darkness simply moved from the wash into the material.
+ *
+ * The lower stops are unchanged: they are below the blur, where nothing about
+ * the material has changed.
+ */
+const GRADIENT_TOP = 0.07;
+
 export function StatusScrim() {
   const insets = useSafeAreaInsets();
   /*
@@ -129,9 +166,18 @@ export function StatusScrim() {
         rest, which is not content passing behind anything; it is just the page,
         and the page is meant to be sharp.
       */}
-      {NATIVE_BLUR ? (
-        <BlurView intensity={INTENSITY} tint={TINT} style={[styles.blur, { height: insets.top }]} />
-      ) : null}
+      {NATIVE_BLUR
+        ? Array.from({ length: PANES }, (_, i) => (
+            <BlurView
+              key={i}
+              intensity={PANE_INTENSITY}
+              tint={TINT}
+              // Tallest first. The count of panes over a row is the blur there:
+              // one at the bottom of the status bar, four at the top edge.
+              style={[styles.blur, { height: (insets.top * (PANES - i)) / PANES }]}
+            />
+          ))
+        : null}
 
       {/*
         Layer 2 — the gradient, over the blur and past it.
@@ -150,8 +196,8 @@ export function StatusScrim() {
       <Svg style={StyleSheet.absoluteFill}>
         <Defs>
           <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#000" stopOpacity="0.12" />
-            <Stop offset="0.42" stopColor="#000" stopOpacity="0.09" />
+            <Stop offset="0" stopColor="#000" stopOpacity={GRADIENT_TOP} />
+            <Stop offset="0.42" stopColor="#000" stopOpacity="0.07" />
             <Stop offset="0.7" stopColor="#000" stopOpacity="0.05" />
             <Stop offset="1" stopColor="#000" stopOpacity="0" />
           </LinearGradient>
