@@ -33,6 +33,13 @@ import { colors } from '@/constants/ascnd';
  * softening, a fade separates by dimming. Both leave the clock legible and only
  * one of them needs an OS from this year.
  *
+ * ── no edge along the bottom ──
+ *
+ * Both halves used to draw one, for different reasons, and both are dealt with
+ * below: the glass by hanging its own rim outside a clip, the gradient by
+ * easing instead of stepping. A strip whose job is to stop you seeing a line
+ * cannot arrive with a line of its own.
+ *
  * ── why it stops exactly at the inset ──
  *
  * `insets.top` is where the phone's chrome ends and the page's own content
@@ -44,6 +51,23 @@ import { colors } from '@/constants/ascnd';
  */
 
 const GLASS = isLiquidGlassAvailable();
+
+/**
+ * How far the glass is hung outside the strip on every side.
+ *
+ * `UIGlassEffect` draws a bright specular rim around the shape it is applied
+ * to — that is what makes the material read as a lens and not as a blur — and
+ * `expo-glass-effect` exposes no way to turn it off: `GlassView` is a plain
+ * `UIVisualEffectView` carrying the effect, and its props are style, tint,
+ * interactivity, colour scheme and corner radii. Nothing else.
+ *
+ * So the rim is not removed, it is put where it cannot be seen. The strip
+ * clips, and the glass inside it is oversized on all four sides, which leaves
+ * every edge it draws outside the clip. Sixteen points is far more than the rim
+ * is wide, and costs nothing — the blur was going to be there anyway, it is
+ * just being read from further out.
+ */
+const RIM = 16;
 
 export function StatusScrim() {
   const insets = useSafeAreaInsets();
@@ -61,29 +85,30 @@ export function StatusScrim() {
   return (
     <View style={[styles.strip, { height: insets.top }]} pointerEvents="none">
       {GLASS ? (
-        <GlassView
-          glassEffectStyle="regular"
-          tintColor="rgba(8,8,10,0.55)"
-          style={StyleSheet.absoluteFill}
-        />
+        <GlassView glassEffectStyle="regular" tintColor="rgba(8,8,10,0.55)" style={styles.glass} />
       ) : (
         /*
-          Four stops, not two.
+          Six stops, not two, and none of them a corner.
 
           A straight ramp from opaque to clear has a visible middle: the eye
-          finds the point where it is exactly half and reads it as a line. The
-          icons sit in roughly the top two thirds of the inset, so it is held
-          solid through there and falls away underneath them, which puts the
-          change where nothing is being read and lands it on zero exactly at
-          the edge of the strip — a gradient that is still at 0.2 when it runs
-          out has an edge after all.
+          finds the point where it is exactly half and reads it as a line. But
+          so does a ramp that is held flat and then released — the kink where
+          the slope changes is just as findable as the half-way point, and that
+          kink is what the bottom edge of this strip was.
+
+          So the slope grows a step at a time instead of switching on: solid
+          where the icons are, barely moving under them, steepest where there
+          is nothing left to hide, and zero exactly at the bottom — a gradient
+          still at 0.2 when it runs out has an edge after all.
         */
         <Svg style={StyleSheet.absoluteFill}>
           <Defs>
             <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0" stopColor={colors.background} stopOpacity="1" />
-              <Stop offset="0.7" stopColor={colors.background} stopOpacity="1" />
-              <Stop offset="0.88" stopColor={colors.background} stopOpacity="0.55" />
+              <Stop offset="0.55" stopColor={colors.background} stopOpacity="1" />
+              <Stop offset="0.72" stopColor={colors.background} stopOpacity="0.92" />
+              <Stop offset="0.85" stopColor={colors.background} stopOpacity="0.65" />
+              <Stop offset="0.94" stopColor={colors.background} stopOpacity="0.3" />
               <Stop offset="1" stopColor={colors.background} stopOpacity="0" />
             </LinearGradient>
           </Defs>
@@ -101,5 +126,7 @@ const styles = StyleSheet.create({
     page is still touchable through it, and `zIndex` below the floating
     header's 20 so a chevron drawn over a hero stays crisp.
   */
-  strip: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  strip: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, overflow: 'hidden' },
+  /** oversized on every side so the glass draws its rim outside the clip above */
+  glass: { position: 'absolute', top: -RIM, left: -RIM, right: -RIM, bottom: -RIM },
 });
