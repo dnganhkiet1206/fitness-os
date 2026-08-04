@@ -27,19 +27,26 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
  * obvious way of getting there. A pane of frosted glass across the top is
  * legible and is also *visible* — it reads as an overlay laid on the app rather
  * than as part of it, and once you have seen it you cannot unsee it. This
- * version therefore spends nothing it does not have to: a partial blur, a wash
- * of black at twelve percent, and a hairline at five percent white. Every one
- * of those numbers is low enough to be deniable on its own; together they are
+ * version therefore spends nothing it does not have to: a partial blur that
+ * fades out instead of ending, and a wash of black at twelve percent. Both
+ * numbers are low enough to be deniable on their own; together they are
  * enough.
  *
- * ── the four layers ──
+ * ── the layers ──
  *
- * 1. a real `UIVisualEffectView`, blurring the content behind it — not itself
- * 2. a long, very light black gradient, for the depth a flat blur has none of
- * 3. a hairline where the blur stops, so the boundary is stated rather than
- *    discovered
- * 4. the page's own header, which is nothing to do with this file and is
+ * 1. a real `UIVisualEffectView`, blurring the content behind it — not itself,
+ *    masked by a gradient so it fades out rather than stopping
+ * 2. a long, very light black gradient, for the depth a blur has none of
+ * 3. the page's own header, which is nothing to do with this file and is
  *    listed because the order is the point: this sits under everything
+ *
+ * There used to be a fourth: a hairline at five percent white, drawn exactly
+ * where the blur stopped. It belonged to a *flat* blur — one that ends at a
+ * definite row, where an unmarked end is a smudge the eye keeps trying to
+ * focus on, and a stated one settles it. A faded blur has no end to mark, so
+ * the line stopped describing anything and became the only edge in the strip:
+ * the one visible thing in a component whose whole standard is that nobody can
+ * tell it is here.
  *
  * ── the fade, and the wrong turn on the way to it ──
  *
@@ -218,18 +225,6 @@ export function StatusScrim() {
         <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid})`} />
       </Svg>
 
-      {/*
-        Layer 3 — the hairline, exactly where the blur stops.
-
-        The blur has to end somewhere, and an unmarked end is a smudge: a soft
-        boundary the eye keeps trying to focus on. A stated one at five percent
-        white is below the threshold of being seen as a line and above the
-        threshold of settling the edge — the same trick UIKit's own bars use.
-
-        Only where there is a blur to end. On Android it would be a line drawn
-        under nothing at all.
-      */}
-      {NATIVE_BLUR ? <View style={[styles.hairline, { top: insets.top }]} /> : null}
     </View>
   );
 }
@@ -243,11 +238,4 @@ const styles = StyleSheet.create({
   */
   strip: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   blur: { position: 'absolute', top: 0, left: 0, right: 0 },
-  hairline: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
 });
