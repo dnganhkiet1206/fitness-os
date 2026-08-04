@@ -11,7 +11,6 @@ import {
   type ScrollViewProps,
   type ViewProps,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AmbientLight } from '@/components/ascnd/ambient-light';
@@ -143,30 +142,23 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
    */
   const scroller = useRef<ScrollView>(null);
 
-  /**
-   * A short fade when a tab comes into focus.
+  /*
+   * ── no fade on focus here ──
    *
-   * A `UITabBarController` swaps its views instantly — that is what iOS does,
-   * and every tab bar on the phone does it — but this app's tabs had been
-   * arriving with their cards cascading in, because the old navigator was
-   * mounting each one fresh. The native one keeps all five alive, so nothing
-   * mounts on the second visit and the change reads as a cut.
+   * There was one, for 160ms, to give tab changes something to look at now
+   * that a `UITabBarController` keeps all five tabs mounted. It blinked: the
+   * opacity was set to 0 the moment focus arrived and animated up from there,
+   * so every switch showed one frame of an empty page before the fade started.
    *
-   * 160ms on the page's own opacity. It is on the wrapper, not the content, so
-   * it cannot disturb the `gap` between cards the way an extra view around
-   * them would; and it is short enough to be a transition rather than a wait —
-   * a tab bar's whole appeal is that it is instant.
+   * A fade that begins at zero on an already-drawn page cannot not do that.
+   * The fix is not a shorter duration or a higher floor — iOS switches tabs
+   * with no transition at all, and that is the behaviour to match.
    */
-  const fade = useSharedValue(1);
-  const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
-
   useFocusEffect(
     useCallback(() => {
       setActiveScroller(() => scroller.current?.scrollTo({ y: 0, animated: true }));
-      fade.value = 0;
-      fade.value = withTiming(1, { duration: 160 });
       return () => setActiveScroller(null);
-    }, [fade]),
+    }, []),
   );
 
   if (back) {
@@ -263,7 +255,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
    * and cover nothing at all.
    */
   return (
-    <Animated.View style={[styles.root, fadeStyle]}>
+    <View style={styles.root}>
       <AmbientLight />
       <ScrollView
         ref={scroller}
@@ -290,7 +282,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         {children}
       </ScrollView>
       <StatusScrim />
-    </Animated.View>
+    </View>
   );
 }
 

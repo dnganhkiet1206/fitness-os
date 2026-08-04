@@ -4,7 +4,7 @@ import { QuickActionsAccessory } from '@/components/ascnd/quick-actions-accessor
 import { colors } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { scrollActiveToTop } from '@/lib/scroll-to-top';
-import { resetTabBar, useTabBarHidden } from '@/lib/tab-bar-visibility';
+import { resetTabBar } from '@/lib/tab-bar-visibility';
 
 /**
  * Tapping the tab you are already on goes back to the top of it.
@@ -102,7 +102,6 @@ const scrollToTopOnRetap = ({ navigation }: { navigation: { isFocused: () => boo
  */
 export default function AppTabs() {
   const i18n = useI18n();
-  const hidden = useTabBarHidden();
 
   return (
     <NativeTabs
@@ -124,19 +123,20 @@ export default function AppTabs() {
       iconColor={{ default: colors.mutedForeground }}
       labelStyle={{ default: { color: colors.mutedForeground } }}
       /*
-        Out of the way when you scroll down, back when you scroll up or pause.
+        Out of the way when you scroll down, back when you scroll up.
 
-        `minimizeBehavior="onScrollDown"` is the platform's version of this and
-        it is the nicer one — the bar shrinks into a pill instead of leaving.
-        It needs UIKit to find the scroll view it should track, and it does not
-        find these pages, for the same reason the native scroll-to-top does not
-        fire on them. Asking for it as well as driving `hidden` would leave two
-        mechanisms where one silently does nothing, so it is off and
-        `tab-bar-visibility` decides — the same rule the app already had, now
-        reaching a real `UITabBarController` instead of a drawn one.
+        This is the platform's own, and it has to be: the alternative was
+        driving `hidden` from a scroll listener, which is React state, which
+        re-renders the whole navigator every time the direction changes. On a
+        long page that is several re-renders of the thing hosting all five tabs
+        during one flick, and it flickered.
+
+        `onScrollDown` costs nothing per frame — UIKit tracks the scroll view
+        itself, with no JS in the loop. If it turns out not to fire on these
+        pages, the answer is to make the scroll view findable, not to animate
+        the bar from JavaScript.
       */
-      hidden={hidden}
-      minimizeBehavior="never">
+      minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
         <NativeTabs.Trigger.Icon sf="house" />
         <NativeTabs.Trigger.Label>{i18n.navToday}</NativeTabs.Trigger.Label>
