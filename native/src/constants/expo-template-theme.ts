@@ -61,6 +61,19 @@ export const Spacing = {
   six: 64,
 } as const;
 
-// Clearance for the floating liquid-glass pill bar (56pt pill + 8 margin)
-export const BottomTabInset = Platform.select({ ios: 72, android: 80 }) ?? 0;
+/**
+ * Clearance a page leaves for the floating tab bar, above the safe-area inset.
+ *
+ * Two capsules now, not one: the tab bar itself is 61pt once every tab carries
+ * a label under its icon, and the coach accessory above it is another 52 with
+ * 8 between them. 130 is that stack plus a margin; Android carries the same
+ * eight points more it always did.
+ *
+ * It was 72 for a single 56pt bar. The extra 58 is the price of two things
+ * asked for together — labels on every tab, and the coach no longer pretending
+ * to be a destination — and it is charged to the bottom of every page in the
+ * app, so it is worth knowing what would buy it back: moving the coach into
+ * the page headers would return 60 of it.
+ */
+export const BottomTabInset = Platform.select({ ios: 130, android: 138 }) ?? 0;
 export const MaxContentWidth = 800;

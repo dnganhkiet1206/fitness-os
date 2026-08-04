@@ -8,6 +8,7 @@ import {
   Heart,
   Home,
   Moon,
+  Settings as SettingsIcon,
   Sparkles,
   TrendingUp,
   Utensils,
@@ -20,7 +21,6 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeOut,
-  LinearTransition,
   SlideOutDown,
   interpolate,
   useAnimatedStyle,
@@ -40,7 +40,11 @@ const TAB_ICONS: Record<string, LucideIcon> = {
   nutrition: Utensils,
   workouts: Dumbbell,
   progress: TrendingUp,
+  settings: SettingsIcon,
 };
+
+/** left to right, and five is Apple's maximum for iPhone */
+const TAB_ORDER = ['index', 'nutrition', 'workouts', 'progress', 'settings'] as const;
 
 const AI_ITEMS = [
   { key: 'scan', icon: Camera, label: { en: 'Scan Food', vi: 'Quét thực phẩm' }, route: '/scan-food?from=ai' as const },
@@ -93,6 +97,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
     nutrition: i18n.navNutrition,
     workouts: i18n.navWorkouts,
     progress: i18n.navProgress,
+    settings: i18n.settingsTitle,
   };
 
   const go = (routeName: string, index: number) => {
@@ -133,38 +138,32 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
     const active = state.index === index;
     const IconCmp = TAB_ICONS[routeName] ?? Home;
     return (
-      <Animated.View key={routeName} layout={LinearTransition.springify().stiffness(350).damping(28)}>
-        {/*
-          The label is drawn only for the active tab — that is the design, and
-          it left every inactive tab with no text anywhere in the tree, so a
-          screen reader announced the app's primary navigation as four unnamed
-          buttons. `accessibilityLabel` supplies the name whether or not it is
-          painted, and `role`/`state` let the reader say "Nutrition, tab, 2 of
-          4, selected" instead of "button".
-        */}
-        <Pressable
-          accessibilityRole="tab"
-          accessibilityLabel={labels[routeName]}
-          accessibilityState={{ selected: active, disabled }}
-          disabled={disabled}
-          onPress={() => go(routeName, index)}
-          style={({ pressed }) => [styles.tab, pressed && !disabled && styles.pressed]}>
-          {/* Web's liquid pill: gradient-bright capsule that fades/scales in */}
-          {active && (
-            <Animated.View
-              entering={FadeIn.duration(180)}
-              exiting={FadeOut.duration(120)}
-              style={styles.tabActiveBg}
-            />
-          )}
-          <Icon icon={IconCmp} size={20} color={active ? colors.foreground : colors.mutedForeground} />
-          {active && (
-            <Animated.Text entering={FadeIn.duration(160)} style={styles.tabLabel} numberOfLines={1}>
-              {labels[routeName]}
-            </Animated.Text>
-          )}
-        </Pressable>
-      </Animated.View>
+      <Pressable
+        key={routeName}
+        accessibilityRole="tab"
+        accessibilityLabel={labels[routeName]}
+        accessibilityState={{ selected: active, disabled }}
+        disabled={disabled}
+        onPress={() => go(routeName, index)}
+        style={({ pressed }) => [styles.tab, pressed && !disabled && styles.pressed]}>
+        <Icon
+          icon={IconCmp}
+          size={22}
+          color={active ? colors.foreground : colors.mutedForeground}
+          strokeWidth={active ? 2.4 : 2}
+        />
+        <Text
+          style={[styles.tabLabel, active && styles.tabLabelActive]}
+          numberOfLines={1}
+          // The five labels are not the same length, and a tab that shrinks to
+          // fit its word would make the bar's spacing depend on the language.
+          // Every tab is the same width; a long word shrinks rather than
+          // pushing its neighbours around.
+          adjustsFontSizeToFit
+          minimumFontScale={0.85}>
+          {labels[routeName]}
+        </Text>
+      </Pressable>
     );
   };
 
@@ -195,16 +194,25 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
       <Animated.View
         style={[styles.wrap, { paddingBottom: insets.bottom + 8 }, hideStyle]}
         pointerEvents="box-none">
-        <PillSurface>
-          {renderTab('index')}
-          {renderTab('nutrition')}
+        {/*
+          The coach sits above the bar, not in it.
+
+          It opens a sheet of four actions — scan a meal, ask the coach, log
+          biometrics, see sleep — and an action is not a destination. It used to
+          be the middle item of the bar, which made one of five equal-looking
+          slots behave unlike the other four: tap it and nothing navigates.
+          iOS 26 has a name for this shape, a tab bar accessory: a small
+          floating control that travels with the bar and is plainly not part of
+          it.
+        */}
+        <PillSurface style={styles.accessory}>
           {centerButton(() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             setAiOpen((v) => !v);
           })}
-          {renderTab('workouts')}
-          {renderTab('progress')}
         </PillSurface>
+
+        <PillSurface>{TAB_ORDER.map((name) => renderTab(name))}</PillSurface>
       </Animated.View>
 
       {/* AI quick-actions overlay (web: dim blur backdrop + 2×2 panel) */}
@@ -288,28 +296,36 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: 'hidden',
   },
+  /*
+    Icon over label, every tab the same width, no capsule behind the selected
+    one.
+
+    The label used to be drawn only for the active tab, which expanded into a
+    bright pill while the other three sat as bare icons. It looks good and it
+    is not how a tab bar works: Apple's guidance is that every tab is labelled,
+    because an icon alone is a guess, and it is the *tint* that says which one
+    you are on. A bright capsule sliding between slots also makes the bar the
+    thing moving on screen, when the thing that moved is the page.
+
+    Fixed width rather than content width for the same reason the labels are
+    always there: five words of different lengths would make the spacing of the
+    bar depend on which language it is in, and the icons would sit at different
+    distances from each other in Vietnamese than in English.
+  */
   tab: {
-    flexDirection: 'row',
+    width: 62,
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    justifyContent: 'center',
+    gap: 3,
+    paddingVertical: 6,
     borderRadius: radius.full,
-    minHeight: 40,
-  },
-  tabActiveBg: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.13)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
   tabsDimmed: { opacity: 0.45 },
-  tabLabel: { fontSize: 13, fontWeight: '600', color: colors.foreground },
+  tabLabel: { fontSize: 10, fontWeight: '500', color: colors.mutedForeground },
+  // Selection is a tint and a heavier stroke on the icon, nothing else
+  tabLabelActive: { color: colors.foreground, fontWeight: '700' },
+  // The coach, floating clear of the bar it travels with
+  accessory: { marginBottom: spacing.sm, paddingHorizontal: 4, paddingVertical: 4 },
   aiBtn: {
     width: 44,
     height: 44,

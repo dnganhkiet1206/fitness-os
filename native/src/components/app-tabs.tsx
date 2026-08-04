@@ -20,6 +20,15 @@ export default function AppTabs() {
       <Tabs.Screen name="nutrition" />
       <Tabs.Screen name="workouts" />
       <Tabs.Screen name="progress" />
+      {/*
+        Settings is the fifth tab, which is Apple's maximum for iPhone.
+
+        Their guidance is that tabs are peer *sections* of content and settings
+        is a utility, so strictly it belongs behind a button rather than in the
+        bar. It is here because it was asked for, and the cost is worth naming:
+        one of five equal slots now goes to a screen people open rarely.
+      */}
+      <Tabs.Screen name="settings" />
     </Tabs>
   );
 }

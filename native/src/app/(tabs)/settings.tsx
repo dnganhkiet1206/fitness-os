@@ -224,7 +224,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <Screen back title={i18n.settingsTitle}>
+    <Screen title={i18n.settingsTitle}>
       <Animated.View entering={rise(0)}>
       <Pressable
         onPress={() => {

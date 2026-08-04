@@ -12,7 +12,6 @@ import {
   Pin,
   Plus,
   RotateCcw,
-  Settings,
   Sparkles,
   Trash2,
   type LucideIcon,
@@ -395,16 +394,6 @@ export default function TodayScreen() {
                   router.push('/ai-coach');
                 }}>
                 <Icon icon={Sparkles} size={20} color="rgba(237,237,237,0.7)" />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={i18n.a11ySettings}
-                style={({ pressed }) => [styles.squareBtn, pressed && styles.pressed]}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  router.push('/settings');
-                }}>
-                <Icon icon={Settings} size={20} color="rgba(237,237,237,0.7)" />
               </Pressable>
             </>
           )}
