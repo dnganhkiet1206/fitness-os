@@ -62,19 +62,18 @@ export const Spacing = {
 } as const;
 
 /**
- * Clearance a page leaves for the floating tab bar, above the safe-area inset.
+ * Clearance a page leaves under its content, above the safe-area inset.
  *
- * Two capsules, not one. The bar is 58pt — a 50pt row of icon-over-label, which
- * is what a `UITabBar` item measures, plus its own 4pt of padding — and the
- * coach accessory above it is 52 with 8 between them. The bar also sits 21pt
- * off the bottom edge now, Apple's inset for the floating capsule. That is 139;
- * Android carries the same eight points more it always did.
+ * Back to 72 now that the tab bar is UIKit's. It had climbed to 139 while the
+ * bar was hand-drawn and each measurement was being matched by hand — a
+ * labelled row, an accessory capsule, Apple's 21pt float — and every one of
+ * those numbers is the system's business again.
  *
- * It was 72 for a single 56pt bar flush at 8. The extra is the price of three
- * things asked for together — labels on every tab, Apple's own metrics, and the
- * coach no longer pretending to be a destination — and it is charged to the
- * bottom of every page, so it is worth knowing what would buy some back:
- * moving the coach into the page headers would return 60.
+ * It exists at all because `Screen` sets `contentInsetAdjustmentBehavior` to
+ * `never`: these pages lay out their own safe-area padding, which means iOS
+ * cannot apply the tab bar's inset for them. 72 clears a floating tab bar with
+ * room to spare, and being a little generous costs a few points of scroll
+ * where being short hides the last card behind the bar.
  */
-export const BottomTabInset = Platform.select({ ios: 139, android: 147 }) ?? 0;
+export const BottomTabInset = Platform.select({ ios: 72, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
