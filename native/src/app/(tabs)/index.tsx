@@ -43,6 +43,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessGauge } from '@/components/ascnd/readiness-gauge';
+import { StatusScrim } from '@/components/ascnd/status-scrim';
 import {
   ReadinessTrendCard,
   SmartTipsCard,
@@ -598,6 +599,11 @@ export default function TodayScreen() {
         </>
       )}
       </ScrollView>
+      {/*
+        Last child, after the scroll view: siblings stack in source order, so a
+        strip written above it would be painted underneath and cover nothing.
+      */}
+      <StatusScrim />
     </View>
   );
 }

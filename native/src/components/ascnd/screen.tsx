@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AmbientLight } from '@/components/ascnd/ambient-light';
 import { Icon } from '@/components/ascnd/icon';
+import { StatusScrim } from '@/components/ascnd/status-scrim';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { colors, glass, spacing, type } from '@/constants/ascnd';
@@ -184,6 +185,13 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
             {...props}>
             {children}
           </ScrollView>
+          {/*
+            The hero runs under the clock here by design, so this is the one
+            sub-page layout that needs the strip. It sits under the floating
+            header (zIndex 10 against 20), so the chevron and title stay crisp
+            on top of it.
+          */}
+          <StatusScrim />
           <View
             style={[styles.pageHeaderFloat, { paddingTop: insets.top }]}
             pointerEvents="box-none"
@@ -224,9 +232,14 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
 
   /*
    * A tab page scrolls all the way up to the status bar, so it is the layout
-   * the notch blur exists for. The scroll view used to be this branch's root;
-   * it now sits in a wrapper purely so the strip has somewhere to hang that is
-   * not inside the scroll (anything inside would scroll away with the diary).
+   * `StatusScrim` exists for. The scroll view used to be this branch's root; it
+   * sits in a wrapper so the light and the strip have somewhere to hang that is
+   * not inside the scroll — anything inside would scroll away with the content.
+   *
+   * The strip is the wrapper's *last* child on purpose. Order is what stacks
+   * siblings in React Native, and `zIndex` only reorders within the same
+   * parent, so a strip written above the ScrollView would be painted under it
+   * and cover nothing at all.
    */
   return (
     <View style={styles.root}>
@@ -255,6 +268,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         </View>
         {children}
       </ScrollView>
+      <StatusScrim />
     </View>
   );
 }
