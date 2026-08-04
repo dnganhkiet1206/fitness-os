@@ -26,9 +26,12 @@
  * card is just noisier than it should be, on exactly the old templates whose
  * owners are least likely to say so.
  *
- * **Effort read backwards.** Effort 8 leaves two reps; 10 leaves none. Invert
- * that and the app confidently tells somebody to stop three reps early on the
- * set that was meant to be all-out.
+ * **Read as a claim rather than a readout.** The effort briefly carried a gloss
+ * — "2 reps left" — and it was cut for a reason worth keeping: the card does not
+ * work anything out, it reads back two numbers somebody typed into the builder.
+ * A derived figure and a stored one look identical on the same line, and only
+ * one of them is something this card can stand behind. So the check refuses a
+ * line that says anything beyond the two values and their labels.
  */
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -44,7 +47,7 @@ try {
   execFileSync('npx', ['tsc', 'src/lib/prescription.ts', '--ignoreConfig', '--outDir', out,
     '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
-  const { DEFAULT_REST, DEFAULT_RPE, repsInReserve, restLabel, uniformValue } =
+  const { DEFAULT_REST, DEFAULT_RPE, restLabel, uniformValue } =
     createRequire(import.meta.url)(path.join(out, 'prescription.js'));
 
   const problems = [];
@@ -60,19 +63,8 @@ try {
     if (got !== want) problems.push(`restLabel(${secs}) = "${got}", đáng lẽ "${want}"`);
   }
 
-  // ── 2: effort → reps left, in both directions ──
-  const RIR = { 10: 0, 9: 1, 8: 2, 7: 3, 6: 4, 5: 5 };
-  for (const [rpe, want] of Object.entries(RIR)) {
-    const got = repsInReserve(Number(rpe));
-    if (got !== want) problems.push(`gắng sức ${rpe} → còn ${got} rep, đáng lẽ ${want}`);
-  }
-  // stored templates are free JSON — anything can be in there
-  for (const [rpe, want] of [[12, 0], [11, 0], [3, 5], [0, 5], [-4, 5]]) {
-    const got = repsInReserve(rpe);
-    if (got !== want) problems.push(`gắng sức ngoài thang ${rpe} → ${got}, đáng lẽ kẹp về ${want}`);
-  }
 
-  // ── 3: the missing field means the default, not a third answer ──
+  // ── 2: the missing field means the default, not a third answer ──
   const MIXED = [
     ['tất cả đều trống', [{}, {}, {}], DEFAULT_REST],
     ['trống lẫn giá trị mặc định ghi rõ', [{}, { restSeconds: 90 }, {}], 90],
@@ -90,7 +82,7 @@ try {
   }
 
   /*
-    ── 4: said once, never twice, never nowhere ──
+    ── 3: said once, never twice, never nowhere ──
 
     The card and the rows carry the two halves of one condition. Read as source
     because that is where the mistake lives: both halves are one short line, and
@@ -103,12 +95,28 @@ try {
   if (!onRows) problems.push('template-list: không thấy nhánh ngược lại trên từng bài — hai nhánh phải trái dấu nhau');
 
   /*
-    Self-test: the split-by-a-missing-field bug, rebuilt.
+    ── 4: the line reads back, it does not conclude ──
 
-    The naive version compares what is stored, so a workout where one exercise
-    spells out the default and the rest leave it blank looks non-uniform. If
-    that version passes the case above, the case is not testing anything.
+    `prescriptionLine` may label the two stored values and nothing else. The
+    gloss that was cut did arithmetic on the effort, and arithmetic is the
+    tell: the moment the line computes something, it is making a claim the
+    builder never stored and the card cannot support.
   */
+  const line = /export function prescriptionLine\([\s\S]*?\n\}/.exec(card)?.[0] ?? '';
+  if (!line) {
+    problems.push('template-list: không thấy prescriptionLine');
+  } else if (/[+\-*/%]|Math\.|10 -/.test(line.replace(/replace\('\{[a-z]\}'/g, ''))) {
+    problems.push('template-list: prescriptionLine có phép tính — dòng này chỉ được đọc lại giá trị đã lưu, không được suy ra thêm');
+  }
+
+  /*
+    Self-tests: the two bugs above, rebuilt.
+
+    A check that has only ever run against the fixed version has not been shown
+    to work. These build the broken versions and require them to be caught.
+  */
+
+  // the naive comparison — reads the stored value and calls a blank different
   const naive = (items) => {
     if (items.length === 0) return null;
     const first = items[0].restSeconds;
@@ -119,14 +127,21 @@ try {
     process.exit(1);
   }
 
+  // the gloss, put back: one subtraction is all it takes
+  const withGloss = line.replace('return `', 'const left = 10 - rpe;\n  return `');
+  if (withGloss === line || !/[+\-*/%]|Math\.|10 -/.test(withGloss.replace(/replace\('\{[a-z]\}'/g, ''))) {
+    console.error('phép tự kiểm hỏng — bản có phép tính đáng lẽ phải bị bắt, đừng tin kết quả');
+    process.exit(1);
+  }
+
   if (problems.length) {
     console.error('cách đọc lại nghỉ/gắng sức sai:\n');
     for (const p of problems) console.error(`  ${p}`);
     process.exit(1);
   }
 
-  const n = Object.keys(CLOCK).length + Object.keys(RIR).length + 5 + MIXED.length;
-  console.log(`nghỉ/gắng sức OK — ${n} ca, thiếu trường = mặc định, gắng sức 10 = hết sức, dòng chỉ hiện đúng một chỗ`);
+  const n = Object.keys(CLOCK).length + MIXED.length;
+  console.log(`nghỉ/gắng sức OK — ${n} ca, thiếu trường = mặc định, dòng chỉ đọc lại chứ không suy ra, hiện đúng một chỗ`);
 } finally {
   rmSync(out, { recursive: true, force: true });
 }

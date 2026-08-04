@@ -15,13 +15,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { rise } from '@/lib/entrance';
-import {
-  DEFAULT_REST,
-  DEFAULT_RPE,
-  repsInReserve,
-  restLabel,
-  uniformValue,
-} from '@/lib/prescription';
+import { DEFAULT_REST, DEFAULT_RPE, restLabel, uniformValue } from '@/lib/prescription';
 import { displayWeight, type WeightUnit } from '@/lib/units';
 
 /**
@@ -55,13 +49,18 @@ export interface TplExercise {
  * came back. Setting them was, in effect, filling in a form that is filed
  * somewhere you cannot read.
  *
- * ── said in words, because neither number speaks for itself ──
+ * ── labelled, and nothing more than labelled ──
  *
- * `1:30` is not obviously a duration until it is called rest, and `8` is not a
- * quantity of anything — it is a position on a scale of how hard the last rep
- * should be. So the effort carries its gloss: how many reps you should still
- * have in you when you stop. That is the form you can act on while you are
- * under the bar, and it is the standard reading of the scale.
+ * `1:30` is not obviously a duration until it is called rest, and `8` on its
+ * own is not a quantity of anything, so both carry their word. That is the
+ * whole job.
+ *
+ * It briefly carried a gloss as well — "còn 2 rep", the reps you should have
+ * left at that effort. It reads as a figure this card worked out, and the card
+ * works nothing out: it reads back two numbers somebody typed into the builder.
+ * A line that reports what was stored and a line that draws a conclusion from
+ * it look identical once they sit next to each other, and only one of them is
+ * something this component can stand behind.
  */
 export function prescriptionLine(
   i18n: ReturnType<typeof useI18n>,
@@ -69,10 +68,7 @@ export function prescriptionLine(
   rpe: number,
 ): string {
   const restText = rest <= 0 ? i18n.nTplNoRest : i18n.nTplRest.replace('{x}', restLabel(rest));
-  const left = repsInReserve(rpe);
-  const gloss =
-    left === 0 ? i18n.nTplRirNone : left === 1 ? i18n.nTplRirOne : i18n.nTplRir.replace('{n}', String(left));
-  return `${restText}  ·  ${i18n.nTplEffort.replace('{x}', String(rpe))} — ${gloss}`;
+  return `${restText}  ·  ${i18n.nTplEffort.replace('{x}', String(rpe))}`;
 }
 
 export interface Template {

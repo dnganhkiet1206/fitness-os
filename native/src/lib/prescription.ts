@@ -9,14 +9,15 @@
  * `90` is a number of seconds and reads as a weight. `1:30` is unambiguous once
  * you know it is a duration and ambiguous until then. And an effort of 8 means
  * nothing at all to somebody who has not met the scale — it is not eight of
- * anything you can count, it is a position on a ten-point scale of how close
- * the last rep should be to the last rep you *could* do.
+ * anything you can count, it is a position on a ten-point scale.
  *
- * So both get spelled out where they are shown, and the effort gets the one
- * gloss that turns it into something countable: how many reps you should still
- * have left when you stop. That is the standard reading of the scale — effort
- * 8 is two reps in reserve, 9 is one, 10 is none — and it is the form people
- * can actually act on mid-set.
+ * So both get their word where they are shown, and that is where it stops. An
+ * earlier version also spelled the effort out as reps in reserve — "2 reps
+ * left" — which is the standard reading of the scale and is still a conclusion
+ * *drawn* rather than a value stored. A card that reads back what the builder
+ * saved has no business doing that: the derived figure and the stored one look
+ * the same once they are on the same line, and the card can only stand behind
+ * one of them.
  *
  * ── no React here ──
  *
@@ -40,18 +41,6 @@ export function restLabel(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-/**
- * How many reps should be left in the tank at an effort of `rpe`.
- *
- * The builder's stepper runs 5–10, so this runs 5–0. Clamped anyway: templates
- * are stored as free JSON and a row written by an older version of the app, or
- * by hand, can hold anything at all. A negative "reps left" is not a number
- * anybody should be shown.
- */
-export function repsInReserve(rpe: number): number {
-  return Math.max(0, Math.min(5, Math.round(10 - rpe)));
 }
 
 /**
