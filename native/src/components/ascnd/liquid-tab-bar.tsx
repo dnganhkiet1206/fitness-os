@@ -146,11 +146,33 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
         disabled={disabled}
         onPress={() => go(routeName, index)}
         style={({ pressed }) => [styles.tab, pressed && !disabled && styles.pressed]}>
+        {/*
+          The selection capsule, and it is glass rather than a white fill.
+
+          On iOS 26 this is not a decoration, it is the system-standard
+          indicator: a Liquid Glass capsule sits behind the selected item and
+          Apple's own framework refuses to let it be removed while Liquid Glass
+          is on. It was taken out here in the previous pass along with the old
+          bright sliding pill — right to lose the pill, wrong to lose the
+          capsule with it.
+
+          Inset two points inside the tab so it reads as a lens laid on the bar
+          rather than as the tab having a border.
+        */}
+        {active && (
+          <Animated.View entering={FadeIn.duration(160)} style={styles.tabSelected}>
+            {GLASS ? (
+              <GlassView glassEffectStyle="regular" style={StyleSheet.absoluteFill} />
+            ) : (
+              <View style={[StyleSheet.absoluteFill, styles.tabSelectedFallback]} />
+            )}
+          </Animated.View>
+        )}
         <Icon
           icon={IconCmp}
-          size={22}
+          size={25}
           color={active ? colors.foreground : colors.mutedForeground}
-          strokeWidth={active ? 2.4 : 2}
+          strokeWidth={active ? 2.3 : 2}
         />
         <Text
           style={[styles.tabLabel, active && styles.tabLabelActive]}
@@ -192,7 +214,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   return (
     <>
       <Animated.View
-        style={[styles.wrap, { paddingBottom: insets.bottom + 8 }, hideStyle]}
+        style={[styles.wrap, { paddingBottom: insets.bottom + 21 }, hideStyle]}
         pointerEvents="box-none">
         {/*
           The coach sits above the bar, not in it.
@@ -262,20 +284,24 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 const styles = StyleSheet.create({
+  /*
+    21pt in from the left, the right and the bottom — Apple's inset for the
+    floating capsule. The bar used to hug its content and sit centred, which
+    put it at a different width on every device and in every language.
+  */
   wrap: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    alignItems: 'center',
+    paddingHorizontal: 21,
   },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-    borderRadius: 28,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    borderRadius: 29,
     borderWidth: 0.5,
     borderColor: 'rgba(255,255,255,0.15)',
     shadowColor: '#000',
@@ -297,35 +323,43 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   /*
-    Icon over label, every tab the same width, no capsule behind the selected
-    one.
+    Icon over label, on Apple's measurements.
 
-    The label used to be drawn only for the active tab, which expanded into a
-    bright pill while the other three sat as bare icons. It looks good and it
-    is not how a tab bar works: Apple's guidance is that every tab is labelled,
-    because an icon alone is a guess, and it is the *tint* that says which one
-    you are on. A bright capsule sliding between slots also makes the bar the
-    thing moving on screen, when the thing that moved is the page.
+    A 25pt glyph and a 50pt row, which is what a `UITabBar` item is; the
+    capsule around them comes out at 58 with its own padding. The icon was 22
+    and the row 49 — near enough to look right and not near enough to be right,
+    and a tab bar is the one piece of chrome in the app people compare against
+    every other app on the phone without meaning to.
 
-    Fixed width rather than content width for the same reason the labels are
-    always there: five words of different lengths would make the spacing of the
-    bar depend on which language it is in, and the icons would sit at different
-    distances from each other in Vietnamese than in English.
+    Every tab takes an equal share of the bar rather than sizing to its word.
+    Five labels of different lengths would make the spacing depend on which
+    language the app is in — the icons would sit at different distances from
+    each other in Vietnamese than in English.
   */
   tab: {
-    width: 62,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
-    paddingVertical: 6,
+    gap: 2,
+    paddingVertical: 5,
     borderRadius: radius.full,
   },
+  tabSelected: {
+    position: 'absolute',
+    top: 2,
+    left: 2,
+    right: 2,
+    bottom: 2,
+    borderRadius: radius.full,
+    overflow: 'hidden',
+  },
+  tabSelectedFallback: { backgroundColor: 'rgba(255,255,255,0.14)' },
   tabsDimmed: { opacity: 0.45 },
-  tabLabel: { fontSize: 10, fontWeight: '500', color: colors.mutedForeground },
+  tabLabel: { fontSize: 11, fontWeight: '500', color: colors.mutedForeground },
   // Selection is a tint and a heavier stroke on the icon, nothing else
   tabLabelActive: { color: colors.foreground, fontWeight: '700' },
   // The coach, floating clear of the bar it travels with
-  accessory: { marginBottom: spacing.sm, paddingHorizontal: 4, paddingVertical: 4 },
+  accessory: { alignSelf: 'flex-end', marginBottom: spacing.sm, paddingHorizontal: 4, paddingVertical: 4 },
   aiBtn: {
     width: 44,
     height: 44,
