@@ -840,7 +840,18 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                 a 90pt trend line animating on every mount is motion for its own
                 sake on a screen showing five of them at once. */}
             {grid ? (
-              <DrawnPath d={path} len={curveLength(curve)} color={color} width={3} />
+              /*
+                Keyed on the path itself, so the draw replays exactly when the
+                line changes — a range switch, a new weigh-in, a unit toggle.
+
+                The key was on the whole `<LineChart>` at the call site first.
+                That worked and cost too much: remounting the chart resets the
+                `width` it measures with `onLayout`, so every range switch had a
+                frame with nothing drawn at all before the new line appeared.
+                Keying the one element that needs to restart leaves the
+                measurement, the axes and the gridlines alone.
+              */
+              <DrawnPath key={path} d={path} len={curveLength(curve)} color={color} width={3} />
             ) : (
               <Path
                 d={path}

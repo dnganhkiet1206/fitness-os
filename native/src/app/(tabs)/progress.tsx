@@ -269,9 +269,14 @@ export default function ProgressScreen() {
     divided by the number of segments, and the pill translates by index.
   */
   const [rangeW, setRangeW] = useState(0);
+  // The track's 2pt padding on each side, and nothing else — the segments are
+  // flush, so a segment is exactly a quarter of what is left.
   const pillW = rangeW > 0 ? (rangeW - 4) / RANGES.length : 0;
   const rangeIdx = RANGES.findIndex((r) => r.key === range);
-  const slide = useSharedValue(0);
+  // Starts where the current range is, not at zero. The default range is the
+  // last segment, so a zero start made the pill slide the width of the control
+  // on first render — an animation for a change that had not happened.
+  const slide = useSharedValue(rangeIdx);
   useEffect(() => {
     slide.value = withTiming(rangeIdx, { duration: 240, easing: Easing.out(Easing.cubic) });
   }, [rangeIdx, slide]);
@@ -554,14 +559,7 @@ export default function ProgressScreen() {
                 </Text>
               ) : null}
             </View>
-            {/*
-              Keyed on the range so switching remounts the chart and the line
-              draws itself on again. Without the key React reconciles the two
-              series into the same `<Path>` and the shape simply changes between
-              one frame and the next.
-            */}
             <LineChart
-              key={range}
               points={chartPoints}
               color={colors.metricBeige}
               height={180}
@@ -876,7 +874,10 @@ const styles = StyleSheet.create({
   // prevented this container from clipping.
   rangeRow: {
     flexDirection: 'row',
-    gap: 2,
+    // No gap. The segments are flush and the pill is what separates them —
+    // with a gap the pill's arithmetic has to account for `(n - 1)` of them,
+    // and getting that subtly wrong is how it ends up 1.5px too wide and
+    // 1.5px left of the last segment it is supposed to be sitting on.
     marginTop: spacing.sm,
     padding: 2,
     borderRadius: radius.sm,
