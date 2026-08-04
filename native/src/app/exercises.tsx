@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { useLocalSearchParams } from 'expo-router';
 import { Plus, Trash2 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -7,6 +8,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { StaggerItem } from '@/components/ascnd/stagger-item';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
+import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -32,9 +34,24 @@ export default function ExercisesScreen() {
   const [muscleGroup, setMuscleGroup] = useState(MUSCLE_GROUPS[0]);
   const [equipment, setEquipment] = useState('');
 
+  /*
+    Arriving from a muscle tile shows only that muscle; arriving from "see all"
+    shows the library as it always was.
+
+    The filter is on the *art key*, not on the group string. `muscle_group` is
+    written three different ways for the same shelf — the picker's label, the
+    builder's English, and the seed's own spelling — so matching the text would
+    show a third of what the tile just counted, and the count and the list would
+    disagree on the same screen.
+  */
+  const { group: groupParam } = useLocalSearchParams<{ group?: string }>();
+  const only = groupParam as MuscleArtKey | undefined;
+
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const filtered = (exercises ?? []).filter((e) => !q || e.name.toLowerCase().includes(q));
+    const filtered = (exercises ?? [])
+      .filter((e) => !only || muscleArtKeysFor(e.muscle_group).includes(only))
+      .filter((e) => !q || e.name.toLowerCase().includes(q));
     const map = new Map<string, typeof filtered>();
     for (const e of filtered) {
       const g = e.muscle_group ?? '—';
@@ -42,7 +59,7 @@ export default function ExercisesScreen() {
       map.get(g)!.push(e);
     }
     return [...map.entries()];
-  }, [exercises, search]);
+  }, [exercises, search, only]);
 
   const submit = () => {
     if (!name.trim()) return;

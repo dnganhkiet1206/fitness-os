@@ -26,7 +26,8 @@ import { getLocale } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import { displayWeight, weightLabel, type WeightUnit } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
-import { MuscleArt, muscleArtFor, type MuscleArtKey } from '@/components/ascnd/muscle-art';
+import { MuscleArt } from '@/components/ascnd/muscle-art';
+import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 
 interface TplExercise {
   exerciseName?: string;
@@ -270,8 +271,13 @@ function MuscleGrid({
   */
   const counts = new Map<MuscleArtKey, number>();
   for (const e of exercises) {
-    const key = muscleArtFor(e.muscle_group);
-    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+    // `Lưng/Chân` is two groups and both are true, so the deadlift is counted
+    // under each. The tiles therefore sum to more than the library holds — a
+    // tile says how many exercises work that muscle, not how many are filed
+    // there and nowhere else.
+    for (const key of muscleArtKeysFor(e.muscle_group)) {
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
   }
 
 
@@ -302,7 +308,10 @@ function MuscleGrid({
               style={({ pressed }) => [styles.libTile, pressed && styles.pressed]}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push('/exercises');
+                // The art key, not the caption: the caption is a display string
+                // and the library has to match against every spelling of the
+                // group, which is what the key stands for.
+                router.push({ pathname: '/exercises', params: { group: t.key } });
               }}>
               <MuscleArt group={t.key} size={64} />
               <Text style={styles.libName} numberOfLines={1}>{vi ? t.vi : t.en}</Text>

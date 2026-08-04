@@ -1,5 +1,7 @@
 import { Image, type ImageStyle, type StyleProp } from 'react-native';
 
+import { muscleArtFor, type MuscleArtKey } from '@/lib/muscle-group';
+
 /**
  * The muscle-group diagrams, and how a stored group name finds one.
  *
@@ -22,21 +24,13 @@ import { Image, type ImageStyle, type StyleProp } from 'react-native';
  * *diagram* rather than a surface, and a diagram that matches the furniture
  * stops reading as one.
  *
- * ── why the lookup is so forgiving ──
- *
- * `exercises.muscle_group` is free text, and two screens write it. The builder
- * (`workout-builder.tsx:30`) stores English — "Chest", "Quads". The library
- * (`exercises.tsx:25`) stores whatever `useI18n()` returned, so a Vietnamese
- * user's exercises are filed under "Ngực" and "Chân trước". The same library
- * therefore holds both spellings of the same group, and anything matching on one
- * of them would silently show art for half a shelf.
- *
- * That is a real defect in the data model rather than something this file
- * invents a workaround for — but it is the data that exists, so the lookup
- * takes both, case-folded and accent-tolerant.
+ * The lookup from a stored group name lives in `@/lib/muscle-group`, away from
+ * React Native, so it can be run against the real data in a check rather than
+ * reviewed by reading. `ART` is typed by its key union, so a diagram with no
+ * file fails to build.
  */
 
-const ART = {
+const ART: Record<MuscleArtKey, number> = {
   chest: require('../../../assets/muscle/chest.webp'),
   back: require('../../../assets/muscle/back.webp'),
   shoulders: require('../../../assets/muscle/shoulders.webp'),
@@ -48,70 +42,6 @@ const ART = {
   abs: require('../../../assets/muscle/abs.webp'),
   cardio: require('../../../assets/muscle/cardio.webp'),
 } as const;
-
-export type MuscleArtKey = keyof typeof ART;
-
-/**
- * Every spelling of every group that the two writers can produce, folded to a
- * key. Written out rather than derived from `useI18n()` so that a change to a
- * label does not silently orphan art for exercises already filed under the old
- * one — the old spelling stays in this table and keeps working.
- */
-const ALIASES: Record<string, MuscleArtKey> = {
-  // English, as `workout-builder.tsx` writes it
-  chest: 'chest',
-  back: 'back',
-  shoulders: 'shoulders',
-  biceps: 'biceps',
-  triceps: 'triceps',
-  quads: 'legs',
-  hamstrings: 'legs',
-  legs: 'legs',
-  calves: 'calves',
-  glutes: 'glutes',
-  abs: 'abs',
-  core: 'abs',
-  'full body': 'cardio',
-  fullbody: 'cardio',
-  cardio: 'cardio',
-  // Vietnamese, as `exercises.tsx` writes it via `useI18n()`
-  nguc: 'chest',
-  lung: 'back',
-  vai: 'shoulders',
-  'tay truoc': 'biceps',
-  'tay sau': 'triceps',
-  'chan truoc': 'legs',
-  'chan sau': 'legs',
-  chan: 'legs',
-  'bap chan': 'calves',
-  mong: 'glutes',
-  bung: 'abs',
-  'toan than': 'cardio',
-  'tim mach': 'cardio',
-};
-
-/** lower-case, strip Vietnamese diacritics, squeeze spaces */
-function fold(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/gi, 'd')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/**
- * Which diagram belongs to a stored group name, or none.
- *
- * `null` rather than a fallback picture. A group with no art gets no art; giving
- * every unknown string the running figure would quietly file "Forearms" under
- * cardio and there would be nothing on screen to say so.
- */
-export function muscleArtFor(group: string | null | undefined): MuscleArtKey | null {
-  if (!group) return null;
-  return ALIASES[fold(group)] ?? null;
-}
 
 export function MuscleArt({
   group,

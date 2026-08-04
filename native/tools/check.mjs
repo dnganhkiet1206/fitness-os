@@ -89,6 +89,7 @@ const STEPS = [
   ['ánh sáng nền', 'node', ['tools/ambient.mjs']],
   ['trục nước', 'node', ['tools/water-scale.mjs']],
   ['đường cân nặng', 'node', ['tools/curve.mjs']],
+  ['nhóm cơ', 'node', ['tools/muscle-map.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
   ['camera shop', 'node', ['tools/shop-camera.mjs']],
   ['tư thế mặc đồ', 'node', ['tools/koa-studio/dress.mjs']],
