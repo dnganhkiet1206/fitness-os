@@ -1,6 +1,5 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
-import { QuickActionsAccessory } from '@/components/ascnd/quick-actions-accessory';
 import { colors } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { scrollActiveToTop } from '@/lib/scroll-to-top';
@@ -171,22 +170,19 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       {/*
-        The quick-actions button, in the system's own accessory slot above the
-        bar.
+        No `NativeTabs.BottomAccessory` here.
 
-        It is a floating action button, not an AI button — the sparkles glyph
-        says AI, and what it opens is four things: scan a meal, ask the coach,
-        log biometrics, see sleep. An action is not a destination, which is why
-        it is not a tab; as the middle item of the bar it made one of five
-        equal-looking slots behave unlike the other four.
+        The quick-actions button lived in it, and the accessory slot draws as a
+        full-width bar of its own above the tab bar — two horizontal bars
+        stacked at the bottom of every screen, which is one more bottom bar
+        than an app should have. It is the correct slot for a now-playing
+        strip; it is too much furniture for a single button.
 
-        iOS 26 has a place for exactly this shape, so the accessory minimises
-        and expands with the bar instead of being a capsule of ours floating
-        near it.
+        The button moved to the Today header instead, where a sparkles button
+        already sat. Nothing about the four actions changed — see
+        `ascnd/quick-actions-accessory`, which keeps its name for now because
+        the whole control may yet be dropped.
       */}
-      <NativeTabs.BottomAccessory>
-        <QuickActionsAccessory />
-      </NativeTabs.BottomAccessory>
     </NativeTabs>
   );
 }

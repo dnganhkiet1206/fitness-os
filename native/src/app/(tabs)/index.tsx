@@ -57,6 +57,7 @@ import {
   WorkoutStatusCard,
 } from '@/components/ascnd/today-widgets-2';
 import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
+import { QuickActionsSheet } from '@/components/ascnd/quick-actions-accessory';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -134,6 +135,16 @@ export default function TodayScreen() {
 
   // Pull-to-refresh (web PullToRefresh: invalidate everything)
   const [refreshing, setRefreshing] = useState(false);
+  /**
+   * The quick-actions sheet — scan a meal, ask the coach, log biometrics, see
+   * sleep — opened by the sparkles button in the header above.
+   *
+   * The state lives here because the sheet is controlled and has no trigger of
+   * its own: it has been in the tab bar's middle slot and in the tab bar's
+   * accessory strip, and both were the wrong place for different reasons (see
+   * `ascnd/quick-actions-accessory`). Whoever opens it owns it.
+   */
+  const [quickOpen, setQuickOpen] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await queryClient.invalidateQueries();
@@ -387,11 +398,11 @@ export default function TodayScreen() {
             <>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={i18n.a11yAskCoach}
+                accessibilityLabel={i18n.nQuickActions}
                 style={({ pressed }) => [styles.squareBtn, pressed && styles.pressed]}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  router.push('/ai-coach');
+                  setQuickOpen(true);
                 }}>
                 <Icon icon={Sparkles} size={20} color="rgba(237,237,237,0.7)" />
               </Pressable>
@@ -593,6 +604,7 @@ export default function TodayScreen() {
         strip written above it would be painted underneath and cover nothing.
       */}
       <StatusScrim />
+      <QuickActionsSheet visible={quickOpen} onClose={() => setQuickOpen(false)} />
     </View>
   );
 }
