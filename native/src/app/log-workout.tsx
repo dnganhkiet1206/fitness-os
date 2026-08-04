@@ -19,14 +19,10 @@ import {
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
-import { useAuth } from '@/hooks/use-auth';
+import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
 import { useExercises } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
-import { useInvalidateToday } from '@/hooks/useTodayData';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
-import { recomputeDailyLog } from '@/lib/daily-log-service';
-import { localDateStr } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 
 const RPE_VALUES = [6, 7, 8, 9, 10] as const;
@@ -42,8 +38,6 @@ interface SetRow {
 const EMPTY_SET: SetRow = { exerciseId: '', exerciseName: '', weight: '', reps: '', rpe: '' };
 
 export default function LogWorkoutSheet() {
-  const { user } = useAuth();
-  const invalidate = useInvalidateToday();
   const i18n = useI18n();
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
@@ -108,35 +102,28 @@ export default function LogWorkoutSheet() {
     0,
   );
 
+  /*
+    The write itself lives in `useLogWorkoutSession`, because the week's day
+    view finishes a workout too and the insert is the small part of it — the
+    volume, the daily-log rebuild and the Today invalidation all have to happen
+    the same way from both, and a second copy would drift without erroring.
+    This screen's job is turning text fields into kilograms.
+  */
+  const log = useLogWorkoutSession();
   const save = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error('Not signed in');
-      const setsJson = validSets.map((s, i) => {
-        const setRpe = Number(s.rpe);
-        return {
+    mutationFn: () =>
+      log.mutateAsync({
+        templateName: name,
+        sessionRpe: rpe,
+        sets: validSets.map((s) => ({
           exerciseId: s.exerciseId,
-          exerciseName: s.exerciseName.trim() || 'Exercise',
-          setIndex: i + 1,
-          weight: Math.round(weightToKg(Number(s.weight), wUnit) * 100) / 100,
+          exerciseName: s.exerciseName,
+          weight: weightToKg(Number(s.weight), wUnit),
           reps: Number(s.reps),
-          rpe: setRpe >= 1 && setRpe <= 10 ? setRpe : null,
-        };
-      });
-
-      const { error } = await supabase.from('workout_sessions').insert({
-        user_id: user.id,
-        template_name: name.trim() || 'Workout',
-        session_rpe: rpe,
-        sets: setsJson,
-        volume_load: Math.round(volumeLoad),
-        pain_flags: [],
-        pr_detected: false,
-      });
-      if (error) throw error;
-      await recomputeDailyLog(user.id, localDateStr());
-    },
+          rpe: Number(s.rpe),
+        })),
+      }),
     onSuccess: () => {
-      invalidate();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
       toast.success(i18n.logWorkoutSaved);

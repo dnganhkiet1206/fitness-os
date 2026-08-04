@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { CheckCircle2, ChevronRight, CircleDashed, Dumbbell, Moon, Plus } from 'lucide-react-native';
+import { CheckCircle2, ChevronRight, CircleDashed, Dumbbell, Moon, Pencil, Plus } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -219,6 +219,23 @@ export default function RoutineScreen() {
                   <Icon icon={look.icon} size={12} color={look.tint} />
                   <Text style={[styles.stateText, { color: look.tint }]}>{stateLabel}</Text>
                 </View>
+                {/*
+                  Changing what a day *is* moved up here when the body started
+                  opening the workout instead of the picker. It is a small
+                  target on purpose: you assign a day once and train it for
+                  months, so it should be findable and not in the way.
+                */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${label} — ${i18n.nChooseWorkout}`}
+                  hitSlop={10}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setPicking(idx);
+                  }}
+                  style={({ pressed }) => [styles.editBtn, pressed && styles.pressed]}>
+                  <Icon icon={Pencil} size={13} color={colors.mutedForeground} />
+                </Pressable>
               </View>
 
               {/*
@@ -234,7 +251,14 @@ export default function RoutineScreen() {
                 accessibilityLabel={`${label} — ${tpl?.name ?? i18n.nRoutineRestDay}, ${stateLabel}`}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  setPicking(idx);
+                  /*
+                    A day with a workout on it opens the workout — every set of
+                    it, with somewhere to tick them off. A day without one has
+                    nothing to open, so it goes straight to the question it is
+                    actually asking: what should this day be.
+                  */
+                  if (tpl) router.push({ pathname: '/routine-day', params: { day: String(idx) } });
+                  else setPicking(idx);
                 }}
                 style={({ pressed }) => [styles.dayBody, pressed && styles.pressed]}>
                 <View style={styles.dayIcon}>
@@ -255,6 +279,7 @@ export default function RoutineScreen() {
                 ) : null}
                 <Icon icon={ChevronRight} size={15} color={colors.mutedForeground} />
               </Pressable>
+
             </GlassCard>
           </Animated.View>
         );
@@ -267,7 +292,7 @@ export default function RoutineScreen() {
           router.push('/workout-builder');
         }}
         style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}>
-        <Icon icon={Plus} size={17} color="#fff" strokeWidth={2.5} />
+        <Icon icon={Plus} size={17} color={colors.primaryForeground} strokeWidth={2.5} />
         <Text style={styles.addText}>{i18n.nRoutineAdd}</Text>
       </Pressable>
 
@@ -350,7 +375,7 @@ const styles = StyleSheet.create({
   weekDate: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   weekDateToday: { backgroundColor: colors.primary },
   weekNum: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  weekNumToday: { color: '#fff', fontWeight: '700' },
+  weekNumToday: { color: colors.primaryForeground, fontWeight: '700' },
   /* Always drawn, transparent when the day is empty — a dot that appears and
      disappears would shift the row's height by three points as the week is
      edited. */
@@ -377,6 +402,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   stateText: { ...type.caption, fontWeight: '600' },
+  editBtn: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
   deloadBadge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
@@ -412,7 +438,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.primary,
   },
-  addText: { ...type.body, color: '#fff', fontWeight: '600' },
+  addText: { ...type.body, color: colors.primaryForeground, fontWeight: '600' },
 
   // ── the day sheet ──
   pickerBackdrop: {

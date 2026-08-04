@@ -189,6 +189,84 @@ export function useDeleteWorkoutSession() {
   });
 }
 
+/** One completed set, in kilograms, as it is stored on the session. */
+export interface LoggedSet {
+  exerciseId: string;
+  exerciseName: string;
+  weight: number;
+  reps: number;
+  rpe?: number | null;
+}
+
+/**
+ * Write a finished workout — the only place in the app that does.
+ *
+ * ── why it is a hook and not two inserts ──
+ *
+ * Two screens finish a workout: the free-form log sheet, and the day view in
+ * the week, where you tick sets off as you do them. The insert is the small
+ * part. What follows it is not:
+ *
+ *   - `volume_load` is derived, and has to be derived the same way both times
+ *   - `recomputeDailyLog` rebuilds the day, which is what readiness reads
+ *   - Today's queries have to be invalidated or the page you return to still
+ *     shows the workout as not done
+ *
+ * A second copy of that would work on the day it was written. It would then
+ * quietly stop matching the first — a screen that inserts but forgets to
+ * recompute produces a session that exists, appears in history, and leaves
+ * readiness saying you did not train. Nothing errors, and the two screens
+ * disagree about the same day.
+ *
+ * So there is one path, and a caller only has to say what was done.
+ */
+export function useLogWorkoutSession() {
+  const { user } = useAuth();
+  const invalidate = useInvalidateToday();
+  return useMutation({
+    mutationFn: async ({
+      templateName,
+      sessionRpe,
+      sets,
+    }: {
+      templateName: string;
+      sessionRpe: number;
+      sets: LoggedSet[];
+    }) => {
+      if (!user) throw new Error('Not signed in');
+      if (sets.length === 0) throw new Error('No sets');
+
+      const { error } = await supabase.from('workout_sessions').insert({
+        user_id: user.id,
+        template_name: templateName.trim() || 'Workout',
+        session_rpe: sessionRpe,
+        sets: sets.map((s, i) => ({
+          exerciseId: s.exerciseId,
+          exerciseName: s.exerciseName.trim() || 'Exercise',
+          setIndex: i + 1,
+          // two decimals, so a 2.5-step weight cannot arrive as 82.50000000000001
+          weight: Math.round(s.weight * 100) / 100,
+          reps: s.reps,
+          rpe: s.rpe && s.rpe >= 1 && s.rpe <= 10 ? s.rpe : null,
+        })),
+        volume_load: Math.round(sets.reduce((sum, s) => sum + s.weight * s.reps, 0)),
+        pain_flags: [],
+        pr_detected: false,
+      });
+      if (error) throw error;
+
+      /*
+        The session is stamped now, so the day it belongs to is today. Nothing
+        here lets a caller pass a date — logging a workout you forgot to log
+        needs a date field on the screen and a second recompute, and pretending
+        otherwise would file it under the wrong day in silence.
+      */
+      await recomputeDailyLog(user.id, localDateStr());
+    },
+    onSuccess: () => invalidate(),
+  });
+}
+
 export function useWorkoutSessions(days = 14) {
   const { user } = useAuth();
   return useQuery({

@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { CalendarDays, ChevronRight, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
+import { CalendarDays, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -250,6 +250,31 @@ export default function WorkoutsScreen() {
         buttons are self-describing, so the caption was the part to drop.
       */}
       <View style={styles.actionsRow}>
+        {/*
+          The week, first and on the left.
+
+          It used to be a full-width bar at the very bottom of the page, under
+          the workout list and the recent sessions — the last thing on a screen
+          you have to scroll to reach, for the one thing on it you look at
+          daily. Its size was the giveaway: nothing else on this page is 44pt
+          tall and the width of the screen, so it read as a footer rather than
+          as one of the ways in.
+
+          It is one of them, so it sits with the other two, at the same height
+          and in the same shapes. On the left because it is where you go before
+          training rather than to build something — the row now reads plan,
+          browse, create.
+        */}
+        <Pressable
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.outlineBtn, pressed && styles.pressed]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/routine');
+          }}>
+          <Icon icon={CalendarDays} size={14} color={colors.metricBlue} />
+          <Text style={styles.outlineBtnText}>{i18n.workoutsWeeklyPlan}</Text>
+        </Pressable>
         <View style={styles.actionButtons}>
           <Pressable
             style={({ pressed }) => [styles.outlineBtn, pressed && styles.pressed]}
@@ -387,29 +412,19 @@ export default function WorkoutsScreen() {
         </Animated.View>
       )}
 
-      {/* Weekly plan link (web bottom button) */}
-      <Pressable
-        style={({ pressed }) => [styles.weeklyBtn, pressed && styles.pressed]}
-        onPress={() => {
-          Haptics.selectionAsync();
-          router.push('/routine');
-        }}>
-        <Icon icon={CalendarDays} size={15} color={colors.metricBlue} />
-        <Text style={styles.weeklyBtnText}>{i18n.workoutsWeeklyPlan}</Text>
-        <Icon icon={ChevronRight} size={16} color={colors.foreground} />
-      </Pressable>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  /* Right-aligned. `space-between` put them there only while a caption held the
-     left end; with the caption gone it pushed them to the left instead, which
-     is not where they had been. */
+  /* Three buttons now, and they no longer hug the right.
+     `flex-end` was right while the row was "browse" and "create" — a pair of
+     tools belonging to the list below them. With the week in front, the row is
+     the page's three doorways and reads left to right like one, so it starts
+     at the left margin and wraps from there. */
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
     gap: spacing.sm,
     flexWrap: 'wrap',
   },
@@ -513,17 +528,5 @@ const styles = StyleSheet.create({
   rpeText: { fontSize: 10, fontWeight: '600', color: colors.metricOrange, fontVariant: ['tabular-nums'] },
   // 28pt of ink with hitSlop 10 on top — 48pt of target, past the 44pt minimum
   sessionDel: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  weeklyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    height: 44,
-    borderRadius: radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(24,24,27,0.2)',
-  },
-  weeklyBtnText: { fontSize: 14, fontWeight: '500', color: colors.foreground },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });
