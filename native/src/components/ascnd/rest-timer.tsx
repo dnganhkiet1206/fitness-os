@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Minus, Plus } from 'lucide-react-native';
-import { useEffect, useId } from 'react';
+import { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -11,7 +11,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 
 import { Icon } from '@/components/ascnd/icon';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
@@ -21,16 +21,16 @@ import { restLabel } from '@/lib/prescription';
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 /**
- * The rest between sets, as the only thing on the screen.
+ * The rest between sets.
  *
- * ── why it takes over ──
+ * ── why it comes forward ──
  *
  * It was a bar pinned above the list, which is the polite version and the
  * wrong one. Rest is not a status: it is the part of a workout where you are
  * not doing anything and are waiting to be told to start again, and for that
- * ninety seconds the app has exactly one job. A strip along the bottom of a
- * list of sets asks you to find it; a ring in the middle of a dimmed screen is
- * legible from a bench two metres away, which is where the phone actually is.
+ * ninety seconds the app has one job. A strip along the bottom of a list of
+ * sets asks you to find it; a card in the middle of a dimmed screen is legible
+ * from a bench two metres away, which is where the phone actually is.
  *
  * It closes itself when the time is up, so the workout is never more than one
  * countdown away from the list — nothing here has to be dismissed to get on.
@@ -41,26 +41,30 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
  * running out: full when the rest starts, gone when it ends, so the amount of
  * colour left *is* the amount of time left and there is nothing to convert.
  *
- * ── the halo is stacked, not blurred ──
+ * ── and it is quiet ──
  *
- * `react-native-svg` leaves the filter primitives unimplemented on native —
- * `feGaussianBlur` renders nothing at all — so the glow is three wider, fainter
- * copies of the ring underneath it. The alphas fall off faster than the widths
- * grow, which is roughly what a blur does, and each step is faint enough not to
- * read as a ring of its own.
+ * The first version was loud: a 220pt ring in neon blue with a stacked halo
+ * behind it, a 46pt clock, and the room blacked out to 86% behind all of it. It
+ * looked like an alarm. Rest is the opposite of an alarm — it is the part of a
+ * workout where nothing is happening and nothing needs to.
+ *
+ * So everything came down at once, because no single one of those was the
+ * problem. The ring is 150 and silver instead of 220 and neon; the halo is
+ * gone, because a glow is a thing asking to be looked at; the clock is 34; and
+ * the room dims rather than going dark, so the sets you are working through
+ * stay visible behind it. What is left is a clock on a card, which is all this
+ * ever needed to be.
+ *
+ * The one thing kept at full strength is the *legibility* of the number. That
+ * is the job, and it survives the rest of it being turned down — tabular
+ * figures at 34pt on a plain dark card read from across a gym perfectly well.
+ * It was never the size that made the old one shout.
  */
 
-const SIZE = 220;
-const R = 92;
-const W = 10;
+const SIZE = 150;
+const R = 63;
+const W = 8;
 const CIRC = 2 * Math.PI * R;
-
-/** Widest and faintest first, so each is drawn under the one inside it. */
-const HALO = [
-  { grow: 14, o: 0.05 },
-  { grow: 9, o: 0.08 },
-  { grow: 4, o: 0.12 },
-];
 
 export function RestTimer({
   left,
@@ -77,13 +81,6 @@ export function RestTimer({
   onAdjust: (delta: number) => void;
   onSkip: () => void;
 }) {
-  /*
-    Ids in SVG are document-global on native rather than local to the `<Svg>`
-    that declares them. This has caught the app three times; `useId` is the rule
-    even where only one of these can be on screen at once.
-  */
-  const gid = `restRing-${useId()}`;
-
   const progress = useSharedValue(1);
   useEffect(() => {
     if (left === null || total <= 0) return;
@@ -152,45 +149,29 @@ export function RestTimer({
 
           <View style={styles.ringWrap}>
             <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-              <Defs>
-                <LinearGradient id={gid} x1="0%" y1="0%" x2="100%" y2="100%">
-                  <Stop offset="0%" stopColor={colors.metricBlue} />
-                  <Stop offset="100%" stopColor={colors.primary} />
-                </LinearGradient>
-              </Defs>
+              <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke="#1c1c21" strokeWidth={W} />
 
-              <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke="#17171c" strokeWidth={W} />
+              {/*
+                One ring, in the app's own silver.
 
-              {HALO.map((h) => (
-                <AnimatedCircle
-                  key={h.grow}
-                  animatedProps={ring}
-                  cx={SIZE / 2}
-                  cy={SIZE / 2}
-                  r={R}
-                  fill="none"
-                  stroke={colors.metricBlue}
-                  strokeOpacity={h.o}
-                  strokeWidth={W + h.grow}
-                  strokeLinecap="round"
-                  strokeDasharray={CIRC}
-                  // Twelve o'clock, and clockwise. A ring that starts at three
-                  // is a chart; a ring that starts at twelve is a clock, and
-                  // this is a clock.
-                  transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
-                />
-              ))}
-
+                It was a blue-to-silver gradient with three glow layers behind
+                it. Neon is what this app signals *with* — a limit approached,
+                a number out of range — and rest is none of those things. A
+                plain stroke in the brand colour says the same amount about how
+                much time is left and does not ask for anything.
+              */}
               <AnimatedCircle
                 animatedProps={ring}
                 cx={SIZE / 2}
                 cy={SIZE / 2}
                 r={R}
                 fill="none"
-                stroke={`url(#${gid})`}
+                stroke={colors.primary}
                 strokeWidth={W}
                 strokeLinecap="round"
                 strokeDasharray={CIRC}
+                // Twelve o'clock, and clockwise. A ring that starts at three is
+                // a chart; a ring that starts at twelve is a clock.
                 transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
               />
             </Svg>
@@ -238,17 +219,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
-    /* 0.68, down from 0.86. At the higher value the workout behind it was
-       gone rather than dimmed, so the timer read as a different screen you had
-       been sent to instead of as a moment inside the one you were on. */
-    backgroundColor: 'rgba(7,7,8,0.68)',
+    /* 0.55, from 0.86 by way of 0.68. The room dims; it does not go out. What
+       is behind this is the list of sets you are working through, and keeping
+       it faintly readable is what makes the countdown feel like a moment inside
+       the workout rather than a screen you were sent to. */
+    backgroundColor: 'rgba(7,7,8,0.55)',
   },
   card: {
     alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    borderRadius: 32,
+    gap: spacing.sm + 2,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 26,
     backgroundColor: 'rgba(18,18,22,0.96)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
@@ -262,31 +244,36 @@ const styles = StyleSheet.create({
   },
   ringWrap: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
   clockWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  /* 46pt and tabular. The point of this screen is a number read at arm's
-     length, and tabular figures stop the whole thing shuffling sideways every
-     time a 1 goes past. */
-  clock: { fontSize: 46, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
+  /* Tabular, so the whole thing does not shuffle sideways every time a 1 goes
+     past. 34pt reads across a gym; the old 46 was not more legible, only
+     louder. */
+  clock: { fontSize: 34, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
   total: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
   controls: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
   round: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: glass.bg,
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
   },
+  /* Outlined, not filled. A solid silver bar next to a silver ring made two
+     bright things competing in a card whose whole point is that nothing in it
+     is urgent — and skipping a rest is not the main action here, waiting is. */
   skip: {
-    height: 56,
-    minWidth: 120,
-    paddingHorizontal: spacing.lg,
+    height: 48,
+    minWidth: 104,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
   },
-  skipText: { ...type.body, color: colors.primaryForeground, fontWeight: '700' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.94 }] },
+  skipText: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.96 }] },
 });
