@@ -17,7 +17,7 @@ import { rise } from '@/lib/entrance';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useExercises, useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   logChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
   libSection: { gap: spacing.sm },
   libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  libAll: { fontSize: 13, fontWeight: '500', color: colors.primary },
+  libAll: { ...type.footnote, color: colors.primary },
   libGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   /*
     Three across. Two makes each tile large enough to show the drawing's
@@ -582,18 +582,29 @@ const styles = StyleSheet.create({
     `31%` with an 8pt gap rather than `flex: 1`, because a last row holding one
     tile would stretch that tile across the screen.
   */
+  /*
+    The same surface as every other card, not a colour invented for this grid.
+
+    It had a hand-picked `rgba(24,24,27,0.35)` fill and a `rgba(43,43,49,0.35)`
+    border, which is a *fourth* dark in a screen that already has three, and it
+    is what made the section read as pasted in from somewhere else. `glass` is
+    what the templates, the sessions and every card on every other tab are made
+    of; a tile made of it belongs to the app whether or not anyone can say why.
+  */
   libTile: {
     width: '31%',
     alignItems: 'center',
-    gap: 2,
-    paddingVertical: spacing.sm,
+    gap: 1,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm + 2,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(24,24,27,0.35)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.35)',
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
   },
-  libName: { fontSize: 13, fontWeight: '600', color: colors.foreground, marginTop: 2 },
-  libCount: { fontSize: 11, color: colors.mutedForeground },
+  // From the type scale rather than ad-hoc sizes, for the same reason.
+  libName: { ...type.footnote, fontWeight: '600', color: colors.foreground, marginTop: 4 },
+  libCount: { ...type.caption, color: colors.mutedForeground },
   tplCard: { padding: spacing.md },
   exRow: {
     flexDirection: 'row',

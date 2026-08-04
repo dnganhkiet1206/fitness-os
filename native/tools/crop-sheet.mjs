@@ -85,6 +85,7 @@ const cfg = {
   gy: num('gy', 418),
   keep: num('keep', 0.62),
   size: num('size', 256),
+  alpha: rest.includes('--alpha'),
 };
 const names = String(flag('names', '')).split(',').filter(Boolean);
 
@@ -142,6 +143,49 @@ const result = await page.evaluate(
       const dw = t.w * scale;
       const dh = t.h * scale;
       g.drawImage(img, t.x, t.y, t.w, t.h, (cfg.size - dw) / 2, (cfg.size - dh) / 2, dw, dh);
+
+      if (cfg.alpha) {
+        /*
+          Lift the sheet's background out.
+
+          The drawing is light on a near-black card, so brightness *is* coverage:
+          the background sits at a max channel of about 15 and every mark is far
+          above it. Alpha comes from that, and the colour is un-premultiplied
+          back out of it — an edge pixel that was half-lit white at 128 becomes
+          full white at 50% alpha rather than staying grey.
+
+          Without this each tile carries a square of the source's own background,
+          a slightly different dark from the tile it is placed on, and the whole
+          grid reads as ten photographs pasted onto ten cards.
+        */
+        const px = g.getImageData(0, 0, cfg.size, cfg.size);
+        const d = px.data;
+        /*
+          The floor is well above the background, not just above it.
+
+          At 18 the cut was clean in principle and left a soft haze around every
+          figure: the sheet's card is not perfectly flat — it carries a faint
+          vignette — so pixels a shade above true black kept a small alpha and
+          became fog. The marks themselves are near-white, so there is a wide
+          gap to sit the threshold in, and 34 is inside it.
+        */
+        const FLOOR = 34;
+        const CEIL = 96;
+        for (let i = 0; i < d.length; i += 4) {
+          const lum = Math.max(d[i], d[i + 1], d[i + 2]);
+          const a = Math.max(0, Math.min(255, Math.round(((lum - FLOOR) * 255) / (CEIL - FLOOR))));
+          if (a === 0) {
+            d[i + 3] = 0;
+            continue;
+          }
+          d[i] = Math.min(255, Math.round((d[i] * 255) / a));
+          d[i + 1] = Math.min(255, Math.round((d[i + 1] * 255) / a));
+          d[i + 2] = Math.min(255, Math.round((d[i + 2] * 255) / a));
+          d[i + 3] = a;
+        }
+        g.putImageData(px, 0, 0);
+      }
+
       out.push(cv.toDataURL('image/webp', 0.9));
     }
     return { sheet: { w: img.naturalWidth, h: img.naturalHeight }, tiles: out, rects };
