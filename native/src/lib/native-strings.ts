@@ -346,6 +346,7 @@ const en = {
 
   // Weight goal (Progress weight chart)
   nQuickActions: 'Quick actions',
+  nHealthAssistant: 'Health assistant',
   nQuickActionsClose: 'Close quick actions',
   nWeightGoal: 'Goal',
   nWeightGoalSet: 'Set a target weight',
@@ -801,6 +802,7 @@ const vi: typeof en = {
 
   // Weight goal (Progress weight chart)
   nQuickActions: 'Thao tác nhanh',
+  nHealthAssistant: 'Trợ lý sức khoẻ',
   nQuickActionsClose: 'Đóng thao tác nhanh',
   nWeightGoal: 'Mục tiêu',
   nWeightGoalSet: 'Đặt cân nặng mục tiêu',
