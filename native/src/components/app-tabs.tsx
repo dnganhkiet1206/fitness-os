@@ -29,9 +29,24 @@ import { useI18n } from '@/hooks/use-app-settings';
  *   - Dynamic Type, Reduce Transparency, and VoiceOver's "tab, 2 of 5,
  *     selected" — all of which had to be re-declared by hand on a `Pressable`
  *
- * Icons are SF Symbols, with a filled variant for the selected state, which is
- * how a system tab bar is drawn. Lucide is for content; the tab bar is chrome,
- * and chrome belongs to the platform.
+ * ── the icons ──
+ *
+ * SF Symbols, outline throughout, and the same weight on every tab.
+ *
+ * The filled-when-selected convention is the nicer one and it could not be had
+ * evenly here: `house`, `dumbbell` and `gearshape` have `.fill` variants,
+ * `fork.knife` and `chart.line.uptrend.xyaxis` do not. Three tabs solidifying
+ * on selection while two stay hollow is the kind of thing nobody can name and
+ * everybody notices. The alternative was swapping those two for symbols that
+ * do fill — a carrot for the food diary, a bar chart for a page of line charts
+ * — and a worse glyph is a worse glyph every time you look at it, while an
+ * uneven flourish is only wrong on the tap.
+ *
+ * So the tint and the system's capsule carry the selection, and all five tabs
+ * behave identically.
+ *
+ * Lucide stays for content: the tab bar is chrome, and chrome belongs to the
+ * platform.
  *
  * ── what it costs ──
  *
@@ -48,7 +63,23 @@ export default function AppTabs() {
 
   return (
     <NativeTabs
-      tintColor={colors.primary}
+      /*
+        Selected is near-white, unselected is the muted grey.
+
+        It was `colors.primary`, the brand silver — and against the unselected
+        grey that is a contrast of 1.74:1, which is to say the selected tab was
+        barely a different colour from the other four. Nothing was wrong with
+        the bar; you simply could not see which tab you were on. Foreground
+        against the same grey is 3.28:1.
+
+        Monochrome on purpose, rather than reaching for one of the neon
+        signals. Those colours mean something everywhere else in the app — a
+        state, a metric, a warning — and a tab bar tinted green would be the
+        one green on screen that does not mean "good".
+      */
+      tintColor={colors.foreground}
+      iconColor={{ default: colors.mutedForeground }}
+      labelStyle={{ default: { color: colors.mutedForeground } }}
       /*
         iOS 26's own hide-on-scroll. The app had a hand-written version — a
         shared value driven from every page's `onScroll`, animating the bar's
@@ -57,23 +88,22 @@ export default function AppTabs() {
       */
       minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} />
+        <NativeTabs.Trigger.Icon sf="house" />
         <NativeTabs.Trigger.Label>{i18n.navToday}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="nutrition">
-        {/* `fork.knife` has no filled variant; the tint carries the selection */}
         <NativeTabs.Trigger.Icon sf="fork.knife" />
         <NativeTabs.Trigger.Label>{i18n.navNutrition}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="workouts">
-        <NativeTabs.Trigger.Icon sf={{ default: 'dumbbell', selected: 'dumbbell.fill' }} />
+        <NativeTabs.Trigger.Icon sf="dumbbell" />
         <NativeTabs.Trigger.Label>{i18n.navWorkouts}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="progress">
-        <NativeTabs.Trigger.Icon sf="chart.xyaxis.line" />
+        <NativeTabs.Trigger.Icon sf="chart.line.uptrend.xyaxis" />
         <NativeTabs.Trigger.Label>{i18n.navProgress}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
@@ -86,7 +116,7 @@ export default function AppTabs() {
         one of five equal slots now goes to a screen people open rarely.
       */}
       <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} />
+        <NativeTabs.Trigger.Icon sf="gearshape" />
         <NativeTabs.Trigger.Label>{i18n.settingsTitle}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
