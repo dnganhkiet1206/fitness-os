@@ -145,7 +145,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
         <MicroTitle>{i18n.dcTrainingTitle}</MicroTitle>
         {hasPR && (
           <View style={styles.prBadge}>
-            <Icon icon={Trophy} size={13} color={colors.readinessYellow} />
+            <Icon icon={Trophy} size={13} />
             <Text style={styles.prText}>PR!</Text>
           </View>
         )}
@@ -154,7 +154,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
       {/* Latest workout row */}
       <View style={styles.latestRow}>
         <View style={styles.latestIcon}>
-          <Icon icon={Dumbbell} size={20} color={colors.primary} />
+          <Icon icon={Dumbbell} size={20} />
         </View>
         <View style={styles.latestInfo}>
           <Text style={styles.latestName} numberOfLines={1}>{latest.template_name || 'Workout'}</Text>
@@ -169,7 +169,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
         <View style={styles.acwrBox}>
           <View style={styles.headRow}>
             <View style={styles.acwrTitleRow}>
-              <Icon icon={Zap} size={14} color={colors.mutedForeground} />
+              <Icon icon={Zap} size={14} />
               <Text style={styles.acwrTitle}>Acute:Chronic Ratio</Text>
             </View>
             <View style={[styles.acwrPill, { backgroundColor: `${acwrColor}1a` }]}>
@@ -355,7 +355,7 @@ export function RecentAwardsCard() {
   return (
     <GlassCard style={styles.stackCard}>
       <View style={styles.headRow}>
-        <MicroTitle icon={Trophy} color={colors.readinessYellow}>{i18n.dcRecentAwards}</MicroTitle>
+        <MicroTitle icon={Trophy}>{i18n.dcRecentAwards}</MicroTitle>
         <Pressable
           hitSlop={8}
           style={styles.viewAll}

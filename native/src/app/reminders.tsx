@@ -51,7 +51,7 @@ export default function RemindersScreen() {
         <View style={styles.rowHead}>
           <View style={styles.rowTitleWrap}>
             <View style={[styles.iconBadge, { backgroundColor: 'rgba(59,166,255,0.14)' }]}>
-              <Icon icon={Droplets} size={16} color={colors.metricBlue} />
+              <Icon icon={Droplets} size={16} />
             </View>
             <Text style={styles.rowTitle}>{i18n.nReminderWater}</Text>
           </View>

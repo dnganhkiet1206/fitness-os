@@ -282,7 +282,7 @@ export default function NutritionScreen() {
             {diaryFailed ? null : (
               <>
                 <View style={styles.sectionHeadRow}>
-                  <Icon icon={Utensils} size={13} color={colors.primary} />
+                  <Icon icon={Utensils} size={13} />
                   <Text style={styles.microTitle}>
                     {lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}
                   </Text>
@@ -334,7 +334,7 @@ export default function NutritionScreen() {
               <>
                 {/* My foods — 4 most recent as cards, "See all" opens the full list */}
                 <View style={styles.sectionHeadRow}>
-                  <Icon icon={Utensils} size={13} color={colors.primary} />
+                  <Icon icon={Utensils} size={13} />
                   <Text style={styles.microTitle}>{lang === 'vi' ? 'Danh sách thực phẩm' : 'My Foods'}</Text>
                 </View>
                 {myFoods && myFoods.length > 0 ? (
@@ -352,7 +352,7 @@ export default function NutritionScreen() {
                 {favorites && favorites.length > 0 && (
                   <>
                     <View style={styles.sectionHeadRow}>
-                      <Icon icon={Star} size={13} color={colors.readinessYellow} />
+                      <Icon icon={Star} size={13} />
                       <Text style={styles.microTitle}>{i18n.nutritionFavorites}</Text>
                     </View>
                     <Animated.View style={styles.cardList} entering={rise(1)}>
@@ -386,7 +386,7 @@ export default function NutritionScreen() {
             {({ pressed }) => (
               <GlassCard style={[styles.listCard, pressed && styles.pressedDim]}>
                 <View style={styles.sectionHead}>
-                  <Icon icon={Utensils} size={13} color={colors.mutedForeground} />
+                  <Icon icon={Utensils} size={13} />
                   <Text style={styles.microTitle}>{i18n.nutritionMealPlan}</Text>
                 </View>
                 <Text style={styles.emptyText}>{i18n.nMealPlans} →</Text>

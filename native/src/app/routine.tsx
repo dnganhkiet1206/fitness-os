@@ -107,7 +107,7 @@ export default function RoutineScreen() {
               style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
               onPress={() => picking !== null && assign(picking, null)}>
               <View style={styles.pickerRowInner}>
-                <Icon icon={Moon} size={16} color={colors.mutedForeground} />
+                <Icon icon={Moon} size={16} />
                 <Text style={styles.pickerRest}>{i18n.nRest}</Text>
               </View>
             </Pressable>
@@ -117,7 +117,7 @@ export default function RoutineScreen() {
                 style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
                 onPress={() => picking !== null && assign(picking, t.id)}>
                 <View style={styles.pickerRowInner}>
-                  <Icon icon={Dumbbell} size={16} color={colors.primary} />
+                  <Icon icon={Dumbbell} size={16} />
                   <Text style={styles.pickerName}>{t.name}</Text>
                 </View>
                 {t.type ? <Text style={styles.pickerType}>{t.type}</Text> : null}

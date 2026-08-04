@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { colors, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useOnlineStatus } from '@/hooks/use-online-status';
 

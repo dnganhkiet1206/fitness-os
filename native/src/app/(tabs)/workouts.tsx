@@ -145,7 +145,7 @@ function TemplateCard({
           style={({ pressed }) => [styles.tplRow, pressed && styles.pressed]}>
           <View style={styles.tplInfo}>
             <View style={styles.tplTitleRow}>
-              <Icon icon={Dumbbell} size={16} color={colors.primary} />
+              <Icon icon={Dumbbell} size={16} />
               <Text style={styles.tplName} numberOfLines={1}>{tpl.name}</Text>
               {tpl.type ? (
                 <View style={styles.typeBadge}>
@@ -422,7 +422,7 @@ export default function WorkoutsScreen() {
               Haptics.selectionAsync();
               router.push('/exercises');
             }}>
-            <Icon icon={Dumbbell} size={14} color={colors.foreground} />
+            <Icon icon={Dumbbell} size={14} />
             <Text style={styles.outlineBtnText}>{i18n.workoutsExercises}</Text>
           </Pressable>
           <Pressable
@@ -498,7 +498,7 @@ export default function WorkoutsScreen() {
                 </View>
                 {s.session_rpe != null && (
                   <View style={styles.rpeBadge}>
-                    <Icon icon={Flame} size={11} color={colors.metricOrange} />
+                    <Icon icon={Flame} size={11} />
                     <Text style={styles.rpeText}>RPE {s.session_rpe}</Text>
                   </View>
                 )}

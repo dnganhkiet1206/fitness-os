@@ -286,7 +286,7 @@ export function SmartTipsCard() {
       <View style={styles.cardHeaderRow}>
         <View style={styles.tipsTitleWrap}>
           <View style={styles.tipsTitleRow}>
-            <Icon icon={Sparkles} size={16} color={colors.primary} />
+            <Icon icon={Sparkles} size={16} />
             <Text style={styles.cardTitle}>{i18n.nSmartTips}</Text>
           </View>
           <Text style={styles.cardHint}>{i18n.nTipsHint}</Text>

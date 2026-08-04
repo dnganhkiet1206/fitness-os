@@ -25,7 +25,7 @@ export default function FoodListScreen() {
     <Screen back title={lang === 'vi' ? 'Danh sách thực phẩm' : 'Food list'}>
       {/* My foods */}
       <View style={styles.head}>
-        <Icon icon={Utensils} size={13} color={colors.primary} />
+        <Icon icon={Utensils} size={13} />
         <Text style={styles.title}>{lang === 'vi' ? 'Danh sách thực phẩm' : 'My Foods'}</Text>
       </View>
       {myFoods && myFoods.length > 0 ? (
@@ -38,7 +38,7 @@ export default function FoodListScreen() {
       {favorites && favorites.length > 0 && (
         <>
           <View style={styles.head}>
-            <Icon icon={Star} size={13} color={colors.readinessYellow} />
+            <Icon icon={Star} size={13} />
             <Text style={styles.title}>{i18n.nutritionFavorites}</Text>
           </View>
           <Animated.View style={styles.list} entering={rise(1)}>{favorites.map((f) => <FoodCard key={f.id} f={f} />)}</Animated.View>

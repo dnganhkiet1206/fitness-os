@@ -444,7 +444,7 @@ export default function LogMealSheet() {
         <Pressable
           style={({ pressed }) => [styles.aiToggle, aiOpen && styles.aiToggleActive, pressed && styles.pressed]}
           onPress={openAi}>
-          <Icon icon={Sparkles} size={18} color={colors.primary} />
+          <Icon icon={Sparkles} size={18} />
           <View style={styles.aiToggleInfo}>
             <Text style={styles.aiToggleTitle}>{i18n.nAiSuggestTitle}</Text>
             <Text style={styles.aiToggleHint}>{i18n.nAiSuggestHint}</Text>

@@ -444,7 +444,7 @@ export default function TodayScreen() {
                 <ActivityIndicator color={colors.foreground} size="small" />
               ) : (
                 <>
-                  <Icon icon={Heart} size={14} color={colors.readinessRed} />
+                  <Icon icon={Heart} size={14} />
                   <Text style={styles.syncText}>{i18n.nSyncHealth}</Text>
                 </>
               )}

@@ -814,17 +814,17 @@ export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, s
           </Text>
           {quality != null && (
             <View style={styles.qualityRow}>
-              <Icon icon={Star} size={12} color={colors.readinessYellow} />
+              <Icon icon={Star} size={12} />
               <Text style={styles.sideLine}>{i18n.dcSleepQuality}:</Text>
               <Text style={styles.sideMonoStrong}>{quality}/10</Text>
             </View>
           )}
           {bedtime && waketime && (
             <View style={styles.timesRow}>
-              <Icon icon={Moon} size={12} color={colors.mutedForeground} />
+              <Icon icon={Moon} size={12} />
               <Text style={styles.timeText}>{fmt(bedtime)}</Text>
               <Text style={styles.timeArrow}>→</Text>
-              <Icon icon={Sunrise} size={12} color={colors.mutedForeground} />
+              <Icon icon={Sunrise} size={12} />
               <Text style={styles.timeText}>{fmt(waketime)}</Text>
             </View>
           )}

@@ -334,7 +334,7 @@ export default function AiCoachScreen() {
         {messages.length === 0 && (
           <View style={styles.empty}>
             <View style={styles.emptyIcon}>
-              <Icon icon={Bot} size={32} color={colors.primary} />
+              <Icon icon={Bot} size={32} />
             </View>
             <Text style={styles.emptyTitle}>{i18n.aiCoachHello}</Text>
             <Text style={styles.emptyHint}>{i18n.aiCoachIntro}</Text>
@@ -357,7 +357,7 @@ export default function AiCoachScreen() {
           <View key={i} style={[styles.msgRow, m.role === 'user' && styles.msgRowUser]}>
             {m.role === 'assistant' && (
               <View style={[styles.avatar, styles.avatarAI]}>
-                <Icon icon={Bot} size={14} color={colors.primary} />
+                <Icon icon={Bot} size={14} />
               </View>
             )}
             <View style={[styles.bubble, m.role === 'user' ? styles.bubbleUser : styles.bubbleAI]}>
@@ -377,7 +377,7 @@ export default function AiCoachScreen() {
         {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
           <View style={styles.msgRow}>
             <View style={[styles.avatar, styles.avatarAI]}>
-              <Icon icon={Bot} size={14} color={colors.primary} />
+              <Icon icon={Bot} size={14} />
             </View>
             <View style={[styles.bubble, styles.bubbleAI]}>
               <ActivityIndicator size="small" color={colors.mutedForeground} />

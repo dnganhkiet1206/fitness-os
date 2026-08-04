@@ -63,7 +63,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
         {loading ? (
           <ActivityIndicator size="small" color={colors.primary} />
         ) : (
-          <Icon icon={Sparkles} size={14} color={colors.primary} />
+          <Icon icon={Sparkles} size={14} />
         )}
         <Text style={styles.suggestBtnText}>
           {lang === 'vi' ? 'AI gợi ý bữa ăn' : 'AI Suggest Meal'}
@@ -76,7 +76,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
     <View style={styles.list}>
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
-          <Icon icon={Sparkles} size={13} color={colors.primary} />
+          <Icon icon={Sparkles} size={13} />
           <Text style={styles.headerTitle}>
             {lang === 'vi' ? 'Gợi ý từ AI' : 'AI Suggestions'}
           </Text>
@@ -97,7 +97,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
           <View style={styles.cardTop}>
             <View style={styles.cardInfo}>
               <View style={styles.nameRow}>
-                <Icon icon={ChefHat} size={13} color={colors.primary} />
+                <Icon icon={ChefHat} size={13} />
                 <Text style={styles.name} numberOfLines={1}>{meal.name}</Text>
               </View>
               <Text style={styles.desc} numberOfLines={2}>{meal.description}</Text>
@@ -143,7 +143,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
         {loading ? (
           <ActivityIndicator size="small" color={colors.mutedForeground} />
         ) : (
-          <Icon icon={Sparkles} size={13} color={colors.mutedForeground} />
+          <Icon icon={Sparkles} size={13} />
         )}
         <Text style={styles.moreText}>
           {lang === 'vi' ? 'Gợi ý khác' : 'More suggestions'}

@@ -232,7 +232,7 @@ export default function WaterScreen() {
                   exiting={FadeOut.duration(110)}
                   layout={LinearTransition.duration(260)}>
                   <View style={styles.logIcon}>
-                    <Icon icon={Droplets} size={16} color={colors.metricBlue} />
+                    <Icon icon={Droplets} size={16} />
                   </View>
                   <Text style={styles.logAmount}>
                     {displayVolume(Number(l.amount_ml), vUnit)} <Text style={styles.logUnit}>{vl}</Text>

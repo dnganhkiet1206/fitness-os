@@ -134,7 +134,7 @@ export function CollectionRow({
         <View style={styles.setInfo}>
           <Text style={styles.setName}>{c.name[lang]}</Text>
           <View style={styles.questCoins}>
-            <Icon icon={Coins} size={11} color={colors.readinessYellow} />
+            <Icon icon={Coins} size={11} />
             <Text style={styles.questCoinText}>+{c.rewardCoins}</Text>
             <Text style={styles.questXpText}>+{c.rewardXp} XP</Text>
           </View>

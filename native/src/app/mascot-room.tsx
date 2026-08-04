@@ -147,7 +147,7 @@ function CoinBurst({ trigger, amount }: { trigger: number; amount: number }) {
   return (
     <Animated.View pointerEvents="none" style={[styles.burstWrap, style]}>
       <View style={styles.burstPill}>
-        <Icon icon={Coins} size={15} color={colors.readinessYellow} />
+        <Icon icon={Coins} size={15} />
         <Text style={styles.burstText}>+{amount}</Text>
       </View>
     </Animated.View>
@@ -382,7 +382,7 @@ export default function MascotRoomScreen() {
             );
           }}
           style={styles.coinPill}>
-          <Icon icon={Coins} size={14} color={colors.readinessYellow} />
+          <Icon icon={Coins} size={14} />
           <Text style={styles.coinText}>{balance.toLocaleString()}</Text>
         </Pressable>
       }>
@@ -548,7 +548,7 @@ export default function MascotRoomScreen() {
             </View>
             {streak >= 2 && (
               <View style={styles.streakChip}>
-                <Icon icon={Flame} size={12} color={colors.metricOrange} />
+                <Icon icon={Flame} size={12} />
                 <Text style={styles.streakChipText}>
                   {i18n.nRoomStreak.replace('{n}', String(streak))}
                 </Text>
@@ -606,7 +606,7 @@ export default function MascotRoomScreen() {
                   {q.name[lang]}
                 </Text>
                 <View style={styles.questCoins}>
-                  <Icon icon={Coins} size={11} color={colors.readinessYellow} />
+                  <Icon icon={Coins} size={11} />
                   <Text style={styles.questCoinText}>+{q.coins}</Text>
                   <Text style={styles.questXpText}>+{q.xp} XP</Text>
                 </View>
@@ -638,14 +638,14 @@ export default function MascotRoomScreen() {
           <View style={styles.questRow}>
             <View style={styles.questInfo}>
               <View style={styles.streakNameRow}>
-                <Icon icon={Flame} size={14} color={colors.metricOrange} />
+                <Icon icon={Flame} size={14} />
                 <Text
                   style={[styles.questName, claimed.has(streakRefKey) && styles.questNameDone]}>
                   {i18n.nRoomStreak.replace('{n}', String(streak))}
                 </Text>
               </View>
               <View style={styles.questCoins}>
-                <Icon icon={Coins} size={11} color={colors.readinessYellow} />
+                <Icon icon={Coins} size={11} />
                 <Text style={styles.questCoinText}>+{streakBonus}</Text>
                 <Text style={styles.questXpText}>+{STREAK_XP} XP</Text>
               </View>
@@ -682,7 +682,7 @@ export default function MascotRoomScreen() {
                     {t ? t.title[lang] : c.title}
                   </Text>
                   <View style={styles.questCoins}>
-                    <Icon icon={Coins} size={11} color={colors.readinessYellow} />
+                    <Icon icon={Coins} size={11} />
                     <Text style={styles.questCoinText}>+{WEEKLY_BONUS_COINS}</Text>
                     <Text style={styles.questXpText}>+{WEEKLY_BONUS_XP} XP</Text>
                   </View>

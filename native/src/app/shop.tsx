@@ -349,7 +349,7 @@ export default function ShopScreen() {
             setCollectionsOpen(true);
           }}>
           <View style={styles.setsChest}>
-            <Icon icon={Sparkles} size={22} color={colors.metricPurple} />
+            <Icon icon={Sparkles} size={22} />
           </View>
           <View style={styles.setsBannerText}>
             <Text style={styles.setsTitle}>{i18n.nRoomCollections}</Text>
@@ -414,7 +414,7 @@ export default function ShopScreen() {
 function Coin({ balance }: { balance: number }) {
   return (
     <View style={styles.coinPill}>
-      <Icon icon={Coins} size={13} color={colors.readinessYellow} />
+      <Icon icon={Coins} size={13} />
       <Text style={styles.coinText}>{balance.toLocaleString()}</Text>
     </View>
   );

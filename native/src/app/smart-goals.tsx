@@ -158,7 +158,7 @@ export default function SmartGoalsScreen() {
             {analysis.twoWeekDeviation && analysis.calorieAdjustment !== 0 && (
               <View style={styles.suggestion}>
                 <View style={styles.suggestionTitleRow}>
-                  <Icon icon={Flame} size={15} color={colors.readinessYellow} />
+                  <Icon icon={Flame} size={15} />
                   <Text style={styles.suggestionTitle}>{i18n.smartGoalsCalorieSuggestion}</Text>
                 </View>
                 <Text style={styles.suggestionValue}>

@@ -438,7 +438,7 @@ export function OnboardingFlow() {
                 {/* Auto-calc box (web) */}
                 <View style={styles.calcBox}>
                   <View style={styles.calcHeader}>
-                    <Icon icon={Sparkles} size={12} color={colors.primary} />
+                    <Icon icon={Sparkles} size={12} />
                     <Text style={styles.calcTitle}>{i18n.onboardingAutoCalc}</Text>
                   </View>
                   <View style={styles.calcGrid}>
@@ -518,7 +518,7 @@ export function OnboardingFlow() {
                 {/* Goal summary (web) */}
                 <View style={styles.calcBox}>
                   <View style={styles.calcHeader}>
-                    <Icon icon={Sparkles} size={12} color={colors.primary} />
+                    <Icon icon={Sparkles} size={12} />
                     <Text style={styles.calcTitle}>{i18n.onboardingSummary}</Text>
                   </View>
                   <View style={styles.calcGrid}>

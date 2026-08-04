@@ -89,7 +89,7 @@ export default function GroceryScreen() {
         {planSuggestions.length > 0 && (
           <GlassCard style={styles.planCard}>
             <View style={styles.planHead}>
-              <Icon icon={UtensilsCrossed} size={13} color={colors.primary} />
+              <Icon icon={UtensilsCrossed} size={13} />
               <Text style={styles.planTitle}>
                 {lang === 'vi' ? 'Từ meal plan của bạn' : 'From your meal plan'}
               </Text>

@@ -187,7 +187,7 @@ export function TodayMeals({
         }}>
         {({ pressed }) => (
           <GlassCard style={[styles.empty, pressed && styles.pressed]}>
-            <Icon icon={UtensilsCrossed} size={20} color={colors.mutedForeground} />
+            <Icon icon={UtensilsCrossed} size={20} />
             <Text style={styles.emptyText}>
               {lang === 'vi'
                 ? 'Chưa ghi bữa nào hôm nay — nhấn để ghi'

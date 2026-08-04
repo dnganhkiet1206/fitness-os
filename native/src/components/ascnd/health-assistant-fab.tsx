@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
 import { QuickActionsSheet } from '@/components/ascnd/quick-actions-accessory';
-import { colors } from '@/constants/ascnd';
+
 import { useI18n } from '@/hooks/use-app-settings';
 
 /**
@@ -78,7 +78,7 @@ export function HealthAssistantFab() {
           ) : (
             <View style={[StyleSheet.absoluteFill, styles.fallback]} />
           )}
-          <Icon icon={HeartPulse} size={22} color={colors.foreground} />
+          <Icon icon={HeartPulse} size={22} />
         </Pressable>
       </View>
 

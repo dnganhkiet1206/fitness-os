@@ -499,7 +499,7 @@ export default function WeeklyReviewScreen() {
             <Animated.View entering={rise(6)}>
             <GlassCard>
               <View style={styles.titleRow}>
-                <Icon icon={Sparkles} size={17} color={colors.primary} />
+                <Icon icon={Sparkles} size={17} />
                 <Text style={styles.title}>{i18n.nAiAnalysis}</Text>
               </View>
               <Text style={styles.hint}>{i18n.nWeeklyReviewHint}</Text>
