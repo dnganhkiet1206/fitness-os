@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { ChevronDown, ChevronUp, Minus, Plus, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { Easing, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -189,127 +189,134 @@ export function WorkoutSetSheet({
           is staged: every change is already applied to the workout. */}
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={i18n.a11yClose} />
 
-      <Animated.View
-        entering={SlideInDown.duration(240).easing(Easing.out(Easing.cubic))}
-        style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
-        <View style={styles.grabber} />
+      {/* The rows are text fields, so the panel has to clear the keyboard.
+          `box-none` keeps the dimmed area behind it tappable. */}
+      <KeyboardAvoidingView
+        style={styles.holder}
+        pointerEvents="box-none"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Animated.View
+          entering={SlideInDown.duration(240).easing(Easing.out(Easing.cubic))}
+          style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
+          <View style={styles.grabber} />
 
-        <Text style={styles.name} numberOfLines={2}>{item.exerciseName}</Text>
-        <Text style={styles.position}>
-          {index + 1} / {total}
-        </Text>
+          <Text style={styles.name} numberOfLines={2}>{item.exerciseName}</Text>
+          <Text style={styles.position}>
+            {index + 1} / {total}
+          </Text>
 
-        <Row label={i18n.nWbSets}>
-          <Stepper
-            initial={item.sets}
-            min={1}
-            max={20}
-            step={1}
-            a11yLabel={i18n.nWbSets}
-            onChange={(n) => onChange({ sets: n })}
-          />
-        </Row>
+          <Row label={i18n.nWbSets}>
+            <Stepper
+              initial={item.sets}
+              min={1}
+              max={20}
+              step={1}
+              a11yLabel={i18n.nWbSets}
+              onChange={(n) => onChange({ sets: n })}
+            />
+          </Row>
 
-        <Row label={i18n.nWbReps}>
-          <Stepper
-            initial={item.reps}
-            min={1}
-            max={100}
-            step={1}
-            a11yLabel={i18n.nWbReps}
-            onChange={(n) => onChange({ reps: n })}
-          />
-        </Row>
+          <Row label={i18n.nWbReps}>
+            <Stepper
+              initial={item.reps}
+              min={1}
+              max={100}
+              step={1}
+              a11yLabel={i18n.nWbReps}
+              onChange={(n) => onChange({ reps: n })}
+            />
+          </Row>
 
-        {/*
-          Stepped in the unit on screen and stored in kilograms, like every
-          other weight in the app. 2.5 is the step because that is the smallest
-          plate pair on a bar; in pounds it is 5, for the same reason.
-        */}
-        <Row label={`${i18n.nWbLoad} (${wl})`} hint={item.weight ? undefined : i18n.nWbBodyweight}>
-          <Stepper
-            initial={displayWeight(item.weight, unit)}
-            min={0}
-            max={unit === 'kg' ? 500 : 1100}
-            step={unit === 'kg' ? 2.5 : 5}
-            decimals={1}
-            a11yLabel={i18n.nWbLoad}
-            onChange={(n) => onChange({ weight: tidy(weightToKg(n, unit)) })}
-          />
-        </Row>
+          {/*
+            Stepped in the unit on screen and stored in kilograms, like every
+            other weight in the app. 2.5 is the step because that is the smallest
+            plate pair on a bar; in pounds it is 5, for the same reason.
+          */}
+          <Row label={`${i18n.nWbLoad} (${wl})`} hint={item.weight ? undefined : i18n.nWbBodyweight}>
+            <Stepper
+              initial={displayWeight(item.weight, unit)}
+              min={0}
+              max={unit === 'kg' ? 500 : 1100}
+              step={unit === 'kg' ? 2.5 : 5}
+              decimals={1}
+              a11yLabel={i18n.nWbLoad}
+              onChange={(n) => onChange({ weight: tidy(weightToKg(n, unit)) })}
+            />
+          </Row>
 
-        <Row label={i18n.nWbRest} hint={restLabel(item.restSeconds ?? 90)}>
-          <Stepper
-            initial={item.restSeconds ?? 90}
-            min={0}
-            max={600}
-            step={15}
-            a11yLabel={i18n.nWbRest}
-            onChange={(n) => onChange({ restSeconds: n })}
-          />
-        </Row>
+          <Row label={i18n.nWbRest} hint={restLabel(item.restSeconds ?? 90)}>
+            <Stepper
+              initial={item.restSeconds ?? 90}
+              min={0}
+              max={600}
+              step={15}
+              a11yLabel={i18n.nWbRest}
+              onChange={(n) => onChange({ restSeconds: n })}
+            />
+          </Row>
 
-        <Row label={i18n.nWbEffort} hint={i18n.nWbEffortHint}>
-          <Stepper
-            initial={item.rpe ?? 7}
-            min={5}
-            max={10}
-            step={1}
-            a11yLabel={i18n.nWbEffort}
-            onChange={(n) => onChange({ rpe: n })}
-          />
-        </Row>
+          <Row label={i18n.nWbEffort} hint={i18n.nWbEffortHint}>
+            <Stepper
+              initial={item.rpe ?? 7}
+              min={5}
+              max={10}
+              step={1}
+              a11yLabel={i18n.nWbEffort}
+              onChange={(n) => onChange({ rpe: n })}
+            />
+          </Row>
 
-        <View style={styles.actions}>
+          <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.nWbMoveUp}
+              disabled={index === 0}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onMove(index - 1);
+              }}
+              style={({ pressed }) => [styles.action, index === 0 && styles.stepOff, pressed && styles.pressed]}>
+              <Icon icon={ChevronUp} size={16} color={colors.foreground} />
+              <Text style={styles.actionText}>{i18n.nWbMoveUp}</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.nWbMoveDown}
+              disabled={index >= total - 1}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onMove(index + 1);
+              }}
+              style={({ pressed }) => [
+                styles.action,
+                index >= total - 1 && styles.stepOff,
+                pressed && styles.pressed,
+              ]}>
+              <Icon icon={ChevronDown} size={16} color={colors.foreground} />
+              <Text style={styles.actionText}>{i18n.nWbMoveDown}</Text>
+            </Pressable>
+          </View>
+
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={i18n.nWbMoveUp}
-            disabled={index === 0}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onMove(index - 1);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              onRemove();
             }}
-            style={({ pressed }) => [styles.action, index === 0 && styles.stepOff, pressed && styles.pressed]}>
-            <Icon icon={ChevronUp} size={16} color={colors.foreground} />
-            <Text style={styles.actionText}>{i18n.nWbMoveUp}</Text>
+            style={({ pressed }) => [styles.remove, pressed && styles.pressed]}>
+            <Icon icon={Trash2} size={15} color={colors.destructive} />
+            <Text style={styles.removeText}>{i18n.nWbRemove}</Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={i18n.nWbMoveDown}
-            disabled={index >= total - 1}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onMove(index + 1);
-            }}
-            style={({ pressed }) => [
-              styles.action,
-              index >= total - 1 && styles.stepOff,
-              pressed && styles.pressed,
-            ]}>
-            <Icon icon={ChevronDown} size={16} color={colors.foreground} />
-            <Text style={styles.actionText}>{i18n.nWbMoveDown}</Text>
+            onPress={onClose}
+            style={({ pressed }) => [styles.done, pressed && styles.pressed]}>
+            <Text style={styles.doneText}>{i18n.nWbDone}</Text>
           </Pressable>
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onRemove();
-          }}
-          style={({ pressed }) => [styles.remove, pressed && styles.pressed]}>
-          <Icon icon={Trash2} size={15} color={colors.destructive} />
-          <Text style={styles.removeText}>{i18n.nWbRemove}</Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={onClose}
-          style={({ pressed }) => [styles.done, pressed && styles.pressed]}>
-          <Text style={styles.doneText}>{i18n.nWbDone}</Text>
-        </Pressable>
-      </Animated.View>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -334,11 +341,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'flex-end',
     // Above the list it covers, on both platforms
     zIndex: 40,
     elevation: 40,
   },
+  /* Pins the panel to the bottom of whatever space the keyboard leaves. */
+  holder: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)' },
   sheet: {
     backgroundColor: colors.card,
