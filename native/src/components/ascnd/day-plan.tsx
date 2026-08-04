@@ -7,12 +7,14 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { RestTimer } from '@/components/ascnd/rest-timer';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
 import { rise } from '@/lib/entrance';
+import { dayProgressKey, staleDayProgress } from '@/lib/local-date';
 import { DEFAULT_REST, DEFAULT_RPE, restLabel } from '@/lib/prescription';
 import { toast } from '@/lib/toast';
 import { displayWeight, weightLabel } from '@/lib/units';
@@ -123,16 +125,29 @@ function expand(exercises: TplExercise[]): SetRow[] {
 }
 
 /**
- * Where a half-finished workout is kept.
+ * Throw away the resume points that can no longer be resumed.
  *
- * Keyed by the date and the workout, so changing the day's assignment mid-week
- * does not resurrect ticks that belonged to a different set of exercises.
+ * Runs once when the panel first mounts, not on every day you flick through:
+ * it reads every key in storage, and doing that seven times while somebody
+ * scrubs across the week is seven reads to delete nothing.
  *
- * It exists because a workout is an hour long and the phone goes in a pocket
- * between every set. Losing forty minutes of ticking to an app the OS decided
- * to evict is the kind of thing that stops somebody using a feature entirely.
+ * Failures are swallowed on purpose. This is housekeeping — a workout must not
+ * fail to open because a cleanup could not run.
  */
-const progressKey = (dateStr: string, templateId: string) => `routine-day:${dateStr}:${templateId}`;
+let pruned = false;
+async function pruneOldProgress() {
+  if (pruned) return;
+  pruned = true;
+  try {
+    const stale = staleDayProgress(await AsyncStorage.getAllKeys());
+    // `removeMany`, not `multiMove`/`multiRemove` — this version of
+    // `@react-native-async-storage/async-storage` renamed the batch methods
+    // (`getMany`/`setMany`/`removeMany`) and the old names do not exist.
+    if (stale.length) await AsyncStorage.removeMany(stale);
+  } catch {
+    // nothing here is worth interrupting a workout for
+  }
+}
 
 export function DayPlan({
   dateStr,
@@ -163,8 +178,15 @@ export function DayPlan({
   const [rest, setRest] = useState<Record<string, number>>({});
   /** the one row showing its editors — at most one, so the list stays short */
   const [editing, setEditing] = useState<string | null>(null);
-  /** seconds left on the current rest, or null when nothing is running */
-  const [resting, setResting] = useState<number | null>(null);
+  /**
+   * The rest that is running: how long is left and what it began at.
+   *
+   * The ring needs both. `left` alone would have nothing to be a fraction of,
+   * and taking the fraction from the *set's* planned rest would break the
+   * moment somebody adds thirty seconds mid-rest — the ring would sit past
+   * full and then jump.
+   */
+  const [resting, setResting] = useState<{ left: number; total: number } | null>(null);
 
   /*
     Read back once, and only once.
@@ -173,11 +195,12 @@ export function DayPlan({
     first render would persist an empty object over whatever was stored, before
     the read had a chance to return.
   */
-  const storeKey = template ? progressKey(dateStr, template.id) : null;
+  const storeKey = template ? dayProgressKey(dateStr, template.id) : null;
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     let alive = true;
     if (!storeKey) return;
+    void pruneOldProgress();
     setLoaded(false);
     AsyncStorage.getItem(storeKey)
       .then((raw) => {
@@ -251,11 +274,11 @@ export function DayPlan({
     const id = setInterval(() => {
       setResting((s) => {
         if (s === null) return null;
-        if (s <= 1) {
+        if (s.left <= 1) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           return null;
         }
-        return s - 1;
+        return { ...s, left: s.left - 1 };
       });
     }, 1000);
     return () => clearInterval(id);
@@ -270,7 +293,7 @@ export function DayPlan({
       setDone((prev) => {
         const next = { ...prev, [row.key]: !prev[row.key] };
         // Rest belongs to finishing a set, not to changing your mind about one.
-        setResting(next[row.key] && secs > 0 ? secs : null);
+        setResting(next[row.key] && secs > 0 ? { left: secs, total: secs } : null);
         return next;
       });
     },
@@ -286,10 +309,16 @@ export function DayPlan({
   };
 
   const doneRows = rows.filter((r) => done[r.key]);
+  /*
+    One save per visit to this day. `isSuccess` never goes back to false on its
+    own, and this panel is remounted whenever the selected day changes, so the
+    lifetime of the guard is exactly the lifetime of the workout being logged.
+  */
+  const canFinish = doneRows.length > 0 && !log.isPending && !log.isSuccess;
   const volume = doneRows.reduce((s, r) => s + r.weight * r.reps, 0);
 
   const finish = () => {
-    if (doneRows.length === 0) return;
+    if (!canFinish) return;
     const sets = doneRows.map((r) => ({
       exerciseId: '',
       exerciseName: r.exerciseName,
@@ -522,73 +551,72 @@ export function DayPlan({
         );
       })}
 
+      {/*
+        Off for good once it has saved.
+
+        `isPending` alone is not enough and the gap it leaves is the expensive
+        kind: the mutation settles, the button comes back, and this panel does
+        not navigate anywhere — it stays exactly where it was, with every set
+        still ticked and a live button under your thumb. A second press writes
+        a second session for the same workout, and nothing about that looks
+        wrong until the volume for the week is double.
+
+        Adding `isSuccess` closes it, and the button then says what happened
+        rather than sitting there greyed: a disabled control with the same
+        label as before reads as a failure, not as a finished job.
+      */}
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: doneRows.length === 0 || log.isPending }}
-        disabled={doneRows.length === 0 || log.isPending}
+        accessibilityState={{ disabled: !canFinish }}
+        disabled={!canFinish}
         onPress={finish}
         style={({ pressed }) => [
           styles.finish,
-          (doneRows.length === 0 || log.isPending) && styles.finishOff,
+          !canFinish && styles.finishOff,
+          log.isSuccess && styles.finishDone,
           pressed && styles.pressed,
         ]}>
-        <Icon icon={Check} size={17} color={colors.primaryForeground} strokeWidth={2.5} />
-        <Text style={styles.finishText}>{i18n.nRdFinish}</Text>
+        <Icon
+          icon={Check}
+          size={17}
+          color={log.isSuccess ? colors.readinessGreen : colors.primaryForeground}
+          strokeWidth={2.5}
+        />
+        <Text style={[styles.finishText, log.isSuccess && styles.finishTextDone]}>
+          {log.isSuccess ? i18n.nRoutineDone : i18n.nRdFinish}
+        </Text>
       </Pressable>
 
       {/*
-        The rest clock, pinned over the page.
+        The rest clock is a screen of its own — see `rest-timer`.
 
-        It is the one thing here that has to be readable when the phone is on a
-        bench two feet away, and it is useless wherever the list happens to have
-        scrolled to. The two buttons on it are for the rest you are *in* — the
-        set went badly and you want another thirty seconds — which is a
-        different act from editing the plan and belongs where the clock is.
+        It was a bar pinned above this list, and a bar is the polite version of
+        the wrong idea: rest is not a status line, it is the ninety seconds
+        where the app has exactly one job. It also could not be pinned, only
+        absolutely positioned inside a scroll view, so it left with the content
+        whenever the list moved.
       */}
-      {resting !== null ? (
-        <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(140)} style={styles.restBar}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${i18n.nRdResting} −${REST_STEP}`}
-            hitSlop={{ top: 8, bottom: 8 }}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setResting((s) => (s === null ? null : Math.max(1, s - REST_STEP)));
-            }}
-            style={({ pressed }) => [styles.restBtn, pressed && styles.pressed]}>
-            <Icon icon={Minus} size={15} color={colors.foreground} strokeWidth={2.5} />
-          </Pressable>
+      <RestTimer
+        left={resting?.left ?? null}
+        total={resting?.total ?? 0}
+        i18n={i18n}
+        onSkip={() => {
+          Haptics.selectionAsync();
+          setResting(null);
+        }}
+        onAdjust={(delta) =>
+          setResting((s) => {
+            if (s === null) return null;
+            const left = Math.max(1, Math.min(REST_MAX, s.left + delta));
+            // Adding time grows what it is counting from as well, so the ring
+            // stays a fraction of something rather than trying to be more than
+            // whole. Taking time off leaves the total alone: the rest really
+            // was cut short, and the ring showing that is the honest reading.
+            return { left, total: Math.max(s.total, left) };
+          })
+        }
+      />
 
-          <View style={styles.restMid}>
-            <Text style={styles.restLabel}>{i18n.nRdResting}</Text>
-            <Text style={styles.restClock}>{restLabel(resting)}</Text>
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${i18n.nRdResting} +${REST_STEP}`}
-            hitSlop={{ top: 8, bottom: 8 }}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setResting((s) => (s === null ? null : Math.min(REST_MAX, s + REST_STEP)));
-            }}
-            style={({ pressed }) => [styles.restBtn, pressed && styles.pressed]}>
-            <Icon icon={Plus} size={15} color={colors.foreground} strokeWidth={2.5} />
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={i18n.nRdSkip}
-            hitSlop={10}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setResting(null);
-            }}
-            style={({ pressed }) => [styles.restSkipBtn, pressed && styles.pressed]}>
-            <Text style={styles.restSkip}>{i18n.nRdSkip}</Text>
-          </Pressable>
-        </Animated.View>
-      ) : null}
     </View>
   );
 }
@@ -716,35 +744,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   finishOff: { opacity: 0.4 },
+  /* Saved is not the same as unavailable. It keeps its full opacity and turns
+     into a statement — green tick, green text, no fill — so the row reads as a
+     finished job rather than as a button that stopped working. */
+  finishDone: {
+    opacity: 1,
+    backgroundColor: 'rgba(43,245,168,0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(43,245,168,0.35)',
+  },
+  finishTextDone: { color: colors.readinessGreen },
   finishText: { ...type.body, color: colors.primaryForeground, fontWeight: '600' },
 
-  restBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: -spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    height: 52,
-    paddingHorizontal: spacing.sm + 2,
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(18,18,22,0.97)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  restBtn: {
-    width: 44,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.sm,
-    backgroundColor: glass.bg,
-  },
-  restMid: { flex: 1, alignItems: 'center' },
-  restLabel: { ...type.caption, color: colors.mutedForeground },
-  restClock: { ...type.title2, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  restSkipBtn: { height: 36, paddingHorizontal: spacing.sm, justifyContent: 'center' },
-  restSkip: { ...type.footnote, color: colors.metricBlue, fontWeight: '600' },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

@@ -83,9 +83,22 @@ type DayState = 'rest' | 'done' | 'todo' | 'missed';
 
 const STATE_STYLE: Record<DayState, { icon: typeof CheckCircle2; tint: string; wash: string }> = {
   done: { icon: CheckCircle2, tint: colors.readinessGreen, wash: 'rgba(63,185,80,0.14)' },
-  todo: { icon: CircleDashed, tint: colors.readinessYellow, wash: 'rgba(230,185,61,0.14)' },
+  /* Silver, not yellow. A training day that has not happened yet is not a
+     warning about anything — it is Thursday. Yellow is what this app uses for
+     "approaching a limit", and spending it here would leave nothing to say
+     that with. */
+  todo: { icon: CircleDashed, tint: colors.primary, wash: 'rgba(168,175,189,0.14)' },
   missed: { icon: CircleDashed, tint: colors.mutedForeground, wash: 'rgba(255,255,255,0.06)' },
-  rest: { icon: Moon, tint: colors.mutedForeground, wash: 'rgba(255,255,255,0.06)' },
+  /*
+    Rest is purple, and it is the only state here that is a *choice*.
+
+    Done, to do and not-trained are all reports on a training day — they are
+    the app telling you where you got to. A rest day is something you decided,
+    and it earns a colour of its own for that: neon purple, the app's own, so a
+    week reads as a shape at a glance. Grey said "nothing here", which is the
+    one thing a planned rest day is not.
+  */
+  rest: { icon: Moon, tint: colors.metricPurple, wash: 'rgba(180,92,255,0.14)' },
 };
 
 export default function RoutineScreen() {
@@ -190,12 +203,9 @@ export default function RoutineScreen() {
               <View style={[styles.weekDate, isToday && styles.weekDateToday, isOpen && styles.weekDateOn]}>
                 <Text style={[styles.weekNum, isOpen && styles.weekNumOn]}>{d.getDate()}</Text>
               </View>
-              <View
-                style={[
-                  styles.weekDot,
-                  hasWork && { backgroundColor: state === 'done' ? colors.readinessGreen : STATE_STYLE[state].tint },
-                ]}
-              />
+              {/* The dot is the week's shape in seven marks: green behind
+                  you, silver ahead, purple where you chose to rest. */}
+              <View style={[styles.weekDot, { backgroundColor: STATE_STYLE[state].tint }]} />
             </Pressable>
           );
         })}

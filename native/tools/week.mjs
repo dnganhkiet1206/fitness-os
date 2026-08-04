@@ -69,7 +69,8 @@ try {
   execFileSync('npx', ['tsc', 'src/lib/local-date.ts', '--ignoreConfig', '--outDir', out,
     '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
-  const { routineIndex, weekDates } = createRequire(import.meta.url)(path.join(out, 'local-date.js'));
+  const { DAY_PROGRESS_KEEP, dayProgressKey, routineIndex, staleDayProgress, weekDates } =
+    createRequire(import.meta.url)(path.join(out, 'local-date.js'));
 
   const problems = [];
   let swept = 0;
@@ -118,6 +119,48 @@ try {
   process.env.TZ = 'UTC';
 
   /*
+    ── the ticks do not pile up forever ──
+
+    Nothing carries a workout's "done" state across a week — it is worked out
+    from this week's dates against the last fortnight's sessions, so Monday
+    comes round and the week is empty again on its own.
+
+    The tick marks are the part that did carry over, in the quiet way: written
+    under the date they belong to, which is what makes them safe, and never
+    deleted, which meant seven entries a week for as long as the app stayed
+    installed. This is the rule that clears them, and it is worth checking
+    because the two ways it can be wrong are both bad and neither is visible.
+    Too loose and it deletes the query cache, which lives in the same store.
+    Too eager and it throws away the resume point for a workout somebody is
+    halfway through.
+  */
+  const TODAY = '2026-08-04';
+  const KEEP = [
+    dayProgressKey(TODAY, 'abc'),
+    dayProgressKey('2026-08-03', 'abc'),
+    dayProgressKey('2026-07-22', 'abc'), // 13 days back — inside the window
+    // a template id with a colon in it must not confuse the date parse
+    dayProgressKey(TODAY, 'a:b:c'),
+  ];
+  const DROP = [
+    dayProgressKey('2026-07-21', 'abc'), // 14 days back — the first one out
+    dayProgressKey('2026-01-01', 'abc'),
+    dayProgressKey('2025-12-30', 'abc'),
+    'routine-day:not-a-date:abc',
+  ];
+  const OTHERS = [
+    'REACT_QUERY_OFFLINE_CACHE',
+    'ascnd:offline-queue',
+    'routine-daySOMETHINGELSE',
+    '',
+  ];
+  const stale = new Set(staleDayProgress([...KEEP, ...DROP, ...OTHERS], TODAY));
+  for (const k of KEEP) if (stale.has(k)) problems.push(`xoá nhầm bản còn dùng được: ${k}`);
+  for (const k of DROP) if (!stale.has(k)) problems.push(`bỏ sót bản đã cũ: ${k}`);
+  for (const k of OTHERS) if (stale.has(k)) problems.push(`đụng vào key không phải của mình: "${k}"`);
+  if (DAY_PROGRESS_KEEP < 7) problems.push(`giữ ${DAY_PROGRESS_KEEP} ngày — chưa đủ một tuần`);
+
+  /*
     Self-test: the millisecond version, and the exact week it fails on.
 
     Two assertions, because either one alone would be misleading. It has to
@@ -163,6 +206,7 @@ try {
 
   console.log(
     `tuần tập OK — ${swept} ngày × ${ZONES.length} múi giờ, thẻ luôn trùng ngày; ` +
+      `dọn tick giữ ${DAY_PROGRESS_KEEP} ngày, không đụng key lạ; ` +
       `bản cộng mili-giây lệch ở Santiago (${chile}) và đúng ở New York, đúng như lý do nó sống sót`,
   );
 } finally {
