@@ -67,3 +67,44 @@ export function uniformValue<T>(
   const first = read(items[0]) ?? fallback;
   return items.every((it) => (read(it) ?? fallback) === first) ? first : null;
 }
+
+/**
+ * Roughly how long a workout runs, in minutes.
+ *
+ * Every set costs its reps at about three seconds each plus its rest, and that
+ * is the whole model. It is deliberately crude — it knows nothing about walking
+ * to the rack, loading plates, or the set you spent talking — so it is always
+ * shown as an approximation and never as a schedule.
+ *
+ * It lives here because two screens need the same number: the builder, which
+ * shows it while you are choosing, and the week, which shows it on the day the
+ * workout is assigned to. Two copies of a formula this arbitrary would drift
+ * within a week and neither would look wrong.
+ *
+ * Floored at one: a single set of one rep is not zero minutes of work.
+ */
+export function estimatedMinutes(items: { sets?: number; reps?: number; restSeconds?: number }[]): number {
+  let seconds = 0;
+  for (const it of items) {
+    seconds += (it.sets ?? 0) * ((it.reps ?? 0) * 3 + (it.restSeconds ?? DEFAULT_REST));
+  }
+  return Math.max(1, Math.round(seconds / 60));
+}
+
+/**
+ * The effort a workout asks for: one number, or the two it runs between.
+ *
+ * A workout is one thing you decide to do or not do today, so it needs a single
+ * reading of how hard it is going to be — and most workouts have one, because
+ * most are built without touching the effort row.
+ *
+ * When they are not, the honest answer is the range and not the average. An
+ * average is a number that appears in no set anywhere: a session of three easy
+ * exercises and one all-out finisher does not "feel like 8". `7–10` says what
+ * is actually written down, which is all this is entitled to say.
+ */
+export function effortRange(items: { rpe?: number }[]): [number, number] | null {
+  if (items.length === 0) return null;
+  const all = items.map((it) => it.rpe ?? DEFAULT_RPE);
+  return [Math.min(...all), Math.max(...all)];
+}

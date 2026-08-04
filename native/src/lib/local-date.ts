@@ -43,3 +43,38 @@ export function localDayRangeISO(dateStr: string): { start: string; end: string 
   end.setDate(end.getDate() + 1);
   return { start: start.toISOString(), end: end.toISOString() };
 }
+
+/**
+ * Which slot of the weekly routine a date falls in — Monday is 0.
+ *
+ * `routine_days.day_of_week` is stored Monday-first, because that is how the
+ * screen lists the week and how most of the world writes a training split.
+ * `Date.getDay()` is Sunday-first. The two are one `+ 6` apart and getting it
+ * wrong shifts the entire routine by a day, which looks like the data being
+ * wrong rather than the index.
+ */
+export function routineIndex(d: Date): number {
+  return (d.getDay() + 6) % 7;
+}
+
+/**
+ * The seven dates of the week `d` falls in, Monday first.
+ *
+ * Built by stepping the day number rather than by adding milliseconds. A day is
+ * not always 86,400,000 ms — on the two days a year the clocks move it is an
+ * hour more or less — so `+ i * 864e5` from a Monday lands on 23:00 the previous
+ * Saturday in one direction and skips a day in the other. `setDate` is calendar
+ * arithmetic and rolls months and years on its own.
+ *
+ * Local midnight, so the results compare cleanly against `localDateStr`.
+ */
+export function weekDates(d: Date = new Date()): Date[] {
+  const monday = new Date(d);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() - routineIndex(monday));
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + i);
+    return day;
+  });
+}

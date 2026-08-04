@@ -1,0 +1,170 @@
+/**
+ * That the training week lines up with the calendar it is drawn on.
+ *
+ * ── the invariant the screen rests on ──
+ *
+ * `routine.tsx` draws seven cards from `routine_days`, indexed 0–6 with Monday
+ * as 0, and puts `weekDates()[idx]` on card `idx`. Everything else on the
+ * screen follows from that pairing: which card is highlighted as today, which
+ * date is looked up in the set of logged sessions, and therefore whether a day
+ * reads "done", "to do" or "not trained".
+ *
+ * So the invariant is exactly one line — `weekDates(d)[routineIndex(d)]` is the
+ * same calendar day as `d` — and if it ever fails, the screen does not break.
+ * It shows a coherent, plausible, wrong week: Wednesday's workout on Tuesday's
+ * card, a session you did today credited to yesterday, "not trained" against a
+ * day you trained. Nothing to see in a screenshot unless you happen to know
+ * what day it is.
+ *
+ * ── why date arithmetic and not milliseconds ──
+ *
+ * The obvious way to build seven days is `start + i * 864e5`, and it is wrong,
+ * because a day is not always 86,400,000 milliseconds. Most of the time you get
+ * away with it: this check sweeps two years in eleven timezones and the two
+ * versions agree in ten of them, including every US and European zone, because
+ * their clocks move at 2am on a Sunday and a week anchored at Monday midnight
+ * never straddles that.
+ *
+ * `America/Santiago` is where it shows. Chile moves the clock at *midnight* on
+ * the Sunday, so the last day of the week has no 00:00 at all, and the
+ * millisecond version lands the whole of Sunday on Saturday — the week of
+ * 2026-03-30 comes out ending on April 4 instead of April 5.
+ *
+ * That is the shape of the bug worth having a tool for. It is not wrong; it is
+ * wrong for some users, in some months, and correct everywhere it would be
+ * tested by hand.
+ */
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const out = mkdtempSync(path.join(tmpdir(), 'week-'));
+
+/**
+ * Eleven zones, chosen for the ways they are awkward rather than for coverage.
+ *
+ * Half-hour and three-quarter-hour offsets (Lord Howe, Chatham), a southern
+ * hemisphere whose DST runs the other way (Sydney, Auckland, São Paulo), a zone
+ * that moves at midnight (Santiago, Havana), one that used to and no longer
+ * does (Tehran), and the two everybody actually tests in.
+ */
+const ZONES = [
+  'UTC', 'America/New_York', 'Europe/London', 'Europe/Lisbon', 'Asia/Ho_Chi_Minh',
+  'America/Santiago', 'America/Havana', 'Australia/Lord_Howe', 'Pacific/Chatham',
+  'Australia/Sydney', 'Pacific/Auckland', 'America/Sao_Paulo', 'Asia/Tehran',
+];
+
+/** Two full years, so both transitions in both hemispheres are swept twice. */
+const FROM = Date.UTC(2026, 0, 1);
+const TO = Date.UTC(2028, 0, 1);
+
+const ds = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+try {
+  execFileSync('npx', ['tsc', 'src/lib/local-date.ts', '--ignoreConfig', '--outDir', out,
+    '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+    { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
+  const { routineIndex, weekDates } = createRequire(import.meta.url)(path.join(out, 'local-date.js'));
+
+  const problems = [];
+  let swept = 0;
+
+  // ── Monday is 0, in the one place the mapping is written down ──
+  // 2026-08-03 is a Monday; seven consecutive days cover every weekday once.
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(2026, 7, 3 + i);
+    if (routineIndex(d) !== i) problems.push(`routineIndex(${ds(d)}) = ${routineIndex(d)}, đáng lẽ ${i}`);
+  }
+
+  for (const tz of ZONES) {
+    process.env.TZ = tz;
+    const seen = [];
+    for (let t = FROM; t < TO; t += 864e5) {
+      const d = new Date(t);
+      const week = weekDates(d);
+      swept++;
+
+      // seven days, Monday first
+      if (week.length !== 7) {
+        problems.push(`${tz} ${ds(d)}: ${week.length} ngày`);
+        continue;
+      }
+      if (routineIndex(week[0]) !== 0) problems.push(`${tz} ${ds(d)}: tuần bắt đầu bằng thứ ${routineIndex(week[0]) + 2}`);
+
+      // ── the invariant ──
+      if (ds(week[routineIndex(d)]) !== ds(d)) {
+        problems.push(`${tz} ${ds(d)}: thẻ ${routineIndex(d)} rơi vào ${ds(week[routineIndex(d)])}`);
+      }
+
+      // seven *consecutive* calendar days, no repeat and no gap
+      for (let i = 1; i < 7; i++) {
+        const prev = new Date(week[i]);
+        prev.setDate(prev.getDate() - 1);
+        if (ds(prev) !== ds(week[i - 1])) {
+          problems.push(`${tz} ${ds(d)}: ${ds(week[i - 1])} → ${ds(week[i])} không liền nhau`);
+        }
+      }
+      seen.push(ds(week[0]));
+    }
+    // every day of a week must produce the same Monday
+    if (new Set(seen).size > 106) problems.push(`${tz}: ${new Set(seen).size} thứ hai khác nhau trong 2 năm, quá nhiều`);
+    if (problems.length > 40) break;
+  }
+  process.env.TZ = 'UTC';
+
+  /*
+    Self-test: the millisecond version, and the exact week it fails on.
+
+    Two assertions, because either one alone would be misleading. It has to
+    fail somewhere — otherwise this whole file is checking a distinction that
+    does not exist — and it has to *pass* in New York, because that is why the
+    bug survives review: the wrong version is correct in the timezone almost
+    everybody writing and testing this code is sitting in.
+  */
+  const naive = (d) => {
+    const m = new Date(d);
+    m.setHours(0, 0, 0, 0);
+    const start = m.getTime() - ((m.getDay() + 6) % 7) * 864e5;
+    return Array.from({ length: 7 }, (_, i) => new Date(start + i * 864e5));
+  };
+  const disagrees = (tz) => {
+    process.env.TZ = tz;
+    for (let t = FROM; t < TO; t += 864e5) {
+      const d = new Date(t);
+      const a = weekDates(d);
+      const b = naive(d);
+      for (let i = 0; i < 7; i++) if (ds(a[i]) !== ds(b[i])) return ds(d);
+    }
+    return null;
+  };
+  const chile = disagrees('America/Santiago');
+  const york = disagrees('America/New_York');
+  process.env.TZ = 'UTC';
+  if (!chile) {
+    console.error('phép tự kiểm hỏng — bản cộng mili-giây đáng lẽ phải sai ở Santiago, đừng tin kết quả');
+    process.exit(1);
+  }
+  if (york) {
+    console.error(`phép tự kiểm hỏng — bản cộng mili-giây lại sai cả ở New York (${york}); ` +
+      'ca thử này không còn mô tả đúng lý do lỗi sống sót, xem lại');
+    process.exit(1);
+  }
+
+  if (problems.length) {
+    console.error('tuần tập lệch lịch:\n');
+    for (const p of problems.slice(0, 20)) console.error(`  ${p}`);
+    process.exit(1);
+  }
+
+  console.log(
+    `tuần tập OK — ${swept} ngày × ${ZONES.length} múi giờ, thẻ luôn trùng ngày; ` +
+      `bản cộng mili-giây lệch ở Santiago (${chile}) và đúng ở New York, đúng như lý do nó sống sót`,
+  );
+} finally {
+  rmSync(out, { recursive: true, force: true });
+}

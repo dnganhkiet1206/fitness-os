@@ -47,7 +47,7 @@ try {
   execFileSync('npx', ['tsc', 'src/lib/prescription.ts', '--ignoreConfig', '--outDir', out,
     '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
-  const { DEFAULT_REST, DEFAULT_RPE, restLabel, uniformValue } =
+  const { DEFAULT_REST, DEFAULT_RPE, effortRange, estimatedMinutes, restLabel, uniformValue } =
     createRequire(import.meta.url)(path.join(out, 'prescription.js'));
 
   const problems = [];
@@ -82,7 +82,54 @@ try {
   }
 
   /*
-    ── 3: said once, never twice, never nowhere ──
+    ── 3: what a workout costs, as the week prints it ──
+
+    Both are shown against a saved workout on the schedule, and both are the
+    kind of number nobody checks: a duration is expected to be approximate and
+    an effort figure is expected to be small, so a wrong one is simply believed.
+
+    The duration is the builder's own formula — reps at three seconds plus rest
+    — reached from `src/lib/prescription.ts` so the two screens cannot drift.
+    The effort is the range and never the average: a session of three easy
+    exercises and one all-out finisher does not "feel like 8", and 8 is a number
+    that appears in no set anywhere in it.
+  */
+  const COST = [
+    ['một bài, không nghỉ', [{ sets: 3, reps: 10, restSeconds: 0 }], 2],
+    ['mặc định 3×10', [{ sets: 3, reps: 10 }], 6],
+    ['thiếu restSeconds = 90', [{ sets: 3, reps: 10, restSeconds: 90 }], 6],
+    ['rỗng', [], 1],
+    ['bé xíu vẫn không phải 0 phút', [{ sets: 1, reps: 1, restSeconds: 0 }], 1],
+  ];
+  for (const [what, items, want] of COST) {
+    const got = estimatedMinutes(items);
+    if (got !== want) problems.push(`${what}: ${got} phút, đáng lẽ ${want}`);
+  }
+
+  const RANGE = [
+    ['đều nhau', [{ rpe: 8 }, { rpe: 8 }], '8-8'],
+    ['thiếu trường = mặc định', [{ rpe: 7 }, {}], '7-7'],
+    ['có bài nặng ở cuối', [{ rpe: 7 }, { rpe: 7 }, { rpe: 7 }, { rpe: 10 }], '7-10'],
+    ['rỗng', [], null],
+  ];
+  for (const [what, items, want] of RANGE) {
+    const r = effortRange(items);
+    const got = r ? `${r[0]}-${r[1]}` : null;
+    if (got !== want) problems.push(`khoảng gắng sức, ${what}: ${got}, đáng lẽ ${want}`);
+  }
+  /*
+    The average is the tempting answer and is the wrong one. Stated as a check
+    so that "simplify this to one number" is a change that fails rather than a
+    change that looks tidier.
+  */
+  const heavy = [{ rpe: 7 }, { rpe: 7 }, { rpe: 7 }, { rpe: 10 }];
+  const avg = heavy.reduce((n, e) => n + e.rpe, 0) / heavy.length;
+  if (effortRange(heavy)[1] === Math.round(avg)) {
+    problems.push('khoảng gắng sức đang trả về trung bình chứ không phải mức cao nhất');
+  }
+
+  /*
+    ── 4: said once, never twice, never nowhere ──
 
     The card and the rows carry the two halves of one condition. Read as source
     because that is where the mistake lives: both halves are one short line, and
@@ -95,7 +142,7 @@ try {
   if (!onRows) problems.push('template-list: không thấy nhánh ngược lại trên từng bài — hai nhánh phải trái dấu nhau');
 
   /*
-    ── 4: the line reads back, it does not conclude ──
+    ── 5: the line reads back, it does not conclude ──
 
     `prescriptionLine` may label the two stored values and nothing else. The
     gloss that was cut did arithmetic on the effort, and arithmetic is the
@@ -140,8 +187,8 @@ try {
     process.exit(1);
   }
 
-  const n = Object.keys(CLOCK).length + MIXED.length;
-  console.log(`nghỉ/gắng sức OK — ${n} ca, thiếu trường = mặc định, dòng chỉ đọc lại chứ không suy ra, hiện đúng một chỗ`);
+  const n = Object.keys(CLOCK).length + MIXED.length + COST.length + RANGE.length;
+  console.log(`nghỉ/gắng sức OK — ${n} ca, thiếu trường = mặc định, dòng chỉ đọc lại chứ không suy ra, gắng sức là khoảng chứ không phải trung bình`);
 } finally {
   rmSync(out, { recursive: true, force: true });
 }

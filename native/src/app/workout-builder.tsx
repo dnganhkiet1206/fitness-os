@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ascnd/icon';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
-import { DEFAULT_REST, restLabel } from '@/lib/prescription';
+import { DEFAULT_REST, estimatedMinutes, restLabel } from '@/lib/prescription';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAddWorkoutTemplate, useExercises, type TemplateExercise } from '@/hooks/use-library';
@@ -257,16 +257,21 @@ export default function WorkoutBuilderSheet() {
 
   const shownName = nameTouched ? name : suggestedName;
 
-  /** total sets, and roughly how long the session runs at 3s a rep */
-  const totals = useMemo(() => {
-    let sets = 0;
-    let seconds = 0;
-    for (const it of items) {
-      sets += it.sets;
-      seconds += it.sets * (it.reps * 3 + (it.restSeconds ?? DEFAULT_REST));
-    }
-    return { sets, minutes: Math.max(1, Math.round(seconds / 60)) };
-  }, [items]);
+  /**
+   * Total sets, and roughly how long the session runs.
+   *
+   * The duration comes from `estimatedMinutes` rather than being worked out
+   * here, because the week screen prints the same figure against the same
+   * workout. Two copies of a formula this arbitrary would drift apart within a
+   * week and neither of them would look wrong.
+   */
+  const totals = useMemo(
+    () => ({
+      sets: items.reduce((n, it) => n + it.sets, 0),
+      minutes: estimatedMinutes(items),
+    }),
+    [items],
+  );
 
   const toggle = (ex: { id: string; name: string }) => {
     Haptics.selectionAsync();
