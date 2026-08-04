@@ -242,9 +242,17 @@ export function TemplateRow({
 /**
  * The stack of cards.
  *
- * The gap is the page's own (`spacing.stack`), the same distance every other
- * card on every other tab keeps from its neighbour — so a workout sits in the
- * page's rhythm rather than in a spacing invented for this list.
+ * The gap is 12, not the page's 20.
+ *
+ * `spacing.stack` is the distance between *sections* — the library grid and the
+ * workout list and the recent sessions, each a different subject. These cards
+ * are not that: they are siblings under one heading, and spacing them as far
+ * apart as the things they sit between makes the heading stop looking like it
+ * covers all three.
+ *
+ * Closer than the page, further than a divided list. That is the whole job of
+ * this number: enough air that an opened card is obviously one card, little
+ * enough that three of them read as a group.
  */
 export function TemplateList({
   templates,
@@ -277,7 +285,7 @@ export function TemplateList({
 }
 
 const styles = StyleSheet.create({
-  tplStack: { gap: spacing.stack },
+  tplStack: { gap: spacing.sm + 4 },
   /* Tighter than the card default (20), because the card holds two lines of
      text and a chevron — 20 all round would leave it mostly empty. */
   tplCard: { padding: spacing.md },

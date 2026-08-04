@@ -7,7 +7,6 @@ import {
   Alert,
   FlatList,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -16,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Animated, { Easing, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -693,81 +693,95 @@ export default function WorkoutBuilderSheet() {
         />
       ) : null}
 
-      {/* ── a movement the library does not have yet ── */}
-      <Modal visible={creating} transparent animationType="slide" onRequestClose={() => setCreating(false)}>
-        <Pressable
-          style={styles.backdrop}
-          accessibilityLabel={i18n.a11yClose}
-          onPress={() => setCreating(false)}
-        />
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
-          <View style={styles.grabber} />
-          <Text style={styles.sheetTitle}>{i18n.nCreateExercise}</Text>
+      {/*
+        ── a movement the library does not have yet ──
 
-          <TextInput
-            style={styles.input}
-            placeholder={i18n.nExerciseName}
-            placeholderTextColor={colors.mutedForeground}
-            value={cName}
-            onChangeText={setCName}
-            autoFocus
-          />
-
-          <Text style={styles.sectionLabel}>{i18n.nMuscleGroup}</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipRow}
-            keyboardShouldPersistTaps="handled">
-            {MUSCLES.map((m) => (
-              <Pressable
-                key={m}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setCMuscle(m);
-                }}
-                style={[styles.chip, cMuscle === m && styles.chipOn]}>
-                <Text style={[styles.chipText, cMuscle === m && styles.chipTextOn]}>{m}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-
-          <Text style={styles.sectionLabel}>{i18n.nEquipment}</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipRow}
-            keyboardShouldPersistTaps="handled">
-            {EQUIPMENT.map((eq) => (
-              <Pressable
-                key={eq}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setCEquip(eq);
-                }}
-                style={[styles.chip, cEquip === eq && styles.chipOn]}>
-                <Text style={[styles.chipText, cEquip === eq && styles.chipTextOn]}>{eq}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-
+        An overlay in this screen's own tree rather than a `Modal`, and mounted
+        only while open. It was a `Modal`, and tapping the button did nothing at
+        all: this screen is itself presented as a modal (`_layout` gives it
+        `presentation: 'modal'`), and a `Modal` opened from inside one renders
+        blank on this RN / react-native-screens combination — the same new-arch
+        bug `_layout` already records against formSheet detents. It fails
+        silently, so the button simply looked dead.
+      */}
+      {creating ? (
+        <View style={styles.overlay}>
           <Pressable
-            accessibilityRole="button"
-            disabled={!cName.trim() || addExercise.isPending}
-            onPress={createCustom}
-            style={({ pressed }) => [
-              styles.primary,
-              (!cName.trim() || addExercise.isPending) && styles.disabled,
-              pressed && styles.pressed,
-            ]}>
-            {addExercise.isPending ? (
-              <ActivityIndicator color={colors.primaryForeground} />
-            ) : (
-              <Text style={styles.primaryText}>{i18n.nCreateExercise}</Text>
-            )}
-          </Pressable>
+            style={styles.backdrop}
+            accessibilityLabel={i18n.a11yClose}
+            onPress={() => setCreating(false)}
+          />
+          <Animated.View
+            entering={SlideInDown.duration(240).easing(Easing.out(Easing.cubic))}
+            style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
+            <View style={styles.grabber} />
+            <Text style={styles.sheetTitle}>{i18n.nCreateExercise}</Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder={i18n.nExerciseName}
+              placeholderTextColor={colors.mutedForeground}
+              value={cName}
+              onChangeText={setCName}
+              autoFocus
+            />
+
+            <Text style={styles.sectionLabel}>{i18n.nMuscleGroup}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+              keyboardShouldPersistTaps="handled">
+              {MUSCLES.map((m) => (
+                <Pressable
+                  key={m}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setCMuscle(m);
+                  }}
+                  style={[styles.chip, cMuscle === m && styles.chipOn]}>
+                  <Text style={[styles.chipText, cMuscle === m && styles.chipTextOn]}>{m}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.sectionLabel}>{i18n.nEquipment}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+              keyboardShouldPersistTaps="handled">
+              {EQUIPMENT.map((eq) => (
+                <Pressable
+                  key={eq}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setCEquip(eq);
+                  }}
+                  style={[styles.chip, cEquip === eq && styles.chipOn]}>
+                  <Text style={[styles.chipText, cEquip === eq && styles.chipTextOn]}>{eq}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={!cName.trim() || addExercise.isPending}
+              onPress={createCustom}
+              style={({ pressed }) => [
+                styles.primary,
+                (!cName.trim() || addExercise.isPending) && styles.disabled,
+                pressed && styles.pressed,
+              ]}>
+              {addExercise.isPending ? (
+                <ActivityIndicator color={colors.primaryForeground} />
+              ) : (
+                <Text style={styles.primaryText}>{i18n.nCreateExercise}</Text>
+              )}
+            </Pressable>
+          </Animated.View>
         </View>
-      </Modal>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -957,7 +971,26 @@ const styles = StyleSheet.create({
   primaryText: { ...type.headline, color: colors.primaryForeground },
   disabled: { opacity: 0.4 },
 
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
+  /* See the note at the sheet's mount point: this screen is presented as a
+     modal, and a `Modal` inside one renders blank here. */
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'flex-end',
+    zIndex: 40,
+    elevation: 40,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
   sheet: {
     backgroundColor: colors.card,
     borderTopLeftRadius: radius.xl,

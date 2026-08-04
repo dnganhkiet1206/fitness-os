@@ -1,7 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { ChevronDown, ChevronUp, Minus, Plus, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, { Easing, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -182,13 +183,15 @@ export function WorkoutSetSheet({
   const wl = weightLabel(unit);
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+    <View style={styles.overlay}>
       {/* Tapping the dimmed page behind the sheet closes it — the standard way
           out of a sheet, and the reason there is no cancel button. Nothing here
           is staged: every change is already applied to the workout. */}
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={i18n.a11yClose} />
 
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
+      <Animated.View
+        entering={SlideInDown.duration(240).easing(Easing.out(Easing.cubic))}
+        style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
         <View style={styles.grabber} />
 
         <Text style={styles.name} numberOfLines={2}>{item.exerciseName}</Text>
@@ -306,13 +309,37 @@ export function WorkoutSetSheet({
           style={({ pressed }) => [styles.done, pressed && styles.pressed]}>
           <Text style={styles.doneText}>{i18n.nWbDone}</Text>
         </Pressable>
-      </View>
-    </Modal>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
+  /*
+    An overlay inside the screen, not a `Modal`.
+
+    The builder is itself presented as a modal (`_layout` gives it
+    `presentation: 'modal'`), and a `Modal` opened from inside one of those
+    renders blank on this RN / react-native-screens combination — the same
+    new-arch bug `_layout` already records against formSheet detents. It fails
+    silently: the state flips, nothing appears, and the button looks dead.
+
+    Nothing here needs a separate window anyway. It covers the screen it belongs
+    to, and being in the same tree means the slide-in can be Reanimated's rather
+    than the platform's.
+  */
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'flex-end',
+    // Above the list it covers, on both platforms
+    zIndex: 40,
+    elevation: 40,
+  },
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)' },
   sheet: {
     backgroundColor: colors.card,
     borderTopLeftRadius: radius.xl,

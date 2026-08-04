@@ -403,10 +403,13 @@ export default function WorkoutsScreen() {
 }
 
 const styles = StyleSheet.create({
+  /* Right-aligned. `space-between` put them there only while a caption held the
+     left end; with the caption gone it pushed them to the left instead, which
+     is not where they had been. */
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     gap: spacing.sm,
     flexWrap: 'wrap',
   },
