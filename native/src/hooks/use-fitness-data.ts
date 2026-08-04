@@ -228,16 +228,37 @@ export function useLogWorkoutSession() {
       templateName,
       sessionRpe,
       sets,
+      date,
     }: {
       templateName: string;
       sessionRpe: number;
       sets: LoggedSet[];
+      /**
+       * The day this workout happened, `YYYY-MM-DD`. Omit for now.
+       *
+       * The week's day view needs it: you finish Monday's session, forget to
+       * hit save, and tick the last set on Tuesday morning. Without a date that
+       * workout files itself under Tuesday, Monday keeps reading "not trained",
+       * and both days' readiness are computed from the wrong training load —
+       * silently, and in a way you cannot correct from inside the app.
+       *
+       * Stamped at local noon rather than at midnight or at the current
+       * time-of-day. Midnight sits on the boundary this app has already been
+       * bitten by twice (a `timestamptz` compared against a bare date string);
+       * noon is the furthest point from it in both directions, so no rounding,
+       * offset or DST hour can push the session into a neighbouring day.
+       */
+      date?: string;
     }) => {
       if (!user) throw new Error('Not signed in');
       if (sets.length === 0) throw new Error('No sets');
 
+      const today = localDateStr();
+      const when = date && date !== today ? new Date(`${date}T12:00:00`) : null;
+
       const { error } = await supabase.from('workout_sessions').insert({
         user_id: user.id,
+        ...(when ? { date_time: when.toISOString() } : {}),
         template_name: templateName.trim() || 'Workout',
         session_rpe: sessionRpe,
         sets: sets.map((s, i) => ({
@@ -256,12 +277,17 @@ export function useLogWorkoutSession() {
       if (error) throw error;
 
       /*
-        The session is stamped now, so the day it belongs to is today. Nothing
-        here lets a caller pass a date — logging a workout you forgot to log
-        needs a date field on the screen and a second recompute, and pretending
-        otherwise would file it under the wrong day in silence.
+        Rebuild the day the workout belongs to — and today as well when they are
+        not the same.
+
+        Today's readiness reads a rolling window of training load, so a session
+        backdated to Monday changes what Thursday's score should be even though
+        nothing about Thursday's own row changed. This is the same pair of
+        recomputes `useDeleteWorkoutSession` does, for the same reason.
       */
-      await recomputeDailyLog(user.id, localDateStr());
+      const day = date || today;
+      await recomputeDailyLog(user.id, day);
+      if (day !== today) await recomputeDailyLog(user.id, today);
     },
     onSuccess: () => invalidate(),
   });

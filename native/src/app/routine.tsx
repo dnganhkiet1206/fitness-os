@@ -1,23 +1,18 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { CheckCircle2, ChevronRight, CircleDashed, Dumbbell, Moon, Pencil, Plus } from 'lucide-react-native';
+import { CheckCircle2, CircleDashed, Dumbbell, Moon, Plus } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
-import { volume, type TplExercise } from '@/components/ascnd/template-list';
+import { DayPlan } from '@/components/ascnd/day-plan';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
-import { useUnits } from '@/hooks/use-units';
 import { useRoutineDays, useUpsertRoutineDay, useWorkoutTemplates } from '@/hooks/use-library';
-import { rise } from '@/lib/entrance';
-import { localDateStr, weekDates } from '@/lib/local-date';
-import { effortRange, estimatedMinutes } from '@/lib/prescription';
-import { displayWeight, weightLabel } from '@/lib/units';
+import { localDateStr, routineIndex, weekDates } from '@/lib/local-date';
 
 /**
  * The training week.
@@ -39,25 +34,39 @@ import { displayWeight, weightLabel } from '@/lib/units';
  * stored with their dates, and the arithmetic — volume, duration, effort — was
  * already written for the builder.
  *
- * ── so: dates, and a state per day ──
+ * ── the strip picks the day; the day is the page ──
  *
- * The week runs across the top with real dates on it, so "Thứ 4" is a day you
- * can locate rather than a row in a list, and today is marked. Each day then
- * says what it is (`Push`, `Rest`), what it costs, and where it stands: done,
- * waiting, not trained, resting.
+ * The dates across the top were decorative for one commit — today marked, a dot
+ * where there was training, and nothing happened when you touched them. The
+ * argument for that was that every day they named was already a card below, so
+ * a tap would only be a second route to something on screen.
  *
- * "Not trained" is deliberately flat. A past training day with no session is a
- * fact and the app does not get to have an opinion about it — no red, no
- * warning glyph, the same muted grey as everything else that is simply over.
+ * That argument was wrong in a way worth writing down. Seven summary cards can
+ * only ever be summaries: six exercises fit in a card, twenty-two *sets* do
+ * not, and sets are what you are looking at when you are actually training. So
+ * the seven cards could never become the thing you use mid-workout, and the
+ * strip that could have got you to one day was doing nothing.
+ *
+ * Now it picks. One day is open at a time, in full — every set, with somewhere
+ * to tick it off — and the strip carries the week: today ringed, the selected
+ * day filled, and a dot under each day saying where it stands.
+ *
+ * Nothing is stacked on anything. The strip selects, the panel below shows, and
+ * neither is a second way to do what the other does.
+ *
+ * ── the states ──
+ *
+ * Done, to do, not trained, rest. "Not trained" is deliberately flat — a past
+ * training day with no session is a fact and the app does not get to have an
+ * opinion about it, so no red and no warning glyph, the same muted grey as
+ * everything else that is simply over.
  *
  * ── nothing was taken away ──
  *
  * Assigning a template, marking a day as rest and toggling deload are all still
- * here; they moved into the sheet that opens when you tap a day. That is a
- * straight win rather than a compromise: seven `Switch`es down the screen were
- * seven controls to read past on a screen whose job is to be read, and deload
- * is a thing you set once a month. On the card it is now a badge, which is what
- * a state you rarely change should look like.
+ * here, in the sheet behind the pencil. Seven `Switch`es down the screen were
+ * seven controls to read past, and deload is a thing you set once a month; on
+ * the day it is now a badge, which is what a rarely-changed state looks like.
  */
 
 const DAY_LONG_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -91,15 +100,19 @@ export default function RoutineScreen() {
   */
   const { data: sessions } = useWorkoutSessions(14);
   const { lang } = useAppSettings();
-  const { weight: wUnit } = useUnits();
   const i18n = useI18n();
   const upsert = useUpsertRoutineDay();
   const [picking, setPicking] = useState<number | null>(null);
+  /*
+    Opens on today, which is the day you came here for on six days out of seven.
+    `routineIndex` rather than a stored preference: the right default changes
+    every midnight, and a remembered one would be wrong by morning.
+  */
+  const [selected, setSelected] = useState(() => routineIndex(new Date()));
 
   const vi = lang === 'vi';
   const longNames = vi ? DAY_LONG_VI : DAY_LONG_EN;
   const shortNames = vi ? DAY_SHORT_VI : DAY_SHORT_EN;
-  const wl = weightLabel(wUnit);
 
   const dates = weekDates();
   const todayStr = localDateStr();
@@ -136,47 +149,71 @@ export default function RoutineScreen() {
   return (
     <Screen back title={i18n.nRoutine}>
       {/*
-        The week, with dates on it.
+        The week, and the control that moves you through it.
 
-        Not a control. It carries today's marker and a dot on the days that have
-        training, and tapping it does nothing — every day it names is a card a
-        thumb's length below, so a tap target here would be a second way to
-        reach something already on screen, and the first thing anyone would
-        expect it to do (filter to one day) would hide the week this screen
-        exists to show.
+        Each cell is a button: the weekday, the date, and a dot underneath in
+        the colour of where that day stands. The dot is the whole week's status
+        in seven pixels — green behind you, silver ahead, nothing on a rest day
+        — which is what the seven cards used to spend a screen and a half
+        saying.
+
+        Today is ringed and the open day is filled. They are usually the same
+        cell and they are different marks, because the one time it matters is
+        the one time they are not: looking at Saturday's plan on a Tuesday, you
+        need to see both which day you are reading and which day it is.
       */}
-      <View style={styles.weekRow} accessibilityRole="header">
+      <View style={styles.weekRow}>
         {dates.map((d, idx) => {
           const day = byDay.get(idx);
-          const isToday = localDateStr(d) === todayStr;
+          const dStr = localDateStr(d);
+          const isToday = dStr === todayStr;
+          const isOpen = idx === selected;
           const hasWork = !!day?.template_id && !day?.is_rest;
+          const state: DayState = !hasWork
+            ? 'rest'
+            : trained.has(dStr)
+              ? 'done'
+              : dStr < todayStr
+                ? 'missed'
+                : 'todo';
           return (
-            <View key={idx} style={styles.weekCell}>
-              <Text style={[styles.weekName, isToday && styles.weekNameToday]}>{shortNames[idx]}</Text>
-              <View style={[styles.weekDate, isToday && styles.weekDateToday]}>
-                <Text style={[styles.weekNum, isToday && styles.weekNumToday]}>{d.getDate()}</Text>
+            <Pressable
+              key={idx}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isOpen }}
+              accessibilityLabel={`${longNames[idx]} ${d.getDate()}`}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setSelected(idx);
+              }}
+              style={({ pressed }) => [styles.weekCell, pressed && styles.pressed]}>
+              <Text style={[styles.weekName, isOpen && styles.weekNameOn]}>{shortNames[idx]}</Text>
+              <View style={[styles.weekDate, isToday && styles.weekDateToday, isOpen && styles.weekDateOn]}>
+                <Text style={[styles.weekNum, isOpen && styles.weekNumOn]}>{d.getDate()}</Text>
               </View>
-              <View style={[styles.weekDot, hasWork && styles.weekDotOn]} />
-            </View>
+              <View
+                style={[
+                  styles.weekDot,
+                  hasWork && { backgroundColor: state === 'done' ? colors.readinessGreen : STATE_STYLE[state].tint },
+                ]}
+              />
+            </Pressable>
           );
         })}
       </View>
 
-      {longNames.map((label, idx) => {
-        const day = byDay.get(idx);
+      {(() => {
+        const day = byDay.get(selected);
         const tpl = templateFor(day?.template_id);
-        const isRest = day?.is_rest || !tpl;
-        const date = dates[idx];
-        const dateStr = localDateStr(date);
-        const isToday = dateStr === todayStr;
-
-        const state: DayState = isRest
+        const dStr = localDateStr(dates[selected]);
+        const state: DayState = !tpl || day?.is_rest
           ? 'rest'
-          : trained.has(dateStr)
+          : trained.has(dStr)
             ? 'done'
-            : dateStr < todayStr
+            : dStr < todayStr
               ? 'missed'
               : 'todo';
+        const look = STATE_STYLE[state];
         const stateLabel =
           state === 'rest'
             ? i18n.nRoutineRestDay
@@ -185,105 +222,41 @@ export default function RoutineScreen() {
               : state === 'missed'
                 ? i18n.nRoutineMissed
                 : i18n.nRoutineTodo;
-        const look = STATE_STYLE[state];
-
-        const exs: TplExercise[] = Array.isArray(tpl?.exercises) ? (tpl.exercises as TplExercise[]) : [];
-        const effort = effortRange(exs);
-        const meta = tpl
-          ? [
-              i18n.nRoutineExercises.replace('{n}', String(exs.length)),
-              i18n.nRoutineMinutes.replace('{n}', String(estimatedMinutes(exs))),
-              effort
-                ? effort[0] === effort[1]
-                  ? i18n.nRoutineEffort.replace('{x}', String(effort[0]))
-                  : i18n.nRoutineEffortRange.replace('{a}', String(effort[0])).replace('{b}', String(effort[1]))
-                : null,
-            ]
-              .filter(Boolean)
-              .join('  ·  ')
-          : i18n.nRoutineRestHint;
-
         return (
-          <Animated.View key={idx} entering={rise(idx)}>
-            <GlassCard style={[styles.dayCard, isToday && styles.dayCardToday]}>
-              <View style={styles.dayHead}>
-                <Text style={[styles.dayName, isToday && styles.dayNameToday]}>{label}</Text>
-                {tpl?.type ? <Text style={styles.dayType}>· {tpl.type}</Text> : null}
-                {day?.is_deload ? (
-                  <View style={styles.deloadBadge}>
-                    <Text style={styles.deloadText}>{i18n.nDeload}</Text>
-                  </View>
-                ) : null}
-                <View style={styles.headSpacer} />
-                <View style={[styles.statePill, { backgroundColor: look.wash }]}>
-                  <Icon icon={look.icon} size={12} color={look.tint} />
-                  <Text style={[styles.stateText, { color: look.tint }]}>{stateLabel}</Text>
-                </View>
-                {/*
-                  Changing what a day *is* moved up here when the body started
-                  opening the workout instead of the picker. It is a small
-                  target on purpose: you assign a day once and train it for
-                  months, so it should be findable and not in the way.
-                */}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${label} — ${i18n.nChooseWorkout}`}
-                  hitSlop={10}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setPicking(idx);
-                  }}
-                  style={({ pressed }) => [styles.editBtn, pressed && styles.pressed]}>
-                  <Icon icon={Pencil} size={13} color={colors.mutedForeground} />
-                </Pressable>
+          <View style={styles.dayHead}>
+            <Text style={styles.dayName}>{longNames[selected]}</Text>
+            {day?.is_deload ? (
+              <View style={styles.deloadBadge}>
+                <Text style={styles.deloadText}>{i18n.nDeload}</Text>
               </View>
-
-              {/*
-                The whole body is the button, not a chevron at the end of it.
-
-                A row that opens something should be pressable everywhere it is
-                readable — this is the mistake the template cards were rebuilt
-                to fix, where a chevron sat at the end of a row that was not a
-                control at all.
-              */}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${label} — ${tpl?.name ?? i18n.nRoutineRestDay}, ${stateLabel}`}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  /*
-                    A day with a workout on it opens the workout — every set of
-                    it, with somewhere to tick them off. A day without one has
-                    nothing to open, so it goes straight to the question it is
-                    actually asking: what should this day be.
-                  */
-                  if (tpl) router.push({ pathname: '/routine-day', params: { day: String(idx) } });
-                  else setPicking(idx);
-                }}
-                style={({ pressed }) => [styles.dayBody, pressed && styles.pressed]}>
-                <View style={styles.dayIcon}>
-                  <Icon icon={isRest ? Moon : Dumbbell} size={16} color={isRest ? colors.mutedForeground : colors.primary} />
-                </View>
-                <View style={styles.dayText}>
-                  <Text style={[styles.dayTitle, isRest && styles.dayTitleRest]} numberOfLines={1}>
-                    {tpl?.name ?? (day?.is_rest ? i18n.nRoutineRestDay : i18n.nRoutineNothing)}
-                  </Text>
-                  <Text style={styles.dayMeta} numberOfLines={1}>{meta}</Text>
-                </View>
-                {/* Volume only where there is any — a rest day showing "0 kg"
-                    is a measurement of nothing, and reads as a failure. */}
-                {tpl && volume(exs) > 0 ? (
-                  <Text style={styles.dayVolume}>
-                    {Math.round(displayWeight(volume(exs), wUnit)).toLocaleString()} {wl}
-                  </Text>
-                ) : null}
-                <Icon icon={ChevronRight} size={15} color={colors.mutedForeground} />
-              </Pressable>
-
-            </GlassCard>
-          </Animated.View>
+            ) : null}
+            <View style={styles.headSpacer} />
+            <View style={[styles.statePill, { backgroundColor: look.wash }]}>
+              <Icon icon={look.icon} size={12} color={look.tint} />
+              <Text style={[styles.stateText, { color: look.tint }]}>{stateLabel}</Text>
+            </View>
+          </View>
         );
-      })}
+      })()}
+
+      {/*
+        Keyed by the day.
+
+        The panel keeps live state — which sets are ticked, what rest each one
+        is on — and reads a stored resume point for the day it is showing.
+        Without the key, moving from Monday to Tuesday would reuse the mounted
+        instance and its ticks, and the storage read would land a moment later
+        on top of a panel that had already shown somebody else's workout as
+        half done.
+      */}
+      <DayPlan
+        key={selected}
+        dateStr={localDateStr(dates[selected])}
+        template={templateFor(byDay.get(selected)?.template_id)}
+        isRest={!!byDay.get(selected)?.is_rest}
+        i18n={i18n}
+        onEdit={() => setPicking(selected)}
+      />
 
       <Pressable
         accessibilityRole="button"
@@ -369,29 +342,33 @@ export default function RoutineScreen() {
 const styles = StyleSheet.create({
   // ── the week strip ──
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
-  weekCell: { alignItems: 'center', gap: 6, flex: 1 },
+  weekCell: { alignItems: 'center', gap: 6, flex: 1, paddingVertical: 4 },
   weekName: { ...type.caption, color: colors.mutedForeground },
-  weekNameToday: { color: colors.primary, fontWeight: '600' },
-  weekDate: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  weekDateToday: { backgroundColor: colors.primary },
+  weekNameOn: { color: colors.foreground, fontWeight: '700' },
+  weekDate: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  /* Today is a ring, the open day is a fill. Usually the same cell, and two
+     marks rather than one because the time it matters is the time they differ:
+     reading Saturday's plan on a Tuesday, you need both. */
+  weekDateToday: { borderColor: colors.primary },
+  weekDateOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   weekNum: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  weekNumToday: { color: colors.primaryForeground, fontWeight: '700' },
+  weekNumOn: { color: colors.primaryForeground, fontWeight: '700' },
   /* Always drawn, transparent when the day is empty — a dot that appears and
      disappears would shift the row's height by three points as the week is
      edited. */
-  weekDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'transparent' },
-  weekDotOn: { backgroundColor: colors.primary },
+  weekDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'transparent' },
 
-  // ── one day ──
-  dayCard: { padding: spacing.md, gap: spacing.sm },
-  /* Today is the one card you are looking for when you open this screen, so it
-     gets a border rather than a fill — enough to find at a glance, not enough
-     to make the other six look switched off. */
-  dayCardToday: { borderColor: colors.primary },
-  dayHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dayName: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
-  dayNameToday: { color: colors.primary },
-  dayType: { ...type.footnote, color: colors.mutedForeground, textTransform: 'capitalize', flexShrink: 1 },
+  // ── the open day ──
+  dayHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },
+  dayName: { ...type.headline, color: colors.foreground },
   headSpacer: { flex: 1 },
   statePill: {
     flexDirection: 'row',
@@ -402,7 +379,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   stateText: { ...type.caption, fontWeight: '600' },
-  editBtn: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
   deloadBadge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
@@ -410,23 +386,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(230,185,61,0.18)',
   },
   deloadText: { ...type.caption, color: colors.readinessYellow, fontWeight: '600' },
-
-  dayBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
-  dayIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
-  },
-  dayText: { flex: 1, minWidth: 0, gap: 2 },
-  dayTitle: { ...type.body, color: colors.foreground, fontWeight: '500' },
-  dayTitleRest: { color: colors.mutedForeground, fontWeight: '400' },
-  dayMeta: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  dayVolume: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 
   addBtn: {

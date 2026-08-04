@@ -46,6 +46,33 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(NATIVE, 'src');
 const MIN_TARGET = 44;
 
+
+/**
+ * `hitSlop` in either form it is written.
+ *
+ * `hitSlop={8}` grows the target by eight on every side. `hitSlop={{ top: 8,
+ * bottom: 8 }}` grows it vertically only, which is the right thing for a
+ * control in a tight horizontal row: adding the same eight points sideways
+ * would make it overlap its neighbour, and a tap landing in two targets at
+ * once resolves by tree order rather than by intent.
+ *
+ * Reading only the first form is why this check once demanded a change that
+ * would have made the screen worse.
+ */
+function readSlop(attrs) {
+  const flat = attrs.match(/hitSlop=\{(\d+)\}/);
+  if (flat) {
+    const n = Number(flat[1]);
+    return { top: n, bottom: n, left: n, right: n };
+  }
+  const obj = attrs.match(/hitSlop=\{\{([^}]*)\}\}/);
+  const side = (name) => {
+    const m = obj ? obj[1].match(new RegExp(`${name}:\\s*(\\d+)`)) : null;
+    return m ? Number(m[1]) : 0;
+  };
+  return { top: side('top'), bottom: side('bottom'), left: side('left'), right: side('right') };
+}
+
 /** `IconButton` is the sanctioned way; it enforces both rules by construction. */
 const EXEMPT = [path.join('src', 'components', 'ascnd', 'icon-button.tsx')];
 
@@ -97,6 +124,44 @@ function pressables(text) {
   }
 }
 
+// ── self-test: slop, in both forms and in both axes ─────────────────────
+{
+  const cases = [
+    ['không có slop', 'onPress={() => x()}', { top: 0, bottom: 0, left: 0, right: 0 }],
+    ['số trần', 'hitSlop={10}', { top: 10, bottom: 10, left: 10, right: 10 }],
+    ['chỉ dọc', 'hitSlop={{ top: 8, bottom: 8 }}', { top: 8, bottom: 8, left: 0, right: 0 }],
+    ['đủ bốn cạnh', 'hitSlop={{ top: 1, bottom: 2, left: 3, right: 4 }}', { top: 1, bottom: 2, left: 3, right: 4 }],
+  ];
+  for (const [what, attrs, want] of cases) {
+    const got = readSlop(attrs);
+    if (JSON.stringify(got) !== JSON.stringify(want)) {
+      console.error(`tự kiểm tra hỏng: đọc slop "${what}" ra ${JSON.stringify(got)}, đáng lẽ ${JSON.stringify(want)}`);
+      process.exit(1);
+    }
+  }
+
+  /*
+    And the reason the two axes are judged apart: a 44×32 button with eight
+    points above and below is a legal 44×48 target, while the same slop on a
+    20-wide one is still too narrow. Collapsing to `min(w, h) + 2 * slop` calls
+    the first one a failure and the second one a pass — both wrong, and the
+    first is what sent this check chasing a change that would have made two
+    steppers overlap.
+  */
+  const vertical = readSlop('hitSlop={{ top: 8, bottom: 8 }}');
+  const wide = { w: 44 + vertical.left + vertical.right, h: 32 + vertical.top + vertical.bottom };
+  const narrow = { w: 20 + vertical.left + vertical.right, h: 32 + vertical.top + vertical.bottom };
+  if (!(wide.w >= MIN_TARGET && wide.h >= MIN_TARGET) || narrow.w >= MIN_TARGET) {
+    console.error('tự kiểm tra hỏng: hai chiều không được xét riêng, đừng tin kết quả');
+    process.exit(1);
+  }
+  const collapsed = Math.min(44, 32) + 2 * 8;
+  if (collapsed !== 48) {
+    console.error('tự kiểm tra hỏng: cách tính gộp cũ không còn tái dựng được');
+    process.exit(1);
+  }
+}
+
 function walk(dir) {
   const out = [];
   for (const name of readdirSync(dir)) {
@@ -135,11 +200,27 @@ for (const file of walk(SRC)) {
       const w = decl.match(/\bwidth:\s*(\d+)/);
       const h = decl.match(/\bheight:\s*(\d+)/);
       if (w && h) {
-        const slopMatch = attrs.match(/hitSlop=\{(\d+)\}/);
-        const slop = slopMatch ? Number(slopMatch[1]) : 0;
-        const eff = Math.min(Number(w[1]), Number(h[1])) + 2 * slop;
-        if (eff < MIN_TARGET) {
-          small.push(`${rel}:${lineOf(p.start)}  ${styleRef[1]} ${w[1]}×${h[1]} +slop ${slop} → ${eff}pt`);
+        const slop = readSlop(attrs);
+        /*
+          Width and height are judged separately, because slop is.
+
+          The two dimensions were collapsed to `min(w, h) + 2 * slop`, which
+          only works while slop is one number. It reads a 44×32 stepper with
+          eight points above and below as a 32pt target and demands the fix it
+          has already been given — and the fix it *would* accept, a plain
+          `hitSlop={8}`, is worse: the steppers sit two points apart, so eight
+          points of slop on each side makes their targets overlap, and a tap in
+          the overlap goes to whichever happens to be later in the tree.
+        */
+        const eff = {
+          w: Number(w[1]) + slop.left + slop.right,
+          h: Number(h[1]) + slop.top + slop.bottom,
+        };
+        if (eff.w < MIN_TARGET || eff.h < MIN_TARGET) {
+          small.push(
+            `${rel}:${lineOf(p.start)}  ${styleRef[1]} ${w[1]}×${h[1]} ` +
+              `+slop ${slop.left}/${slop.right}/${slop.top}/${slop.bottom} → ${eff.w}×${eff.h}pt`,
+          );
         }
       }
     }
