@@ -136,6 +136,9 @@ export default function TodayScreen() {
   // Pull-to-refresh (web PullToRefresh: invalidate everything)
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
+    // The gesture has no button to press, so the tap it never gets is repaid
+    // here: the pull is confirmed the moment it takes, not when data lands.
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     await queryClient.invalidateQueries();
     setRefreshing(false);
@@ -353,8 +356,34 @@ export default function TodayScreen() {
         styles.content,
         { paddingTop: insets.top + 12, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
       ]}
+      /*
+        Pull to refresh, and where its spinner is drawn.
+
+        The gesture worked and the spinner did not: iOS draws it at the top of
+        the *scroll view's frame*, and this scroll view starts at the very top
+        of the screen. Its top padding is on the content container, not the
+        frame — deliberately, so the ambient light behind it is not clipped —
+        so the spinner appeared behind the Dynamic Island and under the status
+        scrim's blur. Pulling did reload; there was simply nothing to see, which
+        is indistinguishable from a page that has no pull-to-refresh.
+
+        `progressViewOffset` moves the indicator without moving the trigger, and
+        it is set to the content's own top padding so the spinner appears
+        exactly where the first card begins. Derived from the same number rather
+        than a second one chosen to look right — if the padding changes, this
+        follows it.
+
+        It is implemented on iOS in this version (`RCTRefreshControl.m` converts
+        it out of the parent's coordinate space); it is not Android-only, which
+        the docs have historically implied.
+      */
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.mutedForeground} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.mutedForeground}
+          progressViewOffset={insets.top + 12}
+        />
       }
       onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}
       scrollEventThrottle={16}
