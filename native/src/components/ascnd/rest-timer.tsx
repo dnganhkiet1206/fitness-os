@@ -6,8 +6,8 @@ import Animated, {
   Easing,
   FadeIn,
   FadeOut,
-  ZoomIn,
   useAnimatedProps,
+  useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -105,6 +105,34 @@ export function RestTimer({
     strokeDashoffset: CIRC * (1 - progress.value),
   }));
 
+  /*
+    The way it arrives.
+
+    It was `ZoomIn.springify()`, which starts the card at nothing and overshoots
+    on the way in. On a small card that reads as a flourish; on something that
+    fills the screen it lunges at you, and the verdict on it was the right one.
+
+    So it settles instead of springing: 96% to full over a fifth of a second on
+    an ease-out, with the fade doing most of the work. Four percent is enough
+    for the eye to register that something came forward and not enough to be a
+    movement in its own right — which is what you want from a panel that appears
+    fifteen times in a workout. No bounce anywhere in it: a spring is a thing
+    arriving, and this is a thing that was already there.
+  */
+  const scale = useSharedValue(0.96);
+  useEffect(() => {
+    if (left === null) {
+      // Reset while it is off screen, so the next rest starts from 96 again
+      // rather than opening already at full size.
+      scale.value = 0.96;
+      return;
+    }
+    scale.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) });
+    // Only the appearing and disappearing matters here, not every tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [left === null, scale]);
+  const card = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   const bump = (delta: number) => {
     Haptics.selectionAsync();
     onAdjust(delta);
@@ -112,14 +140,14 @@ export function RestTimer({
 
   return (
     <Modal visible={left !== null} transparent animationType="none" statusBarTranslucent onRequestClose={onSkip}>
-      <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(150)} style={styles.backdrop}>
+      <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(160)} style={styles.backdrop}>
         {/* Tapping the dark ends the rest — the set you are about to do is a
             better authority on whether you are ready than the clock is, and
             reaching for a small button to say so is friction in the one place
             this screen should have none. */}
         <Pressable style={StyleSheet.absoluteFill} accessibilityLabel={i18n.nRdSkip} onPress={onSkip} />
 
-        <Animated.View entering={ZoomIn.springify().stiffness(220).damping(22)} style={styles.card}>
+        <Animated.View entering={FadeIn.duration(200)} style={[styles.card, card]}>
           <Text style={styles.label}>{i18n.nRdResting}</Text>
 
           <View style={styles.ringWrap}>
@@ -210,7 +238,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
-    backgroundColor: 'rgba(7,7,8,0.86)',
+    /* 0.68, down from 0.86. At the higher value the workout behind it was
+       gone rather than dimmed, so the timer read as a different screen you had
+       been sent to instead of as a moment inside the one you were on. */
+    backgroundColor: 'rgba(7,7,8,0.68)',
   },
   card: {
     alignItems: 'center',
