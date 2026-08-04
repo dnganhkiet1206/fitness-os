@@ -1,6 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
-import { CheckCircle2, CircleDashed, Dumbbell, Moon, Plus } from 'lucide-react-native';
+import { CheckCircle2, CircleDashed, Dumbbell, Moon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -258,17 +257,6 @@ export default function RoutineScreen() {
         onEdit={() => setPicking(selected)}
       />
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push('/workout-builder');
-        }}
-        style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}>
-        <Icon icon={Plus} size={17} color={colors.primaryForeground} strokeWidth={2.5} />
-        <Text style={styles.addText}>{i18n.nRoutineAdd}</Text>
-      </Pressable>
-
       {/*
         One day, everything about it.
 
@@ -388,16 +376,6 @@ const styles = StyleSheet.create({
   deloadText: { ...type.caption, color: colors.readinessYellow, fontWeight: '600' },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    height: 52,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primary,
-  },
-  addText: { ...type.body, color: colors.primaryForeground, fontWeight: '600' },
 
   // ── the day sheet ──
   pickerBackdrop: {
