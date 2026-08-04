@@ -22,12 +22,7 @@ import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { restLabel, WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import {
-  useAddExercise,
-  useAddWorkoutTemplate,
-  useExercises,
-  type TemplateExercise,
-} from '@/hooks/use-library';
+import { useAddWorkoutTemplate, useExercises, type TemplateExercise } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { displayWeight, weightLabel } from '@/lib/units';
@@ -80,7 +75,10 @@ import { displayWeight, weightLabel } from '@/lib/units';
  *
  * Nothing the old form could do was dropped: name, type, search, creating a
  * custom exercise, adding, removing, and all five numbers per exercise are all
- * still here. Reordering is new, and so is the estimated duration.
+ * still reachable. Reordering is new, and so is the estimated duration.
+ *
+ * Creating a movement is the one that moved rather than stayed: it opens the
+ * exercise library, which has had the same form all along. See `openLibrary`.
  *
  * ── one vertical scroller per step ──
  *
@@ -109,10 +107,6 @@ const TYPES = [
   'custom',
 ] as const;
 type TemplateType = (typeof TYPES)[number];
-
-/** for the custom-exercise form; these are what `muscle-group.ts` reads back */
-const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Quads', 'Hamstrings', 'Glutes', 'Abs', 'Full Body', 'Cardio'];
-const EQUIPMENT = ['Barbell', 'Dumbbell', 'Cable', 'Machine', 'Bodyweight', 'Kettlebell', 'Band', 'Other'];
 
 /**
  * The body parts, in the order a body is worked.
@@ -173,102 +167,6 @@ function inferType(groups: Set<MuscleArtKey>): TemplateType {
   return 'full_body';
 }
 
-/**
- * Naming a movement the library does not have yet.
- *
- * A face of the builder rather than a sheet over it. It was a sheet twice — a
- * `Modal`, then an absolute overlay — and both times the panel failed to appear
- * while everything around it worked, because this screen is itself presented as
- * a modal and things that float inside one are fragile here.
- *
- * The chips wrap instead of scrolling sideways. On a sheet there was no room and
- * a horizontal strip was the only way to fit eleven muscles; with the screen to
- * itself, all eleven can simply be visible, and a chip you can see is worth more
- * than one you have to go looking for.
- */
-function NewExercisePane({
-  i18n,
-  name,
-  onName,
-  muscle,
-  onMuscle,
-  equipment,
-  onEquipment,
-  busy,
-  onCreate,
-  bottom,
-}: {
-  i18n: ReturnType<typeof useI18n>;
-  name: string;
-  onName: (v: string) => void;
-  muscle: string;
-  onMuscle: (v: string) => void;
-  equipment: string;
-  onEquipment: (v: string) => void;
-  busy: boolean;
-  onCreate: () => void;
-  /** the home-indicator inset, for the footer */
-  bottom: number;
-}) {
-  const chip = (value: string, current: string, set: (v: string) => void) => (
-    <Pressable
-      key={value}
-      accessibilityRole="button"
-      accessibilityState={{ selected: current === value }}
-      onPress={() => {
-        Haptics.selectionAsync();
-        set(value);
-      }}
-      style={[styles.chip, current === value && styles.chipOn]}>
-      <Text style={[styles.chipText, current === value && styles.chipTextOn]}>{value}</Text>
-    </Pressable>
-  );
-
-  return (
-    <>
-      <ScrollView
-        style={styles.list}
-        contentContainerStyle={styles.reviewContent}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag">
-        <TextInput
-          style={styles.input}
-          placeholder={i18n.nExerciseName}
-          placeholderTextColor={colors.mutedForeground}
-          value={name}
-          onChangeText={onName}
-          autoFocus
-          returnKeyType="done"
-        />
-
-        <Text style={styles.sectionLabel}>{i18n.nMuscleGroup}</Text>
-        <View style={styles.typeWrap}>{MUSCLES.map((m) => chip(m, muscle, onMuscle))}</View>
-
-        <Text style={styles.sectionLabel}>{i18n.nEquipment}</Text>
-        <View style={styles.typeWrap}>{EQUIPMENT.map((e) => chip(e, equipment, onEquipment))}</View>
-      </ScrollView>
-
-      <View style={[styles.footer, { paddingBottom: bottom + spacing.sm }]}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={!name.trim() || busy}
-          onPress={onCreate}
-          style={({ pressed }) => [
-            styles.primary,
-            (!name.trim() || busy) && styles.disabled,
-            pressed && styles.pressed,
-          ]}>
-          {busy ? (
-            <ActivityIndicator color={colors.primaryForeground} />
-          ) : (
-            <Text style={styles.primaryText}>{i18n.nCreateExercise}</Text>
-          )}
-        </Pressable>
-      </View>
-    </>
-  );
-}
-
 export default function WorkoutBuilderSheet() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -277,7 +175,6 @@ export default function WorkoutBuilderSheet() {
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
   const { data: exercises, isLoading } = useExercises();
-  const addExercise = useAddExercise();
   const addTemplate = useAddWorkoutTemplate();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -292,12 +189,6 @@ export default function WorkoutBuilderSheet() {
   const [name, setName] = useState('');
   const [nameTouched, setNameTouched] = useState(false);
   const [pickedType, setPickedType] = useState<TemplateType | null>(null);
-
-  // The custom-exercise sheet
-  const [creating, setCreating] = useState(false);
-  const [cName, setCName] = useState('');
-  const [cMuscle, setCMuscle] = useState(MUSCLES[0]);
-  const [cEquip, setCEquip] = useState(EQUIPMENT[0]);
 
   const label = useCallback((g: { en: string; vi: string }) => (vi ? g.vi : g.en), [vi]);
 
@@ -405,23 +296,26 @@ export default function WorkoutBuilderSheet() {
     setEditing(null);
   };
 
-  const createCustom = async () => {
-    if (!cName.trim()) return;
-    try {
-      const created = await addExercise.mutateAsync({
-        name: cName.trim(),
-        muscle_group: cMuscle,
-        equipment: cEquip,
-      });
-      // Straight into the workout — creating it here is how you said you wanted
-      // it, so making you find it again in the list afterwards is a second job
-      if (created) toggle({ id: created.id, name: created.name });
-      setCName('');
-      setCreating(false);
-      setSearch('');
-    } catch (e) {
-      Alert.alert('ASCND', e instanceof Error ? e.message : 'Error');
-    }
+  /**
+   * Adding a movement the library does not have yet.
+   *
+   * A link, not a form. The builder carried its own copy of this — a name, the
+   * eleven muscle groups, the equipment list, a create button — and the exercise
+   * library two taps away has had exactly that all along. Two copies means two
+   * sets of group labels to keep matching, and `muscle_group` is free text that
+   * the diagrams have to fold back together, so a second writer of it is a
+   * second way for a tile to read zero over a full shelf.
+   *
+   * Whatever was typed into the search goes with it, so a search that found
+   * nothing arrives as a form already carrying the name.
+   *
+   * The builder stays mounted underneath, so coming back finds every exercise
+   * still chosen — and the new one already in the list, because creating it
+   * invalidates the query this screen is reading.
+   */
+  const openLibrary = () => {
+    Haptics.selectionAsync();
+    router.push({ pathname: '/exercises', params: { create: search.trim() } });
   };
 
   const save = () => {
@@ -436,7 +330,7 @@ export default function WorkoutBuilderSheet() {
   };
 
   /**
-   * Which of the builder's four faces is on screen.
+   * Which of the builder's three faces is on screen.
    *
    * The two sheets used to be overlays floating over the picker — a `Modal`
    * first, then an absolutely-positioned view — and both failed on this stack in
@@ -449,35 +343,29 @@ export default function WorkoutBuilderSheet() {
    * screen, with the header's back button carrying the way out. There is no
    * absolute positioning left to get wrong.
    *
-   * It is also the better shape. Naming a movement and prescribing an exercise
-   * are each a whole job with a form of their own; giving them the screen is
-   * what the two-step flow was already doing for picking and reviewing.
+   * It is also the better shape. Prescribing an exercise is a whole job with a
+   * form of its own; giving it the screen is what the two-step flow was already
+   * doing for picking and reviewing. Naming a *new* movement is the same kind of
+   * job, and it does not need a face here at all — the exercise library is one
+   * push away and has had that form since long before this screen did.
    */
-  const mode = creating
-    ? 'new-exercise'
-    : editing !== null && items[editing]
-      ? 'edit-set'
-      : step === 1
-        ? 'pick'
-        : 'review';
+  const mode =
+    editing !== null && items[editing] ? 'edit-set' : step === 1 ? 'pick' : 'review';
 
   /** the back button's job, which is different on each face */
   const goBack = () => {
     Haptics.selectionAsync();
-    if (mode === 'new-exercise') setCreating(false);
-    else if (mode === 'edit-set') setEditing(null);
+    if (mode === 'edit-set') setEditing(null);
     else if (mode === 'review') setStep(1);
     else router.back();
   };
 
   const subtitle =
-    mode === 'new-exercise'
-      ? i18n.nCreateExercise
-      : mode === 'edit-set'
-        ? items[editing!].exerciseName
-        : mode === 'pick'
-          ? i18n.nWbStepPick
-          : i18n.nWbStepReview;
+    mode === 'edit-set'
+      ? items[editing!].exerciseName
+      : mode === 'pick'
+        ? i18n.nWbStepPick
+        : i18n.nWbStepReview;
 
   const typeLabel = (t: TemplateType): string =>
     ({
@@ -524,20 +412,7 @@ export default function WorkoutBuilderSheet() {
         <View style={step === 2 ? styles.segOn : styles.segOff} />
       </View>
 
-      {mode === 'new-exercise' ? (
-        <NewExercisePane
-          i18n={i18n}
-          name={cName}
-          onName={setCName}
-          muscle={cMuscle}
-          onMuscle={setCMuscle}
-          equipment={cEquip}
-          onEquipment={setCEquip}
-          busy={addExercise.isPending}
-          onCreate={createCustom}
-          bottom={insets.bottom}
-        />
-      ) : mode === 'edit-set' ? (
+      {mode === 'edit-set' ? (
         <>
           <WorkoutSetPanel
             item={items[editing!]}
@@ -653,11 +528,7 @@ export default function WorkoutBuilderSheet() {
                       for is what the new exercise is called. */}
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setCName(search.trim());
-                      setCreating(true);
-                    }}
+                    onPress={openLibrary}
                     style={({ pressed }) => [styles.emptyCta, pressed && styles.pressed]}>
                     <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
                     <Text style={styles.emptyCtaText}>
@@ -673,11 +544,7 @@ export default function WorkoutBuilderSheet() {
               visible.length > 0 ? (
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setCName(search.trim());
-                    setCreating(true);
-                  }}
+                  onPress={openLibrary}
                   style={({ pressed }) => [styles.newRow, pressed && styles.pressed]}>
                   <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
                   <Text style={styles.newRowText}>{i18n.nCreateExercise}</Text>
@@ -977,7 +844,6 @@ const styles = StyleSheet.create({
   },
 
   typeWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chipRow: { gap: spacing.sm, paddingRight: spacing.md },
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -1029,16 +895,6 @@ const styles = StyleSheet.create({
   primaryText: { ...type.headline, color: colors.primaryForeground },
   disabled: { opacity: 0.4 },
 
-  input: {
-    height: 48,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
-    color: colors.foreground,
-    fontSize: 16,
-  },
 
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

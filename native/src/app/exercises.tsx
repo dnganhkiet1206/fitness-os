@@ -29,11 +29,6 @@ export default function ExercisesScreen() {
     i18n.muscleTriceps, i18n.muscleQuads, i18n.muscleHamstrings, i18n.muscleGlutes,
     i18n.muscleAbs, i18n.muscleFullBody, i18n.muscleCardio,
   ];
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState('');
-  const [muscleGroup, setMuscleGroup] = useState(MUSCLE_GROUPS[0]);
-  const [equipment, setEquipment] = useState('');
-
   /*
     Arriving from a muscle tile shows only that muscle; arriving from "see all"
     shows the library as it always was.
@@ -43,9 +38,22 @@ export default function ExercisesScreen() {
     builder's English, and the seed's own spelling — so matching the text would
     show a third of what the tile just counted, and the count and the list would
     disagree on the same screen.
+
+    `create` is the third way in: the workout builder sends whatever was typed
+    into its search when nothing matched it, so "no exercise called Hack Squat"
+    arrives here as a form already saying Hack Squat. The builder used to carry
+    a second copy of this form to do that; one form that two screens reach is
+    one set of muscle-group labels, one validation, one place to fix.
   */
-  const { group: groupParam } = useLocalSearchParams<{ group?: string }>();
+  const { group: groupParam, create } = useLocalSearchParams<{ group?: string; create?: string }>();
   const only = groupParam as MuscleArtKey | undefined;
+
+  // Seeded on mount, which is the only moment that matters: this screen is
+  // pushed fresh each time, so there is no later render to fight with.
+  const [adding, setAdding] = useState(!!create);
+  const [name, setName] = useState(create ?? '');
+  const [muscleGroup, setMuscleGroup] = useState(MUSCLE_GROUPS[0]);
+  const [equipment, setEquipment] = useState('');
 
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
