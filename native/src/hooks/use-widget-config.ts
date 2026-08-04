@@ -76,6 +76,70 @@ export const WIDGET_META: Record<WidgetKey, { label: { en: string; vi: string } 
   steps: { label: { en: 'Steps', vi: 'Bước đi' } },
 };
 
+/**
+ * Widgets that shipped after this config was saved, put back where they belong.
+ *
+ * ── the bug this fixes ──
+ *
+ * The stored layout was used exactly as it came out of storage. That is right
+ * for everything the user arranged and wrong for everything the app has learned
+ * to draw since: `water` and `steps` were added to `DEFAULT_CONFIG` after this
+ * feature shipped, so any account whose layout had already been saved — which
+ * is every account that opened edit mode once — has a Today screen that cannot
+ * show them.
+ *
+ * And there is no way back. Edit mode can move a widget, remove a group and add
+ * a group; it has no "add widget" at all. The only route to a widget missing
+ * from the stored config is `resetConfig`, which throws away every arrangement
+ * the user made to get one card back.
+ *
+ * ── what the merge is allowed to do ──
+ *
+ * Add, and only add. Order, grouping, renamed groups and removed groups are all
+ * the user's and are left exactly as found; a widget the user has arranged
+ * somewhere unusual is *found* there and therefore not re-added.
+ *
+ * A new widget goes to the group it has in `DEFAULT_CONFIG` if that group still
+ * exists, and to the last group if it does not — the same place `removeGroup`
+ * already folds orphans into, so a user who deleted the Nutrition group does not
+ * get it resurrected by an app update.
+ *
+ * Nothing is written back. The merge is cheap, idempotent and runs on every
+ * load, so persisting it would only add a storage write nobody asked for — the
+ * next real edit saves the merged shape anyway.
+ */
+export function withNewWidgets(stored: WidgetConfig): WidgetConfig {
+  const groups = stored.groups.map((g) => ({ ...g, widgets: [...g.widgets] }));
+  const heroWidgets = [...stored.heroWidgets];
+  const have = new Set<WidgetKey>([...heroWidgets, ...groups.flatMap((g) => g.widgets)]);
+  let added = false;
+
+  for (const key of DEFAULT_CONFIG.heroWidgets) {
+    if (have.has(key)) continue;
+    heroWidgets.push(key);
+    have.add(key);
+    added = true;
+  }
+
+  for (const def of DEFAULT_CONFIG.groups) {
+    for (const key of def.widgets) {
+      if (have.has(key)) continue;
+      have.add(key);
+      added = true;
+      const home = groups.find((g) => g.id === def.id) ?? groups[groups.length - 1];
+      // No groups at all is not a shape the loader accepts, but a merge that
+      // drops a widget on the floor when it happens would be worse than one
+      // that rebuilds the group it came from.
+      if (home) home.widgets.push(key);
+      else groups.push({ ...def, widgets: [key] });
+    }
+  }
+
+  // The same object back when there is nothing to add, so a caller comparing
+  // by identity can tell an untouched config from a repaired one
+  return added ? { heroWidgets, groups } : stored;
+}
+
 export function useWidgetConfig() {
   const [config, setConfigState] = useState<WidgetConfig>(DEFAULT_CONFIG);
   const [editMode, setEditMode] = useState(false);
@@ -85,7 +149,7 @@ export function useWidgetConfig() {
       if (!raw) return;
       try {
         const parsed = JSON.parse(raw) as WidgetConfig;
-        if (parsed?.groups?.length) setConfigState(parsed);
+        if (parsed?.groups?.length) setConfigState(withNewWidgets(parsed));
       } catch {
         // corrupted config — keep defaults
       }

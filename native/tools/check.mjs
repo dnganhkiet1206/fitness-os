@@ -102,6 +102,7 @@ const STEPS = [
   ['nhóm cơ', 'node', ['tools/muscle-map.mjs']],
   ['nghỉ/gắng sức', 'node', ['tools/prescription.mjs']],
   ['tuần tập', 'node', ['tools/week.mjs']],
+  ['bố cục Today', 'node', ['tools/widgets.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
   ['camera shop', 'node', ['tools/shop-camera.mjs']],
