@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -28,7 +28,7 @@ import Svg, {
 } from 'react-native-svg';
 
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
-import { onCurve, sampleCurve, yOnCurve, type CurvePoint } from '@/lib/curve';
+import { curveLength, onCurve, sampleCurve, yOnCurve, type CurvePoint } from '@/lib/curve';
 
 export interface ChartPoint {
   date: string;
@@ -117,9 +117,63 @@ const SNAP_MS = 190;
 /** how long the indicator takes to appear — short, it is a response to a touch */
 const FADE_MS = 140;
 const SNAP_EASE = Easing.out(Easing.cubic);
+/**
+ * How long the line takes to draw itself on after the range changes.
+ *
+ * Long enough to be a movement rather than a flicker, short enough that
+ * changing your mind about the range twice does not queue a wait. `out(cubic)`
+ * runs quickly across the early history and eases into the recent end, which is
+ * the end being looked at.
+ */
+const DRAW_MS = 560;
+const DRAW_EASE = Easing.out(Easing.cubic);
 
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+/**
+ * The series, drawing itself on.
+ *
+ * ── why a redraw and not a cross-fade ──
+ *
+ * Switching range replaces the whole series, and a chart that swaps one shape
+ * for another instantly gives no sense that the two are the same measurement
+ * over a different window — it reads as a different chart arriving. Fading
+ * between them is smoother and says no more than that. Drawing the new line
+ * left to right says what actually changed: the same history, read across a
+ * different stretch of time.
+ *
+ * ── how ──
+ *
+ * `strokeDasharray` set to the path's own length and `strokeDashoffset` walked
+ * from that to zero: one dash as long as the whole stroke, slid into view.
+ * `curveLength` measures the sampled polyline and rounds *up*, because a dash
+ * shorter than the path repeats and would clip the end of the line permanently,
+ * while one longer than it is simply an unbroken stroke.
+ *
+ * Its own component so the hooks sit outside `LineChart`'s early return, and so
+ * a `key` change remounts it and replays the draw.
+ */
+function DrawnPath({ d, len, color, width }: { d: string; len: number; color: string; width: number }) {
+  const draw = useSharedValue(0);
+  useEffect(() => {
+    draw.value = withTiming(1, { duration: DRAW_MS, easing: DRAW_EASE });
+  }, [draw]);
+  const props = useAnimatedProps(() => ({ strokeDashoffset: len * (1 - draw.value) }));
+  return (
+    <AnimatedPath
+      d={d}
+      stroke={color}
+      strokeWidth={width}
+      fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeDasharray={len}
+      animatedProps={props}
+    />
+  );
+}
 
 /**
  * The vertical rule, driven from the UI thread.
@@ -782,14 +836,21 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                 dashed grid are two backgrounds arguing, and the fill is the one
                 carrying no information. */}
             {grid ? null : <Path d={fillPath} fill={`url(#${fillId})`} />}
-            <Path
-              d={path}
-              stroke={color}
-              strokeWidth={grid ? 3 : 2.5}
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            {/* The gridded chart draws itself on; the sparklines stay static —
+                a 90pt trend line animating on every mount is motion for its own
+                sake on a screen showing five of them at once. */}
+            {grid ? (
+              <DrawnPath d={path} len={curveLength(curve)} color={color} width={3} />
+            ) : (
+              <Path
+                d={path}
+                stroke={color}
+                strokeWidth={2.5}
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
             {/* Every reading gets a dot when the grid is on — that is what says
                 which parts of the curve were measured and which were drawn
                 between measurements. */}

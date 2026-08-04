@@ -2,9 +2,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Camera, ChevronRight, Medal, Plus, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
-import { useCallback, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -255,6 +260,22 @@ export default function ProgressScreen() {
     nothing else — the page kept scrolling out from under the reading.
   */
   const [scrubbing, setScrubbing] = useState(false);
+
+  /*
+    The sliding highlight behind the range buttons.
+
+    Measured rather than assumed: the row is `flex: 1` segments inside a padded
+    track, so its width is whatever the card leaves it. `pillW` is that width
+    divided by the number of segments, and the pill translates by index.
+  */
+  const [rangeW, setRangeW] = useState(0);
+  const pillW = rangeW > 0 ? (rangeW - 4) / RANGES.length : 0;
+  const rangeIdx = RANGES.findIndex((r) => r.key === range);
+  const slide = useSharedValue(0);
+  useEffect(() => {
+    slide.value = withTiming(rangeIdx, { duration: 240, easing: Easing.out(Easing.cubic) });
+  }, [rangeIdx, slide]);
+  const pill = useAnimatedStyle(() => ({ transform: [{ translateX: slide.value * pillW }] }));
   const rangeDays = RANGES.find((r) => r.key === range)?.days ?? null;
   const chartPoints =
     rangeDays == null
@@ -533,7 +554,14 @@ export default function ProgressScreen() {
                 </Text>
               ) : null}
             </View>
+            {/*
+              Keyed on the range so switching remounts the chart and the line
+              draws itself on again. Without the key React reconciles the two
+              series into the same `<Path>` and the shape simply changes between
+              one frame and the next.
+            */}
             <LineChart
+              key={range}
               points={chartPoints}
               color={colors.metricBeige}
               height={180}
@@ -558,7 +586,19 @@ export default function ProgressScreen() {
               unaffected on purpose: "how far to target" is about the newest
               reading, not about the window it happens to be drawn in.
             */}
-            <View style={styles.rangeRow}>
+            <View
+              style={styles.rangeRow}
+              onLayout={(e) => setRangeW(e.nativeEvent.layout.width)}>
+              {/*
+                One highlight that slides, not four backgrounds swapping.
+
+                Swapping which segment is lit says the state changed; sliding
+                the same lit thing across says *from what to what*, which on a
+                four-way control is the only part worth animating. It sits
+                behind the labels rather than being one of them, so nothing has
+                to re-render for it to move.
+              */}
+              {rangeW > 0 ? <Animated.View style={[styles.rangePill, { width: pillW }, pill]} /> : null}
               {RANGES.map((r) => {
                 const on = r.key === range;
                 return (
@@ -566,11 +606,7 @@ export default function ProgressScreen() {
                     key={r.key}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
-                    style={({ pressed }) => [
-                      styles.rangeBtn,
-                      on && styles.rangeBtnOn,
-                      pressed && styles.pressed,
-                    ]}
+                    style={({ pressed }) => [styles.rangeBtn, pressed && styles.pressed]}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setRange(r.key);
@@ -849,7 +885,14 @@ const styles = StyleSheet.create({
   // 34pt tall inside a 4pt-padded row: the touch target is the full segment
   // width, and seven-plus points wide is well past the 44pt floor.
   rangeBtn: { flex: 1, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm - 2 },
-  rangeBtnOn: { backgroundColor: 'rgba(255,255,255,0.09)' },
+  rangePill: {
+    position: 'absolute',
+    left: 2,
+    top: 2,
+    bottom: 2,
+    borderRadius: radius.sm - 2,
+    backgroundColor: 'rgba(255,255,255,0.09)',
+  },
   rangeText: { ...type.footnote, color: colors.mutedForeground },
   rangeTextOn: { color: colors.foreground, fontWeight: '600' },
   bmiScale: { height: BMI_BAR_H, justifyContent: 'center', overflow: 'visible' },

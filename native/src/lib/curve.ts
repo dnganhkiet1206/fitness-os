@@ -92,6 +92,33 @@ export function yOnCurve(curve: readonly CurvePoint[], px: number): number {
 }
 
 /**
+ * How long the drawn line is, in points.
+ *
+ * For the draw-on animation: a stroke is revealed by setting `strokeDasharray`
+ * to its own length and walking `strokeDashoffset` from that to zero, so the
+ * length has to be known before the path is drawn. `getTotalLength` exists on
+ * the DOM element and is not reliably reachable through react-native-svg, so
+ * this measures the sampled polyline instead.
+ *
+ * ── it rounds up, on purpose ──
+ *
+ * Sampling a curve always *under*-measures it: a chord is shorter than the arc
+ * it spans. Under-measuring here is the one failure that shows — a dash pattern
+ * shorter than the path repeats, so the end of the line would be cut off and
+ * stay that way. The two percent is bigger than the sampling error and costs
+ * nothing: a dash longer than the stroke is simply one unbroken stroke.
+ */
+export function curveLength(curve: readonly CurvePoint[]): number {
+  let len = 0;
+  for (let i = 1; i < curve.length; i++) {
+    const dx = curve[i].x - curve[i - 1].x;
+    const dy = curve[i].y - curve[i - 1].y;
+    len += Math.sqrt(dx * dx + dy * dy);
+  }
+  return len * 1.02;
+}
+
+/**
  * How far from the line a touch still counts as being on it.
  *
  * The scrubber used to take any touch anywhere in the plot, which turned a

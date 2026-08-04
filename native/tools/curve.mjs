@@ -47,7 +47,7 @@ try {
   );
 
   const require_ = createRequire(import.meta.url);
-  const { sampleCurve, yOnCurve, onCurve, HIT_BAND } = require_(path.join(out, 'curve.js'));
+  const { sampleCurve, yOnCurve, onCurve, curveLength, HIT_BAND } = require_(path.join(out, 'curve.js'));
 
   const problems = [];
   const PAD_X = 34;
@@ -159,6 +159,36 @@ try {
       console.error('phép tự kiểm hỏng — vùng cố định đáng lẽ phải mù với dữ liệu, đừng tin kết quả');
       process.exit(1);
     }
+  }
+
+  /*
+    ── 6: the drawn length is never short ──
+
+    The draw-on animation sets `strokeDasharray` to this number. Too long is one
+    unbroken stroke, which is what it looks like anyway; too short is a dash
+    that repeats, so the end of the line is clipped and stays clipped. So the
+    only property that matters is that it never comes in under the real path.
+
+    Sampling always under-measures a curve — a chord is shorter than its arc —
+    which is why `curveLength` rounds up. Checked against the straight-line
+    distance, which no path between the same points can be shorter than.
+  */
+  {
+    for (const weights of [[60, 61], [55, 62, 51, 64, 53], Array.from({ length: 40 }, (_, i) => 60 + 6 * Math.sin(i))]) {
+      const { xs, ys, curve } = layout(weights);
+      const len = curveLength(curve);
+      let straight = 0;
+      for (let i = 1; i < xs.length; i++) {
+        straight += Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
+      }
+      if (len < straight) {
+        problems.push(`${weights.length} điểm: độ dài ${len.toFixed(1)} ngắn hơn đường gấp khúc ${straight.toFixed(1)} — nét sẽ bị cắt cụt`);
+      }
+      if (len > straight * 3) {
+        problems.push(`${weights.length} điểm: độ dài ${len.toFixed(1)} lớn bất thường so với ${straight.toFixed(1)}`);
+      }
+    }
+    if (curveLength([]) !== 0) problems.push('đường rỗng phải có độ dài 0');
   }
 
   if (problems.length) {
