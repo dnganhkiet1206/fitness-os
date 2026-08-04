@@ -89,6 +89,16 @@ const scrollToTopOnRetap = ({ navigation }: { navigation: { isFocused: () => boo
  * Lucide stays for content: the tab bar is chrome, and chrome belongs to the
  * platform.
  *
+ * ── four tabs, and Settings is not one of them ──
+ *
+ * It was the fifth for a while. Apple's guidance is that tabs are peer
+ * *sections* of content and settings is a utility, so it never sat right: one
+ * of five equal slots going to a screen people open rarely, while the four
+ * that carry the app got a fifth less room each.
+ *
+ * It is reached from the Today header, where its button had always been, and
+ * `/settings` is unchanged — every link to it still works.
+ *
  * ── what it costs ──
  *
  * `expo-router/unstable-native-tabs` is what its name says: the API can change
@@ -154,19 +164,6 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="progress" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
         <NativeTabs.Trigger.Icon sf="chart.line.uptrend.xyaxis" />
         <NativeTabs.Trigger.Label>{i18n.navProgress}</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      {/*
-        Settings is the fifth tab, which is Apple's maximum for iPhone.
-
-        Their guidance is that tabs are peer *sections* of content and settings
-        is a utility, so strictly it belongs behind a button rather than in the
-        bar. It is here because it was asked for, and the cost is worth naming:
-        one of five equal slots now goes to a screen people open rarely.
-      */}
-      <NativeTabs.Trigger name="settings" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
-        <NativeTabs.Trigger.Icon sf="gearshape" />
-        <NativeTabs.Trigger.Label>{i18n.settingsTitle}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       {/*

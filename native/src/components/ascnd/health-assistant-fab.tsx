@@ -16,24 +16,31 @@ import { useI18n } from '@/hooks/use-app-settings';
  *
  * ── it is not in the capsule, on purpose ──
  *
- * The tab bar is five destinations. This is one action that opens four more —
+ * The tab bar is destinations. This is one action that opens four more —
  * scan a meal, ask the coach, log biometrics, see sleep — and it was inside
  * the bar twice before: as the middle item of the old hand-drawn one, and in
- * `NativeTabs.BottomAccessory`. The first made one of five equal-looking slots
- * behave unlike the other four, because tapping it navigates nowhere. The
- * second drew as a second full-width bar above the first.
+ * `NativeTabs.BottomAccessory`. The first made it one equal-looking slot among
+ * the tabs that behaved unlike the rest, because tapping it navigates nowhere.
+ * The second drew as a second full-width bar above the first.
  *
  * A separate circular island beside the bar is iOS 26's own answer to this
  * shape — it is how the search item is drawn there — and it says what the
- * capsule cannot: this is not one of the five.
+ * capsule cannot: this is not one of the destinations.
  *
- * ── why it sits above the bar rather than beside it ──
+ * ── beside the bar, not above it ──
  *
- * On iOS 26 the system shrinks the tab capsule to make room for the island
- * next to it. Nothing here can do that: the bar is a real `UITabBarController`
- * and it lays itself out across the width. A circle placed level with it would
- * land on top of the fifth tab. So it clears the bar's height and sits above
- * its right end — the same relationship, without covering a destination.
+ * It spent a version stacked above the bar's right end, because with five tabs
+ * a circle level with the capsule would have landed on top of the fifth one.
+ * Settings then left the bar, and four tabs need enough less width that there
+ * is room at the right for the island to sit where it belongs — level with the
+ * capsule, beside it, clear of it.
+ *
+ * `SIT` is the one number here that cannot be derived. The system lays the
+ * capsule out itself and does not report its height or its float, so this is
+ * the offset that centres a 52pt circle against a bar of about 56 resting just
+ * above the safe area. If a future iOS moves the bar, this is the line to
+ * nudge — and the symptom will be a circle sitting slightly high or low
+ * against it, not anything breaking.
  *
  * ── the icon ──
  *
@@ -41,8 +48,8 @@ import { useI18n } from '@/hooks/use-app-settings';
  * one of the four things behind it; this one names what it is for.
  */
 
-/** the tab bar's own height, cleared so the button never covers a tab */
-const BAR_H = 56;
+/** how far above the safe area the circle sits, to line up with the capsule */
+const SIT = 6;
 
 export function HealthAssistantFab() {
   const insets = useSafeAreaInsets();
@@ -56,7 +63,7 @@ export function HealthAssistantFab() {
         // The button is the only thing here that should take a touch; the rest
         // of this box is over the page.
         pointerEvents="box-none"
-        style={[styles.wrap, { bottom: insets.bottom + BAR_H + 12 }]}>
+        style={[styles.wrap, { bottom: insets.bottom + SIT }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={i18n.nHealthAssistant}
