@@ -20,12 +20,13 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
-import { useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
+import { useExercises, useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
 import { getLocale } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import { displayWeight, weightLabel, type WeightUnit } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { MuscleArt, muscleArtFor, type MuscleArtKey } from '@/components/ascnd/muscle-art';
 
 interface TplExercise {
   exerciseName?: string;
@@ -42,6 +43,31 @@ function volume(exercises: unknown): number {
     0,
   );
 }
+
+/**
+ * The tiles, in the order a body is worked rather than alphabetically.
+ *
+ * Push, pull, then the two arms, then the trunk, then everything below the
+ * waist. Alphabetical would put Abs first and Triceps next to Shoulders, which
+ * is an order that serves the spelling and nobody else.
+ *
+ * The names are written here rather than taken from `i18n.muscleChest` and its
+ * siblings, because those are the *stored* labels — changing one has to keep
+ * matching data already filed under it, and a tile caption has no such
+ * obligation.
+ */
+const MUSCLE_TILES: { key: MuscleArtKey; vi: string; en: string }[] = [
+  { key: 'chest', vi: 'Ngực', en: 'Chest' },
+  { key: 'back', vi: 'Lưng', en: 'Back' },
+  { key: 'shoulders', vi: 'Vai', en: 'Shoulders' },
+  { key: 'biceps', vi: 'Tay trước', en: 'Biceps' },
+  { key: 'triceps', vi: 'Tay sau', en: 'Triceps' },
+  { key: 'abs', vi: 'Bụng', en: 'Abs' },
+  { key: 'legs', vi: 'Chân', en: 'Legs' },
+  { key: 'glutes', vi: 'Mông', en: 'Glutes' },
+  { key: 'calves', vi: 'Bắp chân', en: 'Calves' },
+  { key: 'cardio', vi: 'Tim mạch', en: 'Cardio' },
+];
 
 /** Same duration and curve as the diary's meal cards — one behaviour to learn. */
 const OPEN_MS = 260;
@@ -193,6 +219,93 @@ function TemplateCard({
 }
 
 /**
+ * The exercise library, entered by body part.
+ *
+ * ── why it is here ──
+ *
+ * The library was reachable only through an "Exercises" button in the header
+ * row, which is a word next to two other words. A person opening this tab wants
+ * to train something, and the thing they want to train is a body part — so the
+ * way in is a picture of that body part with the count of what is filed under
+ * it.
+ *
+ * The button stays. This is a second door to the same room, not a replacement,
+ * and somebody who has learned where the button is should not have to relearn.
+ *
+ * ── the counts are real ──
+ *
+ * Each tile counts the exercises actually filed under that group, so a library
+ * with nothing under Calves shows no Calves tile rather than an empty room with
+ * a picture on the door. That also means the grid grows as the library does
+ * instead of being a fixed menu that lies about what is behind it.
+ */
+function MuscleGrid({
+  exercises,
+  i18n,
+  vi,
+}: {
+  exercises: { muscle_group: string | null }[];
+  i18n: ReturnType<typeof useI18n>;
+  vi: boolean;
+}) {
+  /*
+    Grouped by *art*, not by stored name.
+
+    `muscle_group` is free text written by two screens in two languages — the
+    builder stores "Quads", the library stores "Chân trước" — so counting by the
+    raw string would put the same shelf on two tiles. Folding to the art key
+    first is what makes one tile mean one body part.
+  */
+  const counts = new Map<MuscleArtKey, number>();
+  for (const e of exercises) {
+    const key = muscleArtFor(e.muscle_group);
+    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const tiles = MUSCLE_TILES.filter((t) => (counts.get(t.key) ?? 0) > 0);
+  if (tiles.length === 0) return null;
+
+  return (
+    <View style={styles.libSection}>
+      <View style={styles.libHead}>
+        <Text style={styles.sectionLabel}>{vi ? 'Thư viện bài tập' : 'Exercise library'}</Text>
+        <Pressable
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/exercises');
+          }}>
+          <Text style={styles.libAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
+        </Pressable>
+      </View>
+      <View style={styles.libGrid}>
+        {tiles.map((t) => {
+          const n = counts.get(t.key) ?? 0;
+          return (
+            <Pressable
+              key={t.key}
+              accessibilityRole="button"
+              accessibilityLabel={`${vi ? t.vi : t.en}, ${n} ${vi ? 'bài' : 'exercises'}`}
+              style={({ pressed }) => [styles.libTile, pressed && styles.pressed]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push('/exercises');
+              }}>
+              <MuscleArt group={t.key} size={64} />
+              <Text style={styles.libName} numberOfLines={1}>{vi ? t.vi : t.en}</Text>
+              <Text style={styles.libCount}>
+                {n} {vi ? 'bài' : n === 1 ? 'exercise' : 'exercises'}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+/**
  * Workouts tab — faithful port of the web /workouts page
  * (WorkoutBuilder): template manager with Exercises + Create actions
  * and the Weekly Plan link at the bottom.
@@ -204,6 +317,9 @@ export default function WorkoutsScreen() {
   const wl = weightLabel(wUnit);
   const vi = lang === 'vi';
   const { data: templates, isError: templatesFailed } = useWorkoutTemplates();
+  // The library already loads on the Exercises screen and is cached under the
+  // same key, so the grid costs a read only the first time either is opened.
+  const { data: exercises } = useExercises();
   // Recent sessions needs no failure notice of its own: the block only renders
   // when there are sessions, so a failed read makes it absent rather than
   // wrong — and it fails alongside the templates above it, which do say so.
@@ -308,6 +424,8 @@ export default function WorkoutsScreen() {
         <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
         <Text style={styles.logChipText}>{i18n.nLogWorkoutBtn}</Text>
       </Pressable>
+
+      <MuscleGrid exercises={exercises ?? []} i18n={i18n} vi={vi} />
 
       {/* Template cards (web glass-card rows) */}
       {templates && templates.length > 0 ? (
@@ -438,6 +556,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(24,24,27,0.2)',
   },
   logChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
+  libSection: { gap: spacing.sm },
+  libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  libAll: { fontSize: 13, fontWeight: '500', color: colors.primary },
+  libGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  /*
+    Three across. Two makes each tile large enough to show the drawing's
+    striations, which is detail nobody reads on a tile; four shrinks the figure
+    to the point where chest and shoulders are the same picture.
+
+    `31%` with an 8pt gap rather than `flex: 1`, because a last row holding one
+    tile would stretch that tile across the screen.
+  */
+  libTile: {
+    width: '31%',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(24,24,27,0.35)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(43,43,49,0.35)',
+  },
+  libName: { fontSize: 13, fontWeight: '600', color: colors.foreground, marginTop: 2 },
+  libCount: { fontSize: 11, color: colors.mutedForeground },
   tplCard: { padding: spacing.md },
   exRow: {
     flexDirection: 'row',

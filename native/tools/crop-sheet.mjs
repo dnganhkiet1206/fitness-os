@@ -23,6 +23,19 @@
  * reading Vietnamese. `keep` is the fraction of the tile height that is the
  * drawing.
  *
+ * ── the geometry that cut the muscle sheet ──
+ *
+ *   node tools/crop-sheet.mjs tools/ref/muscle-sheet.png assets/muscle \
+ *     --x0 64 --y0 142 --w 240 --h 252 --gx 292 --gy 405 --keep 1 --size 240 \
+ *     --names chest,back,legs,biceps,triceps,shoulders,abs,glutes,calves,cardio
+ *
+ * Two numbers there were found by looking rather than by arithmetic. `gy` is
+ * 405 and not the 418 the cards are spaced at, because the two rows' captions
+ * are not 418 apart and a crop tall enough to hold the second row's feet
+ * otherwise cuts through its label. And `x0`/`y0` sit *inside* the source card
+ * rather than on it, because the card's rounded corners come along otherwise
+ * and each tile arrives with a lighter square baked into it.
+ *
  * ── check before you cut ──
  *
  * `--contact` exists because a grid guessed off a screenshot is wrong the first
