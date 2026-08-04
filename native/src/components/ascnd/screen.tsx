@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ChevronLeft } from 'lucide-react-native';
-import { useCallback, useRef } from 'react';
+import { Fragment, useCallback, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -142,21 +142,50 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
    */
   const scroller = useRef<ScrollView>(null);
 
-  /*
-   * ── no fade on focus here ──
+  /**
+   * Replay the page's entrance animations when you come back to the tab.
    *
-   * There was one, for 160ms, to give tab changes something to look at now
-   * that a `UITabBarController` keeps all five tabs mounted. It blinked: the
-   * opacity was set to 0 the moment focus arrived and animated up from there,
-   * so every switch showed one frame of an empty page before the fade started.
+   * ── why they stopped ──
    *
-   * A fade that begins at zero on an already-drawn page cannot not do that.
-   * The fix is not a shorter duration or a higher floor — iOS switches tabs
-   * with no transition at all, and that is the behaviour to match.
+   * Reanimated's `entering` runs on mount, and a `UITabBarController` mounts
+   * each tab once and keeps it. So the cascade the cards were built with —
+   * `rise(i)` on every card of Nutrition, Workouts and Progress — played on
+   * the first visit of the session and never again.
+   *
+   * Today looked like it still worked, which is what made this confusing. It
+   * does not use this scaffold's replay; its widgets are behind `dayPending`,
+   * so a refetch takes them out of the tree and puts them back, and the
+   * cascade comes along for the ride. An accident, on one page out of five.
+   *
+   * ── how it comes back ──
+   *
+   * A `key` on a `Fragment` around the page's content. Changing it remounts
+   * the subtree, which is the only thing that re-runs an `entering`
+   * animation — Reanimated has no "play it again".
+   *
+   * A `Fragment` rather than a `View` because the content container lays its
+   * children out with `gap`: any real box here would collapse the whole page
+   * into one flex child and the spacing between every card with it.
+   *
+   * ── what it costs ──
+   *
+   * The content is rebuilt on each return, so component state *inside* the
+   * cards resets — a meal you had expanded is collapsed when you come back.
+   * The page component itself is untouched, so which segment you were on and
+   * every query's cache survive. The header stays outside the `Fragment` too,
+   * so the title does not flash on each visit.
+   *
+   * The first focus is skipped: the children have just mounted and animated,
+   * and re-keying there would throw that away and do it twice.
    */
+  const visits = useRef(0);
+  const [visit, setVisit] = useState(0);
+
   useFocusEffect(
     useCallback(() => {
       setActiveScroller(() => scroller.current?.scrollTo({ y: 0, animated: true }));
+      visits.current += 1;
+      if (visits.current > 1) setVisit((v) => v + 1);
       return () => setActiveScroller(null);
     }, []),
   );
@@ -279,7 +308,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
           </View>
           {headerRight}
         </View>
-        {children}
+        <Fragment key={visit}>{children}</Fragment>
       </ScrollView>
       <StatusScrim />
     </View>
