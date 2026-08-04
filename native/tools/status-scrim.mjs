@@ -16,6 +16,19 @@
  * `AmbientLight`, which drew nothing until the scroll view stopped painting
  * `colors.background` over the top of it.
  *
+ * ── and why the numbers are checked too ──
+ *
+ * The backdrop's whole standard is that you cannot see it. That makes every
+ * knob on it a one-way ratchet under maintenance: turning any of them *up*
+ * makes the effect more obvious, which always looks like progress in a diff and
+ * is always the failure. `intensity: 50` is `expo-blur`'s own default and is
+ * more than twice what belongs here; a grey gradient reads as a panel; a
+ * hairline you can see is a border. None of those is a bug you would notice by
+ * reading the change — they are bugs you notice by looking at the phone, and
+ * only if you know what it is meant to look like.
+ *
+ * So the limits live here, with the reason next to each one.
+ *
  * ── what is checked ──
  *
  * 1. every page whose content reaches y=0 renders the strip at all
@@ -23,8 +36,13 @@
  *    scroll view opening between the two — i.e. it is genuinely on top
  * 3. the gradient's id is not a string literal (ids are document-global on
  *    native; this has bitten the app three times)
- * 4. the gradient starts opaque and reaches exactly zero at its own bottom
- *    edge, so the strip has no visible edge of its own
+ * 4. the gradient is black, never a slab, reaches exactly zero at its own
+ *    bottom edge, and has no kink in it
+ * 5. the blur is a partial one in a system material, and covers the status bar
+ *    rather than the whole strip
+ * 6. the hairline is at the threshold of visibility, not over it
+ * 7. the gradient is 80–100pt long on every real inset
+ * 8. the header starts 8–12pt below the safe area
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -83,39 +101,60 @@ if (/<LinearGradient[^>]*\sid="/.test(scrim)) {
 }
 
 /**
- * The gradient has no edge of its own.
+ * The gradient is black, is never a slab, and has no edge of its own.
  *
- * Ends are the easy half: opaque at the top, and gone *exactly* at the bottom,
- * because a fade still at 0.2 when it runs out of strip has a hard edge after
- * all — it just moved from the middle to the very bottom row of pixels.
+ * Three separate ways this goes wrong, all of which look like an improvement
+ * while you are making them.
  *
- * The middle is the half that was wrong. Held flat and then released, the ramp
- * has a kink where the slope changes, and the eye finds a kink as easily as it
- * finds a half-way point: that corner *was* the line at the bottom of the
- * strip. So no single span may carry more than half the total fall — flat, and
- * then a cliff, is exactly what that rules out.
+ * **Colour.** Grey and white are both visible as themselves — a grey wash reads
+ * as a panel laid over the app, a white one as haze on the lens. Black at a low
+ * percentage reads as the content being further away, which is the only honest
+ * description of what a backdrop does. So: black, and nothing else.
+ *
+ * **Depth.** The top stop is a wash, not a cover. Past about fifteen percent it
+ * stops being something you see through and becomes a rectangle, and a
+ * rectangle has corners and an area and a presence. Twelve is the design.
+ *
+ * **Ends and middles.** Gone *exactly* at the bottom, because a fade still at
+ * 0.2 when it runs out of strip has a hard edge after all — it just moved from
+ * the middle to the last row of pixels. And no single span may carry more than
+ * half the total fall: held flat and then released, a ramp has a kink where the
+ * slope changes, and the eye finds a kink as easily as it finds the half-way
+ * point of a straight one. That kink *was* the line at the bottom of the strip.
  */
 function gradientProblems(src) {
   const bad = [];
-  const stops = [...src.matchAll(/<Stop\s+offset="([\d.]+)"[^>]*stopOpacity="([\d.]+)"/g)]
-    .map((m) => [Number(m[1]), Number(m[2])]);
+  const stops = [...src.matchAll(/<Stop\s+offset="([\d.]+)"\s+stopColor="([^"]+)"\s+stopOpacity="([\d.]+)"/g)]
+    .map((m) => [Number(m[1]), m[2], Number(m[3])]);
   if (stops.length < 2) return ['status-scrim: không đọc được các mốc gradient'];
 
-  const [firstOff, firstOp] = stops[0];
-  const [lastOff, lastOp] = stops[stops.length - 1];
-  if (firstOff !== 0 || firstOp !== 1) bad.push(`status-scrim: mốc đầu (${firstOff}, ${firstOp}) — phải đục hoàn toàn ở đỉnh`);
-  if (lastOff !== 1 || lastOp !== 0) bad.push(`status-scrim: mốc cuối (${lastOff}, ${lastOp}) — phải tan hết đúng ở mép dưới, không thì chính nó thành một đường viền`);
+  for (const [, color] of stops) {
+    if (!/^#000$|^#000000$|^rgba?\(0, *0, *0/.test(color)) {
+      bad.push(`status-scrim: gradient dùng màu ${color} — chỉ được dùng đen, xám thành tấm nền, trắng thành sương`);
+    }
+  }
+
+  const [firstOff, , firstOp] = stops[0];
+  const [lastOff, , lastOp] = stops[stops.length - 1];
+  if (firstOff !== 0) bad.push(`status-scrim: mốc đầu ở ${firstOff}, phải ở 0`);
+  if (firstOp > 0.15) {
+    bad.push(`status-scrim: đỉnh gradient ${firstOp} — quá đục, từ đây trở lên nó là một hình chữ nhật chứ không phải một lớp phủ`);
+  }
+  if (firstOp <= 0) bad.push('status-scrim: đỉnh gradient bằng 0 — không có gì cả');
+  if (lastOff !== 1 || lastOp !== 0) {
+    bad.push(`status-scrim: mốc cuối (${lastOff}, ${lastOp}) — phải tan hết đúng ở mép dưới, không thì chính nó thành một đường viền`);
+  }
 
   let worst = 0;
   for (let i = 1; i < stops.length; i++) {
     if (stops[i][0] <= stops[i - 1][0]) bad.push(`status-scrim: mốc ${i} không tăng dần`);
-    if (stops[i][1] > stops[i - 1][1]) bad.push(`status-scrim: mốc ${i} đậm hơn mốc trước — gradient phải nhạt dần`);
-    worst = Math.max(worst, stops[i - 1][1] - stops[i][1]);
+    if (stops[i][2] > stops[i - 1][2]) bad.push(`status-scrim: mốc ${i} đậm hơn mốc trước — gradient phải nhạt dần`);
+    worst = Math.max(worst, stops[i - 1][2] - stops[i][2]);
   }
   const fall = firstOp - lastOp;
   if (fall > 0 && worst > fall * 0.5) {
     bad.push(
-      `status-scrim: một đoạn tụt ${worst.toFixed(2)}/${fall.toFixed(2)} độ đục — ` +
+      `status-scrim: một đoạn tụt ${worst.toFixed(3)}/${fall.toFixed(3)} độ đục — ` +
         'dốc gãy như vậy chính là đường viền, phải chia thành nhiều mốc thoải dần',
     );
   }
@@ -124,47 +163,140 @@ function gradientProblems(src) {
 problems.push(...gradientProblems(scrim));
 
 /**
- * The glass has no rim of its own either.
+ * The blur is a fraction of a system material, over the status bar only.
  *
- * `UIGlassEffect` paints a bright specular edge around whatever shape it is
- * applied to — that is what makes it read as a lens rather than as a blur — and
- * `expo-glass-effect` has no prop to switch it off (`GlassView` is a plain
- * `UIVisualEffectView`; its props are style, tint, interactivity, colour scheme
- * and corner radii). The only way is to hang the glass outside a clipping
- * parent on all four sides, so every edge it draws lands outside the strip.
+ * `expo-blur` holds a `UIViewPropertyAnimator` at `fractionComplete`, so
+ * `intensity` scales the blur radius *and* the material's own tint together —
+ * a low number is a fraction of the effect, not a weak frost. The whole range
+ * that reads as native is narrow, and it is nowhere near the middle: 50 is the
+ * library's default and is more than twice what belongs here; 60–100 is what
+ * makes a backdrop announce itself as a BlurView.
  *
- * `StyleSheet.absoluteFill` is the obvious thing to write there and is the bug:
- * the rim then sits exactly on the strip's own bottom edge.
+ * The tint has to be one of the system materials — what UIKit's own bars are
+ * made of. `dark` is `UIBlurEffect.Style.dark`, a heavy grey vibrancy from
+ * before iOS 13, and `default`/`light`/`regular`/`prominent` are its siblings.
+ * Pinned to a `…Dark` variant because the app is dark-only; an adaptive
+ * material goes pale the moment the OS hands it a light trait.
+ *
+ * And the blur is bounded by `insets.top`. Given the whole strip it would
+ * soften the large title where it sits at rest — which is not content passing
+ * behind anything, it is just the page, and the page is meant to be sharp.
  */
-function rimProblems(src) {
+const BLUR_LO = 18;
+const BLUR_HI = 28;
+
+function blurProblems(src) {
   const bad = [];
-  const strip = /strip:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
-  if (!/overflow:\s*'hidden'/.test(strip)) {
-    bad.push("status-scrim: strip không có overflow: 'hidden' — không cắt thì viền kính vẫn hiện");
+  const intensity = Number(/const INTENSITY = ([\d.]+)/.exec(src)?.[1] ?? NaN);
+  if (!(intensity >= BLUR_LO && intensity <= BLUR_HI)) {
+    bad.push(`status-scrim: intensity ${intensity} — phải trong khoảng ${BLUR_LO}–${BLUR_HI}, 50 là mặc định của thư viện và đục gấp đôi mức cần`);
   }
-  const glassStyle = /\sstyle=\{([^}]*)\}\s*\/>/.exec(/<GlassView[\s\S]*?\/>/.exec(src)?.[0] ?? '')?.[1] ?? '';
-  if (/absoluteFill/.test(glassStyle)) {
-    bad.push('status-scrim: GlassView dùng absoluteFill — viền sáng của kính sẽ nằm đúng mép dưới của dải');
+  const tint = /const TINT = '([^']+)'/.exec(src)?.[1] ?? '';
+  if (!/^system\w*MaterialDark$/.test(tint)) {
+    bad.push(`status-scrim: tint "${tint}" — phải là một system material bản Dark, các kiểu cũ (dark/default/light) là lớp xám nặng`);
   }
-  const glass = /glass:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
-  for (const side of ['top', 'left', 'right', 'bottom']) {
-    if (!new RegExp(`${side}:\\s*-`).test(glass)) {
-      bad.push(`status-scrim: kính không tràn ra ngoài cạnh ${side} — viền của nó sẽ lọt vào trong dải`);
-    }
+  const tag = /<BlurView[\s\S]*?\/>/.exec(src)?.[0] ?? '';
+  if (!tag) {
+    bad.push('status-scrim: không thấy <BlurView> — lớp 1 phải là blur thật (UIVisualEffectView)');
+  } else if (!/height:\s*insets\.top/.test(tag)) {
+    bad.push('status-scrim: blur không bị giới hạn ở insets.top — nó sẽ làm mờ cả tiêu đề lớn đang đứng yên');
   }
   return bad;
 }
-problems.push(...rimProblems(scrim));
+problems.push(...blurProblems(scrim));
+
+/**
+ * The hairline is at the threshold of being seen, not over it.
+ *
+ * Its job is to state where the blur stops. An unmarked end is a smudge — a
+ * soft boundary the eye keeps trying to focus on — and a *visible* line is a
+ * border, which puts the page back in a frame. Five percent white on this
+ * background is the gap between those two, and it is narrow: at ten percent it
+ * is a line you can point at.
+ *
+ * One physical pixel, so it stays a hairline at 3× rather than becoming three.
+ */
+function hairlineProblems(src) {
+  const bad = [];
+  const rule = /hairline:\s*\{([\s\S]*?)\n  \},/.exec(src)?.[1] ?? '';
+  if (!rule) return ['status-scrim: không thấy hairline'];
+  const alpha = Number(/rgba\(255, *255, *255, *([\d.]+)\)/.exec(rule)?.[1] ?? NaN);
+  if (!(alpha > 0 && alpha <= 0.06)) {
+    bad.push(`status-scrim: hairline ở ${alpha} — trên 0.06 là một đường kẻ nhìn thấy được, tức là một cái viền`);
+  }
+  if (!/height:\s*StyleSheet\.hairlineWidth/.test(rule)) {
+    bad.push('status-scrim: hairline không dùng StyleSheet.hairlineWidth — 1 điểm sẽ thành 3 pixel trên màn 3×');
+  }
+  return bad;
+}
+problems.push(...hairlineProblems(scrim));
+
+/**
+ * The gradient is 80–100pt long on every inset a real phone has.
+ *
+ * Short is the failure. A short gradient is a band with a soft edge, and the
+ * eye still finds where it ends; finding where it ends is the one thing that
+ * must not happen. Long enough, a twelve percent fall has nowhere to
+ * concentrate and no row of pixels in it differs from its neighbour enough to
+ * see.
+ *
+ * The insets below are real: 20 is a pre-notch iPhone and a typical Android
+ * status bar, 44 the iPhone X through 13, 47–48 the 14, 54 the 12 mini, 59 the
+ * Dynamic Island phones, 62 the 16 Pro.
+ */
+const INSETS = [20, 24, 44, 47, 48, 54, 59, 62];
+function lengthProblems(src) {
+  const bad = [];
+  const m = /Math\.max\((\d+), top \+ (\d+)\)/.exec(src);
+  if (!m) return ['status-scrim: không đọc được chiều dài gradient'];
+  const [floor, add] = [Number(m[1]), Number(m[2])];
+  for (const top of INSETS) {
+    const h = Math.max(floor, top + add);
+    if (h < 80 || h > 100) bad.push(`status-scrim: inset ${top} → dải dài ${h}pt, phải trong 80–100`);
+  }
+  return bad;
+}
+problems.push(...lengthProblems(scrim));
 
 /*
-  Self-tests: the three bugs this file was written for, rebuilt.
+  The header starts 8–12pt below the safe area.
 
-  Each one is a version that shipped or nearly shipped, and each must be caught.
-  A clean run over a source that has already been fixed proves nothing about
-  whether the check works — only a run over the broken version does.
+  Not this component's doing, but the same requirement: a title flush against
+  the inset sits under the Dynamic Island's shadow and reads as cramped. The two
+  pages that lay out their own top padding are the two that can drift.
 */
+const SPACING_SM = 8; // src/constants/ascnd.ts
+const GAPS = {
+  'src/components/ascnd/screen.tsx': [/paddingTop: insets\.top \+ spacing\.sm/, SPACING_SM],
+  'src/app/(tabs)/index.tsx': [/paddingTop: insets\.top \+ (\d+)/, null],
+};
+for (const [file, [re, fixed]] of Object.entries(GAPS)) {
+  const m = re.exec(read(file));
+  const gap = fixed ?? Number(m?.[1]);
+  if (!m || !(gap >= 8 && gap <= 12)) {
+    problems.push(`${file}: header cách safe area ${m ? gap : '?'}pt — phải 8–12pt`);
+  }
+}
+
+/*
+  Self-tests: every version this backdrop has already been, rebuilt.
+
+  Each entry below is a real previous state of the file, or the obvious wrong
+  turn from where it stands now, and every one must be caught. A clean run over
+  a source that has already been fixed proves nothing about whether the check
+  works — only a run over a broken one does.
+
+  The list is long on purpose. This component has been rewritten three times and
+  each rewrite was a correction of the last, so the checks are worth exactly as
+  much as their ability to reject the versions in between.
+*/
+const STOPS = /<Stop offset="0"[\s\S]*?<Stop offset="1"[^/]*\/>/;
+const restop = (...rows) =>
+  scrim.replace(STOPS, rows.map(([o, c, a]) => `<Stop offset="${o}" stopColor="${c}" stopOpacity="${a}" />`).join('\n'));
+
 const SELF = [
   [
+    // the strip painted underneath the thing it is meant to sit in front of
     'đặt trước ScrollView',
     () =>
       orderProblems(
@@ -175,20 +307,29 @@ const SELF = [
       ).bad,
   ],
   [
-    // the first gradient: solid to 0.7, then most of the fall in one span
+    // version two: opaque, held flat to 0.7, then most of the fall in one span
     'gradient gãy dốc',
-    () =>
-      gradientProblems(
-        scrim.replace(
-          /<Stop offset="0"[\s\S]*?<Stop offset="1"[^/]*\/>/,
-          '<Stop offset="0" stopOpacity="1" />\n' +
-            '<Stop offset="0.7" stopOpacity="1" />\n' +
-            '<Stop offset="0.88" stopOpacity="0.55" />\n' +
-            '<Stop offset="1" stopOpacity="0" />',
-        ),
-      ),
+    () => gradientProblems(restop([0, '#000', 1], [0.7, '#000', 1], [0.88, '#000', 0.55], [1, '#000', 0])),
   ],
-  ['kính phủ kín dải', () => rimProblems(scrim.replace(/glass:\s*\{[^}]*\}/, 'glass: { top: 0, left: 0, right: 0, bottom: 0 }'))],
+  [
+    // the grey rectangle — smooth, well-formed, and visible as an overlay
+    'gradient xám',
+    () => gradientProblems(restop([0, '#3a3a3c', 0.12], [0.42, '#3a3a3c', 0.09], [0.7, '#3a3a3c', 0.05], [1, '#3a3a3c', 0])),
+  ],
+  [
+    // a fade that never reaches zero: the edge moves to the last row of pixels
+    'gradient chưa tan đã hết',
+    () => gradientProblems(restop([0, '#000', 0.12], [0.42, '#000', 0.09], [0.7, '#000', 0.06], [1, '#000', 0.04])),
+  ],
+  ['blur mặc định', () => blurProblems(scrim.replace(/const INTENSITY = [\d.]+/, 'const INTENSITY = 50'))],
+  ['tint kiểu cũ', () => blurProblems(scrim.replace(/const TINT = '[^']+'/, "const TINT = 'dark'"))],
+  [
+    // blur over the whole strip, softening the large title where it sits still
+    'blur phủ kín dải',
+    () => blurProblems(scrim.replace(/style=\{\[styles\.blur[^\]]*\]\}/, 'style={StyleSheet.absoluteFill}')),
+  ],
+  ['hairline nhìn thấy được', () => hairlineProblems(scrim.replace('rgba(255,255,255,0.05)', 'rgba(255,255,255,0.14)'))],
+  ['gradient ngắn', () => lengthProblems(scrim.replace(/Math\.max\(\d+, top \+ \d+\)/, 'Math.max(40, top + 4)'))],
 ];
 for (const [what, run] of SELF) {
   if (run().length === 0) {
@@ -204,4 +345,8 @@ if (problems.length) {
 }
 
 const n = Object.values(PAGES).reduce((a, b) => a + b, 0);
-console.log(`dải trạng thái OK — ${n} trang che đúng, id động, không mép nào ở đáy (kính lẫn gradient)`);
+console.log(
+  `dải trạng thái OK — ${n} trang, blur ${/const INTENSITY = ([\d.]+)/.exec(scrim)[1]}/100 ` +
+    `bó trong status bar, gradient đen 0.12 dài ${INSETS.map((t) => Math.max(88, t + 34)).at(-1)}pt, ` +
+    `hairline 0.05, ${SELF.length} bản hỏng đều bị bắt`,
+);

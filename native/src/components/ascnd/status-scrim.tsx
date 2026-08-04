@@ -1,13 +1,11 @@
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
+import { BlurView } from 'expo-blur';
 import { useId } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { colors } from '@/constants/ascnd';
-
 /**
- * The strip the phone's own status bar sits on.
+ * The backdrop the phone's own status bar sits on.
  *
  * ── what it is for ──
  *
@@ -17,57 +15,97 @@ import { colors } from '@/constants/ascnd';
  * icon, and for that second neither number can be read: the phone's chrome and
  * the app's content are the same size, the same weight and both white.
  *
- * So the band the clock lives in is separated from whatever passes under it,
- * and nothing else changes — the page still scrolls to the edge and this is not
- * a header that steals height.
+ * ── the standard it is held to ──
  *
- * ── glass where there is glass ──
+ * Nobody should be able to tell it is here. Apple Fitness, the App Store,
+ * Apple Music, Cal AI and Hevy all have one, and on a still screen none of them
+ * shows anything at all: no bar, no panel, no line you can point at. You only
+ * ever see it working, when something passes underneath.
  *
- * iOS 26 blurs it for real, through the same `GlassView` the tab bar already
- * uses; the pill at the bottom and the band at the top are then made of one
- * material, which is the whole point of a material.
+ * That is a stricter goal than "the clock is legible", and it rules out the
+ * obvious way of getting there. A pane of frosted glass across the top is
+ * legible and is also *visible* — it reads as an overlay laid on the app rather
+ * than as part of it, and once you have seen it you cannot unsee it. This
+ * version therefore spends nothing it does not have to: a partial blur, a wash
+ * of black at twelve percent, and a hairline at five percent white. Every one
+ * of those numbers is low enough to be deniable on its own; together they are
+ * enough.
  *
- * Everywhere else — older iOS, Android, the web build — it is a gradient from
- * the page colour down to nothing. That is not a lesser version of the same
- * idea, it is a different idea for the same problem: a blur separates by
- * softening, a fade separates by dimming. Both leave the clock legible and only
- * one of them needs an OS from this year.
+ * ── the four layers ──
  *
- * ── no edge along the bottom ──
+ * 1. a real `UIVisualEffectView`, blurring the content behind it — not itself
+ * 2. a long, very light black gradient, for the depth a flat blur has none of
+ * 3. a hairline where the blur stops, so the boundary is stated rather than
+ *    discovered
+ * 4. the page's own header, which is nothing to do with this file and is
+ *    listed because the order is the point: this sits under everything
  *
- * Both halves used to draw one, for different reasons, and both are dealt with
- * below: the glass by hanging its own rim outside a clip, the gradient by
- * easing instead of stepping. A strip whose job is to stop you seeing a line
- * cannot arrive with a line of its own.
+ * ── what was here before ──
  *
- * ── why it stops exactly at the inset ──
- *
- * `insets.top` is where the phone's chrome ends and the page's own content
- * begins; a strip any taller starts dimming things that are not scrolled past
- * anything — the large title sits at `insets.top + 8`, and it would arrive with
- * its capitals greyed. Everything inside the inset is either the status bar or
- * content on its way out of sight, so the strip has no reason to reach further
- * down than that.
+ * `GlassView` — iOS 26 liquid glass, tinted 55% dark. It is a beautiful
+ * material and it is the wrong one: `UIGlassEffect` is a *lens*, and it comes
+ * with a bright specular rim on every edge that no prop turns off, so the strip
+ * announced itself twice over. The rim went first, by hanging the glass outside
+ * a clip. The grey stayed, because a 55% tint is grey no matter where you put
+ * its edges. What is left of that pass is the lesson: the failure mode here is
+ * not too little effect, it is too much.
  */
-
-const GLASS = isLiquidGlassAvailable();
 
 /**
- * How far the glass is hung outside the strip on every side.
+ * Blur is iOS-only on purpose.
  *
- * `UIGlassEffect` draws a bright specular rim around the shape it is applied
- * to — that is what makes the material read as a lens and not as a blur — and
- * `expo-glass-effect` exposes no way to turn it off: `GlassView` is a plain
- * `UIVisualEffectView` carrying the effect, and its props are style, tint,
- * interactivity, colour scheme and corner radii. Nothing else.
+ * On Android `BlurView` needs `blurMethod` plus a `BlurTargetView` wrapped
+ * around the content being blurred, with its ref handed back — a change to
+ * every page, not to this file. Left at the default it renders "a view with a
+ * semi-transparent background", which is precisely the grey rectangle this
+ * component exists to not be, so Android and web get the gradient alone.
  *
- * So the rim is not removed, it is put where it cannot be seen. The strip
- * clips, and the glass inside it is oversized on all four sides, which leaves
- * every edge it draws outside the clip. Sixteen points is far more than the rim
- * is wide, and costs nothing — the blur was going to be there anyway, it is
- * just being read from further out.
+ * Stated plainly because it is a real gap: on Android the status bar is washed,
+ * not separated, and content passing under it is dimmed rather than softened.
  */
-const RIM = 16;
+const NATIVE_BLUR = Platform.OS === 'ios';
+
+/**
+ * How hard the blur is, out of 100.
+ *
+ * `expo-blur` implements this by holding a `UIViewPropertyAnimator` at
+ * `fractionComplete`, which scales the blur radius *and* the material's own
+ * tint together — so a low number is not a weak frost, it is a fraction of one.
+ * Twenty-two is enough to break up a digit sliding under the clock and not
+ * enough to notice on a still screen.
+ *
+ * Fifty is the default and is far too much; the numbers people reach for when
+ * they want the effect to be obvious — 60, 80, 100 — are what make a backdrop
+ * read as an overlay.
+ */
+const INTENSITY = 22;
+
+/**
+ * `systemUltraThinMaterialDark`, not `dark`.
+ *
+ * `dark` is `UIBlurEffect.Style.dark`, a heavy grey vibrancy from before iOS
+ * 13. The system materials are what UIKit's own bars are made of, and the ultra
+ * thin one is the lightest of them — it carries almost no colour of its own,
+ * which is the whole requirement. Pinned to the Dark variant rather than the
+ * adaptive one because this app is dark-only (`userInterfaceStyle: "dark"` in
+ * app.json); the adaptive material would go pale if the OS ever handed it a
+ * light trait.
+ */
+const TINT = 'systemUltraThinMaterialDark' as const;
+
+/**
+ * How far the gradient runs, in points.
+ *
+ * Long, and much longer than the blur. A short gradient is a band with a soft
+ * edge — the eye still finds where it ends, and finding where it ends is the
+ * one thing that must not happen. Over ninety points, a twelve percent fall has
+ * nowhere to concentrate, and there is no row of pixels anywhere in it that
+ * differs from its neighbour by enough to see.
+ *
+ * It is measured from the inset rather than fixed, so it stays proportionate on
+ * a phone with a small one, and floored so it cannot get short.
+ */
+const fadeHeight = (top: number) => Math.max(88, top + 34);
 
 export function StatusScrim() {
   const insets = useSafeAreaInsets();
@@ -79,42 +117,60 @@ export function StatusScrim() {
   */
   const gid = `statusScrim-${useId()}`;
 
-  // Nothing to cover on a device with no inset at the top.
+  // Nothing to sit behind on a device with no inset at the top.
   if (insets.top <= 0) return null;
 
   return (
-    <View style={[styles.strip, { height: insets.top }]} pointerEvents="none">
-      {GLASS ? (
-        <GlassView glassEffectStyle="regular" tintColor="rgba(8,8,10,0.55)" style={styles.glass} />
-      ) : (
-        /*
-          Six stops, not two, and none of them a corner.
+    <View style={[styles.strip, { height: fadeHeight(insets.top) }]} pointerEvents="none">
+      {/*
+        Layer 1 — the blur, and only as tall as the status bar.
 
-          A straight ramp from opaque to clear has a visible middle: the eye
-          finds the point where it is exactly half and reads it as a line. But
-          so does a ramp that is held flat and then released — the kink where
-          the slope changes is just as findable as the half-way point, and that
-          kink is what the bottom edge of this strip was.
+        Blurring further down would soften the large title where it sits at
+        rest, which is not content passing behind anything; it is just the page,
+        and the page is meant to be sharp.
+      */}
+      {NATIVE_BLUR ? (
+        <BlurView intensity={INTENSITY} tint={TINT} style={[styles.blur, { height: insets.top }]} />
+      ) : null}
 
-          So the slope grows a step at a time instead of switching on: solid
-          where the icons are, barely moving under them, steepest where there
-          is nothing left to hide, and zero exactly at the bottom — a gradient
-          still at 0.2 when it runs out has an edge after all.
-        */
-        <Svg style={StyleSheet.absoluteFill}>
-          <Defs>
-            <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={colors.background} stopOpacity="1" />
-              <Stop offset="0.55" stopColor={colors.background} stopOpacity="1" />
-              <Stop offset="0.72" stopColor={colors.background} stopOpacity="0.92" />
-              <Stop offset="0.85" stopColor={colors.background} stopOpacity="0.65" />
-              <Stop offset="0.94" stopColor={colors.background} stopOpacity="0.3" />
-              <Stop offset="1" stopColor={colors.background} stopOpacity="0" />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid})`} />
-        </Svg>
-      )}
+      {/*
+        Layer 2 — the gradient, over the blur and past it.
+
+        Black only. Grey and white were both tried in the version before this
+        one and both are visible as themselves: a grey wash reads as a panel, a
+        white one as haze. Black at twelve percent reads as the content being
+        further away, which is the only honest description of what a backdrop
+        is for.
+
+        Four stops with the slope growing a step at a time, because a ramp that
+        is held flat and then released has a kink, and the eye finds a kink as
+        easily as it finds the half-way point of a straight ramp. No span here
+        carries more than half of the total fall.
+      */}
+      <Svg style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#000" stopOpacity="0.12" />
+            <Stop offset="0.42" stopColor="#000" stopOpacity="0.09" />
+            <Stop offset="0.7" stopColor="#000" stopOpacity="0.05" />
+            <Stop offset="1" stopColor="#000" stopOpacity="0" />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid})`} />
+      </Svg>
+
+      {/*
+        Layer 3 — the hairline, exactly where the blur stops.
+
+        The blur has to end somewhere, and an unmarked end is a smudge: a soft
+        boundary the eye keeps trying to focus on. A stated one at five percent
+        white is below the threshold of being seen as a line and above the
+        threshold of settling the edge — the same trick UIKit's own bars use.
+
+        Only where there is a blur to end. On Android it would be a line drawn
+        under nothing at all.
+      */}
+      {NATIVE_BLUR ? <View style={[styles.hairline, { top: insets.top }]} /> : null}
     </View>
   );
 }
@@ -122,11 +178,17 @@ export function StatusScrim() {
 const styles = StyleSheet.create({
   /*
     Above the scroll view and outside it — inside, it would scroll away with
-    the content it exists to cover. `pointerEvents="none"` so the top of the
-    page is still touchable through it, and `zIndex` below the floating
+    the content it exists to sit behind. `pointerEvents="none"` so the top of
+    the page is still touchable through it, and `zIndex` below the floating
     header's 20 so a chevron drawn over a hero stays crisp.
   */
-  strip: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, overflow: 'hidden' },
-  /** oversized on every side so the glass draws its rim outside the clip above */
-  glass: { position: 'absolute', top: -RIM, left: -RIM, right: -RIM, bottom: -RIM },
+  strip: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  blur: { position: 'absolute', top: 0, left: 0, right: 0 },
+  hairline: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
 });

@@ -80,6 +80,15 @@ thì vẫn nằm ở đây.
 | **Vì sao cố ý** | Tối đa 14 lần dựng × 11 truy vấn mỗi lần, để sửa một điểm readiness quá khứ vốn đã là sản phẩm của *thời điểm nó được tính* chứ không phải một sự thật về ngày đó. |
 | **Trạng thái** | Quyết định có chủ ý, không phải sót. Muốn đổi thì phải trả lời trước: readiness của một ngày đã qua **nên** nghĩa là gì. |
 
+### A8. Android không có blur thật sau status bar
+
+| | |
+|---|---|
+| **Bằng chứng** | `StatusScrim` chỉ dựng `BlurView` khi `Platform.OS === 'ios'`. Tài liệu Expo SDK 57 (`sdk/blur-view`): trên Android phải bọc **nội dung cần làm mờ** trong `BlurTargetView` rồi truyền ref của nó vào `BlurView`, kèm `blurMethod`. Để mặc định thì nó "results in a view with a semi-transparent background" — đúng cái tấm xám mà thiết kế cấm. |
+| **Vì sao chưa sửa** | Sửa đúng không nằm trong file backdrop mà nằm ở **mọi trang**: mỗi ScrollView phải được bọc `BlurTargetView` và trả ref ngược lên. Đó là sửa 25 trang cho một nền tảng chưa được kiểm thử lần nào trong dự án này. |
+| **Hậu quả thật** | Trên Android status bar chỉ được *phủ tối 12%*, không được *tách*. Nội dung cuộn qua bị làm mờ màu chứ không bị làm nhoè. Chữ trắng cỡ lớn vẫn có thể lẫn với icon. |
+| **Trạng thái** | Giới hạn có chủ ý, đã ghi trong `status-scrim.tsx`. Cấm "sửa" bằng cách bật `blurMethod` mà không có `BlurTargetView` — làm vậy chỉ đổi tấm phủ đen thành tấm xám. |
+
 ---
 
 ## B. **Chưa** chứng minh được — cấm sửa, cấm dùng làm căn cứ cho việc khác
