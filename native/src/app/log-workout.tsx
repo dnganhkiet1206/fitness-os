@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { CalendarDays, Check, Plus, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -160,17 +160,62 @@ export default function LogWorkoutSheet() {
     });
   };
 
+  /** A blank row — the next *exercise*, where `addSet` gives the next set. */
+  const addExercise = () => {
+    Haptics.selectionAsync();
+    setSets((prev) => [...prev, { ...EMPTY_SET }]);
+  };
+
   const removeSet = (idx: number) => {
     Haptics.selectionAsync();
     setSets((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
   };
 
-  const validSets = sets.filter((s) => Number(s.weight) > 0 && Number(s.reps) > 0);
+  /*
+    Reps are the test, and weight is not.
+
+    It used to require both, so a set with no load was dropped on save without
+    a word: pull-ups, dips, planks, anything done with your own body could be
+    typed in, saved, and simply not be there afterwards. An empty weight box is
+    not an unfinished row — it is what bodyweight work looks like.
+
+    Volume is unaffected by the change. A bodyweight set contributes
+    `0 × reps = 0` to the load, which is what volume load means; what it gains
+    is a session that says the set happened.
+  */
+  const validSets = sets.filter((s) => Number(s.reps) > 0);
   // Inputs are in the user's unit; volume load is stored in kg
   const volumeLoad = validSets.reduce(
-    (sum, s) => sum + weightToKg(Number(s.weight), wUnit) * Number(s.reps),
+    (sum, s) => sum + weightToKg(Number(s.weight) || 0, wUnit) * Number(s.reps),
     0,
   );
+
+  /**
+   * Which set of its exercise each row is.
+   *
+   * The number down the left was the row's position in the whole form, so the
+   * last set of the third exercise was "9" — a number that counts something
+   * nobody is counting. Within its exercise it is "3 of squats", which is what
+   * you would say out loud.
+   *
+   * A run ends when the name changes, so it also marks where one exercise stops
+   * and the next starts: `1` on any row but the first is the boundary, and the
+   * rule above it is drawn from the same fact rather than from a second guess.
+   */
+  const setNumbers = useMemo(() => {
+    const out: number[] = [];
+    let n = 0;
+    let prev: string | null = null;
+    for (const row of sets) {
+      const key = row.exerciseName.trim().toLowerCase();
+      if (key !== prev) {
+        n = 0;
+        prev = key;
+      }
+      out.push(++n);
+    }
+    return out;
+  }, [sets]);
 
   /*
     The write itself lives in `useLogWorkoutSession`, because the week's day
@@ -188,7 +233,7 @@ export default function LogWorkoutSheet() {
         sets: validSets.map((s) => ({
           exerciseId: s.exerciseId,
           exerciseName: s.exerciseName,
-          weight: weightToKg(Number(s.weight), wUnit),
+          weight: weightToKg(Number(s.weight) || 0, wUnit),
           reps: Number(s.reps),
           rpe: Number(s.rpe),
         })),
@@ -235,12 +280,33 @@ export default function LogWorkoutSheet() {
         />
 
         <Text style={styles.sectionLabel}>{i18n.nSets}</Text>
+
+        {/*
+          The columns, named once.
+
+          Every number in a row was labelled only by the placeholder inside it,
+          which is gone the moment the number is there — so a filled row read
+          `1 Bench Press 60 8 8` and nothing on screen said which 8 was reps and
+          which was effort. A heading costs one row and does not disappear.
+        */}
+        <View style={styles.colHead}>
+          <View style={styles.colIdx} />
+          <Text style={[styles.colLabel, styles.colName]}>{i18n.nExercise}</Text>
+          <Text style={[styles.colLabel, styles.colNum]}>{wl}</Text>
+          <Text style={[styles.colLabel, styles.colNum]}>{i18n.nReps}</Text>
+          <Text style={[styles.colLabel, styles.colRpe]}>RPE</Text>
+          <View style={styles.colRemove} />
+        </View>
+
         {sets.map((s, idx) => {
           const suggestions = suggestionsFor(idx);
+          // A `1` below the first row is where one exercise ends and the next
+          // begins — the same fact the numbering already knows, drawn.
+          const startsExercise = idx > 0 && setNumbers[idx] === 1;
           return (
-            <View key={idx}>
+            <View key={idx} style={startsExercise ? styles.groupBreak : undefined}>
               <View style={styles.setRow}>
-                <Text style={styles.setIndex}>{idx + 1}</Text>
+                <Text style={styles.setIndex}>{setNumbers[idx]}</Text>
                 <TextInput
                   style={[styles.input, styles.setName]}
                   placeholder={i18n.nExercise}
@@ -251,24 +317,29 @@ export default function LogWorkoutSheet() {
                   onBlur={() => setTimeout(() => setFocusedRow((cur) => (cur === idx ? null : cur)), 150)}
                 />
                 <TextInput
+                  accessibilityLabel={`${s.exerciseName || i18n.nExercise} ${setNumbers[idx]} ${wl}`}
                   style={[styles.input, styles.setNum]}
-                  placeholder={wl}
+                  // A dash, not "kg": the heading above already says the unit,
+                  // and an empty box here means bodyweight rather than blank.
+                  placeholder="—"
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="decimal-pad"
                   value={s.weight}
                   onChangeText={(v) => updateSet(idx, 'weight', v)}
                 />
                 <TextInput
-                  style={[styles.input, styles.setNum]}
-                  placeholder={i18n.nReps}
+                  accessibilityLabel={`${s.exerciseName || i18n.nExercise} ${setNumbers[idx]} ${i18n.nReps}`}
+                  style={[styles.input, styles.setNum, !(Number(s.reps) > 0) && styles.needed]}
+                  placeholder="—"
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="number-pad"
                   value={s.reps}
                   onChangeText={(v) => updateSet(idx, 'reps', v)}
                 />
                 <TextInput
+                  accessibilityLabel={`${s.exerciseName || i18n.nExercise} ${setNumbers[idx]} RPE`}
                   style={[styles.input, styles.setRpe]}
-                  placeholder="RPE"
+                  placeholder="—"
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="number-pad"
                   maxLength={2}
@@ -296,10 +367,33 @@ export default function LogWorkoutSheet() {
           );
         })}
 
-        <Pressable style={({ pressed }) => [styles.addSet, pressed && styles.pressed]} onPress={addSet}>
-          <Icon icon={Plus} size={15} color={colors.foreground} strokeWidth={2.5} />
-          <Text style={styles.addSetText}>{i18n.nAddSet}</Text>
-        </Pressable>
+        {/*
+          Two buttons, because adding a set and starting a new exercise are two
+          different things and one of them was unreachable.
+
+          "Add set" copies the row above — same movement, same load — which is
+          right for the next set and wrong for the next exercise. Moving on
+          therefore meant adding a set and then clearing three fields by hand;
+          the second button is that, done for you.
+        */}
+        <View style={styles.addRow}>
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.addSet, pressed && styles.pressed]}
+            onPress={addSet}>
+            <Icon icon={Plus} size={15} color={colors.foreground} strokeWidth={2.5} />
+            <Text style={styles.addSetText}>{i18n.nAddSet}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.addSet, pressed && styles.pressed]}
+            onPress={addExercise}>
+            <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
+            <Text style={[styles.addSetText, styles.addExerciseText]}>{i18n.nLgNewExercise}</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.fieldHint}>{i18n.nLgBwHint}</Text>
 
         <View style={styles.summaryRow}>
           <Text style={styles.sectionLabel}>{i18n.nVolume}</Text>
@@ -322,6 +416,10 @@ export default function LogWorkoutSheet() {
             </Pressable>
           ))}
         </View>
+
+        {/* Said next to the button it explains, and only while it is true —
+            a permanent instruction is read once and then stops being read. */}
+        {validSets.length === 0 ? <Text style={styles.fieldHint}>{i18n.nLgNeedReps}</Text> : null}
 
         <Pressable
           style={({ pressed }) => [
@@ -389,6 +487,33 @@ const styles = StyleSheet.create({
     width: 16,
     textAlign: 'center',
   },
+  /* Mirrors the widths of the row below it — the same numbers, written once
+     more rather than reused, because `setNum` and its siblings carry a 44pt
+     height for the fields and a heading at 44pt is a second row of furniture. */
+  colHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  colLabel: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
+  colIdx: { width: 16 },
+  colName: { flex: 1, textAlign: 'left', paddingHorizontal: spacing.sm },
+  colNum: { width: 56 },
+  colRpe: { width: 48 },
+  colRemove: { width: 24 },
+  /* The gap that says a new exercise starts here. A rule rather than a bigger
+     gap alone, because the rows are already 8pt apart and a 16pt gap reads as
+     spacing that got away rather than as a boundary. */
+  groupBreak: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  /* The one field a set cannot do without, marked while it is empty by
+     brightening the border it already has. Not an error colour: the row is not
+     wrong, it is unfinished, and red on something still being typed into reads
+     as a mistake already made. */
+  needed: { borderColor: colors.mutedForeground },
+  addRow: { flexDirection: 'row', gap: spacing.sm },
+  addExerciseText: { color: colors.primary },
+  fieldHint: { ...type.caption, color: colors.mutedForeground },
   setName: { flex: 1, paddingHorizontal: spacing.sm, height: 44 },
   setNum: { width: 56, paddingHorizontal: spacing.xs, height: 44, textAlign: 'center' },
   setRpe: { width: 48, paddingHorizontal: spacing.xs, height: 44, textAlign: 'center' },
@@ -410,6 +535,7 @@ const styles = StyleSheet.create({
   suggestText: { ...type.caption, color: colors.foreground },
   removeText: { color: colors.mutedForeground, fontSize: 14 },
   addSet: {
+    flex: 1,
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,

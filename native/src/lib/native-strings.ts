@@ -76,6 +76,9 @@ const en = {
   nAddSet: 'Add set',
   nRpe: 'Session effort (RPE)',
   nSaveWorkout: 'Save Workout',
+  nLgBwHint: 'Leave the weight empty for a bodyweight set.',
+  nLgNewExercise: 'Different exercise',
+  nLgNeedReps: 'A set is saved once it has reps.',
 
   // Log Sleep sheet
   nLogSleepTitle: 'Log Sleep',
@@ -612,6 +615,9 @@ const vi: typeof en = {
   nAddSet: 'Thêm set',
   nRpe: 'Độ gắng sức (RPE)',
   nSaveWorkout: 'Lưu buổi tập',
+  nLgBwHint: 'Bỏ trống ô cân nặng nếu là set tay không.',
+  nLgNewExercise: 'Bài tập khác',
+  nLgNeedReps: 'Set có số rep thì mới được lưu.',
 
   nLogSleepTitle: 'Ghi giấc ngủ',
   nBedtime: 'Giờ đi ngủ',
