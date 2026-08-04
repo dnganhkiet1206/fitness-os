@@ -35,7 +35,7 @@
  * tested by hand.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -161,6 +161,46 @@ try {
   if (DAY_PROGRESS_KEEP < 7) problems.push(`giữ ${DAY_PROGRESS_KEEP} ngày — chưa đủ một tuần`);
 
   /*
+    ── the week and the day agree about what is already recorded ──
+
+    The week turns a day green from the sessions stored against its date. The
+    panel underneath it used to know nothing about them, and the two halves of
+    one screen disagreed in the expensive direction: the pill said "Hoàn thành"
+    while the button below it was live and would write a second session for the
+    same workout. A session can arrive from the free-form log sheet or from
+    yesterday's app run, so "did I just save it" is not the same question as
+    "is this day done" and cannot be answered from local state.
+
+    Nothing errors when this breaks. You get two sessions, both real, and the
+    week's volume is double — which nobody checks against anything.
+  */
+  const dayPlan = readFileSync(path.join(NATIVE, 'src/components/ascnd/day-plan.tsx'), 'utf8');
+  const routine = readFileSync(path.join(NATIVE, 'src/app/routine.tsx'), 'utf8');
+
+  const guard = (src) => {
+    const bad = [];
+    const logged = /const logged = ([^;]+);/.exec(src)?.[1] ?? '';
+    if (!logged) bad.push('day-plan: không thấy biến `logged`');
+    else if (!/sessions\.length/.test(logged)) {
+      bad.push('day-plan: `logged` không xét sessions đã có — nút sẽ ghi thêm một buổi nữa cho cùng một ngày');
+    }
+    if (!/const canFinish = [^;]*\blogged\b/.test(src)) {
+      bad.push('day-plan: nút hoàn thành không dựa vào `logged`');
+    }
+    return bad;
+  };
+  problems.push(...guard(dayPlan));
+  if (!/<DayPlan[\s\S]*?sessions=\{/.test(routine)) {
+    problems.push('routine: không truyền sessions xuống DayPlan — panel sẽ không biết ngày đã tập rồi');
+  }
+
+  // the version that only knew about its own save
+  if (guard(dayPlan.replace(/const logged = [^;]+;/, 'const logged = log.isSuccess;')).length === 0) {
+    console.error('phép tự kiểm hỏng — bản chỉ biết lần lưu của chính nó đáng lẽ phải bị bắt, đừng tin kết quả');
+    process.exit(1);
+  }
+
+  /*
     Self-test: the millisecond version, and the exact week it fails on.
 
     Two assertions, because either one alone would be misleading. It has to
@@ -206,7 +246,7 @@ try {
 
   console.log(
     `tuần tập OK — ${swept} ngày × ${ZONES.length} múi giờ, thẻ luôn trùng ngày; ` +
-      `dọn tick giữ ${DAY_PROGRESS_KEEP} ngày, không đụng key lạ; ` +
+      `dọn tick giữ ${DAY_PROGRESS_KEEP} ngày, ngày đã ghi thì khoá nút lưu; ` +
       `bản cộng mili-giây lệch ở Santiago (${chile}) và đúng ở New York, đúng như lý do nó sống sót`,
   );
 } finally {

@@ -153,6 +153,7 @@ export function DayPlan({
   dateStr,
   template,
   isRest,
+  sessions,
   i18n,
   onEdit,
 }: {
@@ -160,6 +161,25 @@ export function DayPlan({
   dateStr: string;
   template: { id: string; name: string; exercises?: unknown } | null;
   isRest: boolean;
+  /**
+   * What is already recorded against this day.
+   *
+   * The week has always known this — it is what turns a day green — and this
+   * panel did not, which left the two halves of one screen disagreeing: the
+   * pill above said "Hoàn thành" while the button below was still live and
+   * would happily write a second session for the same workout.
+   *
+   * A session can also arrive from the free-form log sheet, or from yesterday's
+   * app run, so "did I just save it" is not the same question as "is this day
+   * done" and cannot be answered from local state.
+   */
+  sessions: {
+    id: string;
+    date_time: string;
+    template_name: string | null;
+    session_rpe: number | null;
+    volume_load: number | null;
+  }[];
   i18n: ReturnType<typeof useI18n>;
   onEdit: () => void;
 }) {
@@ -314,7 +334,16 @@ export function DayPlan({
     own, and this panel is remounted whenever the selected day changes, so the
     lifetime of the guard is exactly the lifetime of the workout being logged.
   */
-  const canFinish = doneRows.length > 0 && !log.isPending && !log.isSuccess;
+  /*
+    Already recorded counts, whoever recorded it.
+
+    Two-a-day training exists and this rules it out from here; the free-form
+    log sheet still takes a second session without argument. That is the right
+    way round — the common mistake is logging the same workout twice by coming
+    back to a day that already has it, and the rare case has somewhere to go.
+  */
+  const logged = sessions.length > 0 || log.isSuccess;
+  const canFinish = doneRows.length > 0 && !log.isPending && !logged;
   const volume = doneRows.reduce((s, r) => s + r.weight * r.reps, 0);
 
   const finish = () => {
@@ -387,6 +416,30 @@ export function DayPlan({
           <Icon icon={Pencil} size={14} color={colors.mutedForeground} />
         </Pressable>
       </View>
+
+      {sessions.map((sn) => {
+        const at = new Date(sn.date_time);
+        return (
+          <GlassCard key={sn.id} style={styles.loggedCard}>
+            <Icon icon={Check} size={16} color={colors.readinessGreen} />
+            <View style={styles.loggedText}>
+              <Text style={styles.loggedName} numberOfLines={1}>
+                {sn.template_name || i18n.nRdAlready}
+              </Text>
+              <Text style={styles.loggedMeta}>
+                {i18n.nRdLoggedAt.replace(
+                  '{t}',
+                  `${at.getHours()}:${String(at.getMinutes()).padStart(2, '0')}`,
+                )}
+                {sn.volume_load
+                  ? `  ·  ${Math.round(displayWeight(Number(sn.volume_load), wUnit)).toLocaleString()} ${wl}`
+                  : ''}
+                {sn.session_rpe ? `  ·  RPE ${sn.session_rpe}` : ''}
+              </Text>
+            </View>
+          </GlassCard>
+        );
+      })}
 
       {/* A bar rather than a percentage: what you want mid-workout is "how much
           is left", which is a length, not a number to read. */}
@@ -573,17 +626,17 @@ export function DayPlan({
         style={({ pressed }) => [
           styles.finish,
           !canFinish && styles.finishOff,
-          log.isSuccess && styles.finishDone,
+          logged && styles.finishDone,
           pressed && styles.pressed,
         ]}>
         <Icon
           icon={Check}
           size={17}
-          color={log.isSuccess ? colors.readinessGreen : colors.primaryForeground}
+          color={logged ? colors.readinessGreen : colors.primaryForeground}
           strokeWidth={2.5}
         />
-        <Text style={[styles.finishText, log.isSuccess && styles.finishTextDone]}>
-          {log.isSuccess ? i18n.nRoutineDone : i18n.nRdFinish}
+        <Text style={[styles.finishText, logged && styles.finishTextDone]}>
+          {logged ? i18n.nRdAlready : i18n.nRdFinish}
         </Text>
       </Pressable>
 
@@ -645,6 +698,10 @@ const styles = StyleSheet.create({
   tplName: { ...type.title2, color: colors.foreground },
   progress: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   editBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  loggedCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm + 2 },
+  loggedText: { flex: 1, minWidth: 0, gap: 1 },
+  loggedName: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
+  loggedMeta: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   barTrack: { height: 4, borderRadius: 2, backgroundColor: glass.bg, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 2, backgroundColor: colors.primary },
 

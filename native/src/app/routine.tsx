@@ -263,6 +263,7 @@ export default function RoutineScreen() {
         dateStr={localDateStr(dates[selected])}
         template={templateFor(byDay.get(selected)?.template_id)}
         isRest={!!byDay.get(selected)?.is_rest}
+        sessions={(sessions ?? []).filter((sn) => localDateStr(new Date(sn.date_time)) === localDateStr(dates[selected]))}
         i18n={i18n}
         onEdit={() => setPicking(selected)}
       />

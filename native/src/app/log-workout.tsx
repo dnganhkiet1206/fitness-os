@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Check, Plus, X } from 'lucide-react-native';
+import { CalendarDays, Check, Plus, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -17,13 +17,16 @@ import {
 } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import type { TplExercise } from '@/components/ascnd/template-list';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
-import { useExercises } from '@/hooks/use-library';
+import { useExercises, useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
 import { toast } from '@/lib/toast';
-import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
+import { effortRange } from '@/lib/prescription';
+import { localDateStr, routineIndex } from '@/lib/local-date';
+import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/units';
 
 const RPE_VALUES = [6, 7, 8, 9, 10] as const;
 
@@ -37,6 +40,36 @@ interface SetRow {
 
 const EMPTY_SET: SetRow = { exerciseId: '', exerciseName: '', weight: '', reps: '', rpe: '' };
 
+/**
+ * Turn today's planned workout into the rows you are about to fill in.
+ *
+ * One row per *set*, not one per exercise, because that is what this sheet
+ * records and what actually varies: the third set of a five-set squat is the
+ * one that came in two reps light, and a form that cannot say so is a form
+ * people stop trusting.
+ *
+ * A planned weight of zero arrives blank rather than as `0`. Bodyweight work
+ * has no load to prefill, and `0` in a numeric field reads as a value somebody
+ * entered — it would be saved as a real zero-kilo set if it were left alone.
+ */
+function rowsFromTemplate(exercises: TplExercise[], unit: WeightUnit): SetRow[] {
+  const rows: SetRow[] = [];
+  for (const ex of exercises) {
+    // free JSON on the template row — a hand-written number can be anything
+    const count = Math.max(1, Math.min(20, Math.round(ex.sets ?? 1)));
+    for (let i = 0; i < count; i++) {
+      rows.push({
+        exerciseId: '',
+        exerciseName: ex.exerciseName ?? '',
+        weight: ex.weight ? String(displayWeight(ex.weight, unit)) : '',
+        reps: ex.reps ? String(ex.reps) : '',
+        rpe: ex.rpe ? String(ex.rpe) : '',
+      });
+    }
+  }
+  return rows.length > 0 ? rows : [{ ...EMPTY_SET }];
+}
+
 export default function LogWorkoutSheet() {
   const i18n = useI18n();
   const { weight: wUnit } = useUnits();
@@ -46,6 +79,43 @@ export default function LogWorkoutSheet() {
   const [sets, setSets] = useState<SetRow[]>([{ ...EMPTY_SET }]);
   const [focusedRow, setFocusedRow] = useState<number | null>(null);
   const { data: exercises } = useExercises();
+
+  /*
+    What the week says today is.
+
+    This sheet knew nothing about the schedule, which made the two halves of
+    the app strangers: the routine could say today is Push Day with six
+    exercises, and logging it still meant typing the name and eighteen rows
+    from scratch. Meanwhile a session saved here *does* turn that day green on
+    the week — the link ran one way and only one way.
+
+    It is offered, not applied. Filling the form the moment it opens would be
+    the app deciding what you did, and this sheet exists precisely for the
+    times what you did is not what was planned. One chip, one tap, and it is
+    gone once it has been used.
+  */
+  const { data: routineDays } = useRoutineDays();
+  const { data: templates } = useWorkoutTemplates();
+  const [planUsed, setPlanUsed] = useState(false);
+  const todaysPlan = (() => {
+    if (planUsed) return null;
+    const today = routineDays?.find((d) => d.day_of_week === routineIndex(new Date()));
+    if (!today?.template_id || today.is_rest) return null;
+    return templates?.find((t) => t.id === today.template_id) ?? null;
+  })();
+
+  const usePlan = () => {
+    if (!todaysPlan) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const exs: TplExercise[] = Array.isArray(todaysPlan.exercises)
+      ? (todaysPlan.exercises as TplExercise[])
+      : [];
+    setName(todaysPlan.name);
+    setSets(rowsFromTemplate(exs, wUnit));
+    const effort = effortRange(exs);
+    if (effort) setRpe(Math.max(RPE_VALUES[0], Math.min(RPE_VALUES[RPE_VALUES.length - 1], effort[1])));
+    setPlanUsed(true);
+  };
 
   const updateSet = (idx: number, field: keyof SetRow, value: string) => {
     setSets((prev) =>
@@ -140,6 +210,21 @@ export default function LogWorkoutSheet() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>{i18n.nLogWorkoutTitle}</Text>
+
+        {todaysPlan ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${i18n.nRdPlanToday}: ${todaysPlan.name}`}
+            onPress={usePlan}
+            style={({ pressed }) => [styles.planChip, pressed && styles.planChipPressed]}>
+            <Icon icon={CalendarDays} size={14} color={colors.metricBlue} />
+            <View style={styles.planText}>
+              <Text style={styles.planLabel}>{i18n.nRdPlanToday}</Text>
+              <Text style={styles.planName} numberOfLines={1}>{todaysPlan.name}</Text>
+            </View>
+            <Text style={styles.planUse}>{i18n.nRdUsePlan}</Text>
+          </Pressable>
+        ) : null}
 
         <TextInput
           style={styles.input}
@@ -263,6 +348,25 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.card },
   content: { padding: spacing.lg, gap: spacing.sm + 4 },
   title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
+  /* An offer, styled as one: outlined and quiet, sitting above the form rather
+     than inside it, so it reads as "here is what the week says" and not as a
+     field you have to deal with. */
+  planChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm + 2,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+  },
+  planChipPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+  planText: { flex: 1, minWidth: 0 },
+  planLabel: { ...type.caption, color: colors.mutedForeground },
+  planName: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
+  planUse: { ...type.footnote, color: colors.metricBlue, fontWeight: '700' },
   sectionLabel: { ...type.footnote, color: colors.mutedForeground, marginTop: spacing.xs },
   input: {
     height: 48,
