@@ -345,6 +345,8 @@ const en = {
   nWcNoData: 'Log your weight to see changes here',
 
   // Weight goal (Progress weight chart)
+  nQuickActions: 'Quick actions',
+  nQuickActionsClose: 'Close quick actions',
   nWeightGoal: 'Goal',
   nWeightGoalSet: 'Set a target weight',
   nWeightGoalTitle: 'Target weight',
@@ -798,6 +800,8 @@ const vi: typeof en = {
   nWcNoData: 'Ghi cân nặng để xem thay đổi ở đây',
 
   // Weight goal (Progress weight chart)
+  nQuickActions: 'Thao tác nhanh',
+  nQuickActionsClose: 'Đóng thao tác nhanh',
   nWeightGoal: 'Mục tiêu',
   nWeightGoalSet: 'Đặt cân nặng mục tiêu',
   nWeightGoalTitle: 'Cân nặng mục tiêu',

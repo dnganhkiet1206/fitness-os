@@ -1,8 +1,39 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
-import { CoachAccessory } from '@/components/ascnd/coach-accessory';
+import { QuickActionsAccessory } from '@/components/ascnd/quick-actions-accessory';
 import { colors } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
+import { scrollActiveToTop } from '@/lib/scroll-to-top';
+import { resetTabBar, useTabBarHidden } from '@/lib/tab-bar-visibility';
+
+/**
+ * Tapping the tab you are already on goes back to the top of it.
+ *
+ * The native bar has `disableScrollToTop`, defaulted to off, so UIKit does try
+ * — by hunting for the first scroll view inside the tab and scrolling that.
+ * It does not find these pages: `Screen` puts the ambient light in front of
+ * its scroll view and the tab screens nest one or two levels deeper than the
+ * search goes, so the tap did nothing and the feature disappeared with the old
+ * hand-drawn bar that used to do it explicitly.
+ *
+ * So it stays explicit. `Screen` lends its scroll view to a single slot on
+ * focus and takes it back on blur (see `lib/scroll-to-top`), and this asks
+ * that slot to scroll.
+ *
+ * Guarded on `isFocused`, which is the whole subtlety: `tabPress` fires on
+ * every tap, including the ones that are navigating *away from* somewhere
+ * else. Ungated, tapping Nutrition from Today would scroll Today to the top on
+ * the way out — invisible now, and waiting for you the next time you came
+ * back to it.
+ */
+const scrollToTopOnRetap = ({ navigation }: { navigation: { isFocused: () => boolean } }) => ({
+  tabPress: () => {
+    // A tab you arrive at starts with its bar showing, whatever the last page
+    // left it as
+    resetTabBar();
+    if (navigation.isFocused()) scrollActiveToTop();
+  },
+});
 
 /**
  * The tab bar is UIKit's, not ours.
@@ -25,7 +56,7 @@ import { useI18n } from '@/hooks/use-app-settings';
  *     let an app remove
  *   - the metrics, in whatever they are this year
  *   - minimise-on-scroll, Apple's own, replacing a hand-rolled hide/show
- *   - scroll-to-top and pop-to-root on tapping the tab you are already on
+ *   - pop-to-root on tapping the tab you are already on
  *   - Dynamic Type, Reduce Transparency, and VoiceOver's "tab, 2 of 5,
  *     selected" — all of which had to be re-declared by hand on a `Pressable`
  *
@@ -60,6 +91,7 @@ import { useI18n } from '@/hooks/use-app-settings';
  */
 export default function AppTabs() {
   const i18n = useI18n();
+  const hidden = useTabBarHidden();
 
   return (
     <NativeTabs
@@ -81,28 +113,35 @@ export default function AppTabs() {
       iconColor={{ default: colors.mutedForeground }}
       labelStyle={{ default: { color: colors.mutedForeground } }}
       /*
-        iOS 26's own hide-on-scroll. The app had a hand-written version — a
-        shared value driven from every page's `onScroll`, animating the bar's
-        opacity and offset — which the system now does from the scroll view
-        directly, with no JS frame in the loop.
+        Out of the way when you scroll down, back when you scroll up or pause.
+
+        `minimizeBehavior="onScrollDown"` is the platform's version of this and
+        it is the nicer one — the bar shrinks into a pill instead of leaving.
+        It needs UIKit to find the scroll view it should track, and it does not
+        find these pages, for the same reason the native scroll-to-top does not
+        fire on them. Asking for it as well as driving `hidden` would leave two
+        mechanisms where one silently does nothing, so it is off and
+        `tab-bar-visibility` decides — the same rule the app already had, now
+        reaching a real `UITabBarController` instead of a drawn one.
       */
-      minimizeBehavior="onScrollDown">
-      <NativeTabs.Trigger name="index">
+      hidden={hidden}
+      minimizeBehavior="never">
+      <NativeTabs.Trigger name="index" listeners={scrollToTopOnRetap}>
         <NativeTabs.Trigger.Icon sf="house" />
         <NativeTabs.Trigger.Label>{i18n.navToday}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="nutrition">
+      <NativeTabs.Trigger name="nutrition" listeners={scrollToTopOnRetap}>
         <NativeTabs.Trigger.Icon sf="fork.knife" />
         <NativeTabs.Trigger.Label>{i18n.navNutrition}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="workouts">
+      <NativeTabs.Trigger name="workouts" listeners={scrollToTopOnRetap}>
         <NativeTabs.Trigger.Icon sf="dumbbell" />
         <NativeTabs.Trigger.Label>{i18n.navWorkouts}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="progress">
+      <NativeTabs.Trigger name="progress" listeners={scrollToTopOnRetap}>
         <NativeTabs.Trigger.Icon sf="chart.line.uptrend.xyaxis" />
         <NativeTabs.Trigger.Label>{i18n.navProgress}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
@@ -115,24 +154,27 @@ export default function AppTabs() {
         bar. It is here because it was asked for, and the cost is worth naming:
         one of five equal slots now goes to a screen people open rarely.
       */}
-      <NativeTabs.Trigger name="settings">
+      <NativeTabs.Trigger name="settings" listeners={scrollToTopOnRetap}>
         <NativeTabs.Trigger.Icon sf="gearshape" />
         <NativeTabs.Trigger.Label>{i18n.settingsTitle}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       {/*
-        The coach, in the system's own accessory slot above the bar.
+        The quick-actions button, in the system's own accessory slot above the
+        bar.
 
-        It opens a sheet of four actions — scan a meal, ask the coach, log
-        biometrics, see sleep — and an action is not a destination. It used to
-        be the middle item of the bar, which made one of five equal-looking
-        slots behave unlike the other four: tap it and nothing navigates. iOS
-        26 has a place for exactly this shape, so the accessory minimises and
-        expands with the bar instead of being a capsule of ours floating near
-        it.
+        It is a floating action button, not an AI button — the sparkles glyph
+        says AI, and what it opens is four things: scan a meal, ask the coach,
+        log biometrics, see sleep. An action is not a destination, which is why
+        it is not a tab; as the middle item of the bar it made one of five
+        equal-looking slots behave unlike the other four.
+
+        iOS 26 has a place for exactly this shape, so the accessory minimises
+        and expands with the bar instead of being a capsule of ours floating
+        near it.
       */}
       <NativeTabs.BottomAccessory>
-        <CoachAccessory />
+        <QuickActionsAccessory />
       </NativeTabs.BottomAccessory>
     </NativeTabs>
   );

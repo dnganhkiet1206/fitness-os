@@ -19,17 +19,31 @@ import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 
 /**
- * The coach button and its sheet, lifted out of the old hand-drawn tab bar.
+ * The quick-actions button and its sheet, in the tab bar's accessory slot.
  *
- * It sits in `NativeTabs.BottomAccessory` — the system's own slot above the
- * tab bar — rather than among the tabs, because what it opens is four actions
- * and an action is not a destination. As the middle item of the bar it made
- * one of five equal-looking slots behave unlike the other four: tap it and
- * nothing navigates.
+ * ── it is not an AI button ──
  *
- * Only the button moved. The sheet is the same 2×2 of Scan / Coach /
- * Biometrics / Sleep, with the same staggered rise and the same backdrop, so
- * nothing about the feature changed — only what it hangs off.
+ * The sparkles glyph says AI and the thing behind it is a menu of four: scan a
+ * meal, ask the coach, log biometrics, see sleep. Only one of those four is
+ * the coach. It was labelled "Ask coach" while it lived in the old tab bar,
+ * which named it after a quarter of its contents and left the other three
+ * looking like a surprise.
+ *
+ * So it carries no text at all now — a round button, the way a floating action
+ * button is drawn, and the sheet says what is inside the moment it opens. The
+ * accessibility label is "Quick actions", which is what a screen reader should
+ * say about a control that opens a menu rather than doing the first thing on
+ * it.
+ *
+ * ── why it is here and not among the tabs ──
+ *
+ * `NativeTabs.BottomAccessory` is the system's own slot above the tab bar. As
+ * the middle item of the bar this made one of five equal-looking slots behave
+ * unlike the other four: tap it and nothing navigates. An action is not a
+ * destination.
+ *
+ * Only the button moved. The sheet is the same 2×2, with the same staggered
+ * rise and the same backdrop.
  */
 const ITEMS = [
   { key: 'scan', icon: Camera, label: { en: 'Scan Food', vi: 'Quét thực phẩm' }, route: '/scan-food?from=ai' as const },
@@ -38,7 +52,7 @@ const ITEMS = [
   { key: 'sleep', icon: Moon, label: { en: 'Sleep', vi: 'Giấc ngủ' }, route: '/sleep-insights' as const },
 ];
 
-export function CoachAccessory() {
+export function QuickActionsAccessory() {
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -75,7 +89,7 @@ export function CoachAccessory() {
       */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={open ? i18n.a11yCloseCoach : i18n.a11yAskCoach}
+        accessibilityLabel={open ? i18n.nQuickActionsClose : i18n.nQuickActions}
         accessibilityState={{ expanded: open }}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -88,9 +102,6 @@ export function CoachAccessory() {
         <Animated.View style={[styles.icon, closeStyle]}>
           <Icon icon={X} size={18} color={colors.foreground} />
         </Animated.View>
-        <Text style={styles.label} numberOfLines={1}>
-          {i18n.a11yAskCoach}
-        </Text>
       </Pressable>
 
       <Modal visible={open} transparent animationType="none" onRequestClose={() => setOpen(false)}>
@@ -131,16 +142,16 @@ export function CoachAccessory() {
 }
 
 const styles = StyleSheet.create({
+  // Round, and no wider than its glyph — a button that opens a menu, with the
+  // accessory slot's own glass behind it
   btn: {
-    flexDirection: 'row',
+    width: 44,
+    height: 44,
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    justifyContent: 'center',
   },
   // The two glyphs cross-fade in place, so they share one cell
-  icon: { position: 'absolute', left: spacing.md, alignItems: 'center', justifyContent: 'center' },
-  label: { marginLeft: 26, fontSize: 15, fontWeight: '600', color: colors.foreground },
+  icon: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.7 },
 
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.55)' },
