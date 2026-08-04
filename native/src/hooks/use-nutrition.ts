@@ -514,15 +514,31 @@ export function useUpdateMealItemServings() {
 
       const was = Number(row.servings) || 1;
       const k = servings / was;
+      /*
+        Stored exactly, rounded only where it is read.
+
+        These were rounded to whole numbers on the way in, and the next edit
+        rescales *from the rounded figure* — so every change threw away the
+        fraction and the next one multiplied what was left. It compounds and it
+        cannot be undone by going back:
+
+          10 kcal ×0.4 → 4 ·  ×0.4 → 2 (from 1.6) ·  back to 1 serving → 13
+
+        Thirty per cent added to a food by changing the portion three times and
+        changing it back. The columns are NUMERIC, so the rounding bought
+        nothing the schema wanted; it only lost precision. Exact values make the
+        scaling reversible — 10 → 4 → 1.6 → 10 — and `resyncMealEntry` still
+        rounds the meal's totals, so nothing downstream sees a fraction.
+      */
       const { error } = await supabase
         .from('meal_entry_items')
         .update({
           servings,
-          kcal: Math.round((Number(row.kcal) || 0) * k),
-          protein_g: Math.round((Number(row.protein_g) || 0) * k),
-          carbs_g: Math.round((Number(row.carbs_g) || 0) * k),
-          fat_g: Math.round((Number(row.fat_g) || 0) * k),
-          fiber_g: Math.round((Number(row.fiber_g) || 0) * k),
+          kcal: (Number(row.kcal) || 0) * k,
+          protein_g: (Number(row.protein_g) || 0) * k,
+          carbs_g: (Number(row.carbs_g) || 0) * k,
+          fat_g: (Number(row.fat_g) || 0) * k,
+          fiber_g: (Number(row.fiber_g) || 0) * k,
         })
         .eq('id', itemId);
       if (error) throw error;
@@ -540,10 +556,10 @@ export function useUpdateMealItemServings() {
           return {
             ...it,
             servings,
-            kcal: Math.round(it.kcal * k),
-            protein_g: Math.round(it.protein_g * k),
-            carbs_g: Math.round(it.carbs_g * k),
-            fat_g: Math.round(it.fat_g * k),
+            kcal: it.kcal * k,
+            protein_g: it.protein_g * k,
+            carbs_g: it.carbs_g * k,
+            fat_g: it.fat_g * k,
           };
         }),
       ),

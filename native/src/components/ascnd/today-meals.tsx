@@ -418,13 +418,20 @@ function MealRow({
           {it.food_name}
           {/* Only when it is not one portion. "×1" on every line is
               noise that makes the one line that says ×2 harder to see. */}
-          {it.servings !== 1 ? <Text style={styles.serving}>  ×{it.servings}</Text> : null}
+          {/* `0.30000000000000004` is a real thing a float can be; two decimals
+              is finer than any portion anyone sets and never shows it. */}
+          {it.servings !== 1 ? (
+            <Text style={styles.serving}>  ×{Math.round(it.servings * 100) / 100}</Text>
+          ) : null}
         </Text>
         <Text style={styles.itemMacros}>
-          P{it.protein_g} · C{it.carbs_g} · F{it.fat_g}
+          {/* Rounded here rather than in storage: the stored figure is exact
+              so re-scaling a portion stays reversible, and a diary line has no
+              use for a tenth of a gram. */}
+          P{Math.round(it.protein_g)} · C{Math.round(it.carbs_g)} · F{Math.round(it.fat_g)}
         </Text>
       </View>
-      <Text style={styles.itemKcal}>{it.kcal}</Text>
+      <Text style={styles.itemKcal}>{Math.round(it.kcal)}</Text>
       {/*
         Edit and remove, on the row itself.
 
