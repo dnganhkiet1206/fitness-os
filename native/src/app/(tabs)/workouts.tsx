@@ -232,20 +232,32 @@ function TemplateCard({
  * The button stays. This is a second door to the same room, not a replacement,
  * and somebody who has learned where the button is should not have to relearn.
  *
- * ── the counts are real ──
+ * ── every group, every time ──
  *
- * Each tile counts the exercises actually filed under that group, so a library
- * with nothing under Calves shows no Calves tile rather than an empty room with
- * a picture on the door. That also means the grid grows as the library does
- * instead of being a fixed menu that lies about what is behind it.
+ * All ten show, including the ones with nothing filed under them yet. The grid
+ * is a menu of what the app knows about as much as a view of what is in the
+ * library, and a menu that changes shape as exercises are added is one you have
+ * to re-read every visit — the chest tile moving because calves appeared is
+ * motion that means nothing.
+ *
+ * A group with no *art* still gets no tile. That is a different thing: the
+ * missing piece there is a picture, not a shelf.
+ *
+ * ── the counts are real, or they are absent ──
+ *
+ * Each tile counts what is actually filed under it. If the read failed, the
+ * count is left off rather than printed as zero — "0 bài" is a claim about the
+ * library, and the claim would be wrong. Same rule the templates header above
+ * already follows.
  */
 function MuscleGrid({
   exercises,
-  i18n,
+  failed,
   vi,
 }: {
   exercises: { muscle_group: string | null }[];
-  i18n: ReturnType<typeof useI18n>;
+  /** the library did not load — show the shelves, do not claim they are empty */
+  failed: boolean;
   vi: boolean;
 }) {
   /*
@@ -262,8 +274,6 @@ function MuscleGrid({
     if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
   }
 
-  const tiles = MUSCLE_TILES.filter((t) => (counts.get(t.key) ?? 0) > 0);
-  if (tiles.length === 0) return null;
 
   return (
     <View style={styles.libSection}>
@@ -280,13 +290,15 @@ function MuscleGrid({
         </Pressable>
       </View>
       <View style={styles.libGrid}>
-        {tiles.map((t) => {
+        {MUSCLE_TILES.map((t) => {
           const n = counts.get(t.key) ?? 0;
           return (
             <Pressable
               key={t.key}
               accessibilityRole="button"
-              accessibilityLabel={`${vi ? t.vi : t.en}, ${n} ${vi ? 'bài' : 'exercises'}`}
+              accessibilityLabel={
+                failed ? (vi ? t.vi : t.en) : `${vi ? t.vi : t.en}, ${n} ${vi ? 'bài' : 'exercises'}`
+              }
               style={({ pressed }) => [styles.libTile, pressed && styles.pressed]}
               onPress={() => {
                 Haptics.selectionAsync();
@@ -294,9 +306,11 @@ function MuscleGrid({
               }}>
               <MuscleArt group={t.key} size={64} />
               <Text style={styles.libName} numberOfLines={1}>{vi ? t.vi : t.en}</Text>
-              <Text style={styles.libCount}>
-                {n} {vi ? 'bài' : n === 1 ? 'exercise' : 'exercises'}
-              </Text>
+              {failed ? null : (
+                <Text style={styles.libCount}>
+                  {n} {vi ? 'bài' : n === 1 ? 'exercise' : 'exercises'}
+                </Text>
+              )}
             </Pressable>
           );
         })}
@@ -319,7 +333,7 @@ export default function WorkoutsScreen() {
   const { data: templates, isError: templatesFailed } = useWorkoutTemplates();
   // The library already loads on the Exercises screen and is cached under the
   // same key, so the grid costs a read only the first time either is opened.
-  const { data: exercises } = useExercises();
+  const { data: exercises, isError: exercisesFailed } = useExercises();
   // Recent sessions needs no failure notice of its own: the block only renders
   // when there are sessions, so a failed read makes it absent rather than
   // wrong — and it fails alongside the templates above it, which do say so.
@@ -425,7 +439,7 @@ export default function WorkoutsScreen() {
         <Text style={styles.logChipText}>{i18n.nLogWorkoutBtn}</Text>
       </Pressable>
 
-      <MuscleGrid exercises={exercises ?? []} i18n={i18n} vi={vi} />
+      <MuscleGrid exercises={exercises ?? []} failed={exercisesFailed} vi={vi} />
 
       {/* Template cards (web glass-card rows) */}
       {templates && templates.length > 0 ? (
