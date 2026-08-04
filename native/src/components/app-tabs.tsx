@@ -167,19 +167,33 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       {/*
-        No `NativeTabs.BottomAccessory` here.
+        The health assistant, drawn as an island beside the capsule.
 
-        The quick-actions button lived in it, and the accessory slot draws as a
-        full-width bar of its own above the tab bar — two horizontal bars
-        stacked at the bottom of every screen, which is one more bottom bar
-        than an app should have. It is the correct slot for a now-playing
-        strip; it is too much furniture for a single button.
+        `role="search"` is doing the work. It is the only role iOS 26 lays out
+        that way — the tab capsule shrinks and this one is drawn as a separate
+        circle to its right — and that layout cannot be built from this side:
+        nothing in an app can ask a `UITabBarController` to stand aside for a
+        button floating over it. Giving it a fifth item and letting it move
+        itself is the whole mechanism.
 
-        The button moved to the Today header instead, where a sparkles button
-        already sat. Nothing about the four actions changed — see
-        `ascnd/quick-actions-accessory`, which keeps its name for now because
-        the whole control may yet be dropped.
+        The role brings a fixed system title with it, which is why the label is
+        hidden and the name comes from `accessibilityLabel` instead. The icon
+        it would have supplied is overridden; the title cannot be.
+
+        This is also why the four actions became a page rather than a sheet: a
+        tab is a destination, and the system will navigate to it. It was never
+        really an action anyway — it was a menu of four screens.
       */}
+      <NativeTabs.Trigger
+        name="assistant"
+        role="search"
+        accessibilityLabel={i18n.nHealthAssistant}
+        listeners={scrollToTopOnRetap}
+        contentStyle={CONTENT}>
+        <NativeTabs.Trigger.Icon sf="heart.text.square" />
+        <NativeTabs.Trigger.Label hidden>{i18n.nHealthAssistant}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
     </NativeTabs>
   );
 }
