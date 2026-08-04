@@ -1,3 +1,4 @@
+import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import { useId } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -40,6 +41,24 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
  * 4. the page's own header, which is nothing to do with this file and is
  *    listed because the order is the point: this sits under everything
  *
+ * ── the fade, and the wrong turn on the way to it ──
+ *
+ * The blur is masked by a vertical gradient: full strength against the top
+ * edge, thinning continuously to nothing at the bottom of the status bar. One
+ * `UIVisualEffectView` under one `MaskedView`, which is how iOS-style
+ * progressive headers are built in React Native — `expo-progressive-blur` and
+ * the other libraries in that space all compose `MaskedView` over `BlurView`
+ * the same way.
+ *
+ * It was briefly built instead out of four stacked panes of decreasing height,
+ * on the belief that a mask over an effect view costs it its backdrop and
+ * leaves a flat dark band. That is true, and it is true of `UIGlassEffect` —
+ * where it was actually observed, in the `GlassView` version described below.
+ * It was then carried over to `UIBlurEffect` without being retested, which was
+ * wrong: a blur is a backdrop filter and survives being masked. Stacking cost
+ * four live effect views, compounded the material's tint from 22% to 37%, and
+ * banded — for a problem this material does not have.
+ *
  * ── what was here before ──
  *
  * `GlassView` — iOS 26 liquid glass, tinted 55% dark. It is a beautiful
@@ -66,43 +85,20 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 const NATIVE_BLUR = Platform.OS === 'ios';
 
 /**
- * The blur is a ramp, not a slab: barely there where content enters the strip
- * from below, hardest at the very top edge.
- *
- * ── how the ramp is built ──
- *
- * By stacking. Every pane is anchored to the top of the screen and each is
- * shorter than the last, so the number of panes covering a row rises the
- * further up you go — one at the bottom of the blur, all four at the top edge
- * — and blur compounds where they overlap.
- *
- * A gradient mask over one pane is the obvious alternative and it cannot be
- * used: masking a `UIVisualEffectView` can cost it its backdrop, and an effect
- * view with no backdrop draws its material colour flat. That is a dark band
- * across the strip — the exact failure this file was rebuilt to get away from.
- * Nothing here is masked, so every pane keeps its own backdrop.
- *
- * ── what it costs ──
- *
- * Blur radius compounds as `√n`, and the material's tint compounds as
- * `1 − (1 − p)ⁿ`. So four panes at 11 reach the radius one pane at 22 had —
- * `11 × √4 = 22` — but carry 37% of the material where the single pane carried
- * 22%. That is the price of the gradient, and it is why `GRADIENT_TOP` below
- * came down: the extra darkening the material now supplies at the top is taken
- * back off the black wash, so the top of the strip is no darker overall than
- * the flat version was.
- *
- * Four panes, not eight. Each is another live `UIVisualEffectView` compositing
- * every frame, and over a status bar of about sixty points the bands are
- * fifteen points each — a step in blur radius small enough to read as a ramp.
+ * How hard the blur is where it is hardest — the very top edge.
  *
  * `expo-blur` implements intensity by holding a `UIViewPropertyAnimator` at
- * `fractionComplete`, which is why the two compound differently: it scales the
- * radius and the tint together, so a low number is not a weak frost but a
- * fraction of a full one.
+ * `fractionComplete`, which scales the blur radius *and* the material's own
+ * tint together, so a low number is not a weak frost but a fraction of a full
+ * one. Twenty-four is enough to break up a digit sliding under the clock and
+ * not enough to notice on a still screen; the mask below takes it down from
+ * there to nothing.
+ *
+ * Fifty is the default and far too much. The numbers people reach for when
+ * they want the effect to be obvious — 60, 80, 100 — are what make a backdrop
+ * read as an overlay.
  */
-const PANES = 4;
-const PANE_INTENSITY = 11;
+const INTENSITY = 24;
 
 /**
  * `systemUltraThinMaterialDark`, not `dark`.
@@ -134,15 +130,12 @@ const fadeHeight = (top: number) => Math.max(88, top + 34);
 /**
  * How dark the wash starts, at the very top.
  *
- * Was 0.12, against a flat blur carrying 22% of the material. The stacked ramp
- * carries 37% at the top, so 0.07 here keeps the total darkening where it was
- * tuned — the strip did not get heavier when the blur became a gradient, the
- * darkness simply moved from the wash into the material.
- *
- * The lower stops are unchanged: they are below the blur, where nothing about
- * the material has changed.
+ * Back to the value this file was tuned at. It was cut to 0.07 while the ramp
+ * was built out of four stacked panes, whose material tint compounded to 37%
+ * and needed the wash to give ground. One masked pane carries 24%, near enough
+ * to the 22% it was tuned against that the wash can have it back.
  */
-const GRADIENT_TOP = 0.07;
+const GRADIENT_TOP = 0.12;
 
 export function StatusScrim() {
   const insets = useSafeAreaInsets();
@@ -152,7 +145,9 @@ export function StatusScrim() {
     tab underneath it) would otherwise both draw whichever gradient was
     registered last. This has caught the app three times; `useId` is the rule.
   */
-  const gid = `statusScrim-${useId()}`;
+  const uid = useId();
+  const gid = `statusScrim-${uid}`;
+  const mid = `statusScrimMask-${uid}`;
 
   // Nothing to sit behind on a device with no inset at the top.
   if (insets.top <= 0) return null;
@@ -166,18 +161,36 @@ export function StatusScrim() {
         rest, which is not content passing behind anything; it is just the page,
         and the page is meant to be sharp.
       */}
-      {NATIVE_BLUR
-        ? Array.from({ length: PANES }, (_, i) => (
-            <BlurView
-              key={i}
-              intensity={PANE_INTENSITY}
-              tint={TINT}
-              // Tallest first. The count of panes over a row is the blur there:
-              // one at the bottom of the status bar, four at the top edge.
-              style={[styles.blur, { height: (insets.top * (PANES - i)) / PANES }]}
-            />
-          ))
-        : null}
+      {NATIVE_BLUR ? (
+        <MaskedView
+          style={[styles.blur, { height: insets.top }]}
+          maskElement={
+            /*
+              The mask is the fade. Alpha here is how much of the blurred
+              result survives at that row, so the blur arrives at full strength
+              against the top edge and thins continuously to nothing at the
+              bottom of the status bar — one effect view, one gradient, no
+              steps anywhere in it.
+
+              Three stops rather than two: a straight ramp reaches zero at a
+              definite row and the eye finds that row. Holding it higher
+              through the middle and letting it fall away late leaves no line
+              to find.
+            */
+            <Svg style={StyleSheet.absoluteFill}>
+              <Defs>
+                <LinearGradient id={mid} x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor="#fff" stopOpacity="1" />
+                  <Stop offset="0.55" stopColor="#fff" stopOpacity="0.45" />
+                  <Stop offset="1" stopColor="#fff" stopOpacity="0" />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${mid})`} />
+            </Svg>
+          }>
+          <BlurView intensity={INTENSITY} tint={TINT} style={StyleSheet.absoluteFill} />
+        </MaskedView>
+      ) : null}
 
       {/*
         Layer 2 — the gradient, over the blur and past it.
