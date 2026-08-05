@@ -104,6 +104,7 @@ const STEPS = [
   ['tuần tập', 'node', ['tools/week.mjs']],
   ['bố cục Today', 'node', ['tools/widgets.mjs']],
   ['khẩu phần', 'node', ['tools/servings.mjs']],
+  ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
   ['camera shop', 'node', ['tools/shop-camera.mjs']],
