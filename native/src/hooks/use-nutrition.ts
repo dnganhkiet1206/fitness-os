@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 import { offlineNow } from '@/lib/offline';
+import { foldRecentMeals } from '@/lib/recent-meals';
+export type { RecentMeal, RepeatFood } from '@/lib/recent-meals';
 
 export interface FoodItemRow {
   id: string;
@@ -679,5 +681,42 @@ export function useLogPlannedMeal() {
       await recomputeDailyLog(user.id, localDateStr());
     },
     onSuccess: () => invalidateLogQueries(qc, user?.id),
+  });
+}
+
+/**
+ * The meals you have already eaten, so you can eat them again without typing.
+ *
+ * ── why whole meals and not foods ──
+ *
+ * `useRecentFoods` already offers the last dozen *foods*, and it is the wrong
+ * unit for the thing people actually repeat. Breakfast is not "oats"; it is
+ * oats and a banana and milk, in the same amounts, four mornings a week. Picked
+ * one food at a time that is three searches and three taps for something you
+ * did not decide — you had already decided, months ago, that this is what
+ * breakfast is.
+ *
+ * The folding, the de-duplication and the per-serving arithmetic live in
+ * `@/lib/recent-meals`, away from react-query and the Supabase client, so
+ * `tools/repeat-meal.mjs` can run them. Everything this function does is fetch.
+ */
+export function useRecentMeals(limit = 6) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['recent_meals', user?.id, limit],
+    enabled: !!user,
+    queryFn: async () => {
+      // RLS scopes these to the caller; the nested select is one round trip
+      // rather than an entry query followed by one per entry.
+      const { data, error } = await supabase
+        .from('meal_entries')
+        .select(
+          'id, meal_type, date_time, meal_entry_items(food_name, food_item_id, servings, kcal, protein_g, carbs_g, fat_g, fiber_g)',
+        )
+        .order('date_time', { ascending: false })
+        .limit(40);
+      if (error) throw error;
+      return foldRecentMeals(data ?? [], limit);
+    },
   });
 }

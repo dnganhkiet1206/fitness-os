@@ -17,10 +17,16 @@ import {
 } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { dedupeSeedShadows, useFavoriteFoods, useRecentFoods } from '@/hooks/use-nutrition';
+import {
+  dedupeSeedShadows,
+  useFavoriteFoods,
+  useRecentFoods,
+  useRecentMeals,
+  type RecentMeal,
+} from '@/hooks/use-nutrition';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
@@ -93,6 +99,40 @@ export default function LogMealSheet() {
 
   const { data: favorites } = useFavoriteFoods();
   const { data: recents } = useRecentFoods();
+  const { data: recentMeals } = useRecentMeals();
+
+  /**
+   * Eat a past meal again: put it in the form, do not save it.
+   *
+   * Filling rather than writing is the whole difference between a shortcut and
+   * a guess. Nine times out of ten it is exactly right and the next tap is
+   * Save; the tenth time the milk was a splash instead of a glass, and the
+   * amounts are sitting there to be corrected. A button that logged straight to
+   * the diary would be faster and would make that tenth case a thing you have
+   * to go and undo.
+   *
+   * It replaces what is in the form rather than appending, because the form is
+   * empty when this is offered — see where it is rendered.
+   */
+  const repeatMeal = (meal: RecentMeal) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setMealType(meal.meal_type as MealType);
+    setItems(meal.foods.map((f) => ({ ...f })));
+  };
+
+  /** the localized name of a meal type, from the list the chips are built from */
+  const mealLabel = (key: string) => MEAL_TYPES.find((m) => m.key === key)?.label ?? key;
+
+  /** "today" / "yesterday" / "3 days ago", from local dates rather than hours */
+  const whenLabel = (iso: string) => {
+    const days = Math.round(
+      (new Date(localDateStr()).getTime() - new Date(localDateStr(new Date(iso))).getTime()) /
+        86400000,
+    );
+    if (days <= 0) return i18n.nRmToday;
+    if (days === 1) return i18n.nRmYesterday;
+    return i18n.nRmDaysAgo.replace('{n}', String(days));
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 250);
@@ -375,6 +415,49 @@ export default function LogMealSheet() {
           ))}
         </ScrollView>
 
+        {/*
+          Meals you have already eaten.
+
+          Offered only while the form is empty. Once there is something in it
+          you are mid-compose, and a card that replaces the lot with a different
+          meal is a control that destroys work — the shortcut belongs at the
+          start of the job, not in the middle of it.
+        */}
+        {items.length === 0 && recentMeals && recentMeals.length > 0 ? (
+          <View style={styles.repeatBlock}>
+            <Text style={styles.repeatTitle}>{i18n.nRmTitle}</Text>
+            <Text style={styles.repeatHint}>{i18n.nRmHint}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.repeatRow}
+              keyboardShouldPersistTaps="handled">
+              {recentMeals.map((m) => (
+                <Pressable
+                  key={m.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${mealLabel(m.meal_type)}, ${whenLabel(m.date_time)}, ${m.kcal} kcal`}
+                  style={({ pressed }) => [styles.repeatCard, pressed && styles.pressed]}
+                  onPress={() => repeatMeal(m)}>
+                  <View style={styles.repeatHead}>
+                    <Text style={styles.repeatMeal}>{mealLabel(m.meal_type)}</Text>
+                    <Text style={styles.repeatWhen}>{whenLabel(m.date_time)}</Text>
+                  </View>
+                  {/* The foods themselves, because "3 foods · 420 kcal" is true
+                      of most breakfasts anybody has ever eaten. What tells them
+                      apart is which three. */}
+                  <Text style={styles.repeatFoods} numberOfLines={2}>
+                    {m.foods.map((f) => f.food_name).join(', ')}
+                  </Text>
+                  <Text style={styles.repeatKcal}>
+                    {m.kcal.toLocaleString()} kcal · {i18n.nRmFoods.replace('{n}', String(m.foods.length))}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
         {/* Search + scan buttons */}
         <View style={styles.searchRow}>
           <TextInput
@@ -655,6 +738,26 @@ function MacroStat({ label, value, color }: { label: string; value: number; colo
 }
 
 const styles = StyleSheet.create({
+  repeatBlock: { gap: 2 },
+  repeatTitle: { ...type.headline, color: colors.foreground },
+  repeatHint: { ...type.caption, color: colors.mutedForeground, marginBottom: spacing.sm },
+  repeatRow: { gap: spacing.sm, paddingRight: spacing.md },
+  /* Wide enough for two foods on a line and short enough that a second card
+     shows past the edge — a row that looks scrollable gets scrolled. */
+  repeatCard: {
+    width: 200,
+    gap: 3,
+    padding: spacing.md - 4,
+    borderRadius: radius.md,
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+  },
+  repeatHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  repeatMeal: { ...type.footnote, fontWeight: '700', color: colors.foreground },
+  repeatWhen: { ...type.caption, color: colors.mutedForeground },
+  repeatFoods: { ...type.caption, color: colors.mutedForeground },
+  repeatKcal: { ...type.caption, color: colors.foreground, fontVariant: ['tabular-nums'] },
   root: { flex: 1, backgroundColor: colors.card },
   content: { padding: spacing.lg, gap: spacing.sm + 4 },
   title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
