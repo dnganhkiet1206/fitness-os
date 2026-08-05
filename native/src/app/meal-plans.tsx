@@ -2,8 +2,21 @@ import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { ChevronDown, Plus, Search, Trash2, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -40,7 +53,15 @@ import { calorieTargetFor } from '@/lib/macro-targets';
  * food — so putting an egg on Thursday breakfast meant scrolling past every day
  * to a panel that had no idea which day you had been looking at, and hunting a
  * 11pt chip. The day is now the thing you press: every day has its own **Add
- * food**, and the picker opens inside that day already knowing where it goes.
+ * food**, and it opens a sheet that already knows where the food goes — its
+ * title says so.
+ *
+ * A sheet rather than a panel inside the day, because a list of foods is as
+ * long as your library and a card that grows to hold it pushes the rest of the
+ * week off the screen while you are choosing. The sheet takes its own space,
+ * scrolls its own list, and leaves the week where it was. `Modal` is safe on
+ * this screen — it is pushed normally, not presented as a modal, which is what
+ * made the workout builder's sheets fail.
  *
  * `meals_per_day` was asked for at creation and then never used again except as
  * a caption. You could choose six meals a day and still only ever file food
@@ -90,6 +111,7 @@ export default function MealPlansScreen() {
   const deleteItem = useDeleteMealPlanItem();
   const i18n = useI18n();
   const { lang } = useAppSettings();
+  const insets = useSafeAreaInsets();
   const [openId, setOpenId] = useState<string | null>(null);
   const { data: items } = useMealPlanItems(openId);
 
@@ -137,6 +159,19 @@ export default function MealPlansScreen() {
     })[m] ?? m;
 
   const dayLabel = (idx: number) => `${i18n.nDay} ${idx + 1}`;
+
+  /**
+   * The plan the sheet is writing into, and the meal slots it offers.
+   *
+   * Computed here rather than inside the list, because the sheet is one view
+   * for the whole screen — a copy per day would be seven modals waiting to
+   * disagree about which one is open.
+   */
+  const openPlan = plans?.find((p) => p.id === openId);
+  const slots = MEAL_ORDER.slice(
+    0,
+    Math.max(1, Math.min(MEAL_ORDER.length, openPlan?.meals_per_day ?? 3)),
+  );
 
   const closePicker = () => {
     setAddingDay(null);
@@ -346,7 +381,7 @@ export default function MealPlansScreen() {
             was created. Clamped to the six the app knows: `meals_per_day` is a
             free column and a plan written elsewhere could say anything.
           */
-          const slots = MEAL_ORDER.slice(
+          const planSlots = MEAL_ORDER.slice(
             0,
             Math.max(1, Math.min(MEAL_ORDER.length, p.meals_per_day ?? 3)),
           );
@@ -361,13 +396,13 @@ export default function MealPlansScreen() {
                     Haptics.selectionAsync();
                     setOpenId(open ? null : p.id);
                     closePicker();
-                    setAddMeal(slots[0]);
+                    setAddMeal(planSlots[0]);
                   }}
                   style={({ pressed }) => [styles.planRow, pressed && styles.pressedDim]}>
                   <View style={styles.planInfo}>
                     <Text style={styles.title} numberOfLines={1}>{p.name}</Text>
                     <Text style={styles.hint}>
-                      {[goalLabel(p.goal), `${slots.length} ${i18n.nMealsPerDay}`]
+                      {[goalLabel(p.goal), `${planSlots.length} ${i18n.nMealsPerDay}`]
                         .filter(Boolean)
                         .join(' · ')}
                     </Text>
@@ -408,7 +443,6 @@ export default function MealPlansScreen() {
               {open
                 ? DAYS.map((d) => {
                     const day = byDay.get(d)!;
-                    const picking = addingDay === d;
                     return (
                       <Animated.View
                         key={d}
@@ -421,7 +455,7 @@ export default function MealPlansScreen() {
                             ) : null}
                           </View>
 
-                          {day.items.length === 0 && !picking ? (
+                          {day.items.length === 0 ? (
                             <Text style={styles.emptyDay}>{i18n.nMpEmptyDay}</Text>
                           ) : null}
 
@@ -464,121 +498,20 @@ export default function MealPlansScreen() {
                             ),
                           )}
 
-                          {picking ? (
-                            <View style={styles.picker}>
-                              <View style={styles.pickerHead}>
-                                <Text style={styles.pickerTitle} numberOfLines={1}>
-                                  {i18n.nMpAddTo
-                                    .replace('{d}', dayLabel(d))
-                                    .replace('{m}', mealLabel(addMeal))}
-                                </Text>
-                                <Pressable
-                                  accessibilityRole="button"
-                                  accessibilityLabel={i18n.a11yClose}
-                                  hitSlop={10}
-                                  onPress={() => {
-                                    Haptics.selectionAsync();
-                                    closePicker();
-                                  }}
-                                  style={styles.iconBtn}>
-                                  <Icon icon={X} size={15} color={colors.mutedForeground} />
-                                </Pressable>
-                              </View>
-
-                              <View style={styles.chipRow}>
-                                {slots.map((m) => (
-                                  <Pressable
-                                    key={m}
-                                    accessibilityRole="button"
-                                    accessibilityState={{ selected: addMeal === m }}
-                                    style={[styles.miniChip, addMeal === m && styles.chipActive]}
-                                    onPress={() => {
-                                      Haptics.selectionAsync();
-                                      setAddMeal(m);
-                                    }}>
-                                    <Text
-                                      style={[
-                                        styles.miniChipText,
-                                        addMeal === m && styles.chipTextActive,
-                                      ]}>
-                                      {mealLabel(m)}
-                                    </Text>
-                                  </Pressable>
-                                ))}
-                              </View>
-
-                              <View style={styles.searchWrap}>
-                                <Icon icon={Search} size={14} color={colors.mutedForeground} />
-                                <TextInput
-                                  style={styles.searchInput}
-                                  placeholder={i18n.nutritionSearchFood}
-                                  placeholderTextColor={colors.mutedForeground}
-                                  value={foodQuery}
-                                  onChangeText={setFoodQuery}
-                                  autoCorrect={false}
-                                  autoFocus
-                                />
-                                {foodQuery.length > 0 ? (
-                                  <Pressable
-                                    accessibilityRole="button"
-                                    accessibilityLabel={i18n.a11yClearSearch}
-                                    hitSlop={10}
-                                    onPress={() => setFoodQuery('')}
-                                    style={styles.iconBtn}>
-                                    <Icon icon={X} size={14} color={colors.mutedForeground} />
-                                  </Pressable>
-                                ) : null}
-                              </View>
-
-                              {/* Searching → the library; otherwise your own
-                                  foods, which is what you reach for most. */}
-                              {foodDebounced.length >= 2 ? (
-                                (foodResults ?? []).length > 0 ? (
-                                  (foodResults ?? []).map((f) => (
-                                    <FoodRow
-                                      key={f.id}
-                                      name={f.name}
-                                      kcal={Number(f.kcal)}
-                                      onAdd={() => addFood(f)}
-                                    />
-                                  ))
-                                ) : (
-                                  <Text style={styles.emptyDay}>
-                                    {i18n.nMpNoMatch.replace('{x}', foodDebounced)}
-                                  </Text>
-                                )
-                              ) : myFoods && myFoods.length > 0 ? (
-                                <>
-                                  <Text style={styles.pickLabel}>{i18n.nMpFromList}</Text>
-                                  {myFoods.map((f) => (
-                                    <FoodRow
-                                      key={f.id}
-                                      name={f.name}
-                                      kcal={Number(f.kcal)}
-                                      onAdd={() =>
-                                        addFood({ ...f, serving_g: Number(f.serving_g) || 100 })
-                                      }
-                                    />
-                                  ))}
-                                </>
-                              ) : null}
-                            </View>
-                          ) : (
-                            <Pressable
-                              accessibilityRole="button"
-                              accessibilityLabel={`${i18n.nMpAddFood} — ${dayLabel(d)}`}
-                              style={({ pressed }) => [styles.addFoodBtn, pressed && styles.pressed]}
-                              onPress={() => {
-                                Haptics.selectionAsync();
-                                setFoodQuery('');
-                                setFoodDebounced('');
-                                setAddMeal(slots[0]);
-                                setAddingDay(d);
-                              }}>
-                              <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
-                              <Text style={styles.addFoodText}>{i18n.nMpAddFood}</Text>
-                            </Pressable>
-                          )}
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`${i18n.nMpAddFood} — ${dayLabel(d)}`}
+                            style={({ pressed }) => [styles.addFoodBtn, pressed && styles.pressed]}
+                            onPress={() => {
+                              Haptics.selectionAsync();
+                              setFoodQuery('');
+                              setFoodDebounced('');
+                              setAddMeal(planSlots[0]);
+                              setAddingDay(d);
+                            }}>
+                            <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+                            <Text style={styles.addFoodText}>{i18n.nMpAddFood}</Text>
+                          </Pressable>
                         </GlassCard>
                       </Animated.View>
                     );
@@ -593,6 +526,141 @@ export default function MealPlansScreen() {
           <Text style={styles.hint}>{i18n.nNoMealPlansHint}</Text>
         </GlassCard>
       )}
+
+      {/*
+        Choosing the food, as a sheet over the week.
+
+        One for the whole screen, driven by `addingDay`. Seven copies — one per
+        day card — would be seven modals that can disagree about which is open,
+        and the day is already carried by the state rather than by which copy
+        rendered it.
+
+        `Modal` is right here and would not be in the workout builder: that
+        screen is itself presented as a modal, and a modal inside one renders
+        blank on this stack. This screen is pushed normally, like the routine
+        planner, whose template picker is built the same way.
+      */}
+      <Modal
+        visible={addingDay !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={closePicker}>
+        <Pressable
+          style={styles.backdrop}
+          accessibilityLabel={i18n.a11yClose}
+          onPress={closePicker}
+        />
+        {/* `box-none` so the dimmed week behind the sheet still takes the tap
+            that closes it — this fills the window to do its keyboard work. */}
+        <KeyboardAvoidingView
+          style={styles.sheetHolder}
+          pointerEvents="box-none"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
+            <View style={styles.grabber} />
+
+            <View style={styles.pickerHead}>
+              <Text style={styles.pickerTitle} numberOfLines={1}>
+                {addingDay !== null
+                  ? i18n.nMpAddTo
+                      .replace('{d}', dayLabel(addingDay))
+                      .replace('{m}', mealLabel(addMeal))
+                  : ''}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={i18n.a11yClose}
+                hitSlop={10}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  closePicker();
+                }}
+                style={styles.iconBtn}>
+                <Icon icon={X} size={16} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+
+            <View style={styles.chipRow}>
+              {slots.map((m) => (
+                <Pressable
+                  key={m}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: addMeal === m }}
+                  style={[styles.miniChip, addMeal === m && styles.chipActive]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setAddMeal(m);
+                  }}>
+                  <Text style={[styles.miniChipText, addMeal === m && styles.chipTextActive]}>
+                    {mealLabel(m)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={styles.searchWrap}>
+              <Icon icon={Search} size={14} color={colors.mutedForeground} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={i18n.nutritionSearchFood}
+                placeholderTextColor={colors.mutedForeground}
+                value={foodQuery}
+                onChangeText={setFoodQuery}
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+              {foodQuery.length > 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={i18n.a11yClearSearch}
+                  hitSlop={10}
+                  onPress={() => setFoodQuery('')}
+                  style={styles.iconBtn}>
+                  <Icon icon={X} size={14} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {/*
+              The list scrolls inside the sheet.
+
+              Your own foods can run to two hundred rows, which is the reason
+              this stopped being a panel inside a day card: a card that grows to
+              hold them pushes the rest of the week off the screen while you are
+              still choosing.
+            */}
+            <ScrollView
+              style={styles.results}
+              contentContainerStyle={styles.resultsContent}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag">
+              {foodDebounced.length >= 2 ? (
+                (foodResults ?? []).length > 0 ? (
+                  (foodResults ?? []).map((f) => (
+                    <FoodRow key={f.id} name={f.name} kcal={Number(f.kcal)} onAdd={() => addFood(f)} />
+                  ))
+                ) : (
+                  <Text style={styles.emptyDay}>
+                    {i18n.nMpNoMatch.replace('{x}', foodDebounced)}
+                  </Text>
+                )
+              ) : myFoods && myFoods.length > 0 ? (
+                <>
+                  <Text style={styles.pickLabel}>{i18n.nMpFromList}</Text>
+                  {myFoods.map((f) => (
+                    <FoodRow
+                      key={f.id}
+                      name={f.name}
+                      kcal={Number(f.kcal)}
+                      onAdd={() => addFood({ ...f, serving_g: Number(f.serving_g) || 100 })}
+                    />
+                  ))}
+                </>
+              ) : null}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </Screen>
   );
 }
@@ -704,9 +772,39 @@ const styles = StyleSheet.create({
   },
   addFoodText: { ...type.caption, fontWeight: '700', color: colors.primary },
 
-  picker: { gap: spacing.sm, marginTop: spacing.sm },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  /* Pins the sheet to the bottom of whatever the keyboard leaves. */
+  sheetHolder: { flex: 1, justifyContent: 'flex-end' },
+  sheet: {
+    /* Tall enough to be worth opening, short enough that the week behind it is
+       still visible — the sheet is a detour, not a destination. */
+    maxHeight: '82%',
+    backgroundColor: colors.card,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    marginBottom: spacing.xs,
+  },
+  results: { flexGrow: 0 },
+  resultsContent: { paddingBottom: spacing.sm },
   pickerHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  pickerTitle: { ...type.footnote, fontWeight: '600', color: colors.foreground, flex: 1 },
+  pickerTitle: { ...type.title2, color: colors.foreground, flex: 1 },
   miniChip: {
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 7,
