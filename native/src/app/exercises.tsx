@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { StaggerItem } from '@/components/ascnd/stagger-item';
 import { Icon } from '@/components/ascnd/icon';
+import { Field, FormSheet } from '@/components/ascnd/form-sheet';
 import { Screen } from '@/components/ascnd/screen';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -121,44 +122,29 @@ export default function ExercisesScreen() {
         </Pressable>
       </View>
 
-      {adding && (
-        <GlassCard style={styles.addCard}>
-          <Text style={styles.formTitle}>{i18n.exercisesAddTitle}</Text>
+      {/*
+        The form is a sheet, not a card wedged into the page.
 
-          <Text style={styles.fieldLabel}>{i18n.exercisesName}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={lang === 'vi' ? 'VD: Bench Press' : 'e.g. Bench Press'}
-            placeholderTextColor={colors.mutedForeground}
-            value={name}
-            onChangeText={setName}
-          />
+        It used to open in place, above the library — so pressing "thêm bài
+        tập" pushed the thing you were looking at down by three hundred points,
+        and the list you were adding *to* was what got moved out of the way. A
+        form that displaces its own context is a form you fill in blind.
 
-          <Text style={styles.fieldLabel}>{i18n.exercisesMuscleGroup}</Text>
-          <View style={styles.chipWrap}>
-            {MUSCLE_GROUPS.map((g) => (
-              <Pressable
-                key={g}
-                style={[styles.chip, muscleGroup === g && styles.chipActive]}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setMuscleGroup(g);
-                }}>
-                <Text style={[styles.chipText, muscleGroup === g && styles.chipTextActive]}>{g}</Text>
-              </Pressable>
-            ))}
-          </View>
+        It also had a title reading "Thêm Bài Tập" directly under a page titled
+        "Bài tập", under a button that said the same thing again.
 
-          <Text style={styles.fieldLabel}>{i18n.exercisesEquipment}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Barbell"
-            placeholderTextColor={colors.mutedForeground}
-            value={equipment}
-            onChangeText={setEquipment}
-          />
-
+        Now: one sheet, the three questions with what each is for written under
+        it, and the button that finishes it pinned where the thumb already is.
+        Same frame as the meal-plan flow, from `form-sheet`.
+      */}
+      <FormSheet
+        visible={adding}
+        title={i18n.exercisesAddTitle}
+        onClose={() => setAdding(false)}
+        footer={
           <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !name.trim() || addEx.isPending }}
             style={({ pressed }) => [
               styles.submitBtn,
               (!name.trim() || addEx.isPending) && styles.submitDisabled,
@@ -172,8 +158,51 @@ export default function ExercisesScreen() {
               <Text style={styles.submitText}>{i18n.exercisesAddBtn}</Text>
             )}
           </Pressable>
-        </GlassCard>
-      )}
+        }>
+        <Field label={i18n.exercisesName} hint={i18n.nExNameHint}>
+          <TextInput
+            style={styles.input}
+            placeholder={lang === 'vi' ? 'VD: Bench Press' : 'e.g. Bench Press'}
+            placeholderTextColor={colors.mutedForeground}
+            value={name}
+            onChangeText={setName}
+            autoFocus
+            returnKeyType="done"
+            onSubmitEditing={submit}
+          />
+        </Field>
+
+        <Field label={i18n.exercisesMuscleGroup} hint={i18n.nExGroupHint}>
+          <View style={styles.chipWrap}>
+            {MUSCLE_GROUPS.map((g) => (
+              <Pressable
+                key={g}
+                accessibilityRole="button"
+                accessibilityState={{ selected: muscleGroup === g }}
+                hitSlop={{ top: 6, bottom: 6 }}
+                style={[styles.chip, muscleGroup === g && styles.chipActive]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setMuscleGroup(g);
+                }}>
+                <Text style={[styles.chipText, muscleGroup === g && styles.chipTextActive]}>{g}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Field>
+
+        <Field label={i18n.exercisesEquipment} hint={i18n.nExGearHint}>
+          <TextInput
+            style={styles.input}
+            placeholder="Barbell"
+            placeholderTextColor={colors.mutedForeground}
+            value={equipment}
+            onChangeText={setEquipment}
+            returnKeyType="done"
+            onSubmitEditing={submit}
+          />
+        </Field>
+      </FormSheet>
 
       {grouped.length > 0 ? (
         grouped.map(([group, list], gi) => (
@@ -229,9 +258,6 @@ const styles = StyleSheet.create({
   },
   addBtnText: { fontSize: 12, fontWeight: '600', color: colors.primaryForeground },
 
-  addCard: { gap: spacing.sm },
-  formTitle: { ...type.headline, color: colors.foreground, marginBottom: 2 },
-  fieldLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4 },
   input: {
     height: 44,
     borderRadius: radius.md,

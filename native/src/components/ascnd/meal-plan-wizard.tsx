@@ -2,21 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Check, Plus, Search, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { FormSheet } from '@/components/ascnd/form-sheet';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -28,6 +16,7 @@ import {
 } from '@/hooks/use-library';
 import { dedupeSeedShadows, useMyFoods } from '@/hooks/use-nutrition';
 import { supabase } from '@/integrations/supabase/client';
+import { MEAL_ORDER, PLAN_DAYS } from '@/lib/planned-meal';
 
 /**
  * Making a meal plan, from nothing to food on a day, as one flow.
@@ -51,17 +40,15 @@ import { supabase } from '@/integrations/supabase/client';
  * steps, different amount already done — which is exactly what a progress line
  * is for.
  *
- * ── why it is a page and not a sheet ──
+ * ── the frame is shared ──
  *
- * A sheet is dismissed by dragging it down, and that is a gesture you either
- * know or do not. This fills the screen and closes with a button. On iOS
- * `pageSheet` still slides in and still drags away for whoever reaches for it;
- * nothing depends on it.
+ * The full-screen sheet, its close button and the pinned footer come from
+ * `form-sheet`, which the exercise library's add form uses too. Two sheets that
+ * merely resembled each other had different heights and different ways out;
+ * one frame makes them the same thing appearing twice.
  */
 
 const MEALS_PER_DAY = [3, 4, 5, 6];
-const DAYS = [0, 1, 2, 3, 4, 5, 6];
-const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'preworkout', 'postworkout'] as const;
 
 export function MealPlanWizard({
   visible,
@@ -80,7 +67,6 @@ export function MealPlanWizard({
   onPlanCreated?: (id: string) => void;
 }) {
   const i18n = useI18n();
-  const insets = useSafeAreaInsets();
 
   const { data: plans } = useMealPlans();
   const createPlan = useCreateMealPlan();
@@ -244,35 +230,19 @@ export function MealPlanWizard({
   ];
 
   return (
-    <Modal
+    <FormSheet
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.full} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.head}>
-          <Text style={styles.title}>{plan ? i18n.nMpAddTitle : i18n.nutritionCreatePlan}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={i18n.a11yClose}
-            hitSlop={12}
-            onPress={() => {
-              Haptics.selectionAsync();
-              onClose();
-            }}
-            style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
-            <Icon icon={X} size={18} color={colors.foreground} />
-          </Pressable>
-        </View>
-
-        {/*
+      title={plan ? i18n.nMpAddTitle : i18n.nutritionCreatePlan}
+      onClose={onClose}
+      belowHeader={
+        /*
           The progress line.
 
           Four dots and the rails between them, filling left to right. A rail is
           drawn by the dot it leads into, so the row cannot end on a stub, and
           the first and last keep a transparent one so every dot sits at the
           same place in its column and the row does not lean.
-        */}
+        */
         <View style={styles.steps}>
           {steps.map((st, i) => (
             <View key={st.key} style={styles.step}>
@@ -291,13 +261,46 @@ export function MealPlanWizard({
             </View>
           ))}
         </View>
+      }
+      footer={
+        /*
+          One button, and it says what pressing it does next.
 
-        <ScrollView
-          style={styles.body}
-          contentContainerStyle={styles.bodyContent}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag">
-          {!plan ? (
+          While there is no plan it makes the plan and the flow carries on into
+          the same screen — which is the whole point of merging these: creating
+          a plan and putting the first food in it were never two errands.
+        */
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !plan && (!name.trim() || createPlan.isPending) }}
+          disabled={!plan && (!name.trim() || createPlan.isPending)}
+          onPress={() => {
+            if (plan) {
+              Haptics.selectionAsync();
+              onClose();
+            } else {
+              submitPlan();
+            }
+          }}
+          style={({ pressed }) => [
+            styles.primary,
+            !plan && (!name.trim() || createPlan.isPending) && styles.primaryOff,
+            pressed && styles.pressed,
+          ]}>
+          {createPlan.isPending ? (
+            <ActivityIndicator color={colors.primaryForeground} size="small" />
+          ) : (
+            <Text style={styles.primaryText}>
+              {!plan
+                ? i18n.nMpNextAddFood
+                : added > 0
+                  ? `${i18n.nMpDone}  ·  ${i18n.nMpAddedN.replace('{n}', String(added))}`
+                  : i18n.nMpDone}
+            </Text>
+          )}
+        </Pressable>
+      }>
+      {!plan ? (
             <>
               <Text style={styles.stepHead}>{i18n.nutritionPlanName}</Text>
               <Text style={styles.stepHint}>{i18n.nMpStepPlanHint}</Text>
@@ -351,7 +354,7 @@ export function MealPlanWizard({
               <Text style={styles.stepHead}>{i18n.nMpStepDay}</Text>
               <Text style={styles.stepHint}>{i18n.nMpStepDayHint}</Text>
               <View style={styles.chipRow}>
-                {DAYS.map((d) => (
+                {PLAN_DAYS.map((d) => (
                   <Chip
                     key={d}
                     label={dayLabel(d)}
@@ -443,48 +446,7 @@ export function MealPlanWizard({
               </View>
             </>
           )}
-        </ScrollView>
-
-        {/*
-          One button, and it says what pressing it does next.
-
-          While there is no plan it makes the plan and the flow carries on into
-          the same screen — which is the whole point of merging these: creating
-          a plan and putting the first food in it were never two errands.
-        */}
-        <View style={[styles.foot, { paddingBottom: insets.bottom + spacing.sm }]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !plan && (!name.trim() || createPlan.isPending) }}
-            disabled={!plan && (!name.trim() || createPlan.isPending)}
-            onPress={() => {
-              if (plan) {
-                Haptics.selectionAsync();
-                onClose();
-              } else {
-                submitPlan();
-              }
-            }}
-            style={({ pressed }) => [
-              styles.primary,
-              !plan && (!name.trim() || createPlan.isPending) && styles.primaryOff,
-              pressed && styles.pressed,
-            ]}>
-            {createPlan.isPending ? (
-              <ActivityIndicator color={colors.primaryForeground} size="small" />
-            ) : (
-              <Text style={styles.primaryText}>
-                {!plan
-                  ? i18n.nMpNextAddFood
-                  : added > 0
-                    ? `${i18n.nMpDone}  ·  ${i18n.nMpAddedN.replace('{n}', String(added))}`
-                    : i18n.nMpDone}
-              </Text>
-            )}
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+    </FormSheet>
   );
 }
 
@@ -542,25 +504,6 @@ function FoodRow({
 }
 
 const styles = StyleSheet.create({
-  full: { flex: 1, backgroundColor: colors.background },
-  head: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  title: { ...type.title2, color: colors.foreground, flex: 1 },
-  close: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.secondary,
-  },
-
   steps: {
     flexDirection: 'row',
     paddingHorizontal: spacing.sm,
@@ -587,8 +530,6 @@ const styles = StyleSheet.create({
   stepValue: { ...type.caption, color: colors.mutedForeground },
   stepValueOn: { color: colors.foreground, fontWeight: '600' },
 
-  body: { flex: 1 },
-  bodyContent: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
   /* The question, then what it means. A row of chips is only obviously a
      control once you know what it is choosing between. */
   stepHead: { ...type.footnote, color: colors.foreground, fontWeight: '700', marginTop: spacing.sm },
@@ -640,12 +581,6 @@ const styles = StyleSheet.create({
   pickLabel: { ...type.caption, color: colors.mutedForeground },
   empty: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
 
-  foot: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-  },
   primary: {
     height: 50,
     borderRadius: radius.md,
