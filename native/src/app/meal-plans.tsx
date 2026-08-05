@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import { useLocalSearchParams } from 'expo-router';
 import { Check, ChevronDown, Plus, Search, Trash2, UtensilsCrossed, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -104,6 +105,14 @@ const DAYS = [0, 1, 2, 3, 4, 5, 6];
 const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'preworkout', 'postworkout'] as const;
 
 export default function MealPlansScreen() {
+  /*
+    Arriving with a plan already chosen, or with the create form open.
+
+    The Nutrition tab's "Thực đơn" section lists the plans now, so a tap there
+    has somewhere specific to land — otherwise it dropped you at the top of an
+    identical list and asked you to find the one you had just pressed.
+  */
+  const { plan: planParam, create: createParam } = useLocalSearchParams<{ plan?: string; create?: string }>();
   const { data: plans } = useMealPlans();
   const { data: profile } = useProfile();
   const createPlan = useCreateMealPlan();
@@ -113,7 +122,7 @@ export default function MealPlansScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const insets = useSafeAreaInsets();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(planParam ?? null);
   const { data: items } = useMealPlanItems(openId);
 
   /**
@@ -248,7 +257,7 @@ export default function MealPlansScreen() {
   };
 
   // Create form (web: "Create Meal Plan" dialog — name / goal / meals per day)
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(createParam === '1');
   const [name, setName] = useState('');
   const [goal, setGoal] = useState('maintain');
   const [mealsPerDay, setMealsPerDay] = useState(3);

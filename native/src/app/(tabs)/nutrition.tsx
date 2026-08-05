@@ -19,6 +19,7 @@ import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { useMealPlans } from '@/hooks/use-library';
 import { dedupeSeedShadows, useFavoriteFoods, useMyFoods, useRecentFoods, useToggleFavoriteFood, useTodayLog, type FoodItemRow } from '@/hooks/use-nutrition';
 import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile } from '@/hooks/useTodayData';
@@ -45,6 +46,114 @@ type Tab = 'today' | 'foods' | 'plans';
  * favourites, recents and Meal Plans are all still here, under `Thực phẩm` and
  * `Meal Plan`. The change is which of the three you land on.
  */
+/**
+ * The meal-plan tab.
+ *
+ * ── what it was ──
+ *
+ * A single card containing the words "Kế hoạch ăn →" and nothing else, above
+ * two thirds of an empty screen. It was a link wearing a tab's clothes: you
+ * tapped a section, got a door, went through the door, and found the list that
+ * could have been on the section in the first place.
+ *
+ * Nothing about it was broken, which is why it survived — it navigated
+ * correctly to a page that works. It was just the emptiest thing in the app.
+ *
+ * ── what it is ──
+ *
+ * The plans themselves. Each card carries the two facts that tell them apart —
+ * what the plan is for and how many meals a day it runs at — and opens straight
+ * into that plan rather than into a list of every plan you own.
+ *
+ * `/meal-plans` is still where a plan is built and edited. That division is
+ * worth keeping: this is the shelf, that is the workbench, and a tab inside the
+ * diary is the wrong place to be adding foods to day four of a plan.
+ *
+ * ── and when there are none ──
+ *
+ * The empty state says what a meal plan *is*. Somebody who has never made one
+ * is exactly the person looking at this screen, and "no meal plans yet" tells
+ * them only that they have not done a thing they may not have a name for.
+ */
+function MealPlanTab({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
+  const { data: plans, isPending } = useMealPlans();
+
+  const goalLabel = (g: string | null) =>
+    g === 'bulk' ? i18n.goalBulk : g === 'cut' ? i18n.goalCut : g === 'maintain' ? i18n.goalMaintain : null;
+
+  const create = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({ pathname: '/meal-plans', params: { create: '1' } });
+  };
+
+  if (isPending) return null;
+
+  if (!plans || plans.length === 0) {
+    return (
+      <GlassCard style={styles.planEmpty}>
+        <Icon icon={Utensils} size={22} color={colors.mutedForeground} />
+        <Text style={styles.planEmptyTitle}>{i18n.nMealPlanNone}</Text>
+        <Text style={styles.planEmptyBody}>{i18n.nMealPlanWhat}</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={create}
+          style={({ pressed }) => [styles.planCreate, pressed && styles.pressedDim]}>
+          <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
+          <Text style={styles.planCreateText}>{i18n.nMealPlanNew}</Text>
+        </Pressable>
+      </GlassCard>
+    );
+  }
+
+  return (
+    <>
+      <View style={styles.sectionHead}>
+        <Icon icon={Utensils} size={13} />
+        <Text style={styles.microTitle}>
+          {i18n.nutritionMealPlan} ({plans.length})
+        </Text>
+      </View>
+
+      {plans.map((p, i) => (
+        <Animated.View key={p.id} entering={rise(i)}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${p.name} — ${i18n.nMealPlanOpen}`}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push({ pathname: '/meal-plans', params: { plan: p.id } });
+            }}>
+            {({ pressed }) => (
+              <GlassCard style={[styles.planCard, pressed && styles.pressedDim]}>
+                <View style={styles.planText}>
+                  <Text style={styles.planName} numberOfLines={1}>{p.name}</Text>
+                  <Text style={styles.planMeta} numberOfLines={1}>
+                    {[
+                      goalLabel(p.goal),
+                      p.meals_per_day ? `${p.meals_per_day} ${i18n.nutritionMealsPerDay}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join('  ·  ')}
+                  </Text>
+                </View>
+                <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+              </GlassCard>
+            )}
+          </Pressable>
+        </Animated.View>
+      ))}
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={create}
+        style={({ pressed }) => [styles.planAdd, pressed && styles.pressedDim]}>
+        <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
+        <Text style={styles.planAddText}>{i18n.nMealPlanNew}</Text>
+      </Pressable>
+    </>
+  );
+}
+
 export default function NutritionScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -381,18 +490,7 @@ export default function NutritionScreen() {
             )}
           </>
         ) : (
-          <Pressable
-            onPress={() => { Haptics.selectionAsync(); router.push('/meal-plans'); }}>
-            {({ pressed }) => (
-              <GlassCard style={[styles.listCard, pressed && styles.pressedDim]}>
-                <View style={styles.sectionHead}>
-                  <Icon icon={Utensils} size={13} />
-                  <Text style={styles.microTitle}>{i18n.nutritionMealPlan}</Text>
-                </View>
-                <Text style={styles.emptyText}>{i18n.nMealPlans} →</Text>
-              </GlassCard>
-            )}
-          </Pressable>
+          <MealPlanTab i18n={i18n} />
         )}
       </Screen>
       {/* Logging lives here now, on the diary tab where the day is. The old
@@ -516,4 +614,47 @@ const styles = StyleSheet.create({
   foodBrand: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
   foodMacros: { fontSize: 11, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   emptyText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.sm },
+
+  // ── meal plans ──
+  planCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
+  planText: { flex: 1, minWidth: 0, gap: 2 },
+  planName: { fontSize: 15, fontWeight: '600', color: colors.foreground },
+  planMeta: { fontSize: 12, color: colors.mutedForeground },
+  /* Outlined and last, under the plans it adds to. The filled button belongs
+     to the empty state, where creating one is the only thing to do. */
+  planAdd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 44,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(24,24,27,0.2)',
+  },
+  planAddText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  planEmpty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
+  planEmptyTitle: { fontSize: 15, fontWeight: '600', color: colors.foreground },
+  /* The sentence that says what the thing is. Somebody who has never made a
+     meal plan is exactly who is reading this, and "none yet" tells them only
+     that they have not done something they may not have a name for. */
+  planEmptyBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  planCreate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 44,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    marginTop: spacing.xs,
+    backgroundColor: colors.primary,
+  },
+  planCreateText: { fontSize: 14, fontWeight: '600', color: colors.primaryForeground },
 });
