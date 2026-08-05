@@ -341,9 +341,25 @@ export function useMealPlanItems(planId: string | null) {
     queryKey: ['meal_plan_items', planId],
     enabled: !!planId,
     queryFn: async () => {
+      /*
+        Every column a planned food carries, not just the two the old list
+        showed.
+
+        This select was written for a card that printed a name and a calorie
+        count, and it stayed that way when "Log to today" started reading the
+        same rows and writing them into the diary. `PlannedFood` had every field
+        optional, so handing it these rows typechecked — and carbs and fat
+        arrived as `undefined`, became 0, and were written as 0. The meal landed
+        in the diary with its name and its calories and none of its macros, and
+        the only visible symptom was two bars on the Nutrition tab that did not
+        move.
+
+        `serving_g` and `food_item_id` were missing for the same reason and cost
+        the link back to the food they came from.
+      */
       const { data, error } = await supabase
         .from('meal_plan_items')
-        .select('id, day_index, meal_type, food_name, kcal, protein_g')
+        .select('id, day_index, meal_type, food_name, serving_g, kcal, protein_g, carbs_g, fat_g, food_item_id')
         .eq('meal_plan_id', planId!)
         .order('day_index')
         .order('meal_type');

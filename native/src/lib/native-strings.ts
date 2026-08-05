@@ -810,7 +810,7 @@ const vi: typeof en = {
   nMealPlans: 'Kế hoạch ăn',
   nMealPlanNone: 'Chưa có thực đơn nào',
   nMealPlanWhat: 'Thực đơn là vài ngày ăn được viết sẵn, để câu "hôm nay ăn gì" đã có câu trả lời từ trước.',
-  nMealPlanNew: 'Tạo thực đơn',
+  nMealPlanNew: 'Tạo kế hoạch ăn',
   nMealPlanOpen: 'Mở',
   nMealsPerDay: 'bữa/ngày',
   nDay: 'Ngày',

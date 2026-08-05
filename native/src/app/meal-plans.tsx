@@ -20,6 +20,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { MealPlanForm } from '@/components/ascnd/meal-plan-form';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
@@ -106,13 +107,13 @@ const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'preworkout', 'post
 
 export default function MealPlansScreen() {
   /*
-    Arriving with a plan already chosen, or with the create form open.
+    Arriving with a plan already chosen.
 
-    The Nutrition tab's "Thực đơn" section lists the plans now, so a tap there
-    has somewhere specific to land — otherwise it dropped you at the top of an
+    The Nutrition tab's plan section lists the plans now, so a tap there has
+    somewhere specific to land — otherwise it dropped you at the top of an
     identical list and asked you to find the one you had just pressed.
   */
-  const { plan: planParam, create: createParam } = useLocalSearchParams<{ plan?: string; create?: string }>();
+  const { plan: planParam } = useLocalSearchParams<{ plan?: string }>();
   const { data: plans } = useMealPlans();
   const { data: profile } = useProfile();
   const createPlan = useCreateMealPlan();
@@ -257,7 +258,7 @@ export default function MealPlansScreen() {
   };
 
   // Create form (web: "Create Meal Plan" dialog — name / goal / meals per day)
-  const [creating, setCreating] = useState(createParam === '1');
+  const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [goal, setGoal] = useState('maintain');
   const [mealsPerDay, setMealsPerDay] = useState(3);
@@ -374,67 +375,13 @@ export default function MealPlansScreen() {
       {creating && (
         <GlassCard style={styles.createCard}>
           <Text style={styles.formTitle}>{i18n.nutritionCreatePlan}</Text>
-
-          <Text style={styles.fieldLabel}>{i18n.nutritionPlanName}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={lang === 'vi' ? 'VD: Meal Prep Tuần 1' : 'e.g. Meal Prep Week 1'}
-            placeholderTextColor={colors.mutedForeground}
-            value={name}
-            onChangeText={setName}
-          />
-
-          <Text style={styles.fieldLabel}>{i18n.settingsGoal}</Text>
-          <View style={styles.chipRow}>
-            {GOALS.map((g) => (
-              <Pressable
-                key={g.key}
-                accessibilityRole="button"
-                accessibilityState={{ selected: goal === g.key }}
-                style={[styles.chip, goal === g.key && styles.chipActive]}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setGoal(g.key);
-                }}>
-                <Text style={[styles.chipText, goal === g.key && styles.chipTextActive]}>{g.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={styles.fieldLabel}>{i18n.nutritionMealsPerDay}</Text>
-          <View style={styles.chipRow}>
-            {MEALS_PER_DAY.map((n) => (
-              <Pressable
-                key={n}
-                accessibilityRole="button"
-                accessibilityState={{ selected: mealsPerDay === n }}
-                style={[styles.chip, mealsPerDay === n && styles.chipActive]}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setMealsPerDay(n);
-                }}>
-                <Text style={[styles.chipText, mealsPerDay === n && styles.chipTextActive]}>
-                  {n} {i18n.nutritionMeals}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            style={({ pressed }) => [
-              styles.submitBtn,
-              (!name.trim() || createPlan.isPending) && styles.submitDisabled,
-              pressed && name.trim() && !createPlan.isPending && styles.pressed,
-            ]}
-            disabled={!name.trim() || createPlan.isPending}
-            onPress={submitPlan}>
-            {createPlan.isPending ? (
-              <ActivityIndicator color={colors.primaryForeground} size="small" />
-            ) : (
-              <Text style={styles.submitText}>{i18n.nutritionCreateBtn}</Text>
-            )}
-          </Pressable>
+          {/*
+            The fields live in `meal-plan-form`, because the Nutrition tab asks
+            the same three questions in a sheet of its own. Two copies of a
+            form this small are cheap to write and drift in the way that costs
+            something — one screen gaining a field, or a different default.
+          */}
+          <MealPlanForm onCreated={(id) => { setCreating(false); setOpenId(id); }} />
         </GlassCard>
       )}
 

@@ -589,15 +589,33 @@ function invalidateLogQueries(qc: ReturnType<typeof useQueryClient>, userId?: st
   qc.invalidateQueries({ queryKey: ['recent_foods', userId] });
 }
 
-/** One planned food, as the plan stores it. */
+/**
+ * One planned food, as the plan stores it.
+ *
+ * ── why none of these are optional ──
+ *
+ * They were, and it hid a real bug for a release. `useMealPlanItems` selected
+ * six columns — enough for a card showing a name and a calorie count — and when
+ * "Log to today" started reading those same rows, handing them to this type
+ * typechecked perfectly: every field it did not fetch was simply "not provided".
+ *
+ * At runtime `carbs_g` and `fat_g` were `undefined`, became 0, and were written
+ * into the diary as 0. The meal was there, with its name and its calories, and
+ * two of the four macro bars on the Nutrition tab did not move.
+ *
+ * `number | null` rather than `number?` is the difference that matters here.
+ * The database really can hold null, so null has to be sayable — but *omitting*
+ * the field must not compile, because omitting the field is exactly how a
+ * missing column arrives.
+ */
 export interface PlannedFood {
-  food_item_id?: string | null;
+  food_item_id: string | null;
   food_name: string;
-  serving_g?: number | null;
-  kcal?: number | null;
-  protein_g?: number | null;
-  carbs_g?: number | null;
-  fat_g?: number | null;
+  serving_g: number | null;
+  kcal: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
 }
 
 /**

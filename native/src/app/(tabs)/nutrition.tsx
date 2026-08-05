@@ -10,6 +10,7 @@ import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
 import { NutritionCard, WaterWidget } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { MealPlanFormSheet } from '@/components/ascnd/meal-plan-form';
 import { Icon } from '@/components/ascnd/icon';
 import { LogMealFab } from '@/components/ascnd/log-meal-fab';
 import { Screen } from '@/components/ascnd/screen';
@@ -75,46 +76,81 @@ type Tab = 'today' | 'foods' | 'plans';
  * is exactly the person looking at this screen, and "no meal plans yet" tells
  * them only that they have not done a thing they may not have a name for.
  */
-function MealPlanTab({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
+function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boolean }) {
   const { data: plans, isPending } = useMealPlans();
+  const [creating, setCreating] = useState(false);
 
   const goalLabel = (g: string | null) =>
     g === 'bulk' ? i18n.goalBulk : g === 'cut' ? i18n.goalCut : g === 'maintain' ? i18n.goalMaintain : null;
 
-  const create = () => {
+  const open = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push({ pathname: '/meal-plans', params: { create: '1' } });
+    setCreating(true);
   };
+
+  /*
+    Three, and the newest at the top.
+
+    `useMealPlans` already orders by `created_at` descending — the plan you made
+    a minute ago is the one you are here to look at, and the one from March is
+    not. Three is what fits above the fold next to the tab bar; past that this
+    stops being a section of the diary and becomes a second plans screen, which
+    is what "Xem tất cả" is for.
+  */
+  const PREVIEW = 3;
 
   if (isPending) return null;
 
   if (!plans || plans.length === 0) {
     return (
-      <GlassCard style={styles.planEmpty}>
-        <Icon icon={Utensils} size={22} color={colors.mutedForeground} />
-        <Text style={styles.planEmptyTitle}>{i18n.nMealPlanNone}</Text>
-        <Text style={styles.planEmptyBody}>{i18n.nMealPlanWhat}</Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={create}
-          style={({ pressed }) => [styles.planCreate, pressed && styles.pressedDim]}>
-          <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
-          <Text style={styles.planCreateText}>{i18n.nMealPlanNew}</Text>
-        </Pressable>
-      </GlassCard>
+      <>
+        <GlassCard style={styles.planEmpty}>
+          <Icon icon={Utensils} size={22} color={colors.mutedForeground} />
+          <Text style={styles.planEmptyTitle}>{i18n.nMealPlanNone}</Text>
+          <Text style={styles.planEmptyBody}>{i18n.nMealPlanWhat}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={open}
+            style={({ pressed }) => [styles.planCreate, pressed && styles.pressedDim]}>
+            <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
+            <Text style={styles.planCreateText}>{i18n.nMealPlanNew}</Text>
+          </Pressable>
+        </GlassCard>
+        <MealPlanFormSheet
+          visible={creating}
+          onClose={() => setCreating(false)}
+          onCreated={(id) => router.push({ pathname: '/meal-plans', params: { plan: id } })}
+        />
+      </>
     );
   }
 
   return (
     <>
-      <View style={styles.sectionHead}>
-        <Icon icon={Utensils} size={13} />
-        <Text style={styles.microTitle}>
-          {i18n.nutritionMealPlan} ({plans.length})
-        </Text>
+      <View style={styles.planHead}>
+        <View style={styles.sectionHead}>
+          <Icon icon={Utensils} size={13} />
+          <Text style={styles.microTitle}>
+            {i18n.nutritionMealPlan} ({plans.length})
+          </Text>
+        </View>
+        {/* Only when there is something the three cards below are hiding — a
+            "see all" over a list that is already all of it is a control that
+            does nothing, which is what this whole section used to be. */}
+        {plans.length > PREVIEW ? (
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/meal-plans');
+            }}>
+            <Text style={styles.planAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
+          </Pressable>
+        ) : null}
       </View>
 
-      {plans.map((p, i) => (
+      {plans.slice(0, PREVIEW).map((p, i) => (
         <Animated.View key={p.id} entering={rise(i)}>
           <Pressable
             accessibilityRole="button"
@@ -145,11 +181,25 @@ function MealPlanTab({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
 
       <Pressable
         accessibilityRole="button"
-        onPress={create}
+        onPress={open}
         style={({ pressed }) => [styles.planAdd, pressed && styles.pressedDim]}>
         <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
         <Text style={styles.planAddText}>{i18n.nMealPlanNew}</Text>
       </Pressable>
+
+      {/*
+        A sheet, not a page.
+
+        It used to push `/meal-plans` with a flag that opened the form there.
+        That is a whole screen transition to answer three questions and then a
+        back gesture to return to the tab you were on — for a form that fits
+        above the keyboard. The plan you make lands in the list behind it.
+      */}
+      <MealPlanFormSheet
+        visible={creating}
+        onClose={() => setCreating(false)}
+        onCreated={(id) => router.push({ pathname: '/meal-plans', params: { plan: id } })}
+      />
     </>
   );
 }
@@ -490,7 +540,7 @@ export default function NutritionScreen() {
             )}
           </>
         ) : (
-          <MealPlanTab i18n={i18n} />
+          <MealPlanTab i18n={i18n} vi={lang === 'vi'} />
         )}
       </Screen>
       {/* Logging lives here now, on the diary tab where the day is. The old
@@ -616,6 +666,8 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.sm },
 
   // ── meal plans ──
+  planHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  planAll: { fontSize: 13, fontWeight: '600', color: colors.primary },
   planCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
   planText: { flex: 1, minWidth: 0, gap: 2 },
   planName: { fontSize: 15, fontWeight: '600', color: colors.foreground },
