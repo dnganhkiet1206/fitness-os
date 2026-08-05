@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Check, Minus, Moon, Pencil, Plus, Timer } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -13,7 +13,6 @@ import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
-import { rise } from '@/lib/entrance';
 import { dayProgressKey, staleDayProgress } from '@/lib/local-date';
 import { DEFAULT_REST, DEFAULT_RPE, restLabel } from '@/lib/prescription';
 import { toast } from '@/lib/toast';
@@ -48,6 +47,23 @@ import { displayWeight, weightLabel } from '@/lib/units';
  * which is the same as broken: a row of dates you cannot tap is not a calendar.
  * Picking a day up there and reading it down here is one screen doing one job.
  */
+
+/**
+ * How a day arrives when you tap another one.
+ *
+ * It was `rise(i)` — the app's standard card entrance, a spring from below on
+ * a 60ms per-row delay. That is right for a page you have just navigated to,
+ * where the cascade is the screen introducing itself. It is wrong here, and
+ * wrong in a way you feel rather than see: the strip at the top is a *segmented
+ * control*, and this panel is keyed by it, so every tap replayed up to half a
+ * second of staggered springing for what should be an immediate swap. Tapping
+ * T2, T3, T4 in sequence left three cascades overlapping each other.
+ *
+ * A short uniform fade instead. The panel is being *replaced*, not arriving,
+ * and 140ms is enough to stop it being a hard cut without becoming a movement
+ * anybody has to wait through.
+ */
+const SWAP = FadeIn.duration(140);
 
 /** The scale the builder offers, so the two screens ask for the same thing. */
 const RPE_CHOICES = [6, 7, 8, 9, 10] as const;
@@ -134,6 +150,15 @@ function expand(exercises: TplExercise[]): SetRow[] {
  * Failures are swallowed on purpose. This is housekeeping — a workout must not
  * fail to open because a cleanup could not run.
  */
+/**
+ * Whether the effort/rest editor has demonstrated itself yet, this app run.
+ *
+ * See the effect that reads it: a per-component ref reset on every day switch,
+ * which turned a one-off hint into a panel that opened under your thumb every
+ * time you tapped a different day.
+ */
+let introduced = false;
+
 let pruned = false;
 async function pruneOldProgress() {
   if (pruned) return;
@@ -260,14 +285,20 @@ export function DayPlan({
     from then on — the demonstration costs one tap to dismiss and is never
     repeated within a day.
 
-    Held in a ref rather than in state: it must fire once per mounted day, and
-    this component is remounted per day by its key, so a ref is exactly the
-    lifetime wanted.
+    Module scope, not a ref — and that is the whole fix.
+
+    A ref lives as long as the component, and this component is remounted by
+    its key every time you tap a different day. So the "demonstration" fired on
+    *every* day switch: flick across the week and a panel springs open under
+    your thumb seven times, each one needing a tap to close. What was meant to
+    teach an affordance once became the most annoying thing on the screen.
+
+    The affordance needs showing once per app run. That is a lifetime longer
+    than any component here has, so it is held outside all of them.
   */
-  const introduced = useRef(false);
   useEffect(() => {
-    if (!loaded || introduced.current || rows.length === 0) return;
-    introduced.current = true;
+    if (!loaded || introduced || rows.length === 0) return;
+    introduced = true;
     setEditing((rows.find((r) => !done[r.key]) ?? rows[0]).key);
     // `done` is read once, at the moment the resume point lands; depending on
     // it would re-run this every time a set is ticked.
@@ -455,7 +486,7 @@ export function DayPlan({
         const secs = restOf(row);
         const open = editing === row.key;
         return (
-          <Animated.View key={row.key} entering={rise(Math.min(i, 8))}>
+          <Animated.View key={row.key} entering={SWAP}>
             {row.heads ? <Text style={styles.exName}>{row.exerciseName}</Text> : null}
             <GlassCard style={[styles.setCard, isDone && styles.setCardDone]}>
               <View style={styles.setRow}>
