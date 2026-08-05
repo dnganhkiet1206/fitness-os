@@ -6,7 +6,7 @@ import Animated from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useMealPlans } from '@/hooks/use-library';
 import { rise } from '@/lib/entrance';
@@ -45,6 +45,10 @@ export default function MealPlansScreen() {
         <View style={styles.list}>
           {plans.map((p, i) => (
             <Animated.View key={p.id} entering={rise(i)}>
+              {/* Its own element, not a border on the row: a `marginLeft` to
+                  inset the rule moves the whole row, and every chevron after
+                  the first ends up 16pt off the one above it. */}
+              {i > 0 ? <View style={styles.sep} /> : null}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={p.name}
@@ -52,7 +56,7 @@ export default function MealPlansScreen() {
                   Haptics.selectionAsync();
                   router.push({ pathname: '/meal-plan', params: { plan: p.id } });
                 }}
-                style={({ pressed }) => [styles.row, i > 0 && styles.ruled, pressed && styles.pressed]}>
+                style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
                 <View style={styles.text}>
                   <Text style={styles.name} numberOfLines={1}>{p.name}</Text>
                   <Text style={styles.meta} numberOfLines={1}>
@@ -78,16 +82,26 @@ export default function MealPlansScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { borderRadius: radius.lg, backgroundColor: colors.card, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, height: 62 },
-  /* Inset from the left, like a table view's separator — a rule that runs the
-     full width cuts the group into stripes instead of dividing it. */
-  ruled: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    marginLeft: spacing.md,
-    paddingLeft: 0,
+  /*
+    Delineated by its border, not its fill.
+
+    `colors.card` against the page measures 1.045:1 — not a faint surface but
+    no surface at all, with the rows floating on the page. Every other surface
+    in this app is `glass.bg` plus a 12%-white hairline for exactly this
+    reason: at these luminances the border is what the eye finds, and the fill
+    only stops the group looking hollow.
+  */
+  list: {
+    borderRadius: radius.lg,
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    overflow: 'hidden',
   },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, height: 62 },
+  /* Inset from the left, the way a table view's separator is — a rule running
+     the full width cuts the group into stripes instead of dividing it. */
+  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: colors.border },
   text: { flex: 1, minWidth: 0, gap: 2 },
   name: { ...type.body, color: colors.foreground, fontWeight: '600' },
   meta: { ...type.footnote, color: colors.mutedForeground },

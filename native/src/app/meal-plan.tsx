@@ -8,7 +8,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { Icon } from '@/components/ascnd/icon';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
   useDeleteMealPlan,
@@ -213,14 +213,32 @@ export default function MealPlanScreen() {
         the place a subtitle goes.
       */}
       <View style={styles.summary}>
+        {/*
+          The day, in words.
+
+          The strip says which one by filling a pill, and that is the *only*
+          place the page said it — so the heading was a calorie count and you
+          had to look back up and count cells to know what it was counting.
+          An eyebrow over the number is the pattern this app already uses on
+          every other screen, and it costs one line.
+        */}
+        <Text style={styles.eyebrow}>{`${i18n.nDay} ${day + 1}`}</Text>
         <Text style={styles.dayKcal}>
           {today.kcal.toLocaleString()} <Text style={styles.dayKcalUnit}>kcal</Text>
         </Text>
-        <Text style={styles.daySub}>
-          {target > 0 ? i18n.nMpPctTarget.replace('{p}', String(pct)) : ''}
-          {target > 0 && weekKcal > 0 ? '  ·  ' : ''}
-          {weekKcal > 0 ? i18n.nMpWeekTotal.replace('{x}', weekKcal.toLocaleString()) : ''}
-        </Text>
+        {/* Nothing rather than an empty line: a `Text` with no words in it
+            still takes its line height, and a gap you cannot account for reads
+            as a layout mistake. */}
+        {target > 0 || weekKcal > 0 ? (
+          <Text style={styles.daySub}>
+            {[
+              target > 0 ? i18n.nMpPctTarget.replace('{p}', String(pct)) : null,
+              weekKcal > 0 ? i18n.nMpWeekTotal.replace('{x}', weekKcal.toLocaleString()) : null,
+            ]
+              .filter(Boolean)
+              .join('  ·  ')}
+          </Text>
+        ) : null}
       </View>
 
       {meals.length === 0 ? (
@@ -272,17 +290,25 @@ export default function MealPlanScreen() {
             */}
             <View style={styles.list}>
               {foods.map((it, i) => (
-                <View key={it.id} style={[styles.row, i > 0 && styles.rowRuled]}>
-                  <Text style={styles.rowName} numberOfLines={1}>{it.food_name}</Text>
-                  <Text style={styles.rowKcal}>{Math.round(Number(it.kcal))} kcal</Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${i18n.a11yRemove} ${it.food_name}`}
-                    hitSlop={12}
-                    onPress={() => deleteItem.mutate({ id: it.id, planId: plan?.id ?? '' })}
-                    style={({ pressed }) => [styles.rowX, pressed && styles.pressed]}>
-                    <Icon icon={X} size={13} color={colors.mutedForeground} />
-                  </Pressable>
+                <View key={it.id}>
+                  {/* Its own element, not a border on the row. A `marginLeft`
+                      on the row to inset the rule moves the *whole row*, which
+                      pulled every ✕ after the first one 16pt left of the first
+                      — a column of buttons that did not line up, from a style
+                      whose only job was a hairline. */}
+                  {i > 0 ? <View style={styles.sep} /> : null}
+                  <View style={styles.row}>
+                    <Text style={styles.rowName} numberOfLines={1}>{it.food_name}</Text>
+                    <Text style={styles.rowKcal}>{Math.round(Number(it.kcal))} kcal</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${i18n.a11yRemove} ${it.food_name}`}
+                      hitSlop={12}
+                      onPress={() => deleteItem.mutate({ id: it.id, planId: plan?.id ?? '' })}
+                      style={({ pressed }) => [styles.rowX, pressed && styles.pressed]}>
+                      <Icon icon={X} size={13} color={colors.mutedForeground} />
+                    </Pressable>
+                  </View>
                 </View>
               ))}
             </View>
@@ -337,6 +363,13 @@ const styles = StyleSheet.create({
 
   // ── the day, said once ──
   summary: { gap: 2, marginTop: spacing.xs },
+  eyebrow: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    fontWeight: '700',
+  },
   dayKcal: { ...type.largeTitle, color: colors.foreground, fontVariant: ['tabular-nums'] },
   dayKcalUnit: { ...type.body, color: colors.mutedForeground, fontWeight: '500' },
   daySub: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
@@ -367,16 +400,27 @@ const styles = StyleSheet.create({
   eatDone: { backgroundColor: 'rgba(43,245,168,0.18)' },
   eatText: { ...type.caption, color: colors.readinessGreen, fontWeight: '700' },
 
-  list: { borderRadius: radius.md, backgroundColor: colors.card, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, height: 46 },
-  /* Inset from the left, like a table view's separator — a rule that runs the
-     full width cuts the group into stripes instead of dividing it. */
-  rowRuled: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    marginLeft: spacing.md,
-    paddingLeft: 0,
+  /*
+    The surface has to be delineated by its border, not by its fill.
+
+    `colors.card` (#0e0e11) against the page (#070708) measures 1.045:1. That is
+    not a faint surface, it is no surface: the rows floated on the page and the
+    group they were meant to form did not exist. Nothing available fixes it by
+    fill alone — `colors.secondary` is 1.137 — which is exactly why every other
+    surface in this app is `glass.bg` *plus* a 12%-white hairline. The border is
+    what the eye finds; the fill only stops it looking hollow.
+  */
+  list: {
+    borderRadius: radius.md,
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    overflow: 'hidden',
   },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, height: 46 },
+  /* Inset from the left, the way a table view's separator is — a rule that runs
+     the full width cuts the group into stripes instead of dividing it. */
+  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: colors.border },
   rowName: { ...type.body, color: colors.foreground, flex: 1 },
   rowKcal: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   rowX: { width: 28, alignItems: 'flex-end' },
@@ -388,7 +432,9 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 46,
     borderRadius: radius.md,
-    backgroundColor: colors.card,
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
   },
   addText: { ...type.body, color: colors.primary, fontWeight: '600' },
   note: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
