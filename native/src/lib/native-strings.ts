@@ -286,7 +286,10 @@ const en = {
   nMpNoMatch: 'No food matches “{x}”',
   nMpAlready: 'added',
   nMpEatIt: 'Log to today',
-  nMpEaten: 'Logged',
+  nMpEaten: 'In today',
+  nMpAgainTitle: 'Already in today',
+  nMpAgainBody: 'Today already has a {m} with exactly these foods. Log it a second time?',
+  nMpAgainYes: 'Log again',
   nMpEatDone: '{m} added to today’s diary',
   nMpNoFibre: 'Logged from a plan carries no fibre — the plan does not record it.',
   // Repeating a meal you have already eaten
@@ -853,7 +856,10 @@ const vi: typeof en = {
   nMpNoMatch: 'Không có món nào khớp “{x}”',
   nMpAlready: 'đã thêm',
   nMpEatIt: 'Ghi vào hôm nay',
-  nMpEaten: 'Đã ghi',
+  nMpEaten: 'Có trong hôm nay',
+  nMpAgainTitle: 'Hôm nay đã có rồi',
+  nMpAgainBody: 'Nhật ký hôm nay đã có một bữa {m} đúng các món này. Ghi thêm lần nữa?',
+  nMpAgainYes: 'Ghi thêm',
   nMpEatDone: 'Đã thêm {m} vào nhật ký hôm nay',
   nMpNoFibre: 'Ghi từ kế hoạch thì không có chất xơ — kế hoạch không lưu số đó.',
   // Ăn lại bữa đã ăn

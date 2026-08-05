@@ -28,9 +28,10 @@ import {
   useMealPlanItems,
   useMealPlans,
 } from '@/hooks/use-library';
-import { useLogPlannedMeal } from '@/hooks/use-nutrition';
+import { useLogPlannedMeal, useTodayLog } from '@/hooks/use-nutrition';
 import { useProfile } from '@/hooks/useTodayData';
 import { calorieTargetFor } from '@/lib/macro-targets';
+import { plannedMealIsLoggedToday } from '@/lib/planned-meal';
 import { toast } from '@/lib/toast';
 
 /**
@@ -152,44 +153,63 @@ export default function MealPlansScreen() {
   );
 
   /**
-   * Meals written into today's diary since this screen opened.
+   * Whether a planned meal is already in today's diary.
    *
-   * Keyed `plan:day:meal`, and deliberately only for this visit. Whether a meal
-   * "has been eaten" is not a fact the plan holds — a plan day is the second day
-   * of a routine, not a date — and the diary cannot answer it either, because
-   * two eggs for breakfast is one meal logged twice as legitimately as it is a
-   * double tap. So this claims only what it saw: you pressed it, here, just now.
-   * A relaunch forgets, which is honest, because after a relaunch it does not
-   * know.
-   */
-  const [logged, setLogged] = useState<Set<string>>(new Set());
-  /**
-   * How many foods this sitting of the picker has added.
+   * This used to be a `Set` of `plan:day:meal` held for the visit, which forgot
+   * on relaunch — so leaving the screen and coming back offered to log the same
+   * breakfast again, silently, with nothing anywhere saying today already had
+   * it. The reason given was that the app cannot know whether you *ate* it.
    *
-   * The third step is the only one that starts unanswered — the day arrives
-   * from the button you pressed and the meal has a default — so this is what
-   * the progress bar is actually tracking. Reset when the picker opens, not
-   * when it closes: closing it can happen by a back gesture that never reaches
-   * `closePicker`.
+   * True, and beside the point: nothing needs to know that. The diary knows
+   * what it already contains, which is a different question with a real answer
+   * — and one that is stored rather than remembered, so it survives the app
+   * being closed. The rule is in `@/lib/planned-meal`, away from React, and it
+   * errs toward saying no.
+   *
+   * It is evidence, not a verdict. The button stays pressable; it asks first.
    */
-  const [addedCount, setAddedCount] = useState(0);
+  const { data: todayMeals } = useTodayLog();
   const logMeal = useLogPlannedMeal();
+  const inToday = (foods: { food_name: string }[], mealType: string) =>
+    plannedMealIsLoggedToday(foods, mealType, todayMeals ?? []);
 
-  const eatMeal = (planId: string, day: number, meal: string, foods: typeof items) => {
-    const key = `${planId}:${day}:${meal}`;
-    if (!foods || foods.length === 0 || logged.has(key) || logMeal.isPending) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    logMeal.mutate(
-      { mealType: meal, foods },
-      {
-        onSuccess: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setLogged((prev) => new Set(prev).add(key));
-          toast.success(i18n.nMpEatDone.replace('{m}', mealLabel(meal)));
+  const eatMeal = (meal: string, foods: NonNullable<typeof items>) => {
+    if (foods.length === 0 || logMeal.isPending) return;
+
+    const write = () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      logMeal.mutate(
+        { mealType: meal, foods },
+        {
+          onSuccess: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            toast.success(i18n.nMpEatDone.replace('{m}', mealLabel(meal)));
+          },
+          onError: (e: Error) => toast.error(e.message),
         },
-        onError: (e: Error) => toast.error(e.message),
-      },
-    );
+      );
+    };
+
+    /*
+      Asked, not refused.
+
+      The accidental second tap and the genuine second helping look identical
+      from here, and only one of them is a mistake — so the mistake gets a
+      question and the real case gets one extra tap. Blocking outright would
+      make the app the authority on what you ate, which it is not.
+    */
+    if (inToday(foods, meal)) {
+      Alert.alert(
+        i18n.nMpAgainTitle,
+        i18n.nMpAgainBody.replace('{m}', mealLabel(meal).toLowerCase()),
+        [
+          { text: i18n.cancel, style: 'cancel' },
+          { text: i18n.nMpAgainYes, onPress: write },
+        ],
+      );
+      return;
+    }
+    write();
   };
 
   const closePicker = () => setAddingDay(null);
@@ -391,38 +411,33 @@ export default function MealPlansScreen() {
                                     "Day 2" is the second day of a routine, not
                                     a date.
                                   */}
-                                  <Pressable
-                                    accessibilityRole="button"
-                                    accessibilityState={{
-                                      disabled: logged.has(`${p.id}:${d}:${m}`),
-                                    }}
-                                    disabled={logged.has(`${p.id}:${d}:${m}`) || logMeal.isPending}
-                                    hitSlop={8}
-                                    onPress={() =>
-                                      eatMeal(
-                                        p.id,
-                                        d,
-                                        m,
-                                        day.items.filter((it) => it.meal_type === m),
-                                      )
-                                    }
-                                    style={({ pressed }) => [
-                                      styles.eatBtn,
-                                      logged.has(`${p.id}:${d}:${m}`) && styles.eatBtnDone,
-                                      pressed && styles.pressed,
-                                    ]}>
-                                    <Icon
-                                      icon={logged.has(`${p.id}:${d}:${m}`) ? Check : UtensilsCrossed}
-                                      size={12}
-                                      color={colors.readinessGreen}
-                                      strokeWidth={2.5}
-                                    />
-                                    <Text style={styles.eatBtnText}>
-                                      {logged.has(`${p.id}:${d}:${m}`)
-                                        ? i18n.nMpEaten
-                                        : i18n.nMpEatIt}
-                                    </Text>
-                                  </Pressable>
+                                  {(() => {
+                                    const mealFoods = day.items.filter((it) => it.meal_type === m);
+                                    const already = inToday(mealFoods, m);
+                                    return (
+                                      <Pressable
+                                        accessibilityRole="button"
+                                        accessibilityState={{ disabled: logMeal.isPending }}
+                                        disabled={logMeal.isPending}
+                                        hitSlop={8}
+                                        onPress={() => eatMeal(m, mealFoods)}
+                                        style={({ pressed }) => [
+                                          styles.eatBtn,
+                                          already && styles.eatBtnDone,
+                                          pressed && styles.pressed,
+                                        ]}>
+                                        <Icon
+                                          icon={already ? Check : UtensilsCrossed}
+                                          size={12}
+                                          color={colors.readinessGreen}
+                                          strokeWidth={2.5}
+                                        />
+                                        <Text style={styles.eatBtnText}>
+                                          {already ? i18n.nMpEaten : i18n.nMpEatIt}
+                                        </Text>
+                                      </Pressable>
+                                    );
+                                  })()}
                                 </View>
                                 {day.items
                                   .filter((it) => it.meal_type === m)
