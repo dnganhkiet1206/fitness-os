@@ -33,6 +33,26 @@
  * second copy. Somebody who really did eat it twice can still say so.
  */
 
+/**
+ * The meals a day can hold, in the order a day runs.
+ *
+ * Here rather than in a screen because three of them need it and they must
+ * agree: the wizard offers the first N as slots, the plan page groups a day by
+ * it, and the shopping list walks it. A second copy that drifted by one entry
+ * would file food under a meal one of them does not draw.
+ */
+export const MEAL_ORDER = [
+  'breakfast',
+  'lunch',
+  'dinner',
+  'snack',
+  'preworkout',
+  'postworkout',
+] as const;
+
+/** A plan is a week. `day_index` is 0–6 and is a position, not a date. */
+export const PLAN_DAYS = [0, 1, 2, 3, 4, 5, 6];
+
 export interface NamedFood {
   food_name: string;
 }

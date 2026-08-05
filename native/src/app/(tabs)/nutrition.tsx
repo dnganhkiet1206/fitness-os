@@ -158,7 +158,7 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
               accessibilityLabel={`${p.name} — ${i18n.nMealPlanOpen}`}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push({ pathname: '/meal-plans', params: { plan: p.id } });
+                router.push({ pathname: '/meal-plan', params: { plan: p.id } });
               }}>
               {({ pressed }) => (
                 <GlassCard style={[styles.planCard, pressed && styles.pressedDim]}>

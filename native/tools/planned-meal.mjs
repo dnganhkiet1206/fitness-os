@@ -116,12 +116,21 @@ try {
     person who genuinely ate the same breakfast twice would have no way to say
     so.
   */
-  const screen = readFileSync(path.join(NATIVE, 'src/app/meal-plans.tsx'), 'utf8');
+  const screen = readFileSync(path.join(NATIVE, 'src/app/meal-plan.tsx'), 'utf8');
   if (/disabled=\{[^}]*\balready\b/.test(screen)) {
-    problems.push('meal-plans: nút bị khoá theo "already" — đây là bằng chứng, không phải phán quyết; phải hỏi chứ không chặn');
+    problems.push('meal-plan: nút bị khoá theo "already" — đây là bằng chứng, không phải phán quyết; phải hỏi chứ không chặn');
   }
-  if (!/Alert\.alert\(\s*i18n\.nMpAgainTitle/.test(screen)) {
-    problems.push('meal-plans: không thấy hộp thoại xác nhận trước khi ghi trùng');
+  if (!/Alert\.alert\(i18n\.nMpAgainTitle/.test(screen)) {
+    problems.push('meal-plan: không thấy hộp thoại xác nhận trước khi ghi trùng');
+  }
+  /*
+    The file this reads moved once already — the button was on `meal-plans`
+    until the plan got a screen of its own. A rule pointed at a file that no
+    longer holds the code it is about passes forever, so the path is asserted
+    before it is searched.
+  */
+  if (!/plannedMealIsLoggedToday/.test(screen)) {
+    problems.push('meal-plan: màn hình này không còn dùng plannedMealIsLoggedToday — luật đang canh sai tệp');
   }
 
   if (problems.length) {
