@@ -192,13 +192,9 @@ export default function MealPlansScreen() {
     );
   };
 
-  const closePicker = () => {
-    setAddingDay(null);
-    setCreating(false);
-  };
+  const closePicker = () => setAddingDay(null);
 
 
-  const [creating, setCreating] = useState(false);
 
   const GOALS = [
     { key: 'bulk', label: i18n.goalBulk },
@@ -257,21 +253,15 @@ export default function MealPlansScreen() {
 
   return (
     <Screen back title={i18n.nMealPlans}>
-      {/* Header row: your plans + create button (web plans tab) */}
-      <View style={styles.headRow}>
-        <Text style={styles.headTitle}>{i18n.nutritionYourPlans}</Text>
-        <Pressable
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.createBtn, pressed && styles.pressed]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            setCreating((v) => !v);
-          }}>
-          <Icon icon={Plus} size={13} color={colors.primaryForeground} strokeWidth={2.5} />
-          <Text style={styles.createBtnText}>{i18n.nutritionCreateNew}</Text>
-        </Pressable>
-      </View>
+      {/*
+        No "create" button, and no heading either.
 
+        The Nutrition tab makes plans now — that is where you are when you
+        decide you want one — and this screen's own title already says what it
+        is a list of. A second create button here would open the same flow from
+        a screen you had to reach first, and the heading under the heading was
+        the page saying its name twice.
+      */}
 
       {plans && plans.length > 0 ? (
         plans.map((p, pi) => {
@@ -346,6 +336,32 @@ export default function MealPlansScreen() {
                       <Animated.View
                         key={d}
                         entering={FadeInDown.duration(220).delay(Math.min(d, 6) * 30)}>
+                        {/*
+                          An empty day is one line, not a card.
+
+                          Every day is still shown — the week's shape is the
+                          thing being worked on, and hiding the empty ones hides
+                          exactly the days that need food. But a full card
+                          holding a title, the words "chưa có món nào" and a
+                          button is three lines of furniture for a day with
+                          nothing in it, and on a fresh plan that is seven of
+                          them stacked down the screen. The row says the day and
+                          offers the one thing you can do with it.
+                        */}
+                        {day.items.length === 0 ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`${i18n.nMpAddFood} — ${dayLabel(d)}`}
+                            onPress={() => {
+                              Haptics.selectionAsync();
+                              setAddingDay(d);
+                            }}
+                            style={({ pressed }) => [styles.emptyRow, pressed && styles.pressedDim]}>
+                            <Text style={styles.emptyRowDay}>{dayLabel(d)}</Text>
+                            <Text style={styles.emptyRowHint}>{i18n.nMpEmptyDay}</Text>
+                            <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+                          </Pressable>
+                        ) : (
                         <GlassCard style={styles.dayCard}>
                           <View style={styles.dayHead}>
                             <Text style={styles.dayTitle}>{dayLabel(d)}</Text>
@@ -353,10 +369,6 @@ export default function MealPlansScreen() {
                               <Text style={styles.dayKcal}>{day.kcal.toLocaleString()} kcal</Text>
                             ) : null}
                           </View>
-
-                          {day.items.length === 0 ? (
-                            <Text style={styles.emptyDay}>{i18n.nMpEmptyDay}</Text>
-                          ) : null}
 
                           {/* Grouped by meal, in the order a day runs — so a day
                               reads as breakfast then lunch then dinner rather
@@ -438,10 +450,6 @@ export default function MealPlansScreen() {
                             ),
                           )}
 
-                          {day.items.length > 0 ? (
-                            <Text style={styles.fibreNote}>{i18n.nMpNoFibre}</Text>
-                          ) : null}
-
                           <Pressable
                             accessibilityRole="button"
                             accessibilityLabel={`${i18n.nMpAddFood} — ${dayLabel(d)}`}
@@ -454,10 +462,23 @@ export default function MealPlansScreen() {
                             <Text style={styles.addFoodText}>{i18n.nMpAddFood}</Text>
                           </Pressable>
                         </GlassCard>
+                        )}
                       </Animated.View>
                     );
                   })
                 : null}
+
+              {/*
+                Once, under the week — not under every day that has food.
+
+                It was printed inside each day card, so a full plan repeated the
+                same caveat seven times. A note you have read six times is a note
+                you have stopped reading, and it is the only thing on this screen
+                that says what "Ghi vào hôm nay" does not carry.
+              */}
+              {open && (items ?? []).length > 0 ? (
+                <Text style={styles.fibreNote}>{i18n.nMpNoFibre}</Text>
+              ) : null}
             </Animated.View>
           );
         })
@@ -477,30 +498,22 @@ export default function MealPlansScreen() {
         the plan and the day already known and from the Nutrition tab with
         neither.
       */}
+      {/*
+        Always with a plan in hand: this screen is only ever reached from one,
+        and creating happens on the Nutrition tab. `planId` is never null here,
+        so the flow opens on the food with the first three steps already done.
+      */}
       <MealPlanWizard
-        visible={addingDay !== null || creating}
-        planId={creating ? null : openId}
+        visible={addingDay !== null}
+        planId={openId}
         initialDay={addingDay ?? 0}
         onClose={closePicker}
-        onPlanCreated={setOpenId}
       />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headTitle: { ...type.headline, color: colors.foreground },
-  createBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    height: 36,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
-    backgroundColor: colors.primary,
-  },
-  createBtnText: { fontSize: 12, fontWeight: '600', color: colors.primaryForeground },
 
   createCard: { gap: spacing.sm },
   formTitle: { ...type.headline, color: colors.foreground, marginBottom: 2 },
@@ -549,7 +562,22 @@ const styles = StyleSheet.create({
   dayHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dayTitle: { ...type.footnote, fontWeight: '700', color: colors.foreground },
   dayKcal: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  emptyDay: { ...type.caption, color: colors.mutedForeground, paddingVertical: 2 },
+  /* The slim row an untouched day gets. Indented to the same margin as the day
+     cards so the week still reads as one column, and shorter than a card by
+     enough that a plan with three days filled looks like three days filled. */
+  emptyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    height: 44,
+    paddingHorizontal: spacing.md,
+    marginLeft: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  emptyRowDay: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
+  emptyRowHint: { ...type.caption, color: colors.mutedForeground, flex: 1 },
 
   mealGroup: { marginTop: spacing.xs },
   mealHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
@@ -568,7 +596,12 @@ const styles = StyleSheet.create({
   },
   eatBtnDone: { backgroundColor: 'transparent' },
   eatBtnText: { ...type.caption, fontWeight: '700', color: colors.readinessGreen },
-  fibreNote: { ...type.caption, color: colors.mutedForeground, marginTop: spacing.xs },
+  fibreNote: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    marginLeft: spacing.md,
+    marginTop: spacing.xs,
+  },
   mealLabel: {
     ...type.caption,
     color: colors.mutedForeground,
