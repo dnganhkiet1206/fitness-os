@@ -27,17 +27,23 @@ export type EdgeFailure =
   | 'provider-error'
   /** not signed in, or the session expired */
   | 'unauthorised'
+  /** too many requests: the day's own allowance, or the model provider's */
+  | 'rate-limited'
   /** never reached the server */
   | 'offline'
   /** reached it, came back in a shape we do not understand */
   | 'unknown';
 
 /** Message keys, so a caller that shows something shows the right something. */
-export const AI_FAILURE_KEY: Record<EdgeFailure, 'aiNotDeployed' | 'aiProviderError' | 'aiSignedOut' | 'aiOffline' | 'aiUnknown'> = {
+export const AI_FAILURE_KEY: Record<
+  EdgeFailure,
+  'aiNotDeployed' | 'aiProviderError' | 'aiSignedOut' | 'aiOffline' | 'aiRateLimited' | 'aiUnknown'
+> = {
   'not-deployed': 'aiNotDeployed',
   'provider-error': 'aiProviderError',
   unauthorised: 'aiSignedOut',
   offline: 'aiOffline',
+  'rate-limited': 'aiRateLimited',
   unknown: 'aiUnknown',
 };
 
@@ -60,6 +66,20 @@ export function classify(err: unknown): EdgeFailure {
   const status = statusOf(err);
   if (status === 404) return 'not-deployed';
   if (status === 401 || status === 403) return 'unauthorised';
+  /*
+    429 had no case, so it fell all the way through to `unknown` — and a person
+    who had simply used the day's AI allowance was told "something went wrong".
+    Nothing had gone wrong, and the one thing they could act on (wait) was the
+    thing the message hid; the natural response is to press it again and reach
+    the same dead end.
+
+    Both senders mean the same thing to a reader. `_shared/guard.ts` returns 429
+    when the caller's own daily quota is spent, and the functions relay the model
+    provider's 429 when *it* is the one refusing. Either way the request was
+    fine and the answer is to come back later, so they share one kind rather
+    than splitting a distinction the user cannot use.
+  */
+  if (status === 429) return 'rate-limited';
   if (status !== null && status >= 500) return 'provider-error';
   const msg = String((err as { message?: string } | null)?.message ?? err ?? '');
   // Nothing came back at all — `FunctionsFetchError`, or a bare TypeError from

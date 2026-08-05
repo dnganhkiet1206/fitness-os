@@ -50,6 +50,15 @@ try {
     [{ status: 404 }, 'not-deployed', '404 phẳng'],
     [{ context: { status: 401 } }, 'unauthorised', 'hết phiên'],
     [{ context: { status: 403 } }, 'unauthorised', 'bị từ chối'],
+    /*
+      429 fell through to `unknown` before, so someone who had used up the
+      day's AI was told "something went wrong" — and the one thing they could
+      act on, waiting, was the thing the message hid. Two senders, one meaning:
+      `_shared/guard.ts` when the caller's own quota is spent, and the relayed
+      provider 429 when the model is the one refusing.
+    */
+    [{ context: { status: 429 } }, 'rate-limited', 'hết lượt AI trong ngày'],
+    [{ status: 429 }, 'rate-limited', '429 phẳng'],
     [{ context: { status: 500 } }, 'provider-error', 'function chạy rồi hỏng'],
     [{ context: { status: 503 } }, 'provider-error', 'nhà cung cấp quá tải'],
     [{ message: 'Failed to send a request to the Edge Function' }, 'offline', 'không tới nơi'],

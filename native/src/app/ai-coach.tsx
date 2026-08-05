@@ -36,6 +36,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { EDGE_FUNCTIONS, functionUrl, SUPABASE_ANON_KEY } from '@/lib/backend';
+import { AI_FAILURE_KEY, classify } from '@/lib/edge-failure';
 
 /**
  * The coach streams, so it cannot go through `supabase.functions.invoke` and
@@ -193,8 +194,24 @@ export default function AiCoachScreen() {
       });
 
       if (!resp.ok || !resp.body) {
-        const err = await resp.json().catch(() => ({ error: `Error ${resp.status}` }));
-        throw new Error((err as { error?: string }).error || `Error ${resp.status}`);
+        /*
+          Named the same way the other four AI screens name it.
+
+          This one streams, so it cannot go through `callEdge` — and it had
+          grown its own error path as a result: read `error` out of the body and
+          show that string. Two things were wrong with it. The server's own
+          quota message is written in Vietnamese, so an English user was shown
+          Vietnamese; and a 404 or a bare gateway failure has no `error` field
+          at all, so what surfaced was `Error 404`.
+
+          `classify` only needs a status, and `statusOf` reads a plain `.status`
+          — so the status goes through exactly the classifier the other screens
+          use, and the message comes from the same table. The raw body is still
+          worth having, so it goes to the console rather than to the person.
+        */
+        const raw = await resp.text().catch(() => '');
+        if (raw) console.warn(`ai-coach ${resp.status}: ${raw.slice(0, 300)}`);
+        throw new Error(i18n[AI_FAILURE_KEY[classify({ status: resp.status })]]);
       }
 
       const reader = resp.body.getReader();
@@ -235,7 +252,12 @@ export default function AiCoachScreen() {
           .eq('id', convoIdRef.current);
       }
     } catch (e) {
-      Alert.alert('AI Coach', e instanceof Error ? e.message : 'Connection error');
+      // A throw from `fetch` never reached the server; the classifier says so
+      // in the user's language rather than leaving a bare English fallback.
+      Alert.alert(
+        'AI Coach',
+        e instanceof Error ? e.message : i18n[AI_FAILURE_KEY[classify(e)]],
+      );
     } finally {
       setIsLoading(false);
     }
