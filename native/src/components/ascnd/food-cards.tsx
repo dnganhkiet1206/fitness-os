@@ -1,86 +1,87 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Plus, Star, Trash2 } from 'lucide-react-native';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Plus, Star } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
-import { toast } from '@/lib/toast';
 import {
   useCreateFoodItem,
-  useDeleteFoodItem,
   useToggleFavoriteFood,
   type FoodItemRow,
   type RecentFood,
 } from '@/hooks/use-nutrition';
 
-/** A saved food as a card: tap to edit macros, star to favorite, trash to delete. */
+/**
+ * A saved food, as a row in a group.
+ *
+ * ── it was a card, and there were twelve of them ──
+ *
+ * Every food carried its own border and its own fill. Three sections of four
+ * meant twelve bordered rectangles down one screen, each one drawing an edge
+ * around a line of text — and the eye spends its effort on edges before it
+ * spends any on words. Rows in one inset group say the same thing with one
+ * border for the whole set, which is how the plan screens, the plan list and
+ * every table view on the platform do it.
+ *
+ * The group and its hairlines belong to whoever lays these out; a row draws
+ * neither. It only knows its own padding.
+ *
+ * ── one trailing control, not two ──
+ *
+ * It had a star *and* a trash on every row: twenty-four icon buttons on a
+ * screen whose job is to let you look at food, half of them destructive and
+ * sitting under the thumb of somebody scrolling.
+ *
+ * The star stays — it is a toggle, it is cheap, and its state is information.
+ * Delete goes to the food editor, which the row already opens on a tap and
+ * which has had a delete of its own all along. Nothing is lost except the
+ * chance to remove a food you meant to scroll past.
+ */
 export function FoodCard({ f }: { f: FoodItemRow }) {
   const i18n = useI18n();
   const toggleFav = useToggleFavoriteFood();
-  const deleteFood = useDeleteFoodItem();
-
-  const confirmDelete = () => {
-    Alert.alert('ASCND', `${i18n.delete} "${f.name}"?`, [
-      { text: i18n.cancel, style: 'cancel' },
-      {
-        text: i18n.delete,
-        style: 'destructive',
-        onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          /*
-            Say when it did not work.
-
-            This called `mutate` with no `onError`, so a failed delete did
-            nothing at all: the alert closed, the card stayed, and there was no
-            way to tell a refusal from a slow network. The food editor's copy of
-            this same action already reports (`food-editor.tsx:118`); this one
-            was simply missed.
-
-            It is not hypothetical. Until the FK migration is applied, deleting
-            a food that sits in a meal plan is refused by the database — see
-            `20260803120000_meal_plan_item_food_fk.sql`. An expired session and
-            a dropped connection land here too, and all three used to look
-            identical to a delete that worked.
-          */
-          deleteFood.mutate(f.id, {
-            onSuccess: () => toast.success(i18n.foodDeleted),
-            onError: (e: Error) => toast.error(e.message),
-          });
-        },
-      },
-    ]);
-  };
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.foodCard, pressed && styles.pressedDim]}
+      accessibilityRole="button"
+      accessibilityLabel={`${f.name}, ${Math.round(Number(f.kcal))} kcal`}
+      style={({ pressed }) => [styles.row, pressed && styles.pressedDim]}
       onPress={() => {
         Haptics.selectionAsync();
         router.push({ pathname: '/food-editor', params: { id: f.id } });
       }}>
-      <View style={styles.foodInfo}>
-        <Text style={styles.foodName} numberOfLines={1}>
+      <View style={styles.info}>
+        <Text style={styles.name} numberOfLines={1}>
           {f.name}
-          {f.brand ? <Text style={styles.foodBrand}>  ({f.brand})</Text> : null}
+          {f.brand ? <Text style={styles.brand}>  {f.brand}</Text> : null}
         </Text>
-        <Text style={styles.foodMacros}>
-          {Math.round(Number(f.kcal))} kcal · P{Math.round(Number(f.protein_g))} · C{Math.round(Number(f.carbs_g))} · F{Math.round(Number(f.fat_g))}
+        <Text style={styles.macros}>
+          P{Math.round(Number(f.protein_g))} · C{Math.round(Number(f.carbs_g))} · F{Math.round(Number(f.fat_g))}
         </Text>
       </View>
+
+      {/* Right-aligned, like the value in any table row — it is the number you
+          scan a list of food for, and it was buried mid-sentence between the
+          macros. */}
+      <Text style={styles.kcal}>{Math.round(Number(f.kcal))} kcal</Text>
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={i18n.a11yFavourite}
-        hitSlop={8}
+        accessibilityState={{ selected: !!f.is_favorite }}
+        hitSlop={12}
         onPress={() => {
           Haptics.selectionAsync();
           toggleFav.mutate({ id: f.id, is_favorite: !f.is_favorite });
         }}>
-        <Icon icon={Star} size={17} color={f.is_favorite ? colors.readinessYellow : colors.mutedForeground} strokeWidth={f.is_favorite ? 2.5 : 2} />
-      </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={8} onPress={confirmDelete}>
-        <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
+        <Icon
+          icon={Star}
+          size={17}
+          color={f.is_favorite ? colors.readinessYellow : colors.mutedForeground}
+          strokeWidth={f.is_favorite ? 2.5 : 2}
+        />
       </Pressable>
     </Pressable>
   );
@@ -106,45 +107,72 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
   };
 
   return (
-    <View style={styles.foodCard}>
-      <View style={styles.foodInfo}>
-        <Text style={styles.foodName} numberOfLines={1}>{r.food_name}</Text>
-        <Text style={styles.foodMacros}>
-          {r.kcal} kcal · P{r.protein_g} · C{r.carbs_g} · F{r.fat_g}
+    <View style={styles.row}>
+      <View style={styles.info}>
+        <Text style={styles.name} numberOfLines={1}>{r.food_name}</Text>
+        <Text style={styles.macros}>
+          P{r.protein_g} · C{r.carbs_g} · F{r.fat_g}
         </Text>
       </View>
-      {!saved && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={i18n.a11yAdd}
-          hitSlop={8}
-          disabled={createFood.isPending}
-          style={({ pressed }) => pressed && styles.pressed}
-          onPress={quickAdd}>
-          <Icon icon={Plus} size={18} color={colors.primary} strokeWidth={2.5} />
-        </Pressable>
-      )}
+      <Text style={styles.kcal}>{r.kcal} kcal</Text>
+      {/* A fixed slot whether or not there is a button in it, so the kcal
+          column does not jog left on the rows that are already saved. */}
+      <View style={styles.slot}>
+        {!saved ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yAdd}
+            hitSlop={12}
+            disabled={createFood.isPending}
+            style={({ pressed }) => pressed && styles.pressed}
+            onPress={quickAdd}>
+            <Icon icon={Plus} size={18} color={colors.primary} strokeWidth={2.5} />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  foodCard: {
+  /* No border and no fill: the group these sit in draws one border for all of
+     them. A row that carries its own is a card, and twelve cards is what this
+     screen looked like. */
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm + 2,
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
+    minHeight: 52,
+  },
+  info: { flex: 1, minWidth: 0, gap: 2 },
+  name: { fontSize: 15, fontWeight: '500', color: colors.foreground },
+  brand: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
+  /* Monospace, because three numbers in a column only line up if the digits
+     are the same width — that is the whole reason to spend a mono face here. */
+  macros: { fontSize: 11, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  kcal: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  slot: { width: 18, alignItems: 'flex-end' },
+  pressedDim: { opacity: 0.9 },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
+});
+
+/**
+ * The group these rows live in, and the hairline between two of them.
+ *
+ * Exported so every screen that lists foods draws the same object rather than
+ * its own approximation of one. The separator is a element, never a border on
+ * the row: a `marginLeft` to inset a border moves the whole row, and the
+ * trailing column stops lining up.
+ */
+export const foodListStyles = StyleSheet.create({
+  group: {
     borderRadius: radius.md,
-    // Match the app's glass card surface (6% white fill + 12% white hairline)
+    backgroundColor: glass.bg,
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
-    backgroundColor: glass.bg,
+    overflow: 'hidden',
   },
-  foodInfo: { flex: 1, minWidth: 0, gap: 2 },
-  foodName: { fontSize: 14, fontWeight: '500', color: colors.foreground },
-  foodBrand: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
-  foodMacros: { fontSize: 11, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
+  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: colors.border },
 });

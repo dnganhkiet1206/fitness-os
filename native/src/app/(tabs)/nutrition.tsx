@@ -2,13 +2,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
 import { NutritionCard, WaterWidget } from '@/components/ascnd/dashboard-cards';
-import { FoodCard, RecentFoodCard } from '@/components/ascnd/food-cards';
+import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { Icon } from '@/components/ascnd/icon';
@@ -248,7 +248,21 @@ export default function NutritionScreen() {
   const todayFailed = dayFailed || diaryFailed || waterFailed;
 
   const { data: myFoods } = useMyFoods();
+  /*
+    Favourites are read for the *order*, not for a section of their own.
+
+    They are a subset of your foods, so a separate list drew the same rows
+    twice. Sorted to the front of the one list they still stand out — by the
+    star they already carry — and the screen is half the height.
+  */
   const { data: favorites } = useFavoriteFoods();
+  const favIds = useMemo(() => new Set((favorites ?? []).map((f) => f.id)), [favorites]);
+  const myFoodsSorted = useMemo(() => {
+    const fav = (f: FoodItemRow) => (f.is_favorite || favIds.has(f.id) ? 0 : 1);
+    // A copy: the array belongs to react-query's cache and sorting it in place
+    // would reorder it for every other reader.
+    return [...(myFoods ?? [])].sort((a, b) => fav(a) - fav(b) || a.name.localeCompare(b.name));
+  }, [myFoods, favIds]);
   const { data: recents } = useRecentFoods();
   const toggleFav = useToggleFavoriteFood();
 
@@ -259,6 +273,24 @@ export default function NutritionScreen() {
     Haptics.selectionAsync();
     router.push('/food-list');
   };
+  /**
+   * A set of foods as one inset group.
+   *
+   * The separator is an element between rows rather than a border on one: a
+   * `marginLeft` to inset a border moves the whole row, and the trailing column
+   * stops lining up with the row above it.
+   */
+  const FoodGroup = ({ rows }: { rows: FoodItemRow[] }) => (
+    <View style={foodListStyles.group}>
+      {rows.map((f, i) => (
+        <View key={f.id}>
+          {i > 0 ? <View style={foodListStyles.sep} /> : null}
+          <FoodCard f={f} />
+        </View>
+      ))}
+    </View>
+  );
+
   const SeeMore = () => (
     <Pressable style={({ pressed }) => [styles.seeMore, pressed && styles.pressedDim]} onPress={seeMore}>
       <Text style={styles.seeMoreText}>{lang === 'vi' ? 'Xem thêm' : 'See all'}</Text>
@@ -477,63 +509,72 @@ export default function NutritionScreen() {
             {/* AI meal suggestions (web AiMealSuggestButton) */}
             <AiMealSuggest />
 
-            {debounced.length >= 2 && results && (
-              <GlassCard style={styles.listCard}>
-                {results.length > 0 ? (
-                  results.map((f) => <FoodRow key={f.id} f={f} />)
-                ) : (
-                  <Text style={styles.emptyText}>{i18n.nNoExercisesFound}</Text>
-                )}
-              </GlassCard>
-            )}
+            {debounced.length >= 2 && results ? (
+              results.length > 0 ? (
+                <FoodGroup rows={results} />
+              ) : (
+                <Text style={styles.emptyText}>{i18n.nNoExercisesFound}</Text>
+              )
+            ) : null}
 
             {debounced.length < 2 && (
               <>
-                {/* My foods — 4 most recent as cards, "See all" opens the full list */}
-                <View style={styles.sectionHeadRow}>
-                  <Icon icon={Utensils} size={13} />
-                  <Text style={styles.microTitle}>{lang === 'vi' ? 'Danh sách thực phẩm' : 'My Foods'}</Text>
+                {/*
+                  One list, favourites first — not two lists with the same food
+                  in both.
+
+                  "Yêu thích" was its own section, and favourites are a *subset*
+                  of your foods, so the same four rows were drawn twice on most
+                  screens: identical name, identical macros, identical star. Two
+                  cards for one food is not two pieces of information, it is one
+                  piece of information and a question about why it is there
+                  twice.
+
+                  Sorting them to the top of the one list says the same thing in
+                  half the height, and the star that says which they are is the
+                  same star you toggle them with.
+                */}
+                <View style={styles.foodSection}>
+                  <View style={styles.sectionHeadRow}>
+                    <Icon icon={Utensils} size={13} />
+                    <Text style={styles.microTitle}>
+                      {lang === 'vi' ? 'Thực phẩm của tôi' : 'My Foods'}
+                    </Text>
+                  </View>
+                  {myFoodsSorted.length > 0 ? (
+                    <>
+                      <FoodGroup rows={myFoodsSorted.slice(0, 5)} />
+                      {myFoodsSorted.length > 5 ? <SeeMore /> : null}
+                    </>
+                  ) : (
+                    <Text style={styles.emptyText}>
+                      {lang === 'vi' ? 'Chưa có thực phẩm — bấm Thêm để tạo' : 'No foods yet — tap Add to create'}
+                    </Text>
+                  )}
                 </View>
-                {myFoods && myFoods.length > 0 ? (
-                  <Animated.View style={styles.cardList} entering={rise(0)}>
-                    {myFoods.slice(0, 4).map((f) => <FoodCard key={f.id} f={f} />)}
-                    {myFoods.length > 4 && <SeeMore />}
-                  </Animated.View>
-                ) : (
-                  <Text style={styles.emptyText}>
-                    {lang === 'vi' ? 'Chưa có thực phẩm — bấm Thêm để tạo' : 'No foods yet — tap Add to create'}
-                  </Text>
-                )}
 
-                {/* Favorites — starred foods as cards */}
-                {favorites && favorites.length > 0 && (
-                  <>
-                    <View style={styles.sectionHeadRow}>
-                      <Icon icon={Star} size={13} />
-                      <Text style={styles.microTitle}>{i18n.nutritionFavorites}</Text>
-                    </View>
-                    <Animated.View style={styles.cardList} entering={rise(1)}>
-                      {favorites.map((f) => <FoodCard key={f.id} f={f} />)}
-                    </Animated.View>
-                  </>
-                )}
-
-                {/* Recent — logged foods as cards; + adds to My Foods (hidden if
-                    the food is already saved) */}
-                {recents && recents.length > 0 && (
-                  <>
+                {/*
+                  Recent stays separate, because it is a different kind of
+                  thing: these are foods you *logged*, not foods you saved, and
+                  the action on them is "keep this one" rather than "star it".
+                */}
+                {recents && recents.length > 0 ? (
+                  <View style={styles.foodSection}>
                     <View style={styles.sectionHeadRow}>
                       <Icon icon={ClipboardList} size={13} color={colors.mutedForeground} />
                       <Text style={styles.microTitle}>{i18n.nutritionRecent}</Text>
                     </View>
-                    <Animated.View style={styles.cardList} entering={rise(2)}>
+                    <View style={foodListStyles.group}>
                       {recents.slice(0, 4).map((r, i) => (
-                        <RecentFoodCard key={i} r={r} saved={myFoodNames.has(r.food_name.toLowerCase())} />
+                        <View key={`${r.food_name}-${i}`}>
+                          {i > 0 ? <View style={foodListStyles.sep} /> : null}
+                          <RecentFoodCard r={r} saved={myFoodNames.has(r.food_name.toLowerCase())} />
+                        </View>
                       ))}
-                      {recents.length > 4 && <SeeMore />}
-                    </Animated.View>
-                  </>
-                )}
+                    </View>
+                    {recents.length > 4 ? <SeeMore /> : null}
+                  </View>
+                ) : null}
               </>
             )}
           </>
@@ -629,10 +670,13 @@ const styles = StyleSheet.create({
   addFoodText: { fontSize: 12, fontWeight: '600', color: colors.primaryForeground },
   searchInput: { flex: 1, color: colors.foreground, fontSize: 15, height: '100%' },
 
-  listCard: { gap: spacing.sm + 2 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },
-  cardList: { gap: spacing.sm },
+  /* The heading, its group and its "see all" are one thing 10 apart, not three
+     children of the page 20 apart — 20 is the distance between *sections*, and
+     a heading a full section-gap above its own list reads as a heading for the
+     page rather than for the list. */
+  foodSection: { gap: spacing.sm + 2 },
+  sectionHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   seeMore: {
     flexDirection: 'row',
     alignItems: 'center',
