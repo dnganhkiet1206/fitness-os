@@ -586,3 +586,98 @@ function invalidateLogQueries(qc: ReturnType<typeof useQueryClient>, userId?: st
   qc.invalidateQueries({ queryKey: ['readiness_history', userId] });
   qc.invalidateQueries({ queryKey: ['recent_foods', userId] });
 }
+
+/** One planned food, as the plan stores it. */
+export interface PlannedFood {
+  food_item_id?: string | null;
+  food_name: string;
+  serving_g?: number | null;
+  kcal?: number | null;
+  protein_g?: number | null;
+  carbs_g?: number | null;
+  fat_g?: number | null;
+}
+
+/**
+ * Eat what was planned: a meal from the plan, written into today's diary.
+ *
+ * ── why this exists ──
+ *
+ * The meal plan and the food diary did not know about each other. You could
+ * write "chicken breast, breakfast, day 2", and on day 2 you opened Log Meal
+ * and typed it again from nothing. The plan was a notebook — the only thing in
+ * the app that ever read it was the shopping list, and only for the names.
+ *
+ * The workout side had the same hole and it is closed there: the weekly plan is
+ * ticked off and the session writes itself. This is that, for food.
+ *
+ * ── it writes to *today*, whatever day of the plan it came from ──
+ *
+ * A plan's "Day 2" is the second day of a routine, not a date — it has no
+ * calendar meaning and cannot be given one without asking the user when the
+ * week starts. What is certain is that you are eating it now, so it lands on
+ * today, and the button that calls this says so.
+ *
+ * ── one entry, all its foods, the same shape `log-meal` writes ──
+ *
+ * `meal_entries` holds the totals and `meal_entry_items` the foods, with
+ * `servings: 1` because a planned row already *is* the amount planned — its
+ * kcal and macros are for that portion, not for one serving of it.
+ *
+ * ── the one thing that is lost, stated ──
+ *
+ * `meal_plan_items` has no `fiber_g` column, so fibre arrives as 0 where
+ * logging by hand would have carried it. Rounding the number down to a
+ * confident zero is wrong in a way worth naming: it is not that the meal had no
+ * fibre, it is that the plan never recorded any. Fixing it properly is a
+ * migration, not a change here.
+ */
+export function useLogPlannedMeal() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ mealType, foods }: { mealType: string; foods: PlannedFood[] }) => {
+      if (!user) throw new Error('Not signed in');
+      if (foods.length === 0) throw new Error('Nothing planned');
+
+      const n = (v: number | null | undefined) => Math.round(Number(v) || 0);
+      const total = (k: keyof PlannedFood) =>
+        foods.reduce((s, f) => s + (Number(f[k]) || 0), 0);
+
+      const { data: entry, error } = await supabase
+        .from('meal_entries')
+        .insert({
+          user_id: user.id,
+          meal_type: mealType,
+          total_kcal: Math.round(total('kcal')),
+          total_protein_g: Math.round(total('protein_g')),
+          total_carbs_g: Math.round(total('carbs_g')),
+          total_fat_g: Math.round(total('fat_g')),
+          // See the note above: the plan has no fibre to carry over.
+          total_fiber_g: 0,
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+
+      const { error: itemsError } = await supabase.from('meal_entry_items').insert(
+        foods.map((f) => ({
+          meal_entry_id: entry.id,
+          food_item_id: f.food_item_id ?? null,
+          food_name: f.food_name,
+          // The planned row is the portion, so it is one of itself
+          servings: 1,
+          kcal: n(f.kcal),
+          protein_g: n(f.protein_g),
+          carbs_g: n(f.carbs_g),
+          fat_g: n(f.fat_g),
+          fiber_g: 0,
+        })),
+      );
+      if (itemsError) throw itemsError;
+
+      await recomputeDailyLog(user.id, localDateStr());
+    },
+    onSuccess: () => invalidateLogQueries(qc, user?.id),
+  });
+}

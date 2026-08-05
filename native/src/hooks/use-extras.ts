@@ -504,12 +504,23 @@ export function useGroceryMutations() {
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['grocery_items', user?.id] });
 
+  /**
+   * Add a line to the list, optionally with how much of it.
+   *
+   * Takes a bare name as well as `{ name, quantity }`, because the two call
+   * sites that type a name by hand have nothing to say about quantity and
+   * should not have to say `{ name }` to say nothing. The meal plan does have
+   * something to say — it knows the grams — and `quantity` is a free-text
+   * column, so "400g" goes in as written rather than as a number needing a unit
+   * stored beside it.
+   */
   const add = useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async (input: string | { name: string; quantity?: string }) => {
       if (!user) throw new Error('Not signed in');
+      const { name, quantity } = typeof input === 'string' ? { name: input, quantity: undefined } : input;
       const { error } = await supabase
         .from('grocery_items')
-        .insert({ user_id: user.id, name, checked: false });
+        .insert({ user_id: user.id, name, quantity: quantity ?? null, checked: false });
       if (error) throw error;
     },
     onSuccess: () => {

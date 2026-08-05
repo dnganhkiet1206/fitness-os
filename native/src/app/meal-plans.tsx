@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { Check, ChevronDown, Plus, Search, Trash2, X } from 'lucide-react-native';
+import { Check, ChevronDown, Plus, Search, Trash2, UtensilsCrossed, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -32,10 +32,11 @@ import {
   useMealPlanItems,
   useMealPlans,
 } from '@/hooks/use-library';
-import { dedupeSeedShadows, useMyFoods } from '@/hooks/use-nutrition';
+import { dedupeSeedShadows, useLogPlannedMeal, useMyFoods } from '@/hooks/use-nutrition';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { calorieTargetFor } from '@/lib/macro-targets';
+import { toast } from '@/lib/toast';
 
 /**
  * A week of planned eating.
@@ -172,6 +173,37 @@ export default function MealPlansScreen() {
     0,
     Math.max(1, Math.min(MEAL_ORDER.length, openPlan?.meals_per_day ?? 3)),
   );
+
+  /**
+   * Meals written into today's diary since this screen opened.
+   *
+   * Keyed `plan:day:meal`, and deliberately only for this visit. Whether a meal
+   * "has been eaten" is not a fact the plan holds — a plan day is the second day
+   * of a routine, not a date — and the diary cannot answer it either, because
+   * two eggs for breakfast is one meal logged twice as legitimately as it is a
+   * double tap. So this claims only what it saw: you pressed it, here, just now.
+   * A relaunch forgets, which is honest, because after a relaunch it does not
+   * know.
+   */
+  const [logged, setLogged] = useState<Set<string>>(new Set());
+  const logMeal = useLogPlannedMeal();
+
+  const eatMeal = (planId: string, day: number, meal: string, foods: typeof items) => {
+    const key = `${planId}:${day}:${meal}`;
+    if (!foods || foods.length === 0 || logged.has(key) || logMeal.isPending) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    logMeal.mutate(
+      { mealType: meal, foods },
+      {
+        onSuccess: () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setLogged((prev) => new Set(prev).add(key));
+          toast.success(i18n.nMpEatDone.replace('{m}', mealLabel(meal)));
+        },
+        onError: (e: Error) => toast.error(e.message),
+      },
+    );
+  };
 
   const closePicker = () => {
     setAddingDay(null);
@@ -495,7 +527,48 @@ export default function MealPlansScreen() {
                           {MEAL_ORDER.filter((m) => day.items.some((it) => it.meal_type === m)).map(
                             (m) => (
                               <View key={m} style={styles.mealGroup}>
-                                <Text style={styles.mealLabel}>{mealLabel(m)}</Text>
+                                <View style={styles.mealHead}>
+                                  <Text style={styles.mealLabel}>{mealLabel(m)}</Text>
+                                  {/*
+                                    The whole point of a plan: eat it without
+                                    writing it out again. It says "today"
+                                    because that is where it lands — a plan's
+                                    "Day 2" is the second day of a routine, not
+                                    a date.
+                                  */}
+                                  <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityState={{
+                                      disabled: logged.has(`${p.id}:${d}:${m}`),
+                                    }}
+                                    disabled={logged.has(`${p.id}:${d}:${m}`) || logMeal.isPending}
+                                    hitSlop={8}
+                                    onPress={() =>
+                                      eatMeal(
+                                        p.id,
+                                        d,
+                                        m,
+                                        day.items.filter((it) => it.meal_type === m),
+                                      )
+                                    }
+                                    style={({ pressed }) => [
+                                      styles.eatBtn,
+                                      logged.has(`${p.id}:${d}:${m}`) && styles.eatBtnDone,
+                                      pressed && styles.pressed,
+                                    ]}>
+                                    <Icon
+                                      icon={logged.has(`${p.id}:${d}:${m}`) ? Check : UtensilsCrossed}
+                                      size={12}
+                                      color={colors.readinessGreen}
+                                      strokeWidth={2.5}
+                                    />
+                                    <Text style={styles.eatBtnText}>
+                                      {logged.has(`${p.id}:${d}:${m}`)
+                                        ? i18n.nMpEaten
+                                        : i18n.nMpEatIt}
+                                    </Text>
+                                  </Pressable>
+                                </View>
                                 {day.items
                                   .filter((it) => it.meal_type === m)
                                   .map((it) => (
@@ -521,6 +594,10 @@ export default function MealPlansScreen() {
                               </View>
                             ),
                           )}
+
+                          {day.items.length > 0 ? (
+                            <Text style={styles.fibreNote}>{i18n.nMpNoFibre}</Text>
+                          ) : null}
 
                           <Pressable
                             accessibilityRole="button"
@@ -808,6 +885,23 @@ const styles = StyleSheet.create({
   emptyDay: { ...type.caption, color: colors.mutedForeground, paddingVertical: 2 },
 
   mealGroup: { marginTop: spacing.xs },
+  mealHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  /* Quiet green, because it is an affirmative action on a screen full of neutral
+     rows — and small, because it repeats once per meal and a loud button six
+     times over is a screen shouting at itself. */
+  eatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    // 28pt of ink with hitSlop 8 — 44pt of target, which is the minimum
+    height: 28,
+    paddingHorizontal: spacing.sm + 2,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(43,245,168,0.12)',
+  },
+  eatBtnDone: { backgroundColor: 'transparent' },
+  eatBtnText: { ...type.caption, fontWeight: '700', color: colors.readinessGreen },
+  fibreNote: { ...type.caption, color: colors.mutedForeground, marginTop: spacing.xs },
   mealLabel: {
     ...type.caption,
     color: colors.mutedForeground,

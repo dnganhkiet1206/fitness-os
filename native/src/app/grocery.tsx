@@ -31,7 +31,24 @@ export default function GroceryScreen() {
   const { lang } = useAppSettings();
   const [draft, setDraft] = useState('');
 
-  // Ingredients from the latest meal plan (web: "shopping list from meal plan")
+  /**
+   * What the meal plan says you need to buy, and how much of it.
+   *
+   * It used to list distinct names: a week with chicken in six meals suggested
+   * "chicken", once, with no hint whether that was one breast or six. A
+   * shopping list without amounts is a list you have to re-derive in the shop.
+   * The grams are summed across every meal the food appears in, which is the
+   * number you are actually buying.
+   *
+   * Rows with no `serving_g` still appear — with a count instead of a weight,
+   * because "×3" is a true thing to say about three planned portions of unknown
+   * size, and dropping the line entirely would hide food you have to buy.
+   *
+   * Still the most recent plan. Choosing between plans is a control this screen
+   * has nowhere to put; the plan you wrote last is the plan you are shopping
+   * for, which is right often enough that a picker would earn its space only
+   * for someone keeping two live plans at once.
+   */
   const { data: planFoods } = useQuery({
     queryKey: ['grocery_meal_plan', user?.id],
     enabled: !!user,
@@ -45,15 +62,33 @@ export default function GroceryScreen() {
       if (!plans || plans.length === 0) return [];
       const { data: rows } = await supabase
         .from('meal_plan_items')
-        .select('food_name')
+        .select('food_name, serving_g')
         .eq('meal_plan_id', plans[0].id);
-      // Unique food names not already on the grocery list
-      return [...new Set((rows ?? []).map((r) => r.food_name).filter(Boolean))];
+
+      const byName = new Map<string, { name: string; grams: number; times: number }>();
+      for (const r of rows ?? []) {
+        const name = (r.food_name ?? '').trim();
+        if (!name) continue;
+        // Folded case-insensitively, so "Ức gà" and "ức gà" are one line and
+        // one trip to the shop; the first spelling seen is the one shown.
+        const key = name.toLowerCase();
+        const at = byName.get(key) ?? { name, grams: 0, times: 0 };
+        at.grams += Number(r.serving_g) || 0;
+        at.times += 1;
+        byName.set(key, at);
+      }
+      return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
     },
   });
 
   const existingNames = new Set((items ?? []).map((i) => i.name.toLowerCase()));
-  const planSuggestions = (planFoods ?? []).filter((n) => !existingNames.has(n.toLowerCase()));
+  const planSuggestions = (planFoods ?? []).filter(
+    (f) => !existingNames.has(f.name.toLowerCase()),
+  );
+
+  /** "400g", or "×3" when the plan never said how much */
+  const amountOf = (f: { grams: number; times: number }) =>
+    f.grams > 0 ? `${Math.round(f.grams)}g` : `×${f.times}`;
 
   const submit = () => {
     const name = draft.trim();
@@ -95,15 +130,18 @@ export default function GroceryScreen() {
               </Text>
             </View>
             <View style={styles.planChips}>
-              {planSuggestions.map((name) => (
+              {planSuggestions.map((f) => (
                 <Pressable
-                  key={name}
+                  key={f.name}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${f.name}, ${amountOf(f)}`}
                   style={({ pressed }) => [styles.planChip, pressed && styles.pressed]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    add.mutate(name);
+                    add.mutate({ name: f.name, quantity: amountOf(f) });
                   }}>
-                  <Text style={styles.planChipText} numberOfLines={1}>{name}</Text>
+                  <Text style={styles.planChipText} numberOfLines={1}>{f.name}</Text>
+                  <Text style={styles.planChipQty}>{amountOf(f)}</Text>
                   <Icon icon={Plus} size={12} color={colors.primary} strokeWidth={2.5} />
                 </Pressable>
               ))}
@@ -215,5 +253,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(168,175,189,0.3)',
     backgroundColor: 'rgba(168,175,189,0.06)',
   },
+  planChipQty: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   planChipText: { fontSize: 12, color: colors.foreground, flexShrink: 1 },
 });
