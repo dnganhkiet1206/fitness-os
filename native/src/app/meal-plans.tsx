@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { ChevronDown, Plus, Search, Trash2, X } from 'lucide-react-native';
+import { Check, ChevronDown, Plus, Search, Trash2, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -259,6 +259,30 @@ export default function MealPlansScreen() {
     if (used.length === 0) return null;
     return Math.round(used.reduce((s, d) => s + d.kcal, 0) / used.length);
   }, [byDay]);
+
+  /**
+   * The foods already in the meal the sheet is about to write to.
+   *
+   * Scoped to this day *and* this meal, which is the only scope that is a
+   * mistake: the same chicken on Monday and on Tuesday is a plan, and twice in
+   * Monday's breakfast is a slip — usually a second tap on a row that gave no
+   * sign the first one had landed.
+   *
+   * Matched on the name, because that is what `addFood` writes and what a
+   * duplicate line would read as. Matching on `food_item_id` would be exact and
+   * is not available — `useMealPlanItems` does not select it — and would be
+   * worse anyway: the library carries a user's copy shadowing a seed food under
+   * the same name, and two rows reading "Ức gà" in one meal is the duplicate
+   * this is here to stop, whichever row each came from.
+   */
+  const alreadyInSlot = useMemo(() => {
+    const taken = new Set<string>();
+    if (addingDay === null) return taken;
+    for (const it of byDay.get(addingDay)?.items ?? []) {
+      if (it.meal_type === addMeal) taken.add(it.food_name.trim().toLowerCase());
+    }
+    return taken;
+  }, [byDay, addingDay, addMeal]);
 
   const submitPlan = () => {
     if (!name.trim()) return;
@@ -637,7 +661,14 @@ export default function MealPlansScreen() {
               {foodDebounced.length >= 2 ? (
                 (foodResults ?? []).length > 0 ? (
                   (foodResults ?? []).map((f) => (
-                    <FoodRow key={f.id} name={f.name} kcal={Number(f.kcal)} onAdd={() => addFood(f)} />
+                    <FoodRow
+                      key={f.id}
+                      name={f.name}
+                      kcal={Number(f.kcal)}
+                      added={alreadyInSlot.has(f.name.trim().toLowerCase())}
+                      i18n={i18n}
+                      onAdd={() => addFood(f)}
+                    />
                   ))
                 ) : (
                   <Text style={styles.emptyDay}>
@@ -652,6 +683,8 @@ export default function MealPlansScreen() {
                       key={f.id}
                       name={f.name}
                       kcal={Number(f.kcal)}
+                      added={alreadyInSlot.has(f.name.trim().toLowerCase())}
+                      i18n={i18n}
                       onAdd={() => addFood({ ...f, serving_g: Number(f.serving_g) || 100 })}
                     />
                   ))}
@@ -665,17 +698,48 @@ export default function MealPlansScreen() {
   );
 }
 
-/** One choosable food — the same row whether it came from a search or your list. */
-function FoodRow({ name, kcal, onAdd }: { name: string; kcal: number; onAdd: () => void }) {
+/**
+ * One choosable food — the same row whether it came from a search or your list.
+ *
+ * A food already in this meal stays on the list and stops being a button: it
+ * dims, its plus becomes a tick, and it says so. Removing it from the list
+ * instead would be worse — the row you just tapped would vanish, which reads as
+ * a mistake rather than as a confirmation, and the search you were part-way
+ * through would shuffle under your finger.
+ */
+function FoodRow({
+  name,
+  kcal,
+  added,
+  i18n,
+  onAdd,
+}: {
+  name: string;
+  kcal: number;
+  added: boolean;
+  i18n: ReturnType<typeof useI18n>;
+  onAdd: () => void;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${name}, ${Math.round(kcal)} kcal`}
-      style={({ pressed }) => [styles.resultRow, pressed && styles.pressedDim]}
+      accessibilityState={{ disabled: added }}
+      accessibilityLabel={
+        added ? `${name}, ${i18n.nMpAlready}` : `${name}, ${Math.round(kcal)} kcal`
+      }
+      disabled={added}
+      style={({ pressed }) => [styles.resultRow, added && styles.rowAdded, pressed && styles.pressedDim]}
       onPress={onAdd}>
       <Text style={styles.resultName} numberOfLines={1}>{name}</Text>
-      <Text style={styles.resultKcal}>{Math.round(kcal)} kcal</Text>
-      <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+      <Text style={styles.resultKcal}>
+        {added ? i18n.nMpAlready : `${Math.round(kcal)} kcal`}
+      </Text>
+      <Icon
+        icon={added ? Check : Plus}
+        size={14}
+        color={added ? colors.readinessGreen : colors.primary}
+        strokeWidth={2.5}
+      />
     </Pressable>
   );
 }
@@ -783,9 +847,20 @@ const styles = StyleSheet.create({
   /* Pins the sheet to the bottom of whatever the keyboard leaves. */
   sheetHolder: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    /* Tall enough to be worth opening, short enough that the week behind it is
-       still visible — the sheet is a detour, not a destination. */
-    maxHeight: '82%',
+    /*
+      A height, not a ceiling.
+
+      It was `maxHeight`, so the sheet was as tall as whatever happened to be in
+      it — short with four foods, tall with forty — and a panel that is a
+      different size every time you open it reads as unfinished rather than as
+      responsive. Fixed at 86%, the list scrolls inside it and the week stays
+      visible behind the last 14%, which is what says this is a detour and not a
+      destination.
+
+      A percentage of the keyboard-avoider, so it shrinks with the space the
+      keyboard leaves rather than sliding out from under it.
+    */
+    height: '86%',
     backgroundColor: colors.card,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
@@ -801,7 +876,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     marginBottom: spacing.xs,
   },
-  results: { flexGrow: 0 },
+  // Takes whatever the header, chips and search field leave over
+  results: { flex: 1 },
   resultsContent: { paddingBottom: spacing.sm },
   pickerHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   pickerTitle: { ...type.title2, color: colors.foreground, flex: 1 },
@@ -832,6 +908,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(43,43,49,0.4)',
   },
+  /* Dimmed, not hidden — see the note on `FoodRow`. */
+  rowAdded: { opacity: 0.5 },
   resultName: { ...type.footnote, color: colors.foreground, flex: 1, minWidth: 0 },
   resultKcal: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   pickLabel: {
