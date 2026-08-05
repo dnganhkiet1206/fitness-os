@@ -1,13 +1,18 @@
 /**
  * Local notification reminders (water / supplements / bedtime / weigh-in /
- * workout). All scheduling is device-local — no push server. Daily reminders
- * use a repeating DAILY calendar trigger; the water reminder fans out into a
- * few daily triggers across a waking window so it nudges through the day.
+ * workout). All scheduling is device-local — no push server.
+ *
+ * What to schedule is decided by `@/lib/reminder-plan`, which is a pure module
+ * so the rules can be run in a check; this file is the part that talks to the
+ * OS. Reminders are dated one-shots rather than repeating alarms — see
+ * `scheduleReminderPlan`.
  *
  * The native module only exists in a dev/production build. In Expo Go or on
  * web the guarded import degrades to no-ops instead of crashing.
  */
 import { Platform } from 'react-native';
+
+import type { PlannedReminder, ReminderPrefs } from '@/lib/reminder-plan';
 
 type NotificationsModule = typeof import('expo-notifications');
 
@@ -28,15 +33,7 @@ try {
   Notifications = null;
 }
 
-export type ReminderKey = 'water' | 'supplements' | 'bedtime' | 'weighIn' | 'workout';
-
-export interface ReminderPrefs {
-  water: { enabled: boolean; everyHours: number };
-  supplements: { enabled: boolean; hour: number; minute: number };
-  bedtime: { enabled: boolean; hour: number; minute: number };
-  weighIn: { enabled: boolean; hour: number; minute: number };
-  workout: { enabled: boolean; hour: number; minute: number };
-}
+export type { ReminderKey, ReminderPrefs } from '@/lib/reminder-plan';
 
 export const DEFAULT_REMINDERS: ReminderPrefs = {
   water: { enabled: false, everyHours: 2 },
@@ -54,10 +51,6 @@ export interface ReminderCopy {
   weighIn: { title: string; body: string };
   workout: { title: string; body: string };
 }
-
-// Water reminders fire through the waking day, on the hour, every N hours
-const WATER_START_HOUR = 8;
-const WATER_END_HOUR = 20;
 
 export function notificationsAvailable(): boolean {
   return Notifications != null && Platform.OS === 'ios';
@@ -87,46 +80,40 @@ export async function hasNotificationPermission(): Promise<boolean> {
   }
 }
 
-function dailyTrigger(hour: number, minute: number): import('expo-notifications').DailyTriggerInput {
-  return {
-    type: Notifications!.SchedulableTriggerInputTypes.DAILY,
-    hour,
-    minute,
-  };
-}
-
 /**
- * Clear every scheduled ASCND reminder and re-create the enabled ones from
- * the current prefs. Called whenever the user toggles or edits a reminder.
+ * Lay down exactly the reminders in a plan, and nothing else.
+ *
+ * ── one-shot dates, not repeating alarms ──
+ *
+ * A `DAILY` trigger fires forever without asking anything, which is what made
+ * the workout reminder arrive on rest days and the weigh-in arrive the morning
+ * after a weigh-in. iOS runs no code of ours at fire time, so the only way a
+ * reminder can be conditional is for it not to be scheduled — which means dated
+ * one-shots, rebuilt whenever the app learns something.
+ *
+ * `planReminders` decides which; this only schedules them. The split is what
+ * lets the rules be run in `tools/reminders.mjs` against real dates.
+ *
+ * Cancelling everything first is unchanged and still correct: these are the
+ * only notifications the app schedules, and a plan is a complete statement of
+ * what should be pending.
  */
-export async function rescheduleReminders(prefs: ReminderPrefs, copy: ReminderCopy): Promise<void> {
+export async function scheduleReminderPlan(
+  plan: PlannedReminder[],
+  copy: ReminderCopy,
+): Promise<void> {
   if (!Notifications) return;
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
-
-    const schedule = (title: string, body: string, hour: number, minute: number) =>
-      Notifications!.scheduleNotificationAsync({
-        content: { title, body },
-        trigger: dailyTrigger(hour, minute),
+    for (const item of plan) {
+      const text = copy[item.key];
+      await Notifications.scheduleNotificationAsync({
+        content: { title: text.title, body: text.body },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: item.at,
+        },
       });
-
-    if (prefs.water.enabled) {
-      const step = Math.max(1, Math.round(prefs.water.everyHours));
-      for (let h = WATER_START_HOUR; h <= WATER_END_HOUR; h += step) {
-        await schedule(copy.water.title, copy.water.body, h, 0);
-      }
-    }
-    if (prefs.supplements.enabled) {
-      await schedule(copy.supplements.title, copy.supplements.body, prefs.supplements.hour, prefs.supplements.minute);
-    }
-    if (prefs.bedtime.enabled) {
-      await schedule(copy.bedtime.title, copy.bedtime.body, prefs.bedtime.hour, prefs.bedtime.minute);
-    }
-    if (prefs.weighIn.enabled) {
-      await schedule(copy.weighIn.title, copy.weighIn.body, prefs.weighIn.hour, prefs.weighIn.minute);
-    }
-    if (prefs.workout.enabled) {
-      await schedule(copy.workout.title, copy.workout.body, prefs.workout.hour, prefs.workout.minute);
     }
   } catch {
     // scheduling failures are non-fatal — the toggle simply won't fire

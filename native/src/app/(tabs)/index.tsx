@@ -62,6 +62,7 @@ import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
+import { useReminderSync } from '@/hooks/use-reminders';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
@@ -131,6 +132,9 @@ export default function TodayScreen() {
   const { config, editMode, setEditMode, moveWidget, moveGroup, removeGroup, addGroup, resetConfig } =
     useWidgetConfig();
   const { goal: stepsGoal } = useStepsGoal();
+  // Reminders are dated one-shots, so the schedule has to be rebuilt as the day
+  // is lived — see `useReminderSync`.
+  useReminderSync();
   const [newGroupName, setNewGroupName] = useState('');
 
   // Pull-to-refresh (web PullToRefresh: invalidate everything)
