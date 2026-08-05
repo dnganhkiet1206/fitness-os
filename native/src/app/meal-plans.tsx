@@ -196,6 +196,16 @@ export default function MealPlansScreen() {
    * know.
    */
   const [logged, setLogged] = useState<Set<string>>(new Set());
+  /**
+   * How many foods this sitting of the picker has added.
+   *
+   * The third step is the only one that starts unanswered — the day arrives
+   * from the button you pressed and the meal has a default — so this is what
+   * the progress bar is actually tracking. Reset when the picker opens, not
+   * when it closes: closing it can happen by a back gesture that never reaches
+   * `closePicker`.
+   */
+  const [addedCount, setAddedCount] = useState(0);
   const logMeal = useLogPlannedMeal();
 
   const eatMeal = (planId: string, day: number, meal: string, foods: typeof items) => {
@@ -217,6 +227,7 @@ export default function MealPlansScreen() {
 
   const closePicker = () => {
     setAddingDay(null);
+    setAddedCount(0);
     setFoodQuery('');
     setFoodDebounced('');
   };
@@ -249,6 +260,7 @@ export default function MealPlansScreen() {
         // whole of that meal. Only the query is cleared, so the next search
         // starts from nothing rather than from the last thing added.
         onSuccess: () => {
+          setAddedCount((n) => n + 1);
           setFoodQuery('');
           setFoodDebounced('');
         },
@@ -564,6 +576,7 @@ export default function MealPlansScreen() {
                               setFoodQuery('');
                               setFoodDebounced('');
                               setAddMeal(planSlots[0]);
+                              setAddedCount(0);
                               setAddingDay(d);
                             }}>
                             <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
@@ -585,58 +598,128 @@ export default function MealPlansScreen() {
       )}
 
       {/*
-        Choosing the food, as a sheet over the week.
+        Adding a food: one screen, three decisions, in order.
 
-        One for the whole screen, driven by `addingDay`. Seven copies — one per
-        day card — would be seven modals that can disagree about which is open,
-        and the day is already carried by the state rather than by which copy
-        rendered it.
+        ── why it is not three screens, and not a sheet ──
+
+        It was a bottom sheet whose title read "Thêm vào Ngày 2 · Sáng". Both
+        of those had already been decided — the day by which `+` you pressed,
+        the meal by a row of chips you had to notice was a control — and
+        neither could be changed without backing out and starting again. The
+        steps were merged in the sense of being on one surface and separate in
+        every way that mattered.
+
+        All three live here now, labelled, in the order they are asked, with a
+        line of progress across the top that says which are answered. Two of
+        them arrive answered, which is the point: the bar is not there to make
+        you do work, it is there to show you that the work is nearly done and
+        which part is left.
+
+        ── full screen, and an X ──
+
+        A sheet is dismissed by dragging it down, and that is a gesture you
+        either know or do not. This fills the screen and closes with a button
+        big enough to hit — the drag still works on iOS, for whoever reaches
+        for it, but nothing depends on it any more.
 
         `Modal` is right here and would not be in the workout builder: that
         screen is itself presented as a modal, and a modal inside one renders
-        blank on this stack. This screen is pushed normally, like the routine
-        planner, whose template picker is built the same way.
+        blank on this stack. This screen is pushed normally.
       */}
       <Modal
         visible={addingDay !== null}
-        transparent
         animationType="slide"
+        presentationStyle="pageSheet"
         onRequestClose={closePicker}>
-        <Pressable
-          style={styles.backdrop}
-          accessibilityLabel={i18n.a11yClose}
-          onPress={closePicker}
-        />
-        {/* `box-none` so the dimmed week behind the sheet still takes the tap
-            that closes it — this fills the window to do its keyboard work. */}
         <KeyboardAvoidingView
-          style={styles.sheetHolder}
-          pointerEvents="box-none"
+          style={styles.full}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
-            <View style={styles.grabber} />
+          <View style={[styles.fullHead, { paddingTop: spacing.md }]}>
+            <Text style={styles.fullTitle}>{i18n.nMpAddTitle}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.a11yClose}
+              hitSlop={12}
+              onPress={() => {
+                Haptics.selectionAsync();
+                closePicker();
+              }}
+              style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}>
+              <Icon icon={X} size={18} color={colors.foreground} />
+            </Pressable>
+          </View>
 
-            <View style={styles.pickerHead}>
-              <Text style={styles.pickerTitle} numberOfLines={1}>
-                {addingDay !== null
-                  ? i18n.nMpAddTo
-                      .replace('{d}', dayLabel(addingDay))
-                      .replace('{m}', mealLabel(addMeal))
-                  : ''}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={i18n.a11yClose}
-                hitSlop={10}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  closePicker();
-                }}
-                style={styles.iconBtn}>
-                <Icon icon={X} size={16} color={colors.mutedForeground} />
-              </Pressable>
+          {/*
+            The progress line.
+
+            Three dots and two rails. A rail is filled when the step before it
+            is answered, so the line grows left to right and the one hollow dot
+            is always the thing to do next. Under each dot is the *answer*
+            rather than the question — "Ngày 2", "Sáng" — because once a step
+            is decided its label is the least useful thing it could say.
+          */}
+          <View style={styles.steps}>
+            {[
+              { label: i18n.nMpStepDay, value: addingDay !== null ? dayLabel(addingDay) : '', done: true },
+              { label: i18n.nMpStepMeal, value: mealLabel(addMeal), done: true },
+              {
+                label: i18n.nMpStepFood,
+                value: addedCount > 0 ? i18n.nMpAddedN.replace('{n}', String(addedCount)) : i18n.nMpPickFood,
+                done: addedCount > 0,
+              },
+            ].map((st, i, all) => (
+              <View key={st.label} style={styles.step}>
+                <View style={styles.stepTop}>
+                  {/* The rails are drawn by the dot they lead into, so the
+                      first has none and the row cannot end with a stub. */}
+                  <View style={[styles.rail, i === 0 && styles.railHidden, all[i - 1]?.done && styles.railOn]} />
+                  <View style={[styles.dot, st.done && styles.dotOn]}>
+                    {st.done ? <Icon icon={Check} size={10} color={colors.primaryForeground} strokeWidth={3} /> : null}
+                  </View>
+                  <View style={[styles.rail, i === all.length - 1 && styles.railHidden, st.done && styles.railOn]} />
+                </View>
+                <Text style={[styles.stepValue, st.done && styles.stepValueOn]} numberOfLines={1}>
+                  {st.value}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <ScrollView
+            style={styles.fullBody}
+            contentContainerStyle={styles.fullBodyContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag">
+            <Text style={styles.stepHead}>{i18n.nMpStepDay}</Text>
+            <Text style={styles.stepHint}>{i18n.nMpStepDayHint}</Text>
+            {/*
+              The day is changeable here, which it was not.
+
+              You add three foods to Monday, realise the last one was meant for
+              Tuesday, and the old sheet's answer was: close, scroll, find
+              Tuesday's card, press its plus. All that was ever needed was the
+              row of days that was already on the screen behind it.
+            */}
+            <View style={styles.chipRow}>
+              {DAYS.map((d) => (
+                <Pressable
+                  key={d}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: addingDay === d }}
+                  style={[styles.miniChip, addingDay === d && styles.chipActive]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setAddingDay(d);
+                  }}>
+                  <Text style={[styles.miniChipText, addingDay === d && styles.chipTextActive]}>
+                    {dayLabel(d)}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
 
+            <Text style={styles.stepHead}>{i18n.nMpStepMeal}</Text>
+            <Text style={styles.stepHint}>{i18n.nMpStepMealHint}</Text>
             <View style={styles.chipRow}>
               {slots.map((m) => (
                 <Pressable
@@ -655,6 +738,8 @@ export default function MealPlansScreen() {
               ))}
             </View>
 
+            <Text style={styles.stepHead}>{i18n.nMpStepFood}</Text>
+            <Text style={styles.stepHint}>{i18n.nMpStepFoodHint}</Text>
             <View style={styles.searchWrap}>
               <Icon icon={Search} size={14} color={colors.mutedForeground} />
               <TextInput
@@ -679,18 +764,14 @@ export default function MealPlansScreen() {
             </View>
 
             {/*
-              The list scrolls inside the sheet.
+              Plain views, not a second scroll view.
 
-              Your own foods can run to two hundred rows, which is the reason
-              this stopped being a panel inside a day card: a card that grows to
-              hold them pushes the rest of the week off the screen while you are
-              still choosing.
+              The results used to scroll inside a fixed-height sheet. This page
+              scrolls as one thing, and a list that scrolls inside a page that
+              scrolls is the arrangement where neither responds to the flick
+              you actually made.
             */}
-            <ScrollView
-              style={styles.results}
-              contentContainerStyle={styles.resultsContent}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag">
+            <View style={styles.resultsContent}>
               {foodDebounced.length >= 2 ? (
                 (foodResults ?? []).length > 0 ? (
                   (foodResults ?? []).map((f) => (
@@ -723,7 +804,28 @@ export default function MealPlansScreen() {
                   ))}
                 </>
               ) : null}
-            </ScrollView>
+            </View>
+          </ScrollView>
+
+          {/*
+            One way out, at the bottom, next to the thumb that has been
+            tapping foods. The X at the top does the same thing and is where
+            the eye looks for it; this is where the hand already is.
+          */}
+          <View style={[styles.fullFoot, { paddingBottom: insets.bottom + spacing.sm }]}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                Haptics.selectionAsync();
+                closePicker();
+              }}
+              style={({ pressed }) => [styles.doneBtn, pressed && styles.pressed]}>
+              <Text style={styles.doneText}>
+                {addedCount > 0
+                  ? `${i18n.nMpDone}  ·  ${i18n.nMpAddedN.replace('{n}', String(addedCount))}`
+                  : i18n.nMpDone}
+              </Text>
+            </Pressable>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -886,51 +988,88 @@ const styles = StyleSheet.create({
   },
   addFoodText: { ...type.caption, fontWeight: '700', color: colors.primary },
 
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+  /*
+    A page, not a sheet.
+
+    It was a bottom sheet at 86% height with a grabber, dismissed by dragging
+    down. That gesture is one you either know or do not, and everything about
+    the panel — three decisions, a search field, a list of two hundred foods —
+    was a page's worth of content wearing a sheet's clothes. `pageSheet` on iOS
+    still slides and still drags away for whoever reaches for it; nothing
+    depends on it now.
+  */
+  full: { flex: 1, backgroundColor: colors.background },
+  fullHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
   },
-  /* Pins the sheet to the bottom of whatever the keyboard leaves. */
-  sheetHolder: { flex: 1, justifyContent: 'flex-end' },
-  sheet: {
-    /*
-      A height, not a ceiling.
+  fullTitle: { ...type.title2, color: colors.foreground },
+  closeBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary,
+  },
 
-      It was `maxHeight`, so the sheet was as tall as whatever happened to be in
-      it — short with four foods, tall with forty — and a panel that is a
-      different size every time you open it reads as unfinished rather than as
-      responsive. Fixed at 86%, the list scrolls inside it and the week stays
-      visible behind the last 14%, which is what says this is a detour and not a
-      destination.
+  // ── the progress line ──
+  steps: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  step: { flex: 1, alignItems: 'center', gap: 6 },
+  stepTop: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
+  dot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.secondary,
+  },
+  dotOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  rail: { flex: 1, height: 2, backgroundColor: colors.border },
+  railOn: { backgroundColor: colors.primary },
+  /* Hidden rather than absent: the first and last dots keep a rail-sized gap,
+     so all three sit at the same place in their column and the row does not
+     lean. */
+  railHidden: { backgroundColor: 'transparent' },
+  stepValue: { ...type.caption, color: colors.mutedForeground },
+  stepValueOn: { color: colors.foreground, fontWeight: '600' },
 
-      A percentage of the keyboard-avoider, so it shrinks with the space the
-      keyboard leaves rather than sliding out from under it.
-    */
-    height: '86%',
-    backgroundColor: colors.card,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
+  fullBody: { flex: 1 },
+  fullBodyContent: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
+  /* The question, then what it means. The heading alone was what the old sheet
+     had — a row of chips under a word — and a row of chips is only obviously a
+     control once you already know what it is choosing between. */
+  stepHead: { ...type.footnote, color: colors.foreground, fontWeight: '700', marginTop: spacing.sm },
+  stepHint: { ...type.caption, color: colors.mutedForeground, marginBottom: 2 },
+
+  fullFoot: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    gap: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
-  grabber: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    marginBottom: spacing.xs,
+  doneBtn: {
+    height: 50,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
   },
-  // Takes whatever the header, chips and search field leave over
-  results: { flex: 1 },
+  doneText: { ...type.body, color: colors.primaryForeground, fontWeight: '700' },
+
   resultsContent: { gap: spacing.sm, paddingBottom: spacing.sm },
-  pickerHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  pickerTitle: { ...type.title2, color: colors.foreground, flex: 1 },
   miniChip: {
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 7,
