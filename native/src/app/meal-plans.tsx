@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { ChevronDown, ChevronRight, Plus, Search, Trash2, X } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { ChevronDown, Plus, Search, Trash2, X } from 'lucide-react-native';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -20,13 +20,70 @@ import {
   useMealPlans,
 } from '@/hooks/use-library';
 import { dedupeSeedShadows, useMyFoods } from '@/hooks/use-nutrition';
+import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { calorieTargetFor } from '@/lib/macro-targets';
+
+/**
+ * A week of planned eating.
+ *
+ * ── what was hard to follow ──
+ *
+ * The plan's *shape* was invisible. Days were rendered from the items that
+ * existed — `Object.entries(groupedItems)` — so a week with food on Wednesday
+ * only showed one card, headed "Day 3", and nothing said the plan had seven
+ * days or how many of them were still empty. A plan you cannot see the holes in
+ * is a plan you cannot fill.
+ *
+ * Adding was detached from where it landed. One panel at the bottom of the
+ * whole plan asked for a day (seven chips), then a meal (four chips), then a
+ * food — so putting an egg on Thursday breakfast meant scrolling past every day
+ * to a panel that had no idea which day you had been looking at, and hunting a
+ * 11pt chip. The day is now the thing you press: every day has its own **Add
+ * food**, and the picker opens inside that day already knowing where it goes.
+ *
+ * `meals_per_day` was asked for at creation and then never used again except as
+ * a caption. You could choose six meals a day and still only ever file food
+ * under four, because the meal chips were a hard-coded list of four. They come
+ * from the setting now, drawn from the app's own six `meal_type` values in the
+ * order a day runs — the same list and the same order the diary groups by, so
+ * a plan and a logged day describe meals the same way.
+ *
+ * ── what a plan is now for ──
+ *
+ * Numbers. The screen showed each food's calories and never added them up, so
+ * the one question a meal plan exists to answer — does this day come out where
+ * I need it — could not be asked. Every day carries its own total, the plan
+ * header carries the average per day, and the profile's calorie target sits
+ * beside it as the thing to compare against.
+ *
+ * All of it is derived at render from rows already fetched. No column, no
+ * migration, nothing new stored.
+ *
+ * ── nothing was taken away ──
+ *
+ * Create a plan (name, goal, meals per day), delete a plan, search the food
+ * library, pick from your own foods, add to any day and any meal, remove an
+ * item. The seven day-chips are gone as a *control*, not as a capability: the
+ * day is chosen by which day's button you press, which is one decision fewer
+ * and no destination fewer.
+ */
 
 const MEALS_PER_DAY = [3, 4, 5, 6];
-const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
+const DAYS = [0, 1, 2, 3, 4, 5, 6];
+
+/**
+ * The six `meal_type` values the diary writes, in the order a day runs.
+ *
+ * The same list `today-meals` groups by. A plan that filed food under names the
+ * diary does not know would be a second vocabulary for the same idea, and the
+ * first thing to break would be the app's ability to say "you planned this".
+ */
+const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'preworkout', 'postworkout'] as const;
 
 export default function MealPlansScreen() {
   const { data: plans } = useMealPlans();
+  const { data: profile } = useProfile();
   const createPlan = useCreateMealPlan();
   const deletePlan = useDeleteMealPlan();
   const addItem = useAddMealPlanItem();
@@ -36,9 +93,15 @@ export default function MealPlansScreen() {
   const [openId, setOpenId] = useState<string | null>(null);
   const { data: items } = useMealPlanItems(openId);
 
-  // Add-food panel (per open plan): day + meal type + food search
-  const [addOpen, setAddOpen] = useState(false);
-  const [addDay, setAddDay] = useState(0);
+  /**
+   * Which day's picker is open, or `null`.
+   *
+   * One number instead of the old `addOpen` boolean plus a separate `addDay`:
+   * the two could disagree — the panel open while `addDay` still pointed at
+   * whatever was chosen last time — and there was nothing on screen to reveal
+   * it, because the panel was nowhere near the day it was about to write to.
+   */
+  const [addingDay, setAddingDay] = useState<number | null>(null);
   const [addMeal, setAddMeal] = useState<string>('breakfast');
   const [foodQuery, setFoodQuery] = useState('');
   const [foodDebounced, setFoodDebounced] = useState('');
@@ -69,7 +132,17 @@ export default function MealPlansScreen() {
       lunch: i18n.nLunch,
       dinner: i18n.nDinner,
       snack: i18n.nSnack,
+      preworkout: i18n.nPreWorkout,
+      postworkout: i18n.nPostWorkout,
     })[m] ?? m;
+
+  const dayLabel = (idx: number) => `${i18n.nDay} ${idx + 1}`;
+
+  const closePicker = () => {
+    setAddingDay(null);
+    setFoodQuery('');
+    setFoodDebounced('');
+  };
 
   const addFood = (f: {
     id: string;
@@ -80,11 +153,11 @@ export default function MealPlansScreen() {
     fat_g: number;
     serving_g: number;
   }) => {
-    if (!openId) return;
+    if (!openId || addingDay === null) return;
     addItem.mutate(
       {
         meal_plan_id: openId,
-        day_index: addDay,
+        day_index: addingDay,
         meal_type: addMeal,
         food_name: f.name,
         serving_g: Number(f.serving_g) || 100,
@@ -95,6 +168,9 @@ export default function MealPlansScreen() {
         food_item_id: f.id,
       },
       {
+        // The picker stays open: adding one food to a meal is almost never the
+        // whole of that meal. Only the query is cleared, so the next search
+        // starts from nothing rather than from the last thing added.
         onSuccess: () => {
           setFoodQuery('');
           setFoodDebounced('');
@@ -118,12 +194,36 @@ export default function MealPlansScreen() {
   // goal is stored as an English key — render the localized label
   const goalLabel = (g: string | null) => GOALS.find((x) => x.key === g)?.label ?? g;
 
-  const dayLabel = (idx: number) => `${i18n.nDay} ${idx + 1}`;
+  /** what the profile says a day should come to, for the plan to be read against */
+  const target = calorieTargetFor(profile);
 
-  const groupedItems = (items ?? []).reduce<Record<number, typeof items>>((acc, it) => {
-    (acc[it.day_index] ??= []).push(it);
-    return acc;
-  }, {});
+  /** day index → its items, and what they add up to */
+  const byDay = useMemo(() => {
+    const map = new Map<number, { items: NonNullable<typeof items>; kcal: number }>();
+    for (const d of DAYS) map.set(d, { items: [], kcal: 0 });
+    for (const it of items ?? []) {
+      const day = map.get(it.day_index);
+      // A row for a day outside the week is data this screen cannot place; it
+      // is counted nowhere rather than silently folded into day 1.
+      if (!day) continue;
+      day.items.push(it);
+      day.kcal += Math.round(Number(it.kcal) || 0);
+    }
+    return map;
+  }, [items]);
+
+  /**
+   * The average over the days that have anything on them.
+   *
+   * Not over seven. A plan half-written would otherwise read as half the
+   * calories it actually prescribes, which is exactly the number somebody would
+   * act on.
+   */
+  const perDay = useMemo(() => {
+    const used = DAYS.map((d) => byDay.get(d)!).filter((d) => d.items.length > 0);
+    if (used.length === 0) return null;
+    return Math.round(used.reduce((s, d) => s + d.kcal, 0) / used.length);
+  }, [byDay]);
 
   const submitPlan = () => {
     if (!name.trim()) return;
@@ -160,6 +260,7 @@ export default function MealPlansScreen() {
       <View style={styles.headRow}>
         <Text style={styles.headTitle}>{i18n.nutritionYourPlans}</Text>
         <Pressable
+          accessibilityRole="button"
           style={({ pressed }) => [styles.createBtn, pressed && styles.pressed]}
           onPress={() => {
             Haptics.selectionAsync();
@@ -188,6 +289,8 @@ export default function MealPlansScreen() {
             {GOALS.map((g) => (
               <Pressable
                 key={g.key}
+                accessibilityRole="button"
+                accessibilityState={{ selected: goal === g.key }}
                 style={[styles.chip, goal === g.key && styles.chipActive]}
                 onPress={() => {
                   Haptics.selectionAsync();
@@ -203,6 +306,8 @@ export default function MealPlansScreen() {
             {MEALS_PER_DAY.map((n) => (
               <Pressable
                 key={n}
+                accessibilityRole="button"
+                accessibilityState={{ selected: mealsPerDay === n }}
                 style={[styles.chip, mealsPerDay === n && styles.chipActive]}
                 onPress={() => {
                   Haptics.selectionAsync();
@@ -216,6 +321,7 @@ export default function MealPlansScreen() {
           </View>
 
           <Pressable
+            accessibilityRole="button"
             style={({ pressed }) => [
               styles.submitBtn,
               (!name.trim() || createPlan.isPending) && styles.submitDisabled,
@@ -233,150 +339,254 @@ export default function MealPlansScreen() {
       )}
 
       {plans && plans.length > 0 ? (
-        plans.map((p, pi) => (
-          <Animated.View key={p.id} style={styles.planBlock} entering={rise(pi)}>
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                const next = openId === p.id ? null : p.id;
-                setOpenId(next);
-                setAddOpen(false);
-                setFoodQuery('');
-                setFoodDebounced('');
-              }}>
+        plans.map((p, pi) => {
+          const open = openId === p.id;
+          /*
+            How many meal slots this plan has, from the number chosen when it
+            was created. Clamped to the six the app knows: `meals_per_day` is a
+            free column and a plan written elsewhere could say anything.
+          */
+          const slots = MEAL_ORDER.slice(
+            0,
+            Math.max(1, Math.min(MEAL_ORDER.length, p.meals_per_day ?? 3)),
+          );
+
+          return (
+            <Animated.View key={p.id} style={styles.planBlock} entering={rise(pi)}>
               <GlassCard>
-                <View style={styles.planRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: open }}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setOpenId(open ? null : p.id);
+                    closePicker();
+                    setAddMeal(slots[0]);
+                  }}
+                  style={({ pressed }) => [styles.planRow, pressed && styles.pressedDim]}>
                   <View style={styles.planInfo}>
-                    <Text style={styles.title}>{p.name}</Text>
+                    <Text style={styles.title} numberOfLines={1}>{p.name}</Text>
                     <Text style={styles.hint}>
-                      {[goalLabel(p.goal), p.meals_per_day ? `${p.meals_per_day} ${i18n.nMealsPerDay}` : null]
+                      {[goalLabel(p.goal), `${slots.length} ${i18n.nMealsPerDay}`]
                         .filter(Boolean)
                         .join(' · ')}
                     </Text>
+                    {/* Only once it is open, because the items it counts are
+                        only fetched for the open plan — a closed card claiming
+                        "0 kcal/day" would be reporting a query that never ran. */}
+                    {open && perDay != null ? (
+                      <Text style={styles.planTotals}>
+                        {i18n.nMpAvgPerDay.replace('{x}', perDay.toLocaleString())}
+                        {'  ·  '}
+                        {i18n.nMpTarget.replace('{x}', target.toLocaleString())}
+                      </Text>
+                    ) : null}
                   </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={10} onPress={() => confirmDelete(p.id, p.name)}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={i18n.a11yDelete}
+                    hitSlop={10}
+                    onPress={() => confirmDelete(p.id, p.name)}
+                    style={styles.iconBtn}>
                     <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
                   </Pressable>
-                  <Icon icon={openId === p.id ? ChevronDown : ChevronRight} size={20} color={colors.mutedForeground} />
-                </View>
+                  <Icon
+                    icon={ChevronDown}
+                    size={18}
+                    color={open ? colors.foreground : colors.mutedForeground}
+                  />
+                </Pressable>
               </GlassCard>
-            </Pressable>
 
-            {openId === p.id && (
-              <>
-                {Object.entries(groupedItems).map(([day, dayItems]) => (
-                  <GlassCard key={day} style={styles.dayCard}>
-                    <Text style={styles.dayTitle}>{dayLabel(Number(day))}</Text>
-                    {(dayItems ?? []).map((it) => (
-                      <View key={it.id} style={styles.itemRow}>
-                        <Text style={styles.itemName} numberOfLines={1}>
-                          {it.meal_type ? `${mealLabel(it.meal_type)} · ` : ''}{it.food_name}
-                        </Text>
-                        <Text style={styles.itemKcal}>{Math.round(Number(it.kcal))} kcal</Text>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={i18n.a11yRemove}
-                          hitSlop={8}
-                          onPress={() => deleteItem.mutate({ id: it.id, planId: p.id })}>
-                          <Icon icon={X} size={14} color={colors.mutedForeground} />
-                        </Pressable>
-                      </View>
-                    ))}
-                  </GlassCard>
-                ))}
+              {/*
+                Every day, always — including the empty ones.
 
-                {/* Add-food panel (web: food search + day/meal type) */}
-                <GlassCard style={styles.dayCard}>
-                  {!addOpen ? (
-                    <Pressable
-                      style={({ pressed }) => [styles.addFoodBtn, pressed && styles.pressed]}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setAddOpen(true);
-                      }}>
-                      <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
-                      <Text style={styles.addFoodText}>{lang === 'vi' ? 'Thêm món' : 'Add food'}</Text>
-                    </Pressable>
-                  ) : (
-                    <View style={styles.addPanel}>
-                      {/* Day chips (7-day plan) */}
-                      <View style={styles.chipRow}>
-                        {[0, 1, 2, 3, 4, 5, 6].map((d) => (
-                          <Pressable
-                            key={d}
-                            style={[styles.miniChip, addDay === d && styles.chipActive]}
-                            onPress={() => { Haptics.selectionAsync(); setAddDay(d); }}>
-                            <Text style={[styles.miniChipText, addDay === d && styles.chipTextActive]}>
-                              {dayLabel(d)}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                      {/* Meal type chips */}
-                      <View style={styles.chipRow}>
-                        {MEAL_TYPES.map((m) => (
-                          <Pressable
-                            key={m}
-                            style={[styles.miniChip, addMeal === m && styles.chipActive]}
-                            onPress={() => { Haptics.selectionAsync(); setAddMeal(m); }}>
-                            <Text style={[styles.miniChipText, addMeal === m && styles.chipTextActive]}>
-                              {mealLabel(m)}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                      {/* Food search */}
-                      <View style={styles.searchWrap}>
-                        <Icon icon={Search} size={14} color={colors.mutedForeground} />
-                        <TextInput
-                          style={styles.searchInput}
-                          placeholder={i18n.nutritionSearchFood}
-                          placeholderTextColor={colors.mutedForeground}
-                          value={foodQuery}
-                          onChangeText={setFoodQuery}
-                          autoCorrect={false}
-                        />
-                        <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yClose} hitSlop={8} onPress={() => { Haptics.selectionAsync(); setAddOpen(false); setFoodQuery(''); }}>
-                          <Icon icon={X} size={15} color={colors.mutedForeground} />
-                        </Pressable>
-                      </View>
-                      {/* Searching → results; otherwise pick from your food
-                          list (web: choose from list or search) */}
-                      {foodDebounced.length >= 2
-                        ? (foodResults ?? []).map((f) => (
-                            <Pressable
-                              key={f.id}
-                              style={({ pressed }) => [styles.resultRow, pressed && styles.pressedDim]}
-                              onPress={() => addFood(f)}>
-                              <Text style={styles.resultName} numberOfLines={1}>{f.name}</Text>
-                              <Text style={styles.resultKcal}>{Math.round(Number(f.kcal))} kcal</Text>
-                              <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
-                            </Pressable>
-                          ))
-                        : (myFoods && myFoods.length > 0 ? (
-                            <>
-                              <Text style={styles.pickLabel}>
-                                {lang === 'vi' ? 'Từ danh sách của bạn' : 'From your list'}
-                              </Text>
-                              {myFoods.map((f) => (
+                The week's shape is the thing you are working on, and a view
+                built only from the days that already have food hides exactly
+                the days that still need some.
+              */}
+              {open
+                ? DAYS.map((d) => {
+                    const day = byDay.get(d)!;
+                    const picking = addingDay === d;
+                    return (
+                      <Animated.View
+                        key={d}
+                        entering={FadeInDown.duration(220).delay(Math.min(d, 6) * 30)}>
+                        <GlassCard style={styles.dayCard}>
+                          <View style={styles.dayHead}>
+                            <Text style={styles.dayTitle}>{dayLabel(d)}</Text>
+                            {day.kcal > 0 ? (
+                              <Text style={styles.dayKcal}>{day.kcal.toLocaleString()} kcal</Text>
+                            ) : null}
+                          </View>
+
+                          {day.items.length === 0 && !picking ? (
+                            <Text style={styles.emptyDay}>{i18n.nMpEmptyDay}</Text>
+                          ) : null}
+
+                          {/* Grouped by meal, in the order a day runs — so a day
+                              reads as breakfast then lunch then dinner rather
+                              than as the order things happened to be added.
+
+                              All six, not just this plan's `slots`: a plan whose
+                              meal count was lowered, or a row written by the web
+                              app, still has food filed under the meals that are
+                              no longer offered, and food you cannot see is food
+                              you cannot remove. */}
+                          {MEAL_ORDER.filter((m) => day.items.some((it) => it.meal_type === m)).map(
+                            (m) => (
+                              <View key={m} style={styles.mealGroup}>
+                                <Text style={styles.mealLabel}>{mealLabel(m)}</Text>
+                                {day.items
+                                  .filter((it) => it.meal_type === m)
+                                  .map((it) => (
+                                    <View key={it.id} style={styles.itemRow}>
+                                      <Text style={styles.itemName} numberOfLines={1}>
+                                        {it.food_name}
+                                      </Text>
+                                      <Text style={styles.itemKcal}>
+                                        {Math.round(Number(it.kcal))} kcal
+                                      </Text>
+                                      <Pressable
+                                        accessibilityRole="button"
+                                        accessibilityLabel={i18n.a11yRemove}
+                                        hitSlop={10}
+                                        onPress={() =>
+                                          deleteItem.mutate({ id: it.id, planId: p.id })
+                                        }
+                                        style={styles.iconBtn}>
+                                        <Icon icon={X} size={13} color={colors.mutedForeground} />
+                                      </Pressable>
+                                    </View>
+                                  ))}
+                              </View>
+                            ),
+                          )}
+
+                          {picking ? (
+                            <View style={styles.picker}>
+                              <View style={styles.pickerHead}>
+                                <Text style={styles.pickerTitle} numberOfLines={1}>
+                                  {i18n.nMpAddTo
+                                    .replace('{d}', dayLabel(d))
+                                    .replace('{m}', mealLabel(addMeal))}
+                                </Text>
                                 <Pressable
-                                  key={f.id}
-                                  style={({ pressed }) => [styles.resultRow, pressed && styles.pressedDim]}
-                                  onPress={() => addFood({ ...f, serving_g: Number(f.serving_g) || 100 })}>
-                                  <Text style={styles.resultName} numberOfLines={1}>{f.name}</Text>
-                                  <Text style={styles.resultKcal}>{Math.round(Number(f.kcal))} kcal</Text>
-                                  <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+                                  accessibilityRole="button"
+                                  accessibilityLabel={i18n.a11yClose}
+                                  hitSlop={10}
+                                  onPress={() => {
+                                    Haptics.selectionAsync();
+                                    closePicker();
+                                  }}
+                                  style={styles.iconBtn}>
+                                  <Icon icon={X} size={15} color={colors.mutedForeground} />
                                 </Pressable>
-                              ))}
-                            </>
-                          ) : null)}
-                    </View>
-                  )}
-                </GlassCard>
-              </>
-            )}
-          </Animated.View>
-        ))
+                              </View>
+
+                              <View style={styles.chipRow}>
+                                {slots.map((m) => (
+                                  <Pressable
+                                    key={m}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected: addMeal === m }}
+                                    style={[styles.miniChip, addMeal === m && styles.chipActive]}
+                                    onPress={() => {
+                                      Haptics.selectionAsync();
+                                      setAddMeal(m);
+                                    }}>
+                                    <Text
+                                      style={[
+                                        styles.miniChipText,
+                                        addMeal === m && styles.chipTextActive,
+                                      ]}>
+                                      {mealLabel(m)}
+                                    </Text>
+                                  </Pressable>
+                                ))}
+                              </View>
+
+                              <View style={styles.searchWrap}>
+                                <Icon icon={Search} size={14} color={colors.mutedForeground} />
+                                <TextInput
+                                  style={styles.searchInput}
+                                  placeholder={i18n.nutritionSearchFood}
+                                  placeholderTextColor={colors.mutedForeground}
+                                  value={foodQuery}
+                                  onChangeText={setFoodQuery}
+                                  autoCorrect={false}
+                                  autoFocus
+                                />
+                                {foodQuery.length > 0 ? (
+                                  <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={i18n.a11yClearSearch}
+                                    hitSlop={10}
+                                    onPress={() => setFoodQuery('')}
+                                    style={styles.iconBtn}>
+                                    <Icon icon={X} size={14} color={colors.mutedForeground} />
+                                  </Pressable>
+                                ) : null}
+                              </View>
+
+                              {/* Searching → the library; otherwise your own
+                                  foods, which is what you reach for most. */}
+                              {foodDebounced.length >= 2 ? (
+                                (foodResults ?? []).length > 0 ? (
+                                  (foodResults ?? []).map((f) => (
+                                    <FoodRow
+                                      key={f.id}
+                                      name={f.name}
+                                      kcal={Number(f.kcal)}
+                                      onAdd={() => addFood(f)}
+                                    />
+                                  ))
+                                ) : (
+                                  <Text style={styles.emptyDay}>
+                                    {i18n.nMpNoMatch.replace('{x}', foodDebounced)}
+                                  </Text>
+                                )
+                              ) : myFoods && myFoods.length > 0 ? (
+                                <>
+                                  <Text style={styles.pickLabel}>{i18n.nMpFromList}</Text>
+                                  {myFoods.map((f) => (
+                                    <FoodRow
+                                      key={f.id}
+                                      name={f.name}
+                                      kcal={Number(f.kcal)}
+                                      onAdd={() =>
+                                        addFood({ ...f, serving_g: Number(f.serving_g) || 100 })
+                                      }
+                                    />
+                                  ))}
+                                </>
+                              ) : null}
+                            </View>
+                          ) : (
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityLabel={`${i18n.nMpAddFood} — ${dayLabel(d)}`}
+                              style={({ pressed }) => [styles.addFoodBtn, pressed && styles.pressed]}
+                              onPress={() => {
+                                Haptics.selectionAsync();
+                                setFoodQuery('');
+                                setFoodDebounced('');
+                                setAddMeal(slots[0]);
+                                setAddingDay(d);
+                              }}>
+                              <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+                              <Text style={styles.addFoodText}>{i18n.nMpAddFood}</Text>
+                            </Pressable>
+                          )}
+                        </GlassCard>
+                      </Animated.View>
+                    );
+                  })
+                : null}
+            </Animated.View>
+          );
+        })
       ) : (
         <GlassCard>
           <Text style={styles.title}>{i18n.nNoMealPlans}</Text>
@@ -384,6 +594,21 @@ export default function MealPlansScreen() {
         </GlassCard>
       )}
     </Screen>
+  );
+}
+
+/** One choosable food — the same row whether it came from a search or your list. */
+function FoodRow({ name, kcal, onAdd }: { name: string; kcal: number; onAdd: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${name}, ${Math.round(kcal)} kcal`}
+      style={({ pressed }) => [styles.resultRow, pressed && styles.pressedDim]}
+      onPress={onAdd}>
+      <Text style={styles.resultName} numberOfLines={1}>{name}</Text>
+      <Text style={styles.resultKcal}>{Math.round(kcal)} kcal</Text>
+      <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+    </Pressable>
   );
 }
 
@@ -437,32 +662,58 @@ const styles = StyleSheet.create({
 
   planBlock: { gap: spacing.sm },
   planRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  planInfo: { flex: 1, minWidth: 0 },
+  planInfo: { flex: 1, minWidth: 0, gap: 2 },
   title: { ...type.headline, color: colors.foreground },
-  hint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2, textTransform: 'capitalize' },
-  dayCard: { paddingVertical: spacing.md, marginLeft: spacing.md },
-  dayTitle: { ...type.footnote, fontWeight: '600', color: colors.mutedForeground, marginBottom: spacing.sm },
-  itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingVertical: 4,
-  },
-  itemName: { ...type.body, color: colors.foreground, flex: 1 },
-  itemKcal: { ...type.footnote, color: colors.mutedForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
-  pressedDim: { opacity: 0.6, transform: [{ scale: 0.98 }] },
+  hint: { ...type.footnote, color: colors.mutedForeground, textTransform: 'capitalize' },
+  planTotals: { ...type.caption, color: colors.foreground, fontVariant: ['tabular-nums'] },
 
-  addFoodBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 4 },
-  addFoodText: { fontSize: 13, fontWeight: '600', color: colors.primary },
-  addPanel: { gap: spacing.sm },
+  /* Indented, so the days read as belonging to the plan above them rather than
+     as a second list of equals. */
+  dayCard: { paddingVertical: spacing.md, marginLeft: spacing.md, gap: spacing.xs },
+  dayHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  dayTitle: { ...type.footnote, fontWeight: '700', color: colors.foreground },
+  dayKcal: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  emptyDay: { ...type.caption, color: colors.mutedForeground, paddingVertical: 2 },
+
+  mealGroup: { marginTop: spacing.xs },
+  mealLabel: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 2 },
+  itemName: { ...type.body, color: colors.foreground, flex: 1, minWidth: 0 },
+  itemKcal: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  // 28pt of ink with hitSlop 10 — 48pt of target, past the 44pt minimum
+  iconBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+
+  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
+  pressedDim: { opacity: 0.6 },
+
+  addFoodBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 38,
+    marginTop: spacing.xs,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  addFoodText: { ...type.caption, fontWeight: '700', color: colors.primary },
+
+  picker: { gap: spacing.sm, marginTop: spacing.sm },
+  pickerHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  pickerTitle: { ...type.footnote, fontWeight: '600', color: colors.foreground, flex: 1 },
   miniChip: {
     paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: radius.full,
     backgroundColor: colors.secondary,
   },
-  miniChipText: { fontSize: 11, color: colors.secondaryForeground },
+  miniChipText: { ...type.caption, color: colors.secondaryForeground },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -483,8 +734,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(43,43,49,0.4)',
   },
-  resultName: { ...type.footnote, color: colors.foreground, flex: 1 },
-  resultKcal: { ...type.caption, color: colors.mutedForeground },
+  resultName: { ...type.footnote, color: colors.foreground, flex: 1, minWidth: 0 },
+  resultKcal: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   pickLabel: {
     ...type.caption,
     color: colors.mutedForeground,
