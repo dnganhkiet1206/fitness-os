@@ -1,42 +1,35 @@
-import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams } from 'expo-router';
-import { Check, ChevronDown, Plus, Search, Trash2, UtensilsCrossed, X } from 'lucide-react-native';
+import { Check, ChevronDown, Plus, Trash2, UtensilsCrossed, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
-import { MealPlanForm } from '@/components/ascnd/meal-plan-form';
+import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
-  useAddMealPlanItem,
   useCreateMealPlan,
   useDeleteMealPlan,
   useDeleteMealPlanItem,
   useMealPlanItems,
   useMealPlans,
 } from '@/hooks/use-library';
-import { dedupeSeedShadows, useLogPlannedMeal, useMyFoods } from '@/hooks/use-nutrition';
+import { useLogPlannedMeal } from '@/hooks/use-nutrition';
 import { useProfile } from '@/hooks/useTodayData';
-import { supabase } from '@/integrations/supabase/client';
 import { calorieTargetFor } from '@/lib/macro-targets';
 import { toast } from '@/lib/toast';
 
@@ -93,7 +86,6 @@ import { toast } from '@/lib/toast';
  * and no destination fewer.
  */
 
-const MEALS_PER_DAY = [3, 4, 5, 6];
 const DAYS = [0, 1, 2, 3, 4, 5, 6];
 
 /**
@@ -118,11 +110,9 @@ export default function MealPlansScreen() {
   const { data: profile } = useProfile();
   const createPlan = useCreateMealPlan();
   const deletePlan = useDeleteMealPlan();
-  const addItem = useAddMealPlanItem();
   const deleteItem = useDeleteMealPlanItem();
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const insets = useSafeAreaInsets();
   const [openId, setOpenId] = useState<string | null>(planParam ?? null);
   const { data: items } = useMealPlanItems(openId);
 
@@ -135,29 +125,6 @@ export default function MealPlansScreen() {
    * it, because the panel was nowhere near the day it was about to write to.
    */
   const [addingDay, setAddingDay] = useState<number | null>(null);
-  const [addMeal, setAddMeal] = useState<string>('breakfast');
-  const [foodQuery, setFoodQuery] = useState('');
-  const [foodDebounced, setFoodDebounced] = useState('');
-  const { data: myFoods } = useMyFoods();
-
-  useEffect(() => {
-    const t = setTimeout(() => setFoodDebounced(foodQuery.trim()), 250);
-    return () => clearTimeout(t);
-  }, [foodQuery]);
-
-  const { data: foodResults } = useQuery({
-    queryKey: ['mealplan_food_search', foodDebounced],
-    enabled: foodDebounced.length >= 2,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('food_items')
-        .select('id, user_id, name, kcal, protein_g, carbs_g, fat_g, serving_g')
-        .ilike('name', `%${foodDebounced}%`)
-        .order('name')
-        .limit(15);
-      return dedupeSeedShadows(data ?? []);
-    },
-  });
 
   const mealLabel = (m: string) =>
     ({
@@ -227,53 +194,11 @@ export default function MealPlansScreen() {
 
   const closePicker = () => {
     setAddingDay(null);
-    setAddedCount(0);
-    setFoodQuery('');
-    setFoodDebounced('');
+    setCreating(false);
   };
 
-  const addFood = (f: {
-    id: string;
-    name: string;
-    kcal: number;
-    protein_g: number;
-    carbs_g: number;
-    fat_g: number;
-    serving_g: number;
-  }) => {
-    if (!openId || addingDay === null) return;
-    addItem.mutate(
-      {
-        meal_plan_id: openId,
-        day_index: addingDay,
-        meal_type: addMeal,
-        food_name: f.name,
-        serving_g: Number(f.serving_g) || 100,
-        kcal: Math.round(Number(f.kcal) || 0),
-        protein_g: Math.round(Number(f.protein_g) || 0),
-        carbs_g: Math.round(Number(f.carbs_g) || 0),
-        fat_g: Math.round(Number(f.fat_g) || 0),
-        food_item_id: f.id,
-      },
-      {
-        // The picker stays open: adding one food to a meal is almost never the
-        // whole of that meal. Only the query is cleared, so the next search
-        // starts from nothing rather than from the last thing added.
-        onSuccess: () => {
-          setAddedCount((n) => n + 1);
-          setFoodQuery('');
-          setFoodDebounced('');
-        },
-        onError: (e: Error) => Alert.alert('ASCND', e.message),
-      },
-    );
-  };
 
-  // Create form (web: "Create Meal Plan" dialog — name / goal / meals per day)
   const [creating, setCreating] = useState(false);
-  const [name, setName] = useState('');
-  const [goal, setGoal] = useState('maintain');
-  const [mealsPerDay, setMealsPerDay] = useState(3);
 
   const GOALS = [
     { key: 'bulk', label: i18n.goalBulk },
@@ -314,44 +239,7 @@ export default function MealPlansScreen() {
     return Math.round(used.reduce((s, d) => s + d.kcal, 0) / used.length);
   }, [byDay]);
 
-  /**
-   * The foods already in the meal the sheet is about to write to.
-   *
-   * Scoped to this day *and* this meal, which is the only scope that is a
-   * mistake: the same chicken on Monday and on Tuesday is a plan, and twice in
-   * Monday's breakfast is a slip — usually a second tap on a row that gave no
-   * sign the first one had landed.
-   *
-   * Matched on the name, because that is what `addFood` writes and what a
-   * duplicate line would read as. Matching on `food_item_id` would be exact and
-   * is not available — `useMealPlanItems` does not select it — and would be
-   * worse anyway: the library carries a user's copy shadowing a seed food under
-   * the same name, and two rows reading "Ức gà" in one meal is the duplicate
-   * this is here to stop, whichever row each came from.
-   */
-  const alreadyInSlot = useMemo(() => {
-    const taken = new Set<string>();
-    if (addingDay === null) return taken;
-    for (const it of byDay.get(addingDay)?.items ?? []) {
-      if (it.meal_type === addMeal) taken.add(it.food_name.trim().toLowerCase());
-    }
-    return taken;
-  }, [byDay, addingDay, addMeal]);
 
-  const submitPlan = () => {
-    if (!name.trim()) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    createPlan.mutate(
-      { name: name.trim(), goal, meals_per_day: mealsPerDay },
-      {
-        onSuccess: () => {
-          setCreating(false);
-          setName('');
-        },
-        onError: (e: Error) => Alert.alert('ASCND', e.message),
-      },
-    );
-  };
 
   const confirmDelete = (id: string, planName: string) => {
     Alert.alert('ASCND', `${i18n.delete} "${planName}"?`, [
@@ -384,18 +272,6 @@ export default function MealPlansScreen() {
         </Pressable>
       </View>
 
-      {creating && (
-        <GlassCard style={styles.createCard}>
-          <Text style={styles.formTitle}>{i18n.nutritionCreatePlan}</Text>
-          {/*
-            The fields live in `meal-plan-form`, because the Nutrition tab asks
-            the same three questions in a sheet of its own. Two copies of a
-            form this small are cheap to write and drift in the way that costs
-            something — one screen gaining a field, or a different default.
-          */}
-          <MealPlanForm onCreated={(id) => { setCreating(false); setOpenId(id); }} />
-        </GlassCard>
-      )}
 
       {plans && plans.length > 0 ? (
         plans.map((p, pi) => {
@@ -420,7 +296,6 @@ export default function MealPlansScreen() {
                     Haptics.selectionAsync();
                     setOpenId(open ? null : p.id);
                     closePicker();
-                    setAddMeal(planSlots[0]);
                   }}
                   style={({ pressed }) => [styles.planRow, pressed && styles.pressedDim]}>
                   <View style={styles.planInfo}>
@@ -573,10 +448,6 @@ export default function MealPlansScreen() {
                             style={({ pressed }) => [styles.addFoodBtn, pressed && styles.pressed]}
                             onPress={() => {
                               Haptics.selectionAsync();
-                              setFoodQuery('');
-                              setFoodDebounced('');
-                              setAddMeal(planSlots[0]);
-                              setAddedCount(0);
                               setAddingDay(d);
                             }}>
                             <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
@@ -598,284 +469,22 @@ export default function MealPlansScreen() {
       )}
 
       {/*
-        Adding a food: one screen, three decisions, in order.
+        Adding a food — and, from the create button, making the plan first.
 
-        ── why it is not three screens, and not a sheet ──
-
-        It was a bottom sheet whose title read "Thêm vào Ngày 2 · Sáng". Both
-        of those had already been decided — the day by which `+` you pressed,
-        the meal by a row of chips you had to notice was a control — and
-        neither could be changed without backing out and starting again. The
-        steps were merged in the sense of being on one surface and separate in
-        every way that mattered.
-
-        All three live here now, labelled, in the order they are asked, with a
-        line of progress across the top that says which are answered. Two of
-        them arrive answered, which is the point: the bar is not there to make
-        you do work, it is there to show you that the work is nearly done and
-        which part is left.
-
-        ── full screen, and an X ──
-
-        A sheet is dismissed by dragging it down, and that is a gesture you
-        either know or do not. This fills the screen and closes with a button
-        big enough to hit — the drag still works on iOS, for whoever reaches
-        for it, but nothing depends on it any more.
-
-        `Modal` is right here and would not be in the workout builder: that
-        screen is itself presented as a modal, and a modal inside one renders
-        blank on this stack. This screen is pushed normally.
+        Both used to live here: a form in a card at the top of the page, and a
+        sheet over the week for the food. They are four steps of one thing, so
+        they are one component now (`meal-plan-wizard`), reached from here with
+        the plan and the day already known and from the Nutrition tab with
+        neither.
       */}
-      <Modal
-        visible={addingDay !== null}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={closePicker}>
-        <KeyboardAvoidingView
-          style={styles.full}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={[styles.fullHead, { paddingTop: spacing.md }]}>
-            <Text style={styles.fullTitle}>{i18n.nMpAddTitle}</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={i18n.a11yClose}
-              hitSlop={12}
-              onPress={() => {
-                Haptics.selectionAsync();
-                closePicker();
-              }}
-              style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}>
-              <Icon icon={X} size={18} color={colors.foreground} />
-            </Pressable>
-          </View>
-
-          {/*
-            The progress line.
-
-            Three dots and two rails. A rail is filled when the step before it
-            is answered, so the line grows left to right and the one hollow dot
-            is always the thing to do next. Under each dot is the *answer*
-            rather than the question — "Ngày 2", "Sáng" — because once a step
-            is decided its label is the least useful thing it could say.
-          */}
-          <View style={styles.steps}>
-            {[
-              { label: i18n.nMpStepDay, value: addingDay !== null ? dayLabel(addingDay) : '', done: true },
-              { label: i18n.nMpStepMeal, value: mealLabel(addMeal), done: true },
-              {
-                label: i18n.nMpStepFood,
-                value: addedCount > 0 ? i18n.nMpAddedN.replace('{n}', String(addedCount)) : i18n.nMpPickFood,
-                done: addedCount > 0,
-              },
-            ].map((st, i, all) => (
-              <View key={st.label} style={styles.step}>
-                <View style={styles.stepTop}>
-                  {/* The rails are drawn by the dot they lead into, so the
-                      first has none and the row cannot end with a stub. */}
-                  <View style={[styles.rail, i === 0 && styles.railHidden, all[i - 1]?.done && styles.railOn]} />
-                  <View style={[styles.dot, st.done && styles.dotOn]}>
-                    {st.done ? <Icon icon={Check} size={10} color={colors.primaryForeground} strokeWidth={3} /> : null}
-                  </View>
-                  <View style={[styles.rail, i === all.length - 1 && styles.railHidden, st.done && styles.railOn]} />
-                </View>
-                <Text style={[styles.stepValue, st.done && styles.stepValueOn]} numberOfLines={1}>
-                  {st.value}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <ScrollView
-            style={styles.fullBody}
-            contentContainerStyle={styles.fullBodyContent}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag">
-            <Text style={styles.stepHead}>{i18n.nMpStepDay}</Text>
-            <Text style={styles.stepHint}>{i18n.nMpStepDayHint}</Text>
-            {/*
-              The day is changeable here, which it was not.
-
-              You add three foods to Monday, realise the last one was meant for
-              Tuesday, and the old sheet's answer was: close, scroll, find
-              Tuesday's card, press its plus. All that was ever needed was the
-              row of days that was already on the screen behind it.
-            */}
-            <View style={styles.chipRow}>
-              {DAYS.map((d) => (
-                <Pressable
-                  key={d}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: addingDay === d }}
-                  style={[styles.miniChip, addingDay === d && styles.chipActive]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setAddingDay(d);
-                  }}>
-                  <Text style={[styles.miniChipText, addingDay === d && styles.chipTextActive]}>
-                    {dayLabel(d)}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={styles.stepHead}>{i18n.nMpStepMeal}</Text>
-            <Text style={styles.stepHint}>{i18n.nMpStepMealHint}</Text>
-            <View style={styles.chipRow}>
-              {slots.map((m) => (
-                <Pressable
-                  key={m}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: addMeal === m }}
-                  style={[styles.miniChip, addMeal === m && styles.chipActive]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setAddMeal(m);
-                  }}>
-                  <Text style={[styles.miniChipText, addMeal === m && styles.chipTextActive]}>
-                    {mealLabel(m)}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={styles.stepHead}>{i18n.nMpStepFood}</Text>
-            <Text style={styles.stepHint}>{i18n.nMpStepFoodHint}</Text>
-            <View style={styles.searchWrap}>
-              <Icon icon={Search} size={14} color={colors.mutedForeground} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder={i18n.nutritionSearchFood}
-                placeholderTextColor={colors.mutedForeground}
-                value={foodQuery}
-                onChangeText={setFoodQuery}
-                autoCorrect={false}
-                returnKeyType="search"
-              />
-              {foodQuery.length > 0 ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={i18n.a11yClearSearch}
-                  hitSlop={10}
-                  onPress={() => setFoodQuery('')}
-                  style={styles.iconBtn}>
-                  <Icon icon={X} size={14} color={colors.mutedForeground} />
-                </Pressable>
-              ) : null}
-            </View>
-
-            {/*
-              Plain views, not a second scroll view.
-
-              The results used to scroll inside a fixed-height sheet. This page
-              scrolls as one thing, and a list that scrolls inside a page that
-              scrolls is the arrangement where neither responds to the flick
-              you actually made.
-            */}
-            <View style={styles.resultsContent}>
-              {foodDebounced.length >= 2 ? (
-                (foodResults ?? []).length > 0 ? (
-                  (foodResults ?? []).map((f) => (
-                    <FoodRow
-                      key={f.id}
-                      name={f.name}
-                      kcal={Number(f.kcal)}
-                      added={alreadyInSlot.has(f.name.trim().toLowerCase())}
-                      i18n={i18n}
-                      onAdd={() => addFood(f)}
-                    />
-                  ))
-                ) : (
-                  <Text style={styles.emptyDay}>
-                    {i18n.nMpNoMatch.replace('{x}', foodDebounced)}
-                  </Text>
-                )
-              ) : myFoods && myFoods.length > 0 ? (
-                <>
-                  <Text style={styles.pickLabel}>{i18n.nMpFromList}</Text>
-                  {myFoods.map((f) => (
-                    <FoodRow
-                      key={f.id}
-                      name={f.name}
-                      kcal={Number(f.kcal)}
-                      added={alreadyInSlot.has(f.name.trim().toLowerCase())}
-                      i18n={i18n}
-                      onAdd={() => addFood({ ...f, serving_g: Number(f.serving_g) || 100 })}
-                    />
-                  ))}
-                </>
-              ) : null}
-            </View>
-          </ScrollView>
-
-          {/*
-            One way out, at the bottom, next to the thumb that has been
-            tapping foods. The X at the top does the same thing and is where
-            the eye looks for it; this is where the hand already is.
-          */}
-          <View style={[styles.fullFoot, { paddingBottom: insets.bottom + spacing.sm }]}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                Haptics.selectionAsync();
-                closePicker();
-              }}
-              style={({ pressed }) => [styles.doneBtn, pressed && styles.pressed]}>
-              <Text style={styles.doneText}>
-                {addedCount > 0
-                  ? `${i18n.nMpDone}  ·  ${i18n.nMpAddedN.replace('{n}', String(addedCount))}`
-                  : i18n.nMpDone}
-              </Text>
-            </Pressable>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-    </Screen>
-  );
-}
-
-/**
- * One choosable food — the same row whether it came from a search or your list.
- *
- * A food already in this meal stays on the list and stops being a button: it
- * dims, its plus becomes a tick, and it says so. Removing it from the list
- * instead would be worse — the row you just tapped would vanish, which reads as
- * a mistake rather than as a confirmation, and the search you were part-way
- * through would shuffle under your finger.
- */
-function FoodRow({
-  name,
-  kcal,
-  added,
-  i18n,
-  onAdd,
-}: {
-  name: string;
-  kcal: number;
-  added: boolean;
-  i18n: ReturnType<typeof useI18n>;
-  onAdd: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled: added }}
-      accessibilityLabel={
-        added ? `${name}, ${i18n.nMpAlready}` : `${name}, ${Math.round(kcal)} kcal`
-      }
-      disabled={added}
-      style={({ pressed }) => [styles.resultRow, added && styles.rowAdded, pressed && styles.pressedDim]}
-      onPress={onAdd}>
-      <Text style={styles.resultName} numberOfLines={1}>{name}</Text>
-      <Text style={styles.resultKcal}>
-        {added ? i18n.nMpAlready : `${Math.round(kcal)} kcal`}
-      </Text>
-      <Icon
-        icon={added ? Check : Plus}
-        size={14}
-        color={added ? colors.readinessGreen : colors.primary}
-        strokeWidth={2.5}
+      <MealPlanWizard
+        visible={addingDay !== null || creating}
+        planId={creating ? null : openId}
+        initialDay={addingDay ?? 0}
+        onClose={closePicker}
+        onPlanCreated={setOpenId}
       />
-    </Pressable>
+    </Screen>
   );
 }
 

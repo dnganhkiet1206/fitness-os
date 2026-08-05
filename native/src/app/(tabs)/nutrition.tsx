@@ -10,7 +10,7 @@ import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
 import { NutritionCard, WaterWidget } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
-import { MealPlanFormSheet } from '@/components/ascnd/meal-plan-form';
+import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { Icon } from '@/components/ascnd/icon';
 import { LogMealFab } from '@/components/ascnd/log-meal-fab';
 import { Screen } from '@/components/ascnd/screen';
@@ -116,17 +116,17 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
             <Text style={styles.planCreateText}>{i18n.nMealPlanNew}</Text>
           </Pressable>
         </GlassCard>
-        <MealPlanFormSheet
+        <MealPlanWizard
           visible={creating}
+          planId={null}
           onClose={() => setCreating(false)}
-          onCreated={(id) => router.push({ pathname: '/meal-plans', params: { plan: id } })}
         />
       </>
     );
   }
 
   return (
-    <>
+    <View style={styles.planSection}>
       <View style={styles.planHead}>
         <View style={styles.sectionHead}>
           <Icon icon={Utensils} size={13} />
@@ -150,34 +150,36 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
         ) : null}
       </View>
 
-      {plans.slice(0, PREVIEW).map((p, i) => (
-        <Animated.View key={p.id} entering={rise(i)}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${p.name} — ${i18n.nMealPlanOpen}`}
-            onPress={() => {
-              Haptics.selectionAsync();
-              router.push({ pathname: '/meal-plans', params: { plan: p.id } });
-            }}>
-            {({ pressed }) => (
-              <GlassCard style={[styles.planCard, pressed && styles.pressedDim]}>
-                <View style={styles.planText}>
-                  <Text style={styles.planName} numberOfLines={1}>{p.name}</Text>
-                  <Text style={styles.planMeta} numberOfLines={1}>
-                    {[
-                      goalLabel(p.goal),
-                      p.meals_per_day ? `${p.meals_per_day} ${i18n.nutritionMealsPerDay}` : null,
-                    ]
-                      .filter(Boolean)
-                      .join('  ·  ')}
-                  </Text>
-                </View>
-                <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-              </GlassCard>
-            )}
-          </Pressable>
-        </Animated.View>
-      ))}
+      <View style={styles.planStack}>
+        {plans.slice(0, PREVIEW).map((p, i) => (
+          <Animated.View key={p.id} entering={rise(i)}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${p.name} — ${i18n.nMealPlanOpen}`}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push({ pathname: '/meal-plans', params: { plan: p.id } });
+              }}>
+              {({ pressed }) => (
+                <GlassCard style={[styles.planCard, pressed && styles.pressedDim]}>
+                  <View style={styles.planText}>
+                    <Text style={styles.planName} numberOfLines={1}>{p.name}</Text>
+                    <Text style={styles.planMeta} numberOfLines={1}>
+                      {[
+                        goalLabel(p.goal),
+                        p.meals_per_day ? `${p.meals_per_day} ${i18n.nutritionMealsPerDay}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join('  ·  ')}
+                    </Text>
+                  </View>
+                  <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+                </GlassCard>
+              )}
+            </Pressable>
+          </Animated.View>
+        ))}
+      </View>
 
       <Pressable
         accessibilityRole="button"
@@ -188,19 +190,15 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
       </Pressable>
 
       {/*
-        A sheet, not a page.
+        The whole flow, from naming the plan to putting food in it.
 
-        It used to push `/meal-plans` with a flag that opened the form there.
-        That is a whole screen transition to answer three questions and then a
-        back gesture to return to the tab you were on — for a form that fits
-        above the keyboard. The plan you make lands in the list behind it.
+        It used to push `/meal-plans` with a flag that opened a form there;
+        then it was a sheet with the form in it, which still ended by throwing
+        you at a different screen to do the actual work. Creating a plan and
+        putting the first food in it were never two errands.
       */}
-      <MealPlanFormSheet
-        visible={creating}
-        onClose={() => setCreating(false)}
-        onCreated={(id) => router.push({ pathname: '/meal-plans', params: { plan: id } })}
-      />
-    </>
+      <MealPlanWizard visible={creating} planId={null} onClose={() => setCreating(false)} />
+    </View>
   );
 }
 
@@ -666,6 +664,21 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.sm },
 
   // ── meal plans ──
+  /*
+    The section spaces itself.
+
+    Every child of `Screen` is 20 apart — that is the distance between
+    *sections*, and these cards were landing in it because each one was a child.
+    Three plans spread over the page as if each were its own subject, with the
+    heading floating a full section-gap above the first.
+
+    12 between the heading, the group and the button; 10 inside the group. Close
+    enough that the cards read as one list, far enough that an individual one is
+    still a card. Same numbers the saved-workout list settled on, for the same
+    reason.
+  */
+  planSection: { gap: spacing.sm + 4 },
+  planStack: { gap: spacing.sm + 2 },
   planHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   planAll: { fontSize: 13, fontWeight: '600', color: colors.primary },
   planCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
