@@ -35,10 +35,9 @@ interface SetRow {
   exerciseName: string;
   weight: string; // kept as text for input friendliness
   reps: string;
-  rpe: string;
 }
 
-const EMPTY_SET: SetRow = { exerciseId: '', exerciseName: '', weight: '', reps: '', rpe: '' };
+const EMPTY_SET: SetRow = { exerciseId: '', exerciseName: '', weight: '', reps: '' };
 
 /**
  * Turn today's planned workout into the rows you are about to fill in.
@@ -63,7 +62,6 @@ function rowsFromTemplate(exercises: TplExercise[], unit: WeightUnit): SetRow[] 
         exerciseName: ex.exerciseName ?? '',
         weight: ex.weight ? String(displayWeight(ex.weight, unit)) : '',
         reps: ex.reps ? String(ex.reps) : '',
-        rpe: ex.rpe ? String(ex.rpe) : '',
       });
     }
   }
@@ -154,7 +152,6 @@ export default function LogWorkoutSheet() {
           exerciseName: last?.exerciseName ?? '',
           weight: last?.weight ?? '',
           reps: '',
-          rpe: last?.rpe ?? '',
         },
       ];
     });
@@ -235,7 +232,6 @@ export default function LogWorkoutSheet() {
           exerciseName: s.exerciseName,
           weight: weightToKg(Number(s.weight) || 0, wUnit),
           reps: Number(s.reps),
-          rpe: Number(s.rpe),
         })),
       }),
     onSuccess: () => {
@@ -286,15 +282,14 @@ export default function LogWorkoutSheet() {
 
           Every number in a row was labelled only by the placeholder inside it,
           which is gone the moment the number is there — so a filled row read
-          `1 Bench Press 60 8 8` and nothing on screen said which 8 was reps and
-          which was effort. A heading costs one row and does not disappear.
+          `1 Bench Press 60 8` and nothing on screen said which number was which.
+          A heading costs one row and does not disappear.
         */}
         <View style={styles.colHead}>
           <View style={styles.colIdx} />
           <Text style={[styles.colLabel, styles.colName]}>{i18n.nExercise}</Text>
           <Text style={[styles.colLabel, styles.colNum]}>{wl}</Text>
           <Text style={[styles.colLabel, styles.colNum]}>{i18n.nReps}</Text>
-          <Text style={[styles.colLabel, styles.colRpe]}>RPE</Text>
           <View style={styles.colRemove} />
         </View>
 
@@ -335,16 +330,6 @@ export default function LogWorkoutSheet() {
                   keyboardType="number-pad"
                   value={s.reps}
                   onChangeText={(v) => updateSet(idx, 'reps', v)}
-                />
-                <TextInput
-                  accessibilityLabel={`${s.exerciseName || i18n.nExercise} ${setNumbers[idx]} RPE`}
-                  style={[styles.input, styles.setRpe]}
-                  placeholder="—"
-                  placeholderTextColor={colors.mutedForeground}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  value={s.rpe}
-                  onChangeText={(v) => updateSet(idx, 'rpe', v)}
                 />
                 <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={8} onPress={() => removeSet(idx)} style={styles.removeSet}>
                   <Icon icon={X} size={14} color={colors.mutedForeground} />
@@ -402,6 +387,20 @@ export default function LogWorkoutSheet() {
           </Text>
         </View>
 
+        {/*
+          Effort is asked once, here.
+
+          Every row used to carry its own RPE box as well, so the same question
+          was on screen twice — nine times in a nine-set session, then once more
+          at the bottom — and nothing said which one the app would believe. They
+          are not even the same column (`rpe` per set against `session_rpe`), so
+          two people filling this in honestly could disagree with themselves.
+
+          Set-by-set effort still exists where it can be answered honestly: the
+          week's day panel asks after each set, seconds after it happened. This
+          sheet is filled in after the fact, and a number typed then is a memory
+          of the whole workout, which is what one chip says.
+        */}
         <Text style={styles.sectionLabel}>{i18n.nRpe}</Text>
         <View style={styles.chips}>
           {RPE_VALUES.map((v) => (
@@ -494,8 +493,7 @@ const styles = StyleSheet.create({
   colLabel: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
   colIdx: { width: 16 },
   colName: { flex: 1, textAlign: 'left', paddingHorizontal: spacing.sm },
-  colNum: { width: 56 },
-  colRpe: { width: 48 },
+  colNum: { width: 64 },
   colRemove: { width: 24 },
   /* The gap that says a new exercise starts here. A rule rather than a bigger
      gap alone, because the rows are already 8pt apart and a 16pt gap reads as
@@ -515,8 +513,7 @@ const styles = StyleSheet.create({
   addExerciseText: { color: colors.primary },
   fieldHint: { ...type.caption, color: colors.mutedForeground },
   setName: { flex: 1, paddingHorizontal: spacing.sm, height: 44 },
-  setNum: { width: 56, paddingHorizontal: spacing.xs, height: 44, textAlign: 'center' },
-  setRpe: { width: 48, paddingHorizontal: spacing.xs, height: 44, textAlign: 'center' },
+  setNum: { width: 64, paddingHorizontal: spacing.xs, height: 44, textAlign: 'center' },
   removeSet: { width: 24, alignItems: 'center' },
   suggestRow: {
     flexDirection: 'row',

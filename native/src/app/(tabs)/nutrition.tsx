@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -21,7 +21,7 @@ import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useMealPlans } from '@/hooks/use-library';
-import { dedupeSeedShadows, useFavoriteFoods, useMyFoods, useRecentFoods, useToggleFavoriteFood, useTodayLog, type FoodItemRow } from '@/hooks/use-nutrition';
+import { dedupeSeedShadows, useMyFoods, useMyFoodsSorted, useRecentFoods, useToggleFavoriteFood, useTodayLog, type FoodItemRow } from '@/hooks/use-nutrition';
 import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile } from '@/hooks/useTodayData';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
@@ -255,23 +255,25 @@ export default function NutritionScreen() {
     twice. Sorted to the front of the one list they still stand out — by the
     star they already carry — and the screen is half the height.
   */
-  const { data: favorites } = useFavoriteFoods();
-  const favIds = useMemo(() => new Set((favorites ?? []).map((f) => f.id)), [favorites]);
-  const myFoodsSorted = useMemo(() => {
-    const fav = (f: FoodItemRow) => (f.is_favorite || favIds.has(f.id) ? 0 : 1);
-    // A copy: the array belongs to react-query's cache and sorting it in place
-    // would reorder it for every other reader.
-    return [...(myFoods ?? [])].sort((a, b) => fav(a) - fav(b) || a.name.localeCompare(b.name));
-  }, [myFoods, favIds]);
+  const myFoodsSorted = useMyFoodsSorted();
   const { data: recents } = useRecentFoods();
   const toggleFav = useToggleFavoriteFood();
 
   // Names already in "My foods" — recent items already saved hide their +
   const myFoodNames = new Set((myFoods ?? []).map((f) => f.name.toLowerCase()));
 
-  const seeMore = () => {
+  /*
+    "Xem thêm" lands on the list it was under.
+
+    Both of them used to push `/food-list` bare, which opens on saved foods — so
+    the one under Recent took you to the top of a list of up to two hundred
+    other foods, and the four rows it was offering more of were somewhere below
+    them. A link answers the question it is sitting under or it is not a link
+    to anything.
+  */
+  const seeMore = (tab: 'mine' | 'recent') => {
     Haptics.selectionAsync();
-    router.push('/food-list');
+    router.push({ pathname: '/food-list', params: { tab } });
   };
   /**
    * A set of foods as one inset group.
@@ -291,9 +293,16 @@ export default function NutritionScreen() {
     </View>
   );
 
-  const SeeMore = () => (
-    <Pressable style={({ pressed }) => [styles.seeMore, pressed && styles.pressedDim]} onPress={seeMore}>
-      <Text style={styles.seeMoreText}>{lang === 'vi' ? 'Xem thêm' : 'See all'}</Text>
+  const SeeMore = ({ tab, rest }: { tab: 'mine' | 'recent'; rest: number }) => (
+    <Pressable
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.seeMore, pressed && styles.pressedDim]}
+      onPress={() => seeMore(tab)}>
+      {/* How many more, not just that there are more — the difference between
+          "there is another screen" and a reason to open it. */}
+      <Text style={styles.seeMoreText}>
+        {lang === 'vi' ? `Xem thêm ${rest} món` : `See ${rest} more`}
+      </Text>
       <Icon icon={ChevronRight} size={15} color={colors.primary} />
     </Pressable>
   );
@@ -544,7 +553,9 @@ export default function NutritionScreen() {
                   {myFoodsSorted.length > 0 ? (
                     <>
                       <FoodGroup rows={myFoodsSorted.slice(0, 5)} />
-                      {myFoodsSorted.length > 5 ? <SeeMore /> : null}
+                      {myFoodsSorted.length > 5 ? (
+                        <SeeMore tab="mine" rest={myFoodsSorted.length - 5} />
+                      ) : null}
                     </>
                   ) : (
                     <Text style={styles.emptyText}>
@@ -572,7 +583,7 @@ export default function NutritionScreen() {
                         </View>
                       ))}
                     </View>
-                    {recents.length > 4 ? <SeeMore /> : null}
+                    {recents.length > 4 ? <SeeMore tab="recent" rest={recents.length - 4} /> : null}
                   </View>
                 ) : null}
               </>

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,6 +57,35 @@ export function useMyFoods() {
       return (data ?? []) as FoodItemRow[];
     },
   });
+}
+
+/**
+ * "My foods", favourites first — the one order every screen shows them in.
+ *
+ * Favourites used to be their own section, so the same food was drawn twice on
+ * any screen that showed both, with identical name, identical macros and the
+ * identical star. Sorting them to the front says which they are in half the
+ * height, using the star you toggle them with.
+ *
+ * It is a hook rather than a helper because two screens list these foods — the
+ * Nutrition tab's first five and the full list behind "Xem thêm" — and the two
+ * disagreeing about which food is first is exactly the kind of difference
+ * nobody reports and everybody notices.
+ *
+ * `favIds` is not redundant with `is_favorite`: starring a food invalidates
+ * `favorite_foods` first, so for one render `my_foods` still holds the old flag
+ * and the row would drop back down before jumping up again.
+ */
+export function useMyFoodsSorted() {
+  const { data: myFoods } = useMyFoods();
+  const { data: favorites } = useFavoriteFoods();
+  const favIds = useMemo(() => new Set((favorites ?? []).map((f) => f.id)), [favorites]);
+  return useMemo(() => {
+    const fav = (f: FoodItemRow) => (f.is_favorite || favIds.has(f.id) ? 0 : 1);
+    // A copy: the array belongs to react-query's cache and sorting it in place
+    // would reorder it for every other reader.
+    return [...(myFoods ?? [])].sort((a, b) => fav(a) - fav(b) || a.name.localeCompare(b.name));
+  }, [myFoods, favIds]);
 }
 
 export interface RecentFood {
