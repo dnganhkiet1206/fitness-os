@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
   },
   // Takes whatever the header, chips and search field leave over
   results: { flex: 1 },
-  resultsContent: { paddingBottom: spacing.sm },
+  resultsContent: { gap: spacing.sm, paddingBottom: spacing.sm },
   pickerHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   pickerTitle: { ...type.title2, color: colors.foreground, flex: 1 },
   miniChip: {
@@ -900,18 +900,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   searchInput: { flex: 1, color: colors.foreground, fontSize: 15 },
+  /*
+    A card each, with air between them, rather than lines between text rows.
+
+    They were 13pt names on ~32pt rows divided by a hairline: legible, but under
+    the 44pt a finger is entitled to, and dense enough that picking the third
+    chicken out of six near-identical names meant aiming. A surface of its own
+    makes a row a thing you press, and `resultsContent` supplies the gap — so no
+    row has to carry a border to say where it ends.
+  */
   resultRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(43,43,49,0.4)',
+    paddingVertical: spacing.sm + 4,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: 'transparent',
   },
-  /* Dimmed, not hidden — see the note on `FoodRow`. */
-  rowAdded: { opacity: 0.5 },
-  resultName: { ...type.footnote, color: colors.foreground, flex: 1, minWidth: 0 },
-  resultKcal: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  /* Dimmed and outlined, not hidden — see the note on `FoodRow`. The border is
+     what keeps it legible as a row once the fill has faded with it. */
+  rowAdded: { opacity: 0.55, borderColor: colors.border },
+  resultName: { ...type.body, color: colors.foreground, flex: 1, minWidth: 0 },
+  resultKcal: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   pickLabel: {
     ...type.caption,
     color: colors.mutedForeground,
