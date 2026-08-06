@@ -25,10 +25,13 @@ import {
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
+import { TrainingExplainer } from '@/components/ascnd/training-explainer';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useNudges, useRecentWorkouts, useTodayBiometrics, useWearables } from '@/hooks/useTodayData';
 import { useRecentAwards } from '@/hooks/use-extras';
 import { useUnits } from '@/hooks/use-units';
@@ -120,10 +123,28 @@ const ACWR_ZONES = [
 
 export function TrainingCard({ acwr }: { acwr: number | null }) {
   const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
   const { weight: wUnit } = useUnits();
   const { data: workouts } = useRecentWorkouts();
+  /*
+    The seven-day figures come from a seven-day query.
+
+    The line under the bar says "Khối lượng 7 ngày" and was summing
+    `useRecentWorkouts()`, which is *the last five sessions whatever their
+    dates*. Train five times over three weeks and it printed three weeks of
+    volume under a seven-day heading; train six times in one week and it
+    silently dropped the sixth. The PR badge had the same fault — a record set
+    in March still showing today, because five sessions is not a window.
+
+    `latest` still comes from `useRecentWorkouts`: this card's top row needs
+    `pain_flags`, which the sessions query does not select, and "the most recent
+    session" is genuinely not a windowed question.
+  */
+  const { data: week } = useWorkoutSessions(7);
 
   const latest = (workouts ?? [])[0];
+  const help = useHelpTopic('training');
   if (!latest) return null;
 
   const a = acwr ?? 0;
@@ -132,8 +153,8 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   const acwrLabel = a >= 0.8 && a <= 1.3 ? 'Optimal' : a > 1.6 ? 'Spike' : a > 1.3 ? 'Elevated' : a < 0.65 ? 'Detraining' : 'Low';
   const acwrPct = Math.min((a / 2) * 100, 100);
 
-  const totalVolume = (workouts ?? []).reduce((s, w) => s + Number(w.volume_load || 0), 0);
-  const hasPR = (workouts ?? []).some((w) => w.pr_detected);
+  const totalVolume = (week ?? []).reduce((s, w) => s + Number(w.volume_load || 0), 0);
+  const hasPR = (week ?? []).some((w) => w.pr_detected);
   const sets = Array.isArray(latest.sets) ? latest.sets : [];
   const painFlags = (Array.isArray(latest.pain_flags) ? (latest.pain_flags as PainFlag[]) : []).filter(
     (p) => (p.pain_0_10 ?? 0) > 0,
@@ -143,13 +164,30 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
     <GlassCard style={styles.stackCard}>
       <View style={styles.headRow}>
         <MicroTitle>{i18n.dcTrainingTitle}</MicroTitle>
-        {hasPR && (
-          <View style={styles.prBadge}>
-            <Icon icon={Trophy} size={13} />
-            <Text style={styles.prText}>PR!</Text>
-          </View>
-        )}
+        <View style={styles.headAccessories}>
+          {hasPR && (
+            <View style={styles.prBadge}>
+              <Icon icon={Trophy} size={13} />
+              <Text style={styles.prText}>PR!</Text>
+            </View>
+          )}
+          <HelpButton
+            label={vi ? 'Giải thích thẻ tập luyện' : 'Explain the training card'}
+            onPress={help.openHelp}
+          />
+        </View>
       </View>
+
+      {/* Volume load and ACWR are the two numbers on this card that nobody
+          guesses — one looks like a claim to have lifted four tonnes, the other
+          is three words of jargon that decide whether you train tomorrow. */}
+      {help.nudge ? (
+        <HelpNudge
+          text={vi ? 'Chưa rõ 4.200 kg hay ACWR nghĩa là gì? Bấm vào đây.' : 'Not sure what volume load or ACWR mean? Tap here.'}
+          onPress={help.openHelp}
+          onDismiss={help.dismissNudge}
+        />
+      ) : null}
 
       {/* Latest workout row */}
       <View style={styles.latestRow}>
@@ -217,6 +255,8 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
           </Text>
         </View>
       )}
+
+      <TrainingExplainer visible={help.open} onClose={help.close} />
     </GlassCard>
   );
 }
@@ -391,6 +431,7 @@ const styles = StyleSheet.create({
   stackCard: { gap: spacing.md },
   pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  headAccessories: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   microRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   microTitle: {
     fontSize: 12,

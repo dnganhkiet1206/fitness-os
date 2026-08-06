@@ -1,12 +1,8 @@
-import * as Haptics from 'expo-haptics';
 import { useIsFocused } from 'expo-router';
-import { HelpCircle, X } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
-  FadeIn,
-  FadeOut,
   useAnimatedProps,
   useSharedValue,
   withDelay,
@@ -18,11 +14,10 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
-import { Icon } from '@/components/ascnd/icon';
+import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { noteHelpOpened, noteNudged, shouldNudge } from '@/lib/help-nudge';
 import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
 
 /** The storage key the hint counts under — see `lib/help-nudge.ts`. */
@@ -65,39 +60,13 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
   const vi = lang === 'vi';
 
   /*
-    Help, and the hint that it exists.
-
-    `HELP_TOPIC` is the storage key for the counting; it is a constant rather
-    than the string typed twice, because the two uses have to agree or the hint
-    counts under one name and is silenced under another — a bug whose only
-    symptom is a hint that never stops.
+    Help, and the hint that it exists — the same machinery the training card
+    uses. `HELP_TOPIC` is the storage key the counting happens under; it is a
+    constant rather than the string typed twice, because the button and the
+    hint have to agree on it or one counts under a name the other never
+    silences, and the only symptom is a tip that never stops.
   */
-  const [help, setHelp] = useState(false);
-  const [nudge, setNudge] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    void shouldNudge(HELP_TOPIC).then((show) => {
-      if (!alive || !show) return;
-      setNudge(true);
-      void noteNudged(HELP_TOPIC);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const openHelp = () => {
-    Haptics.selectionAsync();
-    setNudge(false);
-    setHelp(true);
-    void noteHelpOpened(HELP_TOPIC);
-  };
-  /* Dismissing is not the same as reading: the showing has already been
-     counted, so it can come back tomorrow, up to the budget. */
-  const dismissNudge = () => {
-    Haptics.selectionAsync();
-    setNudge(false);
-  };
+  const help = useHelpTopic(HELP_TOPIC);
 
   // Stored values are language-neutral tokens (legacy rows may hold prose);
   // localize here so the copy follows the active language.
@@ -185,14 +154,11 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
         not fall through to the card's own press — Today wraps the whole gauge
         in one that pushes `/biometrics`, and tapping `?` must not navigate.
       */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={vi ? 'Giải thích điểm sẵn sàng' : 'Explain the readiness score'}
-        hitSlop={14}
-        onPress={openHelp}
-        style={({ pressed }) => [styles.helpBtn, pressed && styles.helpPressed]}>
-        <Icon icon={HelpCircle} size={17} color={colors.mutedForeground} />
-      </Pressable>
+      <HelpButton
+        label={vi ? 'Giải thích điểm sẵn sàng' : 'Explain the readiness score'}
+        onPress={help.openHelp}
+        style={styles.helpBtn}
+      />
 
       {/*
         The hint, at most three times and never again once the `?` is pressed.
@@ -203,27 +169,16 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
         counting is the whole feature, since an uncounted hint on a card you
         open every morning becomes an obstacle by its tenth appearance.
       */}
-      {nudge ? (
-        <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={openHelp}
-            style={({ pressed }) => [styles.nudge, pressed && styles.helpPressed]}>
-            <Icon icon={HelpCircle} size={14} color={colors.metricBlue} />
-            <Text style={styles.nudgeText}>
-              {vi
-                ? 'Chưa rõ RHR, LOAD hay ACWR là gì? Bấm vào đây.'
-                : 'Not sure what RHR, LOAD or ACWR mean? Tap here.'}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={i18n.a11yClose}
-              hitSlop={12}
-              onPress={dismissNudge}>
-              <Icon icon={X} size={14} color={colors.mutedForeground} />
-            </Pressable>
-          </Pressable>
-        </Animated.View>
+      {help.nudge ? (
+        <HelpNudge
+          text={
+            vi
+              ? 'Chưa rõ RHR, LOAD hay ACWR là gì? Bấm vào đây.'
+              : 'Not sure what RHR, LOAD or ACWR mean? Tap here.'
+          }
+          onPress={help.openHelp}
+          onDismiss={help.dismissNudge}
+        />
       ) : null}
 
       {/* Ring */}
@@ -299,7 +254,7 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
           </View>
         ))}
       </View>
-      <ReadinessExplainer visible={help} onClose={() => setHelp(false)} />
+      <ReadinessExplainer visible={help.open} onClose={help.close} />
     </GlassCard>
   );
 }
@@ -309,31 +264,10 @@ const styles = StyleSheet.create({
   /* Out of the flow, in the corner — see the comment at the button. It is the
      only way to add a trailing accessory to a centred header without the
      header moving. 28pt of ink plus hitSlop 14 is a 56pt target. */
-  helpBtn: {
-    position: 'absolute',
-    top: spacing.md,
-    right: spacing.md,
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  helpPressed: { opacity: 0.7, transform: [{ scale: 0.94 }] },
-  nudge: {
-    /* The card centres its children, so without this the chip shrink-wraps its
-       text into a narrow column instead of spanning the card. */
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm + 2,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(59,166,255,0.25)',
-    backgroundColor: 'rgba(59,166,255,0.10)',
-  },
-  nudgeText: { flex: 1, fontSize: 12, lineHeight: 17, color: colors.foreground },
+  /* Out of the flow, in the corner — see the comment at the button. It is the
+     only way to add a trailing accessory to a centred header without the
+     header moving. Size and hit area come from `HelpButton`. */
+  helpBtn: { position: 'absolute', top: spacing.md, right: spacing.md },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   title: {

@@ -139,9 +139,26 @@ try {
   if (!/sessions[\s\S]{0,80}sets/.test(panel)) {
     problems.push('day-plan: không đọc sets của buổi tập, không có gì để đối chiếu');
   }
+  /*
+    The column list, parsed rather than matched.
+
+    This was written as a literal `volume_load, sets'`, and the very next change
+    to the query — adding `pr_detected` for the training card — inserted a
+    column between the two and failed the check while `sets` was still being
+    selected perfectly well. A rule that breaks when something *near* it moves
+    is a rule that gets deleted the third time it cries wolf.
+  */
   const hook = readFileSync(path.join(NATIVE, 'src/hooks/use-fitness-data.ts'), 'utf8');
-  if (!/volume_load, sets'/.test(hook)) {
-    problems.push('use-fitness-data: useWorkoutSessions không lấy cột sets — panel sẽ không bao giờ đối chiếu được');
+  const select = hook
+    .match(/export function useWorkoutSessions[\s\S]{0,1200}?\.select\('([^']*)'\)/)?.[1]
+    ?.split(',')
+    .map((c) => c.trim());
+  if (!select) {
+    problems.push('use-fitness-data: không đọc được danh sách cột của useWorkoutSessions');
+  } else if (!select.includes('sets')) {
+    problems.push(
+      `use-fitness-data: useWorkoutSessions không lấy cột sets (đang lấy: ${select.join(', ')}) — panel sẽ không bao giờ đối chiếu được`,
+    );
   }
 
   if (problems.length) {

@@ -352,7 +352,7 @@ export function useWorkoutSessions(days = 14) {
           the panel is useless without it, and the alternative was a second
           query fired every time you tapped a different day of the week.
         */
-        .select('id, date_time, template_name, session_rpe, volume_load, sets')
+        .select('id, date_time, template_name, session_rpe, volume_load, pr_detected, sets')
         .eq('user_id', user!.id)
         .gte('date_time', daysAgoISO(days))
         .order('date_time', { ascending: false });
