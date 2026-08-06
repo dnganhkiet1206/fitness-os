@@ -1,0 +1,159 @@
+import * as Haptics from 'expo-haptics';
+import { useMemo } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+
+import { Screen } from '@/components/ascnd/screen';
+import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
+import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
+import { useUnits } from '@/hooks/use-units';
+import { getLocale } from '@/lib/i18n';
+import { localDateStr } from '@/lib/local-date';
+import { toast } from '@/lib/toast';
+import { displayWeight, weightLabel } from '@/lib/units';
+
+/** Ninety days back. The tab shows three; this is the place that shows the rest. */
+const DAYS = 90;
+
+/**
+ * Every workout you have logged, newest first, grouped by month.
+ *
+ * ── why the tab could not just keep growing ──
+ *
+ * "Buổi tập gần đây" listed every session of the last fortnight inside one
+ * card at the bottom of the Workouts tab. Train four times a week and that is
+ * eight rows; the tab is a summary and the summary was mostly a log. Now the
+ * tab shows three and this holds the rest, which is the same arrangement the
+ * workout list directly above it already uses.
+ *
+ * ── months, because a list of dates is not a list ──
+ *
+ * Forty rows of "Thu, 6 Aug · 4,200 kg" is a wall you scroll rather than read.
+ * A month heading with its session count and total volume gives the scroll
+ * somewhere to stop, and answers the question people actually bring to a
+ * training log — *how much did I do in July* — without anyone having to add up
+ * rows by eye.
+ */
+export default function SessionsScreen() {
+  const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
+  const { weight: wUnit } = useUnits();
+  const wl = weightLabel(wUnit);
+  const { data: sessions } = useWorkoutSessions(DAYS);
+  const del = useDeleteWorkoutSession();
+
+  const confirmDelete = (id: string, date_time: string, label: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(i18n.nDeleteSession, i18n.nDeleteSessionMsg.replace('{x}', label), [
+      { text: i18n.cancel, style: 'cancel' },
+      {
+        text: i18n.delete,
+        style: 'destructive',
+        onPress: () =>
+          del.mutate(
+            { id, date_time },
+            {
+              onSuccess: () => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                toast.success(i18n.deleted);
+              },
+              onError: (e: Error) => toast.error(e.message),
+            },
+          ),
+      },
+    ]);
+  };
+
+  /*
+    Grouped by the month the session happened in, locally.
+
+    Keyed on `YYYY-MM` taken from `localDateStr` rather than on
+    `getMonth()` of the raw timestamp — a session logged at 23:30 on the 31st
+    belongs to the month it was in where the person was, which is the same rule
+    the rest of the app files days under.
+  */
+  const months = useMemo(() => {
+    const out: { key: string; label: string; rows: NonNullable<typeof sessions> }[] = [];
+    for (const s of sessions ?? []) {
+      const at = new Date(s.date_time);
+      const key = localDateStr(at).slice(0, 7);
+      let group = out.find((g) => g.key === key);
+      if (!group) {
+        group = {
+          key,
+          label: at.toLocaleDateString(getLocale(lang), { month: 'long', year: 'numeric' }),
+          rows: [],
+        };
+        out.push(group);
+      }
+      group.rows.push(s);
+    }
+    return out;
+  }, [sessions, lang]);
+
+  return (
+    <Screen back title={vi ? 'Buổi tập đã ghi' : 'Logged workouts'}>
+      {months.length === 0 ? (
+        <Text style={styles.empty}>
+          {vi ? 'Chưa có buổi tập nào trong 90 ngày qua' : 'No workouts in the last 90 days'}
+        </Text>
+      ) : (
+        months.map((m) => {
+          const volume = m.rows.reduce((sum, s) => sum + (Number(s.volume_load) || 0), 0);
+          return (
+            <View key={m.key} style={styles.month}>
+              <View style={styles.monthHead}>
+                <Text style={styles.monthName}>{m.label}</Text>
+                <Text style={styles.monthMeta}>
+                  {m.rows.length} {vi ? 'buổi' : m.rows.length === 1 ? 'session' : 'sessions'}
+                  {volume > 0
+                    ? `  ·  ${Math.round(displayWeight(volume, wUnit)).toLocaleString()} ${wl}`
+                    : ''}
+                </Text>
+              </View>
+              <View style={sessionListStyles.group}>
+                {m.rows.map((s, i) => (
+                  <View key={s.id}>
+                    {i > 0 ? <View style={sessionListStyles.sep} /> : null}
+                    <SessionRow
+                      session={s}
+                      wUnit={wUnit}
+                      lang={lang}
+                      i18n={i18n}
+                      onDelete={confirmDelete}
+                    />
+                  </View>
+                ))}
+              </View>
+            </View>
+          );
+        })
+      )}
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  month: { gap: spacing.sm },
+  monthHead: { gap: 1 },
+  monthName: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 2.4,
+    color: colors.mutedForeground,
+  },
+  monthMeta: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  empty: {
+    fontSize: 13,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    paddingVertical: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    backgroundColor: glass.bg,
+  },
+});

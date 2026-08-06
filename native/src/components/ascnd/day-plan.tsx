@@ -13,6 +13,7 @@ import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
+import { mergeProgress, type SessionSet } from '@/lib/day-progress';
 import { dayProgressKey, staleDayProgress } from '@/lib/local-date';
 import { DEFAULT_REST, DEFAULT_RPE, restLabel } from '@/lib/prescription';
 import { toast } from '@/lib/toast';
@@ -204,6 +205,8 @@ export function DayPlan({
     template_name: string | null;
     session_rpe: number | null;
     volume_load: number | null;
+    /** free JSONB on the row — read defensively, it can be anything */
+    sets?: unknown;
   }[];
   i18n: ReturnType<typeof useI18n>;
   onEdit: () => void;
@@ -299,7 +302,12 @@ export function DayPlan({
   useEffect(() => {
     if (!loaded || introduced || rows.length === 0) return;
     introduced = true;
-    setEditing((rows.find((r) => !done[r.key]) ?? rows[0]).key);
+    const next = rows.find((r) => !shown[r.key]);
+    // Nothing left undone means the day is already recorded — there is no
+    // "next set" to demonstrate the editors on, and opening one on a set that
+    // has happened invites editing a record rather than making one.
+    if (!next) return;
+    setEditing(next.key);
     // `done` is read once, at the moment the resume point lands; depending on
     // it would re-run this every time a set is ticked.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -337,18 +345,41 @@ export function DayPlan({
 
   const restOf = useCallback((row: SetRow) => rest[row.key] ?? row.plannedRest, [rest]);
 
+  /*
+    What is ticked: what you ticked, filled in by what the day's sessions prove.
+
+    Only the checkbox ever wrote a tick, so a workout recorded from the
+    free-form sheet left this panel reading "0/12 set" under an empty bar —
+    beside a session card saying it was done at 18:40, a green day on the strip
+    above, and a finish button reading "đã ghi". Three claims that it happened
+    and three that it had not started, on one screen.
+
+    `mergeProgress` reads the session's sets back onto the planned rows. See
+    `lib/day-progress.ts` for why it matches on exercise name and count, why it
+    refuses to match on weight, and why stored ticks win over evidence.
+
+    Derived at render and never stored. The sessions are the record; a copy in
+    `AsyncStorage` could outlive the session it came from, and a tick that
+    outlives its evidence is indistinguishable from one you made.
+  */
+  const shown = useMemo(() => {
+    const sets = sessions.flatMap((sn) => (Array.isArray(sn.sets) ? (sn.sets as SessionSet[]) : []));
+    return mergeProgress(done, rows, sets);
+  }, [done, rows, sessions]);
+
   const toggle = useCallback(
     (row: SetRow) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const secs = rest[row.key] ?? row.plannedRest;
-      setDone((prev) => {
-        const next = { ...prev, [row.key]: !prev[row.key] };
-        // Rest belongs to finishing a set, not to changing your mind about one.
-        setResting(next[row.key] && secs > 0 ? { left: secs, total: secs } : null);
-        return next;
-      });
+      // `shown`, not `prev` — a row ticked by a logged session is absent from
+      // `prev`, so `!prev[key]` would write `true` over a box already drawn
+      // ticked and the tap would do visibly nothing.
+      const next = !shown[row.key];
+      setDone((prev) => ({ ...prev, [row.key]: next }));
+      // Rest belongs to finishing a set, not to changing your mind about one.
+      setResting(next && secs > 0 ? { left: secs, total: secs } : null);
     },
-    [rest],
+    [rest, shown],
   );
 
   const bumpRest = (row: SetRow, by: number) => {
@@ -359,7 +390,7 @@ export function DayPlan({
     }));
   };
 
-  const doneRows = rows.filter((r) => done[r.key]);
+  const doneRows = rows.filter((r) => shown[r.key]);
   /*
     One save per visit to this day. `isSuccess` never goes back to false on its
     own, and this panel is remounted whenever the selected day changes, so the
@@ -481,7 +512,7 @@ export function DayPlan({
       </View>
 
       {rows.map((row, i) => {
-        const isDone = !!done[row.key];
+        const isDone = !!shown[row.key];
         const effort = rpe[row.key] ?? row.plannedRpe;
         const secs = restOf(row);
         const open = editing === row.key;

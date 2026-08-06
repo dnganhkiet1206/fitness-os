@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { CalendarDays, Dumbbell, Flame, Plus, Trash2 } from 'lucide-react-native';
+import { CalendarDays, ChevronDown, ChevronUp, Dumbbell, Plus } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -21,6 +21,7 @@ import { toast } from '@/lib/toast';
 import { displayWeight, weightLabel } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
+import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 
@@ -37,17 +38,24 @@ import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
  * obligation.
  */
 const MUSCLE_TILES: { key: MuscleArtKey; vi: string; en: string }[] = [
+  /* The first six are what the grid shows collapsed — two rows of three — so
+     they are the six biggest movements rather than the first six alphabetically
+     or the order they were typed in. Legs sat seventh and would have been
+     hidden behind Calves, which is a menu with the main course missing. */
   { key: 'chest', vi: 'Ngực', en: 'Chest' },
   { key: 'back', vi: 'Lưng', en: 'Back' },
+  { key: 'legs', vi: 'Chân', en: 'Legs' },
   { key: 'shoulders', vi: 'Vai', en: 'Shoulders' },
   { key: 'biceps', vi: 'Tay trước', en: 'Biceps' },
   { key: 'triceps', vi: 'Tay sau', en: 'Triceps' },
   { key: 'abs', vi: 'Bụng', en: 'Abs' },
-  { key: 'legs', vi: 'Chân', en: 'Legs' },
   { key: 'glutes', vi: 'Mông', en: 'Glutes' },
   { key: 'calves', vi: 'Bắp chân', en: 'Calves' },
   { key: 'cardio', vi: 'Tim mạch', en: 'Cardio' },
 ];
+
+/** Two rows of three — what the library shows before you open it up. */
+const TILES_COLLAPSED = 6;
 
 /** How many of the saved workouts the tab shows before "See all" takes over. */
 const PREVIEW = 3;
@@ -68,7 +76,7 @@ const PREVIEW = 3;
  *
  * ── every group, every time ──
  *
- * All ten show, including the ones with nothing filed under them yet. The grid
+ * All ten exist, including the ones with nothing filed under them yet. The grid
  * is a menu of what the app knows about as much as a view of what is in the
  * library, and a menu that changes shape as exercises are added is one you have
  * to re-read every visit — the chest tile moving because calves appeared is
@@ -76,6 +84,20 @@ const PREVIEW = 3;
  *
  * A group with no *art* still gets no tile. That is a different thing: the
  * missing piece there is a picture, not a shelf.
+ *
+ * ── six of them, until you ask for ten ──
+ *
+ * Ten tiles three across is four rows of a 64pt drawing over two lines of type
+ * — around 440pt, most of a phone screen, for a section that is a *door* to the
+ * library rather than the library itself. Collapsed to the first two rows it is
+ * a menu you take in at a glance, and the toggle underneath restores the rest.
+ *
+ * This does not contradict the paragraph above. What that forbids is the grid
+ * rearranging itself as data arrives; the order here is fixed forever and
+ * collapsing only hides its tail, so expanding puts every tile back exactly
+ * where it was. The order was changed once, when this was added, so that the
+ * six always-visible ones are the six biggest movements — hiding Chân while
+ * showing Bắp chân would have been a menu with the main course missing.
  *
  * ── the counts are real, or they are absent ──
  *
@@ -94,6 +116,7 @@ function MuscleGrid({
   failed: boolean;
   vi: boolean;
 }) {
+  const [open, setOpen] = useState(false);
   /*
     Grouped by *art*, not by stored name.
 
@@ -129,7 +152,7 @@ function MuscleGrid({
         </Pressable>
       </View>
       <View style={styles.libGrid}>
-        {MUSCLE_TILES.map((t) => {
+        {(open ? MUSCLE_TILES : MUSCLE_TILES.slice(0, TILES_COLLAPSED)).map((t) => {
           const n = counts.get(t.key) ?? 0;
           return (
             <Pressable
@@ -157,6 +180,26 @@ function MuscleGrid({
           );
         })}
       </View>
+
+      {/* Says which way it goes and how much is behind it — "Xem thêm" alone is
+          a button whose result you have to press it to find out. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        style={({ pressed }) => [styles.libToggle, pressed && styles.pressedDim]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          setOpen((v) => !v);
+        }}>
+        <Text style={styles.libToggleText}>
+          {open
+            ? vi ? 'Thu gọn' : 'Show less'
+            : vi
+              ? `Xem thêm ${MUSCLE_TILES.length - TILES_COLLAPSED} nhóm`
+              : `Show ${MUSCLE_TILES.length - TILES_COLLAPSED} more`}
+        </Text>
+        <Icon icon={open ? ChevronUp : ChevronDown} size={14} color={colors.primary} />
+      </Pressable>
     </View>
   );
 }
@@ -367,48 +410,49 @@ export default function WorkoutsScreen() {
         </View>
       )}
 
-      {/* Logged sessions (last 14 days) — proof that saved logs landed */}
+      {/*
+        The newest three, and the rest behind "Xem tất cả".
+
+        This listed every session of the last fortnight. Train four times a week
+        and the tab ended in eight rows of log — a summary that was mostly not a
+        summary, and the longest thing on the page for anybody training
+        regularly, which is to say for the people the tab is for.
+
+        Three, like the workout list directly above it, and the same header
+        shape: the two sections were already siblings and now they behave like
+        it. `/sessions` groups the rest by month with a volume total, which is
+        the question a training log actually gets asked.
+      */}
       {sessions && sessions.length > 0 && (
         <Animated.View style={styles.sessionsWrap} entering={rise(templates?.length ?? 0)}>
-          <Text style={styles.sectionLabel}>
-            {vi ? 'Buổi tập gần đây' : 'Recent sessions'} ({sessions.length})
-          </Text>
-          <GlassCard style={styles.sessionsCard}>
-            {sessions.map((s, i) => {
-              const name = s.template_name || 'Workout';
-              const day = new Date(s.date_time).toLocaleDateString(getLocale(lang), {
-                weekday: 'short', day: 'numeric', month: 'short',
-              });
-              return (
-              <View key={s.id} style={[styles.sessionRow, i > 0 && styles.sessionBorder]}>
-                <View style={styles.sessionInfo}>
-                  <Text style={styles.sessionName} numberOfLines={1}>{name}</Text>
-                  <Text style={styles.sessionMeta}>
-                    {day}
-                    {s.volume_load != null ? `  ·  ${Math.round(displayWeight(Number(s.volume_load), wUnit)).toLocaleString()} ${wl}` : ''}
-                  </Text>
-                </View>
-                {s.session_rpe != null && (
-                  <View style={styles.rpeBadge}>
-                    <Icon icon={Flame} size={11} />
-                    <Text style={styles.rpeText}>RPE {s.session_rpe}</Text>
-                  </View>
-                )}
-                {/* Muted, like the template rows above — a red glyph on every
-                    line would make deleting the loudest thing in a list that
-                    exists to show the training happened. */}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={i18n.a11yDelete}
-                  hitSlop={10}
-                  onPress={() => confirmDeleteSession(s.id, s.date_time, `${name} · ${day}`)}
-                  style={({ pressed }) => [styles.sessionDel, pressed && styles.pressed]}>
-                  <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
-                </Pressable>
+          <View style={styles.libHead}>
+            <Text style={styles.sectionLabel}>
+              {vi ? 'Buổi tập gần đây' : 'Recent sessions'} ({sessions.length})
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push('/sessions');
+              }}>
+              <Text style={styles.libAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
+            </Pressable>
+          </View>
+          <View style={sessionListStyles.group}>
+            {sessions.slice(0, PREVIEW).map((s, i) => (
+              <View key={s.id}>
+                {i > 0 ? <View style={sessionListStyles.sep} /> : null}
+                <SessionRow
+                  session={s}
+                  wUnit={wUnit}
+                  lang={lang}
+                  i18n={i18n}
+                  onDelete={confirmDeleteSession}
+                />
               </View>
-              );
-            })}
-          </GlassCard>
+            ))}
+          </View>
         </Animated.View>
       )}
 
@@ -468,6 +512,21 @@ const styles = StyleSheet.create({
   libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   libAll: { ...type.footnote, color: colors.primary },
   libGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  /* Full width and centred, so it reads as the end of the grid rather than as
+     an eleventh tile that lost its picture. */
+  libToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    height: 38,
+    borderRadius: radius.md,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    backgroundColor: glass.bg,
+  },
+  libToggleText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   /*
     Three across. Two makes each tile large enough to show the drawing's
     striations, which is detail nobody reads on a tile; four shrinks the figure

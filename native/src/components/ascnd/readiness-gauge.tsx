@@ -1,8 +1,12 @@
+import * as Haptics from 'expo-haptics';
 import { useIsFocused } from 'expo-router';
-import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { HelpCircle, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
+  FadeIn,
+  FadeOut,
   useAnimatedProps,
   useSharedValue,
   withDelay,
@@ -14,9 +18,15 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
+import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { noteHelpOpened, noteNudged, shouldNudge } from '@/lib/help-nudge';
 import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
+
+/** The storage key the hint counts under — see `lib/help-nudge.ts`. */
+const HELP_TOPIC = 'readiness';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -52,6 +62,43 @@ interface Props {
 export function ReadinessGauge({ score, status, explain, recommendation, acwr }: Props) {
   const i18n = useI18n();
   const { lang } = useAppSettings();
+  const vi = lang === 'vi';
+
+  /*
+    Help, and the hint that it exists.
+
+    `HELP_TOPIC` is the storage key for the counting; it is a constant rather
+    than the string typed twice, because the two uses have to agree or the hint
+    counts under one name and is silenced under another — a bug whose only
+    symptom is a hint that never stops.
+  */
+  const [help, setHelp] = useState(false);
+  const [nudge, setNudge] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void shouldNudge(HELP_TOPIC).then((show) => {
+      if (!alive || !show) return;
+      setNudge(true);
+      void noteNudged(HELP_TOPIC);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const openHelp = () => {
+    Haptics.selectionAsync();
+    setNudge(false);
+    setHelp(true);
+    void noteHelpOpened(HELP_TOPIC);
+  };
+  /* Dismissing is not the same as reading: the showing has already been
+     counted, so it can come back tomorrow, up to the budget. */
+  const dismissNudge = () => {
+    Haptics.selectionAsync();
+    setNudge(false);
+  };
+
   // Stored values are language-neutral tokens (legacy rows may hold prose);
   // localize here so the copy follows the active language.
   const explainText = readinessExplainText(explain, lang);
@@ -121,7 +168,54 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
           style={[styles.statusDot, { backgroundColor: color }, { transform: [{ scale: pulse }] }]}
         />
         <Text style={styles.title}>{i18n.dcReadinessTitle}</Text>
+        {/*
+          The way in to what any of this means.
+
+          A nested `Pressable` becomes the touch responder itself, so this does
+          not fall through to the card's own press — Today wraps the whole gauge
+          in one that pushes `/biometrics`, and tapping `?` must not navigate.
+        */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={vi ? 'Giải thích điểm sẵn sàng' : 'Explain the readiness score'}
+          hitSlop={12}
+          onPress={openHelp}
+          style={({ pressed }) => [styles.helpBtn, pressed && styles.helpPressed]}>
+          <Icon icon={HelpCircle} size={17} color={colors.mutedForeground} />
+        </Pressable>
       </View>
+
+      {/*
+        The hint, at most three times and never again once the `?` is pressed.
+
+        It points up-and-right at the button rather than describing where it is,
+        because "bấm vào biểu tượng dấu hỏi ở góc" is a sentence you have to
+        parse into a location. See `lib/help-nudge.ts` for the counting — the
+        counting is the whole feature, since an uncounted hint on a card you
+        open every morning becomes an obstacle by its tenth appearance.
+      */}
+      {nudge ? (
+        <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={openHelp}
+            style={({ pressed }) => [styles.nudge, pressed && styles.helpPressed]}>
+            <Icon icon={HelpCircle} size={14} color={colors.metricBlue} />
+            <Text style={styles.nudgeText}>
+              {vi
+                ? 'Chưa rõ RHR, LOAD hay ACWR là gì? Bấm vào đây.'
+                : 'Not sure what RHR, LOAD or ACWR mean? Tap here.'}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.a11yClose}
+              hitSlop={12}
+              onPress={dismissNudge}>
+              <Icon icon={X} size={14} color={colors.mutedForeground} />
+            </Pressable>
+          </Pressable>
+        </Animated.View>
+      ) : null}
 
       {/* Ring */}
       <View style={styles.ringWrap}>
@@ -196,15 +290,35 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
           </View>
         ))}
       </View>
+      <ReadinessExplainer visible={help} onClose={() => setHelp(false)} />
     </GlassCard>
   );
 }
 
 const styles = StyleSheet.create({
   card: { alignItems: 'center', paddingVertical: spacing.xl + 8, gap: spacing.lg },
+  /* Sits at the end of the title row, so it is where a trailing accessory is
+     on every other header in the app rather than beside the word it explains. */
+  helpBtn: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
+  helpPressed: { opacity: 0.7, transform: [{ scale: 0.94 }] },
+  nudge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm + 2,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(59,166,255,0.25)',
+    backgroundColor: 'rgba(59,166,255,0.10)',
+  },
+  nudgeText: { flex: 1, fontSize: 12, lineHeight: 17, color: colors.foreground },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   title: {
+    /* Takes the slack so the `?` lands on the right edge of the card rather
+       than tucked against the last letter of the title. */
+    flex: 1,
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',

@@ -108,6 +108,8 @@ const STEPS = [
   ['nhắc nhở', 'node', ['tools/reminders.mjs']],
   ['bữa đã ghi', 'node', ['tools/planned-meal.mjs']],
   ['vòng hoạt động', 'node', ['tools/activity.mjs']],
+  ['đối chiếu tập', 'node', ['tools/day-progress.mjs']],
+  ['nhắc trợ giúp', 'node', ['tools/help-nudge.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],

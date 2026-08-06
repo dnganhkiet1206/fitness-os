@@ -344,7 +344,15 @@ export function useWorkoutSessions(days = 14) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workout_sessions')
-        .select('id, date_time, template_name, session_rpe, volume_load')
+        /*
+          `sets` is here for the week's day panel, which has to work out which
+          planned rows a session accounts for — see `lib/day-progress.ts`. It
+          is the one column on this row that is not a scalar, so it is worth
+          saying why it is worth carrying: a fortnight is a handful of sessions,
+          the panel is useless without it, and the alternative was a second
+          query fired every time you tapped a different day of the week.
+        */
+        .select('id, date_time, template_name, session_rpe, volume_load, sets')
         .eq('user_id', user!.id)
         .gte('date_time', daysAgoISO(days))
         .order('date_time', { ascending: false });

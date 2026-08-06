@@ -56,3 +56,4 @@ example
 
 # local backend config — never commit real keys
 .env
+.check-nudge-*
