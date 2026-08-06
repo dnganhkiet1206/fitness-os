@@ -19,7 +19,6 @@ import {
   Wifi,
   WifiOff,
   Wind,
-  Zap,
   type LucideIcon,
 } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -38,13 +37,13 @@ import { useUnits } from '@/hooks/use-units';
 import { awardText } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
-  ACWR_OPTIMAL,
-  acwrPercent,
   acwrZone,
   averageWeek,
   daysSince,
   loadComparison,
   STALE_AFTER_DAYS,
+  TREND_WEEKS,
+  weeklyVolumes,
   type AcwrZoneKey,
 } from '@/lib/training-card';
 import { displayWeight, weightLabel } from '@/lib/units';
@@ -122,7 +121,17 @@ interface PainFlag {
   pain_0_10?: number;
 }
 
-/** The bar's zone colours, keyed by the one table in `lib/training-card.ts`. */
+/**
+ * How tall the eight-week chart is — named so the bars and the habit line
+ * measure from the same number.
+ *
+ * 56 rather than 44: at 44 a week of 9,000 and a week of 13,000 were 21 and 30
+ * points, a difference you have to look for. The chart exists to make the shape
+ * of a build obvious at a glance, and twelve more points is what buys that.
+ */
+const TREND_H = 56;
+
+/** The chart's zone colours, keyed by the one table in `lib/training-card.ts`. */
 const ZONE_TINT: Record<AcwrZoneKey, string> = {
   detraining: colors.readinessRed,
   low: colors.readinessYellow,
@@ -214,6 +223,10 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   */
   const { data: week } = useWorkoutSessions(7);
   const { data: month } = useWorkoutSessions(28);
+  /* Eight weeks for the chart. The windows all come from `daysAgoISO`, so the
+     newest bar is by construction the same set of sessions as the 7-day total
+     printed above it. */
+  const { data: history } = useWorkoutSessions(TREND_WEEKS * 7);
   const help = useHelpTopic('training');
 
   const latest = (workouts ?? [])[0];
@@ -228,6 +241,8 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   const monthVolume = (month ?? []).reduce((s, w) => s + Number(w.volume_load || 0), 0);
   const habitVolume = averageWeek(monthVolume);
   const hasPR = weekSessions.some((w) => w.pr_detected);
+  const trend = weeklyVolumes(history ?? [], TREND_WEEKS);
+  const trendMax = Math.max(...trend.map((w) => w.volume), habitVolume);
 
   const sets = Array.isArray(latest?.sets) ? latest.sets : [];
   const painFlags = (Array.isArray(latest?.pain_flags) ? (latest.pain_flags as PainFlag[]) : []).filter(
@@ -242,7 +257,10 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
       {hasPR && (
         <View style={styles.prBadge}>
           <Icon icon={Trophy} size={13} />
-          <Text style={styles.prText}>PR!</Text>
+          {/* "PR!" alone is a noise a card makes. What it is actually saying is
+              that a record fell inside the window the rest of the card covers,
+              so it says that. */}
+          <Text style={styles.prText}>{vi ? 'Kỷ lục mới' : 'New PR'}</Text>
         </View>
       )}
       <HelpButton
@@ -348,44 +366,91 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
       ) : null}
 
       {/*
-        Where that lands, at a glance.
+        Eight weeks, and the habit drawn across them.
 
-        Labelled in words. The scale was marked `0 · 0.8 · 1.3 · 2.0`, which is
-        four numbers you can only read once you already understand the ratio —
-        so the picture meant to make the number easy required the number to be
-        understood first.
+        This replaced a bar showing where the ratio sat on a 0–2 scale marked
+        `0 · 0.8 · 1.3 · 2.0`. That bar answered "where am I" using four numbers
+        you can only read once you already understand the ratio — the picture
+        meant to make the number easy needed the number explained first.
+
+        The chart answers the same question and one the card could not answer at
+        all: **which way**. Seventy percent heavier is the fourth week of a
+        deliberate build or one wild Saturday after a fortnight off, and the card
+        drew those identically. The dashed line is the four-week average — the
+        same "thói quen" the sentence at the top compares against — so the claim
+        and its evidence are one picture.
       */}
-      {a > 0 && (
-        <View style={styles.scale}>
-          <View style={styles.acwrTrack}>
-            <View
-              style={[
-                styles.acwrOptimal,
-                {
-                  left: `${acwrPercent(ACWR_OPTIMAL.from)}%`,
-                  right: `${100 - acwrPercent(ACWR_OPTIMAL.to)}%`,
-                },
-              ]}
-            />
-            <View
-              style={[
-                styles.acwrIndicator,
-                { left: `${acwrPercent(a)}%`, backgroundColor: zoneTint, shadowColor: zoneTint },
-              ]}
-            />
+      {trend.some((w) => w.volume > 0) && (
+        <View style={styles.trend}>
+          <View style={styles.trendChart}>
+            {habitVolume > 0 && trendMax > 0 ? (
+              <View style={[styles.habitLine, { bottom: (habitVolume / trendMax) * TREND_H }]} />
+            ) : null}
+            {trend.map((w, i) => {
+              const last = i === trend.length - 1;
+              /*
+                A week with nothing in it gets a deliberate stub rather than a
+                one-pixel sliver. At 1pt the zero weeks read as the chart having
+                failed to draw something; at 2pt and a fainter fill they read as
+                what they are — a week nobody trained — which on this card is
+                information, not an absence of it.
+              */
+              const empty = w.volume === 0;
+              return (
+                <View key={i} style={styles.trendSlot}>
+                  <View
+                    style={[
+                      styles.trendBar,
+                      {
+                        height: empty ? 2 : Math.max(3, (w.volume / (trendMax || 1)) * TREND_H),
+                        backgroundColor: empty
+                          ? 'rgba(255,255,255,0.10)'
+                          : last
+                            ? zoneTint
+                            : 'rgba(255,255,255,0.20)',
+                      },
+                    ]}
+                  />
+                </View>
+              );
+            })}
           </View>
-          <View style={styles.scaleLabels}>
-            <Text style={styles.scaleEnd}>{vi ? 'nhẹ hơn' : 'lighter'}</Text>
-            <Text style={[styles.scaleMid, { color: colors.readinessGreen }]}>
-              {vi ? 'vừa sức' : 'just right'}
-            </Text>
-            <Text style={styles.scaleEnd}>{vi ? 'nặng hơn' : 'heavier'}</Text>
+          {/*
+            The line's name goes in the legend, not on the line.
+
+            It was drawn as a tag at the right-hand end of the dashed rule,
+            which is exactly where the newest bar is — so on any week at or near
+            the baseline the word sat on top of the bar it was there to compare
+            against, and neither could be read.
+          */}
+          <View style={styles.trendLabels}>
+            <Text style={styles.trendEnd}>{vi ? '8 tuần trước' : '8 weeks ago'}</Text>
+            <View style={styles.trendKey}>
+              <View style={styles.trendKeyDash} />
+              <Text style={styles.trendKeyText}>{vi ? 'thói quen' : 'habit'}</Text>
+            </View>
+            <Text style={[styles.trendEnd, styles.trendNow]}>{vi ? 'tuần này' : 'this week'}</Text>
           </View>
         </View>
       )}
 
-      {/* The session itself — a fact, under the interpretation of it */}
-      <View style={styles.latestRow}>
+      {/*
+        The session itself — a fact, under the interpretation of it, and a way
+        through to the rest of them.
+
+        The card was inert: every other widget on Today leads somewhere and this
+        one ended in a full stop, even though `/sessions` now holds the whole log
+        grouped by month. The chart above raises the obvious next question —
+        *what were those weeks* — and this is the answer to it.
+      */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={vi ? 'Xem tất cả buổi tập đã ghi' : 'See all logged workouts'}
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push('/sessions');
+        }}
+        style={({ pressed }) => [styles.latestRow, pressed && styles.pressedDim]}>
         <View style={styles.latestIcon}>
           <Icon icon={Dumbbell} size={20} />
         </View>
@@ -408,7 +473,8 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
               : ''}
           </Text>
         </View>
-      </View>
+        <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+      </Pressable>
 
       {painFlags.length > 0 && (
         <View style={styles.painRow}>
@@ -695,35 +761,36 @@ const styles = StyleSheet.create({
   compareValueMuted: { color: colors.mutedForeground },
   compareSub: { fontSize: 11, color: colors.mutedForeground },
   staleNote: { fontSize: 12, lineHeight: 17, color: colors.readinessYellow },
-  scale: { gap: 6 },
-  scaleLabels: { flexDirection: 'row', alignItems: 'center' },
-  scaleEnd: { flex: 1, fontSize: 10, color: colors.mutedForeground },
-  scaleMid: { flex: 1, fontSize: 10, fontWeight: '600', textAlign: 'center' },
-  acwrTrack: { height: 8, borderRadius: 4, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'visible' },
-  /* `left`/`right` come from `ACWR_OPTIMAL` at the call site. They were the
-     literals 40% and 35%, which happened to be right for 0.8–1.3 on a 0–2
-     scale and would have stayed 40/35 the day either edge moved. */
-  acwrOptimal: {
+  trend: { gap: 5 },
+  /* Bars grow from the baseline, so they are bottom-aligned and the habit line
+     is positioned from the bottom too — one origin for both, or the line and
+     the bars would be measuring from different places. */
+  /* 6pt between bars, not 4. Eight bars across a 350pt card at a 4pt gap are
+     40pt wide each, which reads as a grid of blocks rather than a chart. */
+  trendChart: { height: TREND_H, flexDirection: 'row', alignItems: 'flex-end', gap: 6 },
+  trendSlot: { flex: 1, justifyContent: 'flex-end' },
+  trendBar: { borderRadius: 3, minHeight: 1 },
+  /* Dashed rather than solid: it is a reference, not a measurement, and a solid
+     rule at this weight reads as another bar lying on its side. */
+  habitLine: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    borderRadius: 4,
-    backgroundColor: 'rgba(43,245,168,0.12)',
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    borderStyle: 'dashed',
+    borderTopColor: 'rgba(255,255,255,0.35)',
   },
-  acwrIndicator: {
-    position: 'absolute',
-    top: -1,
-    width: 6,
-    height: 10,
-    borderRadius: 3,
-    marginLeft: -3,
-    backgroundColor: colors.foreground,
-    // neon glow in the zone colour (set inline)
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 5,
-    shadowOpacity: 0.9,
-    elevation: 4,
+  trendLabels: { flexDirection: 'row', alignItems: 'center' },
+  trendEnd: { flex: 1, fontSize: 10, color: colors.mutedForeground },
+  trendNow: { textAlign: 'right', fontWeight: '600', color: colors.foreground },
+  trendKey: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  trendKeyDash: {
+    width: 14,
+    borderTopWidth: 1,
+    borderStyle: 'dashed',
+    borderTopColor: 'rgba(255,255,255,0.35)',
   },
+  trendKeyText: { fontSize: 10, color: colors.mutedForeground },
   painRow: {
     flexDirection: 'row',
     alignItems: 'center',

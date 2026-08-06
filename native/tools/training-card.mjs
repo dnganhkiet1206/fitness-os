@@ -36,7 +36,7 @@ try {
       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  const { acwrZone, acwrPercent, daysSince, loadComparison, averageWeek, ACWR_BANDS, ACWR_OPTIMAL, ACWR_MAX } =
+  const { acwrZone, acwrPercent, daysSince, loadComparison, averageWeek, weeklyVolumes, ACWR_BANDS, ACWR_OPTIMAL, ACWR_MAX } =
     createRequire(import.meta.url)(path.join(out, 'training-card.js'));
 
   const problems = [];
@@ -160,8 +160,74 @@ try {
   }
   eq('4 tuần của 44.400 là 11.100 mỗi tuần', averageWeek(44400), 11100);
 
-  /* ── "how many days ago", counted on the calendar ── */
+  /* ── the eight-week chart ── */
   const at = (iso) => new Date(iso);
+  {
+    const now = at('2026-08-06T09:00:00');
+    const ago = (days, hour = 12) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - days);
+      d.setHours(hour, 0, 0, 0);
+      return d.toISOString();
+    };
+    const S = (days, volume, hour) => ({ date_time: ago(days, hour), volume_load: volume });
+
+    eq('không có buổi nào thì 8 cột rỗng',
+      weeklyVolumes([], 8, now).every((w) => w.volume === 0 && w.sessions === 0), true);
+    eq('luôn trả về đúng số tuần', weeklyVolumes([], 8, now).length, 8);
+
+    const rows = [S(0, 1000), S(3, 2000), S(8, 500), S(30, 900), S(70, 100)];
+    const t = weeklyVolumes(rows, 8, now);
+    // oldest first, so the current week is the last element
+    eq('tuần này gộp đúng', t[7].volume, 3000);
+    eq('tuần này đếm đúng số buổi', t[7].sessions, 2);
+    eq('8 ngày trước rơi vào tuần trước', t[6].volume, 500);
+    eq('30 ngày trước rơi vào tuần thứ 5 tính ngược', t[3].volume, 900);
+    eq('quá 8 tuần thì bị loại', t.reduce((s, w) => s + w.sessions, 0), 4);
+
+    /*
+      The property the whole bucketing exists for: the newest bar holds exactly
+      the sessions the seven-day query returns. `daysAgoISO(7)` is
+      `setDate(getDate() - 7)` and the query is `.gte(...)`, so this simulates
+      it and requires the sums to be identical. A bar that disagrees with the
+      total printed directly above it is worse than no bar.
+    */
+    const sevenDayCutoff = (() => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 7);
+      return d.getTime();
+    })();
+    const queryWould = rows
+      .filter((r) => new Date(r.date_time).getTime() >= sevenDayCutoff)
+      .reduce((s, r) => s + r.volume_load, 0);
+    eq('cột mới nhất bằng đúng tổng 7 ngày', t[7].volume, queryWould);
+
+    /*
+      A session stamped in the *future*.
+
+      `useLogWorkoutSession` files a session at local noon of the day it belongs
+      to, so one logged at nine in the morning carries a timestamp three hours
+      ahead. The seven-day query has no upper bound and keeps it; a bucket
+      closed at `now` would drop it, and the bar would be short by a whole
+      session on the most common day there is — today.
+    */
+    const noonToday = weeklyVolumes([S(0, 4200, 12)], 8, at('2026-08-06T09:00:00'));
+    eq('buổi ghi lúc 12h trưa vẫn thuộc tuần này khi đang là 9h sáng', noonToday[7].volume, 4200);
+
+    /* Self-test: the version that closes the newest bucket at `now`. */
+    const closedAtNow = [S(0, 4200, 12)].filter((r) => new Date(r.date_time).getTime() < now.getTime());
+    if (closedAtNow.length !== 0) {
+      console.error('phép tự kiểm hỏng — ca "ghi lúc 12h trưa" đáng lẽ phải nằm sau thời điểm hiện tại, đừng tin kết quả');
+      process.exit(1);
+    }
+
+    eq('khối lượng rỗng/null coi là 0',
+      weeklyVolumes([{ date_time: ago(1), volume_load: null }, { date_time: 'không phải ngày' }], 8, now)[7].volume, 0);
+    eq('… nhưng buổi có ngày hợp lệ vẫn được đếm',
+      weeklyVolumes([{ date_time: ago(1), volume_load: null }], 8, now)[7].sessions, 1);
+  }
+
+  /* ── "how many days ago", counted on the calendar ── */
   eq('cùng ngày là 0', daysSince('2026-08-06T07:00:00', at('2026-08-06T22:00:00')), 0);
   /*
     23:00 last night is *yesterday* at 07:00 this morning — eight hours apart,
@@ -202,6 +268,9 @@ try {
   if (!/averageWeek\(/.test(card)) {
     problems.push('today-widgets-2: không hiện tuần trung bình — câu kết luận không kiểm chứng được');
   }
+  if (!/weeklyVolumes\(/.test(card)) {
+    problems.push('today-widgets-2: không vẽ 8 tuần — thẻ lại chỉ còn hiện tại, không có chiều hướng');
+  }
   /*
     The English a Vietnamese card was printing verbatim.
 
@@ -237,7 +306,7 @@ try {
   }
 
   console.log(
-    'thẻ tập luyện OK — 301 mức đà tập khớp readiness-engine, 1.3 vẫn nằm trong vùng an toàn, thanh vẽ và màu dùng chung một bảng, "mấy ngày trước" đếm theo lịch (qua mốc đổi giờ vẫn đúng); 1.7 đọc thành "nặng hơn 70%" và hai số trên thẻ chia ra đúng tỉ lệ đó; luật màu cũ (mâu thuẫn ở 1.7 và 0.7) và cách lấy phần trăm từ 0 vẫn bị bắt',
+    'thẻ tập luyện OK — 301 mức đà tập khớp readiness-engine, 1.3 vẫn nằm trong vùng an toàn, thanh vẽ và màu dùng chung một bảng, "mấy ngày trước" đếm theo lịch (qua mốc đổi giờ vẫn đúng); 1.7 đọc thành "nặng hơn 70%" và hai số trên thẻ chia ra đúng tỉ lệ đó; cột mới nhất của biểu đồ 8 tuần bằng đúng tổng 7 ngày, kể cả buổi ghi lúc 12h trưa khi mới 9h sáng; luật màu cũ (mâu thuẫn ở 1.7 và 0.7) và cách lấy phần trăm từ 0 vẫn bị bắt',
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

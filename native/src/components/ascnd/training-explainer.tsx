@@ -107,7 +107,19 @@ export function TrainingExplainer({ visible, onClose }: { visible: boolean; onCl
           ? 'Con số kỹ thuật của tỉ lệ này gọi là ACWR (acute:chronic workload ratio) — nếu bạn từng đọc ở đâu đó thì đây chính là nó.'
           : 'The technical name for this ratio is ACWR — the acute:chronic workload ratio — in case you have met it elsewhere.'}
       </Text>
-      <Text style={styles.section}>{vi ? 'Năm mức trên thanh' : 'The five levels on the bar'}</Text>
+      <Text style={styles.section}>{vi ? 'Biểu đồ 8 tuần' : 'The 8-week chart'}</Text>
+      <Text style={styles.body}>
+        {vi
+          ? 'Mỗi cột là tổng khối lượng của một tuần, cột ngoài cùng bên phải là tuần này. Đường nét đứt chính là "thói quen" mà câu ở trên đang so — nên bạn thấy được ngay tuần này cao hơn hay thấp hơn nền của mình, và cao hơn theo kiểu nào.'
+          : 'Each bar is one week’s total volume, the rightmost being this week. The dashed line is the same "habit" the sentence above compares against — so you can see at a glance whether this week is above your baseline, and in what shape.'}
+      </Text>
+      <Text style={styles.body}>
+        {vi
+          ? 'Đây là thứ mà một con số không nói được: nặng hơn 70% có thể là tuần thứ tư của một chu kỳ tăng dần có chủ đích, cũng có thể là một buổi quá đà sau hai tuần nghỉ. Hai chuyện đó rất khác nhau, và nhìn biểu đồ là phân biệt được.'
+          : 'This is what a single number cannot say: 70% heavier might be the fourth week of a deliberate build, or one wild session after a fortnight off. Those are very different, and the chart tells them apart.'}
+      </Text>
+
+      <Text style={styles.section}>{vi ? 'Năm mức của tỉ lệ' : 'The ratio’s five levels'}</Text>
       <View style={styles.zones}>
         {ACWR_BANDS.map((b) => (
           <View key={b.key} style={styles.zone}>

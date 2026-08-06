@@ -124,6 +124,81 @@ export function daysSince(dateTime: string, now: Date = new Date()): number {
   return Math.max(0, Math.round((today.getTime() - then.getTime()) / 86400000));
 }
 
+export interface WeekBucket {
+  /** total volume load in that week, in kilograms as stored */
+  volume: number;
+  sessions: number;
+}
+
+/**
+ * The last `weeks` weeks of volume, oldest first.
+ *
+ * ── why the card needed this ──
+ *
+ * It said "this week is 70% heavier than your habit" and showed the two
+ * numbers behind that claim, which is enough to *check* it and not enough to
+ * *understand* it. Seventy percent heavier could be the fourth week of a
+ * deliberate build or a single wild Saturday after a fortnight off, and the
+ * card treated those identically. A training card with no direction in it is
+ * a card that can only ever report the present tense.
+ *
+ * ── the boundaries are the same ones the queries use ──
+ *
+ * `useWorkoutSessions(n)` filters on `daysAgoISO(n)`, which is
+ * `setDate(getDate() - n)` — a *calendar* offset, so "seven days ago" is the
+ * same clock time seven dates back and spans 167 or 169 hours across a
+ * daylight-saving change rather than a flat 168.
+ *
+ * These buckets are cut on exactly those instants. That is not fussiness: it
+ * makes the most recent bucket **the same set of sessions** as the seven-day
+ * figure printed above the chart. Bucketing on `daysSince / 7` instead would
+ * be calendar-correct in its own right and would still, twice a year and at
+ * every boundary, put a session in a different bucket than the number beside
+ * it — a bar that disagrees with the total directly above it.
+ */
+export function weeklyVolumes(
+  rows: readonly { date_time: string; volume_load?: number | null }[],
+  weeks: number,
+  now: Date = new Date(),
+): WeekBucket[] {
+  // edge[k] is the instant "7k days before now"; bucket k covers [edge[k+1], edge[k])
+  const edge: number[] = [];
+  for (let k = 0; k <= weeks; k++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 7 * k);
+    edge.push(d.getTime());
+  }
+
+  const out: WeekBucket[] = Array.from({ length: weeks }, () => ({ volume: 0, sessions: 0 }));
+  for (const row of rows) {
+    const t = new Date(row.date_time).getTime();
+    if (Number.isNaN(t) || t < edge[weeks]) continue;
+    for (let k = 0; k < weeks; k++) {
+      /*
+        The newest bucket has no upper edge, deliberately.
+
+        `useLogWorkoutSession` stamps a session at **local noon** of the day it
+        belongs to, so a workout logged at nine in the morning carries a
+        timestamp three hours in the future. Closing bucket 0 at `now` would
+        drop it — while the seven-day query, which is `.gte(...)` with no upper
+        bound, keeps it. The bar and the total printed above it would disagree
+        by a whole session, on the most common day of all: today.
+      */
+      const inBucket = k === 0 ? t >= edge[1] : t >= edge[k + 1] && t < edge[k];
+      if (inBucket) {
+        out[k].volume += Number(row.volume_load) || 0;
+        out[k].sessions += 1;
+        break;
+      }
+    }
+  }
+  // oldest first, which is how a chart is read
+  return out.reverse();
+}
+
+/** How many weeks of history the card draws. */
+export const TREND_WEEKS = 8;
+
 /**
  * Whether the "latest session" is old enough that saying so matters.
  *
