@@ -36,7 +36,7 @@ try {
       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  const { acwrZone, acwrPercent, daysSince, ACWR_BANDS, ACWR_OPTIMAL, ACWR_MAX } =
+  const { acwrZone, acwrPercent, daysSince, loadComparison, averageWeek, ACWR_BANDS, ACWR_OPTIMAL, ACWR_MAX } =
     createRequire(import.meta.url)(path.join(out, 'training-card.js'));
 
   const problems = [];
@@ -117,6 +117,49 @@ try {
   eq('mép phải vùng vẽ khớp vùng tính', acwrZone(ACWR_OPTIMAL.to), 'optimal');
   eq('bảng hiển thị có đủ 5 vùng', ACWR_BANDS.length, 5);
 
+  /* ── the ratio, said as a comparison ── */
+  eq('1.7 là nặng hơn 70%', JSON.stringify(loadComparison(1.7)), JSON.stringify({ heavier: true, percent: 70 }));
+  eq('0.42 là nhẹ hơn 58%', JSON.stringify(loadComparison(0.42)), JSON.stringify({ heavier: false, percent: 58 }));
+  eq('1.0 là không hơn không kém', loadComparison(1).percent, 0);
+  eq('2.0 là nặng hơn 100%', loadComparison(2).percent, 100);
+  eq('0.5 là nhẹ hơn 50%', loadComparison(0.5).percent, 50);
+  /*
+    Self-test: the percentage taken from zero instead of from 1.
+
+    `Math.round(a * 100)` is the obvious reading and it is a different quantity
+    — it says "you did 170% of something", where the something is an average
+    day nobody trained on. If it does not disagree here, the cases above are
+    not testing which baseline the sentence uses.
+  */
+  if (Math.round(1.7 * 100) === loadComparison(1.7).percent) {
+    console.error('phép tự kiểm hỏng — bản lấy phần trăm từ 0 đáng lẽ phải khác bản lấy từ 1, đừng tin kết quả');
+    process.exit(1);
+  }
+
+  /*
+    ── the two numbers on the card divide to the verdict on the card ──
+
+    This is what makes the card checkable instead of believable: it shows the
+    last seven days' volume beside an average week, and claims a percentage
+    between them. If `averageWeek` were, say, the 28-day total over 28 days
+    (the engine's own per-*day* figure), the two printed numbers would not
+    produce the printed sentence and somebody doing the division by hand would
+    find the card lying to them.
+  */
+  const engineAcwr = (v7, v28) => (v7 / 7) / (v28 / 28);
+  let mismatch = null;
+  for (const [v7, v28] of [[18900, 44400], [4000, 40000], [0, 32000], [12000, 12000], [50000, 44400]]) {
+    const shown = v7 / averageWeek(v28); // what a reader dividing the card gets
+    const real = engineAcwr(v7, v28);
+    if (Math.abs(shown - real) > 1e-9) mismatch = { v7, v28, shown, real };
+  }
+  if (mismatch) {
+    problems.push(
+      `hai số trên thẻ không chia ra đúng tỉ lệ: ${mismatch.v7} / tuần-trung-bình = ${mismatch.shown}, engine tính ${mismatch.real}`,
+    );
+  }
+  eq('4 tuần của 44.400 là 11.100 mỗi tuần', averageWeek(44400), 11100);
+
   /* ── "how many days ago", counted on the calendar ── */
   const at = (iso) => new Date(iso);
   eq('cùng ngày là 0', daysSince('2026-08-06T07:00:00', at('2026-08-06T22:00:00')), 0);
@@ -144,6 +187,20 @@ try {
   }
   if (/left: '40%'|right: '35%'/.test(card)) {
     problems.push('today-widgets-2: vùng an toàn trên thanh còn viết cứng 40%/35% thay vì lấy từ ACWR_OPTIMAL');
+  }
+  /*
+    The card has to lead with the sentence, not the quotient.
+
+    `loadComparison` is what turns 1.7 into "nặng hơn 70%". Without it the card
+    is back to printing a ratio and a scale marked 0 / 0.8 / 1.3 / 2.0 — four
+    numbers that only mean something once you already understand the first one,
+    which is the state it was reported as unreadable in.
+  */
+  if (!/loadComparison\(/.test(card)) {
+    problems.push('today-widgets-2: không dùng loadComparison — thẻ lại đang dẫn bằng tỉ lệ trần');
+  }
+  if (!/averageWeek\(/.test(card)) {
+    problems.push('today-widgets-2: không hiện tuần trung bình — câu kết luận không kiểm chứng được');
   }
   /*
     The English a Vietnamese card was printing verbatim.
@@ -180,7 +237,7 @@ try {
   }
 
   console.log(
-    'thẻ tập luyện OK — 301 mức đà tập khớp readiness-engine, 1.3 vẫn nằm trong vùng an toàn, thanh vẽ và màu dùng chung một bảng, "mấy ngày trước" đếm theo lịch (qua mốc đổi giờ vẫn đúng); luật màu cũ (mâu thuẫn ở 1.7 và 0.7) vẫn bị bắt',
+    'thẻ tập luyện OK — 301 mức đà tập khớp readiness-engine, 1.3 vẫn nằm trong vùng an toàn, thanh vẽ và màu dùng chung một bảng, "mấy ngày trước" đếm theo lịch (qua mốc đổi giờ vẫn đúng); 1.7 đọc thành "nặng hơn 70%" và hai số trên thẻ chia ra đúng tỉ lệ đó; luật màu cũ (mâu thuẫn ở 1.7 và 0.7) và cách lấy phần trăm từ 0 vẫn bị bắt',
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

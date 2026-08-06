@@ -61,10 +61,10 @@ export function TrainingExplainer({ visible, onClose }: { visible: boolean; onCl
         : 'How many sets were logged in that session. Warm-ups count only if you logged them.',
     },
     {
-      term: 'RPE 8',
+      term: vi ? 'Gắng sức 8/10' : 'Effort 8/10',
       body: vi
-        ? 'Mức gắng sức của cả buổi, thang 1–10. 8 nghĩa là còn khoảng 2 rep nữa mới hết sức, 10 là không còn gì. Đây là số bạn tự chấm, app không đo được.'
-        : 'How hard the session was, 1–10. 8 means about two reps left in the tank, 10 means nothing left. You set this; the app cannot measure it.',
+        ? 'Mức gắng sức của cả buổi, thang 1–10 (nơi khác gọi là RPE). 8 nghĩa là còn khoảng 2 rep nữa mới hết sức, 10 là không còn gì. Đây là số bạn tự chấm, app không đo được.'
+        : 'How hard the session was, 1–10 (elsewhere called RPE). 8 means about two reps left in the tank, 10 means nothing left. You set this; the app cannot measure it.',
     },
     {
       term: vi ? '4.200 kg' : '4,200 kg',
@@ -78,31 +78,36 @@ export function TrainingExplainer({ visible, onClose }: { visible: boolean; onCl
     <FormSheet visible={visible} title={i18n.dcTrainingTitle} onClose={onClose}>
       <Text style={styles.lede}>
         {vi
-          ? 'Thẻ này trả lời ba câu: buổi gần nhất là khi nào và nặng cỡ nào, tuần vừa rồi bạn làm được bao nhiêu, và tuần này có đang tăng tải quá nhanh không.'
-          : 'This card answers three questions: when the last session was and how hard, how much you did this week, and whether the week is ramping up too fast.'}
+          ? 'Thẻ này trả lời một câu: tuần này bạn có đang tăng tải quá nhanh so với chính mình không. Mọi thứ còn lại trên thẻ là bằng chứng cho câu trả lời đó.'
+          : 'This card answers one question: are you ramping up too fast for yourself? Everything else on it is the evidence for that answer.'}
       </Text>
 
-      <Text style={styles.section}>{vi ? 'Buổi gần nhất' : 'The latest session'}</Text>
-      {latestRows.map((r) => (
-        <View key={r.term} style={styles.row}>
-          <Text style={styles.term}>{r.term}</Text>
-          <Text style={styles.body}>{r.body}</Text>
-        </View>
-      ))}
 
-      <Text style={styles.section}>{vi ? '7 ngày qua' : 'The last 7 days'}</Text>
+      <Text style={styles.section}>{vi ? 'Câu ở trên cùng' : 'The sentence at the top'}</Text>
       <Text style={styles.body}>
         {vi
-          ? 'Số buổi và tổng khối lượng của đúng 7 ngày vừa qua — theo ngày trên lịch, không phải "mấy buổi gần đây". Hai con số này chính là tử số của tỉ lệ bên dưới, nên khi tỉ lệ tụt, nguyên nhân nằm ngay đây.'
-          : 'Sessions and total volume over exactly the last seven calendar days — not "the last few sessions". These two numbers are the numerator of the ratio below, so when the ratio falls, the reason is right here.'}
+          ? '"Tuần này nặng hơn 70% so với thói quen" là cách so hai con số ngay bên dưới nó: tổng khối lượng 7 ngày qua, và một tuần trung bình của bạn trong 4 tuần gần nhất. Bạn tự chia được — 18.900 so với 11.100 là hơn 70%. Không có gì giấu bên trong.'
+          : '"This week is 70% heavier than your habit" compares the two numbers directly beneath it: your volume over the last 7 days, against an average week from your last 4. You can do the division yourself — 18,900 against 11,100 is 70% more. Nothing is hidden.'}
       </Text>
-
-      <Text style={styles.section}>{vi ? 'Đà tập' : 'Training load'}</Text>
       <Text style={styles.body}>
         {vi
-          ? 'Khối lượng trung bình mỗi ngày trong 7 ngày qua, chia cho trung bình mỗi ngày trong 28 ngày qua. Nói gọn: tuần này bạn tập nặng hơn hay nhẹ hơn thói quen của chính mình — so với bạn, không so với ai khác.'
-          : 'Your average daily volume over the last 7 days divided by your average over the last 28. Put plainly: is this week heavier or lighter than your own habit — yours, not anybody else’s.'}
+          ? 'So với chính bạn, không so với ai khác. Một người mới tập và một vận động viên có thể cùng ra 1.2 — nghĩa là cả hai đều đang tăng ở mức hợp lý so với nền của chính họ.'
+          : 'Against you, not against anybody else. A beginner and an athlete can both read 1.2 — both are progressing sensibly relative to their own base.'}
       </Text>
+      <View style={styles.row}>
+        <Text style={styles.term}>{vi ? 'Thói quen · 4 tuần' : 'Habit · 4 weeks'}</Text>
+        <Text style={styles.body}>
+          {vi
+            ? 'Tổng 28 ngày chia cho 4. Dùng 4 tuần chứ không phải 1 vì một tuần ốm hay một tuần đi chơi không nên định nghĩa lại thói quen của bạn.'
+            : 'The 28-day total divided by four. Four weeks rather than one, because a sick week or a holiday should not redefine what your normal is.'}
+        </Text>
+      </View>
+      <Text style={styles.body}>
+        {vi
+          ? 'Con số kỹ thuật của tỉ lệ này gọi là ACWR (acute:chronic workload ratio) — nếu bạn từng đọc ở đâu đó thì đây chính là nó.'
+          : 'The technical name for this ratio is ACWR — the acute:chronic workload ratio — in case you have met it elsewhere.'}
+      </Text>
+      <Text style={styles.section}>{vi ? 'Năm mức trên thanh' : 'The five levels on the bar'}</Text>
       <View style={styles.zones}>
         {ACWR_BANDS.map((b) => (
           <View key={b.key} style={styles.zone}>
@@ -121,6 +126,14 @@ export function TrainingExplainer({ visible, onClose }: { visible: boolean; onCl
           ? 'Cả hai đầu đều đỏ. Tập quá ít cũng bị cảnh báo chứ không riêng tập quá nhiều — mất nền thể lực là thứ khiến bạn dễ chấn thương khi quay lại.'
           : 'Both ends are red. Training too little is flagged as well as too much — losing your base is what makes coming back risky.'}
       </Text>
+
+      <Text style={styles.section}>{vi ? 'Buổi gần nhất' : 'The latest session'}</Text>
+      {latestRows.map((r) => (
+        <View key={r.term} style={styles.row}>
+          <Text style={styles.term}>{r.term}</Text>
+          <Text style={styles.body}>{r.body}</Text>
+        </View>
+      ))}
 
       <Text style={styles.section}>{vi ? 'Hai dấu hiệu còn lại' : 'Two more markers'}</Text>
       <View style={styles.row}>

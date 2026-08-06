@@ -38,11 +38,12 @@ import { useUnits } from '@/hooks/use-units';
 import { awardText } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
-  ACWR_MAX,
   ACWR_OPTIMAL,
   acwrPercent,
   acwrZone,
+  averageWeek,
   daysSince,
+  loadComparison,
   STALE_AFTER_DAYS,
   type AcwrZoneKey,
 } from '@/lib/training-card';
@@ -130,13 +131,31 @@ const ZONE_TINT: Record<AcwrZoneKey, string> = {
   spike: colors.readinessRed,
 };
 
-const zoneLabel = (key: AcwrZoneKey, vi: boolean) =>
+/**
+ * What each band means, as a thing to do rather than a thing to know.
+ *
+ * The card used to stop at a one-word verdict — "Nhảy vọt" — which names the
+ * situation and says nothing about it. A person reading a dashboard at seven in
+ * the morning is deciding whether to train today; a label they then have to
+ * interpret has handed the work back to them.
+ */
+const zoneAdvice = (key: AcwrZoneKey, vi: boolean) =>
   ({
-    detraining: vi ? 'Tập quá thưa' : 'Detraining',
-    low: vi ? 'Hơi ít' : 'Low',
-    optimal: vi ? 'Vừa sức' : 'Optimal',
-    elevated: vi ? 'Tăng nhanh' : 'Elevated',
-    spike: vi ? 'Nhảy vọt' : 'Spike',
+    detraining: vi
+      ? 'Nghỉ lâu làm mất nền thể lực. Quay lại từ từ — đừng tập bù cho những tuần đã nghỉ.'
+      : 'A long gap costs you your base. Come back gradually — do not try to make up the missed weeks.',
+    low: vi
+      ? 'Nhẹ hơn thường lệ. Một tuần giảm tải là bình thường và có ích.'
+      : 'Lighter than usual. One easier week is normal, and useful.',
+    optimal: vi
+      ? 'Đang tăng ở mức hợp lý. Cứ giữ nhịp này.'
+      : 'Progressing at a sensible rate. Keep this up.',
+    elevated: vi
+      ? 'Tăng hơi nhanh. Tuần tới nên giữ nguyên khối lượng thay vì tăng tiếp.'
+      : 'Ramping up quickly. Hold this volume next week rather than adding more.',
+    spike: vi
+      ? 'Tăng vọt là lúc dễ chấn thương nhất. Tuần tới nên giảm tải.'
+      : 'A sharp jump is when injuries happen. Ease off next week.',
   })[key];
 
 /** "Hôm nay" / "Hôm qua" / "5 ngày trước" — the fact the card was missing. */
@@ -147,36 +166,32 @@ const whenLabel = (days: number, vi: boolean) => {
 };
 
 /**
- * Training — the last session, the last week, and whether the week is a jump.
+ * Training — what you did, and whether this week is a jump.
  *
- * ── what was rewritten, and why ──
+ * ── the second rewrite, and what it was for ──
  *
- * **The card contradicted itself about the ratio.** It drew the acute-to-chronic
- * number three times under three rules: a marker coloured by `>1.3 ? yellow :
- * red`, a pill captioned from five bands, and a five-dot legend listing those
- * bands again as hand-typed strings. At 1.7 the dot was yellow while the pill
- * beside it said "Spike" and the legend under it called >1.6 red. All three now
- * read `acwrZone` — see `lib/training-card.ts` for why the five-band version is
- * the correct one rather than merely the more numerous.
+ * The first one made the card *correct*: one band table instead of three
+ * disagreeing ones, a date on the latest session, a seven-day figure computed
+ * over seven days. It was still reported as hard to understand, and it was,
+ * because none of that addressed what the card actually asks of a reader.
  *
- * **The latest session had no date.** It comes from "the most recent session",
- * which has no time limit, so `Push Day · RPE 8 · 4,200 kg` looked identical
- * whether it happened this morning or five weeks ago — with the ratio decaying
- * underneath it for precisely that reason. The card was showing the cause and
- * the effect and joining them to nothing. It says when now, and says plainly
- * when the last session is outside the seven-day window the figures above it
- * are computed over.
+ * It led with **`1.7`**. That is not a fact about somebody's week — it is a
+ * fact about the quotient of two rolling averages, and reading it means
+ * knowing that 1 is neutral, that the top is seven days, that the bottom is
+ * twenty-eight, and that both are per-day. Under it sat a scale marked
+ * `0 · 0.8 · 1.3 · 2.0`, four more numbers that only mean something once you
+ * already understand the first one. The card was a correct readout of a
+ * quantity nobody thinks in.
  *
- * **The zones were stated three times and the seven-day total once, in grey.**
- * The legend is gone: the bar already carries the colours, the pill says the
- * verdict in words, and the full table lives in the help sheet behind the `?`.
- * What that space buys is the week itself — sessions and volume — which was a
- * single 12pt grey line at the bottom under a 30pt ratio, the derived
- * diagnostic shouting over the fact it is derived from.
+ * So the order is inverted. The sentence is the headline — *this week is 70%
+ * heavier than your habit* — with what to do about it underneath. Then the two
+ * volumes it compares, in the same unit, so the claim is checkable rather than
+ * believed: 18,900 against an average week of 11,100 is visibly 1.7. The bar
+ * stays, labelled in words instead of numbers, because "where am I" is a
+ * genuinely visual question. The raw ratio sits at the end of that row in
+ * small mono type, for the people it means something to.
  *
- * **The tick marks did not line up with the band they label.** `0.8–1.3` was
- * centred by `space-between` at 50% while the green band spans 40–65%, centred
- * at 52.5%. They are positioned from the same numbers the band is drawn from.
+ * Everything on the card is now either a sentence, a weight, or a date.
  */
 export function TrainingCard({ acwr }: { acwr: number | null }) {
   const i18n = useI18n();
@@ -186,20 +201,19 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   const wl = weightLabel(wUnit);
   const { data: workouts } = useRecentWorkouts();
   /*
-    The seven-day figures come from a seven-day query.
+    Both sides of the ratio, over the windows the ratio is actually computed
+    over. `daysAgoISO(n)` here and `setDate(getDate() - n)` in
+    `daily-log-service.ts:29-32` are the same instant, so these two sums are the
+    engine's own `training_load_7d` and `training_load_28d` — which is what lets
+    the card show them beside the verdict and have the division come out.
 
-    The line under the bar says "Khối lượng 7 ngày" and was summing
-    `useRecentWorkouts()`, which is *the last five sessions whatever their
-    dates*. Train five times over three weeks and it printed three weeks of
-    volume under a seven-day heading; train six times in one week and it
-    silently dropped the sixth.
-
-    `latest` still comes from `useRecentWorkouts`: this card's top row needs
+    `latest` still comes from `useRecentWorkouts`: the top row needs
     `pain_flags`, which the sessions query does not select, and "the most recent
     session" is genuinely not a windowed question — that is the whole reason it
-    now has to say how long ago it was.
+    has to say how long ago it was.
   */
   const { data: week } = useWorkoutSessions(7);
+  const { data: month } = useWorkoutSessions(28);
   const help = useHelpTopic('training');
 
   const latest = (workouts ?? [])[0];
@@ -207,9 +221,12 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   const a = acwr ?? 0;
   const zone = acwrZone(a);
   const zoneTint = ZONE_TINT[zone];
+  const cmp = loadComparison(a);
 
   const weekSessions = week ?? [];
   const weekVolume = weekSessions.reduce((s, w) => s + Number(w.volume_load || 0), 0);
+  const monthVolume = (month ?? []).reduce((s, w) => s + Number(w.volume_load || 0), 0);
+  const habitVolume = averageWeek(monthVolume);
   const hasPR = weekSessions.some((w) => w.pr_detected);
 
   const sets = Array.isArray(latest?.sets) ? latest.sets : [];
@@ -218,6 +235,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   );
   const age = latest ? daysSince(latest.date_time) : null;
   const stale = age != null && age >= STALE_AFTER_DAYS;
+  const kg = (v: number) => `${Math.round(displayWeight(v, wUnit)).toLocaleString()} ${wl}`;
 
   const headAccessories = (
     <View style={styles.headAccessories}>
@@ -250,8 +268,8 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
         </View>
         <Text style={styles.emptyLine}>
           {vi
-            ? 'Chưa có buổi tập nào được ghi. Ghi một buổi để thấy khối lượng và đà tập.'
-            : 'No workouts logged yet. Record one to see volume and training load.'}
+            ? 'Chưa có buổi tập nào được ghi. Ghi một buổi để thấy khối lượng và so sánh theo tuần.'
+            : 'No workouts logged yet. Record one to see volume and the weekly comparison.'}
         </Text>
         <TrainingExplainer visible={help.open} onClose={help.close} />
       </GlassCard>
@@ -265,81 +283,80 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
         {headAccessories}
       </View>
 
-      {/* Volume load and the ratio are the two numbers on this card nobody
-          guesses — one looks like a claim to have lifted four tonnes, the other
-          is a word that decides whether you train tomorrow. */}
       {help.nudge ? (
         <HelpNudge
-          text={vi ? 'Chưa rõ 4.200 kg hay đà tập nghĩa là gì? Bấm vào đây.' : 'Not sure what volume load or training load mean? Tap here.'}
+          text={vi ? 'Chưa rõ "khối lượng" hay cách so sánh này? Bấm vào đây.' : 'Not sure what volume load or this comparison mean? Tap here.'}
           onPress={help.openHelp}
           onDismiss={help.dismissNudge}
         />
       ) : null}
 
-      {/* The last session — with, at last, when it was */}
-      <View style={styles.latestRow}>
-        <View style={styles.latestIcon}>
-          <Icon icon={Dumbbell} size={20} />
-        </View>
-        <View style={styles.latestInfo}>
-          <View style={styles.latestTop}>
-            <Text style={styles.latestName} numberOfLines={1}>
-              {latest.template_name || (vi ? 'Buổi tập' : 'Workout')}
-            </Text>
-            <Text style={[styles.latestWhen, stale && styles.latestWhenStale]}>
-              {whenLabel(age ?? 0, vi)}
-            </Text>
-          </View>
-          <Text style={styles.latestMeta}>
-            {sets.length} {vi ? 'set' : 'sets'}
-            {latest.session_rpe != null ? ` · RPE ${Number(latest.session_rpe)}` : ''}
-            {` · ${Math.round(displayWeight(Number(latest.volume_load || 0), wUnit)).toLocaleString()} ${wl}`}
-          </Text>
-        </View>
-      </View>
+      {/*
+        The verdict, as a sentence, first.
 
-      {/* Two numbers about the window the ratio is actually computed over, so
-          a falling ratio has its cause on the same card. */}
-      <View style={styles.weekRow}>
-        <View style={styles.weekCell}>
-          <Text style={styles.weekLabel}>{vi ? '7 ngày · buổi tập' : '7 days · sessions'}</Text>
-          <Text style={styles.weekValue}>{weekSessions.length}</Text>
-        </View>
-        <View style={styles.weekDivider} />
-        <View style={styles.weekCell}>
-          <Text style={styles.weekLabel}>{vi ? '7 ngày · khối lượng' : '7 days · volume'}</Text>
-          <Text style={styles.weekValue}>
-            {Math.round(displayWeight(weekVolume, wUnit)).toLocaleString()}
-            <Text style={styles.weekUnit}> {wl}</Text>
+        This is the whole point of the rewrite: the reader should not have to
+        derive the meaning of the card from a number. The number is still here,
+        further down, for whoever wants it.
+      */}
+      {a > 0 ? (
+        <View style={[styles.verdict, { borderColor: `${zoneTint}44`, backgroundColor: `${zoneTint}14` }]}>
+          <Text style={[styles.verdictLine, { color: zoneTint }]}>
+            {cmp.percent === 0
+              ? vi ? 'Tuần này đúng bằng thói quen của bạn' : 'This week matches your habit exactly'
+              : vi
+                ? `Tuần này ${cmp.heavier ? 'nặng' : 'nhẹ'} hơn ${cmp.percent}% so với thói quen`
+                : `This week is ${cmp.percent}% ${cmp.heavier ? 'heavier' : 'lighter'} than your habit`}
           </Text>
+          <Text style={styles.verdictWhy}>{zoneAdvice(zone, vi)}</Text>
+        </View>
+      ) : (
+        /* The comparison needs a habit to compare against, and a habit is four
+           weeks of history. Saying so beats drawing an empty bar. */
+        <Text style={styles.emptyLine}>
+          {vi
+            ? 'Cần khoảng 4 tuần ghi chép để so được tuần này với thói quen của bạn.'
+            : 'About four weeks of history are needed before this week can be compared to your habit.'}
+        </Text>
+      )}
+
+      {/* The two quantities the sentence above is a claim about, in one unit,
+          so it can be checked rather than believed. */}
+      <View style={styles.compareRow}>
+        <View style={styles.compareCell}>
+          <Text style={styles.compareLabel}>{vi ? '7 ngày qua' : 'Last 7 days'}</Text>
+          <Text style={styles.compareValue}>{kg(weekVolume)}</Text>
+          <Text style={styles.compareSub}>
+            {weekSessions.length} {vi ? 'buổi' : weekSessions.length === 1 ? 'session' : 'sessions'}
+          </Text>
+        </View>
+        <View style={styles.compareDivider} />
+        <View style={styles.compareCell}>
+          <Text style={styles.compareLabel}>{vi ? 'Thói quen · 4 tuần' : 'Habit · 4 weeks'}</Text>
+          <Text style={[styles.compareValue, styles.compareValueMuted]}>
+            {habitVolume > 0 ? kg(habitVolume) : '—'}
+          </Text>
+          <Text style={styles.compareSub}>{vi ? 'trung bình mỗi tuần' : 'per week on average'}</Text>
         </View>
       </View>
 
       {stale ? (
         <Text style={styles.staleNote}>
           {vi
-            ? `Buổi gần nhất đã ${age} ngày — các số 7 ngày ở trên bằng 0 vì thế, và đà tập đang giảm.`
-            : `Last session was ${age} days ago — that is why the 7-day figures are zero and the load is falling.`}
+            ? `Buổi gần nhất đã ${age} ngày — vì thế 7 ngày qua bằng 0.`
+            : `Last session was ${age} days ago — that is why the last 7 days is zero.`}
         </Text>
       ) : null}
 
-      {/* Training load */}
+      {/*
+        Where that lands, at a glance.
+
+        Labelled in words. The scale was marked `0 · 0.8 · 1.3 · 2.0`, which is
+        four numbers you can only read once you already understand the ratio —
+        so the picture meant to make the number easy required the number to be
+        understood first.
+      */}
       {a > 0 && (
-        <View style={styles.acwrBox}>
-          <View style={styles.headRow}>
-            <View style={styles.acwrTitleRow}>
-              <Icon icon={Zap} size={14} />
-              <Text style={styles.acwrTitle}>
-                {vi ? 'Đà tập · 7 ngày so với 28 ngày' : 'Training load · 7d vs 28d'}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.acwrValueRow}>
-            <Text style={[styles.acwrValue, { color: zoneTint }]}>{a}</Text>
-            <View style={[styles.acwrPill, { backgroundColor: `${zoneTint}1a` }]}>
-              <Text style={[styles.acwrPillText, { color: zoneTint }]}>{zoneLabel(zone, vi)}</Text>
-            </View>
-          </View>
+        <View style={styles.scale}>
           <View style={styles.acwrTrack}>
             <View
               style={[
@@ -357,24 +374,41 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
               ]}
             />
           </View>
-          {/*
-            Positioned from the same numbers the band is drawn from. They were
-            laid out with `space-between`, which centred "0.8–1.3" at 50% while
-            the band it names spans 40–65% — a label pointing next to its own
-            subject.
-          */}
-          <View style={styles.acwrTicks}>
-            <Text style={[styles.acwrTick, styles.acwrTickStart]}>0</Text>
-            <Text style={[styles.acwrTick, styles.acwrTickAt, { left: `${acwrPercent(ACWR_OPTIMAL.from)}%` }]}>
-              {ACWR_OPTIMAL.from}
+          <View style={styles.scaleLabels}>
+            <Text style={styles.scaleEnd}>{vi ? 'nhẹ hơn' : 'lighter'}</Text>
+            <Text style={[styles.scaleMid, { color: colors.readinessGreen }]}>
+              {vi ? 'vừa sức' : 'just right'}
             </Text>
-            <Text style={[styles.acwrTick, styles.acwrTickAt, { left: `${acwrPercent(ACWR_OPTIMAL.to)}%` }]}>
-              {ACWR_OPTIMAL.to}
-            </Text>
-            <Text style={[styles.acwrTick, styles.acwrTickEnd]}>{ACWR_MAX.toFixed(1)}</Text>
+            <Text style={styles.scaleEnd}>{vi ? 'nặng hơn' : 'heavier'}</Text>
           </View>
         </View>
       )}
+
+      {/* The session itself — a fact, under the interpretation of it */}
+      <View style={styles.latestRow}>
+        <View style={styles.latestIcon}>
+          <Icon icon={Dumbbell} size={20} />
+        </View>
+        <View style={styles.latestInfo}>
+          <View style={styles.latestTop}>
+            <Text style={styles.latestName} numberOfLines={1}>
+              {latest.template_name || (vi ? 'Buổi tập' : 'Workout')}
+            </Text>
+            <Text style={[styles.latestWhen, stale && styles.latestWhenStale]}>
+              {whenLabel(age ?? 0, vi)}
+            </Text>
+          </View>
+          <Text style={styles.latestMeta}>
+            {sets.length} {vi ? 'set' : 'sets'}
+            {` · ${kg(Number(latest.volume_load || 0))}`}
+            {/* "RPE 8" is a term of art; "gắng sức 8/10" is the same number
+                said in words the rest of the app already uses. */}
+            {latest.session_rpe != null
+              ? ` · ${vi ? 'gắng sức' : 'effort'} ${Number(latest.session_rpe)}/10`
+              : ''}
+          </Text>
+        </View>
+      </View>
 
       {painFlags.length > 0 && (
         <View style={styles.painRow}>
@@ -625,42 +659,46 @@ const styles = StyleSheet.create({
   latestWhenStale: { color: colors.readinessYellow, fontWeight: '600' },
   latestMeta: { fontSize: 12, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   emptyLine: { fontSize: 13, lineHeight: 19, color: colors.mutedForeground },
-  /* The week, given the room the five-dot legend used to take. Two cells and a
-     hairline, because a count and a total are one comparison, not two facts. */
-  weekRow: { flexDirection: 'row', alignItems: 'center' },
-  weekCell: { flex: 1, gap: 2 },
-  weekDivider: {
+  /* The sentence, and what to do about it. Tinted by zone and outlined rather
+     than filled: it is the loudest thing on the card and it is still text, so
+     it should read as a highlighted paragraph and not as an alert. */
+  verdict: {
+    gap: 4,
+    padding: spacing.sm + 4,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  verdictLine: { fontSize: 15, fontWeight: '700', lineHeight: 20 },
+  verdictWhy: { fontSize: 12, lineHeight: 17, color: colors.mutedForeground },
+  /* The two quantities the sentence compares, in one unit so the division is
+     visible. Same shape as the old week row; what changed is that the right
+     cell is now the thing the left cell is being measured against, rather than
+     a second unrelated fact. */
+  compareRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  compareCell: { flex: 1, gap: 1 },
+  compareDivider: {
     width: StyleSheet.hairlineWidth,
     alignSelf: 'stretch',
     marginHorizontal: spacing.md,
     backgroundColor: colors.border,
   },
-  weekLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
-  weekValue: {
-    fontSize: 20,
+  compareLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
+  compareValue: {
+    fontSize: 17,
     fontFamily: 'Menlo',
     fontWeight: '700',
     color: colors.foreground,
     fontVariant: ['tabular-nums'],
   },
-  weekUnit: { fontSize: 11, fontWeight: '400', color: colors.mutedForeground },
+  /* The baseline is context, not a score — it should not compete with the
+     number being judged against it. */
+  compareValueMuted: { color: colors.mutedForeground },
+  compareSub: { fontSize: 11, color: colors.mutedForeground },
   staleNote: { fontSize: 12, lineHeight: 17, color: colors.readinessYellow },
-  acwrBox: {
-    backgroundColor: 'rgba(24,24,27,0.2)',
-    borderRadius: radius.sm,
-    padding: spacing.md,
-    gap: spacing.sm + 2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.2)',
-  },
-  acwrTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  acwrTitle: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
-  acwrPill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 3, borderRadius: radius.sm - 4 },
-  acwrPillText: { fontSize: 12, fontWeight: '600' },
-  acwrValueRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
-  /* 26, down from 30. It was the largest thing on the card — a derived
-     diagnostic shouting over the sessions it is derived from. */
-  acwrValue: { fontSize: 26, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
+  scale: { gap: 6 },
+  scaleLabels: { flexDirection: 'row', alignItems: 'center' },
+  scaleEnd: { flex: 1, fontSize: 10, color: colors.mutedForeground },
+  scaleMid: { flex: 1, fontSize: 10, fontWeight: '600', textAlign: 'center' },
   acwrTrack: { height: 8, borderRadius: 4, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'visible' },
   /* `left`/`right` come from `ACWR_OPTIMAL` at the call site. They were the
      literals 40% and 35%, which happened to be right for 0.8–1.3 on a 0–2
@@ -686,15 +724,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.9,
     elevation: 4,
   },
-  /* Absolute, so each tick sits under the value it names. Fixed height because
-     absolutely-positioned children give the row no layout of its own. */
-  acwrTicks: { height: 12 },
-  acwrTick: { position: 'absolute', fontSize: 9, color: colors.mutedForeground, fontFamily: 'Menlo' },
-  acwrTickStart: { left: 0 },
-  acwrTickEnd: { right: 0 },
-  /* -6 pulls the glyph back about half its width, so the label is centred on
-     its mark rather than starting at it. */
-  acwrTickAt: { marginLeft: -6 },
   painRow: {
     flexDirection: 'row',
     alignItems: 'center',

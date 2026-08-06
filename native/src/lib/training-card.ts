@@ -70,6 +70,40 @@ export const ACWR_OPTIMAL = { from: 0.8, to: 1.3 } as const;
 /** The right-hand end of the drawn scale. Ratios past it pin to the end. */
 export const ACWR_MAX = 2;
 
+/**
+ * The ratio as a comparison instead of a quotient.
+ *
+ * `1.7` is not a fact about a person's week. It is a fact about the quotient of
+ * two rolling averages, and reading it requires knowing that 1 is the neutral
+ * point, that the numerator is seven days, that the denominator is twenty-eight,
+ * and that both are per-day rather than per-week. Nobody does that arithmetic
+ * standing in a kitchen looking at a phone.
+ *
+ * `nặng hơn 70% so với thói quen` is the same fact, and needs none of it.
+ *
+ * The percentage is a distance from 1, not from zero: 1.7 is 70% more, 0.42 is
+ * 58% less. Reporting `170%` and `42%` instead would be arithmetically true and
+ * read as "you did 170% of something", which is the wrong quantity by a factor
+ * that changes with every value.
+ */
+export function loadComparison(acwr: number): { heavier: boolean; percent: number } {
+  return { heavier: acwr >= 1, percent: Math.round(Math.abs(acwr - 1) * 100) };
+}
+
+/**
+ * The chronic side of the ratio, per week rather than per day.
+ *
+ * The card shows the two quantities the ratio compares so that the verdict can
+ * be checked rather than believed, and they have to be in the same unit for
+ * that to work: 28 days of volume divided by four is "an average week", against
+ * which "the last seven days" is directly comparable. Per-*day* is how the
+ * engine computes it and is useless to read — a number about a day nobody
+ * trained on.
+ */
+export function averageWeek(volume28d: number): number {
+  return volume28d / 4;
+}
+
 /** Where a ratio sits on the 0–`ACWR_MAX` track, as a percentage. */
 export function acwrPercent(acwr: number): number {
   return Math.max(0, Math.min((acwr / ACWR_MAX) * 100, 100));
