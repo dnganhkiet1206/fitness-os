@@ -96,6 +96,30 @@ export const colors = {
 } as const;
 
 /**
+ * What a session's effort costs you, in colour.
+ *
+ * Six and seven carry no colour — a set you had four reps left in is not news,
+ * and tinting the ordinary case spends the reader's attention on it. The last
+ * three are the ones with consequences, and they are the app's own warning ramp
+ * rather than three colours picked to look different:
+ *
+ *   8   two reps left, the edge of productive work        yellow
+ *   9   one rep left, close enough to miss the next one   orange
+ *   10  nothing left, the set ended because you could not   red
+ *
+ * Deliberately **not** green-to-red: green would say a light session is good
+ * and a hard one is bad, and effort is a prescription rather than a grade.
+ *
+ * It lives here, beside the palette, because two screens read it — the week's
+ * day panel while you are training, and the logged-workout list afterwards —
+ * and a list where RPE 6 and RPE 10 look identical is a list you have to read
+ * word by word instead of scanning.
+ */
+export const effortTint = (rpe: number): string =>
+  ({ 8: colors.readinessYellow, 9: colors.metricOrange, 10: colors.readinessRed })[rpe] ??
+  colors.mutedForeground;
+
+/**
  * Liquid-glass surface recipe (dark) — the web renders cards as a 6%
  * white overlay with a hairline 12% white border and a faint top
  * highlight, over the near-black background. Replicated here without a

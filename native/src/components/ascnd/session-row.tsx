@@ -1,8 +1,8 @@
-import { Flame, Trash2 } from 'lucide-react-native';
+import { Trash2 } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { colors, effortTint, radius, spacing } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { getLocale, type AppLang } from '@/lib/i18n';
 import { displayWeight, weightLabel, type WeightUnit } from '@/lib/units';
@@ -21,7 +21,7 @@ export interface SessionSummary {
  * Lifted out of the Workouts tab when the tab started showing only the newest
  * three and a second screen took the rest. Two lists of the same thing drawn
  * by two pieces of code is how they end up disagreeing about the date format,
- * where the RPE badge sits, and whether the delete is a red glyph or a muted
+ * where the effort badge sits, and whether the delete is a red glyph or a muted
  * one — differences nobody decides on and everybody notices.
  *
  * The group and the hairlines belong to whoever lays these out; a row draws
@@ -35,62 +35,101 @@ export function SessionRow({
   lang,
   i18n,
   onDelete,
+  compactDate = false,
+  volumeRatio,
 }: {
   session: SessionSummary;
   wUnit: WeightUnit;
   lang: AppLang;
   i18n: ReturnType<typeof useI18n>;
   onDelete: (id: string, date_time: string, label: string) => void;
+  /**
+   * Drop the month from the date.
+   *
+   * Set by lists that are already grouped by month, where "Th 5, 6 thg 8" under
+   * a heading reading THÁNG 8 spends a third of the line restating the heading.
+   */
+  compactDate?: boolean;
+  /**
+   * This session's volume as a fraction of the heaviest one on screen.
+   *
+   * Draws a short meter under the date line. Every row was the same shape and
+   * the same weight of grey, so a fortnight of training was a wall of text you
+   * had to read number by number to find the big day in. Omitted where there is
+   * nothing to compare against — one row, or a list with no volumes.
+   */
+  volumeRatio?: number;
 }) {
-  const name = session.template_name || 'Workout';
-  const day = new Date(session.date_time).toLocaleDateString(getLocale(lang), {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
+  const vi = lang === 'vi';
+  const name = session.template_name || (vi ? 'Buổi tập' : 'Workout');
+  const at = new Date(session.date_time);
+  const day = at.toLocaleDateString(
+    getLocale(lang),
+    compactDate
+      ? { weekday: 'short', day: 'numeric' }
+      : { weekday: 'short', day: 'numeric', month: 'short' },
+  );
   const wl = weightLabel(wUnit);
+  const rpe = session.session_rpe;
 
   return (
-    <View style={styles.row}>
-      <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>{name}</Text>
-        <Text style={styles.meta}>
-          {day}
-          {session.volume_load != null
-            ? `  ·  ${Math.round(displayWeight(Number(session.volume_load), wUnit)).toLocaleString()} ${wl}`
-            : ''}
-        </Text>
-      </View>
-      {session.session_rpe != null && (
-        <View style={styles.rpeBadge}>
-          <Icon icon={Flame} size={11} />
-          <Text style={styles.rpeText}>RPE {session.session_rpe}</Text>
+    <View style={styles.wrap}>
+      <View style={styles.row}>
+        <View style={styles.info}>
+          <Text style={styles.name} numberOfLines={1}>{name}</Text>
+          <Text style={styles.meta}>
+            {day}
+            {session.volume_load != null
+              ? `  ·  ${Math.round(displayWeight(Number(session.volume_load), wUnit)).toLocaleString()} ${wl}`
+              : ''}
+          </Text>
+          {/*
+            The meter, inside the text column and 96pt wide.
+
+            It was full-bleed across the row, under everything, and at that
+            width a 2pt rule is a *separator* — which is what it looked like
+            beside the real hairline between rows, on a screen whose whole job
+            is to be scannable. Short and left-aligned under the line it
+            measures, it can only be read as belonging to that line.
+          */}
+          {volumeRatio != null ? (
+            <View style={styles.barTrack}>
+              <View
+                style={[styles.barFill, { width: `${Math.max(3, Math.min(volumeRatio, 1) * 100)}%` }]}
+              />
+            </View>
+          ) : null}
         </View>
-      )}
-      {/* Muted, like the template rows — a red glyph on every line would make
-          deleting the loudest thing in a list that exists to show the training
-          happened. */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={i18n.a11yDelete}
-        hitSlop={10}
-        onPress={() => onDelete(session.id, session.date_time, `${name} · ${day}`)}
-        style={({ pressed }) => [styles.del, pressed && styles.pressed]}>
-        <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
-      </Pressable>
+        {rpe != null && (
+          /* Tinted by value, from the app's one effort ramp. A badge that is
+             the same orange at 6 as at 10 is decoration — it takes up the
+             position of a signal and carries none. */
+          <View style={[styles.rpeBadge, { backgroundColor: `${effortTint(rpe)}1f` }]}>
+            <Text style={[styles.rpeText, { color: effortTint(rpe) }]}>
+              {vi ? 'gắng sức' : 'effort'} {rpe}
+            </Text>
+          </View>
+        )}
+        {/* Muted, like the template rows — a red glyph on every line would make
+            deleting the loudest thing in a list that exists to show the training
+            happened. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yDelete}
+          hitSlop={10}
+          onPress={() => onDelete(session.id, session.date_time, `${name} · ${day}`)}
+          style={({ pressed }) => [styles.del, pressed && styles.pressed]}>
+          <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+        </Pressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.md,
-  },
-  info: { flex: 1, minWidth: 0, gap: 2 },
+  wrap: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
+  info: { flex: 1, minWidth: 0, gap: 3 },
   name: { fontSize: 14, fontWeight: '500', color: colors.foreground },
   meta: {
     fontSize: 11,
@@ -99,17 +138,17 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   rpeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(255,145,48,0.12)',
   },
-  rpeText: { fontSize: 10, fontWeight: '600', color: colors.metricOrange, fontVariant: ['tabular-nums'] },
+  rpeText: { fontSize: 10, fontWeight: '600', fontVariant: ['tabular-nums'] },
   // 28pt of ink with hitSlop 10 on top — 48pt of target, past the 44pt minimum
   del: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  /* 96pt, not the row's width. See the comment at the call site: a 2pt rule
+     spanning the whole row is a separator, whatever it was drawn to mean. */
+  barTrack: { width: 96, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,0.09)', marginTop: 1 },
+  barFill: { height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,0.32)' },
   pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });
 

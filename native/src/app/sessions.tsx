@@ -75,7 +75,14 @@ export default function SessionsScreen() {
     the rest of the app files days under.
   */
   const months = useMemo(() => {
-    const out: { key: string; label: string; rows: NonNullable<typeof sessions> }[] = [];
+    const out: {
+      key: string;
+      label: string;
+      rows: NonNullable<typeof sessions>;
+      volume: number;
+      /** the heaviest session in this month, for the row bars */
+      peak: number;
+    }[] = [];
     for (const s of sessions ?? []) {
       const at = new Date(s.date_time);
       const key = localDateStr(at).slice(0, 7);
@@ -85,10 +92,15 @@ export default function SessionsScreen() {
           key,
           label: at.toLocaleDateString(getLocale(lang), { month: 'long', year: 'numeric' }),
           rows: [],
+          volume: 0,
+          peak: 0,
         };
         out.push(group);
       }
+      const v = Number(s.volume_load) || 0;
       group.rows.push(s);
+      group.volume += v;
+      group.peak = Math.max(group.peak, v);
     }
     return out;
   }, [sessions, lang]);
@@ -100,18 +112,58 @@ export default function SessionsScreen() {
           {vi ? 'Chưa có buổi tập nào trong 90 ngày qua' : 'No workouts in the last 90 days'}
         </Text>
       ) : (
-        months.map((m) => {
-          const volume = m.rows.reduce((sum, s) => sum + (Number(s.volume_load) || 0), 0);
+        months.map((m, mi) => {
+          /*
+            How this month compares with the one before it.
+
+            A heading reading `4 buổi · 48,200 kg` is a fact you have to carry
+            in your head to the next heading before it means anything. "Am I
+            doing more than I was" is the question people bring to a training
+            log, and it is one subtraction the screen can do instead of them.
+
+            ── two months are disqualified, and both would flatter or slander ──
+
+            **This month**, when it is the current one: it is three days old on
+            the third, so comparing it with a finished month reports every start
+            of a month as a collapse.
+
+            **The oldest group on screen**, always: the ninety-day window cuts
+            through it, so it holds part of a month and the month before it
+            would appear to have doubled. It is a truncation, not a training
+            decision.
+
+            `months` is newest-first, so the month *before* this one in time is
+            the group after it in the array.
+          */
+          const older = months[mi + 1];
+          const thisMonthIsRunning = m.key === localDateStr().slice(0, 7);
+          const olderIsTruncated = mi + 1 === months.length - 1;
+          const change =
+            !thisMonthIsRunning && older && !olderIsTruncated && older.volume > 0
+              ? Math.round(((m.volume - older.volume) / older.volume) * 100)
+              : null;
           return (
             <View key={m.key} style={styles.month}>
               <View style={styles.monthHead}>
                 <Text style={styles.monthName}>{m.label}</Text>
-                <Text style={styles.monthMeta}>
-                  {m.rows.length} {vi ? 'buổi' : m.rows.length === 1 ? 'session' : 'sessions'}
-                  {volume > 0
-                    ? `  ·  ${Math.round(displayWeight(volume, wUnit)).toLocaleString()} ${wl}`
-                    : ''}
-                </Text>
+                <View style={styles.monthMetaRow}>
+                  <Text style={styles.monthMeta}>
+                    {m.rows.length} {vi ? 'buổi' : m.rows.length === 1 ? 'session' : 'sessions'}
+                    {m.volume > 0
+                      ? `  ·  ${Math.round(displayWeight(m.volume, wUnit)).toLocaleString()} ${wl}`
+                      : ''}
+                  </Text>
+                  {change != null && change !== 0 ? (
+                    <Text
+                      style={[
+                        styles.monthChange,
+                        { color: change > 0 ? colors.readinessGreen : colors.mutedForeground },
+                      ]}>
+                      {change > 0 ? '↑' : '↓'} {Math.abs(change)}%{' '}
+                      {vi ? 'so với tháng trước' : 'vs previous'}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
               <View style={sessionListStyles.group}>
                 {m.rows.map((s, i) => (
@@ -123,6 +175,8 @@ export default function SessionsScreen() {
                       lang={lang}
                       i18n={i18n}
                       onDelete={confirmDelete}
+                      compactDate
+                      volumeRatio={m.peak > 0 ? (Number(s.volume_load) || 0) / m.peak : undefined}
                     />
                   </View>
                 ))}
@@ -146,6 +200,11 @@ const styles = StyleSheet.create({
     color: colors.mutedForeground,
   },
   monthMeta: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  monthMetaRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexWrap: 'wrap' },
+  /* Green only when it went up — a month with less volume is a deload as often
+     as it is a lapse, and colouring it red would call every planned easy month
+     a failure. Down is simply muted. */
+  monthChange: { fontSize: 11, fontWeight: '600', fontVariant: ['tabular-nums'] },
   empty: {
     fontSize: 13,
     color: colors.mutedForeground,
