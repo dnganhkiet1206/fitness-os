@@ -168,22 +168,31 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
           style={[styles.statusDot, { backgroundColor: color }, { transform: [{ scale: pulse }] }]}
         />
         <Text style={styles.title}>{i18n.dcReadinessTitle}</Text>
-        {/*
-          The way in to what any of this means.
-
-          A nested `Pressable` becomes the touch responder itself, so this does
-          not fall through to the card's own press — Today wraps the whole gauge
-          in one that pushes `/biometrics`, and tapping `?` must not navigate.
-        */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={vi ? 'Giải thích điểm sẵn sàng' : 'Explain the readiness score'}
-          hitSlop={12}
-          onPress={openHelp}
-          style={({ pressed }) => [styles.helpBtn, pressed && styles.helpPressed]}>
-          <Icon icon={HelpCircle} size={17} color={colors.mutedForeground} />
-        </Pressable>
       </View>
+
+      {/*
+        The way in to what any of this means — pinned to the card's corner,
+        deliberately outside the title row.
+
+        It was inside it, with `flex: 1` on the title to push it right, and that
+        moved the title: this card is `alignItems: 'center'`, so the row is a
+        centred group that sizes to its contents, and a stretching child turns
+        it into a full-width row with the dot and the words against the left
+        edge. Absolute here means the title sits exactly where it always has and
+        the `?` cannot affect it at all.
+
+        A nested `Pressable` becomes the touch responder itself, so this does
+        not fall through to the card's own press — Today wraps the whole gauge
+        in one that pushes `/biometrics`, and tapping `?` must not navigate.
+      */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={vi ? 'Giải thích điểm sẵn sàng' : 'Explain the readiness score'}
+        hitSlop={14}
+        onPress={openHelp}
+        style={({ pressed }) => [styles.helpBtn, pressed && styles.helpPressed]}>
+        <Icon icon={HelpCircle} size={17} color={colors.mutedForeground} />
+      </Pressable>
 
       {/*
         The hint, at most three times and never again once the `?` is pressed.
@@ -297,11 +306,23 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
 
 const styles = StyleSheet.create({
   card: { alignItems: 'center', paddingVertical: spacing.xl + 8, gap: spacing.lg },
-  /* Sits at the end of the title row, so it is where a trailing accessory is
-     on every other header in the app rather than beside the word it explains. */
-  helpBtn: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
+  /* Out of the flow, in the corner — see the comment at the button. It is the
+     only way to add a trailing accessory to a centred header without the
+     header moving. 28pt of ink plus hitSlop 14 is a 56pt target. */
+  helpBtn: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   helpPressed: { opacity: 0.7, transform: [{ scale: 0.94 }] },
   nudge: {
+    /* The card centres its children, so without this the chip shrink-wraps its
+       text into a narrow column instead of spanning the card. */
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -316,9 +337,6 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   title: {
-    /* Takes the slack so the `?` lands on the right edge of the card rather
-       than tucked against the last letter of the title. */
-    flex: 1,
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
