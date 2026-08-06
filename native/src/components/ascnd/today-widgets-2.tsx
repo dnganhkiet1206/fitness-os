@@ -37,6 +37,15 @@ import { useRecentAwards } from '@/hooks/use-extras';
 import { useUnits } from '@/hooks/use-units';
 import { awardText } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
+import {
+  ACWR_MAX,
+  ACWR_OPTIMAL,
+  acwrPercent,
+  acwrZone,
+  daysSince,
+  STALE_AFTER_DAYS,
+  type AcwrZoneKey,
+} from '@/lib/training-card';
 import { displayWeight, weightLabel } from '@/lib/units';
 
 function MicroTitle({ icon, children, color }: { icon?: LucideIcon; children: React.ReactNode; color?: string }) {
@@ -112,20 +121,69 @@ interface PainFlag {
   pain_0_10?: number;
 }
 
-// ACWR zone legend (web parity): red / yellow / green / yellow / red
-const ACWR_ZONES = [
-  { color: colors.readinessRed, label: '<0.65' },
-  { color: colors.readinessYellow, label: '0.65–0.8' },
-  { color: colors.readinessGreen, label: '0.8–1.3' },
-  { color: colors.readinessYellow, label: '1.3–1.6' },
-  { color: colors.readinessRed, label: '>1.6' },
-] as const;
+/** The bar's zone colours, keyed by the one table in `lib/training-card.ts`. */
+const ZONE_TINT: Record<AcwrZoneKey, string> = {
+  detraining: colors.readinessRed,
+  low: colors.readinessYellow,
+  optimal: colors.readinessGreen,
+  elevated: colors.readinessYellow,
+  spike: colors.readinessRed,
+};
 
+const zoneLabel = (key: AcwrZoneKey, vi: boolean) =>
+  ({
+    detraining: vi ? 'Tập quá thưa' : 'Detraining',
+    low: vi ? 'Hơi ít' : 'Low',
+    optimal: vi ? 'Vừa sức' : 'Optimal',
+    elevated: vi ? 'Tăng nhanh' : 'Elevated',
+    spike: vi ? 'Nhảy vọt' : 'Spike',
+  })[key];
+
+/** "Hôm nay" / "Hôm qua" / "5 ngày trước" — the fact the card was missing. */
+const whenLabel = (days: number, vi: boolean) => {
+  if (days === 0) return vi ? 'Hôm nay' : 'Today';
+  if (days === 1) return vi ? 'Hôm qua' : 'Yesterday';
+  return vi ? `${days} ngày trước` : `${days} days ago`;
+};
+
+/**
+ * Training — the last session, the last week, and whether the week is a jump.
+ *
+ * ── what was rewritten, and why ──
+ *
+ * **The card contradicted itself about the ratio.** It drew the acute-to-chronic
+ * number three times under three rules: a marker coloured by `>1.3 ? yellow :
+ * red`, a pill captioned from five bands, and a five-dot legend listing those
+ * bands again as hand-typed strings. At 1.7 the dot was yellow while the pill
+ * beside it said "Spike" and the legend under it called >1.6 red. All three now
+ * read `acwrZone` — see `lib/training-card.ts` for why the five-band version is
+ * the correct one rather than merely the more numerous.
+ *
+ * **The latest session had no date.** It comes from "the most recent session",
+ * which has no time limit, so `Push Day · RPE 8 · 4,200 kg` looked identical
+ * whether it happened this morning or five weeks ago — with the ratio decaying
+ * underneath it for precisely that reason. The card was showing the cause and
+ * the effect and joining them to nothing. It says when now, and says plainly
+ * when the last session is outside the seven-day window the figures above it
+ * are computed over.
+ *
+ * **The zones were stated three times and the seven-day total once, in grey.**
+ * The legend is gone: the bar already carries the colours, the pill says the
+ * verdict in words, and the full table lives in the help sheet behind the `?`.
+ * What that space buys is the week itself — sessions and volume — which was a
+ * single 12pt grey line at the bottom under a 30pt ratio, the derived
+ * diagnostic shouting over the fact it is derived from.
+ *
+ * **The tick marks did not line up with the band they label.** `0.8–1.3` was
+ * centred by `space-between` at 50% while the green band spans 40–65%, centred
+ * at 52.5%. They are positioned from the same numbers the band is drawn from.
+ */
 export function TrainingCard({ acwr }: { acwr: number | null }) {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
   const { weight: wUnit } = useUnits();
+  const wl = weightLabel(wUnit);
   const { data: workouts } = useRecentWorkouts();
   /*
     The seven-day figures come from a seven-day query.
@@ -134,118 +192,189 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
     `useRecentWorkouts()`, which is *the last five sessions whatever their
     dates*. Train five times over three weeks and it printed three weeks of
     volume under a seven-day heading; train six times in one week and it
-    silently dropped the sixth. The PR badge had the same fault — a record set
-    in March still showing today, because five sessions is not a window.
+    silently dropped the sixth.
 
     `latest` still comes from `useRecentWorkouts`: this card's top row needs
     `pain_flags`, which the sessions query does not select, and "the most recent
-    session" is genuinely not a windowed question.
+    session" is genuinely not a windowed question — that is the whole reason it
+    now has to say how long ago it was.
   */
   const { data: week } = useWorkoutSessions(7);
+  const help = useHelpTopic('training');
 
   const latest = (workouts ?? [])[0];
-  const help = useHelpTopic('training');
-  if (!latest) return null;
 
   const a = acwr ?? 0;
-  const acwrColor =
-    a >= 0.8 && a <= 1.3 ? colors.readinessGreen : a > 1.3 ? colors.readinessYellow : colors.readinessRed;
-  const acwrLabel = a >= 0.8 && a <= 1.3 ? 'Optimal' : a > 1.6 ? 'Spike' : a > 1.3 ? 'Elevated' : a < 0.65 ? 'Detraining' : 'Low';
-  const acwrPct = Math.min((a / 2) * 100, 100);
+  const zone = acwrZone(a);
+  const zoneTint = ZONE_TINT[zone];
 
-  const totalVolume = (week ?? []).reduce((s, w) => s + Number(w.volume_load || 0), 0);
-  const hasPR = (week ?? []).some((w) => w.pr_detected);
-  const sets = Array.isArray(latest.sets) ? latest.sets : [];
-  const painFlags = (Array.isArray(latest.pain_flags) ? (latest.pain_flags as PainFlag[]) : []).filter(
+  const weekSessions = week ?? [];
+  const weekVolume = weekSessions.reduce((s, w) => s + Number(w.volume_load || 0), 0);
+  const hasPR = weekSessions.some((w) => w.pr_detected);
+
+  const sets = Array.isArray(latest?.sets) ? latest.sets : [];
+  const painFlags = (Array.isArray(latest?.pain_flags) ? (latest.pain_flags as PainFlag[]) : []).filter(
     (p) => (p.pain_0_10 ?? 0) > 0,
   );
+  const age = latest ? daysSince(latest.date_time) : null;
+  const stale = age != null && age >= STALE_AFTER_DAYS;
+
+  const headAccessories = (
+    <View style={styles.headAccessories}>
+      {hasPR && (
+        <View style={styles.prBadge}>
+          <Icon icon={Trophy} size={13} />
+          <Text style={styles.prText}>PR!</Text>
+        </View>
+      )}
+      <HelpButton
+        label={vi ? 'Giải thích thẻ tập luyện' : 'Explain the training card'}
+        onPress={help.openHelp}
+      />
+    </View>
+  );
+
+  /*
+    Nothing logged is a state, not an absence.
+
+    This returned `null`, so a widget somebody had deliberately added to Today
+    simply was not there — indistinguishable from having removed it, or from the
+    app being broken.
+  */
+  if (!latest) {
+    return (
+      <GlassCard style={styles.stackCard}>
+        <View style={styles.headRow}>
+          <MicroTitle>{i18n.dcTrainingTitle}</MicroTitle>
+          {headAccessories}
+        </View>
+        <Text style={styles.emptyLine}>
+          {vi
+            ? 'Chưa có buổi tập nào được ghi. Ghi một buổi để thấy khối lượng và đà tập.'
+            : 'No workouts logged yet. Record one to see volume and training load.'}
+        </Text>
+        <TrainingExplainer visible={help.open} onClose={help.close} />
+      </GlassCard>
+    );
+  }
 
   return (
     <GlassCard style={styles.stackCard}>
       <View style={styles.headRow}>
         <MicroTitle>{i18n.dcTrainingTitle}</MicroTitle>
-        <View style={styles.headAccessories}>
-          {hasPR && (
-            <View style={styles.prBadge}>
-              <Icon icon={Trophy} size={13} />
-              <Text style={styles.prText}>PR!</Text>
-            </View>
-          )}
-          <HelpButton
-            label={vi ? 'Giải thích thẻ tập luyện' : 'Explain the training card'}
-            onPress={help.openHelp}
-          />
-        </View>
+        {headAccessories}
       </View>
 
-      {/* Volume load and ACWR are the two numbers on this card that nobody
+      {/* Volume load and the ratio are the two numbers on this card nobody
           guesses — one looks like a claim to have lifted four tonnes, the other
-          is three words of jargon that decide whether you train tomorrow. */}
+          is a word that decides whether you train tomorrow. */}
       {help.nudge ? (
         <HelpNudge
-          text={vi ? 'Chưa rõ 4.200 kg hay ACWR nghĩa là gì? Bấm vào đây.' : 'Not sure what volume load or ACWR mean? Tap here.'}
+          text={vi ? 'Chưa rõ 4.200 kg hay đà tập nghĩa là gì? Bấm vào đây.' : 'Not sure what volume load or training load mean? Tap here.'}
           onPress={help.openHelp}
           onDismiss={help.dismissNudge}
         />
       ) : null}
 
-      {/* Latest workout row */}
+      {/* The last session — with, at last, when it was */}
       <View style={styles.latestRow}>
         <View style={styles.latestIcon}>
           <Icon icon={Dumbbell} size={20} />
         </View>
         <View style={styles.latestInfo}>
-          <Text style={styles.latestName} numberOfLines={1}>{latest.template_name || 'Workout'}</Text>
+          <View style={styles.latestTop}>
+            <Text style={styles.latestName} numberOfLines={1}>
+              {latest.template_name || (vi ? 'Buổi tập' : 'Workout')}
+            </Text>
+            <Text style={[styles.latestWhen, stale && styles.latestWhenStale]}>
+              {whenLabel(age ?? 0, vi)}
+            </Text>
+          </View>
           <Text style={styles.latestMeta}>
-            RPE {Number(latest.session_rpe ?? 0)}/10 · {sets.length} sets · {Math.round(displayWeight(Number(latest.volume_load || 0), wUnit)).toLocaleString()} {weightLabel(wUnit)}
+            {sets.length} {vi ? 'set' : 'sets'}
+            {latest.session_rpe != null ? ` · RPE ${Number(latest.session_rpe)}` : ''}
+            {` · ${Math.round(displayWeight(Number(latest.volume_load || 0), wUnit)).toLocaleString()} ${wl}`}
           </Text>
         </View>
       </View>
 
-      {/* ACWR box */}
+      {/* Two numbers about the window the ratio is actually computed over, so
+          a falling ratio has its cause on the same card. */}
+      <View style={styles.weekRow}>
+        <View style={styles.weekCell}>
+          <Text style={styles.weekLabel}>{vi ? '7 ngày · buổi tập' : '7 days · sessions'}</Text>
+          <Text style={styles.weekValue}>{weekSessions.length}</Text>
+        </View>
+        <View style={styles.weekDivider} />
+        <View style={styles.weekCell}>
+          <Text style={styles.weekLabel}>{vi ? '7 ngày · khối lượng' : '7 days · volume'}</Text>
+          <Text style={styles.weekValue}>
+            {Math.round(displayWeight(weekVolume, wUnit)).toLocaleString()}
+            <Text style={styles.weekUnit}> {wl}</Text>
+          </Text>
+        </View>
+      </View>
+
+      {stale ? (
+        <Text style={styles.staleNote}>
+          {vi
+            ? `Buổi gần nhất đã ${age} ngày — các số 7 ngày ở trên bằng 0 vì thế, và đà tập đang giảm.`
+            : `Last session was ${age} days ago — that is why the 7-day figures are zero and the load is falling.`}
+        </Text>
+      ) : null}
+
+      {/* Training load */}
       {a > 0 && (
         <View style={styles.acwrBox}>
           <View style={styles.headRow}>
             <View style={styles.acwrTitleRow}>
               <Icon icon={Zap} size={14} />
-              <Text style={styles.acwrTitle}>Acute:Chronic Ratio</Text>
-            </View>
-            <View style={[styles.acwrPill, { backgroundColor: `${acwrColor}1a` }]}>
-              <Text style={[styles.acwrPillText, { color: acwrColor }]}>{acwrLabel}</Text>
+              <Text style={styles.acwrTitle}>
+                {vi ? 'Đà tập · 7 ngày so với 28 ngày' : 'Training load · 7d vs 28d'}
+              </Text>
             </View>
           </View>
-          <Text style={[styles.acwrValue, { color: acwrColor }]}>{a}</Text>
+          <View style={styles.acwrValueRow}>
+            <Text style={[styles.acwrValue, { color: zoneTint }]}>{a}</Text>
+            <View style={[styles.acwrPill, { backgroundColor: `${zoneTint}1a` }]}>
+              <Text style={[styles.acwrPillText, { color: zoneTint }]}>{zoneLabel(zone, vi)}</Text>
+            </View>
+          </View>
           <View style={styles.acwrTrack}>
-            <View style={styles.acwrOptimal} />
-            {/* Marker glows in the zone colour of the current ratio */}
+            <View
+              style={[
+                styles.acwrOptimal,
+                {
+                  left: `${acwrPercent(ACWR_OPTIMAL.from)}%`,
+                  right: `${100 - acwrPercent(ACWR_OPTIMAL.to)}%`,
+                },
+              ]}
+            />
             <View
               style={[
                 styles.acwrIndicator,
-                { left: `${acwrPct}%`, backgroundColor: acwrColor, shadowColor: acwrColor },
+                { left: `${acwrPercent(a)}%`, backgroundColor: zoneTint, shadowColor: zoneTint },
               ]}
             />
           </View>
+          {/*
+            Positioned from the same numbers the band is drawn from. They were
+            laid out with `space-between`, which centred "0.8–1.3" at 50% while
+            the band it names spans 40–65% — a label pointing next to its own
+            subject.
+          */}
           <View style={styles.acwrTicks}>
-            <Text style={styles.acwrTick}>0</Text>
-            <Text style={[styles.acwrTick, { color: colors.readinessGreen }]}>0.8–1.3</Text>
-            <Text style={styles.acwrTick}>2.0</Text>
+            <Text style={[styles.acwrTick, styles.acwrTickStart]}>0</Text>
+            <Text style={[styles.acwrTick, styles.acwrTickAt, { left: `${acwrPercent(ACWR_OPTIMAL.from)}%` }]}>
+              {ACWR_OPTIMAL.from}
+            </Text>
+            <Text style={[styles.acwrTick, styles.acwrTickAt, { left: `${acwrPercent(ACWR_OPTIMAL.to)}%` }]}>
+              {ACWR_OPTIMAL.to}
+            </Text>
+            <Text style={[styles.acwrTick, styles.acwrTickEnd]}>{ACWR_MAX.toFixed(1)}</Text>
           </View>
         </View>
       )}
-
-      {/* Zone legend — neon dots for each ACWR band (web parity) */}
-      <View style={styles.legendRow}>
-        {ACWR_ZONES.map((z) => (
-          <View key={z.label} style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: z.color, shadowColor: z.color }]} />
-            <Text style={styles.legendText}>{z.label}</Text>
-          </View>
-        ))}
-      </View>
-
-      <Text style={styles.volumeLine}>
-        {i18n.dcTraining7dVolume}: <Text style={styles.volumeValue}>{Math.round(displayWeight(totalVolume, wUnit)).toLocaleString()} {weightLabel(wUnit)}</Text>
-      </Text>
 
       {painFlags.length > 0 && (
         <View style={styles.painRow}>
@@ -487,8 +616,35 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(168,175,189,0.2)',
   },
   latestInfo: { flex: 1, minWidth: 0, gap: 2 },
-  latestName: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+  latestTop: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  latestName: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.foreground },
+  /* The fact the card was missing entirely. Muted while it is recent, amber
+     once it is outside the window the numbers above are computed over — the
+     colour is the difference between "trained Tuesday" and "has not trained". */
+  latestWhen: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  latestWhenStale: { color: colors.readinessYellow, fontWeight: '600' },
   latestMeta: { fontSize: 12, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  emptyLine: { fontSize: 13, lineHeight: 19, color: colors.mutedForeground },
+  /* The week, given the room the five-dot legend used to take. Two cells and a
+     hairline, because a count and a total are one comparison, not two facts. */
+  weekRow: { flexDirection: 'row', alignItems: 'center' },
+  weekCell: { flex: 1, gap: 2 },
+  weekDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: 'stretch',
+    marginHorizontal: spacing.md,
+    backgroundColor: colors.border,
+  },
+  weekLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
+  weekValue: {
+    fontSize: 20,
+    fontFamily: 'Menlo',
+    fontWeight: '700',
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
+  },
+  weekUnit: { fontSize: 11, fontWeight: '400', color: colors.mutedForeground },
+  staleNote: { fontSize: 12, lineHeight: 17, color: colors.readinessYellow },
   acwrBox: {
     backgroundColor: 'rgba(24,24,27,0.2)',
     borderRadius: radius.sm,
@@ -501,14 +657,18 @@ const styles = StyleSheet.create({
   acwrTitle: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
   acwrPill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 3, borderRadius: radius.sm - 4 },
   acwrPillText: { fontSize: 12, fontWeight: '600' },
-  acwrValue: { fontSize: 30, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
+  acwrValueRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
+  /* 26, down from 30. It was the largest thing on the card — a derived
+     diagnostic shouting over the sessions it is derived from. */
+  acwrValue: { fontSize: 26, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
   acwrTrack: { height: 8, borderRadius: 4, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'visible' },
+  /* `left`/`right` come from `ACWR_OPTIMAL` at the call site. They were the
+     literals 40% and 35%, which happened to be right for 0.8–1.3 on a 0–2
+     scale and would have stayed 40/35 the day either edge moved. */
   acwrOptimal: {
     position: 'absolute',
     top: 0,
     bottom: 0,
-    left: '40%',
-    right: '35%',
     borderRadius: 4,
     backgroundColor: 'rgba(43,245,168,0.12)',
   },
@@ -526,29 +686,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.9,
     elevation: 4,
   },
-  acwrTicks: { flexDirection: 'row', justifyContent: 'space-between' },
-  acwrTick: { fontSize: 9, color: colors.mutedForeground, fontFamily: 'Menlo' },
-  legendRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.sm + 2,
-    rowGap: 6,
-  },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 4,
-    shadowOpacity: 0.9,
-    elevation: 3,
-  },
-  legendText: { fontSize: 9, color: colors.mutedForeground, fontFamily: 'Menlo' },
-  volumeLine: { fontSize: 12, color: colors.mutedForeground },
-  volumeValue: { fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground },
+  /* Absolute, so each tick sits under the value it names. Fixed height because
+     absolutely-positioned children give the row no layout of its own. */
+  acwrTicks: { height: 12 },
+  acwrTick: { position: 'absolute', fontSize: 9, color: colors.mutedForeground, fontFamily: 'Menlo' },
+  acwrTickStart: { left: 0 },
+  acwrTickEnd: { right: 0 },
+  /* -6 pulls the glyph back about half its width, so the label is centred on
+     its mark rather than starting at it. */
+  acwrTickAt: { marginLeft: -6 },
   painRow: {
     flexDirection: 'row',
     alignItems: 'center',
