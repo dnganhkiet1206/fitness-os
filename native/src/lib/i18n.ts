@@ -669,6 +669,9 @@ interface Translations {
   dcActivityKcal: string;
   dcActivityMin: string;
   dcActivityStepsUnit: string;
+  dcActivityEmpty: string;
+  dcActivityConnect: string;
+  dcActivityEstimated: string;
   dcNutritionTitle: string;
   dcNutritionTarget: string;
   dcNutritionPctOfGoal: string;
@@ -1369,6 +1372,9 @@ const vi: Translations = {
   dcActivityKcal: 'kcal',
   dcActivityMin: 'phút',
   dcActivityStepsUnit: 'bước',
+  dcActivityEmpty: 'Chưa có hoạt động nào hôm nay. Kết nối Apple Health để tự động lấy calo và bước chân, hoặc ghi một buổi tập.',
+  dcActivityConnect: 'Kết nối Health',
+  dcActivityEstimated: '~ Thời gian tập ước tính từ số set đã ghi.',
   dcNutritionTitle: 'Dinh Dưỡng',
   dcNutritionTarget: 'Mục tiêu',
   dcNutritionPctOfGoal: '{x}% mục tiêu',
@@ -2062,6 +2068,9 @@ const en: Translations = {
   dcActivityKcal: 'kcal',
   dcActivityMin: 'min',
   dcActivityStepsUnit: 'steps',
+  dcActivityEmpty: 'No activity today yet. Connect Apple Health for calories and steps, or log a workout.',
+  dcActivityConnect: 'Connect Health',
+  dcActivityEstimated: '~ Exercise time estimated from the sets you logged.',
   dcNutritionTitle: 'Nutrition',
   dcNutritionTarget: 'Target',
   dcNutritionPctOfGoal: '{x}% goal',

@@ -64,6 +64,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useReminderSync } from '@/hooks/use-reminders';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { useTodayTrainingMinutes } from '@/hooks/use-fitness-data';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
@@ -208,10 +209,16 @@ export default function TodayScreen() {
   const readinessScore = dailyLog?.readiness_score != null ? Math.round(Number(dailyLog.readiness_score)) : null;
   const readinessStatus = (dailyLog?.readiness_status as 'green' | 'yellow' | 'red') || 'yellow';
 
-  // Activity rings (web ActivityCard: move kcal/600, exercise min/30, steps/10000)
-  const activeKcal = Number(dailyLog?.active_kcal) || 0;
-  const activeMin = dailyLog?.active_minutes ?? 0;
+  /*
+    Activity rings. `active_kcal` and `active_minutes` are passed through as
+    null-or-number rather than defaulted to 0 here: the card draws a different
+    thing for "Health has never reported" than for "Health says you have not
+    moved", and `|| 0` at this line would erase the difference before it ever
+    reaches the component that cares. The estimate that fills in for a missing
+    watch is a separate query — see `useTodayTrainingMinutes`.
+  */
   const steps = dailyLog?.steps ?? 0;
+  const { data: trainingMin } = useTodayTrainingMinutes();
 
   // Nutrition
   const kcal = Math.round(Number(dailyLog?.kcal) || 0);
@@ -260,9 +267,15 @@ export default function TodayScreen() {
       case 'activity':
         return (
           <ActivityRingsCard
-            move={{ current: Math.round(activeKcal), target: 600 }}
-            exercise={{ current: activeMin, target: 30 }}
-            stand={{ current: steps, target: stepsGoal }}
+            moveKcal={dailyLog?.active_kcal != null ? Number(dailyLog.active_kcal) : null}
+            healthMinutes={dailyLog?.active_minutes ?? null}
+            loggedMinutes={trainingMin ?? 0}
+            steps={steps}
+            stepsTarget={stepsGoal}
+            /* Offered only where it can work — the button is HealthKit, and
+               HealthKit does not exist in Expo Go or on a simulator. */
+            onConnectHealth={healthAvailable ? () => healthSync.mutate() : undefined}
+            onLogWorkout={() => router.push('/log-workout')}
           />
         );
       case 'biometrics':

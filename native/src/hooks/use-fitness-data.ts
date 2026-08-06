@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
+// aliased: this file already has its own `LoggedSet`, a much richer row
+import { trainingMinutes, type LoggedSet as TimedSet } from '@/lib/activity';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
-import { localDateStr } from '@/lib/local-date';
+import { localDateStr, localDayRangeISO } from '@/lib/local-date';
 import { useAuth } from './use-auth';
 import { useInvalidateToday } from './useTodayData';
 
@@ -290,6 +292,47 @@ export function useLogWorkoutSession() {
       if (day !== today) await recomputeDailyLog(user.id, today);
     },
     onSuccess: () => invalidate(),
+  });
+}
+
+/**
+ * Roughly how long today's training took, from the sets that were logged.
+ *
+ * The Activity card's exercise ring is Apple's, and Apple fills it from a
+ * watch. Somebody training without one still trains — and the app holds every
+ * set they recorded, which is enough to say how long it took to the same
+ * accuracy the plan screen already claims before they start.
+ *
+ * It is a separate query rather than a column on `useWorkoutSessions`, which
+ * is the fourteen-day list behind the training screen: adding `sets` there
+ * would pull every set of every session of a fortnight across the wire so that
+ * one card could add up today's. This asks for today's, and asks for nothing
+ * but the sets.
+ *
+ * The result is never written back. It is an estimate, `daily_logs.active_min`
+ * is where a measurement goes, and a computed number that lands in a column
+ * meant for observations is indistinguishable from an observation a week later.
+ */
+export function useTodayTrainingMinutes() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['today_training_minutes', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const day = localDayRangeISO(localDateStr());
+      const { data, error } = await supabase
+        .from('workout_sessions')
+        .select('sets')
+        .eq('user_id', user!.id)
+        .gte('date_time', day.start)
+        .lt('date_time', day.end);
+      if (error) throw error;
+      // `sets` is free JSONB — a row can hold anything, including not an array
+      const all = (data ?? []).flatMap((s) =>
+        Array.isArray(s.sets) ? (s.sets as unknown as TimedSet[]) : [],
+      );
+      return trainingMinutes(all);
+    },
   });
 }
 

@@ -1,5 +1,7 @@
-import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { HeartPulse } from 'lucide-react-native';
+import { useEffect, useId } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -10,39 +12,47 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
-import { colors, spacing } from '@/constants/ascnd';
+import { Icon } from '@/components/ascnd/icon';
+import { colors, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
+import { activityModel, type ActivityInput, type RingKey, type RingModel } from '@/lib/activity';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const TRACK = '#17171c';
 
-interface RingDatum {
-  current: number;
-  target: number;
-}
+/**
+ * The unfilled part of a ring.
+ *
+ * It was `#17171c`, which measures **1.01:1** against the card behind it —
+ * indistinguishable, not "subtle". That is why the card read as a placeholder:
+ * two of its three rings were at zero because nothing wrote their columns, and
+ * a ring at zero is nothing but its track, so the middle of the card was
+ * genuinely, literally empty. Whatever the rings say, you should be able to
+ * see that there are three of them.
+ *
+ * 1.60:1. Enough to find, nowhere near enough to compete with a lit ring at
+ * 7:1 or better.
+ */
+const TRACK = '#3a3a42';
 
-interface Props {
-  move: RingDatum;
-  exercise: RingDatum;
-  stand: RingDatum;
-  size?: number;
-}
+const RING_COLORS: Record<RingKey, [string, string]> = {
+  move: ['#ffc53d', '#ff9130'],
+  exercise: ['#2bf5a8', '#3dff7a'],
+  steps: ['#3ba6ff', '#22e3ff'],
+};
 
 function Ring({
   index,
-  size,
+  center,
   radiusPx,
   strokeWidth,
   gradId,
-  colors: [c0, c1],
   pct,
 }: {
   index: number;
-  size: number;
+  center: number;
   radiusPx: number;
   strokeWidth: number;
   gradId: string;
-  colors: [string, string];
   pct: number;
 }) {
   const circumference = 2 * Math.PI * radiusPx;
@@ -50,22 +60,22 @@ function Ring({
   useEffect(() => {
     progress.value = withDelay(
       300 + index * 150,
-      withTiming(Math.min(pct, 1.5), { duration: 1400, easing: Easing.bezier(0.16, 1, 0.3, 1) }),
+      withTiming(Math.min(pct, 1), { duration: 1400, easing: Easing.bezier(0.16, 1, 0.3, 1) }),
     );
   }, [pct, index, progress]);
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: circumference - progress.value * circumference,
   }));
-  const center = size / 2;
   return (
     <>
-      <Circle cx={center} cy={center} r={radiusPx} fill="none" stroke={TRACK} strokeWidth={strokeWidth} strokeLinecap="round" />
-      <Defs>
-        <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor={c0} />
-          <Stop offset="100%" stopColor={c1} />
-        </LinearGradient>
-      </Defs>
+      <Circle
+        cx={center}
+        cy={center}
+        r={radiusPx}
+        fill="none"
+        stroke={TRACK}
+        strokeWidth={strokeWidth}
+      />
       <AnimatedCircle
         cx={center}
         cy={center}
@@ -82,89 +92,232 @@ function Ring({
   );
 }
 
-/**
- * Faithful port of the web ActivityCard: uppercase micro-title, Apple
- * style triple rings (move kcal / exercise min / steps) with gradient
- * strokes, and the three legends underneath (value/target + percent).
- */
-export function ActivityRingsCard({ move, exercise, stand, size = 160 }: Props) {
-  const i18n = useI18n();
+interface Props extends ActivityInput {
+  size?: number;
+  /** shown in the empty state only, when Apple Health can actually be reached */
+  onConnectHealth?: () => void;
+  onLogWorkout?: () => void;
+}
 
-  const rings = [
-    { key: 'move', label: i18n.dcActivityMove, unit: i18n.dcActivityKcal, colors: ['#ffc53d', '#ff9130'] as [string, string], data: move },
-    { key: 'exercise', label: i18n.dcActivityExercise, unit: i18n.dcActivityMin, colors: ['#2bf5a8', '#3dff7a'] as [string, string], data: exercise },
-    { key: 'stand', label: i18n.dcActivitySteps, unit: i18n.dcActivityStepsUnit, colors: ['#3ba6ff', '#22e3ff'] as [string, string], data: stand },
-  ];
+/**
+ * Today's three rings.
+ *
+ * ── the layout is sideways now ──
+ *
+ * It was a 160pt ring stack centred over three legends, so the card's widest
+ * row was 160pt of art in the middle of a 350pt card with dead space either
+ * side, and the numbers — the part you actually read — were three columns of
+ * 10pt type underneath. Rings left, one labelled row per ring on the right, is
+ * both denser and what Apple's own Fitness widget does: the art is a glance,
+ * the rows are the reading, and neither is squeezed to make room for the
+ * other.
+ *
+ * ── an estimate says it is one ──
+ *
+ * The exercise ring falls back to the length of today's logged sets when no
+ * watch has reported. That is a genuinely useful number and a genuinely
+ * different kind of number, so it is drawn with a `~` and a line under the
+ * card saying where it came from. See `lib/activity.ts` for why the
+ * measurement always wins when there is one.
+ */
+export function ActivityRingsCard({ size = 110, onConnectHealth, onLogWorkout, ...input }: Props) {
+  const i18n = useI18n();
+  const { rings, hasAny } = activityModel(input);
+
+  /*
+    SVG ids are document-global on native, not scoped to the <Svg> they are
+    written in. Two cards with a hardcoded `ring-grad-move` would share one
+    gradient and the second would win for both. `useId` is the project's answer
+    to this and it is not hypothetical — it has cost this codebase three
+    debugging sessions across three different components.
+  */
+  const uid = useId();
+  const gradId = (key: RingKey) => `act-${key}-${uid}`;
 
   const center = size / 2;
-  const strokeWidth = size * 0.065;
-  const gap = strokeWidth * 1.6;
+  /*
+    Thin enough to leave a hole in the middle.
+
+    At 0.105 with a 1.35 gap the three rings ate the centre down to about 10pt
+    across, and three concentric bands around a dot is a *target*, not Apple's
+    rings — which is a lot of what made the old card read as generic chart
+    furniture. The hole here is `center - strokeWidth - 1 - 2*gap`, near 15pt,
+    and the 4.8pt of dark between neighbouring rings is what keeps three of
+    them countable at a glance.
+  */
+  const strokeWidth = size * 0.088;
+  const gap = strokeWidth * 1.5;
+
+  const label: Record<RingKey, string> = {
+    move: i18n.dcActivityMove,
+    exercise: i18n.dcActivityExercise,
+    steps: i18n.dcActivitySteps,
+  };
+  const unit: Record<RingKey, string> = {
+    move: i18n.dcActivityKcal,
+    exercise: i18n.dcActivityMin,
+    steps: i18n.dcActivityStepsUnit,
+  };
+
+  /*
+    Nothing at all is its own card, not three grey circles and three zeros.
+
+    Zeros next to targets look like a report on a day you failed. The day has
+    usually just started, or there is no watch attached — different situations,
+    both fixable, neither communicated by drawing an empty chart. So the body
+    is replaced by the two things that would put a number in it.
+  */
+  if (!hasAny) {
+    return (
+      <GlassCard style={styles.card}>
+        <Text style={styles.title}>{i18n.dcActivity}</Text>
+        <View style={styles.emptyBody}>
+          <Icon icon={HeartPulse} size={20} color={colors.mutedForeground} />
+          <Text style={styles.emptyText}>{i18n.dcActivityEmpty}</Text>
+        </View>
+        <View style={styles.emptyActions}>
+          {onConnectHealth ? (
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.emptyBtn, styles.emptyBtnPrimary, pressed && styles.pressed]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onConnectHealth();
+              }}>
+              <Text style={styles.emptyBtnPrimaryText}>{i18n.dcActivityConnect}</Text>
+            </Pressable>
+          ) : null}
+          {onLogWorkout ? (
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.emptyBtn, pressed && styles.pressed]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                onLogWorkout();
+              }}>
+              <Text style={styles.emptyBtnText}>{i18n.dashLogWorkoutAction}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </GlassCard>
+    );
+  }
+
+  const estimated = rings.some((r) => r.source === 'estimated');
 
   return (
     <GlassCard style={styles.card}>
       <Text style={styles.title}>{i18n.dcActivity}</Text>
-      <View style={styles.ringsWrap}>
+
+      <View style={styles.body}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          {rings.map((r, i) => {
-            const radiusPx = center - strokeWidth / 2 - i * gap - strokeWidth * 0.5;
-            const pct = r.data.target > 0 ? r.data.current / r.data.target : 0;
-            return (
-              <Ring
-                key={r.key}
-                index={i}
-                size={size}
-                radiusPx={radiusPx}
-                strokeWidth={strokeWidth}
-                gradId={`ring-grad-${r.key}`}
-                colors={r.colors}
-                pct={pct}
-              />
-            );
-          })}
+          {/* Hoisted out of the ring loop: three <Defs> blocks drawing one
+              gradient each is three chances to get an id wrong. */}
+          <Defs>
+            {rings.map((r) => {
+              const [c0, c1] = RING_COLORS[r.key];
+              return (
+                <LinearGradient key={r.key} id={gradId(r.key)} x1="0%" y1="0%" x2="100%" y2="100%">
+                  <Stop offset="0%" stopColor={c0} />
+                  <Stop offset="100%" stopColor={c1} />
+                </LinearGradient>
+              );
+            })}
+          </Defs>
+          {rings.map((r, i) => (
+            <Ring
+              key={r.key}
+              index={i}
+              center={center}
+              /* The 1pt is an inset, not a fudge: without it the outermost
+                 ring's outer edge lands exactly on the viewBox boundary and
+                 antialiasing shaves the top pixel off it. */
+              radiusPx={center - strokeWidth / 2 - 1 - i * gap}
+              strokeWidth={strokeWidth}
+              gradId={gradId(r.key)}
+              pct={r.pct}
+            />
+          ))}
         </Svg>
+
+        <View style={styles.rows}>
+          {rings.map((r) => (
+            <Row key={r.key} ring={r} label={label[r.key]} unit={unit[r.key]} />
+          ))}
+        </View>
       </View>
 
-      {/* Legends */}
-      <View style={styles.legendRow}>
-        {rings.map((r) => {
-          const pct = Math.round(Math.min((r.data.current / (r.data.target || 1)) * 100, 999));
-          return (
-            <View key={r.key} style={styles.legendItem}>
-              <View style={styles.legendHead}>
-                <View style={[styles.legendDot, { backgroundColor: r.colors[0] }]} />
-                <Text style={styles.legendLabel}>{r.label}</Text>
-              </View>
-              <View style={styles.legendValueRow}>
-                <Text style={styles.legendValue}>{r.data.current.toLocaleString()}</Text>
-                <Text style={styles.legendTarget}>/{r.data.target.toLocaleString()}{r.unit}</Text>
-              </View>
-              <Text style={[styles.legendPct, { color: r.colors[0] }]}>{pct}%</Text>
-            </View>
-          );
-        })}
-      </View>
+      {estimated ? <Text style={styles.note}>{i18n.dcActivityEstimated}</Text> : null}
     </GlassCard>
   );
 }
 
+/** One ring, read out: what it is, how far along, out of what. */
+function Row({ ring, label, unit }: { ring: RingModel; label: string; unit: string }) {
+  const [tint] = RING_COLORS[ring.key];
+  const dim = ring.source === 'none';
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowHead}>
+        <View style={[styles.dot, { backgroundColor: dim ? colors.mutedForeground : tint }]} />
+        <Text style={styles.rowLabel}>{label}</Text>
+      </View>
+      <View style={styles.rowValues}>
+        <Text style={[styles.rowValue, dim && styles.rowValueDim]}>
+          {/* The tilde is the whole disclosure at a glance; the line under the
+              card says what it means. */}
+          {ring.source === 'estimated' ? '~' : ''}
+          {ring.current.toLocaleString()}
+        </Text>
+        <Text style={styles.rowTarget}>
+          / {ring.target.toLocaleString()} {unit}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  card: { alignItems: 'center', gap: spacing.stack },
+  card: { gap: spacing.md },
   title: {
-    alignSelf: 'flex-start',
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
     color: colors.mutedForeground,
   },
-  ringsWrap: { alignItems: 'center', justifyContent: 'center' },
-  legendRow: { flexDirection: 'row', gap: spacing.lg, justifyContent: 'center' },
-  legendItem: { alignItems: 'center', gap: 4 },
-  legendHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
-  legendValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
-  legendValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  legendTarget: { fontSize: 10, color: colors.mutedForeground },
-  legendPct: { fontSize: 10, fontFamily: 'Menlo', fontWeight: '600', fontVariant: ['tabular-nums'] },
+  body: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  rows: { flex: 1, gap: spacing.sm + 2 },
+  row: { gap: 1 },
+  rowHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dot: { width: 7, height: 7, borderRadius: 3.5 },
+  rowLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
+  rowValues: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+  rowValue: {
+    fontSize: 19,
+    fontFamily: 'Menlo',
+    fontWeight: '700',
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
+  },
+  /* A ring nothing has reported on reads as absent, not as a score of nought. */
+  rowValueDim: { color: colors.mutedForeground, fontWeight: '400' },
+  rowTarget: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  note: { fontSize: 11, color: colors.mutedForeground },
+
+  emptyBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
+  emptyText: { flex: 1, fontSize: 13, lineHeight: 18, color: colors.mutedForeground },
+  emptyActions: { flexDirection: 'row', gap: spacing.sm },
+  emptyBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary,
+  },
+  emptyBtnText: { fontSize: 13, fontWeight: '600', color: colors.foreground },
+  emptyBtnPrimary: { backgroundColor: colors.primary },
+  emptyBtnPrimaryText: { fontSize: 13, fontWeight: '600', color: colors.primaryForeground },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

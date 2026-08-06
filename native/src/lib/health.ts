@@ -23,8 +23,18 @@ if (Platform.OS === 'ios') {
   }
 }
 
+/*
+  Active energy and exercise time are here because the Activity card's two
+  outer rings were reading `daily_logs.active_kcal` and `active_minutes`,
+  columns that existed in the schema and were written by nothing anywhere in
+  the app. They are Apple's Move and Exercise rings, they come from the same
+  place the step count already came from, and asking for two more read
+  permissions in the same prompt costs nothing.
+*/
 const READ_TYPES = [
   'HKQuantityTypeIdentifierStepCount',
+  'HKQuantityTypeIdentifierActiveEnergyBurned',
+  'HKQuantityTypeIdentifierAppleExerciseTime',
   'HKQuantityTypeIdentifierHeartRate',
   'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
   'HKQuantityTypeIdentifierOxygenSaturation',
@@ -58,21 +68,55 @@ export async function requestHealthPermissions(): Promise<boolean> {
   }
 }
 
-export async function getTodaySteps(): Promise<number | null> {
+/**
+ * Today's total of a cumulative quantity, in the unit asked for.
+ *
+ * Steps, active energy and exercise time are the same query three times over —
+ * sum everything recorded since local midnight — and they were about to become
+ * three copies of it. The window is built with `setHours(0,0,0,0)` on a real
+ * `Date`, so it is midnight where the phone is, not midnight UTC.
+ *
+ * `null` and `0` are kept apart all the way up: null means Health had nothing
+ * to say (no permission, no module, a query that threw), zero means it says
+ * you have not moved. The card shows different things for those two, so
+ * collapsing them here would be deciding that question in the wrong place.
+ */
+async function todayTotal(
+  identifier:
+    | 'HKQuantityTypeIdentifierStepCount'
+    | 'HKQuantityTypeIdentifierActiveEnergyBurned'
+    | 'HKQuantityTypeIdentifierAppleExerciseTime',
+  unit: string,
+): Promise<number | null> {
   if (!hk) return null;
   try {
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     const stats = await hk.queryStatisticsForQuantity(
-      'HKQuantityTypeIdentifierStepCount',
+      identifier,
       ['cumulativeSum'],
-      { filter: { date: { startDate: start, endDate: new Date() } }, unit: 'count' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { filter: { date: { startDate: start, endDate: new Date() } }, unit: unit as any },
     );
     const value = stats.sumQuantity?.quantity;
     return value != null ? Math.round(value) : null;
   } catch {
     return null;
   }
+}
+
+export function getTodaySteps(): Promise<number | null> {
+  return todayTotal('HKQuantityTypeIdentifierStepCount', 'count');
+}
+
+/** Apple's Move ring — active calories only, not the resting burn. */
+export function getTodayActiveEnergy(): Promise<number | null> {
+  return todayTotal('HKQuantityTypeIdentifierActiveEnergyBurned', 'kcal');
+}
+
+/** Apple's Exercise ring — minutes at brisk-walk intensity or above. */
+export function getTodayExerciseMinutes(): Promise<number | null> {
+  return todayTotal('HKQuantityTypeIdentifierAppleExerciseTime', 'min');
 }
 
 async function latestQuantity(

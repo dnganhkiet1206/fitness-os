@@ -8,6 +8,8 @@ import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import {
   getLatestBiometrics,
+  getTodayActiveEnergy,
+  getTodayExerciseMinutes,
   getTodaySteps,
   isHealthKitAvailable,
   requestHealthPermissions,
@@ -33,8 +35,13 @@ export function useHealthSync() {
       const granted = await requestHealthPermissions();
       if (!granted) throw new Error('Health access was not granted');
 
-      const [bio, steps] = await Promise.all([getLatestBiometrics(), getTodaySteps()]);
-      if (!bio && steps == null) {
+      const [bio, steps, activeKcal, exerciseMin] = await Promise.all([
+        getLatestBiometrics(),
+        getTodaySteps(),
+        getTodayActiveEnergy(),
+        getTodayExerciseMinutes(),
+      ]);
+      if (!bio && steps == null && activeKcal == null && exerciseMin == null) {
         throw new Error('No health data found — open the Health app to confirm data exists');
       }
 
@@ -52,7 +59,27 @@ export function useHealthSync() {
         if (error) throw error;
       }
 
-      if (steps != null) {
+      /*
+        Only the fields Health actually answered.
+
+        `active_kcal` and `active_minutes` join `steps` here, and this is the
+        only writer of any of the three — `recomputeDailyLog` upserts a fixed
+        list of columns that does not include them, so a meal saved after a
+        sync cannot wipe the rings, and a sync cannot wipe the readiness score.
+        One writer per column, deliberately.
+
+        A metric Health had nothing for is left out of the object rather than
+        written as 0. Sending zero would overwrite this morning's real sync the
+        moment a later one runs without permission for that type, and "you
+        burned 0 calories today" is a much more confident statement than "I do
+        not know".
+      */
+      const measured: { steps?: number; active_kcal?: number; active_minutes?: number } = {};
+      if (steps != null) measured.steps = steps;
+      if (activeKcal != null) measured.active_kcal = activeKcal;
+      if (exerciseMin != null) measured.active_minutes = exerciseMin;
+
+      if (Object.keys(measured).length > 0) {
         const dateStr = localDateStr();
         const { data: existing } = await supabase
           .from('daily_logs')
@@ -61,9 +88,9 @@ export function useHealthSync() {
           .eq('date', dateStr)
           .maybeSingle();
         if (existing) {
-          await supabase.from('daily_logs').update({ steps }).eq('id', existing.id);
+          await supabase.from('daily_logs').update(measured).eq('id', existing.id);
         } else {
-          await supabase.from('daily_logs').insert({ user_id: user.id, date: dateStr, steps });
+          await supabase.from('daily_logs').insert({ user_id: user.id, date: dateStr, ...measured });
         }
       }
 
