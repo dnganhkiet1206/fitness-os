@@ -272,6 +272,39 @@ try {
     problems.push('today-widgets-2: không vẽ 8 tuần — thẻ lại chỉ còn hiện tại, không có chiều hướng');
   }
   /*
+    The habit line has to be drawn after the bars.
+
+    React Native stacks siblings in source order. Written first — which is the
+    natural place for a background reference — every bar paints over it, and it
+    survives only in the gaps. The case where that hurts most is the one it
+    exists for: a steady month, where every bar sits near the line and the line
+    is therefore invisible along its whole length. `zIndex` does not rescue it,
+    because `zIndex` only reorders within one parent.
+
+    Positions rather than presence, because both were present when it was broken.
+
+    Scoped to the chart's own JSX, between `styles.trendChart` and
+    `styles.trendLabels`. Written first as two `indexOf`s over the whole file,
+    which passed on the broken version and had to be thrown away: `trend.map(`
+    also appears in the `trendMax` computation near the top of the component, so
+    the "bars" anchor was pointing at a line of arithmetic hundreds of
+    characters before any JSX, and every ordering compared true.
+  */
+  const chartStart = card.indexOf('styles.trendChart');
+  const chartEnd = card.indexOf('styles.trendLabels');
+  if (chartStart === -1 || chartEnd === -1 || chartEnd <= chartStart) {
+    problems.push('today-widgets-2: không khoanh được vùng JSX của biểu đồ để kiểm thứ tự vẽ');
+  } else {
+    const chart = card.slice(chartStart, chartEnd);
+    const bars = chart.indexOf('styles.trendBar');
+    const line = chart.indexOf('styles.habitLine');
+    if (bars === -1 || line === -1) {
+      problems.push('today-widgets-2: không tìm thấy cột hoặc đường "thói quen" trong vùng biểu đồ');
+    } else if (line < bars) {
+      problems.push('today-widgets-2: đường "thói quen" vẽ trước các cột nên bị cột che — RN xếp chồng theo thứ tự khai báo');
+    }
+  }
+  /*
     The English a Vietnamese card was printing verbatim.
 
     `Optimal`, `Spike`, `Elevated`, `Detraining`, `Low` and the heading
@@ -306,7 +339,7 @@ try {
   }
 
   console.log(
-    'thẻ tập luyện OK — 301 mức đà tập khớp readiness-engine, 1.3 vẫn nằm trong vùng an toàn, thanh vẽ và màu dùng chung một bảng, "mấy ngày trước" đếm theo lịch (qua mốc đổi giờ vẫn đúng); 1.7 đọc thành "nặng hơn 70%" và hai số trên thẻ chia ra đúng tỉ lệ đó; cột mới nhất của biểu đồ 8 tuần bằng đúng tổng 7 ngày, kể cả buổi ghi lúc 12h trưa khi mới 9h sáng; luật màu cũ (mâu thuẫn ở 1.7 và 0.7) và cách lấy phần trăm từ 0 vẫn bị bắt',
+    'thẻ tập luyện OK — 301 mức đà tập khớp readiness-engine, 1.3 vẫn nằm trong vùng an toàn, thanh vẽ và màu dùng chung một bảng, "mấy ngày trước" đếm theo lịch (qua mốc đổi giờ vẫn đúng); 1.7 đọc thành "nặng hơn 70%" và hai số trên thẻ chia ra đúng tỉ lệ đó; cột mới nhất của biểu đồ 8 tuần bằng đúng tổng 7 ngày, kể cả buổi ghi lúc 12h trưa khi mới 9h sáng; đường "thói quen" vẽ sau các cột nên không bị che; luật màu cũ (mâu thuẫn ở 1.7 và 0.7) và cách lấy phần trăm từ 0 vẫn bị bắt',
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

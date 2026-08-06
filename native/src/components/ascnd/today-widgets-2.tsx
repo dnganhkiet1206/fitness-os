@@ -125,11 +125,13 @@ interface PainFlag {
  * How tall the eight-week chart is — named so the bars and the habit line
  * measure from the same number.
  *
- * 56 rather than 44: at 44 a week of 9,000 and a week of 13,000 were 21 and 30
- * points, a difference you have to look for. The chart exists to make the shape
- * of a build obvious at a glance, and twelve more points is what buys that.
+ * 72 rather than the 44 it started at. At 44 a week of 9,000 and a week of
+ * 13,000 were 21 and 30 points apart, a difference you have to go looking for;
+ * the chart exists to make the shape of a build obvious at a glance, and height
+ * is the only thing that buys that. It is the tallest single element on the
+ * card now, which is right — it is the only one that shows a shape.
  */
-const TREND_H = 56;
+const TREND_H = 72;
 
 /** The chart's zone colours, keyed by the one table in `lib/training-card.ts`. */
 const ZONE_TINT: Record<AcwrZoneKey, string> = {
@@ -382,10 +384,34 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
       */}
       {trend.some((w) => w.volume > 0) && (
         <View style={styles.trend}>
-          <View style={styles.trendChart}>
-            {habitVolume > 0 && trendMax > 0 ? (
-              <View style={[styles.habitLine, { bottom: (habitVolume / trendMax) * TREND_H }]} />
+          {/*
+            The chart has a name, and the dashed line has a value.
+
+            It shipped with neither: it appeared after two numbers with nothing
+            saying what it measured, and the reference line was a rule at an
+            arbitrary height captioned "thói quen" with no number on it. So the
+            picture was eight unlabelled shapes and a line — the reader had to
+            reconstruct what it was about from the paragraph above.
+
+            The value goes up here rather than on the line itself for the same
+            reason the caption did: the right-hand end of the line is exactly
+            where the newest bar is, and any week near the baseline puts the two
+            on top of each other.
+          */}
+          <View style={styles.trendHead}>
+            <Text style={styles.trendTitle}>
+              {vi ? 'Khối lượng mỗi tuần' : 'Volume per week'}
+            </Text>
+            {habitVolume > 0 ? (
+              <View style={styles.trendKey}>
+                <View style={styles.trendKeyDash} />
+                <Text style={styles.trendKeyText}>
+                  {vi ? 'thói quen' : 'habit'} {kg(habitVolume)}
+                </Text>
+              </View>
             ) : null}
+          </View>
+          <View style={styles.trendChart}>
             {trend.map((w, i) => {
               const last = i === trend.length - 1;
               /*
@@ -414,21 +440,26 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
                 </View>
               );
             })}
-          </View>
-          {/*
-            The line's name goes in the legend, not on the line.
+            {/*
+              Drawn *after* the bars, on purpose.
 
-            It was drawn as a tag at the right-hand end of the dashed rule,
-            which is exactly where the newest bar is — so on any week at or near
-            the baseline the word sat on top of the bar it was there to compare
-            against, and neither could be read.
-          */}
+              React Native stacks siblings in source order, and this line was
+              written first — so every bar painted over it and the reference was
+              visible only in the gaps between them. On a steady month, where
+              every bar sits near the line, that is precisely when it vanished:
+              the one case the line exists to explain. Same rule that puts
+              `StatusScrim` last in `screen.tsx`; `zIndex` would not have helped,
+              since it only reorders within a parent.
+            */}
+            {habitVolume > 0 && trendMax > 0 ? (
+              <View
+                style={[styles.habitLine, { bottom: (habitVolume / trendMax) * TREND_H }]}
+                pointerEvents="none"
+              />
+            ) : null}
+          </View>
           <View style={styles.trendLabels}>
             <Text style={styles.trendEnd}>{vi ? '8 tuần trước' : '8 weeks ago'}</Text>
-            <View style={styles.trendKey}>
-              <View style={styles.trendKeyDash} />
-              <Text style={styles.trendKeyText}>{vi ? 'thói quen' : 'habit'}</Text>
-            </View>
             <Text style={[styles.trendEnd, styles.trendNow]}>{vi ? 'tuần này' : 'this week'}</Text>
           </View>
         </View>
@@ -761,7 +792,9 @@ const styles = StyleSheet.create({
   compareValueMuted: { color: colors.mutedForeground },
   compareSub: { fontSize: 11, color: colors.mutedForeground },
   staleNote: { fontSize: 12, lineHeight: 17, color: colors.readinessYellow },
-  trend: { gap: 5 },
+  trend: { gap: 6 },
+  trendHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  trendTitle: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
   /* Bars grow from the baseline, so they are bottom-aligned and the habit line
      is positioned from the bottom too — one origin for both, or the line and
      the bars would be measuring from different places. */
@@ -771,14 +804,17 @@ const styles = StyleSheet.create({
   trendSlot: { flex: 1, justifyContent: 'flex-end' },
   trendBar: { borderRadius: 3, minHeight: 1 },
   /* Dashed rather than solid: it is a reference, not a measurement, and a solid
-     rule at this weight reads as another bar lying on its side. */
+     rule at this weight reads as another bar lying on its side.
+
+     55% white, not 35% — it crosses the bars now instead of hiding behind them,
+     and 35% over a lit bar is fainter than 35% over the card. */
   habitLine: {
     position: 'absolute',
     left: 0,
     right: 0,
     borderTopWidth: 1,
     borderStyle: 'dashed',
-    borderTopColor: 'rgba(255,255,255,0.35)',
+    borderTopColor: 'rgba(255,255,255,0.55)',
   },
   trendLabels: { flexDirection: 'row', alignItems: 'center' },
   trendEnd: { flex: 1, fontSize: 10, color: colors.mutedForeground },
@@ -788,9 +824,9 @@ const styles = StyleSheet.create({
     width: 14,
     borderTopWidth: 1,
     borderStyle: 'dashed',
-    borderTopColor: 'rgba(255,255,255,0.35)',
+    borderTopColor: 'rgba(255,255,255,0.55)',
   },
-  trendKeyText: { fontSize: 10, color: colors.mutedForeground },
+  trendKeyText: { fontSize: 10, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   painRow: {
     flexDirection: 'row',
     alignItems: 'center',
