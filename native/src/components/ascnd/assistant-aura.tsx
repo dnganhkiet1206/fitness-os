@@ -1,3 +1,4 @@
+import { useIsFocused } from 'expo-router';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
@@ -314,6 +315,32 @@ function DustField({ layer, height, width }: { layer: DustLayer; height: number;
  * @param state today's readiness, if it is known — recolours the leading pool
  */
 export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | null }) {
+  /*
+    The light comes up when you arrive.
+
+    Not from black — from 0.55 and a little wide, settling to full over 620ms.
+    Same rule the content settles by and for the same reason `screen.tsx`
+    records: this page stays mounted, so anything starting at zero has to
+    un-draw what is already on screen, and you see the un-drawing.
+
+    Slower than the content's 340ms on purpose. Light filling a room is the
+    slowest thing in any real arrival, and if the aura landed first it would be
+    the cards that looked late.
+  */
+  const focused = useIsFocused();
+  const bloom = useSharedValue(0);
+  useEffect(() => {
+    if (focused) {
+      bloom.value = withTiming(1, { duration: 620, easing: Easing.out(Easing.cubic) });
+    } else {
+      bloom.value = 0;
+    }
+  }, [focused, bloom]);
+  const bloomStyle = useAnimatedStyle(() => ({
+    opacity: 0.55 + bloom.value * 0.45,
+    transform: [{ scale: 1.06 - bloom.value * 0.06 }],
+  }));
+
   const tint =
     state === 'green'
       ? colors.readinessGreen
@@ -326,14 +353,14 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
   const { height, width } = useWindowDimensions();
 
   return (
-    <View style={styles.layer} pointerEvents="none">
+    <Animated.View style={[styles.layer, bloomStyle]} pointerEvents="none">
       {POOLS.map((p, i) => (
         <LightPool key={p.id} pool={p} tint={i === 0 ? tint : undefined} />
       ))}
       {DUST.map((d) => (
         <DustField key={d.key} layer={d} height={height} width={width} />
       ))}
-    </View>
+    </Animated.View>
   );
 }
 

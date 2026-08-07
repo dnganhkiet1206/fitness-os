@@ -9,6 +9,7 @@ import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Icon } from '@/components/ascnd/icon';
 import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
+import { Settle } from '@/components/ascnd/settle';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useDailyLog, useTodayBiometrics } from '@/hooks/useTodayData';
@@ -196,7 +197,14 @@ export default function AssistantScreen() {
         ]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never">
-        {/* ── header ── */}
+        {/*
+          Each block settles in, 55ms apart.
+
+          Not an entrance — see `settle.tsx`, and the note in `screen.tsx` that
+          it is built from. This page stays mounted between visits, so nothing
+          here starts from invisible; it starts from *almost* arrived.
+        */}
+        <Settle index={0}>
         <View style={styles.head}>
           <View style={styles.headText}>
             <View style={styles.titleRow}>
@@ -235,6 +243,7 @@ export default function AssistantScreen() {
             <Glyph name="home" size={21} />
           </Pressable>
         </View>
+        </Settle>
 
         {/*
           The lit zone — where the reference puts a rendered orb, this puts the
@@ -248,6 +257,7 @@ export default function AssistantScreen() {
           sits in the brightest part of the aura, and the pill under it is the
           single thing floating over that light.
         */}
+        <Settle index={1}>
         <View style={styles.stage}>
           <Animated.View entering={FadeIn.duration(420)} style={styles.stageInner}>
             <Text style={styles.greeting}>{greeting}</Text>
@@ -273,8 +283,10 @@ export default function AssistantScreen() {
             </LiquidGlass>
           </Animated.View>
         </View>
+        </Settle>
 
         {/* ── metrics ── */}
+        <Settle index={2}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -310,8 +322,10 @@ export default function AssistantScreen() {
             </Pressable>
           ))}
         </ScrollView>
+        </Settle>
 
         {/* ── suggestions ── */}
+        <Settle index={3}>
         <View style={styles.section}>
           <View style={styles.sectionHead}>
             <Text style={styles.sectionTitle}>{vi ? 'Gợi ý cho bạn' : 'Suggested for you'}</Text>
@@ -344,7 +358,9 @@ export default function AssistantScreen() {
             ))}
           </View>
         </View>
+        </Settle>
 
+        <Settle index={4}>
         {/*
           The four things the assistant can do *for* you.
 
@@ -390,6 +406,7 @@ export default function AssistantScreen() {
             ))}
           </View>
         </View>
+        </Settle>
       </ScrollView>
 
       {/*
