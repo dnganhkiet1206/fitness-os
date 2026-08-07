@@ -164,6 +164,25 @@ export default function AppTabs() {
         the navigation that caused it. `usePathname` rather than
         `useSegments()`: the tab's own path is what decides, and a path is a
         string comparison rather than an array to reason about.
+
+        ── it slides, and that took a patch ──
+
+        `react-native-screens` hard-codes `animated:NO` on both paths that apply
+        this prop, so the bar went from there to not-there between two frames.
+        Nothing in JS can soften that: the bar is a `UITabBar` owned by a
+        `UITabBarController`, outside the React view hierarchy entirely, so
+        there is no view here to animate and no opacity here to drive.
+
+        `patches/react-native-screens+4.25.2.patch` changes those two calls to
+        `animated:YES` and UIKit slides the capsule off the bottom edge instead.
+        The patch is two lines and it is pinned to the version in its filename —
+        bump the package and `patch-package` fails loudly at `postinstall`
+        rather than quietly restoring the blink. `tools/check.mjs` checks it is
+        still there, because the failure mode is a thing you only notice by
+        looking.
+
+        The arrival on the other side is timed to it: ~300ms for the bar,
+        340ms for the assistant's cards, 420ms for its light. See `settle.tsx`.
       */
       hidden={pathname === '/assistant'}>
       <NativeTabs.Trigger name="index" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>

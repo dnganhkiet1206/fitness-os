@@ -25,9 +25,23 @@ import Animated, {
  *
  * So this never goes near zero. It starts at 0.86 opacity and 12pt low, which
  * is close enough to the finished state that the first frame reads as the page
- * rather than as a flash, and lands over 340ms. Leaving the tab resets it, so
- * coming back settles again — and the reset is invisible because it happens on
- * a screen nobody is looking at.
+ * rather than as a flash. Leaving the tab resets it, so coming back settles
+ * again — and the reset is invisible because it happens on a screen nobody is
+ * looking at.
+ *
+ * ── the timings are the tab bar's, not free choices ──
+ *
+ * Arriving here also hides the tab bar, and `patches/react-native-screens` now
+ * makes UIKit slide it off rather than blink it out — roughly 300ms for the
+ * capsule to collapse past the bottom edge.
+ *
+ * That is the clock everything else is set to. The first version ran 340ms per
+ * step with a 55ms stagger, so the last of five sections landed at 560ms: the
+ * bar finished, and then the page kept arriving for another quarter of a
+ * second with nothing driving it. 220ms and a 30ms stagger puts the last
+ * section down at 340ms — one motion that starts and stops with the bar,
+ * instead of two that overlap and disagree about how long this is meant to
+ * take.
  *
  * ── why not put this in `Screen` ──
  *
@@ -41,7 +55,7 @@ export function Settle({
   index = 0,
   children,
 }: {
-  /** stagger position; each step waits 55ms longer than the last */
+  /** stagger position; each step waits 30ms longer than the last */
   index?: number;
   children: React.ReactNode;
 }) {
@@ -51,8 +65,8 @@ export function Settle({
   useEffect(() => {
     if (focused) {
       t.value = withDelay(
-        index * 55,
-        withTiming(1, { duration: 340, easing: Easing.out(Easing.cubic) }),
+        index * 30,
+        withTiming(1, { duration: 220, easing: Easing.out(Easing.cubic) }),
       );
     } else {
       // instant, not animated: this runs on a screen that is off-view, and an

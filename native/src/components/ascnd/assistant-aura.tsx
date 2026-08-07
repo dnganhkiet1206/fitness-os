@@ -318,20 +318,27 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
   /*
     The light comes up when you arrive.
 
-    Not from black — from 0.55 and a little wide, settling to full over 620ms.
+    Not from black — from 0.55 and a little wide, settling to full over 420ms.
     Same rule the content settles by and for the same reason `screen.tsx`
     records: this page stays mounted, so anything starting at zero has to
     un-draw what is already on screen, and you see the un-drawing.
 
-    Slower than the content's 340ms on purpose. Light filling a room is the
+    Last of the three, by 80ms. The tab bar slides away over ~300ms, the cards
+    are down by 340ms (`settle.tsx` explains why those two are the same
+    number), and the light finishes after both. Light filling a room is the
     slowest thing in any real arrival, and if the aura landed first it would be
     the cards that looked late.
+
+    It used to be 620ms, against content that took 560ms. Both were nearly
+    twice this and the whole arrival read as sluggish — the numbers came down
+    together, keeping the order they were in rather than compressing the tail
+    onto the rest.
   */
   const focused = useIsFocused();
   const bloom = useSharedValue(0);
   useEffect(() => {
     if (focused) {
-      bloom.value = withTiming(1, { duration: 620, easing: Easing.out(Easing.cubic) });
+      bloom.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) });
     } else {
       bloom.value = 0;
     }
