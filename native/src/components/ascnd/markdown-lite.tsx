@@ -7,8 +7,24 @@ import { colors, spacing, type } from '@/constants/ascnd';
  * shows via ReactMarkdown for the subset the coach actually produces:
  * #/##/### headings, -/* bullets, 1. numbered lists, **bold** inline.
  */
-export function MarkdownLite({ text }: { text: string }) {
+export function MarkdownLite({
+  text,
+  mutedColor,
+}: {
+  text: string;
+  /**
+   * Colour for the list markers.
+   *
+   * They default to `mutedForeground`, which is measured against a card. The
+   * coach's bubbles are `LiquidGlass` over a drifting aura, where that grey
+   * lands at 2.57:1 — so on the one screen this component is used, every
+   * bullet and every number would be the part of a list you cannot see.
+   * `colors.glassMuted` carries the measurement.
+   */
+  mutedColor?: string;
+}) {
   const blocks = text.split('\n');
+  const marker = mutedColor ? { color: mutedColor } : null;
   return (
     <View style={styles.root}>
       {blocks.map((raw, i) => {
@@ -28,7 +44,7 @@ export function MarkdownLite({ text }: { text: string }) {
         if (bullet) {
           return (
             <View key={i} style={styles.bulletRow}>
-              <Text style={styles.bulletDot}>•</Text>
+              <Text style={[styles.bulletDot, marker]}>•</Text>
               <Text style={styles.body}>{renderInline(bullet[1])}</Text>
             </View>
           );
@@ -38,7 +54,7 @@ export function MarkdownLite({ text }: { text: string }) {
         if (numbered) {
           return (
             <View key={i} style={styles.bulletRow}>
-              <Text style={styles.bulletNum}>{numbered[1]}.</Text>
+              <Text style={[styles.bulletNum, marker]}>{numbered[1]}.</Text>
               <Text style={styles.body}>{renderInline(numbered[2])}</Text>
             </View>
           );

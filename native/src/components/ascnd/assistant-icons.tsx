@@ -39,7 +39,15 @@ export type GlyphName =
   | 'sliders'
   | 'arrow'
   | 'camera'
-  | 'home';
+  | 'home'
+  /* the coach's own six — see `ai-coach.tsx`, which joined this icon set when
+     it took the assistant's material */
+  | 'chevron'
+  | 'plus'
+  | 'clock'
+  | 'trash'
+  | 'user'
+  | 'alert';
 
 const disc = (cx: number, cy: number, r: number) =>
   `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
@@ -71,6 +79,30 @@ const PATHS: Record<GlyphName, string> = {
     'M11.06 2.98a1.5 1.5 0 0 1 1.88 0l7.5 6.02c.36.28.56.71.56 1.17V19.2a2.4 2.4 0 0 1-2.4 2.4h-3.7v-5.5a1.2 1.2 0 0 0-1.2-1.2h-3.4a1.2 1.2 0 0 0-1.2 1.2v5.5H5.4A2.4 2.4 0 0 1 3 19.2v-9.03c0-.46.2-.89.56-1.17Z',
   arrow:
     'M12 3.4c.3 0 .6.12.82.34l6.3 6.3a1.16 1.16 0 0 1-1.64 1.64L13.16 7.4V19.4a1.16 1.16 0 0 1-2.32 0V7.4l-4.32 4.28A1.16 1.16 0 0 1 4.88 10l6.3-6.26c.22-.22.52-.34.82-.34Z',
+  chevron:
+    'M15.9 2.66a1.25 1.25 0 0 1 0 1.77L8.33 12l7.57 7.57a1.25 1.25 0 0 1-1.77 1.77l-8.45-8.45a1.25 1.25 0 0 1 0-1.77l8.45-8.45a1.25 1.25 0 0 1 1.77 0Z',
+  plus:
+    'M10.75 3.6a1.25 1.25 0 0 1 2.5 0v7.15h7.15a1.25 1.25 0 0 1 0 2.5h-7.15v7.15a1.25 1.25 0 0 1-2.5 0v-7.15H3.6a1.25 1.25 0 0 1 0-2.5h7.15Z',
+  /* Ring plus hands, drawn `evenodd`. The hands sit inside the ring's hole, so
+     the rule that empties the dial fills them back in — two overlapping
+     "holes" is an odd number of crossings. Cheaper than a third subpath and it
+     keeps the hands the colour of the ring rather than of whatever is behind. */
+  clock:
+    'M12 2.8a9.2 9.2 0 1 0 0 18.4a9.2 9.2 0 1 0 0-18.4ZM12 5a7 7 0 1 1 0 14a7 7 0 1 1 0-14Z' +
+    'M11 6.9a1.1 1.1 0 0 1 2.2 0v4.65l3.2 1.85a1.1 1.1 0 0 1-1.1 1.9l-3.75-2.16a1.1 1.1 0 0 1-.55-.95Z',
+  trash:
+    'M8.2 4.5V3.6a1.2 1.2 0 0 1 1.2-1.2h5.2a1.2 1.2 0 0 1 1.2 1.2v.9h3.6a1.1 1.1 0 0 1 0 2.2H4.6a1.1 1.1 0 0 1 0-2.2Z' +
+    'M6.2 8.4h11.6l-.85 11.3a2.2 2.2 0 0 1-2.2 2.05h-5.5a2.2 2.2 0 0 1-2.2-2.05Z',
+  user:
+    'M12 3.2a4.4 4.4 0 1 0 0 8.8a4.4 4.4 0 1 0 0-8.8Z' +
+    'M12 13.6c-4.4 0-8 2.6-8 5.8 0 .9.7 1.4 1.6 1.4h12.8c.9 0 1.6-.5 1.6-1.4 0-3.2-3.6-5.8-8-5.8Z',
+  /* Triangle with the bar and dot punched out, same `evenodd` trick as
+     `camera`: the holes show the glass rather than a colour that would only be
+     right on one surface. */
+  alert:
+    'M12 2.9c.78 0 1.5.42 1.89 1.1l8.4 14.6A2.18 2.18 0 0 1 20.4 21.9H3.6a2.18 2.18 0 0 1-1.89-3.3l8.4-14.6A2.18 2.18 0 0 1 12 2.9Z' +
+    'M12 7.8a1.15 1.15 0 0 0-1.15 1.2l.3 4.9a.85.85 0 0 0 1.7 0l.3-4.9A1.15 1.15 0 0 0 12 7.8Z' +
+    'M12 16.4a1.3 1.3 0 1 0 0 2.6a1.3 1.3 0 1 0 0-2.6Z',
 };
 
 /**
@@ -93,10 +125,18 @@ export const GLYPH_TINT: Record<GlyphName, readonly [string, string]> = {
   arrow: ['#ffffff', '#c8ccd4'],
   camera: ['#ffd08a', '#ff9130'],
   home: ['#f2f3f6', '#a8afbd'],
+  chevron: ['#ffffff', '#c8ccd4'],
+  plus: ['#ffffff', '#c8ccd4'],
+  clock: ['#f2f3f6', '#a8afbd'],
+  /* Red, alone among the chrome glyphs. Deleting a conversation is the one
+     irreversible thing on that screen and the only one worth colouring. */
+  trash: ['#ff8fa8', '#ff3b5c'],
+  user: ['#e8e8ee', '#a8afbd'],
+  alert: ['#fff0a8', '#ffd93d'],
 };
 
 /** Glyphs whose shape needs a hole punched through it. */
-const EVENODD: Partial<Record<GlyphName, true>> = { camera: true };
+const EVENODD: Partial<Record<GlyphName, true>> = { camera: true, clock: true, alert: true };
 
 /**
  * `useId` on every gradient, without exception.

@@ -112,6 +112,7 @@ const STEPS = [
   ['nhắc trợ giúp', 'node', ['tools/help-nudge.mjs']],
   ['thẻ tập luyện', 'node', ['tools/training-card.mjs']],
   ['ẩn thanh tab', 'node', ['tools/tab-bar-hide.mjs']],
+  ['đọc trên kính', 'node', ['tools/glass-legibility.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],

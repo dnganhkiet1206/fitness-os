@@ -133,7 +133,7 @@ export default function AssistantScreen() {
       note: hr == null
         ? { vi: 'Chưa có', en: 'No data' }
         : hr < 60 ? { vi: 'Thấp', en: 'Low' } : hr <= 80 ? { vi: 'Bình thường', en: 'Normal' } : { vi: 'Cao', en: 'High' },
-      noteTint: hr == null ? colors.mutedForeground : hr <= 80 ? colors.readinessGreen : colors.readinessYellow,
+      noteTint: hr == null ? colors.glassMuted : hr <= 80 ? colors.readinessGreen : colors.readinessYellow,
       route: '/biometrics',
     },
     {
@@ -145,7 +145,7 @@ export default function AssistantScreen() {
       note: sleepMin === 0
         ? { vi: 'Chưa ghi', en: 'Not logged' }
         : sleepMin >= 420 ? { vi: 'Tốt', en: 'Good' } : { vi: 'Thiếu', en: 'Short' },
-      noteTint: sleepMin === 0 ? colors.mutedForeground : sleepMin >= 420 ? colors.readinessGreen : colors.readinessYellow,
+      noteTint: sleepMin === 0 ? colors.glassMuted : sleepMin >= 420 ? colors.readinessGreen : colors.readinessYellow,
       route: '/sleep-insights',
     },
     {
@@ -167,7 +167,7 @@ export default function AssistantScreen() {
         : status === 'green' ? { vi: 'Tốt', en: 'Good' } : status === 'yellow' ? { vi: 'Vừa', en: 'Moderate' } : { vi: 'Thấp', en: 'Low' },
       noteTint:
         readiness == null
-          ? colors.mutedForeground
+          ? colors.glassMuted
           : status === 'green' ? colors.readinessGreen : status === 'yellow' ? colors.readinessYellow : colors.readinessRed,
       route: '/biometrics',
     },
@@ -496,17 +496,24 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 34, fontWeight: '700', letterSpacing: -0.8, color: colors.foreground },
   greetBody: { ...type.body, color: colors.mutedForeground, lineHeight: 22, maxWidth: 322 },
 
+  /* ── every caption on glass is `glassMuted`, not `mutedForeground` ──
+
+     `mutedForeground` is measured against a card: dark, still, the same every
+     time. There is no card on this screen. Over the aura, with the glass fill
+     and a tint wash on top, that grey lands at 2.57:1 — below even the 3:1
+     asked of large text, and it showed as the label under each metric fading
+     into its own tile. The constant carries the numbers. */
   metricScroll: { marginHorizontal: -spacing.md },
   metricRow: { paddingHorizontal: spacing.md, gap: spacing.sm + 2 },
   metricCard: { width: 132, padding: spacing.md, gap: 6 },
   metricIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  metricLabel: { ...type.caption, color: colors.mutedForeground },
+  metricLabel: { ...type.caption, color: colors.glassMuted },
   metricValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
   metricValue: { fontSize: 26, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  metricUnit: { fontSize: 12, color: colors.mutedForeground },
+  metricUnit: { fontSize: 12, color: colors.glassMuted },
   metricNoteRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   metricDot: { width: 6, height: 6, borderRadius: 3 },
-  metricNote: { ...type.caption, color: colors.mutedForeground },
+  metricNote: { ...type.caption, color: colors.glassMuted },
 
   section: { gap: spacing.sm + 2 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -526,7 +533,7 @@ const styles = StyleSheet.create({
   tool: { padding: spacing.md, gap: 5, minHeight: 118 },
   toolIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', marginBottom: 3 },
   toolLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground },
-  toolHint: { ...type.caption, color: colors.mutedForeground, lineHeight: 15 },
+  toolHint: { ...type.caption, color: colors.glassMuted, lineHeight: 15 },
 
   askWrap: { position: 'absolute', left: spacing.md, right: spacing.md },
   ask: {},
@@ -539,7 +546,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(180,92,255,0.16)',
   },
-  askText: { flex: 1, ...type.footnote, color: colors.mutedForeground },
+  askText: { flex: 1, ...type.footnote, color: colors.glassMuted },
   askSend: {
     width: 34,
     height: 34,

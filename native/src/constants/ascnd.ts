@@ -34,6 +34,28 @@ export const colors = {
    * is how it arrived at 3.39 in the first place.
    */
   mutedForeground: '#828282',
+  /**
+   * Secondary text, but on glass over the assistant's aura.
+   *
+   * `mutedForeground` is measured against a card — a dark, still surface. The
+   * two assistant screens do not have one: `LiquidGlass` samples a drifting
+   * coloured aura, so the surface under a caption is both brighter and never
+   * the same twice.
+   *
+   * Measured at the worst spot the aura can produce: its brightest pool at
+   * peak, the tail of its neighbour, the glass fill, the lit face at its bright
+   * corner, and the strongest tint wash on top. `#828282` lands at **2.57:1**
+   * there — below even the 3:1 asked of large text, and the failure is not
+   * subtle: the label under a metric disappears into its own card.
+   *
+   * `#c8ccd4` measures 4.9:1 on that surface. It is also already in the app —
+   * the `arrow` glyph's own colour — so this adds a role, not a colour.
+   *
+   * Only for text on `LiquidGlass`. On a card it is too close to `foreground`
+   * to read as a second rank, which is the job `mutedForeground` still has
+   * everywhere else.
+   */
+  glassMuted: '#c8ccd4',
   secondaryForeground: '#999999',
 
   // Brand (premium silver)
