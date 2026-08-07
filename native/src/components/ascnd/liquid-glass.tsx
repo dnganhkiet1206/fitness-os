@@ -81,6 +81,7 @@ export function LiquidGlass({
   const lit = `lgLit-${uid}`;
   const shade = `lgShade-${uid}`;
   const wash = `lgWash-${uid}`;
+  const edge = `lgEdge-${uid}`;
 
   return (
     <View style={[styles.wrap, { borderRadius: r }, style]}>
@@ -101,6 +102,11 @@ export function LiquidGlass({
             <Stop offset="0.45" stopColor="#000000" stopOpacity={0} />
             <Stop offset="1" stopColor="#000000" stopOpacity={0.16} />
           </LinearGradient>
+          <LinearGradient id={edge} x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor="#ffffff" stopOpacity={0.34} />
+            <Stop offset="0.38" stopColor="#ffffff" stopOpacity={0.14} />
+            <Stop offset="0.7" stopColor="#ffffff" stopOpacity={0} />
+          </LinearGradient>
           {tint ? (
             /* Anchored at the top-left, which is where the glyph sits on every
                card that passes a tint — the wash reads as coming *from* it. */
@@ -114,6 +120,16 @@ export function LiquidGlass({
         {tint ? <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${wash})`} /> : null}
         <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${lit})`} />
         <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${shade})`} />
+        {/*
+          The specular edge — a 1pt line along the top, bright at the left and
+          gone by two-thirds across.
+
+          This is the tell that separates glass from a translucent rectangle. A
+          real pane catches the key light on its upper edge and only on the side
+          the light comes from; a border that is the same value all the way
+          round reads as a drawn outline, which is what the hairline alone was.
+        */}
+        <Rect x="0" y="0" width="100%" height="1" fill={`url(#${edge})`} />
       </Svg>
       {children}
     </View>

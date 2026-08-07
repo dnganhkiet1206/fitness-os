@@ -37,7 +37,8 @@ export type GlyphName =
   | 'spark'
   | 'gauge'
   | 'sliders'
-  | 'arrow';
+  | 'arrow'
+  | 'camera';
 
 const disc = (cx: number, cy: number, r: number) =>
   `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
@@ -60,6 +61,11 @@ const PATHS: Record<GlyphName, string> = {
     'M12 3.2A9.6 9.6 0 0 0 3.4 17.1a1.4 1.4 0 0 0 2.5-1.3 6.8 6.8 0 1 1 12.2 0 1.4 1.4 0 0 0 2.5 1.3A9.6 9.6 0 0 0 12 3.2Zm3.6 4.6-4.5 3.3a2 2 0 1 0 2.1 2.1l3.3-4.5a.6.6 0 0 0-.9-.9Z',
   sliders:
     bar(6.4) + bar(12) + bar(17.6) + disc(15.2, 6.4, 3.05) + disc(8.4, 12, 3.05) + disc(16.4, 17.6, 3.05),
+  /* Body plus a lens punched through it. The lens is a second subpath and the
+     glyph is drawn `evenodd`, so the hole shows the card's glass rather than a
+     disc of some background colour that would only be right on one screen. */
+  camera:
+    'M4.4 6.5h3.05l1.1-1.95c.3-.53.87-.85 1.48-.85h4.24c.61 0 1.18.32 1.48.85l1.1 1.95H19.6A2.4 2.4 0 0 1 22 8.9v8.7a2.4 2.4 0 0 1-2.4 2.4H4.4A2.4 2.4 0 0 1 2 17.6V8.9a2.4 2.4 0 0 1 2.4-2.4ZM8.6 13.4a3.4 3.4 0 1 0 6.8 0 3.4 3.4 0 1 0-6.8 0Z',
   arrow:
     'M12 3.4c.3 0 .6.12.82.34l6.3 6.3a1.16 1.16 0 0 1-1.64 1.64L13.16 7.4V19.4a1.16 1.16 0 0 1-2.32 0V7.4l-4.32 4.28A1.16 1.16 0 0 1 4.88 10l6.3-6.26c.22-.22.52-.34.82-.34Z',
 };
@@ -82,7 +88,11 @@ export const GLYPH_TINT: Record<GlyphName, readonly [string, string]> = {
   gauge: ['#a8ffd9', '#2bf5a8'],
   sliders: ['#e8e8ee', '#a8afbd'],
   arrow: ['#ffffff', '#c8ccd4'],
+  camera: ['#ffd08a', '#ff9130'],
 };
+
+/** Glyphs whose shape needs a hole punched through it. */
+const EVENODD: Partial<Record<GlyphName, true>> = { camera: true };
 
 /**
  * `useId` on every gradient, without exception.
@@ -117,7 +127,11 @@ export function Glyph({
           </LinearGradient>
         </Defs>
       )}
-      <Path d={PATHS[name]} fill={colour ?? `url(#${id})`} />
+      <Path
+        d={PATHS[name]}
+        fill={colour ?? `url(#${id})`}
+        fillRule={EVENODD[name] ? 'evenodd' : 'nonzero'}
+      />
     </Svg>
   );
 }

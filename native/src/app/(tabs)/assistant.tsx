@@ -72,6 +72,22 @@ interface Suggestion {
 /** The colour a glyph lights its panel with — the saturated half of its own gradient. */
 const litBy = (g: GlyphName) => GLYPH_TINT[g][1];
 
+interface Tool {
+  key: string;
+  glyph: GlyphName;
+  label: { vi: string; en: string };
+  hint: { vi: string; en: string };
+  route: string;
+}
+
+/** The original four, with the hints the redesign dropped. */
+const TOOLS: Tool[] = [
+  { key: 'coach', glyph: 'spark', label: { vi: 'AI Coach', en: 'AI Coach' }, hint: { vi: 'Hỏi về tập luyện hoặc ăn uống', en: 'Ask about training or food' }, route: '/ai-coach' },
+  { key: 'scan', glyph: 'camera', label: { vi: 'Quét thực phẩm', en: 'Scan a meal' }, hint: { vi: 'Hướng máy ảnh vào đĩa ăn', en: 'Point the camera at a plate' }, route: '/scan-food?from=ai' },
+  { key: 'bio', glyph: 'heart', label: { vi: 'Sinh trắc học', en: 'Biometrics' }, hint: { vi: 'Nhịp tim, HRV, oxy', en: 'Heart rate, HRV, oxygen' }, route: '/biometrics' },
+  { key: 'sleep', glyph: 'moon', label: { vi: 'Giấc ngủ', en: 'Sleep' }, hint: { vi: 'Đêm qua, và xu hướng', en: 'Last night, and the trend' }, route: '/sleep-insights' },
+];
+
 const SUGGESTIONS: Suggestion[] = [
   { key: 'sleep', glyph: 'moon', label: { vi: 'Cải thiện giấc ngủ', en: 'Improve sleep quality' } },
   { key: 'stress', glyph: 'leaf', label: { vi: 'Giảm căng thẳng', en: 'Reduce stress' } },
@@ -310,28 +326,45 @@ export default function AssistantScreen() {
           </View>
         </View>
 
-        {/* ── shortcuts kept from the old page, so nothing that worked is lost ── */}
+        {/*
+          The four things the assistant can do *for* you.
+
+          These were the whole of what this page was before the redesign. Three
+          survived it as an unlabelled icon row and the fourth — the coach —
+          vanished entirely, absorbed into the ask bar. That is a destination
+          disappearing because a shortcut to it exists, which is not the same
+          thing.
+
+          Restored with the hints they had. Four labels tell you where each one
+          goes; four labels *and* a line saying what is behind them tells you
+          whether to go. "Sinh trắc học" is a word — "nhịp tim, HRV, oxy" is a
+          reason.
+
+          Two across rather than four: a hint needs a line of its own, and four
+          columns on a 390pt screen leaves 85pt for it.
+        */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{vi ? 'Lối tắt' : 'Shortcuts'}</Text>
-          <View style={styles.shortcutRow}>
-            {[
-              { key: 'scan', glyph: 'flame' as GlyphName, label: { vi: 'Quét món ăn', en: 'Scan a meal' }, route: '/scan-food?from=ai' },
-              { key: 'bio', glyph: 'heart' as GlyphName, label: { vi: 'Sinh trắc', en: 'Biometrics' }, route: '/biometrics' },
-              { key: 'sleep', glyph: 'moon' as GlyphName, label: { vi: 'Giấc ngủ', en: 'Sleep' }, route: '/sleep-insights' },
-            ].map((s) => (
+          <Text style={styles.sectionTitle}>{vi ? 'Công cụ' : 'Tools'}</Text>
+          <View style={styles.toolGrid}>
+            {TOOLS.map((t) => (
               <Pressable
-                key={s.key}
+                key={t.key}
                 accessibilityRole="button"
-                accessibilityLabel={vi ? s.label.vi : s.label.en}
-                onPress={() => go(s.route)}
-                style={({ pressed }) => [styles.shortcutWrap, pressed && styles.pressed]}>
+                accessibilityLabel={vi ? t.label.vi : t.label.en}
+                onPress={() => go(t.route)}
+                style={({ pressed }) => [styles.toolWrap, pressed && styles.pressed]}>
                 <LiquidGlass
-                  style={[styles.shortcut, tintBorder(litBy(s.glyph))]}
+                  style={[styles.tool, tintBorder(litBy(t.glyph))]}
                   radius={radius.lg}
-                  tint={litBy(s.glyph)}>
-                  <Glyph name={s.glyph} size={20} />
-                  <Text style={styles.shortcutText} numberOfLines={1}>
-                    {vi ? s.label.vi : s.label.en}
+                  tint={litBy(t.glyph)}>
+                  <View style={[styles.toolIcon, { backgroundColor: `${litBy(t.glyph)}1f` }]}>
+                    <Glyph name={t.glyph} size={19} />
+                  </View>
+                  <Text style={styles.toolLabel} numberOfLines={1}>
+                    {vi ? t.label.vi : t.label.en}
+                  </Text>
+                  <Text style={styles.toolHint} numberOfLines={2}>
+                    {vi ? t.hint.vi : t.hint.en}
                   </Text>
                 </LiquidGlass>
               </Pressable>
@@ -443,10 +476,14 @@ const styles = StyleSheet.create({
   chipInner: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: spacing.md - 2, paddingVertical: spacing.sm + 2 },
   chipText: { ...type.footnote, color: colors.foreground },
 
-  shortcutRow: { flexDirection: 'row', gap: spacing.sm },
-  shortcutWrap: { flex: 1 },
-  shortcut: { alignItems: 'center', gap: 7, paddingVertical: spacing.md },
-  shortcutText: { ...type.caption, color: colors.foreground },
+  toolGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  /* Two per row: `(100% − one gap) / 2`, as a fraction so it holds at any width
+     rather than assuming a 390pt screen. */
+  toolWrap: { width: '48.4%' },
+  tool: { padding: spacing.md, gap: 5, minHeight: 118 },
+  toolIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', marginBottom: 3 },
+  toolLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  toolHint: { ...type.caption, color: colors.mutedForeground, lineHeight: 15 },
 
   askWrap: { position: 'absolute', left: spacing.md, right: spacing.md },
   ask: {},
