@@ -114,6 +114,7 @@ const STEPS = [
   ['ẩn thanh tab', 'node', ['tools/tab-bar-hide.mjs']],
   ['đọc trên kính', 'node', ['tools/glass-legibility.mjs']],
   ['gợi ý trợ lý', 'node', ['tools/suggestions.mjs']],
+  ['trò chuyện coach', 'node', ['tools/coach-chat.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],

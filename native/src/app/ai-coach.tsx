@@ -1,11 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { fetch as expoFetch } from 'expo/fetch';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,6 +22,7 @@ import { MarkdownLite } from '@/components/ascnd/markdown-lite';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { useCoachChat } from '@/hooks/use-coach-chat';
 import { useDailyLog } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { EDGE_FUNCTIONS, functionUrl, SUPABASE_ANON_KEY } from '@/lib/backend';
@@ -35,52 +34,39 @@ const litBy = (g: GlyphName) => GLYPH_TINT[g][1];
 /** The four openers, each with the glyph the assistant's chips already use. */
 const PROMPT_GLYPHS: GlyphName[] = ['moon', 'leaf', 'bolt', 'pulse'];
 
-/**
- * The coach streams, so it cannot go through `supabase.functions.invoke` and
- * builds its own request. Both halves of that request now come from
- * `@/lib/backend` instead of being written out here.
- *
- * The key mattered more than the URL. It read
- * `process.env.EXPO_PUBLIC_SUPABASE_KEY ?? ''` — an **empty string** whenever
- * no `.env` was present, while the Supabase client next to it had a working
- * fallback. So on a fresh clone every other feature worked and the coach alone
- * answered 401, which reads as "the coach is broken" rather than "the key is
- * missing". One source for both, and that cannot happen again.
- */
-const CHAT_URL = functionUrl(EDGE_FUNCTIONS.coach);
-const ANON_KEY = SUPABASE_ANON_KEY;
-
-/**
- * How many turns travel with each request.
- *
- * Every message costs on every turn it is present for, so sending the whole
- * conversation each time makes one long chat cost the square of its length.
- * Twenty turns is more context than a coaching question needs, and it is the
- * same ceiling the edge function enforces — this only saves the upload.
- */
-const SEND_WINDOW = 20;
-
-/** How much of a stored conversation is reloaded when it is opened. */
-const HISTORY_LIMIT = 60;
-
-interface Msg {
-  role: 'user' | 'assistant';
-  content: string;
-}
 
 export default function AiCoachScreen() {
-  const { session } = useAuth();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const inputRef = useRef<TextInput>(null);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const convoIdRef = useRef<string | null>(null);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
+  const { session } = useAuth();
   const queryClient = useQueryClient();
+
+  /*
+    The conversation is not this screen's — see `use-coach-chat`.
+
+    It was `useState` here, which was right while the coach had one home. The
+    Health Assistant's ask bar takes text directly now, so a chat can start
+    there; two copies of the state would be two conversations, and asking on one
+    screen then opening the other would look exactly like the app losing what
+    you said.
+
+    What stays local is everything about *looking*: the scroll position, the
+    draft in the box, whether the history panel is open.
+  */
+  const { messages, isLoading, conversationId, send, newChat, loadConversation, onGrow } = useCoachChat();
+
+  const scrollToEnd = () => {
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+  };
+  // the answer streams in a token at a time, and the transcript follows it
+  useEffect(() => onGrow(scrollToEnd), [onGrow]);
+
   /* The aura's colour, so this screen is lit the same as the one that opened
      it. React Query already has this cached from the assistant — the push
      costs a read, not a request. */
@@ -111,159 +97,22 @@ export default function AiCoachScreen() {
     },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['ai_conversations'] });
-      if (convoIdRef.current === id) {
-        convoIdRef.current = null;
-        setMessages([]);
-      }
+      // deleting the chat you are reading leaves the screen showing a
+      // conversation that no longer exists anywhere
+      if (conversationId === id) newChat();
     },
   });
 
-  const loadConversation = async (id: string) => {
-    Haptics.selectionAsync();
+  const openConversation = (id: string) => {
     setShowHistory(false);
-    // Newest first with a limit, then reversed — an old conversation could
-    // otherwise be reloaded whole, and every message of it would ride along
-    // on the next request.
-    const { data } = await supabase
-      .from('ai_messages')
-      .select('role, content')
-      .eq('conversation_id', id)
-      .order('created_at', { ascending: false })
-      .limit(HISTORY_LIMIT);
-    convoIdRef.current = id;
-    setMessages(
-      (data ?? [])
-        .filter((m) => m.role === 'user' || m.role === 'assistant')
-        .reverse()
-        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-    );
-    scrollToEnd();
+    loadConversation(id);
   };
 
-  const scrollToEnd = () => {
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
-  };
-
-  const saveMessage = async (conversationId: string, role: string, content: string) => {
-    await supabase.from('ai_messages').insert({ conversation_id: conversationId, role, content });
-  };
-
-  const send = async (prompt?: string) => {
+  const submit = (prompt?: string) => {
     const text = (prompt ?? input).trim();
-    if (!text || isLoading) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    const userMsg: Msg = { role: 'user', content: text };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+    if (!text) return;
     setInput('');
-    setIsLoading(true);
-    scrollToEnd();
-
-    try {
-      // Persist conversation + user message (same tables as the web app)
-      if (!convoIdRef.current && session?.user.id) {
-        const { data } = await supabase
-          .from('ai_conversations')
-          .insert({ user_id: session.user.id, title: text.slice(0, 50) })
-          .select('id')
-          .single();
-        convoIdRef.current = data?.id ?? null;
-      }
-      if (convoIdRef.current) await saveMessage(convoIdRef.current, 'user', text);
-
-      let assistantSoFar = '';
-      const upsertAssistant = (chunk: string) => {
-        assistantSoFar += chunk;
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (last?.role === 'assistant') {
-            return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
-          }
-          return [...prev, { role: 'assistant', content: assistantSoFar }];
-        });
-        scrollToEnd();
-      };
-
-      // expo/fetch supports streaming response bodies (RN's built-in fetch doesn't)
-      const resp = await expoFetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-          apikey: ANON_KEY,
-        },
-        body: JSON.stringify({ messages: newMessages.slice(-SEND_WINDOW), lang }),
-      });
-
-      if (!resp.ok || !resp.body) {
-        /*
-          Named the same way the other four AI screens name it.
-
-          This one streams, so it cannot go through `callEdge` — and it had
-          grown its own error path as a result: read `error` out of the body and
-          show that string. Two things were wrong with it. The server's own
-          quota message is written in Vietnamese, so an English user was shown
-          Vietnamese; and a 404 or a bare gateway failure has no `error` field
-          at all, so what surfaced was `Error 404`.
-
-          `classify` only needs a status, and `statusOf` reads a plain `.status`
-          — so the status goes through exactly the classifier the other screens
-          use, and the message comes from the same table. The raw body is still
-          worth having, so it goes to the console rather than to the person.
-        */
-        const raw = await resp.text().catch(() => '');
-        if (raw) console.warn(`ai-coach ${resp.status}: ${raw.slice(0, 300)}`);
-        throw new Error(i18n[AI_FAILURE_KEY[classify({ status: resp.status })]]);
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      // OpenAI-style SSE: lines of `data: {json}` with choices[0].delta.content
-      streaming: while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') break streaming;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) upsertAssistant(content);
-          } catch {
-            buffer = line + '\n' + buffer;
-            break;
-          }
-        }
-      }
-
-      if (assistantSoFar && convoIdRef.current) {
-        await saveMessage(convoIdRef.current, 'assistant', assistantSoFar);
-        await supabase
-          .from('ai_conversations')
-          .update({ updated_at: new Date().toISOString() })
-          .eq('id', convoIdRef.current);
-      }
-    } catch (e) {
-      // A throw from `fetch` never reached the server; the classifier says so
-      // in the user's language rather than leaving a bare English fallback.
-      Alert.alert(
-        'AI Coach',
-        e instanceof Error ? e.message : i18n[AI_FAILURE_KEY[classify(e)]],
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    send(text);
   };
 
   /*
@@ -275,20 +124,15 @@ export default function AiCoachScreen() {
     is no way back into this effect once it has fired because the ref outlives
     every re-render of the screen.
 
-    Gated on `session` because `send` needs the access token — without the
-    guard, a cold start deep into this route fires the request before auth has
-    resolved and the coach answers its own greeting with a 401. The effect
-    simply waits; when the session lands it runs.
+    Gated on `session` because the request needs the access token — without the
+    guard, a cold start deep into this route fires before auth has resolved and
+    the coach answers its own greeting with a 401. The effect simply waits.
 
-    `send` is deliberately not in the dependency list. It is redeclared every
-    render, so depending on it would re-run this effect constantly and the ref
-    would be the only thing preventing a loop — which is a guard doing the job
-    of a dependency array. The ref is the mechanism; the deps are honest about
-    what actually gates the first fire.
+    `send` is deliberately not in the dependency list. The ref is what makes
+    this fire once; the deps are honest about what gates the first fire.
   */
   const { q, ask } = useLocalSearchParams<{ q?: string; ask?: string }>();
   const sentRef = useRef(false);
-  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (sentRef.current || !session) return;
@@ -302,11 +146,6 @@ export default function AiCoachScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, ask, session]);
 
-  const newChat = () => {
-    Haptics.selectionAsync();
-    convoIdRef.current = null;
-    setMessages([]);
-  };
 
   return (
     /*
@@ -423,10 +262,10 @@ export default function AiCoachScreen() {
                     key={c.id}
                     style={({ pressed }) => [
                       styles.historyRow,
-                      convoIdRef.current === c.id && styles.historyRowActive,
+                      conversationId === c.id && styles.historyRowActive,
                       pressed && { opacity: 0.7 },
                     ]}
-                    onPress={() => loadConversation(c.id)}>
+                    onPress={() => openConversation(c.id)}>
                     <Text style={styles.historyTitle} numberOfLines={1}>{c.title ?? '—'}</Text>
                     <Text style={styles.historyDate}>
                       {new Date(c.updated_at).toLocaleDateString(vi ? 'vi-VN' : 'en-US', {
@@ -505,7 +344,7 @@ export default function AiCoachScreen() {
                     style={({ pressed }) => pressed && styles.pressed}
                     onPress={() => {
                       Haptics.selectionAsync();
-                      send(p);
+                      submit(p);
                     }}>
                     <LiquidGlass
                       style={[styles.promptChip, tintBorder(litBy(g))]}
@@ -617,7 +456,7 @@ export default function AiCoachScreen() {
               value={input}
               onChangeText={setInput}
               multiline
-              onSubmitEditing={() => send()}
+              onSubmitEditing={() => submit()}
             />
             <Pressable
               accessibilityRole="button"
@@ -638,7 +477,7 @@ export default function AiCoachScreen() {
                 pressed && styles.pressed,
               ]}
               disabled={!input.trim() || isLoading}
-              onPress={() => send()}>
+              onPress={() => submit()}>
               <Glyph name="arrow" size={17} colour={colors.primaryForeground} />
             </Pressable>
           </View>
