@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
@@ -154,119 +154,139 @@ const POOLS: Pool[] = [
 ];
 
 /**
- * One bubble, rising.
+ * Neon dust, drifting up.
  *
- * ── what a bubble is here ──
+ * ── why it is layers and not motes ──
  *
- * Not a filled disc. The gradient is nearly empty in the middle and brightest
- * just inside its edge, which is how a soap film actually reads — light passes
- * through the thin part and catches on the rim. A filled circle at the same
- * opacity looks like a smudge on the lens; the hollow one looks like something
- * suspended in front of it.
+ * The obvious build is one `Animated.View` per speck. At dust scale you want
+ * forty or more of them, and forty animated views to draw forty circles is a
+ * lot of machinery for very little ink.
  *
- * ── the drift does not reverse ──
+ * These are four layers instead, each holding a dozen static specks and each
+ * rising at its own speed. That reads as independent dust for the same reason
+ * a parallax starfield does — the eye reconstructs depth from the speed
+ * difference and never audits whether two specks in the same plane keep their
+ * spacing. Four animated views, a hundred-odd circles, none of the circles
+ * ever touched after mount.
  *
- * The pools breathe back and forth because that is what light does. Bubbles
- * rise, and rising and then un-rising is the one thing that would announce
- * this as an animation. So the driver is a sawtooth — `withRepeat(…, -1,
- * false)` — running from below the screen to above it, and the opacity ramps
- * in and out at the two ends so the reset never lands anywhere visible.
+ * ── the loop is seamless by construction ──
  *
- * The horizontal wobble is a sine of the *same* driver at a fractional
- * frequency, so a bubble does not drift back to where it started when the
- * cycle repeats; over one pass it makes about one and a half sways, and no two
- * bubbles share a period.
+ * A layer that rises off the top and jumps back to the bottom shows the jump
+ * as a sweep — every speck in it vanishing and reappearing at once. So each
+ * layer is **twice the screen tall with its pattern duplicated exactly one
+ * screen-height down**, and it travels exactly one screen-height before
+ * repeating. At the moment it resets, the copy has arrived precisely where the
+ * original was: nothing on screen changes. No fade is needed, and none is used.
+ *
+ * ── a speck is a glow, not a ring ──
+ *
+ * The bubbles this replaced were hollow — bright at the rim, empty in the
+ * middle — which is how a soap film reads at 90pt. At 5pt a hollow ring is
+ * simply invisible: there is no room for a rim and a middle. So a speck is the
+ * other thing, a lit core falling off into its own halo, which is what "neon"
+ * means at this size.
  */
-function Bubble({ b, height }: { b: BubbleSpec; height: number }) {
-  const t = useSharedValue(b.phase);
+
+/** The four neon hues, and one gradient each rather than one per speck. */
+const DUST_HUES = [
+  { id: 'dCy', colour: '#22e6ff' },
+  { id: 'dVi', colour: '#b45cff' },
+  { id: 'dMi', colour: '#2bf5a8' },
+  { id: 'dWa', colour: '#ffd9b3' },
+] as const;
+
+interface DustLayer {
+  key: string;
+  /** how far up it travels per cycle, as a multiple of screen height */
+  ms: number;
+  sway: number;
+  /** speck radius range, in points */
+  min: number;
+  max: number;
+  opacity: number;
+  count: number;
+  seed: number;
+}
+
+const DUST: DustLayer[] = [
+  /* Nearest: biggest, brightest, fastest. Furthest: barely there. The spread
+     is what produces depth — a single layer at one speed reads as a texture
+     sliding, not as dust hanging in a room. */
+  { key: 'near', ms: 26000, sway: 14, min: 2.2, max: 4.4, opacity: 0.95, count: 11, seed: 3 },
+  { key: 'mid', ms: 38000, sway: 10, min: 1.6, max: 3.2, opacity: 0.7, count: 14, seed: 17 },
+  { key: 'far', ms: 54000, sway: 7, min: 1.1, max: 2.3, opacity: 0.5, count: 16, seed: 41 },
+  { key: 'haze', ms: 74000, sway: 4, min: 0.8, max: 1.6, opacity: 0.34, count: 18, seed: 89 },
+];
+
+/**
+ * One layer of specks, tiled so it can loop without a seam.
+ *
+ * The positions are generated from an integer seed rather than `Math.random`,
+ * so a layer is identical on every mount and across reloads — dust that
+ * rearranges itself when a screen remounts is a thing people notice without
+ * being able to say what moved.
+ */
+function DustField({ layer, height, width }: { layer: DustLayer; height: number; width: number }) {
+  const t = useSharedValue(0);
 
   useEffect(() => {
-    t.value = b.phase;
-    t.value = withRepeat(
-      withTiming(b.phase + 1, { duration: b.ms, easing: Easing.linear }),
-      -1,
-      false,
-    );
-  }, [b.ms, b.phase, t]);
+    t.value = 0;
+    t.value = withRepeat(withTiming(1, { duration: layer.ms, easing: Easing.linear }), -1, false);
+  }, [layer.ms, t]);
 
-  const style = useAnimatedStyle(() => {
-    const p = t.value % 1;
-    /* fade in over the first eighth, out over the last fifth — the sawtooth's
-       jump happens while the bubble is invisible at both ends */
-    const fade = Math.min(1, p / 0.12) * Math.min(1, (1 - p) / 0.2);
-    return {
-      opacity: fade * b.opacity,
-      transform: [
-        { translateY: (0.5 - p) * (height + b.size * 2) },
-        { translateX: Math.sin(p * Math.PI * 3) * b.sway },
-        { scale: 0.92 + p * 0.16 },
-      ],
-    };
-  });
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -t.value * height },
+      { translateX: Math.sin(t.value * Math.PI * 2) * layer.sway },
+    ],
+  }));
 
+  const specks = useMemo(() => {
+    let s = layer.seed;
+    const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    const out: { x: number; y: number; r: number; hue: string; o: number }[] = [];
+    for (let i = 0; i < layer.count; i++) {
+      const x = rnd() * width;
+      const y = rnd() * height;
+      const r = layer.min + rnd() * (layer.max - layer.min);
+      const hue = DUST_HUES[Math.floor(rnd() * DUST_HUES.length)].id;
+      const o = (0.55 + rnd() * 0.45) * layer.opacity;
+      // the speck, and its copy exactly one screen down — this is the seam fix
+      out.push({ x, y, r, hue, o }, { x, y: y + height, r, hue, o });
+    }
+    return out;
+  }, [layer, height, width]);
+
+  /* The halo is drawn as a second, wider circle rather than by blurring the
+     first: there are no filter primitives on native. Two circles per speck is
+     the whole trick, and both are static. */
   return (
-    <Animated.View
-      style={[
-        styles.bubble,
-        {
-          left: `${b.x * 100}%`,
-          width: b.size,
-          height: b.size,
-          /* `left`/`top` place the bubble's corner; these pull it back by half
-             its own size so the given position is its centre. They have to be
-             per-bubble because the sizes run from 34 to 136 — a constant here
-             would offset every bubble but one. */
-          marginLeft: -b.size / 2,
-          marginTop: -b.size / 2,
-        },
-        style,
-      ]}>
-      <Svg width="100%" height="100%" viewBox="0 0 100 100">
+    <Animated.View style={[styles.dust, { width, height: height * 2 }, style]} pointerEvents="none">
+      <Svg width={width} height={height * 2}>
         <Defs>
-          <RadialGradient id={b.id}>
-            <Stop offset="0" stopColor={b.colour} stopOpacity={0.03} />
-            <Stop offset="0.58" stopColor={b.colour} stopOpacity={0.06} />
-            <Stop offset="0.86" stopColor={b.colour} stopOpacity={0.30} />
-            <Stop offset="0.97" stopColor={b.colour} stopOpacity={0.10} />
-            <Stop offset="1" stopColor={b.colour} stopOpacity={0} />
-          </RadialGradient>
+          {DUST_HUES.map((h) => (
+            <RadialGradient key={h.id} id={`${h.id}${layer.key}`}>
+              <Stop offset="0" stopColor="#ffffff" stopOpacity={0.95} />
+              <Stop offset="0.28" stopColor={h.colour} stopOpacity={0.85} />
+              <Stop offset="0.6" stopColor={h.colour} stopOpacity={0.22} />
+              <Stop offset="1" stopColor={h.colour} stopOpacity={0} />
+            </RadialGradient>
+          ))}
         </Defs>
-        <Circle cx="50" cy="50" r="50" fill={`url(#${b.id})`} />
+        {specks.map((sp, i) => (
+          <Circle
+            key={i}
+            cx={sp.x}
+            cy={sp.y}
+            r={sp.r * 3.2}
+            fill={`url(#${sp.hue}${layer.key})`}
+            opacity={sp.o}
+          />
+        ))}
       </Svg>
     </Animated.View>
   );
 }
-
-interface BubbleSpec {
-  id: string;
-  x: number;
-  size: number;
-  sway: number;
-  opacity: number;
-  ms: number;
-  phase: number;
-  colour: string;
-}
-
-/*
-  Nine of them, sizes and periods deliberately unrelated.
-
-  Few enough that they read as occasional rather than as weather, and slow
-  enough — 26 to 52 seconds for a full pass — that nothing crosses the screen
-  while you are reading a card. A bubble you can watch travel is a bubble
-  competing with the text.
-*/
-const BUBBLES: BubbleSpec[] = [
-  { id: 'bub1', x: 0.08, size: 96, sway: 16, opacity: 0.85, ms: 41000, phase: 0.0, colour: '#c9b6ff' },
-  { id: 'bub2', x: 0.62, size: 58, sway: 22, opacity: 0.7, ms: 33000, phase: 0.28, colour: '#8fd8ff' },
-  { id: 'bub3', x: 0.34, size: 136, sway: 12, opacity: 0.6, ms: 52000, phase: 0.55, colour: '#b79bff' },
-  { id: 'bub4', x: 0.84, size: 44, sway: 26, opacity: 0.9, ms: 27000, phase: 0.13, colour: '#a8ffe0' },
-  { id: 'bub5', x: 0.2, size: 34, sway: 30, opacity: 0.75, ms: 26000, phase: 0.71, colour: '#ffd9b3' },
-  { id: 'bub6', x: 0.71, size: 112, sway: 14, opacity: 0.5, ms: 47000, phase: 0.42, colour: '#9fc4ff' },
-  { id: 'bub7', x: 0.46, size: 40, sway: 24, opacity: 0.8, ms: 31000, phase: 0.86, colour: '#e0c4ff' },
-  { id: 'bub8', x: 0.93, size: 74, sway: 18, opacity: 0.55, ms: 38000, phase: 0.62, colour: '#8fd8ff' },
-  { id: 'bub9', x: 0.02, size: 52, sway: 20, opacity: 0.7, ms: 29000, phase: 0.35, colour: '#c9b6ff' },
-];
 
 /**
  * @param state today's readiness, if it is known — recolours the leading pool
@@ -281,15 +301,15 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
           ? colors.readinessRed
           : undefined;
 
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
 
   return (
     <View style={styles.layer} pointerEvents="none">
       {POOLS.map((p, i) => (
         <LightPool key={p.id} pool={p} tint={i === 0 ? tint : undefined} />
       ))}
-      {BUBBLES.map((b) => (
-        <Bubble key={b.id} b={b} height={height} />
+      {DUST.map((d) => (
+        <DustField key={d.key} layer={d} height={height} width={width} />
       ))}
     </View>
   );
@@ -306,8 +326,7 @@ const styles = StyleSheet.create({
     width: '200%',
     height: '200%',
   },
-  /* Anchored at the middle of the layer; `translateY` carries it from below the
-     screen to above. The half-size offsets are applied per bubble at the call
-     site — see the comment there. */
-  bubble: { position: 'absolute', top: '50%' },
+  /* Starts at the top and travels up by exactly one screen height. It is two
+     screens tall, so the half below the fold is always ready to take over. */
+  dust: { position: 'absolute', left: 0, top: 0 },
 });
