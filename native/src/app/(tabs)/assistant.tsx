@@ -1,27 +1,14 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import {
-  Activity,
-  ArrowUp,
-  Battery,
-  Camera,
-  ChevronRight,
-  Flame,
-  Heart,
-  Leaf,
-  Moon,
-  Settings2,
-  Sparkles,
-  Zap,
-  type LucideIcon,
-} from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Icon } from '@/components/ascnd/icon';
-import { LiquidGlass, SolidCard } from '@/components/ascnd/liquid-glass';
+import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
+import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
@@ -66,8 +53,7 @@ import { useDailyLog, useTodayBiometrics } from '@/hooks/useTodayData';
 
 interface Metric {
   key: string;
-  icon: LucideIcon;
-  tint: string;
+  glyph: GlyphName;
   label: { vi: string; en: string };
   value: string;
   unit?: string;
@@ -79,16 +65,18 @@ interface Metric {
 
 interface Suggestion {
   key: string;
-  icon: LucideIcon;
-  tint: string;
+  glyph: GlyphName;
   label: { vi: string; en: string };
 }
 
+/** The colour a glyph lights its panel with — the saturated half of its own gradient. */
+const litBy = (g: GlyphName) => GLYPH_TINT[g][1];
+
 const SUGGESTIONS: Suggestion[] = [
-  { key: 'sleep', icon: Moon, tint: colors.metricPurple, label: { vi: 'Cải thiện giấc ngủ', en: 'Improve sleep quality' } },
-  { key: 'stress', icon: Leaf, tint: colors.readinessGreen, label: { vi: 'Giảm căng thẳng', en: 'Reduce stress' } },
-  { key: 'energy', icon: Zap, tint: colors.readinessYellow, label: { vi: 'Tăng năng lượng', en: 'Increase energy' } },
-  { key: 'habit', icon: Activity, tint: colors.metricBlue, label: { vi: 'Xây thói quen tốt', en: 'Build better habits' } },
+  { key: 'sleep', glyph: 'moon', label: { vi: 'Cải thiện giấc ngủ', en: 'Improve sleep quality' } },
+  { key: 'stress', glyph: 'leaf', label: { vi: 'Giảm căng thẳng', en: 'Reduce stress' } },
+  { key: 'energy', glyph: 'bolt', label: { vi: 'Tăng năng lượng', en: 'Increase energy' } },
+  { key: 'habit', glyph: 'pulse', label: { vi: 'Xây thói quen tốt', en: 'Build better habits' } },
 ];
 
 export default function AssistantScreen() {
@@ -122,8 +110,7 @@ export default function AssistantScreen() {
   const metrics: Metric[] = [
     {
       key: 'hr',
-      icon: Heart,
-      tint: colors.readinessRed,
+      glyph: 'heart',
       label: { vi: 'Nhịp tim', en: 'Heart rate' },
       value: hr != null ? String(hr) : '—',
       unit: hr != null ? 'bpm' : undefined,
@@ -135,8 +122,7 @@ export default function AssistantScreen() {
     },
     {
       key: 'sleep',
-      icon: Moon,
-      tint: colors.metricPurple,
+      glyph: 'moon',
       label: { vi: 'Giấc ngủ', en: 'Sleep' },
       value: sleepMin > 0 ? `${Math.floor(sleepMin / 60)}h ${sleepMin % 60}` : '—',
       unit: sleepMin > 0 ? 'm' : undefined,
@@ -148,8 +134,7 @@ export default function AssistantScreen() {
     },
     {
       key: 'kcal',
-      icon: Flame,
-      tint: colors.metricOrange,
+      glyph: 'flame',
       label: { vi: 'Calo', en: 'Calories' },
       value: kcal > 0 ? kcal.toLocaleString() : '—',
       note: { vi: 'Hôm nay', en: 'Today' },
@@ -158,8 +143,7 @@ export default function AssistantScreen() {
     },
     {
       key: 'readiness',
-      icon: Battery,
-      tint: colors.readinessGreen,
+      glyph: 'gauge',
       label: { vi: 'Sẵn sàng', en: 'Readiness' },
       value: readiness != null ? String(readiness) : '—',
       note: readiness == null
@@ -199,7 +183,7 @@ export default function AssistantScreen() {
               {/* The AI mark. A pill rather than a word in the title, so the
                   title stays a name and the badge stays a label. */}
               <View style={styles.aiBadge}>
-                <Icon icon={Sparkles} size={10} color={colors.metricPurple} />
+                <Glyph name="spark" size={11} />
                 <Text style={styles.aiText}>AI</Text>
               </View>
             </View>
@@ -213,7 +197,7 @@ export default function AssistantScreen() {
             hitSlop={10}
             onPress={() => go('/settings')}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}>
-            <Icon icon={Settings2} size={17} color={colors.foreground} />
+            <Glyph name="sliders" size={17} />
           </Pressable>
         </View>
 
@@ -271,9 +255,12 @@ export default function AssistantScreen() {
               accessibilityLabel={`${vi ? m.label.vi : m.label.en} ${m.value}`}
               onPress={() => go(m.route)}
               style={({ pressed }) => pressed && styles.pressed}>
-              <SolidCard style={styles.metricCard} radius={radius.lg}>
-                <View style={[styles.metricIcon, { backgroundColor: `${m.tint}22` }]}>
-                  <Icon icon={m.icon} size={18} color={m.tint} />
+              <LiquidGlass
+                style={[styles.metricCard, tintBorder(litBy(m.glyph))]}
+                radius={radius.lg}
+                tint={litBy(m.glyph)}>
+                <View style={[styles.metricIcon, { backgroundColor: `${litBy(m.glyph)}1f` }]}>
+                  <Glyph name={m.glyph} size={19} />
                 </View>
                 <Text style={styles.metricLabel}>{vi ? m.label.vi : m.label.en}</Text>
                 <View style={styles.metricValueRow}>
@@ -284,7 +271,7 @@ export default function AssistantScreen() {
                   <View style={[styles.metricDot, { backgroundColor: m.noteTint }]} />
                   <Text style={styles.metricNote}>{vi ? m.note.vi : m.note.en}</Text>
                 </View>
-              </SolidCard>
+              </LiquidGlass>
             </Pressable>
           ))}
         </ScrollView>
@@ -309,12 +296,15 @@ export default function AssistantScreen() {
                 accessibilityRole="button"
                 onPress={() => go('/ai-coach')}
                 style={({ pressed }) => pressed && styles.pressed}>
-                <SolidCard style={styles.chip} radius={radius.full}>
+                <LiquidGlass
+                  style={[styles.chip, tintBorder(litBy(s.glyph))]}
+                  radius={radius.full}
+                  tint={litBy(s.glyph)}>
                   <View style={styles.chipInner}>
-                    <Icon icon={s.icon} size={14} color={s.tint} />
+                    <Glyph name={s.glyph} size={15} />
                     <Text style={styles.chipText}>{vi ? s.label.vi : s.label.en}</Text>
                   </View>
-                </SolidCard>
+                </LiquidGlass>
               </Pressable>
             ))}
           </View>
@@ -325,9 +315,9 @@ export default function AssistantScreen() {
           <Text style={styles.sectionTitle}>{vi ? 'Lối tắt' : 'Shortcuts'}</Text>
           <View style={styles.shortcutRow}>
             {[
-              { key: 'scan', icon: Camera, tint: colors.metricOrange, label: { vi: 'Quét món ăn', en: 'Scan a meal' }, route: '/scan-food?from=ai' },
-              { key: 'bio', icon: Heart, tint: colors.readinessRed, label: { vi: 'Sinh trắc', en: 'Biometrics' }, route: '/biometrics' },
-              { key: 'sleep', icon: Moon, tint: colors.metricBlue, label: { vi: 'Giấc ngủ', en: 'Sleep' }, route: '/sleep-insights' },
+              { key: 'scan', glyph: 'flame' as GlyphName, label: { vi: 'Quét món ăn', en: 'Scan a meal' }, route: '/scan-food?from=ai' },
+              { key: 'bio', glyph: 'heart' as GlyphName, label: { vi: 'Sinh trắc', en: 'Biometrics' }, route: '/biometrics' },
+              { key: 'sleep', glyph: 'moon' as GlyphName, label: { vi: 'Giấc ngủ', en: 'Sleep' }, route: '/sleep-insights' },
             ].map((s) => (
               <Pressable
                 key={s.key}
@@ -335,12 +325,15 @@ export default function AssistantScreen() {
                 accessibilityLabel={vi ? s.label.vi : s.label.en}
                 onPress={() => go(s.route)}
                 style={({ pressed }) => [styles.shortcutWrap, pressed && styles.pressed]}>
-                <SolidCard style={styles.shortcut} radius={radius.lg}>
-                  <Icon icon={s.icon} size={19} color={s.tint} />
+                <LiquidGlass
+                  style={[styles.shortcut, tintBorder(litBy(s.glyph))]}
+                  radius={radius.lg}
+                  tint={litBy(s.glyph)}>
+                  <Glyph name={s.glyph} size={20} />
                   <Text style={styles.shortcutText} numberOfLines={1}>
                     {vi ? s.label.vi : s.label.en}
                   </Text>
-                </SolidCard>
+                </LiquidGlass>
               </Pressable>
             ))}
           </View>
@@ -367,13 +360,13 @@ export default function AssistantScreen() {
           <LiquidGlass style={styles.ask} radius={radius.full} intensity={30}>
             <View style={styles.askInner}>
               <View style={styles.askSpark}>
-                <Icon icon={Sparkles} size={15} color={colors.metricPurple} />
+                <Glyph name="spark" size={16} />
               </View>
               <Text style={styles.askText} numberOfLines={1}>
                 {vi ? 'Hỏi tôi bất cứ điều gì về sức khoẻ…' : 'Ask me anything about your health…'}
               </Text>
               <View style={styles.askSend}>
-                <Icon icon={ArrowUp} size={17} color={colors.primaryForeground} strokeWidth={2.5} />
+                <Glyph name="arrow" size={17} colour={colors.primaryForeground} />
               </View>
             </View>
           </LiquidGlass>

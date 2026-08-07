@@ -1,29 +1,35 @@
 import { BlurView } from 'expo-blur';
+import { useId } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { glass, radius } from '@/constants/ascnd';
 
 /**
  * A control you can see the room through.
  *
- * ── it belongs to the functional layer, and only there ──
+ * ── where Apple's rule applies, and where it was overruled ──
  *
- * Apple's guidance on the material is explicit and this component was first
- * used against it: *"Don't use Liquid Glass in the content layer… including it
- * in the content layer can result in unnecessary complexity and a confusing
- * visual hierarchy,"* and *"use Liquid Glass effects sparingly… limit these
- * effects to the most important functional elements."*
+ * The guidance is *"don't use Liquid Glass in the content layer"* and *"use
+ * Liquid Glass effects sparingly."* That is written for an app that uses the
+ * material throughout: spend it everywhere and nothing floats above anything.
  *
- * The assistant screen shipped with twelve of these — every metric tile, every
- * suggestion chip, every shortcut. Twelve translucent panels over a soft
- * moving aura is twelve surfaces with no clear edge, all at the same value,
- * and the result reads muddy for a reason that is structural rather than a
- * matter of taste: nothing is in front of anything.
+ * This is one screen, and the thing behind the glass is an aura rather than a
+ * page of content — so the risk the rule guards against, glass obscuring what
+ * you came to read, is not present here. The screen is glass throughout by
+ * decision, and what carries the hierarchy instead is `tint`.
  *
- * So this is now for things that *float over* content — the ask bar, the state
- * pill — and content sits on `SolidCard`, which is opaque enough to be read
- * against drifting colour. Two glass surfaces, not twelve.
+ * ── tint: the panel is lit by its own icon ──
+ *
+ * A pane of glass with a coloured light behind it takes that colour. So each
+ * card takes a wash of its glyph's colour, anchored at the corner the glyph
+ * sits in and falling off across the face. Twelve identical panels read flat;
+ * twelve panels each lit a different colour read as twelve objects, which is
+ * the hierarchy the uniform version was missing.
+ *
+ * It is deliberately faint — 0.16 at the peak. Past about a quarter the wash
+ * stops being light through glass and becomes a coloured card, and a coloured
+ * card is exactly what this material exists not to be.
  *
  * ── how this differs from `GlassCard` ──
  *
@@ -60,12 +66,22 @@ export function LiquidGlass({
   style,
   radius: r = glass.radius,
   intensity = 22,
+  tint,
 }: {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   radius?: number;
   intensity?: number;
+  /** the colour of whatever this panel holds — washed across the glass */
+  tint?: string;
 }) {
+  /* Document-global ids on native. Eight of these render on one screen, so a
+     hardcoded id would have the first card's gradient painting all of them. */
+  const uid = useId();
+  const lit = `lgLit-${uid}`;
+  const shade = `lgShade-${uid}`;
+  const wash = `lgWash-${uid}`;
+
   return (
     <View style={[styles.wrap, { borderRadius: r }, style]}>
       <BlurView intensity={intensity} tint="dark" style={StyleSheet.absoluteFill} />
@@ -77,17 +93,27 @@ export function LiquidGlass({
       */}
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
         <Defs>
-          <LinearGradient id="lgLit" x1="0" y1="0" x2="0.9" y2="1">
+          <LinearGradient id={lit} x1="0" y1="0" x2="0.9" y2="1">
             <Stop offset="0" stopColor="#ffffff" stopOpacity={0.10} />
             <Stop offset="0.55" stopColor="#ffffff" stopOpacity={0} />
           </LinearGradient>
-          <LinearGradient id="lgShade" x1="0" y1="0" x2="0.9" y2="1">
+          <LinearGradient id={shade} x1="0" y1="0" x2="0.9" y2="1">
             <Stop offset="0.45" stopColor="#000000" stopOpacity={0} />
             <Stop offset="1" stopColor="#000000" stopOpacity={0.16} />
           </LinearGradient>
+          {tint ? (
+            /* Anchored at the top-left, which is where the glyph sits on every
+               card that passes a tint — the wash reads as coming *from* it. */
+            <RadialGradient id={wash} cx="0.16" cy="0.16" rx="0.95" ry="0.85" gradientUnits="objectBoundingBox">
+              <Stop offset="0" stopColor={tint} stopOpacity={0.16} />
+              <Stop offset="0.45" stopColor={tint} stopOpacity={0.07} />
+              <Stop offset="1" stopColor={tint} stopOpacity={0} />
+            </RadialGradient>
+          ) : null}
         </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#lgLit)" />
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#lgShade)" />
+        {tint ? <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${wash})`} /> : null}
+        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${lit})`} />
+        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${shade})`} />
       </Svg>
       {children}
     </View>
@@ -114,6 +140,10 @@ const styles = StyleSheet.create({
  * so the numbers stay legible whatever is drifting past. It keeps the same
  * hairline as every other card in the app, so it reads as the same family.
  */
+/** A hairline that agrees with the wash — see `LiquidGlass`. */
+export const tintBorder = (tint?: string) =>
+  tint ? { borderColor: `${tint}3d` } : null;
+
 export function SolidCard({
   children,
   style,
