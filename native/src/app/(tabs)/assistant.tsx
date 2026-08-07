@@ -12,7 +12,9 @@ import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { Settle } from '@/components/ascnd/settle';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
-import { useDailyLog, useTodayBiometrics } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useTodayBiometrics } from '@/hooks/useTodayData';
+import { suggestionsFor } from '@/lib/assistant-suggestions';
+import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 
 /**
  * Health Assistant — the screen you open to ask about your own body.
@@ -63,11 +65,6 @@ interface Metric {
   route: string;
 }
 
-interface Suggestion {
-  key: string;
-  glyph: GlyphName;
-  label: { vi: string; en: string };
-}
 
 /** The colour a glyph lights its panel with — the saturated half of its own gradient. */
 const litBy = (g: GlyphName) => GLYPH_TINT[g][1];
@@ -88,12 +85,22 @@ const TOOLS: Tool[] = [
   { key: 'sleep', glyph: 'moon', label: { vi: 'Giấc ngủ', en: 'Sleep' }, hint: { vi: 'Đêm qua, và xu hướng', en: 'Last night, and the trend' }, route: '/sleep-insights' },
 ];
 
-const SUGGESTIONS: Suggestion[] = [
-  { key: 'sleep', glyph: 'moon', label: { vi: 'Cải thiện giấc ngủ', en: 'Improve sleep quality' } },
-  { key: 'stress', glyph: 'leaf', label: { vi: 'Giảm căng thẳng', en: 'Reduce stress' } },
-  { key: 'energy', glyph: 'bolt', label: { vi: 'Tăng năng lượng', en: 'Increase energy' } },
-  { key: 'habit', glyph: 'pulse', label: { vi: 'Xây thói quen tốt', en: 'Build better habits' } },
-];
+/**
+ * Open the coach with a question already asked.
+ *
+ * The chips and the ask bar both land on `/ai-coach`; what separates them is
+ * whether they bring anything. A chip carries its question in `q` and the coach
+ * sends it on arrival, so pressing "Tôi ngủ chưa đủ" produces an answer about
+ * last night rather than an empty chat with the burden back on you.
+ *
+ * `encodeURIComponent` because these questions contain the numbers they are
+ * about, and `?` and `&` are both ordinary punctuation in a sentence.
+ */
+const askCoach = (question: string) => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  router.push(`/ai-coach?q=${encodeURIComponent(question)}` as any);
+};
 
 export default function AssistantScreen() {
   const { lang } = useAppSettings();
@@ -101,6 +108,7 @@ export default function AssistantScreen() {
   const insets = useSafeAreaInsets();
   const { data: dailyLog } = useDailyLog();
   const { data: bio } = useTodayBiometrics();
+  const { data: profile } = useProfile();
 
   const hour = new Date().getHours();
   const greeting =
@@ -172,6 +180,27 @@ export default function AssistantScreen() {
       route: '/biometrics',
     },
   ];
+
+  /*
+    The suggestions come from the same log the tiles above are drawn from.
+
+    `useProfile` is the one extra read, and it is for the targets — a chip that
+    says "you are short on protein" has to know what the target was, and the
+    fallback in `macro-targets` is what a profile that never went through
+    onboarding gets, rather than a number invented here.
+  */
+  const macros = macroTargetsFor(profile);
+  const suggestions = suggestionsFor({
+    readiness,
+    status,
+    acwr: dailyLog?.acwr != null ? Number(dailyLog.acwr) : null,
+    sleepMin,
+    kcal,
+    kcalTarget: calorieTargetFor(profile),
+    proteinG: Number(dailyLog?.protein_g) || 0,
+    proteinTarget: macros.protein,
+    steps: Number(dailyLog?.steps) || 0,
+  });
 
   const go = (route: string) => {
     Haptics.selectionAsync();
@@ -339,11 +368,15 @@ export default function AssistantScreen() {
             </Pressable>
           </View>
           <View style={styles.chips}>
-            {SUGGESTIONS.map((s) => (
+            {suggestions.map((s) => (
               <Pressable
                 key={s.key}
                 accessibilityRole="button"
-                onPress={() => go('/ai-coach')}
+                /* The label is what you read; the question is what gets asked.
+                   VoiceOver should hear the second one, because "Tôi ngủ chưa
+                   đủ" does not describe what pressing it does. */
+                accessibilityLabel={vi ? s.question.vi : s.question.en}
+                onPress={() => askCoach(vi ? s.question.vi : s.question.en)}
                 style={({ pressed }) => pressed && styles.pressed}>
                 <LiquidGlass
                   style={[styles.chip, tintBorder(litBy(s.glyph))]}
@@ -428,9 +461,21 @@ export default function AssistantScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={vi ? 'Hỏi trợ lý sức khoẻ' : 'Ask the health assistant'}
+          /*
+            Opens the coach with the keyboard already up.
+
+            It used to push `/ai-coach` bare, which landed you on a chat with
+            the composer waiting to be tapped a second time — the ask bar is a
+            text field in every way except that it does not accept text, so
+            pressing it and then having to press again is the one thing it must
+            not do. `ask=1` is what tells the coach this arrival came from here;
+            the tool card and "xem tất cả" open it without, and do not raise the
+            keyboard.
+          */
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/ai-coach');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            router.push('/ai-coach?ask=1' as any);
           }}
           style={({ pressed }) => pressed && styles.pressed}>
           <LiquidGlass style={styles.ask} radius={radius.full} intensity={30}>

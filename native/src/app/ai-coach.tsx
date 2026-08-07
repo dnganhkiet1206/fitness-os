@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { fetch as expoFetch } from 'expo/fetch';
-import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -265,6 +265,42 @@ export default function AiCoachScreen() {
       setIsLoading(false);
     }
   };
+
+  /*
+    ── arriving with a question already asked ──
+
+    The assistant's suggestion chips carry their question in `q`; its ask bar
+    carries `ask=1` and no question. Both are one-shot: `sentRef` makes sure a
+    re-render, a keyboard resize or a language change cannot re-send, and there
+    is no way back into this effect once it has fired because the ref outlives
+    every re-render of the screen.
+
+    Gated on `session` because `send` needs the access token — without the
+    guard, a cold start deep into this route fires the request before auth has
+    resolved and the coach answers its own greeting with a 401. The effect
+    simply waits; when the session lands it runs.
+
+    `send` is deliberately not in the dependency list. It is redeclared every
+    render, so depending on it would re-run this effect constantly and the ref
+    would be the only thing preventing a loop — which is a guard doing the job
+    of a dependency array. The ref is the mechanism; the deps are honest about
+    what actually gates the first fire.
+  */
+  const { q, ask } = useLocalSearchParams<{ q?: string; ask?: string }>();
+  const sentRef = useRef(false);
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (sentRef.current || !session) return;
+    if (typeof q === 'string' && q.trim()) {
+      sentRef.current = true;
+      send(q);
+    } else if (ask === '1') {
+      sentRef.current = true;
+      inputRef.current?.focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, ask, session]);
 
   const newChat = () => {
     Haptics.selectionAsync();
@@ -574,6 +610,7 @@ export default function AiCoachScreen() {
               <Glyph name="spark" size={16} />
             </View>
             <TextInput
+              ref={inputRef}
               style={styles.composerInput}
               placeholder={i18n.aiCoachPlaceholder}
               placeholderTextColor={colors.glassMuted}

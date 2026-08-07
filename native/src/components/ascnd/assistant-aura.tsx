@@ -225,11 +225,24 @@ interface DustLayer {
 const DUST: DustLayer[] = [
   /* Nearest: biggest, brightest, fastest. Furthest: barely there. The spread
      is what produces depth — a single layer at one speed reads as a texture
-     sliding, not as dust hanging in a room. */
-  { key: 'near', ms: 26000, sway: 14, min: 2.0, max: 3.8, opacity: 0.32, count: 9, seed: 3 },
-  { key: 'mid', ms: 38000, sway: 10, min: 1.5, max: 2.8, opacity: 0.22, count: 12, seed: 17 },
-  { key: 'far', ms: 54000, sway: 7, min: 1.0, max: 2.0, opacity: 0.15, count: 13, seed: 41 },
-  { key: 'haze', ms: 74000, sway: 4, min: 0.8, max: 1.5, opacity: 0.10, count: 15, seed: 89 },
+     sliding, not as dust hanging in a room.
+
+     ── these have come down three times, and the ratios are the reason ──
+
+     0.42/0.30/0.20/0.14 first, then 0.32/0.22/0.15/0.10, now this. Each pass
+     was the same note — still too bright, still competing with the text — and
+     the first two were single small steps that did not settle it, so this one
+     takes about forty percent off in one go.
+
+     What is held constant is the *spacing between the layers*, roughly 1.5×
+     from each to the next. That ratio is the depth: dim them by different
+     amounts and the four planes collapse into one sheet of specks, which is
+     the failure the layering exists to avoid. So when this needs adjusting
+     again, scale all four by the same factor rather than picking new numbers. */
+  { key: 'near', ms: 26000, sway: 14, min: 2.0, max: 3.8, opacity: 0.19, count: 9, seed: 3 },
+  { key: 'mid', ms: 38000, sway: 10, min: 1.5, max: 2.8, opacity: 0.13, count: 12, seed: 17 },
+  { key: 'far', ms: 54000, sway: 7, min: 1.0, max: 2.0, opacity: 0.09, count: 13, seed: 41 },
+  { key: 'haze', ms: 74000, sway: 4, min: 0.8, max: 1.5, opacity: 0.06, count: 15, seed: 89 },
 ];
 
 /**
