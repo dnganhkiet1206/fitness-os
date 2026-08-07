@@ -48,6 +48,18 @@ import { colors } from '@/constants/ascnd';
  * opacity are composited by the platform without touching the rasterised
  * bitmap, so eight seconds of drift costs the same as sitting still.
  *
+ * ── it is dimmer than it reads written down ──
+ *
+ * Peaks of 0.175 / 0.13 / 0.09 / 0.04, and the dust under a third of what it
+ * started at. Both were turned down twice, for the same reason each time: this
+ * layer sits behind a screen whose job is to hand somebody four numbers about
+ * their body. Anything back here bright enough to be *looked at* is competing
+ * with those numbers, and it will win, because motion beats type every time.
+ *
+ * The test is not whether the aura looks good on its own. It is whether you
+ * can read the metric tiles without noticing it — and then notice it when you
+ * stop reading.
+ *
  * ── the timings are deliberately not round ──
  *
  * 17s, 23s, 29s, 13s. Co-prime-ish durations mean the four pools do not come
@@ -145,12 +157,12 @@ function LightPool({ pool, tint }: { pool: Pool; tint?: string }) {
 const POOLS: Pool[] = [
   /* The state pool. Its colour is overridden by today's readiness — it is the
      one that makes the screen mean something before you read it. */
-  { id: 'auraState', colour: colors.metricPurple, peak: 0.27, cx: 0.44, cy: 0.31, dx: 34, dy: 44, scale: 0.18, ms: 17000, phase: 0 },
-  { id: 'auraViolet', colour: '#7b3dff', peak: 0.20, cx: 0.62, cy: 0.24, dx: 44, dy: 30, scale: 0.15, ms: 23000, phase: 0.33 },
-  { id: 'auraCyan', colour: '#22b8ff', peak: 0.14, cx: 0.33, cy: 0.44, dx: 40, dy: 36, scale: 0.17, ms: 29000, phase: 0.66 },
+  { id: 'auraState', colour: colors.metricPurple, peak: 0.175, cx: 0.44, cy: 0.31, dx: 34, dy: 44, scale: 0.18, ms: 17000, phase: 0 },
+  { id: 'auraViolet', colour: '#7b3dff', peak: 0.13, cx: 0.62, cy: 0.24, dx: 44, dy: 30, scale: 0.15, ms: 23000, phase: 0.33 },
+  { id: 'auraCyan', colour: '#22b8ff', peak: 0.09, cx: 0.33, cy: 0.44, dx: 40, dy: 36, scale: 0.17, ms: 29000, phase: 0.66 },
   /* A dim warm one low down, so the bottom of the page is not dead black and
      the cool pools have something to be cool *against*. */
-  { id: 'auraWarm', colour: '#ffb37a', peak: 0.065, cx: 0.68, cy: 0.66, dx: 28, dy: 24, scale: 0.13, ms: 13000, phase: 0.5 },
+  { id: 'auraWarm', colour: '#ffb37a', peak: 0.04, cx: 0.68, cy: 0.66, dx: 28, dy: 24, scale: 0.13, ms: 13000, phase: 0.5 },
 ];
 
 /**
@@ -212,10 +224,10 @@ const DUST: DustLayer[] = [
   /* Nearest: biggest, brightest, fastest. Furthest: barely there. The spread
      is what produces depth — a single layer at one speed reads as a texture
      sliding, not as dust hanging in a room. */
-  { key: 'near', ms: 26000, sway: 14, min: 2.2, max: 4.4, opacity: 0.95, count: 11, seed: 3 },
-  { key: 'mid', ms: 38000, sway: 10, min: 1.6, max: 3.2, opacity: 0.7, count: 14, seed: 17 },
-  { key: 'far', ms: 54000, sway: 7, min: 1.1, max: 2.3, opacity: 0.5, count: 16, seed: 41 },
-  { key: 'haze', ms: 74000, sway: 4, min: 0.8, max: 1.6, opacity: 0.34, count: 18, seed: 89 },
+  { key: 'near', ms: 26000, sway: 14, min: 2.0, max: 3.8, opacity: 0.42, count: 9, seed: 3 },
+  { key: 'mid', ms: 38000, sway: 10, min: 1.5, max: 2.8, opacity: 0.30, count: 12, seed: 17 },
+  { key: 'far', ms: 54000, sway: 7, min: 1.0, max: 2.0, opacity: 0.20, count: 13, seed: 41 },
+  { key: 'haze', ms: 74000, sway: 4, min: 0.8, max: 1.5, opacity: 0.13, count: 15, seed: 89 },
 ];
 
 /**
@@ -266,9 +278,18 @@ function DustField({ layer, height, width }: { layer: DustLayer; height: number;
         <Defs>
           {DUST_HUES.map((h) => (
             <RadialGradient key={h.id} id={`${h.id}${layer.key}`}>
-              <Stop offset="0" stopColor="#ffffff" stopOpacity={0.95} />
-              <Stop offset="0.28" stopColor={h.colour} stopOpacity={0.85} />
-              <Stop offset="0.6" stopColor={h.colour} stopOpacity={0.22} />
+              {/*
+                No white core any more.
+
+                A speck that reaches pure white is a *highlight*, and the eye
+                sorts highlights before it sorts anything else — forty of them
+                behind a screen of numbers means forty things competing with the
+                numbers for first place. Starting at the hue itself keeps a
+                speck coloured light rather than a point of glare.
+              */}
+              <Stop offset="0" stopColor={h.colour} stopOpacity={0.62} />
+              <Stop offset="0.34" stopColor={h.colour} stopOpacity={0.40} />
+              <Stop offset="0.66" stopColor={h.colour} stopOpacity={0.12} />
               <Stop offset="1" stopColor={h.colour} stopOpacity={0} />
             </RadialGradient>
           ))}
