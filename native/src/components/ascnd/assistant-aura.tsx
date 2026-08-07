@@ -30,7 +30,15 @@ import { colors } from '@/constants/ascnd';
  *
  * ── why every animated value is a transform ──
  *
- * `AmbientLight` records the constraint this is built around: `react-native-svg`
+ * ── the pools are tight, not wide ──
+ *
+ * `rx` began at 0.42 of a layer already drawn at 200% size, which spread each
+ * pool so far that its peak never got bright anywhere — the screen read as one
+ * flat grey-green wash rather than as light with a source. 0.26 concentrates
+ * the same opacity into a bloom you can point at, and the long tail on the
+ * falloff still keeps it from having an edge.
+ *
+ * `AmbientLight` records the other constraint this is built around: `react-native-svg`
  * re-rasterises an `<Svg>` when any child prop changes. Animating gradient
  * stops or a `<Rect>`'s geometry would therefore redraw the whole layer every
  * frame, which is the most expensive way to move a blurry shape that exists.
@@ -120,8 +128,8 @@ function LightPool({ pool, tint }: { pool: Pool; tint?: string }) {
             id={pool.id}
             cx={pool.cx}
             cy={pool.cy}
-            rx={0.42}
-            ry={0.34}
+            rx={0.26}
+            ry={0.22}
             gradientUnits="objectBoundingBox">
             {CURVE.map((p) => (
               <Stop key={p.at} offset={p.at} stopColor={colour} stopOpacity={pool.peak * p.of} />
@@ -137,12 +145,12 @@ function LightPool({ pool, tint }: { pool: Pool; tint?: string }) {
 const POOLS: Pool[] = [
   /* The state pool. Its colour is overridden by today's readiness — it is the
      one that makes the screen mean something before you read it. */
-  { id: 'auraState', colour: colors.metricPurple, peak: 0.30, cx: 0.42, cy: 0.30, dx: 26, dy: 34, scale: 0.14, ms: 17000, phase: 0 },
-  { id: 'auraViolet', colour: '#7b3dff', peak: 0.22, cx: 0.66, cy: 0.20, dx: 34, dy: 22, scale: 0.11, ms: 23000, phase: 0.33 },
-  { id: 'auraCyan', colour: '#22b8ff', peak: 0.16, cx: 0.28, cy: 0.52, dx: 30, dy: 28, scale: 0.13, ms: 29000, phase: 0.66 },
+  { id: 'auraState', colour: colors.metricPurple, peak: 0.42, cx: 0.44, cy: 0.31, dx: 26, dy: 34, scale: 0.16, ms: 17000, phase: 0 },
+  { id: 'auraViolet', colour: '#7b3dff', peak: 0.32, cx: 0.62, cy: 0.24, dx: 34, dy: 22, scale: 0.13, ms: 23000, phase: 0.33 },
+  { id: 'auraCyan', colour: '#22b8ff', peak: 0.22, cx: 0.33, cy: 0.44, dx: 30, dy: 28, scale: 0.15, ms: 29000, phase: 0.66 },
   /* A dim warm one low down, so the bottom of the page is not dead black and
      the cool pools have something to be cool *against*. */
-  { id: 'auraWarm', colour: '#ffb37a', peak: 0.07, cx: 0.72, cy: 0.74, dx: 22, dy: 18, scale: 0.10, ms: 13000, phase: 0.5 },
+  { id: 'auraWarm', colour: '#ffb37a', peak: 0.10, cx: 0.68, cy: 0.66, dx: 22, dy: 18, scale: 0.12, ms: 13000, phase: 0.5 },
 ];
 
 /**

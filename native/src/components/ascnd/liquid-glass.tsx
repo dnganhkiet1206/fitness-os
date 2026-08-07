@@ -5,7 +5,25 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { glass, radius } from '@/constants/ascnd';
 
 /**
- * A card you can see the room through.
+ * A control you can see the room through.
+ *
+ * ── it belongs to the functional layer, and only there ──
+ *
+ * Apple's guidance on the material is explicit and this component was first
+ * used against it: *"Don't use Liquid Glass in the content layer… including it
+ * in the content layer can result in unnecessary complexity and a confusing
+ * visual hierarchy,"* and *"use Liquid Glass effects sparingly… limit these
+ * effects to the most important functional elements."*
+ *
+ * The assistant screen shipped with twelve of these — every metric tile, every
+ * suggestion chip, every shortcut. Twelve translucent panels over a soft
+ * moving aura is twelve surfaces with no clear edge, all at the same value,
+ * and the result reads muddy for a reason that is structural rather than a
+ * matter of taste: nothing is in front of anything.
+ *
+ * So this is now for things that *float over* content — the ask bar, the state
+ * pill — and content sits on `SolidCard`, which is opaque enough to be read
+ * against drifting colour. Two glass surfaces, not twelve.
  *
  * ── how this differs from `GlassCard` ──
  *
@@ -87,4 +105,32 @@ const styles = StyleSheet.create({
   },
 });
 
-export const liquidRadius = radius;
+/**
+ * The content surface that goes *under* the glass layer.
+ *
+ * Darker and much more opaque than `glass.bg`'s 6% white. Over a page whose
+ * background is four coloured pools in motion, a 6% white fill takes the pool's
+ * colour and the text takes it with them; a dark base holds still underneath
+ * so the numbers stay legible whatever is drifting past. It keeps the same
+ * hairline as every other card in the app, so it reads as the same family.
+ */
+export function SolidCard({
+  children,
+  style,
+  radius: r = radius.lg,
+}: {
+  children?: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+  radius?: number;
+}) {
+  return <View style={[solid.card, { borderRadius: r }, style]}>{children}</View>;
+}
+
+const solid = StyleSheet.create({
+  card: {
+    overflow: 'hidden',
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    backgroundColor: 'rgba(13,13,18,0.62)',
+  },
+});

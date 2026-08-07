@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Icon } from '@/components/ascnd/icon';
-import { LiquidGlass } from '@/components/ascnd/liquid-glass';
+import { LiquidGlass, SolidCard } from '@/components/ascnd/liquid-glass';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
@@ -48,12 +48,20 @@ import { useDailyLog, useTodayBiometrics } from '@/hooks/useTodayData';
  * inset would put a hard black band across the top of it. The header here is
  * ordinary content that happens to be first.
  *
- * ── glass, and why it is a different card ──
+ * ── two layers, and glass belongs to only one of them ──
  *
- * `GlassCard`'s 6% white fill reads as glass over a dark even page. Over four
- * drifting coloured pools it reads as tracing paper. `LiquidGlass` samples what
- * is behind it, so the aura's colour arrives inside the card and shifts as the
- * pools move underneath.
+ * This shipped with twelve `LiquidGlass` surfaces — every tile, chip and
+ * shortcut — and read muddy. Apple's guidance says why, and it is structural
+ * rather than a matter of taste: *"Don't use Liquid Glass in the content
+ * layer… including it in the content layer can result in… a confusing visual
+ * hierarchy,"* and *"use Liquid Glass effects sparingly."* Twelve translucent
+ * panels over a drifting aura is twelve surfaces at the same value with no
+ * clear edge — nothing is in front of anything.
+ *
+ * So the screen is two layers now. Content — tiles, chips, shortcuts — sits on
+ * `SolidCard`, dark and opaque enough to stay legible while coloured light
+ * moves behind it. Glass is left to the two things that genuinely *float*: the
+ * state pill over the lit zone, and the ask bar over the whole page.
  */
 
 interface Metric {
@@ -210,13 +218,25 @@ export default function AssistantScreen() {
         </View>
 
         {/*
-          Where the reference puts a rendered orb, this puts nothing at all —
-          the aura is already there, behind everything, and the empty space is
-          what lets it be seen. A hero object here would sit on top of the one
-          thing that is moving.
+          The lit zone — where the reference puts a rendered orb, this puts the
+          sentence a person came for.
+
+          It was 168pt of deliberately empty space with a pill at the bottom, on
+          the theory that emptiness is what lets light be seen. On screen that
+          read as a hole: the aura alone is too quiet to hold the top third of a
+          page, and the greeting sat below it competing with the title for the
+          same job. One focal point instead — the greeting *is* the hero, it
+          sits in the brightest part of the aura, and the pill under it is the
+          single thing floating over that light.
         */}
         <View style={styles.stage}>
-          <Animated.View entering={FadeIn.duration(400)}>
+          <Animated.View entering={FadeIn.duration(420)} style={styles.stageInner}>
+            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.greetBody}>
+              {vi
+                ? 'Tôi ở đây để giúp bạn hiểu dữ liệu sức khoẻ, trả lời câu hỏi và đưa ra lời khuyên riêng cho bạn.'
+                : 'I’m here to help you understand your health, answer questions, and give personalised advice.'}
+            </Text>
             <LiquidGlass style={styles.statePill} radius={radius.full}>
               <View style={styles.stateInner}>
                 <View
@@ -235,16 +255,6 @@ export default function AssistantScreen() {
           </Animated.View>
         </View>
 
-        {/* ── greeting ── */}
-        <View style={styles.greetBlock}>
-          <Text style={styles.greeting}>{greeting} ✨</Text>
-          <Text style={styles.greetBody}>
-            {vi
-              ? 'Tôi ở đây để giúp bạn hiểu dữ liệu sức khoẻ, trả lời câu hỏi và đưa ra lời khuyên riêng cho bạn.'
-              : 'I’m here to help you understand your health, answer questions, and give personalised advice.'}
-          </Text>
-        </View>
-
         {/* ── metrics ── */}
         <ScrollView
           horizontal
@@ -261,7 +271,7 @@ export default function AssistantScreen() {
               accessibilityLabel={`${vi ? m.label.vi : m.label.en} ${m.value}`}
               onPress={() => go(m.route)}
               style={({ pressed }) => pressed && styles.pressed}>
-              <LiquidGlass style={styles.metricCard} radius={radius.lg}>
+              <SolidCard style={styles.metricCard} radius={radius.lg}>
                 <View style={[styles.metricIcon, { backgroundColor: `${m.tint}22` }]}>
                   <Icon icon={m.icon} size={18} color={m.tint} />
                 </View>
@@ -274,7 +284,7 @@ export default function AssistantScreen() {
                   <View style={[styles.metricDot, { backgroundColor: m.noteTint }]} />
                   <Text style={styles.metricNote}>{vi ? m.note.vi : m.note.en}</Text>
                 </View>
-              </LiquidGlass>
+              </SolidCard>
             </Pressable>
           ))}
         </ScrollView>
@@ -299,12 +309,12 @@ export default function AssistantScreen() {
                 accessibilityRole="button"
                 onPress={() => go('/ai-coach')}
                 style={({ pressed }) => pressed && styles.pressed}>
-                <LiquidGlass style={styles.chip} radius={radius.full}>
+                <SolidCard style={styles.chip} radius={radius.full}>
                   <View style={styles.chipInner}>
                     <Icon icon={s.icon} size={14} color={s.tint} />
                     <Text style={styles.chipText}>{vi ? s.label.vi : s.label.en}</Text>
                   </View>
-                </LiquidGlass>
+                </SolidCard>
               </Pressable>
             ))}
           </View>
@@ -325,12 +335,12 @@ export default function AssistantScreen() {
                 accessibilityLabel={vi ? s.label.vi : s.label.en}
                 onPress={() => go(s.route)}
                 style={({ pressed }) => [styles.shortcutWrap, pressed && styles.pressed]}>
-                <LiquidGlass style={styles.shortcut} radius={radius.lg}>
+                <SolidCard style={styles.shortcut} radius={radius.lg}>
                   <Icon icon={s.icon} size={19} color={s.tint} />
                   <Text style={styles.shortcutText} numberOfLines={1}>
                     {vi ? s.label.vi : s.label.en}
                   </Text>
-                </LiquidGlass>
+                </SolidCard>
               </Pressable>
             ))}
           </View>
@@ -381,7 +391,7 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headText: { flex: 1, gap: 3 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  title: { ...type.largeTitle, color: colors.foreground },
+  title: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, color: colors.foreground },
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -404,16 +414,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
 
-  /* Deliberately tall and deliberately empty — this is where the aura shows. */
-  stage: { height: 168, alignItems: 'center', justifyContent: 'flex-end' },
-  statePill: { alignSelf: 'center' },
+  /* The lit zone. Not empty any more — see the comment at the call site. */
+  stage: { paddingTop: spacing.md, paddingBottom: spacing.xs },
+  stageInner: { gap: spacing.md },
+  statePill: { alignSelf: 'flex-start', marginTop: spacing.xs },
   stateInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 1 },
   stateDot: { width: 8, height: 8, borderRadius: 4 },
   stateText: { ...type.footnote, color: colors.foreground },
 
-  greetBlock: { gap: 6 },
-  greeting: { ...type.title, color: colors.foreground },
-  greetBody: { ...type.body, color: colors.mutedForeground, lineHeight: 21 },
+  /* 34 against the title's 22. The greeting is the human moment and the title
+     is a label; at the same size they compete and the eye lands on neither. */
+  greeting: { fontSize: 34, fontWeight: '700', letterSpacing: -0.8, color: colors.foreground },
+  greetBody: { ...type.body, color: colors.mutedForeground, lineHeight: 22, maxWidth: 322 },
 
   metricScroll: { marginHorizontal: -spacing.md },
   metricRow: { paddingHorizontal: spacing.md, gap: spacing.sm + 2 },
