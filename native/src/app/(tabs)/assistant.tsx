@@ -9,7 +9,6 @@ import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Icon } from '@/components/ascnd/icon';
 import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
-import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useDailyLog, useTodayBiometrics } from '@/hooks/useTodayData';
@@ -187,7 +186,13 @@ export default function AssistantScreen() {
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + spacing.md, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
+          {
+            paddingTop: insets.top + spacing.md,
+            /* Clear of the pinned ask bar: its own height (50) plus the gap it
+               keeps from the bottom, plus one more so the last card is not
+               touching it. */
+            paddingBottom: insets.bottom + 50 + spacing.md * 2 + spacing.md,
+          },
         ]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never">
@@ -207,13 +212,27 @@ export default function AssistantScreen() {
               {vi ? 'Người đồng hành sức khoẻ của bạn' : 'Your personal health companion'}
             </Text>
           </View>
+          {/*
+            The way out.
+
+            This page hides the tab bar — the aura runs to all four edges and
+            the ask bar sits where the capsule would be — so it is the only way
+            back, and it has to look like one. It was a 38pt settings button;
+            it is 46pt now and carries a house, because "trở lại" from a screen
+            with no bar underneath it is a destination rather than a direction,
+            and a chevron pointing left in the top *right* corner would be
+            pointing at nothing.
+          */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={vi ? 'Cài đặt trợ lý' : 'Assistant settings'}
+            accessibilityLabel={vi ? 'Về trang chủ' : 'Back to dashboard'}
             hitSlop={10}
-            onPress={() => go('/settings')}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.navigate('/');
+            }}
             style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}>
-            <Glyph name="sliders" size={17} />
+            <Glyph name="home" size={21} />
           </Pressable>
         </View>
 
@@ -381,7 +400,14 @@ export default function AssistantScreen() {
         find. It opens `/ai-coach`, which is the real conversation — this is a
         door, not an input, until the chat moves in here.
       */}
-      <View style={[styles.askWrap, { bottom: BottomTabInset + insets.bottom - spacing.xs }]}>
+      {/*
+        Above the home indicator, not above a tab bar that is no longer there.
+
+        It was offset by `BottomTabInset`, which is the height of a capsule this
+        page hides — so it floated 72pt up with nothing beneath it, and the
+        tools grid ran underneath it. Now it sits where the thumb already is.
+      */}
+      <View style={[styles.askWrap, { bottom: insets.bottom + spacing.md }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={vi ? 'Hỏi trợ lý sức khoẻ' : 'Ask the health assistant'}
@@ -432,9 +458,9 @@ const styles = StyleSheet.create({
   aiText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, color: colors.metricPurple },
   subtitle: { ...type.footnote, color: colors.mutedForeground },
   iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.secondary,

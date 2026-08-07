@@ -1,3 +1,4 @@
+import { usePathname } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { colors } from '@/constants/ascnd';
@@ -110,6 +111,7 @@ const scrollToTopOnRetap = ({ navigation }: { navigation: { isFocused: () => boo
  * platform's bar, which is the same bargain.
  */
 export default function AppTabs() {
+  const pathname = usePathname();
   const i18n = useI18n();
 
   return (
@@ -145,7 +147,25 @@ export default function AppTabs() {
         pages, the answer is to make the scroll view findable, not to animate
         the bar from JavaScript.
       */
-      minimizeBehavior="onScrollDown">
+      minimizeBehavior="onScrollDown"
+      /*
+        Gone while the Health Assistant is open.
+
+        That page is full-bleed — the aura runs to all four edges and the ask
+        bar sits where the capsule would be — so the bar is not furniture there,
+        it is something covering the screen. Its own back button returns to
+        Today, which is the only way out and is meant to be.
+
+        ── this is not the thing the comment above warns against ──
+
+        Driving `hidden` from a *scroll* listener re-renders this navigator
+        several times per flick, which is what flickered. This is driven by the
+        route, so it changes exactly once per tab switch — the same frequency as
+        the navigation that caused it. `usePathname` rather than
+        `useSegments()`: the tab's own path is what decides, and a path is a
+        string comparison rather than an array to reason about.
+      */
+      hidden={pathname === '/assistant'}>
       <NativeTabs.Trigger name="index" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
         <NativeTabs.Trigger.Icon sf="house" />
         <NativeTabs.Trigger.Label>{i18n.navToday}</NativeTabs.Trigger.Label>

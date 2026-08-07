@@ -38,7 +38,8 @@ export type GlyphName =
   | 'gauge'
   | 'sliders'
   | 'arrow'
-  | 'camera';
+  | 'camera'
+  | 'home';
 
 const disc = (cx: number, cy: number, r: number) =>
   `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
@@ -66,6 +67,8 @@ const PATHS: Record<GlyphName, string> = {
      disc of some background colour that would only be right on one screen. */
   camera:
     'M4.4 6.5h3.05l1.1-1.95c.3-.53.87-.85 1.48-.85h4.24c.61 0 1.18.32 1.48.85l1.1 1.95H19.6A2.4 2.4 0 0 1 22 8.9v8.7a2.4 2.4 0 0 1-2.4 2.4H4.4A2.4 2.4 0 0 1 2 17.6V8.9a2.4 2.4 0 0 1 2.4-2.4ZM8.6 13.4a3.4 3.4 0 1 0 6.8 0 3.4 3.4 0 1 0-6.8 0Z',
+  home:
+    'M11.06 2.98a1.5 1.5 0 0 1 1.88 0l7.5 6.02c.36.28.56.71.56 1.17V19.2a2.4 2.4 0 0 1-2.4 2.4h-3.7v-5.5a1.2 1.2 0 0 0-1.2-1.2h-3.4a1.2 1.2 0 0 0-1.2 1.2v5.5H5.4A2.4 2.4 0 0 1 3 19.2v-9.03c0-.46.2-.89.56-1.17Z',
   arrow:
     'M12 3.4c.3 0 .6.12.82.34l6.3 6.3a1.16 1.16 0 0 1-1.64 1.64L13.16 7.4V19.4a1.16 1.16 0 0 1-2.32 0V7.4l-4.32 4.28A1.16 1.16 0 0 1 4.88 10l6.3-6.26c.22-.22.52-.34.82-.34Z',
 };
@@ -89,6 +92,7 @@ export const GLYPH_TINT: Record<GlyphName, readonly [string, string]> = {
   sliders: ['#e8e8ee', '#a8afbd'],
   arrow: ['#ffffff', '#c8ccd4'],
   camera: ['#ffd08a', '#ff9130'],
+  home: ['#f2f3f6', '#a8afbd'],
 };
 
 /** Glyphs whose shape needs a hole punched through it. */

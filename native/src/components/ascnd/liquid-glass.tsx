@@ -1,6 +1,6 @@
 import { BlurView } from 'expo-blur';
-import { useId } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useId, useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { glass, radius } from '@/constants/ascnd';
@@ -53,6 +53,20 @@ import { glass, radius } from '@/constants/ascnd';
  * beneath is already soft — there are no edges down there for a strong blur to
  * dissolve — so all a higher number would buy is a paler card.
  *
+ * ── the face is measured, not sized in percent ──
+ *
+ * `<Svg width="100%">` with `<Rect width="100%">` inside it is the obvious way
+ * to fill the card and it is wrong on native: a percentage resolves against the
+ * frame the SVG was *last laid out at*. On a device this showed as a bright
+ * rectangle sitting inside each tile — the lit face and the tint stopping short
+ * of the card's real edges, with a visible seam where they ended.
+ *
+ * `GlassCard` documents this exact trap and solves it the same way: measure the
+ * box with `onLayout` and hand the SVG real pixels. It cannot loop, because the
+ * face is absolutely positioned and nothing it draws can change the box being
+ * measured. Nothing renders before the first measurement — one frame of plain
+ * blur, invisible next to a card appearing.
+ *
  * ── android ──
  *
  * `experimentalBlurMethod` is deliberately not set. Without it Android renders
@@ -82,6 +96,13 @@ export function LiquidGlass({
   const shade = `lgShade-${uid}`;
   const wash = `lgWash-${uid}`;
   const edge = `lgEdge-${uid}`;
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  const measure = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    // Only on a real change — `onLayout` fires for other reasons, and setting
+    // the same numbers re-renders every panel on the screen for nothing.
+    setSize((p) => (p && p.w === width && p.h === height ? p : { w: width, h: height }));
+  };
 
   return (
     <View style={[styles.wrap, { borderRadius: r }, style]}>
@@ -92,7 +113,9 @@ export function LiquidGlass({
         right. Two rects each fading to fully transparent rather than one
         white→black, which would drag a grey haze through the middle.
       */}
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
+      <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={measure}>
+        {size ? (
+      <Svg width={size.w} height={size.h}>
         <Defs>
           <LinearGradient id={lit} x1="0" y1="0" x2="0.9" y2="1">
             <Stop offset="0" stopColor="#ffffff" stopOpacity={0.10} />
@@ -117,9 +140,9 @@ export function LiquidGlass({
             </RadialGradient>
           ) : null}
         </Defs>
-        {tint ? <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${wash})`} /> : null}
-        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${lit})`} />
-        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${shade})`} />
+        {tint ? <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${wash})`} /> : null}
+        <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${lit})`} />
+        <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${shade})`} />
         {/*
           The specular edge — a 1pt line along the top, bright at the left and
           gone by two-thirds across.
@@ -129,8 +152,10 @@ export function LiquidGlass({
           the light comes from; a border that is the same value all the way
           round reads as a drawn outline, which is what the hairline alone was.
         */}
-        <Rect x="0" y="0" width="100%" height="1" fill={`url(#${edge})`} />
+        <Rect x="0" y="0" width={size.w} height={1} fill={`url(#${edge})`} />
       </Svg>
+        ) : null}
+      </View>
       {children}
     </View>
   );
