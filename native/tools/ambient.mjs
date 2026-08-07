@@ -87,9 +87,20 @@ function routeFiles(dir, prefix = '') {
   return out;
 }
 
-/** Does this file get room light, either directly or through `<Screen>`? */
+/**
+ * Does this file get room light — directly, through `<Screen>`, or from a
+ * component whose whole job is to *be* the room light?
+ *
+ * `AssistantAura` is the third case. It is the same three-pool recipe with the
+ * pools drifting, built for the Health Assistant page where the light is the
+ * hero rather than the backdrop; a page carrying it is lit by definition. The
+ * rule matches the name rather than a list of files, so a second animated
+ * backdrop would be recognised without editing this.
+ */
 const lit = (src) =>
-  /<AmbientLight\b/.test(src) || /from '@\/components\/ascnd\/screen'/.test(src);
+  /<AmbientLight\b/.test(src) ||
+  /<AssistantAura\b/.test(src) ||
+  /from '@\/components\/ascnd\/screen'/.test(src);
 
 function audit(layoutSource, files) {
   const modals = modalRoutes(layoutSource);
@@ -113,7 +124,11 @@ function audit(layoutSource, files) {
 const FIXTURES = [
   ['dùng Screen', `import { Screen } from '@/components/ascnd/screen';`, true],
   ['tự gắn AmbientLight', `import x from 'y';\nreturn (<View><AmbientLight /><ScrollView/></View>);`, true],
+  ['tự gắn AssistantAura', `return (<View><AssistantAura state={null} /><ScrollView/></View>);`, true],
   ['không có gì', `import { View, ScrollView } from 'react-native';\nreturn <ScrollView/>;`, false],
+  /* The near miss: a page that only *imports* the aura and never renders it is
+     dark, and reads at a glance as though it is not. */
+  ['chỉ import chứ không dùng', `import { AssistantAura } from '@/components/ascnd/assistant-aura';\nreturn <ScrollView/>;`, false],
 ];
 const selfFail = FIXTURES.filter(([, src, want]) => lit(src) !== want).map(([label]) => label);
 if (selfFail.length) {

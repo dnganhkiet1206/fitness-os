@@ -1,136 +1,468 @@
-import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Camera, ChevronRight, Heart, Moon, Sparkles, type LucideIcon } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { router } from 'expo-router';
+import {
+  Activity,
+  ArrowUp,
+  Battery,
+  Camera,
+  ChevronRight,
+  Flame,
+  Heart,
+  Leaf,
+  Moon,
+  Settings2,
+  Sparkles,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GlassCard } from '@/components/ascnd/glass-card';
+import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Icon } from '@/components/ascnd/icon';
-import { Screen } from '@/components/ascnd/screen';
+import { LiquidGlass } from '@/components/ascnd/liquid-glass';
+import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { rise } from '@/lib/entrance';
+import { useAppSettings } from '@/hooks/use-app-settings';
+import { useDailyLog, useTodayBiometrics } from '@/hooks/useTodayData';
 
 /**
- * Health assistant — the four things the app can do *for* you, on a page.
+ * Health Assistant — the screen you open to ask about your own body.
  *
- * ── why it is a page and not a button ──
+ * ── this is the layout, not yet the wiring ──
  *
- * These four were behind a floating button for a long time, and the button
- * kept having nowhere to live: the middle slot of a hand-drawn tab bar, where
- * it looked like a destination and navigated nowhere; the native accessory
- * slot, which draws as a second full-width bar; a circle floating over the
- * corner, which cannot make the tab bar move aside for it.
+ * Built to be looked at and pressed before most of it does anything, which is
+ * a deliberate order: the four metric tiles read real data because that data
+ * already existed, and the suggestion chips and the ask box currently route to
+ * screens that exist rather than pretending to be a conversation. Nothing here
+ * displays a number the app cannot produce — the reference's "Stress 28" is a
+ * tile this app has no source for, and it is `Sẵn sàng` instead, which is the
+ * app's own headline metric and is already computed.
  *
- * The last of those is what settled it. A separate island beside the tab bar
- * is an iOS 26 layout, and the system only produces it for a *tab* — it
- * shrinks the capsule to make room and draws the odd one out as a circle.
- * Nothing in an app can ask a `UITabBarController` to stand aside; it can only
- * give it a fifth item and let it do that itself.
+ * ── full bleed, because the light has to reach the corners ──
  *
- * So this is a destination now, which is also the honest description: a menu
- * of four screens was never an action.
+ * Every other page uses `Screen`, which owns a header and lays its own padding.
+ * This one does not: the aura is the background of the whole screen including
+ * under the status bar, and a scaffold that starts content below a safe-area
+ * inset would put a hard black band across the top of it. The header here is
+ * ordinary content that happens to be first.
  *
- * ── the trigger's role ──
+ * ── glass, and why it is a different card ──
  *
- * `role="search"` in `app-tabs` is what makes the island. It is the only role
- * iOS draws that way, and it brings a fixed system title with it — so the
- * label is hidden and the tab carries an `accessibilityLabel` instead, which
- * is what a screen reader reads anyway.
+ * `GlassCard`'s 6% white fill reads as glass over a dark even page. Over four
+ * drifting coloured pools it reads as tracing paper. `LiquidGlass` samples what
+ * is behind it, so the aura's colour arrives inside the card and shifts as the
+ * pools move underneath.
  */
 
-interface Action {
+interface Metric {
   key: string;
   icon: LucideIcon;
-  color: string;
-  label: { en: string; vi: string };
-  hint: { en: string; vi: string };
-  route: '/scan-food?from=ai' | '/ai-coach' | '/biometrics' | '/sleep-insights';
+  tint: string;
+  label: { vi: string; en: string };
+  value: string;
+  unit?: string;
+  /** the small line under the number — a state, not a repeat of the number */
+  note: { vi: string; en: string };
+  noteTint: string;
+  route: string;
 }
 
-const ACTIONS: Action[] = [
-  {
-    key: 'scan',
-    icon: Camera,
-    color: colors.metricOrange,
-    label: { en: 'Scan a meal', vi: 'Quét thực phẩm' },
-    hint: { en: 'Point the camera at a plate', vi: 'Hướng máy ảnh vào đĩa ăn' },
-    route: '/scan-food?from=ai',
-  },
-  {
-    key: 'coach',
-    icon: Sparkles,
-    color: colors.metricPurple,
-    label: { en: 'AI Coach', vi: 'AI Coach' },
-    hint: { en: 'Ask about training or food', vi: 'Hỏi về tập luyện hoặc ăn uống' },
-    route: '/ai-coach',
-  },
-  {
-    key: 'bio',
-    icon: Heart,
-    color: colors.readinessRed,
-    label: { en: 'Biometrics', vi: 'Sinh trắc học' },
-    hint: { en: 'Heart rate, HRV, oxygen', vi: 'Nhịp tim, HRV, oxy' },
-    route: '/biometrics',
-  },
-  {
-    key: 'sleep',
-    icon: Moon,
-    color: colors.metricBlue,
-    label: { en: 'Sleep', vi: 'Giấc ngủ' },
-    hint: { en: 'Last night, and the trend', vi: 'Đêm qua, và xu hướng' },
-    route: '/sleep-insights',
-  },
+interface Suggestion {
+  key: string;
+  icon: LucideIcon;
+  tint: string;
+  label: { vi: string; en: string };
+}
+
+const SUGGESTIONS: Suggestion[] = [
+  { key: 'sleep', icon: Moon, tint: colors.metricPurple, label: { vi: 'Cải thiện giấc ngủ', en: 'Improve sleep quality' } },
+  { key: 'stress', icon: Leaf, tint: colors.readinessGreen, label: { vi: 'Giảm căng thẳng', en: 'Reduce stress' } },
+  { key: 'energy', icon: Zap, tint: colors.readinessYellow, label: { vi: 'Tăng năng lượng', en: 'Increase energy' } },
+  { key: 'habit', icon: Activity, tint: colors.metricBlue, label: { vi: 'Xây thói quen tốt', en: 'Build better habits' } },
 ];
 
 export default function AssistantScreen() {
-  const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
+  const insets = useSafeAreaInsets();
+  const { data: dailyLog } = useDailyLog();
+  const { data: bio } = useTodayBiometrics();
+
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 11
+      ? vi ? 'Chào buổi sáng!' : 'Good morning!'
+      : hour < 18
+        ? vi ? 'Chào buổi chiều!' : 'Good afternoon!'
+        : vi ? 'Chào buổi tối!' : 'Good evening!';
+
+  /*
+    Real values, or a dash.
+
+    Every tile here has a source in the app already, so none of them is a
+    placeholder — and where today has nothing yet the tile shows `—` rather
+    than `0`, because zero is a measurement and "not yet" is not.
+  */
+  const hr = bio?.hr_bpm != null ? Math.round(Number(bio.hr_bpm)) : null;
+  const sleepMin = Number(dailyLog?.sleep_duration_min) || 0;
+  const kcal = Math.round(Number(dailyLog?.kcal) || 0);
+  const readiness = dailyLog?.readiness_score != null ? Math.round(Number(dailyLog.readiness_score)) : null;
+  const status = (dailyLog?.readiness_status as 'green' | 'yellow' | 'red' | null) ?? null;
+
+  const metrics: Metric[] = [
+    {
+      key: 'hr',
+      icon: Heart,
+      tint: colors.readinessRed,
+      label: { vi: 'Nhịp tim', en: 'Heart rate' },
+      value: hr != null ? String(hr) : '—',
+      unit: hr != null ? 'bpm' : undefined,
+      note: hr == null
+        ? { vi: 'Chưa có', en: 'No data' }
+        : hr < 60 ? { vi: 'Thấp', en: 'Low' } : hr <= 80 ? { vi: 'Bình thường', en: 'Normal' } : { vi: 'Cao', en: 'High' },
+      noteTint: hr == null ? colors.mutedForeground : hr <= 80 ? colors.readinessGreen : colors.readinessYellow,
+      route: '/biometrics',
+    },
+    {
+      key: 'sleep',
+      icon: Moon,
+      tint: colors.metricPurple,
+      label: { vi: 'Giấc ngủ', en: 'Sleep' },
+      value: sleepMin > 0 ? `${Math.floor(sleepMin / 60)}h ${sleepMin % 60}` : '—',
+      unit: sleepMin > 0 ? 'm' : undefined,
+      note: sleepMin === 0
+        ? { vi: 'Chưa ghi', en: 'Not logged' }
+        : sleepMin >= 420 ? { vi: 'Tốt', en: 'Good' } : { vi: 'Thiếu', en: 'Short' },
+      noteTint: sleepMin === 0 ? colors.mutedForeground : sleepMin >= 420 ? colors.readinessGreen : colors.readinessYellow,
+      route: '/sleep-insights',
+    },
+    {
+      key: 'kcal',
+      icon: Flame,
+      tint: colors.metricOrange,
+      label: { vi: 'Calo', en: 'Calories' },
+      value: kcal > 0 ? kcal.toLocaleString() : '—',
+      note: { vi: 'Hôm nay', en: 'Today' },
+      noteTint: colors.metricBlue,
+      route: '/nutrition',
+    },
+    {
+      key: 'readiness',
+      icon: Battery,
+      tint: colors.readinessGreen,
+      label: { vi: 'Sẵn sàng', en: 'Readiness' },
+      value: readiness != null ? String(readiness) : '—',
+      note: readiness == null
+        ? { vi: 'Cần thêm dữ liệu', en: 'Needs data' }
+        : status === 'green' ? { vi: 'Tốt', en: 'Good' } : status === 'yellow' ? { vi: 'Vừa', en: 'Moderate' } : { vi: 'Thấp', en: 'Low' },
+      noteTint:
+        readiness == null
+          ? colors.mutedForeground
+          : status === 'green' ? colors.readinessGreen : status === 'yellow' ? colors.readinessYellow : colors.readinessRed,
+      route: '/biometrics',
+    },
+  ];
+
+  const go = (route: string) => {
+    Haptics.selectionAsync();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.push(route as any);
+  };
 
   return (
-    <Screen title={i18n.nHealthAssistant}>
-      {ACTIONS.map((a, i) => (
-        <Animated.View key={a.key} entering={rise(i)}>
+    <View style={styles.root}>
+      <AssistantAura state={status} />
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + spacing.md, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
+        ]}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never">
+        {/* ── header ── */}
+        <View style={styles.head}>
+          <View style={styles.headText}>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Health Assistant</Text>
+              {/* The AI mark. A pill rather than a word in the title, so the
+                  title stays a name and the badge stays a label. */}
+              <View style={styles.aiBadge}>
+                <Icon icon={Sparkles} size={10} color={colors.metricPurple} />
+                <Text style={styles.aiText}>AI</Text>
+              </View>
+            </View>
+            <Text style={styles.subtitle}>
+              {vi ? 'Người đồng hành sức khoẻ của bạn' : 'Your personal health companion'}
+            </Text>
+          </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={vi ? a.label.vi : a.label.en}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push(a.route);
-            }}>
-            {({ pressed }) => (
-              <GlassCard style={[styles.card, pressed && styles.pressed]}>
-                <View style={[styles.icon, { backgroundColor: `${a.color}1f` }]}>
-                  <Icon icon={a.icon} size={20} color={a.color} />
-                </View>
-                <View style={styles.text}>
-                  <Text style={styles.label}>{vi ? a.label.vi : a.label.en}</Text>
-                  <Text style={styles.hint} numberOfLines={1}>
-                    {vi ? a.hint.vi : a.hint.en}
-                  </Text>
-                </View>
-                <Icon icon={ChevronRight} size={17} color={colors.mutedForeground} />
-              </GlassCard>
-            )}
+            accessibilityLabel={vi ? 'Cài đặt trợ lý' : 'Assistant settings'}
+            hitSlop={10}
+            onPress={() => go('/settings')}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}>
+            <Icon icon={Settings2} size={17} color={colors.foreground} />
           </Pressable>
-        </Animated.View>
-      ))}
-    </Screen>
+        </View>
+
+        {/*
+          Where the reference puts a rendered orb, this puts nothing at all —
+          the aura is already there, behind everything, and the empty space is
+          what lets it be seen. A hero object here would sit on top of the one
+          thing that is moving.
+        */}
+        <View style={styles.stage}>
+          <Animated.View entering={FadeIn.duration(400)}>
+            <LiquidGlass style={styles.statePill} radius={radius.full}>
+              <View style={styles.stateInner}>
+                <View
+                  style={[
+                    styles.stateDot,
+                    { backgroundColor: status === 'green' ? colors.readinessGreen : status === 'yellow' ? colors.readinessYellow : status === 'red' ? colors.readinessRed : colors.metricPurple },
+                  ]}
+                />
+                <Text style={styles.stateText}>
+                  {readiness != null
+                    ? vi ? `Sẵn sàng ${readiness}/100 hôm nay` : `Readiness ${readiness}/100 today`
+                    : vi ? 'Đang chờ dữ liệu hôm nay' : 'Waiting for today’s data'}
+                </Text>
+              </View>
+            </LiquidGlass>
+          </Animated.View>
+        </View>
+
+        {/* ── greeting ── */}
+        <View style={styles.greetBlock}>
+          <Text style={styles.greeting}>{greeting} ✨</Text>
+          <Text style={styles.greetBody}>
+            {vi
+              ? 'Tôi ở đây để giúp bạn hiểu dữ liệu sức khoẻ, trả lời câu hỏi và đưa ra lời khuyên riêng cho bạn.'
+              : 'I’m here to help you understand your health, answer questions, and give personalised advice.'}
+          </Text>
+        </View>
+
+        {/* ── metrics ── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.metricRow}
+          /* Four tiles across a 390pt screen is 85pt each, which cannot hold
+             "7h 45m". They scroll, and the fourth peeking at the edge is what
+             tells you they do. */
+          style={styles.metricScroll}>
+          {metrics.map((m) => (
+            <Pressable
+              key={m.key}
+              accessibilityRole="button"
+              accessibilityLabel={`${vi ? m.label.vi : m.label.en} ${m.value}`}
+              onPress={() => go(m.route)}
+              style={({ pressed }) => pressed && styles.pressed}>
+              <LiquidGlass style={styles.metricCard} radius={radius.lg}>
+                <View style={[styles.metricIcon, { backgroundColor: `${m.tint}22` }]}>
+                  <Icon icon={m.icon} size={18} color={m.tint} />
+                </View>
+                <Text style={styles.metricLabel}>{vi ? m.label.vi : m.label.en}</Text>
+                <View style={styles.metricValueRow}>
+                  <Text style={styles.metricValue}>{m.value}</Text>
+                  {m.unit ? <Text style={styles.metricUnit}>{m.unit}</Text> : null}
+                </View>
+                <View style={styles.metricNoteRow}>
+                  <View style={[styles.metricDot, { backgroundColor: m.noteTint }]} />
+                  <Text style={styles.metricNote}>{vi ? m.note.vi : m.note.en}</Text>
+                </View>
+              </LiquidGlass>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        {/* ── suggestions ── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>{vi ? 'Gợi ý cho bạn' : 'Suggested for you'}</Text>
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => go('/ai-coach')}
+              style={({ pressed }) => [styles.seeAll, pressed && styles.pressed]}>
+              <Text style={styles.seeAllText}>{vi ? 'Xem tất cả' : 'View all'}</Text>
+              <Icon icon={ChevronRight} size={14} color={colors.primary} />
+            </Pressable>
+          </View>
+          <View style={styles.chips}>
+            {SUGGESTIONS.map((s) => (
+              <Pressable
+                key={s.key}
+                accessibilityRole="button"
+                onPress={() => go('/ai-coach')}
+                style={({ pressed }) => pressed && styles.pressed}>
+                <LiquidGlass style={styles.chip} radius={radius.full}>
+                  <View style={styles.chipInner}>
+                    <Icon icon={s.icon} size={14} color={s.tint} />
+                    <Text style={styles.chipText}>{vi ? s.label.vi : s.label.en}</Text>
+                  </View>
+                </LiquidGlass>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* ── shortcuts kept from the old page, so nothing that worked is lost ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{vi ? 'Lối tắt' : 'Shortcuts'}</Text>
+          <View style={styles.shortcutRow}>
+            {[
+              { key: 'scan', icon: Camera, tint: colors.metricOrange, label: { vi: 'Quét món ăn', en: 'Scan a meal' }, route: '/scan-food?from=ai' },
+              { key: 'bio', icon: Heart, tint: colors.readinessRed, label: { vi: 'Sinh trắc', en: 'Biometrics' }, route: '/biometrics' },
+              { key: 'sleep', icon: Moon, tint: colors.metricBlue, label: { vi: 'Giấc ngủ', en: 'Sleep' }, route: '/sleep-insights' },
+            ].map((s) => (
+              <Pressable
+                key={s.key}
+                accessibilityRole="button"
+                accessibilityLabel={vi ? s.label.vi : s.label.en}
+                onPress={() => go(s.route)}
+                style={({ pressed }) => [styles.shortcutWrap, pressed && styles.pressed]}>
+                <LiquidGlass style={styles.shortcut} radius={radius.lg}>
+                  <Icon icon={s.icon} size={19} color={s.tint} />
+                  <Text style={styles.shortcutText} numberOfLines={1}>
+                    {vi ? s.label.vi : s.label.en}
+                  </Text>
+                </LiquidGlass>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/*
+        The ask box floats over the content, above the tab bar.
+
+        Pinned rather than scrolled: it is the screen's one primary action, and
+        a primary action that scrolls out of reach is one you have to go and
+        find. It opens `/ai-coach`, which is the real conversation — this is a
+        door, not an input, until the chat moves in here.
+      */}
+      <View style={[styles.askWrap, { bottom: BottomTabInset + insets.bottom - spacing.xs }]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={vi ? 'Hỏi trợ lý sức khoẻ' : 'Ask the health assistant'}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/ai-coach');
+          }}
+          style={({ pressed }) => pressed && styles.pressed}>
+          <LiquidGlass style={styles.ask} radius={radius.full} intensity={30}>
+            <View style={styles.askInner}>
+              <View style={styles.askSpark}>
+                <Icon icon={Sparkles} size={15} color={colors.metricPurple} />
+              </View>
+              <Text style={styles.askText} numberOfLines={1}>
+                {vi ? 'Hỏi tôi bất cứ điều gì về sức khoẻ…' : 'Ask me anything about your health…'}
+              </Text>
+              <View style={styles.askSend}>
+                <Icon icon={ArrowUp} size={17} color={colors.primaryForeground} strokeWidth={2.5} />
+              </View>
+            </View>
+          </LiquidGlass>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  pressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
-  icon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.sm,
+  root: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: spacing.md, gap: spacing.lg },
+
+  head: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  headText: { flex: 1, gap: 3 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  title: { ...type.largeTitle, color: colors.foreground },
+  aiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(180,92,255,0.16)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(180,92,255,0.35)',
+  },
+  aiText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, color: colors.metricPurple },
+  subtitle: { ...type.footnote, color: colors.mutedForeground },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.secondary,
   },
-  text: { flex: 1, minWidth: 0, gap: 2 },
-  label: { ...type.headline, color: colors.foreground },
-  hint: { ...type.footnote, color: colors.mutedForeground },
+
+  /* Deliberately tall and deliberately empty — this is where the aura shows. */
+  stage: { height: 168, alignItems: 'center', justifyContent: 'flex-end' },
+  statePill: { alignSelf: 'center' },
+  stateInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 1 },
+  stateDot: { width: 8, height: 8, borderRadius: 4 },
+  stateText: { ...type.footnote, color: colors.foreground },
+
+  greetBlock: { gap: 6 },
+  greeting: { ...type.title, color: colors.foreground },
+  greetBody: { ...type.body, color: colors.mutedForeground, lineHeight: 21 },
+
+  metricScroll: { marginHorizontal: -spacing.md },
+  metricRow: { paddingHorizontal: spacing.md, gap: spacing.sm + 2 },
+  metricCard: { width: 132, padding: spacing.md, gap: 6 },
+  metricIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  metricLabel: { ...type.caption, color: colors.mutedForeground },
+  metricValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
+  metricValue: { fontSize: 26, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
+  metricUnit: { fontSize: 12, color: colors.mutedForeground },
+  metricNoteRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  metricDot: { width: 6, height: 6, borderRadius: 3 },
+  metricNote: { ...type.caption, color: colors.mutedForeground },
+
+  section: { gap: spacing.sm + 2 },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionTitle: { ...type.headline, color: colors.foreground },
+  seeAll: { flexDirection: 'row', alignItems: 'center', gap: 1 },
+  seeAllText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
+
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: { alignSelf: 'flex-start' },
+  chipInner: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: spacing.md - 2, paddingVertical: spacing.sm + 2 },
+  chipText: { ...type.footnote, color: colors.foreground },
+
+  shortcutRow: { flexDirection: 'row', gap: spacing.sm },
+  shortcutWrap: { flex: 1 },
+  shortcut: { alignItems: 'center', gap: 7, paddingVertical: spacing.md },
+  shortcutText: { ...type.caption, color: colors.foreground },
+
+  askWrap: { position: 'absolute', left: spacing.md, right: spacing.md },
+  ask: {},
+  askInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2, paddingLeft: spacing.sm, paddingRight: spacing.sm, paddingVertical: spacing.sm },
+  askSpark: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(180,92,255,0.16)',
+  },
+  askText: { flex: 1, ...type.footnote, color: colors.mutedForeground },
+  askSend: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });
