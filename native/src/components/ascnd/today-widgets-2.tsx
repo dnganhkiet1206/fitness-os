@@ -21,7 +21,9 @@ import {
   Wind,
   type LucideIcon,
 } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import Svg, { Line } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
@@ -47,6 +49,69 @@ import {
   type AcwrZoneKey,
 } from '@/lib/training-card';
 import { displayWeight, weightLabel } from '@/lib/units';
+
+/**
+ * A dashed rule, drawn rather than bordered.
+ *
+ * ── this replaced `borderStyle: 'dashed'`, which drew nothing at all ──
+ *
+ * The habit line and its legend key were a `View` with `borderTopWidth: 1`,
+ * `borderStyle: 'dashed'` and `borderTopColor`. On a device that produced four
+ * `Unsupported dashed / dotted border style` warnings and **no line**.
+ *
+ * `RCTBorderDrawing.m:496` is the whole story: a dashed border is refused
+ * unless all four `borderColor`s are equal, and it does not fall back to a
+ * solid line — it `return nil`s, so nothing is painted. Setting only
+ * `borderTopColor` leaves the other three at their default, so the colours are
+ * unequal by construction and the branch can never be taken. The one styling
+ * shorthand that reads as "colour just the edge I gave a width to" is the one
+ * that guarantees the edge is not drawn.
+ *
+ * What made this expensive is that it fails *quietly and plausibly*. A missing
+ * reference line on a volume chart looks like a week with no baseline yet, and
+ * `tools/training-card.mjs` was checking that the line is written after the
+ * bars so the bars cannot cover it — which was true, and irrelevant, because
+ * there was no line to cover. Source order was the previous bug in the same
+ * six lines, and checking for it again told me nothing about this one.
+ *
+ * So: SVG, which is how `line-chart.tsx` and `water-chart.tsx` have drawn their
+ * dashed gridlines all along. `strokeDasharray` has no equal-colours precondition
+ * and no silent nil.
+ *
+ * ── the width is a number, never "100%" ──
+ *
+ * A percentage inside `<Svg>` resolves against the frame the SVG was *last laid
+ * out at*, which `glass-card.tsx` and `liquid-glass.tsx` both document at
+ * length after it cost a visible seam on both. Callers pass real pixels: the
+ * legend key knows its own 14, and the habit line takes the chart's measured
+ * width.
+ */
+/**
+ * The habit line's colour, shared by the rule and its legend key.
+ *
+ * 55% white, not 35% — it crosses the bars rather than hiding behind them, and
+ * 35% over a lit bar is fainter than the same 35% over the card. One constant
+ * because the key is a promise about the line: two literals drifting apart
+ * would make the legend describe something the chart is not drawing.
+ */
+const HABIT_COLOUR = 'rgba(255,255,255,0.55)';
+
+function DashedRule({ width, colour }: { width: number; colour: string }) {
+  if (width <= 0) return null;
+  return (
+    <Svg width={width} height={1}>
+      <Line
+        x1={0}
+        y1={0.5}
+        x2={width}
+        y2={0.5}
+        stroke={colour}
+        strokeWidth={1}
+        strokeDasharray={[3, 4]}
+      />
+    </Svg>
+  );
+}
 
 function MicroTitle({ icon, children, color }: { icon?: LucideIcon; children: React.ReactNode; color?: string }) {
   return (
@@ -205,6 +270,15 @@ const whenLabel = (days: number, vi: boolean) => {
  * Everything on the card is now either a sentence, a weight, or a date.
  */
 export function TrainingCard({ acwr }: { acwr: number | null }) {
+  /* The habit line spans the chart, and `DashedRule` needs that span in pixels
+     rather than a percentage — see the note on it. Set once from `onLayout`;
+     the line is absolutely positioned, so nothing it draws can change the box
+     being measured and this cannot loop. */
+  const [chartW, setChartW] = useState(0);
+  const measureChart = (e: LayoutChangeEvent) => {
+    const { width } = e.nativeEvent.layout;
+    setChartW((p) => (p === width ? p : width));
+  };
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -404,14 +478,14 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
             </Text>
             {habitVolume > 0 ? (
               <View style={styles.trendKey}>
-                <View style={styles.trendKeyDash} />
+                <DashedRule width={14} colour={HABIT_COLOUR} />
                 <Text style={styles.trendKeyText}>
                   {vi ? 'thói quen' : 'habit'} {kg(habitVolume)}
                 </Text>
               </View>
             ) : null}
           </View>
-          <View style={styles.trendChart}>
+          <View style={styles.trendChart} onLayout={measureChart}>
             {trend.map((w, i) => {
               const last = i === trend.length - 1;
               /*
@@ -454,8 +528,9 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
             {habitVolume > 0 && trendMax > 0 ? (
               <View
                 style={[styles.habitLine, { bottom: (habitVolume / trendMax) * TREND_H }]}
-                pointerEvents="none"
-              />
+                pointerEvents="none">
+                <DashedRule width={chartW} colour={HABIT_COLOUR} />
+              </View>
             ) : null}
           </View>
           <View style={styles.trendLabels}>
@@ -803,29 +878,14 @@ const styles = StyleSheet.create({
   trendChart: { height: TREND_H, flexDirection: 'row', alignItems: 'flex-end', gap: 6 },
   trendSlot: { flex: 1, justifyContent: 'flex-end' },
   trendBar: { borderRadius: 3, minHeight: 1 },
-  /* Dashed rather than solid: it is a reference, not a measurement, and a solid
-     rule at this weight reads as another bar lying on its side.
-
-     55% white, not 35% — it crosses the bars now instead of hiding behind them,
-     and 35% over a lit bar is fainter than 35% over the card. */
-  habitLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    borderTopWidth: 1,
-    borderStyle: 'dashed',
-    borderTopColor: 'rgba(255,255,255,0.55)',
-  },
+  /* The box the rule is drawn into. It carries no border of its own — the line
+     is an `<Svg>` child, because a dashed *border* silently draws nothing on
+     iOS (see `DashedRule`). */
+  habitLine: { position: 'absolute', left: 0, right: 0, height: 1 },
   trendLabels: { flexDirection: 'row', alignItems: 'center' },
   trendEnd: { flex: 1, fontSize: 10, color: colors.mutedForeground },
   trendNow: { textAlign: 'right', fontWeight: '600', color: colors.foreground },
   trendKey: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  trendKeyDash: {
-    width: 14,
-    borderTopWidth: 1,
-    borderStyle: 'dashed',
-    borderTopColor: 'rgba(255,255,255,0.55)',
-  },
   trendKeyText: { fontSize: 10, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   painRow: {
     flexDirection: 'row',

@@ -29,6 +29,52 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = mkdtempSync(path.join(NATIVE, '.check-training-'));
 const read = (p) => readFileSync(path.join(NATIVE, p), 'utf8');
 
+/**
+ * Source with the prose taken out.
+ *
+ * The rules below read code, and this file's own explanation of the dashed
+ * border bug quotes the broken line verbatim. Scanning raw text flagged the
+ * comment that exists to stop the bug — a check that forbids describing what it
+ * forbids is one nobody can leave a note next to.
+ */
+const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+/**
+ * Returns the complaints rather than pushing them, so the self-test at the
+ * bottom can run it over a deliberately broken source and check that it does
+ * complain — and over a comment that quotes the bug and check that it does not.
+ */
+function dashedBorderProblems(files) {
+  const bad = [];
+  for (const [file, src] of files) {
+    for (const m of src.matchAll(/borderStyle:\s*'(dashed|dotted)'/g)) {
+      bad.push(
+        `${file}: borderStyle: '${m[1]}' — trên iOS viền đứt nét bị từ chối nếu bốn cạnh khác màu, ` +
+          'và nó không vẽ nét liền thay thế mà không vẽ gì cả. Dùng <Svg><Line strokeDasharray>',
+      );
+    }
+  }
+  return bad;
+}
+
+/* The rule has to fire on the line that shipped, and stay quiet on the note
+   that explains it — the second half matters as much, because a check that
+   cannot be documented next to gets deleted by whoever hits it. */
+{
+  const broken = [['x.tsx', stripComments("  habitLine: { borderTopWidth: 1, borderStyle: 'dashed' },")]];
+  const prose = [['x.tsx', stripComments("/* was borderStyle: 'dashed', which drew nothing */\nhabitLine: { height: 1 },")]];
+  if (dashedBorderProblems(broken).length === 0 || dashedBorderProblems(prose).length > 0) {
+    console.error('phép tự kiểm hỏng — luật viền đứt nét phải bắt code và bỏ qua chú thích, đừng tin kết quả');
+    process.exit(2);
+  }
+}
+
+/** Every `.tsx` under `src`, for the rules that are about the app rather than one card. */
+const ALL_SRC = execFileSync('git', ['ls-files', 'src/**/*.tsx'], { cwd: NATIVE, encoding: 'utf8' })
+  .split('\n')
+  .filter(Boolean)
+  .map((f) => [f, stripComments(read(f))]);
+
 try {
   execFileSync(
     'npx',
@@ -303,6 +349,37 @@ try {
     } else if (line < bars) {
       problems.push('today-widgets-2: đường "thói quen" vẽ trước các cột nên bị cột che — RN xếp chồng theo thứ tự khai báo');
     }
+  }
+  /*
+    And the line has to actually exist, which the check above never asked.
+
+    It was drawn with `borderTopWidth: 1` + `borderStyle: 'dashed'` +
+    `borderTopColor`, and on a device that draws **nothing**.
+    `RCTBorderDrawing.m:496` refuses a dashed border unless all four
+    `borderColor`s are equal, and it does not fall back to solid — it logs
+    `Unsupported dashed / dotted border style` and `return nil`s. Colouring only
+    the edge you gave a width to leaves the other three at their default, so the
+    colours are unequal by construction and the branch is unreachable. The
+    warning only shows on a real build, so it survived every check here.
+
+    The ordering rule above passed the whole time, and truthfully: the line
+    *was* written after the bars. It just was not a line. Source order was the
+    previous bug in these six lines, and re-checking it said nothing about this
+    one — which is the reason this rule is separate rather than folded into it.
+
+    Scanned across all of `src`, not just this card. Nothing else used a dashed
+    border when this was found (the other charts draw with `strokeDasharray`,
+    which has no such precondition), so the rule is cheap to keep and the next
+    one to reach for it gets stopped instead of shipping an invisible line.
+  */
+  problems.push(...dashedBorderProblems(ALL_SRC));
+  /*
+    The legend key promises what the line looks like, so they share a colour.
+    Two literals is two chances to change one and not the other, and the failure
+    is a caption describing a line the chart is not drawing.
+  */
+  if (!/const HABIT_COLOUR = /.test(card)) {
+    problems.push('today-widgets-2: đường "thói quen" và chú giải không dùng chung một hằng màu');
   }
   /*
     The English a Vietnamese card was printing verbatim.
