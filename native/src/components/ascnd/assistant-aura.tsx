@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -7,7 +7,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { colors } from '@/constants/ascnd';
 
@@ -145,12 +145,127 @@ function LightPool({ pool, tint }: { pool: Pool; tint?: string }) {
 const POOLS: Pool[] = [
   /* The state pool. Its colour is overridden by today's readiness — it is the
      one that makes the screen mean something before you read it. */
-  { id: 'auraState', colour: colors.metricPurple, peak: 0.42, cx: 0.44, cy: 0.31, dx: 26, dy: 34, scale: 0.16, ms: 17000, phase: 0 },
-  { id: 'auraViolet', colour: '#7b3dff', peak: 0.32, cx: 0.62, cy: 0.24, dx: 34, dy: 22, scale: 0.13, ms: 23000, phase: 0.33 },
-  { id: 'auraCyan', colour: '#22b8ff', peak: 0.22, cx: 0.33, cy: 0.44, dx: 30, dy: 28, scale: 0.15, ms: 29000, phase: 0.66 },
+  { id: 'auraState', colour: colors.metricPurple, peak: 0.27, cx: 0.44, cy: 0.31, dx: 34, dy: 44, scale: 0.18, ms: 17000, phase: 0 },
+  { id: 'auraViolet', colour: '#7b3dff', peak: 0.20, cx: 0.62, cy: 0.24, dx: 44, dy: 30, scale: 0.15, ms: 23000, phase: 0.33 },
+  { id: 'auraCyan', colour: '#22b8ff', peak: 0.14, cx: 0.33, cy: 0.44, dx: 40, dy: 36, scale: 0.17, ms: 29000, phase: 0.66 },
   /* A dim warm one low down, so the bottom of the page is not dead black and
      the cool pools have something to be cool *against*. */
-  { id: 'auraWarm', colour: '#ffb37a', peak: 0.10, cx: 0.68, cy: 0.66, dx: 22, dy: 18, scale: 0.12, ms: 13000, phase: 0.5 },
+  { id: 'auraWarm', colour: '#ffb37a', peak: 0.065, cx: 0.68, cy: 0.66, dx: 28, dy: 24, scale: 0.13, ms: 13000, phase: 0.5 },
+];
+
+/**
+ * One bubble, rising.
+ *
+ * ── what a bubble is here ──
+ *
+ * Not a filled disc. The gradient is nearly empty in the middle and brightest
+ * just inside its edge, which is how a soap film actually reads — light passes
+ * through the thin part and catches on the rim. A filled circle at the same
+ * opacity looks like a smudge on the lens; the hollow one looks like something
+ * suspended in front of it.
+ *
+ * ── the drift does not reverse ──
+ *
+ * The pools breathe back and forth because that is what light does. Bubbles
+ * rise, and rising and then un-rising is the one thing that would announce
+ * this as an animation. So the driver is a sawtooth — `withRepeat(…, -1,
+ * false)` — running from below the screen to above it, and the opacity ramps
+ * in and out at the two ends so the reset never lands anywhere visible.
+ *
+ * The horizontal wobble is a sine of the *same* driver at a fractional
+ * frequency, so a bubble does not drift back to where it started when the
+ * cycle repeats; over one pass it makes about one and a half sways, and no two
+ * bubbles share a period.
+ */
+function Bubble({ b, height }: { b: BubbleSpec; height: number }) {
+  const t = useSharedValue(b.phase);
+
+  useEffect(() => {
+    t.value = b.phase;
+    t.value = withRepeat(
+      withTiming(b.phase + 1, { duration: b.ms, easing: Easing.linear }),
+      -1,
+      false,
+    );
+  }, [b.ms, b.phase, t]);
+
+  const style = useAnimatedStyle(() => {
+    const p = t.value % 1;
+    /* fade in over the first eighth, out over the last fifth — the sawtooth's
+       jump happens while the bubble is invisible at both ends */
+    const fade = Math.min(1, p / 0.12) * Math.min(1, (1 - p) / 0.2);
+    return {
+      opacity: fade * b.opacity,
+      transform: [
+        { translateY: (0.5 - p) * (height + b.size * 2) },
+        { translateX: Math.sin(p * Math.PI * 3) * b.sway },
+        { scale: 0.92 + p * 0.16 },
+      ],
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.bubble,
+        {
+          left: `${b.x * 100}%`,
+          width: b.size,
+          height: b.size,
+          /* `left`/`top` place the bubble's corner; these pull it back by half
+             its own size so the given position is its centre. They have to be
+             per-bubble because the sizes run from 34 to 136 — a constant here
+             would offset every bubble but one. */
+          marginLeft: -b.size / 2,
+          marginTop: -b.size / 2,
+        },
+        style,
+      ]}>
+      <Svg width="100%" height="100%" viewBox="0 0 100 100">
+        <Defs>
+          <RadialGradient id={b.id}>
+            <Stop offset="0" stopColor={b.colour} stopOpacity={0.03} />
+            <Stop offset="0.58" stopColor={b.colour} stopOpacity={0.06} />
+            <Stop offset="0.86" stopColor={b.colour} stopOpacity={0.30} />
+            <Stop offset="0.97" stopColor={b.colour} stopOpacity={0.10} />
+            <Stop offset="1" stopColor={b.colour} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx="50" cy="50" r="50" fill={`url(#${b.id})`} />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+interface BubbleSpec {
+  id: string;
+  x: number;
+  size: number;
+  sway: number;
+  opacity: number;
+  ms: number;
+  phase: number;
+  colour: string;
+}
+
+/*
+  Nine of them, sizes and periods deliberately unrelated.
+
+  Few enough that they read as occasional rather than as weather, and slow
+  enough — 26 to 52 seconds for a full pass — that nothing crosses the screen
+  while you are reading a card. A bubble you can watch travel is a bubble
+  competing with the text.
+*/
+const BUBBLES: BubbleSpec[] = [
+  { id: 'bub1', x: 0.08, size: 96, sway: 16, opacity: 0.85, ms: 41000, phase: 0.0, colour: '#c9b6ff' },
+  { id: 'bub2', x: 0.62, size: 58, sway: 22, opacity: 0.7, ms: 33000, phase: 0.28, colour: '#8fd8ff' },
+  { id: 'bub3', x: 0.34, size: 136, sway: 12, opacity: 0.6, ms: 52000, phase: 0.55, colour: '#b79bff' },
+  { id: 'bub4', x: 0.84, size: 44, sway: 26, opacity: 0.9, ms: 27000, phase: 0.13, colour: '#a8ffe0' },
+  { id: 'bub5', x: 0.2, size: 34, sway: 30, opacity: 0.75, ms: 26000, phase: 0.71, colour: '#ffd9b3' },
+  { id: 'bub6', x: 0.71, size: 112, sway: 14, opacity: 0.5, ms: 47000, phase: 0.42, colour: '#9fc4ff' },
+  { id: 'bub7', x: 0.46, size: 40, sway: 24, opacity: 0.8, ms: 31000, phase: 0.86, colour: '#e0c4ff' },
+  { id: 'bub8', x: 0.93, size: 74, sway: 18, opacity: 0.55, ms: 38000, phase: 0.62, colour: '#8fd8ff' },
+  { id: 'bub9', x: 0.02, size: 52, sway: 20, opacity: 0.7, ms: 29000, phase: 0.35, colour: '#c9b6ff' },
 ];
 
 /**
@@ -166,10 +281,15 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
           ? colors.readinessRed
           : undefined;
 
+  const { height } = useWindowDimensions();
+
   return (
     <View style={styles.layer} pointerEvents="none">
       {POOLS.map((p, i) => (
         <LightPool key={p.id} pool={p} tint={i === 0 ? tint : undefined} />
+      ))}
+      {BUBBLES.map((b) => (
+        <Bubble key={b.id} b={b} height={height} />
       ))}
     </View>
   );
@@ -186,4 +306,8 @@ const styles = StyleSheet.create({
     width: '200%',
     height: '200%',
   },
+  /* Anchored at the middle of the layer; `translateY` carries it from below the
+     screen to above. The half-size offsets are applied per bubble at the call
+     site — see the comment there. */
+  bubble: { position: 'absolute', top: '50%' },
 });
