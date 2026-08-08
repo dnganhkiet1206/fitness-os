@@ -451,6 +451,66 @@ export function useUpsertBodyMeasurement() {
   });
 }
 
+/**
+ * Sleep minutes per day, for the assistant's sleep panel.
+ *
+ * Modelled on `useReadinessHistory` below, including the `.not(... is null)`
+ * filter: a day with nothing logged has to come back *absent* rather than as a
+ * zero, because the panel draws gaps and zeros differently and an unlogged
+ * night is not a night somebody did not sleep.
+ */
+export function useSleepDurationHistory(days = 14) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['sleep_duration_history', user?.id, days],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('daily_logs')
+        .select('date, sleep_duration_min')
+        .eq('user_id', user!.id)
+        .gte('date', daysAgoISO(days).split('T')[0])
+        .not('sleep_duration_min', 'is', null)
+        .order('date', { ascending: true });
+      if (error) throw error;
+      return (data ?? [])
+        .filter((d) => Number(d.sleep_duration_min) > 0)
+        .map((d) => ({ date: d.date, value: Number(d.sleep_duration_min) }));
+    },
+  });
+}
+
+/**
+ * Calories per day, for the assistant's nutrition panel.
+ *
+ * Both of these read `daily_logs` rather than the `sleep_logs` / meal tables
+ * they are derived from, and that is the point: the assistant's tiles read
+ * `daily_logs` too, so the panel and the tile above it cannot disagree about
+ * the same night. Going to the source table would mean recomputing a duration
+ * from `bedtime`/`waketime` here and hoping it matches whatever wrote the
+ * column.
+ */
+export function useKcalHistory(days = 14) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['kcal_history', user?.id, days],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('daily_logs')
+        .select('date, kcal')
+        .eq('user_id', user!.id)
+        .gte('date', daysAgoISO(days).split('T')[0])
+        .not('kcal', 'is', null)
+        .order('date', { ascending: true });
+      if (error) throw error;
+      return (data ?? [])
+        .filter((d) => Number(d.kcal) > 0)
+        .map((d) => ({ date: d.date, value: Number(d.kcal) }));
+    },
+  });
+}
+
 export function useReadinessHistory(days = 14) {
   const { user } = useAuth();
   return useQuery({

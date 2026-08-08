@@ -14,13 +14,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
+import { MetricPanel } from '@/components/ascnd/metric-panel';
 import { Settle } from '@/components/ascnd/settle';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useCoachChat } from '@/hooks/use-coach-chat';
 import { useDailyLog, useProfile, useTodayBiometrics } from '@/hooks/useTodayData';
+import { useBiometricHistory } from '@/hooks/use-biometrics';
+import { useKcalHistory, useReadinessHistory, useSleepDurationHistory } from '@/hooks/use-fitness-data';
 import { briefFor } from '@/lib/assistant-brief';
+import { analyse, WINDOW_DAYS, type MetricKind } from '@/lib/metric-analysis';
 import { suggestionsFor } from '@/lib/assistant-suggestions';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 
@@ -91,7 +95,8 @@ interface Metric {
   /** the small line under the number — a state, not a repeat of the number */
   note: { vi: string; en: string };
   noteTint: string;
-  route: string;
+  /** which analysis this tile opens, in place */
+  kind: MetricKind;
 }
 
 
@@ -181,7 +186,7 @@ export default function AssistantScreen() {
         ? { vi: 'Chưa có', en: 'No data' }
         : hr < 60 ? { vi: 'Thấp', en: 'Low' } : hr <= 80 ? { vi: 'Bình thường', en: 'Normal' } : { vi: 'Cao', en: 'High' },
       noteTint: hr == null ? colors.glassMuted : hr <= 80 ? colors.readinessGreen : colors.readinessYellow,
-      route: '/biometrics',
+      kind: 'hr',
     },
     {
       key: 'sleep',
@@ -193,7 +198,7 @@ export default function AssistantScreen() {
         ? { vi: 'Chưa ghi', en: 'Not logged' }
         : sleepMin >= 420 ? { vi: 'Tốt', en: 'Good' } : { vi: 'Thiếu', en: 'Short' },
       noteTint: sleepMin === 0 ? colors.glassMuted : sleepMin >= 420 ? colors.readinessGreen : colors.readinessYellow,
-      route: '/sleep-insights',
+      kind: 'sleep',
     },
     {
       key: 'kcal',
@@ -202,7 +207,7 @@ export default function AssistantScreen() {
       value: kcal > 0 ? kcal.toLocaleString() : '—',
       note: { vi: 'Hôm nay', en: 'Today' },
       noteTint: colors.metricBlue,
-      route: '/nutrition',
+      kind: 'kcal',
     },
     {
       key: 'readiness',
@@ -216,7 +221,7 @@ export default function AssistantScreen() {
         readiness == null
           ? colors.glassMuted
           : status === 'green' ? colors.readinessGreen : status === 'yellow' ? colors.readinessYellow : colors.readinessRed,
-      route: '/biometrics',
+      kind: 'readiness',
     },
   ];
 
@@ -228,6 +233,61 @@ export default function AssistantScreen() {
   const signal = useAssistantSignal();
   const suggestions = suggestionsFor(signal);
   const brief = briefFor(signal, new Date().getHours(), vi);
+
+  /*
+    ── the tiles open an analysis, not another screen ──
+
+    Tapping one used to push `/biometrics` or `/sleep-insights`. Those pages are
+    still where you *log* things; what they were being used for here was
+    answering "and what does that number mean", which the assistant should not
+    have to leave itself to answer.
+
+    One is always selected, so the panel is never an empty slot waiting to be
+    discovered — readiness on arrival, because it is the app's headline metric
+    and the one the aura is already coloured by.
+
+    The four history queries are React Query reads the rest of the app already
+    makes; only the selected one is enabled, so opening this page costs the one
+    fortnight you are looking at rather than four.
+  */
+  const [selected, setSelected] = useState<MetricKind>('readiness');
+  const readinessHistory = useReadinessHistory(WINDOW_DAYS);
+  const sleepHistory = useSleepDurationHistory(WINDOW_DAYS);
+  const kcalHistory = useKcalHistory(WINDOW_DAYS);
+  const bioHistory = useBiometricHistory(WINDOW_DAYS);
+
+  /* Each source is reshaped to `{ date, value }` here rather than in the lib,
+     because the lib is what the check tool runs and it should not have to know
+     what a database row looks like. Sleep and calories come from `daily_logs`
+     rather than their source tables, so the panel and the tile above it read
+     the same column for the same night. */
+  const points = (() => {
+    if (selected === 'readiness') return (readinessHistory.data ?? []).map((d) => ({ date: d.date, value: d.value }));
+    if (selected === 'kcal') return kcalHistory.data ?? [];
+    if (selected === 'sleep') return sleepHistory.data ?? [];
+    /* Biometrics are samples rather than one row a day, so the day's reading is
+       the lowest heart rate it holds — resting heart rate is the number this
+       metric is about, and the mean of a day that includes a workout is not it. */
+    const byDay = new Map<string, number>();
+    for (const smp of bioHistory.data ?? []) {
+      const hr = Number(smp.hr_bpm);
+      if (!hr) continue;
+      const day = String(smp.date_time).slice(0, 10);
+      byDay.set(day, Math.min(byDay.get(day) ?? hr, hr));
+    }
+    return [...byDay].map(([date, value]) => ({ date, value }));
+  })();
+
+  const selectedTint = litBy(
+    selected === 'hr' ? 'heart' : selected === 'sleep' ? 'moon' : selected === 'kcal' ? 'flame' : 'gauge',
+  );
+
+  const analysis = analyse({
+    kind: selected,
+    points,
+    today: new Date(),
+    kcalTarget: signal.kcalTarget,
+  });
 
   const go = (route: string) => {
     Haptics.selectionAsync();
@@ -391,10 +451,22 @@ export default function AssistantScreen() {
               key={m.key}
               accessibilityRole="button"
               accessibilityLabel={`${vi ? m.label.vi : m.label.en} ${m.value}`}
-              onPress={() => go(m.route)}
+              accessibilityState={{ selected: selected === m.kind }}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setSelected(m.kind);
+              }}
               style={({ pressed }) => pressed && styles.pressed}>
               <LiquidGlass
-                style={[styles.metricCard, tintBorder(litBy(m.glyph))]}
+                style={[
+                  styles.metricCard,
+                  tintBorder(litBy(m.glyph)),
+                  /* The selected tile keeps its own colour and gains an edge.
+                     Without it the panel below is about a tile you cannot pick
+                     out of four, which is the same as being about none of
+                     them. */
+                  selected === m.kind && { borderColor: litBy(m.glyph), borderWidth: 1 },
+                ]}
                 radius={radius.lg}
                 tint={litBy(m.glyph)}>
                 <View style={[styles.metricIcon, { backgroundColor: `${litBy(m.glyph)}1f` }]}>
@@ -413,6 +485,28 @@ export default function AssistantScreen() {
             </Pressable>
           ))}
         </ScrollView>
+        {/*
+          ── the analysis, in place ──
+
+          One tile is always selected, so this is never an empty slot waiting to
+          be discovered — readiness on arrival, the app's headline metric and
+          the one the aura is already coloured by. Tapping another swaps the
+          contents rather than opening anything.
+
+          `MetricPanel` carries the reasoning about why a sentence sits above
+          the chart rather than the other way round.
+        */}
+        <LiquidGlass
+          style={[styles.panel, tintBorder(selectedTint)]}
+          radius={radius.lg}
+          tint={selectedTint}>
+          <MetricPanel
+            analysis={analysis}
+            tint={selectedTint}
+            vi={vi}
+            onAsk={() => askCoach(vi ? analysis.ask.vi : analysis.ask.en)}
+          />
+        </LiquidGlass>
         </Settle>
 
         {/*
@@ -617,6 +711,7 @@ const styles = StyleSheet.create({
      and a tint wash on top, that grey lands at 2.57:1 — below even the 3:1
      asked of large text, and it showed as the label under each metric fading
      into its own tile. The constant carries the numbers. */
+  panel: { marginTop: spacing.sm + 2 },
   metricScroll: { marginHorizontal: -spacing.md },
   metricRow: { paddingHorizontal: spacing.md, gap: spacing.sm + 2 },
   metricCard: { width: 132, padding: spacing.md, gap: 6 },

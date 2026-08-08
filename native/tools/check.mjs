@@ -115,6 +115,7 @@ const STEPS = [
   ['đọc trên kính', 'node', ['tools/glass-legibility.mjs']],
   ['gợi ý trợ lý', 'node', ['tools/suggestions.mjs']],
   ['lời tóm tắt', 'node', ['tools/brief.mjs']],
+  ['phân tích chỉ số', 'node', ['tools/metric-analysis.mjs']],
   ['trò chuyện coach', 'node', ['tools/coach-chat.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
