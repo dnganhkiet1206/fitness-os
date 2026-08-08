@@ -373,6 +373,30 @@ for (const [f, allowed] of Object.entries(COMPOSED)) {
       `${PRESS}: haptic mặc định không phải 'none' — 70 tệp đã tự gọi Haptics, bật sẵn là rung hai lần mỗi lần chạm`,
     );
   }
+  /*
+    ── the press must multiply the caller's opacity, not replace it ──
+
+    The animated style is applied last, so an `opacity` inside it beats anything
+    the call site passed in. The first version wrote a flat `1 - t * …`, which
+    at rest is exactly 1 — and 22 styles in this app carry an opacity between
+    0.35 and 0.55 whose entire job is to say "you cannot press this". Every one
+    of them was being overwritten. No error, no warning, no wrong pixel in
+    isolation: a disabled button just looks live, on about twenty screens.
+
+    Checked as a pair — the flatten that reads the caller's value, and the
+    multiplication that respects it — because either one alone does nothing.
+  */
+  if (!/StyleSheet\.flatten\(style\)/.test(pcode)) {
+    problems.push(
+      `${PRESS}: không đọc opacity mà chỗ gọi đã đặt — style động ghi đè nó, và mọi nút disabled sẽ hết mờ`,
+    );
+  }
+  if (!/opacity: baseOpacity \*/.test(pcode)) {
+    problems.push(
+      `${PRESS}: opacity phải NHÂN với baseOpacity chứ không thay thế — ` +
+        'thay thế là xoá sạch trạng thái disabled của 22 style trong app',
+    );
+  }
 }
 
 /**

@@ -632,5 +632,6 @@ const styles = StyleSheet.create({
   },
   deleteAccountText: { flex: 1 },
   deleteAccountTitle: { fontSize: 15, fontWeight: '600', color: colors.readinessRed },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+  /* The dim while the delete is in flight. No transform: the press owns it. */
+  pressed: { opacity: 0.85 },
 });

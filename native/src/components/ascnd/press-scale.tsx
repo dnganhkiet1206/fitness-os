@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { press } from '@/constants/motion';
@@ -73,9 +73,29 @@ export function PressScale({
      a fast tap — the dim arriving while the scale is still going out — and the
      press is short enough that any disagreement reads as a glitch. */
   const t = useSharedValue(0);
+
+  /**
+   * The opacity the caller already asked for, multiplied rather than replaced.
+   *
+   * The animated style is applied last, so an `opacity` in it *wins* over
+   * anything in the style passed in. The first version therefore silently
+   * cancelled every disabled state in the app: twenty-two styles carry an
+   * `opacity` between 0.35 and 0.55 to say "you cannot press this", and at rest
+   * this component was writing 1 straight over the top of them. Nothing errors,
+   * nothing looks broken in isolation — a disabled button simply looks exactly
+   * like a live one, on about twenty screens.
+   *
+   * Flattening on the JS side is enough: this is a render-time read of a style
+   * that only changes when the caller re-renders, and it makes the press a
+   * *proportion* of whatever the caller wanted. A disabled control at 0.4 dims
+   * to 0.34 under a press instead of jumping to 0.85.
+   */
+  const base = StyleSheet.flatten(style)?.opacity;
+  const baseOpacity = typeof base === 'number' ? base : 1;
+
   const animated = useAnimatedStyle(() => ({
     transform: [{ scale: 1 - t.value * (1 - to) }],
-    opacity: 1 - t.value * (1 - press.opacity),
+    opacity: baseOpacity * (1 - t.value * (1 - press.opacity)),
   }));
 
   return (
