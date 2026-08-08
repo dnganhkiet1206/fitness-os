@@ -88,11 +88,17 @@ export const SUGGESTION_SLOTS = 4;
 /** Below this, a night is short. Seven hours, the app's own threshold. */
 export const SHORT_SLEEP_MIN = 420;
 
+/** Above this, a night went well enough to be worth keeping — 7h30. */
+export const GOOD_SLEEP_MIN = 450;
+
 /** Eating well under target by this fraction is worth a prompt, not a nag. */
 const PROTEIN_SHORTFALL = 0.7;
 
 /** A day with fewer steps than this had no walking in it worth the name. */
 const LOW_STEPS = 4000;
+
+/** Below this much left, "what should I eat" is a question about a snack. */
+const KCAL_GAP = 200;
 
 const hhmm = (min: number) => `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`;
 
@@ -261,6 +267,91 @@ function candidates(s: AssistantSignal): Suggestion[] {
     });
   }
 
+  /*
+    ── a good day is still a day worth asking about ──
+
+    Every rule above fires on something *wrong* or *missing*, and the result was
+    that a person doing well got four evergreens — "phục hồi tốt hơn", "tăng
+    năng lượng", "xây thói quen" — which are word for word as generic as the
+    hardcoded list this engine replaced. Somebody with a full log and nothing
+    the matter saw exactly what somebody with no account at all would see.
+
+    So these fire on the good readings, and they carry the numbers too. "Hôm
+    nay tôi sẵn sàng 82/100, nên tận dụng thế nào" is a question about a person
+    having a good day; "tăng năng lượng" is a question about nobody.
+
+    Four topics between them, so a healthy day fills all four slots from its own
+    data and never reaches the evergreens at all.
+  */
+  if (s.status === 'green' && s.readiness != null) {
+    out.push({
+      key: 'readiness-high',
+      topic: 'readiness',
+      glyph: 'gauge',
+      label: { vi: 'Tận dụng hôm nay', en: 'Make it count' },
+      question: {
+        vi: `Điểm sẵn sàng của tôi hôm nay là ${s.readiness}/100, khá tốt. Nên tận dụng ngày này thế nào?`,
+        en: `My readiness today is ${s.readiness}/100, which is good. How should I make the most of the day?`,
+      },
+    });
+  }
+
+  if (s.sleepMin >= GOOD_SLEEP_MIN) {
+    out.push({
+      key: 'sleep-good',
+      topic: 'sleep',
+      glyph: 'moon',
+      label: { vi: 'Giữ nhịp ngủ này', en: 'Keep this rhythm' },
+      question: {
+        vi: `Đêm qua tôi ngủ ${hhmm(s.sleepMin)}, khá ổn. Làm sao để duy trì đều đặn như vậy?`,
+        en: `I slept ${hhmm(s.sleepMin)} last night, which felt right. How do I make that consistent?`,
+      },
+    });
+  }
+
+  if (zone === 'optimal') {
+    out.push({
+      key: 'load-optimal',
+      topic: 'load',
+      glyph: 'pulse',
+      label: { vi: 'Tăng tải thế nào?', en: 'Ready to add?' },
+      question: {
+        vi: `Tỉ lệ tải của tôi là ${acwr}, đang trong vùng hợp lý. Tuần tới tôi có nên tăng tải không, và tăng bao nhiêu?`,
+        en: `My load ratio is ${acwr}, right in the useful band. Should I add more next week, and how much?`,
+      },
+    });
+  }
+
+  if (s.daysSinceWorkout === 0) {
+    out.push({
+      key: 'trained-today',
+      topic: 'movement',
+      glyph: 'bolt',
+      label: { vi: 'Sau buổi tập', en: 'After the session' },
+      question: {
+        vi: 'Tôi vừa tập xong hôm nay. Nên ăn gì và làm gì trong vài giờ tới để phục hồi tốt nhất?',
+        en: 'I trained today. What should I eat and do over the next few hours to recover best?',
+      },
+    });
+  }
+
+  /* The nutrition slot on an ordinary day. `meal-idea` only fires when nothing
+     has been eaten, so a person who is part-way through their food had no
+     nutrition chip at all — and "what should I eat with the rest of today" is
+     the most actionable question on this whole list. */
+  if (s.kcal > 0 && s.kcalTarget > 0 && s.kcalTarget - s.kcal >= KCAL_GAP) {
+    out.push({
+      key: 'kcal-remaining',
+      topic: 'nutrition',
+      glyph: 'flame',
+      label: { vi: 'Còn lại ăn gì?', en: 'What’s left to eat?' },
+      question: {
+        vi: `Hôm nay tôi đã ăn ${Math.round(s.kcal)} kcal trên mục tiêu ${s.kcalTarget} kcal, và ${Math.round(s.proteinG)}g đạm trên ${Math.round(s.proteinTarget)}g. Phần còn lại nên ăn gì?`,
+        en: `I've had ${Math.round(s.kcal)} of my ${s.kcalTarget} kcal today, and ${Math.round(s.proteinG)}g of ${Math.round(s.proteinTarget)}g protein. What should I eat for the rest?`,
+      },
+    });
+  }
+
   // ── evergreen, so the section is never empty ──
   out.push(
     {
@@ -293,10 +384,20 @@ function candidates(s: AssistantSignal): Suggestion[] {
         en: 'How do I stay consistent with training and food over months rather than weeks?',
       },
     },
-    /* The fourth, and it exists because of arithmetic rather than taste: with
-       three evergreens a day where nothing is wrong produced three chips and a
-       gap. `tools/suggestions.mjs` caught it on the plainest day in its set —
-       the one nobody thinks to look at, because nothing is happening on it. */
+    /* ── the fourth, and it stays ──
+
+       It exists because a day can fire *no* data rule at all, and then all four
+       slots are evergreen. That day is easy to miss when reasoning about it:
+       sleep between the short and the good threshold, no readiness yet, no load
+       ratio, no session ever logged, and calories close enough to target that
+       neither "what's left" nor "short on protein" applies. Nothing is wrong,
+       nothing is missing, and nothing has an opinion.
+
+       I removed it once, on the reasoning that some nutrition rule always
+       fires — wrong by exactly that case, because the calorie rule has a 200
+       kcal floor and a nearly-finished day is silent. `tools/suggestions.mjs`
+       caught the three-chip day that produced, which is why the case is in its
+       set now and was not before. */
     {
       key: 'weekly-plan',
       topic: 'general',

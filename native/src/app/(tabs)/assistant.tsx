@@ -9,13 +9,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { MetricPanel } from '@/components/ascnd/metric-panel';
+import { ScrollProgress } from '@/components/ascnd/scroll-progress';
 import { Settle } from '@/components/ascnd/settle';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
@@ -259,6 +260,17 @@ export default function AssistantScreen() {
   const insight = useSmartNudges();
 
   const [selected, setSelected] = useState<MetricKind>('readiness');
+
+  /* The metric row is wider than the screen, and the only thing saying so was
+     the third tile being cut off — a signal whose strength depends on the phone.
+     See `ScrollProgress`. The offset is a shared value so the bar tracks the
+     finger without re-rendering this screen on every frame of a flick. */
+  const metricX = useSharedValue(0);
+  const [metricViewport, setMetricViewport] = useState(0);
+  const [metricContent, setMetricContent] = useState(0);
+  const onMetricScroll = useAnimatedScrollHandler((e) => {
+    metricX.value = e.contentOffset.x;
+  });
   const readinessHistory = useReadinessHistory(WINDOW_DAYS);
   const sleepHistory = useSleepDurationHistory(WINDOW_DAYS);
   const kcalHistory = useKcalHistory(WINDOW_DAYS);
@@ -532,13 +544,18 @@ export default function AssistantScreen() {
 
         {/* ── metrics ── */}
         <Settle index={3}>
-        <ScrollView
+        <Animated.ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          onScroll={onMetricScroll}
+          scrollEventThrottle={16}
+          onLayout={(e) => setMetricViewport(e.nativeEvent.layout.width)}
+          onContentSizeChange={(w) => setMetricContent(w)}
           contentContainerStyle={styles.metricRow}
           /* Four tiles across a 390pt screen is 85pt each, which cannot hold
-             "7h 45m". They scroll, and the fourth peeking at the edge is what
-             tells you they do. */
+             "7h 45m", so they scroll. What says so is the bar underneath — the
+             cut-off third tile used to be the only hint and it is worth
+             different amounts on different screens. */
           style={styles.metricScroll}>
           {metrics.map((m) => (
             <Pressable
@@ -578,7 +595,15 @@ export default function AssistantScreen() {
               </LiquidGlass>
             </Pressable>
           ))}
-        </ScrollView>
+        </Animated.ScrollView>
+        <View style={styles.metricProgress}>
+          <ScrollProgress
+            x={metricX}
+            viewport={metricViewport}
+            content={metricContent}
+            tint={selectedTint}
+          />
+        </View>
         {/*
           ── the analysis, in place ──
 
@@ -826,6 +851,9 @@ const styles = StyleSheet.create({
   insightDot: { width: 7, height: 7, borderRadius: 4, marginTop: 6 },
   insightText: { ...type.footnote, color: colors.foreground, lineHeight: 20, flex: 1 },
 
+  /* Inset to the row's own gutters rather than the scroll view's, which is
+     pulled out to the screen edges so the tiles can bleed past them. */
+  metricProgress: { marginTop: spacing.sm + 2 },
   panel: { marginTop: spacing.sm + 2 },
   metricScroll: { marginHorizontal: -spacing.md },
   metricRow: { paddingHorizontal: spacing.md, gap: spacing.sm + 2 },

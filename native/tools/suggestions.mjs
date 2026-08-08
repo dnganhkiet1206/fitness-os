@@ -100,6 +100,16 @@ const DAYS = {
   'chưa có bước': day({ steps: 0 }),
   'ngày tệ toàn diện': day({ status: 'red', readiness: 28, acwr: 1.85, sleepMin: 300, proteinG: 40, steps: 900 }),
   'nghỉ tập lâu': day({ daysSinceWorkout: 6 }),
+  'vừa tập hôm nay': day({ daysSinceWorkout: 0 }),
+  'ngủ ngon': day({ sleepMin: 490 }),
+  /* No data rule can fire on this one: sleep between the two thresholds, no
+     readiness, no ratio, no session ever, calories inside the 200 floor. It is
+     the day that proves the fourth evergreen is reachable, and the day whose
+     absence let it be deleted once. */
+  'không luật nào chạy': day({
+    sleepMin: 430, status: null, readiness: null, acwr: null,
+    daysSinceWorkout: null, kcal: 2100, proteinG: 140,
+  }),
   'trống hoàn toàn': {
     name: '', daysSinceWorkout: null,
     readiness: null, status: null, acwr: null, sleepMin: 0,
@@ -220,7 +230,8 @@ for (const [name, r] of Object.entries(results)) {
 const RULES = [
   'readiness-low', 'load-spike', 'load-elevated', 'sleep-short', 'readiness-moderate',
   'load-detraining', 'protein-low', 'meal-idea', 'steps-low', 'sleep-quality',
-  'rest-gap', 'recovery', 'energy', 'habit', 'weekly-plan',
+  'rest-gap', 'readiness-high', 'sleep-good', 'load-optimal', 'trained-today', 'kcal-remaining',
+  'recovery', 'energy', 'habit', 'weekly-plan',
 ];
 for (const key of RULES) {
   if (!fired[key]) problems.push(`luật "${key}" không bao giờ xuất hiện — chết mà không ai biết`);
@@ -248,9 +259,30 @@ for (const name of ['ngày tệ toàn diện', 'sẵn sàng thấp', 'tải vọ
     problems.push(`"${name}": chip đầu tiên là gợi ý chung "${results[name][0].key}" trong khi có chuyện cần nói`);
   }
 }
-// and a plain day still leads with something, just not an alarm
-if (results['ngày bình thường'].some((s) => s.topic === 'readiness' || s.topic === 'load')) {
-  problems.push('"ngày bình thường": có gợi ý về sẵn sàng/tải trong khi mọi chỉ số đều bình thường');
+/*
+  A plain day may talk about readiness and load — it should, now that the
+  good-day rules exist — but it must not *alarm*.
+
+  This rule used to forbid the topics outright, which was right when every rule
+  fired on something wrong. It became wrong the moment a healthy day started
+  getting "Tận dụng hôm nay" and "Tăng tải thế nào?", which is the whole point
+  of those rules. What it actually guards is the alarming *keys*.
+*/
+const ALARMS = new Set(['readiness-low', 'load-spike', 'load-elevated', 'load-detraining', 'sleep-short', 'rest-gap']);
+for (const s of results['ngày bình thường']) {
+  if (ALARMS.has(s.key)) {
+    problems.push(`"ngày bình thường": báo động "${s.key}" trong khi mọi chỉ số đều bình thường`);
+  }
+}
+/* And it must not be all evergreens either — that was the bug this change
+   fixed, and the shape it would regress to. */
+{
+  const data = results['ngày bình thường'].filter((s) => s.topic !== 'general').length;
+  if (data < 3) {
+    problems.push(
+      `"ngày bình thường": chỉ ${data}/4 chip đến từ dữ liệu — người khoẻ mạnh lại thấy gợi ý chung chung như tài khoản trống`,
+    );
+  }
 }
 
 /**
