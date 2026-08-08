@@ -120,11 +120,10 @@ function LockedApp() {
       {/*
         The coach's conversation lives above the router.
 
-        Two screens show it now — the ask bar on the Health Assistant takes
-        text directly, and `/ai-coach` is still a route the dashboard links to.
-        Held in either screen it would be two separate chats, and asking a
-        question on one then opening the other would look exactly like the app
-        losing your conversation. See `use-coach-chat`.
+        The Health Assistant's ask bar takes text directly, and the chat it
+        starts should not be at the mercy of that tab remounting. Holding it
+        here also keeps the streaming request out of a screen. See
+        `use-coach-chat`.
 
         Inside the lock, so a locked app is not holding a chat in memory behind
         the prompt; below `AuthProvider` and the query client, both of which it

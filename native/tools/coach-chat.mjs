@@ -1,30 +1,37 @@
 /**
- * That there is one conversation, not two.
+ * That the assistant is one screen with one conversation.
  *
  * ── the bug this exists to prevent ──
  *
- * The coach's chat was `useState` inside `ai-coach.tsx`. That was correct while
- * the coach had one home. It has two now: the Health Assistant's ask bar takes
- * text directly, and `/ai-coach` is still a route the dashboard links to.
+ * The coach's chat began as `useState` inside `ai-coach.tsx`, which was right
+ * while the coach had one home. When the Health Assistant's ask bar started
+ * taking text, it briefly had two — and both halves of that went wrong at once:
  *
- * Two copies of that state would be two conversations. You would ask something
- * on the assistant tab, open the coach from the dashboard, and find an empty
- * chat — with what you actually said still sitting on the other screen. Nothing
- * throws. Nothing looks wrong in a diff. It looks exactly like the app forgot
- * what you told it, which is the worst thing an assistant can appear to do.
+ *   - **two copies of the state** would be two conversations. Ask on the
+ *     assistant, open the coach from the dashboard, find an empty chat with
+ *     what you actually said sitting on the other screen. Nothing throws;
+ *     it looks exactly like the app forgot what you told it.
+ *   - **two screens for one chat** is what the user hit. Same conversation,
+ *     different chrome, and a "past chats" card that opened the chat you were
+ *     already in. Reported, in their words, as *lộn xộn khó hiểu*.
  *
- * Regressing it is one `useState` away, and the wrong version is the one that
- * reads more naturally at the call site.
+ * The first was fixed by lifting the state; the second by deleting the route.
+ * Both are one plausible-looking commit away from coming back — a second chat
+ * screen reads like a feature, and a local `useState` reads more naturally at
+ * the call site than a context.
  *
  * ── what is checked ──
  *
+ * 0. no other route renders the transcript
  * 1. the provider is mounted, above the router, inside the auth + query context
- * 2. both screens read the conversation from the hook
- * 3. neither screen keeps its own copy of messages, loading, or the convo id
- * 4. what each screen *does* own is local: the draft, the scroll, the focus
+ * 2. the screen reads the conversation from the hook
+ * 3. it keeps no copy of messages, loading, or the convo id
+ * 4. what it *does* own is local: the draft, the scroll, the focus
  * 5. the streaming request is built in exactly one place
- * 6. the two transcripts agree about what a bubble looks like
+ * 6. every surface that takes a health question carries the disclaimer
+ * 7. the conversation's own controls are labelled, not bare icons
  */
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,10 +40,53 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(path.join(NATIVE, p), 'utf8');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
-const SCREENS = ['src/app/(tabs)/assistant.tsx', 'src/app/ai-coach.tsx'];
+/**
+ * The one screen that shows the conversation.
+ *
+ * There were two for a while — the coach kept its own route after moving into
+ * the assistant — and the duplicate was itself the bug the user reported: the
+ * same chat in two places with different chrome, and a "past chats" card that
+ * opened the chat you were already in. Rule 0 below is what keeps it at one.
+ */
+const SCREENS = ['src/app/(tabs)/assistant.tsx'];
 const HOOK = 'src/hooks/use-coach-chat.tsx';
 
 const problems = [];
+
+/*
+  ── 0: no second screen ──
+
+  `/ai-coach` was deleted. Recreating it is the specific regression this file
+  cares about most, because it does not look like a regression: adding a
+  "full screen chat" route reads like a feature, and what it actually produces
+  is the confusion that was just removed.
+
+  Checked as "no route file renders the transcript", not "no file is named
+  ai-coach" — the name is not the problem, a second surface is.
+*/
+// Both patterns. The recursive one alone matches only the subdirectories —
+// six files — and misses every route sitting directly in `src/app`, which is
+// exactly where `/ai-coach` was. A rule that scans the one place the thing it
+// forbids cannot be is not a rule.
+// (Written as line comments on purpose: the glob contains the two characters
+// that close a block comment, and the block-comment version killed the file.)
+const routes = [
+  ...new Set(
+    execFileSync('git', ['ls-files', 'src/app/*.tsx', 'src/app/**/*.tsx'], { cwd: NATIVE, encoding: 'utf8' })
+      .split('\n')
+      .filter(Boolean),
+  ),
+];
+for (const f of routes) {
+  if (SCREENS.includes(f)) continue;
+  const code = strip(read(f));
+  if (/useCoachChat\(\)/.test(code) && /messages\.map\(/.test(code)) {
+    problems.push(
+      `${f}: màn thứ hai vẽ lại cùng cuộc trò chuyện — đúng thứ vừa gỡ đi. ` +
+        'Một cuộc trò chuyện, một chỗ hiện nó.',
+    );
+  }
+}
 
 // ── 1: mounted, and in the right place ──
 const layout = strip(read('src/app/_layout.tsx'));
@@ -138,7 +188,7 @@ for (const [what, needle] of [
   if (!hook.includes(needle)) problems.push(`use-coach-chat: mất "${what}" — logic đã đi đâu mất`);
   for (const file of SCREENS) {
     const code = strip(read(file));
-    // the history panel legitimately reads and deletes conversations
+    // the history panel lives on the screen and legitimately lists and deletes
     if (what === 'ai_conversations insert') continue;
     if (code.includes(needle)) {
       problems.push(`${file}: dựng lại "${what}" — request phải chỉ có một chỗ, xem use-coach-chat`);
@@ -147,19 +197,27 @@ for (const [what, needle] of [
 }
 
 /*
-  ── 6: one conversation should look like one conversation ──
+  ── 7: the conversation's controls carry words ──
 
-  The two transcripts are written out separately — they sit in different
-  layouts and neither is worth a shared component yet. But a bubble that changes
-  shape when you open the full view says the two screens are different chats,
-  which is the same lie the state duplication would have told, in pixels.
+  "New chat" and "past chats" were round grey icons in the header, next to the
+  home button, appearing only while a conversation was open. Three identical
+  unlabelled discs, two of which both read as "leave this chat" — that was half
+  of what the user called confusing.
+
+  They are labelled buttons inside the transcript now. The rule is not "these
+  strings exist" but "they exist *with* text": an icon-only version of the same
+  control is the regression, and it is the tidier-looking one.
 */
-const SHARED_LOOK = ['maxWidth: \'78%\'', 'borderRadius: 14', 'rgba(180,92,255,0.16)', 'colors.glassMuted'];
 for (const file of SCREENS) {
   const src = read(file);
-  for (const token of SHARED_LOOK) {
-    if (!src.includes(token)) {
-      problems.push(`${file}: bong bóng thiếu "${token}" — hai màn phải vẽ cùng một cuộc trò chuyện giống nhau`);
+  for (const [what, re] of [
+    ['trò chuyện mới', /chatBtnText[\s\S]{0,120}?(Trò chuyện mới|New chat)/],
+    ['trò chuyện cũ', /chatBtnText[\s\S]{0,120}?(Trò chuyện cũ|Past chats)/],
+  ]) {
+    if (!re.test(src)) {
+      problems.push(
+        `${file}: "${what}" không còn là nút có chữ — icon tròn không nhãn cạnh nút home chính là chỗ người dùng thấy rối`,
+      );
     }
   }
 }
@@ -221,6 +279,7 @@ if (problems.length) {
 }
 
 console.log(
-  `trò chuyện coach OK — một provider bọc router trong AuthProvider, ${SCREENS.length} màn đều đọc từ hook ` +
-    'và không màn nào giữ messages/isLoading/convoId; request streaming chỉ dựng một chỗ; hai bong bóng cùng số đo',
+  `trò chuyện coach OK — đúng ${SCREENS.length} màn vẽ hội thoại (${routes.length} route đã quét), ` +
+    'provider bọc router trong AuthProvider, màn không giữ messages/isLoading/convoId, ' +
+    'request streaming chỉ dựng một chỗ, có dòng miễn trừ, nút trò chuyện mới/cũ đều có chữ',
 );

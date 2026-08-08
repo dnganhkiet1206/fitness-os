@@ -40,8 +40,7 @@ export type GlyphName =
   | 'arrow'
   | 'camera'
   | 'home'
-  /* the coach's own six — see `ai-coach.tsx`, which joined this icon set when
-     it took the assistant's material */
+  /* the coach's own six, added when the chat took the assistant's material */
   | 'chevron'
   | 'plus'
   | 'clock'

@@ -4,7 +4,7 @@
  * ── why this exists ──
  *
  * The project URL was written out in two places — the Supabase client, and
- * `ai-coach.tsx`, which builds a function URL by hand because it streams and
+ * `use-coach-chat.tsx`, which builds a function URL by hand because it streams and
  * cannot use `functions.invoke`. Two is enough to get wrong: swapping projects
  * meant finding both, and missing the second one produces an app that reads and
  * writes against the new project while its coach talks to the old one. Nothing

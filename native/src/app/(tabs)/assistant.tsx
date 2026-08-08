@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -20,11 +21,13 @@ import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { MarkdownLite } from '@/components/ascnd/markdown-lite';
 import { Settle } from '@/components/ascnd/settle';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
+import { useAuth } from '@/hooks/use-auth';
 import { useCoachChat } from '@/hooks/use-coach-chat';
 import { useDailyLog, useProfile, useTodayBiometrics } from '@/hooks/useTodayData';
 import { suggestionsFor } from '@/lib/assistant-suggestions';
+import { supabase } from '@/integrations/supabase/client';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 
 /**
@@ -47,10 +50,21 @@ import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
  *
  * So the screen has two states rather than two screens. Nothing asked: the
  * greeting, the numbers, the suggestions, the tools. Something asked: the
- * transcript, in their place, with `+` in the header to get back.
+ * transcript, in their place, with "Trò chuyện mới" above it to get back.
  *
- * The conversation itself lives in `use-coach-chat`, above the router, because
- * `/ai-coach` still exists and shows the same one — see the note there.
+ * ── one screen, after briefly being two ──
+ *
+ * The coach kept its own route for a while after moving in here, so the same
+ * conversation had two homes with different chrome, and a "past chats" card
+ * that opened the chat you were already in. That is what made an integrated
+ * feature feel like two half-features. `/ai-coach` is gone; past chats is a
+ * panel on this page; every link that pointed there points here.
+ *
+ * The header is the other half of that fix. It grew a clock and a plus beside
+ * the home button whenever a conversation was open — three identical grey
+ * discs, two of which both read as "leave this chat". It never changes now, and
+ * the controls that act on the conversation live in the conversation and carry
+ * words.
  *
  * ── full bleed, because the light has to reach the corners ──
  *
@@ -102,12 +116,12 @@ interface Tool {
 
 /** The original four, with the hints the redesign dropped. */
 const TOOLS: Tool[] = [
-  /* Was "AI Coach → /ai-coach", which stopped meaning anything the moment the
-     coach moved into this page: a card offering to take you where you already
-     are. The destination is still worth having — it is the same conversation
-     with room for it, and the only way to your past ones — so the card says
-     what is actually behind it now. */
-  { key: 'history', glyph: 'clock', label: { vi: 'Trò chuyện cũ', en: 'Past chats' }, hint: { vi: 'Mở lại những gì đã hỏi', en: 'Reopen what you asked before' }, route: '/ai-coach' },
+  /* This slot held "AI Coach → /ai-coach" and then "Past chats → /ai-coach",
+     and both were the same mistake: a card offering to take you somewhere you
+     already are. Past chats is a panel on this page now, reached from the
+     conversation itself. The slot goes to something that is genuinely
+     elsewhere. */
+  { key: 'steps', glyph: 'bolt', label: { vi: 'Vận động', en: 'Movement' }, hint: { vi: 'Bước chân và calo hôm nay', en: 'Steps and calories today' }, route: '/steps' },
   { key: 'scan', glyph: 'camera', label: { vi: 'Quét thực phẩm', en: 'Scan a meal' }, hint: { vi: 'Hướng máy ảnh vào đĩa ăn', en: 'Point the camera at a plate' }, route: '/scan-food?from=ai' },
   { key: 'bio', glyph: 'heart', label: { vi: 'Sinh trắc học', en: 'Biometrics' }, hint: { vi: 'Nhịp tim, HRV, oxy', en: 'Heart rate, HRV, oxygen' }, route: '/biometrics' },
   { key: 'sleep', glyph: 'moon', label: { vi: 'Giấc ngủ', en: 'Sleep' }, hint: { vi: 'Đêm qua, và xu hướng', en: 'Last night, and the trend' }, route: '/sleep-insights' },
@@ -120,15 +134,19 @@ export default function AssistantScreen() {
   const { data: dailyLog } = useDailyLog();
   const { data: bio } = useTodayBiometrics();
   const { data: profile } = useProfile();
+  const { session } = useAuth();
+  const queryClient = useQueryClient();
 
   /*
-    The conversation, held above the router so `/ai-coach` shows the same one.
-    What stays here is the draft, the scroll position and the focus — the
-    things that belong to a screen rather than to a chat. See `use-coach-chat`.
+    The conversation lives in `use-coach-chat`, above the router. It is the
+    only screen that shows it now, but the provider stays: the chat outlives
+    this tab's scroll state and survives switching tabs, which component state
+    on a `NativeTabs` child does not reliably do.
   */
-  const { messages, isLoading, send, newChat, onGrow } = useCoachChat();
+  const { messages, isLoading, conversationId, send, newChat, loadConversation, onGrow } = useCoachChat();
   const chatting = messages.length > 0;
   const [input, setInput] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
   const scrollToEnd = () => {
@@ -136,6 +154,37 @@ export default function AssistantScreen() {
   };
   // the answer arrives a token at a time, and the transcript follows it down
   useEffect(() => onGrow(scrollToEnd), [onGrow]);
+
+  /* Past conversations, only fetched while the panel is open — the list is
+     never on screen otherwise and a query nobody reads is a request nobody
+     needed. */
+  const { data: conversations } = useQuery({
+    queryKey: ['ai_conversations', session?.user.id],
+    enabled: !!session?.user.id && showHistory,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ai_conversations')
+        .select('id, title, updated_at')
+        .eq('user_id', session!.user.id)
+        .order('updated_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const deleteConvo = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('ai_conversations').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['ai_conversations'] });
+      // deleting the chat you are reading leaves the page showing a
+      // conversation that no longer exists anywhere
+      if (conversationId === id) newChat();
+    },
+  });
 
   const submit = (prompt?: string) => {
     const text = (prompt ?? input).trim();
@@ -252,7 +301,7 @@ export default function AssistantScreen() {
         `AssistantAura` is a sibling of this view rather than a child, so the
         light keeps the whole screen while the page above it shrinks — a room
         does not get shorter when a keyboard opens. Same arrangement
-        `ai-coach.tsx` uses, for the same reason.
+        light keeps the whole screen while the page above it shrinks.
       */}
       <KeyboardAvoidingView
         style={styles.kav}
@@ -297,35 +346,18 @@ export default function AssistantScreen() {
             </Text>
           </View>
           {/*
-            Two more buttons, and only while there is a conversation.
+            ── the header does not change ──
 
-            An empty page has nothing to start over from and no history worth
-            reaching, so on the landing state these would be two controls that
-            do nothing you want. They appear with the transcript they act on.
+            It grew two more grey circles while a conversation was open —
+            history, new chat — beside the home button, and that was the mess.
+            Three identical unlabelled discs, two of which (`+` and `home`) both
+            read as "leave this conversation" with nothing to tell them apart,
+            appearing and disappearing as you typed.
+
+            One button, always, in the same place, meaning the same thing:
+            leave the page. The two controls that act on the *conversation* moved
+            into the conversation, and they carry words. See `chatBar` below.
           */}
-          {chatting ? (
-            <>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={vi ? 'Lịch sử trò chuyện' : 'Chat history'}
-                hitSlop={10}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  router.push('/ai-coach');
-                }}
-                style={({ pressed }) => [styles.iconBtnSm, pressed && styles.pressed]}>
-                <Glyph name="clock" size={17} />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={vi ? 'Cuộc trò chuyện mới' : 'New chat'}
-                hitSlop={10}
-                onPress={newChat}
-                style={({ pressed }) => [styles.iconBtnSm, pressed && styles.pressed]}>
-                <Glyph name="plus" size={16} />
-              </Pressable>
-            </>
-          ) : null}
           {/*
             The way out.
 
@@ -368,6 +400,38 @@ export default function AssistantScreen() {
         {chatting ? (
           <Settle index={1}>
           <View style={styles.transcript}>
+            {/*
+              ── the two controls that act on the conversation ──
+
+              These were round grey icons in the header, beside the home button:
+              a clock and a plus, unlabelled, appearing only while you typed.
+              Three identical discs, and no way to know which one keeps your
+              chat and which one ends it.
+
+              Words instead, and inside the thing they act on. A control that
+              says "Trò chuyện mới" cannot be confused with one that says
+              "Trò chuyện cũ", and neither can be confused with the button that
+              leaves the page — which now never moves or changes.
+            */}
+            <View style={styles.chatBar}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={newChat}
+                style={({ pressed }) => [styles.chatBtn, pressed && styles.pressed]}>
+                <Glyph name="plus" size={13} colour={colors.glassMuted} />
+                <Text style={styles.chatBtnText}>{vi ? 'Trò chuyện mới' : 'New chat'}</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setShowHistory((v) => !v);
+                }}
+                style={({ pressed }) => [styles.chatBtn, pressed && styles.pressed]}>
+                <Glyph name="clock" size={13} colour={colors.glassMuted} />
+                <Text style={styles.chatBtnText}>{vi ? 'Trò chuyện cũ' : 'Past chats'}</Text>
+              </Pressable>
+            </View>
             {messages.map((m, i) => (
               <View key={i} style={[styles.msgRow, m.role === 'user' && styles.msgRowUser]}>
                 {m.role === 'assistant' ? (
@@ -590,9 +654,7 @@ export default function AssistantScreen() {
 
         So the coach moved in here. Same pill, same 34pt spark, same 34pt send
         circle — nothing about it changed except that it works. The conversation
-        itself comes from `useCoachChat` and is shared with `/ai-coach`, which
-        is still a route the dashboard links to and is now the same chat with
-        more room and the history browser.
+        itself comes from `useCoachChat`.
 
         Pinned rather than scrolled: it is the screen's primary action, and one
         that scrolls out of reach is one you have to go and find. Above the home
@@ -653,6 +715,82 @@ export default function AssistantScreen() {
         </View>
       </View>
       </KeyboardAvoidingView>
+
+      {/*
+        Past conversations, laid over the page rather than pushed as a screen.
+
+        This used to be `/ai-coach` — a whole second route showing the *same*
+        conversation with different chrome, which is what made the feature feel
+        like two half-features. Opening "past chats" and landing on the chat you
+        were already in is the exact confusion this removes. It is a list you
+        pick from and dismiss, so it is a panel.
+      */}
+      {showHistory ? (
+        <>
+          {/* Tapping anywhere off the panel closes it — a menu with no way out
+              but the control that opened it is a trap on a page this full. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={vi ? 'Đóng' : 'Close'}
+            style={styles.historyScrim}
+            onPress={() => setShowHistory(false)}
+          />
+          <View style={[styles.historyWrap, { top: insets.top + 64 }]}>
+            <LiquidGlass style={styles.historyPanel} radius={radius.lg} intensity={34}>
+              {/* A menu has to be readable, and glass alone is not: the page
+                  behind it comes through the blur and collides with the row
+                  titles. This one surface gets a dark backing under its glass. */}
+              <View style={styles.historyBacking} pointerEvents="none" />
+              <Text style={styles.historyHeader}>{vi ? 'Trò chuyện cũ' : 'Past chats'}</Text>
+              <ScrollView style={styles.historyScroll} keyboardShouldPersistTaps="handled">
+                {conversations && conversations.length > 0 ? (
+                  conversations.map((c) => (
+                    <Pressable
+                      key={c.id}
+                      style={({ pressed }) => [
+                        styles.historyRow,
+                        conversationId === c.id && styles.historyRowActive,
+                        pressed && { opacity: 0.7 },
+                      ]}
+                      onPress={() => {
+                        setShowHistory(false);
+                        loadConversation(c.id);
+                      }}>
+                      <Text style={styles.historyTitle} numberOfLines={1}>{c.title ?? '—'}</Text>
+                      <Text style={styles.historyDate}>
+                        {new Date(c.updated_at).toLocaleDateString(vi ? 'vi-VN' : 'en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={vi ? 'Xoá' : 'Delete'}
+                        // 28pt drawn; 8 of slop reaches the 44pt HIG floor
+                        hitSlop={8}
+                        style={({ pressed }) => [styles.historyDelete, pressed && { opacity: 0.6 }]}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          deleteConvo.mutate(c.id);
+                        }}>
+                        {/* Neutral in the list. The glyph's own tint is red —
+                            deleting is the one irreversible thing here — but a
+                            column of red bins pulls harder than the titles it
+                            belongs to. */}
+                        <Glyph name="trash" size={14} colour={colors.glassMuted} />
+                      </Pressable>
+                    </Pressable>
+                  ))
+                ) : (
+                  <Text style={styles.historyEmpty}>
+                    {vi ? 'Chưa có cuộc trò chuyện nào' : 'No conversations yet'}
+                  </Text>
+                )}
+              </ScrollView>
+            </LiquidGlass>
+          </View>
+        </>
+      ) : null}
     </View>
   );
 }
@@ -739,22 +877,68 @@ const styles = StyleSheet.create({
   toolLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground },
   toolHint: { ...type.caption, color: colors.glassMuted, lineHeight: 15 },
 
-  /* The secondary header buttons — 40pt beside the home button's 46, because
-     "new chat" and "history" are things you do to the conversation and `home`
-     is the way off the screen. */
-  iconBtnSm: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  /* The two labelled controls above a transcript. Text rather than icons —
+     see the note at the call site for what that replaced. */
+  chatBar: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xs },
+  chatBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    gap: 5,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 7,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: glass.border,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  chatBtnText: { ...type.caption, color: colors.glassMuted },
+
+  /* ── past chats, as a panel over the page ── */
+  historyScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  historyWrap: { position: 'absolute', left: spacing.md, right: spacing.md, zIndex: 20 },
+  historyPanel: { maxHeight: 330, paddingVertical: spacing.xs },
+  historyBacking: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(10,10,16,0.82)',
+  },
+  historyHeader: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    color: colors.glassMuted,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  historyScroll: { maxHeight: 278 },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  historyRowActive: { backgroundColor: 'rgba(255,255,255,0.10)' },
+  historyTitle: { ...type.footnote, color: colors.foreground, flex: 1 },
+  historyDate: { ...type.caption, color: colors.glassMuted },
+  historyDelete: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  historyEmpty: {
+    ...type.footnote,
+    color: colors.glassMuted,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
   },
 
   /* ── the transcript ──
-     Every measurement here is `ai-coach.tsx`'s, deliberately: the two screens
-     show one conversation, and a bubble that changes shape when you open the
-     full view would say they are different chats. */
+     The coach speaks on glass; you speak on solid brand silver. A conversation
+     has to be scannable at a glance — whose turn is whose, without reading —
+     and on a screen where everything is translucent, two glass bubbles would
+     leave only the alignment to tell them apart. */
   transcript: { gap: spacing.sm + 4 },
   msgRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   msgRowUser: { justifyContent: 'flex-end' },

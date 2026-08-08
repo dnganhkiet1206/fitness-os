@@ -438,7 +438,7 @@ export default function TodayScreen() {
                 style={({ pressed }) => [styles.squareBtn, pressed && styles.pressed]}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  router.push('/ai-coach');
+                  router.push('/assistant');
                 }}>
                 <Icon icon={Sparkles} size={20} color="rgba(237,237,237,0.7)" />
               </Pressable>

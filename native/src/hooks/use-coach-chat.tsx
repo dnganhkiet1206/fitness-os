@@ -15,26 +15,22 @@ import { AI_FAILURE_KEY, classify } from '@/lib/edge-failure';
  *
  * ── why this is a provider and not a hook ──
  *
- * The chat used to live in `ai-coach.tsx` as component state. That was correct
- * while it had one home. It now has two: the ask bar on the Health Assistant
- * accepts text directly, so a conversation can start there, and `/ai-coach` is
- * still a route the dashboard links to.
+ * The chat used to live in `ai-coach.tsx` as component state, and for a while
+ * after the coach moved into the Health Assistant there were two screens
+ * showing it. That was the reason this became a provider: two copies of
+ * `useState` are two conversations, and asking on one screen then opening the
+ * other looks exactly like the app forgetting what you said.
  *
- * Two copies of `useState` would mean two conversations. You would ask a
- * question on the assistant tab, open the coach from the dashboard, and find an
- * empty chat — with your actual conversation still sitting on the other screen,
- * unreachable and apparently lost. Nothing would throw; it would simply look
- * like the app forgot.
+ * `/ai-coach` has since been deleted — the duplicate was itself the confusion —
+ * so there is one screen again. This stays a provider anyway, for a smaller but
+ * real reason: the assistant is a `NativeTabs` child, and a conversation is not
+ * something to risk losing to a remount. Holding it at the root also keeps the
+ * streaming request in one place rather than in a screen.
  *
- * So the state moves up to the root, and both screens are views onto it. The
- * assistant is where you start talking; `/ai-coach` is the same conversation
- * with room for it, plus the history browser.
+ * ── what stays in the screen ──
  *
- * ── what stays in the screens ──
- *
- * Everything about *looking*: scroll position, whether the history panel is
- * open, which glass a bubble is drawn on. Those are per-screen and belong
- * there. This holds only what would be wrong to have twice.
+ * Everything about *looking*: scroll position, the draft in the box, whether
+ * the history panel is open. This holds only the conversation.
  *
  * ── the request builds itself ──
  *
@@ -98,10 +94,9 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
     Both screens want to scroll to the bottom as the answer streams in, and
     neither can be asked to poll for it. They subscribe; this calls them.
 
-    A `Set` of callbacks rather than a single one because both screens can be
-    mounted at once — the assistant tab stays alive under a pushed `/ai-coach`,
-    and a transcript that was scrolled to the bottom before you left should
-    still be at the bottom when you come back.
+    A `Set` rather than a single callback so this does not care how many
+    screens are listening — one today, and nothing here has to change if a
+    second ever wants the same conversation.
   */
   const growers = useRef(new Set<() => void>());
   const onGrow = useCallback((fn: () => void) => {
