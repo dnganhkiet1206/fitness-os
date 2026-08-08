@@ -27,6 +27,14 @@
  *     one failure here that is a lie rather than a bug.
  *   - **a `staleTime` that is not infinite.** A refetch on focus turns one
  *     call a day into one call per glance at the screen.
+ *   - **a key that is only the date.** The insight then freezes at whatever
+ *     the day looked like the first time the page was opened — which is the
+ *     morning, when there is least to look at. Log a workout at six and it
+ *     still describes an empty day.
+ *   - **a key that is too fine.** The fix for the one above, overdone: put
+ *     `kcal` in the key and every meal is a model call. The stamp has to be
+ *     booleans, and the check has to say so, because "make it more responsive"
+ *     is the natural next edit and it is the expensive one.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -51,8 +59,46 @@ for (const [what, needle, why] of [
   ['ngày', 'date', 'thiếu ngày thì hôm nay đọc lại lời khuyên của hôm qua'],
   ['người dùng', 'user?.id', 'thiếu người dùng thì hai tài khoản dùng chung một insight'],
   ['ngôn ngữ', 'lang', 'thiếu ngôn ngữ thì đổi sang tiếng Anh vẫn đọc tiếng Việt'],
+  ['dấu vân ngày', 'stamp', 'thiếu nó thì insight đóng băng ở lúc mở trang đầu tiên trong ngày, thường là buổi sáng khi chưa có gì'],
 ]) {
   if (!key.includes(needle)) problems.push(`use-smart-nudges: queryKey thiếu ${what} — ${why}`);
+}
+
+/*
+  ── the stamp is coarse, and that is the expensive thing to get wrong ──
+
+  Three booleans can flip three times, so a day costs at most four calls. A raw
+  value in the same place — `kcal`, `steps`, a minute count — is a model call
+  every time it moves, which on calories is every meal and on steps is all day.
+
+  Checked by shape: the stamp's expression must compare, and must not carry a
+  bare numeric field through. "Make it more responsive" is the natural next
+  edit here and it is the one that quietly multiplies the bill.
+*/
+{
+  const stampExpr = hook.match(/const stamp =([\s\S]*?);\n/)?.[1] ?? '';
+  if (!stampExpr) {
+    problems.push('use-smart-nudges: không tìm thấy biểu thức `stamp`');
+  } else {
+    const flags = [...stampExpr.matchAll(/> 0 \? '/g)].length;
+    if (flags < 3) {
+      problems.push(`use-smart-nudges: stamp chỉ có ${flags} cờ boolean — cần ít nhất 3 (ngủ, ăn, tập)`);
+    }
+    /* Any interpolation that is not a comparison is a raw value leaking in. */
+    for (const m of stampExpr.matchAll(/Number\(log\?\.(\w+)\)(\s*[><=]|\s*\?)?/g)) {
+      if (!m[2] || m[2].trim() === '?') {
+        problems.push(
+          `use-smart-nudges: stamp mang thẳng giá trị "${m[1]}" chứ không phải cờ — ` +
+            'mỗi lần con số đó đổi là một lần gọi model',
+        );
+      }
+    }
+    for (const field of ['sleep_duration_min', 'kcal', 'workout_count']) {
+      if (!stampExpr.includes(field)) {
+        problems.push(`use-smart-nudges: stamp không theo dõi "${field}" — thay đổi ở đó sẽ không làm insight tươi lại`);
+      }
+    }
+  }
 }
 
 // ── one call a day, not one per glance ──
@@ -148,6 +194,12 @@ const selfTest = [
     return !fake.some((c) => c.file === DOOR && c.arg === 'false');
   }],
   ['queryKey thiếu ngày bị bắt', () => !"['smart_nudges', user?.id, lang]".includes('date')],
+  ['stamp mang giá trị thô bị bắt', () => {
+    const bad = "const stamp = String(Number(log?.kcal)) + (Number(log?.steps) > 0 ? 's' : '-');\n";
+    const expr = bad.match(/const stamp =([\s\S]*?);\n/)?.[1] ?? '';
+    const leaks = [...expr.matchAll(/Number\(log\?\.(\w+)\)(\s*[><=]|\s*\?)?/g)].filter((m) => !m[2] || m[2].trim() === '?');
+    return leaks.length > 0;
+  }],
 ];
 const missed = selfTest.filter(([, fn]) => !fn()).map(([l]) => l);
 if (missed.length) {
@@ -163,6 +215,6 @@ if (problems.length) {
 
 console.log(
   `insight hôm nay OK — một chỗ gọi model (${OWNER.split('/').pop()}), thẻ dashboard chỉ đọc cache và dẫn sang /assistant; ` +
-    'queryKey mang ngày + người dùng + ngôn ngữ, staleTime vô hạn nên một ngày một lần; ' +
+    'queryKey mang ngày + người dùng + ngôn ngữ + dấu vân ngày (3 cờ, tối đa 4 lần gọi/ngày); ' +
     'ba trạng thái tải/lỗi/rỗng phân biệt được và lỗi thì cho thử lại',
 );

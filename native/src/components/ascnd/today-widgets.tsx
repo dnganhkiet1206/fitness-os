@@ -263,6 +263,14 @@ export function ReadinessTrendCard() {
  * If not, it says what is behind the door. Either way it costs nothing, and it
  * never triggers the call itself — that belongs to the page that displays the
  * result.
+ *
+ * ── and it goes quiet again when the day moves ──
+ *
+ * The key carries a coarse stamp of today (see `use-smart-nudges`), so logging
+ * a meal invalidates the count this card is showing. It falls back to
+ * "Xem insight hôm nay", which is right rather than a gap: the number would be
+ * a promise about a reading that no longer matches the day, and tapping now
+ * genuinely does produce a different one.
  */
 export function SmartTipsCard() {
   const i18n = useI18n();
