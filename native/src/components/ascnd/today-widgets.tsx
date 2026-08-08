@@ -1,5 +1,5 @@
-import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import { Check, PartyPopper, Sparkles } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -11,9 +11,9 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
+import { useSmartNudges } from '@/hooks/use-smart-nudges';
 import { useProfile } from '@/hooks/useTodayData';
 import { useUnits } from '@/hooks/use-units';
-import { callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 
@@ -242,44 +242,34 @@ export function ReadinessTrendCard() {
   );
 }
 
-interface Nudge {
-  type: string;
-  message: string;
-  priority: 'high' | 'medium' | 'low';
-  icon: string;
-}
-
-const PRIORITY_COLOR: Record<string, string> = {
-  high: colors.readinessRed,
-  medium: colors.readinessYellow,
-  low: colors.readinessGreen,
-};
-
-/** AI smart tips — nudges generated from recent data via edge function */
+/**
+ * The dashboard's door into today's insight.
+ *
+ * ── it used to compute them here ──
+ *
+ * This card called the edge function on tap and dropped the result when it
+ * unmounted, so pressing it twice produced two different readings of the same
+ * unchanged day — a paid model call each time, and advice that looked like it
+ * was being made up on the spot because in a sense it was.
+ *
+ * The insight lives on the Health Assistant now, where the hero says what the
+ * app can see and this says what it means. Two places computing it would be two
+ * answers to one question, so this one only points.
+ *
+ * ── it still shows something ──
+ *
+ * `enabled: false` reads the day's cache without ever requesting: if the
+ * assistant has already been opened today, the card says how many there are.
+ * If not, it says what is behind the door. Either way it costs nothing, and it
+ * never triggers the call itself — that belongs to the page that displays the
+ * result.
+ */
 export function SmartTipsCard() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const [tapped, setTapped] = useState(false);
-
-  const nudges = useMutation({
-    mutationFn: async () => {
-      const res = await callEdge<{ nudges?: Nudge[] }>(EDGE_FUNCTIONS.smartNudges, {
-        lang,
-        date: localDateStr(),
-      });
-      // Nudges are a bonus, not a task the user asked for, so a failure here
-      // stays quiet — but it still fails rather than pretending to zero tips,
-      // so the card can say "none right now" only when that is true.
-      if (!res.ok) throw new Error(res.failure);
-      return res.data?.nudges ?? [];
-    },
-  });
-
-  const load = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setTapped(true);
-    nudges.mutate();
-  };
+  const vi = lang === 'vi';
+  const cached = useSmartNudges(false);
+  const count = cached.data?.length ?? null;
 
   return (
     <GlassCard>
@@ -291,41 +281,29 @@ export function SmartTipsCard() {
           </View>
           <Text style={styles.cardHint}>{i18n.nTipsHint}</Text>
         </View>
-        {tapped && !nudges.isPending && (
-          <Pressable hitSlop={8} onPress={load}>
-            <Text style={styles.refreshText}>{i18n.nTipsRefresh}</Text>
-          </Pressable>
-        )}
       </View>
 
-      {!tapped ? (
-        <Pressable
-          style={({ pressed }) => [styles.tipsBtn, pressed && styles.pressed]}
-          onPress={load}>
-          <Text style={styles.tipsBtnText}>{i18n.nSmartTips}</Text>
-        </Pressable>
-      ) : nudges.isPending ? (
-        <View style={styles.tipsLoading}>
-          <ActivityIndicator color={colors.primary} size="small" />
-          <Text style={styles.cardHint}>{i18n.nTipsLoading}</Text>
-        </View>
-      ) : !nudges.data || nudges.data.length === 0 ? (
-        <Text style={styles.tipsEmpty}>{i18n.nTipsEmpty}</Text>
-      ) : (
-        <View style={styles.nudgeList}>
-          {nudges.data.map((n, i) => (
-            <View key={i} style={styles.nudgeRow}>
-              <View
-                style={[styles.nudgeDot, { backgroundColor: PRIORITY_COLOR[n.priority] ?? colors.mutedForeground }]}
-              />
-              <Text style={styles.nudgeText}>{n.message}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      <Pressable
+        accessibilityRole="button"
+        style={({ pressed }) => [styles.tipsBtn, pressed && styles.pressed]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push('/assistant');
+        }}>
+        <Text style={styles.tipsBtnText}>
+          {count != null && count > 0
+            ? vi
+              ? `${count} gợi ý cho hôm nay`
+              : `${count} suggestions for today`
+            : vi
+              ? 'Xem insight hôm nay'
+              : 'See today’s insight'}
+        </Text>
+      </Pressable>
     </GlassCard>
   );
 }
+
 
 const styles = StyleSheet.create({
   // Web dashboard micro-title: 12px semibold uppercase, wide tracking
@@ -422,7 +400,6 @@ const styles = StyleSheet.create({
   // Smart tips
   tipsTitleWrap: { flex: 1, minWidth: 0 },
   tipsTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  refreshText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
   tipsBtn: {
     marginTop: spacing.md,
     height: 44,
@@ -432,10 +409,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tipsBtnText: { ...type.headline, color: colors.foreground },
-  tipsLoading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
-  tipsEmpty: { ...type.footnote, color: colors.mutedForeground, marginTop: spacing.md },
-  nudgeList: { marginTop: spacing.md, gap: spacing.sm + 2 },
-  nudgeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  nudgeDot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
-  nudgeText: { ...type.footnote, color: colors.foreground, flex: 1, lineHeight: 19 },
 });

@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,6 +21,7 @@ import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useCoachChat } from '@/hooks/use-coach-chat';
+import { useSmartNudges } from '@/hooks/use-smart-nudges';
 import { useDailyLog, useProfile, useTodayBiometrics } from '@/hooks/useTodayData';
 import { useBiometricHistory } from '@/hooks/use-biometrics';
 import { useKcalHistory, useReadinessHistory, useSleepDurationHistory } from '@/hooks/use-fitness-data';
@@ -250,6 +252,12 @@ export default function AssistantScreen() {
     makes; only the selected one is enabled, so opening this page costs the one
     fortnight you are looking at rather than four.
   */
+  /* Today's insight. One call a day, cached by date — see `use-smart-nudges`.
+     It loads on arrival rather than on a tap: this is the page you open to be
+     told something, and a section that waits to be pressed is the "AI đang
+     chờ mình" the hero was rebuilt to stop being. */
+  const insight = useSmartNudges();
+
   const [selected, setSelected] = useState<MetricKind>('readiness');
   const readinessHistory = useReadinessHistory(WINDOW_DAYS);
   const sleepHistory = useSleepDurationHistory(WINDOW_DAYS);
@@ -436,8 +444,94 @@ export default function AssistantScreen() {
         </View>
         </Settle>
 
-        {/* ── metrics ── */}
+        {/*
+          ── insight of today ──
+
+          This was `SmartTipsCard` on the dashboard: a button that called the
+          model on tap and threw the answer away when the card unmounted, so
+          pressing it twice gave two different readings of one unchanged day.
+
+          It belongs here. The hero says what the app can *see*; this says what
+          it *means*; the metric panel below is the evidence. Observation,
+          insight, evidence — and the dashboard card is now a door into this
+          section rather than a second place computing it.
+
+          No tap to start. The one on the dashboard needed one because it was a
+          side feature on a page about something else; this is the page you open
+          to be told something, and a section waiting to be pressed is exactly
+          the "AI đang chờ mình" the rest of this screen was rebuilt to stop
+          being.
+        */}
         <Settle index={2}>
+        <View style={styles.section}>
+          <View style={styles.insightHead}>
+            <Glyph name="spark" size={15} />
+            <Text style={styles.sectionTitle}>{vi ? 'Insight hôm nay' : 'Today’s insight'}</Text>
+          </View>
+          <LiquidGlass
+            style={[styles.insight, tintBorder(litBy('spark'))]}
+            radius={radius.lg}
+            tint={litBy('spark')}>
+            <View style={styles.insightInner}>
+              {insight.isPending ? (
+                <View style={styles.insightRow}>
+                  <ActivityIndicator size="small" color={colors.glassMuted} />
+                  <Text style={styles.insightMuted}>
+                    {vi ? 'Đang đọc dữ liệu hôm nay…' : 'Reading today’s data…'}
+                  </Text>
+                </View>
+              ) : insight.isError ? (
+                /* Says it could not look, rather than "nothing to suggest" —
+                   the second one is the app quietly claiming it did. */
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => insight.refetch()}
+                  style={({ pressed }) => [styles.insightRow, pressed && styles.pressed]}>
+                  <Glyph name="alert" size={14} />
+                  <Text style={styles.insightMuted}>
+                    {vi ? 'Chưa đọc được hôm nay. Chạm để thử lại.' : 'Couldn’t read today. Tap to retry.'}
+                  </Text>
+                </Pressable>
+              ) : !insight.data?.length ? (
+                <Text style={styles.insightMuted}>
+                  {vi
+                    ? 'Hôm nay chưa có gì nổi bật để nhắc bạn.'
+                    : 'Nothing stands out about today.'}
+                </Text>
+              ) : (
+                <View style={styles.insightList}>
+                  {insight.data.map((n, i) => (
+                    <View key={`${n.type}-${i}`} style={styles.insightItem}>
+                      {/* The dot is the priority and nothing else. The server
+                          also sends an `icon` name, and it is ignored: it comes
+                          from a different icon set than the one this screen
+                          draws, so honouring it would mean a glyph that either
+                          does not exist or means something else here. */}
+                      <View
+                        style={[
+                          styles.insightDot,
+                          {
+                            backgroundColor:
+                              n.priority === 'high'
+                                ? colors.readinessRed
+                                : n.priority === 'medium'
+                                  ? colors.readinessYellow
+                                  : colors.readinessGreen,
+                          },
+                        ]}
+                      />
+                      <Text style={styles.insightText}>{n.message}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </LiquidGlass>
+        </View>
+        </Settle>
+
+        {/* ── metrics ── */}
+        <Settle index={3}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -537,7 +631,7 @@ export default function AssistantScreen() {
           Bigger than the tiles, and the only `radius.xl` on the page. It is
           the thing this screen is for.
         */}
-        <Settle index={3}>
+        <Settle index={4}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={vi ? 'Mở AI Coach' : 'Open AI Coach'}
@@ -613,7 +707,7 @@ export default function AssistantScreen() {
         </Pressable>
         </Settle>
 
-        <Settle index={4}>
+        <Settle index={5}>
         {/*
           The four things the assistant can do *for* you.
 
@@ -720,6 +814,18 @@ const styles = StyleSheet.create({
      and a tint wash on top, that grey lands at 2.57:1 — below even the 3:1
      asked of large text, and it showed as the label under each metric fading
      into its own tile. The constant carries the numbers. */
+  insightHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  insight: {},
+  insightInner: { padding: spacing.md },
+  insightRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  insightMuted: { ...type.footnote, color: colors.glassMuted, flex: 1 },
+  insightList: { gap: spacing.sm + 2 },
+  insightItem: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  /* 7pt, nudged down 6 so it sits on the first line's centre rather than its
+     top — a dot aligned to the text box reads as floating above the sentence. */
+  insightDot: { width: 7, height: 7, borderRadius: 4, marginTop: 6 },
+  insightText: { ...type.footnote, color: colors.foreground, lineHeight: 20, flex: 1 },
+
   panel: { marginTop: spacing.sm + 2 },
   metricScroll: { marginHorizontal: -spacing.md },
   metricRow: { paddingHorizontal: spacing.md, gap: spacing.sm + 2 },
