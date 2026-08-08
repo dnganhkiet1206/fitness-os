@@ -80,14 +80,53 @@ const BAR_MS = 300;
 const FLOOR = 150;
 const CEILING = 500;
 
-// ── 1: the prop is still driven by the route ──
-function navigatorProblems(src) {
+/*
+  ── 1: the prop is driven by the last *tab*, not by the pathname ──
+
+  `hidden={pathname === '/assistant'}` is the obvious version and it flashes.
+  Push anything from the assistant — the coach, a metric tile, a tool — and
+  `pathname` becomes that route, `hidden` flips to false, and the bar slides
+  back *up* underneath the screen still sliding in. A third of a second of a
+  bar reappearing on a page that had deliberately hidden it.
+
+  This was happening before `animated:YES` too; the patch is what made it
+  visible, because a snap during a transition nobody watches is not the same
+  as three hundred milliseconds of movement. That is the cost of that patch
+  landing somewhere it was not expected, and it is the reason this rule exists
+  rather than a comment.
+
+  So the rule is about the *shape*: the decision has to come from a value that
+  a push cannot change. Checked as "the pathname is not compared directly to
+  a route", plus the two pieces that make the frozen version work.
+*/
+function navigatorProblems(raw) {
   const bad = [];
-  if (!/hidden=\{pathname === '\/assistant'\}/.test(src)) {
+  /* Comments out first. The file's own note quotes the broken line verbatim to
+     explain why it is broken, and the first version of this rule fired on that
+     — a check that forbids describing what it forbids is one nobody can leave
+     a note next to. `training-card.mjs` hit the same trap and documents it. */
+  const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  if (/hidden=\{pathname ===/.test(src)) {
     bad.push(
-      'app-tabs: không còn `hidden={pathname === \'/assistant\'}` — ' +
-        'không có gì để chạy hiệu ứng, và bản vá native thành thừa',
+      'app-tabs: `hidden` so thẳng pathname — mọi màn push từ trang trợ lý sẽ làm ' +
+        'thanh tab trượt trở lại ngay dưới màn đang trượt vào. Phải quyết theo tab cuối cùng.',
     );
+  }
+  if (!/const TAB_ROUTES = \[/.test(src) || !/lastTab/.test(src)) {
+    bad.push(
+      'app-tabs: không còn ghi nhớ tab cuối cùng — thiếu TAB_ROUTES/lastTab thì ' +
+        '`hidden` lại đổi theo từng lần push',
+    );
+  }
+  if (!/hidden=\{hidden\}/.test(src)) {
+    bad.push('app-tabs: `hidden` không còn được truyền vào NativeTabs');
+  }
+  /* Every tab has to be in the list, or visiting it leaves `lastTab` pointing
+     at wherever you were before — and the bar's state would be a page behind. */
+  for (const route of ['/', '/nutrition', '/workouts', '/progress', '/assistant']) {
+    if (!new RegExp(`'${route.replace('/', '\\/')}'`).test(src.match(/const TAB_ROUTES = \[[^\]]*\]/)?.[0] ?? '')) {
+      bad.push(`app-tabs: TAB_ROUTES thiếu '${route}' — vào tab đó thì trạng thái thanh tab trễ một trang`);
+    }
   }
   return bad;
 }
@@ -229,6 +268,8 @@ problems.push(
  */
 const selfTest = [
   ['prop bị gỡ', () => navigatorProblems('<NativeTabs minimizeBehavior="onScrollDown">')],
+  ['so thẳng pathname', () => navigatorProblems(GOOD_TABS.replace('hidden={hidden}', "hidden={pathname === '/assistant'}"))],
+  ['thiếu một tab', () => navigatorProblems(GOOD_TABS.replace("'/progress', ", ''))],
   ['không có bản vá', () => patchProblems(['expo-modules-jsi+57.0.3.patch'], '4.25.2', '')],
   ['bản vá sai phiên bản', () => patchProblems(['react-native-screens+4.20.0.patch'], '4.25.2', GOOD_PATCH)],
   ['bản vá chỉ sửa một chỗ', () => patchProblems(['react-native-screens+4.25.2.patch'], '4.25.2', HALF_PATCH)],
@@ -238,6 +279,10 @@ const selfTest = [
   ['ánh sáng xong trước thẻ', () => timingProblems(GOOD_SETTLE, GOOD_AURA.replace('duration: 420', 'duration: 200'), GOOD_PAGE)],
 ];
 
+const GOOD_TABS =
+  "const TAB_ROUTES = ['/', '/nutrition', '/workouts', '/progress', '/assistant'];\n" +
+  '  const lastTab = useRef("/");\n' +
+  '  <NativeTabs hidden={hidden}>';
 const GOOD_PATCH =
   '-      [_controller setTabBarHidden:_tabBarHidden animated:NO];\n' +
   '+      [_controller setTabBarHidden:_tabBarHidden animated:YES];\n' +

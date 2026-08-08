@@ -79,7 +79,6 @@ export default function AiCoachScreen() {
   const [input, setInput] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const inputRef = useRef<TextInput>(null);
 
   const scrollToEnd = () => {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
@@ -128,9 +127,9 @@ export default function AiCoachScreen() {
   /*
     ── arriving with a question already asked ──
 
-    The coach card's chips carry their question in `q`; the card itself carries
-    `ask=1` and no question. Both are one-shot: `sentRef` outlives every
-    re-render, so a keyboard resize or a language change cannot re-send.
+    The coach card's chips carry their question in `q` and it is sent on
+    arrival. One-shot: `sentRef` outlives every re-render, so a keyboard resize
+    or a language change cannot re-send.
 
     Gated on `session` because the request needs the access token — without the
     guard, a cold start deep into this route fires before auth has resolved and
@@ -138,8 +137,20 @@ export default function AiCoachScreen() {
 
     `send` is deliberately not in the dependency list. The ref is what makes
     this fire once; the deps are honest about what gates the first fire.
+
+    ── and the keyboard does not come up by itself ──
+
+    Tapping the card used to arrive with `ask=1` and focus the field, on the
+    reasoning that a door should not need a second tap. On a device it was the
+    wrong call twice over: the keyboard covered the four suggested questions,
+    which are the *shorter* path than typing, and it animated up while the push
+    was still animating in — two things moving at once on arrival, which reads
+    as the screen being unsettled rather than eager.
+
+    So arrival is still. The field is one tap away for anyone who wants to type
+    something the chips do not cover.
   */
-  const { q, ask } = useLocalSearchParams<{ q?: string; ask?: string }>();
+  const { q } = useLocalSearchParams<{ q?: string }>();
   const sentRef = useRef(false);
 
   useEffect(() => {
@@ -147,12 +158,9 @@ export default function AiCoachScreen() {
     if (typeof q === 'string' && q.trim()) {
       sentRef.current = true;
       send(q);
-    } else if (ask === '1') {
-      sentRef.current = true;
-      inputRef.current?.focus();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, ask, session]);
+  }, [q, session]);
 
   const chatting = messages.length > 0;
 
@@ -342,7 +350,6 @@ export default function AiCoachScreen() {
                 <Glyph name="spark" size={16} />
               </View>
               <TextInput
-                ref={inputRef}
                 style={styles.composerInput}
                 placeholder={i18n.aiCoachPlaceholder}
                 placeholderTextColor={colors.glassMuted}

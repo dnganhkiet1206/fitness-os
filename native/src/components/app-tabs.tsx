@@ -1,4 +1,5 @@
 import { usePathname } from 'expo-router';
+import { useRef } from 'react';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { colors } from '@/constants/ascnd';
@@ -110,9 +111,47 @@ const scrollToTopOnRetap = ({ navigation }: { navigation: { isFocused: () => boo
  * Android gets Material 3's bottom bar from the same component. Its own
  * platform's bar, which is the same bargain.
  */
+/**
+ * The five routes that *are* tabs.
+ *
+ * Everything else in the app is pushed on the root stack, on top of the whole
+ * `UITabBarController` — so while one of those is open, whether the bar is
+ * hidden is invisible either way. What is *not* invisible is **changing** it:
+ * see `hidden` below.
+ */
+const TAB_ROUTES = ['/', '/nutrition', '/workouts', '/progress', '/assistant'];
+
 export default function AppTabs() {
   const pathname = usePathname();
   const i18n = useI18n();
+
+  /*
+    ── the bar's visibility is frozen while anything is pushed over it ──
+
+    `hidden={pathname === '/assistant'}` was the obvious version and it caused a
+    visible flash: push `/ai-coach` from the assistant and `pathname` becomes
+    `/ai-coach`, so `hidden` flips to false and the bar comes *back* — sliding
+    up underneath the screen that is still sliding in, for about a third of a
+    second, on a page that had deliberately hidden it.
+
+    This was always happening; the `animated:YES` patch is what made it
+    visible. Before, the bar snapped back in one frame during a transition
+    nobody was looking at the bottom of. Three hundred milliseconds of movement
+    is a different matter, and this is the cost of that patch showing up
+    somewhere it was not expected — worth knowing before reaching for it again.
+
+    Every push from the assistant did it, not only the coach: the metric tiles
+    and the tools grid all open root-stack routes.
+
+    So the last *tab* is what decides, and a push does not change it. The ref is
+    written during render on purpose — `usePathname` re-renders on every
+    navigation, so when the pathname is a tab this recomputes with the new
+    value, and when it is a pushed route it keeps the old one. No effect, no
+    extra render, and nothing to get out of step.
+  */
+  const lastTab = useRef('/');
+  if (TAB_ROUTES.includes(pathname)) lastTab.current = pathname;
+  const hidden = lastTab.current === '/assistant';
 
   return (
     <NativeTabs
@@ -184,7 +223,7 @@ export default function AppTabs() {
         The arrival on the other side is timed to it: ~300ms for the bar,
         340ms for the assistant's cards, 420ms for its light. See `settle.tsx`.
       */
-      hidden={pathname === '/assistant'}>
+      hidden={hidden}>
       <NativeTabs.Trigger name="index" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
         <NativeTabs.Trigger.Icon sf="house" />
         <NativeTabs.Trigger.Label>{i18n.navToday}</NativeTabs.Trigger.Label>

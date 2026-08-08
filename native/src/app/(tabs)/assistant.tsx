@@ -140,16 +140,17 @@ export default function AssistantScreen() {
   /*
     Into the coach, optionally with the question already asked.
 
-    `ask=1` and no question means "open empty and put the keyboard up", which is
-    what tapping the card itself should do — the card is a door, and a door that
-    makes you tap again on the other side is the thing this replaced.
+    A chip sends its question on arrival. The card itself just opens the coach —
+    it used to add `ask=1` and raise the keyboard, which covered the four
+    questions that are the faster path and animated up while the push was still
+    animating in.
 
     `encodeURIComponent` because these questions contain the numbers they are
     about, and `?` and `&` are ordinary punctuation in a sentence.
   */
   const askCoach = (question?: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const to = question ? `/ai-coach?q=${encodeURIComponent(question)}` : '/ai-coach?ask=1';
+    const to = question ? `/ai-coach?q=${encodeURIComponent(question)}` : '/ai-coach';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     router.push(to as any);
   };
