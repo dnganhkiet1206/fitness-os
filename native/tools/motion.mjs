@@ -12,10 +12,12 @@
  *   3. the system's Reduce Motion setting is honoured even where the animation
  *      library does not do it for you
  *   4. the response band speaks with four named durations
+ *   5. the two micro-interaction primitives keep their non-obvious guards
  *
- * The first three are worth a tool because they fail *invisibly*: the screen
- * looks exactly as designed and the battery goes, or the frame budget goes, and
- * there is nothing in a diff to review.
+ * All of these except 4 are worth a tool because they fail *invisibly*: the
+ * screen looks exactly as designed and the battery goes, or the frame budget
+ * goes, or a counter quietly swallows the tap meant for the card underneath it,
+ * and there is nothing in a diff to review.
  *
  * ── why the table is small on purpose ──
  *
@@ -312,6 +314,67 @@ for (const [f, allowed] of Object.entries(COMPOSED)) {
 }
 
 /**
+ * ── rule 5: the micro-interaction primitives keep their non-obvious guards ──
+ *
+ * Two components carry the app's smallest motions — the press and the counter —
+ * and each has a guard that looks like boilerplate and is not.
+ *
+ * `AnimatedNumber` is a `TextInput` wearing a `Text`'s clothes, because that is
+ * the only content React Native will animate off the JS thread. Borrowing it
+ * brings two problems that produce no error when you forget them:
+ *
+ *   - without `pointerEvents="none"` it is a live text field sitting on top of
+ *     a card, and it silently eats the tap meant for the card. Every counter in
+ *     this app is inside something pressable, so the symptom is "the dashboard
+ *     stopped opening" with nothing in the logs.
+ *   - without `accessibilityLabel` a screen reader announces a *text field* and
+ *     reads whichever digit the animation is passing through. The number is the
+ *     one thing on that screen somebody needs, and it would be the one thing
+ *     assistive tech could not state.
+ *
+ * `PressScale` puts its animated style on the `Pressable` itself. A wrapper
+ * `View` is the obvious build and it shifts layout at some fraction of fifty
+ * call sites, because `flex`, `alignSelf` and margins all behave differently
+ * one node down — and each shift is a pixel or two, which is exactly the size
+ * of thing that gets shipped.
+ */
+{
+  const NUM = 'src/components/ascnd/animated-number.tsx';
+  const code = strip(read(NUM));
+  for (const [what, re, why] of [
+    ['pointerEvents="none"', /pointerEvents="none"/, 'ô số sẽ nuốt mất cú chạm dành cho thẻ chứa nó'],
+    ['accessibilityLabel', /accessibilityLabel=/, 'trình đọc màn hình sẽ đọc con số đang chạy dở thay vì giá trị thật'],
+    ['editable={false}', /editable=\{false\}/, 'người dùng gõ được vào một con số chỉ để đọc'],
+  ]) {
+    if (!re.test(code)) problems.push(`${NUM}: thiếu ${what} — ${why}`);
+  }
+  /* The worklet and the label must format through one function, or the settled
+     value and the animated digits can disagree about the separator. */
+  if ((code.match(/format\(/g) ?? []).length < 3) {
+    problems.push(`${NUM}: nhãn và worklet phải dùng chung một hàm format, nếu không hai bên hiển thị khác nhau`);
+  }
+  if (!/'worklet'/.test(code)) {
+    problems.push(`${NUM}: hàm format không được đánh dấu 'worklet' — nó chạy trên UI thread`);
+  }
+
+  const PRESS = 'src/components/ascnd/press-scale.tsx';
+  const pcode = strip(read(PRESS));
+  if (!/createAnimatedComponent\(Pressable\)/.test(pcode)) {
+    problems.push(`${PRESS}: style động phải nằm trên chính Pressable — bọc thêm View sẽ xê dịch bố cục ở hàng chục chỗ gọi`);
+  }
+  for (const token of ['press.spring', 'press.opacity']) {
+    if (!pcode.includes(token)) {
+      problems.push(`${PRESS}: không dùng ${token} — độ lún và độ mờ phải có một nguồn duy nhất, đó là lý do file token tồn tại`);
+    }
+  }
+  if (!/haptic = 'none'/.test(pcode)) {
+    problems.push(
+      `${PRESS}: haptic mặc định không phải 'none' — 70 tệp đã tự gọi Haptics, bật sẵn là rung hai lần mỗi lần chạm`,
+    );
+  }
+}
+
+/**
  * The self-test.
  *
  * Each rule is fed the exact shape it exists to reject. The scope test is here
@@ -398,5 +461,6 @@ console.log(
     `${loopFiles} tệp có vòng lặp vô hạn, mọi vòng đều nằm trong useEffect có điều kiện dừng; ` +
     `${clockFiles} tệp dùng frame clock và đều đọc Reduce Motion; ` +
     `dải phản hồi chỉ dùng ${TOKENS.size} nhịp có tên (${[...TOKENS].join('/')}), ` +
-    `${Object.values(COMPOSED).reduce((n, o) => n + Object.keys(o).length, 0)} số thuộc cascade được miễn kèm lý do, rig nhân vật không bị ép vào thang`,
+    `${Object.values(COMPOSED).reduce((n, o) => n + Object.keys(o).length, 0)} số thuộc cascade được miễn kèm lý do, rig nhân vật không bị ép vào thang; ` +
+    'PressScale và AnimatedNumber giữ đủ chốt chặn (không nuốt chạm, đọc được bằng screen reader, không rung hai lần)',
 );

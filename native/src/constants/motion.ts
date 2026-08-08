@@ -13,8 +13,10 @@
  *   - **The character rig.** Koa's blink, nod, squash and weight-shift, the
  *     celebration sequences, the studio loop. Twenty sites and thirteen values,
  *     and they are choreography — 90ms and 110ms next to each other are two
- *     beats of one gesture, not two picks off a scale. Every spring in the app
- *     is in this category too, which is why there are no spring tokens.
+ *     beats of one gesture, not two picks off a scale. Every spring the app had
+ *     when this file was written was in that category; `press` below is the
+ *     first one that is not, and it is here rather than in a component because
+ *     it is the app's answer to *every* tap.
  *   - **The arrival cascade.** The tab bar leaves over 300ms, the cards land at
  *     340 (220 plus a 30ms-per-card stagger), the light finishes at 420. Those
  *     three numbers are one composition: they are in that order, with those
@@ -46,6 +48,49 @@ export const duration = {
   move: 240,
   /** A surface exchanging its contents for different contents. */
   swap: 320,
+} as const;
+
+/**
+ * How a press answers.
+ *
+ * ── the depth ──
+ *
+ * 0.97. The app was using 0.92, 0.95 and 0.98 in different files, which is
+ * three answers to one question. 0.92 on a full-width card is a lurch — the
+ * whole surface visibly shrinks away from the finger; the same 0.92 on a small
+ * icon button is barely visible, because the *absolute* distance travelled is
+ * what the eye reads, not the ratio. 0.97 is the value that stays legible on a
+ * 44pt button and stays polite on a 350pt card, which is the range this app
+ * actually has.
+ *
+ * ── the spring ──
+ *
+ * ζ = 0.707, ωn = 28.3 rad/s. Integrated rather than guessed at: it covers 90%
+ * of the press depth in 94ms and is within a thousandth of its target by 118ms,
+ * which is fast enough that the surface is already down before a normal tap
+ * lifts.
+ *
+ * The overshoot is 4% of the travel, and 4% of a 1 → 0.97 press is 0.0012 of
+ * scale — 0.05pt on a 44pt button, 0.4pt on a 350pt card. Sub-pixel at both
+ * ends of the range this app actually has, which is the point: overshoot you
+ * *can* see turns a button into a toy, and these are mostly cards carrying
+ * numbers about somebody's body.
+ *
+ * The same spring runs both ways. A press-in that is snappier than the release
+ * is the usual instinct and it feels wrong here: the release is the half you
+ * watch, because your finger is out of the way by then.
+ */
+export const press = {
+  scale: 0.97,
+  /**
+   * The dim that goes with it, kept at the value the app already used
+   * everywhere so migrating a call site changes *how* it moves and not *how
+   * far*. Scale alone is too quiet on a large card — there is no edge near
+   * enough to your finger to see 3% by; the dim is what carries the feedback at
+   * card size, and the scale is what carries it at button size.
+   */
+  opacity: 0.85,
+  spring: { damping: 20, stiffness: 400, mass: 0.5 },
 } as const;
 
 /*

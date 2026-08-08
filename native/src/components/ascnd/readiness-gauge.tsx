@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
+import { AnimatedNumber } from '@/components/ascnd/animated-number';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
@@ -47,6 +48,13 @@ interface Props {
   recommendation?: string | null;
   acwr?: number | null;
 }
+
+/* The ring's fill, named because the score now counts on exactly these two
+   numbers. Left as literals they would drift apart the first time one was
+   tuned, and a number that finishes before its ring is the specific thing this
+   pairing exists to fix. */
+const RING_DELAY = 300;
+const RING_MS = 1600;
 
 /**
  * Faithful port of the web ReadinessGauge card: pulsing status dot +
@@ -100,8 +108,8 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
   const focused = useIsFocused();
   useEffect(() => {
     progress.value = withDelay(
-      300,
-      withTiming(score / 100, { duration: 1600, easing: Easing.bezier(0.16, 1, 0.3, 1) }),
+      RING_DELAY,
+      withTiming(score / 100, { duration: RING_MS, easing: Easing.bezier(0.16, 1, 0.3, 1) }),
     );
   }, [score, progress]);
   useEffect(() => {
@@ -220,7 +228,23 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
           />
         </Svg>
         <View style={styles.ringCenter} pointerEvents="none">
-          <Text style={[styles.score, { color }]}>{score}</Text>
+          {/*
+            Counts while the ring fills, on the ring's own delay and duration,
+            so the two halves of one reading arrive together rather than the
+            number being finished before the ring has started.
+
+            Stretched and centred rather than left to shrink: a `<Text>` sizes
+            to its digits and gets centred by `alignItems`, a `TextInput` does
+            not size to content, so without this the number drifts off the
+            middle of the ring.
+          */}
+          <AnimatedNumber
+            value={score}
+            group={false}
+            delay={RING_DELAY}
+            duration={RING_MS}
+            style={[styles.score, { color, alignSelf: 'stretch', textAlign: 'center' }]}
+          />
           <Text style={[styles.statusLabel, { color }]}>{statusLabel}</Text>
         </View>
       </View>

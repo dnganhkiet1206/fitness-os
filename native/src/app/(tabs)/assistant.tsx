@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,6 +17,7 @@ import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { MetricPanel } from '@/components/ascnd/metric-panel';
 import { ScrollProgress } from '@/components/ascnd/scroll-progress';
 import { Settle } from '@/components/ascnd/settle';
+import { PressScale } from '@/components/ascnd/press-scale';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
@@ -408,7 +408,7 @@ export default function AssistantScreen() {
             and a chevron pointing left in the top *right* corner would be
             pointing at nothing.
           */}
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={vi ? 'Về trang chủ' : 'Back to dashboard'}
             hitSlop={10}
@@ -416,9 +416,9 @@ export default function AssistantScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.navigate('/');
             }}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}>
+            style={styles.iconBtn}>
             <Glyph name="home" size={21} />
-          </Pressable>
+          </PressScale>
         </View>
         </Settle>
 
@@ -518,15 +518,15 @@ export default function AssistantScreen() {
               ) : insight.isError ? (
                 /* Says it could not look, rather than "nothing to suggest" —
                    the second one is the app quietly claiming it did. */
-                <Pressable
+                <PressScale
                   accessibilityRole="button"
                   onPress={() => insight.refetch()}
-                  style={({ pressed }) => [styles.insightRow, pressed && styles.pressed]}>
+                  style={styles.insightRow}>
                   <Glyph name="alert" size={14} />
                   <Text style={styles.insightMuted}>
                     {vi ? 'Chưa đọc được hôm nay. Chạm để thử lại.' : 'Couldn’t read today. Tap to retry.'}
                   </Text>
-                </Pressable>
+                </PressScale>
               ) : !insight.data?.length ? (
                 <Text style={styles.insightMuted}>
                   {vi
@@ -581,7 +581,7 @@ export default function AssistantScreen() {
              different amounts on different screens. */
           style={styles.metricScroll}>
           {metrics.map((m) => (
-            <Pressable
+            <PressScale
               key={m.key}
               accessibilityRole="button"
               accessibilityLabel={`${vi ? m.label.vi : m.label.en} ${m.value}`}
@@ -589,8 +589,7 @@ export default function AssistantScreen() {
               onPress={() => {
                 Haptics.selectionAsync();
                 setSelected(m.kind);
-              }}
-              style={({ pressed }) => pressed && styles.pressed}>
+              }}>
               <LiquidGlass
                 style={[
                   styles.metricCard,
@@ -616,7 +615,7 @@ export default function AssistantScreen() {
                   <Text style={styles.metricNote}>{vi ? m.note.vi : m.note.en}</Text>
                 </View>
               </LiquidGlass>
-            </Pressable>
+            </PressScale>
           ))}
         </Animated.ScrollView>
         <View style={styles.metricProgress}>
@@ -680,11 +679,10 @@ export default function AssistantScreen() {
           the thing this screen is for.
         */}
         <Settle index={4}>
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={vi ? 'Mở AI Coach' : 'Open AI Coach'}
-          onPress={() => askCoach()}
-          style={({ pressed }) => pressed && styles.pressed}>
+          onPress={() => askCoach()}>
           <LiquidGlass
             style={[styles.coachCard, tintBorder(litBy('spark'))]}
             radius={radius.xl}
@@ -732,7 +730,7 @@ export default function AssistantScreen() {
               ) : (
                 <View style={styles.chips}>
                   {suggestions.map((s) => (
-                    <Pressable
+                    <PressScale
                       key={s.key}
                       accessibilityRole="button"
                       /* The label is what you read; the question is what gets
@@ -740,19 +738,18 @@ export default function AssistantScreen() {
                          "Tôi ngủ chưa đủ" does not describe what pressing it
                          does. */
                       accessibilityLabel={vi ? s.question.vi : s.question.en}
-                      onPress={() => askCoach(vi ? s.question.vi : s.question.en)}
-                      style={({ pressed }) => pressed && styles.pressed}>
+                      onPress={() => askCoach(vi ? s.question.vi : s.question.en)}>
                       <View style={[styles.chip, { borderColor: `${litBy(s.glyph)}3d` }]}>
                         <Glyph name={s.glyph} size={14} />
                         <Text style={styles.chipText}>{vi ? s.label.vi : s.label.en}</Text>
                       </View>
-                    </Pressable>
+                    </PressScale>
                   ))}
                 </View>
               )}
             </View>
           </LiquidGlass>
-        </Pressable>
+        </PressScale>
         </Settle>
 
         <Settle index={5}>
@@ -777,12 +774,12 @@ export default function AssistantScreen() {
           <Text style={styles.sectionTitle}>{vi ? 'Công cụ' : 'Tools'}</Text>
           <View style={styles.toolGrid}>
             {TOOLS.map((t) => (
-              <Pressable
+              <PressScale
                 key={t.key}
                 accessibilityRole="button"
                 accessibilityLabel={vi ? t.label.vi : t.label.en}
                 onPress={() => go(t.route)}
-                style={({ pressed }) => [styles.toolWrap, pressed && styles.pressed]}>
+                style={styles.toolWrap}>
                 <LiquidGlass
                   style={[styles.tool, tintBorder(litBy(t.glyph))]}
                   radius={radius.lg}
@@ -797,7 +794,7 @@ export default function AssistantScreen() {
                     {vi ? t.hint.vi : t.hint.en}
                   </Text>
                 </LiquidGlass>
-              </Pressable>
+              </PressScale>
             ))}
           </View>
         </View>

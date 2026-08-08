@@ -20,7 +20,6 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -59,6 +58,7 @@ import {
 } from '@/components/ascnd/today-widgets-2';
 import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
 import { BottomTabInset } from '@/constants/expo-template-theme';
+import { PressScale } from '@/components/ascnd/press-scale';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
@@ -249,7 +249,7 @@ export default function TodayScreen() {
     switch (key) {
       case 'readiness':
         return readinessScore != null ? (
-          <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/biometrics'); }}>
+          <PressScale onPress={() => { Haptics.selectionAsync(); router.push('/biometrics'); }}>
             <ReadinessGauge
               score={readinessScore}
               status={readinessStatus}
@@ -257,7 +257,7 @@ export default function TodayScreen() {
               recommendation={dailyLog?.readiness_recommendation}
               acwr={dailyLog?.acwr != null ? Number(dailyLog.acwr) : null}
             />
-          </Pressable>
+          </PressScale>
         ) : (
           <GlassCard style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>{i18n.dashReadiness}</Text>
@@ -282,7 +282,7 @@ export default function TodayScreen() {
         return <BiometricsCard />;
       case 'sleep':
         return sleepTotalMin > 0 ? (
-          <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/sleep-insights'); }}>
+          <PressScale onPress={() => { Haptics.selectionAsync(); router.push('/sleep-insights'); }}>
             <SleepCard
               totalMin={sleepTotalMin}
               targetHours={sleepTargetHours}
@@ -291,14 +291,14 @@ export default function TodayScreen() {
               waketime={sleep?.waketime}
               stages={stages}
             />
-          </Pressable>
+          </PressScale>
         ) : (
-          <Pressable onPress={() => router.push('/log-sleep')}>
+          <PressScale onPress={() => router.push('/log-sleep')}>
             <GlassCard style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>{i18n.dashSleep}</Text>
               <Text style={styles.emptyMsg}>{i18n.dashSleepMsg}</Text>
             </GlassCard>
-          </Pressable>
+          </PressScale>
         );
       case 'steps':
         return <StepsWidget steps={steps} target={stepsGoal} labels={{ title: lang === 'vi' ? 'Bước đi' : 'Steps' }} />;
@@ -309,7 +309,7 @@ export default function TodayScreen() {
         // shortcut to `/log-meal` only when it was empty, which is backwards:
         // the moment you want more detail is the moment there *is* detail.
         return (
-          <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/nutrition'); }}>
+          <PressScale onPress={() => { Haptics.selectionAsync(); router.push('/nutrition'); }}>
             {kcal > 0 ? (
               <NutritionCard
                 kcal={kcal}
@@ -325,7 +325,7 @@ export default function TodayScreen() {
                 <Text style={styles.emptyMsg}>{i18n.dashNutritionMsg}</Text>
               </GlassCard>
             )}
-          </Pressable>
+          </PressScale>
         );
       case 'water':
         return <WaterWidget ml={waterMl ?? 0} targetMl={waterTarget} labels={{ title: lang === 'vi' ? 'Nước uống' : 'Water' }} />;
@@ -414,11 +414,11 @@ export default function TodayScreen() {
           </Text>
         </View>
         <View style={styles.headerButtons}>
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={editMode ? i18n.a11yDoneEditing : i18n.a11yEditLayout}
             accessibilityState={{ selected: editMode }}
-            style={({ pressed }) => [styles.squareBtn, editMode && styles.squareBtnActive, pressed && styles.pressed]}
+            style={[styles.squareBtn, editMode && styles.squareBtnActive]}
             onPress={() => {
               Haptics.selectionAsync();
               setEditMode(!editMode);
@@ -429,7 +429,7 @@ export default function TodayScreen() {
               size={editMode ? 20 : 17}
               color={editMode ? colors.primary : 'rgba(237,237,237,0.7)'}
             />
-          </Pressable>
+          </PressScale>
           {!editMode && (
             <>
               {/*
@@ -459,16 +459,16 @@ export default function TodayScreen() {
               {/* Settings, back where it was. It is also the fifth tab now, so
                   this is a second way in rather than the only one — kept
                   because it is where the hand already goes on this page. */}
-              <Pressable
+              <PressScale
                 accessibilityRole="button"
                 accessibilityLabel={i18n.a11ySettings}
-                style={({ pressed }) => [styles.squareBtn, pressed && styles.pressed]}
+                style={styles.squareBtn}
                 onPress={() => {
                   Haptics.selectionAsync();
                   router.push('/settings');
                 }}>
                 <Icon icon={Settings} size={20} color="rgba(237,237,237,0.7)" />
-              </Pressable>
+              </PressScale>
             </>
           )}
         </View>
@@ -481,23 +481,23 @@ export default function TodayScreen() {
           {/* Quick log actions (web chips row) */}
           <View style={styles.quickRow}>
             {quickActions.map((a) => (
-              <Pressable
+              <PressScale
                 key={a.route}
-                style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
+                style={styles.quickChip}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push(a.route);
                 }}>
                 <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
                 <Text style={styles.quickChipText}>{a.label}</Text>
-              </Pressable>
+              </PressScale>
             ))}
           </View>
 
           {/* HealthKit sync (native-only necessity, styled as a quick chip row) */}
           {healthAvailable && (
-            <Pressable
-              style={({ pressed }) => [styles.syncButton, pressed && styles.pressed]}
+            <PressScale
+              style={styles.syncButton}
               disabled={healthSync.isPending}
               onPress={() => healthSync.mutate()}>
               {healthSync.isPending ? (
@@ -508,7 +508,7 @@ export default function TodayScreen() {
                   <Text style={styles.syncText}>{i18n.nSyncHealth}</Text>
                 </>
               )}
-            </Pressable>
+            </PressScale>
           )}
 
           {/* Hero widgets (web heroWidgets: readiness, activity) — cards
@@ -630,14 +630,10 @@ export default function TodayScreen() {
                 setNewGroupName('');
               }}
             />
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               accessibilityLabel={i18n.a11yAdd}
-              style={({ pressed }) => [
-                styles.addGroupBtn,
-                !newGroupName.trim() && styles.editDisabled,
-                pressed && styles.pressed,
-              ]}
+              style={[styles.addGroupBtn, !newGroupName.trim() && styles.editDisabled, ]}
               disabled={!newGroupName.trim()}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -645,11 +641,11 @@ export default function TodayScreen() {
                 setNewGroupName('');
               }}>
               <Icon icon={Plus} size={18} color={colors.primaryForeground} />
-            </Pressable>
+            </PressScale>
           </View>
 
-          <Pressable
-            style={({ pressed }) => [styles.resetBtn, pressed && styles.pressed]}
+          <PressScale
+            style={styles.resetBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               resetConfig();
@@ -658,7 +654,7 @@ export default function TodayScreen() {
             <Text style={styles.resetText}>
               {lang === 'vi' ? 'Khôi phục mặc định' : 'Reset to default'}
             </Text>
-          </Pressable>
+          </PressScale>
         </>
       )}
       </ScrollView>
@@ -684,20 +680,20 @@ function ArrowBtn({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
       // 30pt drawn; 7 of slop brings the target to 44, the HIG floor
       hitSlop={7}
       disabled={disabled}
-      style={({ pressed }) => [styles.arrowBtn, disabled && styles.editDisabled, pressed && styles.pressed]}
+      style={[styles.arrowBtn, disabled && styles.editDisabled]}
       onPress={() => {
         Haptics.selectionAsync();
         onPress();
       }}>
       <Icon icon={icon} size={15} color={colors.mutedForeground} />
-    </Pressable>
+    </PressScale>
   );
 }
 

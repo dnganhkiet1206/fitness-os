@@ -2,11 +2,12 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { Check, PartyPopper, Sparkles } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
+import { PressScale } from '@/components/ascnd/press-scale';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
@@ -82,8 +83,8 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
             placeholderTextColor={colors.mutedForeground}
           />
           <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
-          <Pressable
-            style={({ pressed }) => [styles.weightBtn, pressed && styles.pressed]}
+          <PressScale
+            style={styles.weightBtn}
             onPress={submit}
             disabled={logWeight.isPending}>
             {logWeight.isPending ? (
@@ -91,10 +92,10 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
             ) : (
               <Text style={styles.weightBtnText}>{i18n.nLogWeight}</Text>
             )}
-          </Pressable>
+          </PressScale>
         </View>
       ) : (
-        <Pressable style={styles.weightDisplay} onPress={() => setEditing(true)}>
+        <PressScale style={styles.weightDisplay} onPress={() => setEditing(true)}>
           <View style={styles.weightValueRow}>
             <Text style={styles.weightValue}>{todayDisp}</Text>
             <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
@@ -110,7 +111,7 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
               </View>
             );
           })()}
-        </Pressable>
+        </PressScale>
       )}
     </GlassCard>
   );
@@ -143,7 +144,7 @@ export function SupplementChecklistCard() {
       ) : (
         <View style={styles.suppList}>
           {supplements.map((s) => (
-            <Pressable
+            <PressScale
               key={s.id}
               style={styles.suppRow}
               onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
@@ -156,7 +157,7 @@ export function SupplementChecklistCard() {
                 </Text>
                 {s.dose_text ? <Text style={styles.suppDose}>{s.dose_text}</Text> : null}
               </View>
-            </Pressable>
+            </PressScale>
           ))}
         </View>
       )}
@@ -291,9 +292,9 @@ export function SmartTipsCard() {
         </View>
       </View>
 
-      <Pressable
+      <PressScale
         accessibilityRole="button"
-        style={({ pressed }) => [styles.tipsBtn, pressed && styles.pressed]}
+        style={styles.tipsBtn}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/assistant');
@@ -307,7 +308,7 @@ export function SmartTipsCard() {
               ? 'Xem insight hôm nay'
               : 'See today’s insight'}
         </Text>
-      </Pressable>
+      </PressScale>
     </GlassCard>
   );
 }
