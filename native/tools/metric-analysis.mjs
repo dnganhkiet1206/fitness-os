@@ -72,11 +72,11 @@ const series = (n, f) => Array.from({ length: n }, (_, i) => ({ date: iso(n - 1 
 
 const KINDS = ['readiness', 'sleep', 'kcal', 'hr'];
 const CASES = {
-  'sẵn sàng, 14 ngày đi lên': { kind: 'readiness', points: series(14, (i) => 50 + i * 2) },
+  'sẵn sàng, cả tuần đi lên': { kind: 'readiness', points: series(14, (i) => 50 + i * 2) },
   'sẵn sàng, 2 ngày': { kind: 'readiness', points: series(2, () => 70) },
   'sẵn sàng, trống': { kind: 'readiness', points: [] },
-  'ngủ, 9 đêm thiếu': { kind: 'sleep', points: series(9, () => 380) },
-  'ngủ, 4 đêm rời rạc': { kind: 'sleep', points: [0, 3, 7, 11].map((b) => ({ date: iso(b), value: 400 })) },
+  'ngủ, thiếu cả tuần': { kind: 'sleep', points: series(9, () => 380) },
+  'ngủ, 4 đêm rời rạc': { kind: 'sleep', points: [0, 2, 4, 6].map((b) => ({ date: iso(b), value: 400 })) },
   'ngủ, 3 đêm': { kind: 'sleep', points: series(3, () => 400) },
   'ngủ, trống': { kind: 'sleep', points: [] },
   'calo, đủ ngày': { kind: 'kcal', points: series(12, (i) => 2000 + (i % 3) * 150), kcalTarget: 2200 },
@@ -91,6 +91,18 @@ const results = {};
 for (const [name, c] of Object.entries(CASES)) {
   results[name] = analyse({ ...c, today: TODAY });
 }
+
+/*
+  Only the readings inside the window count.
+
+  Several fixtures deliberately hand in more days than the chart shows — the
+  app queries a fortnight and draws a week, so that is the real shape and the
+  one worth checking. The first version compared against `points.length` and
+  reported perfectly correct output as wrong: seven columns from twelve
+  readings is the window doing its job.
+*/
+const WINDOW_DATES = new Set(Array.from({ length: WINDOW_DAYS }, (_, i) => iso(i)));
+const inWindow = (c) => c.points.filter((p) => WINDOW_DATES.has(p.date));
 
 const allText = (a) => [
   a.headline,
@@ -108,7 +120,7 @@ const allText = (a) => [
 */
 const TREND_WORDS = /đi lên|đi xuống|ổn định|giảm dần|nhích lên|trending|steady|drifting|creeping/i;
 for (const [name, a] of Object.entries(results)) {
-  const n = CASES[name].points.length;
+  const n = inWindow(CASES[name]).length;
   if (n >= MIN_TREND) continue;
   for (const t of allText(a)) {
     for (const lang of ['vi', 'en']) {
@@ -130,9 +142,9 @@ for (const [name, a] of Object.entries(results)) {
   scale marks the copy legitimately uses.
 */
 function allowed(c) {
-  const vals = c.points.map((p) => p.value);
+  const vals = inWindow(c).map((p) => p.value);
   const n = vals.length;
-  const set = new Set(['100', '7', '14']); // "x/100", the seven-hour mark, the window
+  const set = new Set(['100', '7']); // "x/100", the seven-hour mark and the window
   /* Two adders on purpose. The first version used one, guarded by
      `Number.isFinite`, and fed it the *string* pieces of a grouped number —
      `Number.isFinite('150')` is `false`, because it does not coerce, so every
@@ -177,17 +189,31 @@ for (const [name, a] of Object.entries(results)) {
   }
 }
 
-// ── 3: the window is the window, and gaps are marked ──
+/*
+  ── 3: the window is the window, gaps are marked, and every column has a name ──
+
+  The axis is the part that made this chart readable. Fourteen unlabelled
+  columns was "đẹp nhưng khó hiểu" in the user's words: a shape you could see
+  and not one value you could read off. So a column without a weekday, or a
+  week without exactly one "today", is the regression this guards.
+*/
 for (const [name, a] of Object.entries(results)) {
   if (a.bars.length !== WINDOW_DAYS) {
     problems.push(`"${name}": biểu đồ có ${a.bars.length} cột, phải đúng ${WINDOW_DAYS} — đóng khoảng trống lại là vẽ một tuần khác`);
   }
   const drawn = a.bars.filter((b) => !b.missing).length;
-  if (drawn !== CASES[name].points.length) {
-    problems.push(`"${name}": ${drawn} cột có dữ liệu nhưng đưa vào ${CASES[name].points.length} lần đo`);
+  const want = inWindow(CASES[name]).length;
+  if (drawn !== want) {
+    problems.push(`"${name}": ${drawn} cột có dữ liệu nhưng có ${want} lần đo nằm trong cửa sổ`);
   }
   for (const b of a.bars) {
     if (b.missing && b.value !== 0) problems.push(`"${name}": cột trống ${b.date} lại mang giá trị ${b.value}`);
+    if (!b.weekday?.vi || !b.weekday?.en) problems.push(`"${name}": cột ${b.date} không có nhãn thứ — trục biến mất`);
+  }
+  const todays = a.bars.filter((b) => b.today).length;
+  if (todays !== 1) problems.push(`"${name}": có ${todays} cột được đánh dấu "hôm nay", phải đúng 1`);
+  if (a.bars.length && !a.bars[a.bars.length - 1].today) {
+    problems.push(`"${name}": cột "hôm nay" không nằm ở cuối — biểu đồ đang đọc ngược`);
   }
 }
 
@@ -265,6 +291,10 @@ const selfTest = [
     const bars = barsFor([{ date: iso(0), value: 5 }], WINDOW_DAYS, TODAY);
     return bars.length === WINDOW_DAYS && bars.filter((b) => b.missing).length === WINDOW_DAYS - 1;
   }],
+  ['mỗi cột có nhãn thứ, và đúng một cột là hôm nay', () => {
+    const bars = barsFor([], WINDOW_DAYS, TODAY);
+    return bars.every((b) => b.weekday?.vi) && bars.filter((b) => b.today).length === 1;
+  }],
   ['một ngày đột biến không lật xu hướng', () =>
     direction([70, 70, 70, 70, 70, 70, 70, 70, 70, 120]) !== 'up'],
 ];
@@ -287,5 +317,5 @@ console.log(
   `phân tích chỉ số OK — ${Object.keys(CASES).length} ca × ${KINDS.length} loại, cửa sổ luôn ${WINDOW_DAYS} cột và ` +
     `ngày trống được đánh dấu; dưới ${MIN_TREND} lần đo thì không câu nào nói xu hướng; ` +
     `trung bình chia cho số lần đo chứ không cho cửa sổ; một ngày đột biến không lật được hai tuần; ` +
-    `ví dụ: "${results['ngủ, 9 đêm thiếu'].headline.vi}"`,
+    `ví dụ: "${results['ngủ, thiếu cả tuần'].headline.vi}"`,
 );

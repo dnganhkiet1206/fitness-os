@@ -504,6 +504,15 @@ export default function AssistantScreen() {
             analysis={analysis}
             tint={selectedTint}
             vi={vi}
+            /* Today's column carries its value, and only the caller knows the
+               unit. Sleep reads "7h52", calories "2.150", the other two are
+               plain numbers — the same forms the tile above them uses, so the
+               chart and the tile never print the same night differently. */
+            format={(v) =>
+              selected === 'sleep'
+                ? `${Math.floor(v / 60)}h${String(Math.round(v % 60)).padStart(2, '0')}`
+                : Math.round(v).toLocaleString(vi ? 'vi-VN' : 'en-US')
+            }
             onAsk={() => askCoach(vi ? analysis.ask.vi : analysis.ask.en)}
           />
         </LiquidGlass>

@@ -44,6 +44,10 @@ export interface Bar {
   /** 0 when the day has no reading — `missing` is what says which it is */
   value: number;
   missing: boolean;
+  /** "T2".."CN" / "M".."S" — the column's own label, so the chart has an axis */
+  weekday: Bilingual;
+  /** the rightmost column; drawn brighter and labelled with its value */
+  today: boolean;
 }
 
 export interface Analysis {
@@ -62,8 +66,22 @@ export interface Analysis {
 /** Fewer readings than this and no direction is claimed. */
 export const MIN_TREND = 4;
 
-/** How many days each panel covers. */
-export const WINDOW_DAYS = 14;
+/**
+ * How many days each panel covers.
+ *
+ * ── it was fourteen, and fourteen was unreadable ──
+ *
+ * Fourteen unlabelled columns is a texture, not a chart: you can see a shape
+ * and you cannot answer "which day was that". Seven fits a weekday under every
+ * column at a legible size, and a week is the unit this app already thinks in —
+ * the training card buckets by week, the schedule is a week.
+ *
+ * The trend loses a little power and the sentence above the chart is where that
+ * mattered; `MIN_TREND` of 4 out of 7 is still most of a week, and a direction
+ * read from four days of seven is a claim about this week rather than a claim
+ * about a fortnight, which is the more useful claim anyway.
+ */
+export const WINDOW_DAYS = 7;
 
 const round = (n: number) => Math.round(n);
 const group = (n: number, vi: boolean) => n.toLocaleString(vi ? 'vi-VN' : 'en-US');
@@ -82,6 +100,24 @@ const hhmm = (min: number, vi: boolean) => {
  * A chart that silently closes up its gaps shows a tidier fortnight than the
  * one that happened.
  */
+/**
+ * Weekday initials, indexed the way `Date.getDay()` returns them (Sunday = 0).
+ *
+ * Written out rather than taken from `toLocaleDateString`, because that is a
+ * platform table: Hermes and Node disagree about Vietnamese abbreviations, and
+ * a chart whose axis reads differently on a phone than in the check tool is a
+ * chart the check tool is not checking.
+ */
+const WEEKDAYS: Bilingual[] = [
+  { vi: 'CN', en: 'S' },
+  { vi: 'T2', en: 'M' },
+  { vi: 'T3', en: 'T' },
+  { vi: 'T4', en: 'W' },
+  { vi: 'T5', en: 'T' },
+  { vi: 'T6', en: 'F' },
+  { vi: 'T7', en: 'S' },
+];
+
 export function barsFor(points: Point[], days: number, today: Date): Bar[] {
   const byDate = new Map(points.map((p) => [p.date, p.value]));
   const out: Bar[] = [];
@@ -89,7 +125,13 @@ export function barsFor(points: Point[], days: number, today: Date): Bar[] {
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const v = byDate.get(iso);
-    out.push({ date: iso, value: v ?? 0, missing: v == null });
+    out.push({
+      date: iso,
+      value: v ?? 0,
+      missing: v == null,
+      weekday: WEEKDAYS[d.getDay()],
+      today: i === 0,
+    });
   }
   return out;
 }
@@ -142,10 +184,10 @@ function needMore(n: number): Bilingual {
   const left = MIN_TREND - n;
   return {
     vi: n === 0
-      ? 'Chưa có ngày nào được ghi trong hai tuần qua.'
+      ? 'Chưa có ngày nào được ghi trong tuần này.'
       : `Mới có ${n} ngày được ghi — thêm ${left} ngày nữa là tôi đọc được xu hướng.`,
     en: n === 0
-      ? 'Nothing logged in the last two weeks.'
+      ? 'Nothing logged this week.'
       : `Only ${n} days logged — ${left} more and I can read a trend.`,
   };
 }
@@ -193,10 +235,10 @@ export function analyse({ kind, points, today, kcalTarget = 0 }: AnalysisInput):
       ask: {
         vi: n === 0
           ? 'Tôi chưa ghi giấc ngủ bao giờ. Nên bắt đầu theo dõi thế nào và cần chú ý điều gì?'
-          : `Hai tuần qua tôi ngủ trung bình ${hhmm(avg, true)} mỗi đêm, ${good}/${n} đêm đủ 7 giờ. Tôi nên cải thiện thế nào?`,
+          : `Tuần này tôi ngủ trung bình ${hhmm(avg, true)} mỗi đêm, ${good}/${n} đêm đủ 7 giờ. Tôi nên cải thiện thế nào?`,
         en: n === 0
           ? 'I haven’t logged any sleep yet. How should I start tracking it, and what should I watch for?'
-          : `Over the last two weeks I averaged ${hhmm(avg, false)} a night, with ${good} of ${n} nights over 7h. How should I improve?`,
+          : `This week I averaged ${hhmm(avg, false)} a night, with ${good} of ${n} nights over 7h. How should I improve?`,
       },
     };
   }
@@ -228,10 +270,10 @@ export function analyse({ kind, points, today, kcalTarget = 0 }: AnalysisInput):
       ask: {
         vi: n === 0
           ? 'Tôi chưa ghi bữa ăn nào. Nên bắt đầu theo dõi calo thế nào cho dễ duy trì?'
-          : `Hai tuần qua tôi ăn trung bình ${group(round(avg), true)} kcal mỗi ngày${kcalTarget > 0 ? `, mục tiêu là ${group(kcalTarget, true)} kcal` : ''}. Tôi nên điều chỉnh gì?`,
+          : `Tuần này tôi ăn trung bình ${group(round(avg), true)} kcal mỗi ngày${kcalTarget > 0 ? `, mục tiêu là ${group(kcalTarget, true)} kcal` : ''}. Tôi nên điều chỉnh gì?`,
         en: n === 0
           ? 'I haven’t logged any meals. How should I start tracking calories in a way I’ll keep up?'
-          : `Over the last two weeks I averaged ${group(round(avg), false)} kcal a day${kcalTarget > 0 ? `, against a ${group(kcalTarget, false)} target` : ''}. What should I change?`,
+          : `This week I averaged ${group(round(avg), false)} kcal a day${kcalTarget > 0 ? `, against a ${group(kcalTarget, false)} target` : ''}. What should I change?`,
       },
     };
   }
