@@ -119,6 +119,7 @@ const STEPS = [
   ['insight hôm nay', 'node', ['tools/insight.mjs']],
   ['trò chuyện coach', 'node', ['tools/coach-chat.mjs']],
   ['chi phí aura', 'node', ['tools/aura-cost.mjs']],
+  ['luật chuyển động', 'node', ['tools/motion.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
