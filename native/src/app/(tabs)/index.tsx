@@ -432,16 +432,30 @@ export default function TodayScreen() {
           </Pressable>
           {!editMode && (
             <>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={i18n.a11yAskCoach}
-                style={({ pressed }) => [styles.squareBtn, pressed && styles.pressed]}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  router.push('/ai-coach');
-                }}>
-                <Icon icon={Sparkles} size={20} color="rgba(237,237,237,0.7)" />
-              </Pressable>
+              {/*
+                ── the AI button that used to sit here is gone ──
+
+                It was a `Sparkles` that pushed `/ai-coach`, and it was the only
+                path in the app that jumped *past* the Health Assistant into a
+                bare chat. Every other route is assistant → coach, which is the
+                flow the two screens were built around: the hub first, the
+                conversation after, with today's questions already in hand.
+
+                Its destination had also become the worse one. Since the coach
+                stopped raising the keyboard on arrival, that button landed you
+                on an empty transcript with the burden of thinking of a
+                question — while one tap on the assistant's coach card asks
+                something specific about today's numbers.
+
+                And the tab bar's search island is on screen at that exact
+                moment, a thumb away, going somewhere better. Two AI buttons on
+                one screen pointing at two different screens is the confusion
+                this app has already spent a day removing once.
+
+                What is lost: the one-tap route for somebody who just wants to
+                type. That is now two taps through the assistant, and the same
+                two taps ask a better question.
+              */}
               {/* Settings, back where it was. It is also the fifth tab now, so
                   this is a second way in rather than the only one — kept
                   because it is where the hand already goes on this page. */}
