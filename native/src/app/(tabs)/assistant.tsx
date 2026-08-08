@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -234,8 +234,21 @@ export default function AssistantScreen() {
     same day — see `use-assistant-signal`.
   */
   const signal = useAssistantSignal();
-  const suggestions = suggestionsFor(signal);
-  const brief = briefFor(signal, new Date().getHours(), vi);
+  /* Pure functions of the signal, so they run when the day's data changes
+     rather than on every render — and this screen re-renders on a lot:
+     selecting a tile, the insight arriving, a history landing.
+
+     These only work because `useAssistantSignal` memoises what it returns. A
+     fresh object per render would change the dependency every render and all
+     three would recompute while looking as though they did not; the hook's
+     doc-comment is where that is written down.
+
+     `hour` is read on the same beat rather than per render, so the greeting
+     cannot change from "chiều" to "tối" halfway through a scroll. */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const hour = useMemo(() => new Date().getHours(), [signal]);
+  const suggestions = useMemo(() => suggestionsFor(signal), [signal]);
+  const brief = useMemo(() => briefFor(signal, hour, vi), [signal, hour, vi]);
 
   /*
     ── the tiles open an analysis, not another screen ──
@@ -271,10 +284,17 @@ export default function AssistantScreen() {
   const onMetricScroll = useAnimatedScrollHandler((e) => {
     metricX.value = e.contentOffset.x;
   });
-  const readinessHistory = useReadinessHistory(WINDOW_DAYS);
-  const sleepHistory = useSleepDurationHistory(WINDOW_DAYS);
-  const kcalHistory = useKcalHistory(WINDOW_DAYS);
-  const bioHistory = useBiometricHistory(WINDOW_DAYS);
+  /* ── only the one you are looking at ──
+
+     The comment here used to claim "only the selected one is enabled" and that
+     was simply not true: all four ran on every visit, so opening the page cost
+     four queries, four parses and four cache entries to draw one chart. Each
+     hook takes an `enabled` flag now and three of them sit idle until their
+     tile is tapped. */
+  const readinessHistory = useReadinessHistory(WINDOW_DAYS, selected === 'readiness');
+  const sleepHistory = useSleepDurationHistory(WINDOW_DAYS, selected === 'sleep');
+  const kcalHistory = useKcalHistory(WINDOW_DAYS, selected === 'kcal');
+  const bioHistory = useBiometricHistory(WINDOW_DAYS, selected === 'hr');
 
   /* Each source is reshaped to `{ date, value }` here rather than in the lib,
      because the lib is what the check tool runs and it should not have to know
@@ -302,12 +322,15 @@ export default function AssistantScreen() {
     selected === 'hr' ? 'heart' : selected === 'sleep' ? 'moon' : selected === 'kcal' ? 'flame' : 'gauge',
   );
 
-  const analysis = analyse({
-    kind: selected,
-    points,
-    today: new Date(),
-    kcalTarget: signal.kcalTarget,
-  });
+  /* `points` is rebuilt above on every render, so this has to depend on the
+     selection and the queries rather than on the array's identity. Fourteen
+     bars and a paragraph of formatting is not much, but it was happening on
+     every keystroke-free re-render of the page for no reason. */
+  const analysis = useMemo(
+    () => analyse({ kind: selected, points, today: new Date(), kcalTarget: signal.kcalTarget }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selected, signal.kcalTarget, readinessHistory.data, sleepHistory.data, kcalHistory.data, bioHistory.data],
+  );
 
   const go = (route: string) => {
     Haptics.selectionAsync();

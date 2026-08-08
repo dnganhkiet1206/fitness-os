@@ -16,11 +16,11 @@ export interface BiometricSample {
   notes: string | null;
 }
 
-export function useBiometricHistory(days = 14) {
+export function useBiometricHistory(days = 14, enabled = true) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['biometric_history', user?.id, days],
-    enabled: !!user,
+    enabled: !!user && enabled,
     queryFn: async () => {
       const since = new Date();
       since.setDate(since.getDate() - days);

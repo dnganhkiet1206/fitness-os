@@ -5,12 +5,14 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  cancelAnimation,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { colors } from '@/constants/ascnd';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 /**
  * The room's light, moving.
@@ -104,21 +106,40 @@ interface Pool {
  * clipped at the layer boundary shows the cut as a straight edge, and a
  * straight edge is the one thing light never has.
  */
-function LightPool({ pool, tint }: { pool: Pool; tint?: string }) {
+function LightPool({ pool, tint, moving }: { pool: Pool; tint?: string; moving: boolean }) {
   const t = useSharedValue(pool.phase);
 
   useEffect(() => {
     /*
       One driver per pool, 0 → 1, looping and reversing. Everything the pool
-      does is derived from it, so a pool is one animated value rather than
-      four running out of step with each other.
+      does is derived from it, so a pool is one animated value rather than four
+      running out of step with each other.
+
+      ── and it stops when nobody is looking ──
+
+      This used to be a bare `withRepeat(…, -1)` started on mount, which meant
+      four pools and four dust layers kept animating for the rest of the app's
+      life: on the Today tab, on Nutrition, under a pushed screen, in the
+      background. Eight animations compositing full-screen translucent layers,
+      forever, to draw a room nobody was in. That is most of what made the phone
+      warm.
+
+      `cancelAnimation` is the whole fix. Restarting from wherever the value
+      stopped is deliberate — the pool's position is `cos(t · 2π)`, so every
+      phase is a valid one and there is nothing to resynchronise. The first
+      cycle back is a little slower than the rest, which at seventeen seconds is
+      not a thing an eye can hold.
     */
+    if (!moving) {
+      cancelAnimation(t);
+      return;
+    }
     t.value = withRepeat(
-      withTiming(pool.phase + 1, { duration: pool.ms, easing: Easing.inOut(Easing.sin) }),
+      withTiming(t.value + 1, { duration: pool.ms, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
-  }, [pool.ms, pool.phase, t]);
+  }, [moving, pool.ms, pool.phase, t]);
 
   const style = useAnimatedStyle(() => {
     const a = t.value * Math.PI * 2;
@@ -253,13 +274,28 @@ const DUST: DustLayer[] = [
  * rearranges itself when a screen remounts is a thing people notice without
  * being able to say what moved.
  */
-function DustField({ layer, height, width }: { layer: DustLayer; height: number; width: number }) {
+function DustField({
+  layer,
+  height,
+  width,
+  moving,
+}: {
+  layer: DustLayer;
+  height: number;
+  width: number;
+  moving: boolean;
+}) {
   const t = useSharedValue(0);
 
   useEffect(() => {
-    t.value = 0;
+    /* Stopped whenever the screen is not on top — see `LightPool`, which
+       explains why the four of these running forever was the expensive part. */
+    if (!moving) {
+      cancelAnimation(t);
+      return;
+    }
     t.value = withRepeat(withTiming(1, { duration: layer.ms, easing: Easing.linear }), -1, false);
-  }, [layer.ms, t]);
+  }, [moving, layer.ms, t]);
 
   const style = useAnimatedStyle(() => ({
     transform: [
@@ -372,13 +408,34 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
 
   const { height, width } = useWindowDimensions();
 
+  /*
+    ── when the light is allowed to move ──
+
+    Only while this screen is the one on top, and only if the person has not
+    asked the system for less motion.
+
+    `focused` is the expensive half. Nothing used to turn these off: four pools
+    and four dust layers kept running for the rest of the app's life, on every
+    other tab and underneath every pushed screen, compositing full-screen
+    translucent layers to draw a room nobody was in. Both assistant screens
+    mount an aura, so opening the coach over the assistant had sixteen
+    animations going at once.
+
+    `reduceMotion` is the honest half. The system setting exists for exactly
+    this complaint, and a page whose background never stops is the page it was
+    written for. Stopped, the aura is still there and still today's colour —
+    it just holds still, which is what the setting asks for.
+  */
+  const reduceMotion = useReducedMotion();
+  const moving = focused && !reduceMotion;
+
   return (
     <Animated.View style={[styles.layer, bloomStyle]} pointerEvents="none">
       {POOLS.map((p, i) => (
-        <LightPool key={p.id} pool={p} tint={i === 0 ? tint : undefined} />
+        <LightPool key={p.id} pool={p} tint={i === 0 ? tint : undefined} moving={moving} />
       ))}
       {DUST.map((d) => (
-        <DustField key={d.key} layer={d} height={height} width={width} />
+        <DustField key={d.key} layer={d} height={height} width={width} moving={moving} />
       ))}
     </Animated.View>
   );

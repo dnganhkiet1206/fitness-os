@@ -459,11 +459,11 @@ export function useUpsertBodyMeasurement() {
  * zero, because the panel draws gaps and zeros differently and an unlogged
  * night is not a night somebody did not sleep.
  */
-export function useSleepDurationHistory(days = 14) {
+export function useSleepDurationHistory(days = 14, enabled = true) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['sleep_duration_history', user?.id, days],
-    enabled: !!user,
+    enabled: !!user && enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('daily_logs')
@@ -490,11 +490,11 @@ export function useSleepDurationHistory(days = 14) {
  * from `bedtime`/`waketime` here and hoping it matches whatever wrote the
  * column.
  */
-export function useKcalHistory(days = 14) {
+export function useKcalHistory(days = 14, enabled = true) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['kcal_history', user?.id, days],
-    enabled: !!user,
+    enabled: !!user && enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('daily_logs')
@@ -511,11 +511,11 @@ export function useKcalHistory(days = 14) {
   });
 }
 
-export function useReadinessHistory(days = 14) {
+export function useReadinessHistory(days = 14, enabled = true) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['readiness_history', user?.id, days],
-    enabled: !!user,
+    enabled: !!user && enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('daily_logs')
