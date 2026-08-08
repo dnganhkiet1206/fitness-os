@@ -1,14 +1,16 @@
 import * as Haptics from 'expo-haptics';
 import { Minus, Plus } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { ChartBar } from '@/components/ascnd/chart-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { press } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useStepsHistory } from '@/hooks/use-fitness-data';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
@@ -52,29 +54,29 @@ export default function StepsScreen() {
         <ProgressBar pct={pct} color={colors.primary} height={10} radius={5} style={styles.barTrack} />
         {/* Goal stepper (web Settings inline editor, ±500) */}
         <View style={styles.goalRow}>
-          <Pressable
+          <PressScale to={press.deep}
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yDecrease}
             hitSlop={6}
-            style={({ pressed }) => [styles.goalBtn, pressed && styles.pressed]}
+            style={styles.goalBtn}
             onPress={() => {
               Haptics.selectionAsync();
               setGoal(GOAL - 500);
             }}>
             <Icon icon={Minus} size={14} color={colors.foreground} />
-          </Pressable>
+          </PressScale>
           <Text style={styles.goalValue}>{GOAL.toLocaleString()}</Text>
-          <Pressable
+          <PressScale to={press.deep}
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yIncrease}
             hitSlop={6}
-            style={({ pressed }) => [styles.goalBtn, pressed && styles.pressed]}
+            style={styles.goalBtn}
             onPress={() => {
               Haptics.selectionAsync();
               setGoal(GOAL + 500);
             }}>
             <Icon icon={Plus} size={14} color={colors.foreground} />
-          </Pressable>
+          </PressScale>
         </View>
       </GlassCard>
 
@@ -139,7 +141,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   goalValue: { ...type.mono, fontSize: 15, fontWeight: '700', color: colors.foreground, minWidth: 64, textAlign: 'center' },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.92 }] },
   statRow: { flexDirection: 'row', gap: spacing.sm },
   statCard: { flex: 1, gap: 2 },
   statValue: { ...type.title, ...type.mono, color: colors.foreground },

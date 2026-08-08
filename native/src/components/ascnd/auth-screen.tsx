@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -168,8 +169,8 @@ export function AuthScreen() {
             </Pressable>
           )}
 
-          <Pressable
-            style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
+          <PressScale
+            style={styles.primaryButton}
             onPress={submit}
             disabled={busy}>
             {busy ? (
@@ -179,7 +180,7 @@ export function AuthScreen() {
                 {mode === 'signin' ? i18n.nSignIn : mode === 'signup' ? i18n.nSignUp : i18n.authResetPassword}
               </Text>
             )}
-          </Pressable>
+          </PressScale>
 
           {Platform.OS === 'ios' && appleAvailable && mode !== 'forgot' && (
             <AppleAuthentication.AppleAuthenticationButton
@@ -287,10 +288,6 @@ const styles = StyleSheet.create({
   },
   appleButton: {
     height: 48,
-  },
-  pressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
   },
   switchText: {
     ...type.footnote,

@@ -2,9 +2,11 @@ import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { HeartPulse } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
+import { press } from '@/constants/motion';
 import { Icon } from '@/components/ascnd/icon';
 import { QuickActionsSheet } from '@/components/ascnd/quick-actions-accessory';
 
@@ -64,7 +66,7 @@ export function HealthAssistantFab() {
         // of this box is over the page.
         pointerEvents="box-none"
         style={[styles.wrap, { bottom: insets.bottom + SIT }]}>
-        <Pressable
+        <PressScale to={press.deep}
           accessibilityRole="button"
           accessibilityLabel={i18n.nHealthAssistant}
           accessibilityState={{ expanded: open }}
@@ -72,14 +74,14 @@ export function HealthAssistantFab() {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             setOpen(true);
           }}
-          style={({ pressed }) => [styles.btn, pressed && styles.pressed]}>
+          style={styles.btn}>
           {glass ? (
             <GlassView glassEffectStyle="regular" style={StyleSheet.absoluteFill} />
           ) : (
             <View style={[StyleSheet.absoluteFill, styles.fallback]} />
           )}
           <Icon icon={HeartPulse} size={22} />
-        </Pressable>
+        </PressScale>
       </View>
 
       <QuickActionsSheet visible={open} onClose={() => setOpen(false)} />
@@ -107,5 +109,4 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   fallback: { backgroundColor: 'rgba(28,28,32,0.92)' },
-  pressed: { opacity: 0.9, transform: [{ scale: 0.94 }] },
 });

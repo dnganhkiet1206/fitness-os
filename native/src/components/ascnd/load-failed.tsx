@@ -1,7 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { CloudOff, RotateCw } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -58,7 +59,7 @@ export function LoadFailed({
       <Text style={styles.title}>{i18n.nLoadFailed}</Text>
       <Text style={styles.hint}>{i18n.nLoadFailedHint}</Text>
       {onRetry ? (
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.nRetry}
           disabled={busy}
@@ -66,10 +67,10 @@ export function LoadFailed({
             Haptics.selectionAsync();
             onRetry();
           }}
-          style={({ pressed }) => [styles.retry, (pressed || busy) && styles.retryPressed]}>
+          style={[styles.retry, busy && styles.retryPressed]}>
           <Icon icon={RotateCw} size={15} color={colors.foreground} />
           <Text style={styles.retryText}>{i18n.nRetry}</Text>
-        </Pressable>
+        </PressScale>
       ) : null}
     </GlassCard>
   );

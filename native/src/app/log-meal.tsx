@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -433,11 +434,11 @@ export default function LogMealSheet() {
               contentContainerStyle={styles.repeatRow}
               keyboardShouldPersistTaps="handled">
               {recentMeals.map((m) => (
-                <Pressable
+                <PressScale
                   key={m.id}
                   accessibilityRole="button"
                   accessibilityLabel={`${mealLabel(m.meal_type)}, ${whenLabel(m.date_time)}, ${m.kcal} kcal`}
-                  style={({ pressed }) => [styles.repeatCard, pressed && styles.pressed]}
+                  style={styles.repeatCard}
                   onPress={() => repeatMeal(m)}>
                   <View style={styles.repeatHead}>
                     <Text style={styles.repeatMeal}>{mealLabel(m.meal_type)}</Text>
@@ -452,7 +453,7 @@ export default function LogMealSheet() {
                   <Text style={styles.repeatKcal}>
                     {m.kcal.toLocaleString()} kcal · {i18n.nRmFoods.replace('{n}', String(m.foods.length))}
                   </Text>
-                </Pressable>
+                </PressScale>
               ))}
             </ScrollView>
           </View>
@@ -468,26 +469,26 @@ export default function LogMealSheet() {
             onChangeText={setSearch}
             autoCorrect={false}
           />
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yScanFood}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            style={styles.iconBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/scan-food');
             }}>
             <Icon icon={Camera} size={20} color={colors.foreground} />
-          </Pressable>
-          <Pressable
+          </PressScale>
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yScanBarcode}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            style={styles.iconBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/scan-barcode');
             }}>
             <Icon icon={ScanBarcode} size={20} color={colors.foreground} />
-          </Pressable>
+          </PressScale>
         </View>
 
         {foods && foods.length > 0 && (
@@ -508,9 +509,9 @@ export default function LogMealSheet() {
         {search.length === 0 && quickAdds.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
             {quickAdds.map((q) => (
-              <Pressable
+              <PressScale
                 key={q.key}
-                style={({ pressed }) => [styles.quickChip, pressed && styles.pressed]}
+                style={styles.quickChip}
                 onPress={() => {
                   Haptics.selectionAsync();
                   addItem(q);
@@ -518,14 +519,14 @@ export default function LogMealSheet() {
                 <Icon icon={q.fav ? Star : Clock} size={12} color={colors.primary} />
                 <Text style={styles.quickName} numberOfLines={1}>{q.food_name}</Text>
                 <Text style={styles.quickKcal}>{q.kcal}</Text>
-              </Pressable>
+              </PressScale>
             ))}
           </ScrollView>
         )}
 
         {/* AI suggest */}
-        <Pressable
-          style={({ pressed }) => [styles.aiToggle, aiOpen && styles.aiToggleActive, pressed && styles.pressed]}
+        <PressScale
+          style={[styles.aiToggle, aiOpen && styles.aiToggleActive]}
           onPress={openAi}>
           <Icon icon={Sparkles} size={18} />
           <View style={styles.aiToggleInfo}>
@@ -533,7 +534,7 @@ export default function LogMealSheet() {
             <Text style={styles.aiToggleHint}>{i18n.nAiSuggestHint}</Text>
           </View>
           <Icon icon={aiOpen ? ChevronDown : ChevronRight} size={20} color={colors.mutedForeground} />
-        </Pressable>
+        </PressScale>
 
         {aiOpen && (
           <View style={styles.aiPanel}>
@@ -554,15 +555,15 @@ export default function LogMealSheet() {
                       {Math.round(s.kcal)} kcal · P{Math.round(s.protein_g)} · C{Math.round(s.carbs_g)} · F{Math.round(s.fat_g)} · {i18n.nPrepTime.replace('{n}', String(s.prep_time_min))}
                     </Text>
                   </View>
-                  <Pressable
+                  <PressScale
                     accessibilityRole="button"
                     accessibilityLabel={i18n.a11yAdd}
                     // 40pt drawn; 2 of slop reaches 44
                     hitSlop={2}
-                    style={({ pressed }) => [styles.addChip, pressed && styles.pressed]}
+                    style={styles.addChip}
                     onPress={() => addSuggestion(s)}>
                     <Icon icon={Plus} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
-                  </Pressable>
+                  </PressScale>
                 </View>
               ))
             )}
@@ -570,8 +571,8 @@ export default function LogMealSheet() {
         )}
 
         {/* Custom food entry — type your own dish + macros */}
-        <Pressable
-          style={({ pressed }) => [styles.aiToggle, customOpen && styles.aiToggleActive, pressed && styles.pressed]}
+        <PressScale
+          style={[styles.aiToggle, customOpen && styles.aiToggleActive]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setCustomOpen((v) => !v);
@@ -584,7 +585,7 @@ export default function LogMealSheet() {
             </Text>
           </View>
           <Icon icon={customOpen ? ChevronDown : ChevronRight} size={20} color={colors.mutedForeground} />
-        </Pressable>
+        </PressScale>
 
         {customOpen && (
           <View style={styles.customPanel}>
@@ -606,13 +607,13 @@ export default function LogMealSheet() {
                 ? 'Bỏ trống kcal sẽ tự tính từ macro (P×4 + C×4 + F×9)'
                 : 'Leave kcal empty to auto-calc from macros (P×4 + C×4 + F×9)'}
             </Text>
-            <Pressable
-              style={({ pressed }) => [styles.customAddBtn, !canAddCustom && styles.customAddDisabled, pressed && canAddCustom && styles.pressed]}
+            <PressScale
+              style={[styles.customAddBtn, !canAddCustom && styles.customAddDisabled]}
               disabled={!canAddCustom}
               onPress={addCustom}>
               <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
               <Text style={styles.customAddText}>{vi ? 'Thêm vào bữa' : 'Add to meal'}</Text>
-            </Pressable>
+            </PressScale>
           </View>
         )}
 
@@ -656,11 +657,11 @@ export default function LogMealSheet() {
                       <MacroInput label={`${i18n.nCarbs} (g)`} value={draft.carbs} onChange={(v) => setDraft((d) => ({ ...d, carbs: v }))} />
                       <MacroInput label={`${i18n.nFat} (g)`} value={draft.fat} onChange={(v) => setDraft((d) => ({ ...d, fat: v }))} />
                     </View>
-                    <Pressable
-                      style={({ pressed }) => [styles.customAddBtn, pressed && styles.pressed]}
+                    <PressScale
+                      style={styles.customAddBtn}
                       onPress={applyEdit}>
                       <Text style={styles.customAddText}>{vi ? 'Xong' : 'Done'}</Text>
-                    </Pressable>
+                    </PressScale>
                   </View>
                 )}
               </View>
@@ -690,12 +691,8 @@ export default function LogMealSheet() {
           </View>
         )}
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.saveButton,
-            !canSave && !save.isSuccess && styles.saveDisabled,
-            pressed && canSave && styles.pressed,
-          ]}
+        <PressScale
+          style={[styles.saveButton, !canSave && !save.isSuccess && styles.saveDisabled]}
           disabled={!canSave}
           onPress={() => save.mutate()}>
           {save.isSuccess ? (
@@ -705,7 +702,7 @@ export default function LogMealSheet() {
           ) : (
             <Text style={styles.saveText}>{i18n.nSaveMeal}</Text>
           )}
-        </Pressable>
+        </PressScale>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -965,5 +962,4 @@ const styles = StyleSheet.create({
   },
   saveDisabled: { opacity: 0.4 },
   saveText: { ...type.headline, color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

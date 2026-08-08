@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { Screen } from '@/components/ascnd/screen';
@@ -263,13 +264,13 @@ export default function MealPlanScreen() {
             <View style={styles.sectionHead}>
               <Text style={styles.sectionTitle}>{mealLabel(m)}</Text>
               <Text style={styles.sectionKcal}>{kcal.toLocaleString()} kcal</Text>
-              <Pressable
+              <PressScale
                 accessibilityRole="button"
                 accessibilityState={{ disabled: logMeal.isPending }}
                 disabled={logMeal.isPending}
                 hitSlop={10}
                 onPress={() => eatMeal(m, foods)}
-                style={({ pressed }) => [styles.eat, already && styles.eatDone, pressed && styles.pressed]}>
+                style={[styles.eat, already && styles.eatDone]}>
                 <Icon
                   icon={already ? Check : UtensilsCrossed}
                   size={11}
@@ -277,7 +278,7 @@ export default function MealPlanScreen() {
                   strokeWidth={2.5}
                 />
                 <Text style={styles.eatText}>{already ? i18n.nMpEaten : i18n.nMpEatIt}</Text>
-              </Pressable>
+              </PressScale>
             </View>
 
             {/*
@@ -300,14 +301,14 @@ export default function MealPlanScreen() {
                   <View style={styles.row}>
                     <Text style={styles.rowName} numberOfLines={1}>{it.food_name}</Text>
                     <Text style={styles.rowKcal}>{Math.round(Number(it.kcal))} kcal</Text>
-                    <Pressable
+                    <PressScale
                       accessibilityRole="button"
                       accessibilityLabel={`${i18n.a11yRemove} ${it.food_name}`}
                       hitSlop={12}
                       onPress={() => deleteItem.mutate({ id: it.id, planId: plan?.id ?? '' })}
-                      style={({ pressed }) => [styles.rowX, pressed && styles.pressed]}>
+                      style={styles.rowX}>
                       <Icon icon={X} size={13} color={colors.mutedForeground} />
-                    </Pressable>
+                    </PressScale>
                   </View>
                 </View>
               ))}
@@ -316,17 +317,17 @@ export default function MealPlanScreen() {
         );
       })}
 
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityLabel={`${i18n.nMpAddFood} — ${i18n.nDay} ${day + 1}`}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setAdding(true);
         }}
-        style={({ pressed }) => [styles.add, pressed && styles.pressed]}>
+        style={styles.add}>
         <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
         <Text style={styles.addText}>{i18n.nMpAddFood}</Text>
-      </Pressable>
+      </PressScale>
 
       {/* Once, at the end — not under every meal that has food. */}
       {(items ?? []).length > 0 ? <Text style={styles.note}>{i18n.nMpNoFibre}</Text> : null}
@@ -438,5 +439,4 @@ const styles = StyleSheet.create({
   },
   addText: { ...type.body, color: colors.primary, fontWeight: '600' },
   note: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
-  pressed: { opacity: 0.8 },
 });

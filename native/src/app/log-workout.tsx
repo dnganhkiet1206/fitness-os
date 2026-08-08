@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
@@ -253,18 +254,18 @@ export default function LogWorkoutSheet() {
         <Text style={styles.title}>{i18n.nLogWorkoutTitle}</Text>
 
         {todaysPlan ? (
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={`${i18n.nRdPlanToday}: ${todaysPlan.name}`}
             onPress={usePlan}
-            style={({ pressed }) => [styles.planChip, pressed && styles.planChipPressed]}>
+            style={styles.planChip}>
             <Icon icon={CalendarDays} size={14} color={colors.metricBlue} />
             <View style={styles.planText}>
               <Text style={styles.planLabel}>{i18n.nRdPlanToday}</Text>
               <Text style={styles.planName} numberOfLines={1}>{todaysPlan.name}</Text>
             </View>
             <Text style={styles.planUse}>{i18n.nRdUsePlan}</Text>
-          </Pressable>
+          </PressScale>
         ) : null}
 
         <TextInput
@@ -339,12 +340,12 @@ export default function LogWorkoutSheet() {
               {suggestions.length > 0 && (
                 <View style={styles.suggestRow}>
                   {suggestions.map((ex) => (
-                    <Pressable
+                    <PressScale
                       key={ex.id}
-                      style={({ pressed }) => [styles.suggestChip, pressed && styles.pressed]}
+                      style={styles.suggestChip}
                       onPress={() => pickExercise(idx, ex)}>
                       <Text style={styles.suggestText} numberOfLines={1}>{ex.name}</Text>
-                    </Pressable>
+                    </PressScale>
                   ))}
                 </View>
               )}
@@ -362,20 +363,20 @@ export default function LogWorkoutSheet() {
           the second button is that, done for you.
         */}
         <View style={styles.addRow}>
-          <Pressable
+          <PressScale
             accessibilityRole="button"
-            style={({ pressed }) => [styles.addSet, pressed && styles.pressed]}
+            style={styles.addSet}
             onPress={addSet}>
             <Icon icon={Plus} size={15} color={colors.foreground} strokeWidth={2.5} />
             <Text style={styles.addSetText}>{i18n.nAddSet}</Text>
-          </Pressable>
-          <Pressable
+          </PressScale>
+          <PressScale
             accessibilityRole="button"
-            style={({ pressed }) => [styles.addSet, pressed && styles.pressed]}
+            style={styles.addSet}
             onPress={addExercise}>
             <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
             <Text style={[styles.addSetText, styles.addExerciseText]}>{i18n.nLgNewExercise}</Text>
-          </Pressable>
+          </PressScale>
         </View>
 
         <Text style={styles.fieldHint}>{i18n.nLgBwHint}</Text>
@@ -420,12 +421,8 @@ export default function LogWorkoutSheet() {
             a permanent instruction is read once and then stops being read. */}
         {validSets.length === 0 ? <Text style={styles.fieldHint}>{i18n.nLgNeedReps}</Text> : null}
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.saveButton,
-            !canSave && !save.isSuccess && styles.saveDisabled,
-            pressed && canSave && styles.pressed,
-          ]}
+        <PressScale
+          style={[styles.saveButton, !canSave && !save.isSuccess && styles.saveDisabled]}
           disabled={!canSave}
           onPress={() => save.mutate()}>
           {save.isSuccess ? (
@@ -435,7 +432,7 @@ export default function LogWorkoutSheet() {
           ) : (
             <Text style={styles.saveText}>{i18n.nSaveWorkout}</Text>
           )}
-        </Pressable>
+        </PressScale>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -459,7 +456,6 @@ const styles = StyleSheet.create({
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
   },
-  planChipPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   planText: { flex: 1, minWidth: 0 },
   planLabel: { ...type.caption, color: colors.mutedForeground },
   planName: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
@@ -571,5 +567,4 @@ const styles = StyleSheet.create({
   },
   saveDisabled: { opacity: 0.4 },
   saveText: { ...type.headline, color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

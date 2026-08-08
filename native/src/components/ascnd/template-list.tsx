@@ -10,6 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
@@ -198,7 +199,7 @@ export function TemplateRow({
   return (
     <Animated.View entering={rise(index)}>
       <GlassCard style={styles.tplCard}>
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityState={{ expanded: open, disabled: exs.length === 0 }}
           /*
@@ -214,7 +215,7 @@ export function TemplateRow({
             Haptics.selectionAsync();
             setOpen((v) => !v);
           }}
-          style={({ pressed }) => [styles.tplRow, pressed && styles.pressed]}>
+          style={styles.tplRow}>
           <View style={styles.tplInfo}>
             <View style={styles.tplTitleRow}>
               <Icon icon={Dumbbell} size={16} />
@@ -253,7 +254,7 @@ export function TemplateRow({
               </Animated.View>
             ) : null}
           </View>
-        </Pressable>
+        </PressScale>
 
         {/*
           Mounted only when open, rather than kept in a clipped box.
@@ -416,5 +417,4 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     marginTop: 3,
   },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

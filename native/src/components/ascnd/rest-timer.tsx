@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
@@ -184,29 +185,29 @@ export function RestTimer({
           </View>
 
           <View style={styles.controls}>
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               accessibilityLabel={`${i18n.nRdResting} −15`}
               onPress={() => bump(-15)}
-              style={({ pressed }) => [styles.round, pressed && styles.pressed]}>
+              style={styles.round}>
               <Icon icon={Minus} size={20} color={colors.foreground} strokeWidth={2.5} />
-            </Pressable>
+            </PressScale>
 
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               accessibilityLabel={i18n.nRdSkip}
               onPress={onSkip}
-              style={({ pressed }) => [styles.skip, pressed && styles.pressed]}>
+              style={styles.skip}>
               <Text style={styles.skipText}>{i18n.nRdSkip}</Text>
-            </Pressable>
+            </PressScale>
 
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               accessibilityLabel={`${i18n.nRdResting} +15`}
               onPress={() => bump(15)}
-              style={({ pressed }) => [styles.round, pressed && styles.pressed]}>
+              style={styles.round}>
               <Icon icon={Plus} size={20} color={colors.foreground} strokeWidth={2.5} />
-            </Pressable>
+            </PressScale>
           </View>
         </Animated.View>
       </Animated.View>
@@ -276,5 +277,4 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
   },
   skipText: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.96 }] },
 });

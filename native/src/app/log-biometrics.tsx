@@ -6,7 +6,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,6 +18,7 @@ import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { Check } from 'lucide-react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { useLogBiometrics } from '@/hooks/use-biometrics';
 import { toast } from '@/lib/toast';
@@ -79,8 +79,8 @@ export default function LogBiometricsSheet() {
         </View>
         <Field label={i18n.logBioResp} placeholder="14" unit="rpm" value={resp} onChange={setResp} />
 
-        <Pressable
-          style={({ pressed }) => [styles.saveButton, !canSave && !log.isSuccess && styles.saveDisabled, pressed && canSave && styles.pressed]}
+        <PressScale
+          style={[styles.saveButton, !canSave && !log.isSuccess && styles.saveDisabled]}
           disabled={!canSave}
           onPress={save}>
           {log.isSuccess ? (
@@ -90,7 +90,7 @@ export default function LogBiometricsSheet() {
           ) : (
             <Text style={styles.saveText}>{i18n.save}</Text>
           )}
-        </Pressable>
+        </PressScale>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -133,5 +133,4 @@ const styles = StyleSheet.create({
   saveButton: { height: 50, borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
   saveDisabled: { opacity: 0.4 },
   saveText: { ...type.headline, color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { Plus, Star } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -44,10 +45,10 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
   const toggleFav = useToggleFavoriteFood();
 
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       accessibilityLabel={`${f.name}, ${Math.round(Number(f.kcal))} kcal`}
-      style={({ pressed }) => [styles.row, pressed && styles.pressedDim]}
+      style={styles.row}
       onPress={() => {
         Haptics.selectionAsync();
         router.push({ pathname: '/food-editor', params: { id: f.id } });
@@ -83,7 +84,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
           strokeWidth={f.is_favorite ? 2.5 : 2}
         />
       </Pressable>
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -119,15 +120,14 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
           column does not jog left on the rows that are already saved. */}
       <View style={styles.slot}>
         {!saved ? (
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yAdd}
             hitSlop={12}
             disabled={createFood.isPending}
-            style={({ pressed }) => pressed && styles.pressed}
             onPress={quickAdd}>
             <Icon icon={Plus} size={18} color={colors.primary} strokeWidth={2.5} />
-          </Pressable>
+          </PressScale>
         ) : null}
       </View>
     </View>
@@ -154,8 +154,6 @@ const styles = StyleSheet.create({
   macros: { fontSize: 11, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   kcal: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   slot: { width: 18, alignItems: 'flex-end' },
-  pressedDim: { opacity: 0.9 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
 });
 
 /**

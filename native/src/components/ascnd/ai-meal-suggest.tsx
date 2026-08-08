@@ -3,6 +3,7 @@ import { ChefHat, ChevronDown, ChevronUp, Clock, Sparkles } from 'lucide-react-n
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -56,8 +57,8 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
 
   if (suggestions.length === 0) {
     return (
-      <Pressable
-        style={({ pressed }) => [styles.suggestBtn, pressed && styles.pressed]}
+      <PressScale
+        style={styles.suggestBtn}
         disabled={loading}
         onPress={fetchSuggestions}>
         {loading ? (
@@ -68,7 +69,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
         <Text style={styles.suggestBtnText}>
           {lang === 'vi' ? 'AI gợi ý bữa ăn' : 'AI Suggest Meal'}
         </Text>
-      </Pressable>
+      </PressScale>
     );
   }
 
@@ -136,8 +137,8 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
         </Pressable>
       ))}
 
-      <Pressable
-        style={({ pressed }) => [styles.moreBtn, pressed && styles.pressed]}
+      <PressScale
+        style={styles.moreBtn}
         disabled={loading}
         onPress={fetchSuggestions}>
         {loading ? (
@@ -148,7 +149,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
         <Text style={styles.moreText}>
           {lang === 'vi' ? 'Gợi ý khác' : 'More suggestions'}
         </Text>
-      </Pressable>
+      </PressScale>
     </View>
   );
 }
@@ -231,5 +232,4 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   moreText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });

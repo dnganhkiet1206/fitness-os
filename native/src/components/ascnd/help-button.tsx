@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -78,14 +79,14 @@ export function HelpButton({
   style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={14}
       onPress={onPress}
-      style={({ pressed }) => [styles.btn, style, pressed && styles.pressed]}>
+      style={[styles.btn, style]}>
       <Icon icon={HelpCircle} size={17} color={colors.mutedForeground} />
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -108,10 +109,10 @@ export function HelpNudge({
   const i18n = useI18n();
   return (
     <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)}>
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         onPress={onPress}
-        style={({ pressed }) => [styles.nudge, pressed && styles.pressed]}>
+        style={styles.nudge}>
         <Icon icon={HelpCircle} size={14} color={colors.metricBlue} />
         <Text style={styles.nudgeText}>{text}</Text>
         <View>
@@ -123,7 +124,7 @@ export function HelpNudge({
             <Icon icon={X} size={14} color={colors.mutedForeground} />
           </Pressable>
         </View>
-      </Pressable>
+      </PressScale>
     </Animated.View>
   );
 }
@@ -145,5 +146,4 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(59,166,255,0.10)',
   },
   nudgeText: { flex: 1, fontSize: 12, lineHeight: 17, color: colors.foreground },
-  pressed: { opacity: 0.7, transform: [{ scale: 0.97 }] },
 });

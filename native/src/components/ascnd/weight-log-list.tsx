@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { ChevronDown, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, spacing, type } from '@/constants/ascnd';
@@ -112,14 +113,14 @@ export function WeightLogList({
 
   return (
     <GlassCard style={styles.card}>
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         onPress={() => {
           Haptics.selectionAsync();
           setOpen((v) => !v);
         }}
-        style={({ pressed }) => [styles.head, pressed && styles.pressed]}>
+        style={styles.head}>
         <Text style={styles.title}>{i18n.nWeightHistory}</Text>
         {/* The count stays readable while folded, so the header says how much
             is behind it rather than only that something is. */}
@@ -131,7 +132,7 @@ export function WeightLogList({
         <Animated.View style={chevron}>
           <Icon icon={ChevronDown} size={18} color={colors.mutedForeground} />
         </Animated.View>
-      </Pressable>
+      </PressScale>
 
       {open
         ? rows.map((p) => {
@@ -147,7 +148,7 @@ export function WeightLogList({
                   })}
                 </Text>
                 <Text style={styles.value}>{shown}</Text>
-                <Pressable
+                <PressScale
                   accessibilityRole="button"
                   accessibilityLabel={i18n.a11yDelete}
                   hitSlop={10}
@@ -155,12 +156,12 @@ export function WeightLogList({
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     confirm(p.date, shown);
                   }}
-                  style={({ pressed }) => [styles.del, pressed && styles.pressed]}>
+                  style={styles.del}>
                   {/* Muted, not red — a destructive glyph on every row makes
                       deletion the loudest thing in a list that is not about
                       deleting. The red belongs on the confirm button. */}
                   <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
-                </Pressable>
+                </PressScale>
               </View>
             );
           })
@@ -190,5 +191,4 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   del: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: 0.9 },
 });

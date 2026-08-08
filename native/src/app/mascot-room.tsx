@@ -47,6 +47,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { fireCelebration } from '@/components/ascnd/award-celebration';
 import { EnergyRing } from '@/components/ascnd/energy-ring';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -617,18 +618,14 @@ export default function MascotRoomScreen() {
                   <Text style={styles.claimedText}>{i18n.nRoomClaimed}</Text>
                 </View>
               ) : (
-                <Pressable
+                <PressScale
                   disabled={!isDone || claim.isPending}
-                  style={({ pressed }) => [
-                    styles.claimBtn,
-                    !isDone && styles.claimBtnDisabled,
-                    pressed && isDone && styles.pressed,
-                  ]}
+                  style={[styles.claimBtn, !isDone && styles.claimBtnDisabled]}
                   onPress={() => reward(refKey, q.coins, q.key, q.xp)}>
                   <Text style={[styles.claimText, !isDone && styles.claimTextDisabled]}>
                     {i18n.nRoomClaim}
                   </Text>
-                </Pressable>
+                </PressScale>
               )}
             </View>
           );
@@ -656,12 +653,12 @@ export default function MascotRoomScreen() {
                 <Text style={styles.claimedText}>{i18n.nRoomClaimed}</Text>
               </View>
             ) : (
-              <Pressable
+              <PressScale
                 disabled={claim.isPending}
-                style={({ pressed }) => [styles.claimBtn, pressed && styles.pressed]}
+                style={styles.claimBtn}
                 onPress={() => reward(streakRefKey, streakBonus, `streak:${streak}`, STREAK_XP)}>
                 <Text style={styles.claimText}>{i18n.nRoomClaim}</Text>
-              </Pressable>
+              </PressScale>
             )}
           </View>
         )}
@@ -693,14 +690,14 @@ export default function MascotRoomScreen() {
                     <Text style={styles.claimedText}>{i18n.nRoomClaimed}</Text>
                   </View>
                 ) : (
-                  <Pressable
+                  <PressScale
                     disabled={claim.isPending}
-                    style={({ pressed }) => [styles.claimBtn, pressed && styles.pressed]}
+                    style={styles.claimBtn}
                     onPress={() =>
                       reward(refKey, WEEKLY_BONUS_COINS, `weekly:${c.challenge_key}`, WEEKLY_BONUS_XP)
                     }>
                     <Text style={styles.claimText}>{i18n.nRoomClaim}</Text>
-                  </Pressable>
+                  </PressScale>
                 )}
               </View>
             );
@@ -724,16 +721,16 @@ function ActionChip({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <PressScale
       onPress={onPress}
-      style={({ pressed }) => [styles.chip, pressed && styles.pressed]}>
+      style={styles.chip}>
       <View style={[styles.chipIcon, { backgroundColor: `${color}1c` }]}>
         <Icon icon={icon} size={17} color={color} />
       </View>
       <Text style={styles.chipText} numberOfLines={1}>
         {label}
       </Text>
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -1117,5 +1114,4 @@ const styles = StyleSheet.create({
   wearingBtn: { backgroundColor: 'rgba(43,245,168,0.14)' },
   ownedText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
   wearingText: { color: colors.readinessGreen },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
 });

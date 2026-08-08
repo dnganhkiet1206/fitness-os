@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
 import { NutritionCard, WaterWidget } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
@@ -108,13 +109,13 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
           <Icon icon={Utensils} size={22} color={colors.mutedForeground} />
           <Text style={styles.planEmptyTitle}>{i18n.nMealPlanNone}</Text>
           <Text style={styles.planEmptyBody}>{i18n.nMealPlanWhat}</Text>
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             onPress={open}
-            style={({ pressed }) => [styles.planCreate, pressed && styles.pressedDim]}>
+            style={styles.planCreate}>
             <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
             <Text style={styles.planCreateText}>{i18n.nMealPlanNew}</Text>
-          </Pressable>
+          </PressScale>
         </GlassCard>
         <MealPlanWizard
           visible={creating}
@@ -153,41 +154,38 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
       <View style={styles.planStack}>
         {plans.slice(0, PREVIEW).map((p, i) => (
           <Animated.View key={p.id} entering={rise(i)}>
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               accessibilityLabel={`${p.name} — ${i18n.nMealPlanOpen}`}
               onPress={() => {
                 Haptics.selectionAsync();
                 router.push({ pathname: '/meal-plan', params: { plan: p.id } });
-              }}>
-              {({ pressed }) => (
-                <GlassCard style={[styles.planCard, pressed && styles.pressedDim]}>
-                  <View style={styles.planText}>
-                    <Text style={styles.planName} numberOfLines={1}>{p.name}</Text>
-                    <Text style={styles.planMeta} numberOfLines={1}>
-                      {[
-                        goalLabel(p.goal),
-                        p.meals_per_day ? `${p.meals_per_day} ${i18n.nutritionMealsPerDay}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join('  ·  ')}
-                    </Text>
-                  </View>
-                  <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-                </GlassCard>
-              )}
-            </Pressable>
+              }}>              <GlassCard style={styles.planCard}>
+                <View style={styles.planText}>
+                  <Text style={styles.planName} numberOfLines={1}>{p.name}</Text>
+                  <Text style={styles.planMeta} numberOfLines={1}>
+                    {[
+                      goalLabel(p.goal),
+                      p.meals_per_day ? `${p.meals_per_day} ${i18n.nutritionMealsPerDay}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join('  ·  ')}
+                  </Text>
+                </View>
+                <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+              </GlassCard>
+</PressScale>
           </Animated.View>
         ))}
       </View>
 
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         onPress={open}
-        style={({ pressed }) => [styles.planAdd, pressed && styles.pressedDim]}>
+        style={styles.planAdd}>
         <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
         <Text style={styles.planAddText}>{i18n.nMealPlanNew}</Text>
-      </Pressable>
+      </PressScale>
 
       {/*
         The whole flow, from naming the plan to putting food in it.
@@ -294,9 +292,9 @@ export default function NutritionScreen() {
   );
 
   const SeeMore = ({ tab, rest }: { tab: 'mine' | 'recent'; rest: number }) => (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
-      style={({ pressed }) => [styles.seeMore, pressed && styles.pressedDim]}
+      style={styles.seeMore}
       onPress={() => seeMore(tab)}>
       {/* How many more, not just that there are more — the difference between
           "there is another screen" and a reason to open it. */}
@@ -304,7 +302,7 @@ export default function NutritionScreen() {
         {lang === 'vi' ? `Xem thêm ${rest} món` : `See ${rest} more`}
       </Text>
       <Icon icon={ChevronRight} size={15} color={colors.primary} />
-    </Pressable>
+    </PressScale>
   );
 
   useEffect(() => {
@@ -381,15 +379,15 @@ export default function NutritionScreen() {
               { icon: Pill, route: '/supplements' as const, label: i18n.nSupplements },
               { icon: ShoppingCart, route: '/grocery' as const, label: i18n.nGrocery },
             ].map((b) => (
-              <Pressable
+              <PressScale
                 key={b.route}
                 accessibilityRole="button"
                 accessibilityLabel={b.label}
                 hitSlop={8}
-                style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+                style={styles.iconBtn}
                 onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>
                 <Icon icon={b.icon} size={17} color={colors.mutedForeground} />
-              </Pressable>
+              </PressScale>
             ))}
           </View>
         }>
@@ -413,15 +411,15 @@ export default function NutritionScreen() {
         {/* Log meal — kept on the library and plan segments, where there is no
             other way to start one. `Hôm nay` has its own, under the diary. */}
         {tab !== 'today' ? (
-          <Pressable
-            style={({ pressed }) => [styles.logChip, pressed && styles.pressed]}
+          <PressScale
+            style={styles.logChip}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/log-meal');
             }}>
             <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
             <Text style={styles.logChipText}>{i18n.nLogMealBtn}</Text>
-          </Pressable>
+          </PressScale>
         ) : null}
 
         {tab === 'today' ? (
@@ -504,15 +502,15 @@ export default function NutritionScreen() {
                   autoCorrect={false}
                 />
               </View>
-              <Pressable
-                style={({ pressed }) => [styles.addFoodBtn, pressed && styles.pressed]}
+              <PressScale
+                style={styles.addFoodBtn}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push('/food-editor');
                 }}>
                 <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
                 <Text style={styles.addFoodText}>{i18n.foodAddCustom}</Text>
-              </Pressable>
+              </PressScale>
             </View>
 
             {/* AI meal suggestions (web AiMealSuggestButton) */}
@@ -611,8 +609,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
-  pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
 
   microTitle: {
     fontSize: 12,

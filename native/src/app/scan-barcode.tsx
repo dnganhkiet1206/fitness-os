@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -73,9 +74,9 @@ export default function ScanBarcodeScreen() {
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.permTitle}>{i18n.nCameraNeeded}</Text>
         <Text style={styles.permHint}>{i18n.nCameraHint}</Text>
-        <Pressable style={({ pressed }) => [styles.permBtn, pressed && styles.pressed]} onPress={requestPermission}>
+        <PressScale style={styles.permBtn} onPress={requestPermission}>
           <Text style={styles.permBtnText}>{i18n.nAllowCamera}</Text>
-        </Pressable>
+        </PressScale>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.cancelText}>{i18n.nCancel}</Text>
         </Pressable>
@@ -168,5 +169,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: { color: '#fff', fontSize: 16 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

@@ -21,6 +21,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
@@ -123,20 +124,16 @@ export default function WaterScreen() {
         <Text style={styles.quickLabel}>{i18n.nQuickAdd}</Text>
         <View style={styles.quickRow}>
           {/* Undo last entry (web: minus button) */}
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yRemove}
-            style={({ pressed }) => [
-              styles.undoBtn,
-              (!logs || logs.length === 0) && styles.undoDisabled,
-              pressed && styles.pressed,
-            ]}
+            style={[styles.undoBtn, (!logs || logs.length === 0) && styles.undoDisabled]}
             disabled={!logs || logs.length === 0 || removeLast.isPending}
             onPress={() => removeLast.mutate()}>
             <Icon icon={Minus} size={16} color={colors.foreground} strokeWidth={2.5} />
-          </Pressable>
+          </PressScale>
           {QUICK.map((amount) => (
-            <Pressable
+            <PressScale
               key={amount}
               /*
                 The visible label is a bare number, so the accessible name was
@@ -149,21 +146,21 @@ export default function WaterScreen() {
               accessibilityLabel={i18n.a11yAddWater
                 .replace('{x}', String(amount))
                 .replace('{unit}', vl)}
-              style={({ pressed }) => [styles.quickBtn, pressed && styles.pressed]}
+              style={styles.quickBtn}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 addWater.mutate(volumeToMl(amount, vUnit));
               }}>
               <Icon icon={Plus} size={14} color={colors.foreground} strokeWidth={2.5} />
               <Text style={styles.quickText}>{amount}</Text>
-            </Pressable>
+            </PressScale>
           ))}
         </View>
 
         {/* Anything the three presets do not cover */}
-        <Pressable
+        <PressScale
           accessibilityRole="button"
-          style={({ pressed }) => [styles.customBtn, pressed && styles.pressed]}
+          style={styles.customBtn}
           onPress={() => {
             Haptics.selectionAsync();
             setManualText('');
@@ -171,7 +168,7 @@ export default function WaterScreen() {
           }}>
           <Icon icon={PencilLine} size={15} color={colors.mutedForeground} />
           <Text style={styles.customText}>{i18n.nWaterCustom}</Text>
-        </Pressable>
+        </PressScale>
       </GlassCard>
 
       <ManualWaterSheet
@@ -202,13 +199,13 @@ export default function WaterScreen() {
             are cards now, and a card holding a row of cards is a box inside a
             box — the heading belongs to the group, not to a surface of its own.
           */}
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             onPress={() => {
               Haptics.selectionAsync();
               setLogsOpen((v) => !v);
             }}
-            style={({ pressed }) => [styles.logHead, pressed && styles.pressed]}>
+            style={styles.logHead}>
             <Text style={styles.cardTitle}>{i18n.nTodayLogs}</Text>
             {/* The count stays visible folded, so the header still says how much
                 is behind it rather than just that something is */}
@@ -220,7 +217,7 @@ export default function WaterScreen() {
             <Animated.View style={chevron}>
               <Icon icon={ChevronDown} size={18} color={colors.mutedForeground} />
             </Animated.View>
-          </Pressable>
+          </PressScale>
 
           {/* One card in after another on the way open, all out together on the
               way closed — see `today-meals.tsx` for why the stagger is one-way */}
@@ -345,24 +342,19 @@ function ManualWaterSheet({
             </Text>
 
             <View style={styles.sheetActions}>
-              <Pressable
+              <PressScale
                 accessibilityRole="button"
                 onPress={onClose}
-                style={({ pressed }) => [styles.sheetBtn, pressed && styles.pressed]}>
+                style={styles.sheetBtn}>
                 <Text style={styles.sheetBtnText}>{i18n.cancel}</Text>
-              </Pressable>
-              <Pressable
+              </PressScale>
+              <PressScale
                 accessibilityRole="button"
                 disabled={!valid || busy}
                 onPress={() => onSave(amount)}
-                style={({ pressed }) => [
-                  styles.sheetBtn,
-                  styles.sheetBtnPrimary,
-                  (!valid || busy) && styles.sheetBtnDisabled,
-                  pressed && styles.pressed,
-                ]}>
+                style={[styles.sheetBtn, styles.sheetBtnPrimary, (!valid || busy) && styles.sheetBtnDisabled]}>
                 <Text style={[styles.sheetBtnText, styles.sheetBtnTextPrimary]}>{i18n.save}</Text>
-              </Pressable>
+              </PressScale>
             </View>
           </Pressable>
         </Pressable>
@@ -407,7 +399,6 @@ const styles = StyleSheet.create({
   logAmount: { ...type.body, color: colors.foreground, fontWeight: '600', fontVariant: ['tabular-nums'], flex: 1 },
   logUnit: { ...type.footnote, fontWeight: '400', color: colors.mutedForeground },
   logTime: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 
   // ── manual entry ──
   customBtn: {

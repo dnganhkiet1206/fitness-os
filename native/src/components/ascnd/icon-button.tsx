@@ -1,7 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import type { LucideIcon } from 'lucide-react-native';
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors } from '@/constants/ascnd';
 
@@ -82,7 +83,7 @@ export function IconButton({
   const slop = Math.max(0, Math.ceil((MIN_TARGET - size) / 2));
 
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
@@ -93,20 +94,13 @@ export function IconButton({
         if (haptic) Haptics.selectionAsync();
         onPress();
       }}
-      style={({ pressed }) => [
-        styles.base,
-        { width: size, height: size },
-        disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
-        style,
-      ]}>
+      style={[styles.base, { width: size, height: size }, disabled && styles.disabled, style]}>
       <Icon icon={icon} size={iconSize ?? Math.round(size * 0.46)} color={color} />
-    </Pressable>
+    </PressScale>
   );
 }
 
 const styles = StyleSheet.create({
   base: { alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: 0.6 },
   disabled: { opacity: 0.35 },
 });

@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
@@ -134,16 +135,16 @@ export default function FoodListScreen() {
         {/* Only on the list it would add to. Nothing you press here can put a
             row into Recent — that list is written by logging a meal. */}
         {seg === 'mine' ? (
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.foodAddCustom}
-            style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+            style={styles.addBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/food-editor');
             }}>
             <Icon icon={Plus} size={16} color={colors.primaryForeground} strokeWidth={2.5} />
-          </Pressable>
+          </PressScale>
         ) : null}
       </View>
 
@@ -236,7 +237,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.primary,
   },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
 
   empty: {
     fontSize: 13,

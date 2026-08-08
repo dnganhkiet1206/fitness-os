@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useMemo } from 'react';
-import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Modal, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
@@ -13,6 +13,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -197,20 +198,16 @@ export function MascotCelebrationModal({ mascot, onClose }: { mascot: MascotDef;
           <Text style={styles.name}>{mascot.name}</Text>
           <Text style={styles.tagline}>{mascot.tagline[lang]}</Text>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.primaryBtn,
-              { backgroundColor: mascot.accent },
-              pressed && styles.pressed,
-            ]}
+          <PressScale
+            style={[styles.primaryBtn, { backgroundColor: mascot.accent }]}
             onPress={() => dismiss(true)}>
             <Text style={styles.primaryBtnText}>{i18n.nMascotUse}</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.laterBtn, pressed && styles.pressed]}
+          </PressScale>
+          <PressScale
+            style={styles.laterBtn}
             onPress={() => dismiss(false)}>
             <Text style={styles.laterText}>{i18n.nMascotLater}</Text>
-          </Pressable>
+          </PressScale>
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -293,5 +290,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   laterText: { ...type.footnote, color: colors.mutedForeground, fontWeight: '600' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

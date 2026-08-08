@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -319,12 +320,12 @@ export default function EditProfileSheet() {
         <View style={styles.divider} />
 
         {/* Recompute targets from stats above (weight/height/age/activity/goal) */}
-        <Pressable
-          style={({ pressed }) => [styles.recalcBtn, pressed && styles.pressed]}
+        <PressScale
+          style={styles.recalcBtn}
           onPress={recalcTargets}>
           <Icon icon={RefreshCw} size={16} color={colors.primary} strokeWidth={2.5} />
           <Text style={styles.recalcText}>{i18n.settingsRecalcTargets}</Text>
-        </Pressable>
+        </PressScale>
 
         {/* Daily calories */}
         <Field label={`${i18n.nDailyTarget} (kcal)`}>
@@ -510,7 +511,6 @@ const styles = StyleSheet.create({
     backgroundColor: `${colors.primary}1a`,
   },
   recalcText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   pickerWrap: { alignItems: 'flex-start' },
   segmented: {
     flexDirection: 'row',

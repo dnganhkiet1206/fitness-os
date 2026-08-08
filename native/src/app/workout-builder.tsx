@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
@@ -393,14 +394,14 @@ export default function WorkoutBuilderSheet() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* ── header: the step you are on, and the way back out of it ── */}
       <View style={styles.header}>
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={mode === 'pick' ? i18n.a11yClose : i18n.a11yBack}
           hitSlop={8}
           onPress={goBack}
-          style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}>
+          style={styles.headerBtn}>
           <Icon icon={mode === 'pick' ? X : ArrowLeft} size={18} color={colors.foreground} />
-        </Pressable>
+        </PressScale>
 
         <View style={styles.headerTitle}>
           <Text style={styles.title}>{i18n.nWbTitle}</Text>
@@ -431,12 +432,12 @@ export default function WorkoutBuilderSheet() {
             onRemove={() => removeAt(editing!)}
           />
           <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               onPress={() => setEditing(null)}
-              style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+              style={styles.primary}>
               <Text style={styles.primaryText}>{i18n.nWbDone}</Text>
-            </Pressable>
+            </PressScale>
           </View>
         </>
       ) : mode === 'pick' ? (
@@ -532,39 +533,39 @@ export default function WorkoutBuilderSheet() {
                   </Text>
                   {/* The dead end becomes the way forward: what you searched
                       for is what the new exercise is called. */}
-                  <Pressable
+                  <PressScale
                     accessibilityRole="button"
                     onPress={openLibrary}
-                    style={({ pressed }) => [styles.emptyCta, pressed && styles.pressed]}>
+                    style={styles.emptyCta}>
                     <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
                     <Text style={styles.emptyCtaText}>
                       {search.trim()
                         ? i18n.nWbCreateNamed.replace('{x}', search.trim())
                         : i18n.nCreateExercise}
                     </Text>
-                  </Pressable>
+                  </PressScale>
                 </View>
               )
             }
             ListFooterComponent={
               visible.length > 0 ? (
-                <Pressable
+                <PressScale
                   accessibilityRole="button"
                   onPress={openLibrary}
-                  style={({ pressed }) => [styles.newRow, pressed && styles.pressed]}>
+                  style={styles.newRow}>
                   <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
                   <Text style={styles.newRowText}>{i18n.nCreateExercise}</Text>
-                </Pressable>
+                </PressScale>
               ) : null
             }
             renderItem={({ item: e }) => {
               const on = chosen.has(e.id);
               return (
-                <Pressable
+                <PressScale
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: on }}
                   onPress={() => toggle(e)}
-                  style={({ pressed }) => [styles.exRow, on && styles.exRowOn, pressed && styles.pressed]}>
+                  style={[styles.exRow, on && styles.exRowOn]}>
                   {/* A fixed slot, because `MuscleArt` draws nothing for a
                       group it has no diagram for — without it those rows would
                       start 38pt to the left of the ones around them. */}
@@ -580,7 +581,7 @@ export default function WorkoutBuilderSheet() {
                   <View style={[styles.tick, on && styles.tickOn]}>
                     {on ? <Icon icon={Check} size={14} color={colors.primaryForeground} strokeWidth={3} /> : null}
                   </View>
-                </Pressable>
+                </PressScale>
               );
             }}
           />
@@ -591,21 +592,17 @@ export default function WorkoutBuilderSheet() {
                 ? i18n.nWbSelected.replace('{n}', String(items.length))
                 : i18n.nWbPickHint}
             </Text>
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               disabled={items.length === 0}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setStep(2);
               }}
-              style={({ pressed }) => [
-                styles.primary,
-                items.length === 0 && styles.disabled,
-                pressed && items.length > 0 && styles.pressed,
-              ]}>
+              style={[styles.primary, items.length === 0 && styles.disabled]}>
               <Text style={styles.primaryText}>{i18n.nWbNext}</Text>
               <Icon icon={ChevronRight} size={18} color={colors.primaryForeground} />
-            </Pressable>
+            </PressScale>
           </View>
         </>
       ) : (
@@ -656,7 +653,7 @@ export default function WorkoutBuilderSheet() {
 
             <Text style={styles.sectionLabel}>{i18n.workoutsExercisesAdded}</Text>
             {items.map((ex, idx) => (
-              <Pressable
+              <PressScale
                 key={ex.exerciseId}
                 accessibilityRole="button"
                 accessibilityLabel={`${ex.exerciseName}, ${ex.sets} × ${ex.reps}`}
@@ -664,7 +661,7 @@ export default function WorkoutBuilderSheet() {
                   Haptics.selectionAsync();
                   setEditing(idx);
                 }}
-                style={({ pressed }) => [styles.planRow, pressed && styles.pressed]}>
+                style={styles.planRow}>
                 {/* The number is the order, and the order is part of the plan */}
                 <View style={styles.ordinal}>
                   <Text style={styles.ordinalText}>{idx + 1}</Text>
@@ -679,37 +676,33 @@ export default function WorkoutBuilderSheet() {
                   </Text>
                 </View>
                 <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-              </Pressable>
+              </PressScale>
             ))}
 
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               onPress={() => {
                 Haptics.selectionAsync();
                 setStep(1);
               }}
-              style={({ pressed }) => [styles.newRow, pressed && styles.pressed]}>
+              style={styles.newRow}>
               <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
               <Text style={styles.newRowText}>{i18n.nWbAddMore}</Text>
-            </Pressable>
+            </PressScale>
           </ScrollView>
 
           <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               disabled={items.length === 0 || addTemplate.isPending}
               onPress={save}
-              style={({ pressed }) => [
-                styles.primary,
-                (items.length === 0 || addTemplate.isPending) && styles.disabled,
-                pressed && styles.pressed,
-              ]}>
+              style={[styles.primary, (items.length === 0 || addTemplate.isPending) && styles.disabled]}>
               {addTemplate.isPending ? (
                 <ActivityIndicator color={colors.primaryForeground} />
               ) : (
                 <Text style={styles.primaryText}>{i18n.nWbSave}</Text>
               )}
-            </Pressable>
+            </PressScale>
           </View>
         </>
       )}
@@ -902,5 +895,4 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.4 },
 
 
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

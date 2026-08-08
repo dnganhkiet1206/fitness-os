@@ -7,7 +7,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +16,7 @@ import {
 
 import { Check } from 'lucide-react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { localDateStr } from '@/lib/local-date';
@@ -118,8 +118,8 @@ export default function LogMeasurementSheet() {
           </View>
         ))}
 
-        <Pressable
-          style={({ pressed }) => [styles.saveButton, !canSave && !upsert.isSuccess && styles.saveDisabled, pressed && canSave && styles.pressed]}
+        <PressScale
+          style={[styles.saveButton, !canSave && !upsert.isSuccess && styles.saveDisabled]}
           disabled={!canSave}
           onPress={save}>
           {upsert.isSuccess ? (
@@ -129,7 +129,7 @@ export default function LogMeasurementSheet() {
           ) : (
             <Text style={styles.saveText}>{i18n.save}</Text>
           )}
-        </Pressable>
+        </PressScale>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -177,5 +177,4 @@ const styles = StyleSheet.create({
   saveButton: { height: 50, borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
   saveDisabled: { opacity: 0.4 },
   saveText: { ...type.headline, color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

@@ -5,6 +5,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
@@ -71,15 +72,15 @@ export function QuickActionsSheet({ visible, onClose }: { visible: boolean; onCl
               key={item.key}
               style={styles.itemWrap}
               entering={FadeInDown.springify().stiffness(400).damping(30).delay(idx * 50)}>
-              <Pressable
+              <PressScale
                 accessibilityRole="button"
-                style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+                style={styles.item}
                 onPress={() => go(item.route)}>
                 <View style={styles.itemIcon}>
                   <Icon icon={item.icon} size={20} color="rgba(237,237,237,0.8)" />
                 </View>
                 <Text style={styles.itemLabel}>{lang === 'vi' ? item.label.vi : item.label.en}</Text>
-              </Pressable>
+              </PressScale>
             </Animated.View>
           ))}
         </Animated.View>
@@ -106,7 +107,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
     backgroundColor: 'rgba(24,24,27,0.9)',
   },
-  itemPressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
   itemIcon: {
     width: 44,
     height: 44,

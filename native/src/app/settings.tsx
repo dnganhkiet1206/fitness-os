@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { Icon } from '@/components/ascnd/icon';
@@ -226,30 +227,28 @@ export default function SettingsScreen() {
   return (
     <Screen back title={i18n.settingsTitle}>
       <Animated.View entering={rise(0)}>
-      <Pressable
+      <PressScale
         onPress={() => {
           Haptics.selectionAsync();
           router.push('/edit-profile');
         }}>
-        {({ pressed }) => (
-          <GlassCard style={pressed ? styles.cardPressed : undefined}>
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.cardHeaderInfo}>
-                <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
-                <Text style={styles.cardHint}>{user?.email}</Text>
-              </View>
-              <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+        <GlassCard>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderInfo}>
+              <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
+              <Text style={styles.cardHint}>{user?.email}</Text>
             </View>
-            <View style={styles.divider} />
-            <Row label={i18n.nDailyTarget} value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
-            <Row label={i18n.nGoal} value={(profile?.goal && GOAL_LABELS[profile.goal]) || profile?.goal || '—'} />
-            <Row
-              label={i18n.nTrainingLevel}
-              value={(profile?.training_level && LEVEL_LABELS[profile.training_level]) || profile?.training_level || '—'}
-            />
-          </GlassCard>
-        )}
-      </Pressable>
+            <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+          </View>
+          <View style={styles.divider} />
+          <Row label={i18n.nDailyTarget} value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
+          <Row label={i18n.nGoal} value={(profile?.goal && GOAL_LABELS[profile.goal]) || profile?.goal || '—'} />
+          <Row
+            label={i18n.nTrainingLevel}
+            value={(profile?.training_level && LEVEL_LABELS[profile.training_level]) || profile?.training_level || '—'}
+          />
+        </GlassCard>
+</PressScale>
       </Animated.View>
 
       <Animated.View entering={rise(1)}>
@@ -356,26 +355,24 @@ export default function SettingsScreen() {
 
       {/* Reminders — local notifications */}
       <Animated.View entering={rise(3)}>
-      <Pressable
+      <PressScale
         onPress={() => {
           Haptics.selectionAsync();
           router.push('/reminders');
         }}>
-        {({ pressed }) => (
-          <GlassCard style={pressed ? styles.cardPressed : undefined}>
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.cardHeaderLeft}>
-                <Icon icon={Bell} size={18} color={colors.mutedForeground} />
-                <View style={styles.cardHeaderInfo}>
-                  <Text style={styles.cardTitle}>{i18n.nRemindersTitle}</Text>
-                  <Text style={styles.cardHint}>{i18n.nRemindersDesc}</Text>
-                </View>
+        <GlassCard>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderLeft}>
+              <Icon icon={Bell} size={18} color={colors.mutedForeground} />
+              <View style={styles.cardHeaderInfo}>
+                <Text style={styles.cardTitle}>{i18n.nRemindersTitle}</Text>
+                <Text style={styles.cardHint}>{i18n.nRemindersDesc}</Text>
               </View>
-              <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
             </View>
-          </GlassCard>
-        )}
-      </Pressable>
+            <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+          </View>
+        </GlassCard>
+</PressScale>
       </Animated.View>
 
       {/* App lock — Face ID */}
@@ -406,43 +403,39 @@ export default function SettingsScreen() {
 
       {/* Change password */}
       <Animated.View entering={rise(5)}>
-      <Pressable
+      <PressScale
         onPress={() => {
           Haptics.selectionAsync();
           router.push('/change-password');
         }}>
-        {({ pressed }) => (
-          <GlassCard style={pressed ? styles.cardPressed : undefined}>
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.cardHeaderLeft}>
-                <Icon icon={KeyRound} size={18} color={colors.mutedForeground} />
-                <Text style={styles.cardTitle}>{i18n.settingsChangePassword}</Text>
-              </View>
-              <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+        <GlassCard>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderLeft}>
+              <Icon icon={KeyRound} size={18} color={colors.mutedForeground} />
+              <Text style={styles.cardTitle}>{i18n.settingsChangePassword}</Text>
             </View>
-          </GlassCard>
-        )}
-      </Pressable>
+            <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+          </View>
+        </GlassCard>
+</PressScale>
       </Animated.View>
 
       <Animated.View entering={rise(6)}>
-      <Pressable onPress={exportData} disabled={exporting}>
-        {({ pressed }) => (
-          <GlassCard style={pressed ? styles.cardPressed : undefined}>
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.cardHeaderInfo}>
-                <Text style={styles.cardTitle}>{i18n.settingsExportData}</Text>
-                <Text style={styles.cardHint}>{i18n.settingsExportDesc}</Text>
-              </View>
-              {exporting ? (
-                <ActivityIndicator color={colors.primary} size="small" />
-              ) : (
-                <Icon icon={Upload} size={18} color={colors.mutedForeground} />
-              )}
+      <PressScale onPress={exportData} disabled={exporting}>
+        <GlassCard>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderInfo}>
+              <Text style={styles.cardTitle}>{i18n.settingsExportData}</Text>
+              <Text style={styles.cardHint}>{i18n.settingsExportDesc}</Text>
             </View>
-          </GlassCard>
-        )}
-      </Pressable>
+            {exporting ? (
+              <ActivityIndicator color={colors.primary} size="small" />
+            ) : (
+              <Icon icon={Upload} size={18} color={colors.mutedForeground} />
+            )}
+          </View>
+        </GlassCard>
+</PressScale>
       </Animated.View>
 
       <Animated.View entering={rise(7)}>
@@ -454,38 +447,36 @@ export default function SettingsScreen() {
       </Animated.View>
 
       <Animated.View entering={rise(8)}>
-      <Pressable
+      <PressScale
         onPress={() => {
           Haptics.selectionAsync();
           router.push('/legal');
         }}>
-        {({ pressed }) => (
-          <GlassCard style={pressed ? styles.cardPressed : undefined}>
-            <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardTitle}>{i18n.nLegal}</Text>
-              <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
-            </View>
-          </GlassCard>
-        )}
-      </Pressable>
+        <GlassCard>
+          <View style={styles.cardHeaderRow}>
+            <Text style={styles.cardTitle}>{i18n.nLegal}</Text>
+            <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+          </View>
+        </GlassCard>
+</PressScale>
       </Animated.View>
 
       <Animated.View entering={rise(9)}>
-      <Pressable
-        style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
+      <PressScale
+        style={styles.signOut}
         onPress={confirmSignOut}>
         <Text style={styles.signOutText}>{i18n.nSignOut}</Text>
-      </Pressable>
+      </PressScale>
       </Animated.View>
 
       {/* Last on the screen, and the only row in red — it is the one action
           here that cannot be undone. */}
       <Animated.View entering={rise(10)}>
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityLabel={i18n.nDeleteAccount}
         disabled={deleting}
-        style={({ pressed }) => [styles.deleteAccount, (pressed || deleting) && styles.pressed]}
+        style={[styles.deleteAccount, deleting && styles.pressed]}
         onPress={confirmDeleteAccount}>
         {deleting ? (
           <ActivityIndicator color={colors.readinessRed} size="small" />
@@ -496,7 +487,7 @@ export default function SettingsScreen() {
           <Text style={styles.deleteAccountTitle}>{i18n.nDeleteAccount}</Text>
           <Text style={styles.cardHint}>{i18n.nDeleteAccountDesc}</Text>
         </View>
-      </Pressable>
+      </PressScale>
       </Animated.View>
     </Screen>
   );
@@ -514,7 +505,6 @@ function Row({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
-  cardPressed: { opacity: 0.75 },
   cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   cardHeaderLeft: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardHeaderInfo: { flex: 1, minWidth: 0 },

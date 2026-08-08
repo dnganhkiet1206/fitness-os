@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Droplets, Flame, Footprints, Moon, Star, Sunrise, Target, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useId, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { CarbIcon, FatIcon, FiberIcon, ProteinIcon } from '@/components/ascnd/macro-icons';
 import { Icon } from '@/components/ascnd/icon';
@@ -749,15 +750,14 @@ export function NutritionCard({
   if (!interactive) return card;
 
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       onPress={() => {
         Haptics.selectionAsync();
         setShowLeft((v) => !v);
-      }}
-      style={({ pressed }) => (pressed ? styles.cardPressed : undefined)}>
+      }}>
       {card}
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -964,13 +964,18 @@ function CompactWidget({
   ring?: [string, string];
 }) {
   return (
-    <Pressable
+    <PressScale
       onPress={() => {
         Haptics.selectionAsync();
         onPress();
       }}>
-      {({ pressed }) => (
-        <GlassCard style={[styles.compactCard, pressed && styles.pressedDim]}>
+      {/*
+        This used the children-as-function form to dim the `GlassCard` inside,
+        which was the only way to reach the pressed state from a child. The
+        press now animates the pressable itself and the card comes with it, so
+        the function — and the second style — are no longer carrying anything.
+      */}
+      <GlassCard style={styles.compactCard}>
           {ring ? (
             <MiniRing pct={pct} icon={icon} color={iconColor} gradient={ring} bg={iconBg} />
           ) : (
@@ -983,9 +988,8 @@ function CompactWidget({
             <Text style={styles.compactValue}>{valueText}</Text>
           </View>
           <Text style={styles.compactPct}>{pct}%</Text>
-        </GlassCard>
-      )}
-    </Pressable>
+      </GlassCard>
+    </PressScale>
   );
 }
 
@@ -1086,7 +1090,6 @@ const styles = StyleSheet.create({
   // than the tile's own `gap` puts the bar below them
   macroLines: { gap: 2 },
   macroNote: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  cardPressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
   macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'hidden' },
   macroBarFill: { height: '100%', borderRadius: 2 },
 
@@ -1100,7 +1103,6 @@ const styles = StyleSheet.create({
 
   // compact widgets
   compactCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, padding: spacing.md },
-  pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   compactIcon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   miniRing: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   miniRingCenter: {

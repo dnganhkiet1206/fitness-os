@@ -4,6 +4,7 @@ import { Check, Plus, Search, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { FormSheet } from '@/components/ascnd/form-sheet';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -270,7 +271,7 @@ export function MealPlanWizard({
           the same screen — which is the whole point of merging these: creating
           a plan and putting the first food in it were never two errands.
         */
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityState={{ disabled: !plan && (!name.trim() || createPlan.isPending) }}
           disabled={!plan && (!name.trim() || createPlan.isPending)}
@@ -282,11 +283,7 @@ export function MealPlanWizard({
               submitPlan();
             }
           }}
-          style={({ pressed }) => [
-            styles.primary,
-            !plan && (!name.trim() || createPlan.isPending) && styles.primaryOff,
-            pressed && styles.pressed,
-          ]}>
+          style={[styles.primary, !plan && (!name.trim() || createPlan.isPending) && styles.primaryOff]}>
           {createPlan.isPending ? (
             <ActivityIndicator color={colors.primaryForeground} size="small" />
           ) : (
@@ -298,7 +295,7 @@ export function MealPlanWizard({
                   : i18n.nMpDone}
             </Text>
           )}
-        </Pressable>
+        </PressScale>
       }>
       {!plan ? (
             <>
@@ -484,12 +481,12 @@ function FoodRow({
   onAdd: () => void;
 }) {
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       accessibilityState={{ disabled: added }}
       accessibilityLabel={added ? `${name}, ${i18n.nMpAlready}` : `${name}, ${Math.round(kcal)} kcal`}
       disabled={added}
-      style={({ pressed }) => [styles.row, added && styles.rowAdded, pressed && styles.pressedDim]}
+      style={[styles.row, added && styles.rowAdded]}
       onPress={onAdd}>
       <Text style={styles.rowName} numberOfLines={1}>{name}</Text>
       <Text style={styles.rowKcal}>{added ? i18n.nMpAlready : `${Math.round(kcal)} kcal`}</Text>
@@ -499,7 +496,7 @@ function FoodRow({
         color={added ? colors.readinessGreen : colors.primary}
         strokeWidth={2.5}
       />
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -590,6 +587,4 @@ const styles = StyleSheet.create({
   },
   primaryOff: { opacity: 0.4 },
   primaryText: { ...type.body, color: colors.primaryForeground, fontWeight: '700' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
-  pressedDim: { opacity: 0.8 },
 });

@@ -2,8 +2,9 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Plus } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
@@ -61,28 +62,28 @@ export default function BiometricsScreen() {
     <Screen back
       title={i18n.biometricsTitle}
       headerRight={
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.a11yAdd}
           hitSlop={8}
-          style={({ pressed }) => [styles.logBtn, pressed && styles.pressed]}
+          style={styles.logBtn}
           onPress={() => {
             Haptics.selectionAsync();
             router.push('/log-biometrics');
           }}>
           <Icon icon={Plus} size={22} color={colors.primary} />
-        </Pressable>
+        </PressScale>
       }>
       {!hasAny ? (
         <GlassCard>
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>{i18n.biometricsNoData}</Text>
             <Text style={styles.emptyMsg}>{i18n.biometricsNoDataMsg}</Text>
-            <Pressable
-              style={({ pressed }) => [styles.emptyBtn, pressed && styles.pressed]}
+            <PressScale
+              style={styles.emptyBtn}
               onPress={() => router.push('/log-biometrics')}>
               <Text style={styles.emptyBtnText}>{i18n.biometricsManual}</Text>
-            </Pressable>
+            </PressScale>
           </View>
         </GlassCard>
       ) : (
@@ -151,5 +152,4 @@ const styles = StyleSheet.create({
   metricUnit: { ...type.footnote, color: colors.mutedForeground },
   chart: { marginTop: spacing.sm },
   disclaimer: { ...type.caption, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs, lineHeight: 16 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.96 }] },
 });

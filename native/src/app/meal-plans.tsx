@@ -1,9 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { ChevronRight, UtensilsCrossed } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
@@ -49,14 +50,14 @@ export default function MealPlansScreen() {
                   inset the rule moves the whole row, and every chevron after
                   the first ends up 16pt off the one above it. */}
               {i > 0 ? <View style={styles.sep} /> : null}
-              <Pressable
+              <PressScale
                 accessibilityRole="button"
                 accessibilityLabel={p.name}
                 onPress={() => {
                   Haptics.selectionAsync();
                   router.push({ pathname: '/meal-plan', params: { plan: p.id } });
                 }}
-                style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+                style={styles.row}>
                 <View style={styles.text}>
                   <Text style={styles.name} numberOfLines={1}>{p.name}</Text>
                   <Text style={styles.meta} numberOfLines={1}>
@@ -66,7 +67,7 @@ export default function MealPlansScreen() {
                   </Text>
                 </View>
                 <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-              </Pressable>
+              </PressScale>
             </Animated.View>
           ))}
         </View>
@@ -113,5 +114,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: spacing.md,
   },
-  pressed: { opacity: 0.8 },
 });

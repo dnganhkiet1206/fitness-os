@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
@@ -372,15 +373,15 @@ export default function ProgressScreen() {
             { icon: Swords, route: '/challenges' as const, label: i18n.nChallenges },
             { icon: Medal, route: '/awards' as const, label: i18n.nAwards },
           ].map((b) => (
-            <Pressable
+            <PressScale
               key={b.route}
               accessibilityRole="button"
               accessibilityLabel={b.label}
               hitSlop={8}
-              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+              style={styles.iconBtn}
               onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>
               <Icon icon={b.icon} size={17} color={colors.mutedForeground} />
-            </Pressable>
+            </PressScale>
           ))}
         </View>
       }>
@@ -601,17 +602,17 @@ export default function ProgressScreen() {
               {RANGES.map((r) => {
                 const on = r.key === range;
                 return (
-                  <Pressable
+                  <PressScale
                     key={r.key}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
-                    style={({ pressed }) => [styles.rangeBtn, pressed && styles.pressed]}
+                    style={styles.rangeBtn}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setRange(r.key);
                     }}>
                     <Text style={[styles.rangeText, on && styles.rangeTextOn]}>{i18n[r.label]}</Text>
-                  </Pressable>
+                  </PressScale>
                 );
               })}
             </View>
@@ -622,8 +623,8 @@ export default function ProgressScreen() {
               to it from the current weight is a lot of taps for something
               they could type.
             */}
-            <Pressable
-              style={({ pressed }) => [styles.goalRow, pressed && styles.pressed]}
+            <PressScale
+              style={styles.goalRow}
               onPress={() => {
                 Haptics.selectionAsync();
                 setGoalOpen(true);
@@ -636,7 +637,7 @@ export default function ProgressScreen() {
                   : `${goalDisplay.toFixed(1)}${wl}`}
               </Text>
               <Icon icon={ChevronRight} size={15} color={colors.mutedForeground} />
-            </Pressable>
+            </PressScale>
           </GlassCard>
           </Animated.View>
 
@@ -679,12 +680,12 @@ export default function ProgressScreen() {
       {tab === 'measurements' && !measurementsFailed && (
         <>
           {/* Web: right-aligned "Add measurement" button opening the input dialog */}
-          <Pressable
-            style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+          <PressScale
+            style={styles.addBtn}
             onPress={() => { Haptics.selectionAsync(); router.push('/log-measurement'); }}>
             <Icon icon={Plus} size={13} color={colors.primaryForeground} strokeWidth={2.5} />
             <Text style={styles.addBtnText}>{i18n.progressAddMeasurement}</Text>
-          </Pressable>
+          </PressScale>
 
           {/* Web: multi-line measurement trend (waist / chest / bicep / thigh) */}
           {(measurements ?? []).length > 0 && (
@@ -761,12 +762,12 @@ export default function ProgressScreen() {
       )}
       {tab === 'photos' && !photosFailed && (
         <>
-          <Pressable
-            style={({ pressed }) => [styles.photoCta, pressed && styles.pressed]}
+          <PressScale
+            style={styles.photoCta}
             onPress={() => { Haptics.selectionAsync(); router.push('/progress-photos'); }}>
             <Icon icon={Camera} size={14} color={colors.primaryForeground} />
             <Text style={styles.photoCtaText}>{i18n.nPhotoAdd}</Text>
-          </Pressable>
+          </PressScale>
           {photos && photos.length > 0 ? (
             <Animated.View style={styles.photoGrid} entering={rise(0)}>
               {photos.slice(0, 12).map((p) => (
@@ -799,7 +800,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
 
   microTitle: {
     fontSize: 12,

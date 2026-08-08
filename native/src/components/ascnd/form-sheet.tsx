@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -70,7 +70,7 @@ export function FormSheet({
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.head}>
           <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yClose}
             hitSlop={12}
@@ -78,9 +78,9 @@ export function FormSheet({
               Haptics.selectionAsync();
               onClose();
             }}
-            style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
+            style={styles.close}>
             <Icon icon={X} size={18} color={colors.foreground} />
-          </Pressable>
+          </PressScale>
         </View>
 
         {belowHeader}
@@ -149,5 +149,4 @@ const styles = StyleSheet.create({
   field: { gap: 6 },
   fieldLabel: { ...type.footnote, color: colors.foreground, fontWeight: '700' },
   fieldHint: { ...type.caption, color: colors.mutedForeground, marginTop: -2 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

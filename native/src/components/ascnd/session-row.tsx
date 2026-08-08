@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, effortTint, radius, spacing } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
@@ -113,14 +114,14 @@ export function SessionRow({
         {/* Muted, like the template rows — a red glyph on every line would make
             deleting the loudest thing in a list that exists to show the training
             happened. */}
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.a11yDelete}
           hitSlop={10}
           onPress={() => onDelete(session.id, session.date_time, `${name} · ${day}`)}
-          style={({ pressed }) => [styles.del, pressed && styles.pressed]}>
+          style={styles.del}>
           <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
-        </Pressable>
+        </PressScale>
       </View>
     </View>
   );
@@ -149,7 +150,6 @@ const styles = StyleSheet.create({
      spanning the whole row is a separator, whatever it was drawn to mean. */
   barTrack: { width: 96, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,0.09)', marginTop: 1 },
   barFill: { height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,0.32)' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });
 
 /** The group these rows sit in, and the hairline between two of them. */

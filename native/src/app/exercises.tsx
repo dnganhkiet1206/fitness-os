@@ -4,6 +4,7 @@ import { Plus, Trash2 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { StaggerItem } from '@/components/ascnd/stagger-item';
 import { Icon } from '@/components/ascnd/icon';
@@ -111,15 +112,15 @@ export default function ExercisesScreen() {
           onChangeText={setSearch}
           autoCorrect={false}
         />
-        <Pressable
-          style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+        <PressScale
+          style={styles.addBtn}
           onPress={() => {
             Haptics.selectionAsync();
             setAdding((v) => !v);
           }}>
           <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
           <Text style={styles.addBtnText}>{i18n.exercisesAdd}</Text>
-        </Pressable>
+        </PressScale>
       </View>
 
       {/*
@@ -142,14 +143,10 @@ export default function ExercisesScreen() {
         title={i18n.exercisesAddTitle}
         onClose={() => setAdding(false)}
         footer={
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityState={{ disabled: !name.trim() || addEx.isPending }}
-            style={({ pressed }) => [
-              styles.submitBtn,
-              (!name.trim() || addEx.isPending) && styles.submitDisabled,
-              pressed && name.trim() && !addEx.isPending && styles.pressed,
-            ]}
+            style={[styles.submitBtn, (!name.trim() || addEx.isPending) && styles.submitDisabled]}
             disabled={!name.trim() || addEx.isPending}
             onPress={submit}>
             {addEx.isPending ? (
@@ -157,7 +154,7 @@ export default function ExercisesScreen() {
             ) : (
               <Text style={styles.submitText}>{i18n.exercisesAddBtn}</Text>
             )}
-          </Pressable>
+          </PressScale>
         }>
         <Field label={i18n.exercisesName} hint={i18n.nExNameHint}>
           <TextInput
@@ -310,5 +307,4 @@ const styles = StyleSheet.create({
   },
   name: { ...type.body, color: colors.foreground, flex: 1 },
   equipment: { ...type.caption, color: colors.mutedForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

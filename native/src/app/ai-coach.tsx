@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
@@ -187,7 +188,7 @@ export default function AiCoachScreen() {
           in.
         */}
         <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yBack}
             hitSlop={10}
@@ -195,9 +196,9 @@ export default function AiCoachScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.back();
             }}
-            style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}>
+            style={styles.headerBtn}>
             <Glyph name="chevron" size={17} />
-          </Pressable>
+          </PressScale>
           <View style={styles.headerTitleWrap}>
             <Text style={styles.headerTitle}>{i18n.aiCoachTitle}</Text>
             <View style={styles.aiBadge}>
@@ -209,7 +210,7 @@ export default function AiCoachScreen() {
               replaced on the assistant. One does not: a clock beside a title
               is unambiguous, and "new chat" belongs with the empty state it
               produces, so it sits in the transcript instead. */}
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yHistory}
             hitSlop={10}
@@ -217,9 +218,9 @@ export default function AiCoachScreen() {
               Haptics.selectionAsync();
               setShowHistory((v) => !v);
             }}
-            style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}>
+            style={styles.headerBtn}>
             <Glyph name="clock" size={18} />
-          </Pressable>
+          </PressScale>
         </View>
 
         <ScrollView
@@ -240,12 +241,11 @@ export default function AiCoachScreen() {
               {/* The same four the coach card offers, from the same signal. */}
               <View style={styles.prompts}>
                 {suggestions.map((s) => (
-                  <Pressable
+                  <PressScale
                     key={s.key}
                     accessibilityRole="button"
                     accessibilityLabel={vi ? s.question.vi : s.question.en}
-                    onPress={() => submit(vi ? s.question.vi : s.question.en)}
-                    style={({ pressed }) => pressed && styles.pressed}>
+                    onPress={() => submit(vi ? s.question.vi : s.question.en)}>
                     <LiquidGlass
                       style={[styles.promptChip, tintBorder(litBy(s.glyph))]}
                       radius={radius.full}
@@ -255,7 +255,7 @@ export default function AiCoachScreen() {
                         <Text style={styles.promptText}>{vi ? s.label.vi : s.label.en}</Text>
                       </View>
                     </LiquidGlass>
-                  </Pressable>
+                  </PressScale>
                 ))}
               </View>
             </View>
@@ -264,13 +264,13 @@ export default function AiCoachScreen() {
               {/* "New chat" lives with the transcript it clears, and carries a
                   word. It was a bare `+` in a row of identical grey discs. */}
               <View style={styles.chatBar}>
-                <Pressable
+                <PressScale
                   accessibilityRole="button"
                   onPress={newChat}
-                  style={({ pressed }) => [styles.chatBtn, pressed && styles.pressed]}>
+                  style={styles.chatBtn}>
                   <Glyph name="plus" size={13} colour={colors.glassMuted} />
                   <Text style={styles.chatBtnText}>{vi ? 'Trò chuyện mới' : 'New chat'}</Text>
-                </Pressable>
+                </PressScale>
               </View>
               {/*
                 ── two voices, two materials ──
@@ -358,7 +358,7 @@ export default function AiCoachScreen() {
                 multiline
                 onSubmitEditing={() => submit()}
               />
-              <Pressable
+              <PressScale
                 accessibilityRole="button"
                 accessibilityLabel={i18n.a11ySend}
                 /* 34pt drawn so the pill keeps its proportions; 5 of slop
@@ -367,13 +367,9 @@ export default function AiCoachScreen() {
                 hitSlop={5}
                 disabled={!input.trim() || isLoading}
                 onPress={() => submit()}
-                style={({ pressed }) => [
-                  styles.sendBtn,
-                  (!input.trim() || isLoading) && styles.sendDisabled,
-                  pressed && styles.pressed,
-                ]}>
+                style={[styles.sendBtn, (!input.trim() || isLoading) && styles.sendDisabled]}>
                 <Glyph name="arrow" size={17} colour={colors.primaryForeground} />
-              </Pressable>
+              </PressScale>
             </View>
           </LiquidGlass>
           {/* The one sentence on this screen that is here for a reason outside
@@ -412,13 +408,9 @@ export default function AiCoachScreen() {
               <ScrollView style={styles.historyScroll} keyboardShouldPersistTaps="handled">
                 {conversations && conversations.length > 0 ? (
                   conversations.map((c) => (
-                    <Pressable
+                    <PressScale
                       key={c.id}
-                      style={({ pressed }) => [
-                        styles.historyRow,
-                        conversationId === c.id && styles.historyRowActive,
-                        pressed && { opacity: 0.7 },
-                      ]}
+                      style={[styles.historyRow, conversationId === c.id && styles.historyRowActive]}
                       onPress={() => {
                         setShowHistory(false);
                         loadConversation(c.id);
@@ -430,12 +422,12 @@ export default function AiCoachScreen() {
                           day: 'numeric',
                         })}
                       </Text>
-                      <Pressable
+                      <PressScale
                         accessibilityRole="button"
                         accessibilityLabel={i18n.a11yDelete}
                         // 28pt drawn; 8 of slop reaches the 44pt HIG floor
                         hitSlop={8}
-                        style={({ pressed }) => [styles.historyDelete, pressed && { opacity: 0.6 }]}
+                        style={styles.historyDelete}
                         onPress={() => {
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                           deleteConvo.mutate(c.id);
@@ -444,8 +436,8 @@ export default function AiCoachScreen() {
                             deleting is the one irreversible thing here — but a
                             column of red bins pulls harder than the titles. */}
                         <Glyph name="trash" size={14} colour={colors.glassMuted} />
-                      </Pressable>
-                    </Pressable>
+                      </PressScale>
+                    </PressScale>
                   ))
                 ) : (
                   <Text style={styles.historyEmpty}>{i18n.aiCoachNoHistory}</Text>
@@ -645,5 +637,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
 
-  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
 });

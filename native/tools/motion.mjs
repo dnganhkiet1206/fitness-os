@@ -13,6 +13,7 @@
  *      library does not do it for you
  *   4. the response band speaks with four named durations
  *   5. the two micro-interaction primitives keep their non-obvious guards
+ *   6. a press is answered by one component, at one of two depths
  *
  * All of these except 4 are worth a tool because they fail *invisibly*: the
  * screen looks exactly as designed and the battery goes, or the frame budget
@@ -375,6 +376,59 @@ for (const [f, allowed] of Object.entries(COMPOSED)) {
 }
 
 /**
+ * ── rule 6: a press is answered in one place ──
+ *
+ * `style={({ pressed }) => [x, pressed && styles.pressed]}` is not an
+ * animation. It is a static style swapped in by a re-render, so the surface
+ * jumps to its pressed size and jumps back with nothing in between. 188 sites
+ * across 64 files did exactly that, at nine different depths, and every one of
+ * them read as "already handled" to anybody scanning the file.
+ *
+ * The depth is the part that cannot be fixed locally: 0.92 lurches on a
+ * full-width card and is invisible on a 24pt icon, because the eye reads
+ * distance and not ratio. That judgement belongs to one place — `press` in
+ * `constants/motion` — and a call site re-deciding it is how the app ended up
+ * with 0.88, 0.9, 0.92, 0.94, 0.95, 0.96, 0.97, 0.98 and 0.995 all meaning
+ * "pressed".
+ *
+ * ── what stays, and why it is not a shortfall ──
+ *
+ * A press does not have to be a scale. A row inside a picker highlights its
+ * *background* instead, which is what a table row has always done and what
+ * scaling a full-width row would look wrong doing. Those keep the callback,
+ * because the callback is carrying something a scale cannot.
+ */
+const PRESS_CALLBACK = /style=\{\(\{\s*pressed\s*\}\)|\{\(\{\s*pressed\s*\}\)\s*=>/;
+const AD_HOC_OK = {
+  'src/components/app-tabs.web.tsx': 'thanh tab bản web, không dùng chung với native',
+  'src/components/ascnd/liquid-tab-bar.tsx': 'hàng trong menu sáng nền — thu nhỏ cả hàng ngang đọc ra sai',
+  'src/app/routine.tsx': 'hàng chọn template sáng nền, giống hàng trong bảng',
+  'src/components/ascnd/press-scale.tsx': 'chính nó, và đoạn mã cũ nằm trong doc-comment',
+};
+for (const f of files) {
+  const code = strip(read(f));
+  if (!PRESS_CALLBACK.test(code)) continue;
+  if (AD_HOC_OK[f]) continue;
+  const line = code.split('\n').findIndex((l) => PRESS_CALLBACK.test(l)) + 1;
+  problems.push(
+    `${f}:${line}: còn tự làm hiệu ứng nhấn bằng \`({ pressed })\` — đó là style tĩnh, nó nhảy chứ không chạy; ` +
+      'dùng PressScale, hoặc nếu phản hồi là đổi nền chứ không phải thu nhỏ thì ghi lý do vào AD_HOC_OK',
+  );
+}
+/* And the depth is decided once. A call site passing a bare number is the same
+   drift the token was created to end. */
+for (const f of files) {
+  if (f.endsWith('constants/motion.ts')) continue;
+  const code = strip(read(f));
+  for (const m of code.matchAll(/<PressScale[^>]*?\bto=\{([^}]*)\}/g)) {
+    if (!m[1].includes('press.')) {
+      const line = code.slice(0, m.index).split('\n').length;
+      problems.push(`${f}:${line}: PressScale to={${m[1]}} là số trần — độ lún chỉ có hai giá trị, press.scale và press.deep`);
+    }
+  }
+}
+
+/**
  * The self-test.
  *
  * Each rule is fed the exact shape it exists to reject. The scope test is here
@@ -453,6 +507,7 @@ if (problems.length) {
   process.exit(1);
 }
 
+const pressScaleCount = files.reduce((n, f) => n + (read(f).match(/<PressScale/g) ?? []).length, 0);
 const loopFiles = files.filter((f) => /withRepeat\([\s\S]{0,200}?-1/.test(strip(read(f)))).length;
 const clockFiles = files.filter((f) => /useFrameCallback/.test(strip(read(f)))).length;
 console.log(
@@ -462,5 +517,6 @@ console.log(
     `${clockFiles} tệp dùng frame clock và đều đọc Reduce Motion; ` +
     `dải phản hồi chỉ dùng ${TOKENS.size} nhịp có tên (${[...TOKENS].join('/')}), ` +
     `${Object.values(COMPOSED).reduce((n, o) => n + Object.keys(o).length, 0)} số thuộc cascade được miễn kèm lý do, rig nhân vật không bị ép vào thang; ` +
-    'PressScale và AnimatedNumber giữ đủ chốt chặn (không nuốt chạm, đọc được bằng screen reader, không rung hai lần)',
+    'PressScale và AnimatedNumber giữ đủ chốt chặn (không nuốt chạm, đọc được bằng screen reader, không rung hai lần); ' +
+    `${pressScaleCount} chỗ nhấn dùng PressScale, ${Object.keys(AD_HOC_OK).length - 1} chỗ giữ callback vì phản hồi là đổi nền`,
 );

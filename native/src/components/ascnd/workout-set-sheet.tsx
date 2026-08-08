@@ -1,8 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { ChevronDown, ChevronUp, Minus, Plus, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
@@ -104,14 +105,14 @@ function Stepper({
 
   return (
     <View style={styles.stepper}>
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityLabel={`${a11yLabel} −`}
         disabled={num <= min}
         onPress={() => bump(-1)}
-        style={({ pressed }) => [styles.stepBtn, num <= min && styles.stepOff, pressed && styles.pressed]}>
+        style={[styles.stepBtn, num <= min && styles.stepOff]}>
         <Icon icon={Minus} size={16} color={colors.foreground} strokeWidth={2.5} />
-      </Pressable>
+      </PressScale>
 
       <TextInput
         accessibilityLabel={a11yLabel}
@@ -129,14 +130,14 @@ function Stepper({
         onEndEditing={() => setStr(fmt(num))}
       />
 
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityLabel={`${a11yLabel} +`}
         disabled={num >= max}
         onPress={() => bump(1)}
-        style={({ pressed }) => [styles.stepBtn, num >= max && styles.stepOff, pressed && styles.pressed]}>
+        style={[styles.stepBtn, num >= max && styles.stepOff]}>
         <Icon icon={Plus} size={16} color={colors.foreground} strokeWidth={2.5} />
-      </Pressable>
+      </PressScale>
     </View>
   );
 }
@@ -255,7 +256,7 @@ export function WorkoutSetPanel({
       </Row>
 
       <View style={styles.actions}>
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.nWbMoveUp}
           disabled={index === 0}
@@ -263,12 +264,12 @@ export function WorkoutSetPanel({
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onMove(index - 1);
           }}
-          style={({ pressed }) => [styles.action, index === 0 && styles.stepOff, pressed && styles.pressed]}>
+          style={[styles.action, index === 0 && styles.stepOff]}>
           <Icon icon={ChevronUp} size={16} color={colors.foreground} />
           <Text style={styles.actionText}>{i18n.nWbMoveUp}</Text>
-        </Pressable>
+        </PressScale>
 
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.nWbMoveDown}
           disabled={index >= total - 1}
@@ -276,26 +277,22 @@ export function WorkoutSetPanel({
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onMove(index + 1);
           }}
-          style={({ pressed }) => [
-            styles.action,
-            index >= total - 1 && styles.stepOff,
-            pressed && styles.pressed,
-          ]}>
+          style={[styles.action, index >= total - 1 && styles.stepOff]}>
           <Icon icon={ChevronDown} size={16} color={colors.foreground} />
           <Text style={styles.actionText}>{i18n.nWbMoveDown}</Text>
-        </Pressable>
+        </PressScale>
       </View>
 
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           onRemove();
         }}
-        style={({ pressed }) => [styles.remove, pressed && styles.pressed]}>
+        style={styles.remove}>
         <Icon icon={Trash2} size={15} color={colors.destructive} />
         <Text style={styles.removeText}>{i18n.nWbRemove}</Text>
-      </Pressable>
+      </PressScale>
     </ScrollView>
   );
 }
@@ -363,5 +360,4 @@ const styles = StyleSheet.create({
   },
   removeText: { ...type.footnote, color: colors.destructive, fontWeight: '600' },
 
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

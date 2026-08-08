@@ -11,6 +11,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 
@@ -180,22 +181,20 @@ export function TodayMeals({
   */
   if (groups.length === 0) {
     return (
-      <Pressable
+      <PressScale
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/log-meal');
         }}>
-        {({ pressed }) => (
-          <GlassCard style={[styles.empty, pressed && styles.pressed]}>
-            <Icon icon={UtensilsCrossed} size={20} />
-            <Text style={styles.emptyText}>
-              {lang === 'vi'
-                ? 'Chưa ghi bữa nào hôm nay — nhấn để ghi'
-                : 'Nothing logged today — tap to log a meal'}
-            </Text>
-          </GlassCard>
-        )}
-      </Pressable>
+        <GlassCard style={styles.empty}>
+          <Icon icon={UtensilsCrossed} size={20} />
+          <Text style={styles.emptyText}>
+            {lang === 'vi'
+              ? 'Chưa ghi bữa nào hôm nay — nhấn để ghi'
+              : 'Nothing logged today — tap to log a meal'}
+          </Text>
+        </GlassCard>
+</PressScale>
     );
   }
 
@@ -318,12 +317,12 @@ function MealCard({
 
   return (
     <GlassCard style={styles.meal}>
-      <Pressable
+      <PressScale
         onPress={() => {
           Haptics.selectionAsync();
           setOpen((v) => !v);
         }}
-        style={({ pressed }) => [styles.mealHead, pressed && styles.pressed]}>
+        style={styles.mealHead}>
         <View style={styles.mealHeadText}>
           <Text style={styles.mealName}>{label}</Text>
           <Text style={styles.mealSub}>
@@ -337,7 +336,7 @@ function MealCard({
         <Animated.View style={chevron}>
           <Icon icon={ChevronDown} size={18} color={colors.mutedForeground} />
         </Animated.View>
-      </Pressable>
+      </PressScale>
 
       {/*
         Always mounted, clipped to an animated height. The inner View is what
@@ -441,7 +440,7 @@ function MealRow({
         buttons cost a little width on a row that had spare, and they say what
         is possible without being tried.
       */}
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityLabel={i18n.nItemEdit}
         hitSlop={10}
@@ -449,10 +448,10 @@ function MealRow({
           Haptics.selectionAsync();
           onEdit(it);
         }}
-        style={({ pressed }) => [styles.rowBtn, pressed && styles.pressed]}>
+        style={styles.rowBtn}>
         <Icon icon={Pencil} size={15} color={colors.mutedForeground} />
-      </Pressable>
-      <Pressable
+      </PressScale>
+      <PressScale
         accessibilityRole="button"
         accessibilityLabel={i18n.nItemDelete}
         hitSlop={10}
@@ -460,7 +459,7 @@ function MealRow({
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onDelete(it);
         }}
-        style={({ pressed }) => [styles.rowBtn, pressed && styles.pressed]}>
+        style={styles.rowBtn}>
         {/* Muted, not red. A destructive glyph on every row of a list that is
             not about deleting makes deletion the loudest thing on the card —
             three foods drew three red marks and the eye went to them before the
@@ -468,7 +467,7 @@ function MealRow({
             the red belongs on the confirm dialog's button, where it is about to
             mean something. */}
         <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
-      </Pressable>
+      </PressScale>
     </Animated.View>
   );
 }
@@ -533,21 +532,21 @@ function EditServingsSheet({
           <Text style={styles.sheetSub}>{i18n.nItemServings}</Text>
 
           <View style={styles.stepper}>
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               accessibilityLabel={i18n.nServingsLess}
               onPress={() => step(-0.5)}
-              style={({ pressed }) => [styles.stepBtn, pressed && styles.pressed]}>
+              style={styles.stepBtn}>
               <Icon icon={Minus} size={18} color={colors.foreground} />
-            </Pressable>
+            </PressScale>
             <Text style={styles.stepValue}>{servings % 1 === 0 ? servings : servings.toFixed(1)}</Text>
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               accessibilityLabel={i18n.nServingsMore}
               onPress={() => step(0.5)}
-              style={({ pressed }) => [styles.stepBtn, pressed && styles.pressed]}>
+              style={styles.stepBtn}>
               <Icon icon={Plus} size={18} color={colors.foreground} />
-            </Pressable>
+            </PressScale>
           </View>
 
           <Text style={styles.sheetPreview}>
@@ -556,23 +555,19 @@ function EditServingsSheet({
           </Text>
 
           <View style={styles.sheetActions}>
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               onPress={onClose}
-              style={({ pressed }) => [styles.sheetBtn, pressed && styles.pressed]}>
+              style={styles.sheetBtn}>
               <Text style={styles.sheetBtnText}>{i18n.cancel}</Text>
-            </Pressable>
-            <Pressable
+            </PressScale>
+            <PressScale
               accessibilityRole="button"
               disabled={busy}
               onPress={() => onSave(servings)}
-              style={({ pressed }) => [
-                styles.sheetBtn,
-                styles.sheetBtnPrimary,
-                (pressed || busy) && styles.pressed,
-              ]}>
+              style={[styles.sheetBtn, styles.sheetBtnPrimary, busy && styles.pressed]}>
               <Text style={[styles.sheetBtnText, styles.sheetBtnTextPrimary]}>{i18n.save}</Text>
-            </Pressable>
+            </PressScale>
           </View>
         </Pressable>
       </Pressable>

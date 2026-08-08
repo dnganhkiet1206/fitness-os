@@ -2,9 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Check, Minus, Moon, Pencil, Plus, Timer } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { RestTimer } from '@/components/ascnd/rest-timer';
@@ -446,13 +447,13 @@ export function DayPlan({
         <Icon icon={Moon} size={22} color={colors.mutedForeground} />
         <Text style={styles.emptyText}>{isRest ? i18n.nRoutineRestDay : i18n.nRdEmptyPlan}</Text>
         <Text style={styles.emptyHint}>{i18n.nRoutineRestHint}</Text>
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           onPress={onEdit}
-          style={({ pressed }) => [styles.emptyBtn, pressed && styles.pressed]}>
+          style={styles.emptyBtn}>
           <Icon icon={Pencil} size={13} color={colors.foreground} />
           <Text style={styles.emptyBtnText}>{i18n.nChooseWorkout}</Text>
-        </Pressable>
+        </PressScale>
       </GlassCard>
     );
   }
@@ -469,14 +470,14 @@ export function DayPlan({
             {volume > 0 ? `  ·  ${Math.round(displayWeight(volume, wUnit)).toLocaleString()} ${wl}` : ''}
           </Text>
         </View>
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.nChooseWorkout}
           hitSlop={12}
           onPress={onEdit}
-          style={({ pressed }) => [styles.editBtn, pressed && styles.pressed]}>
+          style={styles.editBtn}>
           <Icon icon={Pencil} size={14} color={colors.mutedForeground} />
-        </Pressable>
+        </PressScale>
       </View>
 
       {sessions.map((sn) => {
@@ -530,20 +531,20 @@ export function DayPlan({
                   report on this screen was that there was no way to complete a
                   set. A control has to look like one before it can be one.
                 */}
-                <Pressable
+                <PressScale
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: isDone }}
                   accessibilityLabel={`${row.exerciseName} ${i18n.nRdSet.replace('{n}', String(row.ordinal))}`}
                   hitSlop={12}
                   onPress={() => toggle(row)}
-                  style={({ pressed }) => [styles.check, isDone && styles.checkOn, pressed && styles.pressed]}>
+                  style={[styles.check, isDone && styles.checkOn]}>
                   <Icon
                     icon={Check}
                     size={16}
                     color={isDone ? colors.primaryForeground : 'rgba(255,255,255,0.22)'}
                     strokeWidth={3}
                   />
-                </Pressable>
+                </PressScale>
 
                 <View style={styles.setText}>
                   <Text style={[styles.setMain, isDone && styles.setMainDone]} numberOfLines={1}>
@@ -565,7 +566,7 @@ export function DayPlan({
                   all the same shape and none of them the one you want. The
                   value you already have is the answer nine times out of ten.
                 */}
-                <Pressable
+                <PressScale
                   accessibilityRole="button"
                   accessibilityLabel={`${i18n.nWbRest} ${restLabel(secs)}`}
                   hitSlop={12}
@@ -573,11 +574,11 @@ export function DayPlan({
                     Haptics.selectionAsync();
                     setEditing(open ? null : row.key);
                   }}
-                  style={({ pressed }) => [styles.chip, open && styles.chipOpen, pressed && styles.pressed]}>
+                  style={[styles.chip, open && styles.chipOpen]}>
                   <Icon icon={Timer} size={11} color={colors.mutedForeground} />
                   <Text style={styles.chipText}>{restLabel(secs)}</Text>
-                </Pressable>
-                <Pressable
+                </PressScale>
+                <PressScale
                   accessibilityRole="button"
                   accessibilityLabel={`${i18n.nWbEffort} ${effort}`}
                   hitSlop={12}
@@ -585,14 +586,9 @@ export function DayPlan({
                     Haptics.selectionAsync();
                     setEditing(open ? null : row.key);
                   }}
-                  style={({ pressed }) => [
-                    styles.chip,
-                    open && styles.chipOpen,
-                    EFFORT_TINT[effort] ? { borderColor: `${EFFORT_TINT[effort]}66` } : null,
-                    pressed && styles.pressed,
-                  ]}>
+                  style={[styles.chip, open && styles.chipOpen, EFFORT_TINT[effort] ? { borderColor: `${EFFORT_TINT[effort]}66` } : null]}>
                   <Text style={[styles.chipText, { color: tintFor(effort) }]}>RPE {effort}</Text>
-                </Pressable>
+                </PressScale>
               </View>
 
               {open ? (
@@ -600,23 +596,23 @@ export function DayPlan({
                   <View style={styles.editorRow}>
                     <Text style={styles.editorLabel}>{i18n.nWbRest}</Text>
                     <View style={styles.stepper}>
-                      <Pressable
+                      <PressScale
                         accessibilityRole="button"
                         accessibilityLabel={`${i18n.nWbRest} −${REST_STEP}`}
                         hitSlop={{ top: 8, bottom: 8 }}
                         onPress={() => bumpRest(row, -REST_STEP)}
-                        style={({ pressed }) => [styles.stepBtn, pressed && styles.pressed]}>
+                        style={styles.stepBtn}>
                         <Icon icon={Minus} size={14} color={colors.foreground} strokeWidth={2.5} />
-                      </Pressable>
+                      </PressScale>
                       <Text style={styles.stepValue}>{restLabel(secs)}</Text>
-                      <Pressable
+                      <PressScale
                         accessibilityRole="button"
                         accessibilityLabel={`${i18n.nWbRest} +${REST_STEP}`}
                         hitSlop={{ top: 8, bottom: 8 }}
                         onPress={() => bumpRest(row, REST_STEP)}
-                        style={({ pressed }) => [styles.stepBtn, pressed && styles.pressed]}>
+                        style={styles.stepBtn}>
                         <Icon icon={Plus} size={14} color={colors.foreground} strokeWidth={2.5} />
-                      </Pressable>
+                      </PressScale>
                     </View>
                   </View>
 
@@ -624,7 +620,7 @@ export function DayPlan({
                     <Text style={styles.editorLabel}>{i18n.nWbEffort}</Text>
                     <View style={styles.rpeRow}>
                       {RPE_CHOICES.map((v) => (
-                        <Pressable
+                        <PressScale
                           key={v}
                           accessibilityRole="button"
                           accessibilityState={{ selected: v === effort }}
@@ -637,16 +633,10 @@ export function DayPlan({
                             // to being a list.
                             setEditing(null);
                           }}
-                          style={({ pressed }) => [
-                            styles.rpeOption,
-                            // Unselected still carries its colour, faintly — the
+                          style={[styles.rpeOption, // Unselected still carries its colour, faintly — the
                             // ramp has to be readable *before* you choose, or it
                             // is a label on a decision already made.
-                            EFFORT_TINT[v] ? { borderColor: `${EFFORT_TINT[v]}59` } : null,
-                            v === effort && styles.rpeOptionOn,
-                            v === effort && EFFORT_TINT[v] ? { backgroundColor: EFFORT_TINT[v], borderColor: EFFORT_TINT[v] } : null,
-                            pressed && styles.pressed,
-                          ]}>
+                            EFFORT_TINT[v] ? { borderColor: `${EFFORT_TINT[v]}59` } : null, v === effort && styles.rpeOptionOn, v === effort && EFFORT_TINT[v] ? { backgroundColor: EFFORT_TINT[v], borderColor: EFFORT_TINT[v] } : null]}>
                           <Text
                             style={[
                               styles.rpeOptionText,
@@ -655,7 +645,7 @@ export function DayPlan({
                             ]}>
                             {v}
                           </Text>
-                        </Pressable>
+                        </PressScale>
                       ))}
                     </View>
                   </View>
@@ -680,17 +670,12 @@ export function DayPlan({
         rather than sitting there greyed: a disabled control with the same
         label as before reads as a failure, not as a finished job.
       */}
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityState={{ disabled: !canFinish }}
         disabled={!canFinish}
         onPress={finish}
-        style={({ pressed }) => [
-          styles.finish,
-          !canFinish && styles.finishOff,
-          logged && styles.finishDone,
-          pressed && styles.pressed,
-        ]}>
+        style={[styles.finish, !canFinish && styles.finishOff, logged && styles.finishDone]}>
         <Icon
           icon={Check}
           size={17}
@@ -700,7 +685,7 @@ export function DayPlan({
         <Text style={[styles.finishText, logged && styles.finishTextDone]}>
           {logged ? i18n.nRdAlready : i18n.nRdFinish}
         </Text>
-      </Pressable>
+      </PressScale>
 
       {/*
         The rest clock is a screen of its own — see `rest-timer`.
@@ -875,5 +860,4 @@ const styles = StyleSheet.create({
   finishTextDone: { color: colors.readinessGreen },
   finishText: { ...type.body, color: colors.primaryForeground, fontWeight: '600' },
 
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

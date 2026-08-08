@@ -14,13 +14,15 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useEffect, useRef } from 'react';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Share, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { press } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AWARD_DEFINITIONS, useAwards, useCheckAwards } from '@/hooks/use-extras';
 import { awardText } from '@/lib/gamification-i18n';
@@ -138,9 +140,9 @@ function MedalCard({
               year: 'numeric',
             })}
           </Text>
-          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yShare} hitSlop={8} style={({ pressed }) => pressed && styles.pressed} onPress={share}>
+          <PressScale to={press.deep} accessibilityRole="button" accessibilityLabel={i18n.a11yShare} hitSlop={8} onPress={share}>
             <Icon icon={Share2} size={14} color={colors.mutedForeground} />
-          </Pressable>
+          </PressScale>
         </View>
       )}
     </Animated.View>
@@ -319,5 +321,4 @@ const styles = StyleSheet.create({
   medalDesc: { fontSize: 10, color: colors.mutedForeground, textAlign: 'center', lineHeight: 14 },
   earnedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   earnedDate: { ...type.mono, fontSize: 9, color: colors.mutedForeground },
-  pressed: { opacity: 0.6, transform: [{ scale: 0.9 }] },
 });

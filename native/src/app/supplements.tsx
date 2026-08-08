@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
@@ -71,18 +72,18 @@ export default function SupplementsScreen() {
       back
       title={i18n.nSupplements}
       headerRight={
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={adding ? i18n.a11yClose : i18n.a11yAdd}
           accessibilityState={{ expanded: adding }}
           hitSlop={8}
-          style={({ pressed }) => [styles.headerAdd, adding && styles.headerAddOn, pressed && styles.pressed]}
+          style={[styles.headerAdd, adding && styles.headerAddOn]}
           onPress={() => {
             Haptics.selectionAsync();
             setAdding((v) => !v);
           }}>
           <Icon icon={adding ? X : Plus} size={18} color={adding ? colors.primary : colors.foreground} />
-        </Pressable>
+        </PressScale>
       }>
       {adding && (
         <GlassCard style={styles.form}>
@@ -115,12 +116,8 @@ export default function SupplementsScreen() {
               </Pressable>
             ))}
           </View>
-          <Pressable
-            style={({ pressed }) => [
-              styles.submitBtn,
-              (!name.trim() || addSup.isPending) && styles.submitDisabled,
-              pressed && name.trim() && styles.pressed,
-            ]}
+          <PressScale
+            style={[styles.submitBtn, (!name.trim() || addSup.isPending) && styles.submitDisabled]}
             disabled={!name.trim() || addSup.isPending}
             onPress={submit}>
             {addSup.isPending ? (
@@ -128,7 +125,7 @@ export default function SupplementsScreen() {
             ) : (
               <Text style={styles.submitText}>{i18n.save}</Text>
             )}
-          </Pressable>
+          </PressScale>
         </GlassCard>
       )}
 
@@ -244,5 +241,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxOn: { backgroundColor: colors.readinessGreen, borderColor: colors.readinessGreen },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

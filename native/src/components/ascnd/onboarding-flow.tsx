@@ -32,6 +32,7 @@ import {
 import Animated, { FadeIn, SlideInLeft, SlideInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
@@ -571,28 +572,24 @@ export function OnboardingFlow() {
 
         {/* Prev / Next nav */}
         <View style={styles.nav}>
-          <Pressable
-            style={({ pressed }) => [styles.prevBtn, step === 0 && styles.disabled, pressed && styles.pressed]}
+          <PressScale
+            style={[styles.prevBtn, step === 0 && styles.disabled]}
             disabled={step === 0}
             onPress={goPrev}>
             <Icon icon={ChevronLeft} size={16} color={colors.mutedForeground} />
             <Text style={styles.prevText}>{i18n.onboardingPrev}</Text>
-          </Pressable>
+          </PressScale>
 
           {step < TOTAL_STEPS - 1 ? (
-            <Pressable
-              style={({ pressed }) => [styles.nextBtn, pressed && styles.pressed]}
+            <PressScale
+              style={styles.nextBtn}
               onPress={goNext}>
               <Text style={styles.nextText}>{i18n.onboardingNext}</Text>
               <Icon icon={ChevronRight} size={16} color={colors.primaryForeground} />
-            </Pressable>
+            </PressScale>
           ) : (
-            <Pressable
-              style={({ pressed }) => [
-                styles.nextBtn,
-                (!termsAccepted || finish.isPending) && styles.disabled,
-                pressed && termsAccepted && styles.pressed,
-              ]}
+            <PressScale
+              style={[styles.nextBtn, (!termsAccepted || finish.isPending) && styles.disabled]}
               disabled={!termsAccepted || finish.isPending}
               onPress={() => finish.mutate()}>
               {finish.isPending ? (
@@ -603,7 +600,7 @@ export function OnboardingFlow() {
                   <Text style={styles.nextText}>{i18n.onboardingDone}</Text>
                 </>
               )}
-            </Pressable>
+            </PressScale>
           )}
         </View>
       </ScrollView>
@@ -619,17 +616,17 @@ export function OnboardingFlow() {
             <Text style={styles.legalTitle} numberOfLines={1}>
               {legalDoc?.title}
             </Text>
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               accessibilityLabel={i18n.a11yClose}
               hitSlop={8}
-              style={({ pressed }) => [styles.legalClose, pressed && styles.pressed]}
+              style={styles.legalClose}
               onPress={() => {
                 Haptics.selectionAsync();
                 setLegalTab(null);
               }}>
               <Icon icon={X} size={18} color={colors.foreground} />
-            </Pressable>
+            </PressScale>
           </View>
           <ScrollView contentContainerStyle={styles.legalContent}>
             {legalDoc?.blocks.map((b, i) => (
@@ -698,19 +695,15 @@ function OptionCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <PressScale
       onPress={() => {
         Haptics.selectionAsync();
         onPress();
       }}
-      style={({ pressed }) => [
-        styles.optionCard,
-        active && styles.optionCardActive,
-        pressed && styles.pressed,
-      ]}>
+      style={[styles.optionCard, active && styles.optionCardActive]}>
       <Text style={styles.optionLabel}>{label}</Text>
       {desc ? <Text style={styles.optionDesc}>{desc}</Text> : null}
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -890,7 +883,6 @@ const styles = StyleSheet.create({
   },
   nextText: { ...type.headline, fontSize: 15, color: colors.primaryForeground },
   disabled: { opacity: 0.4 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 
   legalRoot: { flex: 1, backgroundColor: colors.background },
   legalHeader: {

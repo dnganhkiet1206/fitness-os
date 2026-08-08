@@ -83,6 +83,20 @@ export const duration = {
 export const press = {
   scale: 0.97,
   /**
+   * For controls small enough that 3% is nothing.
+   *
+   * The eye reads the *distance* a thing moves, not the ratio, so 0.97 on a
+   * 24pt icon is 0.7pt of travel — below the threshold where it registers as a
+   * response at all. Every place in the app that had reached for a deeper press
+   * on its own turned out to be exactly this: the back chevron, the two FABs,
+   * a tab-bar icon, the awards icon, a small stepper. Six sites, all under a
+   * finger's width, none of them a card.
+   *
+   * 0.92 rather than the 0.88–0.94 they variously used, for the same reason
+   * there is one `scale` and not fifty.
+   */
+  deep: 0.92,
+  /**
    * The dim that goes with it, kept at the value the app already used
    * everywhere so migrating a call site changes *how* it moves and not *how
    * far*. Scale alone is too quiet on a large card — there is no edge near

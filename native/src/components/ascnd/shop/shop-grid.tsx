@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Backpack, Check, Coins, Crown, Droplets, Dumbbell, Flame, Footprints, Ghost, Gift, Glasses, Headphones, LayoutGrid, Moon, Shirt, Snowflake, Sparkles, Star, Store, Trophy, Wind, type LucideIcon } from 'lucide-react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -145,12 +146,12 @@ export function CollectionRow({
             <Text style={styles.claimedText}>{i18n.nRoomSetClaimed}</Text>
           </View>
         ) : complete ? (
-          <Pressable
+          <PressScale
             disabled={pending}
-            style={({ pressed }) => [styles.claimBtn, pressed && styles.pressed]}
+            style={styles.claimBtn}
             onPress={onClaim}>
             <Text style={styles.claimText}>{i18n.nRoomClaim}</Text>
-          </Pressable>
+          </PressScale>
         ) : (
           <Text style={styles.setProgressText}>
             {i18n.nRoomSetProgress.replace('{a}', String(have)).replace('{b}', String(total))}
@@ -245,7 +246,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   ownedText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
   questCoinText: { ...type.caption, fontWeight: '700', color: colors.readinessYellow, fontVariant: ['tabular-nums'] },
   questCoins: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   questXpText: {

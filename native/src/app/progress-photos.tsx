@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
@@ -51,17 +52,17 @@ export default function ProgressPhotosScreen() {
     <Screen back
       title={i18n.progressPhotos}
       headerRight={
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.a11yAdd}
           hitSlop={8}
-          style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+          style={styles.addBtn}
           onPress={() => {
             Haptics.selectionAsync();
             setCapturing(true);
           }}>
           <Icon icon={Plus} size={22} color={colors.primary} />
-        </Pressable>
+        </PressScale>
       }>
       {upload.isPending && (
         <GlassCard>
@@ -77,11 +78,11 @@ export default function ProgressPhotosScreen() {
           <View style={styles.empty}>
             <Icon icon={Camera} size={40} color={colors.mutedForeground} />
             <Text style={styles.emptyText}>{i18n.progressNoPhotos}</Text>
-            <Pressable
-              style={({ pressed }) => [styles.emptyBtn, pressed && styles.pressed]}
+            <PressScale
+              style={styles.emptyBtn}
               onPress={() => setCapturing(true)}>
               <Text style={styles.emptyBtnText}>{i18n.nPhotoAdd}</Text>
-            </Pressable>
+            </PressScale>
           </View>
         </GlassCard>
       ) : (
@@ -159,9 +160,9 @@ function CaptureView({
     return (
       <View style={[styles.captureRoot, styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.permTitle}>{i18n.nCameraNeeded}</Text>
-        <Pressable style={({ pressed }) => [styles.permBtn, pressed && styles.pressed]} onPress={requestPermission}>
+        <PressScale style={styles.permBtn} onPress={requestPermission}>
           <Text style={styles.permBtnText}>{i18n.nAllowCamera}</Text>
-        </Pressable>
+        </PressScale>
         <Pressable onPress={onClose}>
           <Text style={styles.cancelText}>{i18n.nCancel}</Text>
         </Pressable>
@@ -191,9 +192,9 @@ function CaptureView({
       </View>
 
       <View style={[styles.shutterRow, { bottom: insets.bottom + spacing.xl }]}>
-        <Pressable onPress={shoot} style={({ pressed }) => [styles.shutter, pressed && styles.shutterPressed]}>
+        <PressScale onPress={shoot} style={styles.shutter}>
           <View style={styles.shutterInner} />
-        </Pressable>
+        </PressScale>
       </View>
     </View>
   );
@@ -231,7 +232,5 @@ const styles = StyleSheet.create({
   poseTextActive: { color: '#000' },
   shutterRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   shutter: { width: 74, height: 74, borderRadius: 37, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  shutterPressed: { opacity: 0.7 },
   shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#fff' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.96 }] },
 });

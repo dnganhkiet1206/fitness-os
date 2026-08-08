@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -13,6 +12,7 @@ import {
 
 import { Check } from 'lucide-react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -102,8 +102,8 @@ export default function ChangePasswordScreen() {
             {mismatch && <Text style={styles.error}>{i18n.settingsPasswordMismatch}</Text>}
           </View>
 
-          <Pressable
-            style={({ pressed }) => [styles.button, !canSave && !saved && styles.buttonDisabled, pressed && canSave && styles.pressed]}
+          <PressScale
+            style={[styles.button, !canSave && !saved && styles.buttonDisabled]}
             disabled={!canSave}
             onPress={submit}>
             {saved ? (
@@ -113,7 +113,7 @@ export default function ChangePasswordScreen() {
             ) : (
               <Text style={styles.buttonText}>{i18n.settingsChangePassword}</Text>
             )}
-          </Pressable>
+          </PressScale>
       </View>
     </Screen>
   );
@@ -144,5 +144,4 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.4 },
   buttonText: { ...type.headline, color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

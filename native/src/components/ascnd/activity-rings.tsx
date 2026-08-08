@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { HeartPulse } from 'lucide-react-native';
 import { useEffect, useId } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
@@ -177,26 +178,26 @@ export function ActivityRingsCard({ size = 110, onConnectHealth, onLogWorkout, .
         </View>
         <View style={styles.emptyActions}>
           {onConnectHealth ? (
-            <Pressable
+            <PressScale
               accessibilityRole="button"
-              style={({ pressed }) => [styles.emptyBtn, styles.emptyBtnPrimary, pressed && styles.pressed]}
+              style={[styles.emptyBtn, styles.emptyBtnPrimary]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onConnectHealth();
               }}>
               <Text style={styles.emptyBtnPrimaryText}>{i18n.dcActivityConnect}</Text>
-            </Pressable>
+            </PressScale>
           ) : null}
           {onLogWorkout ? (
-            <Pressable
+            <PressScale
               accessibilityRole="button"
-              style={({ pressed }) => [styles.emptyBtn, pressed && styles.pressed]}
+              style={styles.emptyBtn}
               onPress={() => {
                 Haptics.selectionAsync();
                 onLogWorkout();
               }}>
               <Text style={styles.emptyBtnText}>{i18n.dashLogWorkoutAction}</Text>
-            </Pressable>
+            </PressScale>
           ) : null}
         </View>
       </GlassCard>
@@ -319,5 +320,4 @@ const styles = StyleSheet.create({
   emptyBtnText: { fontSize: 13, fontWeight: '600', color: colors.foreground },
   emptyBtnPrimary: { backgroundColor: colors.primary },
   emptyBtnPrimaryText: { fontSize: 13, fontWeight: '600', color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

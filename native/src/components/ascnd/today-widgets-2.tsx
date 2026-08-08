@@ -25,6 +25,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
@@ -143,39 +144,37 @@ export function BiometricsCard() {
   if (metrics.length === 0) return null;
 
   return (
-    <Pressable onPress={() => { Haptics.selectionAsync(); router.push('/biometrics'); }}>
-      {({ pressed }) => (
-        <GlassCard style={[styles.stackCard, pressed && styles.pressedDim]}>
-          <View style={styles.headRow}>
-            <MicroTitle>{i18n.dcBioTitle}</MicroTitle>
-            <View style={styles.connRow}>
-              <Icon
-                icon={connected ? Wifi : WifiOff}
-                size={12}
-                color={connected ? colors.readinessGreen : colors.readinessRed}
-              />
-              <Text style={styles.connText}>
-                {connected ? String(connected.provider).replace('_', ' ') : i18n.dcBioNotConnected}
-              </Text>
-            </View>
+    <PressScale onPress={() => { Haptics.selectionAsync(); router.push('/biometrics'); }}>
+      <GlassCard style={styles.stackCard}>
+        <View style={styles.headRow}>
+          <MicroTitle>{i18n.dcBioTitle}</MicroTitle>
+          <View style={styles.connRow}>
+            <Icon
+              icon={connected ? Wifi : WifiOff}
+              size={12}
+              color={connected ? colors.readinessGreen : colors.readinessRed}
+            />
+            <Text style={styles.connText}>
+              {connected ? String(connected.provider).replace('_', ' ') : i18n.dcBioNotConnected}
+            </Text>
           </View>
-          <View style={styles.bioGrid}>
-            {metrics.map((m) => (
-              <View key={m.label} style={styles.bioTile}>
-                <Icon icon={m.icon} size={15} color={m.color} />
-                <View style={styles.bioTileInfo}>
-                  <View style={styles.bioValueRow}>
-                    <Text style={styles.bioValue}>{Math.round(Number(m.value) * 10) / 10}</Text>
-                    <Text style={styles.bioUnit}>{m.unit}</Text>
-                  </View>
-                  <Text style={styles.bioLabel}>{m.label}</Text>
+        </View>
+        <View style={styles.bioGrid}>
+          {metrics.map((m) => (
+            <View key={m.label} style={styles.bioTile}>
+              <Icon icon={m.icon} size={15} color={m.color} />
+              <View style={styles.bioTileInfo}>
+                <View style={styles.bioValueRow}>
+                  <Text style={styles.bioValue}>{Math.round(Number(m.value) * 10) / 10}</Text>
+                  <Text style={styles.bioUnit}>{m.unit}</Text>
                 </View>
+                <Text style={styles.bioLabel}>{m.label}</Text>
               </View>
-            ))}
-          </View>
-        </GlassCard>
-      )}
-    </Pressable>
+            </View>
+          ))}
+        </View>
+      </GlassCard>
+</PressScale>
   );
 }
 
@@ -549,14 +548,14 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
         grouped by month. The chart above raises the obvious next question —
         *what were those weeks* — and this is the answer to it.
       */}
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityLabel={vi ? 'Xem tất cả buổi tập đã ghi' : 'See all logged workouts'}
         onPress={() => {
           Haptics.selectionAsync();
           router.push('/sessions');
         }}
-        style={({ pressed }) => [styles.latestRow, pressed && styles.pressedDim]}>
+        style={styles.latestRow}>
         <View style={styles.latestIcon}>
           <Icon icon={Dumbbell} size={20} />
         </View>
@@ -580,7 +579,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
           </Text>
         </View>
         <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-      </Pressable>
+      </PressScale>
 
       {painFlags.length > 0 && (
         <View style={styles.painRow}>
@@ -764,7 +763,6 @@ export function RecentAwardsCard() {
 
 const styles = StyleSheet.create({
   stackCard: { gap: spacing.md },
-  pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   headAccessories: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   microRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

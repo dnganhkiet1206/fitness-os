@@ -18,9 +18,10 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
@@ -382,32 +383,32 @@ export default function WeeklyReviewScreen() {
     <Screen back title={i18n.weeklyReviewTitle}>
       {/* Week navigation (web) */}
       <View style={styles.weekNav}>
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.a11yPrevWeek}
           hitSlop={8}
-          style={({ pressed }) => [styles.weekBtn, pressed && styles.pressed]}
+          style={styles.weekBtn}
           onPress={() => {
             Haptics.selectionAsync();
             analyze.reset();
             setWeekOffset((o) => o - 1);
           }}>
           <Icon icon={ChevronLeft} size={16} color={colors.mutedForeground} />
-        </Pressable>
+        </PressScale>
         <Text style={styles.weekLabel}>{rangeLabel}</Text>
-        <Pressable
+        <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.a11yNextWeek}
           hitSlop={8}
           disabled={weekOffset >= 0}
-          style={({ pressed }) => [styles.weekBtn, weekOffset >= 0 && styles.disabled, pressed && styles.pressed]}
+          style={[styles.weekBtn, weekOffset >= 0 && styles.disabled]}
           onPress={() => {
             Haptics.selectionAsync();
             analyze.reset();
             setWeekOffset((o) => Math.min(o + 1, 0));
           }}>
           <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-        </Pressable>
+        </PressScale>
       </View>
 
       {/* Summary stat tiles */}
@@ -503,8 +504,8 @@ export default function WeeklyReviewScreen() {
                 <Text style={styles.title}>{i18n.nAiAnalysis}</Text>
               </View>
               <Text style={styles.hint}>{i18n.nWeeklyReviewHint}</Text>
-              <Pressable
-                style={({ pressed }) => [styles.cta, analyze.isPending && styles.disabled, pressed && styles.pressed]}
+              <PressScale
+                style={[styles.cta, analyze.isPending && styles.disabled]}
                 disabled={analyze.isPending}
                 onPress={() => analyze.mutate()}>
                 {analyze.isPending ? (
@@ -512,7 +513,7 @@ export default function WeeklyReviewScreen() {
                 ) : (
                   <Text style={styles.ctaText}>{i18n.nAnalyzeWeek}</Text>
                 )}
-              </Pressable>
+              </PressScale>
             </GlassCard>
             </Animated.View>
           ) : (
@@ -656,7 +657,6 @@ const styles = StyleSheet.create({
   },
   ctaText: { ...type.headline, color: colors.primaryForeground },
   disabled: { opacity: 0.5 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.96 }] },
   score: { fontSize: 44, fontWeight: '700', color: colors.foreground, marginTop: spacing.sm },
   summary: { ...type.body, color: colors.secondaryForeground, marginTop: spacing.sm, lineHeight: 21 },
   itemCard: { paddingVertical: spacing.md },

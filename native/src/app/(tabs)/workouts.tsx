@@ -8,6 +8,7 @@ import Animated from 'react-native-reanimated';
 
 import { rise } from '@/lib/entrance';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
@@ -155,13 +156,13 @@ function MuscleGrid({
         {(open ? MUSCLE_TILES : MUSCLE_TILES.slice(0, TILES_COLLAPSED)).map((t) => {
           const n = counts.get(t.key) ?? 0;
           return (
-            <Pressable
+            <PressScale
               key={t.key}
               accessibilityRole="button"
               accessibilityLabel={
                 failed ? (vi ? t.vi : t.en) : `${vi ? t.vi : t.en}, ${n} ${vi ? 'bài' : 'exercises'}`
               }
-              style={({ pressed }) => [styles.libTile, pressed && styles.pressed]}
+              style={styles.libTile}
               onPress={() => {
                 Haptics.selectionAsync();
                 // The art key, not the caption: the caption is a display string
@@ -176,17 +177,17 @@ function MuscleGrid({
                   {n} {vi ? 'bài' : n === 1 ? 'exercise' : 'exercises'}
                 </Text>
               )}
-            </Pressable>
+            </PressScale>
           );
         })}
       </View>
 
       {/* Says which way it goes and how much is behind it — "Xem thêm" alone is
           a button whose result you have to press it to find out. */}
-      <Pressable
+      <PressScale
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        style={({ pressed }) => [styles.libToggle, pressed && styles.pressedDim]}
+        style={styles.libToggle}
         onPress={() => {
           Haptics.selectionAsync();
           setOpen((v) => !v);
@@ -199,7 +200,7 @@ function MuscleGrid({
               : `Show ${MUSCLE_TILES.length - TILES_COLLAPSED} more`}
         </Text>
         <Icon icon={open ? ChevronUp : ChevronDown} size={14} color={colors.primary} />
-      </Pressable>
+      </PressScale>
     </View>
   );
 }
@@ -308,48 +309,48 @@ export default function WorkoutsScreen() {
           training rather than to build something — the row now reads plan,
           browse, create.
         */}
-        <Pressable
+        <PressScale
           accessibilityRole="button"
-          style={({ pressed }) => [styles.outlineBtn, pressed && styles.pressed]}
+          style={styles.outlineBtn}
           onPress={() => {
             Haptics.selectionAsync();
             router.push('/routine');
           }}>
           <Icon icon={CalendarDays} size={14} color={colors.metricBlue} />
           <Text style={styles.outlineBtnText}>{i18n.workoutsWeeklyPlan}</Text>
-        </Pressable>
+        </PressScale>
         <View style={styles.actionButtons}>
-          <Pressable
-            style={({ pressed }) => [styles.outlineBtn, pressed && styles.pressed]}
+          <PressScale
+            style={styles.outlineBtn}
             onPress={() => {
               Haptics.selectionAsync();
               router.push('/exercises');
             }}>
             <Icon icon={Dumbbell} size={14} />
             <Text style={styles.outlineBtnText}>{i18n.workoutsExercises}</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+          </PressScale>
+          <PressScale
+            style={styles.primaryBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/workout-builder');
             }}>
             <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
             <Text style={styles.primaryBtnText}>{i18n.workoutsCreateNew}</Text>
-          </Pressable>
+          </PressScale>
         </View>
       </View>
 
       {/* Log workout — native carries this next to templates for daily use */}
-      <Pressable
-        style={({ pressed }) => [styles.logChip, pressed && styles.pressed]}
+      <PressScale
+        style={styles.logChip}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/log-workout');
         }}>
         <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
         <Text style={styles.logChipText}>{i18n.nLogWorkoutBtn}</Text>
-      </Pressable>
+      </PressScale>
 
       <MuscleGrid exercises={exercises ?? []} failed={exercisesFailed} vi={vi} />
 
@@ -526,7 +527,6 @@ const styles = StyleSheet.create({
     backgroundColor: glass.bg,
   },
   libToggleText: { fontSize: 13, fontWeight: '600', color: colors.primary },
-  pressedDim: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   /*
     Three across. Two makes each tile large enough to show the drawing's
     striations, which is detail nobody reads on a tile; four shrinks the figure
@@ -587,5 +587,4 @@ const styles = StyleSheet.create({
   rpeText: { fontSize: 10, fontWeight: '600', color: colors.metricOrange, fontVariant: ['tabular-nums'] },
   // 28pt of ink with hitSlop 10 on top — 48pt of target, past the 44pt minimum
   sessionDel: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

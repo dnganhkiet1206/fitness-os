@@ -768,7 +768,6 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.7, color: colors.mutedForeground },
   emptyMsg: { fontSize: 13, color: 'rgba(107,107,107,0.8)', textAlign: 'center', maxWidth: 220, lineHeight: 19 },
 
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 
   // Edit mode (web widget-group edit)
   editHint: { fontSize: 13, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs },

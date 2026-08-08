@@ -14,9 +14,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { press } from '@/constants/motion';
 import { duration } from '@/constants/motion';
 import type { useI18n } from '@/hooks/use-app-settings';
 
@@ -92,19 +94,15 @@ export function LogMealFab({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
 
   return (
     <>
-      <Pressable
+      <PressScale to={press.deep}
         accessibilityRole="button"
         accessibilityLabel={i18n.a11yLogMeal}
         onPress={() => toggle(true)}
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: BottomTabInset + insets.bottom + spacing.sm },
-          pressed && styles.fabPressed,
-        ]}>
+        style={[styles.fab, { bottom: BottomTabInset + insets.bottom + spacing.sm }]}>
         <Animated.View style={plusStyle}>
           <Icon icon={Plus} size={26} color={colors.primaryForeground} strokeWidth={2.5} />
         </Animated.View>
-      </Pressable>
+      </PressScale>
 
       <Modal visible={open} transparent animationType="none" onRequestClose={() => toggle(false)}>
         <Animated.View
@@ -120,9 +118,9 @@ export function LogMealFab({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
               <Animated.View
                 key={a.key}
                 entering={FadeInDown.springify().stiffness(400).damping(30).delay(i * 45)}>
-                <Pressable
+                <PressScale to={press.deep}
                   onPress={() => pick(a.route)}
-                  style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
+                  style={styles.row}>
                   <View style={[styles.rowIcon, { backgroundColor: `${a.color}1f` }]}>
                     <Icon icon={a.icon} size={20} color={a.color} />
                   </View>
@@ -132,7 +130,7 @@ export function LogMealFab({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
                       {i18n[a.hint] as string}
                     </Text>
                   </View>
-                </Pressable>
+                </PressScale>
               </Animated.View>
             ))}
           </Animated.View>
@@ -160,7 +158,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  fabPressed: { opacity: 0.9, transform: [{ scale: 0.94 }] },
 
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(4,4,6,0.6)' },
   sheet: { marginHorizontal: spacing.md, gap: spacing.sm },
@@ -174,7 +171,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.12)',
   },
-  rowPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   rowIcon: {
     width: 42,
     height: 42,

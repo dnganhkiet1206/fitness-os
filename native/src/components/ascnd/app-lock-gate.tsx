@@ -1,6 +1,7 @@
 import { Lock } from 'lucide-react-native';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -27,9 +28,9 @@ export function AppLockGate() {
             <Icon icon={Lock} size={34} color={colors.primary} />
           </View>
           <Text style={styles.title}>{i18n.nLockLocked}</Text>
-          <Pressable style={({ pressed }) => [styles.button, pressed && styles.pressed]} onPress={unlock}>
+          <PressScale style={styles.button} onPress={unlock}>
             <Text style={styles.buttonText}>{i18n.nLockUnlock}</Text>
-          </Pressable>
+          </PressScale>
         </View>
       </View>
     </Modal>
@@ -57,5 +58,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonText: { ...type.headline, color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

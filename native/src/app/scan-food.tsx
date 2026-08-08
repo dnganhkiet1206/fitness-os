@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -134,11 +135,11 @@ export default function ScanFoodScreen() {
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.permTitle}>{i18n.nCameraNeeded}</Text>
         <Text style={styles.permHint}>{i18n.nScanFoodHint}</Text>
-        <Pressable
-          style={({ pressed }) => [styles.permBtn, pressed && styles.pressed]}
+        <PressScale
+          style={styles.permBtn}
           onPress={requestPermission}>
           <Text style={styles.permBtnText}>{i18n.nAllowCamera}</Text>
-        </Pressable>
+        </PressScale>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.cancelText}>{i18n.nCancel}</Text>
         </Pressable>
@@ -172,11 +173,11 @@ export default function ScanFoodScreen() {
             {error && items.length === 0 ? (
               <>
                 <Text style={styles.reviewError}>{error}</Text>
-                <Pressable
-                  style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+                <PressScale
+                  style={styles.primaryBtn}
                   onPress={retake}>
                   <Text style={styles.primaryBtnText}>{i18n.nRetake}</Text>
-                </Pressable>
+                </PressScale>
               </>
             ) : (
               <>
@@ -204,18 +205,13 @@ export default function ScanFoodScreen() {
                   ))}
                 </ScrollView>
                 <View style={styles.reviewActions}>
-                  <Pressable
-                    style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}
+                  <PressScale
+                    style={styles.secondaryBtn}
                     onPress={retake}>
                     <Text style={styles.secondaryBtnText}>{i18n.nRetake}</Text>
-                  </Pressable>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.primaryBtn,
-                      styles.primaryFlex,
-                      items.length === 0 && styles.disabled,
-                      pressed && styles.pressed,
-                    ]}
+                  </PressScale>
+                  <PressScale
+                    style={[styles.primaryBtn, styles.primaryFlex, items.length === 0 && styles.disabled]}
                     disabled={items.length === 0}
                     onPress={confirm}>
                     <Text style={styles.primaryBtnText}>
@@ -223,7 +219,7 @@ export default function ScanFoodScreen() {
                         ? i18n.nScanAddOne
                         : i18n.nScanAdd.replace('{n}', String(items.length))}
                     </Text>
-                  </Pressable>
+                  </PressScale>
                 </View>
               </>
             )}
@@ -272,9 +268,9 @@ export default function ScanFoodScreen() {
 
       {/* Shutter */}
       <View style={[styles.shutterRow, { bottom: insets.bottom + spacing.xl }]}>
-        <Pressable onPress={capture} style={({ pressed }) => [styles.shutter, pressed && styles.shutterPressed]}>
+        <PressScale onPress={capture} style={styles.shutter}>
           <View style={styles.shutterInner} />
-        </Pressable>
+        </PressScale>
       </View>
     </View>
   );
@@ -342,7 +338,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shutterPressed: { opacity: 0.7 },
   shutterInner: {
     width: 58,
     height: 58,
@@ -413,5 +408,4 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: { ...type.headline, color: colors.foreground },
   disabled: { opacity: 0.4 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

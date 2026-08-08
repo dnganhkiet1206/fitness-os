@@ -325,7 +325,6 @@ const styles = StyleSheet.create({
   },
   cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
   cardHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 
   // Weight
   weightLogger: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },

@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -168,12 +169,8 @@ export default function LogSleepSheet() {
         })}
       </View>
 
-      <Pressable
-        style={({ pressed }) => [
-          styles.saveButton,
-          save.isPending && styles.saveDisabled,
-          pressed && !save.isPending && !save.isSuccess && styles.pressed,
-        ]}
+      <PressScale
+        style={[styles.saveButton, save.isPending && styles.saveDisabled]}
         disabled={save.isPending || save.isSuccess}
         onPress={() => save.mutate()}>
         {save.isSuccess ? (
@@ -183,7 +180,7 @@ export default function LogSleepSheet() {
         ) : (
           <Text style={styles.saveText}>{i18n.nSaveSleep}</Text>
         )}
-      </Pressable>
+      </PressScale>
     </ScrollView>
   );
 }
@@ -253,5 +250,4 @@ const styles = StyleSheet.create({
   },
   saveDisabled: { opacity: 0.4 },
   saveText: { ...type.headline, color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

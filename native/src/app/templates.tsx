@@ -4,6 +4,7 @@ import { Dumbbell, Plus, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
@@ -117,16 +118,16 @@ export default function TemplatesScreen() {
         </View>
       )}
 
-      <Pressable
+      <PressScale
         accessibilityRole="button"
-        style={({ pressed }) => [styles.createBtn, pressed && styles.pressed]}
+        style={styles.createBtn}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/workout-builder');
         }}>
         <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
         <Text style={styles.createText}>{i18n.workoutsCreateNew}</Text>
-      </Pressable>
+      </PressScale>
     </Screen>
   );
 }
@@ -154,5 +155,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   createText: { ...type.headline, color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

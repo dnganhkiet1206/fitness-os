@@ -7,7 +7,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +14,7 @@ import {
   View,
 } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -157,14 +157,14 @@ export default function FoodEditorSheet() {
               />
               <Text style={styles.unit}>kcal</Text>
             </View>
-            <Pressable
-              style={({ pressed }) => [styles.autoCalcBtn, pressed && styles.pressed]}
+            <PressScale
+              style={styles.autoCalcBtn}
               onPress={() => {
                 Haptics.selectionAsync();
                 setKcal(String(calcKcal));
               }}>
               <Text style={styles.autoCalcText}>{i18n.foodAutoCalc} ({calcKcal})</Text>
-            </Pressable>
+            </PressScale>
           </View>
 
           {totalMacroG > 0 && (
@@ -199,10 +199,10 @@ export default function FoodEditorSheet() {
 
         <View style={styles.actionsRow}>
           {isEdit && (
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               accessibilityLabel={i18n.a11yDelete}
-              style={({ pressed }) => [styles.deleteBtn, pressed && styles.pressed]}
+              style={styles.deleteBtn}
               onPress={confirmDelete}
               disabled={remove.isPending || saved}>
               {remove.isPending ? (
@@ -210,10 +210,10 @@ export default function FoodEditorSheet() {
               ) : (
                 <Icon icon={Trash2} size={18} color={colors.readinessRed} />
               )}
-            </Pressable>
+            </PressScale>
           )}
-          <Pressable
-            style={({ pressed }) => [styles.saveButton, !canSave && !saved && styles.saveDisabled, pressed && canSave && styles.pressed]}
+          <PressScale
+            style={[styles.saveButton, !canSave && !saved && styles.saveDisabled]}
             disabled={!canSave}
             onPress={save}>
             {saved ? (
@@ -223,7 +223,7 @@ export default function FoodEditorSheet() {
             ) : (
               <Text style={styles.saveText}>{isEdit ? i18n.save : i18n.add}</Text>
             )}
-          </Pressable>
+          </PressScale>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -403,5 +403,4 @@ const styles = StyleSheet.create({
   },
   saveDisabled: { opacity: 0.4 },
   saveText: { ...type.headline, color: colors.primaryForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

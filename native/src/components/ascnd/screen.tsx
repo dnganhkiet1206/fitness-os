@@ -3,7 +3,6 @@ import * as Haptics from 'expo-haptics';
 import { ChevronLeft } from 'lucide-react-native';
 import { useCallback, useRef } from 'react';
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,12 +12,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { AmbientLight } from '@/components/ascnd/ambient-light';
 import { Icon } from '@/components/ascnd/icon';
 import { StatusScrim } from '@/components/ascnd/status-scrim';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { colors, glass, spacing, type } from '@/constants/ascnd';
+import { press } from '@/constants/motion';
 import { setActiveScroller } from '@/lib/scroll-to-top';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
@@ -183,17 +184,17 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
   if (back) {
     const headerBar = (
       <View style={styles.pageHeaderRow}>
-        <Pressable
+        <PressScale to={press.deep}
           accessibilityRole="button"
           accessibilityLabel={i18n.a11yBack}
           hitSlop={8}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.backPressed]}
+          style={styles.backBtn}
           onPress={() => {
             Haptics.selectionAsync();
             router.back();
           }}>
           <Icon icon={ChevronLeft} size={22} color={transparentHeader ? '#fff' : colors.primary} />
-        </Pressable>
+        </PressScale>
         <Text style={[styles.pageTitle, transparentHeader && styles.pageTitleFloat]} numberOfLines={1}>
           {title}
         </Text>
@@ -330,7 +331,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  backPressed: { opacity: 0.6, transform: [{ scale: 0.88 }] },
   pageTitle: {
     flex: 1,
     fontSize: 17,

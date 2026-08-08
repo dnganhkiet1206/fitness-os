@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
@@ -110,14 +111,14 @@ export default function GroceryScreen() {
             onSubmitEditing={submit}
             returnKeyType="done"
           />
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yAdd}
-            style={({ pressed }) => [styles.addBtn, !draft.trim() && styles.disabled, pressed && styles.pressed]}
+            style={[styles.addBtn, !draft.trim() && styles.disabled]}
             disabled={!draft.trim()}
             onPress={submit}>
             <Icon icon={Plus} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
-          </Pressable>
+          </PressScale>
         </View>
 
         {/* From your meal plan — tap + to add to the list */}
@@ -131,11 +132,11 @@ export default function GroceryScreen() {
             </View>
             <View style={styles.planChips}>
               {planSuggestions.map((f) => (
-                <Pressable
+                <PressScale
                   key={f.name}
                   accessibilityRole="button"
                   accessibilityLabel={`${f.name}, ${amountOf(f)}`}
-                  style={({ pressed }) => [styles.planChip, pressed && styles.pressed]}
+                  style={styles.planChip}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     add.mutate({ name: f.name, quantity: amountOf(f) });
@@ -143,7 +144,7 @@ export default function GroceryScreen() {
                   <Text style={styles.planChipText} numberOfLines={1}>{f.name}</Text>
                   <Text style={styles.planChipQty}>{amountOf(f)}</Text>
                   <Icon icon={Plus} size={12} color={colors.primary} strokeWidth={2.5} />
-                </Pressable>
+                </PressScale>
               ))}
             </View>
           </GlassCard>
@@ -206,7 +207,6 @@ const styles = StyleSheet.create({
   },
   addBtnText: { fontSize: 22, color: colors.primaryForeground, fontWeight: '600' },
   disabled: { opacity: 0.4 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
   itemCard: { paddingVertical: spacing.md },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   checkbox: {

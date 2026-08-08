@@ -3,7 +3,6 @@ import { ArrowLeft } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -14,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { Ruler, RULER_H, TICK_W } from '@/components/ascnd/weight-goal-ruler';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -243,17 +243,17 @@ export function WeightGoalDialog({
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <Pressable
+          <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yBack}
             hitSlop={8}
-            style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+            style={styles.back}
             onPress={() => {
               Haptics.selectionAsync();
               onClose();
             }}>
             <Icon icon={ArrowLeft} size={20} color={colors.foreground} />
-          </Pressable>
+          </PressScale>
           <Text style={styles.title}>{i18n.nWeightGoalEdit}</Text>
           {/* Balances the back button so the title sits centred */}
           <View style={styles.back} />
@@ -285,25 +285,25 @@ export function WeightGoalDialog({
         <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
           {/* Clearing is only offered when there is something to clear */}
           {goalKg != null ? (
-            <Pressable
-              style={({ pressed }) => [styles.ghost, pressed && styles.pressed]}
+            <PressScale
+              style={styles.ghost}
               onPress={() => {
                 Haptics.selectionAsync();
                 onSave(null);
                 onClose();
               }}>
               <Text style={styles.ghostText}>{i18n.nWeightGoalClear}</Text>
-            </Pressable>
+            </PressScale>
           ) : null}
-          <Pressable
-            style={({ pressed }) => [styles.done, pressed && styles.pressed]}
+          <PressScale
+            style={styles.done}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onSave(weightToKg(value, unit));
               onClose();
             }}>
             <Text style={styles.doneText}>{i18n.nWeightGoalDone}</Text>
-          </Pressable>
+          </PressScale>
         </View>
       </View>
     </Modal>
@@ -367,5 +367,4 @@ const styles = StyleSheet.create({
   doneText: { ...type.headline, color: '#111111' },
   ghost: { alignItems: 'center', paddingVertical: spacing.sm },
   ghostText: { ...type.footnote, color: colors.mutedForeground },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

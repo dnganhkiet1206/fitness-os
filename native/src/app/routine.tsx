@@ -3,6 +3,7 @@ import { CheckCircle2, CircleDashed, Dumbbell, Moon } from 'lucide-react-native'
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
@@ -189,7 +190,7 @@ export default function RoutineScreen() {
                 ? 'missed'
                 : 'todo';
           return (
-            <Pressable
+            <PressScale
               key={idx}
               accessibilityRole="tab"
               accessibilityState={{ selected: isOpen }}
@@ -198,7 +199,7 @@ export default function RoutineScreen() {
                 Haptics.selectionAsync();
                 setSelected(idx);
               }}
-              style={({ pressed }) => [styles.weekCell, pressed && styles.pressed]}>
+              style={styles.weekCell}>
               <Text style={[styles.weekName, isOpen && styles.weekNameOn]}>{shortNames[idx]}</Text>
               <View style={[styles.weekDate, isToday && styles.weekDateToday, isOpen && styles.weekDateOn]}>
                 <Text style={[styles.weekNum, isOpen && styles.weekNumOn]}>{d.getDate()}</Text>
@@ -206,7 +207,7 @@ export default function RoutineScreen() {
               {/* The dot is the week's shape in seven marks: green behind
                   you, silver ahead, purple where you chose to rest. */}
               <View style={[styles.weekDot, { backgroundColor: STATE_STYLE[state].tint }]} />
-            </Pressable>
+            </PressScale>
           );
         })}
       </View>
@@ -385,7 +386,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(230,185,61,0.18)',
   },
   deloadText: { ...type.caption, color: colors.readinessYellow, fontWeight: '600' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 
 
   // ── the day sheet ──

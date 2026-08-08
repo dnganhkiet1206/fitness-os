@@ -29,8 +29,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
+import { press } from '@/constants/motion';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { scrollActiveToTop } from '@/lib/scroll-to-top';
@@ -139,14 +141,14 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
     const active = state.index === index;
     const IconCmp = TAB_ICONS[routeName] ?? Home;
     return (
-      <Pressable
+      <PressScale to={press.deep}
         key={routeName}
         accessibilityRole="tab"
         accessibilityLabel={labels[routeName]}
         accessibilityState={{ selected: active, disabled }}
         disabled={disabled}
         onPress={() => go(routeName, index)}
-        style={({ pressed }) => [styles.tab, pressed && !disabled && styles.pressed]}>
+        style={styles.tab}>
         {/*
           The selection capsule, and it is glass rather than a white fill.
 
@@ -186,24 +188,24 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
           minimumFontScale={0.85}>
           {labels[routeName]}
         </Text>
-      </Pressable>
+      </PressScale>
     );
   };
 
   const centerButton = (onPress: () => void) => (
-    <Pressable
+    <PressScale to={press.deep}
       accessibilityRole="button"
       accessibilityLabel={aiOpen ? i18n.a11yCloseCoach : i18n.a11yAskCoach}
       accessibilityState={{ expanded: aiOpen }}
       onPress={onPress}
-      style={({ pressed }) => [styles.aiBtn, aiOpen && styles.aiBtnOpen, pressed && styles.pressed]}>
+      style={[styles.aiBtn, aiOpen && styles.aiBtnOpen]}>
       <Animated.View style={[styles.aiIcon, sparklesStyle]}>
         <Icon icon={Sparkles} size={18} color="rgba(237,237,237,0.9)" />
       </Animated.View>
       <Animated.View style={[styles.aiIcon, closeStyle]}>
         <Icon icon={X} size={18} color="rgba(237,237,237,0.9)" />
       </Animated.View>
-    </Pressable>
+    </PressScale>
   );
 
   const openAiItem = (route: (typeof AI_ITEMS)[number]['route']) => {
@@ -374,7 +376,6 @@ const styles = StyleSheet.create({
   },
   aiBtnOpen: { backgroundColor: 'rgba(255,255,255,0.16)' },
   aiIcon: { position: 'absolute' },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.9 }] },
 
   overlayBackdrop: {
     flex: 1,

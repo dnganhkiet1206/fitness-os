@@ -946,5 +946,4 @@ const styles = StyleSheet.create({
   },
   coachResumeText: { ...type.caption, color: colors.glassMuted, flex: 1 },
 
-  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

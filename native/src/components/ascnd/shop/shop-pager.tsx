@@ -1,6 +1,7 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { ChevronLeft, ChevronRight, Coins, Lock } from 'lucide-react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
@@ -135,14 +136,9 @@ export function ShopPager({
           </Text>
         </View>
       ) : !isOwned ? (
-        <Pressable
+        <PressScale
           disabled={pendingBuy}
-          style={({ pressed }) => [
-            styles.action,
-            styles.actionBuy,
-            !affordable && styles.actionPoor,
-            pressed && styles.pressed,
-          ]}
+          style={[styles.action, styles.actionBuy, !affordable && styles.actionPoor]}
           onPress={() => onBuy(item)}>
           {buyingKey === item.key ? (
             <ActivityIndicator size="small" color={colors.primaryForeground} />
@@ -156,19 +152,15 @@ export function ShopPager({
               <Text style={[styles.buyText, !affordable && styles.poorText]}>{price}</Text>
             </>
           )}
-        </Pressable>
+        </PressScale>
       ) : (
-        <Pressable
-          style={({ pressed }) => [
-            styles.action,
-            isEquipped ? styles.actionOff : styles.actionWear,
-            pressed && styles.pressed,
-          ]}
+        <PressScale
+          style={[styles.action, isEquipped ? styles.actionOff : styles.actionWear]}
           onPress={() => onToggleEquip(item.key, !isEquipped)}>
           <Text style={[styles.wearText, isEquipped && styles.offText]}>
             {isEquipped ? offLabel : wearLabel}
           </Text>
-        </Pressable>
+        </PressScale>
       )}
     </View>
   );
@@ -192,20 +184,20 @@ function Arrow({
   disabled: boolean;
 }) {
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       accessibilityLabel={dir === 'left' ? i18n.a11yPrevItem : i18n.a11yNextItem}
       accessibilityState={{ disabled }}
       disabled={disabled}
       hitSlop={8}
       onPress={onPress}
-      style={({ pressed }) => [styles.arrow, disabled && styles.arrowOff, pressed && styles.pressed]}>
+      style={[styles.arrow, disabled && styles.arrowOff]}>
       <Icon
         icon={dir === 'left' ? ChevronLeft : ChevronRight}
         size={24}
         color={disabled ? colors.mutedForeground : colors.foreground}
       />
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -254,5 +246,4 @@ const styles = StyleSheet.create({
   wearText: { ...type.headline, color: colors.foreground },
   offText: { color: colors.mutedForeground },
   lockedText: { ...type.footnote, color: colors.mutedForeground },
-  pressed: { opacity: 0.85 },
 });

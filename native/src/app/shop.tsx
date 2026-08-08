@@ -4,6 +4,7 @@ import { Coins, Sparkles, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { BAND_ASPECT } from '@/components/ascnd/shop/shop-camera';
@@ -342,8 +343,8 @@ export default function ShopScreen() {
       )}
 
       {tab === 'outfit' ? (
-        <Pressable
-          style={({ pressed }) => [styles.setsBanner, pressed && styles.pressed]}
+        <PressScale
+          style={styles.setsBanner}
           onPress={() => {
             Haptics.selectionAsync();
             setCollectionsOpen(true);
@@ -364,7 +365,7 @@ export default function ShopScreen() {
           ) : (
             <Text style={styles.setsChevron}>›</Text>
           )}
-        </Pressable>
+        </PressScale>
       ) : null}
 
       {/* Collections stays a sheet. It is a detail *of* the shop rather than a
@@ -453,7 +454,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: spacing.xl,
   },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
   setsBadge: {
     minWidth: 22,
     height: 22,
