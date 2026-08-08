@@ -151,9 +151,9 @@ for (const [name, hex] of [['foreground', fg], ['glassMuted', glassMuted]]) {
   `styles.X` referenced inside it, and checks only those definitions. That is
   the actual invariant: *text on glass*.
 */
-/* One screen now. `/ai-coach` was a second view of the same conversation and
-   was deleted — see `coach-chat.mjs`, which is what keeps it deleted. */
-const GLASS_SCREENS = ['src/app/(tabs)/assistant.tsx'];
+/* Both assistant surfaces: the hub and the conversation it bridges to. Same
+   aura, same glass, same rule about which grey may sit on it. */
+const GLASS_SCREENS = ['src/app/(tabs)/assistant.tsx', 'src/app/ai-coach.tsx'];
 
 /** Style keys referenced anywhere inside a glass panel. */
 function stylesOnGlass(src) {

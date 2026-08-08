@@ -1,0 +1,642 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { AssistantAura } from '@/components/ascnd/assistant-aura';
+import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
+import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
+import { MarkdownLite } from '@/components/ascnd/markdown-lite';
+import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { useAssistantSignal } from '@/hooks/use-assistant-signal';
+import { useAuth } from '@/hooks/use-auth';
+import { useCoachChat } from '@/hooks/use-coach-chat';
+import { supabase } from '@/integrations/supabase/client';
+import { suggestionsFor } from '@/lib/assistant-suggestions';
+
+/**
+ * AI Coach — the conversation, on a screen that is only the conversation.
+ *
+ * ── this page came back on purpose ──
+ *
+ * The chat briefly lived inside the Health Assistant: its ask bar took text and
+ * the transcript replaced the landing content. That worked and it was confusing
+ * for a reason that had nothing to do with the code — one screen was trying to
+ * be a dashboard and a chat at the same time, so its header, its scroll and its
+ * whole identity changed under you as you typed.
+ *
+ * They are two jobs. The assistant is where you *look* at today; this is where
+ * you *talk* about it. The assistant now carries a coach card instead of an
+ * input — a bridge rather than a second half.
+ *
+ * What did not come back is the duplication. The conversation still lives in
+ * `use-coach-chat` above the router, and this is the only screen that draws it:
+ * the earlier mess was two screens showing one chat, and `tools/coach-chat.mjs`
+ * is what keeps that from happening again.
+ *
+ * ── the room is the assistant's ──
+ *
+ * Same aura, same glass, same hand-drawn glyphs, and the aura takes today's
+ * readiness so the light matches the page you came from. Arriving here should
+ * feel like walking into the next room, not opening a different app.
+ *
+ * ── the openers are the card's chips ──
+ *
+ * An empty chat offers the same four questions the coach card offers, from the
+ * same `useAssistantSignal`. Tapping "Tôi ngủ chưa đủ" on the card and finding
+ * a different set of suggestions here would be the bridge visibly failing to
+ * connect.
+ */
+
+/** The colour a glyph lights its panel with — the saturated half of its gradient. */
+const litBy = (g: GlyphName) => GLYPH_TINT[g][1];
+
+export default function AiCoachScreen() {
+  const insets = useSafeAreaInsets();
+  const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
+  const { session } = useAuth();
+  const queryClient = useQueryClient();
+
+  /* The conversation is not this screen's — it lives above the router so it
+     survives this screen being pushed and popped. What stays here is the
+     draft, the scroll position and the focus. */
+  const { messages, isLoading, conversationId, send, newChat, loadConversation, onGrow } = useCoachChat();
+  const [input, setInput] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRef = useRef<TextInput>(null);
+
+  const scrollToEnd = () => {
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+  };
+  // the answer arrives a token at a time, and the transcript follows it down
+  useEffect(() => onGrow(scrollToEnd), [onGrow]);
+
+  const signal = useAssistantSignal();
+  const suggestions = suggestionsFor(signal);
+
+  const { data: conversations } = useQuery({
+    queryKey: ['ai_conversations', session?.user.id],
+    enabled: !!session?.user.id && showHistory,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ai_conversations')
+        .select('id, title, updated_at')
+        .eq('user_id', session!.user.id)
+        .order('updated_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const deleteConvo = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('ai_conversations').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['ai_conversations'] });
+      // deleting the chat you are reading leaves the screen showing a
+      // conversation that no longer exists anywhere
+      if (conversationId === id) newChat();
+    },
+  });
+
+  const submit = (prompt?: string) => {
+    const text = (prompt ?? input).trim();
+    if (!text) return;
+    setInput('');
+    send(text);
+  };
+
+  /*
+    ── arriving with a question already asked ──
+
+    The coach card's chips carry their question in `q`; the card itself carries
+    `ask=1` and no question. Both are one-shot: `sentRef` outlives every
+    re-render, so a keyboard resize or a language change cannot re-send.
+
+    Gated on `session` because the request needs the access token — without the
+    guard, a cold start deep into this route fires before auth has resolved and
+    the coach answers its own greeting with a 401. The effect simply waits.
+
+    `send` is deliberately not in the dependency list. The ref is what makes
+    this fire once; the deps are honest about what gates the first fire.
+  */
+  const { q, ask } = useLocalSearchParams<{ q?: string; ask?: string }>();
+  const sentRef = useRef(false);
+
+  useEffect(() => {
+    if (sentRef.current || !session) return;
+    if (typeof q === 'string' && q.trim()) {
+      sentRef.current = true;
+      send(q);
+    } else if (ask === '1') {
+      sentRef.current = true;
+      inputRef.current?.focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, ask, session]);
+
+  const chatting = messages.length > 0;
+
+  return (
+    <View style={styles.root}>
+      <AssistantAura state={signal.status} />
+
+      {/*
+        The composer rises with the keyboard; the aura does not.
+
+        `AssistantAura` is a sibling of this view rather than a child, so the
+        light keeps the whole screen while the page above it shrinks. A room
+        does not get shorter when a keyboard opens.
+      */}
+      <KeyboardAvoidingView
+        style={styles.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {/*
+          A chat header, and only that.
+
+          Back on the left where every iOS user reaches for it, the name in the
+          middle, history on the right. No home button and no marketing
+          subtitle: this screen has one job, and the way out is the way you came
+          in.
+        */}
+        <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yBack}
+            hitSlop={10}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}
+            style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}>
+            <Glyph name="chevron" size={17} />
+          </Pressable>
+          <View style={styles.headerTitleWrap}>
+            <Text style={styles.headerTitle}>{i18n.aiCoachTitle}</Text>
+            <View style={styles.aiBadge}>
+              <Glyph name="spark" size={10} />
+              <Text style={styles.aiText}>AI</Text>
+            </View>
+          </View>
+          {/* Two controls would need labels to tell apart — see the note this
+              replaced on the assistant. One does not: a clock beside a title
+              is unambiguous, and "new chat" belongs with the empty state it
+              produces, so it sits in the transcript instead. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yHistory}
+            hitSlop={10}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setShowHistory((v) => !v);
+            }}
+            style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}>
+            <Glyph name="clock" size={18} />
+          </Pressable>
+        </View>
+
+        <ScrollView
+          ref={scrollRef}
+          style={styles.list}
+          /* Empty fills and centres; a transcript starts at the top. Rendered
+             as-is, the greeting pinned under the header with the whole screen
+             empty below it and the composer stranded at the far bottom — two
+             things at opposite ends of a void. Once there are messages the
+             growth is dropped, or a transcript would creep down as it grew. */
+          contentContainerStyle={[styles.listContent, !chatting && styles.listContentEmpty]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          {!chatting ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>{i18n.aiCoachHello}</Text>
+              <Text style={styles.emptyHint}>{i18n.aiCoachIntro}</Text>
+              {/* The same four the coach card offers, from the same signal. */}
+              <View style={styles.prompts}>
+                {suggestions.map((s) => (
+                  <Pressable
+                    key={s.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={vi ? s.question.vi : s.question.en}
+                    onPress={() => submit(vi ? s.question.vi : s.question.en)}
+                    style={({ pressed }) => pressed && styles.pressed}>
+                    <LiquidGlass
+                      style={[styles.promptChip, tintBorder(litBy(s.glyph))]}
+                      radius={radius.full}
+                      tint={litBy(s.glyph)}>
+                      <View style={styles.promptInner}>
+                        <Glyph name={s.glyph} size={15} />
+                        <Text style={styles.promptText}>{vi ? s.label.vi : s.label.en}</Text>
+                      </View>
+                    </LiquidGlass>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View style={styles.transcript}>
+              {/* "New chat" lives with the transcript it clears, and carries a
+                  word. It was a bare `+` in a row of identical grey discs. */}
+              <View style={styles.chatBar}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={newChat}
+                  style={({ pressed }) => [styles.chatBtn, pressed && styles.pressed]}>
+                  <Glyph name="plus" size={13} colour={colors.glassMuted} />
+                  <Text style={styles.chatBtnText}>{vi ? 'Trò chuyện mới' : 'New chat'}</Text>
+                </Pressable>
+              </View>
+              {/*
+                ── two voices, two materials ──
+
+                The coach speaks on glass; you speak on solid brand silver. A
+                conversation has to be scannable at a glance — whose turn is
+                whose, without reading a word — and on a screen where everything
+                is translucent, two glass bubbles would leave only the alignment
+                to tell them apart.
+
+                The answer text is `foreground` throughout, which is why glass is
+                allowed here at all: 8.4:1 at the aura's brightest. `mutedColor`
+                pulls the list markers up to the same measured grey the captions
+                use; at `mutedForeground` they sat at 2.57:1.
+              */}
+              {messages.map((m, i) => (
+                <View key={i} style={[styles.msgRow, m.role === 'user' && styles.msgRowUser]}>
+                  {m.role === 'assistant' ? (
+                    <View style={styles.avatarAI}>
+                      <Glyph name="spark" size={14} />
+                    </View>
+                  ) : null}
+                  {m.role === 'assistant' ? (
+                    <LiquidGlass
+                      style={[styles.bubble, tintBorder(litBy('spark'))]}
+                      radius={radius.lg}
+                      tint={litBy('spark')}>
+                      <View style={styles.bubbleInner}>
+                        <MarkdownLite text={m.content} mutedColor={colors.glassMuted} />
+                      </View>
+                    </LiquidGlass>
+                  ) : (
+                    <View style={[styles.bubble, styles.bubbleUser]}>
+                      <View style={styles.bubbleInner}>
+                        <Text style={styles.bubbleUserText}>{m.content}</Text>
+                      </View>
+                    </View>
+                  )}
+                  {m.role === 'user' ? (
+                    <View style={styles.avatarUser}>
+                      <Glyph name="user" size={14} />
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+              {isLoading && messages[messages.length - 1]?.role !== 'assistant' ? (
+                <View style={styles.msgRow}>
+                  <View style={styles.avatarAI}>
+                    <Glyph name="spark" size={14} />
+                  </View>
+                  <LiquidGlass
+                    style={[styles.bubble, tintBorder(litBy('spark'))]}
+                    radius={radius.lg}
+                    tint={litBy('spark')}>
+                    <View style={styles.bubbleInner}>
+                      <ActivityIndicator size="small" color={colors.glassMuted} />
+                    </View>
+                  </LiquidGlass>
+                </View>
+              ) : null}
+            </View>
+          )}
+        </ScrollView>
+
+        {/*
+          The composer: the same glass pill the assistant's coach card is shaped
+          after, so pressing the card and arriving here reads as one movement.
+
+          No top hairline and no page-coloured fill. Both existed to separate a
+          composer from a list on an opaque page; over an aura they draw a
+          straight seam across the room and paint out the light beneath.
+        */}
+        <View style={[styles.composerWrap, { paddingBottom: insets.bottom + spacing.sm }]}>
+          <LiquidGlass style={styles.composer} radius={radius.full} intensity={30}>
+            <View style={styles.composerInner}>
+              <View style={styles.composerSpark}>
+                <Glyph name="spark" size={16} />
+              </View>
+              <TextInput
+                ref={inputRef}
+                style={styles.composerInput}
+                placeholder={i18n.aiCoachPlaceholder}
+                placeholderTextColor={colors.glassMuted}
+                value={input}
+                onChangeText={setInput}
+                multiline
+                onSubmitEditing={() => submit()}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={i18n.a11ySend}
+                /* 34pt drawn so the pill keeps its proportions; 5 of slop
+                   reaches the 44pt HIG floor. `tools/tap-targets.mjs` caught
+                   the version without it. */
+                hitSlop={5}
+                disabled={!input.trim() || isLoading}
+                onPress={() => submit()}
+                style={({ pressed }) => [
+                  styles.sendBtn,
+                  (!input.trim() || isLoading) && styles.sendDisabled,
+                  pressed && styles.pressed,
+                ]}>
+                <Glyph name="arrow" size={17} colour={colors.primaryForeground} />
+              </Pressable>
+            </View>
+          </LiquidGlass>
+          {/* The one sentence on this screen that is here for a reason outside
+              the product. It is attached to the composer by meaning rather than
+              layout, which is how it got left behind once already. */}
+          <View style={styles.disclaimerRow}>
+            <Glyph name="alert" size={12} />
+            <Text style={styles.disclaimer}>
+              {vi
+                ? 'AI chỉ hỗ trợ nhắc nhở thói quen, không chẩn đoán hay phát hiện bệnh. Gặp bác sĩ khi có vấn đề sức khoẻ.'
+                : 'AI supports habit reminders only — it does not diagnose or detect illness. See a doctor for health concerns.'}
+            </Text>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+
+      {/* Past conversations, laid over the page. A list you pick from and
+          dismiss is a panel, not a route. */}
+      {showHistory ? (
+        <>
+          {/* Tapping off it closes it — a menu whose only exit is the control
+              that opened it is a trap. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={vi ? 'Đóng' : 'Close'}
+            style={styles.historyScrim}
+            onPress={() => setShowHistory(false)}
+          />
+          <View style={[styles.historyWrap, { top: insets.top + 64 }]}>
+            <LiquidGlass style={styles.historyPanel} radius={radius.lg} intensity={34}>
+              {/* A menu has to be readable, and glass alone is not: the page
+                  behind it comes through the blur and collides with the row
+                  titles. This one surface gets a dark backing under its glass. */}
+              <View style={styles.historyBacking} pointerEvents="none" />
+              <Text style={styles.historyHeader}>{i18n.aiCoachHistory}</Text>
+              <ScrollView style={styles.historyScroll} keyboardShouldPersistTaps="handled">
+                {conversations && conversations.length > 0 ? (
+                  conversations.map((c) => (
+                    <Pressable
+                      key={c.id}
+                      style={({ pressed }) => [
+                        styles.historyRow,
+                        conversationId === c.id && styles.historyRowActive,
+                        pressed && { opacity: 0.7 },
+                      ]}
+                      onPress={() => {
+                        setShowHistory(false);
+                        loadConversation(c.id);
+                      }}>
+                      <Text style={styles.historyTitle} numberOfLines={1}>{c.title ?? '—'}</Text>
+                      <Text style={styles.historyDate}>
+                        {new Date(c.updated_at).toLocaleDateString(vi ? 'vi-VN' : 'en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={i18n.a11yDelete}
+                        // 28pt drawn; 8 of slop reaches the 44pt HIG floor
+                        hitSlop={8}
+                        style={({ pressed }) => [styles.historyDelete, pressed && { opacity: 0.6 }]}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          deleteConvo.mutate(c.id);
+                        }}>
+                        {/* Neutral in the list. The glyph's own tint is red —
+                            deleting is the one irreversible thing here — but a
+                            column of red bins pulls harder than the titles. */}
+                        <Glyph name="trash" size={14} colour={colors.glassMuted} />
+                      </Pressable>
+                    </Pressable>
+                  ))
+                ) : (
+                  <Text style={styles.historyEmpty}>{i18n.aiCoachNoHistory}</Text>
+                )}
+              </ScrollView>
+            </LiquidGlass>
+          </View>
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
+  // Transparent so the aura behind it in the wrapper is not painted over.
+  kav: { flex: 1, backgroundColor: 'transparent' },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary,
+  },
+  headerTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  headerTitle: { ...type.headline, color: colors.foreground },
+  aiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(180,92,255,0.16)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(180,92,255,0.35)',
+  },
+  aiText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: colors.metricPurple },
+
+  list: { flex: 1 },
+  listContent: { padding: spacing.md, gap: spacing.sm + 4 },
+  listContentEmpty: { flexGrow: 1, justifyContent: 'center' },
+  empty: { alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.sm, paddingBottom: spacing.xl },
+  emptyTitle: { fontSize: 30, fontWeight: '700', letterSpacing: -0.7, color: colors.foreground, textAlign: 'center' },
+  emptyHint: { ...type.body, color: colors.glassMuted, textAlign: 'center', lineHeight: 21, maxWidth: 310 },
+  prompts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  promptChip: { alignSelf: 'flex-start' },
+  promptInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: spacing.md - 2,
+    paddingVertical: spacing.sm + 2,
+  },
+  promptText: { ...type.footnote, color: colors.foreground },
+
+  transcript: { gap: spacing.sm + 4 },
+  chatBar: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xs },
+  chatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 7,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  chatBtnText: { ...type.caption, color: colors.glassMuted },
+  msgRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  msgRowUser: { justifyContent: 'flex-end' },
+  avatarAI: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    backgroundColor: 'rgba(180,92,255,0.16)',
+  },
+  avatarUser: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  bubble: { maxWidth: '78%' },
+  bubbleInner: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
+  bubbleUser: { backgroundColor: colors.primary, borderRadius: radius.lg },
+  bubbleUserText: { ...type.body, color: colors.primaryForeground },
+
+  composerWrap: { paddingHorizontal: spacing.md, gap: 6 },
+  composer: {},
+  composerInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    paddingLeft: spacing.sm,
+    paddingRight: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  composerSpark: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(180,92,255,0.16)',
+  },
+  /* No box of its own: the glass pill *is* the field. A bordered input inside a
+     bordered pill is two controls drawn on top of each other. `maxHeight` still
+     holds, so a long question grows the pill and then scrolls inside it. */
+  composerInput: {
+    flex: 1,
+    maxHeight: 110,
+    color: colors.foreground,
+    fontSize: 16,
+    /* Zero on iOS or the text sits high in its own line box; the row's
+       `alignItems: center` does the vertical centring. */
+    paddingVertical: 0,
+  },
+  sendBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendDisabled: { opacity: 0.35 },
+  disclaimer: { fontSize: 9, lineHeight: 12, color: colors.glassMuted, opacity: 0.72, flexShrink: 1 },
+  disclaimerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.md,
+  },
+
+  historyScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  historyWrap: { position: 'absolute', left: spacing.md, right: spacing.md, zIndex: 20 },
+  historyPanel: { maxHeight: 330, paddingVertical: spacing.xs },
+  historyBacking: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(10,10,16,0.82)',
+  },
+  historyHeader: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    color: colors.glassMuted,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  historyScroll: { maxHeight: 278 },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  historyRowActive: { backgroundColor: 'rgba(255,255,255,0.10)' },
+  historyTitle: { ...type.footnote, color: colors.foreground, flex: 1 },
+  historyDate: { ...type.caption, color: colors.glassMuted },
+  historyDelete: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  historyEmpty: {
+    ...type.footnote,
+    color: colors.glassMuted,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
+
+  pressed: { opacity: 0.85, transform: [{ scale: 0.95 }] },
+});

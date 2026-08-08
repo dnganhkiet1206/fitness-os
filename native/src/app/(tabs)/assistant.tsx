@@ -1,16 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -19,52 +14,47 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
-import { MarkdownLite } from '@/components/ascnd/markdown-lite';
 import { Settle } from '@/components/ascnd/settle';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
-import { useAuth } from '@/hooks/use-auth';
 import { useCoachChat } from '@/hooks/use-coach-chat';
 import { useDailyLog, useProfile, useTodayBiometrics } from '@/hooks/useTodayData';
 import { suggestionsFor } from '@/lib/assistant-suggestions';
-import { supabase } from '@/integrations/supabase/client';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 
 /**
  * Health Assistant — the screen you open to ask about your own body.
  *
- * ── it is the coach now, not a door to one ──
+ * ── a hub, and the coach is next door ──
  *
- * This was built as layout first and wired after, in that order deliberately.
- * What is here now:
+ * This is where you *look* at today; `/ai-coach` is where you *talk* about it.
+ * They were one screen for a while — the ask bar took text and the transcript
+ * replaced the landing — and that failed for a reason unrelated to the code:
+ * one page trying to be a dashboard and a conversation at once has to change
+ * its header, its scroll and its whole identity under you as you type.
  *
- *   - the four metric tiles read today's log, and show `—` rather than `0`
- *     where a value is missing, because zero is a measurement and "not yet" is
- *     not. Nothing displays a number the app cannot produce — the reference's
+ * So the input is gone and a card stands where it was. The card is the bridge:
+ * it carries today's four questions, so the common case is one tap instead of
+ * a tap and then typing, and tapping the card itself opens an empty chat with
+ * the keyboard already up. Both go to the same place with the same four
+ * questions, from the same `useAssistantSignal`.
+ *
+ * What is on this page, and all of it real:
+ *
+ *   - the metric tiles read today's log, and show `—` rather than `0` where a
+ *     value is missing, because zero is a measurement and "not yet" is not.
+ *     Nothing displays a number the app cannot produce — the reference's
  *     "Stress 28" is a tile this app has no source for, and it is `Sẵn sàng`
  *     instead, which is the app's own headline metric.
- *   - the suggestion chips come from `assistant-suggestions`, chosen from the
- *     same log, and each carries the question it asks rather than a topic.
- *   - the ask bar takes text. It was a `Pressable` that pushed `/ai-coach` —
- *     a text field in every way except that it did not accept text.
+ *   - the coach card's questions come from `assistant-suggestions`, chosen from
+ *     that same log, and each carries the question it asks rather than a topic.
+ *   - the tools go to four screens that exist.
  *
- * So the screen has two states rather than two screens. Nothing asked: the
- * greeting, the numbers, the suggestions, the tools. Something asked: the
- * transcript, in their place, with "Trò chuyện mới" above it to get back.
+ * ── the header never changes ──
  *
- * ── one screen, after briefly being two ──
- *
- * The coach kept its own route for a while after moving in here, so the same
- * conversation had two homes with different chrome, and a "past chats" card
- * that opened the chat you were already in. That is what made an integrated
- * feature feel like two half-features. `/ai-coach` is gone; past chats is a
- * panel on this page; every link that pointed there points here.
- *
- * The header is the other half of that fix. It grew a clock and a plus beside
- * the home button whenever a conversation was open — three identical grey
- * discs, two of which both read as "leave this chat". It never changes now, and
- * the controls that act on the conversation live in the conversation and carry
- * words.
+ * It briefly grew a clock and a plus beside the home button whenever a
+ * conversation was open — three identical grey discs, two of which both read as
+ * "leave this chat". One button, one place, one meaning: leave the page.
  *
  * ── full bleed, because the light has to reach the corners ──
  *
@@ -134,63 +124,34 @@ export default function AssistantScreen() {
   const { data: dailyLog } = useDailyLog();
   const { data: bio } = useTodayBiometrics();
   const { data: profile } = useProfile();
-  const { session } = useAuth();
-  const queryClient = useQueryClient();
 
   /*
-    The conversation lives in `use-coach-chat`, above the router. It is the
-    only screen that shows it now, but the provider stays: the chat outlives
-    this tab's scroll state and survives switching tabs, which component state
-    on a `NativeTabs` child does not reliably do.
+    The card reads the conversation but never draws it.
+
+    `messages` is here for one reason: if a chat is already open, the card
+    offers to continue it instead of offering four fresh questions. The
+    transcript itself lives on `/ai-coach` — see `tools/coach-chat.mjs`, which
+    is what stops this page from growing one again.
   */
-  const { messages, isLoading, conversationId, send, newChat, loadConversation, onGrow } = useCoachChat();
+  const { messages } = useCoachChat();
   const chatting = messages.length > 0;
-  const [input, setInput] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
-  const inputRef = useRef<TextInput>(null);
-  const scrollToEnd = () => {
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
-  };
-  // the answer arrives a token at a time, and the transcript follows it down
-  useEffect(() => onGrow(scrollToEnd), [onGrow]);
+  const lastAsked = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
 
-  /* Past conversations, only fetched while the panel is open — the list is
-     never on screen otherwise and a query nobody reads is a request nobody
-     needed. */
-  const { data: conversations } = useQuery({
-    queryKey: ['ai_conversations', session?.user.id],
-    enabled: !!session?.user.id && showHistory,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ai_conversations')
-        .select('id, title, updated_at')
-        .eq('user_id', session!.user.id)
-        .order('updated_at', { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
+  /*
+    Into the coach, optionally with the question already asked.
 
-  const deleteConvo = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('ai_conversations').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ['ai_conversations'] });
-      // deleting the chat you are reading leaves the page showing a
-      // conversation that no longer exists anywhere
-      if (conversationId === id) newChat();
-    },
-  });
+    `ask=1` and no question means "open empty and put the keyboard up", which is
+    what tapping the card itself should do — the card is a door, and a door that
+    makes you tap again on the other side is the thing this replaced.
 
-  const submit = (prompt?: string) => {
-    const text = (prompt ?? input).trim();
-    if (!text) return;
-    setInput('');
-    send(text);
+    `encodeURIComponent` because these questions contain the numbers they are
+    about, and `?` and `&` are ordinary punctuation in a sentence.
+  */
+  const askCoach = (question?: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const to = question ? `/ai-coach?q=${encodeURIComponent(question)}` : '/ai-coach?ask=1';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.push(to as any);
   };
 
   const hour = new Date().getHours();
@@ -296,28 +257,20 @@ export default function AssistantScreen() {
       <AssistantAura state={status} />
 
       {/*
-        The composer has to rise with the keyboard, and the aura must not.
-
-        `AssistantAura` is a sibling of this view rather than a child, so the
-        light keeps the whole screen while the page above it shrinks — a room
-        does not get shorter when a keyboard opens. Same arrangement
-        light keeps the whole screen while the page above it shrinks.
+        No `KeyboardAvoidingView` any more. It was here for the composer, and
+        the composer moved to `/ai-coach` — nothing on this page raises a
+        keyboard, and a wrapper that pads for one that never appears is a layer
+        with a job that no longer exists.
       */}
-      <KeyboardAvoidingView
-        style={styles.kav}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
-        ref={scrollRef}
-        keyboardShouldPersistTaps="handled"
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,
           {
             paddingTop: insets.top + spacing.md,
-            /* The ask bar is a flex sibling now rather than an absolute overlay,
-               so it takes its own room and this only needs air under the last
-               card. */
-            paddingBottom: spacing.md,
+            /* Clear of the tab bar this page hides — there is no bar, so the
+               home indicator is what the last card has to stay above. */
+            paddingBottom: insets.bottom + spacing.lg,
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -356,7 +309,7 @@ export default function AssistantScreen() {
 
             One button, always, in the same place, meaning the same thing:
             leave the page. The two controls that act on the *conversation* moved
-            into the conversation, and they carry words. See `chatBar` below.
+            into the conversation, which now lives on `/ai-coach`.
           */}
           {/*
             The way out.
@@ -384,421 +337,233 @@ export default function AssistantScreen() {
         </Settle>
 
         {/*
-          ── the landing, or the conversation ──
+          The lit zone — where the reference puts a rendered orb, this puts the
+          sentence a person came for.
 
-          These are the same screen in two states rather than two screens. With
-          nothing asked yet, the page is what it always was: greeting, today's
-          numbers, suggestions, tools. Ask something and all of that gives way
-          to the transcript.
-
-          Swapped rather than stacked. A conversation under four cards means
-          every answer starts below a screenful of things you have already read,
-          and the metrics you glanced at on arrival are not what you want to
-          scroll past to re-read what the coach just said. The header's `+`
-          brings the landing back.
+          It was 168pt of deliberately empty space with a pill at the bottom, on
+          the theory that emptiness is what lets light be seen. On screen that
+          read as a hole: the aura alone is too quiet to hold the top third of a
+          page, and the greeting sat below it competing with the title for the
+          same job. One focal point instead — the greeting *is* the hero, it
+          sits in the brightest part of the aura, and the pill under it is the
+          single thing floating over that light.
         */}
-        {chatting ? (
-          <Settle index={1}>
-          <View style={styles.transcript}>
-            {/*
-              ── the two controls that act on the conversation ──
-
-              These were round grey icons in the header, beside the home button:
-              a clock and a plus, unlabelled, appearing only while you typed.
-              Three identical discs, and no way to know which one keeps your
-              chat and which one ends it.
-
-              Words instead, and inside the thing they act on. A control that
-              says "Trò chuyện mới" cannot be confused with one that says
-              "Trò chuyện cũ", and neither can be confused with the button that
-              leaves the page — which now never moves or changes.
-            */}
-            <View style={styles.chatBar}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={newChat}
-                style={({ pressed }) => [styles.chatBtn, pressed && styles.pressed]}>
-                <Glyph name="plus" size={13} colour={colors.glassMuted} />
-                <Text style={styles.chatBtnText}>{vi ? 'Trò chuyện mới' : 'New chat'}</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setShowHistory((v) => !v);
-                }}
-                style={({ pressed }) => [styles.chatBtn, pressed && styles.pressed]}>
-                <Glyph name="clock" size={13} colour={colors.glassMuted} />
-                <Text style={styles.chatBtnText}>{vi ? 'Trò chuyện cũ' : 'Past chats'}</Text>
-              </Pressable>
-            </View>
-            {messages.map((m, i) => (
-              <View key={i} style={[styles.msgRow, m.role === 'user' && styles.msgRowUser]}>
-                {m.role === 'assistant' ? (
-                  <View style={styles.avatarAI}>
-                    <Glyph name="spark" size={14} />
-                  </View>
-                ) : null}
-                {m.role === 'assistant' ? (
-                  <LiquidGlass
-                    style={[styles.bubble, tintBorder(litBy('spark'))]}
-                    radius={radius.lg}
-                    tint={litBy('spark')}>
-                    <View style={styles.bubbleInner}>
-                      <MarkdownLite text={m.content} mutedColor={colors.glassMuted} />
-                    </View>
-                  </LiquidGlass>
-                ) : (
-                  <View style={[styles.bubble, styles.bubbleUser]}>
-                    <View style={styles.bubbleInner}>
-                      <Text style={styles.bubbleUserText}>{m.content}</Text>
-                    </View>
-                  </View>
-                )}
-                {m.role === 'user' ? (
-                  <View style={styles.avatarUser}>
-                    <Glyph name="user" size={14} />
-                  </View>
-                ) : null}
+        <Settle index={1}>
+        <View style={styles.stage}>
+          <Animated.View entering={FadeIn.duration(420)} style={styles.stageInner}>
+            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.greetBody}>
+              {vi
+                ? 'Tôi ở đây để giúp bạn hiểu dữ liệu sức khoẻ, trả lời câu hỏi và đưa ra lời khuyên riêng cho bạn.'
+                : 'I’m here to help you understand your health, answer questions, and give personalised advice.'}
+            </Text>
+            <LiquidGlass style={styles.statePill} radius={radius.full}>
+              <View style={styles.stateInner}>
+                <View
+                  style={[
+                    styles.stateDot,
+                    { backgroundColor: status === 'green' ? colors.readinessGreen : status === 'yellow' ? colors.readinessYellow : status === 'red' ? colors.readinessRed : colors.metricPurple },
+                  ]}
+                />
+                <Text style={styles.stateText}>
+                  {readiness != null
+                    ? vi ? `Sẵn sàng ${readiness}/100 hôm nay` : `Readiness ${readiness}/100 today`
+                    : vi ? 'Đang chờ dữ liệu hôm nay' : 'Waiting for today’s data'}
+                </Text>
               </View>
-            ))}
-            {isLoading && messages[messages.length - 1]?.role !== 'assistant' ? (
-              <View style={styles.msgRow}>
-                <View style={styles.avatarAI}>
-                  <Glyph name="spark" size={14} />
+            </LiquidGlass>
+          </Animated.View>
+        </View>
+        </Settle>
+
+        {/* ── metrics ── */}
+        <Settle index={2}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.metricRow}
+          /* Four tiles across a 390pt screen is 85pt each, which cannot hold
+             "7h 45m". They scroll, and the fourth peeking at the edge is what
+             tells you they do. */
+          style={styles.metricScroll}>
+          {metrics.map((m) => (
+            <Pressable
+              key={m.key}
+              accessibilityRole="button"
+              accessibilityLabel={`${vi ? m.label.vi : m.label.en} ${m.value}`}
+              onPress={() => go(m.route)}
+              style={({ pressed }) => pressed && styles.pressed}>
+              <LiquidGlass
+                style={[styles.metricCard, tintBorder(litBy(m.glyph))]}
+                radius={radius.lg}
+                tint={litBy(m.glyph)}>
+                <View style={[styles.metricIcon, { backgroundColor: `${litBy(m.glyph)}1f` }]}>
+                  <Glyph name={m.glyph} size={19} />
                 </View>
-                <LiquidGlass
-                  style={[styles.bubble, tintBorder(litBy('spark'))]}
-                  radius={radius.lg}
-                  tint={litBy('spark')}>
-                  <View style={styles.bubbleInner}>
-                    <ActivityIndicator size="small" color={colors.glassMuted} />
-                  </View>
-                </LiquidGlass>
-              </View>
-            ) : null}
-          </View>
-          </Settle>
-        ) : (
-          <>
-          {/*
-            The lit zone — where the reference puts a rendered orb, this puts the
-            sentence a person came for.
-
-            It was 168pt of deliberately empty space with a pill at the bottom, on
-            the theory that emptiness is what lets light be seen. On screen that
-            read as a hole: the aura alone is too quiet to hold the top third of a
-            page, and the greeting sat below it competing with the title for the
-            same job. One focal point instead — the greeting *is* the hero, it
-            sits in the brightest part of the aura, and the pill under it is the
-            single thing floating over that light.
-          */}
-          <Settle index={1}>
-          <View style={styles.stage}>
-            <Animated.View entering={FadeIn.duration(420)} style={styles.stageInner}>
-              <Text style={styles.greeting}>{greeting}</Text>
-              <Text style={styles.greetBody}>
-                {vi
-                  ? 'Tôi ở đây để giúp bạn hiểu dữ liệu sức khoẻ, trả lời câu hỏi và đưa ra lời khuyên riêng cho bạn.'
-                  : 'I’m here to help you understand your health, answer questions, and give personalised advice.'}
-              </Text>
-              <LiquidGlass style={styles.statePill} radius={radius.full}>
-                <View style={styles.stateInner}>
-                  <View
-                    style={[
-                      styles.stateDot,
-                      { backgroundColor: status === 'green' ? colors.readinessGreen : status === 'yellow' ? colors.readinessYellow : status === 'red' ? colors.readinessRed : colors.metricPurple },
-                    ]}
-                  />
-                  <Text style={styles.stateText}>
-                    {readiness != null
-                      ? vi ? `Sẵn sàng ${readiness}/100 hôm nay` : `Readiness ${readiness}/100 today`
-                      : vi ? 'Đang chờ dữ liệu hôm nay' : 'Waiting for today’s data'}
-                  </Text>
+                <Text style={styles.metricLabel}>{vi ? m.label.vi : m.label.en}</Text>
+                <View style={styles.metricValueRow}>
+                  <Text style={styles.metricValue}>{m.value}</Text>
+                  {m.unit ? <Text style={styles.metricUnit}>{m.unit}</Text> : null}
+                </View>
+                <View style={styles.metricNoteRow}>
+                  <View style={[styles.metricDot, { backgroundColor: m.noteTint }]} />
+                  <Text style={styles.metricNote}>{vi ? m.note.vi : m.note.en}</Text>
                 </View>
               </LiquidGlass>
-            </Animated.View>
-          </View>
-          </Settle>
+            </Pressable>
+          ))}
+        </ScrollView>
+        </Settle>
 
-          {/* ── metrics ── */}
-          <Settle index={2}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.metricRow}
-            /* Four tiles across a 390pt screen is 85pt each, which cannot hold
-               "7h 45m". They scroll, and the fourth peeking at the edge is what
-               tells you they do. */
-            style={styles.metricScroll}>
-            {metrics.map((m) => (
+        {/*
+          ── the bridge ──
+
+          This is where the ask bar used to be, and it is a card instead on
+          purpose. An input on this page made one screen try to be two things:
+          a dashboard you glance at and a conversation you live in. Its header,
+          its scroll and its whole identity changed under you as you typed.
+
+          A card does the one job that page actually has here — get you to the
+          coach, with something already in your hand. It carries today's four
+          questions, so the common case is one tap rather than one tap and then
+          typing; tapping the card itself opens an empty chat with the keyboard
+          up. Same four questions the coach shows on arrival, from the same
+          `useAssistantSignal`, because a bridge that leads somewhere different
+          from what it advertised is worse than no bridge.
+
+          Bigger than the tiles, and the only `radius.xl` on the page. It is
+          the thing this screen is for.
+        */}
+        <Settle index={3}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={vi ? 'Mở AI Coach' : 'Open AI Coach'}
+          onPress={() => askCoach()}
+          style={({ pressed }) => pressed && styles.pressed}>
+          <LiquidGlass
+            style={[styles.coachCard, tintBorder(litBy('spark'))]}
+            radius={radius.xl}
+            tint={litBy('spark')}>
+            <View style={styles.coachInner}>
+              <View style={styles.coachHead}>
+                <View style={styles.coachIcon}>
+                  <Glyph name="spark" size={22} />
+                </View>
+                <View style={styles.coachHeadText}>
+                  <View style={styles.coachTitleRow}>
+                    <Text style={styles.coachTitle}>AI Coach</Text>
+                    <View style={styles.aiBadge}>
+                      <Glyph name="spark" size={10} />
+                      <Text style={styles.aiText}>AI</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.coachSub}>
+                    {vi
+                      ? 'Hỏi bất cứ điều gì về tập luyện, ăn uống và phục hồi'
+                      : 'Ask anything about training, food and recovery'}
+                  </Text>
+                </View>
+                {/* The only left-pointing glyph in the set, turned around. A
+                    second path would be the same shape twice. */}
+                <View style={styles.coachGo}>
+                  <Glyph name="chevron" size={14} colour={colors.glassMuted} />
+                </View>
+              </View>
+
+              {chatting ? (
+                /*
+                  A conversation is already open, so the card offers to go back
+                  to it rather than to start over. Without this the card would
+                  say "ask me anything" while an unfinished chat sat one tap
+                  away behind it, invisible.
+                */
+                <View style={styles.coachResume}>
+                  <Glyph name="clock" size={13} colour={colors.glassMuted} />
+                  <Text style={styles.coachResumeText} numberOfLines={1}>
+                    {vi ? 'Tiếp tục: ' : 'Continue: '}
+                    {lastAsked}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.chips}>
+                  {suggestions.map((s) => (
+                    <Pressable
+                      key={s.key}
+                      accessibilityRole="button"
+                      /* The label is what you read; the question is what gets
+                         asked. VoiceOver should hear the second one, because
+                         "Tôi ngủ chưa đủ" does not describe what pressing it
+                         does. */
+                      accessibilityLabel={vi ? s.question.vi : s.question.en}
+                      onPress={() => askCoach(vi ? s.question.vi : s.question.en)}
+                      style={({ pressed }) => pressed && styles.pressed}>
+                      <View style={[styles.chip, { borderColor: `${litBy(s.glyph)}3d` }]}>
+                        <Glyph name={s.glyph} size={14} />
+                        <Text style={styles.chipText}>{vi ? s.label.vi : s.label.en}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+          </LiquidGlass>
+        </Pressable>
+        </Settle>
+
+        <Settle index={4}>
+        {/*
+          The four things the assistant can do *for* you.
+
+          These were the whole of what this page was before the redesign. Three
+          survived it as an unlabelled icon row and the fourth — the coach —
+          vanished entirely, absorbed into the ask bar. That is a destination
+          disappearing because a shortcut to it exists, which is not the same
+          thing.
+
+          Restored with the hints they had. Four labels tell you where each one
+          goes; four labels *and* a line saying what is behind them tells you
+          whether to go. "Sinh trắc học" is a word — "nhịp tim, HRV, oxy" is a
+          reason.
+
+          Two across rather than four: a hint needs a line of its own, and four
+          columns on a 390pt screen leaves 85pt for it.
+        */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{vi ? 'Công cụ' : 'Tools'}</Text>
+          <View style={styles.toolGrid}>
+            {TOOLS.map((t) => (
               <Pressable
-                key={m.key}
+                key={t.key}
                 accessibilityRole="button"
-                accessibilityLabel={`${vi ? m.label.vi : m.label.en} ${m.value}`}
-                onPress={() => go(m.route)}
-                style={({ pressed }) => pressed && styles.pressed}>
+                accessibilityLabel={vi ? t.label.vi : t.label.en}
+                onPress={() => go(t.route)}
+                style={({ pressed }) => [styles.toolWrap, pressed && styles.pressed]}>
                 <LiquidGlass
-                  style={[styles.metricCard, tintBorder(litBy(m.glyph))]}
+                  style={[styles.tool, tintBorder(litBy(t.glyph))]}
                   radius={radius.lg}
-                  tint={litBy(m.glyph)}>
-                  <View style={[styles.metricIcon, { backgroundColor: `${litBy(m.glyph)}1f` }]}>
-                    <Glyph name={m.glyph} size={19} />
+                  tint={litBy(t.glyph)}>
+                  <View style={[styles.toolIcon, { backgroundColor: `${litBy(t.glyph)}1f` }]}>
+                    <Glyph name={t.glyph} size={19} />
                   </View>
-                  <Text style={styles.metricLabel}>{vi ? m.label.vi : m.label.en}</Text>
-                  <View style={styles.metricValueRow}>
-                    <Text style={styles.metricValue}>{m.value}</Text>
-                    {m.unit ? <Text style={styles.metricUnit}>{m.unit}</Text> : null}
-                  </View>
-                  <View style={styles.metricNoteRow}>
-                    <View style={[styles.metricDot, { backgroundColor: m.noteTint }]} />
-                    <Text style={styles.metricNote}>{vi ? m.note.vi : m.note.en}</Text>
-                  </View>
+                  <Text style={styles.toolLabel} numberOfLines={1}>
+                    {vi ? t.label.vi : t.label.en}
+                  </Text>
+                  <Text style={styles.toolHint} numberOfLines={2}>
+                    {vi ? t.hint.vi : t.hint.en}
+                  </Text>
                 </LiquidGlass>
               </Pressable>
             ))}
-          </ScrollView>
-          </Settle>
-
-          {/* ── suggestions ── */}
-          <Settle index={3}>
-          <View style={styles.section}>
-            {/* "Xem tất cả" used to sit here and open `/ai-coach`. There is no
-                "all" — these four are chosen from today, and the page it opened
-                is the page you are on. */}
-            <Text style={styles.sectionTitle}>{vi ? 'Gợi ý cho bạn' : 'Suggested for you'}</Text>
-            <View style={styles.chips}>
-              {suggestions.map((s) => (
-                <Pressable
-                  key={s.key}
-                  accessibilityRole="button"
-                  /* The label is what you read; the question is what gets asked.
-                     VoiceOver should hear the second one, because "Tôi ngủ chưa
-                     đủ" does not describe what pressing it does. */
-                  accessibilityLabel={vi ? s.question.vi : s.question.en}
-                  onPress={() => submit(vi ? s.question.vi : s.question.en)}
-                  style={({ pressed }) => pressed && styles.pressed}>
-                  <LiquidGlass
-                    style={[styles.chip, tintBorder(litBy(s.glyph))]}
-                    radius={radius.full}
-                    tint={litBy(s.glyph)}>
-                    <View style={styles.chipInner}>
-                      <Glyph name={s.glyph} size={15} />
-                      <Text style={styles.chipText}>{vi ? s.label.vi : s.label.en}</Text>
-                    </View>
-                  </LiquidGlass>
-                </Pressable>
-              ))}
-            </View>
           </View>
-          </Settle>
-
-          <Settle index={4}>
-          {/*
-            The four things the assistant can do *for* you.
-
-            These were the whole of what this page was before the redesign. Three
-            survived it as an unlabelled icon row and the fourth — the coach —
-            vanished entirely, absorbed into the ask bar. That is a destination
-            disappearing because a shortcut to it exists, which is not the same
-            thing.
-
-            Restored with the hints they had. Four labels tell you where each one
-            goes; four labels *and* a line saying what is behind them tells you
-            whether to go. "Sinh trắc học" is a word — "nhịp tim, HRV, oxy" is a
-            reason.
-
-            Two across rather than four: a hint needs a line of its own, and four
-            columns on a 390pt screen leaves 85pt for it.
-          */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{vi ? 'Công cụ' : 'Tools'}</Text>
-            <View style={styles.toolGrid}>
-              {TOOLS.map((t) => (
-                <Pressable
-                  key={t.key}
-                  accessibilityRole="button"
-                  accessibilityLabel={vi ? t.label.vi : t.label.en}
-                  onPress={() => go(t.route)}
-                  style={({ pressed }) => [styles.toolWrap, pressed && styles.pressed]}>
-                  <LiquidGlass
-                    style={[styles.tool, tintBorder(litBy(t.glyph))]}
-                    radius={radius.lg}
-                    tint={litBy(t.glyph)}>
-                    <View style={[styles.toolIcon, { backgroundColor: `${litBy(t.glyph)}1f` }]}>
-                      <Glyph name={t.glyph} size={19} />
-                    </View>
-                    <Text style={styles.toolLabel} numberOfLines={1}>
-                      {vi ? t.label.vi : t.label.en}
-                    </Text>
-                    <Text style={styles.toolHint} numberOfLines={2}>
-                      {vi ? t.hint.vi : t.hint.en}
-                    </Text>
-                  </LiquidGlass>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-          </Settle>
-          </>
-        )}
-      </ScrollView>
-
-      {/*
-        ── the ask bar is the composer now ──
-
-        It was a `Pressable` that pushed `/ai-coach`: a text field in every way
-        except that it did not accept text. Tapping it and then having to tap
-        the real field on the next screen is the one thing a control shaped like
-        an input must not do.
-
-        So the coach moved in here. Same pill, same 34pt spark, same 34pt send
-        circle — nothing about it changed except that it works. The conversation
-        itself comes from `useCoachChat`.
-
-        Pinned rather than scrolled: it is the screen's primary action, and one
-        that scrolls out of reach is one you have to go and find. Above the home
-        indicator, not above a tab bar this page hides.
-      */}
-      <View style={[styles.askWrap, { paddingBottom: insets.bottom + spacing.md }]}>
-        <LiquidGlass style={styles.ask} radius={radius.full} intensity={30}>
-          <View style={styles.askInner}>
-            <View style={styles.askSpark}>
-              <Glyph name="spark" size={16} />
-            </View>
-            <TextInput
-              ref={inputRef}
-              style={styles.askInput}
-              placeholder={vi ? 'Hỏi tôi bất cứ điều gì về sức khoẻ…' : 'Ask me anything about your health…'}
-              placeholderTextColor={colors.glassMuted}
-              value={input}
-              onChangeText={setInput}
-              multiline
-              onSubmitEditing={() => submit()}
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={vi ? 'Gửi' : 'Send'}
-              /* 34pt drawn so the pill keeps its proportions; 5 of slop reaches
-                 the 44pt HIG floor. Same trade as the coach's send button. */
-              hitSlop={5}
-              disabled={!input.trim() || isLoading}
-              onPress={() => submit()}
-              style={({ pressed }) => [
-                styles.askSend,
-                (!input.trim() || isLoading) && styles.sendDisabled,
-                pressed && styles.pressed,
-              ]}>
-              <Glyph name="arrow" size={17} colour={colors.primaryForeground} />
-            </Pressable>
-          </View>
-        </LiquidGlass>
-        {/*
-          ── the disclaimer came with the chat ──
-
-          It was attached to the coach's composer, which is the right place for
-          it: it is a statement about what the answers are and are not. When the
-          chat moved onto this page the line did not come with it, and this
-          screen would have been taking health questions with nothing saying
-          the replies are not a diagnosis.
-
-          Caught by rendering the two states and looking at them — the mock had
-          it because the mock reused the coach's composer, and the code did not.
-        */}
-        <View style={styles.disclaimerRow}>
-          <Glyph name="alert" size={12} />
-          <Text style={styles.disclaimer}>
-            {vi
-              ? 'AI chỉ hỗ trợ nhắc nhở thói quen, không chẩn đoán hay phát hiện bệnh. Gặp bác sĩ khi có vấn đề sức khoẻ.'
-              : 'AI supports habit reminders only — it does not diagnose or detect illness. See a doctor for health concerns.'}
-          </Text>
         </View>
-      </View>
-      </KeyboardAvoidingView>
-
-      {/*
-        Past conversations, laid over the page rather than pushed as a screen.
-
-        This used to be `/ai-coach` — a whole second route showing the *same*
-        conversation with different chrome, which is what made the feature feel
-        like two half-features. Opening "past chats" and landing on the chat you
-        were already in is the exact confusion this removes. It is a list you
-        pick from and dismiss, so it is a panel.
-      */}
-      {showHistory ? (
-        <>
-          {/* Tapping anywhere off the panel closes it — a menu with no way out
-              but the control that opened it is a trap on a page this full. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={vi ? 'Đóng' : 'Close'}
-            style={styles.historyScrim}
-            onPress={() => setShowHistory(false)}
-          />
-          <View style={[styles.historyWrap, { top: insets.top + 64 }]}>
-            <LiquidGlass style={styles.historyPanel} radius={radius.lg} intensity={34}>
-              {/* A menu has to be readable, and glass alone is not: the page
-                  behind it comes through the blur and collides with the row
-                  titles. This one surface gets a dark backing under its glass. */}
-              <View style={styles.historyBacking} pointerEvents="none" />
-              <Text style={styles.historyHeader}>{vi ? 'Trò chuyện cũ' : 'Past chats'}</Text>
-              <ScrollView style={styles.historyScroll} keyboardShouldPersistTaps="handled">
-                {conversations && conversations.length > 0 ? (
-                  conversations.map((c) => (
-                    <Pressable
-                      key={c.id}
-                      style={({ pressed }) => [
-                        styles.historyRow,
-                        conversationId === c.id && styles.historyRowActive,
-                        pressed && { opacity: 0.7 },
-                      ]}
-                      onPress={() => {
-                        setShowHistory(false);
-                        loadConversation(c.id);
-                      }}>
-                      <Text style={styles.historyTitle} numberOfLines={1}>{c.title ?? '—'}</Text>
-                      <Text style={styles.historyDate}>
-                        {new Date(c.updated_at).toLocaleDateString(vi ? 'vi-VN' : 'en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </Text>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={vi ? 'Xoá' : 'Delete'}
-                        // 28pt drawn; 8 of slop reaches the 44pt HIG floor
-                        hitSlop={8}
-                        style={({ pressed }) => [styles.historyDelete, pressed && { opacity: 0.6 }]}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          deleteConvo.mutate(c.id);
-                        }}>
-                        {/* Neutral in the list. The glyph's own tint is red —
-                            deleting is the one irreversible thing here — but a
-                            column of red bins pulls harder than the titles it
-                            belongs to. */}
-                        <Glyph name="trash" size={14} colour={colors.glassMuted} />
-                      </Pressable>
-                    </Pressable>
-                  ))
-                ) : (
-                  <Text style={styles.historyEmpty}>
-                    {vi ? 'Chưa có cuộc trò chuyện nào' : 'No conversations yet'}
-                  </Text>
-                )}
-              </ScrollView>
-            </LiquidGlass>
-          </View>
-        </>
-      ) : null}
+        </Settle>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  // Transparent so the aura behind it in the wrapper is not painted over.
-  kav: { flex: 1, backgroundColor: 'transparent' },
   scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.md, gap: spacing.lg },
 
@@ -864,9 +629,20 @@ const styles = StyleSheet.create({
   sectionTitle: { ...type.headline, color: colors.foreground },
 
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { alignSelf: 'flex-start' },
-  chipInner: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: spacing.md - 2, paddingVertical: spacing.sm + 2 },
-  chipText: { ...type.footnote, color: colors.foreground },
+  /* Inside the card, so these are outlined pills rather than their own glass.
+     A `LiquidGlass` chip on a `LiquidGlass` card is two blurs sampling the same
+     aura — the inner one has nothing new to show and reads as a smudge. */
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 8,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  chipText: { ...type.caption, color: colors.foreground },
 
   toolGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   /* Two per row: `(100% − one gap) / 2`, as a fraction so it holds at any width
@@ -877,144 +653,36 @@ const styles = StyleSheet.create({
   toolLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground },
   toolHint: { ...type.caption, color: colors.glassMuted, lineHeight: 15 },
 
-  /* The two labelled controls above a transcript. Text rather than icons —
-     see the note at the call site for what that replaced. */
-  chatBar: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xs },
-  chatBtn: {
+  /* ── the coach card ──
+     `radius.xl` and nothing else on the page uses it: the one surface that is
+     a destination rather than a reading. */
+  coachCard: { marginTop: spacing.xs },
+  coachInner: { padding: spacing.md, gap: spacing.md - 2 },
+  coachHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
+  coachIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(180,92,255,0.18)',
+  },
+  coachHeadText: { flex: 1, gap: 3 },
+  coachTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  coachTitle: { ...type.headline, color: colors.foreground },
+  coachSub: { ...type.caption, color: colors.glassMuted, lineHeight: 16 },
+  /* Rotated, because the set has one chevron and it points left. */
+  coachGo: { transform: [{ rotate: '180deg' }] },
+  coachResume: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 7,
-    borderRadius: radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glass.border,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  chatBtnText: { ...type.caption, color: colors.glassMuted },
-
-  /* ── past chats, as a panel over the page ── */
-  historyScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  historyWrap: { position: 'absolute', left: spacing.md, right: spacing.md, zIndex: 20 },
-  historyPanel: { maxHeight: 330, paddingVertical: spacing.xs },
-  historyBacking: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(10,10,16,0.82)',
-  },
-  historyHeader: {
-    fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    color: colors.glassMuted,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-  },
-  historyScroll: { maxHeight: 278 },
-  historyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-  },
-  historyRowActive: { backgroundColor: 'rgba(255,255,255,0.10)' },
-  historyTitle: { ...type.footnote, color: colors.foreground, flex: 1 },
-  historyDate: { ...type.caption, color: colors.glassMuted },
-  historyDelete: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  historyEmpty: {
-    ...type.footnote,
-    color: colors.glassMuted,
-    textAlign: 'center',
-    paddingVertical: spacing.md,
-  },
-
-  /* ── the transcript ──
-     The coach speaks on glass; you speak on solid brand silver. A conversation
-     has to be scannable at a glance — whose turn is whose, without reading —
-     and on a screen where everything is translucent, two glass bubbles would
-     leave only the alignment to tell them apart. */
-  transcript: { gap: spacing.sm + 4 },
-  msgRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  msgRowUser: { justifyContent: 'flex-end' },
-  avatarAI: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-    backgroundColor: 'rgba(180,92,255,0.16)',
-  },
-  avatarUser: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  bubble: { maxWidth: '78%' },
-  bubbleInner: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  bubbleUser: { backgroundColor: colors.primary, borderRadius: radius.lg },
-  bubbleUserText: { ...type.body, color: colors.primaryForeground },
-
-  /* A flex child at the bottom rather than `position: absolute`.
-
-     Absolute is what it was, and absolute does not move for a keyboard: the
-     `KeyboardAvoidingView` pads the container, and a child positioned against
-     that container's bottom edge stays exactly where it was — under the
-     keyboard, with the field you are typing into invisible. */
-  askWrap: { paddingHorizontal: spacing.md, gap: 6 },
-  disclaimer: {
-    fontSize: 9,
-    lineHeight: 12,
-    color: colors.glassMuted,
-    opacity: 0.72,
-    flexShrink: 1,
-  },
-  disclaimerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingHorizontal: spacing.md,
-  },
-  askInput: {
-    flex: 1,
-    maxHeight: 110,
-    color: colors.foreground,
-    fontSize: 16,
-    /* Zero on iOS or the text sits high in its own line box; the row's
-       `alignItems: center` does the vertical centring. */
-    paddingVertical: 0,
-  },
-  sendDisabled: { opacity: 0.35 },
-  ask: {},
-  askInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2, paddingLeft: spacing.sm, paddingRight: spacing.sm, paddingVertical: spacing.sm },
-  askSpark: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(180,92,255,0.16)',
-  },
-  askText: { flex: 1, ...type.footnote, color: colors.glassMuted },
-  askSend: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
+  coachResumeText: { ...type.caption, color: colors.glassMuted, flex: 1 },
 
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });

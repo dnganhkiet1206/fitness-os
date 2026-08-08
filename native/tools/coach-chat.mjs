@@ -22,14 +22,15 @@
  *
  * ── what is checked ──
  *
- * 0. no other route renders the transcript
+ * 0. exactly one route renders the transcript, and the hub is not it —
+ *    the hub links to the coach and grows neither a transcript nor an input
  * 1. the provider is mounted, above the router, inside the auth + query context
- * 2. the screen reads the conversation from the hook
+ * 2. the chat screen reads the conversation from the hook
  * 3. it keeps no copy of messages, loading, or the convo id
  * 4. what it *does* own is local: the draft, the scroll, the focus
  * 5. the streaming request is built in exactly one place
- * 6. every surface that takes a health question carries the disclaimer
- * 7. the conversation's own controls are labelled, not bare icons
+ * 6. the screen that takes health questions carries the disclaimer
+ * 7. "new chat" is a labelled button, not a bare icon
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -43,26 +44,41 @@ const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm,
 /**
  * The one screen that shows the conversation.
  *
- * There were two for a while — the coach kept its own route after moving into
- * the assistant — and the duplicate was itself the bug the user reported: the
- * same chat in two places with different chrome, and a "past chats" card that
- * opened the chat you were already in. Rule 0 below is what keeps it at one.
+ * It has been each of these in turn: `/ai-coach` only, then both it and the
+ * assistant, then the assistant only, and now `/ai-coach` again with the
+ * assistant carrying a card into it. Every move was a real improvement and
+ * every one of them could have left two surfaces behind, which is the failure
+ * this file exists for. Rule 0 keeps the count at one, whichever one it is.
  */
-const SCREENS = ['src/app/(tabs)/assistant.tsx'];
+const SCREENS = ['src/app/ai-coach.tsx'];
+
+/**
+ * The hub, which links to the conversation and must never draw it.
+ *
+ * This is the other half of rule 0. The assistant briefly hosted the chat
+ * inline, and the reason it stopped is not that the code was wrong — it is that
+ * one page trying to be a dashboard and a conversation at once changes its
+ * header, its scroll and its identity under you as you type.
+ */
+const HUB = 'src/app/(tabs)/assistant.tsx';
 const HOOK = 'src/hooks/use-coach-chat.tsx';
 
 const problems = [];
 
 /*
-  ── 0: no second screen ──
+  ── 0: one chat surface, and the hub is not it ──
 
-  `/ai-coach` was deleted. Recreating it is the specific regression this file
-  cares about most, because it does not look like a regression: adding a
-  "full screen chat" route reads like a feature, and what it actually produces
-  is the confusion that was just removed.
+  The count is what matters, not which file. Two surfaces is the specific
+  regression this file cares about most, because it never looks like one:
+  adding a chat to the hub reads like integration, and giving the chat its own
+  route reads like polish. Both are true one at a time and wrong together.
 
   Checked as "no route file renders the transcript", not "no file is named
   ai-coach" — the name is not the problem, a second surface is.
+
+  The hub is checked from the other direction: it may read the conversation
+  (the card offers to continue an open one) but must not draw it, and must not
+  grow an input of its own.
 */
 // Both patterns. The recursive one alone matches only the subdirectories —
 // six files — and misses every route sitting directly in `src/app`, which is
@@ -85,6 +101,21 @@ for (const f of routes) {
       `${f}: màn thứ hai vẽ lại cùng cuộc trò chuyện — đúng thứ vừa gỡ đi. ` +
         'Một cuộc trò chuyện, một chỗ hiện nó.',
     );
+  }
+}
+
+{
+  const code = strip(read(HUB));
+  if (/messages\.map\(/.test(code)) {
+    problems.push(`${HUB}: hub đang vẽ lại hội thoại — chat thuộc về ${SCREENS[0]}`);
+  }
+  if (/<TextInput/.test(code)) {
+    problems.push(
+      `${HUB}: hub có ô nhập — thanh chat đã chuyển sang trang riêng, ở đây chỉ còn thẻ dẫn qua`,
+    );
+  }
+  if (!/\/ai-coach/.test(code)) {
+    problems.push(`${HUB}: không còn đường sang coach — thẻ cầu nối là lý do trang này tồn tại`);
   }
 }
 
@@ -212,7 +243,6 @@ for (const file of SCREENS) {
   const src = read(file);
   for (const [what, re] of [
     ['trò chuyện mới', /chatBtnText[\s\S]{0,120}?(Trò chuyện mới|New chat)/],
-    ['trò chuyện cũ', /chatBtnText[\s\S]{0,120}?(Trò chuyện cũ|Past chats)/],
   ]) {
     if (!re.test(src)) {
       problems.push(
@@ -281,5 +311,6 @@ if (problems.length) {
 console.log(
   `trò chuyện coach OK — đúng ${SCREENS.length} màn vẽ hội thoại (${routes.length} route đã quét), ` +
     'provider bọc router trong AuthProvider, màn không giữ messages/isLoading/convoId, ' +
-    'request streaming chỉ dựng một chỗ, có dòng miễn trừ, nút trò chuyện mới/cũ đều có chữ',
+    'request streaming chỉ dựng một chỗ, có dòng miễn trừ, "trò chuyện mới" là nút có chữ, ' +
+    'hub không vẽ hội thoại và không có ô nhập',
 );
