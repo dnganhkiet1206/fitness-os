@@ -19,6 +19,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBodyMeasurements, useWeightHistory } from '@/hooks/use-fitness-data';
@@ -278,7 +279,7 @@ export default function ProgressScreen() {
   // on first render — an animation for a change that had not happened.
   const slide = useSharedValue(rangeIdx);
   useEffect(() => {
-    slide.value = withTiming(rangeIdx, { duration: 240, easing: Easing.out(Easing.cubic) });
+    slide.value = withTiming(rangeIdx, { duration: duration.move, easing: Easing.out(Easing.cubic) });
   }, [rangeIdx, slide]);
   const pill = useAnimatedStyle(() => ({ transform: [{ translateX: slide.value * pillW }] }));
   const rangeDays = RANGES.find((r) => r.key === range)?.days ?? null;

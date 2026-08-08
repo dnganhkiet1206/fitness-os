@@ -15,6 +15,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { Icon } from '@/components/ascnd/icon';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { restLabel } from '@/lib/prescription';
 
@@ -124,7 +125,7 @@ export function RestTimer({
       scale.value = 0.96;
       return;
     }
-    scale.value = withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) });
+    scale.value = withTiming(1, { duration: duration.appear, easing: Easing.out(Easing.cubic) });
     // Only the appearing and disappearing matters here, not every tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [left === null, scale]);

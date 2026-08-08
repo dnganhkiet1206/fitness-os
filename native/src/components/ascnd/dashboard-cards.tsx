@@ -18,6 +18,7 @@ import { CarbIcon, FatIcon, FiberIcon, ProteinIcon } from '@/components/ascnd/ma
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { colors, radius, spacing } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { displayVolume, volumeLabel } from '@/lib/units';
@@ -404,7 +405,7 @@ function MacroSwap({
   useEffect(() => {
     swap.value = withDelay(
       index * 55,
-      withTiming(showLeft ? 1 : 0, { duration: 320, easing: Easing.bezier(0.22, 1, 0.36, 1) }),
+      withTiming(showLeft ? 1 : 0, { duration: duration.swap, easing: Easing.bezier(0.22, 1, 0.36, 1) }),
     );
   }, [showLeft, index, swap]);
 

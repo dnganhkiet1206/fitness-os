@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ascnd/icon';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import type { useI18n } from '@/hooks/use-app-settings';
 
 /**
@@ -76,13 +77,13 @@ export function LogMealFab({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
 
   const toggle = (next: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    spin.value = withTiming(next ? 1 : 0, { duration: 180 });
+    spin.value = withTiming(next ? 1 : 0, { duration: duration.toggle });
     setOpen(next);
   };
 
   const pick = (route: string) => {
     Haptics.selectionAsync();
-    spin.value = withTiming(0, { duration: 180 });
+    spin.value = withTiming(0, { duration: duration.toggle });
     setOpen(false);
     // let the sheet start closing before the push, so the two do not animate
     // over each other — the same 120ms the tab bar's AI menu uses

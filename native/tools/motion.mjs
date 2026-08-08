@@ -1,26 +1,36 @@
 /**
  * The rules that make motion feel smooth, kept true as the app grows.
  *
- * ── what this is, and what it deliberately is not ──
+ * ── what this is ──
  *
- * Not a token table. The numbers in this app are mostly *compositions* rather
- * than instances of a scale: the aura's pools drift at 17s / 23s / 29s because
- * co-prime periods stop four lights resynchronising into a visible loop, and
- * 300 / 370 / 420 is one cascade — tab bar, then cards, then light — not three
- * samples of "slow". Flattening those into `duration.slow` would not make
- * anything smoother; it would delete the reasoning and leave a lie behind.
- *
- * What actually separates an app that feels like Apple's from one that does not
- * is much smaller and much more mechanical:
+ * Mostly rules, and a very small table. The rules are the part that makes an
+ * app feel smooth; the table only makes it consistent, which is a different and
+ * lesser thing.
  *
  *   1. animation touches the compositor, never the layout engine
  *   2. nothing animates while nobody is looking at it
  *   3. the system's Reduce Motion setting is honoured even where the animation
  *      library does not do it for you
+ *   4. the response band speaks with four named durations
  *
- * Those are the three this enforces. They are worth a tool because all three
- * fail *invisibly*: the screen looks exactly as designed and the battery goes,
- * or the frame budget goes, and there is nothing in the diff to review.
+ * The first three are worth a tool because they fail *invisibly*: the screen
+ * looks exactly as designed and the battery goes, or the frame budget goes, and
+ * there is nothing in a diff to review.
+ *
+ * ── why the table is small on purpose ──
+ *
+ * Because most of this app's numbers are *compositions* rather than instances
+ * of a scale, and a scale is the wrong container for them. The aura's pools
+ * drift at 17s / 23s / 29s because co-prime periods stop four lights
+ * resynchronising into a visible loop. The arrival is one cascade — tab bar at
+ * 300, cards at 340, light at 420 — whose entire meaning is the gaps and the
+ * order. Koa's blink at 90ms and nod at 110ms are two beats of one gesture.
+ *
+ * Flattened into `duration.slow` none of that survives; the numbers would come
+ * out the other side looking arbitrary, which is precisely the state a design
+ * system is supposed to rescue you from. So rule 4 covers the band where the
+ * app was genuinely just picking numbers — a tap being answered — and the rig
+ * and the cascade are exempt, by name, with their reasons attached.
  *
  * ── the history behind rule 2 ──
  *
@@ -237,6 +247,71 @@ for (const f of files) {
 }
 
 /**
+ * ── rule 4: the response band speaks with four words ──
+ *
+ * A survey found the app answering taps at 180, 200, 240 and 320 across seven
+ * places — already close to a vocabulary, just an unnamed one. `constants/motion`
+ * names those four. This rule is what stops the eighth place inventing 190.
+ *
+ * ── what it deliberately does not police ──
+ *
+ * The character rig, and the arrival cascade. Koa's blink at 90ms and nod at
+ * 110ms are two beats of one gesture rather than two picks off a scale, and the
+ * cascade (tab bar 300 → cards 340 → light 420) is a composition whose whole
+ * meaning is the gaps between its numbers. Forcing either through a token table
+ * would delete the reasoning and leave the numbers looking arbitrary, which is
+ * the opposite of what a system is for.
+ *
+ * So: rig directories are exempt wholesale, and the two cascade sites are named
+ * with their reason — the same shape as `BOUNDED_LAYOUT`, for the same reason.
+ * A number that is part of a composition should be next to the comment
+ * explaining the composition.
+ */
+const RIG = /mascot|koa\/|studio\/|celebration|stage-renderer/;
+/*
+  Response-band literals that are part of a composition, not a pick.
+
+  Keyed by file *and value*. Exempting a whole file is the same looseness that
+  let a stale import satisfy rule 2 — it would mean settle.tsx could grow a
+  second, unrelated duration and never be asked about it.
+*/
+const COMPOSED = {
+  'src/components/ascnd/settle.tsx': {
+    220: 'nhịp giữa của cascade vào trang: tab bar 300 → thẻ 340 (220 + stagger 30/thẻ) → ánh sáng 420',
+  },
+  'src/components/ascnd/assistant-aura.tsx': {
+    420: 'nhịp cuối của cascade — ánh sáng phải xong sau thẻ 80ms, đó mới là thứ tự của một lần bước vào phòng',
+  },
+};
+const TOKENS = new Set([180, 200, 240, 320]);
+for (const f of files) {
+  if (RIG.test(f)) continue;
+  const code = strip(read(f));
+  for (const m of code.matchAll(/duration:\s*(\d+)/g)) {
+    const v = Number(m[1]);
+    if (v === 0 || v > 800) continue;
+    const line = code.slice(0, m.index).split('\n').length;
+    if (COMPOSED[f]?.[v]) continue;
+    problems.push(
+      TOKENS.has(v)
+        ? `${f}:${line}: duration: ${v} viết thẳng số — đã có token cho đúng giá trị này trong constants/motion, dùng nó`
+        : `${f}:${line}: duration: ${v} không thuộc bốn nhịp phản hồi (180/200/240/320) — ` +
+            'chọn nhịp gần nhất theo "màn hình đổi bao nhiêu", hoặc nếu nó là một phần của bố cục nhịp thì ghi vào COMPOSED kèm lý do',
+    );
+  }
+}
+/* Same staleness guard as BOUNDED_LAYOUT: a reason outlives the code it
+   describes far too easily, and then it is just a false statement in a file. */
+for (const [f, allowed] of Object.entries(COMPOSED)) {
+  const code = strip(read(f));
+  for (const v of Object.keys(allowed)) {
+    if (!new RegExp(`duration:\\s*${v}\\b`).test(code)) {
+      problems.push(`COMPOSED còn ghi ${f} có duration ${v} nhưng không còn nữa — xoá dòng ngoại lệ đi`);
+    }
+  }
+}
+
+/**
  * The self-test.
  *
  * Each rule is fed the exact shape it exists to reject. The scope test is here
@@ -281,6 +356,20 @@ const SELF = [
     body but `cancelAnimation` is still imported at the top of the file. A
     file-wide search says "gated"; a body-scoped one says what is true.
   */
+  /* Rule 4, both directions: a number off the scale, and a number that *is* a
+     token but written as a literal — the second is the one that would quietly
+     leave the vocabulary half-adopted. */
+  ['số lạ ngoài thang bị bắt', () => !TOKENS.has(190)],
+  ['số đúng token nhưng viết thẳng vẫn bị bắt', () => {
+    const src = 'x.value = withTiming(1, { duration: 240 });';
+    const m = [...src.matchAll(/duration:\s*(\d+)/g)][0];
+    return TOKENS.has(Number(m[1]));
+  }],
+  ['ngoại lệ COMPOSED khớp theo giá trị, không theo tệp', () => {
+    const fake = { 'a.tsx': { 220: 'lý do' } };
+    return fake['a.tsx']?.[220] && !fake['a.tsx']?.[999];
+  }],
+  ['tệp rig được miễn', () => RIG.test('src/components/ascnd/mascot.tsx') && !RIG.test('src/app/water.tsx')],
   ['import thừa không qua mặt được luật', () => {
     const src =
       "import { cancelAnimation, withRepeat } from 'react-native-reanimated';\n" +
@@ -307,5 +396,7 @@ console.log(
   `luật chuyển động OK — ${files.length} tệp: mọi useAnimatedStyle chỉ chạm transform/opacity ` +
     `(${Object.keys(BOUNDED_LAYOUT).length} ngoại lệ có lý do ghi lại, không cái nào lặp vô hạn); ` +
     `${loopFiles} tệp có vòng lặp vô hạn, mọi vòng đều nằm trong useEffect có điều kiện dừng; ` +
-    `${clockFiles} tệp dùng frame clock và đều đọc Reduce Motion`,
+    `${clockFiles} tệp dùng frame clock và đều đọc Reduce Motion; ` +
+    `dải phản hồi chỉ dùng ${TOKENS.size} nhịp có tên (${[...TOKENS].join('/')}), ` +
+    `${Object.values(COMPOSED).reduce((n, o) => n + Object.keys(o).length, 0)} số thuộc cascade được miễn kèm lý do, rig nhân vật không bị ép vào thang`,
 );

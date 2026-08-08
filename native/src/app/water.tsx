@@ -27,6 +27,7 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { WaterChart } from '@/components/ascnd/water-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { useProfile } from '@/hooks/useTodayData';
@@ -94,7 +95,7 @@ export default function WaterScreen() {
   // than two glyphs swapped, so the header shows the fold happening.
   const turn = useSharedValue(1);
   useEffect(() => {
-    turn.value = withTiming(logsOpen ? 1 : 0, { duration: 240, easing: Easing.out(Easing.cubic) });
+    turn.value = withTiming(logsOpen ? 1 : 0, { duration: duration.move, easing: Easing.out(Easing.cubic) });
   }, [logsOpen, turn]);
   const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 180}deg` }] }));
 

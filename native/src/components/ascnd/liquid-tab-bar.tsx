@@ -31,6 +31,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { scrollActiveToTop } from '@/lib/scroll-to-top';
 import { resetTabBar, tabBarVisible } from '@/lib/tab-bar-visibility';
@@ -89,7 +90,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   // Drives the Sparkles↔X cross-rotation on the center button (web: ±90° fade)
   const openSv = useSharedValue(0);
   useEffect(() => {
-    openSv.value = withTiming(aiOpen ? 1 : 0, { duration: 180 });
+    openSv.value = withTiming(aiOpen ? 1 : 0, { duration: duration.toggle });
   }, [aiOpen, openSv]);
 
   const labels: Record<string, string> = {
