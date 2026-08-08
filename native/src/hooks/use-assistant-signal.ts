@@ -1,6 +1,7 @@
-import { useDailyLog, useProfile } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useRecentWorkouts } from '@/hooks/useTodayData';
 import type { AssistantSignal } from '@/lib/assistant-suggestions';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
+import { daysSince } from '@/lib/training-card';
 
 /**
  * Today, in the shape `suggestionsFor` reads.
@@ -24,9 +25,20 @@ import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 export function useAssistantSignal(): AssistantSignal {
   const { data: dailyLog } = useDailyLog();
   const { data: profile } = useProfile();
+  const { data: workouts } = useRecentWorkouts();
   const macros = macroTargetsFor(profile);
 
+  /* `daysSince` counts calendar days rather than milliseconds, so a session
+     logged last night and one logged 25 hours ago across a clock change both
+     come out right — the same trap `weekDates` was rebuilt to avoid.
+
+     `null` rather than a large number when nothing is logged: "you have not
+     trained in 9999 days" is a sentence, and a wrong one. */
+  const last = workouts?.[0]?.date_time;
+
   return {
+    name: typeof profile?.name === 'string' ? profile.name.trim() : '',
+    daysSinceWorkout: last ? daysSince(String(last)) : null,
     readiness: dailyLog?.readiness_score != null ? Math.round(Number(dailyLog.readiness_score)) : null,
     status: (dailyLog?.readiness_status as 'green' | 'yellow' | 'red' | null) ?? null,
     acwr: dailyLog?.acwr != null ? Number(dailyLog.acwr) : null,

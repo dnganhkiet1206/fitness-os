@@ -64,6 +64,8 @@ const problems = [];
 
 /** A day with nothing remarkable about it — the baseline every case varies from. */
 const PLAIN = {
+  name: 'Đặng Anh Kiệt',
+  daysSinceWorkout: 1,
   readiness: 78,
   status: 'green',
   acwr: 1.0,
@@ -97,7 +99,9 @@ const DAYS = {
   'ít bước': day({ steps: 1200 }),
   'chưa có bước': day({ steps: 0 }),
   'ngày tệ toàn diện': day({ status: 'red', readiness: 28, acwr: 1.85, sleepMin: 300, proteinG: 40, steps: 900 }),
+  'nghỉ tập lâu': day({ daysSinceWorkout: 6 }),
   'trống hoàn toàn': {
+    name: '', daysSinceWorkout: null,
     readiness: null, status: null, acwr: null, sleepMin: 0,
     kcal: 0, kcalTarget: 2200, proteinG: 0, proteinTarget: 150, steps: 0,
   },
@@ -185,6 +189,7 @@ function allowedNumbers(d) {
   add(d.kcalTarget);
   add(Math.round(d.proteinG));
   add(Math.round(d.proteinTarget));
+  if (d.daysSinceWorkout != null) add(d.daysSinceWorkout);
   if (d.steps > 0) {
     add(d.steps);
     // `toLocaleString` groups, and the separator depends on the runtime's locale
@@ -215,7 +220,7 @@ for (const [name, r] of Object.entries(results)) {
 const RULES = [
   'readiness-low', 'load-spike', 'load-elevated', 'sleep-short', 'readiness-moderate',
   'load-detraining', 'protein-low', 'meal-idea', 'steps-low', 'sleep-quality',
-  'recovery', 'energy', 'habit', 'weekly-plan',
+  'rest-gap', 'recovery', 'energy', 'habit', 'weekly-plan',
 ];
 for (const key of RULES) {
   if (!fired[key]) problems.push(`luật "${key}" không bao giờ xuất hiện — chết mà không ai biết`);

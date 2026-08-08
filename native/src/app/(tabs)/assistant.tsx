@@ -17,8 +17,10 @@ import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { Settle } from '@/components/ascnd/settle';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
+import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useCoachChat } from '@/hooks/use-coach-chat';
 import { useDailyLog, useProfile, useTodayBiometrics } from '@/hooks/useTodayData';
+import { briefFor } from '@/lib/assistant-brief';
 import { suggestionsFor } from '@/lib/assistant-suggestions';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 
@@ -155,14 +157,6 @@ export default function AssistantScreen() {
     router.push(to as any);
   };
 
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 11
-      ? vi ? 'Chào buổi sáng!' : 'Good morning!'
-      : hour < 18
-        ? vi ? 'Chào buổi chiều!' : 'Good afternoon!'
-        : vi ? 'Chào buổi tối!' : 'Good evening!';
-
   /*
     Real values, or a dash.
 
@@ -227,25 +221,13 @@ export default function AssistantScreen() {
   ];
 
   /*
-    The suggestions come from the same log the tiles above are drawn from.
-
-    `useProfile` is the one extra read, and it is for the targets — a chip that
-    says "you are short on protein" has to know what the target was, and the
-    fallback in `macro-targets` is what a profile that never went through
-    onboarding gets, rather than a number invented here.
+    One signal, three consumers: the hero's briefing, the card's questions, and
+    the coach's openers. Built in one place so they cannot disagree about the
+    same day — see `use-assistant-signal`.
   */
-  const macros = macroTargetsFor(profile);
-  const suggestions = suggestionsFor({
-    readiness,
-    status,
-    acwr: dailyLog?.acwr != null ? Number(dailyLog.acwr) : null,
-    sleepMin,
-    kcal,
-    kcalTarget: calorieTargetFor(profile),
-    proteinG: Number(dailyLog?.protein_g) || 0,
-    proteinTarget: macros.protein,
-    steps: Number(dailyLog?.steps) || 0,
-  });
+  const signal = useAssistantSignal();
+  const suggestions = suggestionsFor(signal);
+  const brief = briefFor(signal, new Date().getHours(), vi);
 
   const go = (route: string) => {
     Haptics.selectionAsync();
@@ -352,12 +334,29 @@ export default function AssistantScreen() {
         <Settle index={1}>
         <View style={styles.stage}>
           <Animated.View entering={FadeIn.duration(420)} style={styles.stageInner}>
-            <Text style={styles.greeting}>{greeting}</Text>
-            <Text style={styles.greetBody}>
-              {vi
-                ? 'Tôi ở đây để giúp bạn hiểu dữ liệu sức khoẻ, trả lời câu hỏi và đưa ra lời khuyên riêng cho bạn.'
-                : 'I’m here to help you understand your health, answer questions, and give personalised advice.'}
-            </Text>
+            {/*
+              ── the briefing ──
+
+              This was "Chào buổi tối!" over a paragraph every person on every
+              day read identically — sitting directly above four tiles showing
+              that person's real numbers. It read as an assistant *waiting*
+              rather than one that had already looked.
+
+              Now the greeting carries your name and the lines under it are
+              what the app can actually see: how you slept, how recovered you
+              are, how long since you trained, what is left of today's food.
+              Every one of them is gated on the datum it quotes — a day the app
+              knows nothing about says so, rather than inventing a warm sentence
+              about numbers it does not have. See `assistant-brief`.
+            */}
+            <Text style={styles.greeting}>{vi ? brief.greeting.vi : brief.greeting.en}</Text>
+            <View style={styles.briefLines}>
+              {brief.lines.map((l) => (
+                <Text key={l.key} style={styles.greetBody}>
+                  {vi ? l.text.vi : l.text.en}
+                </Text>
+              ))}
+            </View>
             <LiquidGlass style={styles.statePill} radius={radius.full}>
               <View style={styles.stateInner}>
                 <View
@@ -605,7 +604,11 @@ const styles = StyleSheet.create({
   /* 34 against the title's 22. The greeting is the human moment and the title
      is a label; at the same size they compete and the eye lands on neither. */
   greeting: { fontSize: 34, fontWeight: '700', letterSpacing: -0.8, color: colors.foreground },
-  greetBody: { ...type.body, color: colors.mutedForeground, lineHeight: 22, maxWidth: 322 },
+  greetBody: { ...type.body, color: colors.mutedForeground, lineHeight: 22, maxWidth: 330 },
+  /* Sentences, one per line, with air between them. Run together as a
+     paragraph they read as prose about you; separated they read as a list of
+     things the app noticed, which is what they are. */
+  briefLines: { gap: 5 },
 
   /* ── every caption on glass is `glassMuted`, not `mutedForeground` ──
 

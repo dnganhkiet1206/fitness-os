@@ -76,6 +76,10 @@ export interface AssistantSignal {
   proteinG: number;
   proteinTarget: number;
   steps: number;
+  /** the person's own name, or '' — never a placeholder like "bạn ơi" */
+  name: string;
+  /** calendar days since the last logged session; null when nothing is logged */
+  daysSinceWorkout: number | null;
 }
 
 /** How many chips the section shows. */
@@ -227,6 +231,19 @@ function candidates(s: AssistantSignal): Suggestion[] {
       question: {
         vi: `Hôm nay tôi mới đi ${s.steps.toLocaleString()} bước. Có cách nào dễ để vận động thêm trong ngày không?`,
         en: `I’ve only walked ${s.steps.toLocaleString()} steps today. What are some easy ways to move more?`,
+      },
+    });
+  }
+
+  if (s.daysSinceWorkout != null && s.daysSinceWorkout >= 3) {
+    out.push({
+      key: 'rest-gap',
+      topic: 'load',
+      glyph: 'pulse',
+      label: { vi: 'Nghỉ lâu rồi', en: 'Been a while' },
+      question: {
+        vi: `Đã ${s.daysSinceWorkout} ngày tôi chưa tập buổi nào. Nên quay lại bằng buổi tập thế nào cho hợp lý?`,
+        en: `It's been ${s.daysSinceWorkout} days since my last session. How should I ease back in?`,
       },
     });
   }
