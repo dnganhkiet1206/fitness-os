@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
+import { HealthSourceCard } from '@/components/ascnd/health-source-card';
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { MetricPanel } from '@/components/ascnd/metric-panel';
 import { ScrollProgress } from '@/components/ascnd/scroll-progress';
@@ -797,6 +798,16 @@ export default function AssistantScreen() {
               </PressScale>
             ))}
           </View>
+
+          {/*
+            Where the numbers come from, under the things that use them.
+
+            Last in the section rather than first: this page is for reading
+            today, and a source card at the top would make the first thing on
+            the screen a piece of plumbing. It renders nothing at all on
+            hardware without HealthKit.
+          */}
+          <HealthSourceCard />
         </View>
         </Settle>
       </ScrollView>

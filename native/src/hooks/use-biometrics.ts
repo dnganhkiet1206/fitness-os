@@ -9,6 +9,7 @@ export interface BiometricSample {
   source: string;
   hr_bpm: number | null;
   hrv_rmssd_ms: number | null;
+  hrv_sdnn_ms: number | null;
   spo2_pct: number | null;
   vo2max_mlkgmin: number | null;
   resp_rate_rpm: number | null;
@@ -39,6 +40,7 @@ export function useBiometricHistory(days = 14, enabled = true) {
 export interface BiometricInput {
   hr_bpm?: number | null;
   hrv_rmssd_ms?: number | null;
+  hrv_sdnn_ms?: number | null;
   spo2_pct?: number | null;
   vo2max_mlkgmin?: number | null;
   resp_rate_rpm?: number | null;
@@ -55,6 +57,7 @@ export function useLogBiometrics() {
         confidence: 0.7,
         hr_bpm: values.hr_bpm ?? null,
         hrv_rmssd_ms: values.hrv_rmssd_ms ?? null,
+        hrv_sdnn_ms: values.hrv_sdnn_ms ?? null,
         spo2_pct: values.spo2_pct ?? null,
         vo2max_mlkgmin: values.vo2max_mlkgmin ?? null,
         resp_rate_rpm: values.resp_rate_rpm ?? null,

@@ -170,6 +170,7 @@ export type Database = {
           date_time: string
           hr_bpm: number | null
           hrv_rmssd_ms: number | null
+          hrv_sdnn_ms: number | null
           id: string
           notes: string | null
           resp_rate_rpm: number | null
@@ -184,6 +185,7 @@ export type Database = {
           date_time?: string
           hr_bpm?: number | null
           hrv_rmssd_ms?: number | null
+          hrv_sdnn_ms?: number | null
           id?: string
           notes?: string | null
           resp_rate_rpm?: number | null
@@ -198,6 +200,7 @@ export type Database = {
           date_time?: string
           hr_bpm?: number | null
           hrv_rmssd_ms?: number | null
+          hrv_sdnn_ms?: number | null
           id?: string
           notes?: string | null
           resp_rate_rpm?: number | null
@@ -916,6 +919,9 @@ export type Database = {
           created_at: string
           deep_min: number | null
           id: string
+          source: string
+          asleep_min: number | null
+          external_id: string | null
           light_min: number | null
           quality: number | null
           rem_min: number | null
@@ -930,6 +936,9 @@ export type Database = {
           created_at?: string
           deep_min?: number | null
           id?: string
+          source?: string
+          asleep_min?: number | null
+          external_id?: string | null
           light_min?: number | null
           quality?: number | null
           rem_min?: number | null
@@ -944,6 +953,9 @@ export type Database = {
           created_at?: string
           deep_min?: number | null
           id?: string
+          source?: string
+          asleep_min?: number | null
+          external_id?: string | null
           light_min?: number | null
           quality?: number | null
           rem_min?: number | null
@@ -1228,6 +1240,8 @@ export type Database = {
           created_at: string
           date_time: string
           id: string
+          source: string
+          external_id: string | null
           pain_flags: Json | null
           pr_detected: boolean | null
           session_rpe: number | null
@@ -1242,6 +1256,8 @@ export type Database = {
           created_at?: string
           date_time?: string
           id?: string
+          source?: string
+          external_id?: string | null
           pain_flags?: Json | null
           pr_detected?: boolean | null
           session_rpe?: number | null
@@ -1256,6 +1272,8 @@ export type Database = {
           created_at?: string
           date_time?: string
           id?: string
+          source?: string
+          external_id?: string | null
           pain_flags?: Json | null
           pr_detected?: boolean | null
           session_rpe?: number | null

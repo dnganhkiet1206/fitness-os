@@ -7,13 +7,18 @@ import { toast } from '@/lib/toast';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import {
+  activityName,
+  APPLE_SOURCE,
+  getLastNightSleep,
   getLatestBiometrics,
+  getRecentWorkouts,
   getTodayActiveEnergy,
   getTodayExerciseMinutes,
   getTodaySteps,
   isHealthKitAvailable,
   requestHealthPermissions,
 } from '@/lib/health';
+import { useAppSettings } from '@/hooks/use-app-settings';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 
@@ -27,6 +32,8 @@ export function useHealthSync() {
   const invalidate = useInvalidateToday();
   const queryClient = useQueryClient();
   const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
 
   const sync = useMutation({
     mutationFn: async () => {
@@ -35,13 +42,22 @@ export function useHealthSync() {
       const granted = await requestHealthPermissions();
       if (!granted) throw new Error('Health access was not granted');
 
-      const [bio, steps, activeKcal, exerciseMin] = await Promise.all([
+      const [bio, steps, activeKcal, exerciseMin, sleep, workouts] = await Promise.all([
         getLatestBiometrics(),
         getTodaySteps(),
         getTodayActiveEnergy(),
         getTodayExerciseMinutes(),
+        getLastNightSleep(),
+        getRecentWorkouts(),
       ]);
-      if (!bio && steps == null && activeKcal == null && exerciseMin == null) {
+      if (
+        !bio &&
+        steps == null &&
+        activeKcal == null &&
+        exerciseMin == null &&
+        !sleep &&
+        workouts.length === 0
+      ) {
         throw new Error('No health data found — open the Health app to confirm data exists');
       }
 
@@ -49,7 +65,11 @@ export function useHealthSync() {
         const { error } = await supabase.from('biometric_samples').insert({
           user_id: user.id,
           hr_bpm: bio.hr_bpm,
-          hrv_rmssd_ms: bio.hrv_rmssd_ms,
+          /* SDNN into the SDNN column. This wrote `hrv_rmssd_ms` for a long
+             time, which put Apple's SDNN into the same series as readings
+             people typed from RMSSD-reporting straps — a mixed baseline under
+             the readiness score's largest term. */
+          hrv_sdnn_ms: bio.hrv_sdnn_ms,
           spo2_pct: bio.spo2_pct,
           resp_rate_rpm: bio.resp_rate_rpm,
           source: bio.source,
@@ -57,6 +77,72 @@ export function useHealthSync() {
           confidence: bio.confidence,
         });
         if (error) throw error;
+      }
+
+      /*
+        ── last night, if the watch has it and nobody has typed it ──
+
+        `external_id` carries the night's own start time, so a second sync in
+        the same morning updates the row it already wrote instead of adding a
+        second night. `onConflict` targets the partial unique index from
+        `20260809120000_health_provenance.sql`, which only covers rows that came
+        from a source with an id — hand-entered nights stay free to repeat,
+        because two naps in one day are two real rows.
+
+        A night somebody already logged by hand is left alone: they were there
+        and the watch was only on their wrist.
+      */
+      if (sleep) {
+        const { data: manual } = await supabase
+          .from('sleep_logs')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('source', 'manual')
+          .gte('bedtime', new Date(+new Date(sleep.bedtime) - 12 * 3600 * 1000).toISOString())
+          .lte('bedtime', new Date(+new Date(sleep.bedtime) + 12 * 3600 * 1000).toISOString())
+          .maybeSingle();
+
+        if (!manual) {
+          await supabase.from('sleep_logs').upsert(
+            {
+              user_id: user.id,
+              bedtime: sleep.bedtime,
+              waketime: sleep.waketime,
+              asleep_min: sleep.asleep_min,
+              deep_min: sleep.deep_min,
+              light_min: sleep.light_min,
+              rem_min: sleep.rem_min,
+              source: APPLE_SOURCE,
+              external_id: sleep.external_id,
+            },
+            { onConflict: 'user_id,external_id' },
+          );
+        }
+      }
+
+      /*
+        ── sessions the watch recorded ──
+
+        `volume_load: 0` and `sets: []` are the honest values, not placeholders.
+        A run has no tonnage, and ACWR is a sum of volume — so these raise
+        `workout_count` and reset `daysSinceWorkout` (the assistant's "you have
+        not trained in 2 days") while leaving the load ratio untouched. Giving
+        them an invented volume would corrupt the one number on that screen
+        whose whole job is to be trustworthy.
+      */
+      if (workouts.length > 0) {
+        await supabase.from('workout_sessions').upsert(
+          workouts.map((w) => ({
+            user_id: user.id,
+            date_time: w.date_time,
+            sets: [],
+            volume_load: 0,
+            template_name: `${activityName(w.activity_type, vi)} · ${w.minutes}′${w.kcal ? ` · ${w.kcal} kcal` : ''}`,
+            source: APPLE_SOURCE,
+            external_id: w.external_id,
+          })),
+          { onConflict: 'user_id,external_id' },
+        );
       }
 
       /*
@@ -94,16 +180,24 @@ export function useHealthSync() {
         }
       }
 
-      // New HRV/RHR should flow into today's readiness score (web parity)
-      if (bio) await recomputeDailyLog(user.id, localDateStr());
+      /* Readiness reads HRV, resting HR, sleep and load, and this sync can now
+         move all four — so it recomputes whenever any of them arrived, not just
+         on a biometric sample. `recomputeDailyLog` is also what writes
+         `sleep_duration_min` and `workout_count` from the rows just inserted. */
+      if (bio || sleep || workouts.length > 0) await recomputeDailyLog(user.id, localDateStr());
 
-      return { steps, bio };
+      return { steps, bio, sleep, workouts: workouts.length };
     },
     onSuccess: () => {
       invalidate();
       // Steps screen + biometrics history read their own keys
       queryClient.invalidateQueries({ queryKey: ['steps_history', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['biometric_history', user?.id] });
+      /* The screens that read the two new sources. Without these the sleep
+         screen keeps showing last night as unlogged until the app restarts. */
+      queryClient.invalidateQueries({ queryKey: ['sleep_logs', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['sleep_duration_history', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['recent_workouts', user?.id] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast.success(i18n.nHealthSynced);
     },
