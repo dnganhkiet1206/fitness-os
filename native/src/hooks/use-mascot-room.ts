@@ -143,11 +143,16 @@ export function useClaimReward() {
         await writeLocal(LOCAL_TX_KEY, rows);
         return;
       }
-      const { error } = await supabase.from('mascot_transactions').insert({
-        user_id: user!.id,
-        amount,
-        reason,
-        ref_key: refKey,
+      /* Through the function, not the table.
+
+         `mascot_transactions` no longer takes client inserts at all — a POST to
+         it with `amount: 999999` unlocked the whole shop for one request. The
+         RPC clamps a claim to the economy's real maxima and keeps the `ref_key`
+         idempotency, so a duplicate is still a no-op. */
+      const { error } = await supabase.rpc('earn_mascot_coins', {
+        p_ref_key: refKey,
+        p_amount: amount,
+        p_reason: reason,
       });
       // duplicate = already claimed elsewhere; treat as success
       if (error && !error.message.includes('duplicate')) throw error;
@@ -180,19 +185,17 @@ export function useBuyItem() {
         }
         return;
       }
-      const { error: invError } = await supabase.from('mascot_inventory').insert({
-        user_id: user!.id,
-        item_key: item.key,
-        equipped: true,
+      /* One call, and the price is not ours to send.
+
+         This used to insert the inventory row and *then* the spend row, so the
+         item was owned before it was paid for — anything failing in between was
+         a free item with no attacker involved. And `-item.price` was a number
+         the client chose. `buy_mascot_item` looks the price up, locks the
+         balance, and writes both rows in one transaction. */
+      const { error: buyError } = await supabase.rpc('buy_mascot_item', {
+        p_item_key: item.key,
       });
-      if (invError) throw invError;
-      const { error: txError } = await supabase.from('mascot_transactions').insert({
-        user_id: user!.id,
-        amount: -item.price,
-        reason: `buy ${item.key}`,
-        ref_key: buyRefKey(item.key),
-      });
-      if (txError) throw txError;
+      if (buyError) throw buyError;
       // Wearing the new piece switches off whatever it conflicts with
       await unequipConflicts(user!.id, item.key);
     },

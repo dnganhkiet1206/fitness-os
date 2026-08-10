@@ -121,6 +121,7 @@ const STEPS = [
   ['chi phí aura', 'node', ['tools/aura-cost.mjs']],
   ['luật chuyển động', 'node', ['tools/motion.mjs']],
   ['nguồn sức khoẻ', 'node', ['tools/health-source.mjs']],
+  ['quyền kinh tế', 'node', ['tools/economy-authority.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],

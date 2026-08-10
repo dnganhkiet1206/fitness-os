@@ -78,18 +78,27 @@ export async function requireUser(req: Request): Promise<Caller | Response> {
  * not in the client, so calling the RPC directly gains nothing — a user can
  * only burn their own allowance.
  *
- * **Fails open when the RPC is missing.** The migration that creates it may
- * not have been applied to the project yet, and an unapplied migration must
- * not take the AI offline. The gate above is what stops the anonymous case;
- * this only bounds an authenticated one. If quota is meant to be enforced,
- * confirm `claim_ai_call` exists on the live project — see
- * `native/docs/PRE_RELEASE.md` §2e.
+ * ── it used to fail open, and that was the right call for a free app ──
+ *
+ * The reasoning was: the migration creating the RPC might not be applied yet,
+ * and an unapplied migration must not take the AI offline. Under that rule an
+ * error meant "allow".
+ *
+ * That trade stops being worth it the moment the app charges money. The thing
+ * on the other side of this call is a paid gateway, and the failure mode of
+ * failing open is an unbounded bill with no ceiling and no alert — a cost that
+ * arrives as an invoice rather than as a bug report. Failing closed costs an
+ * outage, which is loud, bounded, and fixed by applying a migration that is
+ * already in the repository.
+ *
+ * So: no quota counter, no AI. If this ever starts returning 503 in production,
+ * the fix is to apply `20260729120000_ai_usage_quota.sql`, not to soften this.
  */
 export async function claimCall(supabase: SupabaseClient, kind: string): Promise<boolean> {
   const { data, error } = await supabase.rpc("claim_ai_call", { p_kind: kind });
   if (error) {
-    console.warn(`claim_ai_call unavailable (${error.message}) — allowing ${kind}`);
-    return true;
+    console.error(`claim_ai_call failed (${error.message}) — refusing ${kind}`);
+    return false;
   }
   return data !== false;
 }

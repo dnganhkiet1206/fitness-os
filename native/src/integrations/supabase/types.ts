@@ -1329,7 +1329,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      /* Hand-written, like the columns above: these are the RPCs that exist
+         because the tables behind them refuse client writes. Regenerating this
+         file from the live project will produce them properly. */
+      claim_ai_call: {
+        Args: { p_kind: string }
+        Returns: boolean
+      }
+      earn_mascot_coins: {
+        Args: { p_ref_key: string; p_amount: number; p_reason?: string }
+        Returns: number
+      }
+      buy_mascot_item: {
+        Args: { p_item_key: string }
+        Returns: number
+      }
+      current_tier: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -445,11 +445,13 @@ export function useUpdateChallengeProgress() {
         if (isCompleted && !ch.completed) {
           const tier = ch.reward_tier ?? 'bronze';
           const reward = CHALLENGE_REWARD[tier] ?? CHALLENGE_REWARD.bronze;
-          const { error: payError } = await supabase.from('mascot_transactions').insert({
-            user_id: user.id,
-            amount: reward.coins,
-            reason: `challenge ${ch.challenge_key}`,
-            ref_key: challengeRefKey(tier, weekStart, ch.challenge_key),
+          /* Same gate as every other reward — the ledger takes no client
+             inserts. The tier still decides the amount here, and the function
+             bounds it. */
+          const { error: payError } = await supabase.rpc('earn_mascot_coins', {
+            p_ref_key: challengeRefKey(tier, weekStart, ch.challenge_key),
+            p_amount: reward.coins,
+            p_reason: `challenge ${ch.challenge_key}`,
           });
           if (payError && !payError.message.includes('duplicate')) throw payError;
         }
