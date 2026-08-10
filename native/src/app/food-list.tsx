@@ -8,6 +8,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { Icon } from '@/components/ascnd/icon';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -57,7 +58,7 @@ export default function FoodListScreen() {
   const [seg, setSeg] = useState<Segment>(tab === 'recent' ? 'recent' : 'mine');
   const [q, setQ] = useState('');
 
-  const { data: myFoods } = useMyFoods();
+  const { data: myFoods, isError, refetch, isRefetching } = useMyFoods();
   const mine = useMyFoodsSorted();
   const { data: recents } = useRecentFoods();
 
@@ -154,7 +155,12 @@ export default function FoodListScreen() {
         a rise: nothing is arriving from off-screen, the page is already here.
       */}
       <Animated.View key={seg} entering={FadeIn.duration(140)}>
-        {seg === 'mine' ? (
+        {/* A failed read is not an empty list. `data` comes back undefined, the
+        zero branch renders, and the screen tells somebody their own saved
+        items are gone — a statement about their account, not the network. */}
+        {isError ? (
+          <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+        ) : seg === 'mine' ? (
           mineShown.length > 0 ? (
             <View style={foodListStyles.group}>
               {mineShown.map((f, i) => (

@@ -6,6 +6,7 @@ import Animated from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -35,14 +36,20 @@ import { rise } from '@/lib/entrance';
  */
 export default function MealPlansScreen() {
   const i18n = useI18n();
-  const { data: plans } = useMealPlans();
+  const { data: plans, isError, refetch, isRefetching } = useMealPlans();
 
   const goalLabel = (g: string | null) =>
     g === 'bulk' ? i18n.goalBulk : g === 'cut' ? i18n.goalCut : g === 'maintain' ? i18n.goalMaintain : null;
 
   return (
     <Screen back title={i18n.nMealPlans}>
-      {plans && plans.length > 0 ? (
+      {/* A failed read is not an empty list. `data` comes back undefined, the
+        zero branch below renders, and the screen tells somebody they have
+        nothing — which is a statement about their account, not about the
+        network. The failure is answered first so the empty state stays true. */}
+      {isError ? (
+        <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+      ) : plans && plans.length > 0 ? (
         <View style={styles.list}>
           {plans.map((p, i) => (
             <Animated.View key={p.id} entering={rise(i)}>

@@ -132,6 +132,7 @@ const STEPS = [
   ['trí nhớ coach', 'node', ['tools/coach-memory.mjs']],
   ['quyền lợi gói', 'node', ['tools/entitlement.mjs']],
   ['sửa sai được', 'node', ['tools/correctable.mjs']],
+  ['rỗng ≠ hỏng', 'node', ['tools/empty-vs-failed.mjs']],
   ['sẵn sàng deploy', 'node', ['tools/deployable.mjs']],
   ['ghi khi mất mạng', 'node', ['tools/offline-durable.mjs']],
   ['ngân sách ảnh', 'node', ['tools/photo-budget.mjs']],

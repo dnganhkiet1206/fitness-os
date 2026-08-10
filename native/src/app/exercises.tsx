@@ -9,6 +9,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { StaggerItem } from '@/components/ascnd/stagger-item';
 import { Icon } from '@/components/ascnd/icon';
 import { Field, FormSheet } from '@/components/ascnd/form-sheet';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -17,7 +18,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useAddExercise, useDeleteExercise, useExercises } from '@/hooks/use-library';
 
 export default function ExercisesScreen() {
-  const { data: exercises } = useExercises();
+  const { data: exercises, isError, refetch, isRefetching } = useExercises();
   const { user } = useAuth();
   const addEx = useAddExercise();
   const deleteEx = useDeleteExercise();
@@ -201,7 +202,12 @@ export default function ExercisesScreen() {
         </Field>
       </FormSheet>
 
-      {grouped.length > 0 ? (
+      {/* A failed read is not an empty library. The zero branch below would tell
+        somebody the exercise list — including the ones they created — is gone,
+        which is a statement about their account rather than the network. */}
+      {isError ? (
+        <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+      ) : grouped.length > 0 ? (
         grouped.map(([group, list], gi) => (
           <StaggerItem key={group} index={gi} style={styles.group}>
             <Text style={styles.groupTitle}>{group}</Text>

@@ -16,6 +16,7 @@ import Animated from 'react-native-reanimated';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
@@ -26,7 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function GroceryScreen() {
   const { user } = useAuth();
-  const { data: items } = useGroceryItems();
+  const { data: items, isError, refetch, isRefetching } = useGroceryItems();
   const { add, toggle, remove } = useGroceryMutations();
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -150,7 +151,13 @@ export default function GroceryScreen() {
           </GlassCard>
         )}
 
-        {items && items.length > 0 ? (
+        {/* A failed read is not an empty list. `data` comes back undefined, the
+        zero branch below renders, and the screen tells somebody they have
+        nothing — which is a statement about their account, not about the
+        network. The failure is answered first so the empty state stays true. */}
+        {isError ? (
+          <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+        ) : items && items.length > 0 ? (
           items.map((it, i) => (
             <Animated.View key={it.id} entering={rise(i)}>
             <Pressable

@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useMemo } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
@@ -41,7 +42,7 @@ export default function SessionsScreen() {
   const vi = lang === 'vi';
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
-  const { data: sessions } = useWorkoutSessions(DAYS);
+  const { data: sessions, isError, refetch, isRefetching } = useWorkoutSessions(DAYS);
   const del = useDeleteWorkoutSession();
 
   const confirmDelete = (id: string, date_time: string, label: string) => {
@@ -107,7 +108,21 @@ export default function SessionsScreen() {
 
   return (
     <Screen back title={vi ? 'Buổi tập đã ghi' : 'Logged workouts'}>
-      {months.length === 0 ? (
+      {/*
+        A failed read is not an empty history.
+
+        `sessions` comes back undefined when the query fails, `?? []` turns that
+        into no months, and the screen then states — confidently, in the user's
+        own language — that they have not trained in ninety days. Somebody who
+        logged forty sessions reads that on a bad connection and has every
+        reason to think the app lost them.
+
+        So the failure is answered before the zero case, never instead of it:
+        an empty history is still a real thing to say, just not this one.
+      */}
+      {isError ? (
+        <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+      ) : months.length === 0 ? (
         <Text style={styles.empty}>
           {vi ? 'Chưa có buổi tập nào trong 90 ngày qua' : 'No workouts in the last 90 days'}
         </Text>

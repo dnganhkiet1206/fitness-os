@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -33,7 +34,7 @@ type Pose = 'front' | 'side' | 'back';
 export default function ProgressPhotosScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const { data: photos } = useProgressPhotos();
+  const { data: photos, isError, refetch, isRefetching } = useProgressPhotos();
   const upload = useUploadProgressPhoto();
   const del = useDeleteProgressPhoto();
   const [capturing, setCapturing] = useState(false);
@@ -74,7 +75,13 @@ export default function ProgressPhotosScreen() {
         </GlassCard>
       )}
 
-      {!photos || photos.length === 0 ? (
+      {/* A failed read is not an empty gallery. `photos` comes back undefined,
+        the zero branch renders, and the screen tells somebody they have no
+        progress photos — the one thing in this app people would most hate to
+        believe they had lost. The failure is answered first. */}
+      {isError ? (
+        <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+      ) : !photos || photos.length === 0 ? (
         <GlassCard>
           <View style={styles.empty}>
             <Icon icon={Camera} size={40} color={colors.mutedForeground} />

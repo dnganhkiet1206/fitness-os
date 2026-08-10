@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
 import { DEFAULT_REST, estimatedMinutes, restLabel } from '@/lib/prescription';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
@@ -176,7 +177,7 @@ export default function WorkoutBuilderSheet() {
   const insets = useSafeAreaInsets();
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
-  const { data: exercises, isLoading } = useExercises();
+  const { data: exercises, isLoading, isError, refetch, isRefetching } = useExercises();
   const addTemplate = useAddWorkoutTemplate();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -522,6 +523,14 @@ export default function WorkoutBuilderSheet() {
             ListEmptyComponent={
               isLoading ? (
                 <ActivityIndicator color={colors.mutedForeground} style={styles.empty} />
+              ) : isError ? (
+                /*
+                  Loading was already answered here; failure was not. A read that
+                  errors leaves `exercises` undefined, which falls into the same
+                  branch as a genuinely empty library and tells somebody their
+                  exercise list — seeds and all — does not exist.
+                */
+                <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
               ) : (
                 <View style={styles.empty}>
                   <Text style={styles.emptyText}>

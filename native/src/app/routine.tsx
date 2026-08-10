@@ -104,7 +104,7 @@ const STATE_STYLE: Record<DayState, { icon: typeof CheckCircle2; tint: string; w
 
 export default function RoutineScreen() {
   const { data: days } = useRoutineDays();
-  const { data: templates } = useWorkoutTemplates();
+  const { data: templates, isError: templatesFailed } = useWorkoutTemplates();
   /*
     Fourteen days back covers the current week from any day inside it — Sunday
     is six days from Monday — with a week of slack, and it is the window every
@@ -313,7 +313,18 @@ export default function RoutineScreen() {
                 </Pressable>
               ))}
 
-              {!templates || templates.length === 0 ? (
+              {/*
+                A failed read is not "you have no templates".
+
+                This is a picker inside a sheet, so the full failure card would
+                not fit and would be the wrong shape anyway — one line of text
+                is replacing one line of text. What matters is that the line
+                stops making a claim about the account when the truth is that
+                the list could not be read.
+              */}
+              {templatesFailed ? (
+                <Text style={styles.pickerEmpty}>{i18n.nLoadFailed}</Text>
+              ) : !templates || templates.length === 0 ? (
                 <Text style={styles.pickerEmpty}>{i18n.nRoutineNoTemplates}</Text>
               ) : null}
             </ScrollView>

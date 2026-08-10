@@ -7,6 +7,7 @@ import Animated from 'react-native-reanimated';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
@@ -23,7 +24,7 @@ export default function SleepInsightsScreen() {
   const { lang } = useAppSettings();
   const i18n = useI18n();
   const locale = getLocale(lang);
-  const { data: sleepLogs } = useSleepHistory(7);
+  const { data: sleepLogs, isError, refetch, isRefetching } = useSleepHistory(7);
   const { data: profile } = useProfile();
   const vi = lang === 'vi';
   const remove = useDeleteSleepLog();
@@ -102,7 +103,14 @@ export default function SleepInsightsScreen() {
 
   return (
     <Screen back title={i18n.sleepTitle}>
-      {!stats ? (
+      {/* A failed read is not an empty history. `data` comes back undefined, the
+        zero branch below renders, and the screen tells somebody they have
+        never recorded anything — a statement about their account, not about
+        the network. The failure is answered first so the empty state stays
+        true. */}
+      {isError ? (
+        <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+      ) : !stats ? (
         <GlassCard>
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>{i18n.sleepNoData}</Text>

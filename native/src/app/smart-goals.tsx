@@ -6,6 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -33,7 +34,7 @@ function weekAvg(logs: { date: string; weight_kg: number }[], start: string, end
 
 export default function SmartGoalsScreen() {
   const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { data: profile, isError, refetch, isRefetching } = useProfile();
   const { lang } = useAppSettings();
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
@@ -133,7 +134,12 @@ export default function SmartGoalsScreen() {
           </View>
         </View>
 
-        {analysis ? (
+        {/* A failed read is not "not enough data yet". Without the profile there is
+        no analysis, and the zero branch asks somebody to log more of what they
+        have already logged. */}
+        {isError ? (
+          <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+        ) : analysis ? (
           <>
             <View style={styles.chart}>
               <LineChart

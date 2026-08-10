@@ -8,6 +8,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -35,7 +36,7 @@ function statusOf(v: number, [lo, hi]: [number, number]): keyof typeof STATUS {
 
 export default function BiometricsScreen() {
   const i18n = useI18n();
-  const { data: history } = useBiometricHistory(14);
+  const { data: history, isError, refetch, isRefetching } = useBiometricHistory(14);
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
   const remove = useDeleteBiometricSample();
@@ -115,7 +116,14 @@ export default function BiometricsScreen() {
           <Icon icon={Plus} size={22} color={colors.primary} />
         </PressScale>
       }>
-      {!hasAny ? (
+      {/* A failed read is not an empty history. `data` comes back undefined, the
+        zero branch below renders, and the screen tells somebody they have
+        never recorded anything — a statement about their account, not about
+        the network. The failure is answered first so the empty state stays
+        true. */}
+      {isError ? (
+        <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+      ) : !hasAny ? (
         <GlassCard>
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>{i18n.biometricsNoData}</Text>

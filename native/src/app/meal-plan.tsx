@@ -8,6 +8,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -67,7 +68,7 @@ export default function MealPlanScreen() {
   const i18n = useI18n();
 
   const { data: plans } = useMealPlans();
-  const { data: items } = useMealPlanItems(planId ?? null);
+  const { data: items, isError, refetch, isRefetching } = useMealPlanItems(planId ?? null);
   const { data: profile } = useProfile();
   const { data: todayMeals } = useTodayLog();
   const deleteItem = useDeleteMealPlanItem();
@@ -174,6 +175,17 @@ export default function MealPlanScreen() {
           </Pressable>
         ) : undefined
       }>
+      {/*
+        A failed read makes every one of the seven days claim to be empty.
+
+        `items` is the whole plan; undefined turns `byDay` into seven empty
+        buckets, the strip loses all its dots, and the day panel says nothing is
+        planned. Somebody who spent an evening writing a week reads that as the
+        plan having been wiped. Answered once, at the top, rather than seven
+        times inside the day panel.
+      */}
+      {isError ? <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} /> : null}
+
       {/*
         The week, as seven cells you can tap.
 
