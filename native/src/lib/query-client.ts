@@ -3,6 +3,8 @@ import NetInfo from '@react-native-community/netinfo';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
 
+import { registerOfflineWrites } from '@/lib/offline-write';
+
 /**
  * Offline-aware React Query client.
  *
@@ -31,6 +33,16 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+/*
+  Taught before anything is restored.
+
+  Module scope on purpose: `PersistQueryClientProvider` reads the cache back as
+  soon as it mounts, and a paused mutation that returns before its default
+  function exists is discarded. Registering inside a component would be a race
+  whose losing side looks like a write that was never made.
+*/
+registerOfflineWrites(queryClient);
 
 export const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,

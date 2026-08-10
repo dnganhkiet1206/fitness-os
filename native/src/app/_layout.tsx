@@ -143,7 +143,23 @@ export default function RootLayout() {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister: asyncStoragePersister, maxAge: 1000 * 60 * 60 * 24, buster: CACHE_BUSTER }}>
+      persistOptions={{ persister: asyncStoragePersister, maxAge: 1000 * 60 * 60 * 24, buster: CACHE_BUSTER }}
+      /*
+        Finish whatever the last session could not send.
+
+        `onSuccess` fires once the persisted cache has been read back, which is
+        the earliest moment a paused mutation exists again — before it, there is
+        nothing to resume; the provider is what puts it there.
+
+        `registerOfflineWrites` has already run at module scope, so the function
+        those mutations need is waiting for them. In the other order a restored
+        write arrives with its variables and nowhere to take them, and React
+        Query drops it — which from outside is exactly what "the app forgot my
+        workout" looks like.
+      */
+      onSuccess={() => {
+        void queryClient.resumePausedMutations();
+      }}>
       <AppSettingsProvider>
       <AuthProvider>
         <ThemeProvider value={ascndTheme}>

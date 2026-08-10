@@ -40,7 +40,7 @@ thì vẫn nằm ở đây.
 | **Ghi chú** | Đây là mục có giá trị cao nhất trong nhóm A. Nhưng "giá trị cao" không phải là giấy phép làm vội. |
 | **Đã sửa thế nào** | `useDeleteBiometricSample` + danh sách lần đo trên `/biometrics`, dựng lại ngày của mẫu đó và hôm nay. Cùng lúc `body_measurements` cũng có `useDeleteBodyMeasurement` (không nuôi `daily_logs` nên không cần dựng lại). |
 
-### A3. Ghi khi mất mạng không sống sót
+### A3. Ghi khi mất mạng không sống sót — CƠ CHẾ ĐÃ CÓ 2026-08-10, ĐANG MỞ RỘNG
 
 | | |
 |---|---|
@@ -48,6 +48,8 @@ thì vẫn nằm ở đây.
 | **Đã làm** | Chặn phần *nói dối*: `offlineNow()` bỏ qua bản vá lạc quan khi offline. App không còn hiển thị con số sai. |
 | **Chưa làm** | Ghi offline vẫn mất. Cách sửa thật: persist mutation cache + đặt `mutationKey` + `setMutationDefaults` cho **~30 mutation**. |
 | **Rủi ro** | Một call site đặt sai key thì mutation đó **âm thầm** ngừng resume — không lỗi, không cảnh báo, chỉ là dữ liệu biến mất. Ba mươi chỗ để sai. Cần một cách kiểm tự động chứng minh cả 30 chỗ đều đúng **trước khi** bắt đầu, không phải sau. |
+| **Đã làm 2026-08-10** | Điều kiện trên được tôn trọng: `tools/offline-durable.mjs` viết **trước**. Và thiết kế tránh hẳn "30 mutationFn" — tài liệu TanStack gọi cách đó là gần như bất khả thi với 20+ mutation. Thay vào đó **một khoá, một hàm mặc định**, thứ thay đổi là *dữ liệu*: `OfflineWrite` là object thuần, không bắt closure, không giữ `user` từ hook. Thao tác được **đặt tên** chứ không phải ghi bảng thô, vì có việc không chỉ là một câu lệnh — ghi buổi tập còn phải dựng lại readiness, và hàng đợi insert thô sẽ replay insert rồi lặng lẽ bỏ bước dựng lại. |
+| **Đã chuyển 3/30** | `water_logs`, `workout_sessions`, `weight_logs` — những chỗ thật sự xảy ra ở nơi mất sóng. **Chưa chuyển** phần còn lại; luật trong công cụ áp cho mọi chỗ *đã* dùng khoá, chưa ép mọi chỗ *phải* dùng. Đây là mở rộng dần, không phải đã xong. |
 
 ### A4. `.env` nằm trong git
 

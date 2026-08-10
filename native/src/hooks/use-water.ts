@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
+import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { offlineNow } from '@/lib/offline';
 import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
@@ -83,23 +84,33 @@ export function useAddWater() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const dateStr = today();
-  return useMutation({
-    mutationFn: async (amountMl: number) => {
-      if (!user) throw new Error('Not signed in');
-      const { error } = await supabase.from('water_logs').insert({
-        user_id: user.id,
-        amount_ml: amountMl,
-        date: dateStr,
-        logged_at: new Date().toISOString(),
-      });
-      if (error) throw error;
-    },
-    onMutate: (amountMl) =>
+
+  const m = useMutation<void, Error, OfflineWrite, WaterCtx>({
+    /*
+      Through the durable queue, so a glass logged without signal is still a
+      glass tomorrow.
+
+      `mutationKey` is what makes this survive: React Query pauses a mutation it
+      cannot send and writes it to AsyncStorage, but on the next launch it needs
+      a `mutationFn` to hand the variables back to — and functions do not
+      serialise. The key is how it finds the one registered in `offline-write`.
+
+      No `mutationFn` here on purpose. Declaring one would work today and stop
+      working the moment the app restarts, because the local function is not
+      what comes back from storage; the default is. One definition, one
+      behaviour, whether it runs now or in an hour.
+    */
+    mutationKey: [...OFFLINE_WRITE_KEY],
+    onMutate: (w) =>
       patchWater(queryClient, user?.id, dateStr, (logs) => [
         // Newest first, matching the query's own order. The id is a placeholder
         // — the refetch replaces the row wholesale, and nothing keys off it in
         // the moment it exists.
-        { id: `optimistic-${Date.now()}`, amount_ml: amountMl, logged_at: new Date().toISOString() },
+        {
+          id: `optimistic-${Date.now()}`,
+          amount_ml: w.kind === 'water' ? w.amountMl : 0,
+          logged_at: new Date().toISOString(),
+        },
         ...logs,
       ]),
     onError: (_e, _vars, ctx) => rollbackWater(queryClient, ctx),
@@ -112,6 +123,30 @@ export function useAddWater() {
       queryClient.invalidateQueries({ queryKey: ['water_week', user?.id] });
     },
   });
+
+  /*
+    The call sites still say `mutate(ml)`.
+
+    The *variables* have to be a plain serialisable object — that is the whole
+    point, since they are what gets written to storage and read back by a
+    process that has forgotten this component, this user and this date. But
+    making every caller assemble one would push a detail of the persistence
+    layer into six screens, and the one that assembled it slightly differently
+    would be the one that silently stopped resuming.
+  */
+  return {
+    ...m,
+    mutate: (amountMl: number) => {
+      if (!user) return;
+      m.mutate({
+        kind: 'water',
+        userId: user.id,
+        amountMl,
+        date: dateStr,
+        at: new Date().toISOString(),
+      });
+    },
+  };
 }
 
 /** Undo the most recent water entry today (web: minus button) */
@@ -146,6 +181,7 @@ export function useRemoveLastWater() {
       queryClient.invalidateQueries({ queryKey: ['water_week', user?.id] });
     },
   });
+
 }
 
 /** Today's individual water entries — the detail list on the Water screen */
