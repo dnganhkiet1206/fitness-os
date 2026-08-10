@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { supabase } from '@/integrations/supabase/client';
+import { cancelAllReminders } from '@/lib/notifications';
 import { clearPersistedCache } from '@/lib/query-client';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -95,6 +96,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     // Drop cached data so the next account doesn't briefly see this one's
     await clearPersistedCache();
+    /*
+      And the notifications, which outlive the session by up to a week.
+
+      Reminders are scheduled a horizon ahead — about fifty of them across seven
+      days — and signing out cancelled none of them. So a phone that had been
+      handed on, or signed into by somebody else, went on saying "time to drink
+      water" on the previous account's schedule until the horizon ran out. The
+      next person to sign in inherited a stranger's day.
+
+      `cancelAllReminders` existed for exactly this and was called by nothing.
+      Rescheduling happens on its own once a plan is read for whoever signs in
+      next, so there is nothing to restore here.
+    */
+    await cancelAllReminders();
   };
 
   const resetPassword = async (email: string) => {

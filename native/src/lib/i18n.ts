@@ -403,6 +403,8 @@ interface Translations {
   progressWeightChart: string;
   progressMeasurementTrend: string;
   progressMeasurementHistory: string;
+  progressDeleteMeasurement: string;
+  progressDeleteMeasurementBody: string;
   progressAddMeasurement: string;
   progressUploadPhoto: string;
   progressDate: string;
@@ -1130,6 +1132,8 @@ const vi: Translations = {
   progressWeightChart: 'Biểu Đồ Cân Nặng',
   progressMeasurementTrend: 'Xu Hướng Số Đo',
   progressMeasurementHistory: 'Lịch Sử Số Đo',
+  progressDeleteMeasurement: 'Xoá số đo này?',
+  progressDeleteMeasurementBody: 'Cả dòng số đo của ngày này sẽ bị xoá khỏi bảng và biểu đồ.',
   progressAddMeasurement: 'Nhập số đo',
   progressUploadPhoto: 'Tải ảnh',
   progressDate: 'Ngày',
@@ -1837,6 +1841,8 @@ const en: Translations = {
   progressWeightChart: 'Weight Chart',
   progressMeasurementTrend: 'Measurement Trend',
   progressMeasurementHistory: 'Measurement History',
+  progressDeleteMeasurement: 'Delete this measurement?',
+  progressDeleteMeasurementBody: 'The whole row for this date is removed from the table and the chart.',
   progressAddMeasurement: 'Add measurement',
   progressUploadPhoto: 'Upload photo',
   progressDate: 'Date',

@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Camera, ChevronRight, Medal, Plus, Ruler, Scale, Sparkles, Swords, Target } from 'lucide-react-native';
+import { Camera, ChevronRight, Medal, Plus, Ruler, Scale, Sparkles, Swords, Target, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useId, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -23,7 +23,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useBodyMeasurements, useWeightHistory } from '@/hooks/use-fitness-data';
+import { useBodyMeasurements, useDeleteBodyMeasurement, useWeightHistory } from '@/hooks/use-fitness-data';
 import { useProgressPhotos } from '@/hooks/use-progress-photos';
 import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
@@ -236,6 +236,7 @@ export default function ProgressScreen() {
   const { data: weightAll } = useWeightHistory(3650);
   const { data: photos, isError: photosFailed } = useProgressPhotos();
   const { data: measurements, isError: measurementsFailed } = useBodyMeasurements();
+  const removeMeasurement = useDeleteBodyMeasurement();
 
   const { weight: wUnit, height: lHUnit } = useUnits();
   const wl = weightLabel(wUnit);
@@ -734,7 +735,26 @@ export default function ProgressScreen() {
                   {HISTORY_COLS.map((c) => (
                     <Text key={c.k} style={[styles.historyHeadText, styles.historyCol]} numberOfLines={1}>{c.l}</Text>
                   ))}
+                  {/* Matches the delete column below. Without it the header's
+                      flex columns are each 22pt wider than the body's, and the
+                      numbers stop sitting under their own headings. */}
+                  <View style={styles.historyDelete} />
                 </View>
+                {/*
+                  Every row is deletable, which it was not.
+
+                  `useDeleteBodyMeasurement` existed and no screen called it —
+                  the only delete hook in the app that nothing reached. So a
+                  waist typed as 800 instead of 80 sat in this table and in the
+                  trend chart above it for good, on the one screen whose whole
+                  job is showing change over time. One bad point flattens that
+                  chart's scale and every real month of progress with it.
+
+                  Nothing here feeds the readiness score, so there is no rebuild
+                  to do — unlike the sleep and biometric lists, whose delete
+                  confirmations say a score will be recomputed. This one only
+                  has to say what goes.
+                */}
                 {historyRows.map((row) => (
                   <View key={row.id} style={styles.historyRow}>
                     <Text style={[styles.historyDate, styles.historyDateCol]}>
@@ -748,6 +768,30 @@ export default function ProgressScreen() {
                         </Text>
                       );
                     })}
+                    <PressScale
+                      accessibilityRole="button"
+                      accessibilityLabel={i18n.progressDeleteMeasurement}
+                      // 16pt glyph in a narrow column; slop carries it to 44
+                      hitSlop={14}
+                      style={styles.historyDelete}
+                      disabled={removeMeasurement.isPending}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        Alert.alert(
+                          i18n.progressDeleteMeasurement,
+                          i18n.progressDeleteMeasurementBody,
+                          [
+                            { text: i18n.cancel, style: 'cancel' },
+                            {
+                              text: i18n.delete,
+                              style: 'destructive',
+                              onPress: () => removeMeasurement.mutate(row.id),
+                            },
+                          ],
+                        );
+                      }}>
+                      <Icon icon={Trash2} size={14} color={colors.mutedForeground} />
+                    </PressScale>
                   </View>
                 ))}
               </View>
@@ -982,6 +1026,7 @@ const styles = StyleSheet.create({
   historyHeadText: { fontSize: 10, fontWeight: '500', color: colors.mutedForeground, textAlign: 'right' },
   historyDateCol: { flex: 1.3, textAlign: 'left' },
   historyCol: { flex: 1 },
+  historyDelete: { width: 22, alignItems: 'flex-end', justifyContent: 'center' },
   historyDate: { fontSize: 11, color: colors.mutedForeground },
   historyValue: { fontSize: 11, fontFamily: 'Menlo', color: colors.foreground, textAlign: 'right', fontVariant: ['tabular-nums'] },
 

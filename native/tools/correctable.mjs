@@ -107,6 +107,68 @@ for (const table of HAND_WRITTEN) {
 }
 
 /*
+  ── a delete somebody can actually reach ──
+
+  The rule above asks whether a delete *exists in the codebase*. That is not the
+  same question as whether a person can correct a mistake, and the gap between
+  the two hid a real one: `useDeleteBodyMeasurement` was written, exported,
+  correct — and called by no screen. `body_measurements` passed every check here
+  while a waist typed as 800 instead of 80 stayed in the history table and in
+  the trend chart above it for good.
+
+  Which is the same shape as two other bugs found the same week: the coach's
+  memory extractor that only ran from a button almost nobody presses, and the
+  Health sync that only ran from three buttons. Machinery that is correct and
+  unreachable looks exactly like machinery that works, from every angle except
+  using the app.
+
+  So every `useDelete*` hook has to be named by something under `app/` or
+  `components/`. Hooks are the unit because that is how this app exposes a
+  delete to a screen; a hook nothing imports is a feature nobody has.
+*/
+{
+  const SCREENS = files.filter((f) => f.startsWith('src/app/') || f.startsWith('src/components/'));
+
+  for (const [f, c] of code) {
+    for (const m of c.matchAll(/export function (useDelete\w+)\(/g)) {
+      const name = m[1];
+      const used = SCREENS.some((g) => g !== f && new RegExp(`\\b${name}\\b`).test(code.get(g)));
+      if (!used) {
+        problems.push(
+          `${name} (${f}): không màn hình nào gọi — ` +
+            'hàm xoá có tồn tại nhưng người dùng không có nút nào để bấm, ' +
+            'nên một lần gõ nhầm vẫn là vĩnh viễn',
+        );
+      }
+    }
+  }
+}
+
+/*
+  ── signing out takes the notifications with it ──
+
+  Reminders are scheduled a horizon ahead — around fifty of them across seven
+  days. Signing out dropped the cached data and cancelled none of them, so a
+  phone handed on, or signed into by somebody else, went on firing the previous
+  account's schedule until the horizon ran out.
+
+  Not a data bug and not visible from inside the app, which is why it sat there:
+  everything on screen was correct for whoever was signed in. The wrongness only
+  existed on the lock screen of a person who was not.
+*/
+{
+  const auth = code.get('src/hooks/use-auth.tsx') ?? '';
+  const signOut = auth.slice(auth.indexOf('const signOut'));
+  if (!/cancelAllReminders\(\)/.test(signOut.slice(0, signOut.indexOf('};') + 2))) {
+    problems.push(
+      'use-auth.tsx: đăng xuất không huỷ thông báo đã hẹn — ' +
+        'máy vẫn nhắc theo lịch của tài khoản cũ tới hết chân trời 7 ngày, ' +
+        'kể cả khi người khác đã đăng nhập vào',
+    );
+  }
+}
+
+/*
   ── the rebuild covers today, not just the row's own day ──
 
   Checked on the shape rather than by name, because there are three of these
@@ -194,6 +256,28 @@ for (const [table, screen, hook] of [
  * anywhere, and a mistake nobody could undo.
  */
 const SELF = [
+  /*
+    The reachability rules. Both rebuild a version that shipped, and both of
+    those versions passed every other check in this file — which is the point:
+    "a delete exists" and "somebody can delete" are different questions, and
+    only the first one was ever being asked.
+  */
+  ['hàm xoá không màn nào gọi — bị bắt', () => {
+    const lib = 'export function useDeleteBodyMeasurement() {}';
+    const screens = ['export default function Progress() { const { data } = useBodyMeasurements(); }'];
+    const name = lib.match(/export function (useDelete\w+)\(/)[1];
+    return !screens.some((g) => new RegExp(`\\b${name}\\b`).test(g));
+  }],
+  ['hàm xoá có màn gọi — không báo oan', () => {
+    const lib = 'export function useDeleteBodyMeasurement() {}';
+    const screens = ['const removeMeasurement = useDeleteBodyMeasurement();'];
+    const name = lib.match(/export function (useDelete\w+)\(/)[1];
+    return screens.some((g) => new RegExp(`\\b${name}\\b`).test(g));
+  }],
+  ['đăng xuất không huỷ nhắc nhở — bị bắt', () => {
+    const bad = 'const signOut = async () => {\n  await supabase.auth.signOut();\n  await clearPersistedCache();\n};';
+    return !/cancelAllReminders\(\)/.test(bad);
+  }],
   ['ghi mà không xoá — bị bắt', () => {
     const f = "await supabase.from('sleep_logs').insert({ x: 1 });";
     return /from\('sleep_logs'\)[\s\S]{0,60}?\.insert/.test(f) && !/from\('sleep_logs'\)[\s\S]{0,60}?\.delete/.test(f);
@@ -239,5 +323,7 @@ const counted = HAND_WRITTEN.filter((t) =>
 console.log(
   `sửa sai được OK — ${counted} bảng người dùng tự ghi, bảng nào cũng xoá được; ` +
     'ba bảng nuôi điểm sẵn sàng đều dựng lại cả ngày của dòng đó lẫn hôm nay; ' +
-    'giấc ngủ và sinh trắc có danh sách bấm được, và xoá thì hỏi lại',
+    'giấc ngủ và sinh trắc có danh sách bấm được, và xoá thì hỏi lại; ' +
+    'mọi hàm useDelete* đều có ít nhất một màn hình gọi tới (hàm xoá không ai bấm được thì không phải là sửa được); ' +
+    'đăng xuất huỷ luôn thông báo đã hẹn',
 );
