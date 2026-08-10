@@ -71,6 +71,14 @@ export const EDGE_FUNCTIONS = {
   coach: 'ai-coach',
   coachMemory: 'ai-coach-memory',
   /**
+   * Purchases. `verifyPurchase` is called by the app after a StoreKit
+   * transaction; `store-webhook` is called by Apple and is on this list for the
+   * same reason the others are — this list is the deployment checklist, and a
+   * webhook that was never deployed fails silently for weeks.
+   */
+  verifyPurchase: 'verify-purchase',
+  storeWebhook: 'store-webhook',
+  /**
    * Not AI. Deleting an account means deleting the *auth* user, and no client
    * key can do that — it needs the service role, which must never ship in an
    * app. So it is a function like the others, and it is on this list because

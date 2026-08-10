@@ -385,6 +385,33 @@ export type Database = {
         }
         Relationships: []
       }
+      entitlements: {
+        Row: {
+          user_id: string
+          tier: string
+          store: string | null
+          store_txn_id: string | null
+          expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          tier?: string
+          store?: string | null
+          store_txn_id?: string | null
+          expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          tier?: string
+          store?: string | null
+          store_txn_id?: string | null
+          expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           common_mistakes: string[] | null

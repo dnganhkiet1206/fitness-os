@@ -14,3 +14,15 @@ verify_jwt = false
 
 [functions.ai-meal-suggest]
 verify_jwt = false
+
+[functions.ai-coach-memory]
+verify_jwt = false
+
+[functions.verify-purchase]
+verify_jwt = false
+
+# Apple's servers call this one and they hold no user token, so the platform
+# gate must be off. Safety does not come from the gate here — it comes from the
+# function never believing the request body; see the header of store-webhook.
+[functions.store-webhook]
+verify_jwt = false
