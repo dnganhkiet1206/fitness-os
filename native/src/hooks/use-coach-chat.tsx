@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { fetch as expoFetch } from 'expo/fetch';
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
-import { Alert } from 'react-native';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Alert, AppState } from 'react-native';
 
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -111,25 +111,64 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
   };
 
   /*
-    Learn from the conversation that is ending, then clear it.
+    Learn from the conversation, then let it go.
 
-    ── why here and not after every message ──
+    ── why not after every message ──
 
     A chat costs one extraction regardless of how long it ran, and nothing
-    durable is learned from a single line anyway. Closing a conversation is also
-    the moment the person has finished saying what they came to say.
+    durable is learned from a single line anyway.
 
+    ── how much of the conversation has already been paid for ──
+
+    Extraction used to happen in exactly one place, `newChat`, and that was the
+    bug: almost nobody presses "new chat". People finish asking and close the
+    app. The conversation lives in this provider's state, the app is killed, the
+    state goes with it, and nothing was ever learned — so the feature was
+    working perfectly in the one path nearly nobody takes.
+
+    So it also runs when the app goes to the background, which is what "I'm done
+    here" actually looks like. That makes the guard necessary rather than
+    decorative: without it, backgrounding an unchanged conversation four times
+    buys the same extraction four times.
+  */
+  const learnedAt = useRef(0);
+
+  /*
     ── why it is not awaited ──
 
-    Starting a new chat must not wait on a model call. If the extraction fails
-    the conversation is still over and the next one simply knows a little less;
-    there is nothing here worth showing an error for, and a toast about
-    bookkeeping in the middle of "new chat" would be noise.
+    Starting a new chat must not wait on a model call, and neither must
+    backgrounding the app. If the extraction fails the conversation is still
+    over and the next one simply knows a little less; there is nothing here
+    worth showing an error for, and a toast about bookkeeping would be noise.
   */
   const learnFrom = useCallback((convo: Msg[]) => {
+    if (convo.length <= learnedAt.current) return;
     if (convo.filter((m) => m.role === 'user').length < 2) return;
+    learnedAt.current = convo.length;
     void callEdge(EDGE_FUNCTIONS.coachMemory, { messages: convo.slice(-SEND_WINDOW) });
   }, []);
+
+  /*
+    The background listener reads the conversation through a ref.
+
+    It is registered once and would otherwise close over whatever `messages` was
+    at that moment — an empty array — and faithfully extract nothing for the
+    rest of the session.
+  */
+  const messagesRef = useRef<Msg[]>([]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    /* `background` rather than any non-active state: on iOS `inactive` also
+       fires for the app switcher and the notification shade, which are not
+       somebody finishing a conversation. */
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background') learnFrom(messagesRef.current);
+    });
+    return () => sub.remove();
+  }, [learnFrom]);
 
   const newChat = useCallback(() => {
     Haptics.selectionAsync();
@@ -137,6 +176,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
     convoIdRef.current = null;
     setConversationId(null);
     setMessages([]);
+    learnedAt.current = 0;
   }, [messages, learnFrom]);
 
   const loadConversation = useCallback(async (id: string) => {
@@ -152,12 +192,15 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
       .limit(HISTORY_LIMIT);
     convoIdRef.current = id;
     setConversationId(id);
-    setMessages(
-      (data ?? [])
-        .filter((m) => m.role === 'user' || m.role === 'assistant')
-        .reverse()
-        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-    );
+    const loaded = (data ?? [])
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .reverse()
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+    setMessages(loaded);
+    /* Everything in an old conversation has already been through extraction.
+       Without this, opening one from the history panel and then backgrounding
+       the app pays to learn the same facts again. */
+    learnedAt.current = loaded.length;
     grew();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
