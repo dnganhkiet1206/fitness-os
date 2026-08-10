@@ -16,6 +16,7 @@ import { AppLockProvider } from '@/hooks/use-app-lock';
 import { AppSettingsProvider, useI18n } from '@/hooks/use-app-settings';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { CoachChatProvider } from '@/hooks/use-coach-chat';
+import { useAutoHealthSync } from '@/hooks/use-health-sync';
 import { useProfile } from '@/hooks/useTodayData';
 import { asyncStoragePersister, CACHE_BUSTER, queryClient } from '@/lib/query-client';
 
@@ -34,6 +35,12 @@ const ascndTheme = {
   },
 };
 
+/** Renders nothing; keeps Apple Health current. See `useAutoHealthSync`. */
+function HealthAutoSync() {
+  useAutoHealthSync();
+  return null;
+}
+
 function Gate() {
   const { user, loading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -50,6 +57,15 @@ function Gate() {
 
   return (
     <>
+    {/*
+      Health data refreshes itself from here.
+
+      Below the auth and onboarding gates on purpose: there is no point reading
+      a watch for somebody who has not finished telling us who they are, and
+      nothing should touch the Health sheet while an onboarding step is on
+      screen. It renders nothing — it is a hook that needs a place to live.
+    */}
+    <HealthAutoSync />
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       {/* Input sheets use the standard iOS pageSheet modal (swipe down to

@@ -106,6 +106,42 @@ export async function requestHealthPermissions(): Promise<boolean> {
 }
 
 /**
+ * Has this person already been through the Health permission sheet?
+ *
+ * ── what it is for ──
+ *
+ * Reading Health on app open, without ever putting a permission sheet in front
+ * of somebody who did not ask for one. iOS shows that sheet **once**; spending
+ * it at a moment the person did not choose is spending it badly, and a "no"
+ * given to a sheet that appeared out of nowhere cannot be asked again from
+ * inside the app — only from Settings, which nobody goes to.
+ *
+ * So: `requestHealthPermissions` is for a button somebody pressed. This is for
+ * everything else.
+ *
+ * ── what it does not tell you ──
+ *
+ * Not whether they said yes. Apple deliberately refuses to answer that for
+ * *read* access — telling an app "you may not read this" leaks the fact that
+ * the data exists, so `authorizationStatusFor` is only meaningful for writing.
+ * `HKAuthorizationRequestStatus.unnecessary` means only "asking again would
+ * show nothing new".
+ *
+ * That is enough here, and the distinction is already handled downstream: a
+ * sync that comes back with nothing is treated as nothing to write. Reading
+ * zero types after a denial costs one cheap local query and writes nothing.
+ */
+export async function healthAlreadyAsked(): Promise<boolean> {
+  if (!hk) return false;
+  try {
+    const status = await hk.getRequestStatusForAuthorization({ toRead: [...READ_TYPES] });
+    return status === hk.AuthorizationRequestStatus.unnecessary;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Today's total of a cumulative quantity, in the unit asked for.
  *
  * Steps, active energy and exercise time are the same query three times over —

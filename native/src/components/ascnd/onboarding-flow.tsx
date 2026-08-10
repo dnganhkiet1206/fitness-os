@@ -2,10 +2,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import {
+  Bell,
   Check,
   ChevronLeft,
   ChevronRight,
   Dumbbell,
+  HeartPulse,
   Moon,
   Pill,
   Sparkles,
@@ -47,13 +49,15 @@ import {
   calcTDEE,
   calcWaterTarget,
 } from '@/lib/fitness-calc';
+import { isHealthKitAvailable, requestHealthPermissions } from '@/lib/health';
 import { getLegal, type LegalDoc } from '@/lib/legal-content';
 import { localDateStr } from '@/lib/local-date';
+import { requestNotificationPermission } from '@/lib/notifications';
 import { displayVolume, volumeLabel } from '@/lib/units';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 
-const TOTAL_STEPS = 6;
-const STEP_ICONS: LucideIcon[] = [User, Target, Dumbbell, Moon, Utensils, Pill];
+const TOTAL_STEPS = 7;
+const STEP_ICONS: LucideIcon[] = [User, Target, Dumbbell, Moon, Utensils, Pill, HeartPulse];
 
 const COMMON_ALLERGIES_VI = ['Sữa', 'Đậu phộng', 'Hạt cây', 'Trứng', 'Đậu nành', 'Lúa mì', 'Hải sản', 'Cá'];
 const COMMON_ALLERGIES_EN = ['Dairy', 'Peanuts', 'Tree nuts', 'Eggs', 'Soy', 'Wheat', 'Shellfish', 'Fish'];
@@ -76,11 +80,18 @@ function timeToHHMM(d: Date): string {
 }
 
 /**
- * Six-step onboarding — faithful port of the web Onboarding page:
- * Personal → Goal → Training → Lifestyle → Diet → Supplements, with the
- * live BMR/TDEE auto-calc box, goal summary, and the terms-acceptance
- * checkbox (legal docs open in a native sheet since the router isn't
- * mounted while onboarding gates the app).
+ * Onboarding: Personal → Goal → Training → Lifestyle → Diet → Supplements →
+ * Connect, with the live BMR/TDEE auto-calc box, goal summary, and the
+ * terms-acceptance checkbox (legal docs open in a native sheet since the router
+ * isn't mounted while onboarding gates the app).
+ *
+ * The first six steps are a faithful port of the web Onboarding page. The
+ * seventh is not in the web app and could not be: it offers Apple Health and
+ * notifications, which existed here but were reachable only from a button on
+ * Today and a screen in Settings respectively. Somebody finished onboarding,
+ * landed on a dashboard of empty rings, and was never told the app could fill
+ * them in — so the readiness score, which needs HRV, resting heart rate and
+ * sleep, had nothing to work with on the one device where it could have.
  */
 export function OnboardingFlow() {
   const { user } = useAuth();
@@ -97,6 +108,7 @@ export function OnboardingFlow() {
     i18n.onboardingStepLifestyle,
     i18n.onboardingStepDiet,
     i18n.onboardingStepSupplements,
+    i18n.onboardingStepConnect,
   ];
   const COMMON_ALLERGIES = lang === 'vi' ? COMMON_ALLERGIES_VI : COMMON_ALLERGIES_EN;
 
@@ -120,6 +132,36 @@ export function OnboardingFlow() {
   const [selectedSupps, setSelectedSupps] = useState<Set<number>>(new Set());
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'health' | null>(null);
+
+  /*
+    ── the two optional connections ──
+
+    `granted` here means "this device said yes", which is the only thing worth
+    reflecting on screen. Neither is stored on the profile: iOS owns both
+    answers, a person can revoke either in Settings without the app hearing
+    about it, and a row in our database claiming otherwise would be a second,
+    less truthful copy of a fact somebody else is responsible for.
+
+    Health is hidden entirely where HealthKit is unavailable — the simulator,
+    Expo Go, an iPad without it. An offer that cannot be accepted is worse than
+    no offer.
+  */
+  const healthAvailable = isHealthKitAvailable();
+  const [healthGranted, setHealthGranted] = useState(false);
+  const [notifyGranted, setNotifyGranted] = useState(false);
+
+  const connectHealth = async () => {
+    Haptics.selectionAsync();
+    /* No error path. A refusal is an answer, not a failure, and the app works
+       without it — telling somebody off for declining is how the next prompt
+       gets declined too. */
+    setHealthGranted(await requestHealthPermissions());
+  };
+
+  const enableReminders = async () => {
+    Haptics.selectionAsync();
+    setNotifyGranted(await requestNotificationPermission());
+  };
 
   // Live targets (web auto-calc box)
   const w = Number(weightKg) || 70;
@@ -533,11 +575,62 @@ export function OnboardingFlow() {
                 </View>
               </>
             )}
+
+            {/*
+              ── the two permissions, asked where they make sense ──
+
+              Both existed and neither was ever offered. Apple Health was
+              reachable only from a button on Today, and notifications only from
+              the reminders screen — so somebody finished onboarding, landed on
+              a dashboard of empty rings, and had no reason to think the app
+              could fill them in. The most considered thing in the product, the
+              readiness score, needs HRV, resting heart rate and sleep, and all
+              three arrive through a sheet nobody was shown.
+
+              Asked here rather than on launch because by this point the person
+              has spent six screens saying what they want, and each prompt can
+              be preceded by the reason it is being asked — which is the whole
+              difference between a permission somebody grants and one they
+              dismiss. iOS only offers each sheet once.
+
+              Neither blocks finishing. `onboardingConnectLater` is not a button
+              because the Next/Done control already is one; making "skip" a
+              second button would imply the other is required.
+            */}
+            {step === 6 && (
+              <>
+                <Text style={styles.connectIntro}>{i18n.onboardingConnectIntro}</Text>
+
+                {healthAvailable && (
+                  <PermissionCard
+                    icon={HeartPulse}
+                    title={i18n.onboardingHealthTitle}
+                    why={i18n.onboardingHealthWhy}
+                    cta={i18n.onboardingHealthConnect}
+                    done={i18n.onboardingHealthConnected}
+                    granted={healthGranted}
+                    onPress={connectHealth}
+                  />
+                )}
+
+                <PermissionCard
+                  icon={Bell}
+                  title={i18n.onboardingRemindTitle}
+                  why={i18n.onboardingRemindWhy}
+                  cta={i18n.onboardingRemindEnable}
+                  done={i18n.onboardingRemindEnabled}
+                  granted={notifyGranted}
+                  onPress={enableReminders}
+                />
+
+                <Text style={styles.connectLater}>{i18n.onboardingConnectLater}</Text>
+              </>
+            )}
           </GlassCard>
         </Animated.View>
 
         {/* Terms acceptance (final step, web) */}
-        {step === 5 && (
+        {step === 6 && (
           <Animated.View entering={FadeIn.duration(220)} style={styles.termsRow}>
             <Pressable
               accessibilityRole="checkbox"
@@ -707,6 +800,58 @@ function OptionCard({
   );
 }
 
+/**
+ * One optional connection: what it is, why it is worth it, and a way to say yes.
+ *
+ * The `why` line is the point of the whole card. iOS shows its own permission
+ * sheet once and that sheet cannot explain anything specific to this app — so
+ * the reason has to be on screen *before* the sheet appears, or the person is
+ * deciding with no information. "Reads sleep and HRV to work out your readiness
+ * each morning" is a decision somebody can make; a bare system prompt is a
+ * decision they can only guess at.
+ *
+ * Once granted, the button becomes a statement rather than a disabled control:
+ * there is nothing more to do, and a greyed-out button invites a second tap
+ * that will do nothing.
+ */
+function PermissionCard({
+  icon,
+  title,
+  why,
+  cta,
+  done,
+  granted,
+  onPress,
+}: {
+  icon: LucideIcon;
+  title: string;
+  why: string;
+  cta: string;
+  done: string;
+  granted: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <View style={styles.permCard}>
+      <View style={styles.permHead}>
+        <Icon icon={icon} size={16} color={granted ? colors.primary : colors.foreground} />
+        <Text style={styles.permTitle}>{title}</Text>
+      </View>
+      <Text style={styles.permWhy}>{why}</Text>
+      {granted ? (
+        <View style={styles.permDone}>
+          <Icon icon={Check} size={13} color={colors.primary} />
+          <Text style={styles.permDoneText}>{done}</Text>
+        </View>
+      ) : (
+        <PressScale accessibilityRole="button" style={styles.permBtn} onPress={onPress}>
+          <Text style={styles.permBtnText}>{cta}</Text>
+        </PressScale>
+      )}
+    </View>
+  );
+}
+
 function CalcItem({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <View style={styles.calcItem}>
@@ -861,6 +1006,32 @@ const styles = StyleSheet.create({
   termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm + 2, paddingHorizontal: 4 },
   termsText: { ...type.caption, color: colors.mutedForeground, flex: 1, lineHeight: 18 },
   termsLink: { color: colors.primary, textDecorationLine: 'underline' },
+
+  connectIntro: { ...type.footnote, color: colors.mutedForeground, lineHeight: 19, marginBottom: spacing.md },
+  connectLater: { ...type.caption, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
+  permCard: {
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.muted,
+    padding: spacing.md,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  permHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  permTitle: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  permWhy: { ...type.caption, color: colors.mutedForeground, lineHeight: 18 },
+  permBtn: {
+    alignSelf: 'flex-start',
+    // 32 drawn + 12 vertical padding either side reaches the 44pt target
+    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+  },
+  permBtnText: { ...type.caption, fontWeight: '600', color: colors.primaryForeground },
+  permDone: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  permDoneText: { ...type.caption, fontWeight: '600', color: colors.primary },
 
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   prevBtn: {

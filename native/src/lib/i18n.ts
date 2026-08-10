@@ -579,6 +579,17 @@ interface Translations {
   onboardingStepLifestyle: string;
   onboardingStepDiet: string;
   onboardingStepSupplements: string;
+  onboardingStepConnect: string;
+  onboardingConnectIntro: string;
+  onboardingHealthTitle: string;
+  onboardingHealthWhy: string;
+  onboardingHealthConnect: string;
+  onboardingHealthConnected: string;
+  onboardingRemindTitle: string;
+  onboardingRemindWhy: string;
+  onboardingRemindEnable: string;
+  onboardingRemindEnabled: string;
+  onboardingConnectLater: string;
   onboardingYourGoal: string;
   onboardingTrainingLevel: string;
   onboardingBeginner: string;
@@ -1287,6 +1298,17 @@ const vi: Translations = {
   onboardingStepLifestyle: 'Lịch sinh hoạt',
   onboardingStepDiet: 'Chế độ ăn',
   onboardingStepSupplements: 'Thực phẩm bổ sung',
+  onboardingStepConnect: 'Kết nối',
+  onboardingConnectIntro: 'Hai thứ này làm app tự chạy thay vì bắt bạn nhập tay. Bỏ qua cũng được, bật lại trong Cài đặt bất cứ lúc nào.',
+  onboardingHealthTitle: 'Apple Health',
+  onboardingHealthWhy: 'Đọc bước chân, giấc ngủ, nhịp tim nghỉ và HRV để tính điểm sẵn sàng mỗi sáng. Không có nó, những số này phải nhập tay.',
+  onboardingHealthConnect: 'Kết nối Apple Health',
+  onboardingHealthConnected: 'Đã kết nối',
+  onboardingRemindTitle: 'Nhắc nhở',
+  onboardingRemindWhy: 'Nhắc uống nước, ghi bữa ăn và đi ngủ đúng giờ bạn vừa chọn.',
+  onboardingRemindEnable: 'Bật nhắc nhở',
+  onboardingRemindEnabled: 'Đã bật',
+  onboardingConnectLater: 'Bỏ qua, để sau',
   onboardingYourGoal: 'Mục tiêu của bạn',
   onboardingTrainingLevel: 'Trình độ tập luyện',
   onboardingBeginner: 'Người mới',
@@ -1983,6 +2005,17 @@ const en: Translations = {
   onboardingStepLifestyle: 'Lifestyle',
   onboardingStepDiet: 'Diet',
   onboardingStepSupplements: 'Supplements',
+  onboardingStepConnect: 'Connect',
+  onboardingConnectIntro: 'These two let the app work on its own instead of asking you to type. Skipping is fine — you can turn them on later in Settings.',
+  onboardingHealthTitle: 'Apple Health',
+  onboardingHealthWhy: 'Reads steps, sleep, resting heart rate and HRV to work out your readiness each morning. Without it, those numbers have to be entered by hand.',
+  onboardingHealthConnect: 'Connect Apple Health',
+  onboardingHealthConnected: 'Connected',
+  onboardingRemindTitle: 'Reminders',
+  onboardingRemindWhy: 'Nudges for water, meals and bedtime, at the hours you just set.',
+  onboardingRemindEnable: 'Turn on reminders',
+  onboardingRemindEnabled: 'On',
+  onboardingConnectLater: 'Skip for now',
   onboardingYourGoal: 'Your goal',
   onboardingTrainingLevel: 'Training level',
   onboardingBeginner: 'Beginner',

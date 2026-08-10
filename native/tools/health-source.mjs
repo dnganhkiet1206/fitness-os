@@ -40,6 +40,8 @@ const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm,
 const HEALTH = 'src/lib/health.ts';
 const SYNC = 'src/hooks/use-health-sync.ts';
 const SERVICE = 'src/lib/daily-log-service.ts';
+const LAYOUT = 'src/app/_layout.tsx';
+const ONBOARDING = 'src/components/ascnd/onboarding-flow.tsx';
 
 const problems = [];
 
@@ -201,6 +203,114 @@ const problems = [];
   }
 }
 
+/*
+  ── 6: và có thứ gì đó thật sự chạy nó ──
+
+  Everything above is about the data being right. This is about the data being
+  *there*, which turned out to be a separate question with a worse answer.
+
+  The sync ran from three buttons and nothing else. Every rule above passed —
+  SDNN in the SDNN column, sleep minus the awake stages, resting heart rate from
+  the right identifier — and on an ordinary morning the readiness score was
+  still computed from yesterday's numbers, because nobody had tapped. A pipeline
+  that is correct and never runs looks exactly like one that works.
+
+  Four properties, and three of them are about *manners*: an automatic thing
+  that prompts, shouts, or runs constantly gets the feature turned off, which
+  costs more than the staleness it was fixing.
+*/
+{
+  const sync = strip(read(SYNC));
+  const layout = strip(read(LAYOUT));
+
+  if (!/export function useAutoHealthSync/.test(sync)) {
+    problems.push(
+      `${SYNC}: không có đường chạy tự động — ` +
+        'mọi luật ở trên vẫn đúng mà điểm sẵn sàng sáng nay vẫn tính từ số của hôm qua',
+    );
+  }
+  /*
+    Rendered, not merely defined.
+
+    The first version of this rule looked for `useAutoHealthSync()` anywhere in
+    the layout — which the wrapper's own body contains. Deleting `<HealthAutoSync
+    />` from the tree left the component defined, unrendered, and the rule
+    perfectly happy. A hook that is never mounted never runs, which is the exact
+    bug this whole section exists for, reproduced inside its own check.
+  */
+  if (!/<HealthAutoSync\s*\/>/.test(layout)) {
+    problems.push(
+      `${LAYOUT}: không render <HealthAutoSync /> — ` +
+        'định nghĩa hook mà không mount thì nó không bao giờ chạy, đúng thứ lỗi mục này sinh ra để bắt',
+    );
+  }
+  if (!/useAutoHealthSync\(\)/.test(layout)) {
+    problems.push(`${LAYOUT}: không gọi useAutoHealthSync`);
+  }
+
+  /* iOS shows the Health sheet once. Spending it on app launch, at a moment
+     nobody chose, is spending it badly — and a "no" cannot be re-asked from
+     inside the app afterwards, only from Settings. */
+  const auto = sync.slice(sync.indexOf('useAutoHealthSync'));
+  if (/requestHealthPermissions\(/.test(auto)) {
+    problems.push(
+      `${SYNC}: đường tự động gọi requestHealthPermissions — ` +
+        'iOS chỉ hiện bảng xin quyền một lần, tiêu nó vào lúc người dùng không yêu cầu là tiêu phí',
+    );
+  }
+  if (!/healthAlreadyAsked\(/.test(auto)) {
+    problems.push(`${SYNC}: đường tự động không kiểm tra healthAlreadyAsked trước khi đọc`);
+  }
+
+  /* A toast on every foreground is noise; an error toast for work nobody asked
+     for is worse. Both are checked at the source: the silent flag has to reach
+     the two places that speak. */
+  for (const [what, re] of [
+    ['toast thành công', /if \(silent\) return;[\s\S]{0,200}?toast\.success/],
+    ['toast lỗi', /if \(!silent\) toast\.error/],
+  ]) {
+    if (!re.test(sync)) {
+      problems.push(
+        `${SYNC}: ${what} không được chặn ở lần chạy tự động — ` +
+          'mỗi lần mở app lại hiện một thông báo cho việc không ai yêu cầu',
+      );
+    }
+  }
+
+  /* Persisted, and stamped before the run: a device with no Health data must
+     not retry on every single foreground for ever. */
+  if (!/AsyncStorage\.setItem\(LAST_SYNC_KEY[\s\S]{0,120}?mutate\(\)/.test(sync)) {
+    problems.push(
+      `${SYNC}: mốc thời gian không được ghi TRƯỚC khi chạy — ` +
+        'lần chạy hỏng sẽ không giữ khoảng nghỉ, và máy không có dữ liệu Health sẽ thử lại mỗi lần mở app',
+    );
+  }
+}
+
+/*
+  ── 7: onboarding mời cả hai quyền ──
+
+  The same failure one step earlier. Both permissions existed and neither was
+  ever offered: Health only from a button on Today, notifications only from a
+  screen in Settings. Somebody finished onboarding, landed on a dashboard of
+  empty rings, and had no reason to think the app could fill them in.
+
+  The `why` line is checked too, because it is the part that does the work. iOS
+  shows a system sheet that cannot say anything specific to this app, so if the
+  reason is not on screen first, the person is deciding with nothing to go on.
+*/
+{
+  const onb = strip(read(ONBOARDING));
+  for (const [what, re, why] of [
+    ['Apple Health', /requestHealthPermissions\(/, 'điểm sẵn sàng cần HRV, nhịp tim nghỉ và giấc ngủ — không có quyền thì không có gì để tính'],
+    ['thông báo', /requestNotificationPermission\(/, 'toàn bộ phần nhắc nhở im lặng nếu không ai xin quyền'],
+    ['lý do trước khi xin', /onboardingHealthWhy/, 'bảng hệ thống của iOS không nói được vì sao app này cần'],
+    ['ẩn khi máy không có HealthKit', /isHealthKitAvailable\(/, 'một lời mời không thể nhận lời còn tệ hơn không mời'],
+  ]) {
+    if (!re.test(onb)) problems.push(`${ONBOARDING}: không mời "${what}" — ${why}`);
+  }
+}
+
 /**
  * The self-test.
  *
@@ -240,6 +350,43 @@ const SELF = [
     const bad = "{ volume_load: w.kcal ?? 0, external_id: w.id }";
     return !/volume_load: 0/.test(bad);
   }],
+  /*
+    The wiring rules. Each rebuilds the version that shipped, because in every
+    case that version *looked* finished — the sync was written, the permission
+    helpers were written, and the only thing missing was a caller.
+  */
+  ['chỉ có nút bấm, không có đường tự động — bị bắt', () => {
+    const bad = 'export function useHealthSync() {\n  return { available: isHealthKitAvailable(), sync };\n}';
+    return !/export function useAutoHealthSync/.test(bad);
+  }],
+  ['đường tự động tự ý xin quyền — bị bắt', () => {
+    const bad = 'export function useAutoHealthSync() {\n  const granted = await requestHealthPermissions();\n}';
+    const auto = bad.slice(bad.indexOf('useAutoHealthSync'));
+    return /requestHealthPermissions\(/.test(auto);
+  }],
+  ['đường tự động im lặng — không báo oan', () => {
+    const good = 'export function useAutoHealthSync() {\n  if (!(await healthAlreadyAsked())) return;\n}';
+    const auto = good.slice(good.indexOf('useAutoHealthSync'));
+    return !/requestHealthPermissions\(/.test(auto) && /healthAlreadyAsked\(/.test(auto);
+  }],
+  ['ghi mốc SAU khi chạy — bị bắt', () => {
+    const bad = 'sync.mutate();\nawait AsyncStorage.setItem(LAST_SYNC_KEY, String(Date.now()));';
+    return !/AsyncStorage\.setItem\(LAST_SYNC_KEY[\s\S]{0,120}?mutate\(\)/.test(bad);
+  }],
+  ['định nghĩa hook nhưng không render — bị bắt', () => {
+    /* The one the first version of this rule missed: the wrapper still exists
+       and still calls the hook, it simply is not in the tree. */
+    const bad = 'function HealthAutoSync() {\n  useAutoHealthSync();\n  return null;\n}\nreturn <Stack />;';
+    return /useAutoHealthSync\(\)/.test(bad) && !/<HealthAutoSync\s*\/>/.test(bad);
+  }],
+  ['có render — không báo oan', () => {
+    const good = 'function HealthAutoSync() {\n  useAutoHealthSync();\n  return null;\n}\nreturn <><HealthAutoSync /><Stack /></>;';
+    return /<HealthAutoSync\s*\/>/.test(good);
+  }],
+  ['onboarding không mời quyền nào — bị bắt', () => {
+    const bad = 'const finish = useMutation({ mutationFn: async () => { await supabase.from("profiles").upsert({}); } });';
+    return !/requestHealthPermissions\(/.test(bad) && !/requestNotificationPermission\(/.test(bad);
+  }],
 ];
 const missed = SELF.filter(([, fn]) => !fn()).map(([l]) => l);
 if (missed.length) {
@@ -257,5 +404,8 @@ console.log(
   'nguồn sức khoẻ OK — SDNN của Apple vào cột SDNN và baseline HRV chỉ dùng một họ chỉ số (HRV nặng 0.30 điểm sẵn sàng); ' +
     'thời lượng ngủ loại giai đoạn thức và cả hai chỗ đọc sleep_logs dùng chung một hàm; ' +
     'nhịp tim nghỉ đọc từ RestingHeartRate chứ không phải nhịp tức thời, SpO₂ tự nhận đơn vị theo dải sinh lý; ' +
-    'buổi tập nhập về mang volume_load 0 nên ACWR không đổi, và external_id khiến đồng bộ lại không nhân đôi',
+    'buổi tập nhập về mang volume_load 0 nên ACWR không đổi, và external_id khiến đồng bộ lại không nhân đôi; ' +
+    'và đường ống này thật sự có người chạy — đồng bộ tự động khi mở app (15 phút một lần, ghi mốc trước khi chạy), ' +
+    'không tự ý bật bảng xin quyền, không nói gì khi thành công lẫn thất bại; ' +
+    'onboarding có mời cả Apple Health lẫn thông báo, kèm lý do trước khi bảng hệ thống hiện ra',
 );

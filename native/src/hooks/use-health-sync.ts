@@ -1,5 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import { useCallback, useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -15,6 +18,7 @@ import {
   getTodayActiveEnergy,
   getTodayExerciseMinutes,
   getTodaySteps,
+  healthAlreadyAsked,
   isHealthKitAvailable,
   requestHealthPermissions,
 } from '@/lib/health';
@@ -26,8 +30,29 @@ import { localDateStr } from '@/lib/local-date';
  * Pulls today's steps + latest biometrics from Apple Health and writes
  * them to the same tables the web app uses (biometric_samples inserts,
  * daily_logs.steps upsert), then refreshes the Today queries.
+ *
+ * ── two callers, and why they are not the same ──
+ *
+ * This ran from three buttons and nowhere else. Everything below worked
+ * perfectly and only when somebody remembered to press one — which meant that
+ * on any ordinary morning the readiness score, the most considered number in
+ * the app, was computed from **yesterday's** HRV, resting heart rate and sleep.
+ * Nothing looked broken. The number was simply wrong, quietly, for everybody
+ * who did not tap.
+ *
+ * So there is now a second caller that runs on its own (`useAutoHealthSync`),
+ * and it needs the opposite manners from the button:
+ *
+ *   - **It must not prompt.** iOS shows the Health sheet once. A button press
+ *     is somebody asking for it; opening the app is not.
+ *   - **It must not speak.** A success toast and a haptic every time the app
+ *     comes to the foreground is noise, and a red error toast on launch — for
+ *     work nobody requested — is worse.
+ *
+ * `silent` is that difference, and it is a parameter rather than two copies of
+ * the body because the writes below are the part that must not drift apart.
  */
-export function useHealthSync() {
+function useSyncMutation(silent: boolean) {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
   const queryClient = useQueryClient();
@@ -39,7 +64,8 @@ export function useHealthSync() {
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
 
-      const granted = await requestHealthPermissions();
+      /* The button may ask. The clock may not — see `healthAlreadyAsked`. */
+      const granted = silent ? await healthAlreadyAsked() : await requestHealthPermissions();
       if (!granted) throw new Error('Health access was not granted');
 
       const [bio, steps, activeKcal, exerciseMin, sleep, workouts] = await Promise.all([
@@ -198,11 +224,78 @@ export function useHealthSync() {
       queryClient.invalidateQueries({ queryKey: ['sleep_logs', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['sleep_duration_history', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['recent_workouts', user?.id] });
+      if (silent) return;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast.success(i18n.nHealthSynced);
     },
-    onError: (e: Error) => toast.error(e.message),
+    /* "No permission" and "no data yet" are the two ordinary outcomes of an
+       automatic run, and neither is something to interrupt somebody with. */
+    onError: (e: Error) => {
+      if (!silent) toast.error(e.message);
+    },
   });
 
-  return { available: isHealthKitAvailable(), sync };
+  return sync;
+}
+
+export function useHealthSync() {
+  return { available: isHealthKitAvailable(), sync: useSyncMutation(false) };
+}
+
+/**
+ * How long yesterday's numbers may stand before they are refreshed.
+ *
+ * Fifteen minutes is chosen against the slowest thing this reads rather than
+ * the fastest. Steps move constantly, but sleep arrives once a night and HRV
+ * and resting heart rate are written by the watch a few times a day — so the
+ * gap that matters is "did last night land before I looked", and any interval
+ * under an hour answers that. Fifteen keeps the step count feeling live without
+ * making the app do real work every time it is glanced at.
+ *
+ * Persisted rather than kept in memory, because the common shape of a morning
+ * is opening the app four times in ten minutes.
+ */
+const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
+const LAST_SYNC_KEY = 'health:lastAutoSync';
+
+/**
+ * Keep Health data current without anybody having to think about it.
+ *
+ * Mounted once, inside the authenticated part of the tree. Runs on mount and
+ * whenever the app returns to the foreground — the two moments at which
+ * somebody is about to look at a number and it had better be today's.
+ */
+export function useAutoHealthSync(): void {
+  const { user } = useAuth();
+  const sync = useSyncMutation(true);
+
+  /* The mutation object is rebuilt every render; the effect below must not be.
+     Reading it through a ref keeps the listener registered once. */
+  const syncRef = useRef(sync);
+  useEffect(() => {
+    syncRef.current = sync;
+  }, [sync]);
+
+  const attempt = useCallback(async () => {
+    if (!user || !isHealthKitAvailable()) return;
+    if (syncRef.current.isPending) return;
+    if (!(await healthAlreadyAsked())) return;
+
+    const last = Number((await AsyncStorage.getItem(LAST_SYNC_KEY)) ?? 0);
+    if (Date.now() - last < AUTO_SYNC_INTERVAL_MS) return;
+
+    /* Stamped before the run, not after. A sync that fails should still hold
+       the interval — otherwise a device with no Health data retries on every
+       single foreground, for ever. */
+    await AsyncStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
+    syncRef.current.mutate();
+  }, [user]);
+
+  useEffect(() => {
+    void attempt();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void attempt();
+    });
+    return () => sub.remove();
+  }, [attempt]);
 }
