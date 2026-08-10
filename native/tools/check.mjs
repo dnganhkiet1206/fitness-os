@@ -90,6 +90,13 @@ const STEPS = [
   */
   ['route đã sinh', 'node', ['tools/typed-routes.mjs']],
   ['kiểu dữ liệu', 'npx', ['tsc', '--noEmit']],
+  /*
+    Early, and right after `tsc`, because it catches a class `tsc` cannot see
+    at all: a string rendered outside `<Text>`. That is legal TypeScript and a
+    hard crash at runtime, and the stack RN prints for it names no file in this
+    app — so without this step the only way to find one is to open every screen.
+  */
+  ['chữ ngoài Text', 'node', ['tools/stray-text.mjs']],
   ['cửa sổ ngày', 'node', ['tools/day-window.mjs']],
   ['backend', 'node', ['tools/backend-config.mjs']],
   ['vùng chạm', 'node', ['tools/tap-targets.mjs']],

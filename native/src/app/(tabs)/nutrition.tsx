@@ -160,7 +160,8 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
               onPress={() => {
                 Haptics.selectionAsync();
                 router.push({ pathname: '/meal-plan', params: { plan: p.id } });
-              }}>              <GlassCard style={styles.planCard}>
+              }}>
+              <GlassCard style={styles.planCard}>
                 <View style={styles.planText}>
                   <Text style={styles.planName} numberOfLines={1}>{p.name}</Text>
                   <Text style={styles.planMeta} numberOfLines={1}>
@@ -174,7 +175,7 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
                 </View>
                 <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
               </GlassCard>
-</PressScale>
+            </PressScale>
           </Animated.View>
         ))}
       </View>
