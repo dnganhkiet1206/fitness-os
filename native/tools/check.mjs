@@ -127,6 +127,7 @@ const STEPS = [
   ['sửa sai được', 'node', ['tools/correctable.mjs']],
   ['sẵn sàng deploy', 'node', ['tools/deployable.mjs']],
   ['ghi khi mất mạng', 'node', ['tools/offline-durable.mjs']],
+  ['ngân sách ảnh', 'node', ['tools/photo-budget.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],

@@ -60,13 +60,16 @@ thì vẫn nằm ở đây.
 | **Vì sao vẫn ghi** | Nguy hiểm là thói quen: người tiếp theo thêm một secret thật vào file đó sẽ publish nó mà không biết. |
 | **Còn thiếu để sửa** | Quyết định của chủ dự án: chỉ `git rm --cached` (lịch sử vẫn còn) hay viết lại lịch sử. Cái thứ hai đụng vào mọi clone và mọi PR đang mở — **không được tự quyết**. |
 
-### A5. Bucket `progress-photos` không giới hạn dung lượng hay kiểu file
+### ~~A5. Bucket `progress-photos` không giới hạn dung lượng hay kiểu file~~ — ĐÃ SỬA 2026-08-10
 
 | | |
 |---|---|
 | **Bằng chứng** | Bucket được tạo bằng `INSERT INTO storage.buckets (id, name, public)` và không gì khác (`20260212045102_….sql:60`); không có `file_size_limit` hay `allowed_mime_types` ở bất kỳ migration nào. |
 | **Hậu quả** | Lưu trữ và băng thông đều tính tiền, và policy theo user không quan tâm file lớn cỡ nào. |
 | **Còn thiếu để sửa** | Một migration đặt giới hạn là dễ. Chọn **con số** thì không: quá thấp là chặn ảnh iPhone thật. Cần biết kích thước ảnh thực tế app tạo ra (`use-progress-photos.ts` upload JPEG chưa nén lại) trước khi chốt. |
+| **Đã sửa thế nào** | Đúng thứ tự đó: **chặn đầu vào trước, chốt số sau**. `src/lib/photo-size.ts` giới hạn cạnh dài 1920 qua `pictureSize` của `CameraView` + `quality 0.6` — dùng thứ `expo-camera` đã có, không thêm `expo-image-manipulator` (native module, phải rebuild). Rồi bucket đặt **5 MiB + chỉ `image/jpeg`**, tức khoảng gấp đôi trường hợp xấu nhất app tạo được. |
+| **Cái bẫy suýt dính** | `getAvailablePictureSizesAsync` trả **khác nhau theo nền tảng**: Android cho `"1920x1080"`, iOS cho tên preset AVFoundation (`photo`, `high`…). Hàm chỉ parse `WxH` trông hoàn toàn đúng, qua mọi test viết theo Android, và **âm thầm để iOS ở mặc định** — đúng nền tảng app này nhắm tới, và là nền tảng có mặc định lớn nhất. `tools/photo-budget.mjs` chạy hàm thật trên 9 ca của cả hai nền tảng. |
+| **Chưa đo trên máy thật** | Trần đầu vào là thật và phép tính là số học thường, nhưng chưa có iPhone nào chụp qua đoạn code này. Nếu ảnh thật tiến gần 5 MiB thì thứ cần xem lại là `MAX_EDGE`, không phải con số bucket. |
 
 ### ~~A6. `delete-account` chưa tồn tại~~ — ĐÃ VIẾT 2026-08-10
 

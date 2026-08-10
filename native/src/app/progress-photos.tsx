@@ -20,6 +20,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { PHOTO_QUALITY, pickPictureSize } from '@/lib/photo-size';
 import { parseLocalDate } from '@/lib/local-date';
 import {
   useDeleteProgressPhoto,
@@ -137,6 +138,28 @@ function CaptureView({
   const [pose, setPose] = useState<Pose>('front');
   const busyRef = useRef(false);
 
+  /*
+    Ask the camera what it can do, then ask it for less.
+
+    `pictureSize` has to come from `getAvailablePictureSizesAsync` — it is
+    passed straight to the native layer, and a string that platform does not
+    recognise is a crash or a silently ignored prop, not a smaller photo.
+
+    Undefined until the camera is ready, and undefined is a valid answer: it
+    means "leave the default alone", which is a large photo rather than a broken
+    one. `pickPictureSize` explains why the two platforms need separate handling
+    — Android returns `1920x1080`, iOS returns preset names.
+  */
+  const [pictureSize, setPictureSize] = useState<string | undefined>(undefined);
+  const onCameraReady = async () => {
+    try {
+      const sizes = await cameraRef.current?.getAvailablePictureSizesAsync();
+      setPictureSize(pickPictureSize(sizes));
+    } catch {
+      // leave it at the device default; a failed query is not worth a message
+    }
+  };
+
   const poses: { key: Pose; label: string }[] = [
     { key: 'front', label: i18n.nPhotoFront },
     { key: 'side', label: i18n.nPhotoSide },
@@ -148,7 +171,10 @@ function CaptureView({
     busyRef.current = true;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.6 });
+      const photo = await cameraRef.current.takePictureAsync({
+        base64: true,
+        quality: PHOTO_QUALITY,
+      });
       if (photo?.base64) onCaptured(photo.base64, pose);
     } finally {
       busyRef.current = false;
@@ -172,7 +198,13 @@ function CaptureView({
 
   return (
     <View style={styles.captureRoot}>
-      <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" />
+      <CameraView
+        ref={cameraRef}
+        style={StyleSheet.absoluteFill}
+        facing="front"
+        pictureSize={pictureSize}
+        onCameraReady={onCameraReady}
+      />
       <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yClose} style={[styles.closeBtn, { top: insets.top + spacing.sm }]} hitSlop={8} onPress={onClose}>
         <Icon icon={X} size={16} color="#fff" />
       </Pressable>
