@@ -26,3 +26,8 @@ verify_jwt = false
 # function never believing the request body; see the header of store-webhook.
 [functions.store-webhook]
 verify_jwt = false
+
+# Deleting an account needs the service role, so the platform gate is off and
+# the function reads the caller's JWT itself — see `_shared/guard.ts`.
+[functions.delete-account]
+verify_jwt = false

@@ -66,13 +66,13 @@ thì vẫn nằm ở đây.
 | **Hậu quả** | Lưu trữ và băng thông đều tính tiền, và policy theo user không quan tâm file lớn cỡ nào. |
 | **Còn thiếu để sửa** | Một migration đặt giới hạn là dễ. Chọn **con số** thì không: quá thấp là chặn ảnh iPhone thật. Cần biết kích thước ảnh thực tế app tạo ra (`use-progress-photos.ts` upload JPEG chưa nén lại) trước khi chốt. |
 
-### A6. `delete-account` chưa tồn tại
+### ~~A6. `delete-account` chưa tồn tại~~ — ĐÃ VIẾT 2026-08-10
 
 | | |
 |---|---|
 | **Bằng chứng** | Không có thư mục trong `supabase/functions/`, không có mục trong `supabase/config.toml`. |
 | **Hiện tại không hỏng gì** | Nút trong Cài đặt đã gọi nó và đã nói đúng "máy chủ chưa bật chức năng này" khi nhận 404. |
-| **Trạng thái** | Đây là **việc chưa làm**, không phải lỗi. Đặc tả đầy đủ ở `docs/connecting-a-backend.md` §3, gồm cả bước xoá file Storage mà cascade không với tới. |
+| **Trạng thái** | Đã viết theo đúng đặc tả `docs/connecting-a-backend.md` §3. Danh tính lấy từ token qua `requireUser`; Storage xoá **theo từng trang** trước khi xoá auth user (`list` mặc định 100 file — người dùng lâu năm sẽ sót phần sau); không xoá tay bảng nào; mọi nhánh lỗi trả 5xx. `tools/deployable.mjs` giữ luật, gồm cả việc mọi function đều phải có mục trong `config.toml`. **Vẫn cần deploy** — viết xong không phải là đã bật. |
 
 ### A7. Xoá buổi tập không dựng lại các ngày ở giữa
 
