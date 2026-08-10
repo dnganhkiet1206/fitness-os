@@ -211,6 +211,36 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_memory: {
+        Row: {
+          id: string
+          user_id: string
+          kind: string
+          fact: string
+          first_seen: string
+          last_confirmed: string
+          source_excerpt: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          kind: string
+          fact: string
+          first_seen?: string
+          last_confirmed?: string
+          source_excerpt?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          kind?: string
+          fact?: string
+          first_seen?: string
+          last_confirmed?: string
+          source_excerpt?: string | null
+        }
+        Relationships: []
+      }
       body_measurements: {
         Row: {
           bicep_left_cm: number | null

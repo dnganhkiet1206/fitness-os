@@ -122,6 +122,7 @@ const STEPS = [
   ['luật chuyển động', 'node', ['tools/motion.mjs']],
   ['nguồn sức khoẻ', 'node', ['tools/health-source.mjs']],
   ['quyền kinh tế', 'node', ['tools/economy-authority.mjs']],
+  ['trí nhớ coach', 'node', ['tools/coach-memory.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],

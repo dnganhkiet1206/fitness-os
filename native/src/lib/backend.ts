@@ -69,6 +69,7 @@ export const EDGE_FUNCTIONS = {
   weeklyReview: 'ai-weekly-review',
   smartNudges: 'ai-smart-nudges',
   coach: 'ai-coach',
+  coachMemory: 'ai-coach-memory',
   /**
    * Not AI. Deleting an account means deleting the *auth* user, and no client
    * key can do that — it needs the service role, which must never ship in an

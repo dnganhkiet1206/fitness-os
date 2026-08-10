@@ -126,6 +126,10 @@ const TOOLS: Tool[] = [
   { key: 'scan', glyph: 'camera', label: { vi: 'Quét thực phẩm', en: 'Scan a meal' }, hint: { vi: 'Hướng máy ảnh vào đĩa ăn', en: 'Point the camera at a plate' }, route: '/scan-food?from=ai' },
   { key: 'bio', glyph: 'heart', label: { vi: 'Sinh trắc học', en: 'Biometrics' }, hint: { vi: 'Nhịp tim, HRV, oxy', en: 'Heart rate, HRV, oxygen' }, route: '/biometrics' },
   { key: 'sleep', glyph: 'moon', label: { vi: 'Giấc ngủ', en: 'Sleep' }, hint: { vi: 'Đêm qua, và xu hướng', en: 'Last night, and the trend' }, route: '/sleep-insights' },
+  /* The memory is the reason the coach stops asking the same questions, and a
+     feature nobody can see does not feel like personalisation — it feels like
+     luck. This is the door to it, and to the delete button. */
+  { key: 'memory', glyph: 'spark', label: { vi: 'Coach nhớ gì', en: 'Coach memory' }, hint: { vi: 'Những điều bạn đã kể, xem và xoá được', en: 'What you told it — view and erase' }, route: '/coach-memory' },
 ];
 
 export default function AssistantScreen() {

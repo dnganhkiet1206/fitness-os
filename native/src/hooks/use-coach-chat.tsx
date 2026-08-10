@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { EDGE_FUNCTIONS, functionUrl, SUPABASE_ANON_KEY } from '@/lib/backend';
 import { AI_FAILURE_KEY, classify } from '@/lib/edge-failure';
+import { callEdge } from '@/lib/edge';
 
 /**
  * The coach's conversation, held above both screens that show it.
@@ -109,12 +110,34 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
     await supabase.from('ai_messages').insert({ conversation_id: conversationId, role, content });
   };
 
+  /*
+    Learn from the conversation that is ending, then clear it.
+
+    ── why here and not after every message ──
+
+    A chat costs one extraction regardless of how long it ran, and nothing
+    durable is learned from a single line anyway. Closing a conversation is also
+    the moment the person has finished saying what they came to say.
+
+    ── why it is not awaited ──
+
+    Starting a new chat must not wait on a model call. If the extraction fails
+    the conversation is still over and the next one simply knows a little less;
+    there is nothing here worth showing an error for, and a toast about
+    bookkeeping in the middle of "new chat" would be noise.
+  */
+  const learnFrom = useCallback((convo: Msg[]) => {
+    if (convo.filter((m) => m.role === 'user').length < 2) return;
+    void callEdge(EDGE_FUNCTIONS.coachMemory, { messages: convo.slice(-SEND_WINDOW) });
+  }, []);
+
   const newChat = useCallback(() => {
     Haptics.selectionAsync();
+    learnFrom(messages);
     convoIdRef.current = null;
     setConversationId(null);
     setMessages([]);
-  }, []);
+  }, [messages, learnFrom]);
 
   const loadConversation = useCallback(async (id: string) => {
     Haptics.selectionAsync();
