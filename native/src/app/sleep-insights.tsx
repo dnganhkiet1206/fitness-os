@@ -1,15 +1,18 @@
-import { Lightbulb } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { Lightbulb, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useProfile, useSleepHistory } from '@/hooks/useTodayData';
+import { useDeleteSleepLog } from '@/hooks/use-fitness-data';
 import { getLocale } from '@/lib/i18n';
 
 const DEEP = colors.metricPurple;
@@ -22,6 +25,8 @@ export default function SleepInsightsScreen() {
   const locale = getLocale(lang);
   const { data: sleepLogs } = useSleepHistory(7);
   const { data: profile } = useProfile();
+  const vi = lang === 'vi';
+  const remove = useDeleteSleepLog();
   const targetHours = Number(profile?.sleep_target_hours) || 8;
 
   const nights = useMemo(
@@ -160,6 +165,69 @@ export default function SleepInsightsScreen() {
           )}
         </>
       )}
+      {/*
+        Every night, and the way to take one back.
+
+        ── why this was the missing half ──
+
+        The log screen could only `.insert()`, and nothing anywhere listed a
+        night, so a mistyped bedtime was permanent. That matters more than it
+        looks: `daily-log-service` reads the *latest* night ending on a day, so
+        a bad entry logged afterwards **hides** the correct one — and the
+        seven-night average behind the readiness score keeps quoting it for a
+        week.
+
+        Newest first: the night somebody wants to undo is the one they just
+        entered, usually about ten seconds ago.
+      */}
+      {(sleepLogs ?? []).length > 0 ? (
+        <View style={styles.logSection}>
+          <Text style={styles.logTitle}>{vi ? 'Các đêm đã ghi' : 'Logged nights'}</Text>
+          {[...(sleepLogs ?? [])].reverse().map((s) => {
+            const bed = new Date(s.bedtime);
+            const wake = new Date(s.waketime);
+            const mins = Math.round((wake.getTime() - bed.getTime()) / 60000);
+            const t = (d: Date) => d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+            return (
+              <GlassCard key={s.id} style={styles.logRow}>
+                <View style={styles.logBody}>
+                  <Text style={styles.logWhen}>
+                    {wake.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </Text>
+                  <Text style={styles.logVals}>
+                    {`${t(bed)} → ${t(wake)} · ${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}`}
+                  </Text>
+                </View>
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={vi ? 'Xoá đêm này' : 'Delete this night'}
+                  hitSlop={8}
+                  style={styles.logDelete}
+                  disabled={remove.isPending}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    Alert.alert(
+                      vi ? 'Xoá đêm này?' : 'Delete this night?',
+                      vi
+                        ? 'Điểm sẵn sàng của ngày đó và của hôm nay sẽ được tính lại.'
+                        : "That day's readiness and today's will be recomputed.",
+                      [
+                        { text: vi ? 'Huỷ' : 'Cancel', style: 'cancel' },
+                        {
+                          text: vi ? 'Xoá' : 'Delete',
+                          style: 'destructive',
+                          onPress: () => remove.mutate({ id: s.id, waketime: s.waketime }),
+                        },
+                      ],
+                    );
+                  }}>
+                  <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
+                </PressScale>
+              </GlassCard>
+            );
+          })}
+        </View>
+      ) : null}
     </Screen>
   );
 }
@@ -205,4 +273,16 @@ const styles = StyleSheet.create({
   insightRow: { flexDirection: 'row', gap: spacing.sm },
   insightBullet: { ...type.body, color: colors.primary },
   insightText: { ...type.footnote, color: colors.foreground, flex: 1, lineHeight: 19 },
+  logSection: { gap: spacing.sm, marginTop: spacing.md },
+  logTitle: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 1.6,
+  },
+  logRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  logBody: { flex: 1, gap: 2 },
+  logWhen: { ...type.footnote, color: colors.foreground },
+  logVals: { ...type.caption, color: colors.mutedForeground },
+  logDelete: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
 });

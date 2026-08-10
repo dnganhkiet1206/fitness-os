@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Plus } from 'lucide-react-native';
+import { Plus, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -10,8 +10,8 @@ import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
-import { useBiometricHistory, type BiometricSample } from '@/hooks/use-biometrics';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { useBiometricHistory, useDeleteBiometricSample, type BiometricSample } from '@/hooks/use-biometrics';
 
 type MetricKey = 'hr' | 'hrvSdnn' | 'hrv' | 'spo2' | 'vo2max' | 'resp';
 
@@ -36,6 +36,9 @@ function statusOf(v: number, [lo, hi]: [number, number]): keyof typeof STATUS {
 export default function BiometricsScreen() {
   const i18n = useI18n();
   const { data: history } = useBiometricHistory(14);
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
+  const remove = useDeleteBiometricSample();
 
   /*
     ── two HRV metrics, and only the ones you actually have ──
@@ -90,6 +93,11 @@ export default function BiometricsScreen() {
   }, [history]);
 
   const hasAny = (history ?? []).length > 0;
+
+  /* The query orders oldest-first so the charts draw left to right; the list
+     wants the opposite. A copy, because the array belongs to react-query's
+     cache and reversing it in place would flip every chart on the screen. */
+  const rows = useMemo(() => [...(history ?? [])].reverse(), [history]);
 
   return (
     <Screen back
@@ -148,12 +156,93 @@ export default function BiometricsScreen() {
         })
       )}
 
+      {/*
+        The readings themselves, and the way to take one back.
+
+        ── why a list had to exist before a delete could ──
+
+        This screen drew charts and nothing else, so a mistyped reading was
+        permanent. That is not a cosmetic gap: HRV is the largest term in the
+        readiness score and it is scored against a 28-day baseline, so entering
+        450 where 45 was meant drags the app's headline number for four weeks —
+        and because the score still lands between 0 and 100, nothing on any
+        screen looks wrong. The person just quietly stops recognising themselves
+        in it.
+
+        Newest first, because the reading somebody wants to undo is almost
+        always the one they just entered.
+      */}
+      {rows.length > 0 ? (
+        <View style={styles.logSection}>
+          <Text style={styles.logTitle}>{vi ? 'Các lần đo' : 'Readings'}</Text>
+          {rows.map((s) => (
+            <GlassCard key={s.id} style={styles.logRow}>
+              <View style={styles.logBody}>
+                <Text style={styles.logWhen}>{s.date_time.replace('T', ' ').slice(0, 16)}</Text>
+                <Text style={styles.logVals} numberOfLines={1}>
+                  {summarise(s, vi)}
+                </Text>
+              </View>
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel={vi ? 'Xoá lần đo này' : 'Delete this reading'}
+                hitSlop={8}
+                style={styles.logDelete}
+                disabled={remove.isPending}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  Alert.alert(
+                    vi ? 'Xoá lần đo này?' : 'Delete this reading?',
+                    vi
+                      ? 'Điểm sẵn sàng của ngày đó và của hôm nay sẽ được tính lại.'
+                      : "That day's readiness and today's will be recomputed.",
+                    [
+                      { text: vi ? 'Huỷ' : 'Cancel', style: 'cancel' },
+                      {
+                        text: vi ? 'Xoá' : 'Delete',
+                        style: 'destructive',
+                        onPress: () => remove.mutate({ id: s.id, date_time: s.date_time }),
+                      },
+                    ],
+                  );
+                }}>
+                <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
+              </PressScale>
+            </GlassCard>
+          ))}
+        </View>
+      ) : null}
+
       <Text style={styles.disclaimer}>{i18n.biometricsDisclaimer1}</Text>
     </Screen>
   );
 }
 
+/** One reading, in one line, showing only what was actually measured. */
+function summarise(s: BiometricSample, vi: boolean): string {
+  const bits: string[] = [];
+  if (s.hr_bpm != null) bits.push(`${vi ? 'Nhịp nghỉ' : 'RHR'} ${s.hr_bpm}`);
+  if (s.hrv_sdnn_ms != null) bits.push(`SDNN ${s.hrv_sdnn_ms}ms`);
+  if (s.hrv_rmssd_ms != null) bits.push(`RMSSD ${s.hrv_rmssd_ms}ms`);
+  if (s.spo2_pct != null) bits.push(`SpO₂ ${s.spo2_pct}%`);
+  if (s.resp_rate_rpm != null) bits.push(`${vi ? 'Thở' : 'Resp'} ${s.resp_rate_rpm}`);
+  if (s.vo2max_mlkgmin != null) bits.push(`VO₂max ${s.vo2max_mlkgmin}`);
+  return bits.join(' · ') || (vi ? 'Không có giá trị' : 'No values');
+}
+
 const styles = StyleSheet.create({
+  logSection: { gap: spacing.sm, marginTop: spacing.xs },
+  logTitle: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 1.6,
+  },
+  logRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  logBody: { flex: 1, gap: 2 },
+  logWhen: { ...type.footnote, color: colors.foreground },
+  logVals: { ...type.caption, color: colors.mutedForeground },
+  logDelete: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   logBtn: {
     width: 36,
     height: 36,

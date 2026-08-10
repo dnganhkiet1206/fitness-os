@@ -124,6 +124,7 @@ const STEPS = [
   ['quyền kinh tế', 'node', ['tools/economy-authority.mjs']],
   ['trí nhớ coach', 'node', ['tools/coach-memory.mjs']],
   ['quyền lợi gói', 'node', ['tools/entitlement.mjs']],
+  ['sửa sai được', 'node', ['tools/correctable.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],

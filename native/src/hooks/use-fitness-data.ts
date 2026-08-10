@@ -533,3 +533,78 @@ export function useReadinessHistory(days = 14, enabled = true) {
     },
   });
 }
+
+/**
+ * Remove a night that was typed wrong, and rebuild both days it touched.
+ *
+ * ── the two paths, which is the whole difficulty ──
+ *
+ * Sleep reaches the readiness score twice. `daily-log-service` reads the night
+ * that *ends* on a given day for `sleep_min_lastnight`, and separately averages
+ * the last seven nights for `sleep_debt_7d_min` — a window anchored at
+ * `new Date()`, not at the day being rebuilt.
+ *
+ * So a bad night poisons two different things on two different days, and
+ * rebuilding only the night's own day leaves today's score still averaging a
+ * night that no longer exists. Nothing looks broken: the number is still
+ * between 0 and 100, and the sleep figure above it is now correct while the
+ * score below it is not.
+ *
+ * Both days, therefore — the night's, and today's. Same rule as
+ * `useDeleteWorkoutSession`, arrived at from a different direction.
+ *
+ * ── the delete is scoped, not trusted ──
+ *
+ * `.eq('user_id', ...)` alongside the id even though RLS already enforces it.
+ * The policy is the fence; this is the reminder that the fence is what is doing
+ * the work, for whoever reads this next.
+ */
+export function useDeleteSleepLog() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const invalidateToday = useInvalidateToday();
+  return useMutation({
+    mutationFn: async ({ id, waketime }: { id: string; waketime: string }) => {
+      const { error } = await supabase
+        .from('sleep_logs')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user!.id);
+      if (error) throw error;
+
+      const day = localDateStr(new Date(waketime));
+      await recomputeDailyLog(user!.id, day);
+      const today = localDateStr();
+      if (day !== today) await recomputeDailyLog(user!.id, today);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sleep_history', user?.id] });
+      qc.invalidateQueries({ queryKey: ['sleep_duration_history', user?.id] });
+      qc.invalidateQueries({ queryKey: ['today_sleep', user?.id] });
+      invalidateToday();
+    },
+  });
+}
+
+/**
+ * Remove a body measurement.
+ *
+ * No recompute: `body_measurements` is read by the progress screens and by
+ * nothing that feeds `daily_logs`. Listed here beside the other two so the next
+ * person can see at a glance which corrections cost a rebuild and which do not.
+ */
+export function useDeleteBodyMeasurement() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('body_measurements')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['body_measurements', user?.id] }),
+  });
+}

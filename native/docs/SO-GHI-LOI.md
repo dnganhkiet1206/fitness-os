@@ -20,7 +20,7 @@ không phải suy lại trong một giờ. Ngày rà: 2026-08-03.
 Được phép sửa **sau khi** phần "còn thiếu" ở mỗi mục được giải quyết. Chưa đủ
 thì vẫn nằm ở đây.
 
-### A1. Bản ghi giấc ngủ sai là vĩnh viễn
+### ~~A1. Bản ghi giấc ngủ sai là vĩnh viễn~~ — ĐÃ SỬA 2026-08-10
 
 | | |
 |---|---|
@@ -28,8 +28,9 @@ thì vẫn nằm ở đây.
 | **Hậu quả** | `daily-log-service.ts:62-69` đọc `order(waketime desc).limit(1)`, nên một bản ghi log sau **che** bản ghi đúng log trước. Và `sleepDebt7d` (`daily-log-service.ts:148-155`) trung bình 7 ngày, nên một đêm sai kéo điểm sẵn sàng lệch suốt một tuần. |
 | **Còn thiếu để sửa** | Xoá cần một danh sách để bấm vào, mà màn hình ngủ chưa có. Nghĩa là: thêm danh sách + nút xoá + recompute **ngày đó và hôm nay** (lý do ở `use-fitness-data.ts`, hàm `useDeleteWorkoutSession`). Đó là ba thay đổi, không phải một. |
 | **Rủi ro nếu làm ẩu** | Giấc ngủ vào readiness qua **hai** đường — đêm qua và nợ ngủ 7 ngày — nên recompute thiếu một ngày là để lại một điểm số sai mà không có gì trông như hỏng. |
+| **Đã sửa thế nào** | `useDeleteSleepLog` + danh sách đêm trên `/sleep-insights`, dựng lại ngày của đêm đó **và hôm nay** (cùng luật `useDeleteWorkoutSession`). `tools/correctable.mjs` giữ luật, và nó đếm **theo từng hook** — bản đầu đếm theo tệp nên hook bên cạnh cứu được hook thiếu. |
 
-### A2. Mẫu sinh trắc sai là vĩnh viễn, và độc hại lâu hơn
+### ~~A2. Mẫu sinh trắc sai là vĩnh viễn, và độc hại lâu hơn~~ — ĐÃ SỬA 2026-08-10
 
 | | |
 |---|---|
@@ -37,6 +38,7 @@ thì vẫn nằm ở đây.
 | **Hậu quả** | `hrv_history_28d` (`daily-log-service.ts:143`) là **đường cơ sở z-score 28 ngày** của điểm sẵn sàng. Gõ nhầm HRV 450 thay vì 45 làm lệch đường cơ sở đó trong 28 ngày — lâu hơn và khó nhận ra hơn cả A1. |
 | **Còn thiếu để sửa** | Giống A1: cần danh sách trước, rồi mới có chỗ đặt nút xoá. |
 | **Ghi chú** | Đây là mục có giá trị cao nhất trong nhóm A. Nhưng "giá trị cao" không phải là giấy phép làm vội. |
+| **Đã sửa thế nào** | `useDeleteBiometricSample` + danh sách lần đo trên `/biometrics`, dựng lại ngày của mẫu đó và hôm nay. Cùng lúc `body_measurements` cũng có `useDeleteBodyMeasurement` (không nuôi `daily_logs` nên không cần dựng lại). |
 
 ### A3. Ghi khi mất mạng không sống sót
 
