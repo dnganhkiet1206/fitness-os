@@ -4,6 +4,7 @@
  *   node tools/live.mjs            build, boot every screen, then press things
  *   node tools/live.mjs --no-build reuse the last build
  *   node tools/live.mjs --shots    also write PNGs to tools/.live-shots/
+ *   node tools/live.mjs --press-only  skip the screen sweep, only drive controls
  *
  * Not part of `check.mjs`. It builds a bundle and drives a browser, which takes
  * minutes rather than seconds, and a suite people stop running is worth less
@@ -385,6 +386,35 @@ const changed = (a, b) => a.url !== b.url || a.len !== b.len || a.text !== b.tex
  */
 const CONFIRM_ONLY = new Set(['Delete account', 'Xoá tài khoản', 'Sign out', 'Đăng xuất']);
 
+/**
+ * Does anything else in this control's own group react?
+ *
+ * Answers "already selected" without needing an attribute the web layer throws
+ * away. A segmented control has its buttons under one parent; pressing the
+ * neighbour of the current option changes the screen, pressing the current
+ * option does not, and that difference is the whole answer.
+ */
+async function siblingReacts(page, control) {
+  try {
+    const sibs = control.locator('xpath=../*[@role="button"]');
+    const n = Math.min(await sibs.count(), 4);
+    for (let j = 0; j < n; j++) {
+      const sib = sibs.nth(j);
+      const before = await snapshot(page);
+      try {
+        await sib.click({ timeout: 1500 });
+      } catch {
+        continue;
+      }
+      await page.waitForTimeout(1200);
+      if (changed(before, await snapshot(page))) return true;
+    }
+  } catch {
+    // no siblings, detached, or navigated away — not evidence either way
+  }
+  return false;
+}
+
 async function pressEverything(page, label, problems) {
   const controls = page.locator('[role="button"]:visible, button:visible');
   const total = Math.min(await controls.count(), 14);
@@ -433,12 +463,38 @@ async function pressEverything(page, label, problems) {
     const after = await snapshot(page);
 
     if (!changed(before, after)) {
-      problems.push(
-        `${label}: bấm "${name}" mà màn hình không đổi gì — ` +
-          'không điều hướng, không thông báo, không một ký tự nào khác. ' +
-          'Nút chết không đọc thành "bạn thiếu gì đó", nó đọc thành app hỏng. ' +
-          'Nếu nó cố ý chưa dùng được thì phải để disabled.',
-      );
+      /*
+        ── dead, or simply the option you are already on ──
+
+        The weight chart's range segments declare `accessibilityState={{
+        selected }}`, which VoiceOver reads on iOS whatever the role is — but
+        `react-native-web` drops it, because `aria-selected` is not valid on
+        `role="button"`. Measured: the DOM carries `role=button` and nothing
+        else. So on this harness there is no attribute to read, and "All"
+        (the default range) looked like a dead button three runs running.
+
+        Naming it in a list would fix that one segment and none of the others.
+        The question a person would actually ask is better: *does the rest of
+        this group work?* If a sibling under the same parent changes the screen,
+        the group is alive and this control was the one already chosen. If no
+        sibling does anything either, it stays a finding.
+      */
+      const groupAlive = await siblingReacts(page, c);
+      if (page.url() !== home) {
+        await page.goto(home, { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(2500);
+      }
+      if (!groupAlive) {
+        problems.push(
+          `${label}: bấm "${name}" mà màn hình không đổi gì — ` +
+            'không điều hướng, không thông báo, không một ký tự nào khác, ' +
+            'và các nút cùng nhóm cũng vậy. ' +
+            'Nút chết không đọc thành "bạn thiếu gì đó", nó đọc thành app hỏng. ' +
+            'Nếu nó cố ý chưa dùng được thì phải để disabled.',
+        );
+      } else {
+        skipped++;
+      }
     }
 
     if (page.url() !== home) {
@@ -560,7 +616,7 @@ try {
   await canary(chromium);
   process.stdout.write('canary OK — đang mở từng màn');
 
-  for (const mode of MODES) {
+  for (const mode of args.has('--press-only') ? [] : MODES) {
     for (const route of ROUTES) {
       const { text, rootLen, errors } = await boot(chromium, route, mode);
       const at = `[${mode}] ${route}`;
@@ -628,9 +684,21 @@ if (problems.length) {
   process.exit(1);
 }
 
+/*
+  The summary may only claim what this run actually did.
+
+  With `--press-only` the first version still announced "25 screens × 3 states"
+  — a sentence about work it had just been told to skip. That is the same lie
+  this tool exists to catch, printed by the tool itself, and a green line
+  nobody can trust is worse than a red one.
+*/
+const sweptClaim = args.has('--press-only')
+  ? 'bỏ qua vòng quét màn (--press-only)'
+  : `${ROUTES.length} màn × ${MODES.length} trạng thái (đủ dữ liệu / tài khoản trống / mọi truy vấn hỏng): ` +
+    'không màn nào trắng, không lỗi runtime, không chữ lọt ra ngoài như NaN hay undefined';
+
 console.log(
-  `\nchạy thật OK — ${ROUTES.length} màn × ${MODES.length} trạng thái (đủ dữ liệu / tài khoản trống / mọi truy vấn hỏng): ` +
-    'không màn nào trắng, không lỗi runtime, không chữ lọt ra ngoài như NaN hay undefined; ' +
+  `\nchạy thật OK — ${sweptClaim}; ` +
     `đã BẤM THỬ ${globalThis.__pressed} nút trên 4 màn và nút nào cũng làm màn hình đổi ` +
     `(${globalThis.__skipped} nút được bỏ qua có lý do: disabled, đang được chọn sẵn, bị che, ` +
     'hoặc việc duy nhất của nó là mở hộp thoại xác nhận — thứ mà Alert của react-native-web là hàm rỗng); ' +
