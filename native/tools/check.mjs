@@ -108,6 +108,7 @@ const STEPS = [
     a stale generated file — the same class as the tsconfig above.
   */
   ['route đã sinh', 'node', ['tools/typed-routes.mjs']],
+  ['lối vào', 'node', ['tools/reachable.mjs']],
   ['kiểu dữ liệu', 'npx', ['tsc', '--noEmit']],
   /*
     Early, and right after `tsc`, because it catches a class `tsc` cannot see
