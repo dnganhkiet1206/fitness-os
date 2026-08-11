@@ -1,6 +1,7 @@
+import MaskedView from '@react-native-masked-view/masked-view';
 import { useIsFocused } from 'expo-router';
-import { useEffect, useMemo } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,7 +10,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { colors } from '@/constants/ascnd';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
@@ -406,7 +407,11 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
           ? colors.readinessRed
           : undefined;
 
-  const { height, width } = useWindowDimensions();
+  /* The layer's own measured box. `null` until the first layout, and the dust
+     is simply not rendered until then — one frame without specks against a
+     background that fades in anyway, rather than one frame of specks at the
+     wrong scale. */
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
 
   /*
     ── when the light is allowed to move ──
@@ -430,14 +435,74 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
   const moving = focused && !reduceMotion;
 
   return (
-    <Animated.View style={[styles.layer, bloomStyle]} pointerEvents="none">
+    <Animated.View
+      style={[styles.layer, bloomStyle]}
+      pointerEvents="none"
+      onLayout={(e) => {
+        const { width: w, height: h } = e.nativeEvent.layout;
+        setBox((prev) => (prev && Math.abs(prev.h - h) < 1 && Math.abs(prev.w - w) < 1 ? prev : { w, h }));
+      }}>
       {POOLS.map((p, i) => (
         <LightPool key={p.id} pool={p} tint={i === 0 ? tint : undefined} moving={moving} />
       ))}
-      {DUST.map((d) => (
-        <DustField key={d.key} layer={d} height={height} width={width} moving={moving} />
-      ))}
+      {/*
+        ── the dust is masked, and the mask does not move ──
+
+        Every speck used to be able to reach the edge of its canvas at full
+        strength, so wherever that canvas ended, the dust ended — in a line. A
+        field of specks that stops along a straight horizontal is not dust; it
+        reads as a sheet with a torn edge, and against this background the empty
+        side of the tear reads as black.
+
+        The mask fixes it in *screen* space: a vertical fade that stays put
+        while the dust drifts up through it. That matters — fading the specks by
+        their position on the canvas would move the soft band up the screen with
+        them, and would also break the loop, because the seam is only invisible
+        while the two copies of the pattern are identical.
+
+        One mask around all four layers rather than one each: they share a
+        screen and therefore share a fade, and four full-screen masked layers to
+        express one gradient is the kind of thing that made this file's own
+        comments about a warm phone necessary.
+      */}
+      {box ? (
+        <MaskedView style={StyleSheet.absoluteFill} maskElement={<DustMask />}>
+          {DUST.map((d) => (
+            /* Measured, not `useWindowDimensions`. Everything else here is
+               container-relative — the pools are sized in percentages — and the
+               dust alone was sized against the window. Those are the same
+               number on a plain full-screen page and different ones under a tab
+               bar, behind a header, or on an iPad in a split view, and when
+               they differ the canvas no longer lines up with what is on screen. */
+            <DustField key={d.key} layer={d} height={box.h} width={box.w} moving={moving} />
+          ))}
+        </MaskedView>
+      ) : null}
     </Animated.View>
+  );
+}
+
+/**
+ * The fade the dust is seen through.
+ *
+ * Opaque across the middle so the field is unchanged where it is meant to be
+ * read, and falling away over the last tenth at each end. `black` is *hide* and
+ * `white` is *show* — a mask reads luminance, so the stops here are not colours
+ * anybody sees.
+ */
+function DustMask() {
+  return (
+    <Svg style={StyleSheet.absoluteFill}>
+      <Defs>
+        <SvgLinearGradient id="dustFade" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#000" />
+          <Stop offset="0.10" stopColor="#fff" />
+          <Stop offset="0.90" stopColor="#fff" />
+          <Stop offset="1" stopColor="#000" />
+        </SvgLinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width="100%" height="100%" fill="url(#dustFade)" />
+    </Svg>
   );
 }
 
