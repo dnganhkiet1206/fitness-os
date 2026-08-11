@@ -133,7 +133,7 @@ export interface ReadinessResult {
        a different one from a low score. HRV needs 5 readings of history before
        it means anything; sleep needs a night that was actually recorded. */
     hrv?: number;
-    rhr: number;
+    rhr?: number;
     sleep?: number;
     load?: number;
   };

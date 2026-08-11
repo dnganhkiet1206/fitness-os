@@ -309,7 +309,14 @@ export async function recomputeDailyLog(userId: string, date: string) {
       rhr_history_28d: rhrHistory,
     };
 
+    /*
+      `null` means not one of the four sub-scores could be measured — the gate
+      above was satisfied by three biometric readings, which is enough to try
+      and not enough to build a baseline from. Leaving the fields unset shows a
+      blank gauge, which is what "we cannot tell you yet" looks like.
+    */
     const result = computeReadiness(input);
+    if (result) {
     readiness_score = result.score;
     readiness_status = result.status;
     // Store language-neutral tokens; the UI localizes them at render so the
@@ -317,6 +324,7 @@ export async function recomputeDailyLog(userId: string, date: string) {
     readiness_explain = result.explainToken;
     readiness_recommendation = result.recommendationKey;
     acwr = result.acwr;
+    }
   }
 
   // 6. Upsert daily_log

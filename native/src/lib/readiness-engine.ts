@@ -34,8 +34,24 @@ function computeHRVScore(hrv: number, history: number[]): number | null {
   return clamp(50 + 15 * z, 0, 100);
 }
 
-function computeRHRScore(rhr: number, history: number[]): number {
-  if (history.length < 5) return 50;
+/**
+ * Resting heart rate against this person's own baseline, or `null`.
+ *
+ * The last of the four to stop inventing a value. It returned a flat **50** with
+ * no reading and again with fewer than five in the baseline — neutral rather
+ * than punitive, which is why it survived three passes, but still a number
+ * carrying 0.20 of the score (0.25 without HRV) that describes nobody.
+ *
+ * It drags the answer toward the middle in both directions. Somebody sleeping
+ * well and training sensibly, with no resting-HR reading, scores 77 instead of
+ * 86 — nine points of "average" contributed by a measurement that does not
+ * exist. Somebody genuinely struggling is flattered by the same amount.
+ *
+ * Five readings is the same floor HRV uses: a median and a MAD built from four
+ * points is not a baseline, it is four points.
+ */
+function computeRHRScore(rhr: number, history: number[]): number | null {
+  if (history.length < 5) return null;
   const base = median(history);
   const madVal = mad(history);
   let z = robustZ(rhr, base, madVal);
@@ -143,7 +159,7 @@ function getACWR(load7d: number, load28d: number, chronicDays: number): number {
   return acute / (chronic + 1e-6);
 }
 
-export function computeReadiness(input: ReadinessInput): ReadinessResult {
+export function computeReadiness(input: ReadinessInput): ReadinessResult | null {
   const hasHRV = input.hrv_today != null && input.hrv_history_28d.length >= 5;
 
   const hrvScore = hasHRV
@@ -152,7 +168,7 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
 
   const rhrScore = input.rhr_today
     ? computeRHRScore(input.rhr_today, input.rhr_history_28d)
-    : 50;
+    : null;
 
   const sleepScore = computeSleepScore(
     input.sleep_min_lastnight,
@@ -210,6 +226,20 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
     add(0.30, hrvScore); add(0.20, rhrScore); add(0.30, sleepScore); add(0.20, loadScore);
   }
 
+  /*
+    Nothing measurable at all.
+
+    Reachable: three biometric readings satisfies the caller's gate but not the
+    five a baseline needs, and somebody with no sleep row and no logged training
+    then has four null sub-scores. Averaging an empty list gives 0, which would
+    render as a readiness of zero — the most alarming number on the screen,
+    produced by having no data whatsoever.
+
+    `null` instead, and the caller writes no score. A blank gauge is honest;
+    a red one is a false statement about somebody's body.
+  */
+  if (present.length === 0) return null;
+
   const totalWeight = present.reduce((sum, t) => sum + t.w, 0);
   let raw = present.reduce((sum, t) => sum + t.w * t.score, 0) / (totalWeight || 1);
 
@@ -240,9 +270,9 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
       impact: hrvScore < 40 ? 'thấp' : hrvScore > 70 ? 'tốt' : 'trung bình',
     });
   }
-  factors.push(
-    { key: 'rhr', name: 'Nhịp tim nghỉ', score: rhrScore, impact: rhrScore < 40 ? 'cao' : rhrScore > 70 ? 'tốt' : 'trung bình' },
-  );
+  if (rhrScore !== null) {
+    factors.push({ key: 'rhr', name: 'Nhịp tim nghỉ', score: rhrScore, impact: rhrScore < 40 ? 'cao' : rhrScore > 70 ? 'tốt' : 'trung bình' });
+  }
   /* Absent from the list entirely rather than listed at zero. The explain line
      takes the two lowest factors, so a sleep score invented for a night nobody
      measured would not merely be wrong — it would be the headline. */
@@ -278,7 +308,7 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
   } else if (status === 'yellow') {
     recommendationKey = 'yellow_reduce';
     recommendation = 'Giảm volume 5–10%. Tập trung kỹ thuật và phục hồi.';
-  } else if (status === 'red' && rhrScore < 40 && sleepScore !== null && sleepScore < 40) {
+  } else if (status === 'red' && rhrScore !== null && rhrScore < 40 && sleepScore !== null && sleepScore < 40) {
     recommendationKey = 'red_rest';
     recommendation = 'Nên nghỉ ngơi. Cardio nhẹ tối đa 20–30 phút.';
   } else if (status === 'red') {
@@ -298,7 +328,7 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
     recommendationKey,
     subscores: {
       hrv: hrvScore !== null ? Math.round(hrvScore) : undefined,
-      rhr: Math.round(rhrScore),
+      rhr: rhrScore !== null ? Math.round(rhrScore) : undefined,
       /* undefined, not 0 — the gauge draws a tile per sub-score and a zero
          tile reads as "you scored nothing" rather than "not measured". */
       sleep: sleepScore !== null ? Math.round(sleepScore) : undefined,

@@ -421,6 +421,58 @@ const problems = [];
   }
 }
 
+/*
+  ── 10: bốn số hạng, không số hạng nào được bịa ──
+
+  The last of the four. `computeRHRScore` returned a flat **50** with no reading,
+  and again with fewer than five points of baseline. Neutral rather than
+  punitive, which is why it survived three passes over this engine — but still
+  0.20 of the score (0.25 without HRV) describing nobody.
+
+  Measured, same person, same everything else:
+
+      ngủ tốt + tải tốt, CÓ nhịp nghỉ    →  73  vàng
+      y hệt nhưng KHÔNG có nhịp nghỉ     →  81  xanh
+
+  Eight points and a colour band, contributed by a measurement that does not
+  exist. It flatters somebody struggling by exactly as much.
+
+  And with all four absent the weighted mean of an empty list is 0, which would
+  render as a readiness of zero — the most alarming number on the screen,
+  produced by having no data at all. `computeReadiness` returns null there and
+  the caller writes nothing, so the gauge stays blank.
+
+  This is the fourth time the same shape has been found in one engine: a zero or
+  a default standing in for "not measured" and then being scored. The rule below
+  asks the question of all four at once.
+*/
+{
+  const eng = strip(read('src/lib/readiness-engine.ts'));
+
+  for (const [fn, why] of [
+    ['computeHRVScore', 'HRV cần 5 mốc lịch sử mới có baseline'],
+    ['computeRHRScore', 'nhịp tim nghỉ không đo được không phải là nhịp trung bình'],
+    ['computeSleepScore', 'đêm không ghi không phải là đêm thức trắng'],
+    ['computeLoadScore', 'không log buổi tập không phải là tập quá ít'],
+  ]) {
+    if (!new RegExp(`function ${fn}\\([\\s\\S]{0,260}?\\): number \\| null`).test(eng)) {
+      problems.push(`readiness-engine.ts: ${fn} không trả null được — ${why}`);
+    }
+  }
+  if (/computeRHRScore\([^)]*\)\s*\n?\s*: 50/.test(eng) || /:\s*50;\s*\n\s*const sleepScore/.test(eng)) {
+    problems.push('readiness-engine.ts: vẫn thay nhịp tim nghỉ vắng mặt bằng 50 — một con số không mô tả ai cả');
+  }
+  if (!/if \(present\.length === 0\) return null;/.test(eng)) {
+    problems.push(
+      'readiness-engine.ts: không chặn trường hợp KHÔNG số hạng nào đo được — ' +
+        'trung bình có trọng số của một danh sách rỗng là 0, và 0 hiện lên thành điểm sẵn sàng đỏ rực',
+    );
+  }
+  if (!/computeReadiness\(input: ReadinessInput\): ReadinessResult \| null/.test(eng)) {
+    problems.push('readiness-engine.ts: computeReadiness luôn trả về một điểm số, kể cả khi không có gì để chấm');
+  }
+}
+
 /**
  * The self-test.
  *
@@ -465,6 +517,14 @@ const SELF = [
     case that version *looked* finished — the sync was written, the permission
     helpers were written, and the only thing missing was a caller.
   */
+  ['nhịp tim nghỉ vắng mặt thay bằng 50 — bị bắt', () => {
+    const bad = 'function computeRHRScore(rhr: number, history: number[]): number {\n  if (history.length < 5) return 50;';
+    return !/function computeRHRScore\([\s\S]{0,260}?\): number \| null/.test(bad);
+  }],
+  ['trả null được — không báo oan', () => {
+    const good = 'function computeRHRScore(rhr: number, history: number[]): number | null {\n  if (history.length < 5) return null;';
+    return /function computeRHRScore\([\s\S]{0,260}?\): number \| null/.test(good);
+  }],
   ['ACWR chia cứng 28 ngày — bị bắt', () => {
     const bad = 'function getACWR(load7d: number, load28d: number): number {\n  const chronic = load28d / 28;';
     return !/function getACWR\([^)]*chronicDays[^)]*\)/.test(bad);
@@ -542,5 +602,7 @@ console.log(
     'và điểm sẵn sàng không chấm điểm thứ nó không đo được — đêm không có log trả về null và trọng số ' +
     'được chia lại, thay vì bị chấm 20 điểm như đêm thức trắng rồi chặn cả điểm số ở 40; ' +
     'ACWR chia cho số ngày THẬT SỰ có trong cửa sổ (sàn 7), nên người tập đều tuần đầu ra 1.00 chứ không phải 4.00, ' +
-    'và không log buổi tập nào thì tải bị loại khỏi điểm thay vì bị chấm 45 "thiếu tập"',
+    'và không log buổi tập nào thì tải bị loại khỏi điểm thay vì bị chấm 45 "thiếu tập"; ' +
+    'cả BỐN số hạng (HRV, nhịp nghỉ, giấc ngủ, tải) đều trả null được, và khi không số hạng nào đo được ' +
+    'thì không chấm điểm chứ không ra 0',
 );
