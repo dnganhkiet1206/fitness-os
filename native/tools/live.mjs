@@ -1,7 +1,7 @@
 /**
  * The app, actually running, in three states.
  *
- *   node tools/live.mjs            build, then boot every screen
+ *   node tools/live.mjs            build, boot every screen, then press things
  *   node tools/live.mjs --no-build reuse the last build
  *   node tools/live.mjs --shots    also write PNGs to tools/.live-shots/
  *
@@ -215,10 +215,17 @@ function serve() {
 
 // ── one boot ──────────────────────────────────────────────────────────────
 
-async function boot(chromium, route, mode, settleMs = 9000) {
+/**
+ * Open the app and hand back the page, still alive.
+ *
+ * `boot` below reads it and closes it; the driving checks keep it and press
+ * things. `mode === 'signedout'` seeds no session, which is the only way to
+ * reach the screen every user meets first.
+ */
+async function openPage(chromium, route, mode, settleMs = 9000) {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 402, height: 874 } });
-  await ctx.addInitScript(([ref, session]) => {
+  if (mode !== 'signedout') await ctx.addInitScript(([ref, session]) => {
     window.localStorage.setItem(`sb-${ref}-auth-token`, session);
   }, [REF, JSON.stringify({
     access_token: jwt(), refresh_token: 'r', token_type: 'bearer',
@@ -262,7 +269,11 @@ async function boot(chromium, route, mode, settleMs = 9000) {
 
   await page.goto(`http://localhost:${PORT}${route}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(settleMs);
+  return { browser, page, errors };
+}
 
+async function boot(chromium, route, mode, settleMs = 9000) {
+  const { browser, page, errors } = await openPage(chromium, route, mode, settleMs);
   const text = await page.locator('body').innerText().catch(() => '');
   const rootLen = await page.evaluate(() => document.getElementById('root')?.innerHTML?.length ?? 0);
   if (wantShots) {
@@ -272,6 +283,163 @@ async function boot(chromium, route, mode, settleMs = 9000) {
   await browser.close();
   return { text, rootLen, errors };
 }
+
+// ── pressing things ───────────────────────────────────────────────────────
+
+/**
+ * Everything about the page that a working control could plausibly change.
+ *
+ * Deliberately coarse. The question is not "did the right thing happen" — that
+ * is what the scripted scenarios below are for — but "did *anything* happen".
+ * A control that leaves all four of these identical did nothing at all, and
+ * that is the bug: not a wrong outcome, an absent one.
+ */
+async function snapshot(page) {
+  return page.evaluate(() => ({
+    url: location.pathname,
+    len: document.getElementById('root')?.innerHTML?.length ?? 0,
+    text: (document.body.innerText || '').replace(/\s+/g, ' ').slice(0, 4000),
+    focus: document.activeElement?.tagName ?? '',
+  }));
+}
+const changed = (a, b) => a.url !== b.url || a.len !== b.len || a.text !== b.text;
+
+/**
+ * Press every control on a screen and require the app to react.
+ *
+ * ── the bug this generalises ──
+ *
+ * `auth-screen.tsx` had `if (!email) return;` at the top of `submit`, and a
+ * second silent `return` for the password. Tapping Sign In with a blank field
+ * changed nothing: no message, no highlight, no haptic. On the first screen of
+ * the app a dead tap does not read as "you missed a field", it reads as the app
+ * being broken — and there is nothing to file a bug report about, because
+ * nothing happened.
+ *
+ * ── why a control may legitimately do nothing ──
+ *
+ * Exactly one reason: it is disabled, and says so. `aria-disabled` or a
+ * `disabled` attribute is a control that has already answered the question, so
+ * it is skipped rather than pressed. That is also the fix that was applied to
+ * Sign In — the button dims until the form is complete — which is why this rule
+ * and that fix agree instead of fighting.
+ *
+ * Navigation counts as a reaction, so after each press the page is returned to
+ * where it started; otherwise the second control would be pressed on a screen
+ * it does not belong to.
+ */
+async function pressEverything(page, label, problems) {
+  const controls = page.locator('[role="button"]:visible, button:visible');
+  const total = Math.min(await controls.count(), 14);
+  const home = page.url();
+
+  for (let i = 0; i < total; i++) {
+    const c = controls.nth(i);
+    let name = '';
+    try {
+      if (!(await c.isVisible())) continue;
+      name = ((await c.getAttribute('aria-label')) || (await c.innerText()) || '').trim().slice(0, 40);
+      const off = (await c.getAttribute('aria-disabled')) === 'true' || (await c.isDisabled().catch(() => false));
+      if (off) continue; // already says it will do nothing
+      if (!name) continue; // unnamed controls are `tap-targets.mjs`'s problem
+    } catch {
+      continue;
+    }
+
+    const before = await snapshot(page);
+    try {
+      await c.click({ timeout: 2000, force: true });
+    } catch {
+      continue; // covered, detached, or moved — not a dead-control finding
+    }
+    await page.waitForTimeout(1400);
+    const after = await snapshot(page);
+
+    if (!changed(before, after)) {
+      problems.push(
+        `${label}: bấm "${name}" mà màn hình không đổi gì — ` +
+          'không điều hướng, không thông báo, không một ký tự nào khác. ' +
+          'Nút chết không đọc thành "bạn thiếu gì đó", nó đọc thành app hỏng. ' +
+          'Nếu nó cố ý chưa dùng được thì phải để disabled.',
+      );
+    }
+
+    if (page.url() !== home) {
+      await page.goto(home, { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2500);
+    }
+  }
+  return total;
+}
+
+/**
+ * The handful of flows worth stating exactly.
+ *
+ * `pressEverything` asks whether anything happened. These ask whether the right
+ * thing did, and they are written out one at a time because there is no way to
+ * infer intent from a DOM.
+ */
+const SCENARIOS = [
+  {
+    name: 'màn đăng nhập: nút mờ khi thiếu trường, sáng khi đủ',
+    route: '/', mode: 'signedout',
+    async run(page) {
+      const opacity = () =>
+        page.getByText('Sign In', { exact: true })
+          .evaluate((el) => getComputedStyle(el.closest('[role="button"]') ?? el.parentElement).opacity);
+      const blank = Number(await opacity());
+      await page.getByPlaceholder('Email').fill('a@b.com');
+      await page.waitForTimeout(400);
+      const halfway = Number(await opacity());
+      await page.getByPlaceholder('Password').fill('secret123');
+      await page.waitForTimeout(400);
+      const complete = Number(await opacity());
+
+      if (!(blank < 0.9)) return 'ô trống mà nút vẫn sáng — bấm vào sẽ không có gì xảy ra';
+      if (!(halfway < 0.9)) return 'mới có email mà nút đã sáng — thiếu mật khẩu vẫn bấm được';
+      if (!(complete > 0.9)) return 'đã nhập đủ mà nút vẫn mờ — không vào được app';
+      return null;
+    },
+  },
+  {
+    name: 'màn đăng nhập: đổi ngôn ngữ đổi chữ trên màn hình',
+    route: '/', mode: 'signedout',
+    async run(page) {
+      const before = await page.locator('body').innerText();
+      await page.getByText('VI', { exact: true }).click();
+      await page.waitForTimeout(900);
+      const after = await page.locator('body').innerText();
+      if (before === after) return 'bấm VI mà không chữ nào đổi';
+      if (!/Đăng nhập/.test(after)) return `đã đổi sang VI nhưng không thấy tiếng Việt: ${after.slice(0, 80)}`;
+      return null;
+    },
+  },
+  {
+    name: 'Today: nút ghi bữa ăn mở đúng màn',
+    route: '/', mode: 'full',
+    async run(page) {
+      const btn = page.getByText(/Log meal|Ghi bữa ăn/).first();
+      if ((await btn.count()) === 0) return 'không tìm thấy nút ghi bữa ăn trên Today';
+      await btn.click();
+      await page.waitForTimeout(2500);
+      if (!/log-meal/.test(page.url())) return `bấm xong vẫn ở ${page.url().replace(/^.*8731/, '')}`;
+      return null;
+    },
+  },
+  {
+    name: 'Tiến trình: đổi tab đổi nội dung',
+    route: '/progress', mode: 'full',
+    async run(page) {
+      const before = await page.locator('body').innerText();
+      const tab = page.getByText(/Measurements|Số đo/).first();
+      if ((await tab.count()) === 0) return 'không tìm thấy tab số đo';
+      await tab.click();
+      await page.waitForTimeout(1500);
+      if ((await page.locator('body').innerText()) === before) return 'bấm tab mà nội dung không đổi';
+      return null;
+    },
+  },
+];
 
 // ── the canary ────────────────────────────────────────────────────────────
 
@@ -333,6 +501,42 @@ try {
     }
   }
   console.log('');
+
+  /*
+    ── the driving half ──
+
+    Opening a screen proves it renders. It says nothing about whether anything
+    on it works, and the app's very first button did nothing at all for weeks
+    while every static rule stayed green.
+  */
+  process.stdout.write('bấm thử từng nút');
+  let pressed = 0;
+  for (const [route, mode] of [['/', 'signedout'], ['/', 'full'], ['/progress', 'full'], ['/settings', 'full']]) {
+    const { browser, page } = await openPage(chromium, route, mode);
+    try {
+      pressed += await pressEverything(page, `[${mode}] ${route}`, problems);
+    } finally {
+      await browser.close();
+    }
+    process.stdout.write('.');
+  }
+  console.log('');
+
+  process.stdout.write('kịch bản');
+  for (const sc of SCENARIOS) {
+    const { browser, page } = await openPage(chromium, sc.route, sc.mode);
+    try {
+      const why = await sc.run(page);
+      if (why) problems.push(`${sc.name} — ${why}`);
+    } catch (e) {
+      problems.push(`${sc.name} — không chạy được: ${e.message.split('\n')[0].slice(0, 140)}`);
+    } finally {
+      await browser.close();
+    }
+    process.stdout.write('.');
+  }
+  console.log('');
+  globalThis.__pressed = pressed;
 } finally {
   server.close();
 }
@@ -346,5 +550,8 @@ if (problems.length) {
 console.log(
   `\nchạy thật OK — ${ROUTES.length} màn × ${MODES.length} trạng thái (đủ dữ liệu / tài khoản trống / mọi truy vấn hỏng): ` +
     'không màn nào trắng, không lỗi runtime, không chữ lọt ra ngoài như NaN hay undefined; ' +
+    `đã BẤM THỬ ${globalThis.__pressed} nút trên 4 màn và nút nào cũng làm màn hình đổi ` +
+    '(nút cố ý chưa dùng được thì phải để disabled, và được bỏ qua); ' +
+    `${SCENARIOS.length} kịch bản có kết quả cụ thể đều đúng; ` +
     'canary xác nhận bộ chạy nhìn đúng app thật chứ không phải trang lỗi của server',
 );
