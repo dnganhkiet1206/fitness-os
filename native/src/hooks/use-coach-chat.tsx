@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { EDGE_FUNCTIONS, functionUrl, SUPABASE_ANON_KEY } from '@/lib/backend';
 import { AI_FAILURE_KEY, classify } from '@/lib/edge-failure';
+import { localDateStr } from '@/lib/local-date';
 import { callEdge } from '@/lib/edge';
 
 /**
@@ -284,7 +285,23 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
             Authorization: `Bearer ${session?.access_token}`,
             apikey: ANON_KEY,
           },
-          body: JSON.stringify({ messages: newMessages.slice(-SEND_WINDOW), lang }),
+          /*
+            The day, and the offset, because the server cannot know either.
+
+            `ai-coach` used to take "today" from its own clock, which is UTC on
+            every Deno host. For a caller in Vietnam that is yesterday's date
+            from midnight until seven in the morning — so the coach would open
+            the wrong day's log and discuss the wrong numbers with total
+            confidence. `getTimezoneOffset()` is minutes behind UTC (−420 here),
+            and lets the server bucket stored instants into the calendar days
+            this person actually lived.
+          */
+          body: JSON.stringify({
+            messages: newMessages.slice(-SEND_WINDOW),
+            lang,
+            date: localDateStr(),
+            tzOffset: new Date().getTimezoneOffset(),
+          }),
         });
 
         if (!resp.ok || !resp.body) {

@@ -287,6 +287,10 @@ export default function LogMealSheet() {
     mutationFn: async () => {
       const res = await callEdge<{ suggestions?: AiSuggestion[] }>(EDGE_FUNCTIONS.mealSuggest, {
         meal_type: mealType,
+        /* The other caller of this function already sends it. Without it the
+           edge function falls back to its own UTC clock, which is yesterday for
+           anybody east of Greenwich during their morning. */
+        date: localDateStr(),
       });
       if (!res.ok) throw new Error(i18n[AI_FAILURE_KEY[res.failure]]);
       return res.data?.suggestions ?? [];

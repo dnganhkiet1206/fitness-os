@@ -30,7 +30,7 @@
  * `timestamptz` one, so it does not try. It catches the one shape that is
  * always wrong.
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -75,7 +75,76 @@ for (const [line, shouldFlag] of SELF_TEST) {
   }
 }
 
+const SERVER_SELF = [
+  ['edge function tự tính ngày UTC — bị bắt', () => {
+    const bad = 'const today = new Date().toISOString().split("T")[0];';
+    return /new Date\(\)[\s\S]{0,40}?toISOString\(\)\s*\.\s*split\(["']T["']\)\[0\]/.test(bad);
+  }],
+  ['có nhận date từ body (destructure) — không báo oan', () => {
+    const good = 'const { lang = "vi", date } = await req.json();\nconst today = date ?? new Date().toISOString().split("T")[0];';
+    return /const\s*\{[^}]*\bdate\b[^}]*\}\s*=\s*(?:await\s*)?req\.json/.test(good);
+  }],
+  ['có nhận body?.date — không báo oan', () => /body[?.]*\.date/.test('const today = body?.date ?? fallback;')],
+];
+const serverMissed = SERVER_SELF.filter(([, fn]) => !fn()).map(([l]) => l);
+if (serverMissed.length) {
+  console.error(`phép tự kiểm (server) hỏng — ${serverMissed.join('; ')}; đừng tin kết quả`);
+  process.exit(2);
+}
+
 const hits = [];
+
+/*
+  ── the other half: a server guessing somebody's calendar day ──
+
+  Everything above is about the client. The edge functions had the same bug from
+  the opposite side, and nothing was watching them.
+
+      const today = new Date().toISOString().split("T")[0];
+
+  On a Deno host that expression is the date **in UTC**, always. For a caller in
+  Vietnam (UTC+7) it is yesterday's date every morning between midnight and
+  seven — so `ai-coach` fetched the wrong day's log and discussed the wrong
+  numbers with complete confidence, every single morning, for anybody east of
+  Greenwich.
+
+  There is no way to derive it server-side: only the device knows what day it is
+  where the person is standing. So an edge function that needs a calendar date
+  must take one from the request. Computing one from its own clock is allowed
+  only as a fallback for an older client — which is exactly what "must also read
+  a date from the body" tests for.
+*/
+{
+  const FUNCS = path.join(NATIVE, '..', 'supabase', 'functions');
+  const UTC_DATE = /new Date\(\)[\s\S]{0,40}?toISOString\(\)\s*\.\s*(?:split\(["']T["']\)\[0\]|slice\(0,\s*10\))/;
+  /*
+     Reading the date off the request counts however it is written. Two of these
+     functions destructure it —
+
+         const { meal_type, lang = "vi", date } = await req.json();
+
+     — and a first version of this rule only recognised `body?.date`, so it
+     reported both of them as guessing when both were already correct. A rule
+     whose first run is two false positives out of three teaches people to
+     ignore it. */
+  const FROM_BODY =
+    /body[?.]*\.date|const\s*\{[^}]*\bdate\b[^}]*\}\s*=\s*(?:await\s*)?req\.json|week_start|body\?\.\w*[Ww]eek/;
+
+  for (const dir of readdirSync(FUNCS)) {
+    const file = path.join(FUNCS, dir, 'index.ts');
+    if (!existsSync(file)) continue;
+    const code = readFileSync(file, 'utf8');
+    if (!UTC_DATE.test(code)) continue;
+    if (FROM_BODY.test(code)) continue;
+    hits.push({
+      where: `supabase/functions/${dir}/index.ts — tự tính ngày lịch từ đồng hồ của server`,
+      code:
+        'đó là ngày UTC. Với người dùng ở UTC+7, từ nửa đêm tới 7h sáng nó là NGÀY HÔM QUA. ' +
+        'Ngày phải do thiết bị gửi lên, vì chỉ thiết bị mới biết hôm nay là ngày nào ở chỗ người đó đứng.',
+    });
+  }
+}
+
 for (const file of walk(SRC)) {
   const text = readFileSync(file, 'utf8');
   for (const m of text.matchAll(BAD)) {
@@ -93,4 +162,7 @@ if (hits.length) {
   process.exit(1);
 }
 
-console.log(`cửa sổ ngày OK — ${SELF_TEST.length} ca tự kiểm tra đúng, không chỗ nào dùng chuỗi trần`);
+console.log(
+  `cửa sổ ngày OK — ${SELF_TEST.length} ca tự kiểm tra đúng, không chỗ nào dùng chuỗi trần; ` +
+    'và không edge function nào tự tính ngày lịch từ đồng hồ UTC của server',
+);

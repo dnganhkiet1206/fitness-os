@@ -61,10 +61,37 @@ serve(async (req) => {
     const lang = body?.lang === "en" ? "en" : "vi";
     const messages = sanitize(body?.messages);
     if (messages.length === 0) return json({ error: "No messages" }, 400);
-    const today = new Date().toISOString().split("T")[0];
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const weekAgo = sevenDaysAgo.toISOString().split("T")[0];
+    /*
+      ── the server does not know what day it is for this person ──
+
+      This used to be `new Date().toISOString().split("T")[0]`, which is the
+      date in **UTC**, on a Deno host that is always in UTC. For somebody in
+      Vietnam (UTC+7) that is yesterday's date every morning between midnight
+      and seven — so between waking and breakfast the coach fetched the wrong
+      day's log and talked confidently about the wrong numbers.
+
+      There is no way to work it out from here. Only the device knows, so the
+      device sends it: `date` is the caller's own `localDateStr()`. The fallback
+      is kept because an older client may not send one, and a UTC date is closer
+      to right than no date at all — but it is a fallback, not the answer.
+
+      `tzOffset` is `Date.prototype.getTimezoneOffset()` — minutes *behind* UTC,
+      so UTC+7 sends -420. It is what lets a stored instant be bucketed into the
+      calendar day the person experienced it in, further down.
+    */
+    const today = typeof body?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date)
+      ? body.date
+      : new Date().toISOString().split("T")[0];
+    const tzOffset = Number.isFinite(body?.tzOffset) ? Number(body.tzOffset) : 0;
+    /** A stored instant, as the calendar date the caller lived it in. */
+    const localDay = (iso: string) =>
+      new Date(new Date(iso).getTime() - tzOffset * 60_000).toISOString().split("T")[0];
+
+    const weekAgo = (() => {
+      const d = new Date(`${today}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() - 7);
+      return d.toISOString().split("T")[0];
+    })();
 
     const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, memoryRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
@@ -124,21 +151,21 @@ serve(async (req) => {
         readiness_status: d.readiness_status,
       })),
       recent_sleep: sleepLogs.map(s => ({
-        date: new Date(s.waketime).toISOString().split("T")[0],
+        date: localDay(s.waketime),
         deep_min: s.deep_min,
         rem_min: s.rem_min,
         light_min: s.light_min,
         quality: s.quality,
       })),
       recent_workouts: workouts.map(w => ({
-        date: new Date(w.date_time).toISOString().split("T")[0],
+        date: localDay(w.date_time),
         name: w.template_name,
         volume_load: w.volume_load,
         rpe: w.session_rpe,
         pain_flags: w.pain_flags,
       })),
       latest_biometrics: biometrics.map(b => ({
-        date: new Date(b.date_time).toISOString().split("T")[0],
+        date: localDay(b.date_time),
         resting_hr_bpm: b.hr_bpm,
         /* Named by which metric it is. Selecting only `hrv_rmssd_ms` went blind
            the moment Apple's readings moved to their own column, and a coach
