@@ -79,6 +79,11 @@ export default function SmartGoalsScreen() {
   const analysis = useMemo(() => {
     if (!weightLogs || weightLogs.length < 3 || !profile) return null;
     const goal = profile.goal || 'maintain';
+    /* The suggestion below re-applies the goal multiplier to a *measured* TDEE,
+       so it has to pass through the same floor onboarding does — otherwise the
+       one place that can lower somebody's target is the one place with no
+       lower bound on it. */
+    const sex = (profile.sex as 'male' | 'female' | 'other') || 'other';
     const currentCal = Number(profile.tdee_target_kcal) || 2200;
 
     const weekAvgs: { week: string; value: number | null }[] = [];
@@ -132,7 +137,7 @@ export default function SmartGoalsScreen() {
     let measuredDays = 0;
 
     if (measured.ok) {
-      const shouldBe = calcTargetCalories(measured.measured, goal);
+      const shouldBe = calcTargetCalories(measured.measured, goal, sex);
       if (worthMentioning(shouldBe, currentCal)) {
         twoWeekDeviation = true;
         fromMeasurement = true;

@@ -56,6 +56,29 @@ thật — nó không thể nói cho bạn biết lệnh deploy đã chạy chư
 
 ---
 
+## 1b. Hồ sơ đã tạo trước bản sửa mục tiêu dinh dưỡng
+
+Ba con số trong `profiles` được tính sai và đã sửa trong code, nhưng **code chỉ
+sửa những gì tính từ giờ trở đi**. Hàng nào đã nằm trong bảng thì vẫn giữ số cũ:
+
+- `tdee_target_kcal` có thể dưới sàn an toàn (1200 nữ / 1500 nam). Trong vùng
+  quét 401.940 hồ sơ, **7.438 hồ sơ** rơi vào diện này — thấp nhất là
+  1058 kcal/ngày cho phụ nữ 45kg, dưới cả chuyển hoá cơ bản của chính họ.
+- `macro_protein_g` có thể tính trên cân nặng tổng thay vì chặn ở BMI 30.
+- `macro_fiber_g` là 30 với mọi người, thay vì 14g/1000kcal.
+
+**Cách sửa cho một tài khoản:** mở *Sửa hồ sơ* → bấm **Tính lại**. Một chạm, và
+nó chạy đúng chuỗi tính mới.
+
+Cố tình **không** viết migration SQL cho việc này. Muốn sửa hàng loạt thì phải
+chép lại toàn bộ phép tính (Mifflin-St Jeor → hệ số vận động → sàn calo → chặn
+BMI 30 → bù trừ macro) sang SQL, và hai bản sao của cùng một phép tính là thứ
+chắc chắn sẽ lệch nhau. Nếu đến lúc phát hành mà số tài khoản đủ lớn để không
+nhắc từng người được, cách đúng là chạy một script Node **gọi thẳng
+`src/lib/fitness-calc.ts`** chứ không phải viết lại nó bằng SQL.
+
+---
+
 ## 2. Ranh giới free/paid — quyết định, không phải việc code
 
 Đây là thứ phải quyết trước khi viết bất kỳ dòng nào của mục 3 và 4.

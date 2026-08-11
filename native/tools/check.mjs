@@ -152,6 +152,7 @@ const STEPS = [
   ['quyền lợi gói', 'node', ['tools/entitlement.mjs']],
   ['sửa sai được', 'node', ['tools/correctable.mjs']],
   ['rỗng ≠ hỏng', 'node', ['tools/empty-vs-failed.mjs']],
+  ['mục tiêu dinh dưỡng', 'node', ['tools/nutrition-targets.mjs']],
   ['TDEE thích ứng', 'node', ['tools/adaptive-tdee.mjs']],
   ['sẵn sàng deploy', 'node', ['tools/deployable.mjs']],
   ['ghi khi mất mạng', 'node', ['tools/offline-durable.mjs']],

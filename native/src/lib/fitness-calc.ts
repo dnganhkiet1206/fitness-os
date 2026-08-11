@@ -19,29 +19,132 @@ export function calcTDEE(bmr: number, activityLevel: string): number {
   return Math.round(bmr * (ACTIVITY_MULTIPLIERS[activityLevel] || 1.55));
 }
 
-/** Goal-adjusted TDEE */
-export function calcTargetCalories(tdee: number, goal: string): number {
+export type Sex = 'male' | 'female' | 'other';
+
+/**
+ * The lowest daily calorie target this app will hand anybody.
+ *
+ * `cut` is a flat 20% cut of TDEE, and 20% of a small number is a small
+ * number. A 45 kg, 150 cm, 25-year-old sedentary woman has a TDEE of 1,322,
+ * so the old rule prescribed **1,058 kcal a day** — below her own resting
+ * metabolism of 1,102, from an app with nobody supervising it.
+ *
+ * The NIH puts the safe floor for an unsupervised weight-loss plan at 1,200
+ * kcal for women and 1,500 for men, and MyFitnessPal enforces exactly those
+ * two numbers: it will not let a goal be set below them however the maths
+ * comes out. This does the same.
+ *
+ * `other` takes the higher of the two, for the same reason `calcBMR` gives it
+ * the male constant: when the input does not say, do not pick the answer that
+ * prescribes eating less.
+ *
+ * The floor raising a target is not a failure of the maths — it is the maths
+ * asking for something the app will not ask a person to do. Somebody whose
+ * deficit is squeezed to nothing by it needs a smaller goal, not a smaller
+ * plate.
+ */
+const CALORIE_FLOOR_KCAL: Record<Sex, number> = { female: 1200, male: 1500, other: 1500 };
+
+/** Goal-adjusted TDEE, never below the floor for that person. */
+export function calcTargetCalories(tdee: number, goal: string, sex: Sex): number {
+  let target: number;
   switch (goal) {
-    case 'bulk': return Math.round(tdee * 1.1);
-    case 'cut': return Math.round(tdee * 0.8);
-    case 'recomp': return tdee;
-    case 'strength': return Math.round(tdee * 1.05);
-    case 'endurance': return Math.round(tdee * 1.05);
-    default: return tdee; // maintain
+    case 'bulk': target = Math.round(tdee * 1.1); break;
+    case 'cut': target = Math.round(tdee * 0.8); break;
+    case 'strength': target = Math.round(tdee * 1.05); break;
+    case 'endurance': target = Math.round(tdee * 1.05); break;
+    default: target = Math.round(tdee); // maintain, recomp
   }
+  return Math.max(target, CALORIE_FLOOR_KCAL[sex] ?? CALORIE_FLOOR_KCAL.other);
 }
 
-/** Macro suggestions based on goal + weight */
-export function calcMacros(targetKcal: number, weight_kg: number, goal: string) {
-  // Protein: g/kg based on goal
+/**
+ * Adequate Intake for total fibre, from the IOM/Food and Nutrition Board: 14 g
+ * per 1,000 kcal, the level at which the coronary-heart-disease association
+ * was observed. The familiar "25 g for women, 38 g for men" is this same
+ * number applied to reference calorie intakes.
+ *
+ * It replaces a flat 30 g, which was right for nobody in particular: too much
+ * for a 1,500 kcal cut (21 g) and too little for a 3,500 kcal bulk (49 g).
+ */
+export const FIBER_G_PER_1000_KCAL = 14;
+
+/** Fat below this share of calories stops being a diet and starts being a problem — the low end of the IOM's acceptable range (20–35%). */
+const FAT_FLOOR_FRACTION = 0.2;
+const FAT_TARGET_FRACTION = 0.25;
+
+/** Carbohydrate is the remainder, but not all the way to nothing. */
+const MIN_CARB_G = 50;
+
+/**
+ * The body weight a protein target should be computed from.
+ *
+ * Protein need tracks fat-free mass, and fat mass above BMI 30 adds almost
+ * none. Charging 2.4 g/kg against *total* weight therefore overshoots badly
+ * for anybody with obesity: a 150 kg person was being told to eat 360 g of
+ * protein a day — 1,440 kcal of it, most of a 1,982 kcal cut target — which
+ * left carbohydrate negative and got silently clamped.
+ *
+ * Weijs, "Protein requirement in obesity" (Curr Opin Clin Nutr Metab Care,
+ * doi:10.1097/MCO.0000000000001087), states the practical rule directly:
+ *
+ *   "The excessive fat mass accumulation above BMI 30 could be ignored by
+ *    using a maximum adjusted body weight at BMI 30."
+ *
+ * so that is what this does. For everybody under BMI 30 — which is nearly
+ * everybody this app is built for — it changes nothing at all.
+ *
+ * Without a height there is no BMI, and a guessed one would move somebody's
+ * protein target by a hundred grams. So without a height it does not adjust.
+ */
+export function proteinReferenceWeight(weight_kg: number, height_cm?: number): number {
+  if (!height_cm || height_cm < 100 || height_cm > 250) return weight_kg;
+  const m = height_cm / 100;
+  return Math.min(weight_kg, 30 * m * m);
+}
+
+/** Same paper: during weight loss, protein should not fall below 1.2 g/kg of that same reference weight. */
+const PROTEIN_FLOOR_PER_KG = 1.2;
+
+/**
+ * Macro suggestions based on goal + weight.
+ *
+ * The three numbers must add up to `targetKcal`. That sounds obvious and the
+ * previous version did not do it: when protein and fat between them ate the
+ * whole budget, carbohydrate came out negative and was clamped to 50 g — so
+ * the four rings on the nutrition card added up to *more* than the calorie
+ * ring above them, and somebody could hit every macro target and be 225 kcal
+ * over their calorie target on the same screen.
+ *
+ * Here carbohydrate is derived from the identity last, so it holds by
+ * construction. When the remainder would fall under `MIN_CARB_G`, the shortfall
+ * is taken back out of fat first — down to the 20% floor — and only then out
+ * of protein, down to 1.2 g/kg. Nothing is clamped without something else
+ * moving to pay for it.
+ */
+export function calcMacros(targetKcal: number, weight_kg: number, goal: string, height_cm?: number) {
+  const refKg = proteinReferenceWeight(weight_kg, height_cm);
   const proteinPerKg = goal === 'bulk' ? 2.2 : goal === 'cut' ? 2.4 : goal === 'strength' ? 2.0 : 1.8;
-  const protein_g = Math.round(weight_kg * proteinPerKg);
-  // Fat: 25% of calories
-  const fat_g = Math.round((targetKcal * 0.25) / 9);
-  // Carbs: remainder
-  const carbs_g = Math.round((targetKcal - protein_g * 4 - fat_g * 9) / 4);
-  const fiber_g = 30;
-  return { protein_g, carbs_g: Math.max(carbs_g, 50), fat_g, fiber_g };
+
+  let protein_g = Math.round(refKg * proteinPerKg);
+  let fat_g = Math.round((targetKcal * FAT_TARGET_FRACTION) / 9);
+
+  let short = MIN_CARB_G * 4 + protein_g * 4 + fat_g * 9 - targetKcal;
+  if (short > 0) {
+    const fatFloor_g = Math.round((targetKcal * FAT_FLOOR_FRACTION) / 9);
+    const fromFat = Math.min(short, Math.max(fat_g - fatFloor_g, 0) * 9);
+    fat_g -= Math.round(fromFat / 9);
+    short -= fromFat;
+  }
+  if (short > 0) {
+    const proteinFloor_g = Math.round(refKg * PROTEIN_FLOOR_PER_KG);
+    const fromProtein = Math.min(short, Math.max(protein_g - proteinFloor_g, 0) * 4);
+    protein_g -= Math.round(fromProtein / 4);
+  }
+
+  const carbs_g = Math.max(Math.round((targetKcal - protein_g * 4 - fat_g * 9) / 4), 0);
+  const fiber_g = Math.round((targetKcal / 1000) * FIBER_G_PER_1000_KCAL);
+  return { protein_g, carbs_g, fat_g, fiber_g };
 }
 
 /** Water target: ~35ml per kg */

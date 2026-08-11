@@ -51,6 +51,7 @@ type Form = {
   macro_protein_g: string;
   macro_carbs_g: string;
   macro_fat_g: string;
+  macro_fiber_g: string;
   water_target_ml: string;
   units_weight: string;
   units_height: string;
@@ -62,7 +63,7 @@ type Form = {
 const EMPTY: Form = {
   name: '', dob: '', sex: 'male', activity_level: 'moderate',
   height_cm: '175', weight_kg: '70', goal: 'maintain', tdee_target_kcal: '2200',
-  macro_protein_g: '150', macro_carbs_g: '250', macro_fat_g: '70',
+  macro_protein_g: '150', macro_carbs_g: '250', macro_fat_g: '70', macro_fiber_g: '30',
   water_target_ml: '2500', units_weight: 'kg', units_height: 'cm',
   sleep_target_hours: '8', sleep_target_bedtime: '23:00', sleep_target_waketime: '07:00',
 };
@@ -108,6 +109,7 @@ export default function EditProfileSheet() {
       macro_protein_g: String(profile.macro_protein_g ?? 150),
       macro_carbs_g: String(profile.macro_carbs_g ?? 250),
       macro_fat_g: String(profile.macro_fat_g ?? 70),
+      macro_fiber_g: String(profile.macro_fiber_g ?? 30),
       water_target_ml: String(profile.water_target_ml ?? 2500),
       units_weight: profile.units_weight ?? 'kg',
       units_height: profile.units_height ?? 'cm',
@@ -127,8 +129,8 @@ export default function EditProfileSheet() {
     const age = form.dob ? calcAge(form.dob) : 30;
     const bmr = calcBMR(w, h, age, form.sex as 'male' | 'female' | 'other');
     const tdee = calcTDEE(bmr, form.activity_level);
-    const targetKcal = calcTargetCalories(tdee, form.goal);
-    const macros = calcMacros(targetKcal, w, form.goal);
+    const targetKcal = calcTargetCalories(tdee, form.goal, form.sex as 'male' | 'female' | 'other');
+    const macros = calcMacros(targetKcal, w, form.goal, h);
     const waterMl = calcWaterTarget(w);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setForm((f) => ({
@@ -137,6 +139,7 @@ export default function EditProfileSheet() {
       macro_protein_g: String(macros.protein_g),
       macro_carbs_g: String(macros.carbs_g),
       macro_fat_g: String(macros.fat_g),
+      macro_fiber_g: String(macros.fiber_g),
       water_target_ml: String(waterMl),
     }));
     setWaterDisp(String(displayVolume(waterMl, vUnit)));
@@ -160,6 +163,7 @@ export default function EditProfileSheet() {
           macro_protein_g: Number(form.macro_protein_g) || null,
           macro_carbs_g: Number(form.macro_carbs_g) || null,
           macro_fat_g: Number(form.macro_fat_g) || null,
+          macro_fiber_g: Number(form.macro_fiber_g) || null,
           water_target_ml: Number(form.water_target_ml) || null,
           units_weight: form.units_weight,
           units_height: form.units_height,
@@ -347,6 +351,13 @@ export default function EditProfileSheet() {
           </Field>
           <Field label={i18n.nFat} style={styles.third}>
             <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_fat_g} onChangeText={(v) => set('macro_fat_g', v)} />
+          </Field>
+          {/* Fibre was computed by `calcMacros` and then dropped on the floor here:
+              the form had no field for it, so "tính lại" left it at whatever
+              onboarding wrote. Invisible while it was a flat 30 for everybody;
+              a real drift now that it scales with the calorie target. */}
+          <Field label={i18n.foodFiber} style={styles.third}>
+            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_fiber_g} onChangeText={(v) => set('macro_fiber_g', v)} />
           </Field>
         </View>
 
