@@ -95,7 +95,14 @@ export function useSmartNudges(enabled = true) {
     gcTime: 1000 * 60 * 60 * 24,
     retry: RETRY,
     queryFn: async () => {
-      const res = await callEdge<{ nudges?: Nudge[] }>(EDGE_FUNCTIONS.smartNudges, { lang, date });
+      /* `tzOffset` because the prompt branches on time of day — "if evening:
+         remind to sleep early; if morning: remind water + protein" — and the
+         hour it branched on came from a Deno host's UTC clock. */
+      const res = await callEdge<{ nudges?: Nudge[] }>(EDGE_FUNCTIONS.smartNudges, {
+        lang,
+        date,
+        tzOffset: new Date().getTimezoneOffset(),
+      });
       if (!res.ok) throw new Error(res.failure);
       return res.data?.nudges ?? [];
     },

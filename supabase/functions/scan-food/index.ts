@@ -102,7 +102,28 @@ Additional guidelines:
 - If no food/drink is detected, return an empty items array
 - Language for food names: ${lang === "vi" ? "Vietnamese" : "English"}
 - ALWAYS include beverages/drinks - they count for nutrition tracking
-- Round values to 1 decimal place for precision`;
+${
+  /*
+    ── do not manufacture precision that is not there ──
+
+    This guideline used to read "Round values to 1 decimal place for
+    precision", for all three modes at once. In `label` mode that is right and
+    it is what the panel says. In `food` mode it is a decimal place on a
+    portion size guessed from a photograph, and a tenth of a gram on a number
+    whose real uncertainty is a third of itself is not precision, it is a
+    claim the picture cannot support.
+
+    It also contradicted `label`'s own instruction to read the exact values,
+    since a panel reading "0.5 g" would be reported as "0.5" either way but a
+    panel reading "12.75 g" would be rounded away.
+  */ ''
+}${
+  mode === 'label'
+    ? '- Report values exactly as printed on the panel; do not round them'
+    : mode === 'barcode'
+      ? "- Report the product's published values as published; do not round them"
+      : '- Report whole numbers. These are estimates from a photograph, and a decimal place on a guessed portion size claims a precision the image does not contain'
+}`;
 
     const userPromptByMode: Record<string, string> = {
       food: "Analyze this image. Identify EVERY food item AND beverage visible. Provide accurate macronutrients per serving for each.",

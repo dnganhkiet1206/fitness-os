@@ -7,6 +7,7 @@ import {
   quotaExceeded,
   requireUser,
 } from "../_shared/guard.ts";
+import { asleepMinutes } from "../_shared/sleep.ts";
 
 /** Output ceiling. Unbounded generation is an unbounded bill. */
 const MAX_TOKENS = 1024;
@@ -96,8 +97,8 @@ serve(async (req) => {
     const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, memoryRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("*").eq("user_id", userId).gte("date", weekAgo).order("date", { ascending: false }).limit(7),
-      supabase.from("sleep_logs").select("*").eq("user_id", userId).gte("waketime", `${weekAgo}T00:00:00`).order("waketime", { ascending: false }).limit(7),
-      supabase.from("workout_sessions").select("template_name, volume_load, session_rpe, pain_flags, date_time, sets").eq("user_id", userId).gte("date_time", `${weekAgo}T00:00:00`).order("date_time", { ascending: false }).limit(7),
+      supabase.from("sleep_logs").select("*").eq("user_id", userId).gte("waketime", `${weekAgo}T00:00:00Z`).order("waketime", { ascending: false }).limit(7),
+      supabase.from("workout_sessions").select("template_name, volume_load, session_rpe, pain_flags, date_time, sets").eq("user_id", userId).gte("date_time", `${weekAgo}T00:00:00Z`).order("date_time", { ascending: false }).limit(7),
       supabase.from("biometric_samples").select("hr_bpm, hrv_rmssd_ms, hrv_sdnn_ms, date_time").eq("user_id", userId).order("date_time", { ascending: false }).limit(3),
       /* What this person has told the coach in past conversations. The logs
          above are what the app measured; this is what it was told, and it is
@@ -150,8 +151,21 @@ serve(async (req) => {
         readiness: d.readiness_score,
         readiness_status: d.readiness_status,
       })),
+      /*
+        `total_min` is the number this list existed to carry and did not.
+
+        It used to send the three stage figures and nothing else. Those are
+        filled in only by a HealthKit night; a night typed into `log-sleep`
+        leaves all three at 0. So for every hand-logged night the coach was
+        handed `deep 0, rem 0, light 0` and asked about the person's recovery —
+        which is how "giấc ngủ khi ghi thì không xuất hiện ở health assistant"
+        happened. `asleepMinutes` is the app's one definition of a night's
+        length; `null` when the row genuinely cannot say, so the model is never
+        told zero by a row that simply did not know.
+      */
       recent_sleep: sleepLogs.map(s => ({
         date: localDay(s.waketime),
+        total_min: asleepMinutes(s),
         deep_min: s.deep_min,
         rem_min: s.rem_min,
         light_min: s.light_min,

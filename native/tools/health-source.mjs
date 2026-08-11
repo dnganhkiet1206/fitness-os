@@ -473,6 +473,57 @@ const problems = [];
   }
 }
 
+/*
+  ── 11: the coach was never told how long anybody slept ──
+
+  Section 3 settled this for the client: time in bed is not time asleep, and
+  both readers of `sleep_logs` go through one `asleepMinutes`. The edge
+  functions were outside that rule and had the same bug from a third direction.
+
+  `ai-coach` sent the model `{ date, deep_min, rem_min, light_min, quality }`
+  and no duration at all. `ai-smart-nudges` computed one as
+  `deep + rem + light`. Both are only right for a night HealthKit wrote — a
+  night typed into `log-sleep` leaves the three stage boxes empty, stored as 0.
+
+  So for every hand-logged night the coach was handed three zeroes and asked
+  about the person's recovery. That is the second half of a bug a real user
+  reported: "sinh trắc học và giấc ngủ khi ghi thì không xuất hiện ở dashboard
+  và health assistant". The dashboard half was an unapplied migration. This is
+  the assistant half, and it was still live.
+
+  Deno and the RN bundle share no module, so `_shared/sleep.ts` is a second
+  copy of the client's rule by necessity. What is not necessary is the two
+  drifting, so both are read here and required to say the same thing.
+*/
+{
+  const shared = read('../supabase/functions/_shared/sleep.ts');
+  const client = read('src/lib/daily-log-service.ts');
+
+  /* Both must prefer a positive `asleep_min` and fall back to the span. If
+     either half of that rule is missing on either side, they have drifted. */
+  for (const [where, src] of [['_shared/sleep.ts', shared], ['daily-log-service.ts', client]]) {
+    if (!/asleep_min\s*!=\s*null\s*&&\s*\w+\.asleep_min\s*>\s*0/.test(src)) {
+      problems.push(`${where}: asleepMinutes không ưu tiên asleep_min > 0 — thời gian nằm giường bị tính là thời gian ngủ`);
+    }
+    if (!/waketime[\s\S]{0,120}?bedtime[\s\S]{0,120}?60000|wake\s*-\s*bed\s*\)\s*\/\s*60000/.test(src)) {
+      problems.push(`${where}: asleepMinutes không có nhánh lấy khoảng bedtime→waketime — đêm tự ghi tay sẽ không có thời lượng`);
+    }
+  }
+
+  for (const fn of ['ai-coach', 'ai-smart-nudges']) {
+    const src = read(`../supabase/functions/${fn}/index.ts`);
+    if (/deep_min\s*\?\?\s*0\s*\)\s*\+/.test(src) || /\(s\.deep_min[^)]*\)\s*\+\s*\(s\.rem_min/.test(src)) {
+      problems.push(
+        `${fn}: cộng deep+rem+light để ra thời lượng ngủ — đêm ghi tay để trống ba ô đó, ` +
+          'nên model được cho biết người dùng ngủ 0 phút rồi bị hỏi về phục hồi',
+      );
+    }
+    if (!/asleepMinutes\s*\(/.test(src)) {
+      problems.push(`${fn}: không dùng asleepMinutes — model không được cho biết đêm đó dài bao nhiêu`);
+    }
+  }
+}
+
 /**
  * The self-test.
  *

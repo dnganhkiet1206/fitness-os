@@ -316,8 +316,10 @@ export default function LogMealSheet() {
         meal_type: mealType,
         /* The other caller of this function already sends it. Without it the
            edge function falls back to its own UTC clock, which is yesterday for
-           anybody east of Greenwich during their morning. */
+           anybody east of Greenwich during their morning. The same was true of
+           the hour it fits suggestions to, hence `tzOffset`. */
         date: localDateStr(),
+        tzOffset: new Date().getTimezoneOffset(),
       });
       if (!res.ok) throw new Error(i18n[AI_FAILURE_KEY[res.failure]]);
       return res.data?.suggestions ?? [];

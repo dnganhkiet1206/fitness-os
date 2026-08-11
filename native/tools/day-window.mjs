@@ -85,6 +85,21 @@ const SERVER_SELF = [
     return /const\s*\{[^}]*\bdate\b[^}]*\}\s*=\s*(?:await\s*)?req\.json/.test(good);
   }],
   ['có nhận body?.date — không báo oan', () => /body[?.]*\.date/.test('const today = body?.date ?? fallback;')],
+  ['giờ lấy từ đồng hồ server — bị bắt', () =>
+    /new Date\(\)\s*\.\s*get(Hours|Minutes|Day|Date|Month|FullYear)\s*\(/.test('current_hour: new Date().getHours(),')],
+  ['localHour(tzOffset) — không báo oan', () =>
+    !/new Date\(\)\s*\.\s*get(Hours|Minutes|Day|Date|Month|FullYear)\s*\(/.test('current_hour: localHour(tzOffset),')],
+  /* The stripper has to remove prose and keep code. Getting the first half
+     wrong makes the rule fire on its own explanation; getting the second half
+     wrong makes it silently stop seeing the bug, which is worse. */
+  ['bỏ chú thích: đoạn giải thích không bị coi là code', () => {
+    const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/\/\/[^\n]*/g, '');
+    return !/getHours/.test(strip('/* `new Date().getHours()` here was the hour in UTC */\nconst h = localHour(tz);'));
+  }],
+  ['bỏ chú thích: code thật vẫn còn nguyên', () => {
+    const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/\/\/[^\n]*/g, '');
+    return /getHours/.test(strip('/* giải thích */\nconst h = new Date().getHours();'));
+  }],
 ];
 const serverMissed = SERVER_SELF.filter(([, fn]) => !fn()).map(([l]) => l);
 if (serverMissed.length) {
@@ -116,6 +131,18 @@ const hits = [];
 */
 {
   const FUNCS = path.join(NATIVE, '..', 'supabase', 'functions');
+
+  /**
+   * Comments out, newlines kept.
+   *
+   * The hour rule below fired on its own explanation: the comment in
+   * `ai-smart-nudges` that says what `new Date().getHours()` used to do
+   * contains the very string being searched for. A rule that reports the note
+   * describing its own fix is a rule people switch off, so the scan reads code
+   * and the prose is left out of it.
+   */
+  const code_only = (s) =>
+    s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/\/\/[^\n]*/g, '');
   const UTC_DATE = /new Date\(\)[\s\S]{0,40}?toISOString\(\)\s*\.\s*(?:split\(["']T["']\)\[0\]|slice\(0,\s*10\))/;
   /*
      Reading the date off the request counts however it is written. Two of these
@@ -133,7 +160,7 @@ const hits = [];
   for (const dir of readdirSync(FUNCS)) {
     const file = path.join(FUNCS, dir, 'index.ts');
     if (!existsSync(file)) continue;
-    const code = readFileSync(file, 'utf8');
+    const code = code_only(readFileSync(file, 'utf8'));
     if (!UTC_DATE.test(code)) continue;
     if (FROM_BODY.test(code)) continue;
     hits.push({
@@ -141,6 +168,36 @@ const hits = [];
       code:
         'đó là ngày UTC. Với người dùng ở UTC+7, từ nửa đêm tới 7h sáng nó là NGÀY HÔM QUA. ' +
         'Ngày phải do thiết bị gửi lên, vì chỉ thiết bị mới biết hôm nay là ngày nào ở chỗ người đó đứng.',
+    });
+  }
+
+  /*
+    ── the same clock, the other hand ──
+
+    The date got fixed and the *hour* did not. `new Date().getHours()` on a
+    Deno host is the hour in UTC, and two prompts branch on it —
+    `ai-smart-nudges` is told "if evening: remind to sleep early; if morning:
+    remind water + protein". At UTC+7 that put the morning nudge at eight in
+    the evening and told people to go to bed at lunchtime.
+
+    Exactly the bug this section already existed for, one field along, missed
+    because the rule was written about the word "date". So it is written about
+    the clock instead.
+
+    `localHour(tzOffset)` in `_shared/sleep.ts` is the fix, and it returns
+    `null` rather than a UTC hour when the client did not say — a prompt that
+    branches on time of day is better off knowing it does not know.
+  */
+  for (const dir of readdirSync(FUNCS)) {
+    const file = path.join(FUNCS, dir, 'index.ts');
+    if (!existsSync(file)) continue;
+    const code = code_only(readFileSync(file, 'utf8'));
+    if (!/new Date\(\)\s*\.\s*get(Hours|Minutes|Day|Date|Month|FullYear)\s*\(/.test(code)) continue;
+    hits.push({
+      where: `supabase/functions/${dir}/index.ts — đọc giờ/ngày trong tuần từ đồng hồ của server`,
+      code:
+        'đó là giờ UTC. Prompt rẽ nhánh theo "sáng hay tối" sẽ rẽ theo buổi mà người dùng KHÔNG ở trong đó — ' +
+        'ở UTC+7 là lệch bảy tiếng. Dùng localHour(tzOffset) trong _shared/sleep.ts.',
     });
   }
 }
@@ -163,6 +220,8 @@ if (hits.length) {
 }
 
 console.log(
-  `cửa sổ ngày OK — ${SELF_TEST.length} ca tự kiểm tra đúng, không chỗ nào dùng chuỗi trần; ` +
-    'và không edge function nào tự tính ngày lịch từ đồng hồ UTC của server',
+  `cửa sổ ngày OK — ${SELF_TEST.length + SERVER_SELF.length} ca tự kiểm tra đúng, không chỗ nào dùng chuỗi trần; ` +
+    'không edge function nào tự tính ngày lịch từ đồng hồ UTC của server, ' +
+    'và không cái nào đọc GIỜ từ đồng hồ đó nữa (prompt rẽ nhánh "sáng hay tối" từng lệch bảy tiếng ở UTC+7); ' +
+    'luật quét code chứ không quét chú thích, nên nó không tự báo chính lời giải thích của mình',
 );

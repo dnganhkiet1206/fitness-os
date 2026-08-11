@@ -182,6 +182,27 @@ export default function ScanFoodScreen() {
             ) : (
               <>
                 <Text style={styles.reviewTitle}>{i18n.nAiScanTitle}</Text>
+                {/*
+                  ── the card says which kind of number this is ──
+
+                  `activity.ts` already settled this for the exercise ring:
+                  a measurement and an estimate are different things and the
+                  card has to say which. The three scan modes are not equally
+                  accurate and it is not close — `label` is OCR of a printed
+                  panel, `barcode` is the manufacturer's own figures, and
+                  `food` is a portion size guessed from a picture, which is
+                  the weakest number this app produces. All three used to be
+                  rendered as identical bare numbers.
+
+                  No error percentage is quoted, because this app has no
+                  measurement of its own model's accuracy and borrowing
+                  somebody else's would be a number with nothing behind it.
+                  Saying the portion is a guess is true and is the part that
+                  changes what a person does next.
+                */}
+                <Text style={styles.reviewSource}>
+                  {mode === 'label' ? i18n.nScanFromLabel : i18n.nScanFromPhoto}
+                </Text>
                 <ScrollView style={styles.reviewList} contentContainerStyle={styles.reviewListContent}>
                   {items.map((it, idx) => (
                     <View key={idx} style={styles.itemRow}>
@@ -371,6 +392,7 @@ const styles = StyleSheet.create({
     maxHeight: '70%',
   },
   reviewTitle: { ...type.title, color: colors.foreground, textAlign: 'center' },
+  reviewSource: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', marginTop: 4 },
   reviewError: { ...type.body, color: colors.mutedForeground, textAlign: 'center', marginBottom: spacing.sm },
   reviewList: { maxHeight: 280 },
   reviewListContent: { gap: spacing.sm },

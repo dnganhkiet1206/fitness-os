@@ -345,6 +345,11 @@ const en = {
   nScanLabelHint: 'Frame the nutrition facts panel',
   nAnalyzing: 'Analyzing…',
   nScanNoFood: 'No food detected — try again',
+  /* Where the numbers came from. Two of these three modes read a printed
+     figure; one guesses a portion size from a picture, and they are nowhere
+     near equally accurate. Check what they are before adding. */
+  nScanFromPhoto: 'Estimated from the photo — portion size is a guess. Check before adding.',
+  nScanFromLabel: 'Read off the nutrition panel.',
   nScanRetake: 'Retake',
   nScanAdd: 'Add {n} items',
   nScanAddOne: 'Add 1 item',
@@ -920,6 +925,8 @@ const vi: typeof en = {
   nScanLabelHint: 'Đưa bảng thành phần dinh dưỡng vào khung',
   nAnalyzing: 'Đang phân tích…',
   nScanNoFood: 'Không nhận ra món ăn — thử lại',
+  nScanFromPhoto: 'Ước tính từ ảnh — khẩu phần là phỏng đoán. Kiểm lại trước khi thêm.',
+  nScanFromLabel: 'Đọc từ bảng dinh dưỡng.',
   nScanRetake: 'Chụp lại',
   nScanAdd: 'Thêm {n} món',
   nScanAddOne: 'Thêm 1 món',

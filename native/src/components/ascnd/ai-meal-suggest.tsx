@@ -45,6 +45,9 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
       meal_type: mealType || 'any',
       lang,
       date: localDateStr(),
+      /* The function asks the model to fit the time of day. Without this it
+         read the hour off a Deno host's clock, which is UTC. */
+      tzOffset: new Date().getTimezoneOffset(),
     });
     if (res.ok) {
       setSuggestions(res.data?.suggestions ?? []);

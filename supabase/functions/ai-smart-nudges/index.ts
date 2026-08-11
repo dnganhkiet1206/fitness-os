@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { claimCall, corsHeaders, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { asleepMinutes, localHour, SLEEP_COLUMNS } from "../_shared/sleep.ts";
 
 /** Output ceiling — the reply is a handful of one-line nudges. */
 const MAX_TOKENS = 700;
@@ -18,7 +19,7 @@ serve(async (req) => {
 
     if (!(await claimCall(supabase, "ai-smart-nudges"))) return quotaExceeded();
 
-    const { lang = "vi", date } = await req.json().catch(() => ({}));
+    const { lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
     // Prefer the client's local calendar date; fall back to server UTC
     const today = date ?? new Date().toISOString().split("T")[0];
     const threeDaysAgo = new Date(`${today}T00:00:00Z`);
@@ -28,7 +29,7 @@ serve(async (req) => {
     const [profileRes, dailyLogsRes, sleepRes, waterRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("date, kcal, protein_g, carbs_g, fat_g, readiness_score, readiness_status, sleep_duration_min, steps, volume_load").eq("user_id", userId).gte("date", daysAgo3).order("date", { ascending: false }).limit(3),
-      supabase.from("sleep_logs").select("bedtime, waketime, quality, deep_min, rem_min, light_min").eq("user_id", userId).order("waketime", { ascending: false }).limit(3),
+      supabase.from("sleep_logs").select(`quality, deep_min, rem_min, light_min, ${SLEEP_COLUMNS}`).eq("user_id", userId).order("waketime", { ascending: false }).limit(3),
       supabase.from("water_logs").select("amount_ml, date").eq("user_id", userId).eq("date", today),
     ]);
 
@@ -50,10 +51,24 @@ serve(async (req) => {
         bedtime: s.bedtime,
         waketime: s.waketime,
         quality: s.quality,
-        total_min: (s.deep_min ?? 0) + (s.rem_min ?? 0) + (s.light_min ?? 0),
+        /*
+          The stage sum is only a night's length for a night HealthKit wrote.
+          A night typed into `log-sleep` leaves all three boxes empty, stored
+          as 0 — so this used to tell the model the person slept **zero
+          minutes**, and then ask it for a nudge about their recovery.
+        */
+        total_min: asleepMinutes(s),
       })),
       water_today_ml: waterToday,
-      current_hour: new Date().getHours(),
+      /*
+        `new Date().getHours()` here was the hour in UTC, on a Deno host. The
+        prompt below branches on it ("if evening: remind to sleep early; if
+        morning: remind water + protein"), so at UTC+7 somebody got the
+        morning nudge at eight in the evening. `null` when the client did not
+        say, because a prompt that branches on time of day is better off
+        knowing it does not know than being confidently seven hours out.
+      */
+      current_hour: localHour(tzOffset),
     };
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
