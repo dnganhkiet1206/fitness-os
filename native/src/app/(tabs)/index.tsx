@@ -64,12 +64,14 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useReminderSync } from '@/hooks/use-reminders';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { TodaySkeleton } from '@/components/ascnd/skeleton';
 import { useTodayTrainingMinutes } from '@/hooks/use-fitness-data';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { getLocale } from '@/lib/i18n';
+import { recordHeight } from '@/lib/widget-heights';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
@@ -530,9 +532,26 @@ export default function TodayScreen() {
           */}
           {dayFailed ? <LoadFailed i18n={i18n} onRetry={onRefresh} busy={refreshing} /> : null}
 
+          {/*
+            ── loading is a third thing, and it used to look like nothing ──
+
+            `dayPending` rendered `null`, so from the greeting down the page was
+            empty until the query resolved. On a warm cache nobody sees it; on a
+            cold launch it is several seconds of an app that looks broken.
+
+            Unhiding the widgets is not the answer — that is the page-jump
+            `screen.tsx` documents. The answer is to occupy the space they are
+            about to take, at the size they are about to take it, which is why
+            `widget-heights.ts` remembers what each one measured rather than
+            carrying fifteen constants that go stale the first time a card gains
+            a row.
+          */}
+          {dayPending ? <TodaySkeleton heroWidgets={config.heroWidgets} groups={config.groups} /> : null}
+
           {dayPending || dayFailed ? null : config.heroWidgets.map((key, i) => (
             <Animated.View
               key={key}
+              onLayout={(e) => recordHeight(key, e.nativeEvent.layout.height)}
               entering={FadeInDown.springify().damping(26).stiffness(180).delay(i * 70)}>
               {renderWidget(key)}
             </Animated.View>
@@ -545,6 +564,7 @@ export default function TodayScreen() {
               {group.widgets.map((key, wi) => (
                 <Animated.View
                   key={key}
+                  onLayout={(e) => recordHeight(key, e.nativeEvent.layout.height)}
                   entering={FadeInDown.springify()
                     .damping(26)
                     .stiffness(180)
