@@ -43,7 +43,7 @@ import type { ReadinessInput } from './types';
  * touched, and the symptom would be a sleep debt that contradicts the sleep
  * figure printed above it.
  */
-function asleepMinutes(sleep: {
+export function asleepMinutes(sleep: {
   bedtime: string;
   waketime: string;
   asleep_min?: number | null;

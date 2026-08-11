@@ -13,6 +13,7 @@ import Animated, {
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
@@ -719,7 +720,14 @@ export default function ProgressScreen() {
           ) : (
             <Animated.View entering={rise(1)}>
             <GlassCard style={styles.chartCard}>
-              <Text style={styles.emptyText}>{i18n.progressNoMeasurements}</Text>
+              <EmptyState
+                icon={Ruler}
+                title={i18n.progressNoMeasurements}
+                action={{
+                  label: i18n.progressAddMeasurement,
+                  onPress: () => router.push('/log-measurement'),
+                }}
+              />
             </GlassCard>
             </Animated.View>
           )}

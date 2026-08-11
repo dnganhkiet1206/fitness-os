@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { Lightbulb, Trash2 } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { Lightbulb, Moon, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -7,6 +8,7 @@ import Animated from 'react-native-reanimated';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { EmptyState } from '@/components/ascnd/empty-state';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, spacing, type } from '@/constants/ascnd';
@@ -15,6 +17,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useProfile, useSleepHistory } from '@/hooks/useTodayData';
 import { useDeleteSleepLog } from '@/hooks/use-fitness-data';
 import { getLocale } from '@/lib/i18n';
+import { asleepMinutes } from '@/lib/daily-log-service';
 
 const DEEP = colors.metricPurple;
 const REM = colors.metricCyan;
@@ -36,7 +39,27 @@ export default function SleepInsightsScreen() {
         const deep = Number(s.deep_min ?? 0);
         const rem = Number(s.rem_min ?? 0);
         const light = Number(s.light_min ?? 0);
-        const total = deep + rem + light;
+        /*
+          ── how long the night was, and how long it looked like ──
+
+          `total` used to be `deep + rem + light`, which is only a night's
+          length for a night HealthKit wrote. A night typed into `log-sleep`
+          has a bedtime and a waketime and leaves the three stage boxes empty,
+          stored as 0 — so this screen told anybody logging by hand that they
+          slept **0.0h**, computed a full week of sleep debt from it, and then
+          printed "Bạn ngủ trung bình 0.0h, thiếu 8.0h so với mục tiêu" as a
+          finding about their body.
+
+          Same mistake had already been found and fixed twice, in the readiness
+          engine and in the two AI functions. `asleepMinutes` is the app's one
+          definition of a night's length and it now lives in one place.
+
+          The stages are still the stages. `stagesKnown` is what separates "you
+          had no deep sleep" from "nobody measured your deep sleep", and every
+          reader below has to respect that difference.
+        */
+        const stagesKnown = deep + rem + light > 0;
+        const total = asleepMinutes(s);
         const wake = new Date(s.waketime);
         return {
           day: wake.toLocaleDateString(locale, { weekday: 'short' }),
@@ -44,6 +67,7 @@ export default function SleepInsightsScreen() {
           deep_h: deep / 60,
           rem_h: rem / 60,
           light_h: light / 60,
+          stagesKnown,
           quality: Number(s.quality ?? 0),
         };
       }),
@@ -56,8 +80,16 @@ export default function SleepInsightsScreen() {
     const sum = (f: (x: (typeof nights)[number]) => number) => nights.reduce((a, x) => a + f(x), 0);
     const avgTotal = sum((d) => d.total_h) / n;
     const avgQuality = sum((d) => d.quality) / n;
-    const avgDeep = sum((d) => d.deep_h) / n;
-    const avgRem = sum((d) => d.rem_h) / n;
+    /*
+      Averaged over the nights that actually have stages, not over the week.
+      Counting a hand-logged night as zero deep sleep pulls the average under
+      the threshold below and produces "Deep sleep thấp (<1h)" — a statement
+      about somebody's sleep architecture, derived entirely from nights on
+      which nobody measured their sleep architecture.
+    */
+    const staged = nights.filter((d) => d.stagesKnown);
+    const avgDeep = staged.length ? staged.reduce((a, d) => a + d.deep_h, 0) / staged.length : null;
+    const avgRem = staged.length ? staged.reduce((a, d) => a + d.rem_h, 0) / staged.length : null;
     const debt = Math.max(0, targetHours * 7 - sum((d) => d.total_h));
     return { avgTotal, avgQuality, avgDeep, avgRem, debt };
   }, [nights, targetHours]);
@@ -72,14 +104,16 @@ export default function SleepInsightsScreen() {
           : `You sleep ${stats.avgTotal.toFixed(1)}h on average, short by ${(targetHours - stats.avgTotal).toFixed(1)}h vs target.`,
       );
     }
-    if (stats.avgDeep < 1) {
+    /* `null` means no night this week reported stages — so there is nothing to
+       say about deep or REM, and saying it anyway is the bug this guards. */
+    if (stats.avgDeep !== null && stats.avgDeep < 1) {
       out.push(
         lang === 'vi'
           ? 'Deep sleep thấp (<1h). Hãy tránh rượu và caffeine trước giờ ngủ.'
           : 'Deep sleep is low (<1h). Avoid alcohol and caffeine before bed.',
       );
     }
-    if (stats.avgRem < 1.2) {
+    if (stats.avgRem !== null && stats.avgRem < 1.2) {
       out.push(
         lang === 'vi'
           ? 'REM sleep thấp. Cố gắng đi ngủ đều giờ hơn.'
@@ -112,10 +146,14 @@ export default function SleepInsightsScreen() {
         <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
       ) : !stats ? (
         <GlassCard>
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{i18n.sleepNoData}</Text>
-            <Text style={styles.emptyMsg}>{i18n.sleepNoDataMsg}</Text>
-          </View>
+          {/* Told a new user there was no sleep data and stopped there, leaving
+              them to go and find the log sheet on another tab. */}
+          <EmptyState
+            icon={Moon}
+            title={i18n.sleepNoData}
+            hint={i18n.sleepNoDataMsg}
+            action={{ label: i18n.nLogSleepTitle, onPress: () => router.push('/log-sleep') }}
+          />
         </GlassCard>
       ) : (
         <>
@@ -123,7 +161,13 @@ export default function SleepInsightsScreen() {
           <Animated.View style={styles.statGrid} entering={rise(0)}>
             <StatCard value={`${stats.avgTotal.toFixed(1)}h`} label={i18n.sleepAvg} color={colors.foreground} />
             <StatCard value={`${stats.avgQuality.toFixed(1)}`} label={i18n.sleepAvgQuality} color={colors.readinessGreen} />
-            <StatCard value={`${stats.avgDeep.toFixed(1)}h`} label={i18n.sleepAvgDeep} color={DEEP} />
+            {/* An em-dash rather than "0.0h": nobody slept zero deep, the app
+                simply was not told. */}
+            <StatCard
+              value={stats.avgDeep === null ? '—' : `${stats.avgDeep.toFixed(1)}h`}
+              label={i18n.sleepAvgDeep}
+              color={stats.avgDeep === null ? colors.mutedForeground : DEEP}
+            />
             <StatCard value={`${stats.debt.toFixed(1)}h`} label={i18n.sleepDebt} color={stats.debt > 5 ? colors.readinessRed : colors.mutedForeground} />
           </Animated.View>
 
@@ -141,9 +185,19 @@ export default function SleepInsightsScreen() {
                 <View key={i} style={styles.barCol}>
                   <View style={styles.barTrack}>
                     <View style={{ flexGrow: Math.max(0, maxH - n.total_h) }} />
-                    <View style={[styles.barSeg, { flexGrow: n.light_h, backgroundColor: LIGHT }]} />
-                    <View style={[styles.barSeg, { flexGrow: n.rem_h, backgroundColor: REM }]} />
-                    <View style={[styles.barSeg, { flexGrow: n.deep_h, backgroundColor: DEEP }]} />
+                    {n.stagesKnown ? (
+                      <>
+                        <View style={[styles.barSeg, { flexGrow: n.light_h, backgroundColor: LIGHT }]} />
+                        <View style={[styles.barSeg, { flexGrow: n.rem_h, backgroundColor: REM }]} />
+                        <View style={[styles.barSeg, { flexGrow: n.deep_h, backgroundColor: DEEP }]} />
+                      </>
+                    ) : (
+                      /* The night's length is known and its breakdown is not.
+                         One plain bar says both of those; three segments summing
+                         to zero would draw nothing at all and read as a night
+                         that never happened. */
+                      <View style={[styles.barSeg, styles.barUnknown, { flexGrow: n.total_h }]} />
+                    )}
                   </View>
                   <Text style={styles.barLabel}>{n.day}</Text>
                 </View>
@@ -275,6 +329,9 @@ const styles = StyleSheet.create({
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, height: 160, marginTop: spacing.md },
   barCol: { flex: 1, alignItems: 'center', gap: 6 },
   barTrack: { width: '70%', height: 140, flexDirection: 'column', backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden' },
+  /* Neither of the three stage colours — it is not a stage, it is the absence
+     of a breakdown, and giving it one of their colours would name it wrongly. */
+  barUnknown: { backgroundColor: 'rgba(255,255,255,0.14)' },
   barSeg: { width: '100%', flexBasis: 0 },
   barLabel: { ...type.caption, color: colors.mutedForeground },
   insightList: { marginTop: spacing.sm, gap: spacing.sm },

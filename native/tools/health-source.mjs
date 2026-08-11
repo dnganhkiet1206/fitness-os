@@ -29,12 +29,27 @@
  * imported run given an invented tonnage, and a sync that writes a second copy
  * of last night every time it runs.
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(path.join(NATIVE, p), 'utf8');
+
+/** Every .ts/.tsx under a directory. */
+function walk(dir) {
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const p = path.join(dir, name);
+    if (statSync(p).isDirectory()) out.push(...walk(p));
+    else if (/\.tsx?$/.test(name)) out.push(p);
+  }
+  return out;
+}
+
+/** Comments out, newlines kept — a rule must not fire on the note explaining it. */
+const blankComments = (s) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/\/\/[^\n]*/g, '');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 const HEALTH = 'src/lib/health.ts';
@@ -520,6 +535,49 @@ const problems = [];
     }
     if (!/asleepMinutes\s*\(/.test(src)) {
       problems.push(`${fn}: không dùng asleepMinutes — model không được cho biết đêm đó dài bao nhiêu`);
+    }
+  }
+
+  /*
+    ── and the same sum was on a screen, in front of the user ──
+
+    The rule above was written for the two edge functions because that is where
+    the bug was found. It was on the client too: `sleep-insights.tsx` built a
+    night's length as `deep + rem + light`, so a hand-logged night showed
+    **0.0h**, a week of them produced a full week of sleep debt, and the screen
+    printed "Bạn ngủ trung bình 0.0h, thiếu 8.0h so với mục tiêu" as a finding
+    about somebody's body.
+
+    Written about the shape rather than about the file, because the file is not
+    the thing that is wrong — the arithmetic is, wherever it appears.
+  */
+  /*
+    The three added together, whatever the locals happen to be called: `deep +
+    rem + light`, `deep_min + rem_min + light_min`, `deep_h + rem_h + light_h`.
+
+    A first version of this looked for `deep_min` specifically and came back
+    clean against the very file it was written to catch, because that file had
+    already destructured the columns into `deep`, `rem` and `light`. The rule
+    was reading a spelling rather than a shape.
+  */
+  const SUM = /\bdeep\w*\s*\+\s*rem\w*\s*\+\s*light\w*/;
+  for (const rel of walk(path.join(NATIVE, 'src'))) {
+    const src = blankComments(readFileSync(rel, 'utf8'));
+    if (!SUM.test(src)) continue;
+    /*
+      Adding the three to ask *whether they are known at all* is the correct
+      use, and is how the fix itself is written (`stagesKnown`). What is wrong
+      is binding that sum to something that means a length of time.
+    */
+    const asDuration = new RegExp(
+      String.raw`\b(total|duration|slept|asleep|minutes|mins)\w*\s*[:=]\s*[^;\n]{0,40}` + SUM.source,
+      'i',
+    ).test(src);
+    if (asDuration) {
+      problems.push(
+        `${path.relative(NATIVE, rel)}: lấy deep+rem+light làm THỜI LƯỢNG một đêm — ` +
+          'đêm ghi tay để trống ba ô đó, nên nó ra 0 và màn hình nói người dùng ngủ 0 giờ. Dùng asleepMinutes.',
+      );
     }
   }
 }

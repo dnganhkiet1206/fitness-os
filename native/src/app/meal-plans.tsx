@@ -1,10 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { ChevronRight, UtensilsCrossed } from 'lucide-react-native';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { EmptyState } from '@/components/ascnd/empty-state';
+import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
@@ -25,9 +28,17 @@ import { rise } from '@/lib/entrance';
  * the next one a screen and a half away, so where you were in the page depended
  * on what you had expanded.
  *
- * Plans are made on the Nutrition tab now, and a plan is read on `/meal-plan`,
- * one day at a time. What is left here is the one job a list of things should
- * do: name them, say enough to tell them apart, and get out of the way.
+ * A plan is read on `/meal-plan`, one day at a time. What is left here is the
+ * one job a list of things should do: name them, say enough to tell them apart,
+ * and get out of the way.
+ *
+ * ── and it can make one now ──
+ *
+ * This used to say plans were made on the Nutrition tab and only there, which
+ * meant the screen whose entire subject is meal plans could not produce one.
+ * Somebody arriving with none read a paragraph explaining what a meal plan is
+ * and then had nowhere to go. The wizard is a self-contained modal and mounting
+ * it here costs a line; the list stays read-only in every other respect.
  *
  * ── and it is a list, not a stack of cards ──
  *
@@ -37,6 +48,7 @@ import { rise } from '@/lib/entrance';
 export default function MealPlansScreen() {
   const i18n = useI18n();
   const { data: plans, isError, refetch, isRefetching } = useMealPlans();
+  const [creating, setCreating] = useState(false);
 
   const goalLabel = (g: string | null) =>
     g === 'bulk' ? i18n.goalBulk : g === 'cut' ? i18n.goalCut : g === 'maintain' ? i18n.goalMaintain : null;
@@ -79,12 +91,18 @@ export default function MealPlansScreen() {
           ))}
         </View>
       ) : (
-        <View style={styles.empty}>
-          <Icon icon={UtensilsCrossed} size={22} color={colors.mutedForeground} />
-          <Text style={styles.emptyTitle}>{i18n.nNoMealPlans}</Text>
-          <Text style={styles.emptyBody}>{i18n.nMealPlanWhat}</Text>
-        </View>
+        /* Said what a meal plan is and then left. The wizard already existed
+           — it was reachable from the Nutrition tab and from nowhere on the
+           screen whose entire subject is meal plans. */
+        <EmptyState
+          icon={UtensilsCrossed}
+          title={i18n.nNoMealPlans}
+          hint={i18n.nMealPlanWhat}
+          action={{ label: i18n.nutritionCreatePlan, onPress: () => setCreating(true) }}
+        />
       )}
+
+      <MealPlanWizard visible={creating} planId={null} onClose={() => setCreating(false)} />
     </Screen>
   );
 }
