@@ -195,6 +195,42 @@ for (const f of files) {
   }
 }
 
+/*
+  ── the refresh is a default, not a call-site detail ──
+
+  TanStack's persistence guide: *"When persisting to an external storage, only
+  the state of mutations is persisted, as functions cannot be serialized."* That
+  is the sentence that makes `mutationFn` a default here — and it applies to the
+  callbacks just as completely. It is easy to fix one and forget the other,
+  because forgetting the second one breaks nothing you can see.
+
+  A meal logged in a basement, the app killed, opened the next morning: the
+  write resumes and lands, and every `onSuccess` that would have refreshed the
+  screen belongs to a component that does not exist in this process and never
+  did. `staleTime` usually covers it; on a cold start the refetch and the
+  resumed write race, and losing that race leaves somebody looking at a day
+  missing the meal they can see in their own history.
+*/
+{
+  const w = strip(read(WRITE));
+  const defaults = w.slice(w.indexOf('setMutationDefaults'));
+  if (!/invalidateQueries\(/.test(defaults)) {
+    problems.push(
+      `${WRITE}: setMutationDefaults không làm mới truy vấn nào — ` +
+        'callback không được lưu cùng mutation (chỉ trạng thái được lưu), nên một bản ghi ' +
+        'gửi lại sau khi khởi động lại app sẽ vào server mà màn hình không hề đổi',
+    );
+  }
+  /* `onSettled`, not `onSuccess`: a write that finally gives up has changed
+     nothing, and the screen should go back to showing what the server says. */
+  if (!/onSettled:/.test(defaults)) {
+    problems.push(
+      `${WRITE}: setMutationDefaults chỉ làm mới khi thành công — ` +
+        'bản ghi hết lượt thử lại cũng phải kéo màn hình về đúng sự thật của server',
+    );
+  }
+}
+
 /**
  * The self-test.
  *
@@ -210,6 +246,14 @@ const SELF = [
   ['chỉ có key — không bị bắt', () => {
     const body = '    mutationKey: [...OFFLINE_WRITE_KEY],\n    onMutate: () => {},';
     return !/mutationFn:/.test(body);
+  }],
+  ['mặc định không làm mới truy vấn — bị bắt', () => {
+    const d = "setMutationDefaults([...KEY], { mutationFn: f, retry: 3 });";
+    return !/invalidateQueries\(/.test(d);
+  }],
+  ['chỉ làm mới khi thành công — bị bắt', () => {
+    const d = "setMutationDefaults([...KEY], { mutationFn: f, onSuccess: () => client.invalidateQueries() });";
+    return /invalidateQueries\(/.test(d) && !/onSettled:/.test(d);
   }],
   ['biến thể thiếu thời điểm riêng — bị bắt', () => {
     const v = "{ kind: 'supplement'; userId: string; supplementId: string; }";
@@ -254,5 +298,6 @@ console.log(
   `ghi khi mất mạng OK — một khoá, một hàm mặc định đăng ký ở module scope trước khi cache khôi phục; ` +
     `resumePausedMutations chạy trong onSuccess của provider; ${kinds} loại thao tác, ` +
     'mỗi loại mang đủ userId, mang thời điểm của chính nó (không để cột DEFAULT now() đóng dấu lúc gửi muộn), ' +
-    'và chỉ chứa dữ liệu thuần',
+    'và chỉ chứa dữ liệu thuần; mặc định còn làm mới truy vấn khi thao tác lắng xuống, ' +
+    'vì callback của chỗ gọi không được lưu cùng mutation',
 );

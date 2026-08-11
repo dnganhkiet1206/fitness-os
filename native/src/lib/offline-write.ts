@@ -255,5 +255,40 @@ export function registerOfflineWrites(client: QueryClient): void {
     mutationFn: (variables: unknown) => applyOfflineWrite(variables as OfflineWrite),
     retry: 3,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30_000),
+    /*
+      ── the refresh has to be a default too ──
+
+      Every call site declares its own `onSuccess` to invalidate what it
+      changed, and every one of those is lost the moment the app restarts.
+      TanStack's persistence guide is explicit about why: *"When persisting to
+      an external storage, only the state of mutations is persisted, as
+      functions cannot be serialized."* That is the same sentence that makes
+      `mutationFn` a default here — it applies to the callbacks equally, and it
+      is easy to fix one and forget the other.
+
+      What that looks like without this: a meal logged in a basement, the app
+      killed, opened again the next morning. The write resumes and lands
+      correctly on the server. Nothing on screen moves, because the component
+      that would have invalidated the day's totals no longer exists and never
+      did in this process. `staleTime` is a minute, so a mounted query usually
+      refetches and covers it — but only if the refetch happens *after* the
+      write, and on a cold start the two race. Lose that race and the person is
+      looking at a day that is missing the meal they can see in their history.
+
+      Invalidating everything rather than a list of keys. This runs only when a
+      queued write actually lands, which is rare, and only *active* queries
+      refetch — the rest are simply marked stale. A hand-written key list would
+      be the cheaper version and would go out of date the first time an
+      operation is added to the union above, silently, in the one code path
+      nobody exercises by hand.
+
+      `onSettled` rather than `onSuccess` so a write that finally gives up also
+      refreshes. A resumed mutation that exhausts its retries has changed
+      nothing on the server, and the screen should be showing what the server
+      says rather than whatever it was hoping for.
+    */
+    onSettled: () => {
+      void client.invalidateQueries();
+    },
   });
 }
