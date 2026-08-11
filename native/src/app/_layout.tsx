@@ -1,10 +1,12 @@
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useEffect } from 'react';
 
 import { AppLockGate } from '@/components/ascnd/app-lock-gate';
 import { AuthScreen } from '@/components/ascnd/auth-screen';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { CelebrationHost } from '@/components/ascnd/celebration-host';
 import { MascotUnlockCelebration } from '@/components/ascnd/mascot-unlock';
 import { NeonToastHost } from '@/components/ascnd/neon-toast';
@@ -42,10 +44,32 @@ function HealthAutoSync() {
 }
 
 function Gate() {
+  const i18n = useI18n();
   const { user, loading } = useAuth();
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileFailed,
+    refetch: refetchProfile,
+    isRefetching: profileRefetching,
+  } = useProfile();
 
-  const ready = !loading && (!user || !profileLoading);
+  /*
+    ── one query must not hold the whole app hostage ──
+
+    This read `!loading && (!user || !profileLoading)` and returned `null` — the
+    splash — whenever it was false. Measured against a server that fails only
+    the `profiles` request and answers everything else normally: the app is
+    **blank for ever**. Thirty-five seconds in, still nothing. No error, no
+    retry, no explanation; force-quitting and reopening does it again.
+
+    Nothing else was needed to cause it. Failing every *other* query left the
+    app working perfectly, so this is one read deciding whether the product
+    exists.
+
+    A failure is now an answer, the same as an empty one. It ends the wait.
+  */
+  const ready = !loading && (!user || !profileLoading || profileFailed);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
@@ -53,6 +77,27 @@ function Gate() {
 
   if (!ready) return null; // splash stays up
   if (!user) return <AuthScreen />;
+
+  /*
+    Failed, and nothing cached to fall back on.
+
+    The persisted cache means a returning user never sees this: their last-known
+    profile is already in memory and the app carries on offline. It is the
+    person with no cached profile and a failing read who gets here — a first
+    launch, a fresh sign-in, a reinstall — and for them the alternative is
+    entering an app with no calorie target and no macro targets, where every
+    number is quietly built from a default that is not theirs.
+
+    So: say so, and offer the retry. Silence was the bug.
+  */
+  if (profileFailed && !profile) {
+    return (
+      <View style={styles.gateFail}>
+        <LoadFailed i18n={i18n} onRetry={() => void refetchProfile()} busy={profileRefetching} />
+      </View>
+    );
+  }
+
   if (profile && !profile.onboarding_completed) return <OnboardingFlow />;
 
   return (
@@ -186,3 +231,14 @@ export default function RootLayout() {
     </PersistQueryClientProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  /* Centred on the app's own background, because this replaces the entire
+     screen — it is not a card inside a page that failed, it is the page. */
+  gateFail: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    backgroundColor: colors.background,
+  },
+});

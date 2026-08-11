@@ -166,6 +166,53 @@ for (const f of screens) {
   }
 }
 
+/*
+  ── the gate that decides whether the app exists at all ──
+
+  `_layout.tsx`'s `Gate` holds the splash until it is `ready`, and that
+  condition was `!loading && (!user || !profileLoading)`. Measured against a
+  server that fails **only** the `profiles` request and answers everything else
+  normally: the app is blank for ever. Thirty-five seconds in, still nothing —
+  no error, no retry, no explanation, and force-quitting does it again.
+
+  Failing every *other* query left the app working perfectly, so this was one
+  read deciding whether the product existed. `.single()` reports "no rows" as an
+  error too, which widens the blast radius past network trouble.
+
+  A gate may wait on a query. It may not wait on one for ever, so its readiness
+  condition has to account for that query having failed.
+*/
+{
+  const layout = strip(readFileSync(path.join(NATIVE, 'src/app/_layout.tsx'), 'utf8'));
+  const gate = layout.slice(layout.indexOf('function Gate()'));
+  const body = gate.slice(0, gate.indexOf('\nfunction ') === -1 ? gate.length : gate.indexOf('\nfunction '));
+
+  /*
+     The *expression*, not the file.
+
+     A first version asked whether the word `isError` appeared anywhere above
+     `const ready =`. Removing the flag from the readiness condition — the whole
+     bug — left the destructure `isError: profileFailed` sitting there and the
+     rule stayed green. Third time in this project that a rule has been
+     satisfied by a name rather than by behaviour.
+  */
+  const readyExpr = (body.match(/const ready = [^;]*;/) ?? [''])[0];
+  if (!readyExpr) {
+    problems.push('src/app/_layout.tsx: không tìm thấy điều kiện `ready` của Gate — luật này cần sửa lại');
+  } else if (!/Failed|isError/.test(readyExpr)) {
+    problems.push(
+      'src/app/_layout.tsx: điều kiện `ready` của Gate không tính tới việc đọc profile bị lỗi — ' +
+        'chỉ cần truy vấn đó hỏng là app trắng vĩnh viễn, không báo gì và không có cách nào thoát',
+    );
+  }
+  if (!/profileFailed &&/.test(body)) {
+    problems.push(
+      'src/app/_layout.tsx: Gate không có nhánh hiển thị khi đọc profile hỏng — ' +
+        'người dùng lần đầu cài, hoặc vừa đăng nhập lại, sẽ nhìn vào màn hình trắng',
+    );
+  }
+}
+
 /**
  * The self-test.
  *
@@ -174,6 +221,16 @@ for (const f of screens) {
  * about one that already answers both questions.
  */
 const SELF = [
+  ['Gate chờ mãi một truy vấn — bị bắt', () => {
+    /* The exact sabotage the first version of this rule missed: the flag is
+       still destructured, it is simply not used in the condition. */
+    const bad = 'const { isError: profileFailed } = useProfile();\nconst ready = !loading && (!user || !profileLoading);';
+    return !/Failed|isError/.test((bad.match(/const ready = [^;]*;/) ?? [''])[0]);
+  }],
+  ['Gate có tính tới lỗi — không báo oan', () => {
+    const good = 'const ready = !loading && (!user || !profileLoading || profileFailed);';
+    return /Failed|isError/.test((good.match(/const ready = [^;]*;/) ?? [''])[0]);
+  }],
   ['queryFn nuốt lỗi — bị bắt', () => {
     const body = "const { data } = await supabase.from('x').select('*');\nreturn data ?? [];";
     return /supabase/.test(body) && !/\berror\b/.test(body);
