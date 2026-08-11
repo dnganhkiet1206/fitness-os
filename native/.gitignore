@@ -58,3 +58,8 @@ example
 .env
 .check-nudge-*
 .check-training-*
+
+# tools/live.mjs — a web bundle and its screenshots, rebuilt on demand.
+# Large, generated, and meaningless to anyone but the run that made it.
+tools/.live-build/
+tools/.live-shots/

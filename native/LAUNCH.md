@@ -8,6 +8,29 @@ Thứ tự bên dưới là thứ tự phải làm — mỗi mục sau phụ thu
 
 ---
 
+## 0. Chạy thật app một lượt
+
+```bash
+node tools/live.mjs
+```
+
+Dựng bundle web, mở từng màn trong trình duyệt headless ở ba trạng thái (đủ dữ
+liệu / tài khoản trống / mọi truy vấn hỏng), rồi khẳng định: không màn nào
+trắng, không lỗi runtime, không chữ như `NaN` hay `undefined` lọt ra.
+
+Mất vài phút nên nó không nằm trong `check.mjs`. Nhưng ba lỗi dưới đây đều đã
+lọt qua một lần chạy XANH của toàn bộ 47 công cụ tĩnh, và cả ba đều chỉ lộ ra
+khi app thật sự chạy:
+
+- Nút "Đăng nhập" không làm gì khi bỏ trống ô — `return` sớm là code hợp lệ.
+- 12 nhánh `isError` là code không bao giờ chạy, vì `queryFn` bên dưới nuốt lỗi
+  và resolve thành công.
+- Một truy vấn hỏng làm trắng toàn bộ app, vĩnh viễn.
+
+Chạy nó trước khi đẩy bất cứ thứ gì.
+
+---
+
 ## 1. Deploy — chặn tất cả những thứ còn lại
 
 Mọi thứ đã dựng đều **vô hình** cho tới khi chạy hai lệnh này. Trên project thật,

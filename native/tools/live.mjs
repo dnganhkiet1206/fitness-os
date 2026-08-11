@@ -1,0 +1,350 @@
+/**
+ * The app, actually running, in three states.
+ *
+ *   node tools/live.mjs            build, then boot every screen
+ *   node tools/live.mjs --no-build reuse the last build
+ *   node tools/live.mjs --shots    also write PNGs to tools/.live-shots/
+ *
+ * Not part of `check.mjs`. It builds a bundle and drives a browser, which takes
+ * minutes rather than seconds, and a suite people stop running is worth less
+ * than a slower one they run deliberately.
+ *
+ * ── why this exists ──
+ *
+ * The other forty-seven tools read the code. Every one of them was green on the
+ * day each of these shipped:
+ *
+ *   - **The Sign In button did nothing.** `submit` opened with `if (!email)
+ *     return;` and carried a second silent `return` for the password. On the
+ *     app's first screen, tapping with a blank field produced no message, no
+ *     haptic, no change. An early return is ordinary code and no static rule has
+ *     an opinion about it.
+ *
+ *   - **Twelve `isError` branches were unreachable.** Wiring the failure state
+ *     into twelve screens fixed six. The other six had query functions that
+ *     destructured `error` away, so a failed request *resolved* with `data:
+ *     null`, React Query recorded a success, and the branch could never run. It
+ *     read exactly like a fix.
+ *
+ *   - **One failing query blanked the whole app, for ever.** `Gate` waited on
+ *     `!profileLoading` with no case for that query having failed. Fail only
+ *     `profiles` and the app is thirty-five seconds of nothing, with no error
+ *     and no way out. Fail every *other* query and it works perfectly.
+ *
+ * All three needed the app to run. None of them needed a device: a web bundle,
+ * a headless browser, a fake session and a fake server are enough to reach the
+ * screens and lie to them convincingly.
+ *
+ * ── the mistake this file is built to prevent ──
+ *
+ * The first version of this harness reported **30 of 30 routes healthy**. It
+ * was serving with `python -m http.server`, which 404s any path that is not a
+ * file, so twenty-nine of the thirty "screens" measured were the server's own
+ * error page. Only `/` had ever loaded the app. A green result measuring
+ * precisely nothing.
+ *
+ * So `canary()` below runs before anything is trusted, and it does not check
+ * that a page loaded — it checks that a specific number this app computes from
+ * fixture data is on the screen. Nothing but the real app rendering real data
+ * can produce that.
+ */
+import { execFileSync, spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const OUT = path.join(NATIVE, 'tools', '.live-build');
+const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
+const PORT = 8731;
+const REF = 'drqgonxrtmomgrftelih';
+const UID = '11111111-2222-3333-4444-555555555555';
+
+const args = new Set(process.argv.slice(2));
+const wantShots = args.has('--shots');
+
+/* Playwright is whatever the machine happens to have, exactly as in
+   `check.mjs`. ESM ignores NODE_PATH, so the global root is required directly
+   rather than hoped for. */
+function loadChromium() {
+  for (const root of [path.join(NATIVE, 'node_modules'), globalRoot()]) {
+    if (!root || !existsSync(path.join(root, 'playwright'))) continue;
+    return createRequire(path.join(root, 'x.js'))('playwright').chromium;
+  }
+  console.error(
+    'không tìm thấy playwright.\n' +
+      'cài: npm i -g playwright && npx playwright install chromium\n' +
+      'Đây là công cụ chạy thật, không phải phần bắt buộc của `check.mjs`.',
+  );
+  process.exit(2);
+}
+function globalRoot() {
+  try {
+    return execFileSync('npm', ['root', '-g'], { encoding: 'utf8' }).trim();
+  } catch {
+    return null;
+  }
+}
+
+// ── the world the app wakes up in ─────────────────────────────────────────
+
+const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+const jwt = () =>
+  `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({
+    sub: UID,
+    role: 'authenticated',
+    aud: 'authenticated',
+    exp: Math.floor(Date.now() / 1000) + 86400 * 30,
+    email: 'demo@ascnd.app',
+  })}.signature-not-checked-here`;
+
+const day = (n) => new Date(Date.now() - n * 864e5).toISOString();
+const dayStr = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+
+/**
+ * What the server answers in `full` mode.
+ *
+ * The numbers are chosen so the canary can recognise them. `1,680 / 2,450 kcal`
+ * is 69% with 770 remaining, and nothing but this app's own arithmetic over
+ * this exact row produces that pair.
+ */
+const FIXTURES = {
+  profiles: [{
+    user_id: UID, name: 'Kiệt', sex: 'male', date_of_birth: '1996-04-12',
+    height_cm: 174, weight_kg: 71.5, goal: 'recomp', activity_level: 'moderate',
+    training_level: 'intermediate', onboarding_completed: true,
+    tdee_target_kcal: 2450, macro_protein_g: 160, macro_carbs_g: 250,
+    macro_fat_g: 75, macro_fiber_g: 30, sleep_target_hours: 8,
+    waketime: '06:30', bedtime: '23:00', dietary_preference: 'omnivore', coins: 1240,
+  }],
+  daily_logs: [{
+    id: 'dl1', user_id: UID, date: dayStr(0), kcal: 1680, protein_g: 118,
+    carbs_g: 165, fat_g: 52, fiber_g: 21, steps: 8432, active_kcal: 486,
+    active_minutes: 41, water_ml: 1750, readiness_score: 74,
+    sleep_duration_min: 431, workout_count: 1, volume_load: 8450,
+    acwr: 1.08, hrv_today: 62, rhr_today: 54,
+  }],
+  sleep_logs: [{
+    id: 's1', user_id: UID, bedtime: day(1), waketime: day(0.7), quality: 8,
+    deep_min: 92, rem_min: 104, light_min: 235, asleep_min: 431, source: 'apple_health',
+  }],
+  biometric_samples: [{
+    id: 'b1', user_id: UID, date_time: day(0.2), hr_bpm: 54, hrv_sdnn_ms: 62,
+    hrv_rmssd_ms: null, spo2_pct: 97, resp_rate_rpm: 14, vo2max_mlkgmin: 48,
+    source: 'apple_health', confidence: 0.9,
+  }],
+  water_logs: [{ id: 'w1', user_id: UID, amount_ml: 1750, date: dayStr(0), logged_at: day(0.3) }],
+  weight_logs: [
+    { id: 'g1', user_id: UID, weight_kg: 71.5, date: dayStr(0) },
+    { id: 'g2', user_id: UID, weight_kg: 72.1, date: dayStr(7) },
+    { id: 'g3', user_id: UID, weight_kg: 72.8, date: dayStr(21) },
+  ],
+  workout_sessions: [{
+    id: 'k1', user_id: UID, date_time: day(0.4), template_name: 'Push A',
+    volume_load: 8450, session_rpe: 7, sets: [], source: 'manual',
+  }],
+  meal_entries: [{
+    id: 'm1', user_id: UID, date_time: day(0.25), meal_type: 'breakfast',
+    total_kcal: 520, total_protein_g: 38, total_carbs_g: 54, total_fat_g: 14, total_fiber_g: 7,
+  }],
+};
+
+/**
+ * The three worlds.
+ *
+ * `empty` keeps the profile — somebody who finished onboarding and has logged
+ * nothing — because a missing profile is a different test (`Gate`), not this
+ * one.
+ */
+const MODES = ['full', 'empty', 'fail'];
+
+const ROUTES = [
+  '/', '/nutrition', '/workouts', '/progress', '/assistant',
+  '/steps', '/water', '/biometrics', '/sleep-insights', '/sessions',
+  '/templates', '/exercises', '/supplements', '/grocery', '/food-list',
+  '/meal-plans', '/progress-photos', '/awards', '/challenges', '/smart-goals',
+  '/weekly-review', '/settings', '/coach-memory', '/shop', '/ai-coach',
+];
+
+// ── build & serve ─────────────────────────────────────────────────────────
+
+function build() {
+  if (args.has('--no-build')) {
+    if (!existsSync(path.join(OUT, 'index.html'))) {
+      console.error(`--no-build nhưng chưa có bản dựng ở ${OUT}`);
+      process.exit(2);
+    }
+    return;
+  }
+  process.stdout.write('dựng bundle web… ');
+  execFileSync('npx', ['expo', 'export', '--platform', 'web', '--output-dir', OUT, '--clear'], {
+    cwd: NATIVE,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  console.log('xong');
+}
+
+/**
+ * A static server with a single-page fallback.
+ *
+ * The fallback is the whole point and the reason the first harness measured
+ * nothing: every route below is a client-side path, not a file on disk, so
+ * anything that 404s unknown paths hands back an error page that a text scan
+ * will happily call healthy.
+ */
+const TYPES = {
+  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+  '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp',
+  '.ico': 'image/x-icon', '.ttf': 'font/ttf', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg',
+};
+function serve() {
+  const server = http.createServer((req, res) => {
+    const url = decodeURIComponent(req.url.split('?')[0]);
+    let f = path.join(OUT, url);
+    if (!existsSync(f) || statSync(f).isDirectory()) {
+      const asHtml = path.join(OUT, url.replace(/\/$/, '') + '.html');
+      f = existsSync(asHtml) ? asHtml : path.join(OUT, 'index.html');
+    }
+    res.writeHead(200, { 'content-type': TYPES[path.extname(f)] ?? 'application/octet-stream' });
+    res.end(readFileSync(f));
+  });
+  return new Promise((ok) => server.listen(PORT, () => ok(server)));
+}
+
+// ── one boot ──────────────────────────────────────────────────────────────
+
+async function boot(chromium, route, mode, settleMs = 9000) {
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext({ viewport: { width: 402, height: 874 } });
+  await ctx.addInitScript(([ref, session]) => {
+    window.localStorage.setItem(`sb-${ref}-auth-token`, session);
+  }, [REF, JSON.stringify({
+    access_token: jwt(), refresh_token: 'r', token_type: 'bearer',
+    expires_in: 86400 * 30, expires_at: Math.floor(Date.now() / 1000) + 86400 * 30,
+    user: {
+      id: UID, aud: 'authenticated', role: 'authenticated', email: 'demo@ascnd.app',
+      app_metadata: {}, user_metadata: { name: 'Kiệt' }, created_at: day(400),
+    },
+  })]);
+
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('PAGEERROR: ' + e.message));
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    const t = m.text();
+    /* A 500 we asked for is not a finding; it is the experiment. */
+    if (/Failed to load resource|favicon/.test(t)) return;
+    errors.push(t);
+  });
+
+  await page.route('**/*.supabase.co/**', async (r) => {
+    const u = new URL(r.request().url());
+    if (u.pathname.startsWith('/rest/v1/')) {
+      if (mode === 'fail') {
+        return r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' });
+      }
+      const table = u.pathname.split('/')[3];
+      const rows = mode === 'empty' && table !== 'profiles' ? [] : (FIXTURES[table] ?? []);
+      const single = (r.request().headers()['accept'] ?? '').includes('vnd.pgrst.object');
+      return r.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify(single ? (rows[0] ?? null) : rows),
+      });
+    }
+    return r.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ id: UID, aud: 'authenticated', role: 'authenticated' }),
+    });
+  });
+
+  await page.goto(`http://localhost:${PORT}${route}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForTimeout(settleMs);
+
+  const text = await page.locator('body').innerText().catch(() => '');
+  const rootLen = await page.evaluate(() => document.getElementById('root')?.innerHTML?.length ?? 0);
+  if (wantShots) {
+    mkdirSync(path.join(SHOTS, mode), { recursive: true });
+    await page.screenshot({ path: path.join(SHOTS, mode, `${route === '/' ? 'today' : route.slice(1)}.png`) });
+  }
+  await browser.close();
+  return { text, rootLen, errors };
+}
+
+// ── the canary ────────────────────────────────────────────────────────────
+
+/**
+ * Prove the harness is looking at the app before believing anything it says.
+ *
+ * Not "did a page load" — a 404 page loads. These are numbers this app derives
+ * from the fixture row: 2,450 − 1,680 = 770 remaining, and 8,432 steps. Nothing
+ * but the real screen rendering the real fixture can put both on screen.
+ */
+async function canary(chromium) {
+  const { text, rootLen } = await boot(chromium, '/', 'full');
+  const seen = {
+    'tổng calo hôm nay': /1[,.]680/.test(text),
+    'còn lại 770 kcal': /770/.test(text),
+    'số bước 8.432': /8[,.]432/.test(text),
+    'cây DOM có nội dung': rootLen > 5000,
+  };
+  const missing = Object.entries(seen).filter(([, ok]) => !ok).map(([k]) => k);
+  if (missing.length) {
+    console.error(
+      'canary hỏng — bộ chạy KHÔNG nhìn thấy app thật, đừng tin kết quả nào bên dưới.\n' +
+        `  thiếu: ${missing.join(', ')}\n` +
+        '  Đây đúng là cách bản đầu tiên của công cụ này báo "30/30 màn khoẻ" trong khi\n' +
+        '  29 trong số đó là trang 404 của web server.',
+    );
+    process.exit(2);
+  }
+}
+
+// ── run ───────────────────────────────────────────────────────────────────
+
+const BAD_TEXT = /\bNaN\b|\bundefined\b|\[object Object\]|Invalid Date|\bInfinity\b/;
+
+const chromium = loadChromium();
+build();
+const server = await serve();
+const problems = [];
+
+try {
+  await canary(chromium);
+  process.stdout.write('canary OK — đang mở từng màn');
+
+  for (const mode of MODES) {
+    for (const route of ROUTES) {
+      const { text, rootLen, errors } = await boot(chromium, route, mode);
+      const at = `[${mode}] ${route}`;
+
+      /* Blank is the failure nobody reports, because there is nothing to
+         report: no error, no message, no way to tell it from a slow network. */
+      if (rootLen < 400) problems.push(`${at}: màn hình trắng (root ${rootLen} ký tự)`);
+
+      const bad = text.split('\n').filter((l) => BAD_TEXT.test(l)).slice(0, 2);
+      if (bad.length) problems.push(`${at}: chữ không dành cho người dùng — ${bad.join(' / ')}`);
+
+      if (errors.length) problems.push(`${at}: lỗi runtime — ${errors.slice(0, 2).join(' | ').slice(0, 200)}`);
+
+      process.stdout.write('.');
+    }
+  }
+  console.log('');
+} finally {
+  server.close();
+}
+
+if (problems.length) {
+  console.log(`\nchạy thật: ${problems.length} vấn đề\n`);
+  for (const p of problems) console.log(`  ${p}`);
+  process.exit(1);
+}
+
+console.log(
+  `\nchạy thật OK — ${ROUTES.length} màn × ${MODES.length} trạng thái (đủ dữ liệu / tài khoản trống / mọi truy vấn hỏng): ` +
+    'không màn nào trắng, không lỗi runtime, không chữ lọt ra ngoài như NaN hay undefined; ' +
+    'canary xác nhận bộ chạy nhìn đúng app thật chứ không phải trang lỗi của server',
+);

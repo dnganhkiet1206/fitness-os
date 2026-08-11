@@ -31,6 +31,25 @@
  * exit. The tools that draw pictures (`preview`, `gaze`, `weather`, `bugs`,
  * `wardrobe`) are for looking at and are not run here; a screenshot nobody
  * opens proves nothing.
+ *
+ * ── what this cannot see, and what does ──
+ *
+ * Everything here reads the code. That is a real limit rather than a
+ * theoretical one: three bugs shipped past a green run of this suite, and each
+ * needed the app to actually run before it was visible.
+ *
+ *   - Sign In did nothing when a field was blank — an early `return` is
+ *     ordinary code and no rule here has an opinion about it.
+ *   - Twelve `isError` branches were unreachable, because the query functions
+ *     below them swallowed the error and resolved successfully.
+ *   - One failing query blanked the entire app for ever.
+ *
+ *     node tools/live.mjs
+ *
+ * builds a web bundle, boots every screen in a headless browser against a fake
+ * server in three states, and asserts. It is deliberately not a step below: it
+ * takes minutes, and a suite people stop running is worth less than a slower
+ * one they run on purpose. Run it before anything ships.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
