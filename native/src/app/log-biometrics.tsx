@@ -51,24 +51,45 @@ export default function LogBiometricsSheet() {
     on the same terms whether the write went now or from storage. What is left
     here is the part that belongs to the screen.
   */
+  const values = () => ({
+    hr_bpm: num(hr),
+    hrv_rmssd_ms: num(hrv),
+    spo2_pct: num(spo2),
+    vo2max_mlkgmin: num(vo2),
+    resp_rate_rpm: num(resp),
+  });
+
   const save = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    log.mutate({
-      hr_bpm: num(hr),
-      hrv_rmssd_ms: num(hrv),
-      spo2_pct: num(spo2),
-      vo2max_mlkgmin: num(vo2),
-      resp_rate_rpm: num(resp),
-    });
     /*
-      Closed here rather than on success, for the same reason: offline there is
-      no success to wait for, and a screen that never dismisses is a worse
-      answer than one that says what happened. The write is in the persisted
-      queue either way, so saying so is not optimism.
+      ── offline closes now; online waits for an answer ──
+
+      A paused mutation never calls `onSuccess`, so offline there is nothing to
+      wait for and a screen that never dismisses says less than one that says
+      "queued". The write is in the persisted queue, so that is a statement of
+      fact rather than optimism.
+
+      Online it still waits, because online there is a real answer to hear —
+      and an insert can fail for reasons worth showing. A first draft of this
+      closed and said "saved" in both cases, which meant a rejected write was
+      reported as a success. That is the same lie this project has spent the
+      week removing from other screens; it does not get to reappear here.
     */
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
-    toast.success(offlineNow() ? i18n.logMealQueued : i18n.logBioSaved);
+    if (offlineNow()) {
+      log.mutate(values());
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+      toast.success(i18n.logMealQueued);
+      return;
+    }
+    log.mutate(values(), {
+      onSuccess: () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.back();
+        toast.success(i18n.logBioSaved);
+      },
+      onError: (e: Error) => toast.error(e.message),
+    });
   };
 
   return (

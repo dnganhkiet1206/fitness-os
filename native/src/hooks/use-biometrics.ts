@@ -101,21 +101,27 @@ export function useLogBiometrics() {
   */
   return {
     ...m,
-    mutate: (values: BiometricInput) => {
+    mutate: (values: BiometricInput, opts?: Parameters<typeof m.mutate>[1]) => {
       if (!user) return;
-      m.mutate({
-        kind: 'biometrics',
-        userId: user.id,
-        /* There is no date picker here — a reading is always for now — but the
-           moment is still captured at the tap rather than at replay. */
-        dateTime: new Date().toISOString(),
-        hrBpm: values.hr_bpm ?? null,
-        hrvSdnnMs: values.hrv_sdnn_ms ?? null,
-        hrvRmssdMs: values.hrv_rmssd_ms ?? null,
-        spo2Pct: values.spo2_pct ?? null,
-        respRateRpm: values.resp_rate_rpm ?? null,
-        vo2maxMlkgmin: values.vo2max_mlkgmin ?? null,
-      });
+      m.mutate(
+        {
+          kind: 'biometrics',
+          userId: user.id,
+          /* There is no date picker here — a reading is always for now — but
+             the moment is still captured at the tap rather than at replay. */
+          dateTime: new Date().toISOString(),
+          hrBpm: values.hr_bpm ?? null,
+          hrvSdnnMs: values.hrv_sdnn_ms ?? null,
+          hrvRmssdMs: values.hrv_rmssd_ms ?? null,
+          spo2Pct: values.spo2_pct ?? null,
+          respRateRpm: values.resp_rate_rpm ?? null,
+          vo2maxMlkgmin: values.vo2max_mlkgmin ?? null,
+        },
+        /* Forwarded so the screen can still say what happened. These are
+           per-call callbacks and are not persisted — which is correct: they
+           only mean anything while the screen that asked is still there. */
+        opts,
+      );
     },
   };
 }

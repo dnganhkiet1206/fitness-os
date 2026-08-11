@@ -63,18 +63,42 @@ export async function recomputeDailyLog(userId: string, date: string) {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+  /*
+    ── a day it could not read is a day it must not write ──
+
+    Every one of these results used to be destructured as `{ data: x }` with the
+    `error` beside it dropped on the floor, and every consumer below reads
+    `x ?? 0` or `x ?? []`. So a failed query did not fail: it became *"there is
+    none of that"*, and the rebuilt row was written to `daily_logs` with the
+    missing parts zeroed — and `daily_logs` is what the dashboard, the readiness
+    score and the coach all read. A transient failure therefore did not produce
+    an error; it produced a wrong day, persisted, that nothing would ever
+    correct.
+
+    That is how a real bug reached a person: logged sleep and biometrics not
+    appearing on the dashboard. Four of these selects name columns added by
+    `20260809120000_health_provenance.sql` — `asleep_min` and `hrv_sdnn_ms` —
+    and against a database where that migration has not been applied they fail
+    every single time. The insert succeeded, the rebuild "succeeded", and the
+    day was stored as one with no sleep in it.
+
+    Refusing to write is the only safe answer. A rebuild that throws leaves the
+    previous row intact and surfaces through the caller's `onError`, which is a
+    visible problem with a real cause; a rebuild that guesses leaves a quiet
+    wrong number in the one table everything trusts.
+  */
   const [
-    { data: meals },
-    { data: workouts },
-    { data: sleeps },
-    { data: supplements },
-    { data: intakes },
-    { data: bio },
-    { data: profile },
-    { data: bioHistory },
-    { data: load7d },
-    { data: load28d },
-    { data: sleepLogs7d },
+    mealsRes,
+    workoutsRes,
+    sleepsRes,
+    supplementsRes,
+    intakesRes,
+    bioRes,
+    profileRes,
+    bioHistoryRes,
+    load7dRes,
+    load28dRes,
+    sleepLogs7dRes,
   ] = await Promise.all([
     // 1. Nutrition from meal_entries
     supabase
@@ -140,6 +164,49 @@ export async function recomputeDailyLog(userId: string, date: string) {
       .eq('user_id', userId)
       .gte('waketime', sevenDaysAgo.toISOString()),
   ]);
+
+  /*
+    `profiles` is queried with `.single()`, which reports "no rows" as an error
+    (PGRST116). Somebody who has not finished onboarding legitimately has no
+    profile row, and the sleep target below already has a default — so that one
+    case is not a failure. Everything else is.
+  */
+  const failed = (
+    [
+      ['meal_entries', mealsRes],
+      ['workout_sessions', workoutsRes],
+      ['sleep_logs', sleepsRes],
+      ['supplements', supplementsRes],
+      ['supplement_intake_logs', intakesRes],
+      ['biometric_samples', bioRes],
+      ['biometric_samples (28d)', bioHistoryRes],
+      ['workout_sessions (7d)', load7dRes],
+      ['workout_sessions (28d)', load28dRes],
+      ['sleep_logs (7d)', sleepLogs7dRes],
+    ] as const
+  ).filter(([, r]) => r.error);
+
+  if (failed.length > 0) {
+    throw new Error(
+      `Không dựng lại được ngày ${date}: không đọc được ` +
+        failed.map(([name, r]) => `${name} (${r.error?.message})`).join('; '),
+    );
+  }
+
+  const profile = profileRes.error ? null : profileRes.data;
+
+  /* Past the guard every one of these succeeded, so the rest of the function
+     reads exactly as it did before this check existed. */
+  const meals = mealsRes.data;
+  const workouts = workoutsRes.data;
+  const sleeps = sleepsRes.data;
+  const supplements = supplementsRes.data;
+  const intakes = intakesRes.data;
+  const bio = bioRes.data;
+  const bioHistory = bioHistoryRes.data;
+  const load7d = load7dRes.data;
+  const load28d = load28dRes.data;
+  const sleepLogs7d = sleepLogs7dRes.data;
 
   const kcal = meals?.reduce((s, m) => s + Number(m.total_kcal), 0) ?? 0;
   const protein_g = meals?.reduce((s, m) => s + Number(m.total_protein_g), 0) ?? 0;

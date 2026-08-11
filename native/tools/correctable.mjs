@@ -145,6 +145,47 @@ for (const table of HAND_WRITTEN) {
 }
 
 /*
+  ── a rebuild that could not read must not write ──
+
+  `recomputeDailyLog` fires eleven queries and writes one row to `daily_logs` —
+  the table the dashboard, the readiness score and the coach all read. Every
+  result was destructured as `{ data: x }` with the `error` dropped, and every
+  consumer reads `x ?? 0` or `x ?? []`. So a failed query did not fail. It
+  became "there is none of that", and the day was written with the missing parts
+  zeroed.
+
+  That reached a person: sleep and biometrics logged and not appearing on the
+  dashboard. Four of those selects name columns added by an unapplied migration,
+  so on that database they failed every time — the insert succeeded, the rebuild
+  "succeeded", and the day was stored as one with nothing in it. Nothing about
+  that surfaces as an error, and nothing later corrects it.
+
+  The rule is not "check every error everywhere". It is narrower: this one
+  function persists a derived row, so it has to be able to refuse.
+*/
+{
+  const svc = code.get('src/lib/daily-log-service.ts') ?? '';
+  const fn = svc.slice(svc.indexOf('export async function recomputeDailyLog'));
+  const body = fn.slice(0, fn.indexOf('\nexport ') === -1 ? fn.length : fn.indexOf('\nexport '));
+
+  if (!/\.error\)/.test(body) || !/throw new Error/.test(body)) {
+    problems.push(
+      'daily-log-service.ts: recomputeDailyLog không kiểm lỗi truy vấn trước khi ghi — ' +
+        'một truy vấn hỏng sẽ thành "không có dữ liệu loại đó", và ngày bị ghi đè với phần thiếu bằng 0 ' +
+        'vào đúng bảng mà dashboard, điểm sẵn sàng và coach đều đọc',
+    );
+  }
+  /* Destructuring the data straight out of Promise.all is the shape that makes
+     the error unreachable — it is how the bug was written the first time. */
+  if (/\[\s*\{ data:/.test(body)) {
+    problems.push(
+      'daily-log-service.ts: vẫn bóc thẳng { data: … } từ Promise.all — ' +
+        'bóc như vậy thì trường error không còn chỗ nào để kiểm, và truy vấn hỏng trở nên vô hình',
+    );
+  }
+}
+
+/*
   ── signing out takes the notifications with it ──
 
   Reminders are scheduled a horizon ahead — around fifty of them across seven
@@ -274,6 +315,14 @@ const SELF = [
     const name = lib.match(/export function (useDelete\w+)\(/)[1];
     return screens.some((g) => new RegExp(`\\b${name}\\b`).test(g));
   }],
+  ['dựng lại ngày mà không kiểm lỗi — bị bắt', () => {
+    const bad = 'const [{ data: meals }, { data: sleeps }] = await Promise.all([...]);\nconst kcal = meals?.reduce(f) ?? 0;';
+    return /\[\s*\{ data:/.test(bad) && !/throw new Error/.test(bad);
+  }],
+  ['có kiểm lỗi rồi ném — không báo oan', () => {
+    const good = 'const [mealsRes] = await Promise.all([...]);\nif (failed.length > 0) { throw new Error("x"); }\nconst meals = mealsRes.data;';
+    return !/\[\s*\{ data:/.test(good) && /throw new Error/.test(good) && /\.error\)/.test('failed.filter(([, r]) => r.error)');
+  }],
   ['đăng xuất không huỷ nhắc nhở — bị bắt', () => {
     const bad = 'const signOut = async () => {\n  await supabase.auth.signOut();\n  await clearPersistedCache();\n};';
     return !/cancelAllReminders\(\)/.test(bad);
@@ -325,5 +374,6 @@ console.log(
     'ba bảng nuôi điểm sẵn sàng đều dựng lại cả ngày của dòng đó lẫn hôm nay; ' +
     'giấc ngủ và sinh trắc có danh sách bấm được, và xoá thì hỏi lại; ' +
     'mọi hàm useDelete* đều có ít nhất một màn hình gọi tới (hàm xoá không ai bấm được thì không phải là sửa được); ' +
-    'đăng xuất huỷ luôn thông báo đã hẹn',
+    'đăng xuất huỷ luôn thông báo đã hẹn; ' +
+    'và recomputeDailyLog từ chối ghi một ngày mà nó không đọc được đủ dữ liệu',
 );

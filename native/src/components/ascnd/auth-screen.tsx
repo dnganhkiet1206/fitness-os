@@ -62,6 +62,29 @@ export function AuthScreen() {
           ? 'Nhập email để nhận link đặt lại mật khẩu'
           : 'Enter your email to receive a reset link';
 
+  /*
+    ── what the button is allowed to do ──
+
+    `submit` used to open with `if (!email) return;` and carry a second silent
+    `return` for a missing password. On the app's very first screen, tapping
+    Sign In with a blank field therefore did **nothing at all** — no message, no
+    haptic, no field highlight, nothing on screen changed. Found by running the
+    app rather than reading it: an early return is perfectly ordinary code and
+    no static check has an opinion about it.
+
+    A dead tap on the first screen does not read as "you missed a field". It
+    reads as the app being broken, which is the worst thing the first screen can
+    say.
+
+    The guards below stay as they are — they are correct, and defending the
+    function against being called with nothing is not the same job as telling
+    somebody why. This is the telling: the button says what it needs by not
+    being ready until it has it, which is the same `canSave` shape the meal
+    sheet already uses.
+  */
+  const needsPassword = mode !== 'forgot';
+  const canSubmit = email.trim().length > 0 && (!needsPassword || password.length > 0);
+
   const submit = async () => {
     if (!email) return;
     setBusy(true);
@@ -170,9 +193,9 @@ export function AuthScreen() {
           )}
 
           <PressScale
-            style={styles.primaryButton}
+            style={[styles.primaryButton, (busy || !canSubmit) && styles.primaryButtonOff]}
             onPress={submit}
-            disabled={busy}>
+            disabled={busy || !canSubmit}>
             {busy ? (
               <ActivityIndicator color={colors.primaryForeground} />
             ) : (
@@ -274,6 +297,10 @@ const styles = StyleSheet.create({
     color: colors.mutedForeground,
     textAlign: 'right',
   },
+  /* Dimmed rather than recoloured: the button keeps its shape and place, so
+     filling the last field turns it on in front of you instead of swapping one
+     control for another. */
+  primaryButtonOff: { opacity: 0.45 },
   primaryButton: {
     height: 48,
     borderRadius: radius.full,
