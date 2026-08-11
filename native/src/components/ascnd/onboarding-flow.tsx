@@ -515,6 +515,7 @@ export function OnboardingFlow() {
                       <Pressable
                         key={a}
                         onPress={() => toggleAllergy(a)}
+                        hitSlop={4}
                         style={[styles.badge, allergies.includes(a) && styles.badgeActive]}>
                         <Text style={[styles.badgeText, allergies.includes(a) && styles.badgeTextActive]}>
                           {a}
@@ -965,9 +966,23 @@ const styles = StyleSheet.create({
   calcValue: { ...type.footnote, fontWeight: '600', color: colors.foreground },
   calcValueHighlight: { color: colors.primary },
 
+  /*
+    ── the allergy chips, and why the slop is exactly 4 ──
+
+    30pt with no `hitSlop` is a 30pt target, on a control every new user taps
+    during onboarding. It went unmeasured because `tap-targets.mjs` skipped any
+    pressable without a fixed `width`, and a chip sized to its own text has none.
+
+    36 + 4 + 4 lands on Apple's 44 without making a wrapped row of eight chips
+    into a wall. The 4 is not a round number picked for tidiness: the row's gap
+    is `spacing.sm`, so four points of slop on each side meet exactly in the
+    middle of the gap and never overlap. Eight would overlap, and `tap-targets`
+    already records what that costs — a tap in the overlap goes to whichever
+    chip happens to sit later in the tree.
+  */
   badge: {
     paddingHorizontal: spacing.sm + 4,
-    height: 30,
+    height: 36,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,

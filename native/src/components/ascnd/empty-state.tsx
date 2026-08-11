@@ -58,7 +58,7 @@ export function EmptyState({
       {/* A tinted chip rather than a bare glyph: a lone outline icon on a dark
           card reads as a broken image. */}
       <View style={styles.chip}>
-        <Icon icon={icon} size={20} color={colors.mutedForeground} />
+        <Icon icon={icon} size={24} color={colors.mutedForeground} />
       </View>
       <Text style={styles.title}>{title}</Text>
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
@@ -78,27 +78,48 @@ export function EmptyState({
   );
 }
 
+/*
+  ── sized for the room it is standing in ──
+
+  The first version of this was built to the same scale as a row inside a busy
+  card: a 44pt icon chip, a footnote-sized label, and a 40pt button. That is the
+  right scale for a control competing with a dozen others. It is the wrong scale
+  for the only thing on the screen — a small cluster marooned in a page of
+  space, which reads as timid rather than calm.
+
+  40pt was also under Apple's 44pt floor. Small **icon** buttons are allowed to
+  be under it and are common — a 28pt glyph with `hitSlop` out to 44 is what
+  most of this app's row controls do, and nobody notices the invisible margin.
+  A button with a word in it has no such excuse: there is no aesthetic reason
+  for it to be short, and a labelled button drawn under the floor simply looks
+  weak. This one is the single action on an empty page, so it is 48.
+
+  `minWidth` matters more than it looks. A pill sized to its text makes "Ghi"
+  a third of the width of "Nhập số đo", so the same component lands at three
+  different sizes across three screens and stops reading as one thing.
+*/
 const styles = StyleSheet.create({
-  root: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
+  root: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
   chip: {
-    width: 44,
-    height: 44,
+    width: 56,
+    height: 56,
     borderRadius: radius.full,
     backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
   },
-  title: { ...type.headline, color: colors.foreground, textAlign: 'center' },
-  hint: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', lineHeight: 18 },
+  title: { ...type.title2, color: colors.foreground, textAlign: 'center' },
+  hint: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', lineHeight: 18, maxWidth: 280 },
   button: {
-    marginTop: spacing.xs,
-    height: 40,
+    marginTop: spacing.sm,
+    height: 48,
+    minWidth: 176,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: { ...type.footnote, fontWeight: '600', color: colors.primaryForeground },
+  buttonText: { ...type.headline, color: colors.primaryForeground },
 });

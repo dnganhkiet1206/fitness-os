@@ -540,7 +540,12 @@ const styles = StyleSheet.create({
     padding: 3,
     gap: 3,
   },
-  segment: { flex: 1, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
+     screen — and `tap-targets.mjs` never saw it, because it skipped anything
+     without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
+     floor, and on a page with room to spare it also stops the row reading as
+     an afterthought. */
+  segment: { flex: 1, height: 44, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: colors.primary },
   segmentText: { ...type.footnote, color: colors.secondaryForeground, fontWeight: '600' },
   segmentTextActive: { color: colors.primaryForeground },

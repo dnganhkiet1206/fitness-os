@@ -64,7 +64,12 @@ export default function LegalScreen() {
 
 const styles = StyleSheet.create({
   tabBar: { flexDirection: 'row', backgroundColor: colors.secondary, borderRadius: radius.md, padding: 3, gap: 3 },
-  tab: { flex: 1, height: 38, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
+     screen — and `tap-targets.mjs` never saw it, because it skipped anything
+     without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
+     floor, and on a page with room to spare it also stops the row reading as
+     an afterthought. */
+  tab: { flex: 1, height: 44, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   tabActive: { backgroundColor: colors.primary },
   tabText: { ...type.footnote, color: colors.secondaryForeground, fontWeight: '600' },
   tabTextActive: { color: colors.primaryForeground },

@@ -374,6 +374,7 @@ export default function MascotRoomScreen() {
       headerRight={
         <Pressable
           // Hidden test faucet: long-press the coin pill for +500 coins
+          hitSlop={7}
           delayLongPress={600}
           onLongPress={() => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -427,6 +428,7 @@ export default function MascotRoomScreen() {
             return (
               <Pressable
                 key={label}
+                hitSlop={9}
                 onPress={() => {
                   Haptics.selectionAsync();
                   const next = label === 'auto' ? null : (label as (typeof DEV_EMOTIONS)[number]);
@@ -440,6 +442,7 @@ export default function MascotRoomScreen() {
           })}
           {/* the full spec sheet — all 8 expressions and 5 poses, on device */}
           <Pressable
+            hitSlop={9}
             onPress={() => {
               Haptics.selectionAsync();
               router.push('/koa-sheet');

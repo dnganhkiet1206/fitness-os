@@ -174,6 +174,7 @@ function walk(dir) {
 
 const unnamed = [];
 const small = [];
+const shortLabelled = [];
 
 for (const file of walk(SRC)) {
   const rel = path.relative(NATIVE, file);
@@ -199,6 +200,37 @@ for (const file of walk(SRC)) {
       const decl = styles[styleRef[1]] ?? '';
       const w = decl.match(/\bwidth:\s*(\d+)/);
       const h = decl.match(/\bheight:\s*(\d+)/);
+
+      /*
+        ── the check used to skip anything without a fixed width ──
+
+        Below, both dimensions are required before a pressable is measured at
+        all. That quietly excused the most common shape in this app: a control
+        laid out with `flex: 1` and a `height`. Every segmented control, every
+        full-width row, every pill sized by its own text has no `width:` in its
+        style, so none of them were ever measured — and several are 34pt tall
+        with no `hitSlop`, which is a 34pt-tall touch target on a control that
+        spans the screen.
+
+        Height can be judged on its own: a target that is wide enough and too
+        short is still too short. So the vertical check runs whenever there is a
+        `height`, and the width check keeps waiting for a `width` because a
+        `flex: 1` control's width genuinely is not knowable from the source.
+
+        This is what the user meant by the buttons feeling small. The tool said
+        44 everywhere because it was not looking at them.
+      */
+      if (h && !w) {
+        const slop = readSlop(attrs);
+        const effH = Number(h[1]) + slop.top + slop.bottom;
+        if (effH < MIN_TARGET) {
+          shortLabelled.push(
+            `${rel}:${lineOf(p.start)}  ${styleRef[1]} cao ${h[1]}pt` +
+              (slop.top + slop.bottom ? ` +slop ${slop.top}/${slop.bottom} → ${effH}pt` : ' (không có hitSlop)'),
+          );
+        }
+      }
+
       if (w && h) {
         const slop = readSlop(attrs);
         /*
@@ -227,7 +259,7 @@ for (const file of walk(SRC)) {
   }
 }
 
-if (unnamed.length || small.length) {
+if (unnamed.length || small.length || shortLabelled.length) {
   if (unnamed.length) {
     console.error(`nút chỉ có icon mà không có accessibilityLabel (${unnamed.length}):\n`);
     for (const u of unnamed) console.error(`  ${u}`);
@@ -238,8 +270,16 @@ if (unnamed.length || small.length) {
     for (const s of small) console.error(`  ${s}`);
     console.error('');
   }
+  if (shortLabelled.length) {
+    console.error(`chiều cao vùng chạm dưới ${MIN_TARGET}pt (${shortLabelled.length}) — các control rộng theo flex, trước đây bị bỏ qua vì không có width cố định:\n`);
+    for (const s of shortLabelled) console.error(`  ${s}`);
+    console.error('');
+  }
   console.error('dùng <IconButton> — nó ép nhãn và tự tính hitSlop. Xem tools/tap-targets.mjs');
   process.exit(1);
 }
 
-console.log(`vùng chạm OK — mọi nút icon đều có nhãn, không nút nào dưới ${MIN_TARGET}pt`);
+console.log(
+  `vùng chạm OK — mọi nút icon đều có nhãn, không vùng chạm nào dưới ${MIN_TARGET}pt, ` +
+    'và các control rộng theo flex (segment, hàng, pill) cũng được đo chiều cao — trước đây chúng bị bỏ qua vì không có width cố định',
+);

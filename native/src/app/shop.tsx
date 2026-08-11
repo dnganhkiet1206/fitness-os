@@ -516,9 +516,14 @@ const styles = StyleSheet.create({
   sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   sheetScroll: { paddingBottom: spacing.lg },
   sheetTitle: { ...type.headline, color: colors.foreground, flex: 1 },
+  /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
+     screen — and `tap-targets.mjs` never saw it, because it skipped anything
+     without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
+     floor, and on a page with room to spare it also stops the row reading as
+     an afterthought. */
   tab: {
     flex: 1,
-    height: 32,
+    height: 44,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
