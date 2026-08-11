@@ -52,8 +52,36 @@ import { localDateStr } from '@/lib/local-date';
  * deletion, the shop. Queuing those would store an intention that is going to
  * fail or be stale by the time it runs. This is for *logging* — the writes
  * where the person already knows what happened and the app is only the paper.
+ *
+ * **Ticking a supplement is also not here, and that is a decision rather than
+ * an omission.** It looks like the easiest one on the list — a single insert —
+ * and it is the only one that is two-way. `useToggleSupplement` inserts on tick
+ * and deletes on un-tick, and a queue holding only the insert gets the common
+ * offline sequence exactly backwards: tick, notice the mistake, un-tick, and
+ * the delete finds no row to remove while the insert replays regardless. The
+ * pill ends up marked as taken because the person changed their mind about it.
+ *
+ * Queuing it properly means queuing the un-tick too, against a row whose id
+ * does not exist yet. That is a real design, not a line of code, and half of it
+ * is worse than none: the current behaviour fails visibly offline, which is
+ * recoverable, where the half-built one would silently record something untrue.
  */
 
+/**
+ * ── every operation carries its own clock ──
+ *
+ * Not one of these lets the database stamp the time. `meal_entries.date_time`
+ * defaults to `now()`, which is correct to the millisecond when the insert
+ * happens as you tap and wrong by however long the queue waited when it does
+ * not. Breakfast logged at eight in a basement, replayed at six in the evening,
+ * arrives as dinner — and replayed after midnight it arrives on the wrong day,
+ * where `recomputeDailyLog` then rebuilds a day the meal was never part of.
+ *
+ * So the moment is captured where it is known, at the tap, and travels with the
+ * intention. Same reason `date` is a string here rather than something derived
+ * on the other side: `localDateStr` on the replaying device would answer for
+ * the replay day, not the logged one.
+ */
 export type OfflineWrite =
   | { kind: 'water'; userId: string; amountMl: number; date: string; at: string }
   | {
@@ -66,7 +94,50 @@ export type OfflineWrite =
       templateName: string | null;
       sessionRpe: number | null;
     }
-  | { kind: 'weight'; userId: string; kg: number; date: string };
+  | { kind: 'weight'; userId: string; kg: number; date: string }
+  | {
+      kind: 'meal';
+      userId: string;
+      /*
+        Minted on this side, before the row exists anywhere.
+
+        The online path inserts the entry, reads the id back with
+        `.select('id').single()`, and uses it for the item rows. There is no id
+        to read back when the write has not happened yet — and a queue that
+        replayed "insert entry, then insert items" as two independent
+        intentions would lose the link between them entirely.
+
+        `id UUID PRIMARY KEY DEFAULT gen_random_uuid()` takes a supplied value
+        happily; the default only applies when the column is omitted. Minting it
+        here also makes the whole operation idempotent by primary key, which a
+        server-generated id could never be.
+      */
+      entryId: string;
+      dateTime: string;
+      mealType: string;
+      totals: { kcal: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number };
+      items: {
+        food_item_id: string | null;
+        food_name: string;
+        servings: number;
+        kcal: number;
+        protein_g: number;
+        carbs_g: number;
+        fat_g: number;
+        fiber_g: number;
+      }[];
+    }
+  | {
+      kind: 'biometrics';
+      userId: string;
+      dateTime: string;
+      hrBpm: number | null;
+      hrvSdnnMs: number | null;
+      hrvRmssdMs: number | null;
+      spo2Pct: number | null;
+      respRateRpm: number | null;
+      vo2maxMlkgmin: number | null;
+    };
 
 /** The one key every durable write is filed under. */
 export const OFFLINE_WRITE_KEY = ['offline-write'] as const;
@@ -114,6 +185,53 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
         date: w.date,
       });
       if (error) throw error;
+      return;
+    }
+    case 'meal': {
+      /* The entry first, with the id minted at the tap, then its items against
+         that id. Two statements, one intention — which is exactly why the queue
+         carries named operations and not rows: replaying these as two
+         independent inserts would put an entry with no food in it on somebody's
+         day, and it would look like a bug in the meal screen. */
+      const { error } = await supabase.from('meal_entries').insert({
+        id: w.entryId,
+        user_id: w.userId,
+        date_time: w.dateTime,
+        meal_type: w.mealType,
+        total_kcal: w.totals.kcal,
+        total_protein_g: w.totals.protein_g,
+        total_carbs_g: w.totals.carbs_g,
+        total_fat_g: w.totals.fat_g,
+        total_fiber_g: w.totals.fiber_g,
+      });
+      if (error) throw error;
+
+      const { error: itemsErr } = await supabase
+        .from('meal_entry_items')
+        .insert(w.items.map((it) => ({ ...it, meal_entry_id: w.entryId })));
+      if (itemsErr) throw itemsErr;
+
+      /* The day the food was eaten, not the day the queue drained. */
+      await recomputeDailyLog(w.userId, localDateStr(new Date(w.dateTime)));
+      return;
+    }
+    case 'biometrics': {
+      const { error } = await supabase.from('biometric_samples').insert({
+        user_id: w.userId,
+        source: 'manual',
+        confidence: 0.7,
+        date_time: w.dateTime,
+        hr_bpm: w.hrBpm,
+        hrv_sdnn_ms: w.hrvSdnnMs,
+        hrv_rmssd_ms: w.hrvRmssdMs,
+        spo2_pct: w.spo2Pct,
+        resp_rate_rpm: w.respRateRpm,
+        vo2max_mlkgmin: w.vo2maxMlkgmin,
+      });
+      if (error) throw error;
+      /* HRV is the readiness score's largest term. A reading that arrives
+         without rebuilding its day is a reading the score never sees. */
+      await recomputeDailyLog(w.userId, localDateStr(new Date(w.dateTime)));
       return;
     }
   }

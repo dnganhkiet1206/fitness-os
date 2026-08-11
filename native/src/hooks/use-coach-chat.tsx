@@ -12,7 +12,15 @@ import { AI_FAILURE_KEY, classify } from '@/lib/edge-failure';
 import { callEdge } from '@/lib/edge';
 
 /**
- * The coach's conversation, held above both screens that show it.
+ * The coach's conversation, held above the screen that shows it.
+ *
+ * ── where the conversation lives ──
+ *
+ * `/ai-coach` draws it. `(tabs)/assistant.tsx` is the hub: it reads the
+ * conversation to offer to continue an open one, and pushes into `/ai-coach`
+ * from its ask bar and every suggestion chip (`askCoach`, around line 168).
+ * That split is deliberate and `tools/coach-chat.mjs` enforces it — one surface
+ * draws the transcript, and the hub is not it.
  *
  * ── why this is a provider and not a hook ──
  *
@@ -22,11 +30,22 @@ import { callEdge } from '@/lib/edge';
  * `useState` are two conversations, and asking on one screen then opening the
  * other looks exactly like the app forgetting what you said.
  *
- * `/ai-coach` has since been deleted — the duplicate was itself the confusion —
- * so there is one screen again. This stays a provider anyway, for a smaller but
- * real reason: the assistant is a `NativeTabs` child, and a conversation is not
- * something to risk losing to a remount. Holding it at the root also keeps the
- * streaming request in one place rather than in a screen.
+ * It stays a provider now for a smaller but real reason: the assistant is a
+ * `NativeTabs` child, and a conversation is not something to risk losing to a
+ * remount. Holding it at the root also keeps the streaming request in one place
+ * rather than in a screen.
+ *
+ * ── a correction, kept because it cost something ──
+ *
+ * This paragraph used to say `/ai-coach` **had been deleted**. It had not, and
+ * the sentence survived long enough to nearly get the live chat screen removed
+ * as dead code: a reachability check that grepped for the route, piped through
+ * `head`, saw only these comment lines and concluded nothing navigated there.
+ * The one real call site was three lines past the cut.
+ *
+ * A comment that describes the codebase can go stale silently, and this one was
+ * more confident than any of the code around it. `coach-chat.mjs` is the thing
+ * that actually knows; where the two disagree, believe the tool.
  *
  * ── what stays in the screen ──
  *

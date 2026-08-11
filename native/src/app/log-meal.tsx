@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { Camera, Check, ChevronDown, ChevronRight, Clock, Minus, PencilLine, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
@@ -30,6 +31,8 @@ import {
 } from '@/hooks/use-nutrition';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { offlineNow } from '@/lib/offline';
+import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { toast } from '@/lib/toast';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
@@ -321,43 +324,51 @@ export default function LogMealSheet() {
     });
   };
 
-  const save = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error('Not signed in');
-      if (items.length === 0) throw new Error('No items');
-      const { data: entry, error } = await supabase
-        .from('meal_entries')
-        .insert({
-          user_id: user.id,
-          meal_type: mealType,
-          total_kcal: Math.round(totals.kcal),
-          total_protein_g: Math.round(totals.protein_g),
-          total_carbs_g: Math.round(totals.carbs_g),
-          total_fat_g: Math.round(totals.fat_g),
-          total_fiber_g: Math.round(totals.fiber_g),
-        })
-        .select('id')
-        .single();
-      if (error) throw error;
+  /*
+    Saving a meal survives a kitchen with no signal.
 
-      const rows = items.map((it) => ({
-        meal_entry_id: entry.id,
-        food_item_id: it.food_item_id,
-        food_name: it.food_name,
-        servings: it.servings,
-        kcal: Math.round(it.kcal * it.servings),
-        protein_g: Math.round(it.protein_g * it.servings),
-        carbs_g: Math.round(it.carbs_g * it.servings),
-        fat_g: Math.round(it.fat_g * it.servings),
-        fiber_g: Math.round(it.fiber_g * it.servings),
-      }));
-      await supabase.from('meal_entry_items').insert(rows);
-      await recomputeDailyLog(user.id, localDateStr());
+    ── why this is the one that mattered most ──
+
+    Logging food is the most repeated action in the app and kitchens are where
+    signal is worst. Before this, an offline save failed outright: an error
+    toast, and a sheet full of items the person had just spent a minute
+    assembling, gone the moment they backed out.
+
+    ── no `mutationFn` here, on purpose ──
+
+    The key is what makes it durable. React Query pauses a mutation it cannot
+    send and writes the *variables* to storage; on the next launch it needs a
+    `mutationFn` to hand them back to, and functions do not serialise. Declaring
+    one locally would work today and quietly stop working after a restart,
+    because what comes back from storage is the default registered in
+    `offline-write`, not this closure. See `registerOfflineWrites`.
+  */
+  const save = useMutation<void, Error, OfflineWrite>({
+    mutationKey: [...OFFLINE_WRITE_KEY],
+    /*
+      ── closing the sheet cannot wait for the network ──
+
+      A paused mutation never calls `onSuccess`. Leaving the confirmation there
+      means that offline the button spins, the sheet stays open, and nothing
+      ever happens — which is a worse failure than the error toast this
+      replaced, because it does not even say anything.
+
+      So offline the sheet closes here and says so. That is not an optimistic
+      guess: the write is in the persisted queue and will send itself. Online,
+      nothing changes — the real confirmation still comes from `onSuccess`,
+      where it can still report a genuine failure.
+    */
+    onMutate: () => {
+      if (!offlineNow()) return;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+      toast.success(i18n.logMealQueued);
     },
     onSuccess: () => {
       invalidate();
       // Just-logged foods should surface in the Nutrition tab's recent list
       queryClient.invalidateQueries({ queryKey: ['recent_foods', user?.id] });
+      if (offlineNow()) return; // already acknowledged in onMutate
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
       toast.success(i18n.logMealSaved);
@@ -366,6 +377,43 @@ export default function LogMealSheet() {
       if (e.message !== 'No items') toast.error(e.message);
     },
   });
+
+  /*
+    The call site still says `save()`.
+
+    The variables have to be a plain serialisable object — that is the whole
+    point, since they are what a future process reads back having forgotten this
+    screen, this user and this meal. `entryId` is minted here rather than read
+    back from the insert: offline there is no insert to read from, and a
+    client-side id makes the two-statement write idempotent by primary key.
+  */
+  const submit = () => {
+    if (!user || items.length === 0) return;
+    save.mutate({
+      kind: 'meal',
+      userId: user.id,
+      entryId: Crypto.randomUUID(),
+      dateTime: new Date().toISOString(),
+      mealType,
+      totals: {
+        kcal: Math.round(totals.kcal),
+        protein_g: Math.round(totals.protein_g),
+        carbs_g: Math.round(totals.carbs_g),
+        fat_g: Math.round(totals.fat_g),
+        fiber_g: Math.round(totals.fiber_g),
+      },
+      items: items.map((it) => ({
+        food_item_id: it.food_item_id,
+        food_name: it.food_name,
+        servings: it.servings,
+        kcal: Math.round(it.kcal * it.servings),
+        protein_g: Math.round(it.protein_g * it.servings),
+        carbs_g: Math.round(it.carbs_g * it.servings),
+        fat_g: Math.round(it.fat_g * it.servings),
+        fiber_g: Math.round(it.fiber_g * it.servings),
+      })),
+    } satisfies OfflineWrite);
+  };
 
   // Stays disabled after success so the closing sheet can't double-submit
   const canSave = items.length > 0 && !save.isPending && !save.isSuccess;
@@ -694,7 +742,7 @@ export default function LogMealSheet() {
         <PressScale
           style={[styles.saveButton, !canSave && !save.isSuccess && styles.saveDisabled]}
           disabled={!canSave}
-          onPress={() => save.mutate()}>
+          onPress={submit}>
           {save.isSuccess ? (
             <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
           ) : save.isPending ? (

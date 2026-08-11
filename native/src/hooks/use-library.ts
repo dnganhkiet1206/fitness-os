@@ -44,6 +44,10 @@ export function useToggleSupplement() {
           user_id: user!.id,
           supplement_id: supplementId,
           taken: true,
+          /* Stamped here rather than left to the column default. It changes
+             nothing while this write is online — which it always is, see below
+             — but it is the honest value and costs nothing. */
+          date_time: new Date().toISOString(),
         });
         if (error) throw error;
       } else {

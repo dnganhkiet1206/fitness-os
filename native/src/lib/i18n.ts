@@ -461,6 +461,7 @@ interface Translations {
   logMealAdded: string;
   logMealServings: string;
   logMealSaved: string;
+  logMealQueued: string;
 
   // Log Workout Dialog
   logWorkoutTitle: string;
@@ -1187,6 +1188,7 @@ const vi: Translations = {
   logMealAdded: 'Đã thêm',
   logMealServings: 'phần',
   logMealSaved: 'Đã lưu bữa ăn!',
+  logMealQueued: 'Đã lưu — sẽ đồng bộ khi có mạng',
 
   logWorkoutTitle: 'Ghi Buổi Tập',
   logWorkoutName: 'Tên buổi tập',
@@ -1896,6 +1898,7 @@ const en: Translations = {
   logMealAdded: 'Added',
   logMealServings: 'servings',
   logMealSaved: 'Meal saved!',
+  logMealQueued: 'Saved — will sync when you are back online',
 
   logWorkoutTitle: 'Log Workout',
   logWorkoutName: 'Workout name',

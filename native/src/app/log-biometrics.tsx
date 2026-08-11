@@ -15,21 +15,16 @@ import {
 
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
-import { useAuth } from '@/hooks/use-auth';
 import { Check } from 'lucide-react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { useLogBiometrics } from '@/hooks/use-biometrics';
 import { toast } from '@/lib/toast';
-import { useInvalidateToday } from '@/hooks/useTodayData';
-import { recomputeDailyLog } from '@/lib/daily-log-service';
-import { localDateStr } from '@/lib/local-date';
+import { offlineNow } from '@/lib/offline';
 
 export default function LogBiometricsSheet() {
   const i18n = useI18n();
-  const { user } = useAuth();
-  const invalidate = useInvalidateToday();
   const log = useLogBiometrics();
   const [hr, setHr] = useState('');
   const [hrv, setHrv] = useState('');
@@ -41,29 +36,39 @@ export default function LogBiometricsSheet() {
   const canSave =
     (hr || hrv || spo2 || vo2 || resp).length > 0 && !log.isPending && !log.isSuccess;
 
+  /*
+    ── the rebuild moved, and had to ──
+
+    This used to pass `onSuccess` per call, and that callback did two things:
+    rebuilt the day so readiness saw the new HRV, and closed the screen.
+
+    A paused mutation never calls `onSuccess`. Now that the write goes through
+    the durable queue, both of those would simply not happen offline — the
+    reading would send itself an hour later and the score would still be built
+    without it, which is the failure this whole path exists to prevent.
+
+    So the rebuild lives in `applyOfflineWrite` beside the insert, where it runs
+    on the same terms whether the write went now or from storage. What is left
+    here is the part that belongs to the screen.
+  */
   const save = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    log.mutate(
-      {
-        hr_bpm: num(hr),
-        hrv_rmssd_ms: num(hrv),
-        spo2_pct: num(spo2),
-        vo2max_mlkgmin: num(vo2),
-        resp_rate_rpm: num(resp),
-      },
-      {
-        onSuccess: async () => {
-          // Fresh HRV/RHR feeds the readiness engine (web parity)
-          if (user) await recomputeDailyLog(user.id, localDateStr());
-          // Refresh Today's readiness gauge + biometrics card + trend
-          invalidate();
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          router.back();
-          toast.success(i18n.logBioSaved);
-        },
-        onError: (e: Error) => toast.error(e.message),
-      },
-    );
+    log.mutate({
+      hr_bpm: num(hr),
+      hrv_rmssd_ms: num(hrv),
+      spo2_pct: num(spo2),
+      vo2max_mlkgmin: num(vo2),
+      resp_rate_rpm: num(resp),
+    });
+    /*
+      Closed here rather than on success, for the same reason: offline there is
+      no success to wait for, and a screen that never dismisses is a worse
+      answer than one that says what happened. The write is in the persisted
+      queue either way, so saying so is not optimism.
+    */
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.back();
+    toast.success(offlineNow() ? i18n.logMealQueued : i18n.logBioSaved);
   };
 
   return (

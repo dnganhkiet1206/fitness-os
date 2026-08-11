@@ -160,6 +160,30 @@ for (const f of files) {
             'khi khôi phục thì không còn phiên nào để suy ra nó, và insert thiếu user_id sẽ bị RLS chặn',
         );
       }
+      /*
+        ── and its own clock ──
+
+        Every table these write to stamps its time column with `DEFAULT now()`,
+        which is exactly right when the insert happens as you tap and silently
+        wrong by however long the queue waited when it does not. Breakfast
+        logged at eight in a basement, replayed at six, arrives as dinner;
+        replayed after midnight it arrives on the wrong day, and the rebuild
+        that travels with it then recomputes a day the meal was never part of.
+
+        Nothing about that surfaces as an error. The row is there, the totals
+        are right, and it is filed under the wrong hours.
+
+        So a variant has to carry the moment itself. `date`, `dateTime` or `at`
+        — the name follows the column it feeds, the requirement is that the
+        value was decided on the device that saw the tap.
+      */
+      if (!/\b(dateTime|date|at): string/.test(variant)) {
+        problems.push(
+          `${WRITE}: biến thể "${kind}" không mang thời điểm riêng — ` +
+            'cột thời gian mặc định now(), nên khi hàng đợi gửi muộn thì bản ghi mang giờ lúc gửi ' +
+            'chứ không phải giờ lúc người dùng bấm, và qua nửa đêm là sang hẳn ngày khác',
+        );
+      }
     }
     /* Functions and class instances do not survive JSON. */
     if (/=>|\bDate\b(?!\w)/.test(type.replace(/'[^']*'/g, ''))) {
@@ -186,6 +210,14 @@ const SELF = [
   ['chỉ có key — không bị bắt', () => {
     const body = '    mutationKey: [...OFFLINE_WRITE_KEY],\n    onMutate: () => {},';
     return !/mutationFn:/.test(body);
+  }],
+  ['biến thể thiếu thời điểm riêng — bị bắt', () => {
+    const v = "{ kind: 'supplement'; userId: string; supplementId: string; }";
+    return !/\b(dateTime|date|at): string/.test(v);
+  }],
+  ['biến thể có dateTime — không báo oan', () => {
+    const v = "{ kind: 'meal'; userId: string; dateTime: string; }";
+    return /\b(dateTime|date|at): string/.test(v);
   }],
   ['biến thể thiếu userId — bị bắt', () => {
     const v = "{ kind: 'water'; amountMl: number }";
@@ -221,5 +253,6 @@ const kinds = new Set([...read(WRITE).matchAll(/kind: '(\w+)'/g)].map((m) => m[1
 console.log(
   `ghi khi mất mạng OK — một khoá, một hàm mặc định đăng ký ở module scope trước khi cache khôi phục; ` +
     `resumePausedMutations chạy trong onSuccess của provider; ${kinds} loại thao tác, ` +
-    'mỗi loại mang đủ userId và chỉ chứa dữ liệu thuần',
+    'mỗi loại mang đủ userId, mang thời điểm của chính nó (không để cột DEFAULT now() đóng dấu lúc gửi muộn), ' +
+    'và chỉ chứa dữ liệu thuần',
 );
