@@ -120,9 +120,12 @@ export interface ReadinessResult {
   explainToken: string;
   recommendationKey: string;
   subscores: {
+    /* Optional because "not measured" is a real answer for both of these, and
+       a different one from a low score. HRV needs 5 readings of history before
+       it means anything; sleep needs a night that was actually recorded. */
     hrv?: number;
     rhr: number;
-    sleep: number;
+    sleep?: number;
     load: number;
   };
   acwr: number;

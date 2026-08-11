@@ -1,5 +1,5 @@
 /**
- * The app, actually running, in three states.
+ * The app's logic, actually running, in three states.
  *
  *   node tools/live.mjs            build, boot every screen, then press things
  *   node tools/live.mjs --no-build reuse the last build
@@ -34,6 +34,30 @@
  * All three needed the app to run. None of them needed a device: a web bundle,
  * a headless browser, a fake session and a fake server are enough to reach the
  * screens and lie to them convincingly.
+ *
+ * ── what this can and cannot tell you ──
+ *
+ * **The app ships native. The web bundle is a harness, not a target.** Nobody
+ * uses it; it exists here because it is the cheapest way to execute the app's
+ * own JavaScript with a browser attached.
+ *
+ * So this file is a check on **logic and state**, and on nothing else. The three
+ * bugs above are all of that kind: an early `return`, a swallowed error, a
+ * readiness condition with a missing case. Every one of them would have shipped
+ * to a phone exactly as it shipped to this harness.
+ *
+ * Anything that is *layout*, *platform* or *chrome* seen here is noise and must
+ * be discarded rather than fixed. The first run of the press check produced five
+ * findings and every one was of that kind:
+ *
+ *   - `headerRight` buttons read as unreachable because the web tab bar is drawn
+ *     over the top strip. iOS renders `NativeTabs` at the bottom; there is
+ *     nothing over that strip on a phone.
+ *   - Confirm dialogs read as dead because `react-native-web`'s Alert is
+ *     `static alert() {}`. On iOS they are real.
+ *
+ * If a finding here would disappear on a phone, it was never a finding. Judge
+ * every one against that question before touching a line of app code.
  *
  * ── the mistake this file is built to prevent ──
  *

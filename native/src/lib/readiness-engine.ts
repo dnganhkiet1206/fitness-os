@@ -43,7 +43,30 @@ function computeRHRScore(rhr: number, history: number[]): number {
   return clamp(50 - 12 * z, 0, 100);
 }
 
-function computeSleepScore(sleepMin: number, targetMin: number, debtMin: number): number {
+/**
+ * Last night, scored — or `null` when there was no last night to score.
+ *
+ * ── the bug this returns null for ──
+ *
+ * `sleep_duration_min` is `0` when no sleep row exists for the day, and zero
+ * used to walk straight into the ratio below: `0 / 480` scores **20**, exactly
+ * as if somebody had lain awake all night. Weighted 0.30 — or 0.45 when there
+ * is no HRV either — and then the `< 240` override capped the whole score at
+ * 40.
+ *
+ * So a person with three biometric readings and no sleep tracking was told,
+ * with a number and a colour, that they were **not recovered**. Not because
+ * they had slept badly; because the app had never been told how they slept.
+ * Nothing on the screen distinguished the two, and the advice that follows a
+ * red score — rest, cut volume — is advice about their body derived from an
+ * absence of data about their body.
+ *
+ * Zero minutes of sleep is not a measurement. HRV already worked this way
+ * (`computeHRVScore` returns null without enough history and the weights
+ * redistribute); sleep now does too.
+ */
+function computeSleepScore(sleepMin: number | undefined, targetMin: number, debtMin: number): number | null {
+  if (sleepMin === undefined || sleepMin === null || sleepMin <= 0) return null;
   const ratio = sleepMin / (targetMin || 480);
   let score: number;
   if (ratio >= 1.0) {
@@ -106,18 +129,41 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
 
   const acwr = getACWR(input.training_load_7d, input.training_load_28d);
 
-  // Weighted combination
+  /*
+    Weighted combination over the terms that exist.
+
+    The two four-term and three-term rows are the weights this engine has always
+    used and are left exactly as they were, so no existing score moves. The two
+    rows without sleep are new — they are what used to be answered by scoring an
+    absent night as twenty.
+
+    Each row sums to 1.0. A score built from fewer inputs is thinner, but it is
+    about the person; the alternative was a fuller-looking number that was
+    partly about nothing.
+  */
   let raw: number;
-  if (hrvScore !== null) {
+  if (hrvScore !== null && sleepScore !== null) {
     raw = 0.30 * hrvScore + 0.20 * rhrScore + 0.30 * sleepScore + 0.20 * loadScore;
-  } else {
+  } else if (sleepScore !== null) {
     raw = 0.25 * rhrScore + 0.45 * sleepScore + 0.30 * loadScore;
+  } else if (hrvScore !== null) {
+    // 0.30 / 0.20 / 0.20 renormalised over 0.70
+    raw = (0.30 * hrvScore + 0.20 * rhrScore + 0.20 * loadScore) / 0.70;
+  } else {
+    // 0.25 / 0.30 renormalised over 0.55
+    raw = (0.25 * rhrScore + 0.30 * loadScore) / 0.55;
   }
 
   // Safety overrides
   if (input.illness_flag) raw = Math.min(raw, 35);
   if (input.pain_flag_max !== undefined && input.pain_flag_max >= 7) raw = Math.min(raw, 45);
-  if (input.sleep_min_lastnight < 240) raw = Math.min(raw, 40);
+  /* Only a night that was actually measured can be a short one. This used to
+     read `input.sleep_min_lastnight < 240`, which is true of every day with no
+     sleep row at all — capping readiness at 40 for the crime of not owning a
+     sleep tracker. */
+  if (sleepScore !== null && input.sleep_min_lastnight !== undefined && input.sleep_min_lastnight < 240) {
+    raw = Math.min(raw, 40);
+  }
 
   const score = Math.round(clamp(raw, 0, 100));
 
@@ -137,7 +183,14 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
   }
   factors.push(
     { key: 'rhr', name: 'Nhịp tim nghỉ', score: rhrScore, impact: rhrScore < 40 ? 'cao' : rhrScore > 70 ? 'tốt' : 'trung bình' },
-    { key: 'sleep', name: 'Giấc ngủ', score: sleepScore, impact: sleepScore < 40 ? 'kém' : sleepScore > 70 ? 'tốt' : 'trung bình' },
+  );
+  /* Absent from the list entirely rather than listed at zero. The explain line
+     takes the two lowest factors, so a sleep score invented for a night nobody
+     measured would not merely be wrong — it would be the headline. */
+  if (sleepScore !== null) {
+    factors.push({ key: 'sleep', name: 'Giấc ngủ', score: sleepScore, impact: sleepScore < 40 ? 'kém' : sleepScore > 70 ? 'tốt' : 'trung bình' });
+  }
+  factors.push(
     { key: 'load', name: 'Tải tập', score: loadScore, impact: loadScore < 40 ? 'quá tải' : loadScore > 70 ? 'tối ưu' : 'trung bình' },
   );
 
@@ -157,13 +210,13 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
   } else if (status === 'green') {
     recommendationKey = 'green_watch';
     recommendation = 'Sẵn sàng tập. Theo dõi khối lượng — ACWR hơi cao.';
-  } else if (status === 'yellow' && sleepScore < 50) {
+  } else if (status === 'yellow' && sleepScore !== null && sleepScore < 50) {
     recommendationKey = 'yellow_sleep';
     recommendation = 'Giữ cường độ, giảm 15% tổng sets. Ưu tiên ngủ tối nay.';
   } else if (status === 'yellow') {
     recommendationKey = 'yellow_reduce';
     recommendation = 'Giảm volume 5–10%. Tập trung kỹ thuật và phục hồi.';
-  } else if (status === 'red' && rhrScore < 40 && sleepScore < 40) {
+  } else if (status === 'red' && rhrScore < 40 && sleepScore !== null && sleepScore < 40) {
     recommendationKey = 'red_rest';
     recommendation = 'Nên nghỉ ngơi. Cardio nhẹ tối đa 20–30 phút.';
   } else if (status === 'red') {
@@ -184,7 +237,9 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
     subscores: {
       hrv: hrvScore !== null ? Math.round(hrvScore) : undefined,
       rhr: Math.round(rhrScore),
-      sleep: Math.round(sleepScore),
+      /* undefined, not 0 — the gauge draws a tile per sub-score and a zero
+         tile reads as "you scored nothing" rather than "not measured". */
+      sleep: sleepScore !== null ? Math.round(sleepScore) : undefined,
       load: Math.round(loadScore),
     },
     acwr: Math.round(acwr * 100) / 100,

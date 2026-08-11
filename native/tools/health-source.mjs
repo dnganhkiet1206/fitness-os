@@ -311,6 +311,62 @@ const problems = [];
   }
 }
 
+/*
+  ── 8: thiếu dữ liệu không phải là một giá trị ──
+
+  `sleep_duration_min` is `0` on any day with no sleep row, and that zero used
+  to be scored: `0 / 480` gives a sleep sub-score of **20**, exactly as if the
+  person had lain awake all night. Weighted 0.45 when there is no HRV either,
+  and then `if (sleep_min_lastnight < 240)` capped the whole score at 40.
+
+  Measured on the engine itself, same person, same everything else:
+
+      ngủ 7h20 đo được       →  70  vàng
+      ngủ 3h đo được         →  40  đỏ     (đúng — đêm ngắn thật)
+      KHÔNG có dữ liệu ngủ   →  40  đỏ     ← sai 26 điểm, đỏ thay vì vàng
+
+  The app told somebody with three biometric readings and no sleep tracker,
+  with a number and a colour, that they were not recovered — and then advised
+  them to rest. That is advice about a body derived from an absence of data
+  about that body, and nothing on screen separated it from a real bad night.
+
+  HRV already had this right: `computeHRVScore` returns null without enough
+  history and the weights redistribute. The rule is that every sub-score works
+  that way, because the readiness score is the app's headline claim about
+  somebody's physiology.
+*/
+{
+  const eng = strip(read('src/lib/readiness-engine.ts'));
+
+  if (!/function computeSleepScore\([^)]*\): number \| null/.test(eng)) {
+    problems.push(
+      'readiness-engine.ts: computeSleepScore không trả về null được — ' +
+        'đêm không đo được sẽ bị chấm điểm như đêm thức trắng, và điểm sẵn sàng ' +
+        'nói sai về cơ thể người dùng dựa trên dữ liệu không tồn tại',
+    );
+  }
+  if (!/if \(sleepMin === undefined \|\| sleepMin === null \|\| sleepMin <= 0\) return null;/.test(eng)) {
+    problems.push('readiness-engine.ts: computeSleepScore không chặn giá trị 0 — đó chính là giá trị của "không có log ngủ"');
+  }
+  /* The cap must ask whether the night was measured, not merely whether the
+     number is small. Zero is the smallest number of all. */
+  const cap = (eng.match(/if \([^)]*sleep_min_lastnight < 240[^)]*\)/) ?? [''])[0];
+  if (!cap) {
+    problems.push('readiness-engine.ts: không tìm thấy chốt an toàn cho đêm ngắn — luật này cần sửa lại');
+  } else if (!/sleepScore !== null/.test(cap)) {
+    problems.push(
+      'readiness-engine.ts: chốt "đêm ngắn" không kiểm xem đêm đó có được ĐO không — ' +
+        '0 phút cũng nhỏ hơn 240, nên người không đeo đồng hồ ngủ bị chặn điểm ở 40',
+    );
+  }
+  /* A term that does not exist must not appear in the explain line, which is
+     built from the two *lowest* factors — an invented zero would not just be
+     wrong, it would be the headline. */
+  if (!/if \(sleepScore !== null\) \{\s*factors\.push/.test(eng)) {
+    problems.push('readiness-engine.ts: yếu tố "giấc ngủ" vẫn được đưa vào danh sách kể cả khi không đo được');
+  }
+}
+
 /**
  * The self-test.
  *
@@ -355,6 +411,19 @@ const SELF = [
     case that version *looked* finished — the sync was written, the permission
     helpers were written, and the only thing missing was a caller.
   */
+  ['chấm điểm đêm không đo được — bị bắt', () => {
+    const bad = 'function computeSleepScore(sleepMin: number, targetMin: number, debtMin: number): number {\n  const ratio = sleepMin / (targetMin || 480);';
+    return !/function computeSleepScore\([^)]*\): number \| null/.test(bad);
+  }],
+  ['trả null được — không báo oan', () => {
+    const good = 'function computeSleepScore(sleepMin: number | undefined, targetMin: number, debtMin: number): number | null {';
+    return /function computeSleepScore\([^)]*\): number \| null/.test(good);
+  }],
+  ['chốt đêm ngắn không hỏi "có đo không" — bị bắt', () => {
+    const bad = 'if (input.sleep_min_lastnight < 240) raw = Math.min(raw, 40);';
+    const cap = (bad.match(/if \([^)]*sleep_min_lastnight < 240[^)]*\)/) ?? [''])[0];
+    return cap && !/sleepScore !== null/.test(cap);
+  }],
   ['chỉ có nút bấm, không có đường tự động — bị bắt', () => {
     const bad = 'export function useHealthSync() {\n  return { available: isHealthKitAvailable(), sync };\n}';
     return !/export function useAutoHealthSync/.test(bad);
@@ -407,5 +476,7 @@ console.log(
     'buổi tập nhập về mang volume_load 0 nên ACWR không đổi, và external_id khiến đồng bộ lại không nhân đôi; ' +
     'và đường ống này thật sự có người chạy — đồng bộ tự động khi mở app (15 phút một lần, ghi mốc trước khi chạy), ' +
     'không tự ý bật bảng xin quyền, không nói gì khi thành công lẫn thất bại; ' +
-    'onboarding có mời cả Apple Health lẫn thông báo, kèm lý do trước khi bảng hệ thống hiện ra',
+    'onboarding có mời cả Apple Health lẫn thông báo, kèm lý do trước khi bảng hệ thống hiện ra; ' +
+    'và điểm sẵn sàng không chấm điểm thứ nó không đo được — đêm không có log trả về null và trọng số ' +
+    'được chia lại, thay vì bị chấm 20 điểm như đêm thức trắng rồi chặn cả điểm số ở 40',
 );
