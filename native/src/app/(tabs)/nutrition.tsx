@@ -410,20 +410,6 @@ export default function NutritionScreen() {
           ))}
         </View>
 
-        {/* Log meal — kept on the library and plan segments, where there is no
-            other way to start one. `Hôm nay` has its own, under the diary. */}
-        {tab !== 'today' ? (
-          <PressScale
-            style={styles.logChip}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/log-meal');
-            }}>
-            <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
-            <Text style={styles.logChipText}>{i18n.nLogMealBtn}</Text>
-          </PressScale>
-        ) : null}
-
         {tab === 'today' ? (
           <>
             {/*
@@ -595,7 +581,21 @@ export default function NutritionScreen() {
       </Screen>
       {/* Logging lives here now, on the diary tab where the day is. The old
           full-width bar at the end of the meal list is gone. */}
-      {tab === 'today' ? <LogMealFab i18n={i18n} /> : null}
+      {/*
+        ── one way to log a meal, not two ──
+
+        The diary segment had the ⊕ menu; the other two had a small chip at the
+        top of the page that went straight to the manual form. Same intent, two
+        shapes, two places — and the chip was the worse of the two, because the
+        ⊕ offers camera, barcode, search and manual while the chip offered only
+        the last of those. So the segment you happened to be on decided which
+        ways of logging existed.
+
+        The ⊕ now renders on all three. It is absolutely positioned above the
+        tab bar and costs no layout height, so a segment that is a list of foods
+        is not pushed around by it.
+      */}
+      <LogMealFab i18n={i18n} />
     </View>
   );
 }
@@ -645,19 +645,6 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: colors.accent },
   tabText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
   tabTextActive: { color: colors.foreground },
-
-  logChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 36,
-    borderRadius: radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.3)',
-    backgroundColor: 'rgba(24,24,27,0.2)',
-  },
-  logChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
 
   searchRow: { flexDirection: 'row', gap: spacing.sm },
   searchWrap: {
