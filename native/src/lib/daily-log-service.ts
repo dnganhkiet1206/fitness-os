@@ -154,8 +154,10 @@ export async function recomputeDailyLog(userId: string, date: string) {
       .eq('user_id', userId)
       .gte('date_time', sevenDaysAgo.toISOString()),
     supabase
+      /* `date_time` travels with the load because the ratio needs to know how
+         many days it is averaging over — see `training_days_28d`. */
       .from('workout_sessions')
-      .select('volume_load')
+      .select('volume_load, date_time')
       .eq('user_id', userId)
       .gte('date_time', thirtyDaysAgo.toISOString()),
     supabase
@@ -207,6 +209,16 @@ export async function recomputeDailyLog(userId: string, date: string) {
   const load7d = load7dRes.data;
   const load28d = load28dRes.data;
   const sleepLogs7d = sleepLogs7dRes.data;
+
+  /* Oldest session in the window → how many days the chronic average spans.
+     No sessions means no span, which `computeLoadScore` reads as "no training
+     to score" rather than "trained too little". */
+  const oldestWorkout = (load28d ?? []).reduce<number | null>((oldest, w) => {
+    const t = Date.parse(String((w as { date_time?: string }).date_time ?? ''));
+    return Number.isFinite(t) && (oldest === null || t < oldest) ? t : oldest;
+  }, null);
+  const trainingDays28d =
+    oldestWorkout === null ? 0 : Math.min(28, Math.ceil((Date.now() - oldestWorkout) / 86_400_000) + 1);
 
   const kcal = meals?.reduce((s, m) => s + Number(m.total_kcal), 0) ?? 0;
   const protein_g = meals?.reduce((s, m) => s + Number(m.total_protein_g), 0) ?? 0;
@@ -281,6 +293,15 @@ export async function recomputeDailyLog(userId: string, date: string) {
       sleep_debt_7d_min: sleepDebt7d,
       training_load_7d: trainingLoad7d,
       training_load_28d: trainingLoad28d,
+      /*
+        How much history that 28-day figure actually covers.
+
+        Dividing by a flat 28 for somebody who started last week averages their
+        training over three weeks that never happened, and the ratio reads as a
+        fourfold spike for training perfectly evenly. Measured from the oldest
+        session actually in the window.
+      */
+      training_days_28d: trainingDays28d,
       soreness_today: undefined,
       illness_flag: false,
       pain_flag_max: undefined,

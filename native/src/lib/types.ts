@@ -103,6 +103,15 @@ export interface ReadinessInput {
   sleep_debt_7d_min: number;
   training_load_7d: number;
   training_load_28d: number;
+  /**
+   * How many days the 28-day load figure actually covers.
+   *
+   * Optional, and omitting it means "the whole window" — the behaviour before
+   * this existed. It matters for anybody newer than a month: dividing their
+   * load by 28 days when only 7 of them happened made a perfectly even training
+   * week read as a fourfold spike.
+   */
+  training_days_28d?: number;
   soreness_today?: number;
   illness_flag: boolean;
   pain_flag_max?: number;
@@ -126,7 +135,7 @@ export interface ReadinessResult {
     hrv?: number;
     rhr: number;
     sleep?: number;
-    load: number;
+    load?: number;
   };
   acwr: number;
 }

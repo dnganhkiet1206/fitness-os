@@ -367,6 +367,60 @@ const problems = [];
   }
 }
 
+/*
+  ── 9: mẫu số của ACWR phải là những ngày đã xảy ra ──
+
+  Chronic load was `load28d / 28` — an average over a window that, for anybody
+  newer than a month, is mostly days before they installed the app. Measured on
+  the engine, somebody training **perfectly evenly**:
+
+      buổi tập đầu tiên   →  ACWR 4.00   ("spike", nguy hiểm)
+      tập đều 2 tuần      →  ACWR 2.00   ("spike")
+      tập đều 4 tuần      →  ACWR 1.00   (đúng)
+
+  Three weeks of being warned about a dangerous ramp, for training exactly the
+  same amount every week. The ratio was measuring how long they had owned the
+  app, not what they had done.
+
+  And with no sessions logged at all the ratio came out 0, which lands in the
+  `< 0.65` band and scores 45 — "detrained". Somebody who keeps their training
+  elsewhere was marked down daily for a gap in the app's records.
+
+  After: 1.00 for the first workout, 1.00 at two weeks, unchanged at four, and a
+  real ramp (12000 against a 8000 baseline) still reads 1.33. The detector still
+  works; it just stopped firing at people for being new.
+*/
+{
+  const eng = strip(read('src/lib/readiness-engine.ts'));
+
+  if (!/function getACWR\([^)]*chronicDays[^)]*\)/.test(eng)) {
+    problems.push(
+      'readiness-engine.ts: getACWR vẫn chia cứng cho 28 ngày — ' +
+        'người mới tập đều đặn sẽ bị báo tăng tải gấp bốn lần suốt ba tuần đầu',
+    );
+  }
+  if (!/Math\.max\(chronicDays, 7\)/.test(eng)) {
+    problems.push(
+      'readiness-engine.ts: cửa sổ mãn tính không có sàn 7 ngày — ' +
+        'ngắn hơn cửa sổ cấp tính thì tỉ số thành so sánh một tuần với một phần của chính nó',
+    );
+  }
+  if (!/function computeLoadScore\([\s\S]{0,200}?\): number \| null/.test(eng)) {
+    problems.push('readiness-engine.ts: computeLoadScore không trả null được — không log buổi tập nào sẽ bị chấm 45 điểm "thiếu tập"');
+  }
+  if (!/if \(load28d <= 0\) return null;/.test(eng)) {
+    problems.push('readiness-engine.ts: computeLoadScore không chặn trường hợp không có tải nào');
+  }
+
+  const svc = strip(read(SERVICE));
+  if (!/training_days_28d:/.test(svc)) {
+    problems.push(`${SERVICE}: không truyền training_days_28d — engine sẽ mặc định cả 28 ngày, đúng bằng lỗi vừa sửa`);
+  }
+  if (!/select\('volume_load, date_time'\)/.test(svc)) {
+    problems.push(`${SERVICE}: truy vấn tải 28 ngày không lấy date_time — không có nó thì không biết cửa sổ dài bao nhiêu`);
+  }
+}
+
 /**
  * The self-test.
  *
@@ -411,6 +465,14 @@ const SELF = [
     case that version *looked* finished — the sync was written, the permission
     helpers were written, and the only thing missing was a caller.
   */
+  ['ACWR chia cứng 28 ngày — bị bắt', () => {
+    const bad = 'function getACWR(load7d: number, load28d: number): number {\n  const chronic = load28d / 28;';
+    return !/function getACWR\([^)]*chronicDays[^)]*\)/.test(bad);
+  }],
+  ['ACWR nhận cửa sổ thật — không báo oan', () => {
+    const good = 'function getACWR(load7d: number, load28d: number, chronicDays: number): number {\n  const chronic = load28d / Math.max(chronicDays, 7);';
+    return /function getACWR\([^)]*chronicDays[^)]*\)/.test(good) && /Math\.max\(chronicDays, 7\)/.test(good);
+  }],
   ['chấm điểm đêm không đo được — bị bắt', () => {
     const bad = 'function computeSleepScore(sleepMin: number, targetMin: number, debtMin: number): number {\n  const ratio = sleepMin / (targetMin || 480);';
     return !/function computeSleepScore\([^)]*\): number \| null/.test(bad);
@@ -478,5 +540,7 @@ console.log(
     'không tự ý bật bảng xin quyền, không nói gì khi thành công lẫn thất bại; ' +
     'onboarding có mời cả Apple Health lẫn thông báo, kèm lý do trước khi bảng hệ thống hiện ra; ' +
     'và điểm sẵn sàng không chấm điểm thứ nó không đo được — đêm không có log trả về null và trọng số ' +
-    'được chia lại, thay vì bị chấm 20 điểm như đêm thức trắng rồi chặn cả điểm số ở 40',
+    'được chia lại, thay vì bị chấm 20 điểm như đêm thức trắng rồi chặn cả điểm số ở 40; ' +
+    'ACWR chia cho số ngày THẬT SỰ có trong cửa sổ (sàn 7), nên người tập đều tuần đầu ra 1.00 chứ không phải 4.00, ' +
+    'và không log buổi tập nào thì tải bị loại khỏi điểm thay vì bị chấm 45 "thiếu tập"',
 );

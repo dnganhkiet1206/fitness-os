@@ -81,10 +81,25 @@ function computeSleepScore(sleepMin: number | undefined, targetMin: number, debt
   return clamp(score, 0, 100);
 }
 
-function computeLoadScore(load7d: number, load28d: number, soreness?: number): number {
-  const acute = load7d / 7;
-  const chronic = load28d / 28;
-  const acwr = acute / (chronic + 1e-6);
+/**
+ * Training load, or `null` when there is no training to score.
+ *
+ * With no sessions logged at all the ratio came out 0, which lands in the
+ * `< 0.65` bucket and scores **45** — the band that means "detrained, you have
+ * been doing too little". Somebody who logs sleep and biometrics but keeps
+ * their training elsewhere was marked down every day for a gap in the app's
+ * records rather than a gap in their week.
+ *
+ * Same shape as sleep and HRV: absence is not a low value, it is no value.
+ */
+function computeLoadScore(
+  load7d: number,
+  load28d: number,
+  chronicDays: number,
+  soreness?: number,
+): number | null {
+  if (load28d <= 0) return null;
+  const acwr = getACWR(load7d, load28d, chronicDays);
   let score: number;
   if (acwr >= 0.8 && acwr <= 1.3) score = 80;
   else if (acwr >= 0.65 && acwr < 0.8) score = 65;
@@ -98,9 +113,33 @@ function computeLoadScore(load7d: number, load28d: number, soreness?: number): n
   return clamp(score, 0, 100);
 }
 
-function getACWR(load7d: number, load28d: number): number {
+/**
+ * Acute:chronic workload ratio.
+ *
+ * ── the denominator has to be days that happened ──
+ *
+ * Chronic load was `load28d / 28` — a twenty-eight day average over a window
+ * that, for anybody newer than a month, is mostly days they had not yet
+ * installed the app. Measured on the engine, somebody training **perfectly
+ * evenly**:
+ *
+ *     buổi tập đầu tiên   →  ACWR 4.00   ("spike", nguy hiểm)
+ *     tập đều 2 tuần      →  ACWR 2.00   ("spike")
+ *     tập đều 4 tuần      →  ACWR 1.00   (đúng)
+ *
+ * Three weeks of being told they were ramping dangerously, for training exactly
+ * the same amount every week. The ratio was not measuring their training; it
+ * was measuring how long they had owned the app.
+ *
+ * `chronicDays` is how much history the 28-day figure actually covers. With one
+ * week of data, chronic equals acute and the ratio is 1.0 — which is the honest
+ * answer: you cannot spike above a baseline that does not exist yet.
+ */
+function getACWR(load7d: number, load28d: number, chronicDays: number): number {
   const acute = load7d / 7;
-  const chronic = load28d / 28;
+  /* Never fewer than seven: a chronic window shorter than the acute one makes
+     the ratio a comparison of a week against part of itself. */
+  const chronic = load28d / Math.max(chronicDays, 7);
   return acute / (chronic + 1e-6);
 }
 
@@ -121,13 +160,19 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
     input.sleep_debt_7d_min
   );
 
+  /* How many days the 28-day load figure actually covers. Absent on older
+     callers, in which case the full window is assumed — the same answer as
+     before this parameter existed. */
+  const chronicDays = input.training_days_28d ?? 28;
+
   const loadScore = computeLoadScore(
     input.training_load_7d,
     input.training_load_28d,
+    chronicDays,
     input.soreness_today
   );
 
-  const acwr = getACWR(input.training_load_7d, input.training_load_28d);
+  const acwr = getACWR(input.training_load_7d, input.training_load_28d, chronicDays);
 
   /*
     Weighted combination over the terms that exist.
@@ -141,18 +186,32 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
     about the person; the alternative was a fuller-looking number that was
     partly about nothing.
   */
-  let raw: number;
-  if (hrvScore !== null && sleepScore !== null) {
-    raw = 0.30 * hrvScore + 0.20 * rhrScore + 0.30 * sleepScore + 0.20 * loadScore;
-  } else if (sleepScore !== null) {
-    raw = 0.25 * rhrScore + 0.45 * sleepScore + 0.30 * loadScore;
-  } else if (hrvScore !== null) {
-    // 0.30 / 0.20 / 0.20 renormalised over 0.70
-    raw = (0.30 * hrvScore + 0.20 * rhrScore + 0.20 * loadScore) / 0.70;
+  const present: { w: number; score: number }[] = [];
+  const add = (w: number, score: number | null) => {
+    if (score !== null) present.push({ w, score });
+  };
+
+  /*
+    The two historical rows are reproduced exactly, and everything else is the
+    same base weights renormalised over whatever is present.
+
+    Written this way because there are now three terms that can be absent — HRV
+    needs five readings of history, sleep needs a night that was recorded, load
+    needs a session that was logged — and eight explicit branches would be eight
+    places for the numbers to drift apart. Pinning the two combinations that
+    already shipped means no existing score moves; the rest are new cases that
+    previously did not exist because absence was being scored as a low value.
+  */
+  if (hrvScore !== null && sleepScore !== null && loadScore !== null) {
+    add(0.30, hrvScore); add(0.20, rhrScore); add(0.30, sleepScore); add(0.20, loadScore);
+  } else if (hrvScore === null && sleepScore !== null && loadScore !== null) {
+    add(0.25, rhrScore); add(0.45, sleepScore); add(0.30, loadScore);
   } else {
-    // 0.25 / 0.30 renormalised over 0.55
-    raw = (0.25 * rhrScore + 0.30 * loadScore) / 0.55;
+    add(0.30, hrvScore); add(0.20, rhrScore); add(0.30, sleepScore); add(0.20, loadScore);
   }
+
+  const totalWeight = present.reduce((sum, t) => sum + t.w, 0);
+  let raw = present.reduce((sum, t) => sum + t.w * t.score, 0) / (totalWeight || 1);
 
   // Safety overrides
   if (input.illness_flag) raw = Math.min(raw, 35);
@@ -190,9 +249,12 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
   if (sleepScore !== null) {
     factors.push({ key: 'sleep', name: 'Giấc ngủ', score: sleepScore, impact: sleepScore < 40 ? 'kém' : sleepScore > 70 ? 'tốt' : 'trung bình' });
   }
-  factors.push(
-    { key: 'load', name: 'Tải tập', score: loadScore, impact: loadScore < 40 ? 'quá tải' : loadScore > 70 ? 'tối ưu' : 'trung bình' },
-  );
+  /* Same reason sleep is conditional: the explain line takes the two lowest
+     factors, so a load score invented for somebody who logs no training would
+     become the headline advice. */
+  if (loadScore !== null) {
+    factors.push({ key: 'load', name: 'Tải tập', score: loadScore, impact: loadScore < 40 ? 'quá tải' : loadScore > 70 ? 'tối ưu' : 'trung bình' });
+  }
 
   factors.sort((a, b) => a.score - b.score);
   const top2 = factors.slice(0, 2);
@@ -240,7 +302,7 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
       /* undefined, not 0 — the gauge draws a tile per sub-score and a zero
          tile reads as "you scored nothing" rather than "not measured". */
       sleep: sleepScore !== null ? Math.round(sleepScore) : undefined,
-      load: Math.round(loadScore),
+      load: loadScore !== null ? Math.round(loadScore) : undefined,
     },
     acwr: Math.round(acwr * 100) / 100,
   };
