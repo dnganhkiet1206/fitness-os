@@ -149,6 +149,7 @@ const en = {
   // weight history.
   nLoadFailed: 'Could not load your data',
   nLoadFailedHint: 'Your data is safe. The app just could not reach it.',
+  nMore: 'More',
   nRetry: 'Try again',
   // ── screen-reader names for icon-only buttons ──
   // Verbs, not nouns: the reader already says "button", so the label supplies
@@ -733,6 +734,7 @@ const vi: typeof en = {
   // Cố ý không nhắc "hôm nay": thẻ này còn hiện ở Tiến trình và Buổi tập.
   nLoadFailed: 'Không tải được dữ liệu',
   nLoadFailedHint: 'Dữ liệu của bạn vẫn an toàn, chỉ là app chưa lấy được.',
+  nMore: 'Xem thêm',
   nRetry: 'Thử lại',
   // ── tên cho trình đọc màn hình, nút chỉ có icon ──
   a11yBack: 'Quay lại',

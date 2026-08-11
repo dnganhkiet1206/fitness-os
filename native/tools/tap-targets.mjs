@@ -259,7 +259,48 @@ for (const file of walk(SRC)) {
   }
 }
 
-if (unnamed.length || small.length || shortLabelled.length) {
+/*
+  ── a row of abstract glyphs in a header is a memory test ──
+
+  One icon button in a header is a convention people already know: a gear, a
+  plus, a close. A *list* of them is not. Nutrition carried a pill and a
+  trolley; Progress carried sparkles, a target, crossed swords and a medal —
+  four 17pt glyphs standing for weekly review, smart goals, challenges and
+  awards, none of them guessable, and one of them (sparkles) a glyph this app
+  already uses for something else entirely.
+
+  Both are `ShortcutRow`s now: name written out, current state beside it. The
+  rule is about the shape that produced them — a `headerRight` that *maps over
+  a list* to draw icons — because that is the thing that grows from two to four
+  without anybody deciding to.
+
+  A single icon button in a header is untouched.
+*/
+const headerRows = [];
+for (const file of walk(SRC)) {
+  const rel = path.relative(NATIVE, file);
+  const text = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+  const at = text.indexOf('headerRight={');
+  if (at < 0) continue;
+  /* Read to the end of the prop rather than a fixed slice: these blocks are
+     twenty lines and a window would either miss the map or run into the page. */
+  let depth = 0;
+  let end = at + 'headerRight='.length;
+  for (; end < text.length; end++) {
+    const c = text[end];
+    if (c === '{') depth++;
+    else if (c === '}') { depth--; if (depth === 0) break; }
+  }
+  const prop = text.slice(at, end);
+  if (/\.map\(/.test(prop) && /<Icon\b/.test(prop) && !/<Text\b/.test(prop)) {
+    headerRows.push(
+      `${rel}:${text.slice(0, at).split('\n').length}  headerRight vẽ một DÃY icon không chữ — ` +
+        'dùng ShortcutRow ở cuối trang, có tên và có trạng thái',
+    );
+  }
+}
+
+if (unnamed.length || small.length || shortLabelled.length || headerRows.length) {
   if (unnamed.length) {
     console.error(`nút chỉ có icon mà không có accessibilityLabel (${unnamed.length}):\n`);
     for (const u of unnamed) console.error(`  ${u}`);
@@ -268,6 +309,11 @@ if (unnamed.length || small.length || shortLabelled.length) {
   if (small.length) {
     console.error(`vùng chạm nhỏ hơn ${MIN_TARGET}pt (${small.length}):\n`);
     for (const s of small) console.error(`  ${s}`);
+    console.error('');
+  }
+  if (headerRows.length) {
+    console.error(`dãy icon không nhãn trong header (${headerRows.length}):\n`);
+    for (const h of headerRows) console.error(`  ${h}`);
     console.error('');
   }
   if (shortLabelled.length) {
@@ -281,5 +327,6 @@ if (unnamed.length || small.length || shortLabelled.length) {
 
 console.log(
   `vùng chạm OK — mọi nút icon đều có nhãn, không vùng chạm nào dưới ${MIN_TARGET}pt, ` +
-    'và các control rộng theo flex (segment, hàng, pill) cũng được đo chiều cao — trước đây chúng bị bỏ qua vì không có width cố định',
+    'các control rộng theo flex (segment, hàng, pill) cũng được đo chiều cao — trước đây chúng bị bỏ qua vì không có width cố định — ' +
+    'và không header nào vẽ một dãy icon không chữ',
 );

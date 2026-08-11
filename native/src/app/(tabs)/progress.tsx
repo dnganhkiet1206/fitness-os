@@ -14,6 +14,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { EmptyState } from '@/components/ascnd/empty-state';
+import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
@@ -26,6 +27,7 @@ import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBodyMeasurements, useDeleteBodyMeasurement, useWeightHistory } from '@/hooks/use-fitness-data';
 import { useProgressPhotos } from '@/hooks/use-progress-photos';
+import { useAwards, useWeeklyChallenges } from '@/hooks/use-extras';
 import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
 import { useWeightGoal } from '@/hooks/use-weight-goal';
@@ -236,6 +238,9 @@ export default function ProgressScreen() {
    */
   const { data: weightAll } = useWeightHistory(3650);
   const { data: photos, isError: photosFailed } = useProgressPhotos();
+  /* Both rows below carry state rather than only a name — see `shortcut-row`. */
+  const { data: awards } = useAwards();
+  const { data: challenges } = useWeeklyChallenges();
   const { data: measurements, isError: measurementsFailed } = useBodyMeasurements();
   const removeMeasurement = useDeleteBodyMeasurement();
 
@@ -367,26 +372,20 @@ export default function ProgressScreen() {
     <Screen
       contentScrollEnabled={!scrubbing}
       title={i18n.progressTitle}
-      headerRight={
-        <View style={styles.headerButtons}>
-          {[
-            { icon: Sparkles, route: '/weekly-review' as const, label: i18n.nWeeklyReview },
-            { icon: Target, route: '/smart-goals' as const, label: i18n.navSmartGoals },
-            { icon: Swords, route: '/challenges' as const, label: i18n.nChallenges },
-            { icon: Medal, route: '/awards' as const, label: i18n.nAwards },
-          ].map((b) => (
-            <PressScale
-              key={b.route}
-              accessibilityRole="button"
-              accessibilityLabel={b.label}
-              hitSlop={8}
-              style={styles.iconBtn}
-              onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>
-              <Icon icon={b.icon} size={17} color={colors.mutedForeground} />
-            </PressScale>
-          ))}
-        </View>
-      }>
+      /*
+        ── four unlabelled doors used to live up here ──
+
+        Sparkles, Target, Swords, Medal — weekly review, smart goals,
+        challenges, awards. Four abstract glyphs in a row, 17pt each, and not
+        one of them guessable: a target is as much "goal" as it is "aim", and
+        sparkles is the icon this app also uses for AI tips. Nutrition had two
+        of these and they were the thing that read as confusing; this had
+        double.
+
+        They are `ShortcutRow`s at the end of the page now, with their names
+        written out and their current state beside them, which is the same
+        change and the same reasoning as the Nutrition tab.
+      */>
       {/* Segmented tabs (web TabsList) */}
       <View style={styles.tabBar}>
         {tabs.map((t) => (
@@ -837,22 +836,47 @@ export default function ProgressScreen() {
           )}
         </>
       )}
+
+      {/*
+        Below everything, on every segment: these are where you go after
+        reading the charts, not instead of them. A row carries what is behind
+        it — how many badges, how many challenges are still open — so the
+        common question is answered without the trip.
+      */}
+      <View style={styles.moreSection}>
+        <Text style={styles.moreTitle}>{i18n.nMore}</Text>
+        <ShortcutRow
+          icon={Sparkles}
+          label={i18n.nWeeklyReview}
+          onPress={() => router.push('/weekly-review')}
+        />
+        <ShortcutRow
+          icon={Target}
+          label={i18n.navSmartGoals}
+          onPress={() => router.push('/smart-goals')}
+        />
+        <ShortcutRow
+          icon={Swords}
+          label={i18n.nChallenges}
+          value={challenges && challenges.length > 0
+            ? `${challenges.filter((c) => c.completed).length}/${challenges.length}`
+            : null}
+          onPress={() => router.push('/challenges')}
+        />
+        <ShortcutRow
+          icon={Medal}
+          label={i18n.nAwards}
+          value={awards && awards.length > 0 ? String(awards.length) : null}
+          onPress={() => router.push('/awards')}
+        />
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  headerButtons: { flexDirection: 'row', gap: spacing.sm },
-  iconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-
+  moreSection: { gap: spacing.sm, marginTop: spacing.lg },
+  moreTitle: { ...type.footnote, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6, marginLeft: spacing.xs },
   microTitle: {
     fontSize: 12,
     fontWeight: '600',
