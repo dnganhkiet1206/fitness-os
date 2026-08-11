@@ -175,12 +175,13 @@ export default function LogMealSheet() {
     queryKey: ['food_items_search', debounced],
     enabled: debounced.length >= 2,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('food_items')
         .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g')
         .ilike('name', `%${debounced}%`)
         .order('name')
         .limit(8);
+      if (error) throw error;
       return dedupeSeedShadows(data ?? []);
     },
   });

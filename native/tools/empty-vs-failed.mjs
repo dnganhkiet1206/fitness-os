@@ -41,6 +41,19 @@ import { fileURLToPath } from 'node:url';
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
+/**
+ * Same as `strip`, but every comment becomes the same number of blank lines.
+ *
+ * The rule below reports a file and a line, and a line number that points at
+ * the wrong place is worse than none: the first run sent four people to the
+ * middle of a paragraph of prose. Removing comments shifts everything after
+ * them upward, so they are blanked rather than deleted.
+ */
+const blank = (s) =>
+  s
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => '\n'.repeat((m.match(/\n/g) ?? []).length))
+    .replace(/^\s*\/\/.*$/gm, '');
+
 const problems = [];
 
 /**
@@ -143,9 +156,18 @@ for (const f of screens) {
   So the rule reaches into the query. Seven of forty-five were swallowing.
 */
 {
-  const HOOKS = globSync('src/{hooks,lib}/*.{ts,tsx}', { cwd: NATIVE }).sort();
+  /*
+     Screens too, not just hooks. Two `useQuery` calls live directly in
+     `smart-goals.tsx` and both swallowed the error — the rule had been looking
+     only where queries usually live, which is not the same as where they are.
+  */
+  const HOOKS = [
+    ...globSync('src/{hooks,lib}/*.{ts,tsx}', { cwd: NATIVE }),
+    ...globSync('src/app/**/*.tsx', { cwd: NATIVE }),
+    ...globSync('src/components/**/*.tsx', { cwd: NATIVE }),
+  ].sort();
   for (const f of HOOKS) {
-    const src = strip(readFileSync(path.join(NATIVE, f), 'utf8'));
+    const src = blank(readFileSync(path.join(NATIVE, f), 'utf8'));
     for (const m of src.matchAll(/queryFn: async \([^)]*\) *(?::[^=]+)?=> *\{/g)) {
       let i = m.index + m[0].length;
       let depth = 1;

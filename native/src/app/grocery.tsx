@@ -55,17 +55,19 @@ export default function GroceryScreen() {
     queryKey: ['grocery_meal_plan', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data: plans } = await supabase
+      const { data: plans, error } = await supabase
         .from('meal_plans')
         .select('id')
         .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(1);
+      if (error) throw error;
       if (!plans || plans.length === 0) return [];
-      const { data: rows } = await supabase
+      const { data: rows, error: rowsErr } = await supabase
         .from('meal_plan_items')
         .select('food_name, serving_g')
         .eq('meal_plan_id', plans[0].id);
+      if (rowsErr) throw rowsErr;
 
       const byName = new Map<string, { name: string; grams: number; times: number }>();
       for (const r of rows ?? []) {

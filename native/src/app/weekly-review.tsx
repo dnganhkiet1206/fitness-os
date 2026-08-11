@@ -154,13 +154,14 @@ export default function WeeklyReviewScreen() {
     queryKey: ['wr_daily', user?.id, startStr],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('daily_logs')
         .select('date, kcal, protein_g, volume_load, readiness_score')
         .eq('user_id', user!.id)
         .gte('date', startStr)
         .lt('date', endStr)
         .order('date');
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -169,12 +170,13 @@ export default function WeeklyReviewScreen() {
     queryKey: ['wr_workouts', user?.id, startStr],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('workout_sessions')
         .select('id, date_time, pain_flags')
         .eq('user_id', user!.id)
         .gte('date_time', localDayRangeISO(startStr).start)
         .lt('date_time', localDayRangeISO(endStr).start);
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -183,12 +185,13 @@ export default function WeeklyReviewScreen() {
     queryKey: ['wr_sleep', user?.id, startStr],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('sleep_logs')
         .select('waketime, deep_min, rem_min, light_min')
         .eq('user_id', user!.id)
         .gte('waketime', localDayRangeISO(startStr).start)
         .lt('waketime', localDayRangeISO(endStr).start);
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -199,12 +202,13 @@ export default function WeeklyReviewScreen() {
     queryFn: async () => {
       const prevStart = new Date(weekStart);
       prevStart.setDate(prevStart.getDate() - 7);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('daily_logs')
         .select('kcal, protein_g, volume_load')
         .eq('user_id', user!.id)
         .gte('date', localDateStr(prevStart))
         .lt('date', startStr);
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -215,12 +219,13 @@ export default function WeeklyReviewScreen() {
     queryFn: async () => {
       const d = new Date(weekEnd);
       d.setDate(d.getDate() - 28);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('daily_logs')
         .select('volume_load')
         .eq('user_id', user!.id)
         .gte('date', localDateStr(d))
         .lt('date', endStr);
+      if (error) throw error;
       return data ?? [];
     },
   });

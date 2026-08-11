@@ -14,6 +14,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { adaptiveTDEE, worthMentioning } from '@/lib/adaptive-tdee';
+import { calcTargetCalories } from '@/lib/fitness-calc';
 import { localDateStr } from '@/lib/local-date';
 import { convertWeight, displayWeight, weightLabel } from '@/lib/units';
 
@@ -46,12 +48,13 @@ export default function SmartGoalsScreen() {
     queryFn: async () => {
       const from = new Date();
       from.setDate(from.getDate() - 35);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('weight_logs')
         .select('date, weight_kg')
         .eq('user_id', user!.id)
         .gte('date', localDateStr(from))
         .order('date', { ascending: true });
+      if (error) throw error;
       return (data ?? []).map((d) => ({ date: d.date as string, weight_kg: Number(d.weight_kg) }));
     },
   });
@@ -62,12 +65,13 @@ export default function SmartGoalsScreen() {
     queryFn: async () => {
       const from = new Date();
       from.setDate(from.getDate() - 14);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('daily_logs')
         .select('date, kcal, protein_g')
         .eq('user_id', user!.id)
         .gte('date', localDateStr(from))
         .order('date', { ascending: true });
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -91,9 +95,51 @@ export default function SmartGoalsScreen() {
     const targetMax = goal === 'bulk' ? 0.5 : goal === 'cut' ? -0.25 : 0.1;
     const onTrack = weeklyChange >= targetMin && weeklyChange <= targetMax;
 
+    /*
+      ── the advice used to be built from half the equation ──
+
+      What follows below was the whole of it: if the weight had moved the wrong
+      way two weeks running, suggest a fixed ±150 or ±250 kcal. It never looked
+      at what the person ate.
+
+      That cannot tell the two explanations apart, and they need opposite
+      answers. If the target is right and they ate 400 over it, the fix is to
+      eat the target — but the old rule told them to *lower the target*, which
+      makes tomorrow's number harder to hit than today's and starts a spiral.
+      Only if the target itself is wrong does moving it help.
+
+      Intake is the half that separates them, and both halves are already
+      loaded on this screen. `adaptiveTDEE` is the energy-balance identity —
+      mean intake minus what the scale did — which is what MacroFactor and the
+      other adaptive trackers measure instead of guessing from a multiplier.
+      It refuses unless there are ten logged days, six weigh-ins and ten days
+      between the first and last, because it is trivially computable from
+      garbage.
+
+      When it can answer, the suggestion becomes arithmetic: measure the real
+      expenditure, then apply the goal's own multiplier to it. When it cannot,
+      the old heuristic stands — it is a guess, but it is the guess this screen
+      has always made, and removing it would leave nothing.
+    */
+    const measured = adaptiveTDEE(
+      (dailyLogs ?? []).map((d) => ({ date: String(d.date), kcal: Number(d.kcal) || 0 })),
+      (weightLogs ?? []).map((w) => ({ date: w.date, kg: w.weight_kg })),
+    );
+
     let twoWeekDeviation = false;
     let calorieAdjustment = 0;
-    if (valid.length >= 3) {
+    let fromMeasurement = false;
+    let measuredDays = 0;
+
+    if (measured.ok) {
+      const shouldBe = calcTargetCalories(measured.measured, goal);
+      if (worthMentioning(shouldBe, currentCal)) {
+        twoWeekDeviation = true;
+        fromMeasurement = true;
+        measuredDays = measured.loggedDays;
+        calorieAdjustment = shouldBe - currentCal;
+      }
+    } else if (valid.length >= 3) {
       const prev2 = valid.slice(-3, -1);
       const prevChange = prev2[1].value - prev2[0].value;
       const bothOff =
@@ -105,8 +151,8 @@ export default function SmartGoalsScreen() {
         if (goal === 'cut') calorieAdjustment = weeklyChange > 0 ? -250 : -150;
       }
     }
-    return { valid, weeklyChange, onTrack, twoWeekDeviation, calorieAdjustment, currentCal, targetMin, targetMax, goal };
-  }, [weightLogs, profile]);
+    return { valid, weeklyChange, onTrack, twoWeekDeviation, calorieAdjustment, fromMeasurement, measuredDays, currentCal, targetMin, targetMax, goal };
+  }, [weightLogs, dailyLogs, profile]);
 
   const protein = useMemo(() => {
     if (!dailyLogs || dailyLogs.length === 0 || !profile) return null;
@@ -173,6 +219,20 @@ export default function SmartGoalsScreen() {
                 <Text style={styles.suggestionDetail}>
                   {analysis.currentCal} kcal → {analysis.currentCal + analysis.calorieAdjustment} kcal
                 </Text>
+                {/*
+                  Where the number came from, when it came from them.
+
+                  Being told to change a calorie target is being told to change
+                  what you eat every day for months. "Because your own intake
+                  and your own scale say so" is a different sentence from a rule
+                  about weekly trends, and only one of them is checkable by the
+                  person reading it. Shown only when it is true.
+                */}
+                {analysis.fromMeasurement ? (
+                  <Text style={styles.suggestionDetail}>
+                    {i18n.smartGoalsMeasured.replace('{d}', String(analysis.measuredDays))}
+                  </Text>
+                ) : null}
               </View>
             )}
           </>

@@ -315,13 +315,14 @@ export default function NutritionScreen() {
     queryKey: ['nutrition_food_search', debounced],
     enabled: debounced.length >= 2,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('food_items')
         .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
         .ilike('name', `%${debounced}%`)
         .order('is_favorite', { ascending: false })
         .order('name')
         .limit(20);
+      if (error) throw error;
       return dedupeSeedShadows((data ?? []) as FoodItemRow[]);
     },
   });

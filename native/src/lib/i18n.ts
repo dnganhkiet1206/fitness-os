@@ -530,6 +530,7 @@ interface Translations {
   smartGoalsKeepGoing: string;
   smartGoalsSeeBelow: string;
   smartGoalsCalorieSuggestion: string;
+  smartGoalsMeasured: string;
   smartGoalsNeedData: string;
   smartGoalsNeedDataMsg: string;
   smartGoalsProteinCoach: string;
@@ -1251,6 +1252,7 @@ const vi: Translations = {
   smartGoalsKeepGoing: 'Đang đi đúng hướng!',
   smartGoalsSeeBelow: 'Xem gợi ý bên dưới.',
   smartGoalsCalorieSuggestion: 'Gợi ý chỉnh Calories',
+  smartGoalsMeasured: 'Đo từ lượng ăn và cân nặng {d} ngày qua của bạn, không phải từ công thức chung.',
   smartGoalsNeedData: 'Cần ít nhất 3 ngày ghi cân nặng trong 4 tuần gần nhất',
   smartGoalsNeedDataMsg: 'Ghi cân nặng hàng ngày trên Dashboard để nhận phân tích.',
   smartGoalsProteinCoach: 'Phân bổ đạm trong ngày',
@@ -1961,6 +1963,7 @@ const en: Translations = {
   smartGoalsKeepGoing: 'On track!',
   smartGoalsSeeBelow: 'See suggestions below.',
   smartGoalsCalorieSuggestion: 'Calorie Suggestion',
+  smartGoalsMeasured: 'Measured from your own intake and weight over the last {d} days, not from a formula.',
   smartGoalsNeedData: 'Need at least 3 weight entries in the last 4 weeks',
   smartGoalsNeedDataMsg: 'Log weight daily on Dashboard for analysis.',
   smartGoalsProteinCoach: 'Protein Distribution Coach',
