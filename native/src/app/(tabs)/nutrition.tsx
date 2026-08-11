@@ -14,6 +14,9 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { Icon } from '@/components/ascnd/icon';
 import { LogMealFab } from '@/components/ascnd/log-meal-fab';
+import { ShortcutRow } from '@/components/ascnd/shortcut-row';
+import { useSupplementChecklist } from '@/hooks/use-library';
+import { useGroceryItems } from '@/hooks/use-extras';
 import { Screen } from '@/components/ascnd/screen';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodayMeals } from '@/components/ascnd/today-meals';
@@ -212,6 +215,11 @@ export default function NutritionScreen() {
   const { data: today, isError: diaryFailed } = useTodayLog();
   const { data: dailyLog, isError: dayFailed } = useDailyLog();
   const { data: profile } = useProfile();
+  /* Both rows below show state rather than only a name — see `shortcut-row`.
+     Neither read blocks the page: a shortcut with nothing to report simply
+     shows its label, which is exactly what the icons it replaced did. */
+  const { data: supplements } = useSupplementChecklist();
+  const { data: grocery } = useGroceryItems();
 
   /**
    * One retry for the whole tab, not a refetch of the query that reported.
@@ -373,26 +381,19 @@ export default function NutritionScreen() {
     // The FAB is a sibling of the page, not a child: `Screen`'s root *is* the
     // scroll view, so anything inside it scrolls away with the diary.
     <View style={styles.root}>
-      <Screen
-        title={i18n.nutritionTitle}
-        headerRight={
-          <View style={styles.headerButtons}>
-            {[
-              { icon: Pill, route: '/supplements' as const, label: i18n.nSupplements },
-              { icon: ShoppingCart, route: '/grocery' as const, label: i18n.nGrocery },
-            ].map((b) => (
-              <PressScale
-                key={b.route}
-                accessibilityRole="button"
-                accessibilityLabel={b.label}
-                hitSlop={8}
-                style={styles.iconBtn}
-                onPress={() => { Haptics.selectionAsync(); router.push(b.route); }}>
-                <Icon icon={b.icon} size={17} color={colors.mutedForeground} />
-              </PressScale>
-            ))}
-          </View>
-        }>
+      {/*
+        ── the header carries no unlabelled doors any more ──
+
+        It held a pill and a shopping trolley. One tap from anywhere on the tab,
+        which was the good part, and no way to know what either was, which was
+        not — and this app has a real shop, so a trolley in a header is a
+        reasonable guess at entirely the wrong screen.
+
+        Both are now `ShortcutRow`s under the diary, with their names written
+        out and today's state beside them. See that file for why the state is
+        the point rather than the label.
+      */}
+      <Screen title={i18n.nutritionTitle}>
         {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
         <View style={styles.tabBar}>
           {[
@@ -474,6 +475,30 @@ export default function NutritionScreen() {
                 <TodayMeals meals={today ?? []} i18n={i18n} lang={lang} />
               </>
             )}
+
+            {/*
+              ── the two occasional destinations, named ──
+
+              Under the diary, not above it: the diary is why somebody opened
+              this tab, and nothing occasional gets to push it down. The cost is
+              one scroll; what it buys is that neither is a guess any more, and
+              that the answer to "have I taken them today" is on the row itself,
+              so most days the tap does not happen at all.
+            */}
+            <ShortcutRow
+              icon={Pill}
+              label={i18n.nSupplements}
+              value={supplements && supplements.length > 0
+                ? `${supplements.filter((x) => x.taken).length}/${supplements.length} ${i18n.nTakenToday}`
+                : null}
+              onPress={() => router.push('/supplements')}
+            />
+            <ShortcutRow
+              icon={ShoppingCart}
+              label={i18n.nGrocery}
+              value={grocery && grocery.length > 0 ? i18n.nGroceryLeft.replace('{n}', String(grocery.filter((g) => !g.checked).length)) : null}
+              onPress={() => router.push('/grocery')}
+            />
           </>
         ) : tab === 'foods' ? (
           <>
@@ -601,17 +626,6 @@ export default function NutritionScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerButtons: { flexDirection: 'row', gap: spacing.sm },
-  iconBtn: {
-    width: 34,
-    height: 44,
-    borderRadius: 17,
-    backgroundColor: colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-
   microTitle: {
     fontSize: 12,
     fontWeight: '600',

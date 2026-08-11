@@ -127,6 +127,7 @@ const en = {
   nChallengeDone: 'Challenge complete',
   nGrocery: 'Grocery List',
   nAddItem: 'Add an item…',
+  nGroceryLeft: '{n} left',
   nNoGrocery: 'List is empty',
   nNoGroceryHint: 'Add ingredients you need to buy',
 
@@ -713,6 +714,7 @@ const vi: typeof en = {
   nChallengeDone: 'Hoàn thành thử thách',
   nGrocery: 'Đi chợ',
   nAddItem: 'Thêm món cần mua…',
+  nGroceryLeft: 'còn {n} món',
   nNoGrocery: 'Danh sách trống',
   nNoGroceryHint: 'Thêm nguyên liệu bạn cần mua',
 
