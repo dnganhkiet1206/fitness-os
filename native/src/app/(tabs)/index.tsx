@@ -371,6 +371,10 @@ export default function TodayScreen() {
       // the page colour; painting it again here would paint straight over the
       // light and this change would do nothing at all.
       style={styles.scroller}
+      /* Edit mode puts a text field at the very bottom of the page. Without
+         this, the first tap on "add" while the keyboard is open is spent
+         closing the keyboard, which reads as a button that ignores you. */
+      keyboardShouldPersistTaps="handled"
       contentContainerStyle={[
         styles.content,
         { paddingTop: insets.top + 12, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
@@ -638,6 +642,12 @@ export default function TodayScreen() {
           ))}
 
           {/* Add group (web AddGroupInline) */}
+          {/*
+            This row is the last thing in edit mode, under every group card, so
+            the keyboard opens straight over it and over the button beside it.
+            Today builds its own ScrollView rather than going through `Screen`,
+            so nothing above it was going to handle that.
+          */}
           <View style={styles.addGroupRow}>
             <TextInput
               style={styles.addGroupInput}

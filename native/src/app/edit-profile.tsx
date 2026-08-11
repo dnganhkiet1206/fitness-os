@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -221,6 +222,13 @@ export default function EditProfileSheet() {
         </Pressable>
       </View>
 
+      {/*
+        This form runs from the name field down to the two sleep-time pickers —
+        far past what a keyboard leaves visible. `keyboardShouldPersistTaps` was
+        already here, which handles the swallowed first tap; nothing was lifting
+        the fields themselves, so the lower half of the form was typed blind.
+      */}
+      <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Name */}
         <Field label={i18n.settingsName}>
@@ -428,6 +436,7 @@ export default function EditProfileSheet() {
           </Field>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -490,6 +499,7 @@ const styles = StyleSheet.create({
   headerCancel: { ...type.body, color: colors.mutedForeground },
   headerTitle: { ...type.headline, color: colors.foreground },
   headerSave: { ...type.headline, color: colors.primary, fontWeight: '700' },
+  kav: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },
   field: { gap: 6 },
   fieldLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },

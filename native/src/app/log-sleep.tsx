@@ -7,6 +7,8 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -117,7 +119,23 @@ export default function LogSleepSheet() {
   });
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    /*
+      ── the only one of the four log sheets without this ──
+
+      `log-biometrics`, `log-measurement` and `log-meal` all wrap their scroll
+      view in a `KeyboardAvoidingView` and set `keyboardShouldPersistTaps`. This
+      one had neither, and it is the sheet whose text fields sit furthest down
+      the page — the three stage boxes are below the time pickers, with the
+      quality chips and Save below them.
+
+      Two things that costs. Save can end up under the keyboard with nothing to
+      lift it; and without `persistTaps`, the first tap on Save or on a quality
+      chip while the keyboard is open is spent dismissing the keyboard rather
+      than pressing the thing under your finger. That second one is not a
+      layout complaint — it reads as a button that does not work the first time.
+    */
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>{i18n.nLogSleepTitle}</Text>
 
       {/* Bed/wake times — compact pickers in settings-style rows (the old
@@ -212,6 +230,7 @@ export default function LogSleepSheet() {
         )}
       </PressScale>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
