@@ -171,7 +171,7 @@ export function OnboardingFlow() {
   const tdee = calcTDEE(bmr, activityLevel);
   const targetKcal = calcTargetCalories(tdee, goal, sex as 'male' | 'female' | 'other');
   const macros = calcMacros(targetKcal, w, goal, h);
-  const waterTarget = calcWaterTarget(w);
+  const waterTarget = calcWaterTarget(w, h);
   const sleepHours = (() => {
     const bedMin = bedtime.getHours() * 60 + bedtime.getMinutes();
     const wakeMin = waketime.getHours() * 60 + waketime.getMinutes();

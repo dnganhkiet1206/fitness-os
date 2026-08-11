@@ -134,12 +134,37 @@ export function BiometricsCard() {
   const connected = (wearables ?? []).find((w) => w.connected);
 
   const metrics = [
-    { label: 'Heart Rate', value: bio.hr_bpm, unit: 'bpm', icon: Heart, color: colors.destructive },
-    { label: 'HRV', value: bio.hrv_rmssd_ms, unit: 'ms', icon: Activity, color: colors.primary },
+    /*
+      ── it is not heart rate, it is resting heart rate ──
+
+      `hr_bpm` is filled from HealthKit's `RestingHeartRate`, is labelled
+      "Nhịp tim nghỉ" on the sheet people type it into, and is scored as RHR by
+      the readiness engine. Calling it "Heart Rate" here — in English, on a
+      Vietnamese app — invited somebody to compare it against the live number
+      on their watch and conclude the app was wrong, or to log a live reading
+      into the column the readiness score treats as resting.
+    */
+    { label: i18n.biometricsHeartRate, value: bio.hr_bpm, unit: 'bpm', icon: Heart, color: colors.destructive },
+    /*
+      ── the HRV tile went blind for every Apple Health user ──
+
+      This read `hrv_rmssd_ms` only. Apple publishes SDNN and the sync writes it
+      to its own column, so for anybody syncing a watch the value was null, the
+      `.filter` below dropped the row, and the card simply had no HRV on it —
+      no gap, no explanation, just one fewer tile than yesterday.
+
+      `ai-coach` had the identical bug and the comment there says why it
+      matters. The two families are never mixed: whichever one this person's
+      source produces is the one shown, with its name attached, exactly as the
+      Biometrics screen already does it.
+    */
+    bio.hrv_sdnn_ms != null
+      ? { label: 'HRV · SDNN', value: bio.hrv_sdnn_ms, unit: 'ms', icon: Activity, color: colors.primary }
+      : { label: 'HRV', value: bio.hrv_rmssd_ms, unit: 'ms', icon: Activity, color: colors.primary },
     { label: 'SpO₂', value: bio.spo2_pct, unit: '%', icon: Droplets, color: colors.metricBlue },
     // ml/kg is a mass fraction; VO₂max is a rate — ml/kg/min.
     { label: 'VO₂max', value: bio.vo2max_mlkgmin, unit: 'ml/kg/min', icon: Wind, color: colors.metricCyan },
-    { label: 'Resp Rate', value: bio.resp_rate_rpm, unit: 'rpm', icon: Wind, color: colors.metricPurple },
+    { label: i18n.biometricsBreathRate, value: bio.resp_rate_rpm, unit: 'rpm', icon: Wind, color: colors.metricPurple },
   ].filter((m) => m.value != null);
 
   if (metrics.length === 0) return null;

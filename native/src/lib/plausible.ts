@@ -56,8 +56,7 @@ export type Quantity =
   | 'circumference_cm'
   | 'sleep_stage_min'
   | 'meal_kcal'
-  | 'macro_g'
-  | 'water_ml';
+  | 'macro_g';
 
 export interface Bound {
   min: number;
@@ -127,10 +126,17 @@ export const BOUNDS: Record<Quantity, Bound> = {
 
   /** Per food item. 2,000 g of one macronutrient is 2 kg of pure protein. */
   macro_g: { min: 0, max: 2000, unit: 'g' },
-
-  /** One logged drink. Five litres in a single entry is a slipped decimal. */
-  water_ml: { min: 0, max: 5000, unit: 'ml' },
 };
+
+/*
+  ── water is deliberately not in this table ──
+
+  `water.tsx` already has `MAX_ONE_GO`, which is tighter than anything that
+  would fit here (2 litres in a single entry) and argued from the three presets
+  on that screen rather than from physiology. A second, looser bound in this
+  file would not be consulted by anything and would sit there looking like the
+  authority. One rule, in the place that uses it.
+*/
 
 /**
  * `true` when `v` is a number a body could have produced.

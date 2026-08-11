@@ -98,8 +98,6 @@ const CASES = [
   ['meal_kcal', 'lệch một số 0', null, 50000],
   ['macro_g', 'một món nhiều đạm', 120, null],
   ['macro_g', 'lệch một số 0', null, 5000],
-  ['water_ml', 'một chai lớn', 1500, null],
-  ['water_ml', 'lệch một số 0', null, 20000],
 ];
 
 for (const [q, why, keep, refuse] of CASES) {

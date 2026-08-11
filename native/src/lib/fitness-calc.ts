@@ -147,9 +147,36 @@ export function calcMacros(targetKcal: number, weight_kg: number, goal: string, 
   return { protein_g, carbs_g, fat_g, fiber_g };
 }
 
-/** Water target: ~35ml per kg */
-export function calcWaterTarget(weight_kg: number): number {
-  return Math.round(weight_kg * 35);
+/**
+ * Water target.
+ *
+ * 35 ml/kg is the usual rule and it is fine through the normal range — 70 kg
+ * comes out at 2,450 ml, next to EFSA's 2.5 L/day of beverages for men. It is
+ * charged against total body weight, though, and adipose tissue holds far less
+ * water than lean tissue, so it runs away at the top: a 150 kg person was being
+ * told to drink **5.25 litres a day**.
+ *
+ * The documented adjustment is to drop the coefficient to 25 ml/kg at BMI 30
+ * and above, for exactly that reason. Applied as written it puts an 870 ml step
+ * in the middle of the scale — cross from BMI 29.9 to 30.1 and the target falls
+ * by most of a litre overnight, which reads as a bug because it looks like one.
+ *
+ * So the adjusted figure is never allowed below what somebody at BMI 30 with
+ * this height would be told to drink. Both numbers are the published ones; the
+ * `max` only removes the step. The result is continuous at BMI 30, never
+ * decreases as weight rises, and lands a 150 cm/170 cm person at 3.75 L instead
+ * of 5.25 L.
+ *
+ * Without a height there is no BMI, so it does what it always did.
+ */
+export function calcWaterTarget(weight_kg: number, height_cm?: number): number {
+  const perKg = 35;
+  if (!height_cm || height_cm < 100 || height_cm > 250) return Math.round(weight_kg * perKg);
+  const m = height_cm / 100;
+  const bmi = weight_kg / (m * m);
+  if (bmi < 30) return Math.round(weight_kg * perKg);
+  const weightAtBmi30 = 30 * m * m;
+  return Math.round(Math.max(weight_kg * 25, weightAtBmi30 * perKg));
 }
 
 /** Age from DOB (parsed as local so the birthday doesn't shift a day in negative-offset timezones) */

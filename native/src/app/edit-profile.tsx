@@ -131,7 +131,7 @@ export default function EditProfileSheet() {
     const tdee = calcTDEE(bmr, form.activity_level);
     const targetKcal = calcTargetCalories(tdee, form.goal, form.sex as 'male' | 'female' | 'other');
     const macros = calcMacros(targetKcal, w, form.goal, h);
-    const waterMl = calcWaterTarget(w);
+    const waterMl = calcWaterTarget(w, h);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setForm((f) => ({
       ...f,

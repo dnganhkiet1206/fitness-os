@@ -102,6 +102,7 @@ serve(async (req) => {
 DATA: ${JSON.stringify(ctx)}
 
 PRINCIPLES:
+- A null or missing field was NOT MEASURED. It is not a zero. Never state or imply a number the data does not contain
 - Compute accurate macros for each suggestion
 - Prefer favorite foods when they fit
 - Avoid allergies and disliked foods
@@ -114,6 +115,7 @@ PRINCIPLES:
 DỮ LIỆU: ${JSON.stringify(ctx)}
 
 NGUYÊN TẮC:
+- Trường nào null hoặc không có nghĩa là CHƯA ĐO ĐƯỢC, không phải bằng 0. Đừng bao giờ nêu hay ám chỉ một con số mà dữ liệu không có
 - Tính toán macros chính xác cho mỗi gợi ý
 - Ưu tiên thực phẩm yêu thích nếu phù hợp
 - Tránh allergies và disliked foods

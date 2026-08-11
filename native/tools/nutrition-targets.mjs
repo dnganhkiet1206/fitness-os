@@ -52,7 +52,7 @@ execFileSync(
   { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
 );
 const {
-  calcBMR, calcTDEE, calcTargetCalories, calcMacros, proteinReferenceWeight, FIBER_G_PER_1000_KCAL,
+  calcBMR, calcTDEE, calcTargetCalories, calcMacros, calcWaterTarget, proteinReferenceWeight, FIBER_G_PER_1000_KCAL,
 } = await import(pathToFileURL(path.join(out, 'fitness-calc.js')).href);
 
 /* The floors this file holds the app to. Written out here rather than imported
@@ -165,6 +165,54 @@ for (let w = 40; w <= 180; w += 5) {
       }
     }
   }
+}
+
+/*
+  ── the water target ──
+
+  35 ml/kg is fine through the normal range and runs away above it, because it
+  charges fat mass at the same rate as lean and adipose tissue holds far less
+  water: a 150 kg person came out at 5.25 litres a day. The documented
+  adjustment drops the coefficient to 25 ml/kg at BMI 30.
+
+  Applied as published that puts an 870 ml step at the threshold, so the
+  adjusted figure is floored at what somebody at BMI 30 of the same height gets.
+  Both coefficients are the published ones; the floor only removes the step —
+  which is what the first two assertions here are about, since a target that
+  falls off a cliff or goes *down* as somebody gains weight reads as a bug
+  whatever the physiology says.
+*/
+{
+  for (let h = 145; h <= 200; h += 5) {
+    let prev = 0;
+    for (let w = 40; w <= 200; w += 1) {
+      const ml = calcWaterTarget(w, h);
+      if (ml < prev) {
+        problems.push(`nước: ${h}cm, ${w}kg ra ${ml}ml — thấp hơn người nhẹ hơn 1kg (${prev}ml)`);
+        break;
+      }
+      if (prev > 0 && ml - prev > 200) {
+        problems.push(`nước: ${h}cm, ${w}kg nhảy ${ml - prev}ml chỉ vì nặng thêm 1kg — có bậc thang ở ngưỡng BMI`);
+        break;
+      }
+      prev = ml;
+    }
+  }
+
+  /* Under BMI 30 nothing may change: this is the range nearly every user is in,
+     and the old rule was right there. */
+  for (const [w, h] of [[70, 175], [55, 160], [90, 190], [50, 150]]) {
+    const bmi = w / (h / 100) ** 2;
+    if (bmi < 30 && calcWaterTarget(w, h) !== Math.round(w * 35)) {
+      problems.push(`nước: ${w}kg/${h}cm (BMI ${bmi.toFixed(1)}) bị đổi mục tiêu dù dưới BMI 30`);
+    }
+  }
+
+  /* And the case this started from. */
+  const heavy = calcWaterTarget(150, 170);
+  if (heavy >= 5000) problems.push(`nước: 150kg/170cm vẫn ra ${heavy}ml — tính mỡ với cùng tỉ lệ như nạc`);
+  if (heavy < 3000) problems.push(`nước: 150kg/170cm chỉ còn ${heavy}ml — cắt quá tay`);
+  if (calcWaterTarget(70) !== 2450) problems.push('nước: không có chiều cao thì phải giữ nguyên 35ml/kg');
 }
 
 /*

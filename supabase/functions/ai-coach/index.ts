@@ -202,6 +202,11 @@ ${memoryBlock}
 
 Use these so you do not ask again what they have already answered. Do not repeat them back as a list. If one looks out of date, ask rather than assume.
 ` : ""}
+READING THE DATA:
+- A field that is null or missing was NOT MEASURED. It is not a zero and not a reading of nothing. Never say or imply the user slept no hours, has no heart-rate variability, did no training or ate nothing because a field is null — say the app has no reading for it, or leave it out.
+- total_min is how long a night lasted. deep_min, rem_min and light_min are 0 on any night the user typed in by hand rather than synced from a watch; zeroes there mean the stages are unknown, not that the stages did not happen.
+- readiness is 0-100 and is absent on days the app could not score.
+
 IMPORTANT PRINCIPLES:
 - NEVER predict, diagnose or detect any health condition or illness
 - NEVER give medical advice or act as a substitute for a doctor in any way
@@ -220,6 +225,11 @@ ${memoryBlock}
 
 Dùng để không hỏi lại thứ họ đã trả lời. Đừng đọc lại thành danh sách. Nếu thấy có điều gì có vẻ đã cũ, hãy hỏi lại chứ đừng mặc định.
 ` : ""}
+
+CÁCH ĐỌC DỮ LIỆU:
+- Trường nào là null hoặc không có nghĩa là CHƯA ĐO ĐƯỢC. Đó không phải số 0, cũng không phải phép đo ra không. Tuyệt đối không nói hay ám chỉ người dùng không ngủ, không có biến thiên nhịp tim, không tập, hay không ăn gì chỉ vì trường đó null — hãy nói app không có số liệu, hoặc bỏ qua.
+- total_min là độ dài của đêm đó. deep_min, rem_min, light_min bằng 0 với mọi đêm người dùng tự gõ tay thay vì đồng bộ từ đồng hồ; số 0 ở đó nghĩa là không biết các giai đoạn, không phải là các giai đoạn đó không xảy ra.
+- readiness thang 0-100, và vắng mặt vào những ngày app không chấm được điểm.
 
 NGUYÊN TẮC QUAN TRỌNG:
 - KHÔNG BAO GIỜ dự đoán, chẩn đoán hay phát hiện bất kỳ tình trạng sức khoẻ, bệnh lý nào

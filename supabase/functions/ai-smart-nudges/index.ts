@@ -89,6 +89,8 @@ serve(async (req) => {
 DATA: ${JSON.stringify(ctx)}
 
 IMPORTANT PRINCIPLES:
+- A null or missing field was NOT MEASURED. Never say the user slept nothing, drank nothing or trained none because a field is null — skip that topic instead
+- current_hour is null when the app does not know the local time: then do not mention or assume a time of day
 - NEVER predict or diagnose any health condition or illness
 - ONLY remind about simple things everyone knows but forgets: drink water, sleep enough, eat enough, rest
 - Each nudge max 60 characters
@@ -101,6 +103,8 @@ IMPORTANT PRINCIPLES:
 DỮ LIỆU: ${JSON.stringify(ctx)}
 
 NGUYÊN TẮC QUAN TRỌNG:
+- Trường nào null hoặc không có nghĩa là CHƯA ĐO ĐƯỢC. Đừng bao giờ nói người dùng không ngủ, không uống nước hay không tập chỉ vì trường đó null — hãy bỏ qua chủ đề đó
+- current_hour là null khi app không biết giờ địa phương: khi đó không nhắc và không suy đoán thời điểm trong ngày
 - KHÔNG BAO GIỜ dự đoán hay chẩn đoán tình trạng sức khoẻ, bệnh lý
 - CHỈ nhắc nhở những việc đơn giản ai cũng biết nhưng hay quên: uống nước, ngủ đủ, ăn đủ chất, nghỉ ngơi
 - Mỗi nudge tối đa 60 ký tự

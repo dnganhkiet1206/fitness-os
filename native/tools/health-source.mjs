@@ -524,6 +524,75 @@ const problems = [];
   }
 }
 
+/*
+  ── 12: a number called the wrong thing is a wrong number ──
+
+  Three separate ways the same data was misdescribed on the way out.
+
+  **`hr_bpm` is resting heart rate.** HealthKit fills it from
+  `RestingHeartRate`, the sheet people type it into says "Nhịp tim nghỉ", and
+  the readiness engine scores it as RHR. Two display sites called it plain
+  "Heart Rate" — one of them in English, on a Vietnamese app. Somebody reading
+  that compares it against the live number on their watch and concludes the app
+  is broken, or logs a live reading into the column the score treats as
+  resting.
+
+  **The HRV tile went blind for Apple Health users.** The Today card read
+  `hrv_rmssd_ms` only. Apple publishes SDNN, the sync writes it to its own
+  column, so the value was null and the tile silently vanished. `ai-coach` had
+  the identical bug, fixed, with a comment saying why — and this one stayed.
+  Anything that *displays* HRV has to know about both families.
+
+  **The prompts were never told what null means.** Sections 8–11 made
+  `total_min`, `readiness` and the four sub-scores properly nullable, which
+  moved the problem rather than removing it: a model handed `total_min: null`
+  will happily write "bạn không ngủ đêm qua". Every prompt that receives these
+  fields has to say, in its own language, that null means not measured.
+*/
+{
+  const dict = read('src/lib/i18n.ts');
+  const hrLabels = [...dict.matchAll(/biometricsHeartRate:\s*'([^']*)'/g)].map((m) => m[1]);
+  if (hrLabels.length < 2) {
+    problems.push('i18n.ts: không tìm thấy đủ hai bản dịch của biometricsHeartRate — luật dưới đây đang không kiểm gì');
+  }
+  for (const label of hrLabels) {
+    if (!/nghỉ|resting/i.test(label)) {
+      problems.push(
+        `i18n.ts: hr_bpm hiện lên là "${label}" — cột đó là nhịp tim NGHỈ (HealthKit RestingHeartRate, ` +
+          'và điểm sẵn sàng chấm nó như nhịp nghỉ). Gọi là "nhịp tim" mời người dùng so với số trên đồng hồ',
+      );
+    }
+  }
+
+  /* Writing is not displaying: the manual sheet files a typed reading into the
+     RMSSD column on purpose, because that is the family a hand-entered number
+     belongs to until a watch says otherwise. */
+  const WRITE_ONLY = { 'log-biometrics.tsx': 'màn nhập tay — ghi vào cột RMSSD, không hiển thị chuỗi HRV nào' };
+  for (const rel of ['src/components/ascnd/today-widgets-2.tsx', 'src/app/biometrics.tsx', 'src/app/log-biometrics.tsx']) {
+    const src = read(rel);
+    const base = path.basename(rel);
+    if (base in WRITE_ONLY) continue;
+    if (/hrv_rmssd_ms/.test(src) && !/hrv_sdnn_ms/.test(src)) {
+      problems.push(
+        `${base}: hiển thị HRV chỉ từ cột RMSSD — người dùng đồng bộ Apple Health có số ở cột SDNN, ` +
+          'nên ô HRV của họ biến mất không một lời giải thích',
+      );
+    }
+  }
+
+  for (const fn of ['ai-coach', 'ai-smart-nudges', 'ai-meal-suggest']) {
+    const src = read(`../supabase/functions/${fn}/index.ts`);
+    /* Both languages, because a rule the model only gets in English is a rule
+       Vietnamese users do not get. */
+    if (!/null[^\n]*NOT MEASURED|NOT MEASURED[^\n]*null/i.test(src)) {
+      problems.push(`${fn}: prompt tiếng Anh không nói null nghĩa là chưa đo được — model sẽ đọc null thành 0`);
+    }
+    if (!/null[^\n]*CHƯA ĐO ĐƯỢC|CHƯA ĐO ĐƯỢC[^\n]*null/i.test(src)) {
+      problems.push(`${fn}: prompt tiếng Việt không nói null nghĩa là chưa đo được — model sẽ đọc null thành 0`);
+    }
+  }
+}
+
 /**
  * The self-test.
  *
