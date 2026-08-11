@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
   },
   kicker: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 2.5,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   tierText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 2,

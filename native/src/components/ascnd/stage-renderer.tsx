@@ -345,5 +345,5 @@ const styles = StyleSheet.create({
   zzz: { position: 'absolute', bottom: '100%', right: -6, flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
   zzzBig: { fontSize: 19, fontWeight: '800', color: '#dfe6f5', fontStyle: 'italic' },
   zzzMid: { fontSize: 14, fontWeight: '800', color: '#b7c2d6', fontStyle: 'italic', marginBottom: 8 },
-  zzzSmall: { fontSize: 10, fontWeight: '800', color: '#8b97ad', fontStyle: 'italic', marginBottom: 16 },
+  zzzSmall: { fontSize: 11, fontWeight: '800', color: '#8b97ad', fontStyle: 'italic', marginBottom: 16 },
 });

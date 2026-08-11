@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   rarityBadge: { paddingHorizontal: 8, height: 17, borderRadius: radius.full, justifyContent: 'center' },
-  rarityText: { fontSize: 10, fontWeight: '700' },
+  rarityText: { fontSize: 11, fontWeight: '700' },
   setCard: { gap: spacing.sm },
   setFill: { height: '100%', borderRadius: 3 },
   setInfo: { flex: 1, minWidth: 0, gap: 3 },

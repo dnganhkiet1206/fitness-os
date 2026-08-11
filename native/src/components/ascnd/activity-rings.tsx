@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   row: { gap: 1 },
   rowHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 3.5 },
-  rowLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
+  rowLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
   rowValues: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   rowValue: {
     fontSize: 19,

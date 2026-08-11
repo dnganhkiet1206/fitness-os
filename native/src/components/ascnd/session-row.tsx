@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: radius.full,
   },
-  rpeText: { fontSize: 10, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  rpeText: { fontSize: 11, fontWeight: '600', fontVariant: ['tabular-nums'] },
   // 28pt of ink with hitSlop 10 on top — 48pt of target, past the 44pt minimum
   del: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   /* 96pt, not the row's width. See the comment at the call site: a 2pt rule

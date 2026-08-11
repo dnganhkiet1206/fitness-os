@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   tagText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
     color: colors.mutedForeground,

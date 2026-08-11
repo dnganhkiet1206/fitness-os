@@ -194,7 +194,12 @@ export function BiometricsCard() {
                   <Text style={styles.bioValue}>{Math.round(Number(m.value) * 10) / 10}</Text>
                   <Text style={styles.bioUnit}>{m.unit}</Text>
                 </View>
-                <Text style={styles.bioLabel}>{m.label}</Text>
+                {/* The tile is a fixed share of a wrapping grid and the labels
+                    are identifiers, not sentences — "Nhịp tim nghỉ" and
+                    "ml/kg/min" are both longer than what used to be here.
+                    Truncating one keeps the row of tiles level; letting it wrap
+                    makes one tile taller than the three beside it. */}
+                <Text style={styles.bioLabel} numberOfLines={1}>{m.label}</Text>
               </View>
             </View>
           ))}
@@ -799,7 +804,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2.4,
     color: colors.mutedForeground,
   },
-  countText: { fontSize: 10, fontFamily: 'Menlo', color: colors.mutedForeground },
+  countText: { fontSize: 11, fontFamily: 'Menlo', color: colors.mutedForeground },
 
   // Biometrics
   connRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -818,8 +823,8 @@ const styles = StyleSheet.create({
   bioTileInfo: { flex: 1, minWidth: 0, gap: 2 },
   bioValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
   bioValue: { fontSize: 19, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  bioUnit: { fontSize: 10, color: colors.mutedForeground },
-  bioLabel: { fontSize: 10, color: colors.mutedForeground },
+  bioUnit: { fontSize: 11, color: colors.mutedForeground },
+  bioLabel: { fontSize: 11, color: colors.mutedForeground },
 
   // Training
   prBadge: {
@@ -878,7 +883,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
     backgroundColor: colors.border,
   },
-  compareLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
+  compareLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
   compareValue: {
     fontSize: 17,
     fontFamily: 'Menlo',
@@ -893,7 +898,7 @@ const styles = StyleSheet.create({
   staleNote: { fontSize: 12, lineHeight: 17, color: colors.readinessYellow },
   trend: { gap: 6 },
   trendHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  trendTitle: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
+  trendTitle: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
   /* Bars grow from the baseline, so they are bottom-aligned and the habit line
      is positioned from the bottom too — one origin for both, or the line and
      the bars would be measuring from different places. */
@@ -907,10 +912,10 @@ const styles = StyleSheet.create({
      iOS (see `DashedRule`). */
   habitLine: { position: 'absolute', left: 0, right: 0, height: 1 },
   trendLabels: { flexDirection: 'row', alignItems: 'center' },
-  trendEnd: { flex: 1, fontSize: 10, color: colors.mutedForeground },
+  trendEnd: { flex: 1, fontSize: 11, color: colors.mutedForeground },
   trendNow: { textAlign: 'right', fontWeight: '600', color: colors.foreground },
   trendKey: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  trendKeyText: { fontSize: 10, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  trendKeyText: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   painRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -954,7 +959,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(168,175,189,0.2)',
   },
-  nameChipText: { fontSize: 10, fontWeight: '500', color: colors.primary },
+  nameChipText: { fontSize: 11, fontWeight: '500', color: colors.primary },
 
   // Nudges
   nudgeList: { gap: spacing.sm + 2 },
@@ -972,7 +977,7 @@ const styles = StyleSheet.create({
   nudgeAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 2 },
   nudgeInfo: { flex: 1, minWidth: 0, gap: 3 },
   nudgeMsg: { fontSize: 14, color: colors.foreground, lineHeight: 19 },
-  nudgeMeta: { fontSize: 10, color: colors.mutedForeground },
+  nudgeMeta: { fontSize: 11, color: colors.mutedForeground },
 
   // Awards
   viewAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
@@ -990,5 +995,5 @@ const styles = StyleSheet.create({
   awardInfo: { flex: 1, minWidth: 0, gap: 1 },
   awardTitle: { fontSize: 14, fontWeight: '600', color: colors.foreground },
   awardDesc: { fontSize: 11, color: colors.mutedForeground },
-  awardTier: { fontSize: 10, fontWeight: '600', textTransform: 'capitalize' },
+  awardTier: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
 });

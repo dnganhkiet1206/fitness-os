@@ -957,7 +957,7 @@ const styles = StyleSheet.create({
   customPanel: { gap: spacing.sm },
   macroInputRow: { flexDirection: 'row', gap: spacing.sm },
   macroInputCell: { flex: 1, gap: 4 },
-  macroInputLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, color: colors.mutedForeground },
+  macroInputLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, color: colors.mutedForeground },
   macroInputField: {
     height: 40,
     borderRadius: radius.sm,

@@ -822,9 +822,12 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                     // Above the line, unless the line is near the top and there
                     // is no room — then below it, so the caption is never
                     // clipped by the edge of the chart.
-                    y={y(goal) - 5 < 10 ? y(goal) + 12 : y(goal) - 5}
+                    /* The two offsets grew with the text: at 9pt a 5px gap
+                       cleared the goal line and a 12px drop cleared it from
+                       below, and neither did at 11. */
+                    y={y(goal) - 6 < 12 ? y(goal) + 14 : y(goal) - 6}
                     fill={colors.mutedForeground}
-                    fontSize={9}
+                    fontSize={11}
                     opacity={0.9}>
                     {goalLabel} {Math.round(goal * 10) / 10}
                     {unit ? ` ${unit}` : ''}

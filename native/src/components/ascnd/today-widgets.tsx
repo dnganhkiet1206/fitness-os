@@ -405,12 +405,12 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   trendStat: { alignItems: 'center', gap: 2 },
-  trendStatLabel: { fontSize: 9, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
+  trendStatLabel: { fontSize: 11, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
   trendStatValue: { fontSize: 20, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
   trendLegend: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.md, rowGap: 4 },
   trendLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   trendLegendDot: { width: 7, height: 7, borderRadius: 4 },
-  trendLegendText: { fontSize: 9, color: colors.mutedForeground },
+  trendLegendText: { fontSize: 11, color: colors.mutedForeground },
 
   // Supplements
   allDone: { ...type.body, color: colors.readinessGreen },

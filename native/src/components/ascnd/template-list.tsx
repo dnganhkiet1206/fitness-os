@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.secondary,
   },
-  typeText: { fontSize: 10, color: colors.mutedForeground, textTransform: 'capitalize' },
+  typeText: { fontSize: 11, color: colors.mutedForeground, textTransform: 'capitalize' },
   tplMeta: { fontSize: 12, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   tplActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
   /* The prescription on the face of the card, under the count and volume.

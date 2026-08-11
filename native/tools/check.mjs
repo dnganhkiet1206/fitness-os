@@ -138,6 +138,7 @@ const STEPS = [
   ['nhắc trợ giúp', 'node', ['tools/help-nudge.mjs']],
   ['thẻ tập luyện', 'node', ['tools/training-card.mjs']],
   ['ẩn thanh tab', 'node', ['tools/tab-bar-hide.mjs']],
+  ['thang chữ', 'node', ['tools/type-scale.mjs']],
   ['đọc trên kính', 'node', ['tools/glass-legibility.mjs']],
   ['gợi ý trợ lý', 'node', ['tools/suggestions.mjs']],
   ['lời tóm tắt', 'node', ['tools/brief.mjs']],

@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: 'rgba(255,145,48,0.12)',
   },
-  rpeText: { fontSize: 10, fontWeight: '600', color: colors.metricOrange, fontVariant: ['tabular-nums'] },
+  rpeText: { fontSize: 11, fontWeight: '600', color: colors.metricOrange, fontVariant: ['tabular-nums'] },
   // 28pt of ink with hitSlop 10 on top — 48pt of target, past the 44pt minimum
   sessionDel: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
 });

@@ -816,7 +816,7 @@ const styles = StyleSheet.create({
   },
   ringNum: { ...type.title, fontSize: 26, fontWeight: '800', color: colors.foreground, lineHeight: 28, fontVariant: ['tabular-nums'] },
   ringNumMax: { ...type.footnote, fontWeight: '700', color: colors.mutedForeground },
-  ringSub: { fontSize: 9, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', color: colors.mutedForeground, marginTop: 3 },
+  ringSub: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', color: colors.mutedForeground, marginTop: 3 },
   energyInfo: { flex: 1, minWidth: 0, gap: 4 },
   energyTitle: { ...type.headline, color: colors.foreground },
   energyHint: { ...type.footnote, color: colors.mutedForeground, lineHeight: 18 },
@@ -1024,7 +1024,7 @@ const styles = StyleSheet.create({
   },
   itemName: { ...type.caption, color: colors.foreground, fontWeight: '600', textAlign: 'center' },
   rarityBadge: { paddingHorizontal: 8, height: 17, borderRadius: radius.full, justifyContent: 'center' },
-  rarityText: { fontSize: 10, fontWeight: '700' },
+  rarityText: { fontSize: 11, fontWeight: '700' },
   lockBtn: {
     flexDirection: 'row',
     alignItems: 'center',

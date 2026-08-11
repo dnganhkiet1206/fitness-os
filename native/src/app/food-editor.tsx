@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   macroMetaRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  macroMeta: { fontSize: 9, color: colors.mutedForeground },
+  macroMeta: { fontSize: 11, color: colors.mutedForeground },
   macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: colors.background, overflow: 'hidden' },
   macroBarFill: { height: '100%', borderRadius: 2 },
   fiberRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

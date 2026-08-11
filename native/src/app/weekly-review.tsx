@@ -591,8 +591,8 @@ const barStyles = StyleSheet.create({
   barTrack: { width: '100%', height: '100%', justifyContent: 'flex-end' },
   bar: { width: '100%', borderTopLeftRadius: 4, borderTopRightRadius: 4, opacity: 0.85 },
   labels: { flexDirection: 'row', gap: 6, marginTop: 6 },
-  dayLabel: { fontSize: 9, color: colors.mutedForeground, textAlign: 'center' },
-  valLabel: { ...type.mono, fontSize: 8, color: colors.mutedForeground, textAlign: 'center' },
+  dayLabel: { fontSize: 11, color: colors.mutedForeground, textAlign: 'center' },
+  valLabel: { ...type.mono, fontSize: 11, color: colors.mutedForeground, textAlign: 'center' },
 });
 
 const styles = StyleSheet.create({
@@ -619,16 +619,16 @@ const styles = StyleSheet.create({
   statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 },
   statLabel: {
     flex: 1,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1,
     color: colors.mutedForeground,
   },
   deltaRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  deltaText: { ...type.mono, fontSize: 10 },
+  deltaText: { ...type.mono, fontSize: 11 },
   statValue: { ...type.mono, fontSize: 22, fontWeight: '700', color: colors.foreground },
-  statSub: { fontSize: 10, color: colors.mutedForeground },
+  statSub: { fontSize: 11, color: colors.mutedForeground },
 
   microTitle: {
     fontSize: 11,

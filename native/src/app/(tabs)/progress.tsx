@@ -877,7 +877,7 @@ const styles = StyleSheet.create({
   // Stat tiles
   tileRow: { flexDirection: 'row', gap: spacing.sm },
   tile: { flex: 1, alignItems: 'center', gap: 3, padding: spacing.sm + 4 },
-  tileLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.4, color: colors.mutedForeground },
+  tileLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: colors.mutedForeground },
   tileValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
 
   // Weight-chart goal
@@ -903,7 +903,7 @@ const styles = StyleSheet.create({
   bmiCard: { gap: spacing.md },
   bmiHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bmiBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
-  bmiBadgeText: { fontSize: 10, fontWeight: '500' },
+  bmiBadgeText: { fontSize: 11, fontWeight: '500' },
   bmiValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   bmiValue: {
     fontSize: 36,
@@ -961,7 +961,7 @@ const styles = StyleSheet.create({
     width: 36,
     marginLeft: -18,
     textAlign: 'center',
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: 'Menlo',
     color: colors.mutedForeground,
   },
@@ -981,7 +981,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   legendRangeOn: { color: colors.foreground },
-  bmiInfo: { fontSize: 10, color: colors.mutedForeground },
+  bmiInfo: { fontSize: 11, color: colors.mutedForeground },
   bmiInfoStrong: { fontFamily: 'Menlo', color: colors.foreground },
 
   chartCard: { gap: spacing.md },
@@ -998,7 +998,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(43,43,49,0.2)',
   },
-  measureLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.8, color: colors.mutedForeground },
+  measureLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, color: colors.mutedForeground },
   measureValue: { fontSize: 15, fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
 
   // Measurements: add button (web: size-sm rounded-xl, right-aligned)
@@ -1023,7 +1023,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(43,43,49,0.3)',
   },
   historyHead: { paddingVertical: 8 },
-  historyHeadText: { fontSize: 10, fontWeight: '500', color: colors.mutedForeground, textAlign: 'right' },
+  historyHeadText: { fontSize: 11, fontWeight: '500', color: colors.mutedForeground, textAlign: 'right' },
   historyDateCol: { flex: 1.3, textAlign: 'left' },
   historyCol: { flex: 1 },
   historyDelete: { width: 22, alignItems: 'flex-end', justifyContent: 'center' },

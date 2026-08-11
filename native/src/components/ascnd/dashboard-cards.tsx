@@ -1039,7 +1039,7 @@ const styles = StyleSheet.create({
   smallRingWrap: { width: 100, height: 100 },
   smallRingCenter: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 1 },
   smallRingValue: { fontSize: 16, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  smallRingUnit: { fontSize: 9, color: colors.mutedForeground },
+  smallRingUnit: { fontSize: 11, color: colors.mutedForeground },
   ringRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   ringSide: { flex: 1, gap: 6 },
   // 14, not 12. These three lines are the card's whole read-out beside the
@@ -1080,7 +1080,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(43,43,49,0.2)',
   },
-  macroLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
+  macroLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
   macroValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
   macroTarget: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
   // the second reading, stacked on the first — `left: 0, right: 0` so it wraps
@@ -1099,7 +1099,7 @@ const styles = StyleSheet.create({
   stagesLegend: { flexDirection: 'row', justifyContent: 'space-between' },
   stageLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  stageLegendText: { fontSize: 10, color: colors.mutedForeground },
+  stageLegendText: { fontSize: 11, color: colors.mutedForeground },
 
   // compact widgets
   compactCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, padding: spacing.md },

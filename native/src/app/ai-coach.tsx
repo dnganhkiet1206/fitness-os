@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(180,92,255,0.35)',
   },
-  aiText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: colors.metricPurple },
+  aiText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, color: colors.metricPurple },
 
   list: { flex: 1 },
   listContent: { padding: spacing.md, gap: spacing.sm + 4 },
@@ -588,7 +588,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendDisabled: { opacity: 0.35 },
-  disclaimer: { fontSize: 9, lineHeight: 12, color: colors.glassMuted, opacity: 0.72, flexShrink: 1 },
+  /*
+    `lineHeight` was 12, which was a comfortable 1.33× when this text was 9pt
+    and became 1.09× when it was raised to Apple's 11pt floor — close enough for
+    two lines of the disclaimer to touch. The `opacity` stays: this line sits on
+    the bare aura rather than on glass, where `glassMuted` at 0.72 still measures
+    6.19:1, and a disclaimer is meant to be quieter than what it sits under.
+  */
+  disclaimer: { fontSize: 11, lineHeight: 15, color: colors.glassMuted, opacity: 0.72, flexShrink: 1 },
   disclaimerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -609,7 +616,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(10,10,16,0.82)',
   },
   historyHeader: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1.5,

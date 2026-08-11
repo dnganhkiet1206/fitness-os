@@ -127,6 +127,20 @@ if (tints.length < 8) problems.push(`chỉ đọc được ${tints.length} màu 
 
 const surface = worstSurface(pools, { fill, lit, wash }, tints);
 
+/**
+ * The brightest *page* — the aura with no glass over it.
+ *
+ * Hoisted out of the `mutedForeground` check below because the opacity rule
+ * needs it too: a style that is not inside a `<LiquidGlass>` sits on this, and
+ * measuring it against the glass surface would judge it on a background it
+ * never touches.
+ */
+const bare = over(
+  [...pools].sort((a, b) => b.peak - a.peak)[1].hex,
+  [...pools].sort((a, b) => b.peak - a.peak)[1].peak * 0.24,
+  over([...pools].sort((a, b) => b.peak - a.peak)[0].hex, [...pools].sort((a, b) => b.peak - a.peak)[0].peak, pageBg),
+);
+
 for (const [name, hex] of [['foreground', fg], ['glassMuted', glassMuted]]) {
   const r = contrast(hex, surface);
   if (r < AA) {
@@ -179,6 +193,46 @@ function mutedProblems(files) {
         );
       }
     }
+
+    /*
+      ── the colour can be right and the style still unreadable ──
+
+      Everything above proves a *token* clears 4.5:1. A style then writes
+      `opacity: 0.72` beside it, which composites the text back toward whatever
+      is behind it, and the proof no longer describes what is on screen. The AI
+      coach disclaimer did exactly that, and it passed every rule in this file.
+
+      Two things this had to get right, and the first draft got neither.
+
+      It cannot only look at styles on glass. The disclaimer sits *below* the
+      composer, outside every `<LiquidGlass>`, so the on-glass loop never
+      examined it and the sabotage test came back clean — the rule was reading a
+      set that did not contain the thing it was written for. So this walks every
+      style in the file.
+
+      And it cannot judge them all against the glass. A style on the page sits
+      on the bare aura, which is darker, so measuring it against the brightest
+      glass would fail styles that are perfectly legible — the same mistake the
+      `mutedForeground` rule above already documents making once.
+    */
+    const onGlass = new Set(stylesOnGlass(code));
+    for (const m of code.matchAll(/\n\s*(\w+): \{([^}]*)\}/g)) {
+      const [, key, body] = m;
+      const alpha = body.match(/opacity:\s*(0?\.\d+)/);
+      if (!alpha) continue;
+      const token = /colors\.foreground/.test(body) ? fg : /colors\.glassMuted/.test(body) ? glassMuted : null;
+      if (!token) continue;
+      const bg = onGlass.has(key) ? surface : bare;
+      const a = Number(alpha[1]);
+      const r = contrast(over(token, a, bg), bg);
+      if (r < AA) {
+        bad.push(
+          `${file}: styles.${key} dùng màu đạt chuẩn nhưng kèm opacity ${a} — ` +
+            `trên ${onGlass.has(key) ? 'mặt kính sáng nhất' : 'nền aura'} còn ${r.toFixed(2)}:1, dưới ${AA}:1. ` +
+            'Opacity đặt lên chữ là cách hoàn tác một màu đã được chọn kỹ.',
+        );
+      }
+    }
   }
   return bad;
 }
@@ -190,11 +244,6 @@ problems.push(...mutedProblems(GLASS_SCREENS.map((f) => [f, read(f)])));
   there, raising the captions on glass will not have saved anything.
 */
 {
-  const bare = over(
-    [...pools].sort((a, b) => b.peak - a.peak)[1].hex,
-    [...pools].sort((a, b) => b.peak - a.peak)[1].peak * 0.24,
-    over([...pools].sort((a, b) => b.peak - a.peak)[0].hex, [...pools].sort((a, b) => b.peak - a.peak)[0].peak, pageBg),
-  );
   const r = contrast(muted, bare);
   if (r < AA) {
     problems.push(

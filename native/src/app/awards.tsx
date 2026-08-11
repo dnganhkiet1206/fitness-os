@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   tierLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(43,43,49,0.4)' },
-  tierCount: { ...type.mono, fontSize: 10, color: colors.mutedForeground },
+  tierCount: { ...type.mono, fontSize: 11, color: colors.mutedForeground },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 4 },
   medalCard: {
@@ -311,14 +311,14 @@ const styles = StyleSheet.create({
   },
   tierBadge: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
   tierBadgeText: {
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1.6,
   },
   medalTitle: { fontSize: 13, fontWeight: '700', color: colors.foreground, textAlign: 'center' },
   medalTitleLocked: { color: 'rgba(140,140,150,0.5)' },
-  medalDesc: { fontSize: 10, color: colors.mutedForeground, textAlign: 'center', lineHeight: 14 },
+  medalDesc: { fontSize: 11, color: colors.mutedForeground, textAlign: 'center', lineHeight: 14 },
   earnedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  earnedDate: { ...type.mono, fontSize: 9, color: colors.mutedForeground },
+  earnedDate: { ...type.mono, fontSize: 11, color: colors.mutedForeground },
 });

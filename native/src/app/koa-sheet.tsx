@@ -216,6 +216,6 @@ const styles = StyleSheet.create({
   tileOn: { borderColor: colors.primary },
   // the figure is 104 × 130; keep the top 88 so the head fills the tile
   tileFace: { height: 88, width: 104, overflow: 'hidden' },
-  tileLabel: { ...type.caption, ...type.mono, fontSize: 9, color: colors.mutedForeground, letterSpacing: 1 },
+  tileLabel: { ...type.caption, ...type.mono, fontSize: 11, color: colors.mutedForeground, letterSpacing: 1 },
   tileLabelOn: { color: colors.foreground },
 });

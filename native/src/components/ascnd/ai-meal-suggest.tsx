@@ -195,12 +195,12 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1, gap: 3 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.foreground },
-  desc: { fontSize: 10, color: colors.mutedForeground, lineHeight: 14 },
+  desc: { fontSize: 11, color: colors.mutedForeground, lineHeight: 14 },
   macroRow: { flexDirection: 'row', gap: spacing.sm + 4, marginTop: 2 },
-  macro: { ...type.mono, fontSize: 10, color: colors.mutedForeground },
+  macro: { ...type.mono, fontSize: 11, color: colors.mutedForeground },
   macroKcal: { fontWeight: '700', color: colors.foreground },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  prepTime: { fontSize: 10, color: colors.mutedForeground },
+  prepTime: { fontSize: 11, color: colors.mutedForeground },
 
   ingredients: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   ingredientsTitle: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: 'rgba(24,24,27,0.6)',
   },
-  ingredientText: { fontSize: 10, color: 'rgba(237,237,237,0.8)' },
+  ingredientText: { fontSize: 11, color: 'rgba(237,237,237,0.8)' },
 
   moreBtn: {
     flexDirection: 'row',

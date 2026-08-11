@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mascotLockIcon: { fontSize: 9 },
+  mascotLockIcon: { fontSize: 11 },
   mascotProgress: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   },
   mascotProgressFill: { height: '100%', borderRadius: 2 },
   mascotProgressText: {
-    fontSize: 10,
+    fontSize: 11,
     fontVariant: ['tabular-nums'],
     color: colors.mutedForeground,
   },

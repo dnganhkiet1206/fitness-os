@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
      the number looked crossed out in two of the four panels. */
   todayWrap: { position: 'absolute', right: 0, alignItems: 'center' },
   todayValue: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
     backgroundColor: 'rgba(10,10,16,0.94)',
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     bottom: 2,
-    fontSize: 9,
+    fontSize: 11,
     color: 'rgba(255,255,255,0.72)',
     backgroundColor: 'rgba(10,10,16,0.94)',
     paddingHorizontal: 3,
@@ -289,12 +289,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   axis: { flexDirection: 'row', gap: GAP },
-  axisDay: { flex: 1, fontSize: 10, textAlign: 'center', color: colors.glassMuted },
+  axisDay: { flex: 1, fontSize: 11, textAlign: 'center', color: colors.glassMuted },
   axisToday: { fontWeight: '700', color: colors.foreground },
-  gapNote: { fontSize: 10, color: colors.glassMuted, marginTop: -4 },
+  gapNote: { fontSize: 11, color: colors.glassMuted, marginTop: -4 },
   stats: { flexDirection: 'row', gap: spacing.lg, marginTop: 2 },
   stat: { gap: 2 },
-  statLabel: { fontSize: 10, color: colors.glassMuted },
+  statLabel: { fontSize: 11, color: colors.glassMuted },
   statValue: { ...type.footnote, fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
   ask: {
     ...type.caption,
