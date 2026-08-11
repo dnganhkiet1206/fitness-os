@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
+import { BOUNDS, plausibleText } from '@/lib/plausible';
 
 // Face picks map onto the web's 1–10 quality scale (SleepCard shows
 // "x/10") — code-drawn lucide faces on a red→teal neon ramp
@@ -60,6 +61,34 @@ export default function LogSleepSheet() {
   const bedDate = withDate(bedtime, bedtime.getHours() >= 12 ? -1 : 0);
   const wakeDate = withDate(waketime, 0);
   const durationMin = Math.max(0, Math.round((wakeDate.getTime() - bedDate.getTime()) / 60000));
+
+  /*
+    ── the stages have to fit inside the night ──
+
+    The times come from pickers, so the night's length is sound by
+    construction. The three stage boxes were free text with no check at all,
+    which let a night of 8 hours carry 600 minutes of deep sleep — a
+    contradiction visible on the same card, printed by the app about itself.
+
+    Two things are wrong with a number like that and they need different
+    checks. `sleep_stage_min` catches the one that could not be a stage at all;
+    the sum catches the one where each part is fine and the whole is not.
+    Neither figure feeds readiness — `asleepMinutes` uses the span or
+    HealthKit's `asleep_min` — so this is about what Sleep Insights draws, not
+    about the score.
+  */
+  const stages = [deepMin, remMin, lightMin].map((v) => (v.trim() ? Number(v) : 0));
+  const stageBad = [deepMin, remMin, lightMin].some((v) => !plausibleText('sleep_stage_min', v));
+  const stageSum = stages.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+  const stagesOverrun = durationMin > 0 && stageSum > durationMin;
+  const stageError = stageBad
+    ? i18n.outOfRange
+        .replace('{min}', String(BOUNDS.sleep_stage_min.min))
+        .replace('{max}', String(BOUNDS.sleep_stage_min.max))
+        .replace('{unit}', i18n.logSleepMinutes)
+    : stagesOverrun
+      ? i18n.sleepStagesOverrun.replace('{sum}', String(stageSum)).replace('{total}', String(durationMin))
+      : null;
 
   const save = useMutation({
     mutationFn: async () => {
@@ -144,6 +173,7 @@ export default function LogSleepSheet() {
           </View>
         ))}
       </View>
+      {stageError ? <Text style={styles.stageError}>{stageError}</Text> : null}
 
       <Text style={styles.fieldLabel}>{i18n.nHowSleep}</Text>
       <View style={styles.chips}>
@@ -170,8 +200,8 @@ export default function LogSleepSheet() {
       </View>
 
       <PressScale
-        style={[styles.saveButton, save.isPending && styles.saveDisabled]}
-        disabled={save.isPending || save.isSuccess}
+        style={[styles.saveButton, (save.isPending || !!stageError) && styles.saveDisabled]}
+        disabled={save.isPending || save.isSuccess || !!stageError}
         onPress={() => save.mutate()}>
         {save.isSuccess ? (
           <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
@@ -249,5 +279,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   saveDisabled: { opacity: 0.4 },
+  stageError: { ...type.footnote, color: colors.readinessRed },
   saveText: { ...type.headline, color: colors.primaryForeground },
 });

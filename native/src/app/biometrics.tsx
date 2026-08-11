@@ -78,7 +78,8 @@ export default function BiometricsScreen() {
       ? [{ key: 'hrv' as const, label: hrvKinds.sdnn ? 'HRV · RMSSD' : 'HRV', unit: 'ms', color: colors.metricPurple, range: [20, 100] as [number, number], extract: (s: BiometricSample) => s.hrv_rmssd_ms }]
       : []),
     { key: 'spo2', label: 'SpO₂', unit: '%', color: colors.metricBlue, range: [95, 100], extract: (s) => s.spo2_pct },
-    { key: 'vo2max', label: 'VO₂max', unit: 'ml/kg', color: colors.metricOrange, range: [30, 60], extract: (s) => s.vo2max_mlkgmin },
+    // ml/kg is a mass fraction; VO₂max is a rate of oxygen uptake — ml/kg/min.
+    { key: 'vo2max', label: 'VO₂max', unit: 'ml/kg/min', color: colors.metricOrange, range: [30, 60], extract: (s) => s.vo2max_mlkgmin },
     { key: 'resp', label: i18n.biometricsBreathRate, unit: 'rpm', color: colors.metricPurple, range: [12, 20], extract: (s) => s.resp_rate_rpm },
   ];
 

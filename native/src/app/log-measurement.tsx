@@ -24,7 +24,8 @@ import { useI18n } from '@/hooks/use-app-settings';
 import { useUpsertBodyMeasurement, type BodyMeasurementInput } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
 import { toast } from '@/lib/toast';
-import { lengthLabel, lengthToCm } from '@/lib/units';
+import { displayLength, lengthLabel, lengthToCm } from '@/lib/units';
+import { BOUNDS, plausible } from '@/lib/plausible';
 
 type FieldKey = Exclude<keyof BodyMeasurementInput, 'date' | 'notes'>;
 
@@ -56,11 +57,43 @@ export default function LogMeasurementSheet() {
 
   const setField = (key: FieldKey, v: string) => setFields((prev) => ({ ...prev, [key]: v }));
 
+  /*
+    ── the same check the other health inputs got ──
+
+    `body_fat_pct` accepted 500. Circumferences accepted anything at all. Both
+    end up on the Progress charts, where one absurd point sets the axis and
+    flattens every real reading beside it into a straight line.
+
+    The circumference boxes hold the user's length unit, so the value is
+    converted to cm before it is judged — a 40-inch waist is a real waist and
+    refusing it because 40 is small in centimetres would be the bug, not the
+    fix. Body fat is a percentage in both unit systems and is checked as typed.
+  */
+  const errorFor = (key: FieldKey): string | null => {
+    const raw = fields[key]?.trim();
+    if (!raw) return null;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return i18n.outOfRange.replace('{min}', '0').replace('{max}', '—').replace('{unit}', '');
+    if (key === 'body_fat_pct') {
+      return plausible('body_fat_pct', n) ? null
+        : i18n.outOfRange
+            .replace('{min}', String(BOUNDS.body_fat_pct.min))
+            .replace('{max}', String(BOUNDS.body_fat_pct.max))
+            .replace('{unit}', '%');
+    }
+    return plausible('circumference_cm', lengthToCm(n, lUnit)) ? null
+      : i18n.outOfRange
+          .replace('{min}', String(Math.round(displayLength(BOUNDS.circumference_cm.min, lUnit))))
+          .replace('{max}', String(Math.round(displayLength(BOUNDS.circumference_cm.max, lUnit))))
+          .replace('{unit}', lengthLabel(lUnit));
+  };
+  const anyBad = FIELDS.some(({ key }) => errorFor(key) !== null);
+
   const hasValue = FIELDS.some(({ key }) => {
     const v = fields[key]?.trim();
     return v != null && v.length > 0 && !isNaN(Number(v));
   });
-  const canSave = hasValue && !upsert.isPending && !upsert.isSuccess;
+  const canSave = hasValue && !anyBad && !upsert.isPending && !upsert.isSuccess;
 
   const save = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -113,6 +146,7 @@ export default function LogMeasurementSheet() {
                 value={fields[key] ?? ''}
                 onChange={(v) => setField(key, v)}
                 style={styles.half}
+                error={errorFor(key)}
               />
             ))}
           </View>
@@ -136,21 +170,22 @@ export default function LogMeasurementSheet() {
 }
 
 function Field({
-  label, value, onChange, style,
+  label, value, onChange, style, error,
 }: {
-  label: string; value: string; onChange: (v: string) => void; style?: object;
+  label: string; value: string; onChange: (v: string) => void; style?: object; error?: string | null;
 }) {
   return (
     <View style={[styles.field, style]}>
       <Text style={styles.fieldLabel} numberOfLines={1}>{label}</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, error ? styles.inputBad : null]}
         keyboardType="decimal-pad"
         placeholder="—"
         placeholderTextColor={colors.mutedForeground}
         value={value}
         onChangeText={onChange}
       />
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
     </View>
   );
 }
@@ -172,6 +207,8 @@ const styles = StyleSheet.create({
     color: colors.foreground,
     fontSize: 16,
   },
+  inputBad: { borderColor: colors.readinessRed },
+  fieldError: { ...type.footnote, color: colors.readinessRed },
   row: { flexDirection: 'row', gap: spacing.sm },
   half: { flex: 1 },
   saveButton: { height: 50, borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },

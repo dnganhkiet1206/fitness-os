@@ -137,7 +137,8 @@ export function BiometricsCard() {
     { label: 'Heart Rate', value: bio.hr_bpm, unit: 'bpm', icon: Heart, color: colors.destructive },
     { label: 'HRV', value: bio.hrv_rmssd_ms, unit: 'ms', icon: Activity, color: colors.primary },
     { label: 'SpO₂', value: bio.spo2_pct, unit: '%', icon: Droplets, color: colors.metricBlue },
-    { label: 'VO₂max', value: bio.vo2max_mlkgmin, unit: 'ml/kg', icon: Wind, color: colors.metricCyan },
+    // ml/kg is a mass fraction; VO₂max is a rate — ml/kg/min.
+    { label: 'VO₂max', value: bio.vo2max_mlkgmin, unit: 'ml/kg/min', icon: Wind, color: colors.metricCyan },
     { label: 'Resp Rate', value: bio.resp_rate_rpm, unit: 'rpm', icon: Wind, color: colors.metricPurple },
   ].filter((m) => m.value != null);
 

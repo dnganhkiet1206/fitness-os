@@ -33,6 +33,7 @@ import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
+import { outOfRangeMessage } from '@/lib/plausible';
 import { toast } from '@/lib/toast';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
@@ -217,7 +218,32 @@ export default function LogMealSheet() {
   };
 
   const num = (v: string) => Number(v) || 0;
-  const canAddCustom = cName.trim().length > 0 && (num(cKcal) > 0 || num(cProtein) + num(cCarbs) + num(cFat) > 0);
+
+  /*
+    ── one mistyped food item moves several numbers ──
+
+    A custom item's kcal and macros were `Number(v) || 0` and nothing more, so
+    50000 for a bowl of rice went in without comment. That does not stop at the
+    day's total: `daily_logs.kcal` is what `adaptiveTDEE` averages over fourteen
+    days to measure somebody's expenditure, and that measurement now sets a
+    suggested calorie target. A slipped zero in a food entry therefore comes
+    back days later as a diet.
+
+    The bounds are per item, not per day — somebody eating 6,000 kcal across a
+    day is having a day, but 10,000 kcal in one line is a typo.
+  */
+  const customErrors = {
+    kcal: outOfRangeMessage('meal_kcal', cKcal, i18n.outOfRange),
+    protein: outOfRangeMessage('macro_g', cProtein, i18n.outOfRange),
+    carbs: outOfRangeMessage('macro_g', cCarbs, i18n.outOfRange),
+    fat: outOfRangeMessage('macro_g', cFat, i18n.outOfRange),
+  };
+  const customBad = Object.values(customErrors).some(Boolean);
+
+  const canAddCustom =
+    cName.trim().length > 0 &&
+    !customBad &&
+    (num(cKcal) > 0 || num(cProtein) + num(cCarbs) + num(cFat) > 0);
 
   const addCustom = () => {
     if (!canAddCustom) return;
@@ -650,11 +676,16 @@ export default function LogMealSheet() {
               onChangeText={setCName}
             />
             <View style={styles.macroInputRow}>
-              <MacroInput label="kcal" value={cKcal} onChange={setCKcal} />
-              <MacroInput label={`${i18n.nProtein} (g)`} value={cProtein} onChange={setCProtein} />
-              <MacroInput label={`${i18n.nCarbs} (g)`} value={cCarbs} onChange={setCCarbs} />
-              <MacroInput label={`${i18n.nFat} (g)`} value={cFat} onChange={setCFat} />
+              <MacroInput label="kcal" value={cKcal} onChange={setCKcal} bad={!!customErrors.kcal} />
+              <MacroInput label={`${i18n.nProtein} (g)`} value={cProtein} onChange={setCProtein} bad={!!customErrors.protein} />
+              <MacroInput label={`${i18n.nCarbs} (g)`} value={cCarbs} onChange={setCCarbs} bad={!!customErrors.carbs} />
+              <MacroInput label={`${i18n.nFat} (g)`} value={cFat} onChange={setCFat} bad={!!customErrors.fat} />
             </View>
+            {customBad ? (
+              <Text style={styles.customBadText}>
+                {customErrors.kcal ?? customErrors.protein ?? customErrors.carbs ?? customErrors.fat}
+              </Text>
+            ) : null}
             <Text style={styles.customHint}>
               {vi
                 ? 'Bỏ trống kcal sẽ tự tính từ macro (P×4 + C×4 + F×9)'
@@ -761,12 +792,12 @@ export default function LogMealSheet() {
   );
 }
 
-function MacroInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function MacroInput({ label, value, onChange, bad }: { label: string; value: string; onChange: (v: string) => void; bad?: boolean }) {
   return (
     <View style={styles.macroInputCell}>
       <Text style={styles.macroInputLabel} numberOfLines={1}>{label}</Text>
       <TextInput
-        style={styles.macroInputField}
+        style={[styles.macroInputField, bad ? styles.macroInputBad : null]}
         keyboardType="number-pad"
         placeholder="0"
         placeholderTextColor={colors.mutedForeground}
@@ -938,6 +969,8 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     paddingVertical: 0,
   },
+  macroInputBad: { borderColor: colors.readinessRed },
+  customBadText: { ...type.caption, color: colors.readinessRed },
   customHint: { ...type.caption, color: colors.mutedForeground },
   customAddBtn: {
     flexDirection: 'row',

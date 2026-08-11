@@ -40,12 +40,45 @@ export interface RingModel {
 }
 
 /**
- * Apple's own daily defaults, and the reason they are named rather than typed
- * into the card: 600 and 30 were two bare numbers in the middle of Today's
- * JSX, where nobody reading the card could tell whether they were a setting, a
- * placeholder, or a guess.
+ * The two fixed ring targets.
+ *
+ * They are named rather than typed into the card because 600 and 30 were once
+ * two bare numbers in the middle of Today's JSX, where nobody reading it could
+ * tell whether they were a setting, a placeholder or a guess.
+ *
+ * ── the Move number was wrong, and the comment saying otherwise was worse ──
+ *
+ * This block used to open "Apple's own daily defaults". Exercise is: 30
+ * minutes is Apple's default and matches the WHO's 150 minutes a week. Move is
+ * not. Apple does not ship a fixed Move goal at all — it asks for an activity
+ * level during setup and derives the goal from that plus age, sex, height and
+ * weight, then suggests a new one each Monday from how the week actually went.
+ * The starting suggestion is typically around 300 kcal, and the values Apple
+ * proposes run roughly 150–400 depending on age.
+ *
+ * So 600 was about double a typical starting goal, for a ring nobody could
+ * adjust, in an app that celebrates closing it. A goal that cannot be reached
+ * and cannot be changed is not a goal.
+ *
+ * ── why this is a constant and not a formula ──
+ *
+ * The obvious move is to derive it the way the rest of the app derives energy:
+ * the profile already carries an activity multiplier, and BMR × (PAL − 1) is
+ * the energy above rest that the calorie target is already built on. That
+ * quantity is not the Move ring's quantity. PAL is defined as total
+ * expenditure over basal, so it includes the thermic effect of food, and the
+ * ring counts active energy only. Backing TEF out needs a fraction that the
+ * literature puts at 5–15% of expenditure depending on the diet's macronutrient
+ * mix — and this app deliberately prescribes a high-protein one, where protein's
+ * own 20–30% pushes it to the top of that range.
+ *
+ * A hundred-kcal error in that subtraction is a third of the goal. Guessing it
+ * would replace a wrong number with a wrong number wearing a derivation, so
+ * the honest version is the documented starting value, and the real fix — the
+ * one Apple actually ships — is letting people set it. That needs somewhere to
+ * set it from; `LAUNCH.md` records it.
  */
-export const MOVE_TARGET_KCAL = 600;
+export const MOVE_TARGET_KCAL = 300;
 export const EXERCISE_TARGET_MIN = 30;
 
 export interface LoggedSet {

@@ -452,6 +452,10 @@ interface Translations {
   logBioVO2: string;
   logBioResp: string;
   logBioSaved: string;
+  /** Shown under a field whose value is outside anything a body produces. Carries {min}, {max}, {unit}. */
+  outOfRange: string;
+  /** Sleep stages adding up to more than the night itself. Carries {sum}, {total}. */
+  sleepStagesOverrun: string;
 
   // Log Meal Dialog
   logMealTitle: string;
@@ -1181,6 +1185,8 @@ const vi: Translations = {
   logBioVO2: 'VO₂max (ml/kg/min) — ước tính',
   logBioResp: 'Nhịp thở (rpm)',
   logBioSaved: 'Đã lưu chỉ số sinh trắc!',
+  outOfRange: 'Cần nằm trong khoảng {min}–{max} {unit}',
+  sleepStagesOverrun: 'Các giai đoạn cộng lại {sum} phút, dài hơn cả đêm ({total} phút)',
 
   logMealTitle: 'Ghi Bữa Ăn',
   logMealType: 'Loại bữa',
@@ -1892,6 +1898,8 @@ const en: Translations = {
   logBioVO2: 'VO₂max (ml/kg/min) — estimate',
   logBioResp: 'Respiratory rate (rpm)',
   logBioSaved: 'Biometrics saved!',
+  outOfRange: 'Must be between {min} and {max} {unit}',
+  sleepStagesOverrun: 'Stages add up to {sum} min, longer than the night itself ({total} min)',
 
   logMealTitle: 'Log Meal',
   logMealType: 'Meal type',

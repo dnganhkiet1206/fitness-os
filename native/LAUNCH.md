@@ -79,6 +79,30 @@ nhắc từng người được, cách đúng là chạy một script Node **g�
 
 ---
 
+## 1c. Hai chỗ đã biết là chưa xong, không phải lỗi
+
+Ghi ra để lần sau không phải điều tra lại từ đầu.
+
+**Vòng Move không chỉnh được.** Apple hỏi mức vận động lúc cài đặt rồi tự tính
+mục tiêu, và mỗi thứ Hai lại đề xuất mức mới theo tuần vừa rồi. App này để một
+hằng số 300 kcal cho tất cả mọi người. 300 là con số Apple thường bắt đầu, nên
+nó không sai — nhưng nó không phải là mục tiêu của riêng ai. Cách sửa đúng là
+cho người dùng chỉnh, theo đúng khuôn `useStepsGoal` đã có sẵn
+(`AsyncStorage` + clamp + `useSyncExternalStore`); phần còn thiếu là chỗ để bấm.
+Cố tình **không** suy ra từ hệ số vận động: PAL bao gồm cả nhiệt sinh do ăn
+(5–15% tuỳ tỉ lệ macro, và app này kê chế độ nhiều đạm nên nằm ở đầu trên),
+trừ ngược ra sẽ sai cả trăm kcal trên một mục tiêu 300 kcal.
+
+**Kiểm tra ngưỡng không bắt được lỗi "số hợp lý nhưng sai người".**
+`src/lib/plausible.ts` chặn 600 bpm và 7500 kg. Nó không chặn được 175 kg gõ
+nhầm cho người 75 kg, vì 175 kg là cân nặng có thật. Bắt được loại đó cần so
+với lịch sử của chính người đó, với ngưỡng phải nới ra theo khoảng cách giữa
+hai lần đo — và không có tài liệu nào nói ngưỡng đó là bao nhiêu. Đoán một con
+số sẽ đổi một lỗi nhìn thấy được lấy một luật lặng lẽ từ chối dữ liệu thật.
+Nút xoá từng dòng vẫn là cách sửa cho loại này.
+
+---
+
 ## 2. Ranh giới free/paid — quyết định, không phải việc code
 
 Đây là thứ phải quyết trước khi viết bất kỳ dòng nào của mục 3 và 4.

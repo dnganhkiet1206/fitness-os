@@ -11,6 +11,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
+import { BOUNDS, plausible } from '@/lib/plausible';
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
 import { useSmartNudges } from '@/hooks/use-smart-nudges';
 import { useProfile } from '@/hooks/useTodayData';
@@ -62,11 +63,34 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
   const diff = todayDisp != null && profileDisp != null ? todayDisp - profileDisp : null;
   const showLogger = editing || todayWeight == null;
 
+  /*
+    ── checked in kg, typed in whatever they use ──
+
+    The box holds the display unit, so 300 is a plausible weight in pounds
+    (136 kg) and an impossible one in kilograms. Judging the typed number
+    against a kg range would refuse a real reading from anybody on lb, which is
+    worse than the bug being fixed. So the conversion happens first and the
+    bound is applied to the value that will actually be stored.
+
+    Worth being clear about what this cannot do: 175 for a 75 kg person passes,
+    because 175 kg is a weight a person can have. That typo is the one this
+    card's own delete button exists for. What this stops is the slipped decimal
+    and the wrong unit — and weight is the input with the longest tail, running
+    through the BMI band, the chart's scale, and `adaptiveTDEE`'s least-squares
+    fit, which has no outlier defence and now sets a suggested calorie target.
+  */
+  const typed = parseFloat(value);
+  const kg = isNaN(typed) ? null : weightToKg(typed, wUnit);
+  const weightError = kg == null || kg <= 0 ? null : plausible('weight_kg', kg) ? null
+    : i18n.outOfRange
+        .replace('{min}', String(displayWeight(BOUNDS.weight_kg.min, wUnit)))
+        .replace('{max}', String(displayWeight(BOUNDS.weight_kg.max, wUnit)))
+        .replace('{unit}', weightLabel(wUnit));
+
   const submit = () => {
-    const val = parseFloat(value);
-    if (isNaN(val) || val <= 0) return;
+    if (kg == null || kg <= 0 || weightError) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    logWeight.mutate(weightToKg(val, wUnit), { onSuccess: () => setEditing(false) });
+    logWeight.mutate(kg, { onSuccess: () => setEditing(false) });
   };
 
   return (
@@ -84,9 +108,9 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
           />
           <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
           <PressScale
-            style={styles.weightBtn}
+            style={[styles.weightBtn, weightError ? styles.weightBtnOff : null]}
             onPress={submit}
-            disabled={logWeight.isPending}>
+            disabled={logWeight.isPending || !!weightError}>
             {logWeight.isPending ? (
               <ActivityIndicator color={colors.primaryForeground} size="small" />
             ) : (
@@ -94,7 +118,9 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
             )}
           </PressScale>
         </View>
-      ) : (
+      ) : null}
+      {showLogger && weightError ? <Text style={styles.weightError}>{weightError}</Text> : null}
+      {showLogger ? null : (
         <PressScale style={styles.weightDisplay} onPress={() => setEditing(true)}>
           <View style={styles.weightValueRow}>
             <Text style={styles.weightValue}>{todayDisp}</Text>
@@ -350,7 +376,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  weightBtnOff: { opacity: 0.4 },
   weightBtnText: { ...type.headline, color: colors.primaryForeground },
+  weightError: { ...type.footnote, color: colors.readinessRed, marginTop: 6 },
   weightDisplay: {
     flexDirection: 'row',
     alignItems: 'center',

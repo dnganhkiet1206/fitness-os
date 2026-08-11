@@ -91,6 +91,31 @@ try {
   const base = { moveKcal: null, healthMinutes: null, loggedMinutes: 0, steps: 0, stepsTarget: 10000 };
   const ring = (input, key) => activityModel({ ...base, ...input }).rings.find((r) => r.key === key);
 
+  /*
+    ── the Move target has to stay attached to where it came from ──
+
+    It was 600, under a comment calling it "Apple's own daily default". Apple
+    ships no fixed Move goal: it derives one during setup from activity level
+    plus age, sex, height and weight, and the values it proposes run roughly
+    150–400 kcal, typically starting near 300. 600 was about double that, on a
+    ring nobody in this app can adjust.
+
+    So the bound is the source, not a taste: a future edit that moves this
+    number outside the range Apple actually proposes has to come with a reason
+    that is not "it felt low".
+
+    Exercise is left alone — 30 minutes genuinely is Apple's default, and it is
+    the WHO's 150 minutes a week divided by five.
+  */
+  const moveTarget = ring({}, 'move').target;
+  if (moveTarget < 150 || moveTarget > 400) {
+    problems.push(
+      `mục tiêu vòng Move là ${moveTarget} kcal, ngoài khoảng 150–400 mà Apple thực sự đề xuất — ` +
+        'một vòng không thể đóng và không thể chỉnh thì không phải là mục tiêu',
+    );
+  }
+  eq('mục tiêu vòng Exercise là mặc định của Apple', ring({}, 'exercise').target, 30);
+
   eq('chưa có gì thì không vẽ', activityModel(base).hasAny, false);
   eq('chưa có gì thì nguồn là "none"', ring({}, 'move').source, 'none');
   eq('có bước chân là có dữ liệu', activityModel({ ...base, steps: 300 }).hasAny, true);
