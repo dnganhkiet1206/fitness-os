@@ -89,12 +89,13 @@ export function useDailyStreak() {
     queryKey: ['mascot_streak', user?.id, localDateStr()],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('daily_logs')
         .select('date')
         .eq('user_id', user!.id)
         .order('date', { ascending: false })
         .limit(35);
+      if (error) throw error;
       const dates = (data ?? []).map((d) => d.date);
       if (dates.length === 0) return 0;
       const todayStr = localDateStr();

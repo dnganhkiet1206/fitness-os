@@ -29,6 +29,8 @@ export function useUnlockStats() {
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user!.id),
       ]);
+      if (w.error) throw w.error;
+      if (m.error) throw m.error;
       return { workouts: w.count ?? 0, meals: m.count ?? 0 };
     },
   });

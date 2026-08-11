@@ -121,6 +121,51 @@ for (const f of screens) {
   }
 }
 
+/*
+  ── a screen cannot report an error its query never had ──
+
+  Wiring `isError` into twelve screens turned out to fix six of them. The other
+  six kept saying "no saved foods yet" against a server returning 500 to every
+  request, and the reason was a layer down: the query functions themselves.
+
+      const { data } = await supabase.from('food_items').select(...);
+      return (data ?? []) as FoodItemRow[];
+
+  The `error` is destructured away. A failed request therefore *resolves* — with
+  `data: null`, which becomes `[]` — so React Query records a success, `isError`
+  is never true, and the failure branch above it is unreachable code that reads
+  like a fix.
+
+  Found by running the app against a server that 500s everything, which is the
+  only way it could have been found: every one of these type-checks, and the
+  screens all pass the rule above.
+
+  So the rule reaches into the query. Seven of forty-five were swallowing.
+*/
+{
+  const HOOKS = globSync('src/{hooks,lib}/*.{ts,tsx}', { cwd: NATIVE }).sort();
+  for (const f of HOOKS) {
+    const src = strip(readFileSync(path.join(NATIVE, f), 'utf8'));
+    for (const m of src.matchAll(/queryFn: async \([^)]*\) *(?::[^=]+)?=> *\{/g)) {
+      let i = m.index + m[0].length;
+      let depth = 1;
+      while (i < src.length && depth > 0) {
+        if (src[i] === '{') depth++;
+        else if (src[i] === '}') depth--;
+        i++;
+      }
+      const body = src.slice(m.index + m[0].length, i);
+      if (!/supabase/.test(body)) continue;
+      if (/\berror\b/.test(body)) continue;
+      problems.push(
+        `${f}:${src.slice(0, m.index).split('\n').length} — queryFn bỏ qua error của Supabase — ` +
+          'truy vấn hỏng sẽ *thành công* với data null, nên isError không bao giờ đúng ' +
+          'và nhánh báo lỗi ở màn hình trở thành code không bao giờ chạy',
+      );
+    }
+  }
+}
+
 /**
  * The self-test.
  *
@@ -129,6 +174,14 @@ for (const f of screens) {
  * about one that already answers both questions.
  */
 const SELF = [
+  ['queryFn nuốt lỗi — bị bắt', () => {
+    const body = "const { data } = await supabase.from('x').select('*');\nreturn data ?? [];";
+    return /supabase/.test(body) && !/\berror\b/.test(body);
+  }],
+  ['queryFn có ném lỗi — không báo oan', () => {
+    const body = "const { data, error } = await supabase.from('x').select('*');\nif (error) throw error;\nreturn data ?? [];";
+    return /\berror\b/.test(body);
+  }],
   ['màn nói "rỗng" mà không có nhánh lỗi — bị bắt', () => {
     const bad = "const { data: sessions } = useWorkoutSessions();\n<Text style={styles.empty}>Chưa có buổi tập nào</Text>";
     return READS_DATA.test(bad) && SAYS_EMPTY.test(bad) && !SAYS_FAILED.test(bad);
@@ -177,6 +230,7 @@ if (problems.length) {
 }
 
 console.log(
-  `rỗng ≠ hỏng OK — ${covered} màn có câu "chưa có gì" về dữ liệu server, màn nào cũng phân biệt được với "không đọc được"; ` +
+  `rỗng ≠ hỏng OK — mọi queryFn đều báo lỗi Supabase lên trên (nuốt lỗi thì truy vấn hỏng hoá thành "thành công, rỗng"); ` +
+    `${covered} màn có câu "chưa có gì" về dữ liệu server, màn nào cũng phân biệt được với "không đọc được"; ` +
     `${exempt} màn được miễn kèm lý do (câu "rỗng" của chúng nói về trạng thái tại chỗ, không phải về thứ đọc từ server)`,
 );

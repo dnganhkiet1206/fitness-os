@@ -16,11 +16,12 @@ export function useSupplementChecklist() {
     queryKey: ['supplement_checklist', user?.id, dateStr],
     enabled: !!user,
     queryFn: async () => {
-      const { data: supplements } = await supabase
+      const { data: supplements, error: supErr } = await supabase
         .from('supplements')
         .select('id, name, dose_text, timing, category')
         .eq('user_id', user!.id)
         .order('timing');
+      if (supErr) throw supErr;
       const { data: intakes } = await supabase
         .from('supplement_intake_logs')
         .select('supplement_id, taken')

@@ -25,12 +25,13 @@ export function useTodayWeight() {
     queryKey: ['weight_log', user?.id, todayISO()],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('weight_logs')
         .select('weight_kg')
         .eq('user_id', user!.id)
         .eq('date', todayISO())
         .maybeSingle();
+      if (error) throw error;
       return data ? Number(data.weight_kg) : null;
     },
   });

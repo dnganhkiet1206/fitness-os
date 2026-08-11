@@ -30,12 +30,13 @@ export function useFavoriteFoods() {
     queryKey: ['favorite_foods', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('food_items')
         .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
         .eq('is_favorite', true)
         .order('name')
         .limit(50);
+      if (error) throw error;
       return (data ?? []) as FoodItemRow[];
     },
   });
@@ -48,12 +49,13 @@ export function useMyFoods() {
     queryKey: ['my_foods', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('food_items')
         .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
         .eq('user_id', user!.id)
         .order('name')
         .limit(200);
+      if (error) throw error;
       return (data ?? []) as FoodItemRow[];
     },
   });
@@ -106,11 +108,12 @@ export function useRecentFoods() {
     queryKey: ['recent_foods', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('meal_entry_items')
         .select('food_name, food_item_id, kcal, protein_g, carbs_g, fat_g, fiber_g, servings, created_at')
         .order('created_at', { ascending: false })
         .limit(30);
+      if (error) throw error;
       const seen = new Set<string>();
       const out: RecentFood[] = [];
       for (const f of data ?? []) {
