@@ -318,20 +318,55 @@ const changed = (a, b) => a.url !== b.url || a.len !== b.len || a.text !== b.tex
  *
  * ── why a control may legitimately do nothing ──
  *
- * Exactly one reason: it is disabled, and says so. `aria-disabled` or a
- * `disabled` attribute is a control that has already answered the question, so
- * it is skipped rather than pressed. That is also the fix that was applied to
- * Sign In — the button dims until the form is complete — which is why this rule
- * and that fix agree instead of fighting.
+ * The first real run of this rule produced five findings and **not one of them
+ * was a dead button**. Every one exposed a flaw in the rule instead, and each
+ * flaw is now a named exclusion rather than a silent tolerance:
+ *
+ *   1. **Disabled.** A control that says it will do nothing has answered the
+ *      question. That is also how Sign In was fixed — the button dims until the
+ *      form is complete — so the rule and the fix agree instead of fighting.
+ *
+ *   2. **Already selected.** "All" on the weight chart is the default range;
+ *      pressing the segment you are already on correctly changes nothing.
+ *      `aria-selected` / `aria-checked` is the control saying so.
+ *
+ *   3. **Covered.** `headerRight` buttons sit at y≈8, and on web the tab bar is
+ *      drawn over that strip — `elementFromPoint` returns a different div and a
+ *      real click times out. The first version passed `force: true`, which
+ *      dispatches at the coordinates anyway, so the overlay swallowed the press
+ *      and a perfectly good button was reported dead. Forcing turned "I cannot
+ *      reach this" into "this does nothing", which are opposite findings. It is
+ *      also a web-only layout: iOS puts the tabs at the bottom.
+ *
+ *   4. **Its whole job is a confirm dialog.** `react-native-web`'s Alert is
+ *      literally `static alert() {}` — an empty function. Every `Alert.alert`
+ *      confirmation in the app is therefore silent *on web* and correct on iOS.
+ *      Nothing about the app can be learned by pressing those here.
+ *
+ * The lesson worth keeping is the one about `force`: a harness that makes a
+ * control reachable when a user's finger could not is not testing the app the
+ * user has.
  *
  * Navigation counts as a reaction, so after each press the page is returned to
  * where it started; otherwise the second control would be pressed on a screen
  * it does not belong to.
  */
+/**
+ * Controls whose only action is a confirm dialog.
+ *
+ * `react-native-web` ships `class Alert { static alert() {} }` — an empty
+ * function — so these are silent here and correct on a phone. Listed by name
+ * with the reason, rather than tolerated silently, because the day one of them
+ * grows a real behaviour it should come back off this list.
+ */
+const CONFIRM_ONLY = new Set(['Delete account', 'Xoá tài khoản', 'Sign out', 'Đăng xuất']);
+
 async function pressEverything(page, label, problems) {
   const controls = page.locator('[role="button"]:visible, button:visible');
   const total = Math.min(await controls.count(), 14);
   const home = page.url();
+  let tried = 0;
+  let skipped = 0;
 
   for (let i = 0; i < total; i++) {
     const c = controls.nth(i);
@@ -339,19 +374,37 @@ async function pressEverything(page, label, problems) {
     try {
       if (!(await c.isVisible())) continue;
       name = ((await c.getAttribute('aria-label')) || (await c.innerText()) || '').trim().slice(0, 40);
-      const off = (await c.getAttribute('aria-disabled')) === 'true' || (await c.isDisabled().catch(() => false));
-      if (off) continue; // already says it will do nothing
       if (!name) continue; // unnamed controls are `tap-targets.mjs`'s problem
+
+      const off = (await c.getAttribute('aria-disabled')) === 'true' || (await c.isDisabled().catch(() => false));
+      const on = (await c.getAttribute('aria-selected')) === 'true' || (await c.getAttribute('aria-checked')) === 'true';
+      if (off || on || CONFIRM_ONLY.has(name)) {
+        skipped++;
+        continue;
+      }
+      /* Back only means something with somewhere to go. These screens are
+         opened directly by URL, so a stack that was never pushed onto has no
+         previous entry and the button is right to do nothing. */
+      if (/^(Go back|Quay lại|Back)$/i.test(name) && (await page.evaluate(() => history.length)) <= 2) {
+        skipped++;
+        continue;
+      }
     } catch {
       continue;
     }
 
     const before = await snapshot(page);
     try {
-      await c.click({ timeout: 2000, force: true });
+      /* No `force`. A forced click dispatches at the coordinates whatever is on
+         top, so an element under an overlay looks pressed and then looks dead —
+         reporting "does nothing" for something a finger could not have reached.
+         Letting the click time out keeps those two findings apart. */
+      await c.click({ timeout: 2500 });
     } catch {
-      continue; // covered, detached, or moved — not a dead-control finding
+      skipped++;
+      continue;
     }
+    tried++;
     await page.waitForTimeout(1400);
     const after = await snapshot(page);
 
@@ -369,7 +422,7 @@ async function pressEverything(page, label, problems) {
       await page.waitForTimeout(2500);
     }
   }
-  return total;
+  return { tried, skipped };
 }
 
 /**
@@ -511,16 +564,20 @@ try {
   */
   process.stdout.write('bấm thử từng nút');
   let pressed = 0;
+  let skipped = 0;
   for (const [route, mode] of [['/', 'signedout'], ['/', 'full'], ['/progress', 'full'], ['/settings', 'full']]) {
     const { browser, page } = await openPage(chromium, route, mode);
     try {
-      pressed += await pressEverything(page, `[${mode}] ${route}`, problems);
+      const r = await pressEverything(page, `[${mode}] ${route}`, problems);
+      pressed += r.tried;
+      skipped += r.skipped;
     } finally {
       await browser.close();
     }
     process.stdout.write('.');
   }
   console.log('');
+  globalThis.__skipped = skipped;
 
   process.stdout.write('kịch bản');
   for (const sc of SCENARIOS) {
@@ -551,7 +608,8 @@ console.log(
   `\nchạy thật OK — ${ROUTES.length} màn × ${MODES.length} trạng thái (đủ dữ liệu / tài khoản trống / mọi truy vấn hỏng): ` +
     'không màn nào trắng, không lỗi runtime, không chữ lọt ra ngoài như NaN hay undefined; ' +
     `đã BẤM THỬ ${globalThis.__pressed} nút trên 4 màn và nút nào cũng làm màn hình đổi ` +
-    '(nút cố ý chưa dùng được thì phải để disabled, và được bỏ qua); ' +
+    `(${globalThis.__skipped} nút được bỏ qua có lý do: disabled, đang được chọn sẵn, bị che, ` +
+    'hoặc việc duy nhất của nó là mở hộp thoại xác nhận — thứ mà Alert của react-native-web là hàm rỗng); ' +
     `${SCENARIOS.length} kịch bản có kết quả cụ thể đều đúng; ` +
     'canary xác nhận bộ chạy nhìn đúng app thật chứ không phải trang lỗi của server',
 );
