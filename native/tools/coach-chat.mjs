@@ -33,7 +33,7 @@
  * 7. "new chat" is a labelled button, not a bare icon
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -88,9 +88,12 @@ const problems = [];
 // that close a block comment, and the block-comment version killed the file.)
 const routes = [
   ...new Set(
-    execFileSync('git', ['ls-files', 'src/app/*.tsx', 'src/app/**/*.tsx'], { cwd: NATIVE, encoding: 'utf8' })
+    execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', 'src/app/*.tsx', 'src/app/**/*.tsx'], { cwd: NATIVE, encoding: 'utf8' })
       .split('\n')
-      .filter(Boolean),
+      .filter(Boolean)
+      // The working tree, not the index: `--others` so a route written this
+      // minute is scanned, `existsSync` so one deleted this minute is not.
+      .filter((f) => existsSync(path.join(NATIVE, f))),
   ),
 ];
 for (const f of routes) {

@@ -485,15 +485,20 @@ const en = {
   nWeightGoalToGo: '{x} to go',
   nWeightGoalReached: 'Target reached',
 
-  // Log-meal floating button
+  // The four ways to log a meal.
+  //
+  // Two labels each, and both are needed. `nWay*` is what the tile says — a
+  // quarter of a card's width, so it has to hold on one line. `nAdd*` is what
+  // VoiceOver says, where there is no width to fit and "Tìm món" alone does
+  // not say what is being searched.
+  nWayPhoto: 'Photo',
+  nWayBarcode: 'Barcode',
+  nWaySearch: 'Search',
+  nWayManual: 'Manual',
   nAddCamera: 'Scan a meal',
-  nAddCameraHint: 'Point the camera at your plate',
-  nAddBarcode: 'Barcode',
-  nAddBarcodeHint: 'Packaged food',
+  nAddBarcode: 'Scan a barcode',
   nAddSearch: 'Search food',
-  nAddSearchHint: 'From the library',
   nAddManual: 'Enter manually',
-  nAddManualHint: 'Type the numbers',
 
   // Meal builder
   nMealItems: 'Items',
@@ -1063,15 +1068,15 @@ const vi: typeof en = {
   nWeightGoalToGo: 'còn {x}',
   nWeightGoalReached: 'Đã đạt mục tiêu',
 
-  // Log-meal floating button
+  // Bốn cách ghi một bữa ăn — xem chú thích ở bản tiếng Anh
+  nWayPhoto: 'Chụp ảnh',
+  nWayBarcode: 'Mã vạch',
+  nWaySearch: 'Tìm món',
+  nWayManual: 'Nhập tay',
   nAddCamera: 'Quét bữa ăn',
-  nAddCameraHint: 'Hướng camera vào đĩa thức ăn',
-  nAddBarcode: 'Mã vạch',
-  nAddBarcodeHint: 'Thực phẩm đóng gói',
-  nAddSearch: 'Tìm món',
-  nAddSearchHint: 'Từ thư viện',
-  nAddManual: 'Nhập tay',
-  nAddManualHint: 'Tự điền số liệu',
+  nAddBarcode: 'Quét mã vạch',
+  nAddSearch: 'Tìm thực phẩm',
+  nAddManual: 'Nhập tay số liệu',
 
   // Meal builder
   nMealItems: 'Các món',

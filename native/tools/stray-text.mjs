@@ -59,7 +59,7 @@
  * something already in the set.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
@@ -125,9 +125,22 @@ function* elements(node) {
   }
 }
 
-const files = execFileSync('git', ['ls-files', 'src/**/*.tsx'], { cwd: NATIVE, encoding: 'utf8' })
+/* ── the file list is the working tree, not the index ──
+
+   Plain `git ls-files` lists what git has been told about, and that is wrong in
+   both directions for a rule that reads the app as it is on disk. A file
+   deleted but not yet staged is still *on* the list, and reading it threw a raw
+   ENOENT with no step name attached. A file just written and not yet added is
+   *missing from* it, so every rule here quietly skipped brand-new code — which
+   is the worse half: a new component is exactly the thing most likely to carry
+   the mistake, and the suite said "tất cả đều xanh" without having opened it.
+
+   `--others --exclude-standard` adds untracked files while still honouring
+   .gitignore, and `existsSync` drops index entries with no file behind them. */
+const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', 'src/**/*.tsx'], { cwd: NATIVE, encoding: 'utf8' })
   .split('\n')
-  .filter(Boolean);
+  .filter(Boolean)
+  .filter((f) => existsSync(path.join(NATIVE, f)));
 
 const asts = new Map();
 const problems = [];

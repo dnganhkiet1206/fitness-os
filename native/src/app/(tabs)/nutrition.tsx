@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
+import { Barcode, ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -13,7 +13,7 @@ import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/foo
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { Icon } from '@/components/ascnd/icon';
-import { LogMealFab } from '@/components/ascnd/log-meal-fab';
+import { MealLogActions } from '@/components/ascnd/meal-log-actions';
 import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 import { useSupplementChecklist } from '@/hooks/use-library';
 import { useGroceryItems } from '@/hooks/use-extras';
@@ -378,9 +378,7 @@ export default function NutritionScreen() {
   );
 
   return (
-    // The FAB is a sibling of the page, not a child: `Screen`'s root *is* the
-    // scroll view, so anything inside it scrolls away with the diary.
-    <View style={styles.root}>
+    <>
       {/*
         ── the header carries no unlabelled doors any more ──
 
@@ -435,6 +433,15 @@ export default function NutritionScreen() {
               fiber={{ current: Number(dailyLog?.fiber_g) || 0, target: macros.fiber }}
             />
             )}
+
+            {/*
+              The four ways to log, directly under the ring they move.
+
+              This is where the floating ⊕ went — see `meal-log-actions.tsx`
+              for why it could not stay in the corner, which is a story about
+              the fifth tab rather than about the button.
+            */}
+            <MealLogActions i18n={i18n} />
 
             {/*
               Water — Today's widget, not a copy of it.
@@ -514,6 +521,26 @@ export default function NutritionScreen() {
                   onChangeText={setSearch}
                   autoCorrect={false}
                 />
+                {/*
+                  Scanning is a way of searching, so it lives in the search
+                  field — the same place Amazon, the supermarket apps and
+                  MyFitnessPal's own search bar put it. It is the one of the
+                  four logging methods this segment was missing once the ⊕
+                  left, and it is the one that belongs here: a barcode
+                  identifies a packaged food, which is exactly what you are
+                  typing the name of.
+                */}
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={i18n.nAddBarcode}
+                  hitSlop={8}
+                  style={styles.scanBtn}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push('/scan-barcode');
+                  }}>
+                  <Icon icon={Barcode} size={17} color={colors.mutedForeground} />
+                </PressScale>
               </View>
               <PressScale
                 style={styles.addFoodBtn}
@@ -631,24 +658,25 @@ export default function NutritionScreen() {
           <MealPlanTab i18n={i18n} vi={lang === 'vi'} />
         )}
       </Screen>
-      {/* Logging lives here now, on the diary tab where the day is. The old
-          full-width bar at the end of the meal list is gone. */}
       {/*
-        ── one way to log a meal, not two ──
+        ── nothing floats over this page any more ──
 
-        The diary segment had the ⊕ menu; the other two had a small chip at the
-        top of the page that went straight to the manual form. Same intent, two
-        shapes, two places — and the chip was the worse of the two, because the
-        ⊕ offers camera, barcode, search and manual while the chip offered only
-        the last of those. So the segment you happened to be on decided which
-        ways of logging existed.
+        There was a ⊕ here, absolutely positioned above the tab bar, which is
+        why the page used to be wrapped in a plain `View` at all — `Screen`'s
+        root *is* the scroll view, so a sibling was the only way to keep a
+        button from scrolling away with the diary.
 
-        The ⊕ now renders on all three. It is absolutely positioned above the
-        tab bar and costs no layout height, so a segment that is a list of foods
-        is not pushed around by it.
+        It is gone, and so is the wrapper's job. `meal-log-actions.tsx` has the
+        whole reason; the short version is that the bottom-right corner is the
+        system's now — iOS 26 draws the fifth tab's `role="search"` as a
+        detached circle there — and a second circle of our own 22pt above it
+        was a coin-flip, not a control.
+
+        Each segment answers its own logging question instead: Hôm nay has the
+        four ways under the ring, Thực phẩm has search + barcode + Thêm món in
+        its own row, and Kế hoạch is plans rather than a day.
       */}
-      <LogMealFab i18n={i18n} />
-    </View>
+    </>
   );
 }
 
@@ -661,7 +689,6 @@ const styles = StyleSheet.create({
     color: colors.mutedForeground,
   },
 
-  root: { flex: 1 },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: 'rgba(24,24,27,0.6)',
@@ -688,6 +715,9 @@ const styles = StyleSheet.create({
   tabTextActive: { color: colors.foreground },
 
   searchRow: { flexDirection: 'row', gap: spacing.sm },
+  /* 30pt on its own, so hitSlop 8 takes it to 46 — past Apple's 44pt floor
+     without making the glyph bigger than the search icon facing it. */
+  scanBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   searchWrap: {
     flex: 1,
     flexDirection: 'row',
