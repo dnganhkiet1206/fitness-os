@@ -149,7 +149,10 @@ const en = {
   // weight history.
   nLoadFailed: 'Could not load your data',
   nLoadFailedHint: 'Your data is safe. The app just could not reach it.',
-  nMore: 'More',
+  // What the target-calibration card promises, and it has to be true: this
+  // runs on the device, not on a model.
+  nCalibrateHint:
+    'Measures what you actually burn from your intake and what the scale did, then suggests a calorie target that matches it.',
   nRetry: 'Try again',
   // ── screen-reader names for icon-only buttons ──
   // Verbs, not nouns: the reader already says "button", so the label supplies
@@ -208,6 +211,7 @@ const en = {
   nWeightHistory: 'Logged weights',
   nWeightEntries: '{n} entries',
   nWeightEntriesOne: '1 entry',
+  nWeightSeeAll: 'See all {n} entries',
   nDeleteWeight: 'Remove this weight',
   nDeleteWeightMsg: 'Remove the {x} entry? The chart and your BMI will be recalculated.',
   // ── logged sessions, and correcting them ──
@@ -739,7 +743,8 @@ const vi: typeof en = {
   // Cố ý không nhắc "hôm nay": thẻ này còn hiện ở Tiến trình và Buổi tập.
   nLoadFailed: 'Không tải được dữ liệu',
   nLoadFailedHint: 'Dữ liệu của bạn vẫn an toàn, chỉ là app chưa lấy được.',
-  nMore: 'Xem thêm',
+  nCalibrateHint:
+    'Đo tiêu hao thật của bạn từ lượng ăn và biến động cân nặng, rồi đề xuất mục tiêu calo khớp với nó.',
   nRetry: 'Thử lại',
   // ── tên cho trình đọc màn hình, nút chỉ có icon ──
   a11yBack: 'Quay lại',
@@ -796,6 +801,7 @@ const vi: typeof en = {
   nWeightHistory: 'Cân nặng đã ghi',
   nWeightEntries: '{n} lần',
   nWeightEntriesOne: '1 lần',
+  nWeightSeeAll: 'Xem tất cả {n} lần ghi',
   nDeleteWeight: 'Xoá số cân này',
   nDeleteWeightMsg: 'Xoá bản ghi {x}? Biểu đồ và BMI sẽ được tính lại.',
   // ── buổi tập đã ghi và sửa sai ──

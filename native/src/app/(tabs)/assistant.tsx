@@ -117,6 +117,26 @@ interface Tool {
 
 /** The original four, with the hints the redesign dropped. */
 const TOOLS: Tool[] = [
+  /*
+    ── the weekly review belongs here, not at the bottom of Progress ──
+
+    It lived under a heading called `Xem thêm` on the Progress tab, beside
+    challenges and awards, which put the app's second-largest model call in a
+    drawer of leftovers on a tab about weight and photos.
+
+    It is AI in the plain sense — `callEdge(EDGE_FUNCTIONS.…)`, a prompt over
+    your week, a parsed `AIAnalysis` of insights and recommendations with a
+    score — and this page is where the app keeps its AI. Somebody who wants the
+    coach's read on their week now looks in the one place that was always going
+    to be their first guess.
+
+    First in the list because it is the widest of the six: the other five each
+    open one thing, and this one reads everything.
+
+    It also makes the grid three full rows of two. That is a consequence, not a
+    reason, but the fifth tile had been sitting alone on a half-empty row.
+  */
+  { key: 'week', glyph: 'gauge', label: { vi: 'Tổng kết tuần', en: 'Weekly review' }, hint: { vi: 'AI đọc cả tuần và gợi ý tuần tới', en: 'The coach reads your week, and the next one' }, route: '/weekly-review' },
   /* This slot held "AI Coach → /ai-coach" and then "Past chats → /ai-coach",
      and both were the same mistake: a card offering to take you somewhere you
      already are. Past chats is a panel on this page now, reached from the

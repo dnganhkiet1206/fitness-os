@@ -64,8 +64,8 @@ export function NutritionExplainer({ visible, onClose }: { visible: boolean; onC
     {
       term: vi ? 'Nếu mức vận động chọn sai' : 'If the activity level is wrong',
       body: vi
-        ? 'Thì mục tiêu sai theo, và cách sửa là sửa nó chứ không phải cộng bù từng buổi. Sau khoảng hai tuần có ghi ăn và cân đều, màn "Mục tiêu thông minh" sẽ ĐO tiêu hao thật của bạn từ lượng ăn và biến động cân nặng, rồi đề xuất con số đúng hơn.'
-        : 'Then the target is wrong with it, and the fix is to change it rather than to credit sessions one by one. After about two weeks of logged food and regular weigh-ins, Smart Goals measures what you actually burn — from your intake and what the scale did — and suggests a better number.',
+        ? 'Thì mục tiêu sai theo, và cách sửa là sửa nó chứ không phải cộng bù từng buổi. Sau khoảng hai tuần có ghi ăn và cân đều, màn "Hiệu chỉnh mục tiêu" (trong tab Tiến độ, dưới thẻ thay đổi cân nặng) sẽ ĐO tiêu hao thật của bạn từ lượng ăn và biến động cân nặng, rồi đề xuất con số đúng hơn.'
+        : 'Then the target is wrong with it, and the fix is to change it rather than to credit sessions one by one. After about two weeks of logged food and regular weigh-ins, Target calibration — on the Progress tab, under the weight-changes card — measures what you actually burn from your intake and what the scale did, and suggests a better number.',
     },
     {
       term: vi ? 'Bốn ô macro' : 'The four macro tiles',

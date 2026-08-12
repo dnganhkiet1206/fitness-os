@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Camera, ChevronRight, Medal, Plus, Ruler, Scale, Sparkles, Swords, Target, Trash2 } from 'lucide-react-native';
+import { Camera, ChevronRight, Plus, Ruler, Scale, Target, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -14,7 +14,6 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { EmptyState } from '@/components/ascnd/empty-state';
-import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
@@ -27,7 +26,6 @@ import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBodyMeasurements, useDeleteBodyMeasurement, useWeightHistory } from '@/hooks/use-fitness-data';
 import { useProgressPhotos } from '@/hooks/use-progress-photos';
-import { useAwards, useWeeklyChallenges } from '@/hooks/use-extras';
 import { useUnits } from '@/hooks/use-units';
 import { useProfile } from '@/hooks/useTodayData';
 import { useWeightGoal } from '@/hooks/use-weight-goal';
@@ -239,8 +237,9 @@ export default function ProgressScreen() {
   const { data: weightAll } = useWeightHistory(3650);
   const { data: photos, isError: photosFailed } = useProgressPhotos();
   /* Both rows below carry state rather than only a name — see `shortcut-row`. */
-  const { data: awards } = useAwards();
-  const { data: challenges } = useWeeklyChallenges();
+  /* `useAwards` and `useWeeklyChallenges` used to be read here, for the counts
+     on two rows that have moved to Koa's room. Two queries a tab about weight
+     was making on every visit for two numbers it no longer shows. */
   const { data: measurements, isError: measurementsFailed } = useBodyMeasurements();
   const removeMeasurement = useDeleteBodyMeasurement();
 
@@ -378,13 +377,31 @@ export default function ProgressScreen() {
         Sparkles, Target, Swords, Medal — weekly review, smart goals,
         challenges, awards. Four abstract glyphs in a row, 17pt each, and not
         one of them guessable: a target is as much "goal" as it is "aim", and
-        sparkles is the icon this app also uses for AI tips. Nutrition had two
-        of these and they were the thing that read as confusing; this had
-        double.
+        sparkles is the icon this app also uses for AI tips.
 
-        They are `ShortcutRow`s at the end of the page now, with their names
-        written out and their current state beside them, which is the same
-        change and the same reasoning as the Nutrition tab.
+        They became named rows at the end of the page, under a
+        heading that said `Xem thêm`. That fixed the labels and left the real
+        problem in place: `Xem thêm` is not a category, it is an admission that
+        four things had no home, and the four had nothing to do with each other
+        or with this tab.
+
+        ── so they went to the four places they belong ──
+
+        `Tổng kết tuần` is a model call — `callEdge(EDGE_FUNCTIONS.…)`, parsed
+        into insights and recommendations. It is the app's AI, and the app has
+        an AI hub. It is a tool tile on the assistant now.
+
+        `Thử thách` pays coins and XP, and you *claim* that payment in Koa's
+        room — `weeklyRefKey`, `WEEKLY_BONUS_COINS`, the card at the bottom of
+        `mascot-room.tsx`. Seeing the challenge in one place and being paid for
+        it in another was the split. `Thành tích` is the same currency of
+        earned things. Both are rows in the room now.
+
+        `Hiệu chỉnh mục tiêu` (which was called `Mục tiêu thông minh`) stays,
+        and comes up out of the drawer: it reads weight logs and intake and
+        answers the question the weight chart raises — *I am eating to plan and
+        the scale is not moving* — so it belongs directly under the changes
+        card, not under a heading called More.
       */>
       {/* Segmented tabs (web TabsList) */}
       <View style={styles.tabBar}>
@@ -660,6 +677,45 @@ export default function ProgressScreen() {
           </Animated.View>
 
           {/*
+            ── the answer to what the card above raises ──
+
+            `WeightChanges` says which way the scale went over each window. The
+            question that follows it is always the same one — *I am eating to
+            plan, so why is it not moving* — and that question has an answer in
+            this app that was sitting in a drawer at the bottom of the page
+            called `Xem thêm`.
+
+            It is a card rather than a row because the name cannot carry it.
+            "Mục tiêu thông minh" said nothing about what the screen does, and
+            "thông minh" reads as AI, which this is not: `adaptiveTDEE` is the
+            energy-balance identity — mean intake minus what the scale did —
+            computed on the device from data the app already has. Nothing is
+            sent anywhere. So the name says what it does and the second line
+            says how, in one sentence, because a person deciding whether to tap
+            deserves to know before the tap rather than after it.
+          */}
+          <Animated.View entering={rise(4)}>
+            <PressScale
+              accessibilityRole="button"
+              accessibilityLabel={`${i18n.navSmartGoals} — ${i18n.nCalibrateHint}`}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push('/smart-goals');
+              }}>
+              <GlassCard style={styles.calCard}>
+                <View style={styles.calHead}>
+                  <View style={styles.calIcon}>
+                    <Icon icon={Target} size={17} color={colors.metricBeige} />
+                  </View>
+                  <Text style={styles.calTitle}>{i18n.navSmartGoals}</Text>
+                  <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+                </View>
+                <Text style={styles.calHint}>{i18n.nCalibrateHint}</Text>
+              </GlassCard>
+            </PressScale>
+          </Animated.View>
+
+          {/*
             The numbers behind the line, and the only way to remove one.
             `useLogWeight` upserts on (user_id, date), so today can be corrected
             by logging again — no earlier day can, and a wrong one sets the
@@ -669,7 +725,7 @@ export default function ProgressScreen() {
             converting again here is how two figures on one screen come to
             disagree by a rounding step.
           */}
-          <Animated.View entering={rise(4)}>
+          <Animated.View entering={rise(5)}>
             <WeightLogList points={weightData} unit={wl} i18n={i18n} lang={lang} />
           </Animated.View>
         </>
@@ -837,46 +893,23 @@ export default function ProgressScreen() {
         </>
       )}
 
-      {/*
-        Below everything, on every segment: these are where you go after
-        reading the charts, not instead of them. A row carries what is behind
-        it — how many badges, how many challenges are still open — so the
-        common question is answered without the trip.
-      */}
-      <View style={styles.moreSection}>
-        <Text style={styles.moreTitle}>{i18n.nMore}</Text>
-        <ShortcutRow
-          icon={Sparkles}
-          label={i18n.nWeeklyReview}
-          onPress={() => router.push('/weekly-review')}
-        />
-        <ShortcutRow
-          icon={Target}
-          label={i18n.navSmartGoals}
-          onPress={() => router.push('/smart-goals')}
-        />
-        <ShortcutRow
-          icon={Swords}
-          label={i18n.nChallenges}
-          value={challenges && challenges.length > 0
-            ? `${challenges.filter((c) => c.completed).length}/${challenges.length}`
-            : null}
-          onPress={() => router.push('/challenges')}
-        />
-        <ShortcutRow
-          icon={Medal}
-          label={i18n.nAwards}
-          value={awards && awards.length > 0 ? String(awards.length) : null}
-          onPress={() => router.push('/awards')}
-        />
-      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  moreSection: { gap: spacing.sm, marginTop: spacing.lg },
-  moreTitle: { ...type.footnote, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6, marginLeft: spacing.xs },
+  calCard: { gap: spacing.sm },
+  calHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  calIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(214,197,168,0.12)',
+  },
+  calTitle: { ...type.headline, color: colors.foreground, flex: 1 },
+  calHint: { ...type.footnote, color: colors.mutedForeground, lineHeight: 19 },
   microTitle: {
     fontSize: 12,
     fontWeight: '600',

@@ -13,10 +13,12 @@ import {
   Glasses,
   Headphones,
   LayoutGrid,
+  Medal,
   Moon,
   Shirt,
   Snowflake,
   Star,
+  Swords,
   Trophy,
   Utensils,
   Wind,
@@ -54,11 +56,12 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { MascotScene } from '@/components/ascnd/mascot-scene';
 import { RankJourney } from '@/components/ascnd/rank-journey';
+import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useWeeklyChallenges } from '@/hooks/use-extras';
+import { useAwards, useWeeklyChallenges } from '@/hooks/use-extras';
 import { useMascot } from '@/hooks/use-mascot';
 import { DEV_EMOTIONS, setDevEmotion } from '@/hooks/use-mascot-emotion';
 import {
@@ -176,6 +179,7 @@ export default function MascotRoomScreen() {
   const { data: waterMl } = useTodayWater();
   const { data: sleep } = useTodaySleep();
   const { data: challenges } = useWeeklyChallenges();
+  const { data: awards } = useAwards();
 
   const [celebrate, setCelebrate] = useState(0);
   const [flex, setFlex] = useState(0);
@@ -708,6 +712,47 @@ export default function MascotRoomScreen() {
         </GlassCard>
       )}
 
+      {/*
+        ── the two rooms these belong to were the same room all along ──
+
+        `Thử thách` and `Thành tích` sat at the bottom of the Progress tab under
+        a heading called `Xem thêm`, which is a heading that means "these had
+        nowhere to go".
+
+        The challenge one was worse than merely homeless. A finished weekly
+        challenge pays `WEEKLY_BONUS_COINS` and `WEEKLY_BONUS_XP`, and it is
+        paid **on this page** — the card directly above this comment. So the
+        progress bar was on one tab and the reward for filling it was on
+        another, with nothing on either side saying so. Somebody could complete
+        five challenges and never learn there were coins waiting.
+
+        Awards are the same currency of earned things — badges, tiers, a ladder
+        — sitting a few points below the rank journey, which is a ladder made of
+        the same idea. They are next to it now.
+
+        Rows rather than cards: both are lists, both open in full, and the count
+        on the right answers the usual question — *is there anything new* —
+        without the trip. Which is also why the challenge row counts completed
+        against total rather than showing a bare number: `3/5` says there are
+        two left to earn, and `5` says nothing at all.
+      */}
+      <View style={styles.gameRows}>
+        <ShortcutRow
+          icon={Swords}
+          label={i18n.nChallenges}
+          value={challenges && challenges.length > 0
+            ? `${challenges.filter((c) => c.completed).length}/${challenges.length}`
+            : null}
+          onPress={() => router.push('/challenges')}
+        />
+        <ShortcutRow
+          icon={Medal}
+          label={i18n.nAwards}
+          value={awards && awards.length > 0 ? String(awards.length) : null}
+          onPress={() => router.push('/awards')}
+        />
+      </View>
+
     </Screen>
   );
 }
@@ -842,6 +887,7 @@ const styles = StyleSheet.create({
   journeySub: { ...type.footnote, color: colors.mutedForeground },
 
   card: { gap: spacing.sm },
+  gameRows: { gap: spacing.sm },
   cardTitle: { ...type.headline, color: colors.foreground },
   cardHint: { ...type.caption, color: colors.mutedForeground, marginTop: -4 },
 

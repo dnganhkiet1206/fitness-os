@@ -44,11 +44,35 @@ const OPEN_EASE = Easing.out(Easing.cubic);
  * part people came for, so it opens the way the diary's meals do, with the same
  * timing — one behaviour to learn, not two.
  *
+ * ── and opening it shows five, not ninety ──
+ *
+ * "Closed by default" was doing less than it looked like. One tap and the whole
+ * history unrolled: somebody weighing in daily for three months got ninety rows
+ * between the weight card and everything below it, and the tab stopped being a
+ * page and became a ledger. Nothing above or below it had moved, so the fault
+ * was invisible right up until the scroll would not end.
+ *
+ * Five is what the disclosure opens to. It is chosen from what the list is for:
+ * the entry you came to fix is nearly always the one you just typed, and five
+ * covers a working week of daily weigh-ins or five weeks of a Sunday habit —
+ * long enough that "the one just before this one" is on screen for comparison.
+ * Three is enough for the newest but not for a comparison; ten is already a
+ * scroll on a phone.
+ *
+ * Everything older is one more tap behind `Xem tất cả`, and that tap stays
+ * inside this card — a March entry can still be deleted, which is the whole
+ * reason the list exists and is not something a cap is allowed to take away.
+ *
  * ── newest first ──
  *
  * The chart runs oldest → newest because time does. A list of entries is read
  * to find one, and the one being looked for is nearly always recent.
  */
+/**
+ * How many rows the disclosure opens to. See the note above for why five.
+ */
+const PREVIEW = 5;
+
 export function WeightLogList({
   points,
   unit,
@@ -70,6 +94,14 @@ export function WeightLogList({
   lang: 'vi' | 'en';
 }) {
   const [open, setOpen] = useState(false);
+  /**
+   * Reset when the card closes, on purpose.
+   *
+   * Left sticky, a card you had once expanded in full would spring open at
+   * ninety rows the next time you tapped the header — the same surprise the cap
+   * exists to remove, just deferred by one session.
+   */
+  const [all, setAll] = useState(false);
   const del = useDeleteWeight();
 
   const turn = useSharedValue(0);
@@ -81,6 +113,8 @@ export function WeightLogList({
   if (points.length === 0) return null;
 
   const rows = [...points].reverse();
+  const shownRows = all ? rows : rows.slice(0, PREVIEW);
+  const hidden = rows.length - shownRows.length;
 
   /**
    * Ask before removing, and name the day.
@@ -118,6 +152,10 @@ export function WeightLogList({
         accessibilityState={{ expanded: open }}
         onPress={() => {
           Haptics.selectionAsync();
+          // Outside the updater on purpose: a state setter called from inside
+          // another setter's reducer is a side effect in a function React is
+          // allowed to run twice.
+          if (open) setAll(false);
           setOpen((v) => !v);
         }}
         style={styles.head}>
@@ -135,7 +173,7 @@ export function WeightLogList({
       </PressScale>
 
       {open
-        ? rows.map((p) => {
+        ? shownRows.map((p) => {
             // one decimal: the scale reads to 0.1, and 74.8 → "74.8kg"
             const shown = `${p.value.toFixed(1)}${unit}`;
             return (
@@ -166,6 +204,28 @@ export function WeightLogList({
             );
           })
         : null}
+
+      {/*
+        The rest, and it says how many rather than "more".
+
+        A count is the difference between a control you can decide about and one
+        you have to try: `Xem tất cả 47 lần ghi` tells somebody looking for a March
+        weigh-in that it is behind this tap, and tells somebody with six entries
+        that there is nothing here worth the tap.
+      */}
+      {open && hidden > 0 ? (
+        <PressScale
+          accessibilityRole="button"
+          style={styles.seeAll}
+          onPress={() => {
+            Haptics.selectionAsync();
+            setAll(true);
+          }}>
+          <Text style={styles.seeAllText}>
+            {i18n.nWeightSeeAll.replace('{n}', String(rows.length))}
+          </Text>
+        </PressScale>
+      ) : null}
     </GlassCard>
   );
 }
@@ -191,4 +251,16 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   del: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  /* 44 exactly — Apple's floor, and the row it follows is 30 with slop, so
+     giving this one real height is also what stops it reading as another
+     entry. */
+  seeAll: {
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  seeAllText: { ...type.footnote, fontWeight: '600', color: colors.primary },
 });
