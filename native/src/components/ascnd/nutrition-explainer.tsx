@@ -13,18 +13,25 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
  * third card that cannot be read correctly by looking at it, and it is the one
  * most people look at most often.
  *
- * The surprise is the exercise calories. Anybody arriving from MyFitnessPal has
- * learned an equation — *goal − food + exercise = remaining* — where training
- * hands you calories back to eat. This app does not do that, and to somebody
- * carrying the other model it looks like a bug: they train for an hour, the
- * number does not move, and the obvious conclusion is that the app failed to
- * notice.
+ * The surprise is the exercise calories. Several well-known trackers use an
+ * equation — *goal − food + exercise = remaining* — where training hands you
+ * calories back to eat. This app does not, and to somebody carrying that model
+ * it looks like a bug: they train for an hour, the number does not move, and
+ * the obvious conclusion is that the app failed to notice.
  *
  * It noticed. The target is built from Mifflin-St Jeor times an activity
  * multiplier, and the multiplier *is* the training — adding a session back on
  * top would count the same hour twice. That is a paragraph, it is the
  * difference between trusting the number and overeating by several hundred
  * calories, and there was nowhere in the app that said it.
+ *
+ * ── and it names no competitor ──
+ *
+ * The first draft of the text below opened by comparing this app to a named
+ * one. That assumes the reader came from it, and reads as defensive to
+ * everybody who did not. The sentence has to stand on its own terms — *some
+ * apps do X, this one does not, here is why* — and the comparison belongs in
+ * this comment, where it explains why the paragraph exists at all.
  *
  * ── and why this is a sheet rather than a tour ──
  *
@@ -51,8 +58,8 @@ export function NutritionExplainer({ visible, onClose }: { visible: boolean; onC
     {
       term: vi ? 'Tập xong, số này KHÔNG tăng lên' : 'Training does not add calories back',
       body: vi
-        ? 'Đây là chỗ khác với MyFitnessPal, và là chỗ dễ tưởng app tính sai nhất. Ở đó, tập xong bạn được "trả lại" calo để ăn thêm. Ở đây thì không — vì mức vận động bạn chọn ĐÃ bao gồm việc tập rồi. Cộng thêm buổi tập vào nữa là tính cùng một giờ đó hai lần, và đó là cách ăn vượt vài trăm calo mỗi ngày mà vẫn tưởng mình đúng kế hoạch.'
-        : 'This is where the app differs from MyFitnessPal, and where it most looks wrong. There, a workout hands calories back to eat. Here it does not — the activity level you chose already includes your training. Adding a session on top counts the same hour twice, which is how somebody eats several hundred calories over while believing they are on plan.',
+        ? 'Một số app trả lại calo cho bạn sau mỗi buổi tập. App này thì không, vì mức vận động bạn chọn ĐÃ bao gồm việc tập rồi — cộng thêm buổi tập vào nữa là tính cùng một giờ đó hai lần. Đó là cách ăn vượt vài trăm calo mỗi ngày mà vẫn tưởng mình đúng kế hoạch.'
+        : 'Some apps hand calories back after a workout. This one does not, because the activity level you chose already includes your training — adding a session on top counts the same hour twice. That is how somebody eats several hundred calories over while believing they are on plan.',
     },
     {
       term: vi ? 'Nếu mức vận động chọn sai' : 'If the activity level is wrong',

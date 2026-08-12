@@ -628,11 +628,17 @@ export function NutritionCard({
   const card = (
     <GlassCard style={styles.stackCard}>
       <MicroTitle>{i18n.dcNutritionTitle}</MicroTitle>
-      {/* The third card in the app that cannot be read correctly by looking at
-          it — after readiness and training, and the one people look at most.
-          See `nutrition-explainer` for what it has to say and why it is a
-          sheet rather than a tour. */}
-      <HelpButton label={vi ? 'Giải thích mục tiêu calo' : 'Explain the calorie target'} onPress={help.openHelp} />
+      {/* Out of the flow, in the corner — the same placement `readiness-gauge`
+          uses, and for the same reason: a `?` added as a flow child pushes
+          everything under it down and changes the card's height. Absolute
+          costs the card nothing. `spacing.card` rather than `spacing.md`
+          because that is this card's own padding, so the glyph lines up with
+          the content edge instead of floating inside it. */}
+      <HelpButton
+        label={vi ? 'Giải thích mục tiêu calo' : 'Explain the calorie target'}
+        onPress={help.openHelp}
+        style={styles.nutriHelp}
+      />
 
       <View style={styles.ringRow}>
         <SmallRing
@@ -1071,6 +1077,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2.4,
     color: colors.mutedForeground,
   },
+  nutriHelp: { position: 'absolute', top: spacing.card, right: spacing.card, zIndex: 2 },
   stackCard: { gap: spacing.stack },
 
   // small ring
