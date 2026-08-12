@@ -224,6 +224,17 @@ interface Translations {
   activityModerate: string;
   activityHigh: string;
   activityAthlete: string;
+  /* How often you train, appended to each activity chip. The multipliers
+     1.2/1.375/1.55/1.725/1.9 have these standard definitions, and the app was
+     showing the five bare adjectives without them — so nothing on screen said
+     whether "Ít vận động" was about your job or your training. */
+  activityFreqSedentary: string;
+  activityFreqLight: string;
+  activityFreqModerate: string;
+  activityFreqHigh: string;
+  activityFreqAthlete: string;
+  /** The sentence that answers "why did my calories not go up after training". */
+  activityIncludesTraining: string;
 
   // Goals
   goalBulk: string;
@@ -970,6 +981,13 @@ const vi: Translations = {
   activityModerate: 'Trung bình',
   activityHigh: 'Cao',
   activityAthlete: 'Vận động viên',
+  activityFreqSedentary: '0–1 buổi/tuần',
+  activityFreqLight: '1–3 buổi/tuần',
+  activityFreqModerate: '3–5 buổi/tuần',
+  activityFreqHigh: '6–7 buổi/tuần',
+  activityFreqAthlete: '2 buổi/ngày',
+  activityIncludesTraining:
+    'Mức này đã tính cả việc tập, nên app không cộng thêm calo sau mỗi buổi tập — cộng nữa là tính một giờ hai lần.',
 
   goalBulk: 'Tăng cân',
   goalCut: 'Giảm cân',
@@ -1683,6 +1701,13 @@ const en: Translations = {
   activityModerate: 'Moderate',
   activityHigh: 'High',
   activityAthlete: 'Athlete',
+  activityFreqSedentary: '0–1 sessions/wk',
+  activityFreqLight: '1–3 sessions/wk',
+  activityFreqModerate: '3–5 sessions/wk',
+  activityFreqHigh: '6–7 sessions/wk',
+  activityFreqAthlete: 'twice a day',
+  activityIncludesTraining:
+    'This already includes your training, so the app does not add calories back after a session — doing that would count the same hour twice.',
 
   goalBulk: 'Bulk',
   goalCut: 'Cut',

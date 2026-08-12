@@ -412,13 +412,29 @@ export function OnboardingFlow() {
                   />
                 ))}
                 <Field label={i18n.onboardingDailyActivity}>
+                  {/*
+                    ── the five bare adjectives were doing all the work ──
+
+                    "Ít vận động / Nhẹ / Trung bình / Cao / Vận động viên", and
+                    nothing saying whether they meant your job or your training.
+                    Somebody with a desk job who lifts five times a week could
+                    read the first one and be hundreds of kcal under, or read
+                    the fourth and be right, with no way to tell which.
+
+                    The multipliers behind them (1.2 / 1.375 / 1.55 / 1.725 /
+                    1.9) have standard definitions and they are all in
+                    sessions per week — training *is* the axis. Putting that on
+                    the chip is the whole fix, and the line underneath is the
+                    answer to the question this choice creates: why the calorie
+                    target does not move after a workout.
+                  */}
                   <View style={[styles.chips, styles.chipsWrap]}>
                     {[
-                      { val: 'sedentary', label: i18n.activitySedentary },
-                      { val: 'light', label: i18n.activityLight },
-                      { val: 'moderate', label: i18n.activityModerate },
-                      { val: 'high', label: i18n.activityHigh },
-                      { val: 'athlete', label: i18n.activityAthlete },
+                      { val: 'sedentary', label: `${i18n.activitySedentary} · ${i18n.activityFreqSedentary}` },
+                      { val: 'light', label: `${i18n.activityLight} · ${i18n.activityFreqLight}` },
+                      { val: 'moderate', label: `${i18n.activityModerate} · ${i18n.activityFreqModerate}` },
+                      { val: 'high', label: `${i18n.activityHigh} · ${i18n.activityFreqHigh}` },
+                      { val: 'athlete', label: `${i18n.activityAthlete} · ${i18n.activityFreqAthlete}` },
                     ].map((a) => (
                       <Chip
                         key={a.val}
@@ -429,6 +445,7 @@ export function OnboardingFlow() {
                       />
                     ))}
                   </View>
+                  <Text style={styles.activityNote}>{i18n.activityIncludesTraining}</Text>
                 </Field>
               </>
             )}
@@ -920,6 +937,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  activityNote: { ...type.footnote, color: colors.mutedForeground, lineHeight: 18, marginTop: spacing.xs },
   chips: { flexDirection: 'row', gap: spacing.sm },
   chipsWrap: { flexWrap: 'wrap' },
   chip: {

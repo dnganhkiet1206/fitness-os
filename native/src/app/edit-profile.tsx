@@ -191,12 +191,16 @@ export default function EditProfileSheet() {
     { key: 'strength', label: i18n.goalStrength },
     { key: 'endurance', label: i18n.goalEndurance },
   ];
+  /* Same qualifiers as onboarding — see the note there. The five adjectives on
+     their own never said whether they meant your job or your training, and this
+     is the second place somebody sets the number that every calorie target in
+     the app is built from. */
   const activities = [
-    { key: 'sedentary', label: i18n.activitySedentary },
-    { key: 'light', label: i18n.activityLight },
-    { key: 'moderate', label: i18n.activityModerate },
-    { key: 'high', label: i18n.activityHigh },
-    { key: 'athlete', label: i18n.activityAthlete },
+    { key: 'sedentary', label: `${i18n.activitySedentary} · ${i18n.activityFreqSedentary}` },
+    { key: 'light', label: `${i18n.activityLight} · ${i18n.activityFreqLight}` },
+    { key: 'moderate', label: `${i18n.activityModerate} · ${i18n.activityFreqModerate}` },
+    { key: 'high', label: `${i18n.activityHigh} · ${i18n.activityFreqHigh}` },
+    { key: 'athlete', label: `${i18n.activityAthlete} · ${i18n.activityFreqAthlete}` },
   ];
   const sexes = [
     { key: 'male', label: i18n.settingsSexMale },
@@ -322,6 +326,7 @@ export default function EditProfileSheet() {
         {/* Activity level */}
         <Field label={i18n.settingsActivityLevel}>
           <ChipGrid options={activities} value={form.activity_level} onChange={(v) => set('activity_level', v)} />
+          <Text style={styles.activityNote}>{i18n.activityIncludesTraining}</Text>
         </Field>
 
         {/* Goal */}
@@ -500,6 +505,7 @@ const styles = StyleSheet.create({
   headerTitle: { ...type.headline, color: colors.foreground },
   headerSave: { ...type.headline, color: colors.primary, fontWeight: '700' },
   kav: { flex: 1 },
+  activityNote: { ...type.footnote, color: colors.mutedForeground, lineHeight: 18, marginTop: spacing.xs },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },
   field: { gap: 6 },
   fieldLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
