@@ -529,11 +529,13 @@ export function NutritionCard({
   /**
    * How far today sits from the target, signed.
    *
-   * Positive is a surplus (eaten past the target), negative a deficit. The
-   * "remaining" line above it already shows what is left, but it clamps at
-   * zero — so once the target is passed it reads 0 and says nothing about by
-   * how much. This is the line that keeps counting, and it is what a cut or a
-   * bulk is actually steered by.
+   * Positive is a surplus (eaten past the target), negative a deficit.
+   *
+   * It used to feed a second text line under "remaining", which meant the card
+   * printed the same figure twice all day — *còn lại 500* over *thâm hụt −500*.
+   * There is one line now and this decides which of the three things it says;
+   * see the note at the render. The ring still reads `delta` on its own, to
+   * choose its colour and to draw the overshoot lap.
    */
   const delta = kcal - calorieTarget;
   const over = delta > 0;
@@ -694,21 +696,36 @@ export function NutritionCard({
             <Text style={[styles.sidePct, { color: deltaColor }]}>{pctOfTarget}%</Text>
             <Icon icon={Target} size={13} color={deltaColor} />
           </View>
-          <Text style={styles.sideLine}>
-            {i18n.dcNutritionRemaining}: <Text style={styles.sideMono}>{Math.max(calorieTarget - kcal, 0).toLocaleString()}</Text> kcal
-          </Text>
-          {/* Signed distance from the target — the one line that keeps counting
-              once "remaining" has bottomed out at zero. */}
+          {/*
+            ── one line, not two ──
+
+            This used to be a "remaining" line with a signed "deficit / surplus"
+            line under it, and for the whole of a normal day they printed the
+            same number twice: *Còn lại 500* directly above *Thâm hụt −500*. The
+            second line existed because the first clamps at zero and therefore
+            goes quiet exactly when the day gets interesting — but the answer to
+            that is for the one line to keep counting, not for a second line to
+            shadow it all day for the sake of one case.
+
+            So the slot says what is true of the moment. Under the target it is
+            what is left; past it, the same slot turns into the surplus and
+            takes the delta colour with it, which is also the point at which the
+            ring and the percentage above have already turned. Landing exactly
+            on it is its own sentence, because "còn lại 0" is a technically
+            correct thing to say to somebody who has just hit their target
+            precisely, and it reads as a failure.
+          */}
           {onTarget ? (
             <Text style={[styles.sideLine, { color: deltaColor }]}>{i18n.dcNutritionOnTarget}</Text>
+          ) : over ? (
+            <Text style={[styles.sideLine, { color: deltaColor }]}>
+              {i18n.dcNutritionSurplus}:{' '}
+              <Text style={styles.sideMono}>+{delta.toLocaleString()}</Text> kcal
+            </Text>
           ) : (
             <Text style={styles.sideLine}>
-              {over ? i18n.dcNutritionSurplus : i18n.dcNutritionDeficit}:{' '}
-              <Text style={[styles.sideMono, { color: deltaColor }]}>
-                {over ? '+' : '−'}
-                {Math.abs(delta).toLocaleString()}
-              </Text>{' '}
-              kcal
+              {i18n.dcNutritionRemaining}:{' '}
+              <Text style={styles.sideMono}>{(calorieTarget - kcal).toLocaleString()}</Text> kcal
             </Text>
           )}
         </View>
