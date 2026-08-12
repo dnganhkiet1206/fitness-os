@@ -389,9 +389,11 @@ export default function NutritionScreen() {
         not — and this app has a real shop, so a trolley in a header is a
         reasonable guess at entirely the wrong screen.
 
-        Both are now `ShortcutRow`s under the diary, with their names written
-        out and today's state beside them. See that file for why the state is
-        the point rather than the label.
+        Both are now `ShortcutRow`s — names written out, today's state beside
+        them — and each sits with the thing it belongs to rather than in a
+        drawer of leftovers: supplements next to water in "Hôm nay", the
+        shopping list among the foods. See `shortcut-row.tsx` for why the
+        state, not the label, is the point.
       */}
       <Screen title={i18n.nutritionTitle}>
         {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
@@ -457,6 +459,28 @@ export default function NutritionScreen() {
             )}
 
             {/*
+              ── supplements belong beside water, not under the diary ──
+
+              Both are the same kind of thing: a small daily habit with a
+              count, ticked off rather than measured, and neither is a meal.
+              Sitting together above the diary they read as one band of "what
+              else today needs"; split by the meal list they read as two
+              unrelated leftovers.
+
+              The row carries `2/4 hôm nay`, so on most days the question is
+              answered without the tap — which is why it earns a place this
+              high rather than merely being reachable.
+            */}
+            <ShortcutRow
+              icon={Pill}
+              label={i18n.nSupplements}
+              value={supplements && supplements.length > 0
+                ? `${supplements.filter((x) => x.taken).length}/${supplements.length} ${i18n.nTakenToday}`
+                : null}
+              onPress={() => router.push('/supplements')}
+            />
+
+            {/*
               Heading and list go together.
 
               The notice at the top of the segment already says why the diary is
@@ -475,30 +499,6 @@ export default function NutritionScreen() {
                 <TodayMeals meals={today ?? []} i18n={i18n} lang={lang} />
               </>
             )}
-
-            {/*
-              ── the two occasional destinations, named ──
-
-              Under the diary, not above it: the diary is why somebody opened
-              this tab, and nothing occasional gets to push it down. The cost is
-              one scroll; what it buys is that neither is a guess any more, and
-              that the answer to "have I taken them today" is on the row itself,
-              so most days the tap does not happen at all.
-            */}
-            <ShortcutRow
-              icon={Pill}
-              label={i18n.nSupplements}
-              value={supplements && supplements.length > 0
-                ? `${supplements.filter((x) => x.taken).length}/${supplements.length} ${i18n.nTakenToday}`
-                : null}
-              onPress={() => router.push('/supplements')}
-            />
-            <ShortcutRow
-              icon={ShoppingCart}
-              label={i18n.nGrocery}
-              value={grocery && grocery.length > 0 ? i18n.nGroceryLeft.replace('{n}', String(grocery.filter((g) => !g.checked).length)) : null}
-              onPress={() => router.push('/grocery')}
-            />
           </>
         ) : tab === 'foods' ? (
           <>
@@ -528,6 +528,33 @@ export default function NutritionScreen() {
 
             {/* AI meal suggestions (web AiMealSuggestButton) */}
             <AiMealSuggest />
+
+            {/*
+              ── the shopping list lives with the foods, not under the diary ──
+
+              It is the same subject as everything else in this segment — food
+              you do not have yet — and it is used at the same moment: you look
+              through your foods, notice what has run out, and the list is
+              already on the screen you are on. Under the diary it sat beside
+              *what you ate today*, which is a different question on a
+              different day.
+
+              It is named `nGrocery` = "Danh sách đi chợ" rather than the old
+              "Đi chợ": the old name is a verb phrase and reads as an action
+              the app is about to perform, when the screen is a list you keep.
+
+              The row carries `còn 6 món`, so the state is answered without the
+              tap, which is the whole reason it is a `ShortcutRow` and not an
+              icon in the header.
+            */}
+            <ShortcutRow
+              icon={ShoppingCart}
+              label={i18n.nGrocery}
+              value={grocery && grocery.length > 0
+                ? i18n.nGroceryLeft.replace('{n}', String(grocery.filter((g) => !g.checked).length))
+                : null}
+              onPress={() => router.push('/grocery')}
+            />
 
             {debounced.length >= 2 && results ? (
               results.length > 0 ? (

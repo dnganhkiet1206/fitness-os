@@ -92,6 +92,7 @@ function SmallRing({
   unit,
   over = 0,
   glow,
+  size = 100,
 }: {
   pct: number;
   gradId: string;
@@ -114,6 +115,17 @@ function SmallRing({
    * first; one is a hard-edged outline, which is the opposite of a glow.
    */
   glow?: string;
+  /**
+   * Outer box, in points. Everything inside is drawn in a fixed 100×100
+   * viewBox, so this scales the whole thing — band, glow ramp, overshoot lap —
+   * without touching a single coordinate.
+   *
+   * It is a prop rather than a bigger constant because `SleepCard` draws the
+   * same ring and was not asked to change. The number in the middle keeps its
+   * own size on purpose: a larger ring with the same numeral gives the figure
+   * room, whereas scaling the text with the ring just makes the card louder.
+   */
+  size?: number;
 }) {
   // Thick, in the Move-ring proportion: the stroke is most of the difference
   // between the outer edge and the hole, so the ring reads as a band of colour
@@ -178,8 +190,8 @@ function SmallRing({
   const lapped = over > 0;
 
   return (
-    <View style={styles.smallRingWrap}>
-      <Svg width={100} height={100} viewBox="0 0 100 100">
+    <View style={[styles.smallRingWrap, { width: size, height: size }]}>
+      <Svg width={size} height={size} viewBox="0 0 100 100">
         <Defs>
           <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
             <Stop offset="0%" stopColor={c0} />
@@ -644,6 +656,9 @@ export function NutritionCard({
 
       <View style={styles.ringRow}>
         <SmallRing
+          /* The hero of this card and the one number people open the tab for.
+             124 rather than 100 — the sleep card keeps the smaller one. */
+          size={124}
           pct={calPct}
           gradId="nutri-cal"
           gradient={ringGradient}
