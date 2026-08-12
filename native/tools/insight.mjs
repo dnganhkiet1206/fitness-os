@@ -160,6 +160,10 @@ if (!callers.some((c) => c.file === DOOR && c.arg === 'false')) {
 */
 {
   const owner = read(OWNER);
+  /* comments stripped for the stamp rules below: the note beside the stamp
+     explains the `Date.now()` version it forbids, and quoting it must not
+     trip the rule. */
+  const stripped = strip(owner);
   for (const [what, re] of [
     ['đang tải', /insight\.isPending/],
     ['lỗi', /insight\.isError/],
@@ -174,6 +178,32 @@ if (!callers.some((c) => c.file === DOOR && c.arg === 'false')) {
   const errText = owner.match(/Chưa đọc được hôm nay[^']*/)?.[0];
   if (!errText) {
     problems.push(`${OWNER}: câu báo lỗi phải nói rõ là chưa đọc được, không được nói "không có gợi ý"`);
+  }
+
+  /*
+    ── the timestamp has to be the fetch's, not the render's ──
+
+    The section is cached all day and says "hôm nay", so it carries a stamp of
+    when the reading was actually taken. There is exactly one honest source for
+    that: React Query's `dataUpdatedAt`, which the persister dehydrates along
+    with the data, so a relaunch shows the original hour rather than resetting.
+
+    The wrong version is one character shorter and reads fine: `new Date()` at
+    render time. It would say the current hour, always, for a reading computed
+    at seven this morning — a stamp that is a lie precisely when it matters, and
+    one nobody can see is wrong by looking at it, because "just now" is exactly
+    what a fresh render looks like.
+  */
+  const stampArea = stripped.match(/insightStamp[\s\S]{0,400}/)?.[0] ?? '';
+  if (!/insight\.dataUpdatedAt/.test(stripped)) {
+    problems.push(
+      `${OWNER}: mốc thời gian của insight phải lấy từ insight.dataUpdatedAt — đó là lúc dữ liệu THẬT SỰ về, và nó sống sót qua khởi động lại`,
+    );
+  }
+  if (/new Date\(\)\.toLocaleTimeString/.test(stampArea) || /Date\.now\(\)/.test(stampArea)) {
+    problems.push(
+      `${OWNER}: mốc thời gian dựng từ đồng hồ lúc render — nó sẽ luôn nói "vừa xong" cho một kết quả tính từ sáng`,
+    );
   }
 }
 
@@ -194,6 +224,11 @@ const selfTest = [
     return !fake.some((c) => c.file === DOOR && c.arg === 'false');
   }],
   ['queryKey thiếu ngày bị bắt', () => !"['smart_nudges', user?.id, lang]".includes('date')],
+  ['mốc thời gian dựng từ đồng hồ render bị bắt', () => {
+    const bad = "<Text style={styles.insightStamp}>{new Date().toLocaleTimeString(l)}</Text>";
+    const area = bad.match(/insightStamp[\s\S]{0,400}/)?.[0] ?? '';
+    return /new Date\(\)\.toLocaleTimeString/.test(area) && !/insight\.dataUpdatedAt/.test(bad);
+  }],
   ['stamp mang giá trị thô bị bắt', () => {
     const bad = "const stamp = String(Number(log?.kcal)) + (Number(log?.steps) > 0 ? 's' : '-');\n";
     const expr = bad.match(/const stamp =([\s\S]*?);\n/)?.[1] ?? '';
@@ -216,5 +251,6 @@ if (problems.length) {
 console.log(
   `insight hôm nay OK — một chỗ gọi model (${OWNER.split('/').pop()}), thẻ dashboard chỉ đọc cache và dẫn sang /assistant; ` +
     'queryKey mang ngày + người dùng + ngôn ngữ + dấu vân ngày (3 cờ, tối đa 4 lần gọi/ngày); ' +
-    'ba trạng thái tải/lỗi/rỗng phân biệt được và lỗi thì cho thử lại',
+    'ba trạng thái tải/lỗi/rỗng phân biệt được và lỗi thì cho thử lại; ' +
+    'mốc "cập nhật lúc" lấy từ dataUpdatedAt của React Query chứ không phải đồng hồ lúc render, nên khởi động lại vẫn đúng giờ',
 );

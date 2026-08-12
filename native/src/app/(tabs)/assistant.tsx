@@ -30,6 +30,7 @@ import { useKcalHistory, useReadinessHistory, useSleepDurationHistory } from '@/
 import { briefFor } from '@/lib/assistant-brief';
 import { analyse, WINDOW_DAYS, type MetricKind } from '@/lib/metric-analysis';
 import { suggestionsFor } from '@/lib/assistant-suggestions';
+import { getLocale } from '@/lib/i18n';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 
 /**
@@ -135,8 +136,21 @@ const TOOLS: Tool[] = [
 
     It also makes the grid three full rows of two. That is a consequence, not a
     reason, but the fifth tile had been sitting alone on a half-empty row.
+
+    ── it is not a gauge, and it was ──
+
+    This tile shipped with `glyph: 'gauge'`, which is the glyph the readiness
+    metric uses eight tiles above it, in the same green, on the same screen. Two
+    identical speedometers, one meaning "your readiness score" and one meaning
+    "your week", and the only way to tell them apart was to read the label —
+    which is exactly the failure the tools grid grew hints to avoid.
+
+    That the repetition was invisible to me and obvious on the screen is the
+    lesson: `GLYPH_TINT` is a table of nineteen entries and nothing in it knows
+    which page renders which. A calendar in cyan, and no other tile or metric on
+    this page uses either.
   */
-  { key: 'week', glyph: 'gauge', label: { vi: 'Tổng kết tuần', en: 'Weekly review' }, hint: { vi: 'AI đọc cả tuần và gợi ý tuần tới', en: 'The coach reads your week, and the next one' }, route: '/weekly-review' },
+  { key: 'week', glyph: 'calendar', label: { vi: 'Tổng kết tuần', en: 'Weekly review' }, hint: { vi: 'AI đọc cả tuần và gợi ý tuần tới', en: 'The coach reads your week, and the next one' }, route: '/weekly-review' },
   /* This slot held "AI Coach → /ai-coach" and then "Past chats → /ai-coach",
      and both were the same mistake: a card offering to take you somewhere you
      already are. Past chats is a panel on this page now, reached from the
@@ -527,6 +541,44 @@ export default function AssistantScreen() {
           <View style={styles.insightHead}>
             <Glyph name="spark" size={15} />
             <Text style={styles.sectionTitle}>{vi ? 'Insight hôm nay' : 'Today’s insight'}</Text>
+            {/*
+              ── when this reading was taken ──
+
+              The section says "hôm nay" and is cached, which together are a
+              claim with no date on it: the same four sentences are still on the
+              screen at nine in the evening that were computed at seven in the
+              morning, and nothing said so. Somebody who trained at six is
+              reading advice about a day that had not happened yet, and cannot
+              tell.
+
+              `dataUpdatedAt` is React Query's own record of when the data
+              landed, and it is the right source rather than a `Date.now()` at
+              render: the persister dehydrates the full query state, so after a
+              relaunch this still says 07:12 instead of resetting to now. A
+              refetch — one of the at-most-four a day, when a flag in the key
+              flips — moves it, which is exactly the moment it should move. A
+              *failed* refetch does not, because the reading on screen is still
+              the one from the last success.
+
+              An absolute time rather than "3 giờ trước": a relative one is
+              wrong the moment it is drawn and goes on being more wrong the
+              longer the page is open, and correcting that costs a timer on a
+              screen that already runs an aura. The key carries the date, so the
+              stamp can only ever be today and the hour alone is unambiguous.
+
+              Hidden at zero, which is the first load — there is a spinner
+              underneath saying the same thing, and "Cập nhật 07:00" over a
+              spinner would be a lie about a fetch that has not returned.
+            */}
+            {insight.dataUpdatedAt > 0 ? (
+              <Text style={styles.insightStamp}>
+                {(vi ? 'Cập nhật ' : 'Updated ') +
+                  new Date(insight.dataUpdatedAt).toLocaleTimeString(getLocale(lang), {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+              </Text>
+            ) : null}
           </View>
           <LiquidGlass
             style={[styles.insight, tintBorder(litBy('spark'))]}
@@ -895,6 +947,10 @@ const styles = StyleSheet.create({
      asked of large text, and it showed as the label under each metric fading
      into its own tile. The constant carries the numbers. */
   insightHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  /* `flex: 1` on the stamp rather than on the title: the title is the thing
+     that must never be pushed off, and a stamp that takes the slack sits hard
+     against the right edge without a spacer view to do it. */
+  insightStamp: { ...type.caption, color: colors.glassMuted, flex: 1, textAlign: 'right' },
   insight: {},
   insightInner: { padding: spacing.md },
   insightRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

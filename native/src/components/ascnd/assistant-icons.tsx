@@ -39,6 +39,7 @@ export type GlyphName =
   | 'sliders'
   | 'arrow'
   | 'camera'
+  | 'calendar'
   | 'home'
   /* the coach's own six, added when the chat took the assistant's material */
   | 'chevron'
@@ -74,6 +75,18 @@ const PATHS: Record<GlyphName, string> = {
      disc of some background colour that would only be right on one screen. */
   camera:
     'M4.4 6.5h3.05l1.1-1.95c.3-.53.87-.85 1.48-.85h4.24c.61 0 1.18.32 1.48.85l1.1 1.95H19.6A2.4 2.4 0 0 1 22 8.9v8.7a2.4 2.4 0 0 1-2.4 2.4H4.4A2.4 2.4 0 0 1 2 17.6V8.9a2.4 2.4 0 0 1 2.4-2.4ZM8.6 13.4a3.4 3.4 0 1 0 6.8 0 3.4 3.4 0 1 0-6.8 0Z',
+  /* A rounded page with its header ruled off, and no hanger rings — the same
+     shape SF Symbols' own `calendar` draws, for the same reason: at 19pt two
+     2pt posts above the body are three grey pixels, and what they add is
+     noise rather than "calendar".
+
+     The rule is a second subpath under `evenodd`, so it shows the tile's glass
+     rather than a colour that would only be right on one surface — the trick
+     `camera` and `alert` already use. It runs the full width on purpose: a
+     slot that stops short of both edges reads as a dash floating on a card. */
+  calendar:
+    'M5.9 3.9H18.1a3 3 0 0 1 3 3V18.1a3 3 0 0 1-3 3H5.9a3 3 0 0 1-3-3V6.9a3 3 0 0 1 3-3Z' +
+    'M2.9 9.2H21.1V11H2.9Z',
   home:
     'M11.06 2.98a1.5 1.5 0 0 1 1.88 0l7.5 6.02c.36.28.56.71.56 1.17V19.2a2.4 2.4 0 0 1-2.4 2.4h-3.7v-5.5a1.2 1.2 0 0 0-1.2-1.2h-3.4a1.2 1.2 0 0 0-1.2 1.2v5.5H5.4A2.4 2.4 0 0 1 3 19.2v-9.03c0-.46.2-.89.56-1.17Z',
   arrow:
@@ -123,6 +136,7 @@ export const GLYPH_TINT: Record<GlyphName, readonly [string, string]> = {
   sliders: ['#e8e8ee', '#a8afbd'],
   arrow: ['#ffffff', '#c8ccd4'],
   camera: ['#ffd08a', '#ff9130'],
+  calendar: ['#a8f4ff', '#22e3ff'],
   home: ['#f2f3f6', '#a8afbd'],
   chevron: ['#ffffff', '#c8ccd4'],
   plus: ['#ffffff', '#c8ccd4'],
@@ -135,7 +149,7 @@ export const GLYPH_TINT: Record<GlyphName, readonly [string, string]> = {
 };
 
 /** Glyphs whose shape needs a hole punched through it. */
-const EVENODD: Partial<Record<GlyphName, true>> = { camera: true, clock: true, alert: true };
+const EVENODD: Partial<Record<GlyphName, true>> = { camera: true, calendar: true, clock: true, alert: true };
 
 /**
  * `useId` on every gradient, without exception.
