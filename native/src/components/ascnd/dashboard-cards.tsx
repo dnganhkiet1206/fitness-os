@@ -17,10 +17,12 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { CarbIcon, FatIcon, FiberIcon, ProteinIcon } from '@/components/ascnd/macro-icons';
 import { Icon } from '@/components/ascnd/icon';
+import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
+import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { displayVolume, volumeLabel } from '@/lib/units';
 
@@ -517,6 +519,9 @@ export function NutritionCard({
   interactive = false,
 }: NutritionCardProps) {
   const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
+  const help = useHelpTopic('nutrition');
   const calPct = Math.min((kcal / (calorieTarget || 1)) * 100, 100);
   /** the same share, uncapped — the ring stops at a turn, this does not */
   const pctOfTarget = Math.round((kcal / (calorieTarget || 1)) * 100);
@@ -623,6 +628,11 @@ export function NutritionCard({
   const card = (
     <GlassCard style={styles.stackCard}>
       <MicroTitle>{i18n.dcNutritionTitle}</MicroTitle>
+      {/* The third card in the app that cannot be read correctly by looking at
+          it — after readiness and training, and the one people look at most.
+          See `nutrition-explainer` for what it has to say and why it is a
+          sheet rather than a tour. */}
+      <HelpButton label={vi ? 'Giải thích mục tiêu calo' : 'Explain the calorie target'} onPress={help.openHelp} />
 
       <View style={styles.ringRow}>
         <SmallRing
@@ -747,17 +757,45 @@ export function NutritionCard({
     </GlassCard>
   );
 
-  if (!interactive) return card;
+  const withHelp = (
+    <>
+      {card}
+      {help.nudge ? (
+        <HelpNudge
+          text={vi
+            ? 'Tập xong mà số calo không tăng lên? Bấm vào đây.'
+            : 'Trained today and the calories did not go up? Tap here.'}
+          onPress={help.openHelp}
+          onDismiss={help.dismissNudge}
+        />
+      ) : null}
+      <NutritionExplainer visible={help.open} onClose={help.close} />
+    </>
+  );
+
+  if (!interactive) return withHelp;
 
   return (
-    <PressScale
-      accessibilityRole="button"
-      onPress={() => {
-        Haptics.selectionAsync();
-        setShowLeft((v) => !v);
-      }}>
-      {card}
-    </PressScale>
+    <>
+      <PressScale
+        accessibilityRole="button"
+        onPress={() => {
+          Haptics.selectionAsync();
+          setShowLeft((v) => !v);
+        }}>
+        {card}
+      </PressScale>
+      {help.nudge ? (
+        <HelpNudge
+          text={vi
+            ? 'Tập xong mà số calo không tăng lên? Bấm vào đây.'
+            : 'Trained today and the calories did not go up? Tap here.'}
+          onPress={help.openHelp}
+          onDismiss={help.dismissNudge}
+        />
+      ) : null}
+      <NutritionExplainer visible={help.open} onClose={help.close} />
+    </>
   );
 }
 
