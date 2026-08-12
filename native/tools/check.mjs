@@ -141,6 +141,7 @@ const STEPS = [
   ['ẩn thanh tab', 'node', ['tools/tab-bar-hide.mjs']],
   ['thang chữ', 'node', ['tools/type-scale.mjs']],
   ['hình huy hiệu', 'node', ['tools/glyph-collision.mjs']],
+  ['ngôn ngữ AI', 'node', ['tools/ai-language.mjs']],
   ['bàn phím', 'node', ['tools/keyboard.mjs']],
   ['đọc trên kính', 'node', ['tools/glass-legibility.mjs']],
   ['gợi ý trợ lý', 'node', ['tools/suggestions.mjs']],

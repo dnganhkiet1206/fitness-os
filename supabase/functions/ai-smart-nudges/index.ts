@@ -84,7 +84,7 @@ serve(async (req) => {
           {
             role: "system",
             content: lang === "en"
-              ? `You are an AI habit-reminder assistant. Based on the user's data, create 2-4 short nudges for today.
+              ? `You are an AI habit-reminder assistant. Reply in English. Based on the user's data, create 2-4 short nudges for today.
 
 DATA: ${JSON.stringify(ctx)}
 
@@ -97,8 +97,9 @@ IMPORTANT PRINCIPLES:
 - Base it on real data, not generic
 - Prioritize: biggest shortfall first
 - If evening: remind to sleep early; if morning: remind water + protein
-- Do not give medical advice in any form. All text in English.`
-              : `Bạn là AI hỗ trợ nhắc nhở thói quen sinh hoạt. Dựa trên dữ liệu người dùng, tạo 2-4 gợi ý ngắn gọn cho hôm nay.
+- Do not give medical advice in any form
+- Every nudge in English, including when the data contains Vietnamese words`
+              : `Bạn là AI hỗ trợ nhắc nhở thói quen sinh hoạt. Trả lời bằng tiếng Việt. Dựa trên dữ liệu người dùng, tạo 2-4 gợi ý ngắn gọn cho hôm nay.
 
 DỮ LIỆU: ${JSON.stringify(ctx)}
 
@@ -111,7 +112,8 @@ NGUYÊN TẮC QUAN TRỌNG:
 - Dựa trên dữ liệu thực, không generic
 - Ưu tiên: thiếu hụt lớn nhất trước
 - Nếu buổi tối: nhắc ngủ sớm, nếu sáng: nhắc uống nước + protein
-- Không đưa lời khuyên y tế dưới bất kỳ hình thức nào`,
+- Không đưa lời khuyên y tế dưới bất kỳ hình thức nào
+- Mọi gợi ý viết bằng tiếng Việt`,
           },
         ],
         tools: [
