@@ -11,6 +11,7 @@ import { rise } from '@/lib/entrance';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -402,13 +403,14 @@ export default function WorkoutsScreen() {
       ) : templatesFailed ? (
         <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
       ) : (
-        <View style={styles.empty}>
-          <Icon icon={Dumbbell} size={48} color="rgba(107,107,107,0.35)" />
-          <Text style={styles.emptyTitle}>{i18n.workoutsNoTemplates}</Text>
-          <Text style={styles.emptyHint}>
-            {vi ? 'Nhấn + để tạo mẫu tập đầu tiên' : 'Tap + to create your first template'}
-          </Text>
-        </View>
+        /* The hint used to read "nhấn + để tạo mẫu tập đầu tiên", which points
+           at a button somewhere else on the page and makes the reader go and
+           find it. The button is here now. */
+        <EmptyState
+          icon={Dumbbell}
+          title={i18n.workoutsNoTemplates}
+          action={{ label: i18n.workoutsCreateNew, onPress: () => router.push('/workout-builder') }}
+        />
       )}
 
       {/*
@@ -560,9 +562,6 @@ const styles = StyleSheet.create({
   libCount: { ...type.caption, color: colors.mutedForeground },
   /* The list's own section, spaced like the library's above it. */
   tplSection: { gap: spacing.sm },
-  empty: { alignItems: 'center', paddingVertical: spacing.xl * 2, gap: spacing.sm },
-  emptyTitle: { ...type.body, fontWeight: '500', color: colors.mutedForeground },
-  emptyHint: { fontSize: 12, color: 'rgba(107,107,107,0.6)' },
   sessionsWrap: { gap: spacing.sm },
   sessionsCard: { paddingVertical: 4 },
   sessionRow: {

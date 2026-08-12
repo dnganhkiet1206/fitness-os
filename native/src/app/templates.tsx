@@ -7,6 +7,7 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -106,16 +107,24 @@ export default function TemplatesScreen() {
         /* Two different emptinesses. Nothing saved at all is an invitation to
            build one; nothing *matching* is a search that missed, and offering
            to create a workout there would answer a question nobody asked. */
-        <View style={styles.empty}>
-          <Icon icon={Dumbbell} size={48} color="rgba(107,107,107,0.35)" />
-          <Text style={styles.emptyTitle}>
-            {search.trim()
+        <EmptyState
+          icon={Dumbbell}
+          title={
+            search.trim()
               ? vi
                 ? `Không có buổi tập nào khớp “${search.trim()}”`
                 : `No workout matches “${search.trim()}”`
-              : i18n.workoutsNoTemplates}
-          </Text>
-        </View>
+              : i18n.workoutsNoTemplates
+          }
+          /* The distinction the comment above draws, expressed rather than
+             described: a search that missed gets no button, because creating a
+             workout is not the answer to "that word matched nothing". */
+          action={
+            search.trim()
+              ? undefined
+              : { label: i18n.workoutsCreateNew, onPress: () => router.push('/workout-builder') }
+          }
+        />
       )}
 
       <PressScale
@@ -143,8 +152,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   searchInput: { flex: 1, color: colors.foreground, fontSize: 16 },
-  empty: { alignItems: 'center', paddingVertical: spacing.xl * 2, gap: spacing.sm },
-  emptyTitle: { ...type.body, fontWeight: '500', color: colors.mutedForeground, textAlign: 'center' },
   createBtn: {
     flexDirection: 'row',
     alignItems: 'center',

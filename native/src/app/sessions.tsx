@@ -1,11 +1,14 @@
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
+import { Dumbbell } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
 import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
-import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { colors, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
@@ -123,9 +126,11 @@ export default function SessionsScreen() {
       {isError ? (
         <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
       ) : months.length === 0 ? (
-        <Text style={styles.empty}>
-          {vi ? 'Chưa có buổi tập nào trong 90 ngày qua' : 'No workouts in the last 90 days'}
-        </Text>
+        <EmptyState
+          icon={Dumbbell}
+          title={vi ? 'Chưa có buổi tập nào trong 90 ngày qua' : 'No workouts in the last 90 days'}
+          action={{ label: i18n.nLogWorkoutBtn, onPress: () => router.push('/log-workout') }}
+        />
       ) : (
         months.map((m, mi) => {
           /*
@@ -220,14 +225,4 @@ const styles = StyleSheet.create({
      as it is a lapse, and colouring it red would call every planned easy month
      a failure. Down is simply muted. */
   monthChange: { fontSize: 11, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  empty: {
-    fontSize: 13,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    paddingVertical: spacing.lg,
-    borderRadius: radius.md,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
-    backgroundColor: glass.bg,
-  },
 });
