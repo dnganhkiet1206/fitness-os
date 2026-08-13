@@ -142,6 +142,7 @@ const STEPS = [
   ['thang chữ', 'node', ['tools/type-scale.mjs']],
   ['hình huy hiệu', 'node', ['tools/glyph-collision.mjs']],
   ['ngôn ngữ AI', 'node', ['tools/ai-language.mjs']],
+  ['worklet đo được', 'node', ['tools/measured-worklet.mjs']],
   ['bàn phím', 'node', ['tools/keyboard.mjs']],
   ['đọc trên kính', 'node', ['tools/glass-legibility.mjs']],
   ['gợi ý trợ lý', 'node', ['tools/suggestions.mjs']],

@@ -41,11 +41,39 @@ const EASE = Easing.bezier(0.16, 1, 0.3, 1);
  * Sliding keeps the right cap at its true radius, and the left end is shaped by
  * the track's own corner because the track is what clips it.
  *
- * ── the measurement ──
+ * ── the measurement, and the bug that lived in it ──
  *
  * Transforms need points, not percentages, so the track measures itself once.
- * The fill waits for that measurement rather than rendering at translate 0,
- * which for one frame would be a full bar.
+ *
+ * The measurement and the worklet used to live in the *same* component, and
+ * that was wrong in a way no amount of reading the arithmetic reveals. It
+ * showed up as **every macro bar sitting full on a day with nothing logged**.
+ *
+ * `useAnimatedStyle` keeps its `initial` value in a `useRef` and computes it
+ * exactly once, on the hook's first render — `node_modules/react-native-
+ * reanimated/lib/module/hook/useAnimatedStyle.js`, the `if
+ * (!animatedUpdaterData.current)` branch. On that first render `track` is still
+ * `0`, because the layout has not happened yet, so the initial style came out
+ * as
+ *
+ *     translateX: -0 * (1 - 0 / 100)  ===  0
+ *
+ * and `translateX: 0` is the fill sitting exactly over the whole track. A full
+ * bar. That value is then re-applied as the view's base style on **every**
+ * React re-render, and the only thing that can overwrite it is the mapper —
+ * which `startMapper(fun, inputs)` drives from the *shared values* in the
+ * closure, so it runs when `p` moves and at no other time.
+ *
+ * At 0% `p` animates from 0 to 0 and therefore never moves. So the bar was
+ * painted full, and nothing existed to paint it empty again. Every other value
+ * looked fine, because there `p` really does travel and the mapper corrects the
+ * position on its first frame — which is exactly why this was only ever visible
+ * on an empty day.
+ *
+ * The fix is structural rather than a guard: the fill is its own component and
+ * is not mounted until the width is known, so the hook's first evaluation — the
+ * one that is frozen forever — already has the real number in it. Nothing about
+ * the arithmetic changed.
  */
 export function ProgressBar({
   pct,
@@ -67,18 +95,61 @@ export function ProgressBar({
   style?: StyleProp<ViewStyle>;
 }) {
   const r = radius ?? height / 2;
-  const target = Math.min(Math.max(pct, 0), 100);
-  const p = useSharedValue(0);
   const [track, setTrack] = useState(0);
-
-  useEffect(() => {
-    p.value = withDelay(delay, withTiming(target, { duration, easing: EASE }));
-  }, [target, delay, duration, p]);
 
   const measure = (e: LayoutChangeEvent) => {
     const { width } = e.nativeEvent.layout;
     setTrack((prev) => (prev === width ? prev : width));
   };
+
+  return (
+    <View
+      onLayout={measure}
+      style={[{ height, borderRadius: r, backgroundColor: trackColor, overflow: 'hidden' }, style]}>
+      {track > 0 ? (
+        <Fill track={track} pct={pct} color={color} radius={r} delay={delay} duration={duration} />
+      ) : null}
+    </View>
+  );
+}
+
+/**
+ * The moving part, mounted only once the track has a width.
+ *
+ * ── it is a separate component on purpose ──
+ *
+ * Not for tidiness. `useAnimatedStyle` freezes the style it computes on its
+ * first render and re-applies that frozen value on every subsequent one, so a
+ * worklet that reads a measurement must not be *mounted* before the measurement
+ * exists. Keeping the hook in the parent put its first evaluation at `track =
+ * 0`, which is a full bar — see the note at the top of this file for what that
+ * looked like on screen and why only 0% showed it.
+ *
+ * `track` arrives as a prop that is real on the first render of this component,
+ * so the frozen initial style is the correct parked position and every re-render
+ * re-applies *that*.
+ */
+function Fill({
+  track,
+  pct,
+  color,
+  radius,
+  delay,
+  duration,
+}: {
+  track: number;
+  pct: number;
+  color: string;
+  radius: number;
+  delay: number;
+  duration: number;
+}) {
+  const target = Math.min(Math.max(pct, 0), 100);
+  const p = useSharedValue(0);
+
+  useEffect(() => {
+    p.value = withDelay(delay, withTiming(target, { duration, easing: EASE }));
+  }, [target, delay, duration, p]);
 
   /* 0% parks the fill exactly one track-width to the left, 100% brings it home.
      Everything between is the same rectangle, further along. */
@@ -86,15 +157,7 @@ export function ProgressBar({
     transform: [{ translateX: -track * (1 - p.value / 100) }],
   }));
 
-  return (
-    <View
-      onLayout={measure}
-      style={[{ height, borderRadius: r, backgroundColor: trackColor, overflow: 'hidden' }, style]}>
-      {track > 0 ? (
-        <Animated.View style={[styles.fill, { borderRadius: r, backgroundColor: color }, fill]} />
-      ) : null}
-    </View>
-  );
+  return <Animated.View style={[styles.fill, { borderRadius: radius, backgroundColor: color }, fill]} />;
 }
 
 const styles = StyleSheet.create({
