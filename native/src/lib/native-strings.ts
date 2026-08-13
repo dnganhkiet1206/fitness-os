@@ -326,6 +326,18 @@ const en = {
   nMascotWorkout: 'Great window for a workout right now. Ready when you are 💪',
   nMascotPraise: 'You\u2019re crushing it today. Keep the streak alive! 🔥',
   nMascotHello: 'I\u2019m watching your stats — log something and I\u2019ll cheer you on!',
+  // ── Koa naming what you did, then what is left ──
+  // Short on purpose: the two get joined into one speech bubble, and a bubble
+  // people actually read is one line.
+  nMascotWinSleep: 'Sleep logged 😴',
+  nMascotWinMeal: 'Meals logged 🍽',
+  nMascotWinWater: 'Water on target 💧',
+  nMascotWinWorkout: 'Workout done 💪',
+  nMascotGapSleep: 'log last night too',
+  nMascotGapMeal: 'log a meal next',
+  nMascotGapWater: 'drink some water',
+  nMascotGapWorkout: 'a session would round it off',
+  nMascotThen: '{win} — {gap}',
   nMascotLocked: 'Locked',
   nMascotPro: 'PRO · coming soon',
   nMascotUnlockedBadge: 'Unlocked',
@@ -915,6 +927,18 @@ const vi: typeof en = {
   nMascotWorkout: 'Giờ này tập là đẹp đó. Sẵn sàng chưa? 💪',
   nMascotPraise: 'Hôm nay bạn làm tốt lắm. Giữ vững phong độ nha! 🔥',
   nMascotHello: 'Mình đang theo dõi chỉ số của bạn — ghi gì đó đi, mình cổ vũ!',
+  // ── Koa naming what you did, then what is left ──
+  // Short on purpose: the two get joined into one speech bubble, and a bubble
+  // people actually read is one line.
+  nMascotWinSleep: 'Ghi giấc ngủ rồi 😴',
+  nMascotWinMeal: 'Có ghi bữa rồi 🍽',
+  nMascotWinWater: 'Đủ nước rồi 💧',
+  nMascotWinWorkout: 'Tập xong rồi 💪',
+  nMascotGapSleep: 'ghi thêm đêm qua nữa nhé',
+  nMascotGapMeal: 'ghi bữa ăn nữa nha',
+  nMascotGapWater: 'uống thêm nước đi',
+  nMascotGapWorkout: 'tập một buổi nữa là đẹp',
+  nMascotThen: '{win} — {gap}',
   nMascotLocked: 'Chưa mở khoá',
   nMascotPro: 'PRO · sắp ra mắt',
   nMascotUnlockedBadge: 'Đã mở khoá',

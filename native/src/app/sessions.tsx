@@ -128,6 +128,10 @@ export default function SessionsScreen() {
       ) : months.length === 0 ? (
         <EmptyState
           icon={Dumbbell}
+          /* Koa here: an empty session list is a state one button changes, and
+             the button is right underneath. See `empty-state.tsx` for why the
+             companion is not offered on the empties that only time can fill. */
+          companion
           title={vi ? 'Chưa có buổi tập nào trong 90 ngày qua' : 'No workouts in the last 90 days'}
           action={{ label: i18n.nLogWorkoutBtn, onPress: () => router.push('/log-workout') }}
         />

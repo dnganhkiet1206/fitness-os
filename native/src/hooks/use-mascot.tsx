@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useDailyLog, useProfile, useTodayMeals } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
 import { supabase } from '@/integrations/supabase/client';
+import { mascotLine, type MascotThing } from '@/lib/mascot-message';
 import { DEFAULT_MASCOT_ID, getMascot, isUnlocked, MASCOTS } from '@/lib/mascots';
 
 const ENABLED_KEY = 'ascnd_mascot_enabled';
@@ -91,40 +92,78 @@ export function useMascotSettings() {
 }
 
 /**
- * Context-aware reminder: picks the most useful nudge from today's real
- * data. Returns null when the mascot has nothing worth saying.
+ * What Koa says today.
+ *
+ * The decision is `mascotLine` in `lib/mascot-message.ts` — a pure function, so
+ * the voice can be exercised across a whole matrix of days and hours without a
+ * renderer (`tools/mascot-voice.mjs`). This hook only reads the day and turns
+ * the decision into words.
+ *
+ * `null` hides the bubble, and it is returned for two different reasons: the
+ * day could not be read at all, and there is genuinely nothing to say. Both are
+ * better than a sentence — see the note in `mascot-message.ts` for what the old
+ * ladder did with an unreadable day.
  */
 export function useMascotMessage(): string | null {
   const i18n = useI18n();
-  const { data: log } = useDailyLog();
-  const { data: meals } = useTodayMeals();
-  const { data: waterMl } = useTodayWater();
+  const { data: log, isSuccess: logOk } = useDailyLog();
+  const { data: meals, isSuccess: mealsOk } = useTodayMeals();
+  const { data: waterMl, isSuccess: waterOk } = useTodayWater();
   const { data: profile } = useProfile();
 
   return useMemo(() => {
-    const hour = new Date().getHours();
-    const sleepLogged = log?.sleep_duration_min != null && Number(log.sleep_duration_min) > 0;
-    const mealCount = meals?.length ?? 0;
+    /* Every field goes to `null` together unless all three reads succeeded.
+       Half a day is not a day: a failed meals query with a good water query
+       would otherwise have Koa asking for the meal you already logged. */
+    const read = logOk && mealsOk && waterOk;
     const waterTarget = Number(profile?.water_target_ml) || 2500;
-    const waterPct = ((waterMl ?? 0) / waterTarget) * 100;
-    const workedOut = Number(log?.workout_count ?? 0) > 0;
 
-    if (hour >= 6 && hour < 11 && !sleepLogged) return i18n.nMascotSleep;
-    if (hour >= 11 && mealCount === 0) return i18n.nMascotMeal;
-    if (hour >= 14 && waterPct < 50) return i18n.nMascotWater;
-    if (hour >= 16 && hour < 21 && !workedOut) return i18n.nMascotWorkout;
-    if (mealCount > 0 && (sleepLogged || workedOut)) return i18n.nMascotPraise;
-    return i18n.nMascotHello;
-  }, [i18n, log, meals, waterMl, profile]);
+    const line = mascotLine({
+      hour: new Date().getHours(),
+      sleepMin: read ? Number(log?.sleep_duration_min) || 0 : null,
+      meals: read ? meals?.length ?? 0 : null,
+      waterPct: read ? ((waterMl ?? 0) / waterTarget) * 100 : null,
+      workouts: read ? Number(log?.workout_count ?? 0) : null,
+    });
+
+    const WIN: Record<MascotThing, string> = {
+      sleep: i18n.nMascotWinSleep,
+      meal: i18n.nMascotWinMeal,
+      water: i18n.nMascotWinWater,
+      workout: i18n.nMascotWinWorkout,
+    };
+    const GAP: Record<MascotThing, string> = {
+      sleep: i18n.nMascotGapSleep,
+      meal: i18n.nMascotGapMeal,
+      water: i18n.nMascotGapWater,
+      workout: i18n.nMascotGapWorkout,
+    };
+    /* The long-form ask, used only when there is nothing to acknowledge — it
+       explains why the thing is worth logging, which is the right amount of
+       words when it is the whole message. */
+    const ASK: Record<MascotThing, string> = {
+      sleep: i18n.nMascotSleep,
+      meal: i18n.nMascotMeal,
+      water: i18n.nMascotWater,
+      workout: i18n.nMascotWorkout,
+    };
+
+    switch (line.kind) {
+      case 'silent':
+        return null;
+      case 'ask':
+        return ASK[line.gap];
+      case 'notice':
+        return i18n.nMascotThen.replace('{win}', WIN[line.win]).replace('{gap}', GAP[line.gap]);
+      case 'praise':
+        return i18n.nMascotPraise;
+    }
+  }, [i18n, log, meals, waterMl, profile, logOk, mealsOk, waterOk]);
 }
 
+/** happy | neutral | tired — what the figure mirrors, distinct from what it says. */
 export type MascotMood = 'happy' | 'neutral' | 'tired';
 
-/**
- * The buddy mirrors the user's day: fresh when meals + training are
- * logged, visibly tired when the log stays empty past the natural hour
- * for it (no meal after noon, or no workout by evening).
- */
 export function useMascotMood(): MascotMood {
   const { data: log } = useDailyLog();
   const { data: meals } = useTodayMeals();

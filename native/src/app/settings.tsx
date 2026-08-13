@@ -286,7 +286,27 @@ export default function SettingsScreen() {
                   ]}>
                   <View style={styles.mascotFace}>
                     <View style={!m.unlocked && styles.mascotArtLocked}>
-                      <MascotFigure mascot={m} size={44} emotion="idle" animated={false} />
+                      {/*
+                        The chosen one is alive; the rest are stills.
+
+                        Duolingo's own guidance is not to show a character
+                        "static, expressionless", because that is what makes it
+                        read as lifeless — and this row is the one screen where
+                        the whole point is to like a character enough to pick it.
+                        Every figure here was `animated={false}`.
+
+                        Only the selected one moves, for the reason the rest of
+                        this app animates carefully: a row of eight characters
+                        all idling is eight loops running behind a settings
+                        screen. One is enough to say they are alive, and it is
+                        the one being looked at.
+                      */}
+                      <MascotFigure
+                        mascot={m}
+                        size={44}
+                        emotion={selected ? 'happy' : 'idle'}
+                        animated={selected}
+                      />
                     </View>
                     {!m.unlocked && (
                       <View style={styles.mascotLockBadge}>

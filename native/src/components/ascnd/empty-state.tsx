@@ -3,6 +3,8 @@ import type { LucideIcon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
+import { MascotFigure } from '@/components/ascnd/mascot-figure';
+import { useMascot } from '@/hooks/use-mascot';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 
@@ -38,12 +40,26 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
  * would be worse than the dead end, because a button that does not lead to the
  * thing it promises is a lie rather than an absence. So `action` is optional
  * and left out on purpose in those places.
+ *
+ * ── and sometimes the icon is Koa ──
+ *
+ * `companion` swaps the glyph chip for the app's own character. Not everywhere:
+ * only where the screen is empty because of something *the person* has not done
+ * and can do in one tap from this very state.
+ *
+ * That line is the whole rule, and it comes from what a mascot is for. Duolingo
+ * puts Duo at exactly these moments because a character turns a dead end into a
+ * small piece of theatre — and the same character in front of an emptiness the
+ * person cannot fix today is not charming, it is a cartoon shrugging at you. A
+ * chart that needs seven days of data is not the user's fault and gets the
+ * glyph; "no sessions logged" is a state one button changes, and gets Koa.
  */
 export function EmptyState({
   icon,
   title,
   hint,
   action,
+  companion = false,
 }: {
   icon: LucideIcon;
   /** One line. What goes here, not an apology for it being missing. */
@@ -52,14 +68,36 @@ export function EmptyState({
   hint?: string;
   /** Omit when there is genuinely nothing to press. */
   action?: { label: string; onPress: () => void };
+  /**
+   * Show Koa instead of the glyph.
+   *
+   * Only true where the emptiness is the person's to change and `action` is the
+   * way to change it — see the note above. `icon` is still required and is what
+   * shows if the companion is switched off in settings, so no screen loses its
+   * empty state to a preference.
+   */
+  companion?: boolean;
 }) {
+  const { enabled, mascot } = useMascot();
+  const showKoa = enabled;
+
   return (
     <View style={styles.root}>
-      {/* A tinted chip rather than a bare glyph: a lone outline icon on a dark
-          card reads as a broken image. */}
-      <View style={styles.chip}>
-        <Icon icon={icon} size={24} color={colors.mutedForeground} />
-      </View>
+      {companion && showKoa ? (
+        /* No chip behind it: the chip exists to stop a lone outline glyph
+           reading as a broken image, and a drawn character has no such
+           problem. `happy` rather than `sad` on purpose — a disappointed
+           companion in front of a screen you have not used yet is a scold
+           before you have done anything, which is the failure mode a mascot
+           has to avoid rather than lean into. */
+        <MascotFigure mascot={mascot} size={72} emotion="happy" animated />
+      ) : (
+        /* A tinted chip rather than a bare glyph: a lone outline icon on a dark
+           card reads as a broken image. */
+        <View style={styles.chip}>
+          <Icon icon={icon} size={24} color={colors.mutedForeground} />
+        </View>
+      )}
       <Text style={styles.title}>{title}</Text>
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       {action ? (

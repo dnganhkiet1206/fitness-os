@@ -110,7 +110,13 @@ for (const [key, value] of Object.entries(en)) {
   if (key.startsWith('a11y')) continue;          // screen-reader text, English base
   if (KEPT.has(key)) continue;
   if (vi[key] !== value) continue;
-  if (!/[A-Za-z]{3,}/.test(value)) continue;     // "—", "1:30", "%"
+  /* A value with no real word in it is not untranslated — "—", "1:30", "%".
+     Placeholders are stripped first: `{win}` and `{gap}` are code identifiers
+     that never reach a reader, so a template like `'{win} — {gap}'` is
+     punctuation, and it is identical in both languages because a join is
+     identical in both languages. Without this the rule reports the one string
+     in the file that is *correct* to leave alone. */
+  if (!/[A-Za-z]{3,}/.test(value.replace(/\{[^}]*\}/g, ''))) continue;
   if (!source.includes(`i18n.${key}`)) continue; // web-only keys are not this app's problem
   untranslated.push(`${key}: '${value}'`);
 }

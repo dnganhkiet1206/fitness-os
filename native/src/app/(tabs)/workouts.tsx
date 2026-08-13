@@ -408,6 +408,7 @@ export default function WorkoutsScreen() {
            find it. The button is here now. */
         <EmptyState
           icon={Dumbbell}
+          companion
           title={i18n.workoutsNoTemplates}
           action={{ label: i18n.workoutsCreateNew, onPress: () => router.push('/workout-builder') }}
         />
