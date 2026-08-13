@@ -63,3 +63,6 @@ example
 # Large, generated, and meaningless to anyone but the run that made it.
 tools/.live-build/
 tools/.live-shots/
+
+# scratch dir for tools/koa-studio/peek.mjs
+.koa-peek-*/

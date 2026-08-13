@@ -15,6 +15,7 @@ import { duration } from '@/constants/motion';
 import { useMascot } from '@/hooks/use-mascot';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import type { QuestKey } from '@/lib/mascot-room';
+import { PEEK, PEEK_FIGURE, PEEK_HOLD_MS, peekFrame } from '@/lib/peek-frame';
 import { usePeekSignal } from '@/lib/quest-peek';
 
 /**
@@ -29,9 +30,12 @@ import { usePeekSignal } from '@/lib/quest-peek';
  *
  * So the *clip* does the hiding, not the card. This renders a band that ends
  * exactly at the card's top edge, `overflow: 'hidden'`, with the figure parked
- * one full band below its resting spot. Nothing shows. When it rises, it rises
+ * one full band below its hanging spot. Nothing shows. When it rises, it rises
  * out of that edge — which is the same thing to look at as "out from behind the
  * card" and is true whatever the card is made of.
+ *
+ * Where exactly it hangs from, and why from the top, is `lib/peek-frame.ts` —
+ * along with the version of this that shipped and could not work.
  *
  * The band sits in the parent's padding, so it costs no layout: `position:
  * absolute`, anchored to the top of the child, and `pointerEvents="none"` so a
@@ -47,8 +51,8 @@ import { usePeekSignal } from '@/lib/quest-peek';
  * as an entrance is an exit you wait through.
  *
  * The tilt is the reason it does not look like a lift. A rise with no rotation
- * is a freight elevator; ±7° across the hold makes it a creature leaning in to
- * look at what you did. It runs on the same clock as the rise, so it cannot
+ * is a freight elevator; a few degrees each way across the hold makes it a
+ * creature leaning in to look at what you did. It runs on the same clock as the rise, so it cannot
  * drift out of step with it.
  *
  * ── and it is allowed to be skipped ──
@@ -57,18 +61,6 @@ import { usePeekSignal } from '@/lib/quest-peek';
  * holds, and fades out. The information — Koa noticed — survives; the movement
  * that carried it does not, which is exactly the trade the setting asks for.
  */
-
-/** How far above the card's top edge Koa's head reaches, in points. */
-const PEEK = 46;
-
-/**
- * How long Koa stays up.
- *
- * Not one of the four response beats and it should not be: those measure *how
- * long a change takes*, and this is a pause between two changes. A second is
- * long enough to look at a character and short enough that nobody waits for it.
- */
-const HOLD_MS = 1000;
 
 export function CardPeek({
   /** changes to a new non-zero value to fire one peek; 0 never fires */
@@ -92,7 +84,7 @@ export function CardPeek({
     if (reduced) {
       rise.value = withSequence(
         withTiming(1, { duration: duration.appear }),
-        withDelay(HOLD_MS, withTiming(0, { duration: duration.appear })),
+        withDelay(PEEK_HOLD_MS, withTiming(0, { duration: duration.appear })),
       );
       return;
     }
@@ -101,7 +93,7 @@ export function CardPeek({
       // up, with the overshoot a spring gives for free
       withSpring(1, { stiffness: 180, damping: 13, mass: 0.9 }),
       // and away, accelerating, faster than it arrived
-      withDelay(HOLD_MS, withTiming(0, { duration: duration.move, easing: Easing.in(Easing.cubic) })),
+      withDelay(PEEK_HOLD_MS, withTiming(0, { duration: duration.move, easing: Easing.in(Easing.cubic) })),
     );
 
     /* The lean is one composed gesture, so its four steps are named beats
@@ -119,17 +111,17 @@ export function CardPeek({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signal]);
 
-  const figure = useAnimatedStyle(() => ({
-    opacity: reduced ? rise.value : 1,
-    transform: [
-      /* Parked exactly one band down, so at rise 0 the whole figure is below
-         the clip and there is nothing to see through a translucent card. */
-      { translateY: (1 - rise.value) * PEEK },
-      { rotate: `${lean.value * 7}deg` },
-      /* A touch of squash on the way up — it lands rather than arrives. */
-      { scaleY: 1 + (1 - rise.value) * 0.06 },
-    ],
-  }));
+  const figure = useAnimatedStyle(() => {
+    const f = peekFrame(rise.value, lean.value);
+    return {
+      opacity: reduced ? rise.value : 1,
+      transform: [
+        { translateY: f.translateY },
+        { rotate: `${f.rotate}deg` },
+        { scaleY: f.scaleY },
+      ],
+    };
+  });
 
   // No character, no band: the peek is the mascot, and a mascot switched off in
   // settings does not get to come back through a different door.
@@ -138,8 +130,8 @@ export function CardPeek({
   return (
     <View style={styles.wrap}>
       <View pointerEvents="none" style={styles.clip}>
-        <Animated.View style={figure}>
-          <MascotFigure mascot={mascot} size={PEEK * 1.5} emotion="celebrate" animated />
+        <Animated.View style={[styles.figure, figure]}>
+          <MascotFigure mascot={mascot} size={PEEK_FIGURE} emotion="celebrate" animated />
         </Animated.View>
       </View>
       {children}
@@ -175,6 +167,12 @@ const styles = StyleSheet.create({
     height: PEEK,
     overflow: 'hidden',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    /* Hung from the top, not stood on the bottom — `lib/peek-frame.ts`. */
+    justifyContent: 'flex-start',
   },
+  /* The figure is taller than the band and must stay that way: a flex child
+     that shrinks to its container would squash Koa down to the band's height
+     instead of being cropped to it. React Native already defaults to 0, and this says so
+     out loud next to the one layout that would break if it ever did not. */
+  figure: { flexShrink: 0 },
 });

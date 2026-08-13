@@ -170,6 +170,7 @@ const STEPS = [
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
   ['camera shop', 'node', ['tools/shop-camera.mjs']],
   ['tư thế mặc đồ', 'node', ['tools/koa-studio/dress.mjs']],
+  ['peek sau thẻ', 'node', ['tools/peek.mjs']],
 ];
 
 let failed = 0;

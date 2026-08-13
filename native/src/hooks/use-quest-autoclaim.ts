@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { useEntitlement } from '@/hooks/use-entitlement';
+import { useEntitlement, type Tier } from '@/hooks/use-entitlement';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useClaimReward } from '@/hooks/use-mascot-room';
 import { peekAt } from '@/lib/quest-peek';
@@ -45,13 +45,20 @@ import { DAILY_QUESTS, questRefKey, type QuestKey } from '@/lib/mascot-room';
  * is the baseline that separates "already true when I arrived" from "just
  * happened".
  *
- * ── and the peek is the paid one ──
+ * ── and the peek is the one that will be paid for ──
  *
  * The coins are not gated: the economy is the app's, and paywalling a reward
  * somebody earned by logging their food would be a different kind of app. What
  * is gated is the performance — Koa appearing over your cards to react — which
  * is a flourish rather than a function, and is the only kind of thing worth
- * putting behind a tier. `max` only.
+ * putting behind a tier.
+ *
+ * `PEEK_TIER` is that gate, and it is `null` for now: nobody can buy anything
+ * yet (there is no IAP, no paywall, and no webhook writing `entitlements`), so
+ * a tier test today only means "off for every single account", which is not a
+ * business model, it is a feature nobody has seen. It goes back to `'max'` the
+ * day there is something to sell — one word, and the check below already reads
+ * it — see LAUNCH.md.
  *
  * ── what is still a tap ──
  *
@@ -61,10 +68,14 @@ import { DAILY_QUESTS, questRefKey, type QuestKey } from '@/lib/mascot-room';
  * themselves because they happen every day, and a chore you do every day is the
  * definition of a tax.
  */
+/** Tier the peek needs, or `null` while it is on for everybody. */
+const PEEK_TIER: Tier | null = null;
+
 export function useQuestAutoClaim() {
   const quests = useDailyQuests();
   const claim = useClaimReward();
-  const { tier } = useEntitlement();
+  const { has } = useEntitlement();
+  const mayPeek = PEEK_TIER === null || has(PEEK_TIER);
 
   /** what the last reading said, so a *celebration* only follows a change */
   const seen = useRef<Record<QuestKey, boolean> | null>(null);
@@ -96,10 +107,10 @@ export function useQuestAutoClaim() {
       }
 
       // …and only stage the show for something that changed while watching
-      if (before && !before[key] && tier === 'max') peekAt(key, def.coins);
+      if (before && !before[key] && mayPeek) peekAt(key, def.coins);
     }
     // `claim` is a stable mutation object; listing it would re-run this on every
     // mutation state change, which is exactly when it must not re-run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quests.ready, quests.today, quests.done, quests.unclaimed, tier]);
+  }, [quests.ready, quests.today, quests.done, quests.unclaimed, mayPeek]);
 }
