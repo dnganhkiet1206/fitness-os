@@ -107,10 +107,16 @@ Nút xoá từng dòng vẫn là cách sửa cho loại này.
 
 Đây là thứ phải quyết trước khi viết bất kỳ dòng nào của mục 3 và 4.
 
-**Tình trạng hiện tại:** `useEntitlement` tồn tại và **không màn hình nào dùng
-nó**. Toàn bộ luồng entitlement phía server đã xong — Apple verify, webhook,
-chống hoàn tiền — nhưng chưa có gì bị khoá. Nghĩa là hôm nay, nếu thanh toán
-chạy, người mua Plus sẽ mở khoá đúng con số không.
+**Tình trạng hiện tại:** `useEntitlement` giờ có **đúng một** chỗ dùng —
+`use-quest-autoclaim.ts` gọi nó để quyết định có diễn màn Koa nhô lên sau thẻ
+hay không (`tier === 'max'`). Toàn bộ luồng entitlement phía server đã xong —
+Apple verify, webhook, chống hoàn tiền — nhưng ngoài màn diễn đó thì chưa có gì
+bị khoá. Nghĩa là hôm nay, nếu thanh toán chạy, người mua Plus mở khoá đúng con
+số không, còn người mua Max mở khoá một hiệu ứng.
+
+Cái gate đầu tiên đó cố ý được đặt vào thứ **không phải chức năng**: coin vẫn
+tự động vào ví ở mọi bậc, vì khoá phần thưởng mà người ta kiếm được bằng cách
+ghi chép món ăn của chính họ là một loại app khác. Thứ bị khoá là buổi diễn.
 
 Hạn mức AI hiện phẳng cho mọi người (`20260729120000_ai_usage_quota.sql`):
 

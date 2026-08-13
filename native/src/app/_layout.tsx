@@ -8,6 +8,7 @@ import { AppLockGate } from '@/components/ascnd/app-lock-gate';
 import { AuthScreen } from '@/components/ascnd/auth-screen';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { CelebrationHost } from '@/components/ascnd/celebration-host';
+import { QuestAutoClaim } from '@/components/ascnd/quest-autoclaim';
 import { MascotUnlockCelebration } from '@/components/ascnd/mascot-unlock';
 import { NeonToastHost } from '@/components/ascnd/neon-toast';
 import { OfflineBanner } from '@/components/ascnd/offline-banner';
@@ -166,6 +167,11 @@ function Gate() {
         celebration at a time — award medals and mascot unlocks queue up */}
     <MascotUnlockCelebration />
     <CelebrationHost />
+    {/* Finished quests collect themselves, from wherever you were when you
+        finished them — see `use-quest-autoclaim`. Mounted once, at the root,
+        because the thing that finishes a quest is a mutation on some other tab
+        and the room may never be opened at all. */}
+    <QuestAutoClaim />
     </>
   );
 }

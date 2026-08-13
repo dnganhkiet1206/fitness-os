@@ -1,0 +1,180 @@
+import { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+
+import { MascotFigure } from '@/components/ascnd/mascot-figure';
+import { duration } from '@/constants/motion';
+import { useMascot } from '@/hooks/use-mascot';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import type { QuestKey } from '@/lib/mascot-room';
+import { usePeekSignal } from '@/lib/quest-peek';
+
+/**
+ * Koa comes up from behind a card, reacts, and drops back out of sight.
+ *
+ * ── how it hides ──
+ *
+ * The obvious build is to put the figure behind the card and let the card cover
+ * it. That does not work here: `GlassCard` is glass — a 3.5–16% white fill — so
+ * a character parked behind one is plainly visible through it, and the whole
+ * illusion is that there is nothing there until there is.
+ *
+ * So the *clip* does the hiding, not the card. This renders a band that ends
+ * exactly at the card's top edge, `overflow: 'hidden'`, with the figure parked
+ * one full band below its resting spot. Nothing shows. When it rises, it rises
+ * out of that edge — which is the same thing to look at as "out from behind the
+ * card" and is true whatever the card is made of.
+ *
+ * The band sits in the parent's padding, so it costs no layout: `position:
+ * absolute`, anchored to the top of the child, and `pointerEvents="none"` so a
+ * character standing over a card never eats a tap meant for the card.
+ *
+ * ── the motion ──
+ *
+ * Up on a spring, down on a curve, and that asymmetry is the whole character of
+ * it. A spring up overshoots and settles, which reads as somebody popping their
+ * head over a wall; the same spring on the way down reads as the head being
+ * pulled on a rubber band. Down is `Easing.in` — accelerating away, the shape
+ * gravity has — and quicker than the rise, because an exit that takes as long
+ * as an entrance is an exit you wait through.
+ *
+ * The tilt is the reason it does not look like a lift. A rise with no rotation
+ * is a freight elevator; ±7° across the hold makes it a creature leaning in to
+ * look at what you did. It runs on the same clock as the rise, so it cannot
+ * drift out of step with it.
+ *
+ * ── and it is allowed to be skipped ──
+ *
+ * Under Reduce Motion nothing travels: the figure fades in at its resting spot,
+ * holds, and fades out. The information — Koa noticed — survives; the movement
+ * that carried it does not, which is exactly the trade the setting asks for.
+ */
+
+/** How far above the card's top edge Koa's head reaches, in points. */
+const PEEK = 46;
+
+/**
+ * How long Koa stays up.
+ *
+ * Not one of the four response beats and it should not be: those measure *how
+ * long a change takes*, and this is a pause between two changes. A second is
+ * long enough to look at a character and short enough that nobody waits for it.
+ */
+const HOLD_MS = 1000;
+
+export function CardPeek({
+  /** changes to a new non-zero value to fire one peek; 0 never fires */
+  signal,
+  children,
+}: {
+  signal: number;
+  children: React.ReactNode;
+}) {
+  const { enabled, mascot } = useMascot();
+  const reduced = useReducedMotion();
+
+  /** 0 = parked below the clip, 1 = fully up */
+  const rise = useSharedValue(0);
+  /** −1..1, the lean, driven off the same firing so it cannot desync */
+  const lean = useSharedValue(0);
+
+  useEffect(() => {
+    if (!signal) return;
+
+    if (reduced) {
+      rise.value = withSequence(
+        withTiming(1, { duration: duration.appear }),
+        withDelay(HOLD_MS, withTiming(0, { duration: duration.appear })),
+      );
+      return;
+    }
+
+    rise.value = withSequence(
+      // up, with the overshoot a spring gives for free
+      withSpring(1, { stiffness: 180, damping: 13, mass: 0.9 }),
+      // and away, accelerating, faster than it arrived
+      withDelay(HOLD_MS, withTiming(0, { duration: duration.move, easing: Easing.in(Easing.cubic) })),
+    );
+
+    /* The lean is one composed gesture, so its four steps are named beats
+       rather than free numbers: hold while the spring lands, over, across, back.
+       `swap` in the middle because the far side of a lean is the longest part of
+       it — a lean that crosses as fast as it starts reads as a twitch. */
+    lean.value = withSequence(
+      withTiming(0, { duration: duration.toggle }),
+      withTiming(1, { duration: duration.move, easing: Easing.inOut(Easing.quad) }),
+      withTiming(-1, { duration: duration.swap, easing: Easing.inOut(Easing.quad) }),
+      withTiming(0, { duration: duration.move, easing: Easing.inOut(Easing.quad) }),
+    );
+    // `signal` alone: the shared values and `reduced` are stable for a firing,
+    // and listing them would replay the peek when Reduce Motion is toggled.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signal]);
+
+  const figure = useAnimatedStyle(() => ({
+    opacity: reduced ? rise.value : 1,
+    transform: [
+      /* Parked exactly one band down, so at rise 0 the whole figure is below
+         the clip and there is nothing to see through a translucent card. */
+      { translateY: (1 - rise.value) * PEEK },
+      { rotate: `${lean.value * 7}deg` },
+      /* A touch of squash on the way up — it lands rather than arrives. */
+      { scaleY: 1 + (1 - rise.value) * 0.06 },
+    ],
+  }));
+
+  // No character, no band: the peek is the mascot, and a mascot switched off in
+  // settings does not get to come back through a different door.
+  if (!enabled) return <>{children}</>;
+
+  return (
+    <View style={styles.wrap}>
+      <View pointerEvents="none" style={styles.clip}>
+        <Animated.View style={figure}>
+          <MascotFigure mascot={mascot} size={PEEK * 1.5} emotion="celebrate" animated />
+        </Animated.View>
+      </View>
+      {children}
+    </View>
+  );
+}
+
+/**
+ * `CardPeek` with the signal already looked up.
+ *
+ * The lookup is a hook, so it cannot live in the `withPeek` helper on the
+ * dashboard — that helper runs inside a `switch` and a `map`, and a hook called
+ * there would be called a different number of times whenever somebody
+ * rearranged their widgets. A component of its own gets its own, stable, hook
+ * position.
+ */
+export function PeekHost({ quest, children }: { quest: QuestKey; children: React.ReactNode }) {
+  const signal = usePeekSignal(quest);
+  return <CardPeek signal={signal}>{children}</CardPeek>;
+}
+
+const styles = StyleSheet.create({
+  wrap: { position: 'relative' },
+  /* The band, ending flush with the card's top edge. `bottom: '100%'` of the
+     wrapper would be the whole card; anchoring to `top: -PEEK` with a fixed
+     height puts the lower edge exactly on the card and keeps the band out of
+     the layout entirely. */
+  clip: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: -PEEK,
+    height: PEEK,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+});

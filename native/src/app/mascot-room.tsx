@@ -615,20 +615,25 @@ export default function MascotRoomScreen() {
                   <Text style={styles.questXpText}>+{q.xp} XP</Text>
                 </View>
               </View>
+              {/*
+                No button. A finished quest collects itself from wherever you
+                were standing when you finished it — see `use-quest-autoclaim`
+                for why the old "Nhận" was a tax rather than a reward: the coins
+                were already earned, the app already knew, and the only thing in
+                between was remembering that this room exists.
+
+                So the row is a read-out now: collected, or not done yet. The
+                brief window where a quest is done and the claim is still in
+                flight reads as "not done", which is honest — the coins have not
+                landed — and lasts one request.
+              */}
               {isClaimed ? (
                 <View style={styles.claimedChip}>
                   <Icon icon={Check} size={13} color={colors.readinessGreen} strokeWidth={3} />
                   <Text style={styles.claimedText}>{i18n.nRoomClaimed}</Text>
                 </View>
               ) : (
-                <PressScale
-                  disabled={!isDone || claim.isPending}
-                  style={[styles.claimBtn, !isDone && styles.claimBtnDisabled]}
-                  onPress={() => reward(refKey, q.coins, q.key, q.xp)}>
-                  <Text style={[styles.claimText, !isDone && styles.claimTextDisabled]}>
-                    {i18n.nRoomClaim}
-                  </Text>
-                </PressScale>
+                <Text style={styles.claimTextDisabled}>{isDone ? '…' : '—'}</Text>
               )}
             </View>
           );

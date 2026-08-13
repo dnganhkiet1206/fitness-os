@@ -40,6 +40,7 @@ import {
 } from '@/components/ascnd/dashboard-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { PeekHost } from '@/components/ascnd/card-peek';
 import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessGauge } from '@/components/ascnd/readiness-gauge';
 import { StatusScrim } from '@/components/ascnd/status-scrim';
@@ -69,6 +70,7 @@ import { useTodayTrainingMinutes } from '@/hooks/use-fitness-data';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
+import type { QuestKey } from '@/lib/mascot-room';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { getLocale } from '@/lib/i18n';
 import { recordHeight } from '@/lib/widget-heights';
@@ -247,6 +249,42 @@ export default function TodayScreen() {
   ];
 
   // Web Index renderWidget — one place mapping WidgetKey → card
+  /**
+   * Which widget Koa comes up behind when a quest lands.
+   *
+   * Five quests, five cards, and the mapping is the obvious one: the card you
+   * just moved is the card the reaction belongs to. `steps` and `activity` are
+   * the same quest seen twice — whichever of the two the person has on their
+   * dashboard is the one that plays, and if they have both, both do, which is
+   * fine because they are the same news.
+   *
+   * Everything not in here returns `null` and is wrapped in nothing.
+   */
+  const PEEK_QUEST: Partial<Record<WidgetKey, QuestKey>> = {
+    nutrition: 'meal',
+    water: 'water',
+    sleep: 'sleep',
+    steps: 'steps',
+    activity: 'steps',
+    training: 'workout',
+    'workout-status': 'workout',
+  };
+
+  /**
+   * One wrapping point for the whole dashboard.
+   *
+   * The alternative was `<CardPeek>` written into each of the five widgets,
+   * which is five places to keep in step and five chances for the next card to
+   * be added without one. Wrapping the renderer means a widget only has to be
+   * named in `PEEK_QUEST` to take part, and a widget that is not named pays
+   * nothing at all — `CardPeek` is not mounted around it.
+   */
+  const withPeek = (key: WidgetKey, node: React.ReactNode): React.ReactNode => {
+    const quest = PEEK_QUEST[key];
+    if (!quest || !node) return node;
+    return <PeekHost quest={quest}>{node}</PeekHost>;
+  };
+
   const renderWidget = (key: WidgetKey): React.ReactNode => {
     switch (key) {
       case 'readiness':
@@ -557,7 +595,7 @@ export default function TodayScreen() {
               key={key}
               onLayout={(e) => recordHeight(key, e.nativeEvent.layout.height)}
               entering={FadeInDown.springify().damping(26).stiffness(180).delay(i * 70)}>
-              {renderWidget(key)}
+              {withPeek(key, renderWidget(key))}
             </Animated.View>
           ))}
 
@@ -573,7 +611,7 @@ export default function TodayScreen() {
                     .damping(26)
                     .stiffness(180)
                     .delay((config.heroWidgets.length + gi + wi) * 70)}>
-                  {renderWidget(key)}
+                  {withPeek(key, renderWidget(key))}
                 </Animated.View>
               ))}
             </View>
