@@ -72,6 +72,7 @@ import {
   useMascotWallet,
   useToggleEquip,
 } from '@/hooks/use-mascot-room';
+import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { CHALLENGE_TEXT } from '@/lib/gamification-i18n';
@@ -261,14 +262,9 @@ export default function MascotRoomScreen() {
     (inventory ?? []).filter((r) => r.equipped).map((r) => r.item_key),
   );
 
-  const today = localDateStr();
-  const questDone: Record<QuestKey, boolean> = {
-    meal: (Number(dailyLog?.kcal) || 0) > 0,
-    workout: (dailyLog?.workout_count ?? 0) > 0,
-    water: (waterMl ?? 0) >= (Number(profile?.water_target_ml) || 2500),
-    sleep: sleep != null || (Number(dailyLog?.sleep_duration_min) || 0) > 0,
-    steps: (dailyLog?.steps ?? 0) >= 5000,
-  };
+  /* "Done" is defined once, in `use-daily-quests`, because Today shows the same
+     five now — see that file for why it moved out of this screen. */
+  const { done: questDone, today } = useDailyQuests();
 
   const reward = (refKey: string, amount: number, reason: string, xpGain: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

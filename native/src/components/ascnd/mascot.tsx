@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router, useIsFocused } from 'expo-router';
-import { X } from 'lucide-react-native';
+import { Coins, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -19,9 +19,10 @@ import Animated, {
 import { Icon } from '@/components/ascnd/icon';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useMascot } from '@/hooks/use-mascot';
 import { useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
-import { levelFromXp } from '@/lib/mascot-room';
+import { DAILY_QUESTS, levelFromXp } from '@/lib/mascot-room';
 import { useI18n } from '@/hooks/use-app-settings';
 
 /**
@@ -41,6 +42,7 @@ export function Mascot() {
   const { enabled, mascot, message, mood } = useMascot();
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();
+  const quests = useDailyQuests();
   const [bubbleVisible, setBubbleVisible] = useState(true);
   const tired = mood === 'tired';
   const level = levelFromXp(wallet?.xp ?? 0);
@@ -216,21 +218,95 @@ export function Mascot() {
         </View>
       </Pressable>
 
-      {message && (
-        <Animated.View
-          style={[styles.bubble, bubbleStyle]}
-          pointerEvents={bubbleVisible ? 'auto' : 'none'}>
-          <Text style={styles.bubbleText}>{message}</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDismiss} hitSlop={10} onPress={() => setBubbleVisible(false)} style={styles.bubbleClose}>
-            <Icon icon={X} size={11} color={colors.mutedForeground} />
-          </Pressable>
-        </Animated.View>
-      )}
+      <View style={styles.side}>
+        {message && (
+          <Animated.View
+            style={[styles.bubble, bubbleStyle]}
+            pointerEvents={bubbleVisible ? 'auto' : 'none'}>
+            <Text style={styles.bubbleText}>{message}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDismiss} hitSlop={10} onPress={() => setBubbleVisible(false)} style={styles.bubbleClose}>
+              <Icon icon={X} size={11} color={colors.mutedForeground} />
+            </Pressable>
+          </Animated.View>
+        )}
+
+        {/*
+          ── today's five, on the home screen ──
+
+          The quests were never missing — five of them, with coins and XP, have
+          paid out since the room shipped. What was missing is that the only
+          place you could see them was inside the room, so the whole economy was
+          invisible to anybody who never tapped the buddy. Duolingo puts the
+          daily goal on the home screen and in the widget for exactly this
+          reason: a goal you cannot see is not a goal.
+
+          Five dots and a count, no labels. The labels are in the room, one tap
+          away, and five named quests here would be a second to-do list on a
+          screen that already is one — the widgets above *are* the day. This
+          says only how much of it is done.
+
+          `ready` gates it: an unread day computes as five unfinished quests,
+          and `0/5` shown to somebody who logged all morning is worse than
+          showing nothing.
+        */}
+        {quests.ready ? (
+          <View style={styles.quests}>
+            <View style={styles.dots}>
+              {DAILY_QUESTS.map((q) => (
+                <View
+                  key={q.key}
+                  style={[styles.dot, quests.done[q.key] && styles.dotOn]}
+                />
+              ))}
+            </View>
+            <Text style={styles.questCount}>
+              {quests.doneCount}/{quests.total}
+            </Text>
+            {/* The badge is the point of the whole strip: coins already earned
+                and sitting uncollected, which nothing outside the room has ever
+                said. Absent when there is nothing waiting — a permanent badge
+                is decoration. */}
+            {quests.unclaimedCoins > 0 ? (
+              <View style={styles.coinPill}>
+                <Icon icon={Coins} size={11} color={colors.readinessYellow} />
+                <Text style={styles.coinText}>+{quests.unclaimedCoins}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  /* The bubble and the strip share the column beside the buddy, so the strip
+     sits under whatever Koa is saying rather than beside it. */
+  side: { flex: 1, minWidth: 0, gap: 6 },
+  quests: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  dots: { flexDirection: 'row', gap: 5 },
+  /* 7pt, and the unfilled one is a ring rather than a faint disc: an unfinished
+     quest should read as an empty slot, not as a dimmer version of a full one. */
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  dotOn: { backgroundColor: colors.readinessGreen, borderColor: colors.readinessGreen },
+  questCount: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  coinPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,217,61,0.12)',
+  },
+  coinText: { fontSize: 11, fontWeight: '700', color: colors.readinessYellow },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -269,7 +345,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
   },
   bubble: {
-    flex: 1,
+    /* No `flex: 1` any more. It was a direct child of the row and needed to
+       take the remaining width; it is now inside a column, where `flex: 1`
+       stretches it *vertically* and pushes the quest strip off the bottom. The
+       column stretches it to full width on its own. */
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
