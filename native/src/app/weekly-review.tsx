@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import {
   Activity,
@@ -17,7 +17,7 @@ import {
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -230,8 +230,58 @@ export default function WeeklyReviewScreen() {
     },
   });
 
-  const analyze = useMutation({
-    mutationFn: async () => {
+  /*
+    ── the analysis is kept, and it used to be thrown away ──
+
+    This was a `useMutation`, which holds its result in component state and
+    nothing else. Leave the screen and the week you just had analysed is gone;
+    come back and the button is waiting again, ready to spend another model call
+    on data that has not changed. That is the same mistake `SmartTipsCard` made
+    with the daily insight, fixed there a while ago and never carried across.
+
+    So it is a query now, keyed and cached. The cache is React Query's, held for
+    a week (`gcTime`) and never considered stale (`staleTime: Infinity`) — a
+    finished week is a finished week.
+
+    ── the key is what decides when it may run again ──
+
+    `week_start` and `lang` are obvious. `daysLogged` is the interesting one: it
+    is how many days of that week have any data at all, and it is in the key so
+    that *the analysis refreshes exactly when the week gains a day* and at no
+    other time.
+
+    That is deliberately not a "3 refreshes per week" budget. A budget makes the
+    person decide when to spend one, which is a decision they cannot make well —
+    they do not know whether anything has changed since the last run. The day
+    count does know. A past week's count never changes, so its analysis is
+    computed once and kept for good; the current week's changes at most six more
+    times, and every one of those is a moment where the answer genuinely should
+    be different because the app now knows something it did not.
+
+    ── and it still does not run on its own ──
+
+    `enabled` is the button, or a cache that already holds this exact key. The
+    screen has charts and stats above the AI card that are worth opening it for,
+    so arriving must not spend a call — but arriving at a week already analysed
+    should show the analysis rather than the button, which is what reading the
+    cache during render buys.
+  */
+  const qc = useQueryClient();
+  const daysLogged = (dailyLogs ?? []).filter(
+    (d) => Number(d.kcal) > 0 || Number(d.volume_load) > 0 || d.readiness_score != null,
+  ).length;
+  const reviewKey = ['weekly_review', user?.id, startStr, lang, daysLogged] as const;
+  const [asked, setAsked] = useState(false);
+
+  const analyze = useQuery({
+    queryKey: reviewKey,
+    // `getQueryData` during render is a read, not a subscription — it decides
+    // whether this week is one we have already paid for.
+    enabled: !!user && (asked || qc.getQueryData(reviewKey) !== undefined),
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60 * 24 * 7,
+    retry: 1,
+    queryFn: async () => {
       const res = await callEdge<AIAnalysis>(EDGE_FUNCTIONS.weeklyReview, {
         week_start: startStr,
         lang,
@@ -239,11 +289,19 @@ export default function WeeklyReviewScreen() {
       // The alert this feeds used to print the raw client message, which for a
       // missing function reads `Edge Function returned a non-2xx status code`.
       if (!res.ok) throw new Error(i18n[AI_FAILURE_KEY[res.failure]]);
-      return res.data;
+      return res.data ?? null;
     },
-    onSuccess: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-    onError: (e: Error) => Alert.alert('ASCND', e.message),
   });
+
+  /* The mutation reported success and failure through callbacks. A query has
+     neither, so the two effects it had are re-attached to the transitions
+     themselves — a haptic when an analysis arrives, an alert when one fails. */
+  useEffect(() => {
+    if (analyze.data) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [analyze.data]);
+  useEffect(() => {
+    if (analyze.error) Alert.alert('ASCND', (analyze.error as Error).message);
+  }, [analyze.error]);
 
   const a = analyze.data;
 
@@ -395,7 +453,7 @@ export default function WeeklyReviewScreen() {
           style={styles.weekBtn}
           onPress={() => {
             Haptics.selectionAsync();
-            analyze.reset();
+            setAsked(false);
             setWeekOffset((o) => o - 1);
           }}>
           <Icon icon={ChevronLeft} size={16} color={colors.mutedForeground} />
@@ -409,7 +467,7 @@ export default function WeeklyReviewScreen() {
           style={[styles.weekBtn, weekOffset >= 0 && styles.disabled]}
           onPress={() => {
             Haptics.selectionAsync();
-            analyze.reset();
+            setAsked(false);
             setWeekOffset((o) => Math.min(o + 1, 0));
           }}>
           <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
@@ -510,10 +568,13 @@ export default function WeeklyReviewScreen() {
               </View>
               <Text style={styles.hint}>{i18n.nWeeklyReviewHint}</Text>
               <PressScale
-                style={[styles.cta, analyze.isPending && styles.disabled]}
-                disabled={analyze.isPending}
-                onPress={() => analyze.mutate()}>
-                {analyze.isPending ? (
+                /* isFetching, not isPending: in React Query v5 a *disabled*
+                   query is already `pending`, so isPending here would put a
+                   spinner on the button before anybody had pressed it. */
+                style={[styles.cta, analyze.isFetching && styles.disabled]}
+                disabled={analyze.isFetching}
+                onPress={() => setAsked(true)}>
+                {analyze.isFetching ? (
                   <ActivityIndicator color={colors.primaryForeground} />
                 ) : (
                   <Text style={styles.ctaText}>{i18n.nAnalyzeWeek}</Text>
