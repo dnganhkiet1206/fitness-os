@@ -24,7 +24,7 @@ import {
  * `useMascotEmotion()` blends that with the state-derived held emotion.
  */
 
-let active: { action: MascotAction; expires: number } | null = null;
+let active: { action: MascotEmotion; expires: number } | null = null;
 const listeners = new Set<() => void>();
 let timer: ReturnType<typeof setTimeout> | null = null;
 let greeted = false;
@@ -57,14 +57,39 @@ export const DEV_EMOTIONS: MascotEmotion[] = [
 
 /** Play a one-shot action (celebrate on a PR, wave on open, curl on a lift). */
 export function triggerMascotAction(action: MascotAction) {
-  active = { action, expires: Date.now() + ACTION_MS[action] };
+  hold(action, ACTION_MS[action]);
+}
+
+/**
+ * Hold any emotion for a given time — the channel Koa's reactions arrive on.
+ *
+ * ── why the existing one-shot was not enough ──
+ *
+ * `triggerMascotAction` takes one of three names with three fixed durations,
+ * which was right when the only one-shots were *wave on open* and *curl while
+ * lifting*. A decision engine produces an emotion and a duration chosen for the
+ * event — `proud` for two seconds after a personal record — and neither of
+ * those is expressible as one of three names.
+ *
+ * So the store now holds an emotion rather than an action, and
+ * `triggerMascotAction` is a thin call into it. Nothing else about the channel
+ * changes: same slot, same subscribers, same rule that a one-shot outranks the
+ * held emotion. This is the integration requiring a change, not a rewrite for
+ * its own sake.
+ */
+export function holdEmotion(emotion: MascotEmotion, ms: number) {
+  hold(emotion, ms);
+}
+
+function hold(emotion: MascotEmotion, ms: number) {
+  active = { action: emotion, expires: Date.now() + ms };
   emit();
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
     active = null;
     timer = null;
     emit();
-  }, ACTION_MS[action]);
+  }, ms);
 }
 
 function subscribe(cb: () => void) {
@@ -73,7 +98,7 @@ function subscribe(cb: () => void) {
 }
 const getActive = () => active;
 
-function useActiveAction(): MascotAction | null {
+function useActiveAction(): MascotEmotion | null {
   const snap = useSyncExternalStore(subscribe, getActive, getActive);
   return snap?.action ?? null;
 }

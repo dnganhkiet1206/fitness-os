@@ -8,6 +8,8 @@ import { useDailyLog, useProfile, useTodayMeals } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
 import { supabase } from '@/integrations/supabase/client';
 import { seeded } from '@/lib/bandit';
+import { KOA_LINE_KEY } from '@/lib/koa-decide';
+import { useKoaReaction } from '@/lib/koa-stage';
 import { localDateStr } from '@/lib/local-date';
 import { mascotLine, type MascotThing } from '@/lib/mascot-message';
 import { mayPraise, rankQuests, settleStale, usePersonalModel } from '@/lib/personal-model';
@@ -164,6 +166,15 @@ export function useMascotMessage(): MascotSay {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [log, meals, waterMl, profile, logOk, mealsOk, waterOk, order]);
 
+  /* A live reaction outranks the day's summary sentence: something just
+     happened, and it is more interesting than a running total. It returns to
+     the summary by itself when the reaction's hold expires. */
+  const reaction = useKoaReaction();
+  const reactionLine =
+    reaction && reaction.decision.say
+      ? ((i18n as unknown as Record<string, string>)[KOA_LINE_KEY[reaction.decision.say]] ?? null)
+      : null;
+
   const text = useMemo(() => {
 
     const WIN: Record<MascotThing, string> = {
@@ -203,14 +214,21 @@ export function useMascotMessage(): MascotSay {
     }
   }, [i18n, line, today]);
 
+
   /* The gap travels with the sentence instead of being recorded here.
      Composing a sentence is not the same as somebody reading one, and this hook
      runs anywhere the mascot is touched at all — including inside the error card,
      which draws no bubble. Reporting from here taught the model that asks nobody
      saw had failed. `mascot.tsx` reports it, because that is where it appears. */
   return useMemo(
-    () => ({ text, gap: line.kind === 'ask' || line.kind === 'notice' ? line.gap : null }),
-    [text, line],
+    () => ({
+      text: reactionLine ?? text,
+      /* A reaction is not an ask, so it must not be recorded as one — the
+         bandit learns from what Koa *requested*, and a celebration requests
+         nothing. */
+      gap: reactionLine ? null : line.kind === 'ask' || line.kind === 'notice' ? line.gap : null,
+    }),
+    [reactionLine, text, line],
   );
 }
 

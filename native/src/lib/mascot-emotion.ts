@@ -112,6 +112,6 @@ export function baseEmotion(i: EmotionInput): MascotEmotion {
 }
 
 /** Resolve what to render: an active one-shot wins over the held emotion. */
-export function resolveEmotion(base: MascotEmotion, action: MascotAction | null): MascotEmotion {
+export function resolveEmotion(base: MascotEmotion, action: MascotEmotion | null): MascotEmotion {
   return action ?? base;
 }

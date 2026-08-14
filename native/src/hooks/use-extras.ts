@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 
 import { fireCelebration } from '@/components/ascnd/award-celebration';
@@ -6,6 +7,9 @@ import { useAppSettings } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
 import { AWARD_TEXT, CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr, localDayRangeISO, parseLocalDate } from '@/lib/local-date';
+import { useKoaContext } from '@/hooks/use-koa-context';
+import { TIER_MAGNITUDE } from '@/lib/koa-event';
+import { emitKoa } from '@/lib/koa-stage';
 import { streakFrom, STREAK_WINDOW } from '@/lib/streak';
 import { CHALLENGE_REWARD, challengeRefKey } from '@/lib/mascot-room';
 import type { Json } from '@/integrations/supabase/types';
@@ -87,6 +91,14 @@ export function useCheckAwards() {
   const { lang } = useAppSettings();
   const queryClient = useQueryClient();
   const { data: existingAwards } = useAwards();
+  /* Koa is told about a medal at the one moment the app is certain there is a
+     new one — inside `grant`, after the insert came back without a duplicate
+     error. Detecting it anywhere else would mean polling the awards list and
+     diffing it, which is what the character used to have to do for everything
+     and is why it could not see any of this. */
+  const koaCtx = useKoaContext();
+  const koaCtxRef = useRef(koaCtx);
+  koaCtxRef.current = koaCtx;
 
   const grant = async (def: AwardDef, metadata: Record<string, unknown> = {}) => {
     const text = AWARD_TEXT[def.key];
@@ -112,6 +124,19 @@ export function useCheckAwards() {
         icon: def.icon,
         tier: def.tier,
       });
+      /* The medal's own tier is the app's existing answer to "how big was
+         this", so the magnitude is read rather than invented. A personal
+         record is called by its name because the reaction differs: Koa looks
+         at the number first, then at the person. */
+      emitKoa(
+        {
+          id: `award:${def.key}`,
+          kind: def.type === 'pr' ? 'personal_record' : 'award_earned',
+          magnitude: TIER_MAGNITUDE[def.tier] ?? 0.5,
+          label: text.title[lang],
+        },
+        koaCtxRef.current,
+      );
     }
   };
 

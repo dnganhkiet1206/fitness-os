@@ -487,6 +487,17 @@ export default function MascotRoomScreen() {
             style={styles.devChip}>
             <Text style={styles.devChipText}>spec sheet →</Text>
           </Pressable>
+          {/* the brain, next to the body: fire real events and read the
+              decision, including the ones where Koa decides to stay quiet */}
+          <Pressable
+            hitSlop={9}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/koa-debug');
+            }}
+            style={styles.devChip}>
+            <Text style={styles.devChipText}>koa debug →</Text>
+          </Pressable>
         </View>
       ) : null}
       {mood === 'tired' ? (

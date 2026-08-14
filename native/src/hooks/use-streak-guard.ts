@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 
+import { useKoaContext } from '@/hooks/use-koa-context';
 import { useDailyStreak, useSpendFreeze } from '@/hooks/use-mascot-room';
+import { comebackMagnitude, streakMagnitude } from '@/lib/koa-event';
+import { emitKoa } from '@/lib/koa-stage';
 
 /**
  * Spend a streak freeze on a day that would otherwise have broken the run.
@@ -41,11 +44,31 @@ import { useDailyStreak, useSpendFreeze } from '@/hooks/use-mascot-room';
 export function useStreakGuard() {
   const { data } = useDailyStreak();
   const spend = useSpendFreeze();
+  const ctx = useKoaContext();
   const tried = useRef(new Set<string>());
 
   useEffect(() => {
     if (!data) return;
     const { missed, held } = data;
+
+    /* ── the comeback, told to Koa rather than detected by it ──
+
+       `missed` is already the gap between the last logged day and today, and
+       it is computed by the streak — the one system that owns day arithmetic.
+       Koa is handed the answer. Nothing here recounts days, and nothing polls:
+       this runs when the streak query resolves, which is exactly when the fact
+       became known. */
+    if (missed.length >= 3) {
+      emitKoa(
+        {
+          id: `comeback:${data.frozen.length}:${missed[missed.length - 1]}`,
+          kind: 'comeback',
+          magnitude: comebackMagnitude(missed.length),
+          days: missed.length,
+        },
+        ctx,
+      );
+    }
 
     // Nothing to cover, or more days lost than the drawer can pay for.
     if (missed.length === 0 || missed.length > held) return;
@@ -53,7 +76,20 @@ export function useStreakGuard() {
     for (const date of missed) {
       if (tried.current.has(date)) continue;
       tried.current.add(date);
-      spend.mutate(date);
+      spend.mutate(date, {
+        onSuccess: (used) => {
+          if (!used) return;
+          emitKoa(
+            {
+              id: `freeze:${date}`,
+              kind: 'streak_saved',
+              magnitude: streakMagnitude(data.count),
+              days: data.count,
+            },
+            ctx,
+          );
+        },
+      });
     }
     // `spend` is a stable mutation object; listing it would re-run this on every
     // state change of the mutation it just started.

@@ -16,7 +16,7 @@
  * significant one. Both only show up when the events are lined up together.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -38,7 +38,8 @@ try {
      without the project tsconfig; tsc still emits, which is all that is used. */
 }
 const require_ = createRequire(import.meta.url);
-const { decide, QUIET_BELOW, SPEAK_ABOVE } = require_(path.join(out, 'koa-decide.js'));
+const { decide, outranks, LIVE_MS, KOA_LINE_KEY, QUIET_BELOW, SPEAK_ABOVE } =
+  require_(path.join(out, 'koa-decide.js'));
 const { streakMagnitude, comebackMagnitude, TIER_MAGNITUDE } =
   require_(path.join(out, 'koa-event.js'));
 
@@ -131,6 +132,69 @@ for (const kind of ['quest_done', 'day_complete', 'personal_record', 'comeback']
   if (comebackMagnitude(60) > 1) problems.push('vắng 60 ngày ra độ lớn ngoài thang');
 }
 
+/* ── 8: two events arriving together ──
+   The failure this guards is not "is reaction A good" but "when A and B land in
+   the same second, does Koa play both". Four reactions in a row is the spam the
+   whole engine exists to prevent. */
+{
+  const T = 1_000_000;
+  const big = decide({ kind: 'personal_record', magnitude: 0.9 }, CTX);
+  const small = decide({ kind: 'quest_done', quest: 'water', magnitude: 0.5 }, CTX);
+
+  const live = { intensity: big.intensity, at: T };
+  if (outranks(live, small.intensity, T + 200)) {
+    problems.push('một cốc nước cắt ngang được màn ăn mừng PR đang diễn');
+  }
+  if (!outranks({ intensity: small.intensity, at: T }, big.intensity, T + 200)) {
+    problems.push('PR không giành được sân khấu từ một việc nhỏ đang diễn');
+  }
+  if (outranks(live, big.intensity, T + 200)) {
+    problems.push('hai sự kiện cùng cường độ mà cái sau vẫn cướp sân — sẽ nháy hai lần');
+  }
+  if (!outranks(live, small.intensity, T + LIVE_MS + 1)) {
+    problems.push('phản ứng cũ đã hết hạn mà vẫn chặn phản ứng mới');
+  }
+  if (!outranks(null, 0.1, T)) problems.push('sân khấu trống mà vẫn từ chối');
+
+  /* The three-way pile-up the brief names: achievement + level up + XP. Exactly
+     one of them may reach the stage. */
+  const pile = [
+    decide({ kind: 'award_earned', magnitude: 0.4 }, CTX),
+    decide({ kind: 'level_up', magnitude: 0.7 }, CTX),
+    decide({ kind: 'quest_done', quest: 'water', magnitude: 0.4 }, CTX),
+  ];
+  let stage = null;
+  let plays = 0;
+  for (const d of pile) {
+    if (!d.shouldReact) continue;
+    if (!outranks(stage, d.intensity, T)) continue;
+    stage = { intensity: d.intensity, at: T };
+    plays++;
+  }
+  if (plays > 2) problems.push(`ba sự kiện cùng lúc tạo ${plays} lần đổi sân khấu — người dùng thấy nhấp nháy`);
+  if (!stage || stage.intensity !== Math.max(...pile.filter((d) => d.shouldReact).map((d) => d.intensity))) {
+    problems.push('sự kiện lớn nhất trong đợt không phải cái ở lại trên sân khấu');
+  }
+}
+
+/* ── 9: every intent has a string key, and no English is in the engine ── */
+{
+  const intents = ['praise_small', 'praise_big', 'proud_record', 'welcome_back',
+                   'streak_saved', 'streak_risk', 'day_complete'];
+  for (const i of intents) {
+    if (!KOA_LINE_KEY[i]) problems.push(`intent ${i} không có khoá i18n`);
+  }
+  const srcPath = path.join(NATIVE, 'src/lib/koa-decide.ts');
+  const body = readFileSync(srcPath, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  /* `because` is Vietnamese developer text and never reaches a user; what must
+     not appear is a user-facing English sentence. */
+  if (/say: '[A-Z]|say: "[A-Z]/.test(body)) {
+    problems.push('có vẻ engine đang trả chữ thay vì intent');
+  }
+}
+
 /* ── self-test: a flat engine must fail the ordering case ── */
 {
   const flat = () => ({ shouldReact: true, intensity: 0.5, say: null, gaze: 'user' });
@@ -155,5 +219,7 @@ console.log(
     'cường độ tăng dần đúng thứ tự nước < xong ngày < PR < huy hiệu bạch kim; ' +
     `lời thoại chỉ xuất hiện từ ${SPEAK_ABOVE} trở lên; mặt lo có hai khoá (chuỗi ≥3 ngày VÀ hôm nay chưa ghi) ` +
     'và mạnh hơn theo chiều dài chuỗi; quay lại sau hai tuần là lời đón chứ không phải pháo hoa; ' +
-    'và đường cong độ lớn là log nên 3→7 ngày đáng giá hơn 180→365',
+    'và đường cong độ lớn là log nên 3→7 ngày đáng giá hơn 180→365; ' +
+    'va chạm sự kiện: cái lớn giành sân, cái nhỏ bị BỎ chứ không xếp hàng, ' +
+    'ba sự kiện cùng lúc không tạo ba màn diễn, và cả 7 intent đều có khoá i18n',
 );

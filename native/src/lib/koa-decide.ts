@@ -236,3 +236,53 @@ function questEmotion(q: KoaEvent['quest']): MascotEmotion {
 /** 0..1 from a streak length, on the same log curve as `streakMagnitude`. */
 const streakWeight = (days: number) =>
   clamp01(Math.log10(Math.max(days, 1)) / Math.log10(365));
+
+/**
+ * Which string key each intent reads.
+ *
+ * The engine never returns text. This table is the only place the two meet, and
+ * it lives beside the intents rather than inside a screen so that adding a
+ * language is a change to `native-strings.ts` and nothing else.
+ */
+export const KOA_LINE_KEY: Record<KoaLine, string> = {
+  praise_small: 'nKoaPraiseSmall',
+  praise_big: 'nKoaPraiseBig',
+  proud_record: 'nKoaProudRecord',
+  welcome_back: 'nKoaWelcomeBack',
+  streak_saved: 'nKoaStreakSaved',
+  streak_risk: 'nKoaStreakRisk',
+  day_complete: 'nKoaDayComplete',
+};
+
+/**
+ * How long a reaction stays live for the purposes of outranking a new one.
+ *
+ * Roughly the length of the longest reaction, so "still on stage" and "still
+ * being watched" are the same window.
+ */
+export const LIVE_MS = 2600;
+
+/**
+ * Does a new reaction get to interrupt the one already playing?
+ *
+ * ── why the loser is dropped and not queued ──
+ *
+ * Events arrive together far more often than they arrive alone: finishing a
+ * workout can grant a medal, cross a level and complete the day inside the same
+ * second. A queue turns that into four reactions back to back, which is the
+ * spam the whole engine exists to prevent — and the fourth one lands long after
+ * the person has stopped connecting it to anything they did.
+ *
+ * So a bigger moment replaces a smaller one, a smaller one is discarded, and
+ * Koa reacts to *the biggest thing that happened*, once. Equal intensity keeps
+ * the incumbent: the one already on screen has the better claim.
+ */
+export function outranks(
+  live: { intensity: number; at: number } | null,
+  next: number,
+  now: number,
+): boolean {
+  if (!live) return true;
+  if (now - live.at >= LIVE_MS) return true;
+  return next > live.intensity;
+}
