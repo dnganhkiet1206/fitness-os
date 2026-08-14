@@ -28,6 +28,22 @@ export const AWARD_TEXT: Record<string, { title: Bi; desc: Bi }> = {
     title: { en: 'Forged in Steel', vi: 'Thép Đã Tôi' },
     desc: { en: 'Log 30 days in a row', vi: 'Ghi log 30 ngày liên tiếp' },
   },
+  streak_60: {
+    title: { en: 'Two Months Deep', vi: 'Hai Tháng Ròng' },
+    desc: { en: 'Log 60 days in a row', vi: 'Ghi log 60 ngày liên tiếp' },
+  },
+  streak_100: {
+    title: { en: 'Hundred Days', vi: 'Trăm Ngày' },
+    desc: { en: 'Log 100 days in a row', vi: 'Ghi log 100 ngày liên tiếp' },
+  },
+  streak_180: {
+    title: { en: 'Half a Year', vi: 'Nửa Năm' },
+    desc: { en: 'Log 180 days in a row', vi: 'Ghi log 180 ngày liên tiếp' },
+  },
+  streak_365: {
+    title: { en: 'A Full Year', vi: 'Trọn Một Năm' },
+    desc: { en: 'Log 365 days in a row', vi: 'Ghi log 365 ngày liên tiếp' },
+  },
   first_workout: {
     title: { en: 'First Step', vi: 'Bước Đầu' },
     desc: { en: 'Complete your first workout', vi: 'Hoàn thành buổi tập đầu tiên' },

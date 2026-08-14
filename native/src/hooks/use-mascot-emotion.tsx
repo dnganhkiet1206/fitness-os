@@ -82,7 +82,8 @@ function useActiveAction(): MascotAction | null {
  */
 export function useMascotEmotion(): MascotEmotion {
   const mood = useMascotMood();
-  const { data: streak } = useDailyStreak();
+  const { data: streakData } = useDailyStreak();
+  const streak = streakData?.count;
   const { data: profile } = useProfile();
   const pathname = usePathname();
   const action = useActiveAction();

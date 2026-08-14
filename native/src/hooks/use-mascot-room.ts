@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
 import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
-import { localDateStr, parseLocalDate } from '@/lib/local-date';
+import { localDateStr } from '@/lib/local-date';
+import { streakFrom, STREAK_WINDOW, type Streak } from '@/lib/streak';
 import { offlineNow } from '@/lib/offline';
 import {
   buyRefKey,
@@ -81,35 +82,29 @@ export function useMascotWallet() {
   });
 }
 
-/** Consecutive days with a daily_logs row, ending today or yesterday —
- *  same rule as the streak awards in use-extras. */
+/**
+ * The streak, and whether today is already in it.
+ *
+ * The counting is `lib/streak.ts`, shared with the medal engine — the two used
+ * to have a copy each and had already drifted. Here is only the fetching, and
+ * the reason `loggedToday` rides along: the dates are in hand, so answering
+ * "is today safe" costs nothing, while deriving it elsewhere from `useDailyLog`
+ * would be a second definition of a day counting.
+ */
 export function useDailyStreak() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['mascot_streak', user?.id, localDateStr()],
     enabled: !!user,
-    queryFn: async () => {
+    queryFn: async (): Promise<Streak> => {
       const { data, error } = await supabase
         .from('daily_logs')
         .select('date')
         .eq('user_id', user!.id)
         .order('date', { ascending: false })
-        .limit(35);
+        .limit(STREAK_WINDOW);
       if (error) throw error;
-      const dates = (data ?? []).map((d) => d.date);
-      if (dates.length === 0) return 0;
-      const todayStr = localDateStr();
-      const y = new Date();
-      y.setDate(y.getDate() - 1);
-      if (dates[0] !== todayStr && dates[0] !== localDateStr(y)) return 0;
-      let streak = 1;
-      for (let i = 1; i < dates.length; i++) {
-        const diff =
-          (parseLocalDate(dates[i - 1]).getTime() - parseLocalDate(dates[i]).getTime()) / 86400000;
-        if (Math.round(diff) === 1) streak++;
-        else break;
-      }
-      return streak;
+      return streakFrom((data ?? []).map((d) => d.date), localDateStr());
     },
   });
 }

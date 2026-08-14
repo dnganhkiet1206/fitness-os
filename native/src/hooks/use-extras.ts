@@ -6,6 +6,7 @@ import { useAppSettings } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
 import { AWARD_TEXT, CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr, localDayRangeISO, parseLocalDate } from '@/lib/local-date';
+import { streakFrom, STREAK_WINDOW } from '@/lib/streak';
 import { CHALLENGE_REWARD, challengeRefKey } from '@/lib/mascot-room';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
@@ -55,6 +56,16 @@ export const AWARD_DEFINITIONS = [
   { key: 'streak_7', type: 'streak', icon: 'flame', tier: 'silver', requirement: 7 },
   { key: 'streak_14', type: 'streak', icon: 'flame', tier: 'gold', requirement: 14 },
   { key: 'streak_30', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 30 },
+  /* Past a month the ladder used to stop, which is the wrong end to stop at:
+     the people still logging on day 100 are the ones the app is working for,
+     and they were being told nothing. Duolingo's own milestones run to a year
+     for the same reason. These stay platinum because a new tier would mean a
+     new colour in `TIER_CONFIG` and a value the awards table has never seen —
+     the escalation is in the names and in how rare they are. */
+  { key: 'streak_60', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 60 },
+  { key: 'streak_100', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 100 },
+  { key: 'streak_180', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 180 },
+  { key: 'streak_365', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 365 },
   { key: 'first_workout', type: 'first_workout', icon: 'dumbbell', tier: 'bronze' },
   { key: 'workouts_10', type: 'volume_milestone', icon: 'dumbbell', tier: 'silver', requirement: 10 },
   { key: 'workouts_50', type: 'volume_milestone', icon: 'dumbbell', tier: 'gold', requirement: 50 },
@@ -111,32 +122,32 @@ export function useCheckAwards() {
     let granted = false;
 
     try {
-      // Streaks from consecutive daily_logs dates
+      /* Streaks from consecutive daily_logs dates.
+
+         The counting is `streakFrom` — the same function Koa's room uses. It
+         was a second copy here, and the copy was subtly wrong: it started the
+         count at 1 and only ran the loop when the newest row was today or
+         yesterday, so a lapsed streak came out as 1 instead of 0. No medal
+         needs fewer than three days, so nothing ever showed for it.
+
+         The window is `STREAK_WINDOW`, not the 35 it was. A medal is only
+         grantable if the query can see far enough back to count to it, and the
+         ladder now goes to a year. */
       const { data: logs } = await supabase
         .from('daily_logs')
         .select('date')
         .eq('user_id', user.id)
         .order('date', { ascending: false })
-        .limit(35);
+        .limit(STREAK_WINDOW);
 
       if (logs && logs.length > 0) {
-        let streak = 1;
-        const todayStr = localDateStr();
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yStr = localDateStr(yesterday);
-        const dates = logs.map((l) => l.date);
-        if (dates[0] === todayStr || dates[0] === yStr) {
-          for (let i = 1; i < dates.length; i++) {
-            const diffDays =
-              (new Date(dates[i - 1]).getTime() - new Date(dates[i]).getTime()) / 86400000;
-            if (Math.round(diffDays) === 1) streak++;
-            else break;
-          }
-        }
-        for (const key of ['streak_3', 'streak_7', 'streak_14', 'streak_30'] as const) {
-          const def = byKey(key);
-          if ('requirement' in def && streak >= def.requirement && !earned.has(key)) {
+        const { count: streak } = streakFrom(
+          logs.map((l) => l.date),
+          localDateStr(),
+        );
+        for (const def of AWARD_DEFINITIONS) {
+          if (def.type !== 'streak') continue;
+          if ('requirement' in def && streak >= def.requirement && !earned.has(def.key)) {
             await grant(def, { streak });
             granted = true;
           }

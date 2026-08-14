@@ -171,6 +171,7 @@ const STEPS = [
   ['camera shop', 'node', ['tools/shop-camera.mjs']],
   ['tư thế mặc đồ', 'node', ['tools/koa-studio/dress.mjs']],
   ['peek sau thẻ', 'node', ['tools/peek.mjs']],
+  ['chuỗi ngày', 'node', ['tools/streak.mjs']],
 ];
 
 let failed = 0;

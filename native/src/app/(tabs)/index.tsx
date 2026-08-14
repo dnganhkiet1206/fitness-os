@@ -41,6 +41,7 @@ import {
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PeekHost } from '@/components/ascnd/card-peek';
+import { StreakChip } from '@/components/ascnd/streak-chip';
 import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessGauge } from '@/components/ascnd/readiness-gauge';
 import { StatusScrim } from '@/components/ascnd/status-scrim';
@@ -458,6 +459,9 @@ export default function TodayScreen() {
           </Text>
         </View>
         <View style={styles.headerButtons}>
+          {/* The streak sits before the buttons because it is a *reading*, not
+              an action — and it is only ever here, in the bar you land on. */}
+          {!editMode && <StreakChip />}
           <PressScale
             accessibilityRole="button"
             accessibilityLabel={editMode ? i18n.a11yDoneEditing : i18n.a11yEditLayout}

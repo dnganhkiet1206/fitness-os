@@ -170,7 +170,8 @@ export default function MascotRoomScreen() {
 
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();
-  const { data: streak = 0 } = useDailyStreak();
+  const { data: streakData } = useDailyStreak();
+  const streak = streakData?.count ?? 0;
   const claim = useClaimReward();
   const buy = useBuyItem();
   const equip = useToggleEquip();
