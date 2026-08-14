@@ -5,8 +5,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
+import { useMascot } from '@/hooks/use-mascot';
 
 /**
  * "We could not read this" — as distinct from "there is nothing here".
@@ -40,6 +42,18 @@ import type { useI18n } from '@/hooks/use-app-settings';
  * only the one that reported would fix a corner of the page. It is also the
  * gesture the user already has (pull to refresh) exposed as a button, which is
  * one behaviour to learn instead of two.
+ *
+ * ── why the character is here and not on more screens ──
+ *
+ * The mascot literature is consistent about where a character earns its place:
+ * onboarding, empty states, loading, celebrations and **errors** — and equally
+ * consistent that putting it on every screen produces fatigue and nothing else.
+ * A failed read is the textbook case. It is the moment the app is least
+ * likeable, it is nobody's fault, and a character turning up surprised is the
+ * difference between a system that broke and a companion that noticed.
+ *
+ * It is also rare, which is what keeps it from being wallpaper. Settings,
+ * billing and detail views stay characterless on purpose.
  */
 export function LoadFailed({
   i18n,
@@ -51,11 +65,19 @@ export function LoadFailed({
   /** the screen's refresh is already running — the button says so and waits */
   busy?: boolean;
 }) {
+  const { enabled, mascot } = useMascot();
+
   return (
     <GlassCard style={styles.card}>
-      <View style={styles.icon}>
-        <Icon icon={CloudOff} size={20} color={colors.mutedForeground} />
-      </View>
+      {enabled ? (
+        <View style={styles.figure}>
+          <MascotFigure mascot={mascot} size={64} emotion="oops" animated />
+        </View>
+      ) : (
+        <View style={styles.icon}>
+          <Icon icon={CloudOff} size={20} color={colors.mutedForeground} />
+        </View>
+      )}
       <Text style={styles.title}>{i18n.nLoadFailed}</Text>
       <Text style={styles.hint}>{i18n.nLoadFailedHint}</Text>
       {onRetry ? (
@@ -78,6 +100,9 @@ export function LoadFailed({
 
 const styles = StyleSheet.create({
   card: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.lg },
+  /* Same vertical space the icon chip took, so turning the mascot off in
+     settings does not move the card's text. */
+  figure: { marginBottom: spacing.xs, alignItems: 'center' },
   icon: {
     width: 40,
     height: 40,

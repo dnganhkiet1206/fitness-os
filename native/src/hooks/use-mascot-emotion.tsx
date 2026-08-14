@@ -3,11 +3,14 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { useMascotMood } from '@/hooks/use-mascot';
 import { useDailyStreak } from '@/hooks/use-mascot-room';
+import { habitFor, usePersonalModel } from '@/lib/personal-model';
+import { lateHour } from '@/lib/user-rhythm';
 import { useProfile } from '@/hooks/useTodayData';
 import {
   ACTION_MS,
   baseEmotion,
   resolveEmotion,
+  RISK_HOUR,
   type MascotAction,
   type MascotEmotion,
 } from '@/lib/mascot-emotion';
@@ -83,6 +86,7 @@ function useActiveAction(): MascotAction | null {
 export function useMascotEmotion(): MascotEmotion {
   const mood = useMascotMood();
   const { data: streakData } = useDailyStreak();
+  const personal = usePersonalModel();
   const streak = streakData?.count;
   const { data: profile } = useProfile();
   const pathname = usePathname();
@@ -124,6 +128,9 @@ export function useMascotEmotion(): MascotEmotion {
           /* `false` while the query is unread, so a slow morning never puts a
              worried face on a day that may well be logged already. */
           streakAtRisk: streakData ? !streakData.loggedToday : false,
+          /* Their clock, not the app's. Meals are the most frequent log, so
+             they are the best single read on when this person shows up. */
+          riskHour: lateHour(habitFor('meal'), RISK_HOUR),
           hour: new Date().getHours(),
           onWorkoutScreen,
           isBirthday,
@@ -133,7 +140,7 @@ export function useMascotEmotion(): MascotEmotion {
         action,
       ),
     // `force` re-runs the memo via a re-render; hour is read fresh inside.
-    [mood, streak, streakData, onWorkoutScreen, action, isBirthday],
+    [mood, streak, streakData, personal.hours, onWorkoutScreen, action, isBirthday],
   );
 
   // Dev override wins in development so animations are testable on demand.

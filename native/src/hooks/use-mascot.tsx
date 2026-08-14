@@ -7,7 +7,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { useDailyLog, useProfile, useTodayMeals } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
 import { supabase } from '@/integrations/supabase/client';
+import { seeded } from '@/lib/bandit';
+import { localDateStr } from '@/lib/local-date';
 import { mascotLine, type MascotThing } from '@/lib/mascot-message';
+import { noteAsked, rankQuests, settleStale, usePersonalModel } from '@/lib/personal-model';
 import { DEFAULT_MASCOT_ID, getMascot, isUnlocked, MASCOTS } from '@/lib/mascots';
 
 const ENABLED_KEY = 'ascnd_mascot_enabled';
@@ -110,21 +113,60 @@ export function useMascotMessage(): string | null {
   const { data: meals, isSuccess: mealsOk } = useTodayMeals();
   const { data: waterMl, isSuccess: waterOk } = useTodayWater();
   const { data: profile } = useProfile();
+  const personal = usePersonalModel();
+  const today = localDateStr();
 
-  return useMemo(() => {
+  /*
+    ── one draw a day, not one a render ──
+
+    Thompson sampling picks by drawing from each belief, so calling it twice
+    gives two different answers — and a sentence that reshuffles itself every
+    time React re-renders is not personalisation, it is a slot machine. The
+    generator is seeded from the date, so the draw is fixed for the day and
+    genuinely new tomorrow. It also depends on the beliefs themselves, so
+    finishing something re-ranks what is left, which is the one moment a change
+    mid-day is expected rather than jarring.
+  */
+  const order = useMemo(
+    () => rankQuests(seeded(daySeed(today))).filter(isMascotThing),
+    [today, personal.arms],
+  );
+
+  /* Yesterday's unanswered ask is a miss, and a learner that only ever records
+     its successes will convince itself everything works. */
+  useEffect(() => {
+    settleStale(today);
+  }, [today]);
+
+  const line = useMemo(() => {
     /* Every field goes to `null` together unless all three reads succeeded.
        Half a day is not a day: a failed meals query with a good water query
        would otherwise have Koa asking for the meal you already logged. */
     const read = logOk && mealsOk && waterOk;
     const waterTarget = Number(profile?.water_target_ml) || 2500;
 
-    const line = mascotLine({
-      hour: new Date().getHours(),
-      sleepMin: read ? Number(log?.sleep_duration_min) || 0 : null,
-      meals: read ? meals?.length ?? 0 : null,
-      waterPct: read ? ((waterMl ?? 0) / waterTarget) * 100 : null,
-      workouts: read ? Number(log?.workout_count ?? 0) : null,
-    });
+    return mascotLine(
+      {
+        hour: new Date().getHours(),
+        sleepMin: read ? Number(log?.sleep_duration_min) || 0 : null,
+        meals: read ? meals?.length ?? 0 : null,
+        waterPct: read ? ((waterMl ?? 0) / waterTarget) * 100 : null,
+        workouts: read ? Number(log?.workout_count ?? 0) : null,
+      },
+      order,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [log, meals, waterMl, profile, logOk, mealsOk, waterOk, order]);
+
+  /* The ask is recorded here rather than inside the memo: a memo that writes to
+     a store is a render with a side effect, and React is allowed to run it
+     twice. */
+  useEffect(() => {
+    const gap = line.kind === 'ask' || line.kind === 'notice' ? line.gap : null;
+    if (gap) noteAsked(gap, today);
+  }, [line, today]);
+
+  return useMemo(() => {
 
     const WIN: Record<MascotThing, string> = {
       sleep: i18n.nMascotWinSleep,
@@ -158,8 +200,30 @@ export function useMascotMessage(): string | null {
       case 'praise':
         return i18n.nMascotPraise;
     }
-  }, [i18n, log, meals, waterMl, profile, logOk, mealsOk, waterOk]);
+  }, [i18n, line]);
 }
+
+/**
+ * A number for a date, so the day's Thompson draw is fixed for the day.
+ *
+ * Any spreading hash would do; this is the classic FNV-ish string fold. What
+ * matters is only that it is *stable* — the same date must give the same
+ * ranking, or Koa changes his mind every time the screen re-renders.
+ */
+function daySeed(date: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < date.length; i++) {
+    h ^= date.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/* The bandit ranks all five quests; Koa only talks about four of them. Steps
+   have no sentence, so they are filtered out rather than given one. */
+const MASCOT_THINGS: MascotThing[] = ['sleep', 'meal', 'water', 'workout'];
+const isMascotThing = (q: string): q is MascotThing =>
+  (MASCOT_THINGS as string[]).includes(q);
 
 /** happy | neutral | tired — what the figure mirrors, distinct from what it says. */
 export type MascotMood = 'happy' | 'neutral' | 'tired';

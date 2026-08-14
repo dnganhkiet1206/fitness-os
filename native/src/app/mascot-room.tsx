@@ -26,7 +26,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { router, useIsFocused } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
   ActivityIndicator,
@@ -63,6 +63,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAwards, useWeeklyChallenges } from '@/hooks/use-extras';
 import { useMascot } from '@/hooks/use-mascot';
+import { habitFor, usePersonalModel } from '@/lib/personal-model';
 import { DEV_EMOTIONS, setDevEmotion } from '@/hooks/use-mascot-emotion';
 import {
   useBuyItem,
@@ -159,6 +160,15 @@ function CoinBurst({ trigger, amount }: { trigger: number; amount: number }) {
   );
 }
 
+/** Which i18n key names each habit in the "Koa has noticed" line. */
+const LEARNED_LABEL: Record<QuestKey, 'nThingMeal' | 'nThingWorkout' | 'nThingWater' | 'nThingSleep' | 'nThingSteps'> = {
+  meal: 'nThingMeal',
+  workout: 'nThingWorkout',
+  water: 'nThingWater',
+  sleep: 'nThingSleep',
+  steps: 'nThingSteps',
+};
+
 export default function MascotRoomScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -172,6 +182,24 @@ export default function MascotRoomScreen() {
   const { data: inventory } = useMascotInventory();
   const { data: streakData } = useDailyStreak();
   const streak = streakData?.count ?? 0;
+
+  /* The one habit worth saying out loud: the strongest clock Koa has found.
+     Not a list — a list of five inferences reads as surveillance, and one
+     reads as somebody paying attention. */
+  const personal = usePersonalModel();
+  const learned = useMemo(() => {
+    const found = (Object.keys(personal.hours) as QuestKey[])
+      .map((q) => ({ q, h: habitFor(q) }))
+      .filter((x): x is { q: QuestKey; h: NonNullable<ReturnType<typeof habitFor>> } => x.h != null)
+      .sort((a, b) => b.h.strength - a.h.strength)[0];
+    if (!found) return null;
+    const hh = Math.floor(found.h.hour) % 24;
+    const mm = Math.round((found.h.hour - Math.floor(found.h.hour)) * 60);
+    const clock = `${String(hh).padStart(2, '0')}:${String(Math.min(mm, 59)).padStart(2, '0')}`;
+    return i18n.nRoomLearned
+      .replace('{what}', i18n[LEARNED_LABEL[found.q]] as string)
+      .replace('{time}', clock);
+  }, [personal.hours, i18n]);
   const claim = useClaimReward();
   const buy = useBuyItem();
   const equip = useToggleEquip();
@@ -571,6 +599,20 @@ export default function MascotRoomScreen() {
           <Text style={styles.levelHint}>
             {i18n.nRoomLevelHint.replace('{n}', String(LEVEL_XP - intoLevel))}
           </Text>
+          {/*
+            ── what Koa has worked out, said out loud ──
+
+            The model is on the device and nothing about it is secret, so the
+            app says what it learned rather than only acting on it. An app that
+            silently changes its behaviour based on a profile it will not show
+            you is the version of personalisation everybody has learned to
+            distrust; one sentence, in the buddy's own room, is the difference.
+
+            It appears only once there is a real habit — `habit()` returns null
+            until the person agrees with themselves — so it can never be a
+            guess dressed as an observation.
+          */}
+          {learned ? <Text style={styles.learned}>{learned}</Text> : null}
         </View>
       </GlassCard>
 
@@ -917,6 +959,7 @@ const styles = StyleSheet.create({
   },
   levelFill: { height: '100%', borderRadius: 3 },
   levelHint: { ...type.caption, color: colors.mutedForeground },
+  learned: { ...type.caption, color: colors.metricBlue, marginTop: 4 },
   streakChip: {
     flexDirection: 'row',
     alignItems: 'center',

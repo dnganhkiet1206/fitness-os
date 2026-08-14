@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useEntitlement, type Tier } from '@/hooks/use-entitlement';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useClaimReward } from '@/hooks/use-mascot-room';
+import { noteDone } from '@/lib/personal-model';
 import { peekAt } from '@/lib/quest-peek';
 import { DAILY_QUESTS, questRefKey, type QuestKey } from '@/lib/mascot-room';
 
@@ -106,8 +107,14 @@ export function useQuestAutoClaim() {
         claim.mutate({ refKey, amount: def.coins, reason: key });
       }
 
-      // …and only stage the show for something that changed while watching
-      if (before && !before[key] && mayPeek) peekAt(key, def.coins);
+      /* A change seen while watching is also the app's only chance to learn
+         *when* this person does things — the hour is now, and there is no
+         history query anywhere that could recover it later. It is recorded for
+         every observed completion, celebrated or not. */
+      if (before && !before[key]) {
+        noteDone(key, new Date().getHours(), quests.today);
+        if (mayPeek) peekAt(key, def.coins);
+      }
     }
     // `claim` is a stable mutation object; listing it would re-run this on every
     // mutation state change, which is exactly when it must not re-run.

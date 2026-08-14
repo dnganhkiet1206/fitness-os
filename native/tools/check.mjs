@@ -173,6 +173,7 @@ const STEPS = [
   ['peek sau thẻ', 'node', ['tools/peek.mjs']],
   ['chuỗi ngày', 'node', ['tools/streak.mjs']],
   ['khuôn mặt', 'node', ['tools/mascot-face.mjs']],
+  ['mô hình cá nhân', 'node', ['tools/personalize.mjs']],
 ];
 
 let failed = 0;

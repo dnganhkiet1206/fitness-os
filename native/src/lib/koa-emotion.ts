@@ -45,6 +45,12 @@ const STATES: Record<MascotEmotion, KoaState> = {
      shifts the head sideways (`running`, `turn34`) puts the face off-centre in
      a window that is all face. */
   proud: { expression: 'confident', pose: 'idle' },
+  /* The face for a read that failed. `surprised` rather than `sad`, and the
+     difference is whose fault it is: sorrow would be Koa apologising for
+     something the person did, and a query that did not come back is nobody's
+     doing. Surprise is the honest reaction and it is also the recoverable
+     one — the retry button is right underneath. */
+  oops: { expression: 'surprised', pose: 'idle' },
   /* The beanie is not decoration, it is the only thing that reads.
      `happytired` carries its meaning in a wink, and the wink is on a nine
      second cycle — over a one second peek it is almost never showing, so

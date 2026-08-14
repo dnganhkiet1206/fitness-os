@@ -93,9 +93,24 @@ const GAP_HOURS: Record<MascotThing, (hour: number) => boolean> = {
 };
 
 /** Priority when several things are open or several are done. */
+/**
+ * The order to mention things in, when nobody has said otherwise.
+ *
+ * It is still here and it is still the right default — it is what a coach would
+ * say to somebody they have just met. What changed is that it is now a
+ * *default*: `mascotLine` takes an order, and the app hands it one learned from
+ * whether bringing each thing up has ever led anywhere for this person
+ * (`lib/personal-model.ts`). This list is the prior that ranking starts from.
+ */
 const ORDER: MascotThing[] = ['workout', 'meal', 'sleep', 'water'];
 
-export function mascotLine(day: MascotDay): MascotLine {
+/**
+ * @param order most-worth-mentioning first; anything missing keeps its default
+ *   place after the ones listed, so a caller cannot silence a thing by
+ *   forgetting it
+ */
+export function mascotLine(day: MascotDay, order: MascotThing[] = ORDER): MascotLine {
+  const rank = [...order.filter((t) => ORDER.includes(t)), ...ORDER.filter((t) => !order.includes(t))];
   const known =
     day.sleepMin != null && day.meals != null && day.waterPct != null && day.workouts != null;
   if (!known) return { kind: 'silent' };
@@ -107,8 +122,8 @@ export function mascotLine(day: MascotDay): MascotLine {
     workout: (day.workouts ?? 0) > 0,
   };
 
-  const wins = ORDER.filter((t) => done[t]);
-  const gaps = ORDER.filter((t) => !done[t] && GAP_HOURS[t](day.hour));
+  const wins = rank.filter((t) => done[t]);
+  const gaps = rank.filter((t) => !done[t] && GAP_HOURS[t](day.hour));
 
   if (gaps.length === 0) return wins.length > 0 ? { kind: 'praise' } : { kind: 'silent' };
   if (wins.length === 0) return { kind: 'ask', gap: gaps[0] };

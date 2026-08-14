@@ -589,6 +589,15 @@ const en = {
   nRoomUpgrades: 'Room upgrades',
   nRoomInstalled: 'Installed',
   nRoomStreak: '{n}-day streak',
+  nRoomLearned: 'Koa has noticed: you usually log {what} around {time}',
+  /* Nouns, for the sentence above. The win phrases nearby are whole sentences
+     with emoji in them ("Meals logged 🍽") and read as nonsense inside another
+     sentence — a label is not a message. */
+  nThingMeal: 'meals',
+  nThingWorkout: 'training',
+  nThingWater: 'water',
+  nThingSleep: 'sleep',
+  nThingSteps: 'steps',
   nStreakLit: '{n}-day streak, today is logged',
   nStreakAtRisk: '{n}-day streak, nothing logged today yet',
   nStageStreak: 'Day streak',
@@ -1183,6 +1192,12 @@ const vi: typeof en = {
   nRoomUpgrades: 'Nâng cấp phòng',
   nRoomInstalled: 'Đã lắp đặt',
   nRoomStreak: 'Chuỗi {n} ngày',
+  nRoomLearned: 'Koa để ý: bạn thường ghi {what} vào khoảng {time}',
+  nThingMeal: 'bữa ăn',
+  nThingWorkout: 'buổi tập',
+  nThingWater: 'nước uống',
+  nThingSleep: 'giấc ngủ',
+  nThingSteps: 'bước chân',
   nStreakLit: 'Chuỗi {n} ngày, hôm nay đã ghi',
   nStreakAtRisk: 'Chuỗi {n} ngày, hôm nay chưa ghi gì',
   nStageStreak: 'Ngày streak',
