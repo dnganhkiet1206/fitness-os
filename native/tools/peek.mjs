@@ -95,7 +95,19 @@ export function problems(src, geo) {
     }
   }
 
-  // ── 3: the numbers are imported, not retyped ──
+  // ── 3: nothing is drawn while nothing is happening ──
+  if (!/if \(!enabled \|\| !playing\)/.test(src)) {
+    out.push(
+      'không thấy chốt chặn `!enabled || !playing` — băng cắt sẽ gắn một KoaFigure đầy đủ ' +
+        'vĩnh viễn cho MỌI widget tham gia peek (7 cái trên trang Hôm nay), vẽ và chạy đồng hồ ' +
+        'khung hình trong khi không có gì nhìn thấy được',
+    );
+  }
+  if (!/PEEK_TAIL_MS/.test(src)) {
+    out.push('không thấy PEEK_TAIL_MS — không có gì gỡ nhân vật xuống sau khi diễn xong');
+  }
+
+  // ── 4: the numbers are imported, not retyped ──
   const body = src
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/^\s*\/\/.*$/gm, '');
@@ -140,12 +152,15 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
   const FIXED = read(COMPONENT);
   const SHIPPED = FIXED.replace("justifyContent: 'flex-start'", "justifyContent: 'flex-end'");
   const RETYPED = FIXED.replace('{ rotate: `${f.rotate}deg` }', '{ rotate: `${lean.value * 7}deg` }');
+  const ALWAYS_ON = FIXED.replace('if (!enabled || !playing)', 'if (!enabled)');
 
   const selftest = [];
   if (SHIPPED === FIXED) selftest.push('không dựng lại được bản đã ship (flex-end)');
   else if (!problems(SHIPPED, geo).length) selftest.push('bản flex-end đã ship vẫn lọt');
   if (RETYPED === FIXED) selftest.push('không dựng lại được bản gõ tay số độ nghiêng');
   else if (!problems(RETYPED, geo).length) selftest.push('số 7 gõ thẳng vào component vẫn lọt');
+  if (ALWAYS_ON === FIXED) selftest.push('không dựng lại được bản gắn nhân vật vĩnh viễn');
+  else if (!problems(ALWAYS_ON, geo).length) selftest.push('bản gắn nhân vật vĩnh viễn vẫn lọt');
   if (!problems(FIXED, { ...geo, PEEK: Math.ceil(geo.PEEK_FIGURE * KOA_ASPECT) + 1 }).length) {
     selftest.push('băng cao hơn hình vẫn lọt');
   }
@@ -161,6 +176,7 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
     `peek OK — băng ${geo.PEEK}pt, hình ${geo.PEEK_FIGURE}×` +
       `${Math.round(geo.PEEK_FIGURE * KOA_ASPECT)}pt (thấy ` +
       `${Math.round((geo.PEEK / (geo.PEEK_FIGURE * KOA_ASPECT)) * 100)}% chiều cao hình, tính từ đỉnh đầu); ` +
-      'bản flex-end đã ship, bản gõ tay số độ nghiêng và bản băng cao hơn hình đều bị bắt',
+      'nhân vật chỉ được gắn khi đang diễn; ' +
+      'bản flex-end đã ship, bản gõ tay số độ nghiêng, bản băng cao hơn hình và bản gắn vĩnh viễn đều bị bắt',
   );
 }

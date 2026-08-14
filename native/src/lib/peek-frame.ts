@@ -70,6 +70,21 @@ export const LEAN_DEG = 7;
  */
 export const PEEK_HOLD_MS = 1000;
 
+/**
+ * How long after a firing the figure is still worth having on screen.
+ *
+ * The rise is a spring, so it has no duration to read off — this is the hold
+ * plus enough for the spring to settle and the drop to finish, rounded up. It
+ * exists because the alternative is leaving the character mounted for ever:
+ * seven widgets on the dashboard take part in the peek, and each one was
+ * carrying a full `KoaFigure` — a large animated SVG with a frame clock —
+ * permanently, clipped out of sight, on a screen people scroll.
+ *
+ * Erring long is free (a hidden figure for an extra moment); erring short is
+ * not (the character vanishing mid-drop), so this is generous.
+ */
+export const PEEK_TAIL_MS = PEEK_HOLD_MS + 1400;
+
 export interface PeekFrame {
   /** points down from the hanging position; `PEEK` is fully hidden */
   translateY: number;

@@ -17,7 +17,14 @@ import { useMascot } from '@/hooks/use-mascot';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
 import type { QuestKey } from '@/lib/mascot-room';
-import { PEEK, PEEK_EMOTION, PEEK_FIGURE, PEEK_HOLD_MS, peekFrame } from '@/lib/peek-frame';
+import {
+  PEEK,
+  PEEK_EMOTION,
+  PEEK_FIGURE,
+  PEEK_HOLD_MS,
+  PEEK_TAIL_MS,
+  peekFrame,
+} from '@/lib/peek-frame';
 import { usePeekSignal } from '@/lib/quest-peek';
 
 /**
@@ -86,6 +93,22 @@ export function CardPeek({
   /** −1..1, the lean, driven off the same firing so it cannot desync */
   const lean = useSharedValue(0);
 
+  /*
+    ── mounted only while it is playing ──
+
+    The band renders a whole `KoaFigure`: a large animated SVG with a frame
+    clock of its own. Seven widgets on the dashboard take part in the peek, so
+    leaving it mounted meant seven characters drawing and ticking permanently,
+    clipped out of view, on the screen people scroll the most. Nothing was
+    visible and everything was being rendered.
+
+    So the figure exists for one performance and is taken down after it. The
+    shared values and the animated style stay put across that, which is what
+    keeps the frozen-first-evaluation trap (`tools/measured-worklet.mjs`) out of
+    it: the style is not recreated when the child comes back.
+  */
+  const [playing, setPlaying] = useState(false);
+
   /* Latched, because the store's `coins` returns to 0 the moment another quest
      claims the stage — and this card is still on its way back down. */
   const [shownCoins, setShownCoins] = useState(0);
@@ -96,12 +119,15 @@ export function CardPeek({
   useEffect(() => {
     if (!signal) return;
 
+    setPlaying(true);
+    const done = setTimeout(() => setPlaying(false), PEEK_TAIL_MS);
+
     if (reduced) {
       rise.value = withSequence(
         withTiming(1, { duration: duration.appear }),
         withDelay(PEEK_HOLD_MS, withTiming(0, { duration: duration.appear })),
       );
-      return;
+      return () => clearTimeout(done);
     }
 
     rise.value = withSequence(
@@ -121,6 +147,8 @@ export function CardPeek({
       withTiming(-1, { duration: duration.swap, easing: Easing.inOut(Easing.quad) }),
       withTiming(0, { duration: duration.move, easing: Easing.inOut(Easing.quad) }),
     );
+
+    return () => clearTimeout(done);
     // `signal` alone: the shared values and `reduced` are stable for a firing,
     // and listing them would replay the peek when Reduce Motion is toggled.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,8 +167,9 @@ export function CardPeek({
   });
 
   // No character, no band: the peek is the mascot, and a mascot switched off in
-  // settings does not get to come back through a different door.
-  if (!enabled) return <>{children}</>;
+  // settings does not get to come back through a different door. Nothing playing
+  // is the same answer for the same reason — there is nothing to draw.
+  if (!enabled || !playing) return <>{children}</>;
 
   return (
     <View style={styles.wrap}>
