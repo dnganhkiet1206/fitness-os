@@ -1,3 +1,6 @@
+import type { MascotEmotion } from '@/lib/mascot-emotion';
+import type { QuestKey } from '@/lib/mascot-room';
+
 /**
  * Where Koa is, at a given point of the peek.
  *
@@ -88,3 +91,30 @@ export function peekFrame(rise: number, lean: number): PeekFrame {
     scaleY: 1 + (1 - rise) * 0.06,
   };
 }
+
+/**
+ * Which face comes up for which achievement.
+ *
+ * ── why five faces and not one ──
+ *
+ * The first build used `celebrate` for everything: the same star-eyed grin for
+ * drinking a glass of water and for finishing a workout. That is a screensaver
+ * — it plays, you stop reading it, and by the third time it means nothing. A
+ * mascot earns its place by reacting *to what happened*, which is the whole of
+ * why Duolingo rebuilt their owl from two states into a range: joy for a win,
+ * encouragement for a struggle, and something else again for a lapse.
+ *
+ * The peek is a window onto the head, so the reaction has to be carried
+ * entirely by the face — hence the two expressions added to the vocabulary for
+ * it (`proud`, `rested`). Read down the list: eating well is the app's own
+ * delight, the workout gets the smirk you give a hard thing done, sleep is the
+ * contented wink, steps get the plain wide grin of somebody who has been out,
+ * and water — the smallest and most forgotten — gets a straightforward smile.
+ */
+export const PEEK_EMOTION: Record<QuestKey, MascotEmotion> = {
+  meal: 'celebrate',
+  workout: 'proud',
+  sleep: 'rested',
+  steps: 'happy',
+  water: 'idle',
+};

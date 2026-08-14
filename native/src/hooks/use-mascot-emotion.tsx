@@ -121,6 +121,9 @@ export function useMascotEmotion(): MascotEmotion {
         baseEmotion({
           mood,
           streak: streak ?? 0,
+          /* `false` while the query is unread, so a slow morning never puts a
+             worried face on a day that may well be logged already. */
+          streakAtRisk: streakData ? !streakData.loggedToday : false,
           hour: new Date().getHours(),
           onWorkoutScreen,
           isBirthday,
@@ -130,7 +133,7 @@ export function useMascotEmotion(): MascotEmotion {
         action,
       ),
     // `force` re-runs the memo via a re-render; hour is read fresh inside.
-    [mood, streak, onWorkoutScreen, action, isBirthday],
+    [mood, streak, streakData, onWorkoutScreen, action, isBirthday],
   );
 
   // Dev override wins in development so animations are testable on demand.

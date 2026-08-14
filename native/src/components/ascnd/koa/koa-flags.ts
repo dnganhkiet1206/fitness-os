@@ -17,7 +17,20 @@ export type KoaExpression =
   | 'angry'
   | 'delighted'
   | 'happytired'
-  | 'strain';
+  | 'strain'
+  /**
+   * Asking, not mourning — see the note above `KOA_EXPRESSIONS`.
+   *
+   * The first expression here that is **not** on the design sheet. It draws no
+   * new geometry: it is the sheet's own layers in a combination the sheet never
+   * called for — worried brows and a turned-down mouth over eyes held **wide
+   * open**, which is what makes it a question rather than a verdict.
+   *
+   * Four combinations were rendered side by side before this one was picked
+   * (`tools/koa-studio/faces.mjs`). Sad lids read as unimpressed, and sad lids
+   * over wide eyes read as bored; only the open eyes read as asking.
+   */
+  | 'plead';
 
 export type KoaPose = 'idle' | 'turn34' | 'running' | 'lifting' | 'stretching' | 'relaxing';
 
@@ -36,7 +49,29 @@ export const KOA_ITEMS: Record<KoaSlot, string[]> = {
 
 export const KOA_SLOTS = Object.keys(KOA_ITEMS) as KoaSlot[];
 
-/** §3 BIỂU CẢM, in the sheet's order (`strain` is the lifting face) */
+/**
+ * §3 BIỂU CẢM, in the sheet's order (`strain` is the lifting face), then the
+ * ones this app has had to add.
+ *
+ * ── why anything gets added at all ──
+ *
+ * The sheet was drawn for a character in a room. The app needs a character that
+ * reacts to a day, and there is one moment it had no face for: **a streak that
+ * is still alive and has not been fed yet.** `sad` is the streak already
+ * broken — mourning something lost. What that evening needs is Koa *asking*,
+ * which is a different face and is the one Duolingo rebuilt its whole mascot
+ * around: their owl went from two states, happy and crying, to a spectrum
+ * precisely so it could encourage somebody who is struggling rather than only
+ * congratulate or grieve.
+ *
+ * ── and it is drawn out of the parts already here ──
+ *
+ * Not one new path. Every layer below — the sad brow, the wide eye, the flat
+ * mouth — is already in the export, each behind its own flag, and `plead` is a
+ * combination nobody had asked for yet. That is the cheap way to widen a
+ * character's range and the honest one: the face stays unmistakably the same
+ * animal, because it is made of the same drawing.
+ */
 export const KOA_EXPRESSIONS: { key: KoaExpression; label: string }[] = [
   { key: 'happy', label: 'VUI VẺ' },
   { key: 'surprised', label: 'NGẠC NHIÊN' },
@@ -48,6 +83,7 @@ export const KOA_EXPRESSIONS: { key: KoaExpression; label: string }[] = [
   { key: 'delighted', label: 'THÍCH THÚ' },
   { key: 'happytired', label: 'VUI MÀ MỆT' },
   { key: 'strain', label: 'GỒNG SỨC' },
+  { key: 'plead', label: 'VAN NÀI' },
 ];
 
 export const KOA_POSES: { key: KoaPose; label: string }[] = [
@@ -72,6 +108,8 @@ const OPEN_EYES: KoaExpression[] = [
   'angry',
   'happytired',
   'strain',
+  // asking needs eyes you can see — a plea through shut lids is a nap
+  'plead',
 ];
 
 const HAND_ANCHOR: Record<KoaPose, string> = {
@@ -114,7 +152,9 @@ export function koaFlags(e: KoaExpression, p: KoaPose, worn: Worn = {}): Flags {
       : '';
 
   f.eyesOpen = OPEN_EYES.includes(e);
-  f.eyesWide = e === 'surprised';
+  /* Wide for both, and the brow is what tells them apart: raised brows over
+     wide eyes is alarm, worried brows over the same eyes is a plea. */
+  f.eyesWide = e === 'surprised' || e === 'plead';
   f.eyesArc = e === 'grin';
   f.eyesStar = e === 'delighted';
   f.lidsHalf = e === 'confident' || e === 'strain';
@@ -124,7 +164,7 @@ export function koaFlags(e: KoaExpression, p: KoaPose, worn: Worn = {}): Flags {
   f.lidsSad = e === 'sad';
   f.browArc = e === 'happy' || e === 'grin' || e === 'delighted' || e === 'happytired';
   f.browRaised = e === 'surprised';
-  f.browSad = e === 'sad';
+  f.browSad = e === 'sad' || e === 'plead';
   f.browAngry = e === 'angry';
   f.browStrain = e === 'strain';
   f.mouthGrit = e === 'strain';
@@ -135,7 +175,10 @@ export function koaFlags(e: KoaExpression, p: KoaPose, worn: Worn = {}): Flags {
   f.grinCycle = e === 'happytired' ? 'animation:koaBreathGrin 18s linear infinite' : '';
   f.mouthO = e === 'surprised';
   f.mouthSmirk = e === 'confident';
-  f.mouthFrown = e === 'sad';
+  /* Shared with `sad`, and that is right: worry and sorrow do have the same
+     mouth. What separates them is above it — `sad` droops its lids and is
+     already mourning, `plead` holds its eyes wide open and is still asking. */
+  f.mouthFrown = e === 'sad' || e === 'plead';
   f.mouthFlat = e === 'tired';
   f.mouthShout = e === 'angry';
   f.showSteam = e === 'angry';

@@ -12,10 +12,10 @@
  * frame and invisible in a type checker.
  *
  * So this draws the frames. `KoaFigure` is imported and rendered — this is the
- * shipping artwork, not a stand-in — and the geometry comes from
- * `lib/peek-frame.ts`, the same module the component animates from. Change a
- * number there and this picture changes; the tool has nothing of its own to
- * disagree with.
+ * shipping artwork, not a stand-in — the geometry comes from `lib/peek-frame.ts`
+ * and the faces from `PEEK_EMOTION` through the Emotion Engine's own mapping.
+ * Change any of those and this picture changes; the tool has nothing of its own
+ * to disagree with.
  *
  * The one thing it does restate is the band's CSS — `overflow: hidden`, the
  * figure hung from the top — because that is React Native layout and this is a
@@ -23,160 +23,57 @@
  *
  *   node tools/koa-studio/peek.mjs [out.png]
  */
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-process.chdir(NATIVE);
+import { bundleWithKoaStubs, KOA_ART_ENTRY, shoot } from './koa-dom.mjs';
 
 const OUT = path.resolve(process.argv[2] ?? 'peek.png');
-/* Inside the project, and *beside* `node_modules` rather than in it: the stubs
-   import `react`, so the entry needs a `node_modules` to walk up into — and
-   esbuild ignores a tsconfig's `paths` for anything under `node_modules`, so
-   the `@/` imports would stop resolving one directory deeper. */
-const dir = mkdtempSync(path.join(NATIVE, '.koa-peek-'));
-process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
 
-/* ── stubs: the figure is React and SVG, and nothing else ──────────────────
-   `react-native` and `react-native-svg` become plain DOM tags, so react-dom
-   renders the same tree the phone does. Reanimated becomes the identity: a
-   shared value is `{ value }`, an animated prop is its own function's result.
-   Nothing here fakes the *drawing* — only the platform under it. */
-const rn = path.join(dir, 'rn.js');
-writeFileSync(
-  rn,
-  `export const View = 'div';
-   export const Text = 'span';
-   export const Platform = { OS: 'ios', select: (o) => o.ios ?? o.default };
-   export const StyleSheet = { create: (s) => s, flatten: (s) => Object.assign({}, ...[s].flat(9)) };
-   export const AppState = { currentState: 'active', addEventListener: () => ({ remove() {} }) };
-   export const AccessibilityInfo = {
-     isReduceMotionEnabled: () => Promise.resolve(false),
-     addEventListener: () => ({ remove() {} }),
-   };
-   export const Pressable = 'div';
-   export default {};`,
+const { mod, dir } = await bundleWithKoaStubs(
+  KOA_ART_ENTRY +
+    /* From the pure module, not from the component: importing `card-peek.tsx`
+       drags in expo-router and the whole navigator, and esbuild stops at the
+       first `.png` in it. The face map lives beside the geometry for exactly
+       this reason — the peek's facts are data, not a screen. */
+    `\nexport { PEEK, PEEK_FIGURE, LEAN_DEG, peekFrame, PEEK_EMOTION } from '@/lib/peek-frame';`,
 );
+const { art, koaStateFor, PEEK, PEEK_FIGURE, LEAN_DEG, peekFrame, PEEK_EMOTION, KOA_ASPECT } = mod;
 
-const svg = path.join(dir, 'svg.js');
-writeFileSync(
-  svg,
-  ['G', 'Path', 'Rect', 'Circle', 'Ellipse', 'Line', 'Text', 'TSpan', 'Defs', 'ClipPath',
-   'LinearGradient', 'RadialGradient', 'Stop', 'Polygon', 'Polyline', 'Mask', 'Use', 'Symbol']
-    .map((n) => `export const ${n} = ${JSON.stringify(n[0].toLowerCase() + n.slice(1))};`)
-    .join('\n') + `\nexport const Svg = 'svg';\nexport default 'svg';\n`,
-);
-
-const rea = path.join(dir, 'rea.js');
-writeFileSync(
-  rea,
-  `import { createElement } from 'react';
-   export const makeMutable = (v) => ({ value: v });
-   export const useSharedValue = (v) => ({ value: v });
-   export const useDerivedValue = (f) => ({ value: f() });
-   export const useAnimatedProps = (f) => f();
-   export const useAnimatedStyle = (f) => f();
-   export const useAnimatedReaction = () => {};
-   export const useFrameCallback = () => ({ setActive() {}, isActive: false });
-   export const useReducedMotion = () => false;
-   export const cancelAnimation = () => {};
-   export const runOnJS = (f) => f;
-   export const runOnUI = (f) => f;
-   const pass = (v) => v;
-   export const withTiming = pass;
-   export const withSpring = pass;
-   export const withDelay = (_, v) => v;
-   export const withSequence = (...v) => v[0];
-   export const withRepeat = pass;
-   export const interpolate = (x) => x;
-   export const interpolateColor = (_, __, out) => out[0];
-   export const Extrapolation = { CLAMP: 'clamp' };
-   export const Easing = new Proxy({}, { get: () => (t) => t });
-   /* An animated SVG group takes its matrix as a prop; the DOM takes it as a
-      transform. That mapping is this tool's only opinion about the artwork. */
-   const asDom = ({ animatedProps, ...rest }) => {
-     const p = { ...rest, ...(animatedProps || {}) };
-     if (Array.isArray(p.matrix)) { p.transform = 'matrix(' + p.matrix.join(' ') + ')'; delete p.matrix; }
-     if (typeof p.opacity === 'object' && p.opacity) p.opacity = p.opacity.value;
-     return p;
-   };
-   export const createAnimatedComponent = (C) => (props) => createElement(C, asDom(props));
-   const View = (props) => createElement('div', asDom(props));
-   export default { createAnimatedComponent, View, Text: View };`,
-);
-
-/* ── bundle the entry ─────────────────────────────────────────────────── */
-const entry = path.join(dir, 'entry.tsx');
-writeFileSync(
-  entry,
-  /* `server.browser`, not `server`: the node build reaches for `util` through a
-     dynamic `require` that an ESM bundle cannot satisfy, and nothing here needs
-     a stream — one string is the whole output. */
-  `import { renderToStaticMarkup } from 'react-dom/server.browser';
-   import { KoaFigure } from '@/components/ascnd/koa/koa-figure';
-   import { koaStateFor } from '@/lib/koa-emotion';
-   export { PEEK, PEEK_FIGURE, LEAN_DEG, peekFrame } from '@/lib/peek-frame';
-   export { KOA_ASPECT } from '@/components/ascnd/koa/koa-frame';
-   /* The pose is not chosen here. \`card-peek\` asks for the 'celebrate'
-      emotion and the Emotion Engine turns that into an expression and a pose;
-      this asks the engine the same question, so the face in the picture is the
-      face on the phone even after somebody re-tunes the mapping. */
-   const state = koaStateFor('celebrate');
-   export const art = (size: number) =>
-     renderToStaticMarkup(
-       <KoaFigure
-         size={size}
-         animated={false}
-         expression={state.expression}
-         pose={state.pose}
-         worn={state.outfit ?? {}}
-       />,
-     );`,
-);
-
-const bundle = path.join(dir, 'entry.js');
-execFileSync(
-  'npx',
-  ['--yes', 'esbuild', entry, '--bundle', '--format=esm', '--platform=node',
-   '--tsconfig=tsconfig.json', '--jsx=automatic',
-   `--alias:react-native=${rn}`, `--alias:react-native-svg=${svg}`,
-   `--alias:react-native-reanimated=${rea}`,
-   `--outfile=${bundle}`],
-  { stdio: 'inherit' },
-);
-
-const { art, PEEK, PEEK_FIGURE, LEAN_DEG, peekFrame, KOA_ASPECT } =
-  await import(pathToFileURL(bundle).href);
-
-/* ── the scene ────────────────────────────────────────────────────────── */
 const H = Math.round(PEEK_FIGURE * KOA_ASPECT);
-const figure = art(PEEK_FIGURE);
 
-/** rise, lean, and what the frame is meant to show */
+/** the figure in whatever face an emotion resolves to, through the app's map */
+const faceFor = (emotion) => {
+  const s = koaStateFor(emotion);
+  return art(PEEK_FIGURE, s.expression, s.pose, s.outfit ?? {});
+};
+
+/** [rise, lean, emotion, coins, label] */
 const FRAMES = [
-  [0, 0, 'nghỉ — phải trống trơn'],
-  [0.5, 0, 'đang lên'],
-  [1, 0, 'lên hết'],
-  [1, 1, `nghiêng ${LEAN_DEG}°`],
-  [1, -1, `nghiêng −${LEAN_DEG}°`],
+  [0, 0, 'celebrate', 0, 'nghỉ — phải trống trơn'],
+  [0.5, 0, 'celebrate', 0, 'đang lên'],
+  [1, 1, 'celebrate', 0, `nghiêng ${LEAN_DEG}°`],
+  ...Object.entries(PEEK_EMOTION).map(([quest, emotion]) => [
+    1, 0, emotion, quest === 'meal' ? 15 : quest === 'workout' ? 20 : 10,
+    `${quest} → ${emotion}`,
+  ]),
 ];
 
-const CARD_W = 220;
-const CARD_H = 96;
-const PAD = 28;
+const CARD_W = 200;
+const CARD_H = 84;
+const PAD = 24;
+const PER_ROW = 4;
 
-const cell = ([rise, lean, label]) => {
+const cell = ([rise, lean, emotion, coins, label]) => {
   const f = peekFrame(rise, lean);
+  const tf = `translateY(${f.translateY}px) rotate(${f.rotate}deg) scaleY(${f.scaleY})`;
   return `
   <div class="cell">
     <div class="stage">
       <div class="wrap">
         <div class="clip">
-          <div class="fig" style="transform: translateY(${f.translateY}px) rotate(${f.rotate}deg) scaleY(${f.scaleY})">
-            ${figure}
-          </div>
+          <div class="fig" style="transform:${tf}">${faceFor(emotion)}</div>
+          ${coins ? `<div class="coins" style="transform:${tf}">+${coins}</div>` : ''}
         </div>
         <div class="card"><b>Dinh dưỡng</b><span>1 842 kcal</span></div>
       </div>
@@ -192,7 +89,7 @@ writeFileSync(
 <style>
   :root { color-scheme: dark }
   body { margin:0; background:#070708; font:500 12px/1.4 -apple-system,Inter,system-ui,sans-serif; color:#8b8b94 }
-  .row { display:flex; gap:${PAD}px; padding:${PAD}px }
+  .grid { display:grid; grid-template-columns:repeat(${PER_ROW}, ${CARD_W}px); gap:${PAD}px; padding:${PAD}px }
   .cell { width:${CARD_W}px }
   .cell p { margin:10px 0 0; text-align:center }
   /* the band's own height of headroom, so a frame that leaks shows the leak */
@@ -210,41 +107,30 @@ writeFileSync(
           align-items:center; justify-content:flex-start }
   .fig { flex-shrink:0; width:${PEEK_FIGURE}px; height:${H}px }
   .fig > div { width:${PEEK_FIGURE}px; height:${H}px }
+  .coins { position:absolute; left:50%; margin-left:${PEEK_FIGURE / 2 - 2}px; bottom:8px; padding:3px 8px; border-radius:999px;
+           background:rgba(255,209,102,.16); border:1px solid rgba(255,209,102,.34);
+           color:#ffd166; font-size:12px; font-weight:800 }
   .card { height:${CARD_H}px; border-radius:20px; background:rgba(255,255,255,.06);
           border:1px solid rgba(255,255,255,.10); display:flex; flex-direction:column;
           justify-content:center; padding:0 16px; gap:4px }
   .card b { color:#f4f4f6; font-size:15px } .card span { color:#9a9aa4; font-size:13px }
 </style>
-<div class="row">${FRAMES.map(cell).join('')}</div>`,
+<div class="grid">${FRAMES.map(cell).join('')}</div>`,
 );
 
-const W = FRAMES.length * CARD_W + (FRAMES.length + 1) * PAD;
-const TALL = PEEK + CARD_H + PAD * 2 + 34;
+const rows = Math.ceil(FRAMES.length / PER_ROW);
+const W = PER_ROW * CARD_W + (PER_ROW + 1) * PAD;
+/* Generously: headless Chrome shoots the window, not the document, so anything
+   past the bottom edge is simply gone. Spare black costs nothing. */
+const TALL = rows * (PEEK + CARD_H + 70 + PAD) + PAD;
 
-const CHROME = [
-  '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
-  '/opt/pw-browsers/chromium/chrome-linux/chrome',
-  process.env.CHROME_PATH,
-].find((p) => p && existsSync(p));
-if (!CHROME) {
+if (!shoot(html, OUT, W, TALL)) {
   console.log(`Không tìm thấy Chromium — HTML ở ${html}`);
   process.exit(1);
 }
 
-execFileSync(
-  CHROME,
-  ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
-   '--hide-scrollbars', '--force-device-scale-factor=2',
-   /* Without a virtual clock headless keeps the process alive after writing the
-      file, waiting on a page that is never going to do anything else. */
-   '--virtual-time-budget=1500', `--window-size=${W},${TALL}`,
-   `--screenshot=${OUT}`, pathToFileURL(html).href],
-  // Headless Chrome has been known to linger after writing the file; the shot
-  // is already on disk by then, so a bounded wait is the whole handling.
-  { stdio: 'ignore', timeout: 60_000 },
-);
-
 console.log(
   `${OUT} — băng ${PEEK}pt, hình ${PEEK_FIGURE}×${H}pt ` +
-    `(băng thấy ${Math.round((PEEK / H) * 100)}% chiều cao hình)`,
+    `(băng thấy ${Math.round((PEEK / H) * 100)}% chiều cao hình), ` +
+    `${Object.keys(PEEK_EMOTION).length} khuôn mặt theo nhiệm vụ`,
 );

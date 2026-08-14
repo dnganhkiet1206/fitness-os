@@ -172,6 +172,7 @@ const STEPS = [
   ['tư thế mặc đồ', 'node', ['tools/koa-studio/dress.mjs']],
   ['peek sau thẻ', 'node', ['tools/peek.mjs']],
   ['chuỗi ngày', 'node', ['tools/streak.mjs']],
+  ['khuôn mặt', 'node', ['tools/mascot-face.mjs']],
 ];
 
 let failed = 0;

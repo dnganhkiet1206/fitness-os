@@ -42,14 +42,20 @@ export function useQuestPeek(): QuestPeek {
 }
 
 /**
- * The firing number for one card, or 0.
+ * The firing number for one card, and what it was worth.
  *
  * `CardPeek` wants "has my card been asked to play, and how many times", which
- * is what this returns: the counter when the current peek is for this quest, and
+ * is what `signal` is: the counter when the current peek is for this quest, and
  * 0 otherwise. A card that is not the subject sees 0 for ever and never mounts a
  * single animation.
+ *
+ * `coins` rides along so the reward can be shown at the moment it is earned
+ * rather than only in a wallet somewhere else. It drops back to 0 as soon as
+ * another quest takes the stage, which is why `CardPeek` latches it — a number
+ * that vanished halfway through its own exit would look like a glitch.
  */
-export function usePeekSignal(quest: QuestKey): number {
+export function usePeekSignal(quest: QuestKey): { signal: number; coins: number } {
   const peek = useQuestPeek();
-  return peek.quest === quest ? peek.n : 0;
+  const mine = peek.quest === quest;
+  return { signal: mine ? peek.n : 0, coins: mine ? peek.coins : 0 };
 }

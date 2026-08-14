@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -11,11 +11,13 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
+import { radius } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useMascot } from '@/hooks/use-mascot';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import type { MascotEmotion } from '@/lib/mascot-emotion';
 import type { QuestKey } from '@/lib/mascot-room';
-import { PEEK, PEEK_FIGURE, PEEK_HOLD_MS, peekFrame } from '@/lib/peek-frame';
+import { PEEK, PEEK_EMOTION, PEEK_FIGURE, PEEK_HOLD_MS, peekFrame } from '@/lib/peek-frame';
 import { usePeekSignal } from '@/lib/quest-peek';
 
 /**
@@ -65,9 +67,15 @@ import { usePeekSignal } from '@/lib/quest-peek';
 export function CardPeek({
   /** changes to a new non-zero value to fire one peek; 0 never fires */
   signal,
+  /** which face comes up — the achievement decides, see `PEEK_EMOTION` */
+  emotion = 'celebrate',
+  /** coins just earned, shown beside the head; 0 shows nothing */
+  coins = 0,
   children,
 }: {
   signal: number;
+  emotion?: MascotEmotion;
+  coins?: number;
   children: React.ReactNode;
 }) {
   const { enabled, mascot } = useMascot();
@@ -77,6 +85,13 @@ export function CardPeek({
   const rise = useSharedValue(0);
   /** −1..1, the lean, driven off the same firing so it cannot desync */
   const lean = useSharedValue(0);
+
+  /* Latched, because the store's `coins` returns to 0 the moment another quest
+     claims the stage — and this card is still on its way back down. */
+  const [shownCoins, setShownCoins] = useState(0);
+  useEffect(() => {
+    if (signal && coins > 0) setShownCoins(coins);
+  }, [signal, coins]);
 
   useEffect(() => {
     if (!signal) return;
@@ -131,8 +146,13 @@ export function CardPeek({
     <View style={styles.wrap}>
       <View pointerEvents="none" style={styles.clip}>
         <Animated.View style={[styles.figure, figure]}>
-          <MascotFigure mascot={mascot} size={PEEK_FIGURE} emotion="celebrate" animated />
+          <MascotFigure mascot={mascot} size={PEEK_FIGURE} emotion={emotion} animated />
         </Animated.View>
+        {shownCoins > 0 ? (
+          <Animated.View style={[styles.coins, figure]}>
+            <Text style={styles.coinsText}>+{shownCoins}</Text>
+          </Animated.View>
+        ) : null}
       </View>
       {children}
     </View>
@@ -149,8 +169,12 @@ export function CardPeek({
  * position.
  */
 export function PeekHost({ quest, children }: { quest: QuestKey; children: React.ReactNode }) {
-  const signal = usePeekSignal(quest);
-  return <CardPeek signal={signal}>{children}</CardPeek>;
+  const { signal, coins } = usePeekSignal(quest);
+  return (
+    <CardPeek signal={signal} emotion={PEEK_EMOTION[quest]} coins={coins}>
+      {children}
+    </CardPeek>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -170,6 +194,28 @@ const styles = StyleSheet.create({
     /* Hung from the top, not stood on the bottom — `lib/peek-frame.ts`. */
     justifyContent: 'flex-start',
   },
+  /* Beside the head rather than under it: the band is `PEEK` tall and the head
+     fills it, so a coin count below the chin would be outside the window. It
+     rides the same animated style as the figure, so it cannot arrive on its own.
+
+     Anchored to the *head* — half the figure's width out from the centre line —
+     rather than to a percentage of the card. A percentage was fine on a
+     full-width widget and sat on Koa's cheek the moment the card was narrower;
+     the head is always in the middle, so measuring from there holds at any
+     width. */
+  coins: {
+    position: 'absolute',
+    left: '50%',
+    marginLeft: PEEK_FIGURE / 2 - 2,
+    bottom: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(255,209,102,0.16)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,209,102,0.34)',
+  },
+  coinsText: { fontSize: 12, fontWeight: '800', color: '#ffd166' },
   /* The figure is taller than the band and must stay that way: a flex child
      that shrinks to its container would squash Koa down to the band's height
      instead of being cropped to it. React Native already defaults to 0, and this says so
