@@ -113,6 +113,16 @@ export interface MascotSay {
   text: string | null;
   /** what is being asked for, or null — the widget reports it once it is drawn */
   gap: MascotThing | null;
+  /**
+   * This sentence is a reaction to something that just happened, not the day's
+   * summary.
+   *
+   * The widget records what it draws — an ask feeds the bandit, the "all done"
+   * line marks praise as spent for the day. A celebration is neither, and
+   * without this flag it was being filed as praise: one medal in the afternoon
+   * and the real end-of-day line never appeared.
+   */
+  reaction: boolean;
 }
 
 export function useMascotMessage(): MascotSay {
@@ -227,6 +237,7 @@ export function useMascotMessage(): MascotSay {
          bandit learns from what Koa *requested*, and a celebration requests
          nothing. */
       gap: reactionLine ? null : line.kind === 'ask' || line.kind === 'notice' ? line.gap : null,
+      reaction: reactionLine != null,
     }),
     [reactionLine, text, line],
   );
@@ -287,5 +298,14 @@ export function useMascot() {
     unlocked: isUnlocked(m, unlockStats),
   }));
 
-  return { ...settings, mascot, catalog, unlockStats, message: say.text, messageGap: say.gap, mood };
+  return {
+    ...settings,
+    mascot,
+    catalog,
+    unlockStats,
+    message: say.text,
+    messageGap: say.gap,
+    messageIsReaction: say.reaction,
+    mood,
+  };
 }

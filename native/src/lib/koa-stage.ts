@@ -45,6 +45,7 @@ export interface KoaReaction {
 }
 
 let current: KoaReaction | null = null;
+let clearTimer: ReturnType<typeof setTimeout> | null = null;
 let seq = 0;
 const seen = new Set<string>();
 const listeners = new Set<() => void>();
@@ -85,12 +86,41 @@ export function emitKoa(
      is overridden for `hold` ms and then returns by itself. Koa's brain does
      not touch a single transform. */
   holdEmotion(decision.emotion, decision.hold);
+
+  /*
+    ── and the stage is cleared afterwards, which it was not ──
+
+    The *face* returned by itself: `holdEmotion` owns a timer and the emotion
+    channel expires on its own. The reaction sitting here did not, and one
+    missing timer produced three separate faults, none of which look related
+    from the outside:
+
+      · the bubble showed the celebration line **for ever**, because the widget
+        prefers a live reaction's words over the day's summary and the reaction
+        was permanently live;
+      · `gap` therefore stayed `null` for ever, so `noteAsked` never fired
+        again — the bandit stopped learning the moment Koa first celebrated
+        anything;
+      · and the widget, seeing a sentence with no gap, recorded it as the day's
+        praise, so the real "you finished everything" line was suppressed.
+
+    A store whose entries never expire is a store that is always mid-event.
+  */
+  if (clearTimer) clearTimeout(clearTimer);
+  clearTimer = setTimeout(() => {
+    clearTimer = null;
+    current = null;
+    emit();
+  }, decision.hold);
+
   emit();
   return decision;
 }
 
 /** Testing, and the debug screen's reset. */
 export function resetKoaStage() {
+  if (clearTimer) clearTimeout(clearTimer);
+  clearTimer = null;
   current = null;
   seen.clear();
   emit();

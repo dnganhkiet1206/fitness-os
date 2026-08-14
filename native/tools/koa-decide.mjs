@@ -177,6 +177,31 @@ for (const kind of ['quest_done', 'day_complete', 'personal_record', 'comeback']
   }
 }
 
+/* ── 8b: the stage clears itself, and a reaction is not filed as praise ──
+
+   Read as source rather than run, because both live in modules that import
+   React. They are here because one missing timer produced three faults that
+   look unrelated from the outside, and a rule about the *shape* is what stops
+   the next store from having the same hole. */
+{
+  const stage = readFileSync(path.join(NATIVE, 'src/lib/koa-stage.ts'), 'utf8');
+  if (!/clearTimer = setTimeout/.test(stage)) {
+    problems.push(
+      'sân khấu Koa không có timer dọn: phản ứng sẽ sống mãi, nên bong bóng giữ câu ăn mừng ' +
+        'vĩnh viễn, `gap` mãi là null (bandit ngừng học), và câu khen cuối ngày bị nuốt',
+    );
+  }
+  if (!/current = null;/.test(stage)) problems.push('không có chỗ nào đưa sân khấu về trống');
+
+  const widget = readFileSync(path.join(NATIVE, 'src/components/ascnd/mascot.tsx'), 'utf8');
+  if (!/if \(messageIsReaction\) return;/.test(widget)) {
+    problems.push(
+      'widget không phân biệt phản ứng với câu tổng kết — một lời chúc mừng sẽ bị ghi thành ' +
+        'lời khen của ngày, và câu "xong hết rồi" thật sẽ không bao giờ xuất hiện',
+    );
+  }
+}
+
 /* ── 9: every intent has a string key, and no English is in the engine ── */
 {
   const intents = ['praise_small', 'praise_big', 'proud_record', 'welcome_back',
@@ -221,5 +246,6 @@ console.log(
     'và mạnh hơn theo chiều dài chuỗi; quay lại sau hai tuần là lời đón chứ không phải pháo hoa; ' +
     'và đường cong độ lớn là log nên 3→7 ngày đáng giá hơn 180→365; ' +
     'va chạm sự kiện: cái lớn giành sân, cái nhỏ bị BỎ chứ không xếp hàng, ' +
-    'ba sự kiện cùng lúc không tạo ba màn diễn, và cả 7 intent đều có khoá i18n',
+    'ba sự kiện cùng lúc không tạo ba màn diễn, và cả 7 intent đều có khoá i18n; ' +
+    'sân khấu tự dọn sau khi diễn xong, và phản ứng không bị ghi nhầm thành lời khen của ngày',
 );

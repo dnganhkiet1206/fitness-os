@@ -61,7 +61,10 @@ export function useStreakGuard() {
     if (missed.length >= 3) {
       emitKoa(
         {
-          id: `comeback:${data.frozen.length}:${missed[missed.length - 1]}`,
+          /* Keyed on the day they came back to, and nothing else. An earlier
+             version folded the freeze count into the id, which meant spending
+             a freeze changed the id and re-fired the same comeback. */
+          id: `comeback:${missed[missed.length - 1]}`,
           kind: 'comeback',
           magnitude: comebackMagnitude(missed.length),
           days: missed.length,

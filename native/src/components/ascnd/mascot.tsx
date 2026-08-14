@@ -41,7 +41,7 @@ import { useI18n } from '@/hooks/use-app-settings';
 export function Mascot() {
   const i18n = useI18n();
   const focused = useIsFocused();
-  const { enabled, mascot, message, messageGap, mood } = useMascot();
+  const { enabled, mascot, message, messageGap, messageIsReaction, mood } = useMascot();
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();
   const quests = useDailyQuests();
@@ -158,11 +158,15 @@ export function Mascot() {
      that writes the sentence — see `noteAsked`. */
   useEffect(() => {
     if (!bubbleVisible || !message) return;
+    /* A reaction is neither an ask nor the day's praise — it is a comment on
+       something that just happened, and recording it as either corrupts a
+       different system. */
+    if (messageIsReaction) return;
     if (messageGap) noteAsked(messageGap, localDateStr());
     /* No gap and a sentence anyway means the day is finished and this is the
        praise — recorded here, on screen, for the same reason the ask is. */
     else notePraised(localDateStr());
-  }, [bubbleVisible, message, messageGap]);
+  }, [bubbleVisible, message, messageGap, messageIsReaction]);
 
   const bodyStyle = useAnimatedStyle(() => ({
     transform: [
