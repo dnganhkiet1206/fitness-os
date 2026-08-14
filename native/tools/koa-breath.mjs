@@ -48,39 +48,19 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { FIXTURES, REF, UID, day, jwt } from './live-world.mjs';
+
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = path.join(NATIVE, '.live-web');
+const OUT = path.join(NATIVE, 'tools', '.live-build');
 const PORT = 8734;
 const noBuild = process.argv.includes('--no-build');
 const problems = [];
 
-/* Same fake identity `live.mjs` uses — a signed session the app accepts and a
-   Supabase reference that never leaves the machine. */
-const REF = 'zvnetkxvmcmdqrjbcbmt';
-const UID = '00000000-0000-4000-8000-000000000001';
-const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
-const jwt = () =>
-  `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({
-    sub: UID, aud: 'authenticated', role: 'authenticated',
-    exp: Math.floor(Date.now() / 1000) + 86400 * 30,
-  })}.x`;
-
-const day = (back) => {
-  const d = new Date();
-  d.setDate(d.getDate() - back);
-  return d.toISOString();
-};
-const dateOnly = (back) => day(back).slice(0, 10);
-
-/* Enough of a logged day that Koa is not in an error or empty state — the
-   question here is how it moves, not what it says. */
-const FIXTURES = {
-  profiles: [{ id: UID, name: 'Kiệt', water_target_ml: 2500, units: 'metric', lang: 'vi' }],
-  daily_logs: [{ user_id: UID, date: dateOnly(0), kcal: 1800, steps: 7000, workout_count: 1, sleep_duration_min: 420 }],
-  meal_entries: [{ id: 'm1', user_id: UID, date_time: day(0), meal_type: 'lunch' }],
-  water_logs: [{ id: 'w1', user_id: UID, amount_ml: 2000, date: dateOnly(0) }],
-};
-
+/* One world, imported. The first draft copied the project reference and the
+   user id across from `live.mjs` by hand and got the reference wrong, so the
+   app rejected the seeded session and every boot landed on the Sign In screen
+   — a tool measuring a login form while reporting on a mascot. See
+   `tools/live-world.mjs`. */
 function build() {
   if (noBuild) {
     if (!existsSync(path.join(OUT, 'index.html'))) {

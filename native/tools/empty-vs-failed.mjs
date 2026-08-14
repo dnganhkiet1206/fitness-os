@@ -296,6 +296,52 @@ const SELF = [
     return true;
   }],
 ];
+/*
+  ── the error card must not itself read ──
+
+  Found by running the app, not by reading it. `LoadFailed` called `useMascot()`
+  for the character, and that hook is four query subscriptions deep — including
+  the **profile**, which is the query the root gate waits on. So when `profiles`
+  failed:
+
+    1. the gate rendered `LoadFailed`;
+    2. mounting it put a new observer on the failed profile query;
+    3. React Query refetches a stale query when an observer mounts, so
+       `isLoading` went true and `isError` went false;
+    4. the gate flipped back to "still loading" and returned `null`, unmounting
+       the card and its observer;
+    5. the refetch failed, and step 1 began again.
+
+  Measured against a server failing only `profiles`: 25 requests in 35 seconds
+  and a permanently blank app. Every rule in this suite was green, twice — this
+  is the second time one failing query has blanked the whole product.
+
+  Three facts, each the shape of one link in that chain.
+*/
+{
+  const card = strip(readFileSync(path.join(NATIVE, 'src/components/ascnd/load-failed.tsx'), 'utf8'));
+  if (/\buseMascot\(/.test(card)) {
+    problems.push('load-failed.tsx: dùng useMascot() — hook đó đọc hồ sơ, tức là thẻ báo lỗi lại đi đọc chính truy vấn vừa hỏng');
+  }
+  if (/useQuery\(/.test(card)) {
+    problems.push('load-failed.tsx: tự mở truy vấn — thứ hiện ra VÌ một truy vấn hỏng thì không được đọc');
+  }
+  if (!/emotion="[a-z]+"/.test(card)) {
+    problems.push('load-failed.tsx: không truyền emotion cố định cho MascotFigure — thiếu nó, hình vẽ sẽ hỏi engine, và engine đọc hồ sơ');
+  }
+
+  /* And the figure has to honour that: an explicit emotion must bypass the
+     engine entirely rather than being applied after it has already
+     subscribed. */
+  const fig = strip(readFileSync(path.join(NATIVE, 'src/components/ascnd/mascot-figure.tsx'), 'utf8'));
+  /* `\?(?!\?)` and not `\?`: the first draft of this line matched
+     `props.emotion ?? engine` — the exact sabotage it was written to catch —
+     because `??` opens with a question mark too. */
+  if (!/props\.emotion\s*\?(?!\?)/.test(fig)) {
+    problems.push('mascot-figure.tsx: không rẽ nhánh theo props.emotion — gọi useMascotEmotion() vô điều kiện là mắt xích đầu của vòng lặp');
+  }
+}
+
 const missed = SELF.filter(([, fn]) => !fn()).map(([l]) => l);
 if (missed.length) {
   console.error(`phép tự kiểm hỏng — ${missed.join('; ')}; đừng tin kết quả`);

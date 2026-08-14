@@ -8,7 +8,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
-import { useMascot } from '@/hooks/use-mascot';
+import { useMascotIdentity } from '@/hooks/use-mascot';
 
 /**
  * "We could not read this" — as distinct from "there is nothing here".
@@ -65,7 +65,11 @@ export function LoadFailed({
   /** the screen's refresh is already running — the button says so and waits */
   busy?: boolean;
 }) {
-  const { enabled, mascot } = useMascot();
+  /* Identity only, never the day. This card is on screen *because* a read
+     failed; a hook that reads would remount an observer on the very query that
+     failed and bounce the whole app between blank and this card for ever. See
+     `useMascotIdentity`. */
+  const { enabled, mascot } = useMascotIdentity();
 
   return (
     <GlassCard style={styles.card}>

@@ -282,6 +282,48 @@ export function useMascotMood(): MascotMood {
   }, [log, meals]);
 }
 
+/**
+ * Who the character is — and nothing about the day.
+ *
+ * ── the loop this exists to break ──
+ *
+ * `useMascot()` below is four query subscriptions deep: the profile, today's
+ * log, today's meals, today's water, plus the unlock counts. That is right for
+ * the home-screen companion, whose whole job is to have an opinion about your
+ * day. It is catastrophic for `LoadFailed` — the card the app shows *when a
+ * query has failed*.
+ *
+ *   1. the profile read fails, so the root gate renders `LoadFailed`;
+ *   2. `LoadFailed` called `useMascot()`, which mounted a **new observer** on
+ *      the failed profile query;
+ *   3. React Query refetches a stale query when an observer mounts, so
+ *      `isLoading` went true and `isError` went false;
+ *   4. the gate's readiness test flipped back to "still loading" and returned
+ *      `null`, unmounting the card and its observer;
+ *   5. the refetch failed, and step 1 began again.
+ *
+ * Against a server that fails only `profiles`, the app oscillates between blank
+ * and a flash of the error card for ever — three attempts every three seconds,
+ * and nothing a person can read. `tools/live.mjs` found it as twenty-five blank
+ * routes; every static rule in `tools/` was green.
+ *
+ * The rule this leaves behind: **anything that renders because a read failed
+ * must not itself read.** That is what this hook is for. It reads the settings
+ * store and nothing else, and it resolves the character against zero unlock
+ * progress — so a locked pick falls back to the default rather than making a
+ * request to find out.
+ */
+export function useMascotIdentity() {
+  const settings = useMascotSettings();
+  const selected = getMascot(settings.selectedId);
+  return {
+    enabled: settings.enabled,
+    mascot: isUnlocked(selected, { workouts: 0, meals: 0 })
+      ? selected
+      : getMascot(DEFAULT_MASCOT_ID),
+  };
+}
+
 export function useMascot() {
   const settings = useMascotSettings();
   const { data: stats } = useUnlockStats();
