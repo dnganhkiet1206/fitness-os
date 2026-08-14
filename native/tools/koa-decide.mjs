@@ -287,6 +287,46 @@ for (const kind of ['quest_done', 'day_complete', 'personal_record', 'comeback']
   }
 }
 
+/* ── 8e: an event is marked handled only once it has been handled ──
+
+   The single nastiest shape in this whole pipeline, because it destroys exactly
+   the moments it exists to protect and leaves no trace: a personal record
+   earned while the character is off screen comes back `shouldReact: false`, is
+   filed as done, and — the id being persisted — never plays again. Not on
+   returning to the dashboard. Ever. */
+{
+  const stage = readFileSync(path.join(NATIVE, 'src/lib/koa-stage.ts'), 'utf8');
+  const body = stage.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  const declineAt = body.indexOf('if (!decision.shouldReact) return decision;');
+  /* The *call*, not the declaration — `function remember(...)` sits above
+     `emitKoa`, and the first draft of this rule matched it and failed on
+     correct code. */
+  const firstRemember = body.indexOf('remember(event.id)');
+  if (declineAt < 0) {
+    problems.push('không tìm thấy nhánh từ chối trong emitKoa');
+  } else if (firstRemember >= 0 && firstRemember < declineAt) {
+    problems.push(
+      'emitKoa ghi nhận sự kiện TRƯỚC khi biết có phản ứng hay không — một khoảnh khắc bị từ ' +
+        'chối (vì không ai đang nhìn) sẽ bị đánh dấu đã xử lý và không bao giờ diễn lại',
+    );
+  }
+  if (/koaSeenOnce/.test(body)) {
+    problems.push('vẫn dùng koaSeenOnce (kiểm và ghi trong một lần gọi) — đó chính là hình dạng của lỗi');
+  }
+
+  const ctx = readFileSync(path.join(NATIVE, 'src/hooks/use-koa-context.ts'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  if (/visible: true/.test(ctx)) {
+    problems.push(
+      'ngữ cảnh khai `visible: true` cứng — đó là một cái nhún vai, và nó khiến phản ứng diễn ' +
+        'cho một màn hình không có Koa nào trên đó',
+    );
+  }
+  if (!/koaOnScreen\(\)/.test(ctx)) problems.push('không hỏi xem có Koa nào đang được vẽ không');
+}
+
 /* ── 9: every intent has a string key, and no English is in the engine ── */
 {
   const intents = ['praise_small', 'praise_big', 'proud_record', 'welcome_back',
@@ -334,5 +374,7 @@ console.log(
     'ba sự kiện cùng lúc không tạo ba màn diễn, và cả 7 intent đều có khoá i18n; ' +
     'sân khấu tự dọn sau khi diễn xong, phản ứng không bị ghi nhầm thành lời khen của ngày, ' +
     'và ngữ cảnh của Koa chỉ ĐỌC cache chứ không tự tạo truy vấn nào; ' +
-    'lần đọc cấp độ đầu tiên là mốc chứ không phải một lần lên cấp, và dedup sống qua lần khởi động lại',
+    'lần đọc cấp độ đầu tiên là mốc chứ không phải một lần lên cấp, dedup sống qua lần khởi động lại, ' +
+    'sự kiện chỉ bị đánh dấu đã xử lý SAU khi thật sự xử lý, và "có ai nhìn không" là câu hỏi ' +
+    'gửi tới chính hình vẽ chứ không phải một hằng số true',
 );

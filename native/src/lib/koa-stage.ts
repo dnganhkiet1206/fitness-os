@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { holdEmotion } from '@/hooks/use-mascot-emotion';
 import { decide, outranks, type KoaContext, type KoaDecision } from '@/lib/koa-decide';
 import type { KoaEvent } from '@/lib/koa-event';
-import { koaSeenOnce } from '@/lib/personal-model';
+import { koaSeenAdd, koaSeenHas } from '@/lib/personal-model';
 
 /**
  * The one door between what happened and what Koa does about it.
@@ -45,6 +45,12 @@ export interface KoaReaction {
   at: number;
 }
 
+function remember(id: string) {
+  seen.add(id);
+  if (seen.size > 200) seen.delete(seen.values().next().value as string);
+  koaSeenAdd(id);
+}
+
 let current: KoaReaction | null = null;
 let clearTimer: ReturnType<typeof setTimeout> | null = null;
 let seq = 0;
@@ -63,27 +69,42 @@ export function emitKoa(
   ctx: KoaContext,
   now = Date.now(),
 ): KoaDecision {
+  /* Two layers, because they answer different questions. The in-memory set is
+     the fast one and covers a render storm; the persisted one covers a
+     relaunch, which is the case that welcomed the same person back twice in one
+     morning. */
+  if (seen.has(event.id) || koaSeenHas(event.id)) {
+    return {
+      ...decide(event, ctx),
+      shouldReact: false,
+      because: 'sự kiện này đã xử lý rồi',
+    };
+  }
+
   const decision = decide(event, ctx);
 
-  /* Two layers, because they answer different questions. The in-memory set is
-     the fast one and covers a render storm; `koaSeenOnce` is persisted and
-     covers a relaunch, which is the case that welcomed the same person back
-     twice in one morning. */
-  if (seen.has(event.id) || koaSeenOnce(event.id)) {
-    return { ...decision, shouldReact: false, because: 'sự kiện này đã xử lý rồi' };
-  }
-  seen.add(event.id);
-  if (seen.size > 200) seen.delete(seen.values().next().value as string);
+  /*
+    ── nothing is marked handled until it has been ──
 
+    The check and the record used to be one call, made before this line, and
+    that quietly destroyed the moments it was meant to protect: a record earned
+    while the character was off screen came back `shouldReact: false`, was filed
+    as handled, and never played again — the id is persisted, so not on
+    returning to the dashboard, not ever.
+
+    A collision *is* recorded, and deliberately: the smaller of two things that
+    happened in the same second has been answered by the bigger one, and
+    replaying it later would be a celebration with nothing behind it.
+  */
   if (!decision.shouldReact) return decision;
 
-  /* The collision rule is `outranks`, kept in the pure module so a test can
-     play two events arriving together and read which one won. */
   const live = current ? { intensity: current.decision.intensity, at: current.at } : null;
   if (!outranks(live, decision.intensity, now)) {
+    remember(event.id);
     return { ...decision, shouldReact: false, because: 'một phản ứng lớn hơn đang diễn' };
   }
 
+  remember(event.id);
   current = { n: ++seq, event, decision, at: now };
   /* The renderer is the emotion channel that already exists — the held emotion
      is overridden for `hold` ms and then returns by itself. Koa's brain does

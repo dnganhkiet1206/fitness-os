@@ -353,17 +353,27 @@ export function notePraised(today: string) {
 const KOA_SEEN_CAP = 40;
 
 /**
- * Has Koa already reacted to this exact moment? Records it either way.
+ * Has Koa already reacted to this exact moment — and, separately, record that
+ * it has.
  *
- * One call rather than a read and a write, because the two must not be
- * separated: a caller that checks, decides, and then forgets to record is a
- * caller that reacts twice.
+ * ── why these are two calls and not one ──
+ *
+ * They were one, and it threw away real moments. Checking and recording in the
+ * same breath meant an event was marked handled **before anyone knew whether it
+ * would be acted on**, so a personal record that arrived while the character
+ * was off screen was filed as done and never played — not on returning to the
+ * dashboard, not ever, because the record is persisted.
+ *
+ * Split, the caller records only once it has actually decided to perform. The
+ * risk the single call was guarding against — checking and then forgetting to
+ * record — is covered by `tools/koa-decide.mjs` instead.
  */
-export function koaSeenOnce(id: string): boolean {
-  if (model.koaSeen.includes(id)) return true;
+export const koaSeenHas = (id: string): boolean => model.koaSeen.includes(id);
+
+export function koaSeenAdd(id: string) {
+  if (model.koaSeen.includes(id)) return;
   model = { ...model, koaSeen: [...model.koaSeen, id].slice(-KOA_SEEN_CAP) };
   save();
-  return false;
 }
 
 /**

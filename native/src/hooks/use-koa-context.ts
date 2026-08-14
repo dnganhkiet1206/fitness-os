@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
 import type { KoaContext } from '@/lib/koa-decide';
+import { koaOnScreen } from '@/lib/koa-presence';
 import { localDateStr } from '@/lib/local-date';
 import type { Streak } from '@/lib/streak';
 
@@ -49,6 +50,9 @@ export function useKoaContext(): KoaContext {
         (log.workout_count ?? 0) === 0 &&
         (log.steps ?? 0) === 0
       : false,
-    visible: true,
+    /* Asked, not assumed. `true` here used to be a shrug that cost real
+       moments: a record earned on another tab was declared handled and never
+       played. See `lib/koa-presence.ts`. */
+    visible: koaOnScreen(),
   };
 }

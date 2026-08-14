@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { SharedValue } from 'react-native-reanimated';
 
 import { KoaFigure } from '@/components/ascnd/koa/koa-figure';
@@ -6,6 +7,7 @@ import { VectorMascot } from '@/components/ascnd/vector-mascot';
 import { useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
 import { koaStateFor } from '@/lib/koa-emotion';
+import { koaMounted } from '@/lib/koa-presence';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
 import { getShopItem } from '@/lib/mascot-room';
 import type { MascotDef } from '@/lib/mascots';
@@ -70,6 +72,11 @@ function wornFrom(equipped: Set<string> | undefined): Worn {
 }
 
 export function MascotFigure(props: Props) {
+  /* Koa reports its own presence, so the decision engine can tell a reaction
+     somebody will see from one played to an empty screen — see
+     `lib/koa-presence.ts`. Cheap enough to do unconditionally: two integers. */
+  useEffect(() => koaMounted(), []);
+
   // `mood` is not destructured: this branch does not use it, and the vector
   // fallback below takes it through `{...props}` with its own 'neutral'
   // default, so naming it here only left an unused local.
