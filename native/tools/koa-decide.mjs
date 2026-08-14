@@ -202,6 +202,41 @@ for (const kind of ['quest_done', 'day_complete', 'personal_record', 'comeback']
   }
 }
 
+/* ── 8c: Koa's awareness must not cost the app a request ──
+
+   `useCheckAwards` runs on the Awards screen as well as on Today, and the first
+   version of the context called `useDailyStreak()` and `useDailyQuests()` — so
+   opening Awards fired six queries it has no use for, purely so a koala could
+   know the streak in case a medal landed. A companion that makes the app slower
+   to look at is not a companion. */
+{
+  const ctx = readFileSync(path.join(NATIVE, 'src/hooks/use-koa-context.ts'), 'utf8')
+    /* Comments first: the file *documents* the regression by naming the hooks it
+       used to call, and the first draft of this rule matched its own
+       explanation. */
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  if (/use(DailyStreak|DailyQuests|Query)\(/.test(ctx.replace(/useQueryClient\(/g, ''))) {
+    problems.push(
+      'use-koa-context đang tự truy vấn — nó phải ĐỌC cache, vì nó chạy cả trên những màn ' +
+        'hình không cần các dữ liệu đó (Awards), và sẽ bắt màn đó tải thêm sáu truy vấn',
+    );
+  }
+  if (!/getQueryData/.test(ctx)) problems.push('use-koa-context không đọc cache — nó lấy dữ liệu từ đâu?');
+
+  /* A context object rebuilt every render must never be an effect dependency. */
+  for (const f of ['src/hooks/use-quest-autoclaim.ts', 'src/hooks/use-streak-guard.ts']) {
+    const src = readFileSync(path.join(NATIVE, f), 'utf8');
+    const deps = [...src.matchAll(/\}, \[([^\]]*)\]\);/g)].map((m) => m[1]);
+    if (deps.some((d) => /\bkoaCtx\b|\bctx\b/.test(d))) {
+      problems.push(
+        `${f}: ngữ cảnh Koa nằm trong deps của effect — nó là object mới mỗi render, ` +
+          'nên effect sẽ chạy lại mỗi lần render',
+      );
+    }
+  }
+}
+
 /* ── 9: every intent has a string key, and no English is in the engine ── */
 {
   const intents = ['praise_small', 'praise_big', 'proud_record', 'welcome_back',
@@ -247,5 +282,6 @@ console.log(
     'và đường cong độ lớn là log nên 3→7 ngày đáng giá hơn 180→365; ' +
     'va chạm sự kiện: cái lớn giành sân, cái nhỏ bị BỎ chứ không xếp hàng, ' +
     'ba sự kiện cùng lúc không tạo ba màn diễn, và cả 7 intent đều có khoá i18n; ' +
-    'sân khấu tự dọn sau khi diễn xong, và phản ứng không bị ghi nhầm thành lời khen của ngày',
+    'sân khấu tự dọn sau khi diễn xong, phản ứng không bị ghi nhầm thành lời khen của ngày, ' +
+    'và ngữ cảnh của Koa chỉ ĐỌC cache chứ không tự tạo truy vấn nào',
 );

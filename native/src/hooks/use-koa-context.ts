@@ -1,29 +1,54 @@
-import { useDailyQuests } from '@/hooks/use-daily-quests';
-import { useDailyStreak } from '@/hooks/use-mascot-room';
+import { useQueryClient } from '@tanstack/react-query';
+
+import { useAuth } from '@/hooks/use-auth';
 import type { KoaContext } from '@/lib/koa-decide';
+import { localDateStr } from '@/lib/local-date';
+import type { Streak } from '@/lib/streak';
 
 /**
- * What Koa knows about right now, assembled from queries the app already makes.
+ * What Koa knows right now — read from what the app already fetched, never
+ * fetched for Koa's sake.
  *
- * No new request and no new table: the streak is the one `StreakChip` reads and
- * the quest counts are the ones the dashboard reads, so this costs a `useMemo`
- * and nothing else.
+ * ── the regression this shape exists for ──
  *
- * `visible` is `true` because every caller of this is reacting to something the
- * person just did in a foregrounded app, and the reaction lands on the held
- * emotion — which is wherever Koa is drawn, not on one particular card. The
- * card peek has its own, stricter visibility test (`useIsFocused`), because
- * that one really does play in one place.
+ * The first version called `useDailyStreak()` and `useDailyQuests()`. On Today
+ * that is free, because the dashboard reads both anyway. But the medal engine
+ * that needs this context also runs on the **Awards screen**, which reads
+ * neither — so opening Awards started firing six queries (daily log, profile,
+ * water, sleep, wallet, streak) that the screen has no use for, purely so a
+ * koala could know the streak in case a medal happened to land.
+ *
+ * A companion's awareness must not cost the app requests. So this reads the
+ * React Query **cache** and subscribes to nothing: if the data is there it is
+ * used, and if it is not, Koa reacts with what it has. The only decision that
+ * even reads the streak is `streak_at_risk`, which is reached from the
+ * dashboard where the data is always warm.
  */
 export function useKoaContext(): KoaContext {
-  const { data: streak } = useDailyStreak();
-  const quests = useDailyQuests();
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const today = localDateStr();
+
+  const streak = qc.getQueryData<Streak>(['mascot_streak', user?.id, today]);
+  const log = qc.getQueryData<{ kcal?: number; workout_count?: number; steps?: number }>([
+    'daily_log',
+    user?.id,
+    today,
+  ]);
 
   return {
     hour: new Date().getHours(),
     streak: streak?.count ?? 0,
-    doneToday: quests.doneCount,
-    emptyToday: quests.ready ? quests.doneCount === 0 : false,
+    /* Unused by `decide` today; kept because the debug screen prints it, and a
+       context that shows less than the engine could use is a debug tool that
+       lies by omission. */
+    doneToday: 0,
+    /* `false` when the day is unread — never a worried face over an unknown. */
+    emptyToday: log
+      ? (Number(log.kcal) || 0) === 0 &&
+        (log.workout_count ?? 0) === 0 &&
+        (log.steps ?? 0) === 0
+      : false,
     visible: true,
   };
 }

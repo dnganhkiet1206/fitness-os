@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 
 import { useEntitlement, type Tier } from '@/hooks/use-entitlement';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
+import { useKoaContext } from '@/hooks/use-koa-context';
 import { useClaimReward } from '@/hooks/use-mascot-room';
+import { emitKoa } from '@/lib/koa-stage';
 import { askPeek, noteDone } from '@/lib/personal-model';
 import { peekAt } from '@/lib/quest-peek';
 import { DAILY_QUESTS, questRefKey, type QuestKey } from '@/lib/mascot-room';
@@ -75,6 +77,7 @@ const PEEK_TIER: Tier | null = null;
 export function useQuestAutoClaim() {
   const quests = useDailyQuests();
   const claim = useClaimReward();
+  const koaCtx = useKoaContext();
   const { has } = useEntitlement();
   const mayPeek = PEEK_TIER === null || has(PEEK_TIER);
 
@@ -113,6 +116,20 @@ export function useQuestAutoClaim() {
          every observed completion, celebrated or not. */
       if (before && !before[key]) {
         noteDone(key, new Date().getHours(), quests.today);
+
+        /* ── the one daily moment that is genuinely rare ──
+
+           Finishing all five is the only thing on this screen that does not
+           happen most days, and it was the one event with a written line and
+           nothing able to fire it. The individual boxes stay with the card peek
+           — they already have a reaction there, and sending them here as well
+           would give one glass of water two performances. */
+        if (quests.doneCount >= quests.total) {
+          emitKoa(
+            { id: `day:${quests.today}`, kind: 'day_complete', magnitude: 0.6 },
+            koaCtx,
+          );
+        }
         /* And even then, not always. `askPeek` is the rationing — a cooldown so
            a catch-up burst is one performance rather than four, and a daily cap
            so the character stays worth looking at. The all-five moment is the
@@ -122,8 +139,14 @@ export function useQuestAutoClaim() {
         }
       }
     }
-    // `claim` is a stable mutation object; listing it would re-run this on every
-    // mutation state change, which is exactly when it must not re-run.
+    /* `claim` is a stable mutation object; listing it would re-run this on every
+       mutation state change, which is exactly when it must not re-run.
+
+       `koaCtx` is deliberately absent too, and for a sharper reason: it is a
+       fresh object on every render, so listing it would make this effect run on
+       every render — the claim loop, the observation, the lot. It is read
+       through the closure, where being one render stale costs nothing: the only
+       field any of this uses is the hour. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quests.ready, quests.today, quests.done, quests.unclaimed, mayPeek]);
 }

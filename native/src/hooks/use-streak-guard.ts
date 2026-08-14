@@ -61,10 +61,17 @@ export function useStreakGuard() {
     if (missed.length >= 3) {
       emitKoa(
         {
-          /* Keyed on the day they came back to, and nothing else. An earlier
-             version folded the freeze count into the id, which meant spending
-             a freeze changed the id and re-fired the same comeback. */
-          id: `comeback:${missed[missed.length - 1]}`,
+          /* Keyed on the day the absence **started**, so one absence is one
+             comeback however many times the app is opened during it.
+
+             Two earlier versions were wrong in the same direction. The first
+             folded the freeze count in, so spending a freeze changed the id and
+             re-fired it. The second keyed on yesterday — which moves every
+             night, so somebody who opens the app daily without logging would be
+             welcomed back every single morning. A warm moment said daily is a
+             nag, and that is the same failure as any other repetition nobody
+             bounded. */
+          id: `comeback:${missed[0]}`,
           kind: 'comeback',
           magnitude: comebackMagnitude(missed.length),
           days: missed.length,
