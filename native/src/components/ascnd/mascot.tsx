@@ -19,6 +19,7 @@ import Animated, {
 import { Icon } from '@/components/ascnd/icon';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useMascot } from '@/hooks/use-mascot';
 import { useMascotEmotion } from '@/hooks/use-mascot-emotion';
@@ -86,6 +87,23 @@ export function Mascot() {
   const levelScale = Math.min(1 + (level - 1) * 0.02, 1.2);
 
   const hover = useSharedValue(0); // 0..1 (0 = ground, 1 = top of float)
+  /*
+    How far the breath travels, in points — a shared value and not a plain read
+    of `presence.floatPt`.
+
+    Measured in a browser, the first version of this was wrong in a way no
+    static rule saw: the *pace* came from the state and the *depth* was still
+    the literal `-7` this file shipped with, so asleep and wide awake both rose
+    exactly seven points. `tools/koa-breath.mjs` caught it — 7.00px at two in
+    the afternoon and 7.00px at eleven at night, with the periods correctly
+    2851ms and 5256ms.
+
+    It is a shared value because a plain number in the closure would be frozen:
+    `useAnimatedStyle` evaluates its initial style once and only ever updates it
+    from the shared values in the mapper — see `tools/measured-worklet.mjs` and
+    the macro bars that sat full on an empty day.
+  */
+  const travel = useSharedValue(0);
   const entrance = useSharedValue(0); // 0..1
   const nod = useSharedValue(0); // deg rotateX
   const droop = useSharedValue(0); // deg — forward slump, from the state
@@ -127,6 +145,12 @@ export function Mascot() {
       hover.value = 0;
     };
   }, [focused, presence.floatPt, presence.breathMs, hover]);
+
+  useEffect(() => {
+    /* Eased rather than snapped: the depth of a breath changing is itself a
+       small piece of information, and a step change reads as a glitch. */
+    travel.value = withTiming(presence.floatPt, { duration: duration.swap });
+  }, [presence.floatPt, travel]);
 
   // The slump belongs to the state now, not to one of the three moods.
   useEffect(() => {
@@ -194,7 +218,7 @@ export function Mascot() {
   const bodyStyle = useAnimatedStyle(() => ({
     transform: [
       { perspective: 320 },
-      { translateY: interpolate(hover.value, [0, 1], [0, -7]) },
+      { translateY: -hover.value * travel.value },
       { rotateY: `${spin.value}deg` },
       { rotateX: `${nod.value + droop.value}deg` },
       { scale: entrance.value * levelScale },

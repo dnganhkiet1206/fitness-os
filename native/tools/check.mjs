@@ -50,6 +50,14 @@
  * server in three states, and asserts. It is deliberately not a step below: it
  * takes minutes, and a suite people stop running is worth less than a slower
  * one they run on purpose. Run it before anything ships.
+ *
+ *     node tools/koa-breath.mjs
+ *
+ * is the same idea pointed at one thing that only exists over time: it watches
+ * the character's own transform for thirty-five seconds at two hours of the
+ * day. It found what every rule here missed — the breath taking its *pace* from
+ * the state while its *depth* stayed the literal the file shipped with, so
+ * asleep and wide awake both rose exactly seven points.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';

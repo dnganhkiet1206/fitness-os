@@ -209,9 +209,38 @@ const EMOTIONS = Object.keys(
     problems.push('widget không dùng presenceMotion — các con số cử động lại nằm rải trong component');
   }
   /* Numbers back in the component is how the two halves drifted apart the
-     first time. The breath's two values must come from the model. */
+     first time. The breath's two values must come from the model — and there
+     are **two**, which is the half of this that a static rule missed once
+     already.
+
+     The first version of the fix took the *pace* from the state and left the
+     *depth* as the literal `-7` the file shipped with, so asleep and wide awake
+     both rose exactly seven points. Nothing here objected: `presenceMotion`
+     was called, `floatPt` was read, and it was read only to decide whether to
+     start the loop. It took `tools/koa-breath.mjs` measuring the running app —
+     7.00px at both ends of the day — to see it.
+
+     So both are checked, and the depth is checked at the transform rather than
+     at the call: the question is not whether `floatPt` is mentioned, it is
+     whether it reaches the thing that moves. */
   if (!/duration:\s*half\b/.test(src)) {
     problems.push('nhịp thở lại gõ số cứng trong component thay vì lấy từ trạng thái');
+  }
+  /* The whole line, not `[^,\n]+`. The first version of this stopped at the
+     first comma, so `interpolate(hover.value, [0, 1], [0, -7])` was read as
+     `interpolate(hover.value` — no digits, green, and the sabotage it exists to
+     catch walked straight past it. Second time in this file that a pattern
+     which stops early has passed a broken build. */
+  const rise = src.split('\n').find((l) => l.includes('translateY:'));
+  if (!rise) {
+    problems.push('không tìm thấy translateY của thân — luật độ sâu nhịp thở hỏng');
+  } else if (/\d/.test(rise.replace(/\.value/g, '').replace(/\[0,\s*1\]/g, ''))) {
+    problems.push(`độ sâu nhịp thở là số gõ cứng (${rise.trim()}) — ngủ và tỉnh sẽ nhô lên bằng nhau`);
+  }
+  /* And it has to be a shared value, or the worklet freezes it on the first
+     render and the depth never changes again — `tools/measured-worklet.mjs`. */
+  if (!/const travel = useSharedValue\(/.test(src)) {
+    problems.push('độ sâu nhịp thở không phải shared value — worklet sẽ đóng băng giá trị đầu tiên');
   }
 }
 
