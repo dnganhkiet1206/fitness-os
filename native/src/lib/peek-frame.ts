@@ -96,12 +96,24 @@ export interface PeekFrame {
 /**
  * @param rise 0 = parked out of sight, 1 = fully up
  * @param lean −1..1
+ * @param intensity 0..1 from the decision engine — how big a deal this was
+ *
+ * ── what intensity actually moves ──
+ *
+ * The lean, and only the lean. It is tempting to scale the rise as well, but a
+ * character that comes only halfway up for a small win is a character with its
+ * chin cut off by the card — the window is a fixed size and the head has to
+ * clear it or the whole thing is pointless. What can vary without breaking the
+ * framing is *how much it moves once it is there*: a glass of water gets a
+ * glance, a hundred-day medal gets a proper lean. Same trip, different
+ * temperament.
  */
-export function peekFrame(rise: number, lean: number): PeekFrame {
+export function peekFrame(rise: number, lean: number, intensity = 1): PeekFrame {
   'worklet';
+  const amp = 0.45 + intensity * 0.55;
   return {
     translateY: (1 - rise) * PEEK,
-    rotate: lean * LEAN_DEG,
+    rotate: lean * LEAN_DEG * amp,
     /* A touch of squash on the way up — it lands rather than arrives. */
     scaleY: 1 + (1 - rise) * 0.06,
   };

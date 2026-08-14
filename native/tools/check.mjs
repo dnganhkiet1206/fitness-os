@@ -175,6 +175,7 @@ const STEPS = [
   ['khuôn mặt', 'node', ['tools/mascot-face.mjs']],
   ['mô hình cá nhân', 'node', ['tools/personalize.mjs']],
   ['icon tô đặc', 'node', ['tools/icon-fill.mjs']],
+  ['quyết định Koa', 'node', ['tools/koa-decide.mjs']],
 ];
 
 let failed = 0;

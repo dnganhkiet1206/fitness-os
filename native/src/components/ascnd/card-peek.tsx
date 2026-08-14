@@ -80,11 +80,17 @@ export function CardPeek({
   emotion = 'celebrate',
   /** coins just earned, shown beside the head; 0 shows nothing */
   coins = 0,
+  /** 0..1 from the decision engine — how big a deal this was */
+  intensity = 1,
+  /** how long the figure stays up, ms — the decision's own answer */
+  hold = PEEK_HOLD_MS,
   children,
 }: {
   signal: number;
   emotion?: MascotEmotion;
   coins?: number;
+  intensity?: number;
+  hold?: number;
   children: React.ReactNode;
 }) {
   const { enabled, mascot } = useMascot();
@@ -142,7 +148,7 @@ export function CardPeek({
     played.current = signal;
 
     setPlaying(true);
-    const done = setTimeout(() => setPlaying(false), PEEK_TAIL_MS);
+    const done = setTimeout(() => setPlaying(false), hold + PEEK_TAIL_MS - PEEK_HOLD_MS);
 
     /* A celebration with no tap is a celebration with nothing to feel. This is
        deliberately the *light* impact and not the success notification the medal
@@ -154,16 +160,18 @@ export function CardPeek({
     if (reduced) {
       rise.value = withSequence(
         withTiming(1, { duration: duration.appear }),
-        withDelay(PEEK_HOLD_MS, withTiming(0, { duration: duration.appear })),
+        withDelay(hold, withTiming(0, { duration: duration.appear })),
       );
       return () => clearTimeout(done);
     }
 
     rise.value = withSequence(
       // up, with the overshoot a spring gives for free
-      withSpring(1, { stiffness: 180, damping: 13, mass: 0.9 }),
+      /* A bigger moment arrives with more spring in it: the same trip, less
+         damped, so it overshoots further and settles more visibly. */
+      withSpring(1, { stiffness: 180, damping: 16 - intensity * 4, mass: 0.9 }),
       // and away, accelerating, faster than it arrived
-      withDelay(PEEK_HOLD_MS, withTiming(0, { duration: duration.move, easing: Easing.in(Easing.cubic) })),
+      withDelay(hold, withTiming(0, { duration: duration.move, easing: Easing.in(Easing.cubic) })),
     );
 
     /* The lean is one composed gesture, so its four steps are named beats
@@ -198,7 +206,7 @@ export function CardPeek({
       opacity move. Same information, no motion, which is the trade the setting
       is asking for.
     */
-    const f = peekFrame(reduced ? 1 : rise.value, reduced ? 0 : lean.value);
+    const f = peekFrame(reduced ? 1 : rise.value, reduced ? 0 : lean.value, intensity);
     return {
       opacity: reduced ? rise.value : 1,
       transform: [
