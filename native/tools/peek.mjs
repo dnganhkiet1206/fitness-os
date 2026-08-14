@@ -118,7 +118,21 @@ export function problems(src, geo) {
     out.push('không thấy useIsFocused — không có gì biết được màn này có đang ở trước mặt ai không');
   }
 
-  // ── 5: the numbers are imported, not retyped ──
+  // ── 5: the focus gate does not leave the figure mounted, or replay itself ──
+  if (!/if \(!signal\) \{\s*setPlaying\(false\);/.test(src)) {
+    out.push(
+      'mất focus thì signal về 0, effect chạy lại và cleanup huỷ mất timer hạ nhân vật xuống — ' +
+        'thiếu setPlaying(false) ở nhánh đó thì `playing` kẹt true vĩnh viễn và nhân vật ở lại',
+    );
+  }
+  if (!/played\.current === signal/.test(src)) {
+    out.push(
+      'quay lại tab làm signal từ 0 lên lại đúng số cũ — đó là một thay đổi, nên cùng một màn ' +
+        'ăn mừng sẽ diễn lần thứ hai nếu không nhớ lần đã diễn',
+    );
+  }
+
+  // ── 6: the numbers are imported, not retyped ──
   const body = src
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/^\s*\/\/.*$/gm, '');
@@ -165,6 +179,8 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
   const RETYPED = FIXED.replace('{ rotate: `${f.rotate}deg` }', '{ rotate: `${lean.value * 7}deg` }');
   const ALWAYS_ON = FIXED.replace('if (!enabled || !playing)', 'if (!enabled)');
   const BLIND = FIXED.replace('usePeekSignal(quest, focused)', 'usePeekSignal(quest, true)');
+  const STUCK = FIXED.replace('if (!signal) {\n      setPlaying(false);\n      return;\n    }', 'if (!signal) return;');
+  const REPLAY = FIXED.replace('if (played.current === signal) return;', '');
 
   const selftest = [];
   if (SHIPPED === FIXED) selftest.push('không dựng lại được bản đã ship (flex-end)');
@@ -175,6 +191,10 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
   else if (!problems(ALWAYS_ON, geo).length) selftest.push('bản gắn nhân vật vĩnh viễn vẫn lọt');
   if (BLIND === FIXED) selftest.push('không dựng lại được bản diễn khi không ai xem');
   else if (!problems(BLIND, geo).length) selftest.push('bản diễn khi không ai xem vẫn lọt');
+  if (STUCK === FIXED) selftest.push('không dựng lại được bản kẹt nhân vật khi mất focus');
+  else if (!problems(STUCK, geo).length) selftest.push('bản kẹt nhân vật khi mất focus vẫn lọt');
+  if (REPLAY === FIXED) selftest.push('không dựng lại được bản diễn lại lần hai');
+  else if (!problems(REPLAY, geo).length) selftest.push('bản diễn lại lần hai vẫn lọt');
   if (!problems(FIXED, { ...geo, PEEK: Math.ceil(geo.PEEK_FIGURE * KOA_ASPECT) + 1 }).length) {
     selftest.push('băng cao hơn hình vẫn lọt');
   }

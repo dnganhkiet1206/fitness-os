@@ -105,6 +105,11 @@ export function useDailyStreak() {
   return useQuery({
     queryKey: ['mascot_streak', user?.id, localDateStr()],
     enabled: !!user,
+    /* Longer than the app's one-minute default on purpose: this reads up to 400
+       rows and the answer changes at most a handful of times a day — and now
+       that `today-keys` invalidates it at the exact moment it *does* change,
+       polling it every minute of use buys nothing. */
+    staleTime: 1000 * 60 * 10,
     queryFn: async (): Promise<StreakState> => {
       /* Both reads in one query function, because a streak computed from days
          without the freezes that cover them is simply a wrong number — and two

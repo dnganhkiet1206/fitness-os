@@ -23,7 +23,7 @@
  * confident, working product.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -288,6 +288,36 @@ const fold = (hours) => hours.reduce((s, h) => observeHour(s, h), emptyHours());
   if (!allowPraise('2026-08-13', D, false)) problems.push('hôm qua đã khen thì hôm nay không được khen');
 }
 
+/* ── 9: hydration, which is where a store quietly loses things ──
+
+   Two failures, both from ordering rather than arithmetic, and both invisible
+   in any single run: a read that lands after a write and overwrites it, and a
+   settle that runs before the data it is supposed to settle exists. The second
+   one is the nastier of the two — it meant the bandit recorded only wins. */
+{
+  const src = readFileSync(path.join(NATIVE, 'src/lib/personal-model.ts'), 'utf8');
+  const load = src.match(/export async function loadPersonalModel[\s\S]*?\n\}/);
+  if (!load) {
+    problems.push('không tìm thấy loadPersonalModel');
+  } else {
+    if (!/\.\.\.live\.asked/.test(load[0]) || !/live\.budget/.test(load[0])) {
+      problems.push(
+        'nạp dữ liệu ghi đè thay vì hoà: mọi thứ ghi ra trước khi đọc xong sẽ mất — ' +
+          'mất một quan sát thì chịu được, mất NGÂN SÁCH thì trần rò, và trần rò thì vô nghĩa',
+      );
+    }
+    if (!/settleStale\(/.test(load[0])) {
+      problems.push(
+        'không settle sau khi nạp: settleStale chạy từ effect lúc mount, tức TRƯỚC khi đọc xong, ' +
+          'nên nó settle một mô hình rỗng và không bao giờ được hỏi lại — bandit chỉ còn ghi nhận THẮNG',
+      );
+    }
+  }
+  if (!/^void loadPersonalModel\(\);/m.test(src)) {
+    problems.push('không khởi động việc đọc ngay lúc import — cửa sổ ghi-trước-khi-nạp rộng ra vô ích');
+  }
+}
+
 if (problems.length) {
   console.log('mô hình cá nhân:\n');
   for (const p of problems) console.log(`  • ${p}`);
@@ -304,5 +334,6 @@ console.log(
     'quy công chạy qua một ngày thật (sáng nhắc ăn → ăn xong; tối nhắc tập → không tập) ' +
     'ra đúng một thắng cho ăn và một thua cho tập, còn bản một-ô-pending đã ship thì không; ' +
     `ngân sách xuất hiện: dồn 5 lần trong 30 giây chỉ ra 1 màn diễn, cả ngày tối đa ${PEEK_DAILY_CAP}, ` +
-    'riêng khoảnh khắc xong cả 5 được vượt trần đúng một lần, và lời khen chỉ nói một lần mỗi ngày',
+    'riêng khoảnh khắc xong cả 5 được vượt trần đúng một lần, và lời khen chỉ nói một lần mỗi ngày; ' +
+    'nạp dữ liệu thì hoà chứ không ghi đè, và settle chạy SAU khi nạp xong',
 );

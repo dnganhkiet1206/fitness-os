@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { credit, newArm, noteAsk, rankArms, settle, type Arm } from '@/lib/bandit';
 import { allowPeek, allowPraise, freshBudget, type PeekBudget } from '@/lib/mascot-budget';
 import { emptyHours, habit, observeHour, type HourStat } from '@/lib/user-rhythm';
+import { localDateStr } from '@/lib/local-date';
 import type { QuestKey } from '@/lib/mascot-room';
 
 /**
@@ -96,13 +97,55 @@ const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((l) => l());
 
-/** Persist, fire-and-forget: losing one observation to a crash costs nothing. */
+/**
+ * Persist, fire-and-forget and coalesced.
+ *
+ * Finishing a quest touches the model three times in the same tick — the hour
+ * is recorded, the ask is credited, the appearance budget is spent — and each
+ * one used to be its own serialise-and-write. They are three views of one
+ * event, so they are written once, on the next tick.
+ *
+ * Fire-and-forget because losing the last write to a crash costs one
+ * observation out of weeks of them, and blocking anything on a preferences
+ * write would be the worse trade.
+ */
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
 function save() {
-  AsyncStorage.setItem(STORE_KEY, JSON.stringify(model)).catch(() => {});
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    AsyncStorage.setItem(STORE_KEY, JSON.stringify(model)).catch(() => {});
+  }, 0);
 }
 
 /**
- * Read the stored model once per launch.
+ * Read the stored model once per launch, and merge rather than replace.
+ *
+ * ── the two bugs this shape exists for ──
+ *
+ * **Hydration used to clobber.** It assigned the stored blob over `model`
+ * wholesale, so anything written between launch and the read landing was
+ * simply gone. Losing one observation would be tolerable; losing the *budget*
+ * is not — an already-spent peek coming back un-spent is a cap that leaks, and
+ * the whole point of the cap is that it does not.
+ *
+ * **And nothing settled yesterday's asks.** `settleStale` ran from an effect at
+ * mount, which is *before* this resolves, so it settled an empty model and was
+ * never asked again. Every unanswered ask from the day before stayed unanswered
+ * for ever, which meant the bandit recorded **only wins** — the exact failure
+ * that function was written to prevent, hidden by the order two things happened
+ * in. So the settle happens here, after the data it is supposed to settle
+ * actually exists.
+ *
+ * ── what wins on merge ──
+ *
+ * The rationing state (`asked`, `budget`, `praisedOn`) prefers what is already
+ * in memory: those are decisions this session has taken, and re-taking them
+ * means a second performance or a second ask. The learned state (`arms`,
+ * `hours`) prefers storage, because in-memory is at most one observation old
+ * while storage is weeks of them — losing one is the right way round, and it is
+ * unlikely to happen at all now the read starts at import rather than from a
+ * mount effect.
  *
  * Anything missing or malformed falls back to the fresh model rather than
  * throwing — a corrupted preferences blob must never be able to stop the app
@@ -113,27 +156,46 @@ export async function loadPersonalModel() {
   loaded = true;
   try {
     const raw = await AsyncStorage.getItem(STORE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw) as Partial<PersonalModel> & {
-      pending?: { quest: QuestKey; date: string } | null;
-    };
-    const base = fresh();
-    /* The v1 shape had a single `pending`; carrying it across as one entry
-       keeps the learned hours and beliefs, which are the expensive part, rather
-       than making everybody start again for a field that changed shape. */
-    const asked = parsed.asked ?? (parsed.pending ? { [parsed.pending.quest]: parsed.pending.date } : {});
-    model = {
-      arms: { ...base.arms, ...(parsed.arms ?? {}) },
-      hours: { ...base.hours, ...(parsed.hours ?? {}) },
-      asked,
-      budget: parsed.budget ?? base.budget,
-      praisedOn: parsed.praisedOn ?? null,
-    };
-    emit();
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<PersonalModel> & {
+        pending?: { quest: QuestKey; date: string } | null;
+      };
+      const base = fresh();
+      const live = model;
+      /* The v1 shape had a single `pending`; carrying it across as one entry
+         keeps the learned hours and beliefs, which are the expensive part,
+         rather than making everybody start again for a field that changed. */
+      const storedAsked =
+        parsed.asked ?? (parsed.pending ? { [parsed.pending.quest]: parsed.pending.date } : {});
+      const storedBudget = parsed.budget ?? base.budget;
+
+      model = {
+        arms: { ...base.arms, ...(parsed.arms ?? {}) },
+        hours: { ...base.hours, ...(parsed.hours ?? {}) },
+        asked: { ...storedAsked, ...live.asked },
+        /* Whichever has spent more of today is the truthful one; on different
+           days the stored budget is stale and the live one is today's. */
+        budget:
+          live.budget.day === storedBudget.day && live.budget.count > storedBudget.count
+            ? live.budget
+            : storedBudget,
+        praisedOn: live.praisedOn ?? parsed.praisedOn ?? null,
+      };
+      emit();
+    }
   } catch {
     /* keep the fresh model */
   }
+  // Now that yesterday exists, settle it.
+  settleStale(localDateStr());
 }
+
+/* Started here rather than from a mount effect, so the window in which anything
+   can write to an unhydrated model is as close to zero as a promise allows.
+   Every writer below depends on a Supabase query having resolved, and a local
+   key-value read beats a network round trip; the merge above is the belt to
+   this bracer. */
+void loadPersonalModel();
 
 /**
  * Koa just brought this up, **on screen**. Remember it, so the outcome can be

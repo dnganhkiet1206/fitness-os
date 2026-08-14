@@ -1,5 +1,5 @@
 import { useIsFocused } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -109,6 +109,8 @@ export function CardPeek({
     it: the style is not recreated when the child comes back.
   */
   const [playing, setPlaying] = useState(false);
+  /** the firing already performed, so returning to the tab does not replay it */
+  const played = useRef(0);
 
   /* Latched, because the store's `coins` returns to 0 the moment another quest
      claims the stage — and this card is still on its way back down. */
@@ -118,7 +120,25 @@ export function CardPeek({
   }, [signal, coins]);
 
   useEffect(() => {
-    if (!signal) return;
+    /*
+      ── two ways this goes wrong, both from the focus gate ──
+
+      `signal` drops to 0 when the screen loses focus, which makes this effect
+      re-run and its cleanup cancel the timer that takes the figure back down.
+      Without the line below, `playing` stays true for ever and the character
+      stays mounted — the performance cost this was built to remove, restored by
+      the fix for a different problem.
+
+      And coming *back* raises the signal from 0 to the same number again, which
+      is a change, so the same celebration would play a second time. `played`
+      is the memory that says it already happened.
+    */
+    if (!signal) {
+      setPlaying(false);
+      return;
+    }
+    if (played.current === signal) return;
+    played.current = signal;
 
     setPlaying(true);
     const done = setTimeout(() => setPlaying(false), PEEK_TAIL_MS);
