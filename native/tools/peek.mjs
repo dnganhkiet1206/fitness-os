@@ -107,7 +107,18 @@ export function problems(src, geo) {
     out.push('không thấy PEEK_TAIL_MS — không có gì gỡ nhân vật xuống sau khi diễn xong');
   }
 
-  // ── 4: the numbers are imported, not retyped ──
+  // ── 4: nobody performs to an empty room ──
+  if (!/usePeekSignal\(quest, focused\)/.test(src)) {
+    out.push(
+      'PeekHost không truyền trạng thái focus vào usePeekSignal — màn diễn sẽ chạy trong lúc ' +
+        'người dùng đang ở tab khác, mà log bữa ăn TỪ tab Dinh dưỡng mới là đường đi chính',
+    );
+  }
+  if (!/useIsFocused/.test(src)) {
+    out.push('không thấy useIsFocused — không có gì biết được màn này có đang ở trước mặt ai không');
+  }
+
+  // ── 5: the numbers are imported, not retyped ──
   const body = src
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/^\s*\/\/.*$/gm, '');
@@ -153,6 +164,7 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
   const SHIPPED = FIXED.replace("justifyContent: 'flex-start'", "justifyContent: 'flex-end'");
   const RETYPED = FIXED.replace('{ rotate: `${f.rotate}deg` }', '{ rotate: `${lean.value * 7}deg` }');
   const ALWAYS_ON = FIXED.replace('if (!enabled || !playing)', 'if (!enabled)');
+  const BLIND = FIXED.replace('usePeekSignal(quest, focused)', 'usePeekSignal(quest, true)');
 
   const selftest = [];
   if (SHIPPED === FIXED) selftest.push('không dựng lại được bản đã ship (flex-end)');
@@ -161,6 +173,8 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
   else if (!problems(RETYPED, geo).length) selftest.push('số 7 gõ thẳng vào component vẫn lọt');
   if (ALWAYS_ON === FIXED) selftest.push('không dựng lại được bản gắn nhân vật vĩnh viễn');
   else if (!problems(ALWAYS_ON, geo).length) selftest.push('bản gắn nhân vật vĩnh viễn vẫn lọt');
+  if (BLIND === FIXED) selftest.push('không dựng lại được bản diễn khi không ai xem');
+  else if (!problems(BLIND, geo).length) selftest.push('bản diễn khi không ai xem vẫn lọt');
   if (!problems(FIXED, { ...geo, PEEK: Math.ceil(geo.PEEK_FIGURE * KOA_ASPECT) + 1 }).length) {
     selftest.push('băng cao hơn hình vẫn lọt');
   }
@@ -176,7 +190,8 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
     `peek OK — băng ${geo.PEEK}pt, hình ${geo.PEEK_FIGURE}×` +
       `${Math.round(geo.PEEK_FIGURE * KOA_ASPECT)}pt (thấy ` +
       `${Math.round((geo.PEEK / (geo.PEEK_FIGURE * KOA_ASPECT)) * 100)}% chiều cao hình, tính từ đỉnh đầu); ` +
-      'nhân vật chỉ được gắn khi đang diễn; ' +
-      'bản flex-end đã ship, bản gõ tay số độ nghiêng, bản băng cao hơn hình và bản gắn vĩnh viễn đều bị bắt',
+      'nhân vật chỉ được gắn khi đang diễn và chỉ diễn khi màn hình đang ở trước mặt; ' +
+      'bản flex-end đã ship, bản gõ tay số độ nghiêng, bản băng cao hơn hình, bản gắn vĩnh viễn ' +
+      'và bản diễn khi không ai xem đều bị bắt',
   );
 }

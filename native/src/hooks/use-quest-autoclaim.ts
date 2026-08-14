@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useEntitlement, type Tier } from '@/hooks/use-entitlement';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useClaimReward } from '@/hooks/use-mascot-room';
-import { noteDone } from '@/lib/personal-model';
+import { askPeek, noteDone } from '@/lib/personal-model';
 import { peekAt } from '@/lib/quest-peek';
 import { DAILY_QUESTS, questRefKey, type QuestKey } from '@/lib/mascot-room';
 
@@ -113,7 +113,13 @@ export function useQuestAutoClaim() {
          every observed completion, celebrated or not. */
       if (before && !before[key]) {
         noteDone(key, new Date().getHours(), quests.today);
-        if (mayPeek) peekAt(key, def.coins);
+        /* And even then, not always. `askPeek` is the rationing — a cooldown so
+           a catch-up burst is one performance rather than four, and a daily cap
+           so the character stays worth looking at. The all-five moment is the
+           one thing allowed past the cap. See `lib/mascot-budget.ts`. */
+        if (mayPeek && askPeek(quests.today, quests.doneCount >= quests.total)) {
+          peekAt(key, def.coins);
+        }
       }
     }
     // `claim` is a stable mutation object; listing it would re-run this on every

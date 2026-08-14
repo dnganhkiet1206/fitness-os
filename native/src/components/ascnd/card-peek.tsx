@@ -1,3 +1,4 @@
+import { useIsFocused } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -198,7 +199,11 @@ export function CardPeek({
  * position.
  */
 export function PeekHost({ quest, children }: { quest: QuestKey; children: React.ReactNode }) {
-  const { signal, coins } = usePeekSignal(quest);
+  /* Whether this screen is the one in front of the person. A peek fired while
+     they are on another tab is held, not spent on an empty room — the commonest
+     way to finish the meal quest is to log a meal from the Nutrition tab. */
+  const focused = useIsFocused();
+  const { signal, coins } = usePeekSignal(quest, focused);
   return (
     <CardPeek signal={signal} emotion={PEEK_EMOTION[quest]} coins={coins}>
       {children}

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 import { credit, newArm, noteAsk, rankArms, settle, type Arm } from '@/lib/bandit';
+import { allowPeek, allowPraise, freshBudget, type PeekBudget } from '@/lib/mascot-budget';
 import { emptyHours, habit, observeHour, type HourStat } from '@/lib/user-rhythm';
 import type { QuestKey } from '@/lib/mascot-room';
 
@@ -54,6 +55,10 @@ export interface PersonalModel {
    * One date per habit: everything asked gets its own answer.
    */
   asked: Partial<Record<QuestKey, string>>;
+  /** how much of today's appearance budget Koa has spent — `mascot-budget.ts` */
+  budget: PeekBudget;
+  /** the day the "everything done" line was last said */
+  praisedOn: string | null;
 }
 
 /**
@@ -79,6 +84,8 @@ const fresh = (): PersonalModel => ({
   arms: Object.fromEntries(KEYS.map((k) => [k, newArm(...PRIOR[k])])) as Record<QuestKey, Arm>,
   hours: Object.fromEntries(KEYS.map((k) => [k, emptyHours()])) as Record<QuestKey, HourStat>,
   asked: {},
+  budget: freshBudget(''),
+  praisedOn: null,
 });
 
 const STORE_KEY = 'ascnd_personal_model_v1';
@@ -119,6 +126,8 @@ export async function loadPersonalModel() {
       arms: { ...base.arms, ...(parsed.arms ?? {}) },
       hours: { ...base.hours, ...(parsed.hours ?? {}) },
       asked,
+      budget: parsed.budget ?? base.budget,
+      praisedOn: parsed.praisedOn ?? null,
     };
     emit();
   } catch {
@@ -154,7 +163,7 @@ export function noteAsked(quest: QuestKey, date: string) {
 export function noteDone(quest: QuestKey, hour: number, date: string) {
   const hours = { ...model.hours, [quest]: observeHour(model.hours[quest] ?? emptyHours(), hour) };
   const led = credit({ arms: model.arms, asked: model.asked }, quest, date);
-  model = { ...led, hours };
+  model = { ...model, ...led, hours };
   save();
   emit();
 }
@@ -190,6 +199,39 @@ function subscribe(cb: () => void) {
 
 export function usePersonalModel(): PersonalModel {
   return useSyncExternalStore(subscribe, snapshot, snapshot);
+}
+
+/**
+ * Ask for a performance, and spend the budget either way.
+ *
+ * The rules are `mascot-budget.ts`; this is only the part that remembers. It
+ * writes the returned budget whatever the answer, because a cooldown that is
+ * only recorded on success is a cooldown that never starts.
+ */
+export function askPeek(today: string, finishesSet: boolean, now = Date.now()): boolean {
+  const { allow, next } = allowPeek(model.budget, { now, today, finishesSet });
+  if (next !== model.budget) {
+    model = { ...model, budget: next };
+    save();
+    emit();
+  }
+  return allow;
+}
+
+/* Sticky for the life of the process, so the sentence cannot vanish out from
+   under somebody mid-read — see `allowPraise`. */
+let praisedThisSession = false;
+
+export function mayPraise(today: string): boolean {
+  return allowPraise(model.praisedOn, today, praisedThisSession);
+}
+
+export function notePraised(today: string) {
+  praisedThisSession = true;
+  if (model.praisedOn === today) return;
+  model = { ...model, praisedOn: today };
+  save();
+  emit();
 }
 
 /** Testing and "forget me" — see the privacy screen. */

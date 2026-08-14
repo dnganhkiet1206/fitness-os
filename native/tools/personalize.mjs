@@ -35,7 +35,8 @@ const problems = [];
 const out = mkdtempSync(path.join(tmpdir(), 'personalize-'));
 execFileSync(
   'npx',
-  ['tsc', 'src/lib/bandit.ts', 'src/lib/user-rhythm.ts', '--ignoreConfig', '--outDir', out,
+  ['tsc', 'src/lib/bandit.ts', 'src/lib/user-rhythm.ts', 'src/lib/mascot-budget.ts',
+   '--ignoreConfig', '--outDir', out,
    '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
   { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
 );
@@ -44,6 +45,8 @@ const { newArm, reward, mean, sampleBeta, rankArms, seeded, CAP, noteAsk, credit
   require_(path.join(out, 'bandit.js'));
 const { emptyHours, observeHour, habit, isLate, lateHour, MIN_OBS } =
   require_(path.join(out, 'user-rhythm.js'));
+const { allowPeek, allowPraise, freshBudget, PEEK_DAILY_CAP, PEEK_COOLDOWN_MS } =
+  require_(path.join(out, 'mascot-budget.js'));
 
 const near = (a, b, tol) => Math.abs(a - b) <= tol;
 const fold = (hours) => hours.reduce((s, h) => observeHour(s, h), emptyHours());
@@ -228,6 +231,63 @@ const fold = (hours) => hours.reduce((s, h) => observeHour(s, h), emptyHours());
   if (unasked !== base) problems.push('làm một việc không ai nhắc lại được tính là nhắc thành công');
 }
 
+/* ── 8: how often Koa is allowed to appear ──
+
+   The failure this rations against is habituation: a character that turns up
+   for everything is filed by the brain as noise, and the research on banner
+   blindness says that is not a metaphor. So the interesting assertions are the
+   ones about *silence*. */
+{
+  const D = '2026-08-14';
+  const T0 = Date.UTC(2026, 7, 14, 8, 0, 0);
+  let b = freshBudget(D);
+
+  // somebody catching up: five completions inside half a minute → one show
+  let shows = 0;
+  for (let i = 0; i < 5; i++) {
+    const r = allowPeek(b, { now: T0 + i * 6000, today: D, finishesSet: false });
+    b = r.next;
+    if (r.allow) shows++;
+  }
+  if (shows !== 1) {
+    problems.push(`dồn 5 lần trong 30 giây ra ${shows} màn diễn, đáng lẽ 1 — đó là lỗi chứ không phải ăn mừng`);
+  }
+
+  // spread across the day, the cap holds
+  b = freshBudget(D);
+  shows = 0;
+  for (let i = 0; i < 5; i++) {
+    const r = allowPeek(b, { now: T0 + i * 3600_000, today: D, finishesSet: false });
+    b = r.next;
+    if (r.allow) shows++;
+  }
+  if (shows !== PEEK_DAILY_CAP) {
+    problems.push(`5 lần cách nhau 1 tiếng ra ${shows} màn diễn, trần là ${PEEK_DAILY_CAP}`);
+  }
+
+  // …but the all-five moment is not the one that gets dropped
+  const past = allowPeek(b, { now: T0 + 6 * 3600_000, today: D, finishesSet: true });
+  if (!past.allow) problems.push('khoảnh khắc xong cả 5 bị trần chặn — đó là lúc duy nhất thật sự hiếm trong ngày');
+  const twice = allowPeek(past.next, { now: T0 + 7 * 3600_000, today: D, finishesSet: true });
+  if (twice.allow) problems.push('khoảnh khắc xong cả 5 diễn được hai lần trong một ngày');
+
+  // a new day is a clean sheet
+  const tomorrow = allowPeek(twice.next, { now: T0 + 30 * 3600_000, today: '2026-08-15', finishesSet: false });
+  if (!tomorrow.allow) problems.push('sang ngày mới mà trần hôm qua vẫn còn hiệu lực');
+
+  // the cooldown is absolute — even for the big one
+  const fresh2 = allowPeek(freshBudget(D), { now: T0, today: D, finishesSet: false });
+  const tooSoon = allowPeek(fresh2.next, { now: T0 + PEEK_COOLDOWN_MS - 1, today: D, finishesSet: true });
+  if (tooSoon.allow) problems.push('hai nhân vật trèo lên hai thẻ trong cùng một nhịp thở — đó là lỗi hiển thị');
+
+  /* praise: once a day, but sticky inside the session that shows it — a
+     sentence that vanishes while somebody reads it is worse than one repeated */
+  if (!allowPraise(null, D, false)) problems.push('lần đầu trong ngày mà đã không cho khen');
+  if (!allowPraise(D, D, true)) problems.push('đang hiện dở trong phiên này mà đã bị rút mất');
+  if (allowPraise(D, D, false)) problems.push('mở lại app trong ngày vẫn khen lần nữa');
+  if (!allowPraise('2026-08-13', D, false)) problems.push('hôm qua đã khen thì hôm nay không được khen');
+}
+
 if (problems.length) {
   console.log('mô hình cá nhân:\n');
   for (const p of problems) console.log(`  • ${p}`);
@@ -242,5 +302,7 @@ console.log(
     'ngày đầu vẫn thăm dò đủ 4 lựa chọn và giữ đúng thứ tự biên tập; ' +
     `bằng chứng bị chặn ở ${CAP} nên một sở thích không bao giờ thành luật; ` +
     'quy công chạy qua một ngày thật (sáng nhắc ăn → ăn xong; tối nhắc tập → không tập) ' +
-    'ra đúng một thắng cho ăn và một thua cho tập, còn bản một-ô-pending đã ship thì không',
+    'ra đúng một thắng cho ăn và một thua cho tập, còn bản một-ô-pending đã ship thì không; ' +
+    `ngân sách xuất hiện: dồn 5 lần trong 30 giây chỉ ra 1 màn diễn, cả ngày tối đa ${PEEK_DAILY_CAP}, ` +
+    'riêng khoảnh khắc xong cả 5 được vượt trần đúng một lần, và lời khen chỉ nói một lần mỗi ngày',
 );

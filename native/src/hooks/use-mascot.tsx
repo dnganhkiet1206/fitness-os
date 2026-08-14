@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { seeded } from '@/lib/bandit';
 import { localDateStr } from '@/lib/local-date';
 import { mascotLine, type MascotThing } from '@/lib/mascot-message';
-import { rankQuests, settleStale, usePersonalModel } from '@/lib/personal-model';
+import { mayPraise, rankQuests, settleStale, usePersonalModel } from '@/lib/personal-model';
 import { DEFAULT_MASCOT_ID, getMascot, isUnlocked, MASCOTS } from '@/lib/mascots';
 
 const ENABLED_KEY = 'ascnd_mascot_enabled';
@@ -196,9 +196,12 @@ export function useMascotMessage(): MascotSay {
       case 'notice':
         return i18n.nMascotThen.replace('{win}', WIN[line.win]).replace('{gap}', GAP[line.gap]);
       case 'praise':
-        return i18n.nMascotPraise;
+        /* Once a day, not once a render. Finishing everything by two in the
+           afternoon used to mean being congratulated on every launch until
+           midnight, which is the sound a machine makes rather than praise. */
+        return mayPraise(today) ? i18n.nMascotPraise : null;
     }
-  }, [i18n, line]);
+  }, [i18n, line, today]);
 
   /* The gap travels with the sentence instead of being recorded here.
      Composing a sentence is not the same as somebody reading one, and this hook

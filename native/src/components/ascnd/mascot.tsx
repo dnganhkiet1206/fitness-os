@@ -22,7 +22,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useMascot } from '@/hooks/use-mascot';
 import { localDateStr } from '@/lib/local-date';
-import { noteAsked } from '@/lib/personal-model';
+import { noteAsked, notePraised } from '@/lib/personal-model';
 import { useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
 import { DAILY_QUESTS, levelFromXp } from '@/lib/mascot-room';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -157,7 +157,11 @@ export function Mascot() {
      somebody can read. The learner is fed from here rather than from the hook
      that writes the sentence — see `noteAsked`. */
   useEffect(() => {
-    if (bubbleVisible && message && messageGap) noteAsked(messageGap, localDateStr());
+    if (!bubbleVisible || !message) return;
+    if (messageGap) noteAsked(messageGap, localDateStr());
+    /* No gap and a sentence anyway means the day is finished and this is the
+       praise — recorded here, on screen, for the same reason the ask is. */
+    else notePraised(localDateStr());
   }, [bubbleVisible, message, messageGap]);
 
   const bodyStyle = useAnimatedStyle(() => ({
