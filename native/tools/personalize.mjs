@@ -40,7 +40,8 @@ execFileSync(
   { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
 );
 const require_ = createRequire(import.meta.url);
-const { newArm, reward, mean, sampleBeta, rankArms, seeded, CAP } = require_(path.join(out, 'bandit.js'));
+const { newArm, reward, mean, sampleBeta, rankArms, seeded, CAP, noteAsk, credit, settle } =
+  require_(path.join(out, 'bandit.js'));
 const { emptyHours, observeHour, habit, isLate, lateHour, MIN_OBS } =
   require_(path.join(out, 'user-rhythm.js'));
 
@@ -175,6 +176,58 @@ const fold = (hours) => hours.reduce((s, h) => observeHour(s, h), emptyHours());
   if (mean(loser) <= 0) problems.push('thua mãi thì niềm tin chạm 0 — sẽ không bao giờ được thử lại');
 }
 
+/* ── 7: attribution — the ordinary day the one-slot version got wrong ──
+
+   Midday: nothing logged, Koa asks about meals. Late afternoon: the training
+   window opens and meals are *still* unlogged, so the sentence moves on and Koa
+   asks about training. Evening: supper, logged. Next morning: training never
+   happened.
+
+   One win for meals and one loss for training. The order matters and is the
+   whole point — a first draft of this case credited the meal *before* the second
+   ask, which the broken version also gets right. */
+{
+  const D = '2026-08-14';
+  const NEXT = '2026-08-15';
+  const base = { arms: { meal: newArm(3, 2), workout: newArm(4, 2) }, asked: {} };
+
+  let l = noteAsk(base, 'meal', D);
+  l = noteAsk(l, 'workout', D);
+  l = credit(l, 'meal', D);
+  l = settle(l, NEXT);
+
+  if (l.arms.meal.alpha !== 4 || l.arms.meal.beta !== 2) {
+    problems.push(`quy công: bữa ăn ra ${l.arms.meal.alpha}/${l.arms.meal.beta}, đáng lẽ 4/2 (một lần thắng)`);
+  }
+  if (l.arms.workout.alpha !== 4 || l.arms.workout.beta !== 3) {
+    problems.push(`quy công: tập ra ${l.arms.workout.alpha}/${l.arms.workout.beta}, đáng lẽ 4/3 (một lần thua)`);
+  }
+  if (Object.keys(l.asked).length !== 0) problems.push('quy công: sổ chưa được dọn sau khi sang ngày mới');
+
+  // the shipped one-slot version, so the case above can be shown to catch it
+  let slot = { arms: { meal: newArm(3, 2), workout: newArm(4, 2) }, pending: null };
+  const ask = (s, k) => ({ ...s, pending: { quest: k, date: D } });
+  const done = (s, k) =>
+    s.pending && s.pending.quest === k
+      ? { arms: { ...s.arms, [k]: reward(s.arms[k], true) }, pending: null }
+      : s;
+  const day = (s) =>
+    s.pending && s.pending.date !== NEXT
+      ? { arms: { ...s.arms, [s.pending.quest]: reward(s.arms[s.pending.quest], false) }, pending: null }
+      : s;
+  slot = day(done(ask(ask(slot, 'meal'), 'workout'), 'meal'));
+  if (slot.arms.meal.alpha === 4 && slot.arms.workout.beta === 3) {
+    problems.push('tự kiểm: bản một-ô-pending cũng ra đúng, nên ca này không chứng minh gì');
+  }
+
+  // a re-render is not a second ask
+  const once = noteAsk(base, 'meal', D);
+  if (noteAsk(once, 'meal', D) !== once) problems.push('gọi lại noteAsk cùng ngày lại tạo bản ghi mới');
+  // and doing something nobody asked about must not be counted as persuasion
+  const unasked = credit(base, 'water', D);
+  if (unasked !== base) problems.push('làm một việc không ai nhắc lại được tính là nhắc thành công');
+}
+
 if (problems.length) {
   console.log('mô hình cá nhân:\n');
   for (const p of problems) console.log(`  • ${p}`);
@@ -187,5 +240,7 @@ console.log(
     'bộ lấy mẫu Beta khớp cả trung bình lẫn phương sai giải tích trên 3 tham số × 20.000 lượt; ' +
     'học được khác biệt thật (nước 80% vs tập 10% → 120 ngày là đứng đầu), ' +
     'ngày đầu vẫn thăm dò đủ 4 lựa chọn và giữ đúng thứ tự biên tập; ' +
-    `bằng chứng bị chặn ở ${CAP} nên một sở thích không bao giờ thành luật`,
+    `bằng chứng bị chặn ở ${CAP} nên một sở thích không bao giờ thành luật; ` +
+    'quy công chạy qua một ngày thật (sáng nhắc ăn → ăn xong; tối nhắc tập → không tập) ' +
+    'ra đúng một thắng cho ăn và một thua cho tập, còn bản một-ô-pending đã ship thì không',
 );

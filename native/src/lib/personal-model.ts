@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
-import { newArm, rankArms, reward, type Arm } from '@/lib/bandit';
+import { credit, newArm, noteAsk, rankArms, settle, type Arm } from '@/lib/bandit';
 import { emptyHours, habit, observeHour, type HourStat } from '@/lib/user-rhythm';
 import type { QuestKey } from '@/lib/mascot-room';
 
@@ -39,8 +39,21 @@ export interface PersonalModel {
   arms: Record<QuestKey, Arm>;
   /** when they actually do it, per habit */
   hours: Record<QuestKey, HourStat>;
-  /** the gap Koa last brought up, waiting to find out if it worked */
-  pending: { quest: QuestKey; date: string } | null;
+  /**
+   * The day each habit was last brought up, waiting to find out if it worked.
+   *
+   * ── why this is not a single pending slot ──
+   *
+   * It was, and the attribution was wrong in the ordinary case. Koa asks about
+   * meals in the morning and, once meals are logged, about training in the
+   * evening — one slot means the evening ask *overwrites* the morning one, so
+   * the meal that was actually logged is never credited, and training collects
+   * a loss for a day it was only mentioned an hour ago. The model learned the
+   * opposite of what happened, quietly, in the most common shape of a day.
+   *
+   * One date per habit: everything asked gets its own answer.
+   */
+  asked: Partial<Record<QuestKey, string>>;
 }
 
 /**
@@ -65,7 +78,7 @@ const KEYS = Object.keys(PRIOR) as QuestKey[];
 const fresh = (): PersonalModel => ({
   arms: Object.fromEntries(KEYS.map((k) => [k, newArm(...PRIOR[k])])) as Record<QuestKey, Arm>,
   hours: Object.fromEntries(KEYS.map((k) => [k, emptyHours()])) as Record<QuestKey, HourStat>,
-  pending: null,
+  asked: {},
 });
 
 const STORE_KEY = 'ascnd_personal_model_v1';
@@ -94,12 +107,18 @@ export async function loadPersonalModel() {
   try {
     const raw = await AsyncStorage.getItem(STORE_KEY);
     if (!raw) return;
-    const parsed = JSON.parse(raw) as Partial<PersonalModel>;
+    const parsed = JSON.parse(raw) as Partial<PersonalModel> & {
+      pending?: { quest: QuestKey; date: string } | null;
+    };
     const base = fresh();
+    /* The v1 shape had a single `pending`; carrying it across as one entry
+       keeps the learned hours and beliefs, which are the expensive part, rather
+       than making everybody start again for a field that changed shape. */
+    const asked = parsed.asked ?? (parsed.pending ? { [parsed.pending.quest]: parsed.pending.date } : {});
     model = {
       arms: { ...base.arms, ...(parsed.arms ?? {}) },
       hours: { ...base.hours, ...(parsed.hours ?? {}) },
-      pending: parsed.pending ?? null,
+      asked,
     };
     emit();
   } catch {
@@ -108,15 +127,19 @@ export async function loadPersonalModel() {
 }
 
 /**
- * Koa just brought this up. Remember it, so the outcome can be attributed.
+ * Koa just brought this up, **on screen**. Remember it, so the outcome can be
+ * attributed.
  *
- * One pending at a time, and a new day replaces yesterday's — an unresolved ask
- * from yesterday is settled by `settleStale` on the next launch rather than
- * left to collect a reward it did not earn.
+ * The "on screen" matters and was got wrong once: this used to be called from
+ * the hook that *composes* the sentence, and that hook runs wherever the mascot
+ * is used at all — including behind an error card that shows no bubble. The
+ * model was recording asks nobody had read, and then marking them failures.
+ * It is called from the widget that actually draws the bubble.
  */
 export function noteAsked(quest: QuestKey, date: string) {
-  if (model.pending?.quest === quest && model.pending.date === date) return;
-  model = { ...model, pending: { quest, date } };
+  const next = noteAsk({ arms: model.arms, asked: model.asked }, quest, date);
+  if (next.asked === model.asked) return;
+  model = { ...model, ...next };
   save();
   emit();
 }
@@ -130,15 +153,8 @@ export function noteAsked(quest: QuestKey, date: string) {
  */
 export function noteDone(quest: QuestKey, hour: number, date: string) {
   const hours = { ...model.hours, [quest]: observeHour(model.hours[quest] ?? emptyHours(), hour) };
-  let arms = model.arms;
-  let pending = model.pending;
-
-  if (pending && pending.quest === quest && pending.date === date) {
-    arms = { ...arms, [quest]: reward(arms[quest] ?? newArm(), true) };
-    pending = null;
-  }
-
-  model = { arms, hours, pending };
+  const led = credit({ arms: model.arms, asked: model.asked }, quest, date);
+  model = { ...led, hours };
   save();
   emit();
 }
@@ -151,13 +167,9 @@ export function noteDone(quest: QuestKey, hour: number, date: string) {
  * written down.
  */
 export function settleStale(today: string) {
-  const p = model.pending;
-  if (!p || p.date === today) return;
-  model = {
-    ...model,
-    arms: { ...model.arms, [p.quest]: reward(model.arms[p.quest] ?? newArm(), false) },
-    pending: null,
-  };
+  const next = settle({ arms: model.arms, asked: model.asked }, today);
+  if (next.asked === model.asked) return;
+  model = { ...model, ...next };
   save();
   emit();
 }

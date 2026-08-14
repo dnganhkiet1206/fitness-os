@@ -144,3 +144,59 @@ export function seeded(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/**
+ * Which asks are waiting for an answer, alongside the beliefs they will update.
+ *
+ * ── why the bookkeeping is here and not in the store ──
+ *
+ * Because it was in the store, and it was wrong. Attribution is the part of a
+ * bandit that decides what it learns, and it is the part that looks like
+ * plumbing — so it sat in a React module next to `AsyncStorage`, where nothing
+ * could run a day through it and see the answer. The bug it hid: one pending
+ * slot for the whole day, so a morning ask about meals was **overwritten** by an
+ * evening ask about training. The meal that was then logged credited nothing,
+ * and training took a loss for a day it had barely been mentioned. The model
+ * learned the reverse of what happened, in the most ordinary shape of a day.
+ *
+ * Here, `tools/personalize.mjs` plays that exact day through and checks who got
+ * the credit.
+ */
+export interface AskLedger<K extends string> {
+  arms: Record<K, Arm>;
+  /** the day each option was last put in front of the person */
+  asked: Partial<Record<K, string>>;
+}
+
+/** Koa asked about `key` today. Idempotent — a re-render is not a second ask. */
+export function noteAsk<K extends string>(l: AskLedger<K>, key: K, date: string): AskLedger<K> {
+  if (l.asked[key] === date) return l;
+  return { arms: l.arms, asked: { ...l.asked, [key]: date } };
+}
+
+/** They did it. Credits the ask only if it is the one still outstanding today. */
+export function credit<K extends string>(l: AskLedger<K>, key: K, date: string): AskLedger<K> {
+  if (l.asked[key] !== date) return l;
+  const asked = { ...l.asked };
+  delete asked[key];
+  return { arms: { ...l.arms, [key]: reward(l.arms[key], true) }, asked };
+}
+
+/**
+ * A new day: everything asked on an older day went unanswered, and that is a
+ * miss.
+ *
+ * A learner that records only its successes convinces itself everything works,
+ * and the failures are the half that makes the arithmetic mean anything.
+ */
+export function settle<K extends string>(l: AskLedger<K>, today: string): AskLedger<K> {
+  const stale = (Object.keys(l.asked) as K[]).filter((k) => l.asked[k] !== today);
+  if (stale.length === 0) return l;
+  const arms = { ...l.arms };
+  const asked = { ...l.asked };
+  for (const k of stale) {
+    arms[k] = reward(arms[k], false);
+    delete asked[k];
+  }
+  return { arms, asked };
+}

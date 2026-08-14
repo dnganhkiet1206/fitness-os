@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { todayKeys } from '@/lib/today-keys';
 import { localDateStr } from '@/lib/local-date';
 import { offlineNow } from '@/lib/offline';
 import { foldRecentMeals } from '@/lib/recent-meals';
@@ -609,17 +610,14 @@ export function useUpdateMealItemServings() {
  * Everything that changes when a logged food does.
  *
  * `useInvalidateToday` is a hook and cannot be called from inside a mutation's
- * callback, so the keys it shares are repeated here. They are the same keys —
- * if one list grows a member the other has to as well, which is exactly how the
- * diary came to not refresh after a meal was logged.
+ * callback, which is why this exists at all — but the *keys* are no longer
+ * repeated here. They were, and the two copies drifted twice; the second time
+ * it left the streak grey for somebody who had already logged.
  */
 function invalidateLogQueries(qc: ReturnType<typeof useQueryClient>, userId?: string) {
-  const dateStr = localDateStr();
-  qc.invalidateQueries({ queryKey: ['today_meals_detail', userId, dateStr] });
-  qc.invalidateQueries({ queryKey: ['today_meals', userId, dateStr] });
-  qc.invalidateQueries({ queryKey: ['daily_log', userId, dateStr] });
-  qc.invalidateQueries({ queryKey: ['readiness_history', userId] });
-  qc.invalidateQueries({ queryKey: ['recent_foods', userId] });
+  for (const key of todayKeys(userId, localDateStr())) {
+    qc.invalidateQueries({ queryKey: key });
+  }
 }
 
 /**

@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { seeded } from '@/lib/bandit';
 import { localDateStr } from '@/lib/local-date';
 import { mascotLine, type MascotThing } from '@/lib/mascot-message';
-import { noteAsked, rankQuests, settleStale, usePersonalModel } from '@/lib/personal-model';
+import { rankQuests, settleStale, usePersonalModel } from '@/lib/personal-model';
 import { DEFAULT_MASCOT_ID, getMascot, isUnlocked, MASCOTS } from '@/lib/mascots';
 
 const ENABLED_KEY = 'ascnd_mascot_enabled';
@@ -107,7 +107,13 @@ export function useMascotSettings() {
  * better than a sentence — see the note in `mascot-message.ts` for what the old
  * ladder did with an unreadable day.
  */
-export function useMascotMessage(): string | null {
+export interface MascotSay {
+  text: string | null;
+  /** what is being asked for, or null — the widget reports it once it is drawn */
+  gap: MascotThing | null;
+}
+
+export function useMascotMessage(): MascotSay {
   const i18n = useI18n();
   const { data: log, isSuccess: logOk } = useDailyLog();
   const { data: meals, isSuccess: mealsOk } = useTodayMeals();
@@ -158,15 +164,7 @@ export function useMascotMessage(): string | null {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [log, meals, waterMl, profile, logOk, mealsOk, waterOk, order]);
 
-  /* The ask is recorded here rather than inside the memo: a memo that writes to
-     a store is a render with a side effect, and React is allowed to run it
-     twice. */
-  useEffect(() => {
-    const gap = line.kind === 'ask' || line.kind === 'notice' ? line.gap : null;
-    if (gap) noteAsked(gap, today);
-  }, [line, today]);
-
-  return useMemo(() => {
+  const text = useMemo(() => {
 
     const WIN: Record<MascotThing, string> = {
       sleep: i18n.nMascotWinSleep,
@@ -201,6 +199,16 @@ export function useMascotMessage(): string | null {
         return i18n.nMascotPraise;
     }
   }, [i18n, line]);
+
+  /* The gap travels with the sentence instead of being recorded here.
+     Composing a sentence is not the same as somebody reading one, and this hook
+     runs anywhere the mascot is touched at all — including inside the error card,
+     which draws no bubble. Reporting from here taught the model that asks nobody
+     saw had failed. `mascot.tsx` reports it, because that is where it appears. */
+  return useMemo(
+    () => ({ text, gap: line.kind === 'ask' || line.kind === 'notice' ? line.gap : null }),
+    [text, line],
+  );
 }
 
 /**
@@ -245,7 +253,7 @@ export function useMascotMood(): MascotMood {
 export function useMascot() {
   const settings = useMascotSettings();
   const { data: stats } = useUnlockStats();
-  const message = useMascotMessage();
+  const say = useMascotMessage();
   const mood = useMascotMood();
 
   const unlockStats = stats ?? { workouts: 0, meals: 0 };
@@ -258,5 +266,5 @@ export function useMascot() {
     unlocked: isUnlocked(m, unlockStats),
   }));
 
-  return { ...settings, mascot, catalog, unlockStats, message, mood };
+  return { ...settings, mascot, catalog, unlockStats, message: say.text, messageGap: say.gap, mood };
 }

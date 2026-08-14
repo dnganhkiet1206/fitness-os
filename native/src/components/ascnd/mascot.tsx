@@ -21,6 +21,8 @@ import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useMascot } from '@/hooks/use-mascot';
+import { localDateStr } from '@/lib/local-date';
+import { noteAsked } from '@/lib/personal-model';
 import { useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
 import { DAILY_QUESTS, levelFromXp } from '@/lib/mascot-room';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -39,7 +41,7 @@ import { useI18n } from '@/hooks/use-app-settings';
 export function Mascot() {
   const i18n = useI18n();
   const focused = useIsFocused();
-  const { enabled, mascot, message, mood } = useMascot();
+  const { enabled, mascot, message, messageGap, mood } = useMascot();
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();
   const quests = useDailyQuests();
@@ -150,6 +152,13 @@ export function Mascot() {
   useEffect(() => {
     bubble.value = withSpring(bubbleVisible && message ? 1 : 0, { stiffness: 260, damping: 20 });
   }, [bubbleVisible, message, bubble]);
+
+  /* The one place an ask counts as having been made: on screen, in a bubble
+     somebody can read. The learner is fed from here rather than from the hook
+     that writes the sentence — see `noteAsked`. */
+  useEffect(() => {
+    if (bubbleVisible && message && messageGap) noteAsked(messageGap, localDateStr());
+  }, [bubbleVisible, message, messageGap]);
 
   const bodyStyle = useAnimatedStyle(() => ({
     transform: [

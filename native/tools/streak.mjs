@@ -212,6 +212,43 @@ for (const [label, dates, frozen, wantCount, wantToday] of FREEZE_CASES) {
   }
 }
 
+/* ── 1d: the streak has to be refreshed by the thing that changes it ──
+
+   `mascot_streak` is derived from `daily_logs`, and for one release nothing
+   invalidated it: logging the first meal of the day left the flame grey in the
+   header and Koa wearing the worried face all evening, for somebody who had
+   already logged. The number was right in the database and wrong on the screen.
+
+   The cause was two hand-maintained lists of query keys — a hook for screens and
+   a plain function for mutation callbacks — which the file itself already warned
+   had drifted once before. So the rule is not "remember to add the key", it is
+   that there is only one list. */
+if (!TZ) {
+  const keys = read('src/lib/today-keys.ts');
+  if (!/'mascot_streak'/.test(keys)) {
+    problems.push(
+      "today-keys: thiếu 'mascot_streak' — ghi bữa đầu tiên trong ngày xong, ngọn lửa vẫn xám " +
+        'và Koa vẫn giữ mặt lo, cho người đã ghi rồi',
+    );
+  }
+  for (const f of ['src/hooks/useTodayData.ts', 'src/hooks/use-nutrition.ts']) {
+    const src = read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    // anchored on the *definition*: an unanchored match found a call site
+    const block = src.match(/function (useInvalidateToday|invalidateLogQueries)\([\s\S]*?\n\}/);
+    if (!block) {
+      problems.push(`${f}: không tìm thấy hàm làm mới hôm nay`);
+      continue;
+    }
+    if (!/todayKeys\(/.test(block[0])) {
+      problems.push(`${f}: không dùng todayKeys — danh sách khoá lại có hai bản, và hai bản đã lệch nhau hai lần`);
+    }
+    const literals = [...block[0].matchAll(/queryKey: \[/g)].length;
+    if (literals > 0) {
+      problems.push(`${f}: còn ${literals} khoá viết thẳng trong hàm làm mới — phải nằm trong today-keys`);
+    }
+  }
+}
+
 /* ── 2: the same cases, from somewhere the clocks move ──
    A year of consecutive days crosses every transition a timezone has, so a
    `Math.round(diff) === 1` that cannot survive a 23- or 25-hour day comes out
