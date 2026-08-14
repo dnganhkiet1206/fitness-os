@@ -184,7 +184,21 @@ export function CardPeek({
   }, [signal]);
 
   const figure = useAnimatedStyle(() => {
-    const f = peekFrame(rise.value, lean.value);
+    /*
+      ── under Reduce Motion, nothing may travel ──
+
+      The comment above says the figure "fades in at its resting spot", and for
+      one release it did not: `peekFrame` takes the same `rise` that drives the
+      fade, so the reduced path animated `translateY` from a full band height to
+      zero as well. That is a 58-point slide in 200ms — a *faster* movement than
+      the spring it was supposed to replace, delivered to the person who asked
+      the operating system for less of exactly that.
+
+      So the reduced path pins the frame at its resting position and lets only
+      opacity move. Same information, no motion, which is the trade the setting
+      is asking for.
+    */
+    const f = peekFrame(reduced ? 1 : rise.value, reduced ? 0 : lean.value);
     return {
       opacity: reduced ? rise.value : 1,
       transform: [

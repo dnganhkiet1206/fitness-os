@@ -174,6 +174,7 @@ const STEPS = [
   ['chuỗi ngày', 'node', ['tools/streak.mjs']],
   ['khuôn mặt', 'node', ['tools/mascot-face.mjs']],
   ['mô hình cá nhân', 'node', ['tools/personalize.mjs']],
+  ['icon tô đặc', 'node', ['tools/icon-fill.mjs']],
 ];
 
 let failed = 0;

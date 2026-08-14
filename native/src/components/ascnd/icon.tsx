@@ -52,7 +52,22 @@ export function Icon({
       size={size}
       color={color ?? iconTint(LucideCmp) ?? colors.mutedForeground}
       strokeWidth={strokeWidth}
-      fill={fill}
+      /*
+        ── omitted, never passed as `undefined` ──
+
+        This read `fill={fill}`, and it turned **every icon in the app** into a
+        black blob.
+
+        Lucide builds its props as `{ ...defaultAttributes, ...customAttrs }`,
+        where `defaultAttributes.fill` is the string `'none'` and `customAttrs`
+        is the rest of what it was handed. A key that is present and `undefined`
+        still wins a spread — so `fill: 'none'` was overwritten with
+        `fill: undefined`, and an SVG shape with no fill specified is not
+        unfilled, it is **black**. Every outline icon filled itself in.
+
+        Spreading conditionally is the whole fix: absent means absent.
+      */
+      {...(fill ? { fill } : null)}
     />
   );
 }
