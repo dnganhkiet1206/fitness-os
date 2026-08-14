@@ -56,3 +56,36 @@ export function useKoaContext(): KoaContext {
     visible: koaOnScreen(),
   };
 }
+
+/**
+ * The same context with the two fields that describe *this instant* re-read.
+ *
+ * ── why a captured context is not a current one ──
+ *
+ * Every emitter holds this object across time. It has to: `useKoaContext`
+ * returns a fresh object on every render, so listing it as an effect dependency
+ * would run the effect on every render, and each emitter therefore reads it
+ * through a ref or a closure. That is right for the fields it snapshots — the
+ * streak and the day's totals come out of the query cache and do not change
+ * between the render and the event.
+ *
+ * Two fields are not like that, and both were wrong in ways that only showed up
+ * at the moments they mattered:
+ *
+ *   · **`hour`.** `quest_done` and `streak_at_risk` are decided on the clock,
+ *     and the app is left open. Somebody logging at ten past midnight was being
+ *     judged on the hour of whenever the dashboard last re-rendered — which on
+ *     a screen nobody has touched is the hour they opened it.
+ *   · **`visible`.** The record celebration is the case that forced this: the
+ *     figure is mounted *by the same state change* that fires the event, so at
+ *     the render the context was built from there was no Koa on screen, and the
+ *     biggest moment in the app decided nobody was looking and said nothing.
+ *
+ * So a context is refreshed at the point of use rather than at the point of
+ * capture. `tools/koa-decide.mjs` keeps every emitter doing it — the debug
+ * screen excepted, which builds contexts by hand precisely so it can ask what
+ * happens when nobody is watching.
+ */
+export function refreshKoaContext(ctx: KoaContext): KoaContext {
+  return { ...ctx, hour: new Date().getHours(), visible: koaOnScreen() };
+}

@@ -5,6 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { trainingMinutes, type LoggedSet as TimedSet } from '@/lib/activity';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr, localDayRangeISO } from '@/lib/local-date';
+import {
+  PR_HISTORY,
+  bestsFrom,
+  findRecords,
+  setsFromJson,
+  type PersonalRecord,
+} from '@/lib/personal-record';
 import { useAuth } from './use-auth';
 import { useInvalidateToday } from './useTodayData';
 
@@ -259,6 +266,42 @@ export function useLogWorkoutSession() {
       const today = localDateStr();
       const when = date && date !== today ? new Date(`${date}T12:00:00`) : null;
 
+      /*
+        ── did any of this beat anything ──
+
+        Read before the insert, or the session being saved would be part of its
+        own history and every set in it would tie its own record.
+
+        `pr_detected` was written as the literal `false` here for as long as the
+        column has existed, which left two medals unearnable and a badge that
+        could never light — see `lib/personal-record.ts`. The rules live there;
+        this is the one place in the app that writes a session, so it is the one
+        place that has to ask.
+
+        A failure to read history is not a failure to save a workout. If the
+        query errors the records come out empty, the session is written with
+        `pr_detected: false`, and the worst outcome is a record that goes
+        unremarked — against losing the workout entirely.
+      */
+      let records: PersonalRecord[] = [];
+      try {
+        const { data: past } = await supabase
+          .from('workout_sessions')
+          .select('sets')
+          .eq('user_id', user.id)
+          .order('date_time', { ascending: false })
+          .limit(PR_HISTORY);
+        if (past && past.length > 0) {
+          const bests = bestsFrom(past.flatMap((row) => setsFromJson(row.sets)));
+          records = findRecords(
+            sets.map((s) => ({ exerciseName: s.exerciseName, weight: s.weight, reps: s.reps })),
+            bests,
+          );
+        }
+      } catch {
+        records = [];
+      }
+
       const { error } = await supabase.from('workout_sessions').insert({
         user_id: user.id,
         ...(when ? { date_time: when.toISOString() } : {}),
@@ -275,7 +318,7 @@ export function useLogWorkoutSession() {
         })),
         volume_load: Math.round(sets.reduce((sum, s) => sum + s.weight * s.reps, 0)),
         pain_flags: [],
-        pr_detected: false,
+        pr_detected: records.length > 0,
       });
       if (error) throw error;
 
@@ -291,6 +334,12 @@ export function useLogWorkoutSession() {
       const day = date || today;
       await recomputeDailyLog(user.id, day);
       if (day !== today) await recomputeDailyLog(user.id, today);
+
+      /* Handed back rather than announced from in here. Koa reacting to this
+         is worth nothing unless somebody is looking at Koa, and this hook has
+         no idea what is on screen — the sheet that called it does, and it is
+         the one that puts a figure up. See `app/log-workout.tsx`. */
+      return { records };
     },
     onSuccess: () => invalidate(),
   });

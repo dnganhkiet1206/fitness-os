@@ -7,7 +7,7 @@ import { useAppSettings } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
 import { AWARD_TEXT, CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr, localDayRangeISO, parseLocalDate } from '@/lib/local-date';
-import { useKoaContext } from '@/hooks/use-koa-context';
+import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { TIER_MAGNITUDE } from '@/lib/koa-event';
 import { emitKoa } from '@/lib/koa-stage';
 import { streakFrom, STREAK_WINDOW } from '@/lib/streak';
@@ -135,7 +135,7 @@ export function useCheckAwards() {
           magnitude: TIER_MAGNITUDE[def.tier] ?? 0.5,
           label: text.title[lang],
         },
-        koaCtxRef.current,
+        refreshKoaContext(koaCtxRef.current),
       );
     }
   };

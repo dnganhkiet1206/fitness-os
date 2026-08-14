@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { CalendarDays, Check, Plus, X } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,12 +18,21 @@ import {
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
+import { RecordCelebration } from '@/components/ascnd/record-celebration';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
+import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useExercises, useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
+import { emitKoa } from '@/lib/koa-stage';
+import {
+  exerciseKey,
+  headlineRecord,
+  recordsMagnitude,
+  type PersonalRecord,
+} from '@/lib/personal-record';
 import { toast } from '@/lib/toast';
 import { effortRange } from '@/lib/prescription';
 import { localDateStr, routineIndex } from '@/lib/local-date';
@@ -223,6 +232,34 @@ export default function LogWorkoutSheet() {
     This screen's job is turning text fields into kilograms.
   */
   const log = useLogWorkoutSession();
+
+  /*
+    ── the one moment worth stopping the screen for ──
+
+    A session that beat something is the largest event a strength app has, and
+    until now it left the same grey toast as any other save — the column that
+    would have said so was written as `false` on every row ever inserted
+    (`lib/personal-record.ts`). Now it is computed, and when it comes back
+    non-empty the sheet holds for a beat with Koa instead of closing.
+
+    Nothing changes for an ordinary session: no records, no overlay, one frame,
+    the toast, gone.
+  */
+  const [records, setRecords] = useState<PersonalRecord[]>([]);
+  const koaCtx = useKoaContext();
+  const koaCtxRef = useRef(koaCtx);
+  koaCtxRef.current = koaCtx;
+  const leaving = useRef(false);
+
+  const finish = () => {
+    /* Both the tap and the timer land here, and the screen pops — a second
+       call would pop the screen behind it as well. */
+    if (leaving.current) return;
+    leaving.current = true;
+    router.back();
+    toast.success(i18n.logWorkoutSaved);
+  };
+
   const save = useMutation({
     mutationFn: () =>
       log.mutateAsync({
@@ -235,13 +272,45 @@ export default function LogWorkoutSheet() {
           reps: Number(s.reps),
         })),
       }),
-    onSuccess: () => {
+    onSuccess: (res) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
-      toast.success(i18n.logWorkoutSaved);
+      if (res.records.length > 0) setRecords(res.records);
+      else finish();
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  /*
+    ── announced after the figure exists, not before ──
+
+    The engine's first question is whether anybody can see a reaction
+    (`koaOnScreen()`), and on this screen the answer changes *because of* this
+    state: the overlay is what puts a Koa on the sheet. Emitting from
+    `onSuccess` would ask before mounting it, get "không ai đang nhìn", and
+    silently drop the largest moment the app has.
+
+    From an effect it runs after the commit, and after the figure's own mount
+    effect — a child's effects run before its parent's — so the presence counter
+    is already up. `refreshKoaContext` is what re-reads it; the context captured
+    at render time still says nobody is there.
+
+    The id is the day, the movement and the number, so re-saving the same
+    workout does not celebrate it twice, while genuinely beating 90 and then 95
+    on the same afternoon is two events.
+  */
+  useEffect(() => {
+    if (records.length === 0) return;
+    const head = headlineRecord(records);
+    emitKoa(
+      {
+        id: `pr:${localDateStr()}:${head ? exerciseKey(head.exercise) : '?'}:${head?.value ?? 0}`,
+        kind: 'personal_record',
+        magnitude: recordsMagnitude(records),
+        label: head?.exercise,
+      },
+      refreshKoaContext(koaCtxRef.current),
+    );
+  }, [records]);
 
   // Stays disabled after success so the closing sheet can't double-submit
   const canSave = validSets.length > 0 && !save.isPending && !save.isSuccess;
@@ -434,6 +503,13 @@ export default function LogWorkoutSheet() {
           )}
         </PressScale>
       </ScrollView>
+
+      {/* Over the form rather than instead of it: the sheet is popping in a
+          moment anyway, and unmounting a screen's contents underneath an
+          overlay is how a keyboard dismissal animates into an empty page. */}
+      {records.length > 0 ? (
+        <RecordCelebration records={records} onDone={finish} />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }

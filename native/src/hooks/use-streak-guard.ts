@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { useKoaContext } from '@/hooks/use-koa-context';
+import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useDailyStreak, useSpendFreeze } from '@/hooks/use-mascot-room';
 import { comebackMagnitude, streakMagnitude } from '@/lib/koa-event';
 import { emitKoa } from '@/lib/koa-stage';
@@ -76,7 +76,7 @@ export function useStreakGuard() {
           magnitude: comebackMagnitude(missed.length),
           days: missed.length,
         },
-        ctx,
+        refreshKoaContext(ctx),
       );
     }
 
@@ -96,7 +96,7 @@ export function useStreakGuard() {
               magnitude: streakMagnitude(data.count),
               days: data.count,
             },
-            ctx,
+            refreshKoaContext(ctx),
           );
         },
       });

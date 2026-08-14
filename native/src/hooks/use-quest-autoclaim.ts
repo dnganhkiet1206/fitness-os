@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import { useEntitlement, type Tier } from '@/hooks/use-entitlement';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
-import { useKoaContext } from '@/hooks/use-koa-context';
+import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useClaimReward, useMascotWallet } from '@/hooks/use-mascot-room';
 import { emitKoa } from '@/lib/koa-stage';
 import { askPeek, levelStep, noteDone } from '@/lib/personal-model';
@@ -113,7 +113,7 @@ export function useQuestAutoClaim() {
         magnitude: Math.min(0.5 + (level - (from ?? level)) * 0.1 + level * 0.02, 0.9),
         label: String(level),
       },
-      koaCtx,
+      refreshKoaContext(koaCtx),
     );
     // `koaCtx` is a fresh object each render and must not be a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -158,7 +158,7 @@ export function useQuestAutoClaim() {
         if (quests.doneCount >= quests.total) {
           emitKoa(
             { id: `day:${quests.today}`, kind: 'day_complete', magnitude: 0.6 },
-            koaCtx,
+            refreshKoaContext(koaCtx),
           );
         }
         /* And even then, not always. `askPeek` is the rationing — a cooldown so
