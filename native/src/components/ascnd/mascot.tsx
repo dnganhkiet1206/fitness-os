@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { router, useIsFocused } from 'expo-router';
 import { Coins, X } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -21,22 +21,41 @@ import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useMascot } from '@/hooks/use-mascot';
+import { useMascotEmotion } from '@/hooks/use-mascot-emotion';
+import { noticeAmplitude, presenceMotion } from '@/lib/koa-idle';
 import { localDateStr } from '@/lib/local-date';
+import type { MascotEmotion } from '@/lib/mascot-emotion';
 import { noteAsked, notePraised } from '@/lib/personal-model';
 import { useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
 import { DAILY_QUESTS, levelFromXp } from '@/lib/mascot-room';
 import { useI18n } from '@/hooks/use-app-settings';
 
 /**
- * Floating fitness companion — "2.5D": the emoji artwork is animated in
- * real 3D space (perspective + rotateX/rotateY), with squash & stretch,
- * a ground shadow that reacts to hover height and a character-colored
- * aura. All transforms run on the UI thread via Reanimated.
+ * The companion on the home screen — present according to the day, not on a
+ * loop.
  *
- * Everything here idles forever by design, and this sits on the app's home
- * screen — a tab the user leaves mounted all day. So the float, the sway,
- * the quirk timer and the character's own clock all stop the moment the
- * tab loses focus; an unwatched buddy costs nothing.
+ * ── what this used to be, and why it changed ──
+ *
+ * It floated for ever, swayed ±9° for ever, and fired a random quirk — a hop,
+ * a double-nod, or a full 360° flip — every six to fourteen seconds, gated on
+ * nothing but the tab being focused. The face had been state-driven for a
+ * while; the body was not, so the two halves of one character disagreed. At
+ * eleven at night, with the day logged, Koa wore the `sleep` face and did a
+ * backflip every ten seconds.
+ *
+ * Now the body reads the same state the face does. Two kinds of movement and
+ * no third: a **breath** whose depth and pace come from the emotion, and a
+ * **notice** — one movement when the state actually changes, sized by how big
+ * the change was. The rules are `lib/koa-idle.ts`, kept out of here so they can
+ * be run through a week of states and read.
+ *
+ * The flip did not disappear; it moved to the tap. A somersault somebody asked
+ * for is delight, and the same somersault on a timer is wallpaper.
+ *
+ * Everything still stops when the tab loses focus — an unwatched buddy costs
+ * nothing — and Reanimated's own `ReduceMotion.System` default means every
+ * `withTiming`/`withSpring`/`withRepeat` below already honours the accessibility
+ * setting without being told to.
  */
 export function Mascot() {
   const i18n = useI18n();
@@ -46,8 +65,19 @@ export function Mascot() {
   const { data: inventory } = useMascotInventory();
   const quests = useDailyQuests();
   const [bubbleVisible, setBubbleVisible] = useState(true);
-  const tired = mood === 'tired';
   const level = levelFromXp(wallet?.xp ?? 0);
+
+  /*
+    The same emotion the figure is drawing. Reading it here is what ends the
+    disagreement: `MascotFigure` resolves it internally for the face, so the
+    body was the only part of the character that had never been told.
+  */
+  const emotion = useMascotEmotion();
+  /* Something is genuinely for the user: coins already earned and uncollected,
+     or a sentence on screen nobody has read. Not a performance — it only stops
+     the breath settling all the way down. */
+  const waiting = (quests.unclaimedCoins > 0 || (!!message && bubbleVisible)) && quests.ready;
+  const presence = presenceMotion(emotion, waiting);
   // The buddy wears its purchased outfit everywhere, not just in its room
   const equippedOutfits = new Set(
     (inventory ?? []).filter((r) => r.equipped).map((r) => r.item_key),
@@ -57,97 +87,90 @@ export function Mascot() {
 
   const hover = useSharedValue(0); // 0..1 (0 = ground, 1 = top of float)
   const entrance = useSharedValue(0); // 0..1
-  const tiltY = useSharedValue(0); // deg — slow look-around
   const nod = useSharedValue(0); // deg rotateX
-  const droop = useSharedValue(0); // deg — forward slump when tired
+  const droop = useSharedValue(0); // deg — forward slump, from the state
   const spin = useSharedValue(0); // deg rotateY for flips
   const squashX = useSharedValue(1);
   const squashY = useSharedValue(1);
   const bubble = useSharedValue(0);
 
-  // Idle life: float loop + slow look-around sway
+  // Arrival, once.
   useEffect(() => {
     entrance.value = withDelay(350, withSpring(1, { stiffness: 200, damping: 13 }));
   }, [entrance]);
 
+  /*
+    ── the breath ──
+
+    One loop, and its two numbers come from the state rather than from here.
+    `floatPt: 0` is a real answer — a flat, tired character does not rise at all
+    — so the loop is not started, and the value is put back to rest instead of
+    being left wherever the last state's breath had reached.
+  */
   useEffect(() => {
-    if (!focused) return;
+    if (!focused || presence.floatPt === 0) {
+      cancelAnimation(hover);
+      hover.value = withTiming(0, { duration: 400 });
+      return;
+    }
+    const half = presence.breathMs / 2;
     hover.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 1700, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 1700, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: half, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: half, easing: Easing.inOut(Easing.sin) }),
       ),
       -1,
-    );
-    tiltY.value = withRepeat(
-      withSequence(
-        withTiming(9, { duration: 2600, easing: Easing.inOut(Easing.quad) }),
-        withTiming(-9, { duration: 2600, easing: Easing.inOut(Easing.quad) }),
-      ),
-      -1,
-      true,
     );
     return () => {
       // a repeat runs until it is cancelled — leaving the tab is not enough
       cancelAnimation(hover);
-      cancelAnimation(tiltY);
       hover.value = 0;
-      tiltY.value = 0;
     };
-  }, [focused, hover, tiltY]);
+  }, [focused, presence.floatPt, presence.breathMs, hover]);
 
-  // Tired buddy slumps forward and blinks slow and heavy
+  // The slump belongs to the state now, not to one of the three moods.
   useEffect(() => {
-    droop.value = withSpring(tired ? 10 : 0, { stiffness: 120, damping: 14 });
-  }, [tired, droop]);
+    droop.value = withSpring(presence.droopDeg, { stiffness: 120, damping: 14 });
+  }, [presence.droopDeg, droop]);
 
-  // Random quirks so it feels alive, not looping: a hop, a nod, or a flip
-  // (paused while tired — no energy for tricks)
+  /*
+    ── the notice ──
+
+    The whole of the character's spontaneity, and none of it is spontaneous:
+    one movement when the state changes, sized by how far it moved. The random
+    quirk timer that used to live here is gone, and with it the 360° flip on a
+    stranger's schedule — a movement on a timer means nothing, which is the only
+    kind this removes. The flip is on the tap instead.
+
+    `seen` starts as `null` so the first reading is a baseline rather than a
+    change: on mount the entrance spring is already playing, and a notice over
+    the top of it is the character reacting to having appeared.
+  */
+  const seen = useRef<MascotEmotion | null>(null);
   useEffect(() => {
-    if (tired || !focused) return;
-    let alive = true;
-    const doQuirk = () => {
-      if (!alive) return;
-      const roll = Math.random();
-      if (roll < 0.45) {
-        // hop with squash & stretch
-        squashY.value = withSequence(
-          withTiming(0.82, { duration: 110 }),
-          withSpring(1.12, { stiffness: 400, damping: 9 }),
-          withSpring(1, { stiffness: 260, damping: 14 }),
-        );
-        squashX.value = withSequence(
-          withTiming(1.14, { duration: 110 }),
-          withSpring(0.92, { stiffness: 400, damping: 9 }),
-          withSpring(1, { stiffness: 260, damping: 14 }),
-        );
-      } else if (roll < 0.8) {
-        // curious double-nod (rotateX in perspective)
-        nod.value = withSequence(
-          withTiming(14, { duration: 140 }),
-          withTiming(-6, { duration: 160 }),
-          withTiming(10, { duration: 140 }),
-          withTiming(0, { duration: 180 }),
-        );
-      } else {
-        // full 3D flip
-        spin.value = withSequence(
-          withTiming(360, { duration: 650, easing: Easing.out(Easing.cubic) }),
-          withTiming(0, { duration: 0 }),
-        );
-      }
-      schedule();
-    };
-    let timer: ReturnType<typeof setTimeout>;
-    const schedule = () => {
-      timer = setTimeout(doQuirk, 6000 + Math.random() * 8000);
-    };
-    schedule();
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [tired, focused, squashX, squashY, nod, spin]);
+    const amp = noticeAmplitude(seen.current, emotion);
+    seen.current = emotion;
+    if (amp === 0 || !focused) return;
+    /* A look up and back — the movement of noticing, scaled. Bigger changes
+       also get a small lift, which is what makes waking up for a celebration
+       read differently from settling into `rested`. */
+    nod.value = withSequence(
+      withTiming(-6 - amp * 10, { duration: 180, easing: Easing.out(Easing.quad) }),
+      withSpring(0, { stiffness: 180, damping: 12 }),
+    );
+    if (amp > 0.5) {
+      squashY.value = withSequence(
+        withTiming(0.94, { duration: 90 }),
+        withSpring(1.06, { stiffness: 380, damping: 10 }),
+        withSpring(1, { stiffness: 260, damping: 14 }),
+      );
+      squashX.value = withSequence(
+        withTiming(1.06, { duration: 90 }),
+        withSpring(0.95, { stiffness: 380, damping: 10 }),
+        withSpring(1, { stiffness: 260, damping: 14 }),
+      );
+    }
+  }, [emotion, focused, nod, squashX, squashY]);
 
   useEffect(() => {
     bubble.value = withSpring(bubbleVisible && message ? 1 : 0, { stiffness: 260, damping: 20 });
@@ -172,7 +195,7 @@ export function Mascot() {
     transform: [
       { perspective: 320 },
       { translateY: interpolate(hover.value, [0, 1], [0, -7]) },
-      { rotateY: `${tiltY.value + spin.value}deg` },
+      { rotateY: `${spin.value}deg` },
       { rotateX: `${nod.value + droop.value}deg` },
       { scale: entrance.value * levelScale },
       { scaleX: squashX.value },

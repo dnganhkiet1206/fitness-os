@@ -177,6 +177,7 @@ const STEPS = [
   ['icon tô đặc', 'node', ['tools/icon-fill.mjs']],
   ['quyết định Koa', 'node', ['tools/koa-decide.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
+  ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],
 ];
 
 let failed = 0;
