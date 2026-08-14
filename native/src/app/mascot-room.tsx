@@ -67,6 +67,7 @@ import { habitFor, usePersonalModel } from '@/lib/personal-model';
 import { DEV_EMOTIONS, setDevEmotion } from '@/hooks/use-mascot-emotion';
 import {
   useBuyItem,
+  useBuyFreeze,
   useClaimReward,
   useDailyStreak,
   useMascotInventory,
@@ -81,6 +82,8 @@ import { localDateStr } from '@/lib/local-date';
 import {
   DAILY_QUESTS,
   ENERGY_SIGNALS,
+  FREEZE_MAX,
+  FREEZE_PRICE,
   LEVEL_XP,
   RANKS,
   SHOP_CATEGORIES,
@@ -186,6 +189,11 @@ export default function MascotRoomScreen() {
   /* The one habit worth saying out loud: the strongest clock Koa has found.
      Not a list — a list of five inferences reads as surveillance, and one
      reads as somebody paying attention. */
+  const freezeHeld = streakData?.held ?? 0;
+  const freezeUsed = streakData?.frozen.length ?? 0;
+  const freezeFull = freezeHeld >= FREEZE_MAX;
+  const buyFreeze = useBuyFreeze();
+
   const personal = usePersonalModel();
   const learned = useMemo(() => {
     const found = (Object.keys(personal.hours) as QuestKey[])
@@ -616,6 +624,54 @@ export default function MascotRoomScreen() {
         </View>
       </GlassCard>
 
+      {/*
+        ── the freeze, next to the streak it protects ──
+
+        Not in the shop. The shop dresses Koa in whatever you are looking at and
+        frames a camera on it; there is nothing to try on here, and an item that
+        only makes sense beside a number belongs beside that number. Somebody
+        reading "12 days" is the person who wants to know it can survive a
+        Tuesday.
+      */}
+      <GlassCard style={styles.freezeCard}>
+        <View style={styles.freezeHead}>
+          <View style={styles.freezeIcon}>
+            <Icon icon={Snowflake} size={18} color={colors.metricBlue} />
+          </View>
+          <View style={styles.freezeText}>
+            <Text style={styles.freezeTitle}>{i18n.nFreezeTitle}</Text>
+            <Text style={styles.freezeHeld}>
+              {i18n.nFreezeHeld.replace('{n}', String(freezeHeld)).replace('{max}', String(FREEZE_MAX))}
+            </Text>
+          </View>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.nFreezeBuy.replace('{n}', String(FREEZE_PRICE))}
+            disabled={freezeFull || buyFreeze.isPending || balance < FREEZE_PRICE}
+            onPress={() => {
+              Haptics.selectionAsync();
+              buyFreeze.mutate();
+            }}
+            style={[
+              styles.freezeBuy,
+              (freezeFull || balance < FREEZE_PRICE) && styles.freezeBuyOff,
+            ]}>
+            <Text style={styles.freezeBuyText}>
+              {freezeFull ? i18n.nFreezeFull : i18n.nFreezeBuy.replace('{n}', String(FREEZE_PRICE))}
+            </Text>
+          </PressScale>
+        </View>
+        <Text style={styles.freezeHint}>{i18n.nFreezeHint}</Text>
+        {freezeUsed > 0 ? (
+          <Text style={styles.freezeSaved}>
+            {(freezeUsed === 1 ? i18n.nFreezeSaved : i18n.nFreezeSavedPlural).replace(
+              '{n}',
+              String(freezeUsed),
+            )}
+          </Text>
+        ) : null}
+      </GlassCard>
+
       {/* Rank journey — the whole ladder at a glance */}
       <GlassCard style={styles.journeyCard}>
         <View style={styles.journeyHead}>
@@ -960,6 +1016,31 @@ const styles = StyleSheet.create({
   levelFill: { height: '100%', borderRadius: 3 },
   levelHint: { ...type.caption, color: colors.mutedForeground },
   learned: { ...type.caption, color: colors.metricBlue, marginTop: 4 },
+  freezeCard: { gap: spacing.xs },
+  freezeHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  freezeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(88,166,255,0.12)',
+  },
+  freezeText: { flex: 1, minWidth: 0 },
+  freezeTitle: { ...type.headline, color: colors.foreground },
+  freezeHeld: { ...type.caption, color: colors.mutedForeground },
+  freezeBuy: {
+    height: 36,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  freezeBuyOff: { opacity: 0.45 },
+  freezeBuyText: { ...type.caption, fontWeight: '700', color: colors.foreground },
+  freezeHint: { ...type.caption, color: colors.mutedForeground },
+  freezeSaved: { ...type.caption, fontWeight: '600', color: colors.metricBlue },
   streakChip: {
     flexDirection: 'row',
     alignItems: 'center',

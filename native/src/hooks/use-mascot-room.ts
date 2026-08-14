@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { localDateStr } from '@/lib/local-date';
-import { streakFrom, STREAK_WINDOW, type Streak } from '@/lib/streak';
+import { missedDates, streakFrom, STREAK_WINDOW, type Streak } from '@/lib/streak';
 import { offlineNow } from '@/lib/offline';
 import {
   buyRefKey,
@@ -91,21 +91,100 @@ export function useMascotWallet() {
  * "is today safe" costs nothing, while deriving it elsewhere from `useDailyLog`
  * would be a second definition of a day counting.
  */
+export interface StreakState extends Streak {
+  /** days already covered by a spent freeze */
+  frozen: string[];
+  /** days between the last logged day and today that nothing covers yet */
+  missed: string[];
+  /** unspent freezes in the drawer */
+  held: number;
+}
+
 export function useDailyStreak() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['mascot_streak', user?.id, localDateStr()],
     enabled: !!user,
-    queryFn: async (): Promise<Streak> => {
-      const { data, error } = await supabase
-        .from('daily_logs')
-        .select('date')
-        .eq('user_id', user!.id)
-        .order('date', { ascending: false })
-        .limit(STREAK_WINDOW);
-      if (error) throw error;
-      return streakFrom((data ?? []).map((d) => d.date), localDateStr());
+    queryFn: async (): Promise<StreakState> => {
+      /* Both reads in one query function, because a streak computed from days
+         without the freezes that cover them is simply a wrong number — and two
+         separate queries would show it, briefly, every time one resolved
+         first. */
+      const [logs, freezes] = await Promise.all([
+        supabase
+          .from('daily_logs')
+          .select('date')
+          .eq('user_id', user!.id)
+          .order('date', { ascending: false })
+          .limit(STREAK_WINDOW),
+        supabase.from('streak_freezes').select('used_on').eq('user_id', user!.id),
+      ]);
+      if (logs.error) throw logs.error;
+
+      /* ── the freeze read is allowed to fail, and the streak is not ──
+
+         `streak_freezes` arrives with a migration, and migrations reach
+         production later than app builds do. Between those two moments the
+         table simply does not exist, and throwing here would take the **whole
+         streak** down with it — a number that has worked for months, removed
+         from the header of everybody's dashboard, to report the absence of a
+         feature nobody has yet.
+
+         This is the one place the app's "empty is not failed" rule bends, and
+         it bends the safe way: an unreadable freeze list is read as *no
+         freezes*, which is exactly what every account has today. The streak
+         count keeps coming from `daily_logs`, whose error still propagates, so
+         nothing about the number itself is being guessed. */
+      const dates = (logs.data ?? []).map((d) => d.date);
+      const rows = freezes.error ? [] : freezes.data ?? [];
+      const frozen = rows.map((r) => r.used_on).filter((d): d is string => !!d);
+      const held = rows.filter((r) => !r.used_on).length;
+      const today = localDateStr();
+
+      return {
+        ...streakFrom(dates, today, frozen),
+        frozen,
+        missed: missedDates(dates, today, frozen),
+        held,
+      };
     },
+  });
+}
+
+/**
+ * Buy one, at the price the server looks up.
+ *
+ * No amount and no price crosses the wire — see `buy_streak_freeze`. The
+ * mutation is what the button disables on, which is also the only thing
+ * standing between a double tap and two purchases; the database's hold limit is
+ * what makes that merely annoying rather than expensive.
+ */
+export function useBuyFreeze() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('buy_streak_freeze');
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mascot_wallet', user?.id] });
+      qc.invalidateQueries({ queryKey: ['mascot_streak', user?.id] });
+    },
+  });
+}
+
+/** Spend one on a day that would otherwise break the run. */
+export function useSpendFreeze() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (date: string) => {
+      const { data, error } = await supabase.rpc('use_streak_freeze', { p_date: date });
+      if (error) throw error;
+      return data as boolean;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mascot_streak', user?.id] }),
   });
 }
 

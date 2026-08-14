@@ -101,6 +101,13 @@ hai lần đo — và không có tài liệu nào nói ngưỡng đó là bao nh
 số sẽ đổi một lỗi nhìn thấy được lấy một luật lặng lẽ từ chối dữ liệu thật.
 Nút xoá từng dòng vẫn là cách sửa cho loại này.
 
+**Bảo hiểm chuỗi** thêm một migration nữa vào hàng chờ:
+`20260814120000_streak_freeze.sql` (bảng `streak_freezes`, RPC `buy_streak_freeze`
+và `use_streak_freeze`, một dòng giá trong `shop_prices`). Cho đến khi
+`supabase db push` chạy, bảng đó không tồn tại trên production — app đã được
+viết để chịu được điều đó: đọc bảo hiểm hỏng thì coi như KHÔNG có bảo hiểm nào,
+và streak vẫn chạy đúng như trước. Nút mua sẽ báo lỗi cho tới lúc deploy.
+
 ---
 
 ## 2. Ranh giới free/paid — quyết định, không phải việc code

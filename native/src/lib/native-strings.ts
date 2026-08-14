@@ -590,6 +590,13 @@ const en = {
   nRoomInstalled: 'Installed',
   nRoomStreak: '{n}-day streak',
   nRoomLearned: 'Koa has noticed: you usually log {what} around {time}',
+  nFreezeTitle: 'Streak Freeze',
+  nFreezeHeld: '{n}/{max} in the drawer',
+  nFreezeHint: 'Covers one missed day automatically. Koa only spends one when it actually saves the streak.',
+  nFreezeBuy: 'Buy · {n}',
+  nFreezeFull: 'Drawer full',
+  nFreezeSaved: 'A freeze covered {n} day',
+  nFreezeSavedPlural: 'Freezes covered {n} days',
   /* Nouns, for the sentence above. The win phrases nearby are whole sentences
      with emoji in them ("Meals logged 🍽") and read as nonsense inside another
      sentence — a label is not a message. */
@@ -1193,6 +1200,13 @@ const vi: typeof en = {
   nRoomInstalled: 'Đã lắp đặt',
   nRoomStreak: 'Chuỗi {n} ngày',
   nRoomLearned: 'Koa để ý: bạn thường ghi {what} vào khoảng {time}',
+  nFreezeTitle: 'Bảo hiểm chuỗi',
+  nFreezeHeld: 'Đang có {n}/{max}',
+  nFreezeHint: 'Tự bù một ngày lỡ. Koa chỉ dùng khi nó thật sự cứu được chuỗi.',
+  nFreezeBuy: 'Mua · {n}',
+  nFreezeFull: 'Đã đầy',
+  nFreezeSaved: 'Đã bù {n} ngày',
+  nFreezeSavedPlural: 'Đã bù {n} ngày',
   nThingMeal: 'bữa ăn',
   nThingWorkout: 'buổi tập',
   nThingWater: 'nước uống',

@@ -211,6 +211,27 @@ export type Database = {
         }
         Relationships: []
       }
+      streak_freezes: {
+        Row: {
+          id: string
+          user_id: string
+          acquired_at: string
+          used_on: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          acquired_at?: string
+          used_on?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          acquired_at?: string
+          used_on?: string | null
+        }
+        Relationships: []
+      }
       coach_memory: {
         Row: {
           id: string
@@ -1400,6 +1421,14 @@ export type Database = {
       buy_mascot_item: {
         Args: { p_item_key: string }
         Returns: number
+      }
+      buy_streak_freeze: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      use_streak_freeze: {
+        Args: { p_date: string }
+        Returns: boolean
       }
       current_tier: {
         Args: Record<PropertyKey, never>

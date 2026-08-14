@@ -200,7 +200,7 @@ export type ShopCategory = 'head' | 'face' | 'body' | 'gear' | 'special';
 
 export interface ShopItem {
   key: ShopItemKey;
-  type: 'outfit' | 'stage';
+  type: 'outfit' | 'stage' | 'consumable';
   /** Outfits in the same slot are mutually exclusive when equipped */
   slot?: OutfitSlot;
   /** the id within `KOA_ITEMS[slot]` this outfit puts on the character */
@@ -372,6 +372,43 @@ export const collectionProgress = (
  * the first off), and **one stage at a time** (the room shows a single skin).
  * Anything with neither a slot nor the stage type conflicts with nothing.
  */
+/**
+ * Things that are spent rather than worn.
+ *
+ * Kept out of `SHOP_ITEMS` on purpose. That list feeds the shop screen, which
+ * dresses Koa in whatever you are looking at and frames a camera on it — there
+ * is nothing to try on here, and a consumable dropped into that grid would be
+ * an item you cannot wear, cannot preview, and cannot buy twice through the
+ * generic `buy_mascot_item` (it refuses anything already owned).
+ *
+ * They are still catalogue entries so that one file answers "what does this
+ * cost", and `tools/economy-authority.mjs` checks the SQL price table against
+ * both lists together.
+ */
+export const CONSUMABLES: ShopItem[] = [
+  {
+    key: 'streak_freeze',
+    type: 'consumable',
+    rarity: 'rare',
+    price: 150,
+    name: { vi: 'Bảo hiểm chuỗi', en: 'Streak Freeze' },
+  },
+];
+
+/**
+ * How many freezes may be held at once — the same 2 the SQL enforces.
+ *
+ * Duplicated here only to draw "1/2" without a round trip; the database is what
+ * actually refuses the third, so a wrong number here is a cosmetic bug rather
+ * than an economic one.
+ */
+export const FREEZE_MAX = 2;
+
+export const FREEZE_KEY = 'streak_freeze';
+
+/** The one price, read from the catalogue so the screen cannot invent another. */
+export const FREEZE_PRICE = CONSUMABLES.find((c) => c.key === FREEZE_KEY)!.price;
+
 export const conflictingKeys = (key: string): ShopItemKey[] => {
   const item = getShopItem(key);
   if (!item) return [];

@@ -58,6 +58,9 @@ for (const [table, ops] of [
   ['mascot_inventory', ['INSERT', 'DELETE']],
   ['entitlements', ['INSERT', 'UPDATE', 'DELETE']],
   ['shop_prices', ['INSERT', 'UPDATE', 'DELETE']],
+  /* Freezes are currency in another shape: a client INSERT policy here is a
+     free streak forever, and an UPDATE policy is un-spending one. */
+  ['streak_freezes', ['INSERT', 'UPDATE', 'DELETE']],
 ]) {
   for (const op of ops) {
     /* A policy counts only if it is still standing at the end. */
@@ -117,14 +120,17 @@ for (const f of walk(path.join(NATIVE, 'src'))) {
      '--module', 'esnext', '--target', 'es2020', '--moduleResolution', 'bundler', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  const { SHOP_ITEMS, DAILY_QUESTS, CHALLENGE_REWARD } = await import(
+  const { SHOP_ITEMS, CONSUMABLES, DAILY_QUESTS, CHALLENGE_REWARD } = await import(
     pathToFileURL(path.join(out, 'mascot-room.js')).href
   );
 
   const seeded = new Map(
     [...sql.matchAll(/\('([a-z0-9_]+)',\s*(\d+)\)/g)].map((m) => [m[1], Number(m[2])]),
   );
-  for (const item of SHOP_ITEMS) {
+  /* Consumables are a second catalogue for a good reason (they are not worn),
+     and they are bought with the same coins from the same price table — so the
+     parity check has to see both or a consumable's price could drift unnoticed. */
+  for (const item of [...SHOP_ITEMS, ...CONSUMABLES]) {
     const price = seeded.get(item.key);
     if (price === undefined) {
       problems.push(`shop_prices: thiếu "${item.key}" — mua món này sẽ báo lỗi "unknown item"`);
@@ -135,7 +141,9 @@ for (const f of walk(path.join(NATIVE, 'src'))) {
       );
     }
   }
-  const extra = [...seeded.keys()].filter((k) => !SHOP_ITEMS.some((i) => i.key === k));
+  const extra = [...seeded.keys()].filter(
+    (k) => ![...SHOP_ITEMS, ...CONSUMABLES].some((i) => i.key === k),
+  );
   if (extra.length) {
     problems.push(`shop_prices: có ${extra.length} khoá không còn trong catalogue (${extra.slice(0, 3).join(', ')}…)`);
   }

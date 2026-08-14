@@ -38,6 +38,8 @@ import { fileURLToPath } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(path.join(NATIVE, p), 'utf8');
+/** migrations live at the repo root, one level up from the app */
+const readRepo = (p) => readFileSync(path.join(NATIVE, '..', p), 'utf8');
 const problems = [];
 
 /* ── load the real function ──
@@ -65,7 +67,7 @@ if (!readFileSync(emitted, 'utf8')) {
   process.exit(1);
 }
 writeFileSync(emitted, readFileSync(emitted, 'utf8').replaceAll('@/lib/local-date', './local-date'));
-const { streakFrom, STREAK_WINDOW } = createRequire(import.meta.url)(emitted);
+const { streakFrom, missedDates, STREAK_WINDOW } = createRequire(import.meta.url)(emitted);
 
 /* ── dates, built in UTC so the *fixtures* never move with the timezone ──
    Only the code under test is allowed to care where it is running. */
@@ -89,6 +91,40 @@ const CASES = [
   ['đứt từ hai hôm trước', run(5, 2), 0, false],
   ['hôm nay có, hôm qua trống', [TODAY, day(TODAY_PARTS, 2), day(TODAY_PARTS, 3)], 1, true],
   ['một năm liền', run(365), 365, true],
+];
+
+/* ── the freeze ──
+   A bought day off only means anything if the counter treats it as a day. */
+const FREEZE_CASES = [
+  [
+    // today + the covered yesterday + the two logged days behind it = four
+    'hôm qua được bù thì chuỗi liền mạch',
+    [TODAY, day(TODAY_PARTS, 2), day(TODAY_PARTS, 3)],
+    [day(TODAY_PARTS, 1)],
+    4,
+    true,
+  ],
+  [
+    'bù hai ngày liền',
+    [TODAY, day(TODAY_PARTS, 3)],
+    [day(TODAY_PARTS, 1), day(TODAY_PARTS, 2)],
+    4,
+    true,
+  ],
+  [
+    'bù ngày không nằm trong lỗ hổng thì không nối gì thêm',
+    [TODAY, day(TODAY_PARTS, 1)],
+    [day(TODAY_PARTS, 9)],
+    2,
+    true,
+  ],
+  [
+    'không thể bù chính hôm nay — ngày chưa hết',
+    [day(TODAY_PARTS, 1)],
+    [TODAY],
+    1,
+    false,
+  ],
 ];
 
 const check = (label, dates, wantCount, wantToday, tz) => {
@@ -121,6 +157,59 @@ if (TZ) {
     else break;
   }
   if (naive === 365) problems.push(`${TZ}: đồng hồ không đổi giờ trong năm này — ca này không chứng minh gì`);
+}
+
+/* ── 1b: frozen days, and the gap a freeze would have to cover ── */
+for (const [label, dates, frozen, wantCount, wantToday] of FREEZE_CASES) {
+  const got = streakFrom(dates, TODAY, frozen);
+  const where = TZ ? ` [${TZ}]` : '';
+  if (got.count !== wantCount) problems.push(`${label}${where}: đếm ra ${got.count}, đáng lẽ ${wantCount}`);
+  if (got.loggedToday !== wantToday) {
+    problems.push(`${label}${where}: loggedToday=${got.loggedToday}, đáng lẽ ${wantToday}`);
+  }
+}
+
+{
+  const eq = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
+  const cases = [
+    ['ghi hôm nay thì không có lỗ hổng', run(3), [], []],
+    ['ghi hôm qua thì hôm qua chưa phải lỗ hổng', run(3, 1), [], []],
+    ['lỡ đúng hôm qua', run(3, 2), [], [day(TODAY_PARTS, 1)]],
+    ['lỡ hai ngày', run(3, 3), [], [day(TODAY_PARTS, 2), day(TODAY_PARTS, 1)]],
+    ['ngày đã bù thì không đòi bù lại', run(3, 2), [day(TODAY_PARTS, 1)], []],
+    ['chưa từng ghi gì thì không có gì để bù', [], [], []],
+  ];
+  for (const [label, dates, frozen, want] of cases) {
+    const got = missedDates(dates, TODAY, frozen);
+    if (!eq(got, want)) {
+      problems.push(`lỗ hổng — ${label}: ra [${got.join(', ')}], đáng lẽ [${want.join(', ')}]`);
+    }
+  }
+}
+
+/* ── 1c: the guard must not spend a freeze that cannot save anything ── */
+{
+  const guard = read('src/hooks/use-streak-guard.ts').replace(/\/\*[\s\S]*?\*\//g, '');
+  if (!/missed\.length > held/.test(guard)) {
+    problems.push(
+      'use-streak-guard: không thấy điều kiện chặn khi số ngày lỡ nhiều hơn số bảo hiểm đang có — ' +
+        'sẽ đốt coin để đổi lấy đúng con số không, và người dùng mở app ra thấy chuỗi bằng 0 lẫn ngăn kéo rỗng',
+    );
+  }
+  const FREEZE_SQL = 'supabase/migrations/20260814120000_streak_freeze.sql';
+  if (!/use_streak_freeze/.test(readRepo(FREEZE_SQL))) {
+    problems.push('không tìm thấy hàm use_streak_freeze trong migration');
+  }
+  const sqlFreeze = readRepo(FREEZE_SQL);
+  if (!/CURRENT_DATE - 3|CURRENT_DATE-3/.test(sqlFreeze)) {
+    problems.push(
+      'use_streak_freeze: thiếu cửa sổ ngày — mua bảo hiểm sau khi chuỗi đã chết mà vẫn cứu được ' +
+        'thì chuỗi không còn nghĩa gì',
+    );
+  }
+  if (!/CREATE UNIQUE INDEX[\s\S]*?used_on/.test(sqlFreeze)) {
+    problems.push('thiếu unique index (user, used_on) — hai lần mở app cùng lúc sẽ tiêu hai bảo hiểm cho một ngày');
+  }
 }
 
 /* ── 2: the same cases, from somewhere the clocks move ──
@@ -221,8 +310,10 @@ if (problems.length) {
 }
 
 console.log(
-  `chuỗi ngày OK — ${CASES.length} ca đếm đúng, chạy lại nguyên bảng ở 3 múi giờ có đổi giờ ` +
-    '(gồm Lord Howe lệch 30 phút) nên một năm liền vẫn ra 365; ' +
+  `chuỗi ngày OK — ${CASES.length} ca đếm đúng, ${FREEZE_CASES.length} ca có bảo hiểm ` +
+    '(bù được lỗ hổng, không bù được chính hôm nay), lỗ hổng tính đúng ở 6 ca; ' +
+    'guard từ chối tiêu khi lỗ hổng lớn hơn số đang có, SQL có cửa sổ ngày và unique index; ' +
+    'chạy lại nguyên bảng ở 3 múi giờ có đổi giờ (gồm Lord Howe lệch 30 phút) nên một năm liền vẫn ra 365; ' +
     `${defs.filter((d) => d.type === 'streak').length} mốc streak đều nằm trong cửa sổ ${STREAK_WINDOW} ngày ` +
     `(cửa sổ cũ 35 sẽ chặn ${defs.filter((d) => d.type === 'streak' && d.requirement > 35).length} mốc); ` +
     `${allKeys.length} huy hiệu đều có chữ ở cả hai ngôn ngữ; ` +
