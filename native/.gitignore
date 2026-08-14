@@ -64,5 +64,8 @@ example
 tools/.live-build/
 tools/.live-shots/
 
-# scratch dir for tools/koa-studio/peek.mjs
+# scratch dirs for the koa-studio renderers (tools/koa-studio/koa-dom.mjs).
+# They clean themselves up on exit — but a run killed by a timeout never gets
+# to, and one of them reached a commit before this line existed.
 .koa-peek-*/
+.koa-dom-*/
