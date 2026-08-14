@@ -313,6 +313,18 @@ const fold = (hours) => hours.reduce((s, h) => observeHour(s, h), emptyHours());
       );
     }
   }
+  /* The clock model must not learn from a completion nobody performed: `steps`
+     is discovered by a fifteen-minute Health sync, so its "hour" is the polling
+     schedule wearing a person's name. */
+  const trusted = src.match(/const CLOCK_TRUSTED: QuestKey\[\] = \[([^\]]*)\]/);
+  if (!trusted) {
+    problems.push('không thấy CLOCK_TRUSTED — mô hình giờ giấc đang học từ mọi nguồn, kể cả đồng bộ nền');
+  } else if (/'steps'/.test(trusted[1])) {
+    problems.push(
+      "CLOCK_TRUSTED có 'steps' — bước chân không bao giờ được ghi tay, nên giờ ghi nhận được là " +
+        'lúc app đồng bộ với Apple Health, tức là app đang học chính lịch polling của nó',
+    );
+  }
   if (!/^void loadPersonalModel\(\);/m.test(src)) {
     problems.push('không khởi động việc đọc ngay lúc import — cửa sổ ghi-trước-khi-nạp rộng ra vô ích');
   }
@@ -335,5 +347,6 @@ console.log(
     'ra đúng một thắng cho ăn và một thua cho tập, còn bản một-ô-pending đã ship thì không; ' +
     `ngân sách xuất hiện: dồn 5 lần trong 30 giây chỉ ra 1 màn diễn, cả ngày tối đa ${PEEK_DAILY_CAP}, ` +
     'riêng khoảnh khắc xong cả 5 được vượt trần đúng một lần, và lời khen chỉ nói một lần mỗi ngày; ' +
-    'nạp dữ liệu thì hoà chứ không ghi đè, và settle chạy SAU khi nạp xong',
+    'nạp dữ liệu thì hoà chứ không ghi đè, settle chạy SAU khi nạp xong, ' +
+    'và mô hình giờ giấc không học từ thứ do đồng bộ nền phát hiện ra',
 );

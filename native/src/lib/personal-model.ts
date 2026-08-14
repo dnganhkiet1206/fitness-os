@@ -216,14 +216,37 @@ export function noteAsked(quest: QuestKey, date: string) {
 }
 
 /**
- * They did it. Records the hour either way, and settles the ask if this was it.
+ * Quests whose completion time is a fact about the **person**.
  *
- * The hour is recorded for **every** completion, asked about or not — the clock
- * model is about when this person lives, which has nothing to do with what Koa
- * said. Only the bandit cares about attribution.
+ * ── the one that is not ──
+ *
+ * `steps` is never logged by hand. The app finds out the goal was crossed when
+ * Apple Health is next synced, which happens on a fifteen-minute timer while the
+ * app is open — so the hour recorded is *when the phone synced*, which is a fact
+ * about the app, not about when anybody walked. Feeding that into a model whose
+ * whole job is "when is this person around" would teach it, with perfect
+ * confidence, the shape of its own polling schedule.
+ *
+ * The others are recorded, and the label the room shows says "log" rather than
+ * "do" for a reason: a sleep entry is written in the morning about the night
+ * before. "When you usually log sleep" is a true sentence and a useful one; it
+ * is just not the same sentence as "when you sleep", and the copy does not
+ * claim it is.
+ */
+const CLOCK_TRUSTED: QuestKey[] = ['meal', 'water', 'workout', 'sleep'];
+
+/**
+ * They did it. Records the hour where the hour means something, and settles the
+ * ask if this was it.
+ *
+ * The hour is recorded whether or not Koa asked — the clock model is about when
+ * this person lives, which has nothing to do with what Koa said. Only the bandit
+ * cares about attribution.
  */
 export function noteDone(quest: QuestKey, hour: number, date: string) {
-  const hours = { ...model.hours, [quest]: observeHour(model.hours[quest] ?? emptyHours(), hour) };
+  const hours = CLOCK_TRUSTED.includes(quest)
+    ? { ...model.hours, [quest]: observeHour(model.hours[quest] ?? emptyHours(), hour) }
+    : model.hours;
   const led = credit({ arms: model.arms, asked: model.asked }, quest, date);
   model = { ...model, ...led, hours };
   save();

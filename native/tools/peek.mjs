@@ -132,7 +132,24 @@ export function problems(src, geo) {
     );
   }
 
-  // ── 6: the numbers are imported, not retyped ──
+  // ── 6: the decoration is not read out, and the moment is felt ──
+  if (!/accessibilityElementsHidden/.test(src) || !/no-hide-descendants/.test(src)) {
+    out.push(
+      'băng cắt không được ẩn khỏi trình đọc màn hình — viên xu là một <Text>, nên VoiceOver ' +
+        'có thể dừng lại ở một "+15" trôi nổi không ngữ cảnh, tự hiện rồi tự biến mất',
+    );
+  }
+  if (!/Haptics\.impactAsync/.test(src)) {
+    out.push('màn diễn không có phản hồi rung — một lời chúc mừng không chạm vào tay là nửa lời');
+  }
+  if (/Haptics\.notificationAsync/.test(src)) {
+    out.push(
+      'peek dùng rung mức "notification" — đó là mức của huy hiệu; một nhiệm vụ hằng ngày và ' +
+        'một huy hiệu mà rung như nhau thì thứ bậc cảm giác biến mất',
+    );
+  }
+
+  // ── 7: the numbers are imported, not retyped ──
   const body = src
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/^\s*\/\/.*$/gm, '');
@@ -181,6 +198,8 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
   const BLIND = FIXED.replace('usePeekSignal(quest, focused)', 'usePeekSignal(quest, true)');
   const STUCK = FIXED.replace('if (!signal) {\n      setPlaying(false);\n      return;\n    }', 'if (!signal) return;');
   const REPLAY = FIXED.replace('if (played.current === signal) return;', '');
+  const LOUD = FIXED.replace('accessibilityElementsHidden', 'accessible');
+  const NUMB = FIXED.replace('Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)', 'Promise.resolve()');
 
   const selftest = [];
   if (SHIPPED === FIXED) selftest.push('không dựng lại được bản đã ship (flex-end)');
@@ -195,6 +214,10 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
   else if (!problems(STUCK, geo).length) selftest.push('bản kẹt nhân vật khi mất focus vẫn lọt');
   if (REPLAY === FIXED) selftest.push('không dựng lại được bản diễn lại lần hai');
   else if (!problems(REPLAY, geo).length) selftest.push('bản diễn lại lần hai vẫn lọt');
+  if (LOUD === FIXED) selftest.push('không dựng lại được bản để trình đọc màn hình chạm vào');
+  else if (!problems(LOUD, geo).length) selftest.push('bản để trình đọc màn hình chạm vào vẫn lọt');
+  if (NUMB === FIXED) selftest.push('không dựng lại được bản không rung');
+  else if (!problems(NUMB, geo).length) selftest.push('bản không rung vẫn lọt');
   if (!problems(FIXED, { ...geo, PEEK: Math.ceil(geo.PEEK_FIGURE * KOA_ASPECT) + 1 }).length) {
     selftest.push('băng cao hơn hình vẫn lọt');
   }
@@ -210,7 +233,8 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
     `peek OK — băng ${geo.PEEK}pt, hình ${geo.PEEK_FIGURE}×` +
       `${Math.round(geo.PEEK_FIGURE * KOA_ASPECT)}pt (thấy ` +
       `${Math.round((geo.PEEK / (geo.PEEK_FIGURE * KOA_ASPECT)) * 100)}% chiều cao hình, tính từ đỉnh đầu); ` +
-      'nhân vật chỉ được gắn khi đang diễn và chỉ diễn khi màn hình đang ở trước mặt; ' +
+      'nhân vật chỉ được gắn khi đang diễn, chỉ diễn khi màn hình đang ở trước mặt, ' +
+      'ẩn khỏi trình đọc màn hình và rung ở mức nhẹ hơn huy hiệu; ' +
       'bản flex-end đã ship, bản gõ tay số độ nghiêng, bản băng cao hơn hình, bản gắn vĩnh viễn ' +
       'và bản diễn khi không ai xem đều bị bắt',
   );

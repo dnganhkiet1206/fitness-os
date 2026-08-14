@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -143,6 +144,13 @@ export function CardPeek({
     setPlaying(true);
     const done = setTimeout(() => setPlaying(false), PEEK_TAIL_MS);
 
+    /* A celebration with no tap is a celebration with nothing to feel. This is
+       deliberately the *light* impact and not the success notification the medal
+       overlay uses — a quest is a small daily thing and a medal is not, and a
+       hierarchy of feelings only exists if the small one is smaller. The daily
+       cap is what keeps it from becoming a buzz you learn to ignore. */
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
     if (reduced) {
       rise.value = withSequence(
         withTiming(1, { duration: duration.appear }),
@@ -194,7 +202,29 @@ export function CardPeek({
 
   return (
     <View style={styles.wrap}>
-      <View pointerEvents="none" style={styles.clip}>
+      {/*
+        ── invisible to a screen reader, on purpose ──
+
+        The band is decoration over information that exists elsewhere: the quest
+        strip says how many of the five are done and the wallet holds the coins.
+        A screen-reader user who is not shown this loses a koala, not a fact.
+
+        Announcing it would be the wrong trade. `announceForAccessibility`
+        interrupts whatever is being read, and the guidance is consistent that
+        direct announcements are a last resort — worse for anybody on Braille,
+        where an "assertive" interjection about an animation is noise with no
+        way to skip it. Something that cannot be tapped and carries nothing new
+        should be hidden, not narrated.
+
+        And it fixes a real defect rather than a theoretical one: the coin pill
+        is a `<Text>`, so VoiceOver could land on a floating "+15" with no
+        context, appearing and vanishing on its own.
+      */}
+      <View
+        pointerEvents="none"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={styles.clip}>
         <Animated.View style={[styles.figure, figure]}>
           <MascotFigure mascot={mascot} size={PEEK_FIGURE} emotion={emotion} animated />
         </Animated.View>
