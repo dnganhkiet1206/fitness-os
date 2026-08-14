@@ -3,11 +3,11 @@ import { useEffect, useRef } from 'react';
 import { useEntitlement, type Tier } from '@/hooks/use-entitlement';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useKoaContext } from '@/hooks/use-koa-context';
-import { useClaimReward } from '@/hooks/use-mascot-room';
+import { useClaimReward, useMascotWallet } from '@/hooks/use-mascot-room';
 import { emitKoa } from '@/lib/koa-stage';
-import { askPeek, noteDone } from '@/lib/personal-model';
+import { askPeek, levelStep, noteDone } from '@/lib/personal-model';
 import { peekAt } from '@/lib/quest-peek';
-import { DAILY_QUESTS, questRefKey, type QuestKey } from '@/lib/mascot-room';
+import { DAILY_QUESTS, levelFromXp, questRefKey, type QuestKey } from '@/lib/mascot-room';
 
 /**
  * Rewards land by themselves, and Koa says so.
@@ -78,6 +78,7 @@ export function useQuestAutoClaim() {
   const quests = useDailyQuests();
   const claim = useClaimReward();
   const koaCtx = useKoaContext();
+  const { data: wallet } = useMascotWallet();
   const { has } = useEntitlement();
   const mayPeek = PEEK_TIER === null || has(PEEK_TIER);
 
@@ -87,6 +88,36 @@ export function useQuestAutoClaim() {
   const seenDay = useRef<string | null>(null);
   /** ref keys already sent this session, so a re-render cannot re-send */
   const sent = useRef(new Set<string>());
+
+  /*
+    ── the level, which nothing could see before ──
+
+    A level is not an event anywhere in this app: it is `levelFromXp(wallet.xp)`,
+    derived fresh on every read, so there is no moment at which the app knows a
+    crossing just happened. The only way to notice one is to remember the last
+    level — which is what `levelStep` does, persisted, and why its first reading
+    deliberately reports no crossing. Without that, reinstalling the app would
+    congratulate somebody on reaching the level they were already at.
+  */
+  useEffect(() => {
+    if (wallet?.xp == null) return;
+    const level = levelFromXp(wallet.xp);
+    const { from, crossed } = levelStep(level);
+    if (!crossed) return;
+    emitKoa(
+      {
+        id: `level:${level}`,
+        kind: 'level_up',
+        /* Levels get harder as they go, so a later one is a bigger moment —
+           but bounded, or level 20 would outshine a year-long streak. */
+        magnitude: Math.min(0.5 + (level - (from ?? level)) * 0.1 + level * 0.02, 0.9),
+        label: String(level),
+      },
+      koaCtx,
+    );
+    // `koaCtx` is a fresh object each render and must not be a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wallet?.xp]);
 
   useEffect(() => {
     if (!quests.ready) return;

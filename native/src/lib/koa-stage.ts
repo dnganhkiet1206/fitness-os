@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { holdEmotion } from '@/hooks/use-mascot-emotion';
 import { decide, outranks, type KoaContext, type KoaDecision } from '@/lib/koa-decide';
 import type { KoaEvent } from '@/lib/koa-event';
+import { koaSeenOnce } from '@/lib/personal-model';
 
 /**
  * The one door between what happened and what Koa does about it.
@@ -64,12 +65,14 @@ export function emitKoa(
 ): KoaDecision {
   const decision = decide(event, ctx);
 
-  if (seen.has(event.id)) {
+  /* Two layers, because they answer different questions. The in-memory set is
+     the fast one and covers a render storm; `koaSeenOnce` is persisted and
+     covers a relaunch, which is the case that welcomed the same person back
+     twice in one morning. */
+  if (seen.has(event.id) || koaSeenOnce(event.id)) {
     return { ...decision, shouldReact: false, because: 'sự kiện này đã xử lý rồi' };
   }
   seen.add(event.id);
-  /* Bounded: this is a session-lived set and the ids are short, but a person
-     who leaves the app open for a week should not accumulate for ever. */
   if (seen.size > 200) seen.delete(seen.values().next().value as string);
 
   if (!decision.shouldReact) return decision;

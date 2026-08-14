@@ -41,6 +41,39 @@ export const RISK_HOUR = 18;
 /** The first streak the app itself calls an achievement (`streak_3`). */
 export const RISK_MIN_STREAK = 3;
 
+/**
+ * Is this person's streak actually in danger right now?
+ *
+ * ── why one function and not two ──
+ *
+ * There were two. `baseEmotion` decided it for the held face, `koa-decide`
+ * decided it again for the event, and they had **already drifted**: the event
+ * version never checked the hour, so a simulated risk event would worry at nine
+ * in the morning while the real face waited until evening. Nothing was broken
+ * yet — the event branch is only reachable from the debug screen — which is
+ * precisely the state `streakFrom` was in before its two copies disagreed for
+ * real.
+ *
+ * Three conditions, and each is a decision worth keeping:
+ *
+ *   · the run is long enough to be worth something (`RISK_MIN_STREAK` — the
+ *     first medal, so Koa only pleads for a streak the app has already called
+ *     an achievement);
+ *   · today is genuinely empty, not merely unread;
+ *   · and their own evening is running out — `riskHour` is the person's clock
+ *     from `lib/user-rhythm.ts`, floored at `RISK_HOUR`.
+ */
+export function streakInDanger(i: {
+  streak: number;
+  emptyToday: boolean;
+  hour: number;
+  riskHour?: number;
+}): boolean {
+  return (
+    i.emptyToday && i.streak >= RISK_MIN_STREAK && i.hour >= (i.riskHour ?? RISK_HOUR)
+  );
+}
+
 /** How long each one-shot action holds before returning to the base emotion. */
 export const ACTION_MS: Record<MascotAction, number> = {
   celebrate: 2600,
@@ -102,7 +135,16 @@ export function baseEmotion(i: EmotionInput): MascotEmotion {
         medal. Pleading over a one-day streak every single evening teaches
         people to ignore the face.
   */
-  if (i.streakAtRisk && i.streak >= RISK_MIN_STREAK && i.hour >= (i.riskHour ?? RISK_HOUR)) return 'worry';
+  if (
+    streakInDanger({
+      streak: i.streak,
+      emptyToday: i.streakAtRisk === true,
+      hour: i.hour,
+      riskHour: i.riskHour,
+    })
+  ) {
+    return 'worry';
+  }
   // Chilly out → bundled up in the coat.
   if (i.cold) return 'coat';
   // Otherwise mirror the day.

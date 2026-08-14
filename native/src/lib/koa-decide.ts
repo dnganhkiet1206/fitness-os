@@ -1,4 +1,4 @@
-import type { MascotEmotion } from '@/lib/mascot-emotion';
+import { streakInDanger, type MascotEmotion } from '@/lib/mascot-emotion';
 import type { KoaEvent } from '@/lib/koa-event';
 
 /**
@@ -46,6 +46,8 @@ export interface KoaContext {
   emptyToday: boolean;
   /** the person is on a screen where a reaction can be seen */
   visible: boolean;
+  /** the hour this person is actually late by — `lib/user-rhythm.ts` */
+  riskHour?: number;
   /** reduce motion is on — reactions still happen, they just do not travel */
   reduced?: boolean;
 }
@@ -189,10 +191,18 @@ export function decide(event: KoaEvent, ctx: KoaContext): KoaDecision {
 
     case 'streak_at_risk': {
       /* The one reaction that is not a reward, and the only one gated on the
-         person's own clock rather than on a magnitude. Below three days there
-         is nothing at stake worth a worried face — see `RISK_MIN_STREAK`. */
-      if (ctx.streak < 3) return quiet('chuỗi còn quá ngắn để đáng lo');
-      if (!ctx.emptyToday) return quiet('hôm nay đã có ghi rồi');
+         person's own clock rather than on a magnitude. The test is
+         `streakInDanger` — the same function the held face uses, because this
+         had already drifted into a second opinion that skipped the hour. */
+      if (!streakInDanger({ ...ctx, riskHour: ctx.riskHour })) {
+        return quiet(
+          ctx.streak < 3
+            ? 'chuỗi còn quá ngắn để đáng lo'
+            : !ctx.emptyToday
+              ? 'hôm nay đã có ghi rồi'
+              : 'chưa tới giờ mà người này thường ghi',
+        );
+      }
       return {
         shouldReact: true,
         emotion: 'worry',

@@ -16,7 +16,7 @@
  * significant one. Both only show up when the events are lined up together.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -29,14 +29,24 @@ const out = mkdtempSync(path.join(tmpdir(), 'koa-decide-'));
 try {
   execFileSync(
     'npx',
-    ['tsc', 'src/lib/koa-decide.ts', 'src/lib/koa-event.ts', '--ignoreConfig', '--outDir', out,
+    ['tsc', 'src/lib/koa-decide.ts', 'src/lib/koa-event.ts', 'src/lib/mascot-emotion.ts',
+     '--ignoreConfig', '--outDir', out,
      '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
 } catch {
-  /* `mascot-emotion` is a type-only import and the alias does not resolve
-     without the project tsconfig; tsc still emits, which is all that is used. */
+  /* Without the project tsconfig there is no `@/` mapping, so tsc reports the
+     aliases as unresolved and exits non-zero — while still emitting the JS,
+     which is all that is used here. */
 }
+/* `streakInDanger` is now a real import rather than a type, so the emitted
+   alias has to be rewritten to a relative path — the same one-line
+   substitution `tools/streak.mjs` documents. It is a path, not behaviour. */
+const decidePath = path.join(out, 'koa-decide.js');
+writeFileSync(
+  decidePath,
+  readFileSync(decidePath, 'utf8').replaceAll('@/lib/mascot-emotion', './mascot-emotion'),
+);
 const require_ = createRequire(import.meta.url);
 const { decide, outranks, LIVE_MS, KOA_LINE_KEY, QUIET_BELOW, SPEAK_ABOVE } =
   require_(path.join(out, 'koa-decide.js'));
@@ -96,6 +106,14 @@ for (const kind of ['quest_done', 'day_complete', 'personal_record', 'comeback']
 /* ── 5: the worried face has two locks, and both must hold ── */
 {
   const short = decide({ kind: 'streak_at_risk', magnitude: 1 }, { ...CTX, streak: 2, emptyToday: true });
+  /* The hour is part of the test now, and that is the drift this consolidation
+     removed: the event branch used to worry at any time of day while the held
+     face waited for the evening. */
+  const early = decide(
+    { kind: 'streak_at_risk', magnitude: 1 },
+    { ...CTX, hour: 9, streak: 30, emptyToday: true },
+  );
+  if (early.shouldReact) problems.push('chuỗi sắp mất mà đã lo từ 9h sáng — mặt lo lúc đó là tâm trạng, không phải thông tin');
   if (short.shouldReact) problems.push('chuỗi 2 ngày mà đã van nài — sẽ thành lải nhải');
   const fed = decide({ kind: 'streak_at_risk', magnitude: 1 }, { ...CTX, streak: 30, emptyToday: false });
   if (fed.shouldReact) problems.push('hôm nay đã ghi rồi mà vẫn lo');
@@ -237,6 +255,38 @@ for (const kind of ['quest_done', 'day_complete', 'personal_record', 'comeback']
   }
 }
 
+/* ── 8d: a first reading is a baseline, never a crossing ──
+
+   The level is derived from lifetime XP, so there is no moment at which the app
+   knows one was just crossed — only a remembered previous value can tell. Which
+   means the first reading after an install reads straight in at whatever level
+   the account already is, and treating that as a crossing congratulates
+   somebody on reaching the level they were already at. The quest watcher learnt
+   this the same way. */
+{
+  const pm = readFileSync(path.join(NATIVE, 'src/lib/personal-model.ts'), 'utf8');
+  const step = pm.match(/export function levelStep[\s\S]*?\n\}/);
+  if (!step) {
+    problems.push('không tìm thấy levelStep — không có gì nhớ được cấp độ trước');
+  } else if (!/from != null && next > from/.test(step[0])) {
+    problems.push(
+      'levelStep không loại lần đọc ĐẦU TIÊN khỏi "vừa lên cấp" — cài lại app sẽ chúc mừng ' +
+        'người ta vì đã đạt đúng cái cấp họ đang có',
+    );
+  }
+  if (!/koaSeen/.test(pm)) {
+    problems.push(
+      'không có dedup lưu trữ: sân khấu chỉ nhớ trong phiên, nên đóng rồi mở lại app trong ' +
+        'cùng buổi sáng sẽ chào đón cùng một người quay lại lần thứ hai',
+    );
+  }
+
+  const claim = readFileSync(path.join(NATIVE, 'src/hooks/use-quest-autoclaim.ts'), 'utf8');
+  if (!/if \(!crossed\) return;/.test(claim)) {
+    problems.push('lên cấp được phát mà không kiểm `crossed` — mỗi lần đọc ví sẽ là một lần lên cấp');
+  }
+}
+
 /* ── 9: every intent has a string key, and no English is in the engine ── */
 {
   const intents = ['praise_small', 'praise_big', 'proud_record', 'welcome_back',
@@ -283,5 +333,6 @@ console.log(
     'va chạm sự kiện: cái lớn giành sân, cái nhỏ bị BỎ chứ không xếp hàng, ' +
     'ba sự kiện cùng lúc không tạo ba màn diễn, và cả 7 intent đều có khoá i18n; ' +
     'sân khấu tự dọn sau khi diễn xong, phản ứng không bị ghi nhầm thành lời khen của ngày, ' +
-    'và ngữ cảnh của Koa chỉ ĐỌC cache chứ không tự tạo truy vấn nào',
+    'và ngữ cảnh của Koa chỉ ĐỌC cache chứ không tự tạo truy vấn nào; ' +
+    'lần đọc cấp độ đầu tiên là mốc chứ không phải một lần lên cấp, và dedup sống qua lần khởi động lại',
 );

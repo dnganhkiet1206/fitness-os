@@ -60,6 +60,30 @@ export interface PersonalModel {
   budget: PeekBudget;
   /** the day the "everything done" line was last said */
   praisedOn: string | null;
+  /**
+   * Koa event ids already reacted to, newest last.
+   *
+   * ── why this had to survive a restart ──
+   *
+   * The stage's own set is session-lived, which is right for most events —
+   * medals are deduped by the database, a finished day only fires on a
+   * transition nobody sees twice. The comeback is the exception: it fires from
+   * a query result on every launch during an absence, so closing the app and
+   * opening it again welcomed the same person back a second time.
+   *
+   * Capped, because this is a ring buffer of recent moments and not a history.
+   */
+  koaSeen: string[];
+  /**
+   * The buddy's level at the last reading, or `null` before the first one.
+   *
+   * `null` is load-bearing. The level is derived from lifetime XP, so a fresh
+   * install reads straight in at whatever level the account already is — and
+   * treating that first reading as a *crossing* would congratulate somebody on
+   * reaching level 6 the moment they reinstalled. The first reading sets the
+   * baseline and says nothing, exactly as the quest watcher does.
+   */
+  level: number | null;
 }
 
 /**
@@ -87,6 +111,8 @@ const fresh = (): PersonalModel => ({
   asked: {},
   budget: freshBudget(''),
   praisedOn: null,
+  koaSeen: [],
+  level: null,
 });
 
 const STORE_KEY = 'ascnd_personal_model_v1';
@@ -180,6 +206,10 @@ export async function loadPersonalModel() {
             ? live.budget
             : storedBudget,
         praisedOn: live.praisedOn ?? parsed.praisedOn ?? null,
+        /* Union, newest last: an id recorded before the read landed is a
+           reaction that already happened, and forgetting it would replay it. */
+        koaSeen: [...new Set([...(parsed.koaSeen ?? []), ...live.koaSeen])].slice(-KOA_SEEN_CAP),
+        level: live.level ?? parsed.level ?? null,
       };
       emit();
     }
@@ -317,6 +347,38 @@ export function notePraised(today: string) {
   model = { ...model, praisedOn: today };
   save();
   emit();
+}
+
+/** How many recent Koa moments are remembered across launches. */
+const KOA_SEEN_CAP = 40;
+
+/**
+ * Has Koa already reacted to this exact moment? Records it either way.
+ *
+ * One call rather than a read and a write, because the two must not be
+ * separated: a caller that checks, decides, and then forgets to record is a
+ * caller that reacts twice.
+ */
+export function koaSeenOnce(id: string): boolean {
+  if (model.koaSeen.includes(id)) return true;
+  model = { ...model, koaSeen: [...model.koaSeen, id].slice(-KOA_SEEN_CAP) };
+  save();
+  return false;
+}
+
+/**
+ * The level last seen, and the new one recorded.
+ *
+ * Returns `null` on the very first reading — see the field's note: a first
+ * reading is a baseline, never a crossing.
+ */
+export function levelStep(next: number): { from: number | null; crossed: boolean } {
+  const from = model.level;
+  if (from === next) return { from, crossed: false };
+  model = { ...model, level: next };
+  save();
+  emit();
+  return { from, crossed: from != null && next > from };
 }
 
 /** Testing and "forget me" — see the privacy screen. */
