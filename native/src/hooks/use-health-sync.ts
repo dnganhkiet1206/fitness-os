@@ -220,8 +220,15 @@ function useSyncMutation(silent: boolean) {
       queryClient.invalidateQueries({ queryKey: ['steps_history', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['biometric_history', user?.id] });
       /* The screens that read the two new sources. Without these the sleep
-         screen keeps showing last night as unlogged until the app restarts. */
-      queryClient.invalidateQueries({ queryKey: ['sleep_logs', user?.id] });
+         screen keeps showing last night as unlogged until the app restarts.
+
+         `sleep_history` and not `sleep_logs`: this line said `sleep_logs` —
+         the *table* name — and no query in the app is keyed on that, so it
+         matched nothing and invalidated nothing. The comment above it described
+         a bug that was still happening. A key that names the table rather than
+         the query is the easiest possible thing to write and produces no error
+         of any kind; `invalidateQueries` is happy to match zero observers. */
+      queryClient.invalidateQueries({ queryKey: ['sleep_history', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['sleep_duration_history', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['recent_workouts', user?.id] });
       if (silent) return;

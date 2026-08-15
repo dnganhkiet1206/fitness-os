@@ -173,7 +173,17 @@ export function useDeleteBiometricSample() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['biometric_history', user?.id] });
-      qc.invalidateQueries({ queryKey: ['today_biometrics', user?.id] });
+      /* `today_bio`, which is what the query is actually called
+         (`useTodayData.ts`). This said `today_biometrics` and so matched
+         nothing — the same shape as the `sleep_logs` line in
+         `use-health-sync.ts`, and just as silent.
+
+         `invalidateToday()` below happens to cover `today_bio` as part of
+         `todayKeys`, so deleting a biometric did refresh in the end. That is
+         luck, not design: the line was written because somebody knew this key
+         needed refreshing, and it stopped being true the moment the query was
+         renamed. */
+      qc.invalidateQueries({ queryKey: ['today_bio', user?.id] });
       invalidateToday();
     },
   });

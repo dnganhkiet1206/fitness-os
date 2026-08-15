@@ -18,6 +18,17 @@ function emit() {
   listeners.forEach((l) => l());
 }
 
+/**
+ * `hydrated` means "the read has been *started*", which is not the same as
+ * "the stored value is in hand" — so a second flag records the landing.
+ *
+ * The daily steps quest is judged against this goal and, once claimed, cannot
+ * be un-claimed. Judging it during the window before the read lands means
+ * judging somebody who set 15,000 against the default 10,000 and paying them
+ * for a day they have not had. `settled` is what lets the quest wait.
+ */
+let settled = false;
+
 async function hydrate() {
   if (hydrated) return;
   hydrated = true;
@@ -25,10 +36,12 @@ async function hydrate() {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
     if (stored != null && Number(stored) > 0) {
       goalState = Number(stored);
-      emit();
     }
   } catch {
     // keep default
+  } finally {
+    settled = true;
+    emit();
   }
 }
 
@@ -46,8 +59,9 @@ export function setStepsGoal(value: number) {
 
 export function useStepsGoal() {
   const goal = useSyncExternalStore(subscribe, () => goalState);
+  const ready = useSyncExternalStore(subscribe, () => settled);
   useEffect(() => {
     hydrate();
   }, []);
-  return { goal, setGoal: setStepsGoal };
+  return { goal, setGoal: setStepsGoal, ready };
 }

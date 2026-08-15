@@ -407,6 +407,55 @@ if (problems.length) {
     problems.push(`chỉ soi được ${checked} hook đọc dữ liệu ngày — bộ quét hỏng, đừng tin kết quả`);
   }
 
+  /* ── a quest is judged against the person's own target, and only once it is
+     known ──
+
+     Two failures of the same shape lived in `use-daily-quests.ts`:
+
+       · steps were `>= 5000`, hard-coded, while the ring on Today measures
+         against the goal the person set (default 10,000, adjustable 1k–50k).
+         Somebody on 15,000 saw a ring at 40% and a Koa room saying the steps
+         quest was done.
+       · water compared against `profile?.water_target_ml || 2500`, and `ready`
+         did not wait for the profile. So during load the quest was judged — and
+         auto-claimed, irreversibly — against 2,500 for somebody whose target is
+         3,500.
+
+     A default is right for rendering and wrong for deciding. Both halves are
+     checked: the comparison uses the real goal, and every source feeding a
+     decision is in `ready`. */
+  const q = readFileSync(path.join(NATIVE, 'src/hooks/use-daily-quests.ts'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+  const doneBlock = q.slice(q.indexOf('const done'), q.indexOf('const claimed'));
+  if (/steps:\s*\([^)]*\)\s*>=\s*\d+/.test(doneBlock)) {
+    problems.push(
+      'use-daily-quests.ts: quest bước chân so với một con số gõ cứng chứ không phải mục tiêu ' +
+        'người dùng tự đặt — vòng bước trên Today và phòng Koa sẽ nói hai điều khác nhau về cùng một ngày',
+    );
+  }
+
+  /* Anchored past `const claimed`, because the first `ready:` in the file is
+     the interface's `ready: boolean;` — matching that read a declaration
+     instead of the expression and reported the correct code as broken. */
+  const readyLine = q.slice(q.indexOf('const claimed')).match(/ready:\s*([^,]+),/);
+  if (!readyLine) {
+    problems.push('use-daily-quests.ts: không đọc được biểu thức `ready` — luật này đã lạc mục tiêu');
+  } else {
+    for (const [needed, why] of [
+      ['profileOk', 'mục tiêu nước lấy từ hồ sơ, chưa đọc xong thì mặc định 2500 ml đứng thay'],
+      ['stepsGoalOk', 'mục tiêu bước lấy từ bộ nhớ máy, chưa đọc xong thì mặc định 10.000 đứng thay'],
+    ]) {
+      if (!readyLine[1].includes(needed)) {
+        problems.push(
+          `use-daily-quests.ts: \`ready\` thiếu ${needed} — ${why}; ` +
+            'quest được chấm và TỰ NHẬN theo mục tiêu của người khác, mà đã nhận thì không rút lại được',
+        );
+      }
+    }
+  }
+
   if (problems.length) {
     console.log('quyết định của Koa:\n');
     for (const p of problems) console.log(`  • ${p}`);

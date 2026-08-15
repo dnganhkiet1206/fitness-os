@@ -224,6 +224,13 @@ const STEPS = [
     thing anybody would notice.
   */
   ['đăng xuất sạch', 'node', ['tools/signed-out.mjs']],
+  /*
+    invalidateQueries is a filter, so matching nothing is indistinguishable
+    from success — no error, no warning, no return value anybody reads. A key
+    naming the table instead of the query therefore refreshes nothing and looks
+    exactly like a slow network. Two of them had shipped.
+  */
+  ['khoá invalidate', 'node', ['tools/invalidate-keys.mjs']],
 ];
 
 let failed = 0;
