@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { localDayRangeISO } from './local-date';
+import { chronicDays } from './training-card';
 import { computeReadiness } from './readiness-engine';
 import type { ReadinessInput } from './types';
 
@@ -251,12 +252,10 @@ export async function recomputeDailyLog(userId: string, date: string) {
   /* Oldest session in the window → how many days the chronic average spans.
      No sessions means no span, which `computeLoadScore` reads as "no training
      to score" rather than "trained too little". */
-  const oldestWorkout = (load28d ?? []).reduce<number | null>((oldest, w) => {
-    const t = Date.parse(String((w as { date_time?: string }).date_time ?? ''));
-    return Number.isFinite(t) && (oldest === null || t < oldest) ? t : oldest;
-  }, null);
-  const trainingDays28d =
-    oldestWorkout === null ? 0 : Math.min(28, Math.ceil((Date.now() - oldestWorkout) / 86_400_000) + 1);
+  /* One rule, shared with the training card — which prints the two quantities
+     this ratio compares, and so has to divide by the same span or the card
+     disproves its own verdict. */
+  const trainingDays28d = chronicDays((load28d ?? []) as { date_time?: string | null }[]);
 
   const kcal = meals?.reduce((s, m) => s + Number(m.total_kcal), 0) ?? 0;
   const protein_g = meals?.reduce((s, m) => s + Number(m.total_protein_g), 0) ?? 0;

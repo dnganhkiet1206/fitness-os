@@ -91,17 +91,55 @@ export function loadComparison(acwr: number): { heavier: boolean; percent: numbe
 }
 
 /**
+ * How many days the 28-day load figure actually covers.
+ *
+ * Measured from the oldest session inside the window, because dividing by a
+ * flat 28 for somebody who started last week averages their training over three
+ * weeks that never happened.
+ *
+ * Shared with `daily-log-service.ts`, which computes the same span to feed the
+ * readiness engine. It was written out in that file only, so the card had no
+ * way to agree with it — see `averageWeek` below.
+ */
+export const CHRONIC_MIN_DAYS = 7;
+
+export function chronicDays(sessions: { date_time?: string | null }[], now: Date = new Date()): number {
+  let oldest: number | null = null;
+  for (const s of sessions) {
+    const t = Date.parse(String(s.date_time ?? ''));
+    if (Number.isFinite(t) && (oldest === null || t < oldest)) oldest = t;
+  }
+  if (oldest === null) return 0;
+  return Math.min(28, Math.ceil((now.getTime() - oldest) / 86_400_000) + 1);
+}
+
+/**
  * The chronic side of the ratio, per week rather than per day.
  *
  * The card shows the two quantities the ratio compares so that the verdict can
  * be checked rather than believed, and they have to be in the same unit for
- * that to work: 28 days of volume divided by four is "an average week", against
- * which "the last seven days" is directly comparable. Per-*day* is how the
- * engine computes it and is useless to read — a number about a day nobody
- * trained on.
+ * that to work: "an average week" against which "the last seven days" is
+ * directly comparable. Per-*day* is how the engine computes it and is useless
+ * to read — a number about a day nobody trained on.
+ *
+ * ── the card used to contradict itself ──
+ *
+ * This was `volume28d / 4`: a flat four weeks, regardless of how much history
+ * the window held. The engine had already stopped doing that — it divides by
+ * `max(chronicDays, 7)` precisely because a flat 28 made a new lifter's
+ * perfectly even week read as a fourfold spike.
+ *
+ * So the card printed two numbers *and* a percentage derived from the engine's
+ * ratio, and for anybody newer than a month those did not agree. Ten days in,
+ * the pair on screen divided to about 2.8× the ratio the sentence beside them
+ * was computed from. The card exists so the verdict can be checked by hand, and
+ * checking it by hand disproved it.
+ *
+ * With a full window this returns exactly what it always did — `v28 / 4` — so
+ * nothing changes for anybody who has been training a month.
  */
-export function averageWeek(volume28d: number): number {
-  return volume28d / 4;
+export function averageWeek(volume28d: number, days: number = 28): number {
+  return (volume28d * 7) / Math.max(days, CHRONIC_MIN_DAYS);
 }
 
 /** Where a ratio sits on the 0–`ACWR_MAX` track, as a percentage. */

@@ -41,6 +41,7 @@ import { awardText } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
   acwrZone,
+  chronicDays,
   averageWeek,
   daysSince,
   loadComparison,
@@ -365,7 +366,10 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   const weekSessions = week ?? [];
   const weekVolume = weekSessions.reduce((s, w) => s + Number(w.volume_load || 0), 0);
   const monthVolume = (month ?? []).reduce((s, w) => s + Number(w.volume_load || 0), 0);
-  const habitVolume = averageWeek(monthVolume);
+  /* Divided by the span the engine used, not a flat four weeks — otherwise the
+     two figures printed on this card do not divide to the percentage printed
+     beside them, which is the one thing the card exists to make checkable. */
+  const habitVolume = averageWeek(monthVolume, chronicDays(month ?? []));
   const hasPR = weekSessions.some((w) => w.pr_detected);
   const trend = weeklyVolumes(history ?? [], TREND_WEEKS);
   const trendMax = Math.max(...trend.map((w) => w.volume), habitVolume);

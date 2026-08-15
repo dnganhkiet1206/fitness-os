@@ -54,6 +54,7 @@ export type Quantity =
   | 'weight_kg'
   | 'body_fat_pct'
   | 'circumference_cm'
+  | 'height_cm'
   | 'sleep_stage_min'
   | 'sleep_duration_min'
   | 'meal_kcal'
@@ -146,6 +147,28 @@ export const BOUNDS: Record<Quantity, Bound> = {
     a set that says 5000.
   */
   set_reps: { min: 1, max: 500, unit: 'reps' },
+
+  /*
+    Standing height, which had no bound at all — and it is an input to almost
+    every number the app gives back.
+
+    `calcBMR` uses it linearly at 6.25 kcal per cm, so typing 175 as `69` takes
+    **660 kcal** off the daily target: a person eating to a figure that is
+    wrong by a third, in the direction that loses weight they may not want to
+    lose.
+
+    Worse is what happens just below the typo. `fitness-calc.ts` reads
+    `height_cm < 100` as *"no height was given"* and silently falls back — so
+    the BMI-30 ceiling on the protein reference weight stops applying and the
+    water target reverts to a per-kg figure. The three macro rings can then sum
+    past the calorie ring, which the comment in that file states as impossible.
+    A single mistyped digit turns a guard off rather than tripping it.
+
+    The range is the one `fitness-calc.ts` already uses for "is this a real
+    height", so there is one opinion rather than two: a bound that disagreed
+    with that guard would let through exactly the values that switch it off.
+  */
+  height_cm: { min: 100, max: 250, unit: 'cm' },
 
   /** A single sleep stage cannot outlast the day it happened in. */
   sleep_stage_min: { min: 0, max: 1440, unit: 'min' },

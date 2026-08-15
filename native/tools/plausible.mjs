@@ -218,6 +218,30 @@ const REGISTRY = [
     save: 'const submit = ',
     covers: ['weight_kg'],
   },
+  {
+    /*
+      ── the two numbers everything else is derived from had no bound at all ──
+
+      Height and weight are typed here, and `calcBMR` uses height linearly at
+      6.25 kcal per cm: 175 entered as `69` moves the daily calorie target by
+      **660 kcal**. That alone would be worth a bound.
+
+      What made it worse is what sits just under the typo. `fitness-calc.ts`
+      reads `height_cm < 100` as "no height was given" and falls back — so the
+      BMI-30 ceiling on the protein reference weight stops applying and the
+      water target reverts to a flat per-kg figure. The three macro rings can
+      then add up past the calorie ring, a state that file's own comment calls
+      impossible. One mistyped digit switched a guard off instead of tripping
+      it, and nothing on screen said so.
+
+      Every log-* sheet had a gate. The screen holding the inputs those sheets
+      are all measured against did not.
+    */
+    file: 'src/app/edit-profile.tsx',
+    gate: 'statsBad',
+    save: 'disabled={save.isPending',
+    covers: ['height_cm', 'weight_kg'],
+  },
 ];
 
 /**
@@ -285,11 +309,39 @@ for (const { file, gate, save, covers } of REGISTRY) {
   if (!line) {
     problems.push(`${file}: không tìm thấy dòng chặn lưu ("${save}") — luật này đang không kiểm gì cả, hãy sửa mốc neo`);
   } else {
-    /* The anchor may open a multi-line expression; read to the end of the
-       statement rather than trusting one line. */
+    /*
+      The anchor may open a multi-line expression, so read to the end of *that
+      expression* — and no further.
+
+      This used to take a flat 600-character slice, which is not an expression;
+      it is a neighbourhood. `edit-profile.tsx` dims its Save label with
+      `style={[styles.headerSave, statsBad && …]}` a few lines below the
+      `disabled=` it also guards, so deleting the gate from the disabled
+      expression left the rule green — the name was still *somewhere* in the
+      window. The check would have passed a screen whose Save button worked
+      perfectly well on an out-of-range value, which is the one thing this file
+      exists to prevent.
+
+      A `{`-shaped anchor (a JSX prop) ends at its matching brace; a
+      `const x =` anchor ends at its `;`.
+    */
     const start = src.indexOf(save);
-    const expr = src.slice(start, start + 600);
-    const head = expr.split(/;\n|\n\s*\n/)[0];
+    let head;
+    const braceAt = save.indexOf('{');
+    if (braceAt >= 0) {
+      let depth = 0;
+      let j = start + braceAt;
+      for (; j < src.length; j++) {
+        if (src[j] === '{') depth++;
+        else if (src[j] === '}') {
+          depth--;
+          if (depth === 0) break;
+        }
+      }
+      head = src.slice(start, j + 1);
+    } else {
+      head = src.slice(start, src.indexOf(';', start) + 1 || start + 600);
+    }
     if (!new RegExp(`\\b${gate}\\b`).test(head)) {
       problems.push(
         `${file}: \`${gate}\` được tính nhưng không có mặt trong biểu thức chặn lưu — ` +

@@ -28,6 +28,7 @@ import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
 import { calcAge, calcBMR, calcMacros, calcTargetCalories, calcTDEE, calcWaterTarget } from '@/lib/fitness-calc';
+import { outOfRangeMessage } from '@/lib/plausible';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import {
   displayHeight,
@@ -122,6 +123,12 @@ export default function EditProfileSheet() {
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
 
+  /* Empty is allowed — the profile may legitimately not have these yet, and
+     `outOfRangeMessage` treats a blank string as nothing to complain about. */
+  const heightError = outOfRangeMessage('height_cm', form.height_cm, i18n.outOfRange);
+  const weightError = outOfRangeMessage('weight_kg', form.weight_kg, i18n.outOfRange);
+  const statsBad = !!heightError || !!weightError;
+
   /** Recompute calorie / macro / water targets from the current stats —
    *  same chain as onboarding (BMR → TDEE → goal-adjusted kcal → macros). */
   const recalcTargets = () => {
@@ -215,13 +222,16 @@ export default function EditProfileSheet() {
           <Text style={styles.headerCancel}>{i18n.nCancel}</Text>
         </Pressable>
         <Text style={styles.headerTitle}>{i18n.settingsPersonalInfo}</Text>
-        <Pressable hitSlop={8} onPress={() => save.mutate()} disabled={save.isPending || save.isSuccess}>
+        <Pressable
+          hitSlop={8}
+          onPress={() => save.mutate()}
+          disabled={save.isPending || save.isSuccess || statsBad}>
           {save.isSuccess ? (
             <Icon icon={Check} size={20} color={colors.primary} strokeWidth={3} />
           ) : save.isPending ? (
             <ActivityIndicator color={colors.primary} size="small" />
           ) : (
-            <Text style={styles.headerSave}>{i18n.save}</Text>
+            <Text style={[styles.headerSave, statsBad && styles.headerSaveOff]}>{i18n.save}</Text>
           )}
         </Pressable>
       </View>
@@ -269,11 +279,25 @@ export default function EditProfileSheet() {
           <Segmented options={sexes} value={form.sex} onChange={(v) => set('sex', v)} />
         </Field>
 
-        {/* Height + Weight (entered in the user's display units) */}
+        {/*
+          Height + Weight (entered in the user's display units).
+
+          These two were the only numeric fields in the app with no bound on
+          them, and they are the two that feed almost everything else: `calcBMR`
+          uses height linearly at 6.25 kcal/cm, so 175 typed as `69` moves the
+          calorie target by 660 kcal. Below 100 cm `fitness-calc.ts` stops
+          treating the value as a height at all and quietly disables the
+          BMI-based protein ceiling, so the typo turns a guard off instead of
+          tripping it.
+
+          Checked in centimetres and kilograms — the stored units — rather than
+          on the display string, because the same body is 175 cm or 5.7 ft and
+          only one of those has a meaningful range.
+        */}
         <View style={styles.row}>
           <Field label={`${i18n.settingsHeight} (${form.units_height})`} style={styles.half}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, heightError && styles.inputBad]}
               keyboardType="decimal-pad"
               value={hDisp}
               onChangeText={(v) => {
@@ -285,7 +309,7 @@ export default function EditProfileSheet() {
           </Field>
           <Field label={`${i18n.settingsWeight} (${form.units_weight})`} style={styles.half}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, weightError && styles.inputBad]}
               keyboardType="decimal-pad"
               value={wDisp}
               onChangeText={(v) => {
@@ -296,6 +320,8 @@ export default function EditProfileSheet() {
             />
           </Field>
         </View>
+        {heightError ? <Text style={styles.fieldError}>{heightError}</Text> : null}
+        {weightError ? <Text style={styles.fieldError}>{weightError}</Text> : null}
 
         {/* Units — flipping converts the field in place */}
         <View style={styles.row}>
@@ -504,6 +530,9 @@ const styles = StyleSheet.create({
   headerCancel: { ...type.body, color: colors.mutedForeground },
   headerTitle: { ...type.headline, color: colors.foreground },
   headerSave: { ...type.headline, color: colors.primary, fontWeight: '700' },
+  headerSaveOff: { opacity: 0.35 },
+  inputBad: { borderColor: colors.readinessRed, borderWidth: 1 },
+  fieldError: { ...type.footnote, color: colors.readinessRed, marginTop: -spacing.xs },
   kav: { flex: 1 },
   activityNote: { ...type.footnote, color: colors.mutedForeground, lineHeight: 18, marginTop: spacing.xs },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },

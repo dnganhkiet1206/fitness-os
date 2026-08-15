@@ -20,6 +20,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -205,19 +206,71 @@ try {
     produce the printed sentence and somebody doing the division by hand would
     find the card lying to them.
   */
-  const engineAcwr = (v7, v28) => (v7 / 7) / (v28 / 28);
+  /*
+    ── and the engine's ratio is asked of the engine ──
+
+    This rule used to define `engineAcwr = (v7/7) / (v28/28)` and compare the
+    card against *that*. It was written before the engine started dividing by
+    `max(chronicDays, 7)`, so it went on asserting a formula the engine had
+    stopped using — and stayed green while the card genuinely disagreed with the
+    app for every user newer than a month. A transcription of the thing under
+    test agrees with itself no matter what the thing does.
+
+    So the ratio now comes out of `computeReadiness`, which returns it. The
+    fixtures sweep `days`, because that is the axis the drift lived on: at a
+    full 28 the old formula and the new one are identical, which is exactly why
+    nothing noticed.
+  */
+  const engineOut = mkdtempSync(path.join(tmpdir(), 'tc-engine-'));
+  try {
+    execFileSync(
+      'npx',
+      ['tsc', 'src/lib/readiness-engine.ts', '--ignoreConfig', '--outDir', engineOut,
+       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+      { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch {
+    /* type-only import of `./types`; emits anyway */
+  }
+  const { computeReadiness } = createRequire(import.meta.url)(
+    path.join(engineOut, 'readiness-engine.js'),
+  );
+  const engineAcwr = (v7, v28, days) =>
+    computeReadiness({
+      hrv_today: 60,
+      rhr_today: 58,
+      sleep_min_lastnight: 450,
+      sleep_target_min: 480,
+      sleep_debt_7d_min: 0,
+      training_load_7d: v7,
+      training_load_28d: v28,
+      training_days_28d: days,
+      illness_flag: false,
+      hrv_history_28d: [60, 61, 59, 62, 58],
+      rhr_history_28d: [58, 59, 57, 60, 58],
+    })?.acwr;
+
   let mismatch = null;
-  for (const [v7, v28] of [[18900, 44400], [4000, 40000], [0, 32000], [12000, 12000], [50000, 44400]]) {
-    const shown = v7 / averageWeek(v28); // what a reader dividing the card gets
-    const real = engineAcwr(v7, v28);
-    if (Math.abs(shown - real) > 1e-9) mismatch = { v7, v28, shown, real };
+  for (const [v7, v28] of [[18900, 44400], [4000, 40000], [12000, 12000], [50000, 44400]]) {
+    for (const days of [7, 10, 14, 21, 28]) {
+      const shown = v7 / averageWeek(v28, days); // what a reader dividing the card gets
+      const real = engineAcwr(v7, v28, days);
+      /* The engine rounds its published ratio to two decimals, so compare at
+         that resolution rather than demanding bit equality of a rounded value. */
+      if (typeof real !== 'number' || Math.abs(shown - real) > 0.005) {
+        mismatch = { v7, v28, days, shown, real };
+      }
+    }
   }
   if (mismatch) {
     problems.push(
-      `hai số trên thẻ không chia ra đúng tỉ lệ: ${mismatch.v7} / tuần-trung-bình = ${mismatch.shown}, engine tính ${mismatch.real}`,
+      `hai số trên thẻ không chia ra đúng tỉ lệ khi lịch sử chỉ ${mismatch.days} ngày: ` +
+        `${mismatch.v7} / tuần-trung-bình = ${mismatch.shown?.toFixed?.(2)}, engine tính ${mismatch.real} — ` +
+        'thẻ tồn tại để người đọc TỰ chia ra kiểm chứng được, và phép chia đó đang bác bỏ chính lời thẻ nói',
     );
   }
-  eq('4 tuần của 44.400 là 11.100 mỗi tuần', averageWeek(44400), 11100);
+  eq('4 tuần đủ của 44.400 vẫn là 11.100 mỗi tuần', averageWeek(44400, 28), 11100);
+  eq('mới 7 ngày thì tuần trung bình bằng chính tuần đó', averageWeek(9000, 7), 9000);
 
   /* ── the eight-week chart ── */
   const at = (iso) => new Date(iso);
