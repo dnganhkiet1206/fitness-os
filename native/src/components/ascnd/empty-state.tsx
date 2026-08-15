@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
-import { useMascot } from '@/hooks/use-mascot';
+import { useMascotIdentity } from '@/hooks/use-mascot';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 
@@ -78,7 +78,11 @@ export function EmptyState({
    */
   companion?: boolean;
 }) {
-  const { enabled, mascot } = useMascot();
+  /* Identity only — the same rule the error card is built on. This renders
+     *because* a read came back with nothing, and a hook that reads would put a
+     fresh observer on the very query that came back empty. See
+     `useMascotIdentity`. */
+  const { enabled, mascot } = useMascotIdentity();
   const showKoa = enabled;
 
   return (

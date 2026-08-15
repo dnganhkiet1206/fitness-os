@@ -609,6 +609,15 @@ const en = {
   nPrRepsBodyLine: '{ex} — {value} reps, was {prev}',
   nPrFirstLoad: '{ex} — {value} {unit}, first time loaded',
   nPrContinue: 'Tap to continue',
+  /* Smart scheduling. Every line names the reading it came from — a suggested
+     time with no stated source is the app asserting something about somebody's
+     life without saying how it knows. */
+  nSmartFrom: 'Koa noticed: {what}',
+  nSmartBedtime: 'you go to bed at {t}',
+  nSmartWake: 'you wake at {t}',
+  nSmartWorkout: 'you usually log training around {t}',
+  nSmartMove: 'Remind at {t}',
+  nSmartMoved: 'Moved to {t}',
   nFreezeTitle: 'Streak Freeze',
   nFreezeHeld: '{n}/{max} in the drawer',
   nFreezeHint: 'Covers one missed day automatically. Koa only spends one when it actually saves the streak.',
@@ -1233,6 +1242,12 @@ const vi: typeof en = {
   nPrRepsBodyLine: '{ex} — {value} lần, trước là {prev}',
   nPrFirstLoad: '{ex} — {value} {unit}, lần đầu có tạ',
   nPrContinue: 'Chạm để tiếp tục',
+  nSmartFrom: 'Koa để ý: {what}',
+  nSmartBedtime: 'bạn đi ngủ lúc {t}',
+  nSmartWake: 'bạn dậy lúc {t}',
+  nSmartWorkout: 'bạn thường ghi buổi tập quanh {t}',
+  nSmartMove: 'Nhắc lúc {t}',
+  nSmartMoved: 'Đã chuyển sang {t}',
   nFreezeTitle: 'Bảo hiểm chuỗi',
   nFreezeHeld: 'Đang có {n}/{max}',
   nFreezeHint: 'Tự bù một ngày lỡ. Koa chỉ dùng khi nó thật sự cứu được chuỗi.',

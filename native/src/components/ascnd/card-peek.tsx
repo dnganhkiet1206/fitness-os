@@ -15,7 +15,7 @@ import Animated, {
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { radius } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
-import { useMascot } from '@/hooks/use-mascot';
+import { useMascotIdentity } from '@/hooks/use-mascot';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
 import type { QuestKey } from '@/lib/mascot-room';
@@ -93,7 +93,13 @@ export function CardPeek({
   hold?: number;
   children: React.ReactNode;
 }) {
-  const { enabled, mascot } = useMascot();
+  /* Identity only. `useMascot()` is five query subscriptions deep, and this
+     component is mounted around **seven** widgets on the dashboard — so the
+     peek wrappers alone were putting thirty-five observers on Today's queries
+     and running the bandit's whole sentence-composition seven extra times per
+     render, to draw a character whose face is pinned by `PEEK_EMOTION`. None
+     of it was ever read. See `useMascotIdentity`. */
+  const { enabled, mascot } = useMascotIdentity();
   const reduced = useReducedMotion();
 
   /** 0 = parked below the clip, 1 = fully up */

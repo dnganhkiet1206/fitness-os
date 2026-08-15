@@ -12,7 +12,7 @@ import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useI18n } from '@/hooks/use-app-settings';
-import { useMascot } from '@/hooks/use-mascot';
+import { useMascotIdentity } from '@/hooks/use-mascot';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useUnits } from '@/hooks/use-units';
 import type { NativeStrings } from '@/lib/native-strings';
@@ -112,7 +112,8 @@ export function RecordCelebration({
   onDone: () => void;
 }) {
   const i18n = useI18n();
-  const { mascot } = useMascot();
+  /* Identity only: the face here is pinned to `proud`. */
+  const { mascot } = useMascotIdentity();
   const { weight: wUnit } = useUnits();
   const reduced = useReducedMotion();
 

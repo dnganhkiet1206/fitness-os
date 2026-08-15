@@ -13,7 +13,7 @@ import { CategoryRow, CollectionRow } from '@/components/ascnd/shop/shop-grid';
 import { ShopPager } from '@/components/ascnd/shop/shop-pager';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useMascot } from '@/hooks/use-mascot';
+import { useMascotIdentity } from '@/hooks/use-mascot';
 import {
   useBuyItem,
   useClaimReward,
@@ -99,7 +99,9 @@ const asTab = (v: unknown): Tab =>
 export default function ShopScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const { mascot } = useMascot();
+  /* Identity only — the shop dresses the character, it has no opinion about
+     today's calories. */
+  const { mascot } = useMascotIdentity();
 
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();

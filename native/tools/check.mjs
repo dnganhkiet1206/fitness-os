@@ -186,6 +186,7 @@ const STEPS = [
   ['quyết định Koa', 'node', ['tools/koa-decide.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],
+  ['giờ nhắc nhở', 'node', ['tools/reminder-timing.mjs']],
 ];
 
 let failed = 0;
