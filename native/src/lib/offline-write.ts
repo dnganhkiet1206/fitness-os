@@ -137,6 +137,30 @@ export type OfflineWrite =
       spo2Pct: number | null;
       respRateRpm: number | null;
       vo2maxMlkgmin: number | null;
+    }
+  | {
+      /*
+        Sleep and measurements were the last two day-affecting writes with no
+        durable path. Both hung for ever when fired offline and were dropped on
+        the next launch — the same failure `workout` and `weight` had, which is
+        why those two are directly above.
+      */
+      kind: 'sleep';
+      userId: string;
+      bedtime: string;
+      waketime: string;
+      quality: number;
+      deepMin: number;
+      remMin: number;
+      lightMin: number;
+    }
+  | {
+      kind: 'measurement';
+      userId: string;
+      /* `YYYY-MM-DD`, and it is the conflict target — replaying twice updates
+         the same row rather than making a second one for the same day. */
+      date: string;
+      fields: Record<string, number | null>;
     };
 
 /** The one key every durable write is filed under. */
@@ -243,6 +267,31 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
 
       /* The day the food was eaten, not the day the queue drained. */
       await rebuildAfterReplay(w.userId, localDateStr(new Date(w.dateTime)));
+      return;
+    }
+    case 'sleep': {
+      const { error } = await supabase.from('sleep_logs').insert({
+        user_id: w.userId,
+        bedtime: w.bedtime,
+        waketime: w.waketime,
+        quality: w.quality,
+        deep_min: w.deepMin,
+        rem_min: w.remMin,
+        light_min: w.lightMin,
+      });
+      if (error) throw error;
+      /* Sleep is the readiness score's second-largest term; a night that
+         arrives without rebuilding its day is a night the score never sees. */
+      await rebuildAfterReplay(w.userId, localDateStr(new Date(w.waketime)));
+      return;
+    }
+    case 'measurement': {
+      const { error } = await supabase
+        .from('body_measurements')
+        .upsert({ user_id: w.userId, date: w.date, ...w.fields }, { onConflict: 'user_id,date' });
+      if (error) throw error;
+      /* No rebuild: `daily_logs` carries no measurement field, so there is
+         nothing about the day for this to change. */
       return;
     }
     case 'biometrics': {

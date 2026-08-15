@@ -175,11 +175,17 @@ for (const f of files) {
         Nothing about that surfaces as an error. The row is there, the totals
         are right, and it is filed under the wrong hours.
 
-        So a variant has to carry the moment itself. `date`, `dateTime` or `at`
-        — the name follows the column it feeds, the requirement is that the
-        value was decided on the device that saw the tap.
+        So a variant has to carry the moment itself. `date`, `dateTime`, `at`,
+        or — for a night — `bedtime`/`waketime`. The name follows the column it
+        feeds; the requirement is that the value was decided on the device that
+        saw the tap, not by the server when the queue happened to drain.
+
+        The sleep variant is the reason that list has five names instead of
+        three: a night's own two instants *are* its clock, and a rule that
+        demanded a differently-named field would have been asking for a
+        redundant one.
       */
-      if (!/\b(dateTime|date|at): string/.test(variant)) {
+      if (!/\b(dateTime|date|at|bedtime|waketime): string/.test(variant)) {
         problems.push(
           `${WRITE}: biến thể "${kind}" không mang thời điểm riêng — ` +
             'cột thời gian mặc định now(), nên khi hàng đợi gửi muộn thì bản ghi mang giờ lúc gửi ' +

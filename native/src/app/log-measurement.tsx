@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -21,17 +22,24 @@ import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { localDateStr } from '@/lib/local-date';
 import { useI18n } from '@/hooks/use-app-settings';
+import { useAuth } from '@/hooks/use-auth';
 import { useUpsertBodyMeasurement, type BodyMeasurementInput } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
 import { toast } from '@/lib/toast';
 import { displayLength, lengthLabel, lengthToCm } from '@/lib/units';
 import { BOUNDS, plausible } from '@/lib/plausible';
+import { offlineNow } from '@/lib/offline';
+import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 
 type FieldKey = Exclude<keyof BodyMeasurementInput, 'date' | 'notes'>;
 
 export default function LogMeasurementSheet() {
   const i18n = useI18n();
   const { height: lUnit } = useUnits();
+  const { user } = useAuth();
+  const queue = useMutation<void, Error, OfflineWrite>({
+    mutationKey: [...OFFLINE_WRITE_KEY],
+  });
   const upsert = useUpsertBodyMeasurement();
   const [date, setDate] = useState(new Date());
   const [fields, setFields] = useState<Partial<Record<FieldKey, string>>>({});
@@ -105,6 +113,23 @@ export default function LogMeasurementSheet() {
         payload[key] =
           key === 'body_fat_pct' ? Number(v) : Math.round(lengthToCm(Number(v), lUnit) * 10) / 10;
       }
+    }
+    /* Offline this paused for ever with the sheet open; the paused write was
+       then dropped on the next launch. `date` is the upsert's conflict target,
+       so a replay updates the same row rather than making a second one. */
+    if (offlineNow() && user) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+      toast.success(i18n.logMealQueued);
+      queue.mutate({
+        kind: 'measurement',
+        userId: user.id,
+        date: payload.date,
+        fields: Object.fromEntries(
+          Object.entries(payload).filter(([k]) => k !== 'date'),
+        ) as Record<string, number | null>,
+      });
+      return;
     }
     upsert.mutate(payload, {
       onSuccess: () => {

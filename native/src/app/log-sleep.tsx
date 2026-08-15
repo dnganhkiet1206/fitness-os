@@ -28,6 +28,8 @@ import { toast } from '@/lib/toast';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 import { BOUNDS, plausibleText } from '@/lib/plausible';
+import { offlineNow } from '@/lib/offline';
+import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 
 // Face picks map onto the web's 1–10 quality scale (SleepCard shows
 // "x/10") — code-drawn lucide faces on a red→teal neon ramp
@@ -91,6 +93,10 @@ export default function LogSleepSheet() {
     : stagesOverrun
       ? i18n.sleepStagesOverrun.replace('{sum}', String(stageSum)).replace('{total}', String(durationMin))
       : null;
+
+  const queue = useMutation<void, Error, OfflineWrite>({
+    mutationKey: [...OFFLINE_WRITE_KEY],
+  });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -231,7 +237,28 @@ export default function LogSleepSheet() {
         accessibilityLabel={i18n.nSaveSleep}
         style={[styles.saveButton, (save.isPending || !!stageError) && styles.saveDisabled]}
         disabled={save.isPending || save.isSuccess || !!stageError}
-        onPress={() => save.mutate()}>
+        onPress={() => {
+          /* Offline this write used to pause for ever: the button stayed
+             disabled on `isPending`, no toast fired, the sheet never closed,
+             and the paused mutation was dropped on the next launch. */
+          if (offlineNow() && user) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.back();
+            toast.success(i18n.logMealQueued);
+            queue.mutate({
+              kind: 'sleep',
+              userId: user.id,
+              bedtime: bedDate.toISOString(),
+              waketime: wakeDate.toISOString(),
+              quality,
+              deepMin: Number(deepMin) || 0,
+              remMin: Number(remMin) || 0,
+              lightMin: Number(lightMin) || 0,
+            });
+            return;
+          }
+          save.mutate();
+        }}>
         {save.isSuccess ? (
           <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
         ) : save.isPending ? (
