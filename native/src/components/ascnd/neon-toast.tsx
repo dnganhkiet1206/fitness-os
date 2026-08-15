@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, Info, XCircle, type LucideIcon } from 'lucide-react-native';
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -36,6 +36,25 @@ export function NeonToastHost() {
 
   useEffect(() => {
     if (!t) return;
+    /*
+      ── said out loud, because this bar is the only thing that says it ──
+
+      Nothing here spoke to VoiceOver: no live region, no announcement. And this
+      is the app's **sole** channel for "meal saved", "workout saved", "queued
+      offline" and every `toast.error` — the log sheets pop themselves on
+      success, so there is no other surface left to read. A blind user tapped
+      Save and received a haptic and nothing else; on failure, the same haptic
+      and nothing else.
+
+      It also cannot be reached by navigating: it removes itself after
+      `AUTO_HIDE_MS`, which is shorter than it takes to swipe to it. So the
+      announcement has to be pushed, not offered.
+
+      `announceForAccessibility` is the push, and it is what carries this on
+      iOS; `accessibilityLiveRegion` on the view below is the Android half of
+      the same idea. Both are cheap and neither is a substitute for the other.
+    */
+    AccessibilityInfo.announceForAccessibility(t.message);
     const timer = setTimeout(() => dismissToast(t.id), AUTO_HIDE_MS);
     return () => clearTimeout(timer);
   }, [t]);
@@ -44,7 +63,10 @@ export function NeonToastHost() {
   const accent = ACCENT[t.kind];
 
   return (
-    <View style={[styles.wrap, { top: insets.top + 8 }]} pointerEvents="box-none">
+    <View
+      style={[styles.wrap, { top: insets.top + 8 }]}
+      pointerEvents="box-none"
+      accessibilityLiveRegion="polite">
       <Animated.View
         key={t.id}
         // Calm entrance: a short fade + gentle drop, no spring overshoot
@@ -52,7 +74,13 @@ export function NeonToastHost() {
         exiting={FadeOutUp.duration(180)}
         // Colored shadow = the neon glow; border picks up the same accent
         style={[styles.toast, { borderColor: `${accent}59`, shadowColor: accent }]}>
-        <Pressable style={styles.row} onPress={() => dismissToast(t.id)}>
+        <Pressable
+          accessibilityRole="button"
+          /* The message is the label: a bar that announces "button" and nothing
+             else is what an unlabelled control sounds like. */
+          accessibilityLabel={t.message}
+          style={styles.row}
+          onPress={() => dismissToast(t.id)}>
           <View style={[styles.neonBar, { backgroundColor: accent }]} />
           <View style={[styles.iconWrap, { backgroundColor: `${accent}24` }]}>
             <Icon icon={ICONS[t.kind]} size={16} color={accent} />

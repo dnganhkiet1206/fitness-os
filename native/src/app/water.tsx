@@ -34,6 +34,7 @@ import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { useProfile } from '@/hooks/useTodayData';
 import { useAddWater, useRemoveLastWater, useTodayWater, useTodayWaterLogs, useWaterWeek } from '@/hooks/use-water';
 import { displayVolume, volumeLabel, volumeToMl } from '@/lib/units';
+import { toast } from '@/lib/toast';
 
 // Quick-add amounts in the display unit (converted to ml on tap)
 const QUICK_ML = [250, 500, 750];
@@ -129,7 +130,22 @@ export default function WaterScreen() {
             accessibilityLabel={i18n.a11yRemove}
             style={[styles.undoBtn, (!logs || logs.length === 0) && styles.undoDisabled]}
             disabled={!logs || logs.length === 0 || removeLast.isPending}
-            onPress={() => removeLast.mutate()}>
+            onPress={() =>
+              /*
+                ── the ring moves, then quietly moves back ──
+
+                All three water writes are optimistic and none of them said a
+                word when the server refused: `use-water` rolls the patch back
+                and stops there, so the number ticked up, then dropped again on
+                its own, with no explanation and nothing to retry. These are the
+                two most-tapped write buttons in the app, and they were the only
+                ones in it with no error path at all — every log-* sheet has
+                toasted its failures for a long time.
+              */
+              removeLast.mutate(undefined, {
+                onError: (e: Error) => toast.error(e.message),
+              })
+            }>
             <Icon icon={Minus} size={16} color={colors.foreground} strokeWidth={2.5} />
           </PressScale>
           {QUICK.map((amount) => (
@@ -149,7 +165,9 @@ export default function WaterScreen() {
               style={styles.quickBtn}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                addWater.mutate(volumeToMl(amount, vUnit));
+                addWater.mutate(volumeToMl(amount, vUnit), {
+                  onError: (e: Error) => toast.error(e.message),
+                });
               }}>
               <Icon icon={Plus} size={14} color={colors.foreground} strokeWidth={2.5} />
               <Text style={styles.quickText}>{amount}</Text>
@@ -181,7 +199,9 @@ export default function WaterScreen() {
         busy={addWater.isPending}
         onClose={() => setManualOpen(false)}
         onSave={(amount) => {
-          addWater.mutate(volumeToMl(amount, vUnit));
+          addWater.mutate(volumeToMl(amount, vUnit), {
+            onError: (e: Error) => toast.error(e.message),
+          });
           setManualOpen(false);
         }}
       />

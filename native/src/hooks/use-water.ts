@@ -136,15 +136,31 @@ export function useAddWater() {
   */
   return {
     ...m,
-    mutate: (amountMl: number) => {
+    /*
+      `options` is forwarded, and that is not decoration.
+
+      The wrapper used to take only the millilitres, which meant no caller could
+      pass an `onError` even if it wanted to — and none did. All three water
+      buttons are optimistic, so a refused write rolled the patch back and said
+      nothing: the ring ticked up, then dropped again on its own. A convenience
+      wrapper that removes the ability to report failure is how a screen ends up
+      with no error path "by design".
+    */
+    mutate: (
+      amountMl: number,
+      options?: Parameters<typeof m.mutate>[1],
+    ) => {
       if (!user) return;
-      m.mutate({
-        kind: 'water',
-        userId: user.id,
-        amountMl,
-        date: dateStr,
-        at: new Date().toISOString(),
-      });
+      m.mutate(
+        {
+          kind: 'water',
+          userId: user.id,
+          amountMl,
+          date: dateStr,
+          at: new Date().toISOString(),
+        },
+        options,
+      );
     },
   };
 }

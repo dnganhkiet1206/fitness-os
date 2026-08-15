@@ -240,6 +240,31 @@ export default function LogMealSheet() {
   };
   const customBad = Object.values(customErrors).some(Boolean);
 
+  /*
+    ── the same numbers, edited instead of added ──
+
+    `customErrors` above guards the *add* form and has since the day the bounds
+    were written. The per-item **edit** panel writes to the same four fields,
+    through `applyEdit`, and checked nothing at all: add a food normally, tap
+    its row, type 50000 into kcal, press Done — saved.
+
+    That defeats the exact protection the comment above describes, and by the
+    same route: `daily_logs.kcal` is what `adaptiveTDEE` regresses over fourteen
+    days to suggest a calorie target, so one edited line comes back days later
+    as a diet.
+
+    One rule, two forms, and only one of them had it. Same shape as the workout
+    sheet's missing bound, and the same fix — the rule computed once, read by
+    both.
+  */
+  const draftErrors = {
+    kcal: outOfRangeMessage('meal_kcal', draft.kcal, i18n.outOfRange),
+    protein: outOfRangeMessage('macro_g', draft.protein, i18n.outOfRange),
+    carbs: outOfRangeMessage('macro_g', draft.carbs, i18n.outOfRange),
+    fat: outOfRangeMessage('macro_g', draft.fat, i18n.outOfRange),
+  };
+  const draftBad = Object.values(draftErrors).some(Boolean);
+
   const canAddCustom =
     cName.trim().length > 0 &&
     !customBad &&
@@ -283,7 +308,7 @@ export default function LogMealSheet() {
   };
 
   const applyEdit = () => {
-    if (editingIdx == null) return;
+    if (editingIdx == null || draftBad) return;
     Haptics.selectionAsync();
     setItems((prev) =>
       prev.map((it, i) =>
@@ -738,13 +763,22 @@ export default function LogMealSheet() {
                       {vi ? 'Macro cho 1 khẩu phần' : 'Macros per serving'}
                     </Text>
                     <View style={styles.macroInputRow}>
-                      <MacroInput label="kcal" value={draft.kcal} onChange={(v) => setDraft((d) => ({ ...d, kcal: v }))} />
-                      <MacroInput label={`${i18n.nProtein} (g)`} value={draft.protein} onChange={(v) => setDraft((d) => ({ ...d, protein: v }))} />
-                      <MacroInput label={`${i18n.nCarbs} (g)`} value={draft.carbs} onChange={(v) => setDraft((d) => ({ ...d, carbs: v }))} />
-                      <MacroInput label={`${i18n.nFat} (g)`} value={draft.fat} onChange={(v) => setDraft((d) => ({ ...d, fat: v }))} />
+                      <MacroInput label="kcal" value={draft.kcal} bad={!!draftErrors.kcal} onChange={(v) => setDraft((d) => ({ ...d, kcal: v }))} />
+                      <MacroInput label={`${i18n.nProtein} (g)`} value={draft.protein} bad={!!draftErrors.protein} onChange={(v) => setDraft((d) => ({ ...d, protein: v }))} />
+                      <MacroInput label={`${i18n.nCarbs} (g)`} value={draft.carbs} bad={!!draftErrors.carbs} onChange={(v) => setDraft((d) => ({ ...d, carbs: v }))} />
+                      <MacroInput label={`${i18n.nFat} (g)`} value={draft.fat} bad={!!draftErrors.fat} onChange={(v) => setDraft((d) => ({ ...d, fat: v }))} />
                     </View>
+                    {/* The first thing that is wrong, named — a Done button
+                        that does nothing is worse than one that says why. */}
+                    {draftBad ? (
+                      <Text style={styles.rangeError}>
+                        {Object.values(draftErrors).find(Boolean)}
+                      </Text>
+                    ) : null}
                     <PressScale
-                      style={styles.customAddBtn}
+                      accessibilityRole="button"
+                      style={[styles.customAddBtn, draftBad && styles.saveDisabled]}
+                      disabled={draftBad}
                       onPress={applyEdit}>
                       <Text style={styles.customAddText}>{vi ? 'Xong' : 'Done'}</Text>
                     </PressScale>
@@ -778,6 +812,17 @@ export default function LogMealSheet() {
         )}
 
         <PressScale
+                    /* The name has to be a constant, because the *text* is not.
+
+             This button renders a Check on success and a spinner while
+             pending, and in both of those branches there is no `<Text>` in the
+             tree at all — so the control announced itself as an unnamed
+             element at exactly the two moments a person most needs to know
+             what it is doing. `tools/tap-targets.mjs` documents this as the
+             blind spot it cannot see, and these five buttons were sitting in
+             it. */
+          accessibilityRole="button"
+          accessibilityLabel={i18n.nSaveMeal}
           style={[styles.saveButton, !canSave && !save.isSuccess && styles.saveDisabled]}
           disabled={!canSave}
           onPress={submit}>
@@ -1049,5 +1094,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   saveDisabled: { opacity: 0.4 },
+  rangeError: { ...type.caption, color: colors.readinessRed },
   saveText: { ...type.headline, color: colors.primaryForeground },
 });

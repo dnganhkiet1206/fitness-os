@@ -218,6 +218,17 @@ export default function LogSleepSheet() {
       </View>
 
       <PressScale
+                /* The name has to be a constant, because the *text* is not.
+
+           This button renders a Check on success and a spinner while
+           pending, and in both of those branches there is no `<Text>` in the
+           tree at all — so the control announced itself as an unnamed
+           element at exactly the two moments a person most needs to know
+           what it is doing. `tools/tap-targets.mjs` documents this as the
+           blind spot it cannot see, and these five buttons were sitting in
+           it. */
+        accessibilityRole="button"
+        accessibilityLabel={i18n.nSaveSleep}
         style={[styles.saveButton, (save.isPending || !!stageError) && styles.saveDisabled]}
         disabled={save.isPending || save.isSuccess || !!stageError}
         onPress={() => save.mutate()}>

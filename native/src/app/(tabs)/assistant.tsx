@@ -157,7 +157,7 @@ const TOOLS: Tool[] = [
      conversation itself. The slot goes to something that is genuinely
      elsewhere. */
   { key: 'steps', glyph: 'bolt', label: { vi: 'Vận động', en: 'Movement' }, hint: { vi: 'Bước chân và calo hôm nay', en: 'Steps and calories today' }, route: '/steps' },
-  { key: 'scan', glyph: 'camera', label: { vi: 'Quét thực phẩm', en: 'Scan a meal' }, hint: { vi: 'Hướng máy ảnh vào đĩa ăn', en: 'Point the camera at a plate' }, route: '/scan-food?from=ai' },
+  { key: 'scan', glyph: 'camera', label: { vi: 'Quét thực phẩm', en: 'Scan a meal' }, hint: { vi: 'Hướng máy ảnh vào đĩa ăn', en: 'Point the camera at a plate' }, route: '/scan-food' },
   { key: 'bio', glyph: 'heart', label: { vi: 'Sinh trắc học', en: 'Biometrics' }, hint: { vi: 'Nhịp tim, HRV, oxy', en: 'Heart rate, HRV, oxygen' }, route: '/biometrics' },
   { key: 'sleep', glyph: 'moon', label: { vi: 'Giấc ngủ', en: 'Sleep' }, hint: { vi: 'Đêm qua, và xu hướng', en: 'Last night, and the trend' }, route: '/sleep-insights' },
   /* The memory is the reason the coach stops asking the same questions, and a

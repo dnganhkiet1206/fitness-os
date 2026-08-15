@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useRootNavigationState } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
@@ -19,7 +19,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
-import { setPendingScan, type ScannedFood } from '@/lib/scan-bridge';
+import { setPendingScan, stackHasMealSheet, type ScannedFood } from '@/lib/scan-bridge';
 
 type ScanMode = 'food' | 'label';
 type Phase = 'camera' | 'analyzing' | 'review';
@@ -47,7 +47,9 @@ function normalize(items: RawItem[]): ScannedFood[] {
 }
 
 export default function ScanFoodScreen() {
-  const { from } = useLocalSearchParams<{ from?: string }>();
+  /* `from` is gone. It existed to tell this screen where to go afterwards, and
+     that is now worked out from the navigation state — see `confirm` below. */
+  const navState = useRootNavigationState();
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const i18n = useI18n();
@@ -119,13 +121,22 @@ export default function ScanFoodScreen() {
   const confirm = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setPendingScan(items);
-    // Opened from the tab-bar AI panel there's no meal sheet behind us —
-    // route into it so the scanned items don't sit parked in the bridge
-    if (from === 'ai') {
-      router.replace('/log-meal');
-    } else {
-      router.back();
-    }
+    /*
+      Where the food goes is worked out here, not passed in.
+
+      This used to read `if (from === 'ai')`, and the comment beside it said the
+      right thing: opened from the tab-bar AI panel there is no meal sheet
+      behind us, so route into one. What it missed is that the Nutrition tab's
+      own "four ways to log a meal" card pushes this screen with **no parameter
+      at all** — so the most prominent scan button in the app took the other
+      branch, popped back to the tab, and left the scan parked in the bridge
+      where nothing would ever read it.
+
+      Asking the navigation state removes the class: a caller cannot forget a
+      flag it is never asked for.
+    */
+    if (stackHasMealSheet(navState)) router.back();
+    else router.replace('/log-meal');
   };
 
   if (!permission) return <View style={styles.root} />;

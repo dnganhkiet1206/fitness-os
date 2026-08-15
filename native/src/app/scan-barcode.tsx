@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useRootNavigationState } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -11,7 +11,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAppSettings } from '@/hooks/use-app-settings';
-import { setPendingScan } from '@/lib/scan-bridge';
+import { setPendingScan, stackHasMealSheet } from '@/lib/scan-bridge';
 
 /** Open Food Facts lookup — same source and per-serving math as the web app */
 async function lookupBarcode(code: string, lang: string) {
@@ -41,6 +41,7 @@ async function lookupBarcode(code: string, lang: string) {
 
 export default function ScanBarcodeScreen() {
   const insets = useSafeAreaInsets();
+  const navState = useRootNavigationState();
   const [permission, requestPermission] = useCameraPermissions();
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -56,7 +57,11 @@ export default function ScanBarcodeScreen() {
     if (food) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setPendingScan(food);
-      router.back();
+      /* Same rule as the photo scanner: the destination is worked out, not
+         passed in. This screen never took a parameter at all, so every barcode
+         scanned from the Nutrition tab was written to the bridge and dropped. */
+      if (stackHasMealSheet(navState)) router.back();
+      else router.replace('/log-meal');
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       setStatus('not-found');

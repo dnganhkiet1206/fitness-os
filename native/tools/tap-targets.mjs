@@ -300,7 +300,83 @@ for (const file of walk(SRC)) {
   }
 }
 
-if (unnamed.length || small.length || shortLabelled.length || headerRows.length) {
+/*
+  ── the blind spot this file already documents, closed for the buttons in it ──
+
+  The note at the top of this file says it plainly: a control whose label is
+  rendered conditionally needs an `accessibilityLabel` regardless, and this
+  checker cannot tell you so.
+
+  The five save buttons were sitting in exactly that hole. Each renders
+
+      isSuccess ? <Icon Check/> : isPending ? <ActivityIndicator/> : <Text>Save</Text>
+
+  so in two of the three branches there is no text in the tree at all, and the
+  most important button on each sheet announced itself as an unnamed element at
+  precisely the two moments — saving, saved — when a person most needs to know
+  what it is doing. Combined with a toast that said nothing, tapping Save gave a
+  VoiceOver user a haptic and no information whatsoever.
+
+  Named files rather than a general rule, because the general rule is the thing
+  this checker cannot do. Each entry is a button that changes what it renders.
+*/
+const conditional = [];
+const CONDITIONAL_LABEL = [
+  'src/app/log-meal.tsx',
+  'src/app/log-workout.tsx',
+  'src/app/log-sleep.tsx',
+  'src/app/log-biometrics.tsx',
+  'src/app/log-measurement.tsx',
+];
+for (const file of CONDITIONAL_LABEL) {
+  const src = readFileSync(path.join(NATIVE, file), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const at = src.indexOf('styles.saveButton');
+  if (at < 0) {
+    conditional.push(`${file}: không còn thấy nút lưu — luật nhãn-có-điều-kiện đã lạc mục tiêu`);
+    continue;
+  }
+  /* Look just above the style line: that is where the element's own props are,
+     and a label belonging to some other control on the page must not count. */
+  const head = src.slice(Math.max(0, at - 400), at);
+  if (!head.includes('accessibilityLabel')) {
+    conditional.push(
+      `${file}: nút lưu không có accessibilityLabel — nhánh đang gửi và đã xong không có <Text> nào, ` +
+        'nên nó tự giới thiệu là một phần tử không tên đúng lúc quan trọng nhất',
+    );
+  }
+}
+
+/*
+  And the one surface that announces results at all has to announce them.
+
+  `neon-toast` is the app's sole channel for "đã lưu", "đã xếp hàng offline" and
+  every `toast.error` — the sheets pop themselves on success, so nothing else is
+  left on screen to read. It also removes itself after three seconds, which is
+  shorter than it takes to navigate to it, so the announcement has to be pushed
+  rather than offered.
+*/
+{
+  /* Comments stripped. The first version read the raw file and passed with the
+     call deleted — because the comment above it *names* the API while
+     explaining why it is there. Third time this file family has been fooled by
+     its own prose; it is a rule about code, so it reads code. */
+  const toastHost = readFileSync(path.join(NATIVE, 'src/components/ascnd/neon-toast.tsx'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  if (!/announceForAccessibility/.test(toastHost)) {
+    conditional.push(
+      'neon-toast.tsx: không đọc thông báo lên — đây là kênh xác nhận DUY NHẤT của app, ' +
+        'và nó tự biến mất sau 3 giây nên không thể điều hướng tới kịp',
+    );
+  }
+  if (!/accessibilityLiveRegion/.test(toastHost)) {
+    conditional.push('neon-toast.tsx: thiếu accessibilityLiveRegion (nửa Android của cùng một ý)');
+  }
+}
+
+if (unnamed.length || small.length || shortLabelled.length || headerRows.length || conditional.length) {
   if (unnamed.length) {
     console.error(`nút chỉ có icon mà không có accessibilityLabel (${unnamed.length}):\n`);
     for (const u of unnamed) console.error(`  ${u}`);
@@ -321,12 +397,19 @@ if (unnamed.length || small.length || shortLabelled.length || headerRows.length)
     for (const s of shortLabelled) console.error(`  ${s}`);
     console.error('');
   }
+  if (conditional.length) {
+    console.error(`nhãn phụ thuộc điều kiện (${conditional.length}) — điểm mù mà chính file này ghi ra:\n`);
+    for (const c of conditional) console.error(`  ${c}`);
+    console.error('');
+  }
   console.error('dùng <IconButton> — nó ép nhãn và tự tính hitSlop. Xem tools/tap-targets.mjs');
   process.exit(1);
 }
 
 console.log(
   `vùng chạm OK — mọi nút icon đều có nhãn, không vùng chạm nào dưới ${MIN_TARGET}pt, ` +
+    `${CONDITIONAL_LABEL.length} nút lưu có nhãn cố định (nhánh đang gửi/đã xong không có chữ nào để đọc), ` +
+    'toast đọc được nội dung lên cho trình đọc màn hình, ' +
     'các control rộng theo flex (segment, hàng, pill) cũng được đo chiều cao — trước đây chúng bị bỏ qua vì không có width cố định — ' +
     'và không header nào vẽ một dãy icon không chữ',
 );
