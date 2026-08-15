@@ -51,7 +51,17 @@ export function asleepMinutes(sleep: {
   if (sleep.asleep_min != null && sleep.asleep_min > 0) return Math.round(sleep.asleep_min);
   const bed = new Date(sleep.bedtime).getTime();
   const wake = new Date(sleep.waketime).getTime();
-  return Math.round((wake - bed) / 60000);
+  /*
+    Never negative.
+
+    The sheet that writes these rows now refuses an impossible span, but this
+    function also reads rows written before that check existed, and rows from
+    HealthKit. A reversed pair used to come through here as a negative number
+    and go straight into `daily_logs.sleep_duration_min`, where it fed the
+    readiness score and — through the seven-day mean — invented sleep debt for a
+    week. Zero says "no sleep recorded", which is what a nonsense span means.
+  */
+  return Math.max(0, Math.round((wake - bed) / 60000));
 }
 
 export async function recomputeDailyLog(userId: string, date: string) {

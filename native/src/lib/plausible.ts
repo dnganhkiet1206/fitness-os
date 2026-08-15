@@ -55,6 +55,7 @@ export type Quantity =
   | 'body_fat_pct'
   | 'circumference_cm'
   | 'sleep_stage_min'
+  | 'sleep_duration_min'
   | 'meal_kcal'
   | 'macro_g'
   | 'lift_kg'
@@ -148,6 +149,23 @@ export const BOUNDS: Record<Quantity, Bound> = {
 
   /** A single sleep stage cannot outlast the day it happened in. */
   sleep_stage_min: { min: 0, max: 1440, unit: 'min' },
+
+  /*
+    The night itself, which had no bound at all — and the stages did, which made
+    the gap easy to miss.
+
+    It mattered because `sleep_duration_min` is the heaviest single input to the
+    readiness score (weight 0.30) and the app derives it from two time pickers,
+    so an impossible night is two taps away rather than a typo. A 26-hour
+    "night" scored 100/100 and, through the 7-day average, wiped a real week of
+    sleep debt.
+
+    Floor at 10 rather than 0: under ten minutes is not a sleep record, and 0
+    would let a reversed pair through as "fine". Ceiling at 960 (16 h) — long
+    enough for genuine recovery sleep and for the long end of a sick day, short
+    enough that a day-length span cannot be one night.
+  */
+  sleep_duration_min: { min: 10, max: 960, unit: 'min' },
 
   /** Per food item, not per day. 10,000 kcal in one item is a mistyped number, not a meal. */
   meal_kcal: { min: 0, max: 10000, unit: 'kcal' },

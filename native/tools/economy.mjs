@@ -45,7 +45,8 @@ try {
   );
 
   const mod = await import(pathToFileURL(path.join(out, 'mascot-room.js')).href);
-  const { CHALLENGE_REWARD, challengeRefKey, xpForRefKey, DAILY_QUESTS, SHOP_ITEMS, streakCoins } = mod;
+  const { CHALLENGE_REWARD, challengeRefKey, xpForRefKey, DAILY_QUESTS, SHOP_ITEMS, streakCoins,
+          WEEKLY_BONUS_XP } = mod;
 
   const problems = [];
   const check = (ok, msg) => { if (!ok) problems.push(msg); };
@@ -65,6 +66,28 @@ try {
   check(
     xpForRefKey('d:2026-08-03:workout') === workout.xp,
     'khoá nhiệm vụ ngày không còn định giá đúng',
+  );
+
+  /*
+    2b — the retired `w:` key still prices, and this is the point of it.
+
+    Finishing a weekly challenge used to be paid twice: automatically as
+    `ch:<tier>:<week>:<key>`, and again from a "Claim" button in the Koa room as
+    `w:<id>`. The room's path is gone, so nothing writes `w:` any more.
+
+    But XP is not stored — it is re-derived from the ledger on every read. So
+    every `w:` row already sitting in a real user's history is still being
+    priced today, and deleting the branch that prices it would take 40 XP off
+    each of those rows. Somebody who had completed a few challenges would open
+    the app and find themselves a **level lower**, with the shop's `unlockLevel`
+    gates closed again behind them, and nothing to explain it.
+
+    A dead key that must keep its value is exactly the kind of thing a later
+    cleanup removes for looking unused. This is the note that stops it.
+  */
+  check(
+    xpForRefKey('w:1234') === WEEKLY_BONUS_XP,
+    'khoá `w:` cũ không còn định giá — mọi thử thách đã nhận trước đây sẽ mất XP và người dùng bị tụt cấp',
   );
 
   // 3 — the shop has to outlast a month of perfect play

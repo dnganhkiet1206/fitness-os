@@ -120,7 +120,7 @@ for (const f of walk(path.join(NATIVE, 'src'))) {
      '--module', 'esnext', '--target', 'es2020', '--moduleResolution', 'bundler', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  const { SHOP_ITEMS, CONSUMABLES, DAILY_QUESTS, CHALLENGE_REWARD } = await import(
+  const { SHOP_ITEMS, CONSUMABLES } = await import(
     pathToFileURL(path.join(out, 'mascot-room.js')).href
   );
 
@@ -149,30 +149,28 @@ for (const f of walk(path.join(NATIVE, 'src'))) {
   }
 
   /*
-    ── 3: the ceilings still cover a real day ──
+    ── 3: the ceilings are `tools/reward-ledger.mjs`'s question now ──
 
-    The clamp in `earn_mascot_coins` bounds a forged claim. Bounded too tightly
-    it stops being a safety net and starts refusing rewards somebody earned,
-    which is the failure nobody would report as a security bug.
+    There was a ceiling check here, and it was **green while the ceiling was
+    wrong**, in two separate ways worth recording:
+
+      · It compared `MAX_PER_CLAIM` against `CHALLENGE_REWARD` alone, whose peak
+        is exactly 120 — so it read 120 >= 120 and passed, while the welcome
+        gift (300), the Runner Set (180) and the dev faucet (500) were all being
+        refused by the server. It never read `COLLECTIONS` and could not see an
+        amount written straight into a screen.
+
+      · `sql` above is every migration concatenated, and `.match()` returns the
+        **first** hit. Once a later migration replaced the function, this still
+        read the superseded constant out of the older file. A ceiling check
+        pinned to a number that no longer runs is worse than no check.
+
+    Both are the same mistake — asserting about a copy instead of about the
+    thing that runs — so the replacement reads the *last* definition and checks
+    *every* grant. It lives in `reward-ledger.mjs` rather than being widened
+    here, because two files both deciding what the ceiling means is how this one
+    came to be wrong in the first place.
   */
-  const perClaim = Number(sql.match(/MAX_PER_CLAIM CONSTANT INTEGER := (\d+)/)?.[1] ?? 0);
-  const perDay = Number(sql.match(/MAX_PER_DAY\s+CONSTANT INTEGER := (\d+)/)?.[1] ?? 0);
-  const biggestReward = Math.max(...Object.values(CHALLENGE_REWARD).map((r) => r.coins));
-  const questsPerDay = DAILY_QUESTS.reduce((s, q) => s + q.coins, 0);
-  const realisticDay = questsPerDay + biggestReward + 25; // + a streak bonus
-
-  if (perClaim < biggestReward) {
-    problems.push(
-      `earn_mascot_coins: trần mỗi lần ${perClaim} < phần thưởng lớn nhất ${biggestReward} — ` +
-        'người dùng thắng thử thách platinum sẽ bị từ chối trả thưởng',
-    );
-  }
-  if (perDay < realisticDay) {
-    problems.push(
-      `earn_mascot_coins: trần mỗi ngày ${perDay} < một ngày trọn vẹn ${realisticDay} ` +
-        `(${questsPerDay} quest + ${biggestReward} thử thách + 25 chuỗi) — sẽ chặn nhầm người chơi thật`,
-    );
-  }
 }
 
 /**
@@ -212,5 +210,8 @@ if (problems.length) {
 
 console.log(
   'quyền kinh tế OK — sổ cái, kho đồ, bảng giá và entitlements đều không nhận ghi từ client; ' +
-    '39 giá trong SQL khớp catalogue; trần thưởng đủ cho một ngày chơi trọn vẹn',
+    '39 giá trong SQL khớp catalogue. Trần thưởng KHÔNG còn kiểm ở đây: bản cũ so trần với ' +
+    'CHALLENGE_REWARD (đỉnh đúng 120) nên xanh trong khi quà chào mừng 300 đang bị từ chối, ' +
+    'và nó đọc hằng số ĐẦU TIÊN trong chuỗi migration nên vẫn đọc bản đã bị thay thế — ' +
+    'câu hỏi đó giờ thuộc về tools/reward-ledger.mjs, nơi đọc bản định nghĩa cuối và mọi khoản thưởng',
 );

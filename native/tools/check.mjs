@@ -198,6 +198,16 @@ const STEPS = [
     the streak freeze, dead, with nothing red anywhere.
   */
   ['SQL kinh tế', 'node', ['tools/economy-sql.mjs']],
+  /*
+    Asks the two questions the other economy rules do not: can this amount get
+    past the server's ceiling, and how many ledger rows does one event write.
+    `economy-authority.mjs` compares the ceiling only against `CHALLENGE_REWARD`
+    (peak exactly 120) so it never saw the 300-coin welcome gift failing, and
+    `economy.mjs` prices rewards without counting them, so it never saw a
+    finished challenge being paid through two different `ref_key` shapes.
+  */
+  ['sổ cái thưởng', 'node', ['tools/reward-ledger.mjs']],
+  ['cửa sổ giấc ngủ', 'node', ['tools/sleep-window.mjs']],
 ];
 
 let failed = 0;

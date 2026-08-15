@@ -81,6 +81,7 @@ import { CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
   DAILY_QUESTS,
+  CHALLENGE_REWARD,
   ENERGY_SIGNALS,
   FREEZE_MAX,
   FREEZE_PRICE,
@@ -88,12 +89,9 @@ import {
   RANKS,
   SHOP_CATEGORIES,
   STREAK_XP,
-  WEEKLY_BONUS_COINS,
-  WEEKLY_BONUS_XP,
   levelFromXp,
   nextRank,
   questRefKey,
-  weeklyRefKey,
   rankForLevel,
   streakCoins,
   type Collection,
@@ -410,16 +408,30 @@ export default function MascotRoomScreen() {
       title=""
       headerRight={
         <Pressable
-          // Hidden test faucet: long-press the coin pill for +500 coins
+          /*
+            Hidden test faucet — development builds only.
+
+            It was unconditional, so in a shipped app a long press on the coin
+            pill minted 500 coins. That is not a debug affordance once it is on
+            a phone in a shop; it is the economy with a hole in it, reachable by
+            accident, on the one control a user presses to check their balance.
+
+            The amount also has to sit under `MAX_PER_CLAIM` (300), or the
+            faucet raises instead of paying and reads as a broken button.
+          */
           hitSlop={7}
           delayLongPress={600}
-          onLongPress={() => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            claim.mutate(
-              { refKey: `dev:${Date.now()}`, amount: 500, reason: 'dev grant' },
-              { onSuccess: () => toast.success(i18n.nRoomEarned.replace('{n}', '500')) },
-            );
-          }}
+          onLongPress={
+            __DEV__
+              ? () => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  claim.mutate(
+                    { refKey: `dev:${Date.now()}`, amount: 300, reason: 'dev grant' },
+                    { onSuccess: () => toast.success(i18n.nRoomEarned.replace('{n}', '300')) },
+                  );
+                }
+              : undefined
+          }
           style={styles.coinPill}>
           <Icon icon={Coins} size={14} />
           <Text style={styles.coinText}>{balance.toLocaleString()}</Text>
@@ -782,41 +794,51 @@ export default function MascotRoomScreen() {
         )}
       </GlassCard>
 
-      {/* Weekly challenge bonuses */}
+      {/*
+        ── weekly challenges: a receipt, not a till ──
+
+        This card used to carry a "Claim" button paying `WEEKLY_BONUS_COINS`
+        (40) + 40 XP under the key `w:<id>`. But finishing a challenge is
+        *already* paid, automatically, the moment progress completes it —
+        `use-extras.ts` writes `ch:<tier>:<week>:<key>` worth 25/50/80/120 by
+        tier.
+
+        Two keys for one event, and `UNIQUE(user_id, ref_key)` cannot see that
+        they mean the same thing. So every finished challenge paid twice: a gold
+        one gave 120 coins and 120 XP instead of 80 and 80. XP is derived from
+        this same ledger, so the inflation carried straight into level, rank,
+        the level-up celebrations and the shop's `unlockLevel` gates.
+
+        The tier-scaled path is the one that survives: it is the table the
+        economy was balanced around, and a platinum challenge ought to be worth
+        more than a bronze one, which a flat 40 made false.
+
+        So this card shows what was already paid. Nothing to press, nothing to
+        remember to come back for — and the amount comes from `CHALLENGE_REWARD`
+        so it can never drift from what the ledger actually recorded.
+      */}
       {completedWeekly.length > 0 && (
         <GlassCard style={styles.card}>
           <Text style={styles.cardTitle}>{i18n.nRoomWeeklyBonus}</Text>
           {completedWeekly.map((c) => {
-            const refKey = weeklyRefKey(c.id);
-            const isClaimed = claimed.has(refKey);
             const t = CHALLENGE_TEXT[c.challenge_key];
+            const paid = CHALLENGE_REWARD[c.reward_tier ?? 'bronze'] ?? CHALLENGE_REWARD.bronze;
             return (
               <View key={c.id} style={styles.questRow}>
                 <View style={styles.questInfo}>
-                  <Text style={[styles.questName, isClaimed && styles.questNameDone]}>
+                  <Text style={[styles.questName, styles.questNameDone]}>
                     {t ? t.title[lang] : c.title}
                   </Text>
                   <View style={styles.questCoins}>
                     <Icon icon={Coins} size={11} />
-                    <Text style={styles.questCoinText}>+{WEEKLY_BONUS_COINS}</Text>
-                    <Text style={styles.questXpText}>+{WEEKLY_BONUS_XP} XP</Text>
+                    <Text style={styles.questCoinText}>+{paid.coins}</Text>
+                    <Text style={styles.questXpText}>+{paid.xp} XP</Text>
                   </View>
                 </View>
-                {isClaimed ? (
-                  <View style={styles.claimedChip}>
-                    <Icon icon={Check} size={13} color={colors.readinessGreen} strokeWidth={3} />
-                    <Text style={styles.claimedText}>{i18n.nRoomClaimed}</Text>
-                  </View>
-                ) : (
-                  <PressScale
-                    disabled={claim.isPending}
-                    style={styles.claimBtn}
-                    onPress={() =>
-                      reward(refKey, WEEKLY_BONUS_COINS, `weekly:${c.challenge_key}`, WEEKLY_BONUS_XP)
-                    }>
-                    <Text style={styles.claimText}>{i18n.nRoomClaim}</Text>
-                  </PressScale>
-                )}
+                <View style={styles.claimedChip}>
+                  <Icon icon={Check} size={13} color={colors.readinessGreen} strokeWidth={3} />
+                  <Text style={styles.claimedText}>{i18n.nRoomClaimed}</Text>
+                </View>
               </View>
             );
           })}

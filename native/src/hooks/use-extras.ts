@@ -257,7 +257,13 @@ export function useWeeklyChallenges() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('weekly_challenges')
-        .select('id, challenge_key, title, description, icon, current_value, target_value, completed')
+        /* `reward_tier` is read by the Koa room, which prints what a finished
+           challenge already paid. Without it the room cannot tell a bronze from
+           a platinum and would have to guess a flat number — which is how the
+           duplicate 40-coin claim got there in the first place. */
+        .select(
+          'id, challenge_key, title, description, icon, current_value, target_value, completed, reward_tier',
+        )
         .eq('user_id', user!.id)
         .eq('week_start', weekStart)
         .order('created_at');

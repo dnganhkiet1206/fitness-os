@@ -27,9 +27,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
-import { BOUNDS, plausibleText } from '@/lib/plausible';
+import { BOUNDS, plausible, plausibleText } from '@/lib/plausible';
 import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
+import { sleepSpan } from '@/lib/sleep-window';
 
 // Face picks map onto the web's 1–10 quality scale (SleepCard shows
 // "x/10") — code-drawn lucide faces on a red→teal neon ramp
@@ -40,14 +41,6 @@ const QUALITY: { value: number; icon: LucideIcon; color: string }[] = [
   { value: 8, icon: Smile, color: colors.readinessGreen },
   { value: 10, icon: Laugh, color: colors.metricCyan },
 ];
-
-/** Bedtime after noon belongs to yesterday; waketime is always today. */
-function withDate(time: Date, dayOffset: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() + dayOffset);
-  d.setHours(time.getHours(), time.getMinutes(), 0, 0);
-  return d;
-}
 
 export default function LogSleepSheet() {
   const { user } = useAuth();
@@ -62,9 +55,26 @@ export default function LogSleepSheet() {
   const [remMin, setRemMin] = useState('');
   const [lightMin, setLightMin] = useState('');
 
-  const bedDate = withDate(bedtime, bedtime.getHours() >= 12 ? -1 : 0);
-  const wakeDate = withDate(waketime, 0);
-  const durationMin = Math.max(0, Math.round((wakeDate.getTime() - bedDate.getTime()) / 60000));
+  /*
+    Which day each time belongs to is `lib/sleep-window.ts`'s question — it is
+    a rule whose failures are all at the edges (a nap once became a 26-hour
+    night here), so it lives where `tools/sleep-window.mjs` can run it against a
+    table of cases rather than inside this screen where nothing could.
+  */
+  const { bedDate, wakeDate, minutes: durationMin } = sleepSpan(bedtime, waketime);
+
+  /*
+    And the span still has to be a possible night. The pickers make the
+    arithmetic sound, not the result: 11:00 → 07:00 is now a legal 20-hour span,
+    which is not a night anybody slept.
+  */
+  const durationBad = !plausible('sleep_duration_min', durationMin);
+  const durationError = durationBad
+    ? i18n.outOfRange
+        .replace('{min}', String(BOUNDS.sleep_duration_min.min))
+        .replace('{max}', String(BOUNDS.sleep_duration_min.max))
+        .replace('{unit}', i18n.logSleepMinutes)
+    : null;
 
   /*
     ── the stages have to fit inside the night ──
@@ -198,6 +208,7 @@ export default function LogSleepSheet() {
         ))}
       </View>
       {stageError ? <Text style={styles.stageError}>{stageError}</Text> : null}
+      {durationError ? <Text style={styles.stageError}>{durationError}</Text> : null}
 
       <Text style={styles.fieldLabel}>{i18n.nHowSleep}</Text>
       <View style={styles.chips}>
@@ -235,8 +246,11 @@ export default function LogSleepSheet() {
            it. */
         accessibilityRole="button"
         accessibilityLabel={i18n.nSaveSleep}
-        style={[styles.saveButton, (save.isPending || !!stageError) && styles.saveDisabled]}
-        disabled={save.isPending || save.isSuccess || !!stageError}
+        style={[
+          styles.saveButton,
+          (save.isPending || !!stageError || !!durationError) && styles.saveDisabled,
+        ]}
+        disabled={save.isPending || save.isSuccess || !!stageError || !!durationError}
         onPress={() => {
           /* Offline this write used to pause for ever: the button stayed
              disabled on `isPending`, no toast fired, the sheet never closed,
