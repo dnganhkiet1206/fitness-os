@@ -173,3 +173,86 @@ export function baseEmotion(i: EmotionInput): MascotEmotion {
 export function resolveEmotion(base: MascotEmotion, action: MascotEmotion | null): MascotEmotion {
   return action ?? base;
 }
+
+/**
+ * The one-shot channel: an emotion held for a while, over the top of whatever
+ * the engine would otherwise be showing.
+ *
+ * ── why this lives here rather than in the hook ──
+ *
+ * It was module state inside `hooks/use-mascot-emotion.tsx`, and that closed a
+ * runtime import cycle:
+ *
+ *     use-mascot.tsx → lib/koa-stage.ts → hooks/use-mascot-emotion.tsx
+ *                    → use-mascot.tsx
+ *
+ * All three edges were **value** imports, so the cycle was real rather than a
+ * type-level artefact. It survived only because every use sits inside a
+ * function body: by the time anything calls, all three modules have finished
+ * loading. One call at module scope anywhere in that triangle — a constant
+ * derived from a helper, a store initialised eagerly — and the app fails at
+ * startup with an undefined binding, on the slowest device first, in a stack
+ * that names none of the three files.
+ *
+ * `koa-stage.ts` only ever wanted `holdEmotion`. Moving the channel into this
+ * file — which already owns `MascotEmotion`, `MascotAction` and `ACTION_MS`,
+ * and whose own only import is type-only — cuts the edge at its source. The
+ * hook keeps the React surface and re-exports what screens already import, so
+ * nothing else moves.
+ */
+let active: { action: MascotEmotion; expires: number } | null = null;
+const listeners = new Set<() => void>();
+let timer: ReturnType<typeof setTimeout> | null = null;
+
+function emit() {
+  listeners.forEach((l) => l());
+}
+
+function hold(emotion: MascotEmotion, ms: number) {
+  active = { action: emotion, expires: Date.now() + ms };
+  emit();
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(() => {
+    active = null;
+    timer = null;
+    emit();
+  }, ms);
+}
+
+/** Hold any emotion for a given time — the channel Koa's reactions arrive on. */
+export function holdEmotion(emotion: MascotEmotion, ms: number) {
+  hold(emotion, ms);
+}
+
+/** Play a one-shot action (celebrate on a PR, wave on open, curl on a lift). */
+export function triggerMascotAction(action: MascotAction) {
+  hold(action, ACTION_MS[action]);
+}
+
+export function subscribeEmotion(cb: () => void) {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+}
+export const getHeldEmotion = () => active;
+
+// ── DEV emotion override — lets a dev force any emotion to test the animation
+//    without recreating real conditions (streak / time of day / screen). Only
+//    honoured in __DEV__. `null` = back to the real Emotion Engine. ──
+let devOverride: MascotEmotion | null = null;
+export function setDevEmotion(e: MascotEmotion | null) {
+  devOverride = e;
+  emit();
+}
+export const getDevOverride = () => devOverride;
+/** Emotions worth cycling through when testing the mascot animation. */
+export const DEV_EMOTIONS: MascotEmotion[] = [
+  'idle',
+  'happy',
+  'sad',
+  'tired',
+  'sleep',
+  'celebrate',
+  'curl',
+  'wave',
+  'run',
+];

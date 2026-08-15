@@ -2,10 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 
-import { fireCelebration } from '@/components/ascnd/award-celebration';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
 import { AWARD_TEXT, CHALLENGE_TEXT } from '@/lib/gamification-i18n';
+/* Straight to the queue rather than through `award-celebration.tsx`, whose
+   `fireCelebration` is a one-line pass-through to exactly this. A hook reaching
+   into a component to reach a lib pulls React and the whole overlay into the
+   import graph of something that only wanted to append to an array. */
+import { enqueueAward } from '@/lib/celebration-queue';
 import { localDateStr, localDayRangeISO, parseLocalDate } from '@/lib/local-date';
 import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { TIER_MAGNITUDE } from '@/lib/koa-event';
@@ -118,7 +122,7 @@ export function useCheckAwards() {
     if (!error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Fire the confetti overlay in the user's language
-      fireCelebration({
+      enqueueAward({
         title: text.title[lang],
         description: text.desc[lang],
         icon: def.icon,
@@ -540,7 +544,7 @@ export function useUpdateChallengeProgress() {
       );
 
       for (const party of parties) {
-        if (party) fireCelebration(party);
+        if (party) enqueueAward(party);
       }
     },
     onSuccess: () => {

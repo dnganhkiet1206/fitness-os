@@ -7,13 +7,29 @@ import { habitFor, usePersonalModel } from '@/lib/personal-model';
 import { lateHour } from '@/lib/user-rhythm';
 import { useProfile } from '@/hooks/useTodayData';
 import {
-  ACTION_MS,
+  DEV_EMOTIONS,
+  getDevOverride,
+  getHeldEmotion,
+  holdEmotion,
+  setDevEmotion,
+  subscribeEmotion,
+  triggerMascotAction,
   baseEmotion,
   resolveEmotion,
   RISK_HOUR,
   type MascotAction,
   type MascotEmotion,
 } from '@/lib/mascot-emotion';
+
+/* Re-exported so the screens that already import these from this hook keep
+   working; the channel itself now lives in `lib/mascot-emotion.ts`, which is
+   what breaks the import cycle described there. */
+export { DEV_EMOTIONS, holdEmotion, setDevEmotion, triggerMascotAction };
+
+/* Session-scoped, and it stays in the hook rather than moving to the channel
+   with the rest: "has the buddy said hello yet on this launch" is a fact about
+   this React tree, not about the emotion store. */
+let greeted = false;
 
 /**
  * The Emotion Engine's React layer.
@@ -24,82 +40,9 @@ import {
  * `useMascotEmotion()` blends that with the state-derived held emotion.
  */
 
-let active: { action: MascotEmotion; expires: number } | null = null;
-const listeners = new Set<() => void>();
-let timer: ReturnType<typeof setTimeout> | null = null;
-let greeted = false;
-
-function emit() {
-  listeners.forEach((l) => l());
-}
-
-// ── DEV emotion override — lets a dev force any emotion to test the animation
-//    without recreating real conditions (streak / time of day / screen). Only
-//    honoured in __DEV__. `null` = back to the real Emotion Engine. ──
-let devOverride: MascotEmotion | null = null;
-export function setDevEmotion(e: MascotEmotion | null) {
-  devOverride = e;
-  emit();
-}
-const getDevOverride = () => devOverride;
-/** Emotions worth cycling through when testing the mascot animation. */
-export const DEV_EMOTIONS: MascotEmotion[] = [
-  'idle',
-  'happy',
-  'sad',
-  'tired',
-  'sleep',
-  'celebrate',
-  'curl',
-  'wave',
-  'run',
-];
-
-/** Play a one-shot action (celebrate on a PR, wave on open, curl on a lift). */
-export function triggerMascotAction(action: MascotAction) {
-  hold(action, ACTION_MS[action]);
-}
-
-/**
- * Hold any emotion for a given time — the channel Koa's reactions arrive on.
- *
- * ── why the existing one-shot was not enough ──
- *
- * `triggerMascotAction` takes one of three names with three fixed durations,
- * which was right when the only one-shots were *wave on open* and *curl while
- * lifting*. A decision engine produces an emotion and a duration chosen for the
- * event — `proud` for two seconds after a personal record — and neither of
- * those is expressible as one of three names.
- *
- * So the store now holds an emotion rather than an action, and
- * `triggerMascotAction` is a thin call into it. Nothing else about the channel
- * changes: same slot, same subscribers, same rule that a one-shot outranks the
- * held emotion. This is the integration requiring a change, not a rewrite for
- * its own sake.
- */
-export function holdEmotion(emotion: MascotEmotion, ms: number) {
-  hold(emotion, ms);
-}
-
-function hold(emotion: MascotEmotion, ms: number) {
-  active = { action: emotion, expires: Date.now() + ms };
-  emit();
-  if (timer) clearTimeout(timer);
-  timer = setTimeout(() => {
-    active = null;
-    timer = null;
-    emit();
-  }, ms);
-}
-
-function subscribe(cb: () => void) {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-const getActive = () => active;
 
 function useActiveAction(): MascotEmotion | null {
-  const snap = useSyncExternalStore(subscribe, getActive, getActive);
+  const snap = useSyncExternalStore(subscribeEmotion, getHeldEmotion, getHeldEmotion);
   return snap?.action ?? null;
 }
 
@@ -116,7 +59,7 @@ export function useMascotEmotion(): MascotEmotion {
   const { data: profile } = useProfile();
   const pathname = usePathname();
   const action = useActiveAction();
-  const devOverrideEmotion = useSyncExternalStore(subscribe, getDevOverride, getDevOverride);
+  const devOverrideEmotion = useSyncExternalStore(subscribeEmotion, getDevOverride, getDevOverride);
   const onWorkoutScreen = /log-workout|workout/i.test(pathname ?? '');
 
   // Birthday = today's month/day matches the profile DOB (parsed local so

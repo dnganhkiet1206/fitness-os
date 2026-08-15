@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-import { holdEmotion } from '@/hooks/use-mascot-emotion';
+import { holdEmotion } from '@/lib/mascot-emotion';
 import { decide, outranks, type KoaContext, type KoaDecision } from '@/lib/koa-decide';
 import type { KoaEvent } from '@/lib/koa-event';
 import { koaSeenAdd, koaSeenHas } from '@/lib/personal-model';

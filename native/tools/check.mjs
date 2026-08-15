@@ -231,6 +231,15 @@ const STEPS = [
     exactly like a slow network. Two of them had shipped.
   */
   ['khoá invalidate', 'node', ['tools/invalidate-keys.mjs']],
+  /*
+    A runtime import cycle is the bug that works until it does not: every use
+    sits inside a function body, so the modules finish loading before anything
+    calls — right up until one module-scope call anywhere in the loop, which
+    throws at startup on the slowest device with a stack naming none of the
+    files involved. Checks the direction too, since a layer reaching upwards is
+    what produces the cycles.
+  */
+  ['tầng import', 'node', ['tools/layering.mjs']],
 ];
 
 let failed = 0;
