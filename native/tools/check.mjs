@@ -190,6 +190,14 @@ const STEPS = [
   ['đã nối chưa', 'node', ['tools/linked.mjs']],
   ['ghi ngày', 'node', ['tools/daily-log-write.mjs']],
   ['bàn giao quét', 'node', ['tools/scan-handoff.mjs']],
+  /*
+    Reads `supabase/migrations/`, not `src/`. It is here because the bug it was
+    written for passed every other check in this file and a real deploy: a
+    plpgsql body is not parsed when the function is created, so `FOR UPDATE`
+    beside a `SUM` loaded green and raised on every call — the whole shop and
+    the streak freeze, dead, with nothing red anywhere.
+  */
+  ['SQL kinh tế', 'node', ['tools/economy-sql.mjs']],
 ];
 
 let failed = 0;
