@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { Check, PartyPopper, Sparkles } from 'lucide-react-native';
@@ -11,7 +12,11 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
+import { useAuth } from '@/hooks/use-auth';
+import { offlineNow } from '@/lib/offline';
+import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { BOUNDS, plausible } from '@/lib/plausible';
+import { toast } from '@/lib/toast';
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
 import { useSmartNudges } from '@/hooks/use-smart-nudges';
 import { useProfile } from '@/hooks/useTodayData';
@@ -44,6 +49,10 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
   const { data: todayWeight } = useTodayWeight();
   const { data: profile } = useProfile();
   const logWeight = useLogWeight();
+  const { user } = useAuth();
+  /* The durable twin — no local `mutationFn`, because what comes back from
+     storage after a restart is the default registered in `offline-write`. */
+  const queue = useMutation<void, Error, OfflineWrite>({ mutationKey: [...OFFLINE_WRITE_KEY] });
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState('');
 
@@ -90,7 +99,37 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
   const submit = () => {
     if (kg == null || kg <= 0 || weightError) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    logWeight.mutate(kg, { onSuccess: () => setEditing(false) });
+    /*
+      ── offline, down the durable pipe; and either way it says what happened ──
+
+      Two faults met in this one line. Fired offline the mutation paused, the
+      tile sat in its editing state for ever, and the paused write was restored
+      on the next launch with no `mutationFn` registered for its key and
+      dropped — a weigh-in silently gone. And online, a rejected write had no
+      `onError` at all, so the field simply closed as though it had worked.
+
+      Weight is not a cosmetic number here: `adaptiveTDEE` runs a least-squares
+      regression over fourteen days of it to suggest a calorie target.
+
+      `kind: 'weight'` and its handler have been in `lib/offline-write.ts` since
+      that file was written, with nothing ever producing one.
+    */
+    if (offlineNow() && user) {
+      /* Closed here rather than in a callback: a paused mutation never calls
+         one, which is the whole failure being fixed. */
+      setEditing(false);
+      queue.mutate({ kind: 'weight', userId: user.id, kg, date: localDateStr() });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      toast.success(i18n.logMealQueued);
+      return;
+    }
+    logWeight.mutate(kg, {
+      onSuccess: () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setEditing(false);
+      },
+      onError: (e: Error) => toast.error(e.message),
+    });
   };
 
   return (

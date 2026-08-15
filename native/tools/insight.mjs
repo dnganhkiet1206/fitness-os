@@ -146,8 +146,27 @@ if (!callers.some((c) => c.file === DOOR && c.arg === 'false')) {
   if (!/router\.push\('\/assistant'\)/.test(door)) {
     problems.push(`${DOOR}: thẻ không còn dẫn sang /assistant — nó là cánh cửa, cửa phải mở ra chỗ nào đó`);
   }
-  if (/callEdge|useMutation/.test(door)) {
+  /*
+    `callEdge` is the thing that actually asks the model, and it is what this
+    rule is about.
+
+    It used to read `/callEdge|useMutation/`. `useMutation` was a proxy — the
+    card had no mutations of any kind at the time, so banning the word was a
+    free extra net. It stopped being free the day this file grew a durable
+    offline write for the weigh-in tile: a mutation that posts a weight to
+    Supabase has nothing to do with who computes the day's insight, and the
+    proxy failed it.
+
+    A proxy that fails correct code teaches people to weaken the rule it stands
+    for. So the rule is now written about the thing itself, and the AI-name
+    check below covers the case the proxy was really guarding: a mutation in
+    this file that asks the model anything.
+  */
+  if (/callEdge/.test(door)) {
     problems.push(`${DOOR}: vẫn tự gọi edge function — insight chỉ được tính ở một chỗ`);
+  }
+  if (/useMutation[\s\S]{0,400}?(ai-|nudge|insight|smart-nudges)/i.test(door)) {
+    problems.push(`${DOOR}: có mutation đụng tới AI/nudge — insight chỉ được tính ở một chỗ`);
   }
 }
 

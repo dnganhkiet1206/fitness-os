@@ -18,6 +18,7 @@ import { useProfile, useSleepHistory } from '@/hooks/useTodayData';
 import { useDeleteSleepLog } from '@/hooks/use-fitness-data';
 import { getLocale } from '@/lib/i18n';
 import { asleepMinutes } from '@/lib/daily-log-service';
+import { toast } from '@/lib/toast';
 
 const DEEP = colors.metricPurple;
 const REM = colors.metricCyan;
@@ -278,7 +279,17 @@ export default function SleepInsightsScreen() {
                         {
                           text: vi ? 'Xoá' : 'Delete',
                           style: 'destructive',
-                          onPress: () => remove.mutate({ id: s.id, waketime: s.waketime }),
+                          onPress: () =>
+                            remove.mutate(
+                              { id: s.id, waketime: s.waketime },
+                              {
+                                onSuccess: () => {
+                                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                                  toast.success(i18n.deleted);
+                                },
+                                onError: (e: Error) => toast.error(e.message),
+                              },
+                            ),
                         },
                       ],
                     );

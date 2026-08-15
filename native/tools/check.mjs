@@ -188,6 +188,7 @@ const STEPS = [
   ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],
   ['giờ nhắc nhở', 'node', ['tools/reminder-timing.mjs']],
   ['đã nối chưa', 'node', ['tools/linked.mjs']],
+  ['ghi ngày', 'node', ['tools/daily-log-write.mjs']],
 ];
 
 let failed = 0;

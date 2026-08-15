@@ -13,6 +13,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBiometricHistory, useDeleteBiometricSample, type BiometricSample } from '@/hooks/use-biometrics';
+import { toast } from '@/lib/toast';
 
 type MetricKey = 'hr' | 'hrvSdnn' | 'hrv' | 'spo2' | 'vo2max' | 'resp';
 
@@ -210,7 +211,21 @@ export default function BiometricsScreen() {
                       {
                         text: vi ? 'Xoá' : 'Delete',
                         style: 'destructive',
-                        onPress: () => remove.mutate({ id: s.id, date_time: s.date_time }),
+                        onPress: () =>
+                          remove.mutate(
+                            { id: s.id, date_time: s.date_time },
+                            {
+                              onSuccess: () => {
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                                toast.success(i18n.deleted);
+                              },
+                              /* `recomputeDailyLog` throws now, and HRV is the
+                                 readiness score's largest term — a delete whose
+                                 rebuild failed must not look like one that
+                                 worked. */
+                              onError: (e: Error) => toast.error(e.message),
+                            },
+                          ),
                       },
                     ],
                   );

@@ -351,6 +351,29 @@ export async function recomputeDailyLog(userId: string, date: string) {
       acwr,
     }, { onConflict: 'user_id,date' });
 
-  if (error) console.error('recomputeDailyLog error:', error);
-  return { error };
+  /*
+    ── the write refuses too, now ──
+
+    This used to be `console.error(...)` and `return { error }`, and all sixteen
+    call sites did `await recomputeDailyLog(...)` and threw the result away. So
+    the half of this file's contract that the header states — *"a rebuild that
+    throws leaves the previous row intact and surfaces through the caller's
+    `onError`"* — held for the eleven **reads** above and not for the one
+    **write** below them.
+
+    What that cost: log a meal, `meal_entries` inserts fine, this upsert is
+    refused (RLS, a dropped connection on the twelfth request of the sequence, a
+    constraint). The mutation resolves, `onSuccess` fires, a green toast says
+    saved, and the meal appears in the diary — while the calorie ring, the macro
+    tiles, the readiness score and the day's quest all keep the numbers they had
+    *before the meal*, for ever, until some later write for the same day happens
+    to succeed. Nothing anywhere says so.
+
+    A visible error is worse than a silent success exactly once — at the moment
+    it appears. A quiet wrong number in the one table every other feature reads
+    is worse every day after that.
+  */
+  if (error) {
+    throw new Error(`Không lưu được ngày ${date}: ${error.message}`);
+  }
 }

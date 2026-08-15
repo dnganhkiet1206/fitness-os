@@ -31,7 +31,7 @@
  * 4. the queued variables are plain data — nothing captured, nothing that
  *    cannot survive a round trip through AsyncStorage
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { globSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,6 +41,8 @@ const read = (p) => readFileSync(path.join(NATIVE, p), 'utf8');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 const WRITE = 'src/lib/offline-write.ts';
+const noComments = (t) =>
+  t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const CLIENT = 'src/lib/query-client.ts';
 const LAYOUT = 'src/app/_layout.tsx';
 
@@ -283,6 +285,66 @@ const missed = SELF.filter(([, fn]) => !fn()).map(([l]) => l);
 if (missed.length) {
   console.error(`phép tự kiểm hỏng — không bắt được: ${missed.join('; ')}; đừng tin kết quả`);
   process.exit(2);
+}
+
+/*
+  ── every declared kind has somebody who produces it ──
+
+  `kind: 'workout'` and `kind: 'weight'` were declared in the `OfflineWrite`
+  union, given full handlers in `applyOfflineWrite`, and **never constructed by
+  anything**. The plumbing existed, the pipe was not connected, and reading this
+  file gave the confident impression that workouts and weigh-ins survived a lost
+  connection. They did not.
+
+  What actually happened to a workout logged in a gym basement: React Query
+  paused the mutation, `isPending` stayed true for ever, the Save button stayed
+  disabled, no toast fired, the sheet never closed. Back out and the form was
+  gone. On the next launch the paused mutation was restored from storage, found
+  no `mutationFn` registered for its key, and was dropped. The sets were simply
+  not there.
+
+  A declared-but-unproduced kind is worse than a missing feature, because it
+  reads as a finished one. This counts producers by looking for the literal
+  `kind: 'x'` outside the declaration file — which is exactly what a call site
+  building the payload must write.
+*/
+{
+  const union = read(WRITE);
+  const declared = [...new Set([...union.matchAll(/\|\s*\{\s*kind: '(\w+)'/g)].map((m) => m[1]))];
+  const multiline = [...new Set([...union.matchAll(/\n\s+kind: '(\w+)';/g)].map((m) => m[1]))];
+  for (const k of multiline) if (!declared.includes(k)) declared.push(k);
+
+  if (declared.length < 3) {
+    problems.push(`chỉ đọc được ${declared.length} loại thao tác từ union — bộ quét hỏng, đừng tin kết quả`);
+  }
+
+  const files = [];
+  (function walk(dir) {
+    for (const entry of readdirSync(dir)) {
+      const abs = path.join(dir, entry);
+      if (statSync(abs).isDirectory()) walk(abs);
+      else if (/\.(ts|tsx)$/.test(abs)) files.push(abs);
+    }
+  })(path.join(NATIVE, 'src'));
+
+  for (const kind of declared) {
+    /* Comments stripped first. The first version of this searched raw text and
+       passed while the producer was deleted — because the *doc comment* above
+       the call site quotes `kind: 'workout'` while explaining why the producer
+       exists. A rule that matches the prose describing the code is a rule that
+       is satisfied by the prose alone. */
+    const producer = files.some(
+      (f) =>
+        !f.endsWith(path.normalize(WRITE)) &&
+        new RegExp(`kind: '${kind}'`).test(noComments(readFileSync(f, 'utf8'))),
+    );
+    if (!producer) {
+      problems.push(
+        `loại '${kind}' được khai báo và có handler nhưng KHÔNG chỗ nào tạo ra nó — ` +
+          'đường ghi đó vẫn treo vô tận rồi mất trắng khi mất mạng',
+      );
+    }
+  }
 }
 
 if (problems.length) {

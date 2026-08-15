@@ -32,6 +32,7 @@ import { useWeightGoal } from '@/hooks/use-weight-goal';
 import { getLocale } from '@/lib/i18n';
 import { localDaysAgoStr, parseLocalDate } from '@/lib/local-date';
 import { convertLength, displayLength, displayWeight, formatHeight, weightLabel } from '@/lib/units';
+import { toast } from '@/lib/toast';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { WeightLogList } from '@/components/ascnd/weight-log-list';
 
@@ -848,7 +849,16 @@ export default function ProgressScreen() {
                             {
                               text: i18n.delete,
                               style: 'destructive',
-                              onPress: () => removeMeasurement.mutate(row.id),
+                              onPress: () =>
+                                removeMeasurement.mutate(row.id, {
+                                  onSuccess: () => {
+                                    Haptics.notificationAsync(
+                                      Haptics.NotificationFeedbackType.Success,
+                                    );
+                                    toast.success(i18n.deleted);
+                                  },
+                                  onError: (e: Error) => toast.error(e.message),
+                                }),
                             },
                           ],
                         );

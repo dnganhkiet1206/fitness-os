@@ -143,6 +143,36 @@ export type OfflineWrite =
 export const OFFLINE_WRITE_KEY = ['offline-write'] as const;
 
 /**
+ * Rebuild the day a replayed write belongs to, without letting a failed rebuild
+ * undo a write that already landed.
+ *
+ * ── why this one place swallows, when nothing else does ──
+ *
+ * `recomputeDailyLog` throws now: a day that cannot be rebuilt must say so
+ * rather than leave a quiet wrong number in the table every other feature reads.
+ * Everywhere in the app that is right, because the caller is a live mutation
+ * with an `onError` and the person is holding the phone.
+ *
+ * Here it is not. By the time this runs, the insert above has **already
+ * succeeded** on the server. Letting the rebuild's failure reject
+ * `applyOfflineWrite` marks the whole queued write as failed — and the only
+ * repair for a failed queued write is to run it again, which would insert the
+ * meal a second time. A duplicated meal is worse than a day that is briefly
+ * behind: one is wrong data the person has to find and delete, the other
+ * corrects itself the next time anything writes to that day.
+ *
+ * So the failure is recorded and the write is allowed to stand. This is the
+ * only call site in the app that does that, and this comment is the reason.
+ */
+async function rebuildAfterReplay(userId: string, date: string) {
+  try {
+    await recomputeDailyLog(userId, date);
+  } catch (e) {
+    console.error('offline replay: day not rebuilt —', (e as Error).message);
+  }
+}
+
+/**
  * Perform one queued intention.
  *
  * Runs identically whether it was fired live or resumed an hour later from
@@ -175,7 +205,7 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
       /* The rebuild travels with the insert. A queue of bare inserts would
          replay the row and leave the readiness score derived from a day that
          no longer matches it — and nothing about that looks wrong. */
-      await recomputeDailyLog(w.userId, localDateStr(new Date(w.dateTime)));
+      await rebuildAfterReplay(w.userId, localDateStr(new Date(w.dateTime)));
       return;
     }
     case 'weight': {
@@ -212,7 +242,7 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
       if (itemsErr) throw itemsErr;
 
       /* The day the food was eaten, not the day the queue drained. */
-      await recomputeDailyLog(w.userId, localDateStr(new Date(w.dateTime)));
+      await rebuildAfterReplay(w.userId, localDateStr(new Date(w.dateTime)));
       return;
     }
     case 'biometrics': {
@@ -231,7 +261,7 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
       if (error) throw error;
       /* HRV is the readiness score's largest term. A reading that arrives
          without rebuilding its day is a reading the score never sees. */
-      await recomputeDailyLog(w.userId, localDateStr(new Date(w.dateTime)));
+      await rebuildAfterReplay(w.userId, localDateStr(new Date(w.dateTime)));
       return;
     }
   }

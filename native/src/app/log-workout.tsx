@@ -22,6 +22,7 @@ import { RecordCelebration } from '@/components/ascnd/record-celebration';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
+import { useAuth } from '@/hooks/use-auth';
 import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
 import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useExercises, useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
@@ -33,6 +34,8 @@ import {
   recordsMagnitude,
   type PersonalRecord,
 } from '@/lib/personal-record';
+import { offlineNow } from '@/lib/offline';
+import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { toast } from '@/lib/toast';
 import { effortRange } from '@/lib/prescription';
 import { localDateStr, routineIndex } from '@/lib/local-date';
@@ -81,6 +84,7 @@ function rowsFromTemplate(exercises: TplExercise[], unit: WeightUnit): SetRow[] 
 export default function LogWorkoutSheet() {
   const i18n = useI18n();
   const { weight: wUnit } = useUnits();
+  const { user } = useAuth();
   const wl = weightLabel(wUnit);
   const [name, setName] = useState('');
   const [rpe, setRpe] = useState<number>(7);
@@ -259,6 +263,37 @@ export default function LogWorkoutSheet() {
     router.back();
     toast.success(i18n.logWorkoutSaved);
   };
+
+  /*
+    ── the same workout, down a durable pipe, when there is no signal ──
+
+    `useLogWorkoutSession` reads history to find records and then inserts. Both
+    halves need the network, so offline it does neither: React Query pauses the
+    mutation, `isPending` stays true for ever, the Save button stays disabled
+    (`canSave` below reads it), no toast fires and the sheet never closes. Back
+    out and the whole form is gone. On the next launch the paused mutation is
+    restored from storage, finds no `mutationFn` registered for its key, and is
+    **dropped** — the sets are simply not there.
+
+    A gym basement is the single most likely place in the world for somebody to
+    be logging a workout.
+
+    `lib/offline-write.ts` has had a `kind: 'workout'` and a working handler for
+    it since the day that file was written. Nothing had ever produced one. This
+    is the producer.
+
+    No record is claimed on this path, and that is not an omission: a personal
+    record is a comparison against history, and offline there is no history to
+    compare with. Inventing one would be the app celebrating something it cannot
+    know.
+  */
+  const queue = useMutation<void, Error, OfflineWrite>({
+    mutationKey: [...OFFLINE_WRITE_KEY],
+    onMutate: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      finish();
+    },
+  });
 
   const save = useMutation({
     mutationFn: () =>
@@ -493,7 +528,33 @@ export default function LogWorkoutSheet() {
         <PressScale
           style={[styles.saveButton, !canSave && !save.isSuccess && styles.saveDisabled]}
           disabled={!canSave}
-          onPress={() => save.mutate()}>
+          onPress={() => {
+            /* Offline, the durable queue takes it; online, the rich path runs
+               and can still find a record. The branch is here rather than
+               inside the mutation because the two have different variables and
+               different promises. */
+            if (offlineNow() && user) {
+              queue.mutate({
+                kind: 'workout',
+                userId: user.id,
+                dateTime: new Date().toISOString(),
+                sets: validSets.map((s, i) => ({
+                  exerciseId: s.exerciseId,
+                  exerciseName: s.exerciseName.trim() || 'Exercise',
+                  setIndex: i + 1,
+                  weight: Math.round(weightToKg(Number(s.weight) || 0, wUnit) * 100) / 100,
+                  reps: Number(s.reps),
+                  rpe: null,
+                })),
+                volumeLoad: Math.round(volumeLoad),
+                templateId: null,
+                templateName: name.trim() || 'Workout',
+                sessionRpe: rpe,
+              });
+              return;
+            }
+            save.mutate();
+          }}>
           {save.isSuccess ? (
             <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
           ) : save.isPending ? (
