@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import { useDailyStreak, useMascotWallet } from '@/hooks/use-mascot-room';
+import { useStepsAvailable } from '@/hooks/use-fitness-data';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
 import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
@@ -40,6 +41,15 @@ export interface DailyQuests {
   done: Record<QuestKey, boolean>;
   doneCount: number;
   total: number;
+  /**
+   * The quests that count today.
+   *
+   * Normally all five. It drops `steps` for an account no step count has ever
+   * reached — see `useStepsAvailable`. Every screen that draws the list must
+   * read this rather than `DAILY_QUESTS`, or it will show a dot that can never
+   * light and a denominator that can never be met.
+   */
+  active: QuestKey[];
   /** finished but not yet collected — this is what a badge should count */
   unclaimed: QuestKey[];
   /** coins sitting there waiting, quests only */
@@ -65,6 +75,7 @@ export function useDailyQuests(): DailyQuests {
   const { data: sleep, isSuccess: sleepOk } = useTodaySleep();
   const { data: wallet } = useMascotWallet();
   const { goal: stepsGoal, ready: stepsGoalOk } = useStepsGoal();
+  const { data: stepsAvailable, isSuccess: stepsAvailOk } = useStepsAvailable();
   useDailyStreak();
 
   const today = localDateStr();
@@ -91,15 +102,32 @@ export function useDailyQuests(): DailyQuests {
       steps: (dailyLog?.steps ?? 0) >= stepsGoal,
     };
 
+    /*
+      ── a quest nobody can win is not a quest ──
+
+      `daily_logs.steps` is written only by the HealthKit sync, so for anybody
+      who declined the Health prompt it is null for ever. The steps quest was
+      still shown, still counted in the denominator, and still unwinnable: 10
+      coins and 12 XP unreachable every day, the day stuck at 4/5, and Koa's
+      "finished everything" moment — which fires on `doneCount >= total` — dead
+      code for those accounts.
+
+      So it leaves the set entirely rather than sitting there greyed out. It
+      comes back by itself the moment a first step count arrives, because the
+      signal is "has one ever arrived" rather than a stored decision.
+    */
+    const activeDefs = DAILY_QUESTS.filter((q) => q.key !== 'steps' || stepsAvailable !== false);
+
     const claimed = wallet?.claimed ?? new Set<string>();
-    const unclaimed = DAILY_QUESTS.filter(
+    const unclaimed = activeDefs.filter(
       (q) => done[q.key] && !claimed.has(questRefKey(today, q.key)),
     );
 
     return {
       done,
-      doneCount: DAILY_QUESTS.filter((q) => done[q.key]).length,
-      total: DAILY_QUESTS.length,
+      active: activeDefs.map((q) => q.key),
+      doneCount: activeDefs.filter((q) => done[q.key]).length,
+      total: activeDefs.length,
       unclaimed: unclaimed.map((q) => q.key),
       unclaimedCoins: unclaimed.reduce((sum, q) => sum + q.coins, 0),
       /*
@@ -115,11 +143,11 @@ export function useDailyQuests(): DailyQuests {
         A default is the right thing to render while loading and the wrong thing
         to decide on.
       */
-      ready: logOk && waterOk && sleepOk && profileOk && stepsGoalOk,
+      ready: logOk && waterOk && sleepOk && profileOk && stepsGoalOk && stepsAvailOk,
       today,
     };
   }, [
     dailyLog, profile, waterMl, sleep, wallet, today,
-    logOk, waterOk, sleepOk, profileOk, stepsGoal, stepsGoalOk,
+    logOk, waterOk, sleepOk, profileOk, stepsGoal, stepsGoalOk, stepsAvailable, stepsAvailOk,
   ]);
 }

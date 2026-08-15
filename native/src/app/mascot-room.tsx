@@ -300,7 +300,7 @@ export default function MascotRoomScreen() {
 
   /* "Done" is defined once, in `use-daily-quests`, because Today shows the same
      five now — see that file for why it moved out of this screen. */
-  const { done: questDone, today } = useDailyQuests();
+  const { done: questDone, active: activeQuests, today } = useDailyQuests();
 
   const reward = (refKey: string, amount: number, reason: string, xpGain: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -722,7 +722,10 @@ export default function MascotRoomScreen() {
       <GlassCard style={styles.card}>
         <Text style={styles.cardTitle}>{i18n.nRoomQuests}</Text>
         <Text style={styles.cardHint}>{i18n.nRoomQuestsHint}</Text>
-        {DAILY_QUESTS.map((q) => {
+        {/* Only the quests that count for this account — an account with no
+            step source never receives a step count, so listing the steps quest
+            here would be offering 10 coins nobody can collect. */}
+        {DAILY_QUESTS.filter((q) => activeQuests.includes(q.key)).map((q) => {
           const refKey = questRefKey(today, q.key);
           const isClaimed = claimed.has(refKey);
           const isDone = questDone[q.key];

@@ -28,7 +28,7 @@ import { localDateStr } from '@/lib/local-date';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
 import { noteAsked, notePraised } from '@/lib/personal-model';
 import { useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
-import { DAILY_QUESTS, levelFromXp } from '@/lib/mascot-room';
+import { levelFromXp } from '@/lib/mascot-room';
 import { useI18n } from '@/hooks/use-app-settings';
 
 /**
@@ -316,10 +316,13 @@ export function Mascot() {
         {quests.ready ? (
           <View style={styles.quests}>
             <View style={styles.dots}>
-              {DAILY_QUESTS.map((q) => (
+              {/* `quests.active`, not the whole catalogue: an account with no
+                  step source drops the steps quest, and a dot that can never
+                  light is worse than no dot. */}
+              {quests.active.map((key) => (
                 <View
-                  key={q.key}
-                  style={[styles.dot, quests.done[q.key] && styles.dotOn]}
+                  key={key}
+                  style={[styles.dot, quests.done[key] && styles.dotOn]}
                 />
               ))}
             </View>

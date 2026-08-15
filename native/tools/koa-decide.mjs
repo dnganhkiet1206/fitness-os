@@ -439,6 +439,65 @@ if (problems.length) {
   /* Anchored past `const claimed`, because the first `ready:` in the file is
      the interface's `ready: boolean;` — matching that read a declaration
      instead of the expression and reported the correct code as broken. */
+  /* ── a quest nobody can win must leave the set ──
+
+     `daily_logs.steps` has one writer, the HealthKit sync. Decline the Health
+     prompt and it is null for ever: the steps quest was unwinnable, the day was
+     pinned at 4/5, and Koa's "finished everything" event — gated on
+     `doneCount >= total` — was dead code for those accounts. Two medals in this
+     app were already fixed for being unearnable by construction; this was the
+     same shape, one screen over.
+
+     Apple refuses to tell an app whether *read* permission was granted (see
+     `lib/health.ts`), so the signal has to be observational — has a step count
+     ever arrived — and the denominator has to follow it. Checking `total` and
+     `doneCount` come from the filtered set rather than from `DAILY_QUESTS`
+     directly is the part that matters: a screen can hide the row and still
+     leave the day unfinishable. */
+  /* The filter has to *consult the signal*, not merely exist. A first version
+     of this rule only checked that the identifier `activeDefs` appeared, and
+     `const activeDefs = DAILY_QUESTS;` satisfied that perfectly while
+     reinstating the bug. */
+  const filterLine = q.match(/const activeDefs\s*=\s*([^;]+);/);
+  if (!filterLine || !/stepsAvailable/.test(filterLine[1])) {
+    problems.push(
+      'use-daily-quests.ts: bộ quest không lọc theo nguồn dữ liệu — người từ chối quyền Health ' +
+        'không bao giờ có số bước, nên quest bước vĩnh viễn không xong và ngày kẹt ở 4/5',
+    );
+  }
+  /* Anchored past `const claimed` for the same reason `ready` is: the first
+     `total:` in the file is the interface's `total: number;`, and reading a
+     declaration instead of the expression let a reinstated `DAILY_QUESTS.length`
+     pass unnoticed. */
+  const returned = q.slice(q.indexOf('const claimed'));
+  for (const [field, why] of [
+    ['total', 'mẫu số vẫn là cả 5 quest nên "xong cả ngày" không bao giờ đạt'],
+    ['doneCount', 'tử số đếm cả quest không thể thắng'],
+  ]) {
+    const line = returned.match(new RegExp(`${field}:\\s*([^,\\n]+)`));
+    if (!line) {
+      problems.push(`use-daily-quests.ts: không đọc được \`${field}\` — luật này đã lạc mục tiêu`);
+    } else if (/DAILY_QUESTS/.test(line[1])) {
+      problems.push(`use-daily-quests.ts: \`${field}\` vẫn tính từ DAILY_QUESTS — ${why}`);
+    }
+  }
+  /* And the screens draw the filtered list, or a dot sits there that can never
+     light. */
+  for (const [file, what] of [
+    ['src/components/ascnd/mascot.tsx', 'chấm tiến độ trên Today'],
+    ['src/app/mascot-room.tsx', 'danh sách quest trong phòng Koa'],
+  ]) {
+    const src = readFileSync(path.join(NATIVE, file), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    if (/DAILY_QUESTS\.map\(/.test(src)) {
+      problems.push(
+        `${file}: ${what} vẽ thẳng từ DAILY_QUESTS — sẽ hiện một quest mà tài khoản này ` +
+          'không bao giờ hoàn thành được',
+      );
+    }
+  }
+
   const readyLine = q.slice(q.indexOf('const claimed')).match(/ready:\s*([^,]+),/);
   if (!readyLine) {
     problems.push('use-daily-quests.ts: không đọc được biểu thức `ready` — luật này đã lạc mục tiêu');
@@ -446,6 +505,7 @@ if (problems.length) {
     for (const [needed, why] of [
       ['profileOk', 'mục tiêu nước lấy từ hồ sơ, chưa đọc xong thì mặc định 2500 ml đứng thay'],
       ['stepsGoalOk', 'mục tiêu bước lấy từ bộ nhớ máy, chưa đọc xong thì mặc định 10.000 đứng thay'],
+      ['stepsAvailOk', 'chưa biết tài khoản này có nguồn bước chân chưa thì mẫu số có thể sai'],
     ]) {
       if (!readyLine[1].includes(needed)) {
         problems.push(

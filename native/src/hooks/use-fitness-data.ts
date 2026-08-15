@@ -435,6 +435,54 @@ export function useWeightHistory(days = 30) {
 }
 
 /** Daily step counts over N days (from daily_logs) for the Steps screen */
+/**
+ * Has a step count ever reached this account?
+ *
+ * ── why this cannot be a permission check ──
+ *
+ * `daily_logs.steps` has exactly one writer: the HealthKit sync. Somebody who
+ * declines the Health prompt — or is on a device without it — has `steps` null
+ * for ever, which made the steps quest permanently unwinnable, held the day at
+ * 4/5 so Koa's "finished everything" moment could never fire, and put the
+ * `steps_50k` challenge and `steps_10k` medal out of reach. The same shape as
+ * the `first_pr`/`pr_5` medals that were unearnable by construction: a goal
+ * displayed beside reachable ones, which does not read as a broken app, it
+ * reads as a failure in the person looking at it.
+ *
+ * The obvious check — ask iOS whether Health was granted — is impossible on
+ * purpose. `lib/health.ts` documents it: Apple refuses to answer for *read*
+ * access, because telling an app "you may not read this" would leak that the
+ * data exists. So the only honest signal is observational: has a value ever
+ * arrived?
+ *
+ * `.not('steps', 'is', null)` and not `> 0`: a real zero is a measurement — a
+ * day somebody did not walk — and treating it as "no source" would hide the
+ * quest from an active user on a quiet day.
+ *
+ * Unbounded by date, deliberately. This answers "does this account have a step
+ * source at all", and a fortnight of not opening the app is not an answer to
+ * that.
+ */
+export function useStepsAvailable() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['steps_available', user?.id],
+    enabled: !!user,
+    /* It flips at most once in an account's life, so re-asking on every focus
+       is pure noise. */
+    staleTime: 1000 * 60 * 60,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('daily_logs')
+        .select('date', { count: 'exact', head: true })
+        .eq('user_id', user!.id)
+        .not('steps', 'is', null);
+      if (error) throw error;
+      return (count ?? 0) > 0;
+    },
+  });
+}
+
 export function useStepsHistory(days = 14) {
   const { user } = useAuth();
   return useQuery({
