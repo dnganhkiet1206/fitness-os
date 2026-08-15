@@ -1,3 +1,4 @@
+"use strict";
 /**
  * What Koa says, and the reason it is not a list of things you failed to do.
  *
@@ -40,33 +41,9 @@
  * the fix is the app's standing one: say nothing rather than say something
  * false.
  */
-
-/** The four things Koa watches. Order is the order they are worth mentioning. */
-export type MascotThing = 'sleep' | 'meal' | 'water' | 'workout';
-
-export interface MascotDay {
-  /** minutes slept last night; `null` when the day could not be read */
-  sleepMin: number | null;
-  /** meals logged today */
-  meals: number | null;
-  /** share of the water target, 0–100+ */
-  waterPct: number | null;
-  /** workouts logged today */
-  workouts: number | null;
-  /** local hour, 0–23 */
-  hour: number;
-}
-
-export type MascotLine =
-  /** today is unreadable — the bubble hides rather than inventing a state */
-  | { kind: 'silent' }
-  /** nothing done yet: ask for the one thing that makes sense at this hour */
-  | { kind: 'ask'; gap: MascotThing }
-  /** the common case: name the win, then the one thing still open */
-  | { kind: 'notice'; win: MascotThing; gap: MascotThing }
-  /** nothing left to ask for */
-  | { kind: 'praise' };
-
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GAP_SPAN = exports.GAP_FROM = void 0;
+exports.mascotLine = mascotLine;
 /**
  * Water counts as done at half the target, not at the whole thing.
  *
@@ -75,7 +52,6 @@ export type MascotLine =
  * means the change of voice is not also a quiet change of standard.
  */
 const WATER_DONE_PCT = 50;
-
 /**
  * The hour each gap becomes worth raising — for somebody the app knows nothing
  * about yet.
@@ -93,13 +69,12 @@ const WATER_DONE_PCT = 50;
  * observations or below 0.6 agreement, so an unknown person keeps exactly these
  * numbers and nothing changes until there is something real to change it to.
  */
-export const GAP_FROM: Record<MascotThing, number> = {
-  sleep: 6,
-  meal: 11,
-  water: 14,
-  workout: 16,
+exports.GAP_FROM = {
+    sleep: 6,
+    meal: 11,
+    water: 14,
+    workout: 16,
 };
-
 /**
  * How long each gap stays worth raising, in hours — `null` for the rest of the
  * day.
@@ -114,20 +89,18 @@ export const GAP_FROM: Record<MascotThing, number> = {
  * Move a night worker's training hour to ten in the evening and their window
  * moves with it; a fixed 16–21 would simply never contain them.
  */
-export const GAP_SPAN: Record<MascotThing, number | null> = {
-  sleep: 5,
-  meal: null,
-  water: null,
-  workout: 5,
+exports.GAP_SPAN = {
+    sleep: 5,
+    meal: null,
+    water: null,
+    workout: 5,
 };
-
 /** Circular, so a window that opens at 22:00 still contains 01:00. */
-function withinWindow(hour: number, from: number, span: number | null): boolean {
-  if (span === null) return hour >= from;
-  const d = (((hour - from) % 24) + 24) % 24;
-  return d < span;
+function withinWindow(hour, from, span) {
+    if (span === null)
+        return hour >= from;
+    return hour >= from && hour < from + span;
 }
-
 /** Priority when several things are open or several are done. */
 /**
  * The order to mention things in, when nobody has said otherwise.
@@ -138,8 +111,7 @@ function withinWindow(hour: number, from: number, span: number | null): boolean 
  * whether bringing each thing up has ever led anywhere for this person
  * (`lib/personal-model.ts`). This list is the prior that ranking starts from.
  */
-const ORDER: MascotThing[] = ['workout', 'meal', 'sleep', 'water'];
-
+const ORDER = ['workout', 'meal', 'sleep', 'water'];
 /**
  * @param order most-worth-mentioning first; anything missing keeps its default
  *   place after the ones listed, so a caller cannot silence a thing by
@@ -148,29 +120,22 @@ const ORDER: MascotThing[] = ['workout', 'meal', 'sleep', 'water'];
  *   from their own logging clock. Anything missing falls back to `GAP_FROM`,
  *   which is what a stranger gets.
  */
-export function mascotLine(
-  day: MascotDay,
-  order: MascotThing[] = ORDER,
-  dueFrom: Partial<Record<MascotThing, number>> = {},
-): MascotLine {
-  const rank = [...order.filter((t) => ORDER.includes(t)), ...ORDER.filter((t) => !order.includes(t))];
-  const known =
-    day.sleepMin != null && day.meals != null && day.waterPct != null && day.workouts != null;
-  if (!known) return { kind: 'silent' };
-
-  const done: Record<MascotThing, boolean> = {
-    sleep: (day.sleepMin ?? 0) > 0,
-    meal: (day.meals ?? 0) > 0,
-    water: (day.waterPct ?? 0) >= WATER_DONE_PCT,
-    workout: (day.workouts ?? 0) > 0,
-  };
-
-  const wins = rank.filter((t) => done[t]);
-  const gaps = rank.filter(
-    (t) => !done[t] && withinWindow(day.hour, dueFrom[t] ?? GAP_FROM[t], GAP_SPAN[t]),
-  );
-
-  if (gaps.length === 0) return wins.length > 0 ? { kind: 'praise' } : { kind: 'silent' };
-  if (wins.length === 0) return { kind: 'ask', gap: gaps[0] };
-  return { kind: 'notice', win: wins[0], gap: gaps[0] };
+function mascotLine(day, order = ORDER, dueFrom = {}) {
+    const rank = [...order.filter((t) => ORDER.includes(t)), ...ORDER.filter((t) => !order.includes(t))];
+    const known = day.sleepMin != null && day.meals != null && day.waterPct != null && day.workouts != null;
+    if (!known)
+        return { kind: 'silent' };
+    const done = {
+        sleep: (day.sleepMin ?? 0) > 0,
+        meal: (day.meals ?? 0) > 0,
+        water: (day.waterPct ?? 0) >= WATER_DONE_PCT,
+        workout: (day.workouts ?? 0) > 0,
+    };
+    const wins = rank.filter((t) => done[t]);
+    const gaps = rank.filter((t) => !done[t] && withinWindow(day.hour, dueFrom[t] ?? exports.GAP_FROM[t], exports.GAP_SPAN[t]));
+    if (gaps.length === 0)
+        return wins.length > 0 ? { kind: 'praise' } : { kind: 'silent' };
+    if (wins.length === 0)
+        return { kind: 'ask', gap: gaps[0] };
+    return { kind: 'notice', win: wins[0], gap: gaps[0] };
 }

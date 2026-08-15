@@ -187,6 +187,7 @@ const STEPS = [
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],
   ['giờ nhắc nhở', 'node', ['tools/reminder-timing.mjs']],
+  ['đã nối chưa', 'node', ['tools/linked.mjs']],
 ];
 
 let failed = 0;

@@ -43,7 +43,7 @@ execFileSync(
 const require_ = createRequire(import.meta.url);
 const { newArm, reward, mean, sampleBeta, rankArms, seeded, CAP, noteAsk, credit, settle } =
   require_(path.join(out, 'bandit.js'));
-const { emptyHours, observeHour, habit, isLate, lateHour, MIN_OBS } =
+const { emptyHours, observeHour, habit, lateHour, MIN_OBS } =
   require_(path.join(out, 'user-rhythm.js'));
 const { allowPeek, allowPraise, freshBudget, PEEK_DAILY_CAP, PEEK_COOLDOWN_MS } =
   require_(path.join(out, 'mascot-budget.js'));
@@ -88,13 +88,19 @@ const fold = (hours) => hours.reduce((s, h) => observeHour(s, h), emptyHours());
     if (lateHour(owl, floor) <= floor) {
       problems.push('cú đêm: ngưỡng muộn không được sớm hơn thói quen của chính họ');
     }
-    if (isLate(owl, 9, floor)) problems.push('cú đêm bị coi là muộn lúc 9h sáng');
-    if (!isLate(owl, 23, floor)) problems.push('cú đêm 23h vẫn chưa bị coi là muộn');
+    /* `isLate` used to answer this with a six-hour window baked in. It is gone:
+       six hours is right for a workout and wrong for a meal, and the window now
+       belongs to the caller (`GAP_SPAN`). What is asserted here is the part that
+       is genuinely the rhythm's — the *hour* it hands over. */
+    const late = lateHour(owl, floor);
+    if (late <= 9) problems.push(`cú đêm bị coi là muộn từ ${late}h — tức 9h sáng đã muộn`);
+    if (late > 23) problems.push(`ngưỡng muộn vượt khỏi mặt đồng hồ (${late})`);
+    if (!(late >= 21)) problems.push(`cú đêm tập lúc 22h mà ngưỡng muộn mới ${late}h`);
   }
 
   // nobody with no habit gets a personalised threshold — the floor stands
   if (lateHour(null, 18) !== 18) problems.push('chưa có thói quen thì phải giữ nguyên mốc mặc định');
-  if (isLate(null, 12, 18)) problems.push('chưa có thói quen mà 12h đã bị coi là muộn');
+  if (lateHour(null, 18) !== 18) problems.push('chưa có thói quen thì ngưỡng phải đúng bằng sàn của chỗ gọi');
 }
 
 /* ── 3: the sampler really is Beta ── */

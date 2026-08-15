@@ -43,7 +43,8 @@ try {
       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  const { mascotLine } = createRequire(import.meta.url)(path.join(out, 'mascot-message.js'));
+  const { mascotLine, GAP_FROM, GAP_SPAN } =
+    createRequire(import.meta.url)(path.join(out, 'mascot-message.js'));
 
   const problems = [];
 
@@ -126,6 +127,52 @@ try {
         }
       }
     }
+  }
+
+  /*
+    ── 2b. the ask lands on this person's clock, not on an imagined one ──
+
+    `GAP_FROM` used to be the whole answer: ask about a workout from four in
+    the afternoon, whoever you are. Somebody on nights who trains at ten in the
+    evening was therefore asked, wrongly, every single afternoon — and an ask
+    that is wrong at the moment it is made is exactly how a companion becomes a
+    nag. `lateHour` had been written for this and had no caller in the app.
+
+    Four things are checked, and the last two are the ones that would let the
+    old behaviour back in unnoticed.
+  */
+  {
+    const nothing = { sleepMin: 0, meals: 0, waterPct: 0, workouts: 0 };
+    const asked = (hour, dueFrom) => {
+      const l = mascotLine({ ...nothing, hour }, undefined, dueFrom);
+      return l.kind === 'ask' || l.kind === 'notice' ? l.gap : null;
+    };
+
+    // a stranger keeps exactly the shipped behaviour
+    if (asked(16, {}) === null) problems.push('người mới không còn được hỏi về buổi tập lúc 16h');
+
+    // the night worker, asked in their own evening and left alone in the day
+    const owl = { workout: 22 };
+    if (asked(16, owl) === 'workout') {
+      problems.push('người tập lúc 22h vẫn bị hỏi về buổi tập lúc 16h — giờ học được không tới nơi');
+    }
+    if (asked(22, owl) !== 'workout') {
+      problems.push('người tập lúc 22h lại KHÔNG được hỏi vào đúng giờ của họ');
+    }
+    // and the window travels with them across midnight
+    if (asked(1, owl) !== 'workout') {
+      problems.push('cửa sổ mở lúc 22h không chứa 1h sáng — số học đồng hồ không vòng');
+    }
+
+    // a closed window still closes, or "still time to train" stops being true
+    if (asked(14, { workout: 16 }) === 'workout') {
+      problems.push('hỏi về buổi tập TRƯỚC giờ mở cửa sổ');
+    }
+    if (GAP_SPAN.meal !== null || GAP_SPAN.water !== null) {
+      problems.push('bữa ăn hoặc nước bị đóng cửa sổ — người chưa ăn tới tối vẫn phải được hỏi');
+    }
+    // an unfed evening must still be asked about, which a 6-hour window would kill
+    if (asked(19, {}) === null) problems.push('19h chưa ăn gì mà Koa im');
   }
 
   // 3. the balance

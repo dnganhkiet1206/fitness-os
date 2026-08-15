@@ -100,20 +100,6 @@ export function habit(s: HourStat): Habit | null {
   };
 }
 
-/**
- * Signed hours from `a` to `b` the short way round: −12…12.
- *
- * The `+ 24` is there to make a negative remainder positive before the fold,
- * and it has to be exactly 24. The first draft wrote `+ 36`, reasoning vaguely
- * about the twelve-hour fold below, and that quietly rotated every answer half
- * a day: a threshold of 22:00 against a clock reading 23:00 came out as
- * **−11 hours early** instead of one hour late, so the one case the function
- * exists for — is this person late — answered no all evening.
- */
-export function hoursBetween(a: number, b: number): number {
-  const d = (((b - a) % 24) + 24) % 24;
-  return d > 12 ? d - 24 : d;
-}
 
 /**
  * The hour by which this person is *late* for something, or `null`.
@@ -135,14 +121,30 @@ export function lateHour(h: Habit | null, floor: number): number {
 }
 
 /**
- * Is `now` past the point where this person would normally have done it?
+ * ── why there is no `isLate` or `hoursBetween` here any more ──
  *
- * Circular, so a habit at 22:00 is not "late" at 01:00 — that is the next day
- * arriving, not lateness, and reading it as lateness is how a night owl gets
- * nagged at breakfast.
+ * There was an `isLate(habit, now, floor)`: a fixed six-hour window after
+ * `lateHour`. It answered the question the whole of this file exists for —
+ * *is this person past the hour they would normally have done it* — it was
+ * documented, it was tested, and it had **no caller in the app at all**. The
+ * mascot went on asking on four hours somebody typed for an imagined day while
+ * the model that knew better sat one import away. `tools/linked.mjs` exists so
+ * that cannot happen quietly again.
+ *
+ * Wiring it up is what showed why it had never fitted: six hours is right for a
+ * workout and wrong for a meal. Somebody who has not eaten by seven in the
+ * evening must still be asked, and a fixed window silences the ask exactly when
+ * it matters most. The window belongs to the caller, who knows whether the
+ * thing closes.
+ *
+ * So `lateHour` is the single answer to "from when", the window is `GAP_SPAN`
+ * in `lib/mascot-message.ts`, and there is no second opinion to drift from
+ * this one.
+ *
+ * `hoursBetween` went with it — it existed only to serve `isLate`. Its lesson
+ * did not: it once wrote `+36` where it meant `+24`, which rotated every answer
+ * half a day, so the one question the function existed to answer came back
+ * "no" all evening. `tools/personalize.mjs` caught it. Any clock arithmetic in
+ * this app wraps at 24 and is tested at midnight, because midnight is the hour
+ * every one of these bugs has been found at.
  */
-export function isLate(h: Habit | null, now: number, floor: number): boolean {
-  const threshold = lateHour(h, floor);
-  const delta = hoursBetween(threshold, now);
-  return delta >= 0 && delta < 6;
-}

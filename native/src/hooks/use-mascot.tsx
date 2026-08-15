@@ -11,8 +11,9 @@ import { seeded } from '@/lib/bandit';
 import { KOA_LINE_KEY } from '@/lib/koa-decide';
 import { useKoaReaction } from '@/lib/koa-stage';
 import { localDateStr } from '@/lib/local-date';
-import { mascotLine, type MascotThing } from '@/lib/mascot-message';
-import { mayPraise, rankQuests, settleStale, usePersonalModel } from '@/lib/personal-model';
+import { GAP_FROM, mascotLine, type MascotThing } from '@/lib/mascot-message';
+import { habitFor, mayPraise, rankQuests, settleStale, usePersonalModel } from '@/lib/personal-model';
+import { lateHour } from '@/lib/user-rhythm';
 import { DEFAULT_MASCOT_ID, getMascot, isUnlocked, MASCOTS } from '@/lib/mascots';
 
 const ENABLED_KEY = 'ascnd_mascot_enabled';
@@ -163,6 +164,32 @@ export function useMascotMessage(): MascotSay {
     const read = logOk && mealsOk && waterOk;
     const waterTarget = Number(profile?.water_target_ml) || 2500;
 
+    /*
+      ── the hour Koa is allowed to ask, from this person's own clock ──
+
+      `GAP_FROM` is four numbers somebody typed for an imagined day: ask about
+      sleep from six, a meal from eleven, water from two, a workout from four.
+      Somebody on nights trains at ten in the evening and was being asked at
+      four in the afternoon; somebody who eats at one was asked at eleven. Every
+      one of those asks is *wrong at the moment it is made*, and that is the
+      specific way a companion becomes a nag — not by asking too often, but by
+      asking for something you were never going to have done yet.
+
+      The app has known better for a while and nothing consumed it. `isLate` and
+      `lateHour` were written for exactly this question, tested by
+      `tools/personalize.mjs`, and had **no caller in the app at all**. This is
+      the caller: the typed number becomes a floor, and the learned hour plus its
+      own spread moves it later for the people it is wrong for.
+
+      Nothing changes for somebody new. `habit()` returns `null` below six
+      observations or under 0.6 agreement, and `lateHour(null, floor)` is the
+      floor — so a stranger gets precisely the behaviour that shipped.
+    */
+    const dueFrom: Partial<Record<MascotThing, number>> = {};
+    for (const thing of MASCOT_THINGS) {
+      dueFrom[thing] = lateHour(habitFor(thing), GAP_FROM[thing]);
+    }
+
     return mascotLine(
       {
         hour: new Date().getHours(),
@@ -172,9 +199,15 @@ export function useMascotMessage(): MascotSay {
         workouts: read ? Number(log?.workout_count ?? 0) : null,
       },
       order,
+      dueFrom,
     );
+    /* `personal.hours` is listed because `dueFrom` above is read from it. The
+       store is subscribed, so learning a new hour re-renders — but a memo that
+       does not name it would keep serving the sentence computed from the old
+       clock until some unrelated field happened to change. A model that learns
+       and a screen that never re-reads it are the same as not learning. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [log, meals, waterMl, profile, logOk, mealsOk, waterOk, order]);
+  }, [log, meals, waterMl, profile, logOk, mealsOk, waterOk, order, personal.hours]);
 
   /* A live reaction outranks the day's summary sentence: something just
      happened, and it is more interesting than a running total. It returns to
