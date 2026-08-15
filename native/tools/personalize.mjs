@@ -101,6 +101,51 @@ const fold = (hours) => hours.reduce((s, h) => observeHour(s, h), emptyHours());
   // nobody with no habit gets a personalised threshold — the floor stands
   if (lateHour(null, 18) !== 18) problems.push('chưa có thói quen thì phải giữ nguyên mốc mặc định');
   if (lateHour(null, 18) !== 18) problems.push('chưa có thói quen thì ngưỡng phải đúng bằng sàn của chỗ gọi');
+
+  /*
+    ── the night-shift nurse ──
+
+    `lateHour` was `Math.max(floor, …)` — linear arithmetic on an hour, which is
+    the one thing this whole file exists to avoid. Somebody who trains at 01:00
+    has `late ≈ 2`, and `Math.max(16, 2)` is **16**: the exact number a person
+    the app knows nothing about gets. So having learned her routine precisely,
+    it threw the answer away — asking "chưa tập à?" from 16:00 while she slept
+    and saying nothing at 01:00 when she actually trained.
+
+    Learning the habit made her experience identical to a stranger's, which is
+    worse than never learning it: the app is confidently wrong at the one hour
+    it had evidence about.
+  */
+  const nurse = habit(fold([1, 1, 0, 2, 1, 1]));
+  if (!nurse) {
+    problems.push('y tá ca đêm: 6 lần quanh 1h sáng mà không ra thói quen');
+  } else {
+    const late = lateHour(nurse, 16);
+    if (late >= 12) {
+      problems.push(
+        `y tá ca đêm tập lúc 1h sáng nhưng ngưỡng muộn ra ${late}h — ` +
+          'đúng con số của người lạ, tức thói quen học được đã bị vứt đi',
+      );
+    }
+    if (!(late >= 0 && late < 24)) problems.push(`ngưỡng muộn nằm ngoài mặt đồng hồ (${late})`);
+  }
+
+  /* But the floor still does its job when it really is just ahead of the habit:
+     a 07:00 breakfast does not make 08:00 an emergency. */
+  const early = habit(fold([7, 7, 6, 8, 7, 7]));
+  if (early && lateHour(early, 11) !== 11) {
+    problems.push(
+      `thói quen 7h sáng với sàn 11h ra ${lateHour(early, 11)} — sàn phải còn tác dụng khi nó ở ngay phía trước`,
+    );
+  }
+
+  /* And a habit late in the evening wraps past midnight instead of jamming
+     against 23:00, which is what `Math.min(late, 23)` used to do. */
+  const nightcap = habit(fold([23, 23, 22, 0, 23, 23]));
+  if (nightcap) {
+    const late = lateHour(nightcap, 16);
+    if (!(late >= 0 && late < 24)) problems.push(`thói quen sát nửa đêm ra ngưỡng ${late} — không còn trên mặt đồng hồ`);
+  }
 }
 
 /* ── 3: the sampler really is Beta ── */

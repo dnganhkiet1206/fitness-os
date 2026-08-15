@@ -49,6 +49,8 @@
  *     is judged against the history that existed before it, and reports at most
  *     one record per exercise — the best one.
  */
+import { exerciseKey } from '@/lib/exercise-key';
+
 
 /** One completed set, as it is stored in `workout_sessions.sets`. */
 export interface RecordSet {
@@ -88,12 +90,52 @@ export interface PersonalRecord {
  * left empty when the name was typed, which is most of the time — keying on it
  * would mean "Bench Press" typed on Monday and picked on Thursday are two
  * different exercises with two separate histories.
+ *
+ * The matching rule itself is `lib/exercise-key.ts`, shared with
+ * `day-progress.ts`. It was written twice, and the two copies disagreed about
+ * doubled spaces — see that file.
  */
-export const exerciseKey = (name: string): string =>
-  name.trim().toLowerCase().replace(/\s+/g, ' ');
+export { exerciseKey };
 
-/** Loads are compared at two decimals — the precision they are stored at. */
-export const weightKey = (w: number): string => (Math.round(w * 100) / 100).toFixed(2);
+/**
+ * How much heavier counts as heavier.
+ *
+ * ── the phantom record this exists for ──
+ *
+ * Somebody logging in pounds never sees kilograms, but that is what is stored.
+ * The sheet shows `displayWeight`, which rounds to one decimal, and saves back
+ * through `weightToKg`. So a bench of exactly 100.00 kg comes out as
+ *
+ *     100.00 kg → 220.5 lb (rounded) → 100.0197… kg
+ *
+ * and `100.02 > 100.00` is true. Log the same weight twice and the second one
+ * is a **personal record**: fireworks, `pr_detected: true`, a badge lit, and a
+ * tick towards the `first_pr` and `pr_5` medals. The celebration even printed
+ * the proof — *"Bench Press — 220.5 lb, trước là 220.5 lb"*, the same number
+ * twice, because in the unit the user reads nothing had changed at all.
+ *
+ * Worse, it does not settle: each round-trip drifts a little further, so a lb
+ * user could post a record every session forever by repeating one workout,
+ * which makes the feature worthless precisely for the people it fires most for.
+ *
+ * 0.05 kg is chosen against the error, not against training: the worst
+ * one-decimal lb rounding is 0.05 lb ≈ 0.023 kg, so this clears it twice over
+ * while sitting far below the smallest micro-plate anybody actually loads
+ * (0.25 kg). No real increase is swallowed by it.
+ */
+export const WEIGHT_EPSILON_KG = 0.05;
+
+/**
+ * Loads are bucketed to the same tolerance, so "most reps at this weight" finds
+ * the history it should.
+ *
+ * The key was two decimals, which put that same 100.0197 in a different bucket
+ * from 100.00 — so a lb user's rep history at a given load became invisible the
+ * moment it round-tripped, and every set at it read as a load never used
+ * before. The bucket is the epsilon, or the two answers disagree.
+ */
+export const weightKey = (w: number): string =>
+  (Math.round(w / WEIGHT_EPSILON_KG) * WEIGHT_EPSILON_KG).toFixed(2);
 
 const round2 = (w: number) => Math.round(w * 100) / 100;
 const clamp01 = (n: number) => Math.min(Math.max(n, 0), 1);
@@ -135,7 +177,11 @@ export function findRecords(sets: RecordSet[], bests: Bests): PersonalRecord[] {
 
     const w = round2(s.weight);
     const found: PersonalRecord | null =
-      w > 0 && w > best.topWeight
+      /* Beaten by more than the unit round-trip can invent — see
+         `WEIGHT_EPSILON_KG`. Without the margin, a pounds user re-logging the
+         identical weight posts a record every time, and the celebration prints
+         the same number twice. */
+      w > 0 && w > best.topWeight + WEIGHT_EPSILON_KG
         ? { exercise: s.exerciseName.trim(), kind: 'weight', value: w, previous: best.topWeight }
         : (() => {
             const prev = best.repsAt[weightKey(w)];

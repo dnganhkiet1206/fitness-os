@@ -20,7 +20,7 @@
  * about that direction.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -30,11 +30,28 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = mkdtempSync(path.join(tmpdir(), 'dayprog-'));
 
 try {
-  execFileSync(
-    'npx',
-    ['tsc', 'src/lib/day-progress.ts', '--ignoreConfig', '--outDir', out,
-      '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
-    { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+  try {
+    execFileSync(
+      'npx',
+      ['tsc', 'src/lib/day-progress.ts', 'src/lib/exercise-key.ts', '--ignoreConfig', '--outDir', out,
+        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+      { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch {
+    /* Without the project's tsconfig there is no `@/` mapping, so tsc reports
+       the alias as unresolved and exits non-zero — while still emitting the JS,
+       which is all this needs. The real type check is `npx tsc --noEmit` over
+       the whole project. Same swallow as `tools/streak.mjs`; this file did not
+       need it until `day-progress.ts` gained its first import. */
+  }
+  /* And the emitted require is rewritten to sit beside its sibling — the trick
+     `tools/streak.mjs` documents. `exercise-key.ts` is compiled alongside
+     because the name-matching rule now lives there, shared with
+     `personal-record.ts`. */
+  const emitted = path.join(out, 'day-progress.js');
+  writeFileSync(
+    emitted,
+    readFileSync(emitted, 'utf8').replaceAll('@/lib/exercise-key', './exercise-key'),
   );
   const { sessionTicks, mergeProgress } = createRequire(import.meta.url)(
     path.join(out, 'day-progress.js'),

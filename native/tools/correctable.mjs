@@ -168,7 +168,12 @@ for (const table of HAND_WRITTEN) {
   const fn = svc.slice(svc.indexOf('export async function recomputeDailyLog'));
   const body = fn.slice(0, fn.indexOf('\nexport ') === -1 ? fn.length : fn.indexOf('\nexport '));
 
-  if (!/\.error\)/.test(body) || !/throw new Error/.test(body)) {
+  /* Any Error class, not the literal `new Error`. The rebuild's throws are a
+     named `DailyLogRebuildError` now, so that callers can tell "the write
+     failed" from "the summary failed" and stop rolling back rows the server
+     really did delete — and a rule pinned to the exact constructor turned that
+     fix into a red step while the behaviour it cares about was untouched. */
+  if (!/\.error\)/.test(body) || !/throw new \w*Error\(/.test(body)) {
     problems.push(
       'daily-log-service.ts: recomputeDailyLog không kiểm lỗi truy vấn trước khi ghi — ' +
         'một truy vấn hỏng sẽ thành "không có dữ liệu loại đó", và ngày bị ghi đè với phần thiếu bằng 0 ' +

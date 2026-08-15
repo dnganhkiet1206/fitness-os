@@ -38,7 +38,7 @@
  * that put a character there.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -59,7 +59,7 @@ const out = mkdtempSync(path.join(tmpdir(), 'pr-'));
 try {
   execFileSync(
     'npx',
-    ['tsc', 'src/lib/personal-record.ts', '--ignoreConfig', '--outDir', out,
+    ['tsc', 'src/lib/personal-record.ts', 'src/lib/exercise-key.ts', '--ignoreConfig', '--outDir', out,
      '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
@@ -67,7 +67,19 @@ try {
   /* No project tsconfig here, so tsc exits non-zero over the missing `@/`
      mapping while still emitting the JS — which is all this uses. */
 }
-const { bestsFrom, findRecords, recordsMagnitude, setsFromJson, headlineRecord } =
+/* The `@/` alias has no mapping without the project tsconfig, so the emitted
+   require is pointed at its sibling — the trick `tools/streak.mjs` documents.
+   `exercise-key.ts` is compiled alongside because the "same exercise?" rule now
+   lives there, shared with `day-progress.ts`; it used to be written out twice
+   and the two copies disagreed about doubled spaces. */
+{
+  const emitted = path.join(out, 'personal-record.js');
+  writeFileSync(
+    emitted,
+    readFileSync(emitted, 'utf8').replaceAll('@/lib/exercise-key', './exercise-key'),
+  );
+}
+const { bestsFrom, findRecords, recordsMagnitude, setsFromJson, headlineRecord, exerciseKey } =
   createRequire(import.meta.url)(path.join(out, 'personal-record.js'));
 
 const set = (exerciseName, weight, reps) => ({ exerciseName, weight, reps });
@@ -142,6 +154,114 @@ const against = (history, session) => findRecords(session, bestsFrom(history));
   const spaced = against([set('Bench  Press', 80, 5)], [set('  bench press ', 85, 5)]);
   if (spaced.length !== 1) {
     problems.push('cùng một bài viết hoa/khoảng trắng khác nhau bị coi là hai bài khác nhau');
+  }
+
+  /*
+    ── and the training week agrees about it ──
+
+    This rule was written twice. Here it collapsed runs of whitespace; in
+    `day-progress.ts` it did not. So `"Bench  Press"` with a doubled space —
+    a paste, a thumb — was one exercise to the record detector and two to the
+    week: the plan said the scheduled lift had not been done while this file was
+    comparing those very rows against each other and celebrating a record from
+    them.
+
+    Both now call `lib/exercise-key.ts`. Comparing the two *behaviours* rather
+    than checking that both files contain an import is the point — an import
+    proves nothing if somebody adds a local override beside it.
+  */
+  const { sessionTicks } = (() => {
+    try {
+      execFileSync(
+        'npx',
+        ['tsc', 'src/lib/day-progress.ts', 'src/lib/exercise-key.ts', '--ignoreConfig',
+         '--outDir', out, '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+        { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+      );
+    } catch {
+      /* the `@/` alias again — it emits anyway */
+    }
+    const dp = path.join(out, 'day-progress.js');
+    writeFileSync(dp, readFileSync(dp, 'utf8').replaceAll('@/lib/exercise-key', './exercise-key'));
+    return createRequire(import.meta.url)(dp);
+  })();
+
+  for (const [a, b] of [
+    ['Bench  Press', 'Bench Press'],
+    ['  Squat ', 'squat'],
+    ['Front\tSquat', 'front squat'],
+    ['Overhead   Press', 'OVERHEAD PRESS'],
+  ]) {
+    const sameToRecords = exerciseKey(a) === exerciseKey(b);
+    /* One planned row named `b`, one logged set named `a`: ticked exactly when
+       the week thinks they are the same exercise. */
+    const ticks = sessionTicks([{ key: 'r1', exerciseName: b }], [{ exerciseName: a }]);
+    const sameToWeek = ticks.r1 === true;
+    if (sameToRecords !== sameToWeek) {
+      problems.push(
+        `"${a}" vs "${b}": bộ kỷ lục nói ${sameToRecords ? 'CÙNG' : 'KHÁC'} bài, ` +
+          `lịch tuần nói ${sameToWeek ? 'CÙNG' : 'KHÁC'} — hai bản sao của cùng một luật lại lệch nhau`,
+      );
+    }
+  }
+}
+
+/* ── 3b. a pound user re-logging the same weight is not a record ──
+
+   Run through the app's real conversion functions rather than a hand-typed
+   number, because the bug *is* the conversion: `displayWeight` rounds to one
+   decimal for the sheet and `weightToKg` parses it back, so 100.00 kg returns
+   as 100.0197… and beats itself. Logging the identical workout twice posted a
+   personal record, printed "220.5 lb, trước là 220.5 lb" — the same number
+   twice — set `pr_detected`, and counted toward two medals. And it compounds:
+   every round-trip drifts further, so it fires again, forever. */
+{
+  const u = mkdtempSync(path.join(tmpdir(), 'units-'));
+  try {
+    execFileSync(
+      'npx',
+      ['tsc', 'src/lib/units.ts', '--ignoreConfig', '--outDir', u,
+       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+      { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch {
+    /* emits anyway */
+  }
+  const { displayWeight, weightToKg } = createRequire(import.meta.url)(path.join(u, 'units.js'));
+  const roundTrip = (kg) => weightToKg(displayWeight(kg, 'lbs'), 'lbs');
+
+  for (const kg of [60, 80, 100, 102.5, 137.5]) {
+    const back = roundTrip(kg);
+    /* The premise: the round-trip really does move the number. If it stops
+       doing so this rule is guarding nothing and should say so rather than pass
+       quietly. */
+    if (back === kg) {
+      problems.push(`vòng đổi kg→lb→kg tại ${kg} không còn lệch — luật này mất mục tiêu, kiểm tra lại`);
+      continue;
+    }
+    const again = against([set('Bench', kg, 5)], [set('Bench', back, 5)]);
+    if (again.length !== 0) {
+      problems.push(
+        `ghi lại đúng mức tạ cũ (${kg}kg → ${displayWeight(kg, 'lbs')}lb → ${back}kg) ` +
+          'vẫn tính là kỷ lục — người dùng dùng pound sẽ phá kỷ lục mỗi buổi mà không nâng thêm gì',
+      );
+    }
+    /* And the rep history at that load survives the round-trip, or every set
+       reads as "a load never used before" and rep records stop existing. */
+    const moreReps = against([set('Bench', kg, 5)], [set('Bench', back, 8)]);
+    if (moreReps.length !== 1 || moreReps[0].kind !== 'reps') {
+      problems.push(
+        `thêm reps ở mức tạ đã đổi đơn vị (${kg} → ${back}) không được ghi nhận — ` +
+          'lịch sử reps bị lạc sang một "mức tạ mới"',
+      );
+    }
+  }
+
+  /* A real increase still registers. The margin must not eat a genuine lift —
+     1.25 kg is the smallest pair of plates most gyms have. */
+  const real = against([set('Bench', 100, 5)], [set('Bench', 101.25, 5)]);
+  if (real.length !== 1 || real[0].kind !== 'weight') {
+    problems.push('tăng thật 1.25kg lại KHÔNG được tính là kỷ lục — biên độ bỏ qua đang quá rộng');
   }
 }
 

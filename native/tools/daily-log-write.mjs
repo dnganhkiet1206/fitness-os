@@ -158,6 +158,61 @@ const ALLOWED_SWALLOW = 'src/lib/offline-write.ts';
   }
 }
 
+/* ── 4. a failed rebuild must not put a deleted row back on screen ──
+
+   The regression this rule exists for was caused by the fix above.
+
+   These mutations write, then `resyncMealEntry`, then `recomputeDailyLog`. The
+   write cannot be undone — the row is gone from the server before the rebuild
+   even starts. While the rebuild swallowed its errors, `onError` almost never
+   ran for that reason; now that it throws, an unconditional rollback restores
+   the pre-delete snapshot and the food *reappears*, next to an error, until
+   `onSettled` refetches and it vanishes again.
+
+   Deleted → gone → back with an error → gone. So the rollback has to know which
+   step failed, and the only durable way to tell is the error's own type. */
+{
+  const src = strip(read('src/hooks/use-nutrition.ts'));
+
+  if (!src.includes('DailyLogRebuildError')) {
+    problems.push(
+      'src/hooks/use-nutrition.ts: rollback lạc quan không phân biệt lỗi GHI với lỗi DỰNG LẠI NGÀY — ' +
+        'lệnh xoá đã chạy trên server rồi, khôi phục snapshot sẽ làm món ăn đã xoá hiện lại kèm ' +
+        'thông báo lỗi, rồi tự biến mất khi refetch',
+    );
+  }
+
+  /* Every `onError` in this file has to go through the one decision. A second
+     unconditional `setQueryData(ctx.key, ctx.previous)` beside it would be the
+     same bug back, in a file that already looks fixed. */
+  const raw = [...src.matchAll(/setQueryData\(\s*ctx\.key\s*,\s*ctx\.previous\s*\)/g)];
+  const guarded = src.includes('function rollbackUnlessRebuilt');
+  if (guarded && raw.length > 1) {
+    problems.push(
+      `src/hooks/use-nutrition.ts: có ${raw.length} chỗ khôi phục snapshot trực tiếp — ` +
+        'phải đi qua rollbackUnlessRebuilt, nếu không một chỗ sẽ lại phục hồi dòng đã xoá thật',
+    );
+  }
+
+  /* And the class has to actually be thrown, or the guard above is a no-op that
+     reads like a fix. */
+  const svc = strip(read('src/lib/daily-log-service.ts'));
+  const thrown = [...svc.matchAll(/throw new DailyLogRebuildError\(/g)].length;
+  const plain = [...svc.matchAll(/throw new Error\(/g)].length;
+  if (thrown < 2) {
+    problems.push(
+      `src/lib/daily-log-service.ts: chỉ ${thrown} chỗ ném DailyLogRebuildError — ` +
+        'cả nhánh đọc lẫn nhánh ghi đều phải ném đúng lớp đó, nếu không rollback vẫn phục hồi nhầm',
+    );
+  }
+  if (plain > 0) {
+    problems.push(
+      `src/lib/daily-log-service.ts: còn ${plain} chỗ ném Error thường — ` +
+        'chỗ gọi sẽ coi đó là lỗi ghi và hoàn tác một thao tác đã thành công',
+    );
+  }
+}
+
 if (problems.length) {
   console.log('ghi ngày hỏng mà không ai biết:\n');
   for (const p of problems) console.log(`  • ${p}`);
@@ -170,5 +225,8 @@ console.log(
     'giữ nguyên số trước bữa ăn vĩnh viễn kèm một toast xanh); không chỗ nào hứng kết quả vào biến ' +
     'để lại có thứ mà bỏ qua; chỉ đúng một chỗ được nuốt lỗi — đường phát lại offline, nơi lệnh ghi ' +
     'đã nằm trên server và chạy lại sẽ nhân đôi bản ghi — và nó có lý do viết ngay bên cạnh; ' +
-    'và cả 6 màn xoá có dựng lại ngày đều báo được lỗi thay vì trông như đã xoá xong',
+    'và cả 6 màn xoá có dựng lại ngày đều báo được lỗi thay vì trông như đã xoá xong; ' +
+    'lỗi dựng-lại-ngày mang lớp riêng (DailyLogRebuildError) và rollback lạc quan bỏ qua nó — ' +
+    'nếu không, một lần dựng lại hỏng sẽ đưa món ăn ĐÃ XOÁ THẬT quay lại màn hình kèm thông báo ' +
+    'lỗi rồi tự biến mất, tức chính bản sửa "ném thay vì nuốt" đẻ ra lỗi mới',
 );

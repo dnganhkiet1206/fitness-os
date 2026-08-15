@@ -41,6 +41,8 @@
  * what actually happened. Requiring the numbers to agree would tick nothing on
  * exactly the days the record matters most.
  */
+import { exerciseKey } from '@/lib/exercise-key';
+
 
 export interface PlanRow {
   key: string;
@@ -51,7 +53,14 @@ export interface SessionSet {
   exerciseName?: string | null;
 }
 
-const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase();
+/*
+  Shared with `personal-record.ts`. This was a local `trim().toLowerCase()`
+  while the record detector also collapsed runs of whitespace, so `"Bench
+  Press"` with a doubled space was two exercises here and one there: the
+  training week said the scheduled lift had not been done while the record sheet
+  compared those same rows against each other. See `lib/exercise-key.ts`.
+*/
+const norm = exerciseKey;
 
 /**
  * Which plan rows a set of logged sessions accounts for.

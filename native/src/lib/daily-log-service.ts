@@ -43,6 +43,34 @@ import type { ReadinessInput } from './types';
  * touched, and the symptom would be a sleep debt that contradicts the sleep
  * figure printed above it.
  */
+/**
+ * The day could not be rebuilt — but whatever was written *was* written.
+ *
+ * ── why this needs its own class ──
+ *
+ * `recomputeDailyLog` runs last, after the write it is summarising. So by the
+ * time it fails, the meal is already deleted, the serving is already changed,
+ * the workout is already saved. The row is gone from the server and it is not
+ * coming back.
+ *
+ * Every one of those callers is an optimistic mutation whose `onError` restores
+ * the pre-write snapshot. That is right when the *write* failed and actively
+ * wrong when only the rebuild did: the user watches the food they deleted
+ * reappear, with an error beside it, and then vanish again a moment later when
+ * `onSettled` refetches. Three states, two of them lies.
+ *
+ * Making it a class rather than a message prefix is deliberate — `onError` has
+ * to make a decision on it, and a decision keyed on the wording of an error
+ * string breaks the first time somebody rewords the string, silently, in the
+ * direction of restoring deleted rows again.
+ */
+export class DailyLogRebuildError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DailyLogRebuildError';
+  }
+}
+
 export function asleepMinutes(sleep: {
   bedtime: string;
   waketime: string;
@@ -199,7 +227,7 @@ export async function recomputeDailyLog(userId: string, date: string) {
   ).filter(([, r]) => r.error);
 
   if (failed.length > 0) {
-    throw new Error(
+    throw new DailyLogRebuildError(
       `Không dựng lại được ngày ${date}: không đọc được ` +
         failed.map(([name, r]) => `${name} (${r.error?.message})`).join('; '),
     );
@@ -384,6 +412,6 @@ export async function recomputeDailyLog(userId: string, date: string) {
     is worse every day after that.
   */
   if (error) {
-    throw new Error(`Không lưu được ngày ${date}: ${error.message}`);
+    throw new DailyLogRebuildError(`Không lưu được ngày ${date}: ${error.message}`);
   }
 }

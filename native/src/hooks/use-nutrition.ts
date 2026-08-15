@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
-import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { DailyLogRebuildError, recomputeDailyLog } from '@/lib/daily-log-service';
 import { todayKeys } from '@/lib/today-keys';
 import { localDateStr } from '@/lib/local-date';
 import { offlineNow } from '@/lib/offline';
@@ -495,6 +495,39 @@ async function patchDiary(
   return { key, previous };
 }
 
+/**
+ * Undo the optimistic patch — unless the write already happened.
+ *
+ * ── the bug this exists for ──
+ *
+ * These mutations do three things in order: write, `resyncMealEntry`, then
+ * `recomputeDailyLog`. Only the first is the user's edit; the other two are
+ * bookkeeping over it. And the first one **cannot be undone** — the row is
+ * deleted on the server before the other two even start.
+ *
+ * `recomputeDailyLog` used to swallow its errors, so `onError` almost never ran
+ * for that reason. It throws now, correctly — a day it could not read is a day
+ * it must not write. But that turned a silent wrong number into a visible wrong
+ * *behaviour*: rolling back put the deleted food back on screen next to an
+ * error message, and then `onSettled` refetched and it disappeared again.
+ * Deleted → gone → back, with an error → gone. The one thing that never
+ * happened is the app telling the truth.
+ *
+ * So the snapshot is only restored when the write itself failed. When the
+ * rebuild failed the optimistic state is the accurate one — the server really
+ * does look like that now — and the error still surfaces, which is what tells
+ * the user the totals may be stale.
+ */
+function rollbackUnlessRebuilt(
+  qc: ReturnType<typeof useQueryClient>,
+  error: unknown,
+  ctx: { key: readonly unknown[]; previous: unknown } | undefined,
+) {
+  if (!ctx?.previous) return;
+  if (error instanceof DailyLogRebuildError) return;
+  qc.setQueryData(ctx.key, ctx.previous);
+}
+
 /** Remove one logged food from today's diary. */
 export function useDeleteMealItem() {
   const { user } = useAuth();
@@ -508,9 +541,7 @@ export function useDeleteMealItem() {
     },
     onMutate: ({ itemId }) =>
       patchDiary(qc, user?.id, (items) => items.filter((it) => it.id !== itemId)),
-    onError: (_e, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(ctx.key, ctx.previous);
-    },
+    onError: (e, _vars, ctx) => rollbackUnlessRebuilt(qc, e, ctx),
     onSettled: () => invalidateLogQueries(qc, user?.id),
   });
 }
@@ -599,9 +630,7 @@ export function useUpdateMealItemServings() {
           };
         }),
       ),
-    onError: (_e, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(ctx.key, ctx.previous);
-    },
+    onError: (e, _vars, ctx) => rollbackUnlessRebuilt(qc, e, ctx),
     onSettled: () => invalidateLogQueries(qc, user?.id),
   });
 }

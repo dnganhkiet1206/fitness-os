@@ -114,11 +114,54 @@ export function habit(s: HourStat): Habit | null {
  */
 export const SLACK = 2;
 
+/**
+ * How far past the habit the caller's floor may still pull the answer.
+ *
+ * The floor exists so a 07:00 breakfast habit does not make 08:00 an emergency
+ * — it buys a few more hours before anybody is nagged. It was never meant to
+ * *replace* a habit that sits somewhere else on the clock entirely.
+ *
+ * Six hours is the same reach the old `isLate` window used, and it is the point
+ * where "wait a bit longer" stops being a nudge and starts being a different
+ * time of day.
+ */
+export const FLOOR_REACH = 6;
+
+/**
+ * ── the floor is a floor on the circle, not on the number line ──
+ *
+ * This was `Math.max(floor, Math.min(late, 23))`, which is linear arithmetic on
+ * a value that lives on a 24-hour circle — the exact mistake the rest of this
+ * file exists to avoid.
+ *
+ * A night-shift nurse who trains at 01:00 has `hour ≈ 1`, so `late ≈ 2`, and
+ * `Math.max(16, 2)` returns **16**: the default for somebody the app knows
+ * nothing about. Having learned her routine precisely, it then threw the answer
+ * away — asking "chưa tập à?" from 16:00 while she slept, and staying silent at
+ * 01:00 when she actually trained. Learning her habit made her experience
+ * *identical* to a stranger's, which is worse than not learning it, because the
+ * app is now confidently wrong at the one hour it had evidence about.
+ *
+ * `Math.min(late, 23)` was the same error at the other end: a 23:00 habit
+ * clamped to 23:00 instead of wrapping past midnight to 01:00.
+ *
+ * So the floor now applies only when it is *just ahead* of the habit's own late
+ * hour — within `FLOOR_REACH`, going forwards around the clock. Further than
+ * that and the floor is plainly describing a different part of somebody else's
+ * day, and the habit wins.
+ */
 export function lateHour(h: Habit | null, floor: number): number {
   if (!h) return floor;
-  const late = h.hour + SLACK * h.spread;
-  return Math.max(floor, Math.min(late, 23));
+  const late = wrap24(h.hour + SLACK * h.spread);
+  return forward(late, floor) <= FLOOR_REACH ? wrap24(floor) : late;
 }
+
+/** Hours from `a` forward to `b`, going the way the clock goes. */
+export function forward(a: number, b: number): number {
+  return wrap24(b - a);
+}
+
+const wrap24 = (h: number) => ((h % 24) + 24) % 24;
 
 /**
  * ── why there is no `isLate` or `hoursBetween` here any more ──

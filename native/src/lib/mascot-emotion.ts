@@ -63,15 +63,31 @@ export const RISK_MIN_STREAK = 3;
  *   · and their own evening is running out — `riskHour` is the person's clock
  *     from `lib/user-rhythm.ts`, floored at `RISK_HOUR`.
  */
+/**
+ * ── and "their evening" is a window on the circle, not `hour >= riskHour` ──
+ *
+ * `riskHour` comes from `lateHour`, which now answers on the 24-hour circle:
+ * somebody who logs at 01:00 gets a risk hour near 02:00, not the stranger's
+ * default. Under a plain `hour >= riskHour` that would read as *"in danger from
+ * 02:00 until midnight"* — twenty-two hours of pleading, which is the same bug
+ * moved one file along rather than fixed.
+ *
+ * So it is a window that starts at their risk hour and runs to the end of their
+ * day, measured forwards from that hour. `RISK_SPAN` is what remains of a day
+ * once the late hour has arrived — long enough to still be asking at bedtime,
+ * short enough that it closes before the next one opens.
+ */
+export const RISK_SPAN = 6;
+
 export function streakInDanger(i: {
   streak: number;
   emptyToday: boolean;
   hour: number;
   riskHour?: number;
 }): boolean {
-  return (
-    i.emptyToday && i.streak >= RISK_MIN_STREAK && i.hour >= (i.riskHour ?? RISK_HOUR)
-  );
+  const from = i.riskHour ?? RISK_HOUR;
+  const since = ((((i.hour - from) % 24) + 24) % 24);
+  return i.emptyToday && i.streak >= RISK_MIN_STREAK && since < RISK_SPAN;
 }
 
 /** How long each one-shot action holds before returning to the base emotion. */

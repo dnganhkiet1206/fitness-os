@@ -216,7 +216,23 @@ export default function LogWorkoutSheet() {
     Hafthór Björnsson's 501 kg deadlift, the heaviest lift ever recorded. Zero
     stays legal — bodyweight work is logged with no load.
   */
-  const setErrors = sets.map((row) => ({
+  /*
+    Only the rows that will actually be written.
+
+    This ran over `sets`, which includes rows nobody has finished filling in —
+    and the form opens with an empty one, while "add set" copies the previous
+    row's weight with the reps left blank. Blank passes (`plausibleText` accepts
+    an empty string), but typing `0` into reps on *any* row failed
+    `set_reps` (min 1) and locked the Save button for the whole sheet, with the
+    message pointing at a row the user had already decided not to log.
+
+    Before the bound existed those rows were simply skipped, because `validSets`
+    drops anything without reps. Checking the wider set than the one being saved
+    is what turned a guard into an obstacle — so this checks exactly what gets
+    written. The 700 kg typo is still caught: that row has reps, so it is in
+    `validSets`.
+  */
+  const setErrors = validSets.map((row) => ({
     weight: outOfRangeMessage(
       'lift_kg',
       String(weightToKg(Number(row.weight) || 0, wUnit)),
@@ -285,13 +301,20 @@ export default function LogWorkoutSheet() {
   koaCtxRef.current = koaCtx;
   const leaving = useRef(false);
 
-  const finish = () => {
+  /*
+    `message` because the offline path used to borrow this one wholesale, and
+    `logWorkoutSaved` is *"Đã lưu buổi tập!"* — a claim that the workout is on
+    the server. Offline it is in a queue on the phone, and the sheet had just
+    told the user something that had not happened. `log-meal` and the sleep
+    sheet both say the queued version; only this one lied.
+  */
+  const finish = (message: string = i18n.logWorkoutSaved) => {
     /* Both the tap and the timer land here, and the screen pops — a second
        call would pop the screen behind it as well. */
     if (leaving.current) return;
     leaving.current = true;
     router.back();
-    toast.success(i18n.logWorkoutSaved);
+    toast.success(message);
   };
 
   /*
@@ -321,7 +344,7 @@ export default function LogWorkoutSheet() {
     mutationKey: [...OFFLINE_WRITE_KEY],
     onMutate: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      finish();
+      finish(i18n.logMealQueued);
     },
   });
 
