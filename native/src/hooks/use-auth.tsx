@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 import { supabase } from '@/integrations/supabase/client';
 import { cancelAllReminders } from '@/lib/notifications';
-import { clearPersistedCache } from '@/lib/query-client';
+import { clearPersistedCache, clearUserScopedStorage } from '@/lib/query-client';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -96,6 +96,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     // Drop cached data so the next account doesn't briefly see this one's
     await clearPersistedCache();
+    /*
+      And the preferences the cache does not cover.
+
+      `clearPersistedCache` removes one key. The learned daily rhythm, the
+      reminder-plan signature and the personal goals are separate ones, and
+      leaving them behind is not merely untidy: the plan signature makes
+      `use-reminders.ts` exit early, so a second account whose plan hashes the
+      same never gets a single notification scheduled — permanently, with the
+      switches still shown on.
+    */
+    await clearUserScopedStorage();
     /*
       And the notifications, which outlive the session by up to a week.
 

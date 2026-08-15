@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
+import { syncProfileWeight } from '@/lib/weight-sync';
 // aliased: this file already has its own `LoggedSet`, a much richer row
 import { trainingMinutes, type LoggedSet as TimedSet } from '@/lib/activity';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
@@ -56,10 +57,13 @@ export function useLogWeight() {
           { onConflict: 'user_id,date' },
         );
       if (error) throw error;
+      await syncProfileWeight(user!.id, weight_kg);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['weight_log', user?.id] });
       qc.invalidateQueries({ queryKey: ['weight_history', user?.id] });
+      /* The profile moved, and everything derived from it is read from there. */
+      qc.invalidateQueries({ queryKey: ['profile', user?.id] });
     },
   });
 }

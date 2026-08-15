@@ -3,6 +3,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
+import { syncProfileWeight } from '@/lib/weight-sync';
 
 /**
  * Writes that survive a gym basement.
@@ -239,6 +240,11 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
         date: w.date,
       });
       if (error) throw error;
+      /* Same rule as the online path: the profile's current weight is what
+         every target is computed from, and a weigh-in that only lands in
+         `weight_logs` leaves it stale. `syncProfileWeight` carries the date, so
+         a queued Tuesday weight replayed on Friday does not overwrite Friday's. */
+      await syncProfileWeight(w.userId, w.kg, w.date);
       return;
     }
     case 'meal': {

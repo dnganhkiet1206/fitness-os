@@ -85,7 +85,6 @@ const KNOWN = {
   'lib/help-nudge.ts: resetRun': 'dùng khi test',
   'lib/i18n.ts: formatPrice': 'định dạng giá — chờ IAP',
   'lib/i18n.ts: useTranslation': 'API cũ của bản web, useI18n thay thế',
-  'lib/personal-model.ts: resetPersonalModel': 'dùng khi test và ở màn debug',
   'lib/training-card.ts: acwrPercent': 'chỉ tools/training-card.mjs kiểm',
   'lib/units.ts: formatWeight': 'displayWeight + weightLabel đang được gọi rời',
 };

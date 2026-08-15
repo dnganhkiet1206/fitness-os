@@ -391,9 +391,29 @@ export function levelStep(next: number): { from: number | null; crossed: boolean
   return { from, crossed: from != null && next > from };
 }
 
-/** Testing and "forget me" — see the privacy screen. */
+/**
+ * Forget everything learned about whoever was signed in.
+ *
+ * Used by the privacy screen's "forget me" and by `clearUserScopedStorage()` on
+ * sign-out.
+ *
+ * ── why `loaded` has to be cleared too ──
+ *
+ * The model lives in a module-scope `let` and `loaded` guards the read so the
+ * file is opened once per launch. Resetting the value alone left that guard set,
+ * so the *next* account to sign in on the same launch never had its own stored
+ * model read at all — `loadPersonalModel()` returned immediately and the app
+ * carried on with the blank one, silently discarding weeks of a returning
+ * user's learned rhythm.
+ *
+ * `praisedThisSession` goes with it: it is a once-a-day gate keyed to nothing
+ * but the process, so leaving it set would deny the next person their first
+ * piece of praise for no reason either of them could see.
+ */
 export function resetPersonalModel() {
   model = fresh();
+  loaded = false;
+  praisedThisSession = false;
   save();
   emit();
 }

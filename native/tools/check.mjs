@@ -215,6 +215,15 @@ const STEPS = [
     and nothing had ever executed it.
   */
   ['điểm sẵn sàng', 'node', ['tools/readiness.mjs']],
+  /*
+    Sign-out used to clear one of seventeen stored keys. The one that mattered
+    most was invisible: a leftover reminder-plan signature makes the scheduler
+    exit early, so the *next* account never gets a single notification while
+    every switch still reads as on. Nothing about a leftover preference looks
+    wrong, which is why this has to be a list somebody maintains rather than a
+    thing anybody would notice.
+  */
+  ['đăng xuất sạch', 'node', ['tools/signed-out.mjs']],
 ];
 
 let failed = 0;
