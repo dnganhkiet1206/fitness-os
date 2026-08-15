@@ -68,6 +68,36 @@ export const MIN_WEIGH_INS = 6;
 export const MIN_SPAN_DAYS = 10;
 
 /**
+ * How many *different days* the weigh-ins must fall on.
+ *
+ * ── why the count of weigh-ins was not enough ──
+ *
+ * `MIN_WEIGH_INS` counts readings; this counts evidence, and they are not the
+ * same thing. Six readings taken on two days is **two** data points: with only
+ * two distinct x-values a least-squares line passes exactly through the two
+ * cluster means, so the fit has no residual, no way to tell noise from trend,
+ * and no idea that it cannot tell.
+ *
+ * Body weight swings a kilo on water alone, which the regression's own header
+ * says is the reason it is a regression rather than last-minus-first — but a
+ * regression over two clusters is last-minus-first wearing a hat.
+ *
+ * Measured on the real function. Somebody whose weight is genuinely **flat** at
+ * 70 kg, weighed three times on a high-carb Monday (71.0) and three times on a
+ * low-carb Saturday twelve days later (69.5):
+ *
+ *     ước lượng: 3,163 kcal/ngày   ·   sự thật: 2,200   ·   lệch +963
+ *
+ * And this is the screen that offers to change somebody's calorie target. A
+ * suggestion wrong by nine hundred kilocalories, derived from water, presented
+ * with the authority of a measurement.
+ *
+ * Five over a ten-day span makes the degenerate case unreachable and still asks
+ * for less than every-other-day.
+ */
+export const MIN_DISTINCT_DAYS = 5;
+
+/**
  * How far apart the two numbers must be before it is worth saying anything.
  *
  * Under this, the difference is noise: a 0.1 kg error in the trend over two
@@ -90,7 +120,10 @@ export interface WeighIn {
 }
 
 export type AdaptiveResult =
-  | { ok: false; reason: 'not-enough-intake' | 'not-enough-weight' | 'span-too-short' }
+  | {
+      ok: false;
+      reason: 'not-enough-intake' | 'not-enough-weight' | 'span-too-short' | 'weigh-ins-clustered';
+    }
   | {
       ok: true;
       /** kcal/day the energy balance implies */
@@ -147,6 +180,12 @@ export function adaptiveTDEE(intake: DayIntake[], weights: WeighIn[]): AdaptiveR
 
   const span = points[points.length - 1].t - points[0].t;
   if (span < MIN_SPAN_DAYS) return { ok: false, reason: 'span-too-short' };
+
+  /* Distinct days, not readings — see `MIN_DISTINCT_DAYS`. Six weigh-ins
+     bunched onto two mornings are two data points, and the line through them is
+     whatever the water weight happened to be on those two mornings. */
+  const distinctDays = new Set(points.map((p) => p.t)).size;
+  if (distinctDays < MIN_DISTINCT_DAYS) return { ok: false, reason: 'weigh-ins-clustered' };
 
   const meanIntake = days.reduce((s, d) => s + d.kcal, 0) / days.length;
   const perDay = kgPerDay(points);

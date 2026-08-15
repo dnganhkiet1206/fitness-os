@@ -127,6 +127,55 @@ const weights = (n, kg0, perWeek, step = 1) => {
 }
 
 /*
+  ── 2b: two clusters at the ends of a long span ──
+
+  The case above is caught by `MIN_SPAN_DAYS`, not by anything about clustering
+  — the readings are three days apart, so the window is too short and the
+  function refuses for that reason. The gap it leaves is the opposite shape:
+  readings that pass every count and span check while still being **two data
+  points**.
+
+  Six weigh-ins on two days twelve days apart satisfies `MIN_WEIGH_INS = 6` and
+  `MIN_SPAN_DAYS = 10`. But with two distinct x-values a least-squares line
+  passes exactly through the two cluster means: no residual, no way to separate
+  water from fat, and no indication that it cannot.
+
+  Measured on the shipped function, for somebody whose weight is genuinely flat
+  at 70 kg — weighed on a high-carb Monday and a low-carb Saturday:
+
+      3,163 kcal/ngày against a true 2,200 — wrong by 963, entirely from water
+
+  and this is the number the goals screen offers to set as a calorie target.
+*/
+{
+  const day = (n) => new Date(Date.now() - (13 - n) * 864e5).toISOString().slice(0, 10);
+  const flat = [
+    { date: day(0), kg: 71.0 }, { date: day(0), kg: 71.1 }, { date: day(0), kg: 70.9 },
+    { date: day(12), kg: 69.5 }, { date: day(12), kg: 69.6 }, { date: day(12), kg: 69.4 },
+  ];
+  const r = adaptiveTDEE(intake(14, 2200), flat);
+  if (r.ok) {
+    problems.push(
+      `6 lần cân dồn vào ĐÚNG HAI ngày (cách nhau 12 ngày) vẫn trả lời ${r.measured} kcal — ` +
+        'sáu lần đo trên hai ngày là HAI điểm dữ liệu, và đường hồi quy đi đúng qua hai trung bình ' +
+        'cụm, nên nó không phân biệt được nước với mỡ. Người có cân nặng phẳng 70kg nhận đề xuất ' +
+        `lệch ${r.measured - 2200} kcal`,
+    );
+  }
+
+  /* And the guard must not swallow honest data: the same six readings spread
+     across six different days still has to produce an answer. */
+  const spread = [
+    { date: day(0), kg: 71.0 }, { date: day(2), kg: 70.7 }, { date: day(5), kg: 70.4 },
+    { date: day(8), kg: 70.1 }, { date: day(10), kg: 69.8 }, { date: day(12), kg: 69.5 },
+  ];
+  const ok = adaptiveTDEE(intake(14, 2200), spread);
+  if (!ok.ok) {
+    problems.push(`6 lần cân rải trên 6 ngày khác nhau bị từ chối (${ok.reason}) — chốt chặn quá chặt`);
+  }
+}
+
+/*
   ── 3: a day nobody logged is not a day of eating nothing ──
 
   This is the same mistake the readiness score made with sleep, and it is worth
@@ -232,7 +281,11 @@ if (problems.length) {
 
 console.log(
   'TDEE thích ứng OK — 4 ca tính tay khớp (ăn 1800 giảm 0,5 kg/tuần → ~2350 kcal); ' +
-    'từ chối đúng 5 kiểu dữ liệu mỏng (ít ngày ghi ăn, ít lần cân, các lần cân dồn vào 3 ngày); ' +
+    'từ chối đúng các kiểu dữ liệu mỏng: ít ngày ghi ăn, ít lần cân, quãng quá ngắn, ' +
+    'và — thứ mà số lượng lần cân không bắt được — sáu lần cân dồn vào ĐÚNG HAI ngày cách nhau ' +
+    '12 ngày, vốn qua được cả MIN_WEIGH_INS lẫn MIN_SPAN_DAYS trong khi thực chất chỉ là hai điểm ' +
+    'dữ liệu (đo thật: người cân nặng phẳng nhận đề xuất lệch +963 kcal); sáu lần cân rải trên ' +
+    'sáu ngày vẫn được trả lời bình thường; ' +
     'ngày không ghi bị loại khỏi trung bình thay vì tính là 0 kcal; ' +
     'dùng hồi quy nên một buổi sáng nặng thêm 1,2 kg không lật ngược xu hướng; ' +
     'chỉ lên tiếng khi chênh từ 200 kcal trở lên',
