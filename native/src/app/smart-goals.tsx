@@ -16,13 +16,19 @@ import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { adaptiveTDEE, worthMentioning } from '@/lib/adaptive-tdee';
 import { calcTargetCalories } from '@/lib/fitness-calc';
-import { localDateStr } from '@/lib/local-date';
+import { localDateStr, weekStartOf } from '@/lib/local-date';
 import { convertWeight, displayWeight, weightLabel } from '@/lib/units';
 
+/*
+  `weekStartOf` rather than a fourth copy of the arithmetic. The line here was
+  `getDate() - getDay() + 1`, which on a **Sunday** resolves to tomorrow — so
+  "this week" ran from tomorrow to next Sunday, held no data at all, and the
+  advice below it silently fell back to a week-old window. Right six days out of
+  seven, and wrong on the day people sit down to review their week.
+*/
 function weekDates(weeksAgo: number) {
-  const now = new Date();
-  const start = new Date(now);
-  start.setDate(start.getDate() - start.getDay() + 1 - weeksAgo * 7);
+  const start = weekStartOf();
+  start.setDate(start.getDate() - weeksAgo * 7);
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
   return { start: localDateStr(start), end: localDateStr(end) };

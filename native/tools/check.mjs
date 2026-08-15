@@ -240,6 +240,13 @@ const STEPS = [
     what produces the cycles.
   */
   ['tầng import', 'node', ['tools/layering.mjs']],
+  /*
+    Two shapes that only misbehave in a corner: a challenge measuring a literal
+    while its own label promises "your target", and a week-start expression
+    that is right six days out of seven and wrong on Sunday — the day people sit
+    down to review their week, and fixed again by Monday morning.
+  */
+  ['mục tiêu tuần', 'node', ['tools/weekly-targets.mjs']],
 ];
 
 let failed = 0;

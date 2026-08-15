@@ -154,3 +154,34 @@ export function staleDayProgress(keys: readonly string[], today: string = localD
     return date <= oldest;
   });
 }
+
+/**
+ * The Monday that starts `d`'s week, at local midnight.
+ *
+ * ── why this is shared ──
+ *
+ * There were three of these. Two agreed; the third was wrong in one place, and
+ * that place was Sunday.
+ *
+ *     use-extras.ts     date - day + (day === 0 ? -6 : 1)   ✓
+ *     weekly-review.tsx date - day + (day === 0 ? -6 : 1)   ✓
+ *     smart-goals.tsx   date - day + 1                      ✗
+ *
+ * `Date.getDay()` is Sunday-first, so on a Sunday the third one computes
+ * `date - 0 + 1` — **tomorrow**. Its "this week" therefore ran from tomorrow's
+ * Monday to the following Sunday: entirely in the future, and empty. Every
+ * Sunday the newest column of that screen was blank and the calorie advice
+ * underneath it was reading a week-old window, and by Monday morning it looked
+ * correct again so there was nothing to catch.
+ *
+ * Sunday is the one day of seven this class of expression gets wrong, which is
+ * exactly why it survived: it is right 86% of the time, and wrong on the day
+ * people sit down to look at their week.
+ */
+export function weekStartOf(d: Date = new Date()): Date {
+  const out = new Date(d);
+  const day = out.getDay();
+  out.setDate(out.getDate() - day + (day === 0 ? -6 : 1));
+  out.setHours(0, 0, 0, 0);
+  return out;
+}

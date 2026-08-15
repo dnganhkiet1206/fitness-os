@@ -33,7 +33,7 @@ import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
-import { localDateStr, localDayRangeISO } from '@/lib/local-date';
+import { localDateStr, localDayRangeISO, weekStartOf } from '@/lib/local-date';
 
 interface AIInsight {
   category: string;
@@ -64,14 +64,8 @@ const PRIORITY_COLOR = {
 const DAYS_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const DAYS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-function getWeekStart(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+/* Shared with the challenges and the goals screen — see `weekStartOf`. */
+const getWeekStart = weekStartOf;
 
 const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
 const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);

@@ -10,7 +10,8 @@ import { AWARD_TEXT, CHALLENGE_TEXT } from '@/lib/gamification-i18n';
    into a component to reach a lib pulls React and the whole overlay into the
    import graph of something that only wanted to append to an array. */
 import { enqueueAward } from '@/lib/celebration-queue';
-import { localDateStr, localDayRangeISO, parseLocalDate } from '@/lib/local-date';
+import { localDateStr, localDayRangeISO, parseLocalDate, weekStartOf } from '@/lib/local-date';
+import { macroTargetsFor } from '@/lib/macro-targets';
 import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { TIER_MAGNITUDE } from '@/lib/koa-event';
 import { emitKoa } from '@/lib/koa-stage';
@@ -269,13 +270,11 @@ export function useCheckAwards() {
   return { checkAndGrant, ready: !!existingAwards };
 }
 
-/** Monday of the current week (same logic as the web app) */
+/** Monday of the current week — the rule lives in `lib/local-date.ts`, shared
+ *  with the weekly review and the goals screen, which had three copies between
+ *  them and one of the three was wrong every Sunday. */
 function getWeekStart(): string {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diff));
-  return localDateStr(monday);
+  return localDateStr(weekStartOf());
 }
 
 export function useWeeklyChallenges() {
@@ -391,6 +390,36 @@ export function useUpdateChallengeProgress() {
         .eq('completed', false);
       if (!challenges || challenges.length === 0) return;
 
+      /*
+        ── the challenges promised "your target" and measured somebody else's ──
+
+        Three of them counted against a number typed into this file: sleep at
+        360 minutes, protein at 100 g, water at 2,000 ml. But the descriptions
+        the user reads are *"Đạt mục tiêu protein 7 ngày"*, *"Đạt mục tiêu nước
+        7 ngày"*, *"Ngủ đủ giấc"* — their target, in their own words.
+
+        So somebody whose profile says 8 hours of sleep, 150 g of protein and
+        3,500 ml of water was told they had "hit their target" on a day they
+        slept six hours, ate 100 g and drank two litres. Not a threshold that
+        was merely generous: a claim about them that was not true, from the one
+        table that already holds the right answer.
+
+        `macroTargetsFor` exists precisely for this — its own header says a
+        target computed twice is a target that will contradict itself — and this
+        file had never imported it.
+      */
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('sleep_target_hours, water_target_ml, macro_protein_g')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      /* A profile that will not load is not a licence to invent a threshold, so
+         these fall back to the same defaults every other screen uses. */
+      const sleepTargetMin = Math.round((Number(profile?.sleep_target_hours) || 8) * 60);
+      const waterTargetMl = Number(profile?.water_target_ml) || 2500;
+      const proteinTargetG = macroTargetsFor(profile).protein;
+
       // parseLocalDate: a bare 'YYYY-MM-DD' parses as UTC midnight, which
       // localDateStr would render as Sunday in negative-offset timezones —
       // cutting the last day out of the challenge week
@@ -449,7 +478,7 @@ export function useUpdateChallengeProgress() {
             .eq('user_id', user.id)
             .gte('date', weekStart)
             .lt('date', weekEndStr);
-          newValue = (logs ?? []).filter((l) => (l.sleep_duration_min ?? 0) >= 360).length;
+          newValue = (logs ?? []).filter((l) => (l.sleep_duration_min ?? 0) >= sleepTargetMin).length;
         } else if (ch.challenge_key === 'protein_7') {
           const { data: logs } = await supabase
             .from('daily_logs')
@@ -457,7 +486,7 @@ export function useUpdateChallengeProgress() {
             .eq('user_id', user.id)
             .gte('date', weekStart)
             .lt('date', weekEndStr);
-          newValue = (logs ?? []).filter((l) => (Number(l.protein_g) || 0) >= 100).length;
+          newValue = (logs ?? []).filter((l) => (Number(l.protein_g) || 0) >= proteinTargetG).length;
         } else if (ch.challenge_key === 'calories_5') {
           const { data: logs } = await supabase
             .from('daily_logs')
@@ -477,7 +506,7 @@ export function useUpdateChallengeProgress() {
           (logs ?? []).forEach((l) => {
             byDate.set(l.date, (byDate.get(l.date) ?? 0) + l.amount_ml);
           });
-          newValue = [...byDate.values()].filter((v) => v >= 2000).length;
+          newValue = [...byDate.values()].filter((v) => v >= waterTargetMl).length;
         }
 
         const isCompleted = newValue >= ch.target_value;
