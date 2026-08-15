@@ -56,7 +56,9 @@ export type Quantity =
   | 'circumference_cm'
   | 'sleep_stage_min'
   | 'meal_kcal'
-  | 'macro_g';
+  | 'macro_g'
+  | 'lift_kg'
+  | 'set_reps';
 
 export interface Bound {
   min: number;
@@ -117,6 +119,32 @@ export const BOUNDS: Record<Quantity, Bound> = {
 
   /** Waist, hip, arm, thigh, chest. Wide enough to cover every one of them on every body. */
   circumference_cm: { min: 10, max: 300, unit: 'cm' },
+
+  /*
+    The load on the bar — not the person on the scale, which is `weight_kg`.
+
+    This was the one numeric input in the app with no bound at all, and it was
+    the most expensive one to leave open. A mistyped 700 kg bench does three
+    things at once: it inflates `volume_load`, which feeds training load, which
+    feeds the readiness score; it is picked up by `lib/personal-record.ts` as a
+    **personal record**, so the app celebrates the typo; and it then becomes the
+    baseline every later set is measured against, so nothing is ever a record
+    again. Deleting the session is the only cure.
+
+    501 kg is Hafthór Björnsson's deadlift, the heaviest lift ever recorded by
+    anybody. 600 leaves room above it and still catches a decimal slipped or a
+    unit confused — the same job the ceiling does on `weight_kg`. Zero is a
+    real, common value: bodyweight work is logged with no load.
+  */
+  lift_kg: { min: 0, max: 600, unit: 'kg' },
+
+  /*
+    Reps in one set. High-rep sets are real training — 100-rep squat sets are a
+    named protocol — and endurance records go into the hundreds, so the ceiling
+    is generous. What it catches is a rep count that has swallowed a weight, or
+    a set that says 5000.
+  */
+  set_reps: { min: 1, max: 500, unit: 'reps' },
 
   /** A single sleep stage cannot outlast the day it happened in. */
   sleep_stage_min: { min: 0, max: 1440, unit: 'min' },

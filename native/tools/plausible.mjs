@@ -75,6 +75,15 @@ const CASES = [
   ['spo2_pct', 'SpO₂ thấp có thật', 88, null],
   ['spo2_pct', 'gõ nhầm 97 thành 970', null, 970],
   ['spo2_pct', 'không thể vượt 100%', null, 101],
+  ['lift_kg', 'mức tạ nặng nhất từng được ghi nhận: 501 kg (Hafthór Björnsson, deadlift 2020)', 501, null],
+  ['lift_kg', 'body-weight: không tạ là một giá trị thật, không phải ô bỏ trống', 0, null],
+  ['lift_kg', 'tạ đơn nhẹ', 2.5, null],
+  ['lift_kg', 'gõ nhầm 70 thành 700 — cú gõ này từng thành kỷ lục cá nhân rồi thành mốc so sánh', null, 700],
+  ['lift_kg', 'nhầm đơn vị: nhập gram', null, 70000],
+  ['set_reps', 'set 100 rep là một giáo án có thật, không phải lỗi', 100, null],
+  ['set_reps', 'set nặng 1 rep', 1, null],
+  ['set_reps', '0 rep không phải một set, mà là một dòng chưa điền', null, 0],
+  ['set_reps', 'số lần nuốt mất mức tạ', null, 5000],
   ['vo2max_mlkgmin', 'VO₂max cao nhất từng ghi nhận: 97,5 (Oskar Svendsen, 2012)', 97.5, null],
   ['vo2max_mlkgmin', 'người ít vận động', 25, null],
   ['vo2max_mlkgmin', 'gõ nhầm 44 thành 4400', null, 4400],
@@ -159,6 +168,31 @@ const REGISTRY = [
     gate: 'anyBad',
     save: 'const canSave =',
     covers: ['hr_bpm', 'hrv_ms', 'spo2_pct', 'vo2max_mlkgmin', 'resp_rpm'],
+  },
+  {
+    /*
+      ── this screen used to be exempt, and the exemption was the bug ──
+
+      It sat in `NO_GATE_NEEDED` with the reason *"tạ và số lần là con số của
+      buổi tập, không phải chỉ số sức khoẻ có ngưỡng sinh lý"* — a workout
+      number, not a health metric with physiological bounds. That is true about
+      the number and wrong about what the app does with it.
+
+      A mistyped 700 kg bench inflates `volume_load`, which feeds training load,
+      which feeds the readiness score — so it *is* a health metric two steps
+      downstream. And after `lib/personal-record.ts` was added it became worse
+      than wrong: the typo is detected as a personal record, celebrated on
+      screen, and then kept as the baseline every later set is compared against,
+      so nothing is ever a record again.
+
+      The exemption was written before the record engine existed. It was
+      reasonable then and false afterwards, which is the failure mode of every
+      exemption list — so this one is now a real entry instead.
+    */
+    file: 'src/app/log-workout.tsx',
+    gate: 'firstSetError',
+    save: 'const canSave =',
+    covers: ['lift_kg', 'set_reps'],
   },
   {
     file: 'src/app/log-measurement.tsx',
@@ -280,7 +314,8 @@ for (const { file, gate, save, covers } of REGISTRY) {
   gated or explicitly recorded as needing no gate.
 */
 const NO_GATE_NEEDED = {
-  'log-workout.tsx': 'tạ và số lần là con số của buổi tập, không phải chỉ số sức khoẻ có ngưỡng sinh lý',
+  /* Empty on purpose. `log-workout.tsx` was the only entry and it has moved
+     into REGISTRY — see the note there for why its exemption was wrong. */
 };
 for (const f of readdirSync(path.join(NATIVE, 'src/app')).filter((f) => /^log-.*\.tsx$/.test(f))) {
   const known = REGISTRY.some((r) => r.file.endsWith(`/${f}`)) || f in NO_GATE_NEEDED;

@@ -37,6 +37,7 @@ import {
 import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { toast } from '@/lib/toast';
+import { outOfRangeMessage } from '@/lib/plausible';
 import { effortRange } from '@/lib/prescription';
 import { localDateStr, routineIndex } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/units';
@@ -195,6 +196,35 @@ export default function LogWorkoutSheet() {
     is a session that says the set happened.
   */
   const validSets = sets.filter((s) => Number(s.reps) > 0);
+
+  /*
+    ── the one numeric input in the app with no bound at all ──
+
+    Every other number a person types here is checked against `lib/plausible.ts`
+    — heart rate, SpO₂, body fat, a meal's calories, a body weight. The load on
+    the bar was not, and it was the most expensive one to leave open.
+
+    A mistyped 700 kg bench does three things at once. It inflates
+    `volume_load`, which feeds training load, which feeds the readiness score.
+    It is picked up by `lib/personal-record.ts` as a **personal record**, so the
+    sheet below throws a celebration for the typo. And it then becomes the
+    baseline every later set is measured against, so nothing is ever a record
+    again. Deleting the session is the only cure, and nothing on screen suggests
+    that is what happened.
+
+    Bounds rather than a guess about anybody's strength: 600 kg sits above
+    Hafthór Björnsson's 501 kg deadlift, the heaviest lift ever recorded. Zero
+    stays legal — bodyweight work is logged with no load.
+  */
+  const setErrors = sets.map((row) => ({
+    weight: outOfRangeMessage(
+      'lift_kg',
+      String(weightToKg(Number(row.weight) || 0, wUnit)),
+      i18n.outOfRange,
+    ),
+    reps: outOfRangeMessage('set_reps', row.reps, i18n.outOfRange),
+  }));
+  const firstSetError = setErrors.find((e) => e.weight || e.reps);
   // Inputs are in the user's unit; volume load is stored in kg
   const volumeLoad = validSets.reduce(
     (sum, s) => sum + weightToKg(Number(s.weight) || 0, wUnit) * Number(s.reps),
@@ -348,7 +378,8 @@ export default function LogWorkoutSheet() {
   }, [records]);
 
   // Stays disabled after success so the closing sheet can't double-submit
-  const canSave = validSets.length > 0 && !save.isPending && !save.isSuccess;
+  const canSave =
+    validSets.length > 0 && !firstSetError && !save.isPending && !save.isSuccess;
 
   return (
     <KeyboardAvoidingView
@@ -524,6 +555,11 @@ export default function LogWorkoutSheet() {
         {/* Said next to the button it explains, and only while it is true —
             a permanent instruction is read once and then stops being read. */}
         {validSets.length === 0 ? <Text style={styles.fieldHint}>{i18n.nLgNeedReps}</Text> : null}
+        {/* Said next to the button it blocks, and naming the range — a disabled
+            button with no reason is the thing that gets an app deleted. */}
+        {firstSetError ? (
+          <Text style={styles.rangeError}>{firstSetError.weight ?? firstSetError.reps}</Text>
+        ) : null}
 
         <PressScale
           style={[styles.saveButton, !canSave && !save.isSuccess && styles.saveDisabled]}
@@ -645,6 +681,7 @@ const styles = StyleSheet.create({
   addRow: { flexDirection: 'row', gap: spacing.sm },
   addExerciseText: { color: colors.primary },
   fieldHint: { ...type.caption, color: colors.mutedForeground },
+  rangeError: { ...type.caption, color: colors.readinessRed },
   setName: { flex: 1, paddingHorizontal: spacing.sm, height: 44 },
   setNum: { width: 64, paddingHorizontal: spacing.xs, height: 44, textAlign: 'center' },
   removeSet: { width: 24, alignItems: 'center' },
