@@ -208,6 +208,13 @@ const STEPS = [
   */
   ['sổ cái thưởng', 'node', ['tools/reward-ledger.mjs']],
   ['cửa sổ giấc ngủ', 'node', ['tools/sleep-window.mjs']],
+  /*
+    Runs `computeReadiness` for real. Every other assertion about that engine —
+    in `training-card.mjs` and `health-source.mjs` — is a transcription of its
+    constants, and a copy agrees with itself. This is the app's headline number
+    and nothing had ever executed it.
+  */
+  ['điểm sẵn sàng', 'node', ['tools/readiness.mjs']],
 ];
 
 let failed = 0;

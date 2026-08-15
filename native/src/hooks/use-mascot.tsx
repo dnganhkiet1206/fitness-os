@@ -301,18 +301,43 @@ const isMascotThing = (q: string): q is MascotThing =>
 /** happy | neutral | tired — what the figure mirrors, distinct from what it says. */
 export type MascotMood = 'happy' | 'neutral' | 'tired';
 
+/**
+ * ── an unread day is not an empty day ──
+ *
+ * This was the one emotional input in the app with no readiness gate on it.
+ * Every other one has had one for a while — `useDailyQuests.ready`,
+ * `useMascotMessage.read`, `useKoaContext.emptyToday`, `streakAtRisk` — and
+ * this one read `data` straight off two queries.
+ *
+ * While those queries are in flight, or after either has failed, `log` and
+ * `meals` are `undefined`. `meals?.length ?? 0` is then 0 and
+ * `log?.workout_count ?? 0` is 0 — not "unknown", but a confident *nothing*.
+ * So any launch after midday returned `'tired'`, which `baseEmotion` combines
+ * with a zero streak into **`sad`**, which `presenceMotion('sad')` draws as
+ * `floatPt: 0, droopDeg: 10`: a character slumped, motionless, visibly
+ * unhappy — because the network had not answered yet.
+ *
+ * It got worse rather than better with the last round of work: making the body
+ * follow the emotion honestly means a wrong emotion is now plainly visible
+ * instead of being a small change of face.
+ *
+ * `'neutral'` is the truthful answer to "how is their day going" when the day
+ * has not been read. It is also what the figure already does at rest, so the
+ * transition into the real mood is a settle rather than a snap.
+ */
 export function useMascotMood(): MascotMood {
-  const { data: log } = useDailyLog();
-  const { data: meals } = useTodayMeals();
+  const { data: log, isSuccess: logRead } = useDailyLog();
+  const { data: meals, isSuccess: mealsRead } = useTodayMeals();
 
   return useMemo(() => {
+    if (!logRead || !mealsRead) return 'neutral';
     const hour = new Date().getHours();
     const mealCount = meals?.length ?? 0;
     const workedOut = Number(log?.workout_count ?? 0) > 0;
     if (mealCount > 0 && workedOut) return 'happy';
     if ((hour >= 12 && mealCount === 0) || (hour >= 18 && !workedOut)) return 'tired';
     return 'neutral';
-  }, [log, meals]);
+  }, [log, meals, logRead, mealsRead]);
 }
 
 /**

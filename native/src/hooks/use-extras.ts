@@ -165,10 +165,36 @@ export function useCheckAwards() {
         .order('date', { ascending: false })
         .limit(STREAK_WINDOW);
 
+      /* ── the same streak the rest of the app shows ──
+
+         This called `streakFrom(dates, today)` and left the third argument off,
+         while `use-mascot-room.ts` passes `frozen`. So somebody whose day 40 was
+         covered by a streak freeze saw "40 ngày" on their level card and was
+         never granted `streak_30` or `streak_100`: the app sold a 150-coin item
+         to protect a number, protected the number, and quietly did not protect
+         the medals that number is for.
+
+         `lib/streak.ts` has a header explaining that it exists *because these
+         two call sites had already drifted apart once*. They drifted again, on
+         the argument added since.
+
+         The freeze read is allowed to fail for the reason spelled out in
+         `use-mascot-room.ts`: the table arrives with a migration, and an
+         unreadable freeze list means "no freezes", which is what every account
+         has until then. The streak itself still comes from `daily_logs`. */
+      const { data: freezeRows, error: freezeError } = await supabase
+        .from('streak_freezes')
+        .select('used_on')
+        .eq('user_id', user.id);
+      const frozen = freezeError
+        ? []
+        : (freezeRows ?? []).map((r) => r.used_on).filter((d): d is string => !!d);
+
       if (logs && logs.length > 0) {
         const { count: streak } = streakFrom(
           logs.map((l) => l.date),
           localDateStr(),
+          frozen,
         );
         for (const def of AWARD_DEFINITIONS) {
           if (def.type !== 'streak') continue;

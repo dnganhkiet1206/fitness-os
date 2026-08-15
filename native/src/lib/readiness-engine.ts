@@ -20,8 +20,34 @@ function mad(arr: number[]): number {
   return median(deviations);
 }
 
-function robustZ(x: number, med: number, madVal: number): number {
-  return (x - med) / (1.4826 * madVal + 1e-6);
+/**
+ * ── why the dispersion estimate has a floor ──
+ *
+ * `1.4826 * MAD` is the standard robust estimate of σ, and it is only an
+ * estimate of *spread*. When the sample has no spread it estimates zero, and
+ * dividing by zero-plus-epsilon does not produce a large z — it produces a
+ * meaningless one.
+ *
+ * This is not an edge case here. Resting heart rate is stored as a whole number
+ * and the baseline window is five to twenty-eight readings, so identical values
+ * are ordinary: `[58, 58, 58, 60, 62]` has a median of 58 and a **MAD of 0**.
+ *
+ * With `1e-6` as the divisor, a reading **one beat** above the median gave
+ * `z ≈ 10⁶`, clamped to 3, scoring `50 - 12·3` = **14/100** — the identical
+ * score to a reading forty beats high. The metric stopped being a measurement
+ * and became a three-step function: 86 below the median, 50 exactly on it, 14
+ * anywhere above. At weight 0.20 that moves readiness seven to nine points,
+ * enough to turn a green day amber, and the explanation panel printed "Nhịp tim
+ * nghỉ: cao (14)" about a single beat of ordinary variation.
+ *
+ * The floor is expressed in the metric's own units by the caller, because the
+ * right value is a fact about the instrument: heart rate is integer bpm, so
+ * differences below 1 bpm are not resolvable and must not be scored as if they
+ * were. The `1e-6` stays underneath as a last guard against a caller passing
+ * zero.
+ */
+function robustZ(x: number, med: number, madVal: number, floor: number): number {
+  return (x - med) / (1.4826 * Math.max(madVal, floor) + 1e-6);
 }
 
 // Sub-score calculators
@@ -29,7 +55,9 @@ function computeHRVScore(hrv: number, history: number[]): number | null {
   if (history.length < 5) return null;
   const base = median(history);
   const madVal = mad(history);
-  let z = robustZ(hrv, base, madVal);
+  /* 1 ms: SDNN/RMSSD are reported to the millisecond, so a smaller spread than
+     that is rounding, not physiology. */
+  let z = robustZ(hrv, base, madVal, 1);
   z = clamp(z, -3, 3);
   return clamp(50 + 15 * z, 0, 100);
 }
@@ -54,7 +82,9 @@ function computeRHRScore(rhr: number, history: number[]): number | null {
   if (history.length < 5) return null;
   const base = median(history);
   const madVal = mad(history);
-  let z = robustZ(rhr, base, madVal);
+  /* 1 bpm: resting heart rate is stored as a whole number, so this is the
+     smallest difference the instrument can actually resolve. */
+  let z = robustZ(rhr, base, madVal, 1);
   z = clamp(z, -3, 3);
   return clamp(50 - 12 * z, 0, 100);
 }

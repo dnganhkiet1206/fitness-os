@@ -422,6 +422,34 @@ try {
     problems.push('training-explainer: tự viết lại các khoảng thay vì lấy ACWR_BANDS — đây đúng là cách thẻ đã lệch nhau');
   }
 
+  /* ── a card that cannot judge the week must not colour it ──
+
+     `acwr` is null for anybody without 28 days of load. `?? 0` made that zero,
+     and zero is the **detraining** band — the red one. The verdict sentence was
+     already gated on `a > 0` and correctly said four weeks were needed; the
+     chart was not, so the newest bar was painted red at the same time. One card
+     saying "I cannot compare this yet" in words and "this week collapsed" in
+     colour, about the same week.
+
+     The tint has to be conditional on there being a verdict, not merely
+     computed from a number that stands in for one. */
+  {
+    const src = readFileSync(path.join(NATIVE, 'src/components/ascnd/today-widgets-2.tsx'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+    const tint = src.match(/const zoneTint = ([^;]+);/);
+    if (!tint) {
+      problems.push('không đọc được zoneTint trong today-widgets-2.tsx — luật này đã lạc mục tiêu');
+    } else if (!/\?/.test(tint[1])) {
+      problems.push(
+        'zoneTint lấy thẳng từ vùng đà tập, không hỏi có đủ dữ liệu để phán xét chưa — ' +
+          'người chưa đủ 28 ngày có acwr null, `?? 0` biến thành 0 = vùng detraining, ' +
+          'nên cột tuần mới nhất bị tô ĐỎ ngay cạnh dòng chữ nói rằng chưa so sánh được',
+      );
+    }
+  }
+
   if (problems.length) {
     console.error('thẻ tập luyện sai:\n');
     for (const p of problems) console.error(`  ${p}`);

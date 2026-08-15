@@ -313,6 +313,70 @@ for (const f of ['src/hooks/use-extras.ts', 'src/hooks/use-mascot-room.ts']) {
   }
 }
 
+/* ── 6: and both callers count the SAME streak ──
+
+   The header of `lib/streak.ts` exists because these two call sites had each
+   grown their own day-counting loop and the two disagreed. Sharing the function
+   fixed that — and then they drifted again on the argument added afterwards:
+   the room passed `frozen`, the medal check did not.
+
+   The result was an app that sells a 150-coin item to protect a number, shows
+   the protected number on the level card — "40 ngày" — and never grants
+   `streak_30` or `streak_100`, because the medals were counting a streak that
+   the freeze had not been applied to. Nothing on screen could explain it.
+
+   Checking the *arity at the call site* rather than the presence of the word
+   `frozen` anywhere in the file: a `frozen` variable computed and then not
+   passed is exactly the bug. */
+for (const f of ['src/hooks/use-extras.ts', 'src/hooks/use-mascot-room.ts']) {
+  const src = read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const calls = [...src.matchAll(/streakFrom\(/g)];
+  if (calls.length === 0) continue;
+
+  for (const m of calls) {
+    /* Walk to the matching paren so a nested call does not truncate the read,
+       then split the arguments at the top level.
+
+       Counting commas instead of arguments is what the first version of this
+       rule did, and it let the sabotage through: these calls are written
+       multi-line with a **trailing comma**, so three arguments produce three
+       commas and two produce two. `commas < 2` was therefore true for neither.
+       Splitting and dropping the empty tail counts what is actually there. */
+    let depth = 0;
+    let j = m.index + 'streakFrom'.length;
+    const start = j + 1;
+    for (; j < src.length; j++) {
+      const c = src[j];
+      if (c === '(') depth++;
+      else if (c === ')') {
+        depth--;
+        if (depth === 0) break;
+      }
+    }
+    const inner = src.slice(start, j);
+    let d = 0;
+    const parts = [];
+    let buf = '';
+    for (const c of inner) {
+      if (c === '(' || c === '[' || c === '{') d++;
+      if (c === ')' || c === ']' || c === '}') d--;
+      if (c === ',' && d === 0) {
+        parts.push(buf);
+        buf = '';
+      } else buf += c;
+    }
+    parts.push(buf);
+    const args = parts.map((p) => p.trim()).filter(Boolean).length;
+
+    if (args < 3) {
+      problems.push(
+        `${f}: streakFrom gọi với ${args} tham số, thiếu danh sách ngày được bảo hiểm — ` +
+          'người mua bảo hiểm sẽ thấy chuỗi đúng trên thẻ level nhưng không bao giờ được trao huy chương',
+      );
+    }
+  }
+}
+
 /* ── self-test: the cases have to be sharp enough for the bug that shipped ── */
 if (!TZ) {
   /** the medal engine's own copy, exactly as it was */

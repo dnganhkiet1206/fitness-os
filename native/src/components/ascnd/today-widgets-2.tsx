@@ -337,9 +337,29 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
 
   const latest = (workouts ?? [])[0];
 
+  /*
+    ── "not enough history" is not "you have stopped training" ──
+
+    `acwr` is `null` for anybody the engine cannot place yet — no 28-day load,
+    or not enough of the day to compute one. `?? 0` turned that absence into the
+    number zero, and zero is not a neutral value on this scale: `acwrZone(0)`
+    is **detraining**, the red band that means somebody has dropped off.
+
+    The verdict sentence below is already gated on `a > 0`, so the *words* were
+    right — it says four weeks of history are needed. The **colour** was not:
+    `zoneTint` painted the newest bar of the trend chart red, so the card told
+    the reader in one place that it could not judge their week and in another,
+    in the strongest signal a chart has, that their week was a collapse. On the
+    same card, about the same week.
+
+    So the tint is only a verdict when there is a verdict. Without one the newest
+    bar draws like every other bar — which is the honest picture: volume that
+    happened, not yet compared to anything.
+  */
+  const judged = acwr != null && acwr > 0;
   const a = acwr ?? 0;
   const zone = acwrZone(a);
-  const zoneTint = ZONE_TINT[zone];
+  const zoneTint = judged ? ZONE_TINT[zone] : 'rgba(255,255,255,0.20)';
   const cmp = loadComparison(a);
 
   const weekSessions = week ?? [];

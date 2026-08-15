@@ -363,6 +363,57 @@ if (problems.length) {
   process.exit(1);
 }
 
+/* ── an unread day must not become a mood ──
+
+   `useMascotMood` read `data` off two queries and nothing else. While they are
+   in flight, or after either fails, `meals?.length ?? 0` is 0 and
+   `log?.workout_count ?? 0` is 0 — not "unknown" but a confident *nothing* — so
+   every launch after midday returned `tired`, which `baseEmotion` turns into
+   **`sad`** for a zero streak, which `presenceMotion('sad')` draws slumped and
+   motionless.
+
+   A character visibly unhappy because the network had not answered yet. And the
+   last round made it worse rather than better: now that the body follows the
+   emotion honestly, a wrong emotion is unmistakable instead of a small change
+   of face.
+
+   Every other emotional input already had a gate. The rule is the shape, not
+   the one hook: read a day-query in this file and you answer for whether it has
+   been read. */
+{
+  const src = readFileSync(path.join(NATIVE, 'src/hooks/use-mascot.tsx'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+  /* Split on `export function` so each hook answers for itself — an `isSuccess`
+     belonging to a different hook in the same file would satisfy a whole-file
+     grep and prove nothing. */
+  const chunks = src.split(/\bexport function /).slice(1);
+  let checked = 0;
+  for (const chunk of chunks) {
+    const name = chunk.slice(0, chunk.indexOf('(')).trim();
+    const body = chunk.slice(0, chunk.indexOf('\n}') === -1 ? chunk.length : chunk.indexOf('\n}'));
+    if (!/use(DailyLog|TodayMeals|TodayWater)\(\)/.test(body)) continue;
+    checked++;
+    if (!/isSuccess/.test(body)) {
+      problems.push(
+        `use-mascot.tsx: ${name} đọc dữ liệu ngày mà không có cổng isSuccess — ` +
+          'lúc truy vấn đang bay hoặc đã hỏng, "chưa đọc được" bị đọc thành "chưa ăn gì, chưa tập gì", ' +
+          'và sau 12h trưa Koa gục xuống buồn bã chỉ vì mạng chưa trả lời',
+      );
+    }
+  }
+  if (checked < 2) {
+    problems.push(`chỉ soi được ${checked} hook đọc dữ liệu ngày — bộ quét hỏng, đừng tin kết quả`);
+  }
+
+  if (problems.length) {
+    console.log('quyết định của Koa:\n');
+    for (const p of problems) console.log(`  • ${p}`);
+    process.exit(1);
+  }
+}
+
 console.log(
   'quyết định Koa OK — không diễn khi không ai nhìn; việc nhỏ (dưới ' +
     `${QUIET_BELOW}) đi qua không cần nghi lễ và không có lời thoại; ` +
