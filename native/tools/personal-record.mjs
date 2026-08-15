@@ -265,6 +265,97 @@ const against = (history, session) => findRecords(session, bestsFrom(history));
   }
 }
 
+/* ── 3c. the sentence the celebration prints, on all four branches ──
+
+   `recordLine` carried a comment saying it was "exported and pure so
+   `tools/personal-record.mjs` can read every branch". It was not: `grep
+   recordLine tools/*.mjs` returned nothing. The comment described a test that
+   had never been written, which is worse than no comment — it is a claim that
+   the risky part is covered, sitting directly above the risky part.
+
+   And the branches are exactly the ones worth covering. Two of the four exist
+   because a number that is genuinely zero must not be printed as one:
+
+     · a bodyweight rep record must not say "ở 0 kg", which reads as a broken
+       app rather than as pull-ups;
+     · the first time load is added to a bodyweight movement must not say
+       "trước là 0 kg", which is a sentence about a set nobody did. */
+{
+  const rc = mkdtempSync(path.join(tmpdir(), 'recline-'));
+  try {
+    execFileSync(
+      'npx',
+      ['tsc', 'src/lib/record-line.ts', '--ignoreConfig', '--outDir', rc,
+       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+      { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch {
+    /* `@/lib/units` is unmapped without the project config; it emits anyway. */
+  }
+  let recordLine;
+  try {
+    const emitted = path.join(rc, 'record-line.js');
+    /* Only `displayWeight` and `weightLabel` are needed, and both are pure
+       arithmetic — compiled alongside and pointed at their sibling, the trick
+       `tools/streak.mjs` documents. */
+    execFileSync(
+      'npx',
+      ['tsc', 'src/lib/units.ts', '--ignoreConfig', '--outDir', rc,
+       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+      { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    writeFileSync(emitted, readFileSync(emitted, 'utf8').replaceAll('@/lib/units', './units'));
+    ({ recordLine } = createRequire(import.meta.url)(emitted));
+  } catch (e) {
+    problems.push(`không nạp được recordLine để kiểm: ${String(e).slice(0, 90)}`);
+  }
+
+  if (typeof recordLine === 'function') {
+    /* Only the six placeholders matter, so the strings are stand-ins that make
+       which branch ran unmistakable. */
+    const i18n = {
+      nPrWeightLine: 'W|{ex}|{value}|{unit}|{prev}',
+      nPrFirstLoad: 'FIRST|{ex}|{value}|{unit}',
+      nPrRepsLine: 'R|{ex}|{value}|{w}|{unit}|{prev}',
+      nPrRepsBodyLine: 'RBODY|{ex}|{value}|{prev}',
+    };
+    const line = (r) => recordLine(r, i18n, 'kg');
+
+    const heavier = line({ exercise: 'Bench', kind: 'weight', value: 85, previous: 80 });
+    if (!heavier.startsWith('W|')) problems.push(`kỷ lục tạ dùng nhầm câu: ${heavier}`);
+
+    const firstLoad = line({ exercise: 'Pull-up', kind: 'weight', value: 10, previous: 0 });
+    if (!firstLoad.startsWith('FIRST|')) {
+      problems.push(`lần đầu đeo tạ vẫn in câu "trước là 0 kg": ${firstLoad}`);
+    }
+    if (/\b0\b/.test(firstLoad)) {
+      problems.push(`lần đầu đeo tạ vẫn in ra số 0: ${firstLoad}`);
+    }
+
+    const reps = line({ exercise: 'Bench', kind: 'reps', value: 8, previous: 5, atWeight: 80 });
+    if (!reps.startsWith('R|')) problems.push(`kỷ lục reps có tạ dùng nhầm câu: ${reps}`);
+
+    const bodyReps = line({ exercise: 'Pull-up', kind: 'reps', value: 12, previous: 10, atWeight: 0 });
+    if (!bodyReps.startsWith('RBODY|')) {
+      problems.push(`kỷ lục reps body-weight vẫn in "ở 0 kg": ${bodyReps}`);
+    }
+    if (/\b0\b/.test(bodyReps)) {
+      problems.push(`kỷ lục body-weight vẫn in ra số 0: ${bodyReps}`);
+    }
+    /* `atWeight` absent is the same fact as zero, and reached by a different
+       route — `findRecords` omits it for weight records. */
+    const bodyNoField = line({ exercise: 'Dip', kind: 'reps', value: 9, previous: 7 });
+    if (!bodyNoField.startsWith('RBODY|')) {
+      problems.push(`thiếu hẳn atWeight không được coi là body-weight: ${bodyNoField}`);
+    }
+    /* And every placeholder is filled — a leftover `{prev}` on screen is the
+       most visible possible bug in a celebration. */
+    for (const [what, s] of [['tạ', heavier], ['lần đầu', firstLoad], ['reps', reps], ['body', bodyReps]]) {
+      if (/\{\w+\}/.test(s)) problems.push(`câu ${what} còn chỗ trống chưa thay: ${s}`);
+    }
+  }
+}
+
 /* ── 4. magnitude stays inside the scale the engine speaks ── */
 {
   /* `QUIET_BELOW` is where `koa-decide` stops bothering anybody. Beating
@@ -446,5 +537,5 @@ console.log(
     'cột JSONB rác không làm hỏng lần lưu; pr_detected được TÍNH chứ không phải hằng số, ' +
     'lịch sử đọc TRƯỚC khi ghi, Koa được báo SAU khi hình đã lên màn hình, ' +
     'mọi emitKoa đều đọc lại giờ và "có ai nhìn không" ngay lúc bắn, ' +
-    'và buổi tập không có kỷ lục vẫn đóng ngay trong một nhịp như cũ',
+    'buổi tập không có kỷ lục vẫn đóng ngay trong một nhịp như cũ; và câu ăn mừng được CHẠY THẬT qua cả bốn nhánh — chú thích của nó từng nói là công cụ này đọc mọi nhánh trong khi grep ra 0 kết quả, nên hai nhánh dễ hỏng nhất (hít xà không in "ở 0 kg", lần đầu đeo tạ không in "trước là 0 kg") chưa từng được kiểm',
 );

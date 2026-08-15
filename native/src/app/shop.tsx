@@ -316,7 +316,34 @@ export default function ShopScreen() {
 
       {SELLS[tab] ? (
         items.length === 0 ? (
-          <Text style={styles.emptyCat}>{i18n.nRoomEmptyCat}</Text>
+          /*
+            ── two different emptinesses, and they were sharing a sentence ──
+
+            `nRoomEmptyCat` is *"more coming soon"*, which is true of a category
+            the catalogue has nothing in yet. It was also shown for a **closet
+            with nothing bought in it** — telling somebody the app has run out
+            of things while thirty-six outfits sit one tab away, and leaving
+            them on a dead end with no way through to them.
+
+            The closet's emptiness is the one the shop can do something about,
+            so it says what it is and offers the way out.
+          */
+          tab === 'closet' ? (
+            <View style={styles.emptyCloset}>
+              <Text style={styles.emptyCat}>{i18n.nRoomEmptyCloset}</Text>
+              <PressScale
+                style={styles.emptyClosetBtn}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setTab('outfit');
+                  setIndex(0);
+                }}>
+                <Text style={styles.emptyClosetBtnText}>{i18n.nRoomGoToOutfits}</Text>
+              </PressScale>
+            </View>
+          ) : (
+            <Text style={styles.emptyCat}>{i18n.nRoomEmptyCat}</Text>
+          )
         ) : (
           <ShopPager
             items={items}
@@ -456,6 +483,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: spacing.xl,
   },
+  emptyCloset: { alignItems: 'center', paddingBottom: spacing.lg },
+  emptyClosetBtn: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  emptyClosetBtnText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
   setsBadge: {
     minWidth: 22,
     height: 22,

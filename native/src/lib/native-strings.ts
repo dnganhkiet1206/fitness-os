@@ -581,6 +581,12 @@ const en = {
   nRoomSetProgress: '{a}/{b} owned',
   nRoomSetDone: 'Set complete!',
   nRoomEmptyCat: 'More coming soon',
+  /* The closet is empty because nothing has been bought yet — a different fact
+     from the catalogue being empty, and the one the shop can do something
+     about. Saying "more coming soon" there tells the user the app has run out
+     of things while thirty-six outfits sit one tab away. */
+  nRoomEmptyCloset: 'Nothing worn yet — pick something from Outfits',
+  nRoomGoToOutfits: 'Browse outfits',
   nRoomSetClaimed: 'Reward claimed',
   nRoomNotEnough: 'Not enough coins yet — finish more quests!',
   nRoomCoins: 'coins',
@@ -1219,6 +1225,8 @@ const vi: typeof en = {
   nRoomSetProgress: 'Đã có {a}/{b}',
   nRoomSetDone: 'Đủ bộ!',
   nRoomEmptyCat: 'Sắp có thêm đồ',
+  nRoomEmptyCloset: 'Tủ đồ còn trống — chọn một món ở tab Trang phục nhé',
+  nRoomGoToOutfits: 'Xem trang phục',
   nRoomSetClaimed: 'Đã nhận thưởng',
   nRoomNotEnough: 'Chưa đủ xu — hoàn thành thêm nhiệm vụ nhé!',
   nRoomCoins: 'xu',

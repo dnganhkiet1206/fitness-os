@@ -187,6 +187,7 @@ export default function MascotRoomScreen() {
   /* The one habit worth saying out loud: the strongest clock Koa has found.
      Not a list — a list of five inferences reads as surveillance, and one
      reads as somebody paying attention. */
+  const loggedToday = streakData?.loggedToday ?? false;
   const freezeHeld = streakData?.held ?? 0;
   const freezeUsed = streakData?.frozen.length ?? 0;
   const freezeFull = freezeHeld >= FREEZE_MAX;
@@ -760,8 +761,21 @@ export default function MascotRoomScreen() {
             </View>
           );
         })}
-        {/* Streak bonus — appears from day 2, pays more the longer the run */}
-        {streak >= 2 && (
+        {/*
+          Streak bonus — appears from day 2, pays more the longer the run.
+
+          ── and only once today is actually in the streak ──
+
+          The gate was `streak >= 2` alone. But `streak` counts the run up to
+          the last logged day, so on a morning with nothing logged yet it still
+          reads 7 — and the bonus is keyed `d:<today>:streak`, so claiming it
+          paid for a day that had not happened. Log nothing else and the streak
+          then breaks, leaving a paid bonus for a broken day.
+
+          `loggedToday` is already computed by `useDailyStreak` for exactly this
+          question, and was simply not being asked.
+        */}
+        {streak >= 2 && loggedToday && (
           <View style={styles.questRow}>
             <View style={styles.questInfo}>
               <View style={styles.streakNameRow}>
