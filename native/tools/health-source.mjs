@@ -431,7 +431,33 @@ const problems = [];
   if (!/training_days_28d:/.test(svc)) {
     problems.push(`${SERVICE}: không truyền training_days_28d — engine sẽ mặc định cả 28 ngày, đúng bằng lỗi vừa sửa`);
   }
-  if (!/select\('volume_load, date_time'\)/.test(svc)) {
+  /*
+    ── the property, not the column list ──
+
+    This pinned the literal `select('volume_load, date_time')`. What it is
+    protecting is that the 28-day load query carries `date_time`, because
+    without it the chronic span is unknown and the engine falls back to a flat
+    28 — the exact bug it was written after.
+
+    Pinning the whole string made it fail the moment the query stopped reading
+    `volume_load`, which it did when training load moved from tonnage to the
+    session-RPE method (`lib/session-load.ts`). The query still carried
+    `date_time`; the rule was asserting a spelling. That is the shape this
+    directory keeps having to fix, so it now asks the question it means.
+  */
+  /* Bound to the statement, and the first attempt at this was not: it looked
+     for any `.select(…date_time…)` in the file and the biometrics query
+     satisfied it, so removing `date_time` from the load query left the rule
+     green. The same flat-search trap `write-confirmed.mjs` fell into. This
+     finds the 28-day `workout_sessions` query by its own window bound and reads
+     only that one. */
+  const load28 = [...svc.matchAll(/from\('workout_sessions'\)([\s\S]{0,240}?)thirtyDaysAgo/g)];
+  if (load28.length !== 1) {
+    problems.push(
+      `${SERVICE}: tìm thấy ${load28.length} truy vấn workout_sessions 28 ngày — bộ quét hỏng, đừng tin bước này`,
+    );
+  }
+  if (!load28.some((m) => /\.select\('[^']*date_time[^']*'\)/.test(m[1]))) {
     problems.push(`${SERVICE}: truy vấn tải 28 ngày không lấy date_time — không có nó thì không biết cửa sổ dài bao nhiêu`);
   }
 }

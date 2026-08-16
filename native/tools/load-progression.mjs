@@ -43,7 +43,7 @@ try {
   try {
     execFileSync(
       'npx',
-      ['tsc', 'src/lib/load-progression.ts', 'src/lib/prescription.ts',
+      ['tsc', 'src/lib/load-progression.ts', 'src/lib/prescription.ts', 'src/lib/goal-training.ts',
        '--ignoreConfig', '--outDir', out,
        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
@@ -53,7 +53,12 @@ try {
        still emits, which is all this uses */
   }
   const p = path.join(out, 'load-progression.js');
-  writeFileSync(p, readFileSync(p, 'utf8').replaceAll('@/lib/prescription', './prescription'));
+  writeFileSync(
+    p,
+    readFileSync(p, 'utf8')
+      .replaceAll('@/lib/prescription', './prescription')
+      .replaceAll('@/lib/goal-training', './goal-training'),
+  );
 
   const { suggestLoad, MIN_SESSIONS, RPE_MARGIN, MAX_STEP } =
     createRequire(import.meta.url)(p);

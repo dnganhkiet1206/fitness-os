@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { localDayRangeISO } from './local-date';
 import { chronicDays } from './training-card';
+import { loadWindow, sessionLoad, type LoadSession } from './session-load';
 import { computeReadiness } from './readiness-engine';
 import type { ReadinessInput } from './types';
 
@@ -188,15 +189,18 @@ export async function recomputeDailyLog(userId: string, date: string) {
       .gte('date_time', thirtyDaysAgo.toISOString())
       .order('date_time', { ascending: true }),
     supabase
+      /* `session_rpe` and `sets` rather than `volume_load` — see the note on
+         `trainingLoad7d` below. Tonnage is still read further up for
+         `daily_logs.volume_load`; this pair is the *internal* load. */
       .from('workout_sessions')
-      .select('volume_load')
+      .select('session_rpe, sets')
       .eq('user_id', userId)
       .gte('date_time', sevenDaysAgo.toISOString()),
     supabase
       /* `date_time` travels with the load because the ratio needs to know how
          many days it is averaging over — see `training_days_28d`. */
       .from('workout_sessions')
-      .select('volume_load, date_time')
+      .select('session_rpe, sets, date_time')
       .eq('user_id', userId)
       .gte('date_time', thirtyDaysAgo.toISOString()),
     supabase
@@ -254,8 +258,22 @@ export async function recomputeDailyLog(userId: string, date: string) {
      to score" rather than "trained too little". */
   /* One rule, shared with the training card — which prints the two quantities
      this ratio compares, and so has to divide by the same span or the card
-     disproves its own verdict. */
-  const trainingDays28d = chronicDays((load28d ?? []) as { date_time?: string | null }[]);
+     disproves its own verdict.
+
+     ── and only the sessions the sum actually contains ──
+
+     The span has to describe the same set of sessions as the load, and since
+     the load switched to the session-RPE method it no longer contains the
+     unmeasurable ones. Passing every row here would divide a sum built from
+     three weighted sessions by a span reaching back to a run four weeks ago —
+     a chronic average deflated by days that contributed nothing, which reads
+     as a spike and lands on the wrong side of the overreaching threshold.
+
+     So the rows are filtered by the same test that builds the sum. */
+  const measured28d = ((load28d ?? []) as (LoadSession & { date_time?: string | null })[]).filter(
+    (row) => sessionLoad(row) != null,
+  );
+  const trainingDays28d = chronicDays(measured28d);
 
   const kcal = meals?.reduce((s, m) => s + Number(m.total_kcal), 0) ?? 0;
   const protein_g = meals?.reduce((s, m) => s + Number(m.total_protein_g), 0) ?? 0;
@@ -308,8 +326,31 @@ export async function recomputeDailyLog(userId: string, date: string) {
     .map(Number);
   const rhrHistory = (bioHistory ?? []).filter(b => b.hr_bpm != null).map(b => Number(b.hr_bpm));
 
-  const trainingLoad7d = load7d?.reduce((s, w) => s + Number(w.volume_load), 0) ?? 0;
-  const trainingLoad28d = load28d?.reduce((s, w) => s + Number(w.volume_load), 0) ?? 0;
+  /*
+    ── training load is what the session cost, not what was lifted ──
+
+    This summed `volume_load`, which is `Σ (weight × reps)`. That is a fine
+    *external* measure of a barbell session and zero for everything else: a
+    session of pull-ups, press-ups and dips came to 0, and so did every run
+    imported from a watch (deliberately — a run has no tonnage).
+
+    Zero then propagated. `scoreLoad` bails on `load28d <= 0`, so the readiness
+    score silently lost its training dimension; `acwr` stayed null; and with it
+    `overreaching` — which is the one condition that stops `suggestLoad` telling
+    somebody to add weight — could never fire for them.
+
+    `lib/session-load.ts` computes internal load by the session-RPE method
+    instead: `RPE × total reps`, both of which this app has stored all along.
+    Sessions it cannot measure return `null` and are dropped from **both** sides
+    of the ratio rather than counted as zero-cost work.
+
+    The acute:chronic bands in `readiness-engine` are untouched by the change of
+    unit because ACWR is a *ratio* — scale both sides consistently and the value
+    is identical. `tools/session-load.mjs` proves that by running it rather than
+    asserting it here.
+  */
+  const trainingLoad7d = loadWindow((load7d ?? []) as LoadSession[]);
+  const trainingLoad28d = loadWindow((load28d ?? []) as LoadSession[]);
 
   let sleepDebt7d = 0;
   if (sleepLogs7d && sleepLogs7d.length > 0) {

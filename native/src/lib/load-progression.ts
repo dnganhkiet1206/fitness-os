@@ -1,3 +1,4 @@
+import { goalRpeTarget } from '@/lib/goal-training';
 import { DEFAULT_RPE } from '@/lib/prescription';
 import type { Confidence, Situation } from '@/lib/user-state';
 
@@ -91,8 +92,21 @@ export interface LoadInput {
    * first. Nulls are dropped — a session where nobody answered is not a zero.
    */
   reported: (number | null | undefined)[];
-  /** The effort the workout asks for; `DEFAULT_RPE` when it says nothing. */
+  /**
+   * The effort the workout asks for.
+   *
+   * When the workout says nothing, the fallback comes from the person's **goal**
+   * rather than a flat constant — see `lib/goal-training.ts`. Somebody training
+   * for strength and somebody training to hold steady should not both be
+   * measured against 7 by default; that was the shape of `goal` reaching the
+   * nutrition half of the app and nothing else.
+   *
+   * A workout that *does* state its effort keeps it. The person who wrote the
+   * workout knows more about it than a goal label does.
+   */
   target?: number | null;
+  /** `profiles.goal`, used only for the fallback above. */
+  goal?: string | null;
   /** How the person is doing overall — `lib/user-state.ts`. */
   situation?: Situation;
   /** How sure the app is about that. */
@@ -109,7 +123,7 @@ const NOTHING: LoadSuggestion = {
 };
 
 export function suggestLoad(input: LoadInput): LoadSuggestion {
-  const target = Number(input.target) || DEFAULT_RPE;
+  const target = Number(input.target) || goalRpeTarget(input.goal) || DEFAULT_RPE;
   const said = input.reported
     .map((r) => Number(r))
     .filter((r) => Number.isFinite(r) && r > 0);

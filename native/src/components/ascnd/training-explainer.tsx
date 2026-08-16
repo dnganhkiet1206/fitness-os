@@ -69,8 +69,20 @@ export function TrainingExplainer({ visible, onClose }: { visible: boolean; onCl
     {
       term: vi ? '4.200 kg' : '4,200 kg',
       body: vi
-        ? 'KHÔNG phải mức tạ bạn nâng. Đây là tổng khối lượng: cộng (tạ × số rep) của từng set. 60kg × 10 rep × 3 set = 1.800 kg. Nên số hàng nghìn là bình thường, và đó là cách so hai buổi tập với nhau.'
-        : 'NOT the weight you lifted. It is volume load: weight × reps, summed over every set. 60kg × 10 reps × 3 sets = 1,800 kg. Numbers in the thousands are normal, and it is how two sessions get compared.',
+        ? 'KHÔNG phải mức tạ bạn nâng. Đây là tổng khối lượng: cộng (tạ × số rep) của từng set. 60kg × 10 rep × 3 set = 1.800 kg. Nên số hàng nghìn là bình thường. Nó đo thứ bạn NÂNG, nên một buổi hít xà hay chống đẩy ra 0 — đó là lý do nó không phải con số dùng để so tuần này với thói quen.'
+        : 'NOT the weight you lifted. It is tonnage: weight × reps, summed over every set. 60kg × 10 reps × 3 sets = 1,800 kg. Numbers in the thousands are normal. It measures what you LIFTED, so a session of pull-ups or press-ups comes to 0 — which is why it is not the number the week-versus-habit comparison uses.',
+    },
+    {
+      term: vi ? 'Tải 2.400' : 'Load 2,400',
+      body: vi
+        ? 'Con số dùng để so tuần này với thói quen. Bằng mức gắng sức của buổi nhân tổng số rep: gắng sức 8 × 300 rep = 2.400. Nó đo buổi tập tốn gì với CƠ THỂ bạn, nên một buổi tay không vẫn có tải — khác với tổng khối lượng, vốn bằng 0 khi không có tạ. Không có đơn vị, và cũng không cần: nó chỉ có nghĩa khi so với chính các buổi gần đây của bạn.'
+        : 'The number the week-versus-habit comparison uses. Session effort × total reps: effort 8 × 300 reps = 2,400. It measures what the session cost YOUR BODY, so a bodyweight session still has a load — unlike tonnage, which is zero without weights. It has no unit and needs none: it only means anything against your own recent sessions.',
+    },
+    {
+      term: vi ? 'Buổi không có tải' : 'A session with no load',
+      body: vi
+        ? 'Buổi nhập từ đồng hồ (chạy bộ, đạp xe) không có mức gắng sức bạn tự chấm và cũng không có rep, nên app KHÔNG tính tải cho nó — và không coi nó bằng 0. Nó được bỏ khỏi cả hai vế của phép so, vì "không đo được" khác với "tốn 0".'
+        : 'Sessions imported from a watch (a run, a ride) have no effort rating and no reps, so the app does not compute a load for them — and does not treat them as zero. They are dropped from both sides of the comparison, because "not measurable" is not the same as "cost nothing".',
     },
   ];
 
@@ -86,8 +98,8 @@ export function TrainingExplainer({ visible, onClose }: { visible: boolean; onCl
       <Text style={styles.section}>{vi ? 'Câu ở trên cùng' : 'The sentence at the top'}</Text>
       <Text style={styles.body}>
         {vi
-          ? '"Tuần này nặng hơn 70% so với thói quen" là cách so hai con số ngay bên dưới nó: tổng khối lượng 7 ngày qua, và một tuần trung bình của bạn trong 4 tuần gần nhất. Bạn tự chia được — 18.900 so với 11.100 là hơn 70%. Không có gì giấu bên trong.'
-          : '"This week is 70% heavier than your habit" compares the two numbers directly beneath it: your volume over the last 7 days, against an average week from your last 4. You can do the division yourself — 18,900 against 11,100 is 70% more. Nothing is hidden.'}
+          ? '"Tuần này nặng hơn 70% so với thói quen" là cách so hai con số ngay bên dưới nó: TẢI của 7 ngày qua, và một tuần trung bình của bạn trong 4 tuần gần nhất. Bạn tự chia được — 18.900 so với 11.100 là hơn 70%. Không có gì giấu bên trong. (Số kg in nhỏ bên dưới mỗi ô là tổng khối lượng, một đại lượng khác — xem phần từ ngữ.)'
+          : '"This week is 70% heavier than your habit" compares the two numbers directly beneath it: your LOAD over the last 7 days, against an average week from your last 4. You can do the division yourself — 18,900 against 11,100 is 70% more. Nothing is hidden. (The kg printed small under each is tonnage, a different quantity — see the glossary.)'}
       </Text>
       <Text style={styles.body}>
         {vi

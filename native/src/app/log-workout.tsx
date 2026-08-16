@@ -28,7 +28,7 @@ import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useExercises, useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
 import { useUserState } from '@/hooks/use-user-state';
-import { useDailyLog } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile } from '@/hooks/useTodayData';
 import { emitKoa } from '@/lib/koa-stage';
 import {
   exerciseKey,
@@ -152,6 +152,7 @@ export default function LogWorkoutSheet() {
   /* Today's readiness, if it has been computed. `null` when it has not, and the
      engine treats that as "no opinion" rather than as green — the difference
      between the two is the whole reason it is nullable. */
+  const { data: profile } = useProfile();
   const { data: todayLog } = useDailyLog();
   const readinessStatus = (todayLog?.readiness_status ?? null) as
     | 'green'
@@ -168,6 +169,11 @@ export default function LogWorkoutSheet() {
     const suggestion = suggestLoad({
       reported: mine.map((s) => s.session_rpe),
       target: rpe,
+      /* The chip above already carries the template's effort, so `target` is
+         almost always set and the goal is the fallback for the case it is not.
+         Passed anyway rather than conditionally: a caller that decides when the
+         engine may see an input is a caller making the engine's decision. */
+      goal: profile?.goal,
       situation: userState.situation,
       situationConfidence: userState.confidence,
       readiness: readinessStatus,
@@ -181,7 +187,7 @@ export default function LogWorkoutSheet() {
       : (vi
           ? `Mấy buổi "${name.trim()}" gần đây bạn thấy nặng hơn mức ${rpe} — có thể giảm ~${pct}%`
           : `Your recent "${name.trim()}" sessions felt harder than ${rpe} — easing off about ${pct}% is fine`);
-  }, [recentSessions, name, rpe, userState.situation, userState.confidence, readinessStatus, vi]);
+  }, [recentSessions, name, rpe, profile?.goal, userState.situation, userState.confidence, readinessStatus, vi]);
 
   const updateSet = (idx: number, field: keyof SetRow, value: string) => {
     setSets((prev) =>

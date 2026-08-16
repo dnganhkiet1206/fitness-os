@@ -38,6 +38,7 @@ import { useRecentWorkouts, useTodayBiometrics } from '@/hooks/useTodayData';
 import { useRecentAwards } from '@/hooks/use-extras';
 import { useUnits } from '@/hooks/use-units';
 import { connectedSourceLabel } from '@/lib/biometric-source';
+import { loadWindow, type LoadSession } from '@/lib/session-load';
 import { awardText } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
@@ -389,6 +390,30 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
      two figures printed on this card do not divide to the percentage printed
      beside them, which is the one thing the card exists to make checkable. */
   const habitVolume = averageWeek(monthVolume, chronicDays(month ?? []));
+
+  /*
+    ── the pair the verdict is actually a claim about ──
+
+    The sentence above ("this week is 18% heavier than your habit") is derived
+    from `acwr`, and `acwr` is now the **internal** load ratio — RPE × reps, the
+    session-RPE method — because tonnage was zero for everybody who trains
+    without a barbell.
+
+    The two figures printed under it were tonnage, and this card's whole stated
+    purpose is that the pair divides to the percentage beside it. After the unit
+    changed they no longer did: a bodyweight trainee would read *"18% heavier
+    than your habit"* directly above **0 kg / 0 kg**. Exactly the fault this
+    card was fixed for once before, when the percentage came from
+    `chronicDays` and the numbers came from a flat `v28/4`.
+
+    So the pair is the load pair, and tonnage keeps its place as a separate,
+    labelled line — it is a real quantity and a readable one, it is simply not
+    what the sentence is about. Two named things beat one number pretending to
+    be both, which is also what the training/cardio split requires.
+  */
+  const weekLoad = loadWindow(weekSessions as LoadSession[]);
+  const monthLoad = loadWindow((month ?? []) as LoadSession[]);
+  const habitLoad = averageWeek(monthLoad, chronicDays(month ?? []));
   const hasPR = weekSessions.some((w) => w.pr_detected);
   const trend = weeklyVolumes(history ?? [], TREND_WEEKS);
   const trendMax = Math.max(...trend.map((w) => w.volume), habitVolume);
@@ -487,22 +512,27 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
       )}
 
       {/* The two quantities the sentence above is a claim about, in one unit,
-          so it can be checked rather than believed. */}
+          so it can be checked rather than believed — and tonnage underneath
+          each, which is a different quantity and is labelled as one. */}
       <View style={styles.compareRow}>
         <View style={styles.compareCell}>
           <Text style={styles.compareLabel}>{vi ? '7 ngày qua' : 'Last 7 days'}</Text>
-          <Text style={styles.compareValue}>{kg(weekVolume)}</Text>
+          <Text style={styles.compareValue}>{Math.round(weekLoad).toLocaleString()}</Text>
           <Text style={styles.compareSub}>
             {weekSessions.length} {vi ? 'buổi' : weekSessions.length === 1 ? 'session' : 'sessions'}
+            {weekVolume > 0 ? ` · ${kg(weekVolume)}` : ''}
           </Text>
         </View>
         <View style={styles.compareDivider} />
         <View style={styles.compareCell}>
           <Text style={styles.compareLabel}>{vi ? 'Thói quen · 4 tuần' : 'Habit · 4 weeks'}</Text>
           <Text style={[styles.compareValue, styles.compareValueMuted]}>
-            {habitVolume > 0 ? kg(habitVolume) : '—'}
+            {habitLoad > 0 ? Math.round(habitLoad).toLocaleString() : '—'}
           </Text>
-          <Text style={styles.compareSub}>{vi ? 'trung bình mỗi tuần' : 'per week on average'}</Text>
+          <Text style={styles.compareSub}>
+            {vi ? 'trung bình mỗi tuần' : 'per week on average'}
+            {habitVolume > 0 ? ` · ${kg(habitVolume)}` : ''}
+          </Text>
         </View>
       </View>
 

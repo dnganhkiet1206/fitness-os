@@ -166,7 +166,51 @@ việc khác hẳn với tỏ ra thất vọng sau đó.
 
 ---
 
-## 5. Điều chỉnh độ khó buổi tập
+## 5. Tải tập luyện: nội sinh và ngoại sinh là HAI thứ
+
+`lib/session-load.ts` — tải nội sinh theo phương pháp session-RPE:
+`RPE × tổng reps`. Tính từ dữ liệu đã lưu (`session_rpe` và `sets[].reps`), nên
+không cần migration và không hỏi thêm người dùng gì.
+
+**Vì sao phải đổi.** Tải cũ là tấn tạ (`Σ tạ × reps`), áp dụng mù cho mọi buổi.
+Một buổi hít xà + chống đẩy + dips ra **0**. Rồi số 0 đó lan xuống:
+`trainingLoad28d` → `readiness-engine` bail ở `load28d <= 0` → điểm sẵn sàng mất
+hẳn chiều tập luyện → `acwr` null → `overreaching` không bao giờ bật →
+**cổng an toàn duy nhất** chặn "khuyên tăng tải cho người đang quá tải" không
+bao giờ đóng cho họ.
+
+**`null` chứ không phải 0** cho buổi không đo được. `0` nói "có tập và tốn 0";
+`null` nói "không đo được". Buổi nhập từ đồng hồ rơi vào `null` và bị bỏ khỏi
+**cả hai** vế của tỉ lệ.
+
+**Vì sao đổi đơn vị không chấm lại điểm của ai:** ACWR là một *tỉ lệ*. Nhân cả
+hai vế với cùng một hệ số thì giá trị không đổi, nên các dải 0.8–1.3 giữ nguyên
+nghĩa. `tools/session-load.mjs` **chạy thật** qua 5 hệ số để chứng minh, chứ
+không khẳng định trong chú thích.
+
+**Tấn tạ ở lại như một chỉ số riêng** — nó đo thứ bạn *nâng*, tải nội sinh đo
+thứ buổi tập *tốn*. Không gộp thành một "điểm tổng" giả. Trên thẻ tập luyện, cặp
+số dùng để so là cặp **tải** (vì lời phán quyết là về tải), còn tấn tạ đi kèm
+dưới mỗi ô như một dòng phụ có nhãn riêng.
+
+## 6. Mục tiêu chạm tới tập luyện
+
+`lib/goal-training.ts`. Trước đây `profiles.goal` chỉ chạm `calcTargetCalories`
+và `calcMacros` — grep nó trong mọi file tập luyện đều rỗng.
+
+**Sàn cho MỌI mục tiêu là khuyến nghị WHO 2020:** ≥ 2 ngày tập cơ/tuần và
+150–300 phút aerobic vừa/tuần. Mục tiêu sức bền **không** được miễn phần tập cơ.
+
+**Trên sàn thì phải có nguồn:** `strength`/`bulk` lên 3 ngày; `endurance` lên
+300 phút (đầu trên của chính dải WHO). `cut`/`maintain`/`recomp` ở đúng sàn, và
+mục tiêu app chưa từng nghe tên cũng rơi về đúng sàn. `tools/goal-training.mjs`
+kiểm **hai chiều** — bắt cả mục tiêu thấp hơn sàn lẫn mục tiêu được cho một con
+số không chỉ được nguồn.
+
+Dải RPE của mục tiêu là mức đặt **mặc định** cho `suggestLoad` khi mẫu tập không
+nói gì. Mẫu tập có ghi mức riêng thì vẫn thắng.
+
+## 7. Điều chỉnh độ khó buổi tập
 
 `lib/load-progression.ts` — autoregulation theo RPE. App đã lưu **cả hai vế** từ
 lâu mà chưa bao giờ đặt cạnh nhau: mức gắng sức mẫu tập *kê ra* (`rpe`,
@@ -192,7 +236,7 @@ Hiển thị ở `log-workout` ngay trên hàng chọn RPE — đúng lúc ngư�
   một bước tuyệt đối thì nghiêm khắc với người đẩy 30 kg và vô nghĩa với người
   gánh 140.
 
-## 6. Cá nhân hoá đang có
+## 8. Cá nhân hoá đang có
 
 - `lib/personal-model.ts` — Beta bandit trên 5 thói quen + đồng hồ sinh hoạt
   vòng tròn, lưu trên **máy** (AsyncStorage), tự quên dần (halving quá `CAP`).
@@ -203,12 +247,14 @@ Hiển thị ở `log-workout` ngay trên hàng chọn RPE — đúng lúc ngư�
 
 ---
 
-## 7. Kiểm tra
+## 9. Kiểm tra
 
 | bước | kiểm cái gì |
 |---|---|
 | `tools/user-state.mjs` | 25 ca có đáp án cụ thể + quét 0–120 ngày × 4 nhịp |
 | `tools/load-progression.mjs` | 12 ca + quét 120 tổ hợp cho hai bất biến trái chiều |
+| `tools/session-load.mjs` | 9 ca + bất biến ACWR bất biến theo đơn vị, chạy qua 5 hệ số |
+| `tools/goal-training.mjs` | sàn WHO hai chiều + mục tiêu thật sự chạm tới engine |
 | `tools/challenge-reward.mjs` | chạy thật một tuần lượt focus, đếm số lần ăn mừng |
 | `tools/entry-points.mjs` | mọi màn có lối vào; lối vào không-điều-kiện được kiểm tận nơi |
 | `tools/write-day.mjs` | lệnh ghi đọc ngày lúc chạy, không phải lúc render |
@@ -230,18 +276,26 @@ Mọi luật mới đều được **phá thử trên bản đã ship** và ph�
    ý giảm tải một chu kỳ sẽ được đọc là chững. Nó chỉ ảnh hưởng tới giọng của
    nhân vật chứ không phải một chẩn đoán, nhưng đây là giới hạn thật và app chưa
    có chỗ nào để nói "tôi đang deload".
-2. **Điều chỉnh độ khó chỉ đọc `session_rpe` của cả buổi**, không đọc RPE từng
+2. **Buổi cardio nhập từ đồng hồ vẫn không có tải.** Không có RPE để nhân, và
+   thời lượng hiện bị vứt vào chuỗi `template_name` chứ không phải một cột. Nên
+   người chỉ chạy bộ vẫn không có `acwr`. Sửa được bằng một cột `duration_min`,
+   nhưng đó là migration thứ 13 vào hàng chờ chưa deploy.
+3. **`stalled` vẫn không tính được cho người tập tay không** — tín hiệu tiến bộ
+   của nó là xu hướng **tấn tạ**, mà tấn tạ của họ luôn bằng 0. Đây là lựa chọn
+   có ý thức: tiến bộ về sức mạnh là chuyện của khối lượng nâng được, còn tải
+   nội sinh trộn cường độ với khối lượng nên không thay thế được ở chỗ này.
+4. **Điều chỉnh độ khó chỉ đọc `session_rpe` của cả buổi**, không đọc RPE từng
    set (`rpe` per set tồn tại nhưng chỉ được ghi ở bảng ngày trong tuần). Nên nó
    nói được "buổi này nặng hơn mức đặt" chứ chưa nói được "bài nào nặng".
-3. **Ghép buổi với mẫu tập bằng TÊN**, vì `workout_sessions` lưu `template_name`
+5. **Ghép buổi với mẫu tập bằng TÊN**, vì `workout_sessions` lưu `template_name`
    chứ không lưu id. Đổi tên mẫu tập là mất lịch sử so sánh của nó.
-4. **`emotion: 'sad'` giờ không còn đường tới từ trạng thái thật.** Nó vẫn nằm
+6. **`emotion: 'sad'` giờ không còn đường tới từ trạng thái thật.** Nó vẫn nằm
    trong bảng biểu cảm và `DEV_EMOTIONS` để thử hoạt ảnh. Đây là lựa chọn có ý
    thức, không phải sót.
-5. **Chạm vào Koa giữa lúc đang có phản ứng lớn hơn** thì lời chào bị bỏ và
+7. **Chạm vào Koa giữa lúc đang có phản ứng lớn hơn** thì lời chào bị bỏ và
    đánh dấu đã xử lý — tức hôm đó không còn lời chào. Đây là hệ quả của luật
    "cái lớn giành sân, cái nhỏ bị bỏ chứ không xếp hàng" áp cho mọi sự kiện, chứ
    không phải một nhánh riêng bị quên.
-6. **`useUserState` đọc cache và không đăng ký observer**, nên khi streak được
+8. **`useUserState` đọc cache và không đăng ký observer**, nên khi streak được
    fetch lại, component không tự render lại vì lý do đó. Đây là đúng thiết kế đã
    ghi ở `use-koa-context`, và cái giá là trạng thái có thể trễ một lần render.
