@@ -26,6 +26,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
 import { toast } from '@/lib/toast';
 import { calcAge, calcBMR, calcMacros, calcTargetCalories, calcTDEE, calcWaterTarget } from '@/lib/fitness-calc';
 import {
@@ -174,32 +175,33 @@ export default function EditProfileSheet() {
   const save = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          name: form.name,
-          dob: form.dob || null,
-          sex: form.sex,
-          activity_level: form.activity_level,
-          height_cm: Number(form.height_cm) || null,
-          weight_kg: Number(form.weight_kg) || null,
-          goal: form.goal,
-          tdee_target_kcal: Number(form.tdee_target_kcal) || null,
-          macro_protein_g: Number(form.macro_protein_g) || null,
-          macro_carbs_g: Number(form.macro_carbs_g) || null,
-          macro_fat_g: Number(form.macro_fat_g) || null,
-          macro_fiber_g: Number(form.macro_fiber_g) || null,
-          water_target_ml: Number(form.water_target_ml) || null,
-          units_weight: form.units_weight,
-          units_height: form.units_height,
-          sleep_target_hours: Number(form.sleep_target_hours) || null,
-          sleep_target_bedtime: form.sleep_target_bedtime,
-          sleep_target_waketime: form.sleep_target_waketime,
-          allergies,
-          disliked_foods: parseDislikes(dislikes),
-        })
-        .eq('user_id', user.id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('profiles')
+          .update({
+            name: form.name,
+            dob: form.dob || null,
+            sex: form.sex,
+            activity_level: form.activity_level,
+            height_cm: Number(form.height_cm) || null,
+            weight_kg: Number(form.weight_kg) || null,
+            goal: form.goal,
+            tdee_target_kcal: Number(form.tdee_target_kcal) || null,
+            macro_protein_g: Number(form.macro_protein_g) || null,
+            macro_carbs_g: Number(form.macro_carbs_g) || null,
+            macro_fat_g: Number(form.macro_fat_g) || null,
+            macro_fiber_g: Number(form.macro_fiber_g) || null,
+            water_target_ml: Number(form.water_target_ml) || null,
+            units_weight: form.units_weight,
+            units_height: form.units_height,
+            sleep_target_hours: Number(form.sleep_target_hours) || null,
+            sleep_target_bedtime: form.sleep_target_bedtime,
+            sleep_target_waketime: form.sleep_target_waketime,
+            allergies,
+            disliked_foods: parseDislikes(dislikes),
+          })
+          .eq('user_id', user.id),
+        'Không lưu được hồ sơ — hãy đăng nhập lại rồi thử lần nữa',
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });

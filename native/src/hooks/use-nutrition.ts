@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
 import { DailyLogRebuildError, recomputeDailyLog } from '@/lib/daily-log-service';
 import { todayKeys } from '@/lib/today-keys';
 import { localDateStr } from '@/lib/local-date';
@@ -203,8 +204,10 @@ export function useUpdateFoodItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...item }: FoodFormData & { id: string }) => {
-      const { error } = await supabase.from('food_items').update(item).eq('id', id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('food_items').update(item).eq('id', id),
+        'Không lưu được món này — có thể nó đã được xoá ở thiết bị khác',
+      );
     },
     onSuccess: () => invalidateFoodQueries(qc),
   });
@@ -214,8 +217,10 @@ export function useDeleteFoodItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('food_items').delete().eq('id', id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('food_items').delete().eq('id', id),
+        'Không lưu được món này — có thể nó đã được xoá ở thiết bị khác',
+      );
     },
     onSuccess: () => invalidateFoodQueries(qc),
   });
@@ -237,8 +242,10 @@ export function useToggleFavoriteFood() {
       if (readError) throw readError;
 
       if (row.user_id === user!.id) {
-        const { error } = await supabase.from('food_items').update({ is_favorite }).eq('id', id);
-        if (error) throw error;
+        await confirmWrite(
+          supabase.from('food_items').update({ is_favorite }).eq('id', id),
+          'Không lưu được món này — có thể nó đã được xoá ở thiết bị khác',
+        );
       } else if (is_favorite) {
         const { error } = await supabase.from('food_items').insert({
           user_id: user!.id,
@@ -419,25 +426,28 @@ async function resyncMealEntry(entryId: string) {
   if (error) throw error;
 
   if (!rest || rest.length === 0) {
-    const { error: delError } = await supabase.from('meal_entries').delete().eq('id', entryId);
-    if (delError) throw delError;
+    await confirmWrite(
+      supabase.from('meal_entries').delete().eq('id', entryId),
+      'Không cập nhật được bữa ăn — có thể nó đã được xoá ở thiết bị khác',
+    );
     return;
   }
 
   const sum = (k: 'kcal' | 'protein_g' | 'carbs_g' | 'fat_g' | 'fiber_g') =>
     Math.round(rest.reduce((s, r) => s + (Number(r[k]) || 0), 0));
 
-  const { error: upError } = await supabase
-    .from('meal_entries')
-    .update({
-      total_kcal: sum('kcal'),
-      total_protein_g: sum('protein_g'),
-      total_carbs_g: sum('carbs_g'),
-      total_fat_g: sum('fat_g'),
-      total_fiber_g: sum('fiber_g'),
+  await confirmWrite(
+    supabase.from('meal_entries')
+      .update({
+    total_kcal: sum('kcal'),
+    total_protein_g: sum('protein_g'),
+    total_carbs_g: sum('carbs_g'),
+    total_fat_g: sum('fat_g'),
+    total_fiber_g: sum('fiber_g'),
     })
-    .eq('id', entryId);
-  if (upError) throw upError;
+      .eq('id', entryId),
+    'Không cập nhật được bữa ăn — có thể nó đã được xoá ở thiết bị khác',
+  );
 }
 
 /**
@@ -534,8 +544,10 @@ export function useDeleteMealItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ itemId, entryId }: { itemId: string; entryId: string }) => {
-      const { error } = await supabase.from('meal_entry_items').delete().eq('id', itemId);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('meal_entry_items').delete().eq('id', itemId),
+        'Không cập nhật được món trong bữa ăn',
+      );
       await resyncMealEntry(entryId);
       await recomputeDailyLog(user!.id, localDateStr());
     },
@@ -597,18 +609,19 @@ export function useUpdateMealItemServings() {
         scaling reversible — 10 → 4 → 1.6 → 10 — and `resyncMealEntry` still
         rounds the meal's totals, so nothing downstream sees a fraction.
       */
-      const { error } = await supabase
-        .from('meal_entry_items')
-        .update({
-          servings,
-          kcal: (Number(row.kcal) || 0) * k,
-          protein_g: (Number(row.protein_g) || 0) * k,
-          carbs_g: (Number(row.carbs_g) || 0) * k,
-          fat_g: (Number(row.fat_g) || 0) * k,
-          fiber_g: (Number(row.fiber_g) || 0) * k,
+      await confirmWrite(
+        supabase.from('meal_entry_items')
+          .update({
+        servings,
+        kcal: (Number(row.kcal) || 0) * k,
+        protein_g: (Number(row.protein_g) || 0) * k,
+        carbs_g: (Number(row.carbs_g) || 0) * k,
+        fat_g: (Number(row.fat_g) || 0) * k,
+        fiber_g: (Number(row.fiber_g) || 0) * k,
         })
-        .eq('id', itemId);
-      if (error) throw error;
+          .eq('id', itemId),
+        'Không cập nhật được món trong bữa ăn',
+      );
 
       await resyncMealEntry(entryId);
       await recomputeDailyLog(user!.id, localDateStr());

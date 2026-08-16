@@ -177,13 +177,26 @@ export function useSleepHistory(days = 7) {
 export function useInvalidateToday() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const dateStr = today();
   /* The list is `lib/today-keys.ts`, shared with the mutation callbacks in
      `use-nutrition` that cannot call a hook. It used to be written out twice,
      and the two copies had already drifted twice — the second time it left the
      streak stale after the first log of the day. */
   return () => {
-    for (const key of todayKeys(user?.id, dateStr)) {
+    /*
+      ── the day is read when the refresh runs, not when the hook rendered ──
+
+      This closed over a `const dateStr = today()` from the hook body. Every
+      query above may do that, because a query *key* has to hold still across
+      the renders of a day and React Query re-keys itself on the next render.
+      This is not a query: it is the callback a write fires afterwards to bring
+      the screen up to date.
+
+      An app left open crosses midnight. The first log after that invalidated
+      **yesterday's** keys — so the new day's totals, rings and streak sat on
+      screen as they were, showing nothing logged, while the row was already in
+      the database. The one moment the refresh exists for is the one it missed.
+    */
+    for (const key of todayKeys(user?.id, today())) {
       queryClient.invalidateQueries({ queryKey: key });
     }
   };

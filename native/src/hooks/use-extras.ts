@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
 import { AWARD_TEXT, CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 /* Straight to the queue rather than through `award-celebration.tsx`, whose
    `fireCelebration` is a one-line pass-through to exactly this. A hook reaching
@@ -16,6 +17,7 @@ import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { TIER_MAGNITUDE } from '@/lib/koa-event';
 import { emitKoa } from '@/lib/koa-stage';
 import { streakFrom, STREAK_WINDOW } from '@/lib/streak';
+import { challengeStep } from '@/lib/challenge-progress';
 import { CHALLENGE_REWARD, challengeRefKey } from '@/lib/mascot-room';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
@@ -145,7 +147,30 @@ export function useCheckAwards() {
     }
   };
 
-  const checkAndGrant = async () => {
+  /*
+    ── this ran again on every render of Today, not on every focus ──
+
+    `Today` wires it up as `useFocusEffect(useCallback(fn, [awardsReady,
+    checkAndGrant]))`. `useFocusEffect` re-runs its effect whenever the callback
+    identity changes while the screen is focused — and `checkAndGrant` was a
+    plain `async () => {}` in a hook body, so it was a **new function on every
+    render**.
+
+    The dashboard re-renders often: a query settling, the mascot's held emotion
+    expiring, a quest ticking over, the wallet arriving. Each of those started
+    another full pass — four Supabase reads for streaks, workout counts, PRs and
+    steps — and the `awardCheckInFlight` ref only stops them overlapping, not
+    repeating. As soon as one finished the next render queued another.
+
+    `useCallback` makes the identity change when the inputs do, which is what
+    the dependency list in Today was written believing all along.
+
+    `grant` stays a plain function: it is called from inside this one, never
+    from an effect, so its identity is nobody's dependency. `koaCtxRef` is a ref
+    for the same reason it was already a ref — the context object is new each
+    render and listing it here would put the loop straight back.
+  */
+  const checkAndGrant = useCallback(async () => {
     if (!user || !existingAwards) return;
     const earned = new Set(existingAwards.map((a) => a.award_key));
     const byKey = (key: string) => AWARD_DEFINITIONS.find((d) => d.key === key)!;
@@ -265,7 +290,10 @@ export function useCheckAwards() {
       queryClient.invalidateQueries({ queryKey: ['awards', user.id] });
       queryClient.invalidateQueries({ queryKey: ['awards_recent', user.id] });
     }
-  };
+    // `grant` closes over `lang` and `user`, both of which are dependencies
+    // here; `queryClient` is stable for the life of the provider.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, existingAwards, lang, queryClient]);
 
   return { checkAndGrant, ready: !!existingAwards };
 }
@@ -509,8 +537,11 @@ export function useUpdateChallengeProgress() {
           newValue = [...byDate.values()].filter((v) => v >= waterTargetMl).length;
         }
 
-        const isCompleted = newValue >= ch.target_value;
-        const capped = Math.min(newValue, ch.target_value);
+        /* One reading of the pass, shared by the write, the payment and the
+           celebration — see `lib/challenge-progress.ts`. Three separate
+           opinions about "is this finished" is how the celebration came to be
+           gated one condition weaker than the payment. */
+        const step = challengeStep(ch, newValue);
 
         /*
           Write only when something moved.
@@ -521,15 +552,28 @@ export function useUpdateChallengeProgress() {
           reason — and it rewrites `completed_at` on each pass, quietly moving
           the moment a challenge was finished.
         */
-        if (capped !== ch.current_value || isCompleted !== ch.completed) {
-          await supabase
-            .from('weekly_challenges')
-            .update({
-              current_value: capped,
-              completed: isCompleted,
-              completed_at: isCompleted ? new Date().toISOString() : null,
-            })
-            .eq('id', ch.id);
+        if (!step.unchanged) {
+          /*
+            ── and this write in particular has to be confirmed ──
+
+            It is the one whose silent no-op *causes another bug*. If the row is
+            not updated, `completed` stays false in the database, so the next
+            focus pass reads the challenge as freshly finished — pays again
+            (harmless, the ledger is idempotent on `ref_key`) and **celebrates
+            again**, which is the repeat this round just removed. A write that
+            quietly does nothing here rebuilds the fault it was paired with.
+          */
+          await confirmWrite(
+            supabase
+              .from('weekly_challenges')
+              .update({
+                current_value: step.value,
+                completed: step.completed,
+                completed_at: step.completed ? new Date().toISOString() : null,
+              })
+              .eq('id', ch.id),
+            'Không cập nhật được tiến trình thử thách',
+          );
         }
 
         /*
@@ -543,7 +587,30 @@ export function useUpdateChallengeProgress() {
           on `ref_key` besides. The `!ch.completed` guard is not the safety —
           the unique key is — it just saves a round trip on every later focus.
         */
-        if (isCompleted && !ch.completed) {
+        /*
+          ── the payment and the celebration are one moment, and they had
+             drifted apart ──
+
+          The payment was gated on the *transition* — `isCompleted &&
+          !ch.completed`, the pass on which a challenge stops being unfinished.
+          The celebration below it was gated on `isCompleted` alone.
+
+          That reads like a small inconsistency and was not, because of where
+          this runs. `useUpdateChallengeProgress` fires from Today's
+          `useFocusEffect`, so it re-runs **every time the tab regains focus** —
+          which is every return from a meal sheet, a workout sheet, a weigh-in,
+          or any other tab. On each of those passes every already-finished
+          challenge re-entered this branch and queued confetti again.
+
+          So finishing one challenge on Monday meant a full-screen award
+          animation on every single return to Today until the week rolled over.
+          The one thing celebration depends on is being rare, and this was the
+          app's own most-repeated animation.
+
+          Both now live in the same `if`. A moment is paid for once and
+          announced once, on the pass where it actually happened.
+        */
+        if (step.justCompleted) {
           const tier = ch.reward_tier ?? 'bronze';
           const reward = CHALLENGE_REWARD[tier] ?? CHALLENGE_REWARD.bronze;
           /* Same gate as every other reward — the ledger takes no client
@@ -555,20 +622,22 @@ export function useUpdateChallengeProgress() {
             p_reason: `challenge ${ch.challenge_key}`,
           });
           if (payError && !payError.message.includes('duplicate')) throw payError;
+
+          // Built here, inside the branch that has already established there is
+          // a reward to name. Carrying the row out to read later would lose that
+          // narrowing, and `reward_title` is nullable.
+          if (!ch.reward_title) return null;
+          const t = CHALLENGE_TEXT[ch.challenge_key];
+          const doneLabel = lang === 'vi' ? 'Hoàn thành thử thách' : 'Challenge complete';
+          return {
+            title: t ? t.reward[lang] : ch.reward_title,
+            description: `${doneLabel}: ${t ? t.title[lang] : ch.title}`,
+            icon: ch.icon ?? 'trophy',
+            tier: ch.reward_tier ?? 'bronze',
+          };
         }
 
-        // Built here, inside the branch that has already established there is
-        // a reward to name. Carrying the row out to read later would lose that
-        // narrowing, and `reward_title` is nullable.
-        if (!isCompleted || !ch.reward_title) return null;
-        const t = CHALLENGE_TEXT[ch.challenge_key];
-        const doneLabel = lang === 'vi' ? 'Hoàn thành thử thách' : 'Challenge complete';
-        return {
-          title: t ? t.reward[lang] : ch.reward_title,
-          description: `${doneLabel}: ${t ? t.title[lang] : ch.title}`,
-          icon: ch.icon ?? 'trophy',
-          tier: ch.reward_tier ?? 'bronze',
-        };
+        return null;
         }),
       );
 
@@ -634,8 +703,10 @@ export function useGroceryMutations() {
 
   const toggle = useMutation({
     mutationFn: async ({ id, checked }: { id: string; checked: boolean }) => {
-      const { error } = await supabase.from('grocery_items').update({ checked }).eq('id', id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('grocery_items').update({ checked }).eq('id', id),
+        'Không cập nhật được danh sách đi chợ',
+      );
     },
     onSuccess: () => {
       Haptics.selectionAsync();
@@ -645,8 +716,10 @@ export function useGroceryMutations() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('grocery_items').delete().eq('id', id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('grocery_items').delete().eq('id', id),
+        'Không cập nhật được danh sách đi chợ',
+      );
     },
     onSuccess: invalidate,
   });

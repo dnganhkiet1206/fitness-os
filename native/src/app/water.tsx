@@ -142,7 +142,7 @@ export default function WaterScreen() {
                 ones in it with no error path at all — every log-* sheet has
                 toasted its failures for a long time.
               */
-              removeLast.mutate(undefined, {
+              removeLast.mutate({
                 onError: (e: Error) => toast.error(e.message),
               })
             }>

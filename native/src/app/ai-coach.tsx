@@ -26,6 +26,7 @@ import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useAuth } from '@/hooks/use-auth';
 import { useCoachChat } from '@/hooks/use-coach-chat';
 import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
 import { suggestionsFor } from '@/lib/assistant-suggestions';
 
 /**
@@ -107,8 +108,10 @@ export default function AiCoachScreen() {
 
   const deleteConvo = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('ai_conversations').delete().eq('id', id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('ai_conversations').delete().eq('id', id),
+        'Không xoá được cuộc trò chuyện này',
+      );
     },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['ai_conversations'] });

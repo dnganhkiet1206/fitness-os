@@ -320,6 +320,8 @@ const en = {
   // Mascot
   nMascotTitle: 'Companion',
   nMascotToggleHint: 'Your companion nudges you based on today\u2019s data',
+  nMascotRoomTitle: 'Companion room, shop & challenges',
+  nStreakFreezeFailed: 'Could not use your streak insurance — we will try again next time you open the app',
   nMascotSleep: 'Morning! How did you sleep? Log it so I can compute your readiness 😴',
   nMascotMeal: 'No meals logged yet today — fuel up and log it! 🍽',
   nMascotWater: 'Hydration check — you\u2019re under half your water target 💧',
@@ -973,6 +975,8 @@ const vi: typeof en = {
 
   nMascotTitle: 'Bạn đồng hành',
   nMascotToggleHint: 'Linh vật sẽ nhắc bạn dựa trên dữ liệu hôm nay',
+  nMascotRoomTitle: 'Phòng bạn đồng hành, cửa hàng & thử thách',
+  nStreakFreezeFailed: 'Chưa dùng được bảo hiểm chuỗi — app sẽ thử lại lần mở tới',
   nMascotSleep: 'Chào buổi sáng! Đêm qua ngủ sao rồi? Ghi lại để mình tính điểm sẵn sàng nhé 😴',
   nMascotMeal: 'Hôm nay chưa ghi bữa nào — nạp năng lượng rồi ghi lại nha! 🍽',
   nMascotWater: 'Kiểm tra nước nè — bạn mới uống chưa được nửa mục tiêu 💧',

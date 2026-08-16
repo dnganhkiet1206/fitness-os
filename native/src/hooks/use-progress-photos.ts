@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
 import { localDateStr } from '@/lib/local-date';
 
 const BUCKET = 'progress-photos';
@@ -97,8 +98,10 @@ export function useDeleteProgressPhoto() {
         storagePath = photo_url.split(`/${BUCKET}/`)[1] || '';
       }
       if (storagePath) await supabase.storage.from(BUCKET).remove([storagePath]);
-      const { error } = await supabase.from('progress_photos').delete().eq('id', id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('progress_photos').delete().eq('id', id),
+        'Không xoá được ảnh này',
+      );
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress_photos', user?.id] }),
   });

@@ -79,7 +79,26 @@ interface Way {
 const WAYS: Way[] = [
   { key: 'camera', icon: Camera, color: colors.metricPurple, label: 'nWayPhoto', spoken: 'nAddCamera', route: '/scan-food' },
   { key: 'barcode', icon: Barcode, color: colors.metricCyan, label: 'nWayBarcode', spoken: 'nAddBarcode', route: '/scan-barcode' },
-  { key: 'search', icon: Search, color: colors.metricBlue, label: 'nWaySearch', spoken: 'nAddSearch', route: '/food-list' },
+  /*
+    ── this tile could not do the thing it is named after ──
+
+    It pointed at `/food-list`, which is the **food library**: its search box
+    says "filter this list", tapping a row opens `/food-editor` to change that
+    food's nutrition, and the `+` on a recent row saves it into My Foods. There
+    is no path from that screen to a logged meal at all — so one of the four
+    "ways to log a meal" logged nothing, on the card whose entire job is to be
+    the four ways.
+
+    `/log-meal` has had the right screen all along: a search box that queries
+    `food_items` and adds the result straight into the meal being built. The
+    tile now opens it with that box already focused, so the way in is the same
+    number of taps it always looked like it was.
+
+    `manual` below still opens the same sheet without the focus, and the two are
+    genuinely different acts: one starts by looking a food up, the other by
+    typing one in. What they now have in common is that both of them finish.
+  */
+  { key: 'search', icon: Search, color: colors.metricBlue, label: 'nWaySearch', spoken: 'nAddSearch', route: '/log-meal?focus=search' },
   { key: 'manual', icon: Pencil, color: colors.metricOrange, label: 'nWayManual', spoken: 'nAddManual', route: '/log-meal' },
 ];
 

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
 import { localDateStr, localDayRangeISO } from '@/lib/local-date';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
@@ -37,9 +38,23 @@ export function useSupplementChecklist() {
 export function useToggleSupplement() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const dateStr = today();
   return useMutation({
     mutationFn: async ({ supplementId, taken }: { supplementId: string; taken: boolean }) => {
+      /*
+        ── read here, in the tap, not in the render ──
+
+        This was `const dateStr = today()` in the hook body, which runs when the
+        component renders. The app gets left open; a phone showing the
+        supplements list at eleven at night is still showing it at ten past
+        midnight, and the range below is what decides **which day's row gets
+        deleted**.
+
+        So un-ticking a supplement after midnight looked for today's entry
+        inside yesterday's window: today's tick survived, and if yesterday had
+        one it was removed instead. The checkbox bounced back and a day that was
+        already finished quietly lost an entry.
+      */
+      const dateStr = today();
       if (taken) {
         const { error } = await supabase.from('supplement_intake_logs').insert({
           user_id: user!.id,
@@ -97,8 +112,10 @@ export function useDeleteSupplement() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('supplements').delete().eq('id', id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('supplements').delete().eq('id', id),
+        'Không xoá được thực phẩm bổ sung này',
+      );
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['supplement_checklist'] }),
   });
@@ -128,8 +145,10 @@ export function useDeleteExercise() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('exercises').delete().eq('id', id).eq('user_id', user!.id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('exercises').delete().eq('id', id).eq('user_id', user!.id),
+        'Không xoá được bài tập này',
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exercises', user?.id] });
@@ -193,12 +212,13 @@ export function useDeleteWorkoutTemplate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('workout_templates')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user!.id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('workout_templates')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user!.id),
+        'Không xoá được mẫu tập này',
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workout_templates', user?.id] });
@@ -328,12 +348,13 @@ export function useDeleteMealPlan() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('meal_plans')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user!.id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('meal_plans')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user!.id),
+        'Không xoá được thực đơn này',
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meal_plans', user?.id] });
@@ -406,8 +427,10 @@ export function useDeleteMealPlanItem() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id }: { id: string; planId: string }) => {
-      const { error } = await supabase.from('meal_plan_items').delete().eq('id', id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('meal_plan_items').delete().eq('id', id),
+        'Không xoá được món trong thực đơn',
+      );
     },
     onSuccess: (_data, { planId }) => {
       queryClient.invalidateQueries({ queryKey: ['meal_plan_items', planId] });

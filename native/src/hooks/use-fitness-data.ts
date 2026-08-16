@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
 import { syncProfileWeight } from '@/lib/weight-sync';
 // aliased: this file already has its own `LoggedSet`, a much richer row
 import { trainingMinutes, type LoggedSet as TimedSet } from '@/lib/activity';
@@ -92,12 +93,13 @@ export function useDeleteWeight() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (date: string) => {
-      const { error } = await supabase
-        .from('weight_logs')
-        .delete()
-        .eq('user_id', user!.id)
-        .eq('date', date);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('weight_logs')
+          .delete()
+          .eq('user_id', user!.id)
+          .eq('date', date),
+        'Không xoá được lần cân này — có thể nó đã được xoá ở thiết bị khác',
+      );
     },
     onSuccess: () => {
       // Both keys, and both without the `days` suffix so every window is
@@ -156,12 +158,13 @@ export function useDeleteWorkoutSession() {
   const invalidateToday = useInvalidateToday();
   return useMutation({
     mutationFn: async ({ id, date_time }: { id: string; date_time: string }) => {
-      const { error } = await supabase
-        .from('workout_sessions')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user!.id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('workout_sessions')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user!.id),
+        'Không xoá được buổi tập — có thể nó đã được xoá ở thiết bị khác',
+      );
 
       const day = localDateStr(new Date(date_time));
       await recomputeDailyLog(user!.id, day);
@@ -667,12 +670,13 @@ export function useDeleteSleepLog() {
   const invalidateToday = useInvalidateToday();
   return useMutation({
     mutationFn: async ({ id, waketime }: { id: string; waketime: string }) => {
-      const { error } = await supabase
-        .from('sleep_logs')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user!.id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('sleep_logs')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user!.id),
+        'Không xoá được giấc ngủ này — có thể nó đã được xoá ở thiết bị khác',
+      );
 
       const day = localDateStr(new Date(waketime));
       await recomputeDailyLog(user!.id, day);
@@ -700,12 +704,13 @@ export function useDeleteBodyMeasurement() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('body_measurements')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user!.id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('body_measurements')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user!.id),
+        'Không xoá được số đo này — có thể nó đã được xoá ở thiết bị khác',
+      );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['body_measurements', user?.id] }),
   });

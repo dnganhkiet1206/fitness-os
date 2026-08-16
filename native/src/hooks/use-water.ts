@@ -2,11 +2,33 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { offlineNow } from '@/lib/offline';
 import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
 
+/**
+ * The day a write belongs to, read when the write happens.
+ *
+ * ── the bug this replaced ──
+ *
+ * Every mutation in this file opened with `const dateStr = today();` in the
+ * hook body — which runs at **render**, not at the tap. The app is left open;
+ * a phone on a bedside table renders the Water screen at eleven at night and is
+ * still showing it at ten past midnight. The glass logged then carried
+ * `date: <yesterday>`, so it counted toward yesterday's ring, yesterday's
+ * challenge and yesterday's streak.
+ *
+ * The give-away was inside the same object: `at:` read `new Date()` fresh while
+ * `date:` came from the capture, so one row stated two different days about
+ * itself.
+ *
+ * Queries keep reading the date at render on purpose — a query *key* has to be
+ * stable across the renders of a day, and React Query re-keys by itself when
+ * the next render sees a new date. It is only the writes that have to ask what
+ * day it is at the moment they are made.
+ */
 const today = () => localDateStr();
 
 /**
@@ -18,6 +40,9 @@ const today = () => localDateStr();
  * it ever felt like it had not registered.
  */
 type WaterLog = { id: string; amount_ml: number; logged_at: string };
+
+/** The one branch of `OfflineWrite` this file sends. */
+type WaterWrite = Extract<OfflineWrite, { kind: 'water' }>;
 
 async function patchWater(
   qc: ReturnType<typeof useQueryClient>,
@@ -83,9 +108,12 @@ export function useTodayWater() {
 export function useAddWater() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const dateStr = today();
 
-  const m = useMutation<void, Error, OfflineWrite, WaterCtx>({
+  /* Narrowed to the one branch this hook ever sends. Typed as the whole union
+     it compiled, and every callback then had to pretend it did not know the
+     write carries a date — which is how three of them ended up reading a
+     captured one instead. */
+  const m = useMutation<void, Error, WaterWrite, WaterCtx>({
     /*
       Through the durable queue, so a glass logged without signal is still a
       glass tomorrow.
@@ -101,8 +129,11 @@ export function useAddWater() {
       behaviour, whether it runs now or in an hour.
     */
     mutationKey: [...OFFLINE_WRITE_KEY],
+    /* `w.date` — the day the write itself carries, not the day this component
+       last rendered. The optimistic patch then lands on the same key the row
+       will land on. */
     onMutate: (w) =>
-      patchWater(queryClient, user?.id, dateStr, (logs) => [
+      patchWater(queryClient, user?.id, w.date, (logs) => [
         // Newest first, matching the query's own order. The id is a placeholder
         // — the refetch replaces the row wholesale, and nothing keys off it in
         // the moment it exists.
@@ -117,9 +148,9 @@ export function useAddWater() {
     onSuccess: () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['today_water', user?.id, dateStr] });
-      queryClient.invalidateQueries({ queryKey: ['today_water_logs', user?.id, dateStr] });
+    onSettled: (_d, _e, w) => {
+      queryClient.invalidateQueries({ queryKey: ['today_water', user?.id, w.date] });
+      queryClient.invalidateQueries({ queryKey: ['today_water_logs', user?.id, w.date] });
       queryClient.invalidateQueries({ queryKey: ['water_week', user?.id] });
     },
   });
@@ -156,7 +187,9 @@ export function useAddWater() {
           kind: 'water',
           userId: user.id,
           amountMl,
-          date: dateStr,
+          /* Read here, in the tap. See the note on `today` above: the hook body
+             runs at render, and an app left open crosses midnight. */
+          date: today(),
           at: new Date().toISOString(),
         },
         options,
@@ -169,9 +202,15 @@ export function useAddWater() {
 export function useRemoveLastWater() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const dateStr = today();
-  return useMutation({
-    mutationFn: async () => {
+  /*
+    The date is the mutation's *variable* rather than a capture, which is what
+    lets one reading reach the find, the optimistic patch and the invalidation.
+    Computing it separately in each would leave three readings that can disagree
+    across midnight — and the one that matters, the `.eq('date', …)` on the
+    find, would then delete a glass from the wrong day.
+  */
+  const m = useMutation({
+    mutationFn: async (dateStr: string) => {
       if (!user) throw new Error('Not signed in');
       const { data: last, error: findError } = await supabase
         .from('water_logs')
@@ -183,21 +222,37 @@ export function useRemoveLastWater() {
         .maybeSingle();
       if (findError) throw findError;
       if (!last) return;
-      const { error } = await supabase.from('water_logs').delete().eq('id', last.id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('water_logs').delete().eq('id', last.id),
+        'Không bỏ được lần uống gần nhất',
+      );
     },
-    onMutate: () => patchWater(queryClient, user?.id, dateStr, (logs) => logs.slice(1)),
+    onMutate: (dateStr) => patchWater(queryClient, user?.id, dateStr, (logs) => logs.slice(1)),
     onError: (_e, _vars, ctx) => rollbackWater(queryClient, ctx),
     onSuccess: () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
-    onSettled: () => {
+    onSettled: (_d, _e, dateStr) => {
       queryClient.invalidateQueries({ queryKey: ['today_water', user?.id, dateStr] });
       queryClient.invalidateQueries({ queryKey: ['today_water_logs', user?.id, dateStr] });
       queryClient.invalidateQueries({ queryKey: ['water_week', user?.id] });
     },
   });
 
+  /*
+    The day is filled in here, at the tap, so no screen has to know that this
+    write is date-scoped.
+
+    `options` is forwarded for the same reason `useAddWater` forwards it, and
+    the reason is on the record: these are the two most-tapped write buttons in
+    the app and they were the only two with no error path, because a convenience
+    wrapper had quietly removed the ability to pass one. A wrapper that takes
+    the date away must not take the `onError` with it.
+  */
+  return {
+    ...m,
+    mutate: (options?: Parameters<typeof m.mutate>[1]) => m.mutate(today(), options),
+  };
 }
 
 /** Today's individual water entries — the detail list on the Water screen */

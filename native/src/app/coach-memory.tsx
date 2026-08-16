@@ -12,6 +12,7 @@ import { press } from '@/constants/motion';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
 
 interface Memory {
   id: string;
@@ -75,16 +76,20 @@ export default function CoachMemoryScreen() {
 
   const forget = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('coach_memory').delete().eq('id', id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('coach_memory').delete().eq('id', id),
+        'Không xoá được ghi nhớ này',
+      );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['coach_memory', user?.id] }),
   });
 
   const forgetAll = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from('coach_memory').delete().eq('user_id', user!.id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('coach_memory').delete().eq('user_id', user!.id),
+        'Không xoá được ghi nhớ này',
+      );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['coach_memory', user?.id] }),
   });

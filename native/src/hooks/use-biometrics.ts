@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { localDateStr } from '@/lib/local-date';
@@ -159,12 +160,13 @@ export function useDeleteBiometricSample() {
   const invalidateToday = useInvalidateToday();
   return useMutation({
     mutationFn: async ({ id, date_time }: { id: string; date_time: string }) => {
-      const { error } = await supabase
-        .from('biometric_samples')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user!.id);
-      if (error) throw error;
+      await confirmWrite(
+        supabase.from('biometric_samples')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user!.id),
+        'Không xoá được chỉ số này — có thể nó đã được xoá ở thiết bị khác',
+      );
 
       const day = localDateStr(new Date(date_time));
       await recomputeDailyLog(user!.id, day);

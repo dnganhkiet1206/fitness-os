@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Camera, Check, ChevronDown, ChevronRight, Clock, Minus, PencilLine, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -86,6 +86,25 @@ export default function LogMealSheet() {
   const [mealType, setMealType] = useState<MealType>('lunch');
   const [items, setItems] = useState<MealItem[]>([]);
   const [search, setSearch] = useState('');
+  /*
+    ── the "Find a food" tile lands here, and it lands *in the box* ──
+
+    That tile used to open `/food-list`, which is the food **library** — filter
+    the list, edit a food's nutrition, save a recent one. Nothing on that screen
+    logs a meal, so one of the four ways to log a meal logged nothing.
+
+    It opens this sheet now, and `focus=search` puts the cursor straight in the
+    search field. Without that the tile would be one tap better than it was and
+    still leave somebody looking for where the searching happens on a screen
+    that also offers a camera, a barcode, quick-adds and a custom-food form.
+
+    Read once into a `useState` initialiser rather than watched: this decides
+    where the keyboard goes on arrival. Re-reading it on later renders would
+    yank focus back into the search box while somebody is typing a dish name
+    into the custom form below.
+  */
+  const { focus } = useLocalSearchParams<{ focus?: string }>();
+  const [focusSearch] = useState(() => focus === 'search');
   const [debounced, setDebounced] = useState('');
   const [aiOpen, setAiOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
@@ -574,6 +593,7 @@ export default function LogMealSheet() {
             value={search}
             onChangeText={setSearch}
             autoCorrect={false}
+            autoFocus={focusSearch}
           />
           <PressScale
             accessibilityRole="button"

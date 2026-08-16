@@ -267,6 +267,35 @@ export default function SettingsScreen() {
             trackColor={{ true: colors.readinessGreen, false: colors.secondary }}
           />
         </View>
+        {/*
+          ── the only way back into the room, when the figure is switched off ──
+
+          There were exactly two doors to `/mascot-room` in the whole app: the
+          figure on Today (hidden when the mascot is off) and the streak chip
+          (hidden until a streak is at least one day). `/shop` and `/challenges`
+          are reachable *only from inside that room*.
+
+          So somebody who turns the mascot off, or who has not yet logged two
+          days running, loses the shop, the weekly challenges and the coin
+          balance — while the app keeps paying them coins for quests and keeps
+          scoring challenges in the background. A currency you cannot spend and
+          a competition you cannot see.
+
+          This row sits with the switch that causes it and is shown whether the
+          switch is on or off. That is the point: the person most likely to need
+          it is the one who has just turned the figure off.
+        */}
+        <PressScale
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/mascot-room');
+          }}>
+          <View style={styles.roomRow}>
+            <Text style={styles.roomLabel}>{i18n.nMascotRoomTitle}</Text>
+            <Icon icon={ChevronRight} size={18} color={colors.mutedForeground} />
+          </View>
+        </PressScale>
+
         {mascot.enabled && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mascotRow}>
             {mascot.catalog.map((m) => {
@@ -548,6 +577,17 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   toggleInfo: { flex: 1, minWidth: 0 },
+  /* A 44pt row so the whole strip is the target, not just the words — this is
+     the only door left to the room for somebody who has switched the figure
+     off, and a door you have to aim at is one more way to lose it. */
+  roomRow: {
+    minHeight: 44,
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  roomLabel: { ...type.body, color: colors.foreground },
   mascotRow: { marginTop: spacing.md },
   mascotChip: {
     width: 116,

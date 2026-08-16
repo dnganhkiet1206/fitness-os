@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react';
 
+import { useI18n } from '@/hooks/use-app-settings';
+
 import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useDailyStreak, useSpendFreeze } from '@/hooks/use-mascot-room';
 import { comebackMagnitude, streakMagnitude } from '@/lib/koa-event';
 import { emitKoa } from '@/lib/koa-stage';
+import { toast } from '@/lib/toast';
 
 /**
  * Spend a streak freeze on a day that would otherwise have broken the run.
@@ -42,6 +45,7 @@ import { emitKoa } from '@/lib/koa-stage';
  * shared between them.
  */
 export function useStreakGuard() {
+  const i18n = useI18n();
   const { data } = useDailyStreak();
   const spend = useSpendFreeze();
   const ctx = useKoaContext();
@@ -85,6 +89,25 @@ export function useStreakGuard() {
 
     for (const date of missed) {
       if (tried.current.has(date)) continue;
+      /*
+        ── marked before the attempt, and never unmarked ──
+
+        `tried` exists so a re-render does not fire the same rescue twice, and
+        marking *before* the call is the only ordering that achieves that — the
+        mutation is asynchronous, so marking after leaves a window in which
+        every render starts another one.
+
+        What was missing is the other half. There was no `onError`, so a refused
+        RPC left the day permanently in `tried`: no second attempt for the rest
+        of the session, the streak broken anyway, and not one word about it. And
+        this is the only place in the app that spends 150 coins.
+
+        So a failure puts the day back. The next launch — or the next time the
+        streak query settles — tries again, which is exactly what somebody who
+        bought insurance is entitled to. And it says so: silence here is a
+        person discovering on their own that a thing they paid for did not
+        happen.
+      */
       tried.current.add(date);
       spend.mutate(date, {
         onSuccess: (used) => {
@@ -99,10 +122,16 @@ export function useStreakGuard() {
             refreshKoaContext(ctx),
           );
         },
+        onError: (e: Error) => {
+          tried.current.delete(date);
+          toast.error(e.message || i18n.nStreakFreezeFailed);
+        },
       });
     }
     // `spend` is a stable mutation object; listing it would re-run this on every
-    // state change of the mutation it just started.
+    // state change of the mutation it just started. `i18n` is read only inside
+    // the error path and changes only when the app language does, which is a
+    // remount anyway.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 }
