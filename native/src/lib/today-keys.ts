@@ -38,7 +38,6 @@ export function todayKeys(userId: string | undefined, dateStr: string): unknown[
     ['workout_sessions', userId],
     ['readiness_history', userId],
     ['recent_foods', userId],
-    ['nudges', userId],
     ['profile', userId],
     /* Lifetime counters — they drive the mascot unlocks, so a fresh log can pop
        the unlock celebration straight away. */

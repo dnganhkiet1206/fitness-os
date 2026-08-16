@@ -11,8 +11,33 @@ export type WidgetKey =
   | 'readiness' | 'activity' | 'readiness-trend'
   | 'biometrics' | 'training' | 'nutrition' | 'sleep'
   | 'weight' | 'workout-status' | 'supplements'
-  | 'ai-tips' | 'awards' | 'nudges'
+  | 'ai-tips' | 'awards'
   | 'water' | 'steps';
+
+/**
+ * Widgets that used to exist and no longer do.
+ *
+ * ── why removing a card is not enough ──
+ *
+ * The stored layout is the user's, and `withNewWidgets` is deliberately
+ * add-only, so a key written into somebody's config years ago stays there
+ * forever. When `nudges` was deleted — its table had no writer, so the card
+ * returned `null` on every render — every account that had ever opened edit
+ * mode kept the entry, and the entry is not silent:
+ *
+ *   · the group renders it as a zero-height child, and the group has `gap`, so
+ *     the Insights section grows one blank slot's worth of space;
+ *   · edit mode falls back to `?? key`, so the chip reads literally **"nudges"**
+ *     — an English identifier, on a Vietnamese screen, for a card that cannot
+ *     appear;
+ *   · and the only way out is `resetConfig`, which throws away every
+ *     arrangement the user made.
+ *
+ * So retirement is explicit and the merge prunes it. The list is typed
+ * `string[]`, not `WidgetKey[]` — these keys are gone from the union, which is
+ * the whole point.
+ */
+export const RETIRED_WIDGETS: string[] = ['nudges'];
 
 export interface WidgetGroup {
   id: string;
@@ -51,7 +76,7 @@ export const DEFAULT_CONFIG: WidgetConfig = {
       id: 'insights',
       title: { en: 'Insights', vi: 'Phân tích' },
       icon: '✨',
-      widgets: ['readiness-trend', 'ai-tips', 'awards', 'nudges'],
+      widgets: ['readiness-trend', 'ai-tips', 'awards'],
     },
   ],
 };
@@ -71,7 +96,6 @@ export const WIDGET_META: Record<WidgetKey, { label: { en: string; vi: string } 
   supplements: { label: { en: 'Supplements', vi: 'Thực phẩm bổ sung' } },
   'ai-tips': { label: { en: 'AI Tips', vi: 'Gợi ý AI' } },
   awards: { label: { en: 'Awards', vi: 'Thành tích' } },
-  nudges: { label: { en: 'Nudges', vi: 'Nhắc nhở' } },
   water: { label: { en: 'Water', vi: 'Nước uống' } },
   steps: { label: { en: 'Steps', vi: 'Bước đi' } },
 };
@@ -109,23 +133,29 @@ export const WIDGET_META: Record<WidgetKey, { label: { en: string; vi: string } 
  * next real edit saves the merged shape anyway.
  */
 export function withNewWidgets(stored: WidgetConfig): WidgetConfig {
-  const groups = stored.groups.map((g) => ({ ...g, widgets: [...g.widgets] }));
-  const heroWidgets = [...stored.heroWidgets];
+  /* Retired keys are dropped on the way in — see `RETIRED_WIDGETS`. This is the
+     one thing the merge takes away, and it only takes away cards that no longer
+     exist to draw. */
+  const live = (list: WidgetKey[]) => list.filter((k) => !RETIRED_WIDGETS.includes(k));
+  const groups = stored.groups.map((g) => ({ ...g, widgets: live(g.widgets) }));
+  const heroWidgets = live(stored.heroWidgets);
   const have = new Set<WidgetKey>([...heroWidgets, ...groups.flatMap((g) => g.widgets)]);
-  let added = false;
+  let changed =
+    heroWidgets.length !== stored.heroWidgets.length ||
+    groups.some((g, i) => g.widgets.length !== stored.groups[i].widgets.length);
 
   for (const key of DEFAULT_CONFIG.heroWidgets) {
     if (have.has(key)) continue;
     heroWidgets.push(key);
     have.add(key);
-    added = true;
+    changed = true;
   }
 
   for (const def of DEFAULT_CONFIG.groups) {
     for (const key of def.widgets) {
       if (have.has(key)) continue;
       have.add(key);
-      added = true;
+      changed = true;
       const home = groups.find((g) => g.id === def.id) ?? groups[groups.length - 1];
       // No groups at all is not a shape the loader accepts, but a merge that
       // drops a widget on the floor when it happens would be worse than one
@@ -135,9 +165,9 @@ export function withNewWidgets(stored: WidgetConfig): WidgetConfig {
     }
   }
 
-  // The same object back when there is nothing to add, so a caller comparing
-  // by identity can tell an untouched config from a repaired one
-  return added ? { heroWidgets, groups } : stored;
+  // The same object back when nothing was added or retired, so a caller
+  // comparing by identity can tell an untouched config from a repaired one
+  return changed ? { heroWidgets, groups } : stored;
 }
 
 export function useWidgetConfig() {

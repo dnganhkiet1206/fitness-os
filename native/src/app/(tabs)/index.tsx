@@ -53,7 +53,6 @@ import {
 } from '@/components/ascnd/today-widgets';
 import {
   BiometricsCard,
-  NudgesCard,
   RecentAwardsCard,
   TrainingCard,
   WorkoutStatusCard,
@@ -384,8 +383,6 @@ export default function TodayScreen() {
         return <SmartTipsCard />;
       case 'awards':
         return <RecentAwardsCard />;
-      case 'nudges':
-        return <NudgesCard />;
       default:
         return null;
     }

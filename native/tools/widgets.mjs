@@ -23,6 +23,21 @@
  *    group, where `removeGroup` already folds orphans
  * 6. a current config comes back as the same object, so a load costs nothing
  * 7. running it twice changes nothing the first run did not
+ * 8. a widget that was RETIRED is dropped from a stored layout
+ *
+ * ── why (8) is here ──
+ *
+ * `nudges` was deleted because its table had no writer, so the card returned
+ * `null` on every render. But the merge is add-only by design, so the key
+ * survived in every layout that had ever been saved — and a dead key is not
+ * silent. The group lays it out as a zero-height child inside a `gap`, so the
+ * section grows a blank slot; and edit mode falls back to `?? key`, printing
+ * the bare identifier **"nudges"** on a Vietnamese screen as a chip for a card
+ * that cannot appear. The only escape was `resetConfig`, which discards
+ * everything the user arranged.
+ *
+ * Deleting a card is therefore two edits, and this is the one that is easy to
+ * forget because nothing crashes when you do.
  */
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -51,7 +66,7 @@ try {
   execFileSync('npx', ['tsc', file, '--ignoreConfig', '--outDir', out, '--module', 'commonjs',
     '--target', 'es2020', '--skipLibCheck'], { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
 
-  const { DEFAULT_CONFIG, WIDGET_META, withNewWidgets } =
+  const { DEFAULT_CONFIG, RETIRED_WIDGETS, WIDGET_META, withNewWidgets } =
     createRequire(import.meta.url)(path.join(out, 'widgets.js'));
 
   const flat = (c) => [...c.heroWidgets, ...c.groups.flatMap((g) => g.widgets)];
@@ -96,8 +111,8 @@ try {
     problems.push('group order changed');
   }
   if (merged.groups[0].title.en !== 'My insights') problems.push('a renamed group lost its name');
-  if (merged.groups[0].widgets.join(',') !== 'nudges,ai-tips,readiness-trend,awards') {
-    problems.push('an untouched group was reordered');
+  if (merged.groups[0].widgets.join(',') !== 'ai-tips,readiness-trend,awards') {
+    problems.push(`an untouched group was reordered: ${merged.groups[0].widgets.join(',')}`);
   }
   // added at the end of its group, never in front of what was already there
   if (merged.groups[2].widgets.join(',') !== 'nutrition,supplements,water') {
@@ -149,7 +164,36 @@ try {
   if (withNewWidgets(merged) !== merged) problems.push('running twice changed the result');
 
   /*
-    ── 8: the check has teeth ──
+    ── 8: a retired widget is dropped, everywhere it could be hiding ──
+
+    `old` above already carries `nudges` in a group, so the merge must have
+    removed it there. Here it is also placed among the hero widgets, because a
+    user can drag it up there and the pruning has to reach both lists.
+  */
+  if (flat(merged).includes('nudges')) {
+    problems.push('nudges survived in a stored layout — nó vẽ ra một ô rỗng và một chip tên "nudges"');
+  }
+  const retiredHero = withNewWidgets({
+    heroWidgets: ['readiness', 'nudges', 'activity'],
+    groups: DEFAULT_CONFIG.groups.map((g) => ({ ...g, widgets: [...g.widgets] })),
+  });
+  if (flat(retiredHero).includes('nudges')) {
+    problems.push('nudges survived among the hero widgets');
+  }
+  if (retiredHero.heroWidgets.join(',') !== 'readiness,activity') {
+    problems.push(`pruning disturbed the hero order: ${retiredHero.heroWidgets.join(',')}`);
+  }
+  /* and the two lists cannot overlap: a key on both would be pruned on load and
+     re-added by the merge on the same pass, so the config would never settle and
+     the card would flicker in and out of somebody's layout forever */
+  for (const k of RETIRED_WIDGETS ?? []) {
+    if (WIDGET_META[k] || placed.has(k)) {
+      problems.push(`'${k}' vừa nằm trong RETIRED_WIDGETS vừa còn trong roster — dọn rồi thêm lại ngay`);
+    }
+  }
+
+  /*
+    ── 9: the check has teeth ──
 
     What the loader did before this: hand the stored config straight through.
     Rebuilt here and required to fail the very test that matters, so a future
@@ -169,7 +213,10 @@ try {
   console.log(
     `bố cục Today OK — ${Object.keys(WIDGET_META).length} widget đều có chỗ; ` +
     `cấu hình cũ nhận lại steps+water đúng nhóm, thứ tự và tên nhóm giữ nguyên, ` +
-    `nhóm đã xoá không sống lại, chạy hai lần không đổi gì; bản cũ (dùng thẳng) mất đúng 2 widget`,
+    `nhóm đã xoá không sống lại, chạy hai lần không đổi gì; bản cũ (dùng thẳng) mất đúng 2 widget; ` +
+    `và widget đã khai tử ('nudges') bị dọn khỏi layout đã lưu ở CẢ hàng hero lẫn trong nhóm — ` +
+    `để lại thì nó vẽ một ô rỗng trong nhóm có gap và một chip mang đúng tên khoá tiếng Anh cho ` +
+    `một thẻ không bao giờ hiện được`,
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

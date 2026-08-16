@@ -128,38 +128,30 @@ export function useTodayBiometrics() {
   });
 }
 
-export function useNudges() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ['nudges', user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('habit_nudges')
-        .select('*')
-        .eq('user_id', user!.id)
-        .eq('enabled', true);
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-}
+/*
+  ── `useNudges` and `useWearables` are gone, and this is why ──
 
-export function useWearables() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ['wearables', user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('wearable_sources')
-        .select('*')
-        .eq('user_id', user!.id);
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-}
+  Both read tables — `habit_nudges` and `wearable_sources` — that **no code in
+  this app has ever written to**. Neither was a feature waiting to be finished;
+  they were two queries fired on every Today open against tables that are empty
+  for every account.
+
+  `nudges` was worse than idle: it sat in `todayKeys`, so *every* write — a meal,
+  a workout, a night's sleep, a weigh-in — invalidated it and refetched an empty
+  table. And `NudgesCard` returned `null` unconditionally, because a filter over
+  no rows is always empty, so the toggle for it in the widget settings switched
+  a card on that could not appear.
+
+  `wearable_sources` was worse still, because it did not merely show nothing: it
+  made the biometrics card print *"chưa kết nối"* in red beside HRV and resting
+  heart rate that Apple Health had just supplied. That card now reads the
+  `source` column on the reading itself, which is the thing it was pretending to
+  look up.
+
+  The tables are left in the schema — dropping one is irreversible and keeping an
+  empty table costs nothing — and `tools/dead-schema.mjs` records them as known
+  and unused, so a *new* table nobody wired up will fail the suite.
+*/
 
 /** Recent nights for the Sleep Insights screen (deep/REM/light breakdown) */
 export function useSleepHistory(days = 7) {

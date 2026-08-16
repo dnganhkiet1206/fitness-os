@@ -247,6 +247,14 @@ const STEPS = [
     down to review their week, and fixed again by Monday morning.
   */
   ['mục tiêu tuần', 'node', ['tools/weekly-targets.mjs']],
+  /*
+    A table nobody uses does not fail — it accumulates. Two were queried on
+    every Today open with nothing ever writing to them, and one of those sat in
+    todayKeys so every write in the app refetched an empty table. Same shape as
+    linked.mjs: unused must be named, with a reason, somewhere a person edits
+    on purpose.
+  */
+  ['bảng chết', 'node', ['tools/dead-schema.mjs']],
 ];
 
 let failed = 0;

@@ -37,6 +37,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { COMMON_ALLERGIES, parseDislikes } from '@/lib/food-preferences';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -58,9 +59,6 @@ import { useVolumeUnit } from '@/hooks/use-volume-unit';
 
 const TOTAL_STEPS = 7;
 const STEP_ICONS: LucideIcon[] = [User, Target, Dumbbell, Moon, Utensils, Pill, HeartPulse];
-
-const COMMON_ALLERGIES_VI = ['Sữa', 'Đậu phộng', 'Hạt cây', 'Trứng', 'Đậu nành', 'Lúa mì', 'Hải sản', 'Cá'];
-const COMMON_ALLERGIES_EN = ['Dairy', 'Peanuts', 'Tree nuts', 'Eggs', 'Soy', 'Wheat', 'Shellfish', 'Fish'];
 
 const COMMON_SUPPLEMENTS = [
   { name: 'Whey Protein', category: 'protein', dose: '30g', timing: 'post-workout' },
@@ -110,7 +108,6 @@ export function OnboardingFlow() {
     i18n.onboardingStepSupplements,
     i18n.onboardingStepConnect,
   ];
-  const COMMON_ALLERGIES = lang === 'vi' ? COMMON_ALLERGIES_VI : COMMON_ALLERGIES_EN;
 
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -125,7 +122,6 @@ export function OnboardingFlow() {
   const [activityLevel, setActivityLevel] = useState('moderate');
   const [waketime, setWaketime] = useState(new Date(2000, 0, 1, 7, 0));
   const [bedtime, setBedtime] = useState(new Date(2000, 0, 1, 23, 0));
-  const [workType, setWorkType] = useState('sedentary');
   const [dietaryPreference, setDietaryPreference] = useState('omnivore');
   const [allergies, setAllergies] = useState<string[]>([]);
   const [dislikedFoods, setDislikedFoods] = useState('');
@@ -205,11 +201,10 @@ export function OnboardingFlow() {
           goal,
           activity_level: activityLevel,
           training_level: trainingLevel,
-          work_type: workType,
           dietary_preference: dietaryPreference,
           allergies,
           disliked_foods: dislikedFoods
-            ? dislikedFoods.split(',').map((s) => s.trim()).filter(Boolean)
+            ? parseDislikes(dislikedFoods)
             : [],
           tdee_target_kcal: targetKcal,
           macro_protein_g: macros.protein_g,
@@ -480,21 +475,24 @@ export function OnboardingFlow() {
                     </Field>
                   </View>
                 </View>
-                <Field label={i18n.onboardingWorkType}>
-                  <View style={styles.chips}>
-                    {[
-                      { val: 'sedentary', label: i18n.onboardingWorkSedentary },
-                      { val: 'active', label: i18n.onboardingWorkActive },
-                    ].map((wt) => (
-                      <Chip
-                        key={wt.val}
-                        label={wt.label}
-                        active={workType === wt.val}
-                        onPress={() => setWorkType(wt.val)}
-                      />
-                    ))}
-                  </View>
-                </Field>
+                {/*
+                  ── the work-type question is gone ──
+
+                  It wrote `profiles.work_type` and **nothing in the app has
+                  ever read that column** — not the BMR chain, not the TDEE
+                  multiplier, not the coach. Asking somebody a question and then
+                  never using the answer is taking information without a reason,
+                  and every extra onboarding step costs completions.
+
+                  Not folded into the TDEE maths either: the question directly
+                  above already asks for `activity_level`, which is the same
+                  quantity in different words. Two inputs meaning one thing is
+                  the drift this repository has now been bitten by five separate
+                  times.
+
+                  The column stays — dropping one is irreversible and an empty
+                  column costs nothing.
+                */}
                 {/* Auto-calc box (web) */}
                 <View style={styles.calcBox}>
                   <View style={styles.calcHeader}>
@@ -530,12 +528,13 @@ export function OnboardingFlow() {
                   <View style={[styles.chips, styles.chipsWrap]}>
                     {COMMON_ALLERGIES.map((a) => (
                       <Pressable
-                        key={a}
-                        onPress={() => toggleAllergy(a)}
+                        key={a.value}
+                        onPress={() => toggleAllergy(a.value)}
                         hitSlop={4}
-                        style={[styles.badge, allergies.includes(a) && styles.badgeActive]}>
-                        <Text style={[styles.badgeText, allergies.includes(a) && styles.badgeTextActive]}>
-                          {a}
+                        style={[styles.badge, allergies.includes(a.value) && styles.badgeActive]}>
+                        <Text
+                          style={[styles.badgeText, allergies.includes(a.value) && styles.badgeTextActive]}>
+                          {a.label[lang]}
                         </Text>
                       </Pressable>
                     ))}

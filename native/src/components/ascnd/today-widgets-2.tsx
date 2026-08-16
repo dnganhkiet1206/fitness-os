@@ -34,9 +34,10 @@ import { TrainingExplainer } from '@/components/ascnd/training-explainer';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
-import { useNudges, useRecentWorkouts, useTodayBiometrics, useWearables } from '@/hooks/useTodayData';
+import { useRecentWorkouts, useTodayBiometrics } from '@/hooks/useTodayData';
 import { useRecentAwards } from '@/hooks/use-extras';
 import { useUnits } from '@/hooks/use-units';
+import { connectedSourceLabel } from '@/lib/biometric-source';
 import { awardText } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
 import {
@@ -129,10 +130,28 @@ function MicroTitle({ icon, children, color }: { icon?: LucideIcon; children: Re
 export function BiometricsCard() {
   const i18n = useI18n();
   const { data: bio } = useTodayBiometrics();
-  const { data: wearables } = useWearables();
 
   if (!bio) return null;
-  const connected = (wearables ?? []).find((w) => w.connected);
+  /*
+    ── the card showed Apple Health data and said "not connected" beside it ──
+
+    This read `wearable_sources`, and **nothing in the app has ever written to
+    that table**. So `connected` was always `undefined` and the header drew a
+    red WifiOff with *"chưa kết nối"* — for everybody, including somebody
+    syncing Apple Health whose HRV and resting heart rate are printed two lines
+    below, in this same card. One card, two contradictory claims about the same
+    reading.
+
+    The answer was already in hand: these rows carry the `source` that wrote
+    them (`use-health-sync.ts` stamps `APPLE_SOURCE`), and the query selects
+    `*`. So the indicator now reports what actually produced today's numbers,
+    which is the question it was always pretending to answer — and it costs one
+    query fewer.
+
+    The rule itself lives in `lib/biometric-source.ts` so `tools/dead-schema.mjs`
+    can run its edges — `manual` is a real source and still not a connection.
+  */
+  const connectedSource = connectedSourceLabel(bio.source);
 
   const metrics = [
     /*
@@ -177,12 +196,12 @@ export function BiometricsCard() {
           <MicroTitle>{i18n.dcBioTitle}</MicroTitle>
           <View style={styles.connRow}>
             <Icon
-              icon={connected ? Wifi : WifiOff}
+              icon={connectedSource ? Wifi : WifiOff}
               size={12}
-              color={connected ? colors.readinessGreen : colors.readinessRed}
+              color={connectedSource ? colors.readinessGreen : colors.readinessRed}
             />
             <Text style={styles.connText}>
-              {connected ? String(connected.provider).replace('_', ' ') : i18n.dcBioNotConnected}
+              {connectedSource ?? i18n.dcBioNotConnected}
             </Text>
           </View>
         </View>
@@ -699,57 +718,6 @@ export function WorkoutStatusCard({ planned }: { planned: number }) {
           ))}
         </View>
       )}
-    </GlassCard>
-  );
-}
-
-// ─── NudgesCard (web dashboard/NudgesCard) ─────────────────────────────
-
-const NUDGE_ICON: Record<string, LucideIcon> = {
-  sleep: Moon,
-  hydration: Droplets,
-  protein: Beef,
-  steps: Footprints,
-  recovery: Heart,
-};
-
-const NUDGE_PRIORITY_COLOR: Record<string, string> = {
-  high: colors.readinessRed,
-  medium: colors.readinessYellow,
-  low: colors.readinessGreen,
-};
-
-export function NudgesCard() {
-  const i18n = useI18n();
-  const { data: nudges } = useNudges();
-
-  const active = (nudges ?? []).filter((n) => n.enabled);
-  if (active.length === 0) return null;
-
-  return (
-    <GlassCard style={styles.stackCard}>
-      <View style={styles.headRow}>
-        <MicroTitle>{i18n.dcNudgesTitle}</MicroTitle>
-        <Text style={styles.countText}>{active.length} {i18n.dcNudgesActive}</Text>
-      </View>
-      <View style={styles.nudgeList}>
-        {active.map((n) => {
-          const NIcon = NUDGE_ICON[n.type] ?? Heart;
-          const pColor = NUDGE_PRIORITY_COLOR[n.priority ?? 'low'] ?? colors.readinessGreen;
-          return (
-            <View key={n.id} style={styles.nudgeRow}>
-              <View style={[styles.nudgeAccent, { backgroundColor: pColor }]} />
-              <Icon icon={NIcon} size={15} color={colors.mutedForeground} />
-              <View style={styles.nudgeInfo}>
-                <Text style={styles.nudgeMsg}>{n.message}</Text>
-                <Text style={styles.nudgeMeta}>
-                  Cap: {n.frequency_cap ?? 3}x/day · {n.priority}
-                </Text>
-              </View>
-            </View>
-          );
-        })}
-      </View>
     </GlassCard>
   );
 }

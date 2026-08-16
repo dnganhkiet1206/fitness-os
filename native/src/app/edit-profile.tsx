@@ -21,13 +21,20 @@ import {
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
 import { calcAge, calcBMR, calcMacros, calcTargetCalories, calcTDEE, calcWaterTarget } from '@/lib/fitness-calc';
+import {
+  COMMON_ALLERGIES,
+  allergyLabel,
+  canonicalAllergy,
+  dislikesText,
+  parseDislikes,
+} from '@/lib/food-preferences';
 import { outOfRangeMessage } from '@/lib/plausible';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import {
@@ -83,6 +90,7 @@ export default function EditProfileSheet() {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Form>(EMPTY);
   const [showDob, setShowDob] = useState(false);
@@ -90,6 +98,8 @@ export default function EditProfileSheet() {
   const [wDisp, setWDisp] = useState('');
   const [hDisp, setHDisp] = useState('');
   const [waterDisp, setWaterDisp] = useState('');
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [dislikes, setDislikes] = useState('');
   const { unit: vUnit, setUnit: setVUnit } = useVolumeUnit();
 
   useEffect(() => {
@@ -99,6 +109,13 @@ export default function EditProfileSheet() {
     setWDisp(String(displayWeight(Number(profile.weight_kg ?? 70), uW)));
     setHDisp(String(displayHeight(Number(profile.height_cm ?? 175), uH)));
     setWaterDisp(String(displayVolume(Number(profile.water_target_ml ?? 2500), vUnit)));
+    /* Folded onto the canonical values so an account that stored the
+       Vietnamese labels shows its chips selected instead of blank — see
+       `canonicalAllergy`. */
+    setAllergies(
+      Array.isArray(profile.allergies) ? profile.allergies.map(canonicalAllergy) : [],
+    );
+    setDislikes(dislikesText(profile.disliked_foods));
     setForm({
       name: profile.name ?? '',
       dob: profile.dob ?? '',
@@ -178,6 +195,8 @@ export default function EditProfileSheet() {
           sleep_target_hours: Number(form.sleep_target_hours) || null,
           sleep_target_bedtime: form.sleep_target_bedtime,
           sleep_target_waketime: form.sleep_target_waketime,
+          allergies,
+          disliked_foods: parseDislikes(dislikes),
         })
         .eq('user_id', user.id);
       if (error) throw error;
@@ -466,6 +485,76 @@ export default function EditProfileSheet() {
             </View>
           </Field>
         </View>
+
+        {/*
+          ── the one thing here nobody could change ──
+
+          `allergies` and `disliked_foods` were collected once, during
+          onboarding, and then had no edit path anywhere in the app. Meanwhile
+          `ai-meal-suggest` and `ai-coach-memory` both read them on every
+          request.
+
+          So somebody who mistapped "Hải sản" while signing up, or who was
+          diagnosed afterwards, had no way to correct it — while the thing
+          suggesting their meals went on reading the wrong answer. Of everything
+          the profile holds, this is the field where being stuck on a wrong
+          value matters most.
+
+          Same chips as onboarding, from `lib/food-preferences.ts`, so the two
+          screens cannot drift.
+        */}
+        <Field label={i18n.onboardingAllergies}>
+          <View style={styles.chipsWrap}>
+            {COMMON_ALLERGIES.map((a) => {
+              const on = allergies.includes(a.value);
+              return (
+                <Pressable
+                  key={a.value}
+                  hitSlop={4}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: on }}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setAllergies(on ? allergies.filter((x) => x !== a.value) : [...allergies, a.value]);
+                  }}
+                  style={[styles.badge, on && styles.badgeActive]}>
+                  <Text style={[styles.badgeText, on && styles.badgeTextActive]}>{a.label[lang]}</Text>
+                </Pressable>
+              );
+            })}
+            {/* Anything stored that is not one of the eight — a value typed
+                before this list existed. Shown selected so it is visible and
+                can be removed, rather than silently invisible. */}
+            {allergies
+              .filter((v) => !COMMON_ALLERGIES.some((a) => a.value === v))
+              .map((v) => (
+                <Pressable
+                  key={v}
+                  hitSlop={4}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: true }}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setAllergies(allergies.filter((x) => x !== v));
+                  }}
+                  style={[styles.badge, styles.badgeActive]}>
+                  <Text style={[styles.badgeText, styles.badgeTextActive]}>
+                    {allergyLabel(v, lang)}
+                  </Text>
+                </Pressable>
+              ))}
+          </View>
+        </Field>
+
+        <Field label={i18n.onboardingDislikedFoods}>
+          <TextInput
+            style={styles.input}
+            placeholder={i18n.onboardingDislikedFoodsPlaceholder}
+            placeholderTextColor={colors.mutedForeground}
+            value={dislikes}
+            onChangeText={setDislikes}
+          />
+        </Field>
       </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -531,6 +620,17 @@ const styles = StyleSheet.create({
   headerTitle: { ...type.headline, color: colors.foreground },
   headerSave: { ...type.headline, color: colors.primary, fontWeight: '700' },
   headerSaveOff: { opacity: 0.35 },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  badge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  badgeActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}22` },
+  badgeText: { ...type.footnote, color: colors.mutedForeground },
+  badgeTextActive: { color: colors.primary, fontWeight: '600' },
   inputBad: { borderColor: colors.readinessRed, borderWidth: 1 },
   fieldError: { ...type.footnote, color: colors.readinessRed, marginTop: -spacing.xs },
   kav: { flex: 1 },
