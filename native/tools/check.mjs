@@ -190,6 +190,7 @@ const STEPS = [
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],
   ['lệnh ghi xác nhận', 'node', ['tools/write-confirmed.mjs']],
+  ['điều chỉnh tải', 'node', ['tools/load-progression.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],
   ['giờ nhắc nhở', 'node', ['tools/reminder-timing.mjs']],

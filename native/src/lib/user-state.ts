@@ -52,6 +52,8 @@
  *      standard nobody was consulted about.
  */
 
+import { TREND_WEEKS } from '@/lib/training-card';
+
 /**
  * How much the app is entitled to act on what it thinks it knows.
  *
@@ -67,11 +69,22 @@ export type Trend = 'up' | 'steady' | 'down';
 /**
  * The situation, in the only vocabulary anything downstream hears.
  *
- * Deliberately short, and deliberately missing the obvious entries. There is no
- * `lazy`, because that is a judgement rather than an observation. There is no
- * `stalled` — plateaued progress despite steady work — because the app does not
- * yet have a progression signal honest enough to detect it, and a state nothing
- * can compute is a state that quietly means "sometimes".
+ * Deliberately short, and deliberately missing one obvious entry. There is no
+ * `lazy`, because that is a judgement rather than an observation — every state
+ * here describes a *situation*, and each exists because something downstream
+ * should behave differently in it.
+ *
+ * ── `stalled` was missing for a reason that turned out to be wrong ──
+ *
+ * The first version of this file said there was no `stalled` because "the app
+ * does not yet have a progression signal honest enough to detect it". That
+ * sentence was written without checking, and it was false: `workout_sessions`
+ * has carried `volume_load`, `pr_detected` and `session_rpe` all along, and
+ * `useWorkoutSessions` already selects all three over an eight-week window for
+ * the training card.
+ *
+ * The comment is corrected rather than quietly deleted, because a file that
+ * explains an absence is making a claim, and this one was making a false one.
  */
 export type Situation =
   /** not enough history to have a baseline — the cold start */
@@ -83,7 +96,9 @@ export type Situation =
   /** back after a real gap — the most fragile moment there is */
   | 'returning'
   /** training load is running well ahead of what they are used to */
-  | 'overreaching';
+  | 'overreaching'
+  /** turning up as usual, and the numbers have stopped moving */
+  | 'stalled';
 
 export interface UserState {
   situation: Situation;
@@ -185,6 +200,53 @@ export const RETURN_FRESH_DAYS = 2;
  */
 export const OVERREACH_ACWR = 1.5;
 
+/**
+ * How far back progression is judged.
+ *
+ * `TREND_WEEKS` — the window the training card already fetches and charts —
+ * **imported rather than repeated**. A second opinion about "recently, in
+ * training" on a different span would disagree with the chart sitting next to
+ * it on the same screen, and it also costs no query this way, because that
+ * exact window is already in the cache.
+ *
+ * Written as `56` in the first draft, with a comment saying it equalled
+ * `TREND_WEEKS * 7`. A comment asserting two numbers are equal is the setup for
+ * them not being.
+ */
+export const PROGRESS_DAYS = TREND_WEEKS * 7;
+
+/**
+ * The fewest lifting sessions that can support the claim.
+ *
+ * Eight over eight weeks — a session a week. Below that the two halves being
+ * compared are two or three workouts each, and the mean of three workouts moves
+ * more from which exercises were in them than from anything about progress.
+ */
+export const MIN_LIFT_SESSIONS = 8;
+
+/**
+ * How much the recent half has to gain on the older half to count as moving.
+ *
+ * Small on purpose: this is the *bar for saying nothing*, so a low bar means
+ * `stalled` is claimed rarely. Five per cent of tonnage over four weeks is well
+ * inside what adding one set to one exercise produces, and anybody clearing it
+ * is progressing enough that the app has nothing useful to say about it.
+ */
+export const PROGRESS_FRACTION = 0.05;
+
+/**
+ * One logged session, as `useWorkoutSessions` already returns it.
+ *
+ * Only the three fields the progression read needs, so the shape a caller has
+ * to satisfy stays honest about what is actually used.
+ */
+export interface SessionLike {
+  date_time: string;
+  /** total tonnage; `0` for anything a watch imported — see below */
+  volume_load: number | string | null;
+  pr_detected?: boolean | null;
+}
+
 export interface UserStateInput {
   /**
    * Dates with something logged, `YYYY-MM-DD`, newest first — exactly what
@@ -202,6 +264,14 @@ export interface UserStateInput {
    * training card was carrying.
    */
   acwr?: number | null;
+  /**
+   * Recent sessions, newest first — the same array the training card holds.
+   *
+   * Absent means "not read", not "none": a screen that never fetched them gets
+   * no progression claim rather than a claim of no progress. Same rule as
+   * `acwr`, and the same reason.
+   */
+  sessions?: SessionLike[];
 }
 
 const DAY_MS = 86_400_000;
@@ -362,7 +432,25 @@ export function userStateFrom(input: UserStateInput): UserState {
     };
   }
 
-  /* ── 4. materially below their own normal ──
+  /* ── 4. turning up, and the numbers have stopped moving ──
+
+     Below `overreaching` and `returning`, because both of those describe
+     something happening *now* that changes what to do; above `steady`, because
+     it is a refinement of it.
+
+     Ranked here and gated on `trend !== 'down'` for a reason worth stating: a
+     plateau is a fact about somebody who is **still training**. Somebody whose
+     consistency has fallen away is a different situation with a different
+     answer, and calling that person stalled would be telling them their work
+     is not paying off at the moment they are doing less of it. */
+  if (trend !== 'down') {
+    const p = progressionOf(input.sessions, today);
+    if (p.stalled) {
+      return { ...base, situation: 'stalled', confidence, because: p.because };
+    }
+  }
+
+  /* ── 5. materially below their own normal ──
      `trend === 'down'` already carries `DROP_FRACTION`, so neither one missed
      day nor two can reach here. `MIN_BASELINE` is the other half: somebody
      whose normal is under one log a week has no expectation for a quiet week to
@@ -383,6 +471,80 @@ export function userStateFrom(input: UserStateInput): UserState {
     situation: 'steady',
     confidence,
     because: `tuần này ${(recent * 100) | 0}% số ngày, nền ${(baseline * 100) | 0}% — không lệch đủ để nói gì`,
+  };
+}
+
+/**
+ * Has training stopped moving?
+ *
+ * ── the two signals, and why neither is enough alone ──
+ *
+ * **No personal record in the window.** On its own this is a bad signal and
+ * gets worse the better somebody gets: records are frequent in a first year and
+ * rare after several, so "no PR in eight weeks" would eventually mark every
+ * experienced lifter as stuck.
+ *
+ * **Flat tonnage.** On its own this is also bad: somebody deliberately doing
+ * fewer, heavier sets moves less tonnage while getting stronger.
+ *
+ * Together they are worth something. Both pointing the same way over eight
+ * weeks of turning up is the ordinary shape of a plateau, and it is the one
+ * thing about training this app can see that a person often cannot.
+ *
+ * ── and only sessions with weight on the bar ──
+ *
+ * `use-health-sync.ts` writes imported watch workouts with `volume_load: 0`,
+ * **deliberately** — a run has no tonnage, and its comment says so at length.
+ * Counting those would put every runner in the app at zero volume for ever and
+ * report them all as stalled, which is not a plateau, it is a unit error.
+ */
+function progressionOf(
+  sessions: SessionLike[] | undefined,
+  today: string,
+): { stalled: boolean; because: string } {
+  if (!sessions) return { stalled: false, because: 'chưa đọc được buổi tập nào' };
+
+  const lifts = sessions
+    .map((s) => ({
+      days: daysBefore((s.date_time ?? '').slice(0, 10), today),
+      volume: Number(s.volume_load) || 0,
+      pr: s.pr_detected === true,
+    }))
+    .filter((s) => !Number.isNaN(s.days) && s.days >= 0 && s.days < PROGRESS_DAYS && s.volume > 0);
+
+  if (lifts.length < MIN_LIFT_SESSIONS) {
+    return {
+      stalled: false,
+      because: `mới ${lifts.length} buổi có tạ trong ${PROGRESS_DAYS} ngày, chưa đủ ${MIN_LIFT_SESSIONS} để nói gì`,
+    };
+  }
+
+  if (lifts.some((s) => s.pr)) {
+    return { stalled: false, because: 'có kỷ lục cá nhân trong cửa sổ' };
+  }
+
+  /* Split at the midpoint of the window rather than at the midpoint of the
+     *list*: an uneven cadence would otherwise put six of eight sessions in one
+     half and compare four weeks against one. */
+  const half = PROGRESS_DAYS / 2;
+  const recent = lifts.filter((s) => s.days < half);
+  const older = lifts.filter((s) => s.days >= half);
+  if (recent.length === 0 || older.length === 0) {
+    return { stalled: false, because: 'các buổi tập dồn hết về một nửa cửa sổ, không có gì để so' };
+  }
+
+  const mean = (xs: { volume: number }[]) => xs.reduce((n, x) => n + x.volume, 0) / xs.length;
+  const now = mean(recent);
+  const before = mean(older);
+  if (now > before * (1 + PROGRESS_FRACTION)) {
+    return { stalled: false, because: `khối lượng tăng ${(((now / before) - 1) * 100) | 0}%` };
+  }
+
+  return {
+    stalled: true,
+    because:
+      `${lifts.length} buổi có tạ trong ${PROGRESS_DAYS} ngày, không kỷ lục nào, ` +
+      `khối lượng ${(((now / before) - 1) * 100) | 0}% so với bốn tuần trước`,
   };
 }
 

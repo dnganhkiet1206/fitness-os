@@ -60,6 +60,22 @@ Trả lời **"đợt này là đợt thế nào"**, không bao giờ trả lờ
 | `slipping` | thấp hơn nền của **chính họ**, và không phải vì lỡ một ngày | `recent < baseline × 0.6` |
 | `returning` | vừa quay lại sau một đợt vắng thật | vắng ≥ 3 ngày, ghi lại trong 2 ngày qua |
 | `overreaching` | tải tập chạy trước xa thói quen | `acwr ≥ 1.5` |
+| `stalled` | vẫn đi tập, mà các con số đứng yên | ≥ 8 buổi **có tạ** / 56 ngày, không PR, khối lượng không nhích |
+
+### `stalled` cần HAI tín hiệu, và chỉ đếm buổi có tạ
+
+Chỉ "không có PR" là tín hiệu tồi và càng tệ khi người ta càng khoẻ: PR thưa dần
+một cách tự nhiên, nên một mình nó sẽ chấm mọi người tập lâu năm là chững. Chỉ
+"khối lượng phẳng" cũng tồi: người cố ý tập ít set nặng hơn di chuyển ít tổng tạ
+hơn mà vẫn mạnh lên. Hai tín hiệu cùng chiều qua 8 tuần vẫn đi tập thì mới nói.
+
+`use-health-sync` **cố ý** ghi `volume_load: 0` cho buổi nhập từ đồng hồ — chạy
+bộ không có tổng tạ. Không lọc thì mọi người chạy bộ đều bị chấm là chững; đó
+không phải plateau, đó là lỗi đơn vị.
+
+Và nó xếp **dưới** `slipping`: chững lại là chuyện của người **vẫn đang tập**.
+Nói với người vừa tập ít hẳn đi rằng công sức của họ không có kết quả là nói sai
+vào đúng lúc tệ nhất.
 
 ### Ba chốt chặn, và đó mới là phần việc thật
 
@@ -120,7 +136,7 @@ nhân vật có thể đáp lại *họ* thay vì đáp lại điểm số.
 | 22h–6h | `sleep`, khẽ | nhân vật bật dậy lúc 2h sáng là nhân vật không có trạng thái |
 | `returning` (đủ tin cậy) | `happy` + lời đón | khoảnh khắc mong manh nhất trong cả sản phẩm |
 | `overreaching` | `idle`, **không lời** | một cú nhảy hớn hở ở đây là lời chào duy nhất có thể đẩy người ta tới chấn thương |
-| `slipping` | **y hệt người bình thường** | đổi sắc mặt vì ai đó có một tuần khó khăn là bình phẩm về nó |
+| `slipping` · `stalled` | **y hệt người bình thường** | đổi sắc mặt vì tuần của bạn khó khăn, hay vì mức tạ một tháng nay không nhích, là bình phẩm về nó |
 | `confidence: 'none'` | y hệt người lạ | chưa đủ dữ liệu thì không được đoán |
 
 Dedup theo `greet:<ngày>` — "lần đầu chào hôm nay". Mọi cú chạm sau vẫn có cú
@@ -150,7 +166,33 @@ việc khác hẳn với tỏ ra thất vọng sau đó.
 
 ---
 
-## 5. Cá nhân hoá đang có
+## 5. Điều chỉnh độ khó buổi tập
+
+`lib/load-progression.ts` — autoregulation theo RPE. App đã lưu **cả hai vế** từ
+lâu mà chưa bao giờ đặt cạnh nhau: mức gắng sức mẫu tập *kê ra* (`rpe`,
+`effortRange`) và mức người ta *báo lại* (`session_rpe`, thang 6–10).
+
+Đây là **gợi ý, không bao giờ là thay đổi.** Không dòng nào ghi vào mẫu tập.
+Hiển thị ở `log-workout` ngay trên hàng chọn RPE — đúng lúc người ta sắp quyết
+định để bao nhiêu ký lên thanh đòn.
+
+**Guardrails, và đó mới là phần việc:**
+
+- dưới **3 buổi** cùng mẫu tập thì không kết luận gì. Một buổi nặng bất thường
+  có thể là một đêm mất ngủ, một ca làm dài, một bữa ăn nặng trước đó;
+- lệch phải từ **1 điểm** RPE trở lên — thang này tự báo bằng số nguyên, dưới
+  một điểm là đọc nhiễu;
+- **không bao giờ đề xuất tăng** khi `overreaching`, khi `returning`, hay khi
+  điểm sẵn sàng đỏ. Thấy nhẹ *không* phải bằng chứng phản bác một đợt tăng tải —
+  nó thường là cảm giác của đợt tăng tải lúc đang đi vào;
+- nhưng **không cổng nào được bịt lời khuyên GIẢM**. Đây là kiểu hỏng dễ xảy ra
+  nhất: ai đó thêm một cổng chặn cho nhánh tăng rồi áp cho cả khối. `tools/load-progression.mjs`
+  quét 120 tổ hợp cho riêng bất biến này;
+- bước nhảy là **tỉ lệ**, chặn ở 10% — bài học `DROP_FRACTION` của vòng trước:
+  một bước tuyệt đối thì nghiêm khắc với người đẩy 30 kg và vô nghĩa với người
+  gánh 140.
+
+## 6. Cá nhân hoá đang có
 
 - `lib/personal-model.ts` — Beta bandit trên 5 thói quen + đồng hồ sinh hoạt
   vòng tròn, lưu trên **máy** (AsyncStorage), tự quên dần (halving quá `CAP`).
@@ -161,11 +203,17 @@ việc khác hẳn với tỏ ra thất vọng sau đó.
 
 ---
 
-## 6. Kiểm tra
+## 7. Kiểm tra
 
 | bước | kiểm cái gì |
 |---|---|
-| `tools/user-state.mjs` | 17 ca có đáp án cụ thể + quét 0–120 ngày × 4 nhịp |
+| `tools/user-state.mjs` | 25 ca có đáp án cụ thể + quét 0–120 ngày × 4 nhịp |
+| `tools/load-progression.mjs` | 12 ca + quét 120 tổ hợp cho hai bất biến trái chiều |
+| `tools/challenge-reward.mjs` | chạy thật một tuần lượt focus, đếm số lần ăn mừng |
+| `tools/entry-points.mjs` | mọi màn có lối vào; lối vào không-điều-kiện được kiểm tận nơi |
+| `tools/write-day.mjs` | lệnh ghi đọc ngày lúc chạy, không phải lúc render |
+| `tools/write-confirmed.mjs` | mọi update/delete xác nhận có dòng bị chạm |
+| `tools/focus-effects.mjs` | không useFocusEffect nào phụ thuộc hàm đổi danh tính mỗi render |
 | `tools/koa-decide.mjs` | thứ tự cường độ, va chạm, lời chào theo bối cảnh, chuỗi-không-chấm-mặt, mọi loại sự kiện đều có người bắn |
 | `tools/personal-record.mjs` | emitter được **quét ra** chứ không phải danh sách gõ tay |
 | `tools/koa-breath.mjs` | nhịp thở đo thật trong trình duyệt |
@@ -178,21 +226,22 @@ Mọi luật mới đều được **phá thử trên bản đã ship** và ph�
 
 ## Giới hạn đã biết
 
-1. **`stalled` chưa tồn tại.** Trạng thái "chăm chỉ đều đặn mà không tiến bộ" là
-   thật và đáng đối xử khác, nhưng app chưa có tín hiệu tiến bộ đủ trung thực để
-   phát hiện. Một trạng thái không tính được là một trạng thái ngầm nghĩa là
-   "thỉnh thoảng", nên nó không có trong bảng.
-2. **Chưa có điều chỉnh độ khó buổi tập.** `lib/prescription.ts` chỉ là định
-   dạng (đọc lại rest/RPE đã lưu), không có vòng
-   *quan sát → cập nhật mô hình → điều chỉnh đề xuất* cho khối lượng tập.
-   `user-state` mới chỉ cung cấp `overreaching` cho phía nhân vật.
-3. **`emotion: 'sad'` giờ không còn đường tới từ trạng thái thật.** Nó vẫn nằm
+1. **`stalled` không phân biệt được plateau với deload có chủ ý.** Người đang cố
+   ý giảm tải một chu kỳ sẽ được đọc là chững. Nó chỉ ảnh hưởng tới giọng của
+   nhân vật chứ không phải một chẩn đoán, nhưng đây là giới hạn thật và app chưa
+   có chỗ nào để nói "tôi đang deload".
+2. **Điều chỉnh độ khó chỉ đọc `session_rpe` của cả buổi**, không đọc RPE từng
+   set (`rpe` per set tồn tại nhưng chỉ được ghi ở bảng ngày trong tuần). Nên nó
+   nói được "buổi này nặng hơn mức đặt" chứ chưa nói được "bài nào nặng".
+3. **Ghép buổi với mẫu tập bằng TÊN**, vì `workout_sessions` lưu `template_name`
+   chứ không lưu id. Đổi tên mẫu tập là mất lịch sử so sánh của nó.
+4. **`emotion: 'sad'` giờ không còn đường tới từ trạng thái thật.** Nó vẫn nằm
    trong bảng biểu cảm và `DEV_EMOTIONS` để thử hoạt ảnh. Đây là lựa chọn có ý
    thức, không phải sót.
-4. **Chạm vào Koa giữa lúc đang có phản ứng lớn hơn** thì lời chào bị bỏ và
+5. **Chạm vào Koa giữa lúc đang có phản ứng lớn hơn** thì lời chào bị bỏ và
    đánh dấu đã xử lý — tức hôm đó không còn lời chào. Đây là hệ quả của luật
    "cái lớn giành sân, cái nhỏ bị bỏ chứ không xếp hàng" áp cho mọi sự kiện, chứ
    không phải một nhánh riêng bị quên.
-5. **`useUserState` đọc cache và không đăng ký observer**, nên khi streak được
+6. **`useUserState` đọc cache và không đăng ký observer**, nên khi streak được
    fetch lại, component không tự render lại vì lý do đó. Đây là đúng thiết kế đã
    ghi ở `use-koa-context`, và cái giá là trạng thái có thể trễ một lần render.

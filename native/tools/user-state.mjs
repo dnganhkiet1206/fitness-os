@@ -33,7 +33,7 @@
  * `none` — the property the whole cold-start guardrail rests on.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -47,7 +47,8 @@ try {
   try {
     execFileSync(
       'npx',
-      ['tsc', 'src/lib/user-state.ts', '--ignoreConfig', '--outDir', out,
+      ['tsc', 'src/lib/user-state.ts', 'src/lib/training-card.ts', 'src/lib/local-date.ts',
+       '--ignoreConfig', '--outDir', out,
        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
     );
@@ -55,6 +56,16 @@ try {
     /* no project tsconfig here — tsc exits non-zero over the `@/` mapping and
        still emits, which is all this uses */
   }
+  /* `PROGRESS_DAYS` is `TREND_WEEKS * 7` imported from the training card rather
+     than a second 56 typed here, so the emitted alias has to be rewritten to a
+     relative path — the same one-line substitution `tools/streak.mjs` and
+     `tools/koa-decide.mjs` both document. It is a path, not behaviour. */
+  const statePath = path.join(out, 'user-state.js');
+  writeFileSync(
+    statePath,
+    readFileSync(statePath, 'utf8').replaceAll('@/lib/training-card', './training-card'),
+  );
+
   const {
     userStateFrom,
     MIN_HISTORY_DAYS,
@@ -62,6 +73,8 @@ try {
     RECENT_DAYS,
     DROP_FRACTION,
     MIN_BASELINE,
+    MIN_LIFT_SESSIONS,
+    PROGRESS_DAYS,
     AWAY_DAYS,
     OVERREACH_ACWR,
   } = createRequire(import.meta.url)(path.join(out, 'user-state.js'));
@@ -77,6 +90,13 @@ try {
     return list;
   };
   /** every `every`-th day across `from..to` — a weekly rhythm, not a daily one */
+  /** sessions `daysAgo` back, all at one tonnage; `prAt` marks which get a PR */
+  const lifts = (daysAgo, volume, prAt = []) =>
+    daysAgo.map((n, i) => ({
+      date_time: `${d(n)}T18:00:00.000Z`,
+      volume_load: volume,
+      pr_detected: prAt.includes(i),
+    }));
   const cadence = (from, to, every) => {
     const list = [];
     for (let i = to; i <= from; i += every) list.push(d(i));
@@ -190,6 +210,68 @@ try {
       want: 'slipping',
       why: 'nền tính trên 20 ngày đã sống chứ không phải 28 ngày tưởng tượng',
     },
+    /* ── plateau: turning up, numbers not moving ── */
+    {
+      name: 'tập đều 8 tuần, không kỷ lục, khối lượng đứng yên',
+      dates: span(59, 0),
+      sessions: lifts([50, 46, 42, 38, 24, 20, 16, 12, 8, 4], 5000),
+      want: 'stalled',
+      why: 'hai tín hiệu cùng chỉ một hướng qua 8 tuần vẫn đi tập — đây mới là hình dạng của chững lại',
+    },
+    {
+      name: 'tập đều 8 tuần, khối lượng tăng đều',
+      dates: span(59, 0),
+      sessions: [...lifts([50, 46, 42, 38], 4000), ...lifts([24, 20, 16, 12, 8, 4], 6000)],
+      want: 'steady',
+      why: 'khối lượng tăng 50% thì app không có gì hữu ích để nói',
+    },
+    {
+      name: 'tập đều 8 tuần, khối lượng đứng nhưng CÓ kỷ lục',
+      dates: span(59, 0),
+      sessions: lifts([50, 46, 42, 38, 24, 20, 16, 12, 8, 4], 5000, [3]),
+      want: 'steady',
+      why: 'chỉ "không kỷ lục" đã là tín hiệu tồi; có kỷ lục thì dứt khoát không phải chững',
+    },
+    {
+      name: 'người chạy bộ: 20 buổi từ đồng hồ, volume_load 0',
+      dates: span(59, 0),
+      sessions: lifts(Array.from({ length: 20 }, (_, i) => i * 2 + 1), 0),
+      want: 'steady',
+      why:
+        'use-health-sync CỐ Ý ghi volume_load 0 cho buổi nhập từ đồng hồ (chạy bộ không có tổng tạ). ' +
+        'Không lọc thì mọi người chạy bộ đều bị chấm là chững — đó không phải plateau, đó là lỗi đơn vị',
+    },
+    {
+      name: 'mới 5 buổi có tạ trong 8 tuần',
+      dates: span(59, 0),
+      sessions: lifts([40, 30, 20, 10, 2], 5000),
+      want: 'steady',
+      why: 'dưới ngưỡng buổi tối thiểu thì trung bình mỗi nửa chỉ hai ba buổi — đó là bài tập nào có trong buổi, không phải tiến bộ',
+    },
+    {
+      name: 'chưa đọc được buổi tập nào',
+      dates: span(59, 0),
+      sessions: undefined,
+      want: 'steady',
+      why: 'không đọc được KHÁC với không tiến bộ — màn không fetch buổi tập thì không được kết luận',
+    },
+    {
+      name: 'đang sa sút thì KHÔNG được đọc thành chững lại',
+      dates: [...span(59, 7), d(4)],
+      sessions: lifts([50, 46, 42, 38, 24, 20, 16, 12, 8, 4], 5000),
+      want: 'slipping',
+      why:
+        'chững lại là chuyện của người VẪN ĐANG tập. Nói với người vừa tập ít hẳn đi rằng công sức ' +
+        'của họ không có kết quả là nói sai vào đúng lúc tệ nhất',
+    },
+    {
+      name: 'quá tải thì vẫn là quá tải, không phải chững',
+      dates: span(59, 0),
+      acwr: 1.8,
+      sessions: lifts([50, 46, 42, 38, 24, 20, 16, 12, 8, 4], 5000),
+      want: 'overreaching',
+      why: 'quá tải có việc phải làm ngay, chững lại thì không — nên nó xếp trên',
+    },
     {
       name: 'ngày trùng lặp',
       dates: [...span(59, 0), ...span(3, 0)],
@@ -201,7 +283,7 @@ try {
   for (const c of CASES) {
     let got;
     try {
-      got = userStateFrom({ loggedDates: c.dates, today: TODAY, acwr: c.acwr });
+      got = userStateFrom({ loggedDates: c.dates, today: TODAY, acwr: c.acwr, sessions: c.sessions });
     } catch (e) {
       problems.push(`"${c.name}" ném lỗi: ${e.message}`);
       continue;
@@ -310,6 +392,24 @@ try {
     }
   }
 
+  /* the plateau read never fires without enough lifting sessions, swept */
+  for (let n = 0; n < MIN_LIFT_SESSIONS; n++) {
+    const st = userStateFrom({
+      loggedDates: span(59, 0),
+      today: TODAY,
+      sessions: lifts(Array.from({ length: n }, (_, i) => i * 5 + 1), 5000),
+    });
+    if (st.situation === 'stalled') {
+      problems.push(`${n} buổi có tạ mà đã kết luận 'stalled' — dưới ${MIN_LIFT_SESSIONS} thì không được nói gì`);
+    }
+  }
+  if (PROGRESS_DAYS !== 56) {
+    problems.push(
+      `PROGRESS_DAYS = ${PROGRESS_DAYS} — nó phải là TREND_WEEKS × 7 của training-card, tức cùng cửa ` +
+        'sổ mà thẻ tập luyện đã fetch và vẽ; lệch đi là hai ý kiến khác nhau về "gần đây" cạnh nhau trên một màn',
+    );
+  }
+
   if (AWAY_DAYS < 2) problems.push('AWAY_DAYS dưới 2 — một ngày nghỉ không phải là vắng mặt');
   if (OVERREACH_ACWR <= 1) problems.push('OVERREACH_ACWR ≤ 1 — tập đúng bằng thói quen không phải quá tải');
 
@@ -327,7 +427,11 @@ try {
       'KHÔNG phải "slipping" — dù về số học họ đang thấp hơn nền của chính mình; acwr 1.8 ra "overreaching" ' +
       'còn acwr null thì không kết luận gì; và người tập 2 buổi/tuần suốt 3 tháng vẫn là bình thường CỦA HỌ. ' +
       `Quét toàn bộ 0–120 ngày lịch sử × 4 nhịp: dưới ${MIN_HISTORY_DAYS} ngày không bao giờ kết luận gì khác ` +
-      'ngoài settling_in, recent/nền luôn nằm trong 0..1, và người ghi đủ mọi ngày không bao giờ bị nói là sa sút',
+      'ngoài settling_in, recent/nền luôn nằm trong 0..1, và người ghi đủ mọi ngày không bao giờ bị nói là sa sút. ' +
+      'Chững lại (stalled) cần HAI tín hiệu cùng chiều — không kỷ lục VÀ khối lượng không nhích — trên ít nhất ' +
+      `${MIN_LIFT_SESSIONS} buổi CÓ TẠ trong ${PROGRESS_DAYS} ngày: người chạy bộ (volume_load 0, do đồng bộ ` +
+      'đồng hồ ghi cố ý như vậy) không bao giờ bị chấm là chững, người có kỷ lục cũng không, người đang sa sút ' +
+      'thì "slipping" mới là điều đúng để nói, và chưa đọc được buổi tập nào thì không kết luận gì',
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

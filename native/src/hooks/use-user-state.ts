@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { localDateStr } from '@/lib/local-date';
 import type { StreakState } from '@/hooks/use-mascot-room';
-import { UNKNOWN_STATE, userStateFrom, type UserState } from '@/lib/user-state';
+import { PROGRESS_DAYS, UNKNOWN_STATE, userStateFrom, type SessionLike, type UserState } from '@/lib/user-state';
 
 /**
  * What kind of stretch this person is in, read from what the app already has.
@@ -52,6 +52,17 @@ export function useUserState(): UserState {
 
   const streak = qc.getQueryData<StreakState>(['mascot_streak', user?.id, today]);
   const log = qc.getQueryData<{ acwr?: number | string | null }>(['daily_log', user?.id, today]);
+  /*
+    The eight-week session window, read from the cache on the same terms as
+    everything else here.
+
+    `PROGRESS_DAYS` is `TREND_WEEKS * 7`, which is exactly the window the
+    training card already fetches on Today — so on the screen where the
+    companion lives this is warm, and on a screen that never asked for it the
+    value is `undefined` and no progression claim is made. Picking any other
+    number would have meant a second query for the same eight weeks.
+  */
+  const sessions = qc.getQueryData<SessionLike[]>(['workout_sessions', user?.id, PROGRESS_DAYS]);
 
   const raw = log?.acwr;
   const acwr = raw == null ? null : Number(raw);
@@ -62,6 +73,7 @@ export function useUserState(): UserState {
       loggedDates: streak.loggedDates ?? [],
       today,
       acwr: acwr != null && Number.isFinite(acwr) ? acwr : null,
+      sessions,
     });
-  }, [streak, acwr, today]);
+  }, [streak, acwr, sessions, today]);
 }

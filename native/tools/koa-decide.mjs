@@ -511,12 +511,19 @@ for (const kind of ['quest_done', 'day_complete', 'personal_record', 'comeback']
     problems.push('lời đón không lớn hơn cái vẫy tay thường — hai thứ khác nhau mà diễn như nhau');
   }
 
-  const hard = greet(st('slipping'));
-  if (hard.emotion !== plain.emotion || hard.say !== plain.say) {
-    problems.push(
-      `người đang sa sút được chào KHÁC người bình thường ('${hard.emotion}'/${hard.say}) — ` +
-        'nhân vật đổi sắc mặt vì bạn có một tuần khó khăn là nhân vật đang bình phẩm về nó',
-    );
+  /* The two situations that describe something *hard* must both get the
+     ordinary greeting. A character that changes its face because your week was
+     difficult, or because your lifts have not moved in a month, is a character
+     commenting on it — and neither of those is news to the person living it. */
+  for (const situation of ['slipping', 'stalled']) {
+    const hard = greet(st(situation));
+    if (hard.emotion !== plain.emotion || hard.say !== plain.say) {
+      problems.push(
+        `'${situation}' được chào KHÁC người bình thường ('${hard.emotion}'/${hard.say}) — ` +
+          'nhân vật đổi sắc mặt vì tuần của bạn khó khăn, hay vì mức tạ của bạn một tháng nay ' +
+          'không nhích, là nhân vật đang bình phẩm về nó',
+      );
+    }
   }
 
   const heavy = greet(st('overreaching'));
@@ -529,7 +536,7 @@ for (const kind of ['quest_done', 'day_complete', 'personal_record', 'comeback']
 
   /* the confidence gate, on every situation — a state read at confidence
      `none` is a state the app is not entitled to act on */
-  for (const situation of ['returning', 'overreaching', 'slipping', 'steady', 'settling_in']) {
+  for (const situation of ['returning', 'overreaching', 'slipping', 'stalled', 'steady', 'settling_in']) {
     const d = greet(st(situation, 'none'));
     if (d.emotion !== plain.emotion || d.say !== plain.say) {
       problems.push(

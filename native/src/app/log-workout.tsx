@@ -21,12 +21,14 @@ import { Icon } from '@/components/ascnd/icon';
 import { RecordCelebration } from '@/components/ascnd/record-celebration';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
+import { useLogWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useExercises, useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
+import { useUserState } from '@/hooks/use-user-state';
+import { useDailyLog } from '@/hooks/useTodayData';
 import { emitKoa } from '@/lib/koa-stage';
 import {
   exerciseKey,
@@ -38,6 +40,7 @@ import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { toast } from '@/lib/toast';
 import { outOfRangeMessage } from '@/lib/plausible';
+import { suggestLoad } from '@/lib/load-progression';
 import { effortRange } from '@/lib/prescription';
 import { localDateStr, routineIndex } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/units';
@@ -129,6 +132,56 @@ export default function LogWorkoutSheet() {
     if (effort) setRpe(Math.max(RPE_VALUES[0], Math.min(RPE_VALUES[RPE_VALUES.length - 1], effort[1])));
     setPlanUsed(true);
   };
+
+  /*
+    Recent sessions of *this* workout, by name.
+
+    By name because that is the only thread the sheet has: a session stores
+    `template_name`, not a template id, and the name is what somebody typed or
+    picked. Matching loosely across different workouts would average a leg day
+    into a press day and suggest a load change for neither.
+
+    `useWorkoutSessions(14)` is already fetched by two other screens, so on a
+    warm cache this costs nothing; on a cold one it is the same fortnight
+    everything else here reads.
+  */
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
+  const { data: recentSessions } = useWorkoutSessions(14);
+  const userState = useUserState();
+  /* Today's readiness, if it has been computed. `null` when it has not, and the
+     engine treats that as "no opinion" rather than as green — the difference
+     between the two is the whole reason it is nullable. */
+  const { data: todayLog } = useDailyLog();
+  const readinessStatus = (todayLog?.readiness_status ?? null) as
+    | 'green'
+    | 'yellow'
+    | 'red'
+    | null;
+  const loadHint = useMemo(() => {
+    const key = name.trim().toLowerCase();
+    if (!key) return null;
+    const mine = (recentSessions ?? []).filter(
+      (s) => (s.template_name ?? '').trim().toLowerCase() === key,
+    );
+    if (mine.length === 0) return null;
+    const suggestion = suggestLoad({
+      reported: mine.map((s) => s.session_rpe),
+      target: rpe,
+      situation: userState.situation,
+      situationConfidence: userState.confidence,
+      readiness: readinessStatus,
+    });
+    if (suggestion.advice === 'unknown' || suggestion.advice === 'hold') return null;
+    const pct = Math.round(Math.abs(suggestion.step) * 100);
+    return suggestion.advice === 'up'
+      ? (vi
+          ? `Mấy buổi "${name.trim()}" gần đây bạn thấy nhẹ hơn mức ${rpe} — có thể thử tăng ~${pct}%`
+          : `Your recent "${name.trim()}" sessions felt easier than ${rpe} — you could try about ${pct}% more`)
+      : (vi
+          ? `Mấy buổi "${name.trim()}" gần đây bạn thấy nặng hơn mức ${rpe} — có thể giảm ~${pct}%`
+          : `Your recent "${name.trim()}" sessions felt harder than ${rpe} — easing off about ${pct}% is fine`);
+  }, [recentSessions, name, rpe, userState.situation, userState.confidence, readinessStatus, vi]);
 
   const updateSet = (idx: number, field: keyof SetRow, value: string) => {
     setSets((prev) =>
@@ -560,6 +613,25 @@ export default function LogWorkoutSheet() {
           sheet is filled in after the fact, and a number typed then is a memory
           of the whole workout, which is what one chip says.
         */}
+        {/*
+          ── what the last few of these actually felt like ──
+
+          The app has stored both halves of this for a long time and never put
+          them together: the template records the effort it *asks for* (`rpe`,
+          summarised by `effortRange`), and every logged session records the
+          effort the person *reported* (`session_rpe`). Two screens, no
+          conclusion.
+
+          This is the one place the comparison is worth anything, because it is
+          the moment somebody is about to decide what weight to put on the bar.
+          It is a sentence, not a change: nothing is written to the template, and
+          the chips below stay exactly as free as they were. `lib/load-progression.ts`
+          carries the reasoning, including the gates that stop it ever saying
+          "add load" to somebody in a load spike, on their first sessions back,
+          or on a morning readiness reads red.
+        */}
+        {loadHint ? <Text style={styles.loadHint}>{loadHint}</Text> : null}
+
         <Text style={styles.sectionLabel}>{i18n.nRpe}</Text>
         <View style={styles.chips}>
           {RPE_VALUES.map((v) => (
@@ -667,6 +739,9 @@ const styles = StyleSheet.create({
   planLabel: { ...type.caption, color: colors.mutedForeground },
   planName: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
   planUse: { ...type.footnote, color: colors.metricBlue, fontWeight: '700' },
+  /* A quiet line, not a banner: it is information beside a decision, and a
+     coloured card here would read as the app instructing somebody. */
+  loadHint: { ...type.caption, color: colors.mutedForeground, lineHeight: 17 },
   sectionLabel: { ...type.footnote, color: colors.mutedForeground, marginTop: spacing.xs },
   input: {
     height: 48,
