@@ -222,4 +222,7 @@ phải chờ tới sát ngày phát hành:
 
 - Onboarding
 - Widget / Live Activity / Apple Watch
-- Mở rộng hàng đợi offline (hiện phủ 3 trong khoảng 30 điểm ghi)
+- Mở rộng hàng đợi offline. Hiện phủ **7** loại thao tác ghi — nước, buổi tập,
+  cân nặng, bữa ăn, sinh trắc, giấc ngủ, số đo — trong khoảng 30 điểm ghi của
+  app. (Dòng này từng ghi "3", đúng vào lúc nó được viết; các vòng sau mở rộng
+  hàng đợi mà không cập nhật lại đây.)

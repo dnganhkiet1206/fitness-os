@@ -7,6 +7,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
+import { toast } from '@/lib/toast';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { press } from '@/constants/motion';
 import { useAppSettings } from '@/hooks/use-app-settings';
@@ -149,7 +150,25 @@ export default function CoachMemoryScreen() {
                     style={styles.forgetBtn}
                     onPress={() => {
                       Haptics.selectionAsync();
-                      forget.mutate(m.id);
+                      /*
+                        ── the write can now say it did nothing, so somebody has
+                           to be listening ──
+
+                        These deletes used to end with `if (error) throw error`
+                        and nothing else, which meant a delete that matched **no
+                        rows** looked exactly like one that worked: PostgREST
+                        answers both with `error: null`. The round that added
+                        `confirmWrite` made the app able to tell the difference —
+                        and then left this screen with nowhere for the answer to
+                        go, so the row vanished optimistically, came back on the
+                        refetch, and nobody was told why.
+
+                        Adding the check without adding the ear is half the job,
+                        and the half that shows is the one that reads as a bug.
+                      */
+                      forget.mutate(m.id, {
+                        onError: (e: Error) => toast.error(e.message),
+                      });
                     }}>
                     <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
                   </PressScale>
@@ -177,7 +196,10 @@ export default function CoachMemoryScreen() {
                 {
                   text: vi ? 'Xoá hết' : 'Erase',
                   style: 'destructive',
-                  onPress: () => forgetAll.mutate(),
+                  onPress: () =>
+                    forgetAll.mutate(undefined, {
+                      onError: (e: Error) => toast.error(e.message),
+                    }),
                 },
               ],
             );

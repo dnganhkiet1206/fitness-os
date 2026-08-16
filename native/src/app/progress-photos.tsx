@@ -19,6 +19,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
+import { toast } from '@/lib/toast';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { PHOTO_QUALITY, pickPictureSize } from '@/lib/photo-size';
@@ -46,7 +47,12 @@ export default function ProgressPhotosScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(i18n.nPhotoDelete, '', [
       { text: i18n.nCancel, style: 'cancel' },
-      { text: i18n.nPhotoDelete, style: 'destructive', onPress: () => del.mutate({ id, photo_url }) },
+      {
+        text: i18n.nPhotoDelete,
+        style: 'destructive',
+        onPress: () =>
+          del.mutate({ id, photo_url }, { onError: (e: Error) => toast.error(e.message) }),
+      },
     ]);
   };
 

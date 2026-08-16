@@ -21,6 +21,7 @@ import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { MarkdownLite } from '@/components/ascnd/markdown-lite';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { toast } from '@/lib/toast';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useAuth } from '@/hooks/use-auth';
@@ -433,7 +434,12 @@ export default function AiCoachScreen() {
                         style={styles.historyDelete}
                         onPress={() => {
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          deleteConvo.mutate(c.id);
+                          /* Same reason as `coach-memory.tsx`: the delete can
+                             now report that it touched nothing, and a report
+                             nobody receives is the row silently reappearing. */
+                          deleteConvo.mutate(c.id, {
+                            onError: (e: Error) => toast.error(e.message),
+                          });
                         }}>
                         {/* Neutral in the list. The glyph's own tint is red —
                             deleting is the one irreversible thing here — but a

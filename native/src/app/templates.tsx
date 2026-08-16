@@ -10,6 +10,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
+import { toast } from '@/lib/toast';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
@@ -58,7 +59,11 @@ export default function TemplatesScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(i18n.nDeleteTemplate, '', [
       { text: i18n.nCancel, style: 'cancel' },
-      { text: i18n.nDeleteTemplate, style: 'destructive', onPress: () => del.mutate(id) },
+      {
+        text: i18n.nDeleteTemplate,
+        style: 'destructive',
+        onPress: () => del.mutate(id, { onError: (e: Error) => toast.error(e.message) }),
+      },
     ]);
   };
 

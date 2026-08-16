@@ -8,6 +8,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
+import { toast } from '@/lib/toast';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -63,7 +64,11 @@ export default function SupplementsScreen() {
   const confirmDelete = (id: string, sName: string) => {
     Alert.alert('ASCND', `${i18n.delete} "${sName}"?`, [
       { text: i18n.cancel, style: 'cancel' },
-      { text: i18n.delete, style: 'destructive', onPress: () => delSup.mutate(id) },
+      {
+        text: i18n.delete,
+        style: 'destructive',
+        onPress: () => delSup.mutate(id, { onError: (e: Error) => toast.error(e.message) }),
+      },
     ]);
   };
 

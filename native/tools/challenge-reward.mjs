@@ -162,7 +162,68 @@ try {
     }
   }
 
-  /* ── 6. the mutation actually asks this function ──
+  /* ── 6. one bad row does not take the good ones with it ──
+
+     A correction to my own previous round, and worth stating as a rule rather
+     than a patch. That round wrapped the challenge write in `confirmWrite`,
+     which **throws** when the update matches no rows — for a good reason: a
+     silent no-op leaves `completed` false in the database, so the next focus
+     pass reads the challenge as freshly finished and celebrates it again, which
+     is the exact repeat this file exists to prevent.
+
+     What it did not weigh is where that throw lands. The pass runs
+     `challenges.map(...)` inside `Promise.all`, so one unwritable row rejected
+     the whole batch: no challenge in that pass paid, none celebrated. And
+     Today's focus effect wraps the call in `.catch(() => {})`, so it happened
+     without a word.
+
+     `allSettled` keeps the blast radius at one challenge. The failure is still
+     reported — re-thrown after the successful ones have been paid and announced
+     — so nothing is swallowed; it simply stops being contagious. */
+  {
+    const src = readFileSync(path.join(NATIVE, 'src/hooks/use-extras.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+    if (/await Promise\.all\(\s*challenges\.map/.test(src)) {
+      problems.push(
+        'vòng thử thách vẫn dùng Promise.all — một dòng không ghi được sẽ reject cả lượt, nên KHÔNG ' +
+          'thử thách nào được trả tiền hay ăn mừng, và .catch(() => {}) ở Today nuốt luôn lý do',
+      );
+    }
+    if (!/Promise\.allSettled\(\s*challenges\.map/.test(src)) {
+      problems.push('không tìm thấy Promise.allSettled quanh vòng thử thách — bộ quét hỏng hoặc luật đã bị gỡ');
+    }
+    /* and the failure is not merely dropped: allSettled without a re-throw
+       would trade a contagious error for a silent one, which is the other half
+       of the same mistake */
+    if (!/status === 'rejected'/.test(src)) {
+      problems.push(
+        'allSettled mà không ai đọc nhánh rejected — đổi một lỗi lây lan lấy một lỗi im lặng, ' +
+          'tức vẫn là nửa việc',
+      );
+    }
+    /* The celebrations still run before the re-throw, or a failing row silences
+       the four that worked — the very thing this section is about.
+
+       Scoped to the text after `settled`, and that scoping is the fix to a
+       first draft that could not fail: it searched the whole file for
+       `enqueueAward(`, and the first one is in the medal engine four hundred
+       lines earlier. So the celebration always appeared to come first, whatever
+       the challenge loop did. Breaking the order on purpose left it green. */
+    const loop = src.slice(src.indexOf('const settled'));
+    const enqueueAt = loop.indexOf('enqueueAward(');
+    const throwAt = loop.search(/throw failed\.reason/);
+    if (enqueueAt < 0 || throwAt < 0) {
+      problems.push('không tìm thấy cả hai mốc (enqueueAward / throw) sau vòng settled — bộ quét hỏng');
+    } else if (throwAt < enqueueAt) {
+      problems.push(
+        'ném lỗi TRƯỚC khi bắn các màn ăn mừng — những thử thách đã thành công trong cùng lượt vẫn bị làm im',
+      );
+    }
+  }
+
+  /* ── 7. the mutation actually asks this function ──
 
      The rule above proves the function is right. This proves the app uses it:
      the payment and the celebration must sit behind the same `justCompleted`,
@@ -218,7 +279,9 @@ try {
       'chỉ sinh 1 lần ghi, nên `completed_at` không bị dời sang lúc mở tab gần nhất; vượt mục tiêu bị kẹp, ' +
       'số âm và NaN không lưu được, mục tiêu 0 không kẹt; tụt xuống rồi đạt lại thì ĐƯỢC ăn mừng lại vì ' +
       'app thật sự đã gỡ trạng thái xong; và trong use-extras.ts tiền thưởng với màn ăn mừng nằm trong ' +
-      'CÙNG một nhánh chuyển trạng thái',
+      'CÙNG một nhánh chuyển trạng thái; và một thử thách ghi hỏng chỉ làm hỏng CHÍNH NÓ — ' +
+      'Promise.all cũ khiến một dòng không ghi được reject cả lượt, nên không thử thách nào được ' +
+      'trả tiền hay ăn mừng, trong im lặng, vì Today bọc lời gọi bằng .catch(() => {})',
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

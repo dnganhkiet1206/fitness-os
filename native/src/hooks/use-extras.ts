@@ -464,14 +464,27 @@ export function useUpdateChallengeProgress() {
        * moved. Nothing in one iteration is an input to any other: each reads its
        * own table and writes its own row.
        *
-       * The celebrations are the reason this is not simply `Promise.all` over
-       * the whole body. Fired from inside parallel work they would pop in
-       * whatever order the network happened to settle, and two arriving on the
-       * same frame stack on top of each other. So each iteration *returns* what
-       * to celebrate and the celebrating happens after, in the order the
-       * challenges were listed.
+       * The celebrations are the reason the celebrating does not happen inside
+       * the parallel work. Fired from in there they would pop in whatever order
+       * the network happened to settle, and two arriving on the same frame stack
+       * on top of each other. So each iteration *returns* what to celebrate and
+       * the celebrating happens after, in the order the challenges were listed.
+       *
+       * ── and `allSettled`, which is a correction to my own last round ──
+       *
+       * This was `Promise.all`, and the round that added `confirmWrite` put a
+       * throwing call inside the map without weighing what that does here. With
+       * `Promise.all`, **one** challenge whose row cannot be written rejects the
+       * whole batch: no challenge in that pass is paid, none is celebrated, and
+       * the `.catch(() => {})` around this in Today swallows the reason. One bad
+       * row taking four good ones with it, silently.
+       *
+       * `allSettled` keeps the blast radius at one challenge. The failure is not
+       * ignored — it is re-thrown after the celebrations, so the mutation still
+       * reports it and `onSuccess` does not run on a pass that half-worked — but
+       * the four that succeeded have already been paid and announced by then.
        */
-      const parties = await Promise.all(
+      const settled = await Promise.allSettled(
         challenges.map(async (ch) => {
         let newValue = 0;
 
@@ -641,9 +654,17 @@ export function useUpdateChallengeProgress() {
         }),
       );
 
-      for (const party of parties) {
-        if (party) enqueueAward(party);
+      /* In the order the challenges were listed, and only the ones that got
+         that far — see the note on `allSettled` above. */
+      for (const r of settled) {
+        if (r.status === 'fulfilled' && r.value) enqueueAward(r.value);
       }
+
+      /* Reported after the successful ones have been paid and announced. The
+         first failure is enough: they are all the same kind of failure, and a
+         mutation reports one error, not a list. */
+      const failed = settled.find((r) => r.status === 'rejected');
+      if (failed && failed.status === 'rejected') throw failed.reason;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weekly-challenges'] });

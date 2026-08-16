@@ -317,7 +317,12 @@ export default function MealPlanScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={`${i18n.a11yRemove} ${it.food_name}`}
                       hitSlop={12}
-                      onPress={() => deleteItem.mutate({ id: it.id, planId: plan?.id ?? '' })}
+                      onPress={() =>
+                        deleteItem.mutate(
+                          { id: it.id, planId: plan?.id ?? '' },
+                          { onError: (e: Error) => toast.error(e.message) },
+                        )
+                      }
                       style={styles.rowX}>
                       <Icon icon={X} size={13} color={colors.mutedForeground} />
                     </PressScale>

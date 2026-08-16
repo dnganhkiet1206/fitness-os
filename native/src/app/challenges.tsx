@@ -1,5 +1,5 @@
 import { Check, Target } from 'lucide-react-native';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -7,6 +7,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
 import { StaggerItem } from '@/components/ascnd/stagger-item';
+import { toast } from '@/lib/toast';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
@@ -24,14 +25,37 @@ export default function ChallengesScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
 
-  // Web flow: seed this week's challenges if empty, then refresh progress
+  /*
+    Seed this week's challenges if empty, then refresh progress.
+
+    ── and the refresh says so when it cannot ──
+
+    Today runs the same pass and deliberately swallows its failures: it is
+    background work behind a dashboard, and a toast about challenge bookkeeping
+    on every return to the home tab would be noise about something nobody asked
+    for.
+
+    Here it is the opposite. This screen exists to show these numbers, and the
+    person is looking straight at them. A refresh that fails silently leaves
+    last week's progress on screen looking like this week's — the app stating a
+    number it knows is stale.
+  */
+  const refreshProgress = useCallback(() => {
+    updateProgress.mutate(undefined, {
+      onError: (e: Error) => toast.error(e.message),
+    });
+    // `updateProgress` is a fresh object each render; listing it would re-run
+    // the effect below on every render rather than once per screen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (initializedRef.current || challenges === undefined) return;
     initializedRef.current = true;
     if (challenges.length === 0) {
-      initChallenges.mutate(undefined, { onSuccess: () => updateProgress.mutate() });
+      initChallenges.mutate(undefined, { onSuccess: refreshProgress });
     } else {
-      updateProgress.mutate();
+      refreshProgress();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [challenges]);
