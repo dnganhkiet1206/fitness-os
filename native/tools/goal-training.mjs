@@ -468,6 +468,33 @@ try {
           'trả lời thật và rơi về sàn WHO đúng như thiết kế, cái trước thì chưa biết gì',
       );
     }
+    /*
+      And the query behind it really returns the two columns the count reads.
+
+      `strengthDaysIn` needs `sets` (to know a session held reps) and
+      `date_time` (to know which day it was). Drop either from the select and
+      the function keeps working perfectly — returning 0, for everybody,
+      forever. Nothing throws, the card renders, and the line says the person
+      has not met a health minimum. `sets` is the fragile one: it carries a
+      comment justifying its cost, which is exactly the kind of column somebody
+      later removes to make a query lighter.
+    */
+    const hook = readFileSync(path.join(NATIVE, 'src/hooks/use-fitness-data.ts'), 'utf8');
+    const q = hook.match(/export function useWorkoutSessions[\s\S]*?\.select\('([^']+)'\)/);
+    if (!q) {
+      problems.push('không tìm thấy select của useWorkoutSessions — bộ quét hỏng, không phải code sạch');
+    } else {
+      for (const col of ['sets', 'date_time']) {
+        if (!new RegExp(`\\b${col}\\b`).test(q[1])) {
+          problems.push(
+            `useWorkoutSessions không còn lấy cột '${col}', mà đếm ngày tập cơ đọc nó. Thiếu cột thì ` +
+              'hàm vẫn chạy trơn tru và trả 0 — cho tất cả mọi người, mãi mãi — rồi thẻ Today nói ' +
+              'họ chưa đạt mức tối thiểu về sức khoẻ. Không có ngoại lệ nào ném ra',
+          );
+        }
+      }
+    }
+
     if (!/7 ngày qua|last 7/i.test(card)) {
       problems.push(
         'nhãn không còn nói cửa sổ 7 ngày — `useWorkoutSessions(7)` là cửa sổ trượt, gọi nó là ' +
