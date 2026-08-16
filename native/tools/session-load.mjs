@@ -37,7 +37,7 @@
  * it over a spread of factors instead of asserting it in a comment.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -52,7 +52,8 @@ try {
     execFileSync(
       'npx',
       ['tsc', 'src/lib/session-load.ts', 'src/lib/readiness-engine.ts', 'src/lib/training-card.ts',
-       'src/lib/local-date.ts',
+       'src/lib/local-date.ts', 'src/lib/user-state.ts', 'src/lib/load-progression.ts',
+       'src/lib/prescription.ts', 'src/lib/goal-training.ts',
        '--ignoreConfig', '--outDir', out,
        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
@@ -69,6 +70,13 @@ try {
      public entry point tests the path the app actually takes, and the returned
      `acwr` is the same number the dashboard shows. */
   const { computeReadiness } = req(path.join(out, 'readiness-engine.js'));
+  /* The last two links of the chain. `@/lib/x` → `./x` so `require` resolves. */
+  for (const f of ['user-state', 'load-progression', 'training-card']) {
+    const p = path.join(out, `${f}.js`);
+    writeFileSync(p, readFileSync(p, 'utf8').replace(/@\/lib\//g, './'));
+  }
+  const { userStateFrom, OVERREACH_ACWR } = req(path.join(out, 'user-state.js'));
+  const { suggestLoad } = req(path.join(out, 'load-progression.js'));
 
   /** A readiness input with everything but the two loads held still. */
   const ready = (load7, load28, days = 28) =>
@@ -239,6 +247,67 @@ try {
           'kia của chuỗi, và nếu nó trống thì overreaching vẫn không bao giờ bật được cho họ',
       );
     }
+
+    /* ── and the two links this comment used to only assert ──
+
+       The paragraph above says the load reaching the engine "is what lets
+       `overreaching` fire, which is what closes the one gate that refuses to
+       tell somebody in a load spike to add weight". That was a sentence. The
+       chain stopped at `subscores.load`, so the last two steps — the ones the
+       whole change was for — were reasoned about and never run. That is the
+       exact shape this repository has already been caught by twice: a comment
+       describing a test that does not exist.
+
+       So: give the same bodyweight trainee a genuine spike, take the `acwr` the
+       engine returns, and walk it the rest of the way. */
+    const spike = ready(loadWindow(bodyweight.slice(0, 3).map((s) => ({ ...s, session_rpe: 10 }))) * 2.2, load28);
+    if (!spike || !(spike.acwr >= OVERREACH_ACWR)) {
+      problems.push(
+        `không dựng nổi một ca quá tải cho người tập tay không (acwr = ${spike?.acwr}, cần ≥ ` +
+          `${OVERREACH_ACWR}) — bộ quét hỏng chứ không phải app đúng`,
+      );
+    } else {
+      /* Enough history that the state engine is allowed to conclude anything at
+         all, and a cadence that is otherwise unremarkable, so the only thing
+         the verdict can be about is the load. */
+      const today = '2025-06-30';
+      const loggedDates = Array.from({ length: 40 }, (_, i) => {
+        const d = new Date(`${today}T12:00:00.000Z`);
+        d.setUTCDate(d.getUTCDate() - i);
+        return d.toISOString().slice(0, 10);
+      });
+      const st = userStateFrom({ loggedDates, today, acwr: spike.acwr, sessions: [] });
+      if (st.situation !== 'overreaching') {
+        problems.push(
+          `acwr ${spike.acwr} của người tập tay không ra trạng thái '${st.situation}' chứ không phải ` +
+            "'overreaching' — mắt xích này đứt thì tải nội sinh tính ra cũng không tới được cổng an toàn",
+        );
+      }
+
+      /* Reported effort well under target: on its own this is a clear "add
+         load". The gate is the only reason it must not be. */
+      const easy = [6, 6, 6, 6, 6, 6];
+      const ungated = suggestLoad({ reported: easy, target: 9 }).advice;
+      if (ungated !== 'up') {
+        problems.push(
+          `báo ${easy[0]} liên tục với mức đặt 9 mà KHÔNG ra 'up' (ra '${ungated}') — ca kiểm bên dưới ` +
+            'chỉ có nghĩa nếu bản không có cổng chặn thật sự khuyên tăng tải',
+        );
+      }
+      const gated = suggestLoad({
+        reported: easy,
+        target: 9,
+        situation: st.situation,
+        situationConfidence: st.confidence,
+      }).advice;
+      if (gated === 'up') {
+        problems.push(
+          'người tập tay không đang quá tải VẪN được khuyên tăng tải — đây là đầu cuối của cả chuỗi ' +
+            'và là lời khuyên duy nhất trong app có thể góp phần gây chấn thương. Trước khi có tải ' +
+            'nội sinh, nhóm này không bao giờ tới được cổng chặn này vì acwr của họ luôn là null',
+        );
+      }
+    }
   }
 
   /* ── 5. totalReps, on its own ── */
@@ -327,7 +396,12 @@ try {
       'chứ KHÔNG phải 0, và bị bỏ khỏi cả hai vế của tỉ lệ (ba buổi chạy không làm đổi tổng). ' +
       'ACWR được CHẠY THẬT qua 5 hệ số nhân và không đổi — đó là lý do đổi đơn vị không chấm lại điểm ' +
       'sẵn sàng của người đang tập tạ, và các dải 0.8–1.3 giữ nguyên nghĩa. Nhịp mạn tính lọc theo cùng ' +
-      'phép đo với tổng. Và tấn tạ VẪN ở lại như một chỉ số ngoại sinh riêng, không bị gộp',
+      'phép đo với tổng. Và tấn tạ VẪN ở lại như một chỉ số ngoại sinh riêng, không bị gộp. Cả chuỗi ' +
+      'được CHẠY tới đầu cuối chứ không chỉ tới acwr: buổi tay không → tải > 0 → điểm sẵn sàng có ' +
+      'thành phần tải → acwr vượt ngưỡng → userStateFrom ra "overreaching" → suggestLoad TỪ CHỐI ' +
+      'khuyên tăng tải (cùng đầu vào mà bỏ trạng thái đi thì nó khuyên "up", nên ca kiểm có răng). ' +
+      'Hai mắt xích cuối trước đây chỉ được KHẲNG ĐỊNH trong một dòng chú thích — đúng hình dạng ' +
+      '"chú thích mô tả một bài kiểm không tồn tại" mà repo này đã dính hai lần',
   );
 } finally {
   rmSync(out, { recursive: true, force: true });
