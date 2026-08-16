@@ -34,10 +34,12 @@ import { TrainingExplainer } from '@/components/ascnd/training-explainer';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
-import { useRecentWorkouts, useTodayBiometrics } from '@/hooks/useTodayData';
+import { useProfile, useRecentWorkouts, useTodayBiometrics } from '@/hooks/useTodayData';
 import { useRecentAwards } from '@/hooks/use-extras';
 import { useUnits } from '@/hooks/use-units';
 import { connectedSourceLabel } from '@/lib/biometric-source';
+import { goalTraining } from '@/lib/goal-training';
+import { strengthDaysIn } from '@/lib/training-week';
 import { loadWindow, type LoadSession } from '@/lib/session-load';
 import { awardText } from '@/lib/gamification-i18n';
 import { localDateStr } from '@/lib/local-date';
@@ -336,6 +338,9 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
   const { data: workouts } = useRecentWorkouts();
+  /* Already mounted by Today, so this shares the cached row rather than adding
+     a query — it is here for `goal`, which decides the strength-day target. */
+  const { data: profile } = useProfile();
   /*
     Both sides of the ratio, over the windows the ratio is actually computed
     over. `daysAgoISO(n)` here and `setDate(getDate() - n)` in
@@ -415,6 +420,40 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   const monthLoad = loadWindow((month ?? []) as LoadSession[]);
   const habitLoad = averageWeek(monthLoad, chronicDays(month ?? []));
   const hasPR = weekSessions.some((w) => w.pr_detected);
+
+  /*
+    ── the half of the goal that reached nothing ──
+
+    `goalTraining` returns three things and, until now, one of them was read:
+    `rpeBand`, through `goalRpeTarget` in the load engine. `strengthDays` — the
+    WHO floor of muscle-strengthening work on two or more days a week, which
+    applies to every adult whatever they are training for — was computed and
+    consumed by nobody. The commit that added it said the goal now reached the
+    training half of the app. Only its effort band did.
+
+    Both sides are already on this screen: `useProfile` is mounted by Today, and
+    `week` is the query this card's own comparison runs on, so nothing new is
+    fetched.
+
+    `week == null` is left as null rather than counted as zero. An unloaded
+    query rendering "0/2 days" is the shape this repository keeps finding — the
+    absent value given a numeral, and the numeral then read as a verdict — and
+    the verdict here would be "you have not done the minimum", said to somebody
+    whose sessions simply have not arrived yet.
+  */
+  /*
+    `profile === undefined` is React Query still fetching (or having failed),
+    not "this person has no goal" — a profile row with `goal: null` is a real
+    answer and lands on the WHO floor by design.
+
+    The difference matters because the target is the denominator of a verdict.
+    Rendering the floor while the row is in flight shows somebody with a
+    `strength` goal and two strength days a filled `2/2`, which flips to `2/3`
+    the moment the row lands: met, then not met, about a health minimum. So the
+    line waits for both halves rather than showing one of them early.
+  */
+  const strengthTarget = profile === undefined ? null : goalTraining(profile?.goal).strengthDays;
+  const strengthDone = week == null ? null : strengthDaysIn(week, localDateStr());
   const trend = weeklyVolumes(history ?? [], TREND_WEEKS);
   const trendMax = Math.max(...trend.map((w) => w.volume), habitVolume);
 
@@ -535,6 +574,43 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
           </Text>
         </View>
       </View>
+
+      {/*
+        Muscle-strengthening days against what this person's goal aims at.
+
+        One line, on a card they are already reading, rather than a screen to go
+        and find — and it says "last 7 days" because that is the window `week`
+        covers. A rolling window called "this week" would be a claim about a
+        calendar the query does not use.
+
+        The pips are the target, filled by what was done. Past the target they
+        stop filling and the count carries the surplus: a row of pips that grows
+        would turn a floor into a scoreboard, and this floor is a minimum for
+        health, not a score to beat.
+      */}
+      {strengthDone != null && strengthTarget != null ? (
+        <View style={styles.strengthRow}>
+          <Text style={styles.strengthLabel}>
+            {vi ? 'Ngày tập cơ · 7 ngày qua' : 'Strength days · last 7'}
+          </Text>
+          <View style={styles.pips}>
+            {Array.from({ length: strengthTarget }, (_, i) => (
+              <View
+                key={i}
+                style={[styles.pip, i < strengthDone && styles.pipOn]}
+              />
+            ))}
+          </View>
+          <Text
+            style={[
+              styles.strengthCount,
+              strengthDone >= strengthTarget && styles.strengthCountOn,
+            ]}
+          >
+            {strengthDone}/{strengthTarget}
+          </Text>
+        </View>
+      ) : null}
 
       {stale ? (
         <Text style={styles.staleNote}>
@@ -917,6 +993,13 @@ const styles = StyleSheet.create({
      number being judged against it. */
   compareValueMuted: { color: colors.mutedForeground },
   compareSub: { fontSize: 11, color: colors.mutedForeground },
+  strengthRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  strengthLabel: { flex: 1, fontSize: 12, color: colors.mutedForeground },
+  pips: { flexDirection: 'row', gap: 4 },
+  pip: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.18)' },
+  pipOn: { backgroundColor: colors.metricBeige },
+  strengthCount: { fontSize: 12, fontWeight: '600', color: colors.mutedForeground, minWidth: 26, textAlign: 'right' },
+  strengthCountOn: { color: colors.metricBeige },
   staleNote: { fontSize: 12, lineHeight: 17, color: colors.readinessYellow },
   trend: { gap: 6 },
   trendHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },

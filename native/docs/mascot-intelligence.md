@@ -210,6 +210,33 @@ số không chỉ được nguồn.
 Dải RPE của mục tiêu là mức đặt **mặc định** cho `suggestLoad` khi mẫu tập không
 nói gì. Mẫu tập có ghi mức riêng thì vẫn thắng.
 
+### Nửa đo được: số ngày tập cơ
+
+`lib/training-week.ts`. Khi mới viết, `goalTraining` trả **ba** trường và chỉ có
+`rpeBand` được đọc — `strengthDays` và `aerobicMin` được tính rồi không ai dùng,
+trong khi commit giới thiệu nó nói mục tiêu đã chạm tới phần tập luyện. Nửa kia
+là `strengthDaysIn`, đo đúng thứ mà khuyến nghị nói tới:
+
+- **Đếm theo NGÀY, không theo buổi.** WHO viết là "≥ 2 ngày/tuần"; hai buổi cùng
+  một ngày vẫn là một ngày, nếu không thì một hôm tập đúp sẽ đọc thành đã rải
+  việc ra hai ngày.
+- **Ngày là ngày của người tập.** `date_time` lưu bằng `toISOString()` nên
+  `.slice(0,10)` là ngày UTC; ở UTC+7 buổi 06:00 rơi sang ngày UTC hôm trước, và
+  sai lệch đó chỉ đẩy con số LÊN — nói người ta đã đạt sàn trong khi chưa.
+- **Cửa sổ tính theo ngày, không theo 168 giờ.** `useWorkoutSessions(7)` là một
+  khoảng giờ, mà khoảng giờ bắt đầu giữa ngày chạm vào **tám** ngày lịch, nên
+  người tập hằng ngày sẽ đọc ra "8/2 ngày trong 7 ngày qua".
+- **Chỉ tính buổi có rep** — cùng phép thử `sessionLoad` dùng, nên buổi tay
+  không có tính còn buổi chạy nhập từ đồng hồ thì không.
+
+Hiện trên thẻ tập luyện ở Today, cạnh phần so tuần/thói quen: `Ngày tập cơ · 7
+ngày qua  ●●○  2/3`. Truy vấn chưa về thì **không vẽ** thay vì vẽ `0/2` —
+"chưa tải xong" không phải "chưa đạt mức tối thiểu".
+
+`tools/goal-training.mjs` còn giữ một luật về chính hình dạng lỗi trên: **mọi
+trường của `GoalTraining` phải tới được đâu đó**, hoặc nằm trong danh sách "chưa
+đo được" kèm lý do. Một trường mới thêm mà không ai đọc sẽ làm hỏng bước kiểm.
+
 ## 7. Điều chỉnh độ khó buổi tập
 
 `lib/load-progression.ts` — autoregulation theo RPE. App đã lưu **cả hai vế** từ
@@ -280,22 +307,31 @@ Mọi luật mới đều được **phá thử trên bản đã ship** và ph�
    thời lượng hiện bị vứt vào chuỗi `template_name` chứ không phải một cột. Nên
    người chỉ chạy bộ vẫn không có `acwr`. Sửa được bằng một cột `duration_min`,
    nhưng đó là migration thứ 13 vào hàng chờ chưa deploy.
-3. **`stalled` vẫn không tính được cho người tập tay không** — tín hiệu tiến bộ
+3. **`aerobicMin` của mục tiêu chưa đo được, nên chưa hiện ở đâu.** Sàn 150–300
+   phút aerobic/tuần vẫn nằm trong `goalTraining` như một phần của khuyến nghị,
+   nhưng app **không có** con số để đặt cạnh nó: thời lượng buổi từ đồng hồ bị
+   gộp vào chuỗi `template_name` (xem giới hạn 2), còn `daily_logs.active_minutes`
+   là "phút vận động" của Apple — gồm cả tập tạ — nên gọi nó là phút aerobic sẽ
+   là một khẳng định rộng hơn thứ đo được. Bỏ trống là lựa chọn có ý thức: một
+   thanh tiến độ sai còn tệ hơn không có thanh nào. Trường này nằm trong danh
+   sách "chưa đo được" của `tools/goal-training.mjs`, và nếu sau này app đo được
+   thật thì bước kiểm sẽ **bắt** phải xoá nó khỏi danh sách.
+4. **`stalled` vẫn không tính được cho người tập tay không** — tín hiệu tiến bộ
    của nó là xu hướng **tấn tạ**, mà tấn tạ của họ luôn bằng 0. Đây là lựa chọn
    có ý thức: tiến bộ về sức mạnh là chuyện của khối lượng nâng được, còn tải
    nội sinh trộn cường độ với khối lượng nên không thay thế được ở chỗ này.
-4. **Điều chỉnh độ khó chỉ đọc `session_rpe` của cả buổi**, không đọc RPE từng
+5. **Điều chỉnh độ khó chỉ đọc `session_rpe` của cả buổi**, không đọc RPE từng
    set (`rpe` per set tồn tại nhưng chỉ được ghi ở bảng ngày trong tuần). Nên nó
    nói được "buổi này nặng hơn mức đặt" chứ chưa nói được "bài nào nặng".
-5. **Ghép buổi với mẫu tập bằng TÊN**, vì `workout_sessions` lưu `template_name`
+6. **Ghép buổi với mẫu tập bằng TÊN**, vì `workout_sessions` lưu `template_name`
    chứ không lưu id. Đổi tên mẫu tập là mất lịch sử so sánh của nó.
-6. **`emotion: 'sad'` giờ không còn đường tới từ trạng thái thật.** Nó vẫn nằm
+7. **`emotion: 'sad'` giờ không còn đường tới từ trạng thái thật.** Nó vẫn nằm
    trong bảng biểu cảm và `DEV_EMOTIONS` để thử hoạt ảnh. Đây là lựa chọn có ý
    thức, không phải sót.
-7. **Chạm vào Koa giữa lúc đang có phản ứng lớn hơn** thì lời chào bị bỏ và
+8. **Chạm vào Koa giữa lúc đang có phản ứng lớn hơn** thì lời chào bị bỏ và
    đánh dấu đã xử lý — tức hôm đó không còn lời chào. Đây là hệ quả của luật
    "cái lớn giành sân, cái nhỏ bị bỏ chứ không xếp hàng" áp cho mọi sự kiện, chứ
    không phải một nhánh riêng bị quên.
-8. **`useUserState` đọc cache và không đăng ký observer**, nên khi streak được
+9. **`useUserState` đọc cache và không đăng ký observer**, nên khi streak được
    fetch lại, component không tự render lại vì lý do đó. Đây là đúng thiết kế đã
    ghi ở `use-koa-context`, và cái giá là trạng thái có thể trễ một lần render.

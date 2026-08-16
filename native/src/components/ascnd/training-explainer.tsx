@@ -84,6 +84,12 @@ export function TrainingExplainer({ visible, onClose }: { visible: boolean; onCl
         ? 'Buổi nhập từ đồng hồ (chạy bộ, đạp xe) không có mức gắng sức bạn tự chấm và cũng không có rep, nên app KHÔNG tính tải cho nó — và không coi nó bằng 0. Nó được bỏ khỏi cả hai vế của phép so, vì "không đo được" khác với "tốn 0".'
         : 'Sessions imported from a watch (a run, a ride) have no effort rating and no reps, so the app does not compute a load for them — and does not treat them as zero. They are dropped from both sides of the comparison, because "not measurable" is not the same as "cost nothing".',
     },
+    {
+      term: vi ? 'Ngày tập cơ 2/3' : 'Strength days 2/3',
+      body: vi
+        ? 'Số NGÀY trong 7 ngày qua bạn có tập cơ, và mức mục tiêu của bạn nhắm tới. Đếm theo ngày chứ không theo buổi: hai buổi cùng một ngày vẫn là một ngày. Mức tối thiểu là 2 ngày/tuần — khuyến nghị của WHO cho mọi người lớn, kể cả khi bạn đang tập vì sức bền; mục tiêu sức mạnh hoặc tăng cơ nhắm tới 3. Buổi chạy nhập từ đồng hồ không tính vào đây vì nó không phải tập cơ.'
+        : 'How many DAYS in the last 7 you did strength work, and what your goal aims at. Counted in days, not sessions: two sessions on the same day is still one day. The floor is 2 days a week — the WHO recommendation for every adult, including while training for endurance; a strength or muscle-gain goal aims at 3. A run imported from a watch does not count here, because it is not strength work.',
+    },
   ];
 
   return (
