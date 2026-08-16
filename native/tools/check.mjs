@@ -236,6 +236,15 @@ const STEPS = [
   */
   ['độ tin cậy điểm sẵn sàng', 'node', ['tools/readiness-confidence.mjs']],
   /*
+    `docs/fitness-scores.md` says, for every number the app shows, what it is
+    made of and what it does when the data is missing. Written down those are
+    assertions, and a document is the one place here where an assertion has
+    never had to be true — a threshold moves in code and the prose goes on
+    describing the old behaviour to whoever reads it next. This pulls every
+    figure back out of the document and compares it to the value in use.
+  */
+  ['tài liệu chỉ số', 'node', ['tools/score-doc.mjs']],
+  /*
     Sign-out used to clear one of seventeen stored keys. The one that mattered
     most was invisible: a leftover reminder-plan signature makes the scheduler
     exit early, so the *next* account never gets a single notification while
