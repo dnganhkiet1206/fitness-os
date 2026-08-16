@@ -17,6 +17,7 @@ import { AnimatedNumber } from '@/components/ascnd/animated-number';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
+import { readinessConfidence } from '@/lib/readiness-engine';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
@@ -93,6 +94,24 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
   if (subs.sleep != null) tiles.push({ label: 'SLEEP', value: String(subs.sleep), color: subColor(subs.sleep) });
   if (subs.load != null) tiles.push({ label: 'LOAD', value: String(subs.load), color: subColor(subs.load) });
   if (acwr != null && acwr > 0) tiles.push({ label: 'ACWR', value: String(acwr), color: acwrColor });
+
+  /*
+    ── how much of this number is actually measured ──
+
+    The engine renormalises over whatever dimensions it could read, which is
+    right — but it meant a 72 built from sleep alone rendered identically to a
+    72 built from HRV, resting heart rate, sleep and training load. A thin
+    number wearing the same confidence as a full one is false precision, and
+    this is the screen where somebody decides whether to train hard today.
+
+    The count is recovered from `readiness_explain`, which already encodes every
+    sub-score the engine measured — the same string the tiles above are drawn
+    from, so there is nothing new to store. The *banding* comes from
+    `readinessConfidence` in the engine rather than being re-typed here: one
+    rule, two readers.
+  */
+  const measured = Object.keys(subs).length;
+  const confidence = measured > 0 ? readinessConfidence(measured) : null;
   const [g0, g1] = GRADIENTS[status] ?? GRADIENTS.yellow;
   const statusLabel =
     status === 'green' ? i18n.dcReadinessTrain : status === 'yellow' ? i18n.dcReadinessModerate : i18n.dcReadinessRecover;
@@ -263,6 +282,15 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
 
       {/* Explain + recommendation */}
       {explainText ? <Text style={styles.explain}>{explainText}</Text> : null}
+      {/* Said plainly rather than as a badge: a coloured chip reading "LOW"
+          beside a readiness score would be read as a low *score*. */}
+      {confidence && confidence !== 'high' ? (
+        <Text style={styles.confidence}>
+          {vi
+            ? `Dựa trên ${measured} chỉ số đo được${confidence === 'low' ? ' — ghi thêm giấc ngủ hoặc buổi tập để chắc hơn' : ''}`
+            : `Based on ${measured} measured input${measured === 1 ? '' : 's'}${confidence === 'low' ? ' — log sleep or a workout for a fuller reading' : ''}`}
+        </Text>
+      ) : null}
       {recoText ? (
         <View style={[styles.recoPill, { backgroundColor: `${color}1a`, borderColor: `${color}33` }]}>
           <Text style={[styles.recoText, { color }]}>{recoText}</Text>
@@ -328,6 +356,14 @@ const styles = StyleSheet.create({
   },
   tileLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground },
   tileValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
+  confidence: {
+    fontSize: 11,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    opacity: 0.8,
+    paddingHorizontal: spacing.card,
+    marginTop: 2,
+  },
   explain: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', lineHeight: 18, paddingHorizontal: spacing.card },
   recoPill: {
     marginHorizontal: spacing.card,

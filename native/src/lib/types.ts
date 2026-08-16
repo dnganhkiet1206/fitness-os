@@ -137,7 +137,43 @@ export interface ReadinessResult {
     sleep?: number;
     load?: number;
   };
-  acwr: number;
+  /**
+   * Acute:chronic workload ratio, or `null` when there is no chronic base to
+   * compare against.
+   *
+   * ── why this became nullable ──
+   *
+   * It was `number`, and `getACWR(0, 0, …)` returns **0**. So somebody who had
+   * never logged a session got the same stored value as somebody who trained
+   * hard for a month and then took a complete rest week. Those are opposite
+   * situations — one is "nothing is known", the other is "well rested" — and
+   * the app could not tell them apart because a missing measurement had been
+   * given a numeric value.
+   *
+   * `null` is now reserved for the first. Zero keeps its real meaning: a week
+   * with no training *against a baseline that exists*.
+   */
+  acwr: number | null;
+  /**
+   * How much of the score is actually measured.
+   *
+   * The engine renormalises over whatever dimensions are present, which is
+   * right — but it meant a 72 built from sleep alone rendered identically to a
+   * 72 built from HRV, resting heart rate, sleep and training load. The number
+   * carried no trace of how thin it was, and a thin number that looks confident
+   * is the definition of false precision.
+   */
+  confidence: ReadinessConfidence;
 }
+
+/**
+ * How many independent dimensions the readiness score rests on.
+ *
+ * Not a probability and not a percentage — a count, banded. The engine has four
+ * possible inputs (HRV, resting heart rate, sleep, training load) and drops the
+ * ones it cannot measure; this reports how many survived, so a screen can say
+ * "based on one thing" rather than presenting one thing as four.
+ */
+export type ReadinessConfidence = 'high' | 'medium' | 'low';
 
 export type ReadinessStatus = 'green' | 'yellow' | 'red';

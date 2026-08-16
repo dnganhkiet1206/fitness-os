@@ -1,7 +1,7 @@
 // ASCND – Readiness & Recovery Engine
 // Evidence-inspired pseudo-formula using HRV (RMSSD), RHR, sleep, training load
 
-import type { ReadinessInput, ReadinessResult } from './types';
+import type { ReadinessConfidence, ReadinessInput, ReadinessResult } from './types';
 
 function clamp(val: number, min: number, max: number): number {
   return Math.min(Math.max(val, min), max);
@@ -189,6 +189,31 @@ function getACWR(load7d: number, load28d: number, chronicDays: number): number {
   return acute / (chronic + 1e-6);
 }
 
+/**
+ * How many dimensions the score rests on, banded.
+ *
+ * ── one rule, two readers ──
+ *
+ * The engine knows the count directly. The dashboard has to recover it from
+ * `readiness_explain`, which encodes every sub-score it measured — so the two
+ * arrive at the count by different routes and must not band it by different
+ * numbers. This repository has been bitten by a duplicated threshold six times;
+ * the banding lives here and both call it.
+ *
+ * Three or four dimensions is triangulation. Two is a pair. One is a real
+ * number built from a single measurement, and a screen showing it should be
+ * able to say so rather than presenting it with the weight of a full reading.
+ *
+ * Deliberately a count and not a percentage: there is no basis for calling a
+ * two-input score "50% confident", and there is a basis for saying it rests on
+ * two things instead of four.
+ */
+export function readinessConfidence(dimensions: number): ReadinessConfidence {
+  if (dimensions >= 3) return 'high';
+  if (dimensions === 2) return 'medium';
+  return 'low';
+}
+
 export function computeReadiness(input: ReadinessInput): ReadinessResult | null {
   const hasHRV = input.hrv_today != null && input.hrv_history_28d.length >= 5;
 
@@ -218,7 +243,24 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult | null 
     input.soreness_today
   );
 
-  const acwr = getACWR(input.training_load_7d, input.training_load_28d, chronicDays);
+  /*
+    ── `null` when there is no chronic base, and 0 only when there is ──
+
+    `getACWR(0, 0, …)` returns 0, so an account that has never logged a session
+    stored the same `acwr` as somebody who trained hard for a month and then
+    took a full rest week. Those are opposite states: one is "nothing is known",
+    the other is "thoroughly rested". A missing measurement had been given a
+    number, and a number is a claim.
+
+    So the ratio exists only when there is something to be a ratio *of*. Zero
+    keeps its real meaning — a week with no training against a baseline that
+    does exist — which is a fact worth having and worth distinguishing from an
+    empty account.
+  */
+  const acwr =
+    input.training_load_28d > 0
+      ? getACWR(input.training_load_7d, input.training_load_28d, chronicDays)
+      : null;
 
   /*
     Weighted combination over the terms that exist.
@@ -326,7 +368,7 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult | null 
   // Recommendation — keep prose + a stable key so the UI can localize it
   let recommendation: string;
   let recommendationKey: string;
-  if (status === 'green' && acwr <= 1.2) {
+  if (status === 'green' && acwr != null && acwr <= 1.2) {
     recommendationKey = 'green_optimal';
     recommendation = 'Tập theo kế hoạch — đẩy top set + backoff sets.';
   } else if (status === 'green') {
@@ -364,6 +406,20 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult | null 
       sleep: sleepScore !== null ? Math.round(sleepScore) : undefined,
       load: loadScore !== null ? Math.round(loadScore) : undefined,
     },
-    acwr: Math.round(acwr * 100) / 100,
+    acwr: acwr == null ? null : Math.round(acwr * 100) / 100,
+    /*
+      Banded by how many of the four dimensions survived, and nothing else.
+
+      Three or four is `high`: the score is triangulating. Two is `medium`. One
+      is `low`, and one is common — somebody with a sleep row and nothing else
+      gets a perfectly real number built from a single measurement, and the
+      screen showing it should be able to say so rather than presenting it with
+      the same weight as a fully-measured day.
+
+      Deliberately not a percentage. There is no basis for saying a two-input
+      score is "50% confident"; there is a basis for saying it rests on two
+      things instead of four.
+    */
+    confidence: readinessConfidence(present.length),
   };
 }

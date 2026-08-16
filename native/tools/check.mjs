@@ -226,6 +226,16 @@ const STEPS = [
   */
   ['điểm sẵn sàng', 'node', ['tools/readiness.mjs']],
   /*
+    Two ways a readiness number said more than it knew. `getACWR(0, 0, …)`
+    returns 0, so an account that had never logged a session stored exactly what
+    somebody who trained a month and then rested a full week stored — opposite
+    states, one value, and the missing one given a numeral. And the score itself
+    carried no trace of its own thinness: a 72 built from sleep alone rendered
+    identically to a 72 built from four dimensions, on the screen where somebody
+    decides whether to train hard today.
+  */
+  ['độ tin cậy điểm sẵn sàng', 'node', ['tools/readiness-confidence.mjs']],
+  /*
     Sign-out used to clear one of seventeen stored keys. The one that mattered
     most was invisible: a leftover reminder-plan signature makes the scheduler
     exit early, so the *next* account never gets a single notification while
