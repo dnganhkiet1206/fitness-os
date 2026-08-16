@@ -6,9 +6,10 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useKoaContext } from '@/hooks/use-koa-context';
-import { KOA_LINE_KEY, type KoaDecision } from '@/lib/koa-decide';
+import { KOA_LINE_KEY, type KoaContext, type KoaDecision } from '@/lib/koa-decide';
 import { comebackMagnitude, streakMagnitude, TIER_MAGNITUDE, type KoaEvent } from '@/lib/koa-event';
 import { emitKoa, resetKoaStage, useKoaReaction } from '@/lib/koa-stage';
+import { UNKNOWN_STATE, type Situation } from '@/lib/user-state';
 
 /**
  * Koa's brain, made visible.
@@ -43,10 +44,43 @@ const CASES: { label: string; event: Omit<KoaEvent, 'magnitude'> & { magnitude: 
   { label: 'Chạm Koa', event: { kind: 'koa_greeted', magnitude: 0.3 } },
 ];
 
+/**
+ * The situations `decide` reads, forceable.
+ *
+ * ── why an override and not "just have a bad fortnight" ──
+ *
+ * `koa_greeted` now answers differently for somebody returning after an absence
+ * and somebody in a load spike. Both are real, both are rare, and neither can be
+ * produced on a development device without either waiting a fortnight or writing
+ * fake rows. A branch that can only be seen by living it is a branch nobody will
+ * ever look at — which is exactly how `koa_greeted` came to sit in the engine,
+ * fully written, with nothing firing it.
+ *
+ * `null` means "use the real state", so the default is still the truth.
+ */
+const SITUATIONS: (Situation | null)[] = [
+  null,
+  'settling_in',
+  'steady',
+  'slipping',
+  'returning',
+  'overreaching',
+];
+
 export default function KoaDebugScreen() {
-  const ctx = useKoaContext();
+  const real = useKoaContext();
   const live = useKoaReaction();
   const [last, setLast] = useState<{ label: string; d: KoaDecision } | null>(null);
+  const [forced, setForced] = useState<Situation | null>(null);
+
+  /* The override replaces only the situation. Confidence is forced to `high`
+     with it, because every branch downstream is gated on confidence and an
+     override that left it at `none` would silently do nothing — a debug control
+     that appears to work and does not is worse than no control. */
+  const ctx: KoaContext =
+    forced == null
+      ? real
+      : { ...real, state: { ...(real.state ?? UNKNOWN_STATE), situation: forced, confidence: 'high' } };
 
   const fire = (label: string, event: KoaEvent) => {
     /* A fresh id every press: dedup is a production rule, and a debug button
@@ -60,9 +94,26 @@ export default function KoaDebugScreen() {
       <ScrollView contentContainerStyle={styles.body}>
         <Text style={styles.h}>CONTEXT</Text>
         <Text style={styles.mono}>
-          {`giờ ${ctx.hour}  ·  chuỗi ${ctx.streak}  ·  xong ${ctx.doneToday}/5  ·  ` +
-            `hôm nay trống: ${ctx.emptyToday ? 'có' : 'không'}  ·  nhìn thấy: ${ctx.visible ? 'có' : 'không'}`}
+          {`giờ ${ctx.hour}  ·  chuỗi ${ctx.streak}  ·  ` +
+            `${ctx.state?.situation ?? '?'}/${ctx.state?.confidence ?? '?'}${forced ? ' (ÉP)' : ''}  ·  ` +
+            `hôm nay trống: ${ctx.emptyToday ? 'có' : 'không'}  ·  nhìn thấy: ${ctx.visible ? 'có' : 'không'}\n` +
+            `tuần này ${((ctx.state?.recent ?? 0) * 100) | 0}%  ·  nền ${((ctx.state?.baseline ?? 0) * 100) | 0}%  ·  ` +
+            `${ctx.state?.because ?? '—'}`}
         </Text>
+
+        <Text style={styles.h}>ÉP TRẠNG THÁI</Text>
+        <View style={styles.grid}>
+          {SITUATIONS.map((sit) => (
+            <PressScale
+              key={sit ?? 'that'}
+              accessibilityRole="button"
+              accessibilityLabel={sit ?? 'thật'}
+              style={[styles.btn, forced === sit && styles.btnOn]}
+              onPress={() => setForced(sit)}>
+              <Text style={styles.btnText}>{sit ?? 'thật'}</Text>
+            </PressScale>
+          ))}
+        </View>
 
         <Text style={styles.h}>SỰ KIỆN</Text>
         <View style={styles.grid}>
@@ -151,6 +202,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: 'rgba(255,255,255,0.07)',
   },
+  /* The forced situation has to be visible at a glance, or the whole screen
+     starts lying about which context produced the decision below it. */
+  btnOn: { backgroundColor: colors.primary },
   wide: { alignItems: 'center', marginTop: spacing.xs },
   btnText: { ...type.caption, fontWeight: '600', color: colors.foreground },
   card: { gap: 4, padding: spacing.sm, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.05)' },

@@ -165,7 +165,41 @@ export function baseEmotion(i: EmotionInput): MascotEmotion {
   if (i.cold) return 'coat';
   // Otherwise mirror the day.
   if (i.mood === 'happy') return 'happy';
-  if (i.mood === 'tired') return i.streak === 0 ? 'sad' : 'tired';
+  /*
+    ── the streak used to make Koa sadder, and that was the guilt mechanic ──
+
+    This read `i.streak === 0 ? 'sad' : 'tired'`. Two things were wrong with it,
+    and the second is the serious one.
+
+    **It fired on the wrong person.** `useMascotMood` returns `'tired'` for a
+    day that is merely *empty so far* — past midday with no meal, or past six
+    with no workout. Somebody who installed the app this morning has a streak of
+    0 by definition, so opening it at half past six on day one produced `sad`,
+    which `presenceMotion` draws as `floatPt: 0, droopDeg: 10`: a figure
+    slumped, motionless and visibly unhappy. Before they had done anything at
+    all, and precisely at the moment they were deciding whether to keep the app.
+
+    **And it made the streak the reason.** The same empty evening drew `tired`
+    at streak 12 and `sad` at streak 0 — so the character was sadder about
+    *people with less to lose*. That is introjected regulation with the sign
+    flipped onto the person least able to carry it. The evidence on this points
+    one way: pressure applied through guilt buys short-term compliance and
+    predicts long-term maintenance worse than autonomous motivation does, and
+    negative affect only survives into continued behaviour where
+    self-compassion is already high — which is not something a slumped cartoon
+    can supply.
+
+    So the day is still mirrored, and the streak no longer scores it. `sad`
+    stays in the vocabulary and in `DEV_EMOTIONS`; what it no longer is, is the
+    face this app wears at somebody who has not logged lunch.
+
+    The judgement that was worth keeping did not live here anyway: `worry` above
+    is the state with an actual claim behind it — a run the app has already
+    called an achievement, a genuinely empty day, and *this person's* evening
+    running out. That one asks while there is still time to answer, which is a
+    different act from looking disappointed after the fact.
+  */
+  if (i.mood === 'tired') return 'tired';
   return 'idle';
 }
 

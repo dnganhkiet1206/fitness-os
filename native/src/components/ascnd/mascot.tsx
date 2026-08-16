@@ -23,7 +23,9 @@ import { duration } from '@/constants/motion';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useMascot } from '@/hooks/use-mascot';
 import { useMascotEmotion } from '@/hooks/use-mascot-emotion';
+import { useKoaContext, refreshKoaContext } from '@/hooks/use-koa-context';
 import { noticeAmplitude, presenceMotion } from '@/lib/koa-idle';
+import { emitKoa } from '@/lib/koa-stage';
 import { localDateStr } from '@/lib/local-date';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
 import { noteAsked, notePraised } from '@/lib/personal-model';
@@ -65,6 +67,7 @@ export function Mascot() {
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();
   const quests = useDailyQuests();
+  const koaCtx = useKoaContext();
   const [bubbleVisible, setBubbleVisible] = useState(true);
   const level = levelFromXp(wallet?.xp ?? 0);
 
@@ -241,8 +244,37 @@ export function Mascot() {
 
   if (!enabled) return null;
 
+  /*
+    ── the tap is the one thing the person starts, and it ignored them ──
+
+    `koa_greeted` has been in the event vocabulary, with a decision branch and a
+    night-versus-day face, since the engine was written. Nothing emitted it. So
+    the only interaction Koa has — touching the figure — ran this fixed
+    animation and nothing else: the same 360° flip at three in the morning while
+    the character wore the `sleep` face, the same flip for somebody back after a
+    fortnight away, the same flip for somebody in the middle of a load spike.
+
+    Now the tap announces itself and the engine answers, which is the entire
+    point of having an engine. `decide` reads `ctx.state` for the two situations
+    that change the reply — see the `koa_greeted` branch — and falls through to
+    the plain wave at confidence `none`, so a five-day-old account is greeted
+    exactly as a stranger should be.
+
+    ── once a day, and why that is the honest id ──
+
+    `emitKoa` dedupes on the id, and taps repeat. A per-tap id would fill the
+    persisted ring buffer with forty greetings and evict the medals it exists to
+    remember; a fixed id would fire once per install. Per day is what the moment
+    actually is: *the first time you said hello today*. Every tap after it still
+    gets the jump and still opens the room — the flip is the acknowledgement
+    that a touch landed, and that is not a thing to ration.
+  */
   const poke = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    emitKoa(
+      { id: `greet:${localDateStr()}`, kind: 'koa_greeted', magnitude: 0.35 },
+      refreshKoaContext(koaCtx),
+    );
     // Excited jump: anticipation squash → stretch up → land with a flip
     squashY.value = withSequence(
       withTiming(0.78, { duration: 90 }),

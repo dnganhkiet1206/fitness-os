@@ -449,14 +449,60 @@ const against = (history, session) => findRecords(session, bestsFrom(history));
   }
 }
 
-/* ── 7. every emitter hands Koa a context read at the moment it fires ── */
+/* ── 7. every emitter hands Koa a context read at the moment it fires ──
+
+   ── the list used to be typed here, and that was the bug in the rule ──
+
+   Four paths, written down once. So the rule covered the emitters that existed
+   the day it was written and was blind to every one added after — which is a
+   guard that checks a list rather than a behaviour, the failure mode this
+   directory has now had to fix six times.
+
+   It found out the honest way: `components/ascnd/mascot.tsx` became the fifth
+   emitter (the tap on the figure, which had never announced itself), and this
+   rule stayed green about a file it had never heard of.
+
+   So the emitters are *found*. Anything in `src` that calls `emitKoa` answers
+   for its context, and a sixth one cannot be added without either passing or
+   failing — never by being absent. The debug screen is the one exemption and it
+   is named with its reason: it builds contexts by hand precisely so it can ask
+   what happens when nobody is watching, and refreshing them would defeat the
+   only thing it is for. */
 {
-  const files = [
-    'src/hooks/use-extras.ts',
-    'src/hooks/use-quest-autoclaim.ts',
-    'src/hooks/use-streak-guard.ts',
-    'src/app/log-workout.tsx',
-  ];
+  const EXEMPT = new Map([
+    [
+      'src/app/koa-debug.tsx',
+      'dựng ngữ cảnh bằng tay để hỏi "nếu không ai nhìn thì sao" — làm mới sẽ phá đúng thứ nó tồn tại để thử',
+    ],
+  ]);
+
+  const all = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', 'src'], {
+    cwd: NATIVE,
+    encoding: 'utf8',
+  })
+    .split('\n')
+    .filter(Boolean);
+
+  const files = all.filter((f) => {
+    if (f === 'src/lib/koa-stage.ts') return false; // where emitKoa is defined
+    if (EXEMPT.has(f)) return false;
+    try {
+      return /\bemitKoa\(/.test(readFileSync(path.join(NATIVE, f), 'utf8'));
+    } catch {
+      return false;
+    }
+  });
+
+  if (files.length < 4) {
+    problems.push(
+      `chỉ tìm thấy ${files.length} file gọi emitKoa — bộ quét hỏng, đừng tin kết quả của bước này`,
+    );
+  }
+  for (const [f, why] of EXEMPT) {
+    if (!all.includes(f)) problems.push(`danh sách miễn còn '${f}' nhưng file đó không còn — bỏ dòng đó đi`);
+    if (!why || why.length < 20) problems.push(`'${f}' được miễn mà lý do quá sơ sài`);
+  }
+
   for (const f of files) {
     const src = strip(read(f));
     let i = src.indexOf('emitKoa(');
@@ -536,6 +582,6 @@ console.log(
     'độ lớn luôn đủ để nói thành lời và không bao giờ vượt huy chương bạch kim; ' +
     'cột JSONB rác không làm hỏng lần lưu; pr_detected được TÍNH chứ không phải hằng số, ' +
     'lịch sử đọc TRƯỚC khi ghi, Koa được báo SAU khi hình đã lên màn hình, ' +
-    'mọi emitKoa đều đọc lại giờ và "có ai nhìn không" ngay lúc bắn, ' +
+    'mọi emitKoa đều đọc lại giờ và "có ai nhìn không" ngay lúc bắn — và các emitter được QUÉT RA chứ không còn là danh sách gõ tay, nên emitter thứ năm (cú chạm vào Koa) không thể lọt qua bằng cách vắng mặt, ' +
     'buổi tập không có kỷ lục vẫn đóng ngay trong một nhịp như cũ; và câu ăn mừng được CHẠY THẬT qua cả bốn nhánh — chú thích của nó từng nói là công cụ này đọc mọi nhánh trong khi grep ra 0 kết quả, nên hai nhánh dễ hỏng nhất (hít xà không in "ở 0 kg", lần đầu đeo tạ không in "trước là 0 kg") chưa từng được kiểm',
 );

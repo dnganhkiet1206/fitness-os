@@ -92,6 +92,24 @@ export function useMascotWallet() {
  * would be a second definition of a day counting.
  */
 export interface StreakState extends Streak {
+  /**
+   * Every day with a row, newest first — the same array the count is derived
+   * from, kept rather than discarded.
+   *
+   * ── why it rides along instead of being fetched again ──
+   *
+   * `lib/user-state.ts` answers "what kind of stretch is this person in", and
+   * the only raw material it needs is this list. It was already read here (up
+   * to `STREAK_WINDOW` rows), used for one number, and thrown away — so a
+   * second consumer would otherwise have meant a second identical query, on
+   * every screen that wanted to know.
+   *
+   * The rule `useKoaContext` is built on applies to the whole companion layer:
+   * **the app's awareness of somebody must not cost the app requests.** Keeping
+   * the array is the cheap side of that trade; re-fetching it would be the
+   * expensive one.
+   */
+  loggedDates: string[];
   /** days already covered by a spent freeze */
   frozen: string[];
   /** days between the last logged day and today that nothing covers yet */
@@ -148,6 +166,7 @@ export function useDailyStreak() {
 
       return {
         ...streakFrom(dates, today, frozen),
+        loggedDates: dates,
         frozen,
         missed: missedDates(dates, today, frozen),
         held,

@@ -52,8 +52,9 @@ const { decide, outranks, LIVE_MS, KOA_LINE_KEY, QUIET_BELOW, SPEAK_ABOVE } =
   require_(path.join(out, 'koa-decide.js'));
 const { streakMagnitude, comebackMagnitude, TIER_MAGNITUDE } =
   require_(path.join(out, 'koa-event.js'));
+const { baseEmotion, RISK_MIN_STREAK } = require_(path.join(out, 'mascot-emotion.js'));
 
-const CTX = { hour: 19, streak: 12, doneToday: 2, emptyToday: false, visible: true };
+const CTX = { hour: 19, streak: 12, emptyToday: false, visible: true };
 
 /* ── 1: nobody performs to an empty room ── */
 for (const kind of ['quest_done', 'day_complete', 'personal_record', 'comeback']) {
@@ -355,6 +356,253 @@ for (const kind of ['quest_done', 'day_complete', 'personal_record', 'comeback']
   /* If the ordering assertion above were removed, this is the shape that would
      pass: every event the same size. Stated here so the reason the case exists
      is written down next to it. */
+}
+
+/* ── every kind of event either has somebody who fires it, or a written reason ──
+
+   ── the shape, not the instance ──
+
+   `koa_greeted` sat in the union with a full decision branch — a night face, a
+   day face, an intensity, a hold — and **nothing in the app ever emitted it**.
+   It was reachable only from the debug screen, so the one interaction a person
+   can start ran a fixed 360° flip and consulted none of it. Nothing failed;
+   there is simply no way to notice a `case` that is never reached.
+
+   That is the same shape as `tools/dead-schema.mjs` (a table nobody reads or
+   writes) and `tools/linked.mjs` (an exported function nobody calls), and it
+   gets the same treatment: every kind is either wired up, or named here with
+   the reason it is not. A tenth kind added and left unwired fails this step —
+   which is the case worth catching, because it is the one nobody would
+   otherwise see. */
+{
+  const KIND_EXEMPT = new Map([
+    [
+      'quest_done',
+      'năm việc hằng ngày đã có phản ứng riêng ở chỗ peek trên thẻ (`quest-peek`); bắn thêm qua ' +
+        'đường này nữa là một cốc nước được diễn hai lần',
+    ],
+    [
+      'streak_at_risk',
+      'khuôn mặt lo đã được `baseEmotion` giữ liên tục suốt buổi tối chứ không phải một sự kiện ' +
+        'nổ một lần; nhánh sự kiện còn lại để màn debug chạy thử `streakInDanger` cùng một luật',
+    ],
+  ]);
+
+  const eventSrc = readFileSync(path.join(NATIVE, 'src/lib/koa-event.ts'), 'utf8');
+  const union = eventSrc.slice(
+    eventSrc.indexOf('export type KoaEventKind'),
+    eventSrc.indexOf('export interface KoaEvent'),
+  );
+  const kinds = [...union.matchAll(/\|\s*'(\w+)'/g)].map((m) => m[1]);
+  if (kinds.length < 8) {
+    problems.push(`chỉ đọc được ${kinds.length} loại sự kiện từ koa-event.ts — bộ quét hỏng`);
+  }
+
+  const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', 'src'], {
+    cwd: NATIVE,
+    encoding: 'utf8',
+  })
+    .split('\n')
+    .filter(Boolean)
+    /* the debug screen fires all of them by construction, so counting it would
+       make every kind look wired */
+    .filter((f) => f !== 'src/app/koa-debug.tsx' && f !== 'src/lib/koa-event.ts');
+
+  /* Read out of the `emitKoa(...)` call itself rather than off a `kind:` line.
+
+     A first draft matched `kind:\s*'(\w+)'` and immediately reported
+     `award_earned` as unwired — because the medal engine writes
+     `kind: def.type === 'pr' ? 'personal_record' : 'award_earned'`, and a
+     ternary is not a literal on a `kind:` line. Two kinds decided in one
+     expression is an ordinary thing to write; a rule that cannot read it would
+     have been argued down rather than fixed. So the whole call is taken, and
+     every kind named anywhere inside it counts. */
+  const emitted = new Set();
+  let scanned = 0;
+  for (const f of files) {
+    let src;
+    try {
+      src = readFileSync(path.join(NATIVE, f), 'utf8');
+    } catch {
+      continue;
+    }
+    src = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    let i = src.indexOf('emitKoa(');
+    while (i >= 0) {
+      let depth = 0;
+      let j = i + 'emitKoa'.length;
+      for (; j < src.length; j++) {
+        if (src[j] === '(') depth++;
+        else if (src[j] === ')') {
+          depth--;
+          if (depth === 0) break;
+        }
+      }
+      scanned++;
+      const call = src.slice(i, j + 1);
+      for (const m of call.matchAll(/'(\w+)'/g)) {
+        if (kinds.includes(m[1])) emitted.add(m[1]);
+      }
+      i = src.indexOf('emitKoa(', j);
+    }
+  }
+  if (scanned < 4) {
+    problems.push(`chỉ đọc được ${scanned} lời gọi emitKoa — bộ quét hỏng, đừng tin kết quả bước này`);
+  }
+
+  for (const kind of kinds) {
+    if (emitted.has(kind) || KIND_EXEMPT.has(kind)) continue;
+    problems.push(
+      `sự kiện '${kind}' có nhánh quyết định nhưng KHÔNG chỗ nào trong app bắn nó — nối nó vào, ` +
+        'hoặc ghi tên nó vào KIND_EXEMPT kèm LÝ DO. Một `case` không bao giờ chạy tới không gây lỗi, ' +
+        'nó chỉ nằm đó — đúng như `koa_greeted` đã nằm đó suốt, trong khi cú chạm vào Koa chạy một ' +
+        'hoạt ảnh cố định và không hỏi engine lấy một câu',
+    );
+  }
+  for (const [kind, why] of KIND_EXEMPT) {
+    if (!kinds.includes(kind)) {
+      problems.push(`KIND_EXEMPT còn '${kind}' nhưng loại đó không còn trong koa-event.ts — bỏ dòng đó đi`);
+    }
+    if (!why || why.length < 30) problems.push(`'${kind}' được miễn mà lý do quá sơ sài`);
+  }
+}
+
+/* ── the greeting reads the person, and only when it is entitled to ──
+
+   `koa_greeted` had a decision branch from the day the engine was written and
+   **nothing ever emitted it**: touching the figure ran a fixed 360° flip and
+   opened the room. So the one interaction the person initiates was the one
+   place the character had no opinion.
+
+   Three things have to hold at once, and the middle one is the reason this is a
+   table rather than a reading:
+
+     · a person back after a fortnight gets warmth, not the stranger's wave;
+     · a person **below their own baseline** gets the ordinary wave. A character
+       that changes its face at somebody having a hard fortnight is a character
+       commenting on it, and that is the mechanic this app has twice written
+       down that it will not use;
+     · a person in a load spike is greeted quietly — a cheerful bounce is the
+       one greeting here that could push somebody toward an injury.
+
+   And none of it fires without confidence: at `none` — a five-day-old account,
+   or a screen that never read the streak — the answer must be exactly the
+   stranger's wave. */
+{
+  const NOON = { hour: 14, streak: 5, emptyToday: false, visible: true };
+  const st = (situation, confidence = 'high') => ({
+    situation, confidence, recent: 0.3, baseline: 0.6, trend: null, daysQuiet: 0, because: 'thử',
+  });
+  const greet = (state) => decide({ kind: 'koa_greeted', magnitude: 0.35 }, { ...NOON, state });
+
+  const plain = greet(undefined);
+  if (plain.emotion !== 'wave' || plain.say !== null) {
+    problems.push(`chạm Koa khi chưa biết gì phải ra vẫy tay không lời, ra '${plain.emotion}'/${plain.say}`);
+  }
+
+  const back = greet(st('returning'));
+  if (back.say !== 'welcome_back') {
+    problems.push(
+      `chạm Koa sau khi quay lại phải là lời đón (welcome_back), ra ${back.say} — ` +
+        'đây là khoảnh khắc mong manh nhất trong cả sản phẩm và nó đang nhận đúng cái vẫy tay của người lạ',
+    );
+  }
+  if (!(back.intensity > plain.intensity)) {
+    problems.push('lời đón không lớn hơn cái vẫy tay thường — hai thứ khác nhau mà diễn như nhau');
+  }
+
+  const hard = greet(st('slipping'));
+  if (hard.emotion !== plain.emotion || hard.say !== plain.say) {
+    problems.push(
+      `người đang sa sút được chào KHÁC người bình thường ('${hard.emotion}'/${hard.say}) — ` +
+        'nhân vật đổi sắc mặt vì bạn có một tuần khó khăn là nhân vật đang bình phẩm về nó',
+    );
+  }
+
+  const heavy = greet(st('overreaching'));
+  if (heavy.say !== null || heavy.intensity >= plain.intensity) {
+    problems.push(
+      'người đang quá tải phải được chào KHẼ và không lời — một cú nhảy hớn hở ở đây là lời chào duy nhất ' +
+        'có thể đẩy người ta tới chấn thương',
+    );
+  }
+
+  /* the confidence gate, on every situation — a state read at confidence
+     `none` is a state the app is not entitled to act on */
+  for (const situation of ['returning', 'overreaching', 'slipping', 'steady', 'settling_in']) {
+    const d = greet(st(situation, 'none'));
+    if (d.emotion !== plain.emotion || d.say !== plain.say) {
+      problems.push(
+        `'${situation}' với độ tin cậy none vẫn đổi lời chào — chưa đủ dữ liệu thì phải cư xử ` +
+          'đúng như với người lạ',
+      );
+    }
+  }
+
+  /* and night still wins over all of it */
+  for (const hour of [23, 2, 5]) {
+    const d = decide({ kind: 'koa_greeted', magnitude: 0.35 }, { ...NOON, hour, state: st('returning') });
+    if (d.emotion !== 'sleep') {
+      problems.push(`chạm Koa lúc ${hour}h ra '${d.emotion}' — nhân vật bật dậy lúc 2h sáng là nhân vật không có trạng thái`);
+    }
+  }
+}
+
+/* ── the streak must not make Koa sadder ──
+
+   `baseEmotion` used to read `mood === 'tired' ? (streak === 0 ? 'sad' : 'tired')`.
+   `useMascotMood` returns `tired` for a day that is only *empty so far* — past
+   midday with no meal, past six with no workout — so somebody who installed the
+   app that morning met a figure drawn at `floatPt: 0, droopDeg: 10`: slumped,
+   motionless, visibly unhappy, before they had done anything at all.
+
+   And the streak was the term that decided it, which put the sad face on the
+   people with the least invested. That is guilt aimed at whoever is least able
+   to carry it, and it is the mechanic this app has written down twice that it
+   will not use.
+
+   So: identical days must draw identical faces whatever the streak, and no
+   streak value may produce `sad`. `worry` is the one state allowed to look
+   concerned, and it is gated on a run the app has already called an
+   achievement, a genuinely empty day, and this person's own evening. */
+{
+  const DAY = {
+    onWorkoutScreen: false,
+    isBirthday: false,
+    cold: false,
+    streakAtRisk: false,
+  };
+  for (const mood of ['happy', 'neutral', 'tired']) {
+    for (const hour of [7, 11, 13, 17, 19, 21]) {
+      const at = (streak) => baseEmotion({ ...DAY, mood, hour, streak });
+      const zero = at(0);
+      if (zero === 'sad') {
+        problems.push(
+          `mood='${mood}' lúc ${hour}h với chuỗi 0 ra 'sad' — một ngày MỚI CHỈ TRỐNG không phải một ngày ` +
+            'thất bại, và người có chuỗi 0 là người mới cài app sáng nay',
+        );
+      }
+      for (const streak of [1, 3, 12, 200]) {
+        if (at(streak) !== zero) {
+          problems.push(
+            `mood='${mood}' lúc ${hour}h: chuỗi 0 ra '${zero}' còn chuỗi ${streak} ra '${at(streak)}' — ` +
+              'cùng một ngày mà chuỗi lại chấm điểm nó, tức Koa buồn hơn với người có ít thứ để mất hơn',
+          );
+        }
+      }
+    }
+  }
+  /* and the one concerned state that IS allowed still works, so this check
+     cannot be satisfied by deleting every negative face in the app */
+  const worried = baseEmotion({
+    ...DAY, mood: 'tired', hour: 20, streak: RISK_MIN_STREAK, streakAtRisk: true, riskHour: 18,
+  });
+  if (worried !== 'worry') {
+    problems.push(
+      `chuỗi ${RISK_MIN_STREAK} ngày, hôm nay trống thật, 20h — phải là 'worry' nhưng ra '${worried}'. ` +
+        'Hỏi khi vẫn còn kịp trả lời là việc khác với tỏ ra thất vọng sau đó',
+    );
+  }
 }
 
 if (problems.length) {

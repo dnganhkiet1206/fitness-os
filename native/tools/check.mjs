@@ -184,6 +184,7 @@ const STEPS = [
   ['mô hình cá nhân', 'node', ['tools/personalize.mjs']],
   ['icon tô đặc', 'node', ['tools/icon-fill.mjs']],
   ['quyết định Koa', 'node', ['tools/koa-decide.mjs']],
+  ['trạng thái người dùng', 'node', ['tools/user-state.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],
   ['giờ nhắc nhở', 'node', ['tools/reminder-timing.mjs']],

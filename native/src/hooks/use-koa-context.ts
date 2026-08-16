@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import type { KoaContext } from '@/lib/koa-decide';
 import { koaOnScreen } from '@/lib/koa-presence';
+import { useUserState } from '@/hooks/use-user-state';
 import { localDateStr } from '@/lib/local-date';
 import type { Streak } from '@/lib/streak';
 
@@ -29,6 +30,7 @@ export function useKoaContext(): KoaContext {
   const qc = useQueryClient();
   const { user } = useAuth();
   const today = localDateStr();
+  const state = useUserState();
 
   const streak = qc.getQueryData<Streak>(['mascot_streak', user?.id, today]);
   const log = qc.getQueryData<{ kcal?: number; workout_count?: number; steps?: number }>([
@@ -40,10 +42,11 @@ export function useKoaContext(): KoaContext {
   return {
     hour: new Date().getHours(),
     streak: streak?.count ?? 0,
-    /* Unused by `decide` today; kept because the debug screen prints it, and a
-       context that shows less than the engine could use is a debug tool that
-       lies by omission. */
-    doneToday: 0,
+    /* What kind of stretch this person is in. Read from the same cache and on
+       the same terms as everything else here — `useUserState` mounts no
+       observer either, and returns `settling_in`/`none` when there is nothing
+       to read, which is the value every branch downstream already handles. */
+    state,
     /* `false` when the day is unread — never a worried face over an unknown. */
     emptyToday: log
       ? (Number(log.kcal) || 0) === 0 &&

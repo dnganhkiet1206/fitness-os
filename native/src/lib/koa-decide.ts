@@ -1,5 +1,6 @@
 import { streakInDanger, type MascotEmotion } from '@/lib/mascot-emotion';
 import type { KoaEvent } from '@/lib/koa-event';
+import type { UserState } from '@/lib/user-state';
 
 /**
  * What Koa does about something that just happened — one function, no state.
@@ -40,8 +41,30 @@ export interface KoaContext {
   hour: number;
   /** consecutive days, 0 when the run is over */
   streak: number;
-  /** how many of the five are done today */
-  doneToday: number;
+  /**
+   * What kind of stretch this person is in — `lib/user-state.ts`.
+   *
+   * ── what this replaced ──
+   *
+   * A field called `doneToday`, typed `number`, documented as "how many of the
+   * five are done today". It was **hard-coded to 0** at its only real caller,
+   * with a note admitting `decide` never read it and that it was kept because
+   * the debug screen printed it. So the debug screen printed `xong 0/5` at
+   * somebody who had finished four — a diagnostic tool stating a number that
+   * was never once true.
+   *
+   * The context did need more than the hour and the streak. It needed something
+   * the app can actually compute, and something worth deciding on: the
+   * difference between a person who missed Tuesday, a person who has managed one
+   * day in a fortnight, and a person who has been here five days and has no
+   * baseline at all. The streak reads all three as the same number.
+   *
+   * Optional, and every branch that reads it must survive its absence: a screen
+   * that never fetched the streak has no state, and `settling_in` at confidence
+   * `none` is the honest value for that — the same value a brand-new account
+   * gets, for the same reason.
+   */
+  state?: UserState;
   /** today has nothing in it yet */
   emptyToday: boolean;
   /** the person is on a screen where a reaction can be seen */
@@ -85,7 +108,29 @@ export type KoaLine =
 
 /** Below this, a moment is not worth interrupting anybody for. */
 export const QUIET_BELOW = 0.25;
-/** At or above this, the reaction gets words as well as a face. */
+/**
+ * Where generic praise stops being small and starts being big.
+ *
+ * ── the comment here used to claim more than the constant does ──
+ *
+ * It read *"at or above this, the reaction gets words as well as a face"*, and
+ * that was never true of the code. It is used in exactly one place — the
+ * `award_earned` / `level_up` branch, to pick between `praise_small` and
+ * `praise_big` — while `streak_saved` speaks at 0.45 and `comeback` speaks from
+ * 0.5. Those are not violations of a rule; they are the answer to a different
+ * question.
+ *
+ * The distinction the engine actually draws is `QUIET_BELOW`: is this worth
+ * interrupting anybody for. Above that line, whether there are words depends on
+ * whether the moment is *about the person* — coming back, a run saved, a record
+ * — or merely about a number going up, and a number going up gets a face until
+ * it is big enough to be worth a sentence. That judgement is per branch, which
+ * is why it is written in each branch.
+ *
+ * Left as a threshold on praise, with the claim removed. A constant that says
+ * it governs the whole engine, and governs one branch, is the kind of thing a
+ * later reader builds on.
+ */
 export const SPEAK_ABOVE = 0.6;
 
 const clamp01 = (n: number) => Math.min(Math.max(n, 0), 1);
@@ -214,16 +259,102 @@ export function decide(event: KoaEvent, ctx: KoaContext): KoaDecision {
       };
     }
 
-    case 'koa_greeted':
+    /* ── the one moment the person starts ── */
+    case 'koa_greeted': {
+      /* Night first: a character that bounces awake at three in the morning
+         because you touched it is a character with no state at all. */
+      if (ctx.hour >= 22 || ctx.hour < 6) {
+        return {
+          shouldReact: true,
+          emotion: 'sleep',
+          intensity: 0.3,
+          gaze: 'user',
+          hold: 1200,
+          say: null,
+          because: 'người dùng chạm Koa lúc đêm',
+        };
+      }
+
+      /*
+        ── and this is where the state layer earns its place ──
+
+        A greeting is the one interaction the person initiates, which makes it
+        the only place a companion can respond to *them* rather than to a score.
+        It used to be a constant: the same wave, at the same intensity, for the
+        person on a two-hundred-day run and the person opening the app for the
+        first time since a fortnight ago.
+
+        Two situations change the answer, and both are read from
+        `lib/user-state.ts` rather than guessed here:
+
+          · **returning.** They were away and they came back. That is the most
+            fragile moment in the whole product, and the reaction to it is
+            warmth — `welcome_back`, the line written for exactly this and
+            reachable until now only from an automatic comeback event they had
+            to be lucky to see. Nothing about the days missed: the magnitude
+            curve already flattens past a fortnight so that a longer absence
+            cannot read as a bigger occasion, which would be congratulating
+            somebody for having been away.
+          · **overreaching.** Load running well ahead of what their body is
+            used to. Koa acknowledges them and stays quiet: a cheerful bounce at
+            somebody in a load spike is the one greeting in this list that could
+            push a person toward an injury, and silence is the only honest
+            alternative to a medical claim the app is in no position to make.
+
+            The emotion is `idle` and that is a correction to my own first
+            draft, which used `rested`. `rested` is not a mood in this app — it
+            carries `outfit: { head: 'beanie' }`, added so that a one-second
+            *peek* crop of nothing but a face could still say "slept". Used as a
+            greeting it would have put a woolly hat on the character every time
+            somebody in a load spike tapped it, which is a costume change
+            dressed up as a reaction.
+
+        `slipping` is deliberately **not** in this list. Somebody below their
+        own baseline is having a hard fortnight, and a character that changes
+        its face about it is a character commenting on it. The right response to
+        a hard fortnight is an ordinary greeting — which is what they get.
+
+        And nothing is read at all without confidence: at `none` this falls
+        through to the plain wave, so a five-day-old account is greeted exactly
+        as a stranger should be.
+      */
+      const st = ctx.state;
+      const known = st != null && st.confidence !== 'none';
+
+      if (known && st.situation === 'returning') {
+        return {
+          shouldReact: true,
+          emotion: 'happy',
+          intensity: 0.55,
+          gaze: 'user',
+          hold: 1800,
+          say: 'welcome_back',
+          because: `chạm Koa sau khi quay lại — ${st.because}`,
+        };
+      }
+
+      if (known && st.situation === 'overreaching') {
+        return {
+          shouldReact: true,
+          emotion: 'idle',
+          intensity: 0.3,
+          gaze: 'user',
+          hold: 1400,
+          say: null,
+          because: `chạm Koa khi đang quá tải — ${st.because}`,
+        };
+      }
+
       return {
         shouldReact: true,
-        emotion: ctx.hour >= 22 || ctx.hour < 6 ? 'sleep' : 'wave',
+        emotion: 'wave',
         intensity: 0.35,
         gaze: 'user',
         hold: 1200,
         say: null,
         because: 'người dùng chủ động mở/chạm Koa',
       };
+    }
   }
 }
 
