@@ -347,7 +347,31 @@ export default function MascotRoomScreen() {
     welcomeTried.current = true;
     claim.mutate(
       { refKey: 'welcome', amount: 300, reason: 'welcome bonus' },
-      { onSuccess: () => toast.success(i18n.nRoomWelcome.replace('{n}', '300')) },
+      {
+        onSuccess: () => toast.success(i18n.nRoomWelcome.replace('{n}', '300')),
+        /*
+          ── a failed welcome has to be retried, and it could not be ──
+
+          `welcomeTried` is set before the call so a re-render cannot grant
+          twice, and nothing put it back. A refused claim therefore stayed
+          refused for as long as this screen was mounted, and the screen it
+          leaves behind is the worst version of itself: a shop with
+          thirty-nine things in it and a balance of **zero**, on the very first
+          visit, with no word about why.
+
+          The grant is idempotent — `ref_key: 'welcome'` is unique per account,
+          so `earn_mascot_coins` pays it once however many times it is asked.
+          Which makes clearing the latch on failure free, and leaving it set
+          pure loss.
+
+          Same correction `useStreakGuard` already carries, and the same one
+          `use-quest-autoclaim` needed: mark before the call, unmark when the
+          call comes back refused.
+        */
+        onError: () => {
+          welcomeTried.current = false;
+        },
+      },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wallet]);

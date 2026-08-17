@@ -33,6 +33,7 @@ import {
   type ShopCategory,
   type ShopItem,
 } from '@/lib/mascot-room';
+import { offlineNow } from '@/lib/offline';
 import { toast } from '@/lib/toast';
 
 /**
@@ -213,6 +214,30 @@ export default function ShopScreen() {
     if (!TEST_UNLOCK_ALL && balance < item.price) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       toast.warning(i18n.nRoomNotEnough);
+      return;
+    }
+    /*
+      ── the shop is online-only, and it had no way of saying so ──
+
+      `lib/offline-write.ts` names the shop in its list of what is deliberately
+      **not** queued, and that is right: a purchase is a server decision about a
+      price and a balance, and a queued one would be an intention that may be
+      unaffordable by the time it sends.
+
+      What the screen did with that decision was nothing. `buy.mutate` fired,
+      React Query paused it — `networkMode` is the default `'online'` — and
+      `isPending` stayed true for ever: no toast, no error (a paused mutation
+      never calls `onError`), and `pendingBuy` disabled **every** buy button on
+      the page. One tap with no signal and the whole shop went dead, silently,
+      with a spinner on the item that had not been bought.
+
+      Refusing out loud is the honest version, and it is the same shape the log
+      sheets already use for the writes that *can* be queued — the difference
+      being that here there is nothing to promise.
+    */
+    if (offlineNow()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      toast.warning(i18n.nShopOffline);
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

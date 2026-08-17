@@ -557,72 +557,43 @@ export function useUpdateChallengeProgress() {
         const step = challengeStep(ch, newValue);
 
         /*
-          Write only when something moved.
+          ── one branch: paid, named, and only then written down ──
 
-          This now runs whenever Today comes into focus, not only when the
-          Challenges screen is opened, so most runs find nothing changed. An
-          unconditional update makes every one of those three writes for no
-          reason — and it rewrites `completed_at` on each pass, quietly moving
-          the moment a challenge was finished.
+          Two invariants meet here and both are about *ordering*.
+
+          **Paid and announced in the same `if`.** The payment used to be gated
+          on the transition and the celebration on the state alone. This runs
+          from Today's `useFocusEffect`, so it re-ran on every return to the tab
+          — and every already-finished challenge queued its confetti again, for
+          the rest of the week. `tools/challenge-reward.mjs` holds the two
+          together for that reason; the fix below must not split them.
+
+          **Paid before the row is marked finished.** That is new, and it is the
+          other way round from how it ran. `confirmWrite` wrote
+          `completed: true` first and the payment came after, so a payment that
+          failed — a dropped connection, the daily ceiling, anything — left the
+          challenge marked complete in the database with nothing credited. And
+          `justCompleted` is a *transition* (`completed && !was`), so the next
+          pass reads it as long-finished and never comes back: the coins were
+          gone permanently, for a challenge the app itself recorded as won.
+
+          Reversed, both orders of failure recover, because the payment is the
+          idempotent half — `challengeRefKey(tier, weekStart, key)` is fixed for
+          the week and `UNIQUE(user_id, ref_key)` makes a repeat a no-op:
+
+            · pay fails → the row stays unfinished → the next pass retries both
+            · pay lands, write fails → `confirmWrite` throws before the award is
+              returned, so the next pass pays again (no-op), writes, and
+              celebrates once
+
+          The idempotent step goes first. Same rule that puts the ledger insert
+          before the inventory insert inside `buy_mascot_item`.
         */
-        if (!step.unchanged) {
-          /*
-            ── and this write in particular has to be confirmed ──
-
-            It is the one whose silent no-op *causes another bug*. If the row is
-            not updated, `completed` stays false in the database, so the next
-            focus pass reads the challenge as freshly finished — pays again
-            (harmless, the ledger is idempotent on `ref_key`) and **celebrates
-            again**, which is the repeat this round just removed. A write that
-            quietly does nothing here rebuilds the fault it was paired with.
-          */
-          await confirmWrite(
-            supabase
-              .from('weekly_challenges')
-              .update({
-                current_value: step.value,
-                completed: step.completed,
-                completed_at: step.completed ? new Date().toISOString() : null,
-              })
-              .eq('id', ch.id),
-            'Không cập nhật được tiến trình thử thách',
-          );
-        }
-
-        /*
-          And pay for it.
-
-          Finishing a challenge used to fire a celebration and nothing else,
-          while the daily quests beside it ran a closed loop into the shop —
-          two reward systems, and the ornamental one asks for the harder thing.
-
-          Only on the pass that completes it, and the ledger row is idempotent
-          on `ref_key` besides. The `!ch.completed` guard is not the safety —
-          the unique key is — it just saves a round trip on every later focus.
-        */
-        /*
-          ── the payment and the celebration are one moment, and they had
-             drifted apart ──
-
-          The payment was gated on the *transition* — `isCompleted &&
-          !ch.completed`, the pass on which a challenge stops being unfinished.
-          The celebration below it was gated on `isCompleted` alone.
-
-          That reads like a small inconsistency and was not, because of where
-          this runs. `useUpdateChallengeProgress` fires from Today's
-          `useFocusEffect`, so it re-runs **every time the tab regains focus** —
-          which is every return from a meal sheet, a workout sheet, a weigh-in,
-          or any other tab. On each of those passes every already-finished
-          challenge re-entered this branch and queued confetti again.
-
-          So finishing one challenge on Monday meant a full-screen award
-          animation on every single return to Today until the week rolled over.
-          The one thing celebration depends on is being rare, and this was the
-          app's own most-repeated animation.
-
-          Both now live in the same `if`. A moment is paid for once and
-          announced once, on the pass where it actually happened.
-        */
+        /* The queue's own parameter type, rather than an import of the shape
+           from the component that renders it: `tools/layering.mjs` forbids a
+           hook reaching into `components/` for a value, and this needs no new
+           edge at all — `enqueueAward` is already imported here. */
+        let award: Parameters<typeof enqueueAward>[0] | null = null;
         if (step.justCompleted) {
           const tier = ch.reward_tier ?? 'bronze';
           const reward = CHALLENGE_REWARD[tier] ?? CHALLENGE_REWARD.bronze;
@@ -636,21 +607,54 @@ export function useUpdateChallengeProgress() {
           });
           if (payError && !payError.message.includes('duplicate')) throw payError;
 
-          // Built here, inside the branch that has already established there is
-          // a reward to name. Carrying the row out to read later would lose that
-          // narrowing, and `reward_title` is nullable.
-          if (!ch.reward_title) return null;
-          const t = CHALLENGE_TEXT[ch.challenge_key];
-          const doneLabel = lang === 'vi' ? 'Hoàn thành thử thách' : 'Challenge complete';
-          return {
-            title: t ? t.reward[lang] : ch.reward_title,
-            description: `${doneLabel}: ${t ? t.title[lang] : ch.title}`,
-            icon: ch.icon ?? 'trophy',
-            tier: ch.reward_tier ?? 'bronze',
-          };
+          /* Named here, inside the branch that has already established there is
+             a reward to name. `reward_title` is nullable, and a challenge
+             without one is still paid and still written — it simply has nothing
+             to put on a card. */
+          if (ch.reward_title) {
+            const t = CHALLENGE_TEXT[ch.challenge_key];
+            const doneLabel = lang === 'vi' ? 'Hoàn thành thử thách' : 'Challenge complete';
+            award = {
+              title: t ? t.reward[lang] : ch.reward_title,
+              description: `${doneLabel}: ${t ? t.title[lang] : ch.title}`,
+              icon: ch.icon ?? 'trophy',
+              tier: ch.reward_tier ?? 'bronze',
+            };
+          }
         }
 
-        return null;
+        /*
+          Write only when something moved.
+
+          This now runs whenever Today comes into focus, not only when the
+          Challenges screen is opened, so most runs find nothing changed. An
+          unconditional update makes every one of those three writes for no
+          reason — and it rewrites `completed_at` on each pass, quietly moving
+          the moment a challenge was finished.
+
+          ── and this write in particular has to be confirmed ──
+
+          It is the one whose silent no-op *causes another bug*. If the row is
+          not updated, `completed` stays false in the database, so the next
+          focus pass reads the challenge as freshly finished — pays again
+          (harmless, the ledger is idempotent on `ref_key`) and **celebrates
+          again**, which is the repeat this file was corrected for.
+        */
+        if (!step.unchanged) {
+          await confirmWrite(
+            supabase
+              .from('weekly_challenges')
+              .update({
+                current_value: step.value,
+                completed: step.completed,
+                completed_at: step.completed ? new Date().toISOString() : null,
+              })
+              .eq('id', ch.id),
+            'Không cập nhật được tiến trình thử thách',
+          );
+        }
+
+        return award;
         }),
       );
 

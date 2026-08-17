@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (93 bước). Ngày rà: 2026-08-17.
+Bộ kiểm: `node tools/check.mjs` (94 bước). Ngày rà: 2026-08-17.
 
 ---
 
@@ -1228,6 +1228,291 @@ Không có đường nào để một buổi chạy tham gia vào lời khuyên 
 Rỗng / thiếu / null / NaN / âm / toàn 0 → `unknown`, bước 0. `target` bằng
 0/null/NaN rơi về mục tiêu theo goal chứ không so với 0 (so với 0 sẽ đọc **mọi**
 buổi từng ghi là quá nặng). Chênh lệch cực lớn bị chặn ở `MAX_STEP`.
+
+---
+
+## Vòng 5 — Chain D: sự kiện → thưởng → sổ cái → ví → cửa hàng → freeze
+
+Ngày rà: 2026-08-17. Bộ kiểm: 94 bước.
+
+---
+
+### NGỮ NGHĨA SỔ CÁI — đọc từ schema và RLS
+
+`mascot_transactions` là **A: sổ cái chỉ ghi thêm (append-only)**.
+
+| | |
+|---|---|
+| số dư | **suy ra**, không lưu: `SUM(amount)` |
+| dương | một khoản thưởng đã được cấp phép |
+| âm | một khoản chi (mua đồ / mua freeze) |
+| sửa | không có policy UPDATE cho client |
+| xoá | không có policy DELETE cho client |
+| chèn | không có policy INSERT cho client (bị gỡ ở `20260810120000`) |
+| hoàn tiền / đảo | **không tồn tại** — không có đường nào tạo dòng bù |
+
+Client **chỉ đọc**. Mọi thay đổi đi qua bốn hàm `SECURITY DEFINER`:
+`earn_mascot_coins`, `buy_mascot_item`, `buy_streak_freeze`, `use_streak_freeze`.
+
+XP **dùng chung đúng những dòng ấy**: `xpForRefKey(ref_key)` cộng lại từ chính
+sổ cái. Nên câu hỏi §20 ("xu vào mà XP hỏng") **không có chỗ để xảy ra** — một
+sự kiện là một dòng, và một dòng cho cả hai. Dòng âm (`buy:`, `freeze:`) không
+khớp mẫu nào nên cho 0 XP: mua đồ không bao giờ tụt cấp.
+
+**Sáu hình dạng `ref_key`**, tất cả có tiền tố phân vùng và dấu `:` phân cách,
+mọi thành phần đều từ tập đóng hoặc độ rộng cố định:
+`d:<YYYY-MM-DD>:<quest|streak>` · `w:<id>` · `ch:<tier>:<weekStart>:<key>` ·
+`set:<id>` · `buy:<itemKey>` · `freeze:<uuid>`. Không cặp nào va nhau, và không
+chỗ nào nối chuỗi thiếu phân cách.
+
+---
+
+### ĐO THẬT — PostgreSQL 16.13 dựng từ mọi migration, vai `authenticated`, RLS bật
+
+Danh tính lấy từ `request.jwt.claim.sub` đúng như Supabase, nên đây là RLS chạy
+thật chứ không phải bị vòng qua.
+
+**Không đúc được tiền, không tự cấp được gì:**
+
+```
+POST mascot_transactions {amount: 999999}   → new row violates RLS policy
+POST mascot_inventory    {stage_champion}   → new row violates RLS policy
+POST streak_freezes                          → new row violates RLS policy
+UPDATE shop_prices SET price = 1             → UPDATE 0
+DELETE FROM mascot_transactions              → DELETE 0
+UPDATE mascot_transactions SET amount=99999  → UPDATE 0
+INSERT entitlements {tier:'max'}             → new row violates RLS policy
+ghi thưởng cho user khác                     → new row violates RLS policy
+đọc ví của user khác                         → 0 dòng
+```
+
+**Trần và idempotency:**
+
+```
+earn(999999) / earn(0) / earn(-50) / earn(NULL)  → reward out of range
+earn('d:2026-08-17:meal', 10) × 2, rồi × 300     → 1 dòng, số dư 10
+```
+
+Lần thứ ba xin 300 với **cùng ref_key** cũng chỉ ra 1 dòng 10 xu.
+
+**Double-spend, hai giao dịch song song thật (số dư 210, hai món 150):**
+
+```
+A: BEGIN; buy_mascot_item('head_beanie')     → 60
+B:        buy_mascot_item('bottom_legging')  → ERROR: insufficient coins
+trạng thái cuối: so_du=60, so_mon_so_huu=1
+```
+
+B chặn ở `pg_advisory_xact_lock`, rồi cộng lại sổ cái đã có khoản nợ của A. Số
+dư không bao giờ âm.
+
+**Freeze:**
+
+```
+mua 3 cái                       → cái thứ ba: freeze limit (trần giữ 2)
+use_streak_freeze(cùng ngày) ×3 → t, f, f   (1 tiêu, 1 còn giữ)
+use(CURRENT_DATE-30) / (+5)     → freeze window
+```
+
+---
+
+### BUG-21 — Thưởng nhiệm vụ hỏng một lần là không bao giờ thử lại
+
+| | |
+|---|---|
+| **AREA** | `use-quest-autoclaim.ts` |
+| **SEVERITY** | P2 — mất thưởng đã kiếm được |
+| **STATUS** | ĐÃ SỬA |
+
+**TRIGGER** Hoàn thành một nhiệm vụ; lệnh ghi thưởng bị từ chối (mạng chập,
+chạm trần ngày).
+
+**EXPECTED** Thử lại. Việc thử lại **không thể** trả hai lần:
+`earn_mascot_coins` khoá theo `ref_key`, và khoá là `d:<hôm nay>:<nhiệm vụ>`,
+cố định cả ngày.
+
+**ACTUAL** `sent.current.add(refKey)` chạy **trước** lệnh gọi và không có
+`onError` để gỡ ra. Khoá nằm lại suốt phiên: không thử lại ở lần render sau,
+không khi ví refetch, không khi một nhiệm vụ khác xong.
+
+Và không chỉ một phiên. `unclaimed` dựng từ nhiệm vụ **của hôm nay**, nên một
+lần hỏng lúc 23:30 mà chưa mở lại app trước nửa đêm là mất hẳn: danh sách ngày
+mai là khoá của một ngày khác, và không gì trong app quay lại lấy của hôm qua.
+
+**EVIDENCE** Đúng hình dạng `useStreakGuard` đã được sửa — *"không có `onError`,
+nên một RPC bị từ chối để lại ngày đó vĩnh viễn trong `tried`"* — để nguyên ở
+đây.
+
+**FIX** `onError: () => sent.current.delete(refKey)`. Im lặng, khác streak
+guard: cái kia tiêu 150 xu và người ta có quyền biết nó hỏng; cái này là đường
+"thưởng tự về" và một toast đỏ cho một nhiệm vụ 10 xu đúng là cái thuế mà cả
+hook này sinh ra để dẹp.
+
+**VERIFICATION** `tools/economy-ledger.mjs` luật A.
+
+---
+
+### BUG-22 — Thử thách được ghi là thắng, rồi tiền thưởng biến mất vĩnh viễn
+
+| | |
+|---|---|
+| **AREA** | `use-extras.ts` → `weekly_challenges` → `earn_mascot_coins` |
+| **SEVERITY** | P1 — mất thưởng, không thể phục hồi |
+| **STATUS** | ĐÃ SỬA |
+
+**TRIGGER** Hoàn thành một thử thách tuần; lệnh trả thưởng hỏng.
+
+**ACTUAL** `confirmWrite` ghi `completed: true` **trước**, trả thưởng **sau**.
+`step.justCompleted` là một **chuyển trạng thái** (`completed && !was`), nên
+lượt focus kế tiếp đọc thử thách là "đã xong từ lâu" và **không bao giờ quay
+lại**. Xu mất hẳn — hạng bạch kim là 120 — cho một thử thách chính app đã ghi
+là thắng.
+
+**ROOT CAUSE** Bước **không** idempotent (ghi cờ hoàn thành) đi trước bước
+**có** idempotent (trả thưởng, khoá `ch:<tier>:<weekStart>:<key>` + `UNIQUE`).
+
+**FIX** Đảo thứ tự. Cả hai chiều hỏng giờ đều phục hồi được:
+
+- trả thưởng hỏng → dòng vẫn chưa hoàn thành → lượt sau thử lại cả hai
+- trả thưởng xong, ghi hỏng → `confirmWrite` ném trước khi award được trả về,
+  nên lượt sau trả lại (no-op), ghi, và ăn mừng đúng một lần
+
+Cùng luật đặt lệnh ghi sổ cái trước lệnh ghi kho đồ bên trong `buy_mascot_item`.
+
+**REGRESSION RISK** `tools/challenge-reward.mjs` giữ một bất biến sẵn có: tiền
+thưởng và màn ăn mừng phải nằm trong **cùng** một nhánh. **Bản sửa đầu của tôi
+tách chúng ra và bộ kiểm bắt được** — không nới luật, sắp lại code: trả thưởng
+và dựng thẻ ăn mừng cùng một nhánh, lệnh ghi đứng sau cả hai.
+
+---
+
+### BUG-23 — Freeze: thiết bị thứ hai nhận nguyên văn lỗi ràng buộc SQL
+
+| | |
+|---|---|
+| **AREA** | `use_streak_freeze` → `useStreakGuard` |
+| **SEVERITY** | P2 |
+| **STATUS** | ĐÃ SỬA (migration `20260817130000`) |
+
+**TRIGGER** Hai thiết bị (hoặc hai lượt settle) cùng cứu một ngày bị lỡ.
+
+**EXPECTED** Hàm tự nói trong header của nó: *"Trả về false thay vì ném khi
+không có gì để tiêu hoặc ngày đã được phủ."*
+
+**ACTUAL** — đo thật, hai phiên song song, 2 freeze đang giữ:
+
+```
+A: use_streak_freeze(CURRENT_DATE-1)  → t
+B: use_streak_freeze(CURRENT_DATE-1)  → ERROR: duplicate key value violates
+                                        unique constraint "streak_freezes_one_per_day"
+trạng thái cuối: da_tieu=1  con_giu=1
+```
+
+**Dữ liệu an toàn** — index duy nhất riêng phần làm đúng việc, đúng một freeze
+bị tiêu. Cái hỏng là *báo cáo*: cả hai qua được phép kiểm `EXISTS` vì chưa ai
+commit, và `FOR UPDATE SKIP LOCKED` đưa cho hai bên **hai dòng khác nhau** thay
+vì bắt một bên chờ.
+
+**Vì sao tệ hơn vẻ ngoài:** không ai bấm nút này. `useStreakGuard` chạy nó mỗi
+lần mở app khi còn lỗ hổng, và `onError` của nó (a) hiện `e.message` cho người
+dùng và (b) trả ngày về `tried` để thử lại. Nên thiết bị thứ hai hiện
+
+> duplicate key value violates unique constraint "streak_freezes_one_per_day"
+
+thành toast đỏ — trong một lượt mở app mà chuỗi ngày **đã được cứu** — rồi thử
+lại và hiện tiếp.
+
+**FIX** Bắt `unique_violation` quanh **riêng** lệnh UPDATE và trả `false` — đúng
+câu trả lời mà phép kiểm phía trên đã có cho cùng tình huống. Hẹp có chủ ý:
+`not signed in` và `freeze window` vẫn ném.
+
+**VERIFICATION** Chạy lại đúng cuộc đua sau khi sửa: `A → t`, `B → f`,
+`da_tieu=1 con_giu=1`; và `freeze window` / `not signed in` vẫn ném.
+`tools/economy-ledger.mjs` luật D giữ cả index lẫn nhánh bắt lỗi.
+
+---
+
+### BUG-24 — Quà chào mừng hỏng trong im lặng, phòng Koa mở ra với 0 xu
+
+| | |
+|---|---|
+| **AREA** | `mascot-room.tsx` |
+| **SEVERITY** | P3 |
+| **STATUS** | ĐÃ SỬA |
+
+`welcomeTried.current = true` đặt trước lệnh gọi, không có `onError` để gỡ. Một
+lần bị từ chối là bị từ chối suốt thời gian màn hình còn mount — và màn hình nó
+để lại là bản tệ nhất của chính nó: cửa hàng 39 món, số dư **0**, ngay lần vào
+đầu tiên, không một lời giải thích. Grant idempotent theo `ref_key: 'welcome'`
+nên gỡ chốt là miễn phí.
+
+---
+
+### BUG-25 — Cửa hàng mất mạng: một cú chạm làm chết cả trang, im lặng
+
+| | |
+|---|---|
+| **AREA** | `shop.tsx` |
+| **SEVERITY** | P3 |
+| **STATUS** | ĐÃ SỬA |
+
+`lib/offline-write.ts` nêu đích danh cửa hàng trong danh sách **cố ý không** xếp
+hàng, và điều đó đúng: mua là một quyết định của server về giá và số dư. Cái
+màn hình làm với quyết định đó là **không gì cả** — `buy.mutate` bắn, React
+Query tạm dừng (`networkMode` mặc định `'online'`), `isPending` giữ true vĩnh
+viễn: không toast, không lỗi (mutation tạm dừng không bao giờ gọi `onError`), và
+`pendingBuy` **tắt mọi nút mua trên trang**. Giờ nó từ chối thành lời.
+
+---
+
+## Chain D — đã kiểm và **KHÔNG** phải lỗi
+
+### N13. Giá do server quyết — đã đo
+
+`buy_mascot_item(p_item_key)` nhận **đúng một** tham số. Giá tra từ
+`shop_prices`, bảng chỉ có policy SELECT. Client không có đường nào gửi giá.
+`UPDATE shop_prices` từ vai `authenticated` → `UPDATE 0`.
+
+### N14. Mua trùng một món — ba lớp chặn
+
+`EXISTS(inventory)` trong hàm, `UNIQUE(user_id, item_key)` trên bảng, và
+`UNIQUE(user_id, ref_key)` với `buy:<item>` trên sổ cái. Hai lượt song song:
+advisory lock tuần tự hoá, lượt sau thấy dòng kho đồ của lượt trước.
+
+### N15. Không có trạng thái nửa vời trong một lần mua
+
+Hai lệnh INSERT (sổ cái, kho đồ) nằm trong **một** transaction của hàm. Lệnh
+nào ném thì cả hai lùi. Cửa sổ "sở hữu trước, trả tiền sau" mà migration
+`20260810120000` mô tả không còn tồn tại.
+
+### N16. `equipped` vẫn cho client UPDATE — có chủ ý và có trigger canh
+
+Mặc đồ là miễn phí và chỉ mặc được thứ đã sở hữu. Trigger
+`mascot_inventory_no_swap` chặn UPDATE đổi `item_key` hoặc `user_id`, tức chặn
+đúng đường biến món rẻ thành món đắt.
+
+### N17. `earn_mascot_coins` trả về `p_amount` kể cả khi `ON CONFLICT DO NOTHING`
+
+Giá trị trả về nói dối về việc có ghi hay không. **Không nơi nào đọc nó** —
+`useClaimReward` và `use-extras` đều bỏ qua — nên hôm nay không có hậu quả.
+Ghi lại vì đó là một cái bẫy: cách dùng tự nhiên của giá trị này là "đã cộng bao
+nhiêu". Không sửa: đổi giá trị trả về là đổi hành vi của một hàm mà không gì
+đang đọc, tức thay đổi không có bằng chứng.
+
+### N18. Trần ngày dùng ngày UTC (`date_trunc('day', now())`)
+
+Cửa sổ trần là ngày của **server**, không phải của người dùng. Đã tính: một ngày
+tối đa hợp lệ là 700 và trần là 800, còn hai nửa ngày địa phương ghép vào một
+ngày UTC thực tế không chạm tới. Là một bất nhất tiềm tàng, hậu quả có biên, và
+sửa nó là đổi ngữ nghĩa của một hàng rào an toàn — không phải một bản sửa có
+bằng chứng.
+
+### N19. Kinh tế offline — không có
+
+Không mutation kinh tế nào mang `mutationKey`, nên không cái nào sống qua khởi
+động lại; `offline-write.ts` nêu đích danh cửa hàng là **cố ý** không xếp hàng.
+Client không tạo được trạng thái kinh tế nào mà server chưa xác nhận. Nửa còn
+lại — giao diện không được ngụ ý đã mua xong — là BUG-25.
 
 ---
 

@@ -138,7 +138,40 @@ export function useQuestAutoClaim() {
       const refKey = questRefKey(quests.today, key);
       if (!sent.current.has(refKey)) {
         sent.current.add(refKey);
-        claim.mutate({ refKey, amount: def.coins, reason: key });
+        /*
+          ── marked before the call, and put back when the call fails ──
+
+          Marking first is the only ordering that stops a re-render firing the
+          same claim twice, because `mutate` is asynchronous. What was missing
+          is the other half: with no `onError`, a refused claim left the key in
+          `sent` for the rest of the session, so the coins were not retried —
+          not on the next render, not when the wallet refetched, not when
+          another quest completed.
+
+          `earn_mascot_coins` is idempotent on `ref_key` and the key is
+          `d:<today>:<quest>`, fixed for the day, so retrying costs nothing and
+          can never pay twice. Which makes not retrying pure loss.
+
+          And it is not only a session's worth. `unclaimed` is built from
+          **today's** quests, so a claim that fails at half past eleven and is
+          still blocked at midnight is never offered again: tomorrow's list is
+          a different day's keys, and nothing in the app goes back for
+          yesterday's.
+
+          Exactly the shape `useStreakGuard` was corrected for — *"there was no
+          `onError`, so a refused RPC left the day permanently in `tried`"* —
+          left standing here.
+
+          Silent on purpose, unlike the streak guard: that one spends 150 coins
+          and a person is entitled to know it failed, while this is the
+          "rewards land by themselves" path and a red toast for a blip on a
+          ten-coin quest is the tax this whole hook exists to remove. The next
+          render tries again; nothing is lost.
+        */
+        claim.mutate(
+          { refKey, amount: def.coins, reason: key },
+          { onError: () => sent.current.delete(refKey) },
+        );
       }
 
       /* A change seen while watching is also the app's only chance to learn

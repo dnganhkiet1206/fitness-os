@@ -258,6 +258,21 @@ const STEPS = [
     finished challenge being paid through two different `ref_key` shapes.
   */
   ['sổ cái thưởng', 'node', ['tools/reward-ledger.mjs']],
+  /*
+    The four economy rules before this one are all about the server and the
+    numbers — payouts against prices, SQL that locks before it decides, amounts
+    that fit under the ceiling. None of them can see what happens on the client
+    when an economic call *fails*, which is where the coins were going.
+
+    Two shapes, both of which shipped. A latch set before a reward call and
+    never released when that call is refused, so the coins are never retried —
+    although `UNIQUE(user_id, ref_key)` makes retrying incapable of paying
+    twice. And a reward paid *after* the event is recorded as finished: the
+    challenge payout wrote `completed: true` first, and `justCompleted` is a
+    transition, so one refused payment lost the coins permanently for a
+    challenge the app itself had recorded as won.
+  */
+  ['sổ cái kinh tế', 'node', ['tools/economy-ledger.mjs']],
   ['cửa sổ giấc ngủ', 'node', ['tools/sleep-window.mjs']],
   /*
     Runs `computeReadiness` for real. Every other assertion about that engine —
