@@ -149,8 +149,32 @@ if (device && user) {
 /* ── 5. sign-out actually calls it ── */
 {
   const auth = strip(readFileSync(path.join(NATIVE, 'src/hooks/use-auth.tsx'), 'utf8'));
-  const at = auth.indexOf('const signOut');
-  const body = at < 0 ? '' : auth.slice(at, auth.indexOf('\n  };', at));
+  /*
+    Following the call rather than reading one function body. The cleanup now
+    lives in `forgetPreviousAccount`, because the button is not the only way a
+    session ends — a revoked refresh token and an account deleted from another
+    device both arrive as a `SIGNED_OUT` event, and behind the button was the
+    only place any of this used to happen. What matters is that signing out
+    reaches both cleaners, not which function they are spelled in.
+  */
+  const bodyOf = (marker) => {
+    const at = auth.indexOf(marker);
+    if (at < 0) return '';
+    const open = auth.indexOf('{', at);
+    let depth = 0;
+    for (let i = open; i < auth.length; i++) {
+      if (auth[i] === '{') depth++;
+      else if (auth[i] === '}' && --depth === 0) return auth.slice(open, i + 1);
+    }
+    return '';
+  };
+  let body = bodyOf('const signOut');
+  if (!body) {
+    problems.push('không tìm thấy signOut trong use-auth.tsx — luật này đã lạc mục tiêu');
+  }
+  for (const call of body.matchAll(/\b([a-zA-Z_$][\w$]*)\s*\(\s*\)/g)) {
+    body += bodyOf(`function ${call[1]}`) + bodyOf(`const ${call[1]}`);
+  }
   if (!body.includes('clearUserScopedStorage(')) {
     problems.push(
       'signOut không gọi clearUserScopedStorage — hai danh sách kia chỉ là hai mảng không ai dùng',

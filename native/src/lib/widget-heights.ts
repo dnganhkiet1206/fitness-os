@@ -32,6 +32,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
+
 const STORAGE_KEY = 'ascnd-widget-heights';
 
 /** A plain card with a title and a couple of rows. Used once, on a fresh install. */
@@ -90,6 +92,23 @@ export async function hydrateWidgetHeights(): Promise<void> {
     // an unreadable cache is not an error worth surfacing; the fallback covers it
   }
 }
+
+/*
+  The cache is measured from *this* account's cards — a different set of
+  widgets, in a different order, at different heights. `ascnd-widget-heights`
+  is deleted on sign-out; the object it was read into was not, and `hydrated`
+  meant the next account never read its own. See `lib/user-scoped-reset.ts`.
+*/
+onUserScopedReset(() => {
+  for (const k of Object.keys(heights)) delete heights[k];
+  hydrated = false;
+  dirty = false;
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  emit();
+});
 
 /**
  * Subscribes the caller to the height cache.

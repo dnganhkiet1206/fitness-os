@@ -15,6 +15,7 @@ import { GAP_FROM, mascotLine, type MascotThing } from '@/lib/mascot-message';
 import { habitFor, mayPraise, rankQuests, settleStale, usePersonalModel } from '@/lib/personal-model';
 import { lateHour } from '@/lib/user-rhythm';
 import { DEFAULT_MASCOT_ID, getMascot, isUnlocked, MASCOTS } from '@/lib/mascots';
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
 const ENABLED_KEY = 'ascnd_mascot_enabled';
 const SELECTED_KEY = 'ascnd_mascot_selected';
@@ -49,6 +50,16 @@ export function useUnlockStats() {
 let settingsState = { enabled: true, selectedId: DEFAULT_MASCOT_ID };
 const settingsListeners = new Set<() => void>();
 let settingsHydrated = false;
+
+/* Which buddy, and whether the buddy is on at all, is a choice — and both keys
+   are deleted on sign-out while `settingsState` kept the answer and
+   `settingsHydrated` stopped the next account's own choice from ever being
+   read. See `lib/user-scoped-reset.ts`. */
+onUserScopedReset(() => {
+  settingsState = { enabled: true, selectedId: DEFAULT_MASCOT_ID };
+  settingsHydrated = false;
+  settingsListeners.forEach((l) => l());
+});
 
 function patchSettings(patch: Partial<typeof settingsState>) {
   settingsState = { ...settingsState, ...patch };

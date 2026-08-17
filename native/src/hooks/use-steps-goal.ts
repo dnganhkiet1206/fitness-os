@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useSyncExternalStore } from 'react';
 
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
+
 /**
  * Daily steps goal — port of the web useStepsGoal (localStorage →
  * AsyncStorage, same key semantics and 1k–50k clamp). Module-level
@@ -49,6 +51,24 @@ function subscribe(cb: () => void) {
   listeners.add(cb);
   return () => listeners.delete(cb);
 }
+
+/*
+  ── the goal is one person's, and it stays in memory after they leave ──
+
+  `clearUserScopedStorage()` deletes `ascnd-steps-goal`, but the number the app
+  reads is `goalState`, and `hydrated` means it is never read from disk again.
+  So the next account was judged against the previous account's target — and
+  the daily steps quest pays coins on that comparison, once, permanently.
+
+  Back to the state a fresh launch has, latch included: `settled` goes with it
+  or the quest would be judged during the window that flag exists to cover.
+*/
+onUserScopedReset(() => {
+  goalState = DEFAULT_GOAL;
+  hydrated = false;
+  settled = false;
+  emit();
+});
 
 export function setStepsGoal(value: number) {
   const clamped = Math.max(1000, Math.min(50000, Math.round(value)));

@@ -9,6 +9,7 @@ import { FormSheet } from '@/components/ascnd/form-sheet';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
+import { useAuth } from '@/hooks/use-auth';
 import {
   useAddMealPlanItem,
   useCreateMealPlan,
@@ -68,6 +69,7 @@ export function MealPlanWizard({
   onPlanCreated?: (id: string) => void;
 }) {
   const i18n = useI18n();
+  const { user } = useAuth();
 
   const { data: plans } = useMealPlans();
   const createPlan = useCreateMealPlan();
@@ -116,7 +118,12 @@ export function MealPlanWizard({
   }, [query]);
 
   const { data: results } = useQuery({
-    queryKey: ['mealplan_food_search', debounced],
+    /* Keyed by the account, not by the typed text alone. This select reads
+       `food_items` through RLS, which returns the shared seeds *and* this
+       person's own foods, and the result is written to the persisted cache —
+       so an entry named only "gà" is one account's private list under a word
+       the next account types on its first day. Same fix as `log-meal.tsx`. */
+    queryKey: ['mealplan_food_search', user?.id, debounced],
     enabled: debounced.length >= 2,
     queryFn: async () => {
       const { data, error } = await supabase

@@ -190,11 +190,24 @@ export default function SettingsScreen() {
           const res = await callEdge(EDGE_FUNCTIONS.deleteAccount, {});
           setDeleting(false);
           if (!res.ok) {
+            /* `nDeleteAccountFailed` says nothing has been deleted, and there
+               is one failure where that is untrue: the photos are removed
+               before the auth row, so a failure after them leaves the account
+               standing with every progress photo already gone. The function
+               marks that case `partial`; saying it plainly is the difference
+               between a person keeping their account believing their pictures
+               are safe and knowing they are not. Retrying is still right. */
+            const partial =
+              typeof res.body === 'object' &&
+              res.body !== null &&
+              (res.body as { partial?: unknown }).partial === true;
             Alert.alert(
               'ASCND',
               res.failure === 'not-deployed'
                 ? i18n.nDeleteAccountNotSetUp
-                : i18n.nDeleteAccountFailed,
+                : partial
+                  ? i18n.nDeleteAccountPartial
+                  : i18n.nDeleteAccountFailed,
             );
             return;
           }

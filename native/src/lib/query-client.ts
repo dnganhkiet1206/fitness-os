@@ -5,6 +5,7 @@ import { QueryClient, onlineManager } from '@tanstack/react-query';
 
 import { registerOfflineWrites } from '@/lib/offline-write';
 import { resetPersonalModel } from '@/lib/personal-model';
+import { runUserScopedResets } from '@/lib/user-scoped-reset';
 
 /**
  * Offline-aware React Query client.
@@ -132,6 +133,21 @@ export async function clearUserScopedStorage() {
   /* Module-scope state, which no `removeItem` can reach — see
      `resetPersonalModel`. */
   await resetPersonalModel();
+  /*
+    And the other five stores of the same shape, which this line used to miss.
+
+    Five of the keys above are read once per launch into a module-scope `let`
+    behind a `hydrated` latch. Deleting the key left the value live in memory
+    *and* stopped the next account from ever reading its own, so the list above
+    was doing none of what the comment beneath it claims for
+    `ascnd-weight-goal-kg` and `ascnd-steps-goal`: with real modules and real
+    storage, B signed in and saw A's 15 000-step goal and A's 62.5 kg target
+    with AsyncStorage completely empty.
+
+    They live in `hooks/`, and `lib/` may not import upwards, so each registers
+    its own reset instead — see `lib/user-scoped-reset.ts`.
+  */
+  runUserScopedResets();
 }
 
 /** Exported for `tools/signed-out.mjs`, which checks the two lists cover every

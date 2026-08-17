@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
+
 /**
  * Whether to point at a help button that somebody has not pressed yet.
  *
@@ -101,3 +103,9 @@ export async function noteHelpOpened(topic: string): Promise<void> {
 export function resetRun(): void {
   shownThisRun.clear();
 }
+
+/* "This run" ends at sign-out as far as a person is concerned. `ascnd-help-nudge`
+   is deleted then, but this set is not, so the second account to use the phone
+   in one launch was silently denied every hint the first account had already
+   been shown. See `lib/user-scoped-reset.ts`. */
+onUserScopedReset(resetRun);

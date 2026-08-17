@@ -97,11 +97,32 @@ export function useDeleteProgressPhoto() {
       if (photo_url.startsWith('http')) {
         storagePath = photo_url.split(`/${BUCKET}/`)[1] || '';
       }
-      if (storagePath) await supabase.storage.from(BUCKET).remove([storagePath]);
+      /*
+        ── the row goes first, and that order is the whole point ──
+
+        This used to remove the object and then delete the row. The two are not
+        one transaction and cannot be made into one, so the only question is
+        which failure a person is left holding.
+
+        Object first: the file is gone the instant the request lands, and if the
+        row delete then fails — offline, RLS, anything — the list still shows
+        the photo, its signed URL 404s, and pressing delete again re-runs a
+        removal of a file that no longer exists. A card that cannot be got rid
+        of and cannot be looked at, permanently.
+
+        Row first: if the object removal fails, an unreferenced file is left in
+        the bucket. Nothing displays it, nothing shows it to anybody, and
+        deleting the account sweeps the folder wholesale. Invisible, and already
+        cleaned up by something that exists.
+
+        `confirmWrite` throws on a failed delete, so the removal below is
+        genuinely only reached once the row is gone.
+      */
       await confirmWrite(
         supabase.from('progress_photos').delete().eq('id', id),
         'Không xoá được ảnh này',
       );
+      if (storagePath) await supabase.storage.from(BUCKET).remove([storagePath]);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress_photos', user?.id] }),
   });

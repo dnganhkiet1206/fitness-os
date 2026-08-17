@@ -320,7 +320,11 @@ export default function NutritionScreen() {
   }, [search]);
 
   const { data: results } = useQuery({
-    queryKey: ['nutrition_food_search', debounced],
+    /* Keyed by the account as well as the text — this select returns the
+       caller's own `food_items` alongside the shared seeds, and the row
+       renderer below proves it by comparing `f.user_id === user?.id`. See the
+       note on the same query in `log-meal.tsx`. */
+    queryKey: ['nutrition_food_search', user?.id, debounced],
     enabled: debounced.length >= 2,
     queryFn: async () => {
       const { data, error } = await supabase

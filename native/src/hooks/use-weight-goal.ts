@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useSyncExternalStore } from 'react';
 
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
+
 /**
  * Target weight, stored on the device.
  *
@@ -64,6 +66,16 @@ function subscribe(cb: () => void) {
   listeners.add(cb);
   return () => listeners.delete(cb);
 }
+
+/* A target weight is about as personal as this app gets, and deleting the key
+   on sign-out left the number itself in `goalState` with `hydrated` set — so
+   the line drawn across the next account's chart was the previous person's
+   goal. See `lib/user-scoped-reset.ts`. */
+onUserScopedReset(() => {
+  goalState = null;
+  hydrated = false;
+  emit();
+});
 
 /**
  * `null` clears the goal; anything else is clamped and rounded to 0.01 kg.

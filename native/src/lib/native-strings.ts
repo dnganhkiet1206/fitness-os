@@ -204,6 +204,8 @@ const en = {
   nDeleteAccountDone: 'Your account has been deleted.',
   nDeleteAccountNotSetUp: 'Account deletion is not available on this server yet.',
   nDeleteAccountFailed: 'Could not delete the account. Nothing was removed.',
+  nDeleteAccountPartial:
+    'Could not delete the account. Your progress photos have already been removed and cannot be recovered — please try again to finish deleting the account.',
   a11yPrevItem: 'Previous item',
   a11yNextItem: 'Next item',
   a11yAddWater: 'Add {x} {unit}',
@@ -861,6 +863,8 @@ const vi: typeof en = {
   nDeleteAccountDone: 'Tài khoản của bạn đã được xoá.',
   nDeleteAccountNotSetUp: 'Máy chủ chưa bật chức năng xoá tài khoản.',
   nDeleteAccountFailed: 'Không xoá được tài khoản. Chưa có gì bị xoá.',
+  nDeleteAccountPartial:
+    'Không xoá được tài khoản. Ảnh tiến trình của bạn thì đã bị xoá và không khôi phục được — hãy thử lại để xoá nốt tài khoản.',
   a11yPrevItem: 'Món trước',
   a11yNextItem: 'Món sau',
   a11yAddWater: 'Thêm {x} {unit}',

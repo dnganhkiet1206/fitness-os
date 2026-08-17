@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (94 bước). Ngày rà: 2026-08-17.
+Bộ kiểm: `node tools/check.mjs` (95 bước). Ngày rà: 2026-08-17.
 
 ---
 
@@ -1513,6 +1513,280 @@ Không mutation kinh tế nào mang `mutationKey`, nên không cái nào sống 
 động lại; `offline-write.ts` nêu đích danh cửa hàng là **cố ý** không xếp hàng.
 Client không tạo được trạng thái kinh tế nào mà server chưa xác nhận. Nửa còn
 lại — giao diện không được ngụ ý đã mua xong — là BUG-25.
+
+---
+
+## Vòng 6 — Chain E: đăng ký → profiles → phiên → đăng xuất → xoá tài khoản → tài khoản kế tiếp
+
+**Bất biến gốc:** *người A không bao giờ được thừa hưởng, đọc, sửa, nhận, hay bị
+ảnh hưởng bởi trạng thái riêng của người B.*
+
+Nửa server đo trên PostgreSQL 16.13 dựng lại từ **mọi** migration trong repo.
+Nửa client chạy thật các module thật với AsyncStorage thật.
+
+**VERIFICATION:** `node tools/check.mjs` (95 bước) · `npx tsc --noEmit` ·
+`node tools/auth-lifecycle.mjs`
+
+---
+
+### BUG-26 (P1). Năm kho trong bộ nhớ sống sót qua đăng xuất — `USER-BOUND-STATE-SURVIVES-LOGOUT`
+
+`clearUserScopedStorage()` xoá 13 khoá AsyncStorage. Năm trong số đó được đọc
+**một lần mỗi lần chạy** vào một `let` ở phạm vi module, sau một cổng `hydrated`.
+Xoá khoá không chạm tới cái `let`, và cổng khiến giá trị **không bao giờ được đọc
+lại** — nên con số giờ không còn nằm ở đâu trên đĩa vẫn là con số app đang dùng.
+
+Chạy thật (`src/hooks/use-steps-goal.ts`, `use-weight-goal.ts`,
+`lib/widget-heights.ts` với AsyncStorage thật):
+
+```
+A đặt:  steps=15000  weight=62.5  height(steps)=480
+sau signOut, AsyncStorage còn: {}
+B thấy: steps=15000  weight=62.5  height(steps)=480
+```
+
+Giá phải trả:
+
+| kho | hậu quả |
+| --- | --- |
+| `ascnd-steps-goal` | nhiệm vụ bước chân hằng ngày được chấm theo `(dailyLog.steps ?? 0) >= stepsGoal` (`use-daily-quests.ts:102`) và `useQuestAutoClaim` trả xu **một lần, không đòi lại được** — B bị chấm theo mục tiêu của A |
+| `ascnd-weight-goal-kg` | cân nặng mục tiêu của A được vẽ lên biểu đồ tiến trình của B |
+| `ascnd-widget-heights` | khung xương màn Today dựng theo số đo thẻ của tài khoản khác |
+| `ascnd_mascot_enabled` / `_selected` | lựa chọn linh vật của A, và lựa chọn của B không bao giờ được đọc |
+| `ascnd-help-nudge` (`shownThisRun`) | B bị từ chối mọi gợi ý A đã xem trong cùng lần chạy |
+
+Điều đáng nói nhất: `query-client.ts` **đã biết** hình dạng lỗi này và viết ra
+thành lời — *"Module-scope state, which no `removeItem` can reach — see
+`resetPersonalModel`"* — nhưng chỉ với đúng `lib/personal-model.ts`. Chú thích
+ngay bên trên `USER_KEYS` khẳng định `ascnd-weight-goal-kg` và `ascnd-steps-goal`
+là *"A's targets drawn on B's charts"* đã được sửa. Chúng chưa.
+
+**Nguyên nhân gốc của việc bỏ sót:** năm kho kia nằm trong `hooks/`, và
+`tools/layering.mjs` cấm `lib/` import ngược lên. `clearUserScopedStorage` ở
+`lib/` nên **không thể** gọi tới chúng.
+
+**Sửa:** `src/lib/user-scoped-reset.ts` — mỗi kho tự đăng ký `onUserScopedReset`
+ở phạm vi module, `clearUserScopedStorage` gọi `runUserScopedResets()`. Phụ thuộc
+đi xuống, tầng nguyên vẹn. Câu hỏi thứ tự nạp tự trả lời: module chưa từng được
+import thì không giữ trạng thái nào, nên không có gì đăng ký là **đúng**.
+
+Reset là *về đúng trạng thái một lần chạy mới có*, **kể cả cổng hydrate** — xoá
+giá trị mà để cổng bật là lỗi riêng của nó: tài khoản sau không bao giờ đọc được
+giá trị của chính họ (đúng bài học của `loaded` trong `resetPersonalModel`).
+
+---
+
+### BUG-27 (P1). Cái nút không phải cửa duy nhất kết thúc một phiên — `SESSION-ENDS-BY-ANOTHER-DOOR`
+
+`signOut()` trong `use-auth.tsx` dọn ba thứ. `onAuthStateChange` thì chỉ
+`setUser(null)`. Nhưng một phiên còn kết thúc bằng:
+
+- refresh token hết hiệu lực (app đóng lâu quá cửa sổ làm mới, hoặc token bị
+  dùng lại và bị thu hồi),
+- tài khoản bị xoá — **kể cả bởi chính `delete-account` của app này**, chạy từ
+  máy khác của cùng người đó,
+- phiên bị thu hồi sau khi đổi mật khẩu.
+
+supabase-js báo cả ba theo đúng một cách: sự kiện `SIGNED_OUT`. Đi những cửa đó
+thì trên máy còn nguyên: toàn bộ persisted query cache (bữa ăn, cân nặng, buổi
+tập của tài khoản trước), mọi khoá `USER_KEYS`, mô hình thói quen đã học, chữ ký
+lịch nhắc, và **tới một tuần thông báo đã hẹn của người trước**. Người kế tiếp
+đăng nhập thừa hưởng tất cả — đúng kết cục mà `clearUserScopedStorage` và
+`cancelAllReminders` được viết ra để chặn, đạt tới bằng một cánh cửa mà không
+hàm nào trong hai hàm đó đứng sau.
+
+**Sửa:** tách phần dọn ra `forgetPreviousAccount()`, gọi nó từ nhánh
+`SIGNED_OUT` của `onAuthStateChange` **và** từ `signOut()`. Mọi bước đều
+idempotent; nút vẫn `await` để "đã đăng xuất" nghĩa là dọn xong, chứ không phụ
+thuộc vào một sự kiện có tới hay không. Không `await` trong callback: supabase-js
+chạy nó trong lock của chính nó — và không có lời gọi ngược vào supabase nào bên
+trong nên cũng không có gì để deadlock.
+
+---
+
+### BUG-28 (P2). Khoá cache tìm kiếm thức ăn không có chủ — `USER-SCOPED-QUERY-WITHOUT-USER-KEY`
+
+Ba truy vấn dùng `queryKey: ['..._food_search', debounced]` — chỉ có chữ đã gõ:
+
+- `src/app/log-meal.tsx` → `food_items_search`
+- `src/app/(tabs)/nutrition.tsx` → `nutrition_food_search`
+- `src/components/ascnd/meal-plan-wizard.tsx` → `mealplan_food_search` (bộ dò
+  tìm ra chỗ này, đọc tay đã bỏ sót)
+
+Policy thật của bảng (đo trên DB dựng từ migration):
+
+```
+Users can view own + shared food items | ((user_id IS NULL) OR (auth.uid() = user_id))
+```
+
+Nên kết quả là danh sách hạt giống chung **cộng món riêng của người đó**, và
+cache ấy được ghi xuống đĩa. Một mục tên đúng `"gà"` là danh sách món riêng của
+một tài khoản, dưới một từ tài khoản kế tiếp sẽ gõ trong ngày đầu tiên. Cộng với
+BUG-27 (cache không bị dọn khi phiên kết thúc bằng cửa khác) thì đây là đường rò
+thật, không phải giả định.
+
+**Sửa:** `user?.id` vào cả ba khoá. `invalidateQueries` theo tiền tố vẫn khớp.
+
+*Đã kiểm và để nguyên:* `['meal_plan_items', planId]` và `['food_item', id]` bỏ
+id người dùng nhưng khoá theo một uuid không đoán được, mà tài khoản kế tiếp
+không có cách nào cầm — trong `BY_ROW_ID` của bộ dò, kèm lý do.
+
+---
+
+### BUG-29 (P2). Xoá tài khoản nói dối theo chiều ngược lại — `NON-ATOMIC-ACCOUNT-DELETION`
+
+`delete-account` xoá ảnh trong storage **trước** rồi mới xoá hàng auth (bắt buộc
+thế: mất id thì không liệt kê được thư mục nữa). Một lỗi rơi vào khoảng giữa trả
+500 trơn, và app hiện `nDeleteAccountFailed` — *"Chưa có gì bị xoá."* Trong khi
+**toàn bộ ảnh tiến trình đã mất vĩnh viễn**. Người quyết định giữ lại tài khoản
+được bảo là ảnh của họ an toàn, và nó không.
+
+**Sửa:** lỗi mang `partial: true` một khi đã thật sự phá huỷ thứ gì;
+`callEdge` đọc được body của `FunctionsHttpError` (`error.context`, trước đây
+không call site nào với tới được); Settings nói đúng chuyện đã xảy ra. Thử lại
+vẫn đúng và vẫn là lời khuyên nên đưa: vòng lặp storage gặp thư mục rỗng và
+`deleteUser` chạy lại.
+
+---
+
+### BUG-30 (P3). Xoá ảnh tiến trình xoá file trước, xoá hàng sau
+
+`useDeleteProgressPhoto` gọi `storage.remove()` (không kiểm lỗi) rồi mới
+`confirmWrite(delete row)`. Hai việc không nằm trong một transaction và không thể
+gộp được, nên câu hỏi duy nhất là để người dùng ôm thất bại nào:
+
+- **File trước:** hàng còn, thẻ còn trên danh sách, signed URL 404, bấm xoá lại
+  chỉ xoá một file đã không còn. Một thẻ không xem được và không bỏ được, vĩnh
+  viễn.
+- **Hàng trước:** file mồ côi trong bucket. Không gì hiển thị nó, và xoá tài
+  khoản quét cả thư mục.
+
+**Sửa:** đảo thứ tự. `confirmWrite` ném khi xoá hụt nên lệnh `remove` chỉ chạy
+sau khi hàng đã mất thật.
+
+---
+
+### Bộ dò `tools/auth-lifecycle.mjs` — bốn luật, đã chứng minh có răng
+
+| luật | phá lại thế nào | bộ dò nói gì |
+| --- | --- | --- |
+| A — chạy thật ba kho | bỏ `onUserScopedReset` trong `use-steps-goal.ts` | *"người A đặt 15000, AsyncStorage đã trống, người B vẫn thấy 15000 thay vì 10000"* |
+| A′ — `clearUserScopedStorage` gọi resets | comment `runUserScopedResets()` | *"xoá khoá trong AsyncStorage không chạm tới bản sao đang nằm trong bộ nhớ"* |
+| B — kho có cổng đọc-một-lần phải đăng ký | như trên | *"đọc ascnd-steps-goal một lần mỗi lần chạy (cổng `hydrated`) … tài khoản sau KHÔNG BAO GIỜ đọc được giá trị của chính họ"* |
+| C — `SIGNED_OUT` được xử lý | bỏ nhánh `SIGNED_OUT` | *"refresh token hết hiệu lực, tài khoản bị xoá từ máy khác, hoặc đổi mật khẩu"* |
+| D — khoá truy vấn bảng riêng tư có chủ | bỏ `user?.id` khỏi `food_items_search` | *"bộ nhớ đệm này được ghi xuống đĩa, nên mục nhập đó là thứ tài khoản kế tiếp đọc trúng"* |
+
+Luật A **không** grep tên hàm: nó transpile module thật, đưa AsyncStorage chạy
+được, đặt giá trị, xoá đúng danh sách `USER_KEYS` của app, chạy resets, hydrate
+lại, rồi đọc số ra.
+
+Luật B phân biệt **cổng đọc-một-lần** với **chốt in-flight** bằng đúng cơ chế của
+lỗi: `if (x) return; x = true;` trong hàm có `AsyncStorage.getItem`, và `x` không
+được đặt lại `false` ở đâu trong cùng hàm ấy. `use-health-sync.ts` có đúng hình
+`if (autoSyncInFlight) return; autoSyncInFlight = true` nhưng gỡ nó trong
+`finally` — nên nó **không** phải kho, và luật nói đúng điều đó.
+
+**Hai bộ dò cũ được chỉnh lại điểm neo, không nới lỏng:** `signed-out.mjs` (luật
+5) và `correctable.mjs` đều đọc thân `const signOut` để tìm lời gọi dọn. Phần dọn
+chuyển sang `forgetPreviousAccount`, nên cả hai giờ **đi theo lời gọi** (một
+chặng, chỉ vào hàm định nghĩa trong cùng file) thay vì đọc một thân hàm. Điều
+được kiểm vẫn y nguyên, và giờ nó đúng bất kể phần dọn được đặt tên là gì.
+
+---
+
+## Chain E — đã kiểm và **KHÔNG** phải lỗi
+
+### E1. `handle_new_user` — sạch, đo trên Postgres thật
+
+Chạy `INSERT INTO auth.users` thật: đúng **một** hàng `profiles`, đúng `user_id`,
+đúng mọi mặc định. Metadata chỉ được tin cho `name`; nhét thêm `user_id`, `role`,
+`goal`, `tdee_target_kcal` vào `raw_user_meta_data` đều bị bỏ qua (hồ sơ ra
+`goal=maintain, tdee_target_kcal=2200`). Metadata `NULL` và `{}` đều an toàn.
+
+### E2. Ma trận RLS đầy đủ — 121+ đòn tấn công, 0 rò rỉ
+
+31 bảng có `user_id`, **tất cả** `rls=true`. Gieo dữ liệu riêng của A vào cả 31,
+tấn công với JWT của B:
+
+| đòn | chặn / rò |
+| --- | --- |
+| DELETE | 31 / 0 |
+| INSERT (nhét `user_id` của A) | 31 / 0 |
+| SELECT | 31 / 0 |
+| UPDATE | 28 / 0 |
+| UPDATE trên 3 bảng không có cột text nullable (`streak_freezes`, `water_logs`, `weekly_reviews`), kiểm riêng | 3 / 0 |
+
+### E3. `SECURITY DEFINER` — không có lỗ ủy quyền
+
+Gọi với JWT của B: `use_streak_freeze` → `f`; số dư → `0`; `current_tier()` →
+`'free'` trong khi A đang giữ `'max'`. Không hàm nào nhận id người dùng từ tham
+số — tất cả đọc `auth.uid()`.
+
+### E4. Cascade xoá tài khoản — không một dòng mồ côi
+
+Đồ thị FK dựng từ migration thật, không phải từ chú thích. **34** bảng dữ liệu
+người dùng tới được `auth.users` bằng cascade: 31 qua `user_id` của chính nó, 3
+qua cha (`ai_messages` → `ai_conversations`, `meal_entry_items` → `meal_entries`,
+`meal_plan_items` → `meal_plans`). Gieo cả hàng sâu qua cha rồi
+`DELETE FROM auth.users`: quét lại toàn bộ 31 bảng → **0 dòng còn sót**, 0 hàng
+auth. `shop_prices` là danh mục chung, không thuộc ai (đúng như thiết kế).
+
+Chú thích trong `delete-account/index.ts` ghi *"All 31 tables … four of them
+through a parent"* — số đo thật là 34/31/3. Đã sửa chú thích cho khớp phép đo.
+
+### E5. Vòng lặp storage của `delete-account` — không treo
+
+`list(userId, {limit:100})` rồi `remove` những gì vừa liệt kê, lặp tới khi trang
+ngắn. Nguy cơ lặp vô hạn nếu thư mục có thư mục con (folder không xoá được →
+list lại đúng 100 mục cũ) **không tồn tại**: `useUploadProgressPhoto` viết đường
+dẫn phẳng `${user.id}/${date}-${pose}-${ts}.jpg`.
+
+### E6. Danh tính lấy từ token, không lấy từ body
+
+`requireUser` (`_shared/guard.ts`) đọc JWT ở header, đòi có `sub` **và**
+`role === 'authenticated'` — anon key là JWT hợp lệ của cùng project nhưng thiếu
+cả hai. `delete-account` dùng `caller.userId`, không đọc id nào từ body.
+
+### E7. Push token — không tồn tại
+
+Không có `getExpoPushToken`, không bảng `push_tokens`, không đăng ký từ xa. Mọi
+thông báo là local notification. Lớp lỗi `PUSH-TOKEN-CROSS-ACCOUNT` **không áp
+dụng** cho codebase này.
+
+### E8. Đua lịch nhắc lúc đăng xuất — xem xét, chưa chứng minh được
+
+Giả thuyết: `useReminderSync` mount trên Today, `queryClient.clear()` đổi `ctx` →
+đổi chữ ký kế hoạch → effect đặt lại lịch **sau** `cancelAllReminders()`. Không
+dựng được đường chạy: `_layout.tsx` có `if (!user) return <AuthScreen />`, mà
+`user` về `null` ngay trong `await supabase.auth.signOut()` — dòng đầu tiên,
+trước mọi lệnh dọn — nên cây bị unmount trước khi cache bị xoá. Ghi lại như một
+nghi vấn chưa dựng được, **không** tính là lỗi.
+
+### E9. Trạng thái module không phải dữ liệu người dùng
+
+`koa-stage.ts`, `quest-peek.ts`, `celebration-queue.ts`, `mascot-emotion.ts`,
+`toast.ts` giữ sự kiện giao diện tức thời (một màn ăn mừng đang xếp hàng, một
+toast). Vòng đời của chúng là một lần điều hướng, không phải một phiên; không có
+khoá `USER_KEYS` nào chống lưng. `autoSyncInFlight` trong `use-health-sync.ts` là
+chốt in-flight gỡ trong `finally`, không phải bộ nhớ đệm — bộ dò phân biệt được
+(xem luật B).
+
+---
+
+## Chain E — trạng thái triển khai, nói cho rõ
+
+Đề bài yêu cầu phân biệt sạch. Đây là bảng:
+
+| thứ | trạng thái |
+| --- | --- |
+| `user-scoped-reset.ts` + 5 đăng ký reset | **đã hiện thực**, **đã kiểm cục bộ** (`tools/auth-lifecycle.mjs`) |
+| `forgetPreviousAccount` trên `SIGNED_OUT` | **đã hiện thực**, **đã kiểm cục bộ** (kiểm cấu trúc; đường `SIGNED_OUT` thật cần thiết bị) |
+| `user?.id` trong 3 khoá tìm kiếm | **đã hiện thực**, **đã kiểm cục bộ** |
+| `partial` của `delete-account` + copy | **đã hiện thực**, **CHƯA deploy** |
+| `supabase/functions/delete-account/` | **có mã nguồn**, **CHƯA deploy lên project nào** — app vẫn trả `not-deployed` và vẫn nói đúng như vậy |
+| RLS, cascade, `handle_new_user`, `SECURITY DEFINER` | **migration có sẵn**; đo trên PostgreSQL 16.13 dựng lại từ mọi migration trong repo, **không** đo trên production |
+
+Không có khẳng định nào ở đây về hành vi production.
 
 ---
 

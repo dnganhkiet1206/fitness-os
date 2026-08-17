@@ -202,15 +202,43 @@ for (const table of HAND_WRITTEN) {
   everything on screen was correct for whoever was signed in. The wrongness only
   existed on the lock screen of a person who was not.
 */
+/*
+  The cleanup moved out of `signOut` and into `forgetPreviousAccount`, which the
+  `SIGNED_OUT` event calls as well — a session also ends when the refresh token
+  stops being valid or the account is deleted from another device, and behind
+  the button was the only place any of this used to happen. So the rule follows
+  the call rather than reading one function body: whatever `signOut` reaches
+  has to cancel the reminders.
+*/
 {
   const auth = code.get('src/hooks/use-auth.tsx') ?? '';
-  const signOut = auth.slice(auth.indexOf('const signOut'));
-  if (!/cancelAllReminders\(\)/.test(signOut.slice(0, signOut.indexOf('};') + 2))) {
-    problems.push(
-      'use-auth.tsx: đăng xuất không huỷ thông báo đã hẹn — ' +
-        'máy vẫn nhắc theo lịch của tài khoản cũ tới hết chân trời 7 ngày, ' +
-        'kể cả khi người khác đã đăng nhập vào',
-    );
+  const bodyOf = (marker) => {
+    const at = auth.indexOf(marker);
+    if (at < 0) return '';
+    const open = auth.indexOf('{', at);
+    let depth = 0;
+    for (let i = open; i < auth.length; i++) {
+      if (auth[i] === '{') depth++;
+      else if (auth[i] === '}' && --depth === 0) return auth.slice(open, i + 1);
+    }
+    return '';
+  };
+  const signOut = bodyOf('const signOut');
+  if (!signOut) {
+    problems.push('use-auth.tsx: không tìm thấy signOut — luật huỷ nhắc nhở đã lạc mục tiêu');
+  } else {
+    /* One hop, and only into a function defined in this same file. */
+    let reached = signOut;
+    for (const call of signOut.matchAll(/\b([a-zA-Z_$][\w$]*)\s*\(\s*\)/g)) {
+      reached += bodyOf(`function ${call[1]}`) + bodyOf(`const ${call[1]}`);
+    }
+    if (!/cancelAllReminders\(\)/.test(reached)) {
+      problems.push(
+        'use-auth.tsx: đăng xuất không huỷ thông báo đã hẹn — ' +
+          'máy vẫn nhắc theo lịch của tài khoản cũ tới hết chân trời 7 ngày, ' +
+          'kể cả khi người khác đã đăng nhập vào',
+      );
+    }
   }
 }
 

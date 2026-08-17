@@ -51,7 +51,18 @@ export { AI_FAILURE_KEY };
 
 export type EdgeResult<T> =
   | { ok: true; data: T }
-  | { ok: false; failure: EdgeFailure; fn: EdgeFunction; raw: string };
+  /**
+   * `body` is what the function itself said, when it said anything.
+   *
+   * `functions.invoke` reports a non-2xx as a `FunctionsHttpError` and puts the
+   * response on `error.context` — so the JSON a function deliberately returned
+   * alongside its status was, until this field existed, unreachable at every
+   * call site. `delete-account` needs it: its failure carries `partial: true`
+   * once photos have actually been destroyed, and the difference between
+   * "nothing was deleted" and "your photos are gone but your account is not" is
+   * the whole message.
+   */
+  | { ok: false; failure: EdgeFailure; fn: EdgeFunction; raw: string; body?: unknown };
 
 /**
  * Call an edge function.
@@ -77,7 +88,26 @@ export async function callEdge<T>(
       headers: { Authorization: `Bearer ${token}` },
     });
     if (error) {
-      return { ok: false, failure: classify(error), fn, raw: String(error?.message ?? error) };
+      /* The body the function chose to send with its status. `context` is a
+         `Response` on `FunctionsHttpError` and absent on the others, and a
+         failure to parse it is not itself worth reporting — the classification
+         below stands either way. */
+      let replied: unknown;
+      const res = (error as { context?: unknown }).context;
+      if (res instanceof Response) {
+        try {
+          replied = await res.clone().json();
+        } catch {
+          // not JSON, or already consumed; `raw` still carries the message
+        }
+      }
+      return {
+        ok: false,
+        failure: classify(error),
+        fn,
+        raw: String(error?.message ?? error),
+        body: replied,
+      };
     }
     return { ok: true, data: data as T };
   } catch (e) {

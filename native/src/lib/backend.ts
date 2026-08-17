@@ -60,8 +60,10 @@ export const USING_CONFIGURED_BACKEND = SUPABASE_URL !== DEFAULT_URL;
  * list is what `edge.ts` reports against, so a missing deployment says which
  * function is missing.
  *
- * Five of them have source in `supabase/functions/`; `delete-account` does not
- * and has to be written — see `docs/connecting-a-backend.md` §3.
+ * All of them have source in `supabase/functions/`. Having source is not the
+ * same as being deployed, which is the whole reason this list exists: the app
+ * reports `not-deployed` per function name, and `delete-account` is the one
+ * that has not been pushed to any project yet.
  */
 export const EDGE_FUNCTIONS = {
   mealSuggest: 'ai-meal-suggest',

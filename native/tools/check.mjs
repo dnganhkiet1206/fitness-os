@@ -309,6 +309,7 @@ const STEPS = [
     thing anybody would notice.
   */
   ['đăng xuất sạch', 'node', ['tools/signed-out.mjs']],
+  ['vòng đời tài khoản', 'node', ['tools/auth-lifecycle.mjs']],
   /*
     invalidateQueries is a filter, so matching nothing is indistinguishable
     from success — no error, no warning, no return value anybody reads. A key

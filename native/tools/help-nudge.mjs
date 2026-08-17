@@ -14,7 +14,7 @@
  * shuts up.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -54,13 +54,28 @@ function installFakeStorage() {
   };
 }
 
+/* `@/lib/...` is unmapped without the project tsconfig, so this reports TS2307
+   and exits non-zero while still emitting. The emitted requires are rewritten
+   below, and a genuinely missing output fails at the `require` under it. */
 try {
-  execFileSync(
-    'npx',
-    ['tsc', 'src/lib/help-nudge.ts', '--ignoreConfig', '--outDir', out,
-      '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck', '--esModuleInterop'],
-    { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
-  );
+  try {
+    execFileSync(
+      'npx',
+      ['tsc', 'src/lib/help-nudge.ts', 'src/lib/user-scoped-reset.ts',
+        '--ignoreConfig', '--outDir', out,
+        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck', '--esModuleInterop'],
+      { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch {
+    // emitted regardless; see above
+  }
+  {
+    const js = path.join(out, 'help-nudge.js');
+    writeFileSync(
+      js,
+      readFileSync(js, 'utf8').replace(/require\("@\/lib\/(.*?)"\)/g, 'require("./$1")'),
+    );
+  }
   const { storage, clear } = installFakeStorage();
   const mod = require_(path.join(out, 'help-nudge.js'));
   const { shouldNudge, noteNudged, noteHelpOpened, resetRun, NUDGE_LIMIT } = mod;

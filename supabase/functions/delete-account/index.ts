@@ -30,7 +30,12 @@ import { corsHeaders, json, requireUser } from "../_shared/guard.ts";
  *
  * ── no hand-written list of tables ──
  *
- * All 31 tables reach `auth.users` by cascade, four of them through a parent.
+ * All 34 user-data tables reach `auth.users` by cascade — 31 by their own
+ * `user_id`, and three (`ai_messages`, `meal_entry_items`, `meal_plan_items`)
+ * through a parent that has one. Measured on a database built from every
+ * migration in this repo, by deleting a user seeded across all of them and
+ * counting what was left: nothing.
+ *
  * A manual delete list is the thing that rots: the next table added and not
  * added to the list leaves data behind, silently, and nothing fails.
  *
@@ -44,6 +49,19 @@ import { corsHeaders, json, requireUser } from "../_shared/guard.ts";
  * The app signs out and clears its cache on 2xx, and says **nothing has been
  * deleted** on anything else. A 200 after a partial failure turns that sentence
  * into a lie, on the one screen where a lie is least recoverable.
+ *
+ * ── and a non-2xx can be a lie in the other direction ──
+ *
+ * There is a window between the last photo being removed and the auth row
+ * being deleted. A failure inside it returned a plain 500, and the app said
+ * *nothing has been deleted* — while every progress photo the person had was
+ * already gone for good. Somebody who then decides to keep their account has
+ * been told their pictures are safe, and they are not.
+ *
+ * So the failure carries `partial: true` once anything has actually been
+ * destroyed, and the app says so in that case. Retrying stays correct and is
+ * the right advice: the storage loop finds an empty folder and `deleteUser`
+ * runs again.
  */
 
 const BUCKET = "progress-photos";
@@ -70,13 +88,17 @@ serve(async (req) => {
       hundred, which would look identical from the outside and leave the rest
       behind for ever.
     */
+    /* Flipped the moment anything is actually destroyed, so a later failure
+       can say so rather than claim nothing happened. */
+    let destroyedSomething = false;
+
     for (;;) {
       const { data: files, error: listErr } = await admin.storage
         .from(BUCKET)
         .list(userId, { limit: 100 });
       if (listErr) {
         console.error("storage list failed", listErr.message);
-        return json({ error: "Could not read stored files" }, 500);
+        return json({ error: "Could not read stored files", partial: destroyedSomething }, 500);
       }
       if (!files || files.length === 0) break;
 
@@ -85,8 +107,11 @@ serve(async (req) => {
         .remove(files.map((f) => `${userId}/${f.name}`));
       if (rmErr) {
         console.error("storage remove failed", rmErr.message);
-        return json({ error: "Could not delete stored files" }, 500);
+        /* A failed batch is not a clean one: `remove` deletes what it can and
+           reports the first problem, so some of these may already be gone. */
+        return json({ error: "Could not delete stored files", partial: true }, 500);
       }
+      destroyedSomething = true;
       if (files.length < 100) break;
     }
 
@@ -94,7 +119,7 @@ serve(async (req) => {
     const { error: delErr } = await admin.auth.admin.deleteUser(userId);
     if (delErr) {
       console.error("deleteUser failed", delErr.message);
-      return json({ error: "Could not delete the account" }, 500);
+      return json({ error: "Could not delete the account", partial: destroyedSomething }, 500);
     }
 
     console.log("account deleted", userId);

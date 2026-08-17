@@ -82,7 +82,6 @@ const KNOWN = {
   'components/ascnd/studio/live-regions.ts: areaOf': 'chỉ tool ngân sách vẽ dùng',
   'hooks/use-library.ts: useWorkoutTemplateNames': 'danh sách tên mẫu, chưa màn nào cần',
   'lib/backend.ts: describeBackend': 'câu mô tả backend cho màn chẩn đoán chưa dựng',
-  'lib/help-nudge.ts: resetRun': 'dùng khi test',
   'lib/i18n.ts: formatPrice': 'định dạng giá — chờ IAP',
   'lib/i18n.ts: useTranslation': 'API cũ của bản web, useI18n thay thế',
   'lib/training-card.ts: acwrPercent': 'chỉ tools/training-card.mjs kiểm',

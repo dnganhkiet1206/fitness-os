@@ -192,7 +192,13 @@ export default function LogMealSheet() {
   );
 
   const { data: foods } = useQuery({
-    queryKey: ['food_items_search', debounced],
+    /* The account is part of the key, not decoration. `food_items` is read
+       through RLS — `user_id IS NULL OR auth.uid() = user_id` — so this result
+       is the shared seed list *plus this person's own foods*, and the cache it
+       lands in is written to disk. Keyed by the search text alone, the entry
+       "gà" holds one account's private foods under a name the next account
+       types on its first day. */
+    queryKey: ['food_items_search', user?.id, debounced],
     enabled: debounced.length >= 2,
     queryFn: async () => {
       const { data, error } = await supabase
