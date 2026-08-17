@@ -68,11 +68,21 @@ const EXEMPT = new Map([
     'gỡ cờ equipped khỏi các món CÙNG VỊ TRÍ trước khi mặc món mới — nếu vị trí đó đang trống thì ' +
       'không có dòng nào để chạm, và đó là kết quả đúng chứ không phải thất bại',
   ],
-  [
-    'src/hooks/use-health-sync.ts:daily_logs:update',
-    'đồng bộ nền chạy 15 phút một lần, không ai đang chờ; một dòng biến mất giữa chừng sẽ được lượt ' +
-      'sau ghi lại, còn ném lỗi ở đây sẽ làm hỏng cả lượt đồng bộ vì một hàng số đo',
-  ],
+  /*
+    `use-health-sync.ts:daily_logs:update` used to be exempt here, and the entry
+    is gone because the write is.
+
+    The exemption reasoned about the right thing (an update touching no rows is
+    not a failure for a background sync) and sat on top of the wrong shape: the
+    update was the second half of a `select … maybeSingle()` then
+    insert-or-update, which read a failed lookup as "no row" and inserted
+    against `UNIQUE (user_id, date)`. It is one `upsert` now — no read, no id
+    carried across a round trip, no branch to get wrong — and an upsert has no
+    "touched nothing" case to excuse.
+
+    Left as a note rather than deleted silently: an exemption that disappears is
+    worth a sentence saying whether the risk went with it.
+  */
   [
     'src/hooks/use-coach-chat.tsx:ai_conversations:update',
     'chỉ đụng vào `updated_at` để cuộc trò chuyện nổi lên đầu danh sách; hỏng thì thứ tự sai một chỗ ' +

@@ -167,6 +167,7 @@ export type Database = {
         Row: {
           confidence: number | null
           created_at: string
+          external_id: string | null
           date_time: string
           hr_bpm: number | null
           hrv_rmssd_ms: number | null
@@ -182,6 +183,7 @@ export type Database = {
         Insert: {
           confidence?: number | null
           created_at?: string
+          external_id?: string | null
           date_time?: string
           hr_bpm?: number | null
           hrv_rmssd_ms?: number | null
@@ -197,6 +199,7 @@ export type Database = {
         Update: {
           confidence?: number | null
           created_at?: string
+          external_id?: string | null
           date_time?: string
           hr_bpm?: number | null
           hrv_rmssd_ms?: number | null

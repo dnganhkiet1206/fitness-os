@@ -88,8 +88,18 @@ function useSyncMutation(silent: boolean) {
       }
 
       if (bio) {
-        const { error } = await supabase.from('biometric_samples').insert({
+        /*
+          Upsert, not insert — see `20260817120000_health_import_conflict_target.sql`.
+
+          `external_id` is the reading's own identity at the source, so a sync
+          that finds nothing new lands on the row it already wrote. The bare
+          `.insert()` this replaces added a copy of the same two numbers on
+          every foreground: Apple computes resting heart rate once a day, and
+          `useAutoHealthSync` runs every fifteen minutes the app is looked at.
+        */
+        const { error } = await supabase.from('biometric_samples').upsert({
           user_id: user.id,
+          external_id: bio.external_id,
           hr_bpm: bio.hr_bpm,
           /* SDNN into the SDNN column. This wrote `hrv_rmssd_ms` for a long
              time, which put Apple's SDNN into the same series as readings
@@ -101,7 +111,7 @@ function useSyncMutation(silent: boolean) {
           source: bio.source,
           date_time: bio.date_time,
           confidence: bio.confidence,
-        });
+        }, { onConflict: 'user_id,external_id' });
         if (error) throw error;
       }
 
@@ -110,26 +120,46 @@ function useSyncMutation(silent: boolean) {
 
         `external_id` carries the night's own start time, so a second sync in
         the same morning updates the row it already wrote instead of adding a
-        second night. `onConflict` targets the partial unique index from
-        `20260809120000_health_provenance.sql`, which only covers rows that came
-        from a source with an id — hand-entered nights stay free to repeat,
-        because two naps in one day are two real rows.
+        second night. `onConflict` targets
+        `sleep_logs_user_external_key` — a plain `UNIQUE (user_id,
+        external_id)`, because the **partial** index this used to point at could
+        never be inferred as an arbiter and every one of these upserts failed.
+        Hand-entered nights still repeat freely: their `external_id` is NULL and
+        Postgres treats NULLs as distinct. Measured, both halves, in
+        `20260817120000_health_import_conflict_target.sql`.
 
         A night somebody already logged by hand is left alone: they were there
         and the watch was only on their wrist.
       */
       if (sleep) {
-        const { data: manual } = await supabase
+        /*
+          ── `limit(1)`, not `maybeSingle()`, and the error is read ──
+
+          `maybeSingle()` has two ways to answer "no row" that are not one:
+          a query that genuinely matched nothing, and a query that matched
+          **more than one** — which it reports as an error. Somebody who logged
+          two naps by hand inside this ±12h window hit the second one, the error
+          was destructured away, `manual` came back nullish, and the watch's
+          night was written on top of theirs. Two rows for one night is not a
+          cosmetic duplicate: `daily-log-service` takes the latest `waketime` as
+          *the* night and averages `sleepDebt7d` over a row count that has
+          gained a phantom entry, and sleep is 0.30 of the readiness score.
+
+          A failed lookup is not permission to write. It stops the sleep step
+          and says so, rather than guessing that nothing was there.
+        */
+        const { data: manual, error: manualErr } = await supabase
           .from('sleep_logs')
           .select('id')
           .eq('user_id', user.id)
           .eq('source', 'manual')
           .gte('bedtime', new Date(+new Date(sleep.bedtime) - 12 * 3600 * 1000).toISOString())
           .lte('bedtime', new Date(+new Date(sleep.bedtime) + 12 * 3600 * 1000).toISOString())
-          .maybeSingle();
+          .limit(1);
+        if (manualErr) throw manualErr;
 
-        if (!manual) {
-          await supabase.from('sleep_logs').upsert(
+        if (!manual || manual.length === 0) {
+          const { error } = await supabase.from('sleep_logs').upsert(
             {
               user_id: user.id,
               bedtime: sleep.bedtime,
@@ -143,6 +173,7 @@ function useSyncMutation(silent: boolean) {
             },
             { onConflict: 'user_id,external_id' },
           );
+          if (error) throw error;
         }
       }
 
@@ -157,7 +188,7 @@ function useSyncMutation(silent: boolean) {
         whose whole job is to be trustworthy.
       */
       if (workouts.length > 0) {
-        await supabase.from('workout_sessions').upsert(
+        const { error } = await supabase.from('workout_sessions').upsert(
           workouts.map((w) => ({
             user_id: user.id,
             date_time: w.date_time,
@@ -169,6 +200,7 @@ function useSyncMutation(silent: boolean) {
           })),
           { onConflict: 'user_id,external_id' },
         );
+        if (error) throw error;
       }
 
       /*
@@ -191,19 +223,47 @@ function useSyncMutation(silent: boolean) {
       if (activeKcal != null) measured.active_kcal = activeKcal;
       if (exerciseMin != null) measured.active_minutes = exerciseMin;
 
+      /*
+        ── one statement, because the three it replaces could not be made safe ──
+
+        This was: `select('id').maybeSingle()`, then `update` if a row came
+        back, `insert` if one did not. Four faults in eight lines, and the
+        database already had a verb that has none of them.
+
+        1. **A failed lookup was read as "there is no row."** The `error` was
+           destructured away, so a dropped connection, a timeout or an RLS
+           refusal all arrived as `existing === undefined` — and the branch that
+           takes is `insert`, against a table carrying `UNIQUE (user_id, date)`.
+           The insert is then refused for a reason that has nothing to do with
+           the truth, and the day's steps are gone. Exactly the class Chain A
+           found in the offline weight replay.
+
+        2. **Neither write was checked either.** Three statements, zero of them
+           reporting. The mutation went on to `onSuccess` and showed
+           *"Đã đồng bộ"* over a day nothing had been written to.
+
+        3. **Read-then-write is a race with itself.** There are three live sync
+           mutations — the auto one, Today's, and the Health card's — and two
+           can be in flight at once. Both select, both find nothing, both
+           insert; one wins and one hits the unique constraint. The losing one
+           is the silent failure in (2).
+
+        4. And `update(...).eq('id', existing.id)` names a row by an id read a
+           round trip earlier, which is the shape that goes wrong the day
+           anything else can delete a day's row.
+
+        `upsert` on the natural key answers all four: one statement, no read,
+        no id, no window between them, and the conflict is resolved by the
+        database rather than by a guess. It writes only the columns named in
+        the payload, so the "one writer per column" rule this comment block
+        already relies on is untouched — `recomputeDailyLog` keeps its own
+        list and neither can wipe the other's.
+      */
       if (Object.keys(measured).length > 0) {
-        const dateStr = localDateStr();
-        const { data: existing } = await supabase
+        const { error } = await supabase
           .from('daily_logs')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('date', dateStr)
-          .maybeSingle();
-        if (existing) {
-          await supabase.from('daily_logs').update(measured).eq('id', existing.id);
-        } else {
-          await supabase.from('daily_logs').insert({ user_id: user.id, date: dateStr, ...measured });
-        }
+          .upsert({ user_id: user.id, date: localDateStr(), ...measured }, { onConflict: 'user_id,date' });
+        if (error) throw error;
       }
 
       /* Readiness reads HRV, resting HR, sleep and load, and this sync can now
@@ -219,6 +279,22 @@ function useSyncMutation(silent: boolean) {
       // Steps screen + biometrics history read their own keys
       queryClient.invalidateQueries({ queryKey: ['steps_history', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['biometric_history', user?.id] });
+      /*
+        ── the one answer that changes exactly once in an account's life ──
+
+        `useStepsAvailable` asks "has a step count ever reached this account",
+        and it is cached for an hour precisely because the answer almost never
+        moves. The moment it *does* move is this one — the first sync that ever
+        lands a step count — and nothing told it.
+
+        So for the first hour after connecting Health, `useDailyQuests` kept
+        dropping the steps quest: the day stayed at 4/5, the ten coins and
+        twelve XP were unreachable, and Koa's "finished everything" moment could
+        not fire. Every one of those is the failure `useStepsAvailable` was
+        written to remove, reappearing for an hour on the one day somebody has
+        just connected their watch and is looking at the app.
+      */
+      queryClient.invalidateQueries({ queryKey: ['steps_available', user?.id] });
       /* The screens that read the two new sources. Without these the sleep
          screen keeps showing last night as unlogged until the app restarts.
 
@@ -265,6 +341,9 @@ export function useHealthSync() {
 const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 const LAST_SYNC_KEY = 'health:lastAutoSync';
 
+/** Guards the window between deciding to sync and the mutation existing — see `attempt`. */
+let autoSyncInFlight = false;
+
 /**
  * Keep Health data current without anybody having to think about it.
  *
@@ -283,19 +362,45 @@ export function useAutoHealthSync(): void {
     syncRef.current = sync;
   }, [sync]);
 
+  /*
+    ── the slot is claimed before anything is awaited ──
+
+    `attempt` has three `await`s before it starts the sync, and two callers that
+    can fire within a frame of each other: the mount effect, and the AppState
+    listener registered in the same effect — a launch straight into the
+    foreground runs both. `isPending` is false until `mutate()` is actually
+    called, and the persisted stamp is only written on the far side of those
+    awaits, so both runs read the same old `last`, both passed, and both
+    started a full sync against the same day.
+
+    That is the one race the rest of this round exists to make survivable rather
+    than harmless: two syncs writing the same rows is now idempotent, but it is
+    still two permission checks, twelve HealthKit queries and two eleven-query
+    rebuilds for one result.
+
+    A module-scope flag is the right scope for it, not a ref: the guard has to
+    hold across every mount of this hook in the process, and `useAutoHealthSync`
+    is mounted once but remounts on any auth change. It is set before the first
+    `await` and cleared in `finally`, so nothing can wedge it.
+  */
   const attempt = useCallback(async () => {
     if (!user || !isHealthKitAvailable()) return;
-    if (syncRef.current.isPending) return;
-    if (!(await healthAlreadyAsked())) return;
+    if (autoSyncInFlight || syncRef.current.isPending) return;
+    autoSyncInFlight = true;
+    try {
+      if (!(await healthAlreadyAsked())) return;
 
-    const last = Number((await AsyncStorage.getItem(LAST_SYNC_KEY)) ?? 0);
-    if (Date.now() - last < AUTO_SYNC_INTERVAL_MS) return;
+      const last = Number((await AsyncStorage.getItem(LAST_SYNC_KEY)) ?? 0);
+      if (Date.now() - last < AUTO_SYNC_INTERVAL_MS) return;
 
-    /* Stamped before the run, not after. A sync that fails should still hold
-       the interval — otherwise a device with no Health data retries on every
-       single foreground, for ever. */
-    await AsyncStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
-    syncRef.current.mutate();
+      /* Stamped before the run, not after. A sync that fails should still hold
+         the interval — otherwise a device with no Health data retries on every
+         single foreground, for ever. */
+      await AsyncStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
+      syncRef.current.mutate();
+    } finally {
+      autoSyncInFlight = false;
+    }
   }, [user]);
 
   useEffect(() => {

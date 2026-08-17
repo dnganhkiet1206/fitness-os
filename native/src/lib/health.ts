@@ -81,7 +81,17 @@ export interface HealthBiometrics {
   spo2_pct: number | null;
   resp_rate_rpm: number | null;
   source: string;
+  /** when the newest contributing reading was taken — not when the sync ran */
   date_time: string;
+  /**
+   * HealthKit's identity for that reading, `hk:<uuid>`.
+   *
+   * The same role `external_id` plays for sleep and workouts since
+   * `20260809120000_health_provenance.sql`: re-importing a reading already
+   * stored is an update of one row rather than a second copy of it. This table
+   * was the one the provenance migration missed.
+   */
+  external_id: string | null;
   confidence: number;
 }
 
@@ -192,6 +202,39 @@ export function getTodayExerciseMinutes(): Promise<number | null> {
   return todayTotal('HKQuantityTypeIdentifierAppleExerciseTime', 'min');
 }
 
+/**
+ * A reading, with the two things about it that are not its value.
+ *
+ * ── why the timestamp had to start travelling ──
+ *
+ * This returned `samples[0]?.quantity` and dropped the rest of the sample on
+ * the floor. `getLatestBiometrics` then stamped the row `date_time: new
+ * Date().toISOString()` — **the moment of the sync**, not the moment of the
+ * reading — and the window this function searches is *seven days*.
+ *
+ * So a resting heart rate the watch computed on Tuesday, synced on Friday
+ * afternoon, was written as a reading taken on Friday afternoon. Two things
+ * downstream believe that date:
+ *
+ *   - `daily-log-service` picks today's biometrics with `localDayRangeISO` and
+ *     takes the newest, so a stale reading is scored as today's — and resting
+ *     HR carries 0.20 of the readiness score, 0.25 when HRV is absent;
+ *   - `hrv_history_28d` and `rhr_history_28d` are the 28-day baselines the two
+ *     largest terms are z-scored against, and every value in them sat at a
+ *     sync time rather than where the reading actually happened.
+ *
+ * The sample knows its own `startDate` and its own `uuid` — `BaseSample` in
+ * `@kingstinct/react-native-healthkit` carries both. Neither had to be
+ * derived; they only had to be kept.
+ */
+interface Reading {
+  value: number;
+  /** when the reading was taken, from the sample itself */
+  at: string;
+  /** HealthKit's identity for this sample, so re-importing is a no-op */
+  uuid: string;
+}
+
 async function latestQuantity(
   identifier:
     | 'HKQuantityTypeIdentifierRestingHeartRate'
@@ -199,7 +242,7 @@ async function latestQuantity(
     | 'HKQuantityTypeIdentifierOxygenSaturation'
     | 'HKQuantityTypeIdentifierRespiratoryRate',
   unit: string,
-): Promise<number | null> {
+): Promise<Reading | null> {
   if (!hk) return null;
   try {
     const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
@@ -210,7 +253,18 @@ async function latestQuantity(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       unit: unit as any,
     });
-    return samples[0]?.quantity ?? null;
+    const s = samples[0];
+    if (s == null || s.quantity == null) return null;
+    /* `startDate` crosses a native bridge and arrives as a `Date` or as the
+       string one serialises to, depending on the runtime. Both go through
+       `new Date`; an unparseable one falls back to now, which is what the whole
+       file used to do unconditionally. */
+    const at = new Date(s.startDate as unknown as string | Date);
+    return {
+      value: s.quantity,
+      at: Number.isNaN(+at) ? new Date().toISOString() : at.toISOString(),
+      uuid: String(s.uuid ?? ''),
+    };
   } catch {
     return null;
   }
@@ -252,14 +306,45 @@ export async function getLatestBiometrics(): Promise<HealthBiometrics | null> {
     latestQuantity('HKQuantityTypeIdentifierOxygenSaturation', '%'),
     latestQuantity('HKQuantityTypeIdentifierRespiratoryRate', 'count/min'),
   ]);
-  if (hr == null && hrv == null && spo2 == null && resp == null) return null;
+  const readings = [hr, hrv, spo2, resp].filter((r): r is Reading => r != null);
+  if (readings.length === 0) return null;
+
+  /*
+    ── the row is stamped and named by its newest contributing reading ──
+
+    Four metrics, four samples, four different moments, one row. The honest
+    "as of" for that row is the most recent of them: it is the point after
+    which nothing in the row is new, which is exactly the question
+    `daily-log-service` asks when it looks for *today's* biometrics.
+
+    That same sample's `uuid` becomes the row's identity. It is deterministic
+    for a given set of readings, so a sync that finds nothing new upserts onto
+    the row it already wrote instead of adding another — and the moment any one
+    metric updates, the newest sample changes, the id changes, and the new
+    reading becomes a new row rather than overwriting the old one.
+
+    Without it, every foreground of the day inserted another copy of the same
+    two numbers: Apple computes resting heart rate once a day and HRV SDNN a
+    handful of times, while `useAutoHealthSync` runs every fifteen minutes the
+    app is looked at. Those copies are not inert — they are the 28-day baseline
+    the readiness score's two largest terms are z-scored against, and a baseline
+    made mostly of one repeated value has almost no median absolute deviation.
+    A small MAD is a divisor.
+  */
+  const newest = readings.reduce((a, b) => (+new Date(b.at) > +new Date(a.at) ? b : a));
+
   return {
-    hr_bpm: hr != null ? Math.round(hr) : null,
-    hrv_sdnn_ms: hrv != null ? Math.round(hrv) : null,
-    spo2_pct: spo2 != null ? asPercent(spo2) : null,
-    resp_rate_rpm: resp != null ? Math.round(resp) : null,
+    hr_bpm: hr != null ? Math.round(hr.value) : null,
+    hrv_sdnn_ms: hrv != null ? Math.round(hrv.value) : null,
+    spo2_pct: spo2 != null ? asPercent(spo2.value) : null,
+    resp_rate_rpm: resp != null ? Math.round(resp.value) : null,
     source: APPLE_SOURCE,
-    date_time: new Date().toISOString(),
+    date_time: newest.at,
+    /* Empty only if HealthKit handed back a sample with no uuid, which it does
+       not do — but an empty string must never become the id of a row, because
+       every such row would then collide with every other. `null` means "no
+       identity", and the unique constraint lets those repeat. */
+    external_id: newest.uuid ? `hk:${newest.uuid}` : null,
     confidence: 1,
   };
 }

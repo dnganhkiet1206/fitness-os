@@ -162,6 +162,21 @@ const STEPS = [
   ['chi phí aura', 'node', ['tools/aura-cost.mjs']],
   ['luật chuyển động', 'node', ['tools/motion.mjs']],
   ['nguồn sức khoẻ', 'node', ['tools/health-source.mjs']],
+  /*
+    The Apple Health sleep and workout import had never written a row. The
+    upserts chose `ON CONFLICT (user_id, external_id)` against a **partial**
+    unique index, which Postgres cannot infer as an arbiter unless the statement
+    repeats the predicate — and PostgREST's `on_conflict` sends column names
+    only. Every one was refused with 42P10 (measured on PostgreSQL 16.13), and
+    neither call site read its error, so the sync reported success over it.
+
+    So this reads the constraints out of `supabase/migrations/` and checks every
+    `onConflict` in the app against them; it also holds the two properties that
+    kept the failure invisible — every write and every select in the sync must
+    take its `error`, and the sync must not decide a row's existence by reading
+    first.
+  */
+  ['đồng bộ sức khoẻ', 'node', ['tools/health-sync.mjs']],
   ['quyền kinh tế', 'node', ['tools/economy-authority.mjs']],
   ['trí nhớ coach', 'node', ['tools/coach-memory.mjs']],
   ['quyền lợi gói', 'node', ['tools/entitlement.mjs']],

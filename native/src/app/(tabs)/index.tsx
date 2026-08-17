@@ -315,6 +315,10 @@ export default function TodayScreen() {
             /* Offered only where it can work — the button is HealthKit, and
                HealthKit does not exist in Expo Go or on a simulator. */
             onConnectHealth={healthAvailable ? () => healthSync.mutate() : undefined}
+            /* The same mutation the sync chip further down already guards on.
+               This button had no guard at all, and it is the one shown to
+               somebody whose first sync is running — the slowest one there is. */
+            connectPending={healthSync.isPending}
             onLogWorkout={() => router.push('/log-workout')}
           />
         );

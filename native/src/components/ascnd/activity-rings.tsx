@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { HeartPulse } from 'lucide-react-native';
 import { useEffect, useId } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -97,6 +97,22 @@ interface Props extends ActivityInput {
   size?: number;
   /** shown in the empty state only, when Apple Health can actually be reached */
   onConnectHealth?: () => void;
+  /**
+   * Whether that connect is already running.
+   *
+   * ── why the button needed one ──
+   *
+   * It had no pending state of any kind: no `disabled`, no spinner, no change
+   * of label. And it is shown *only* in the empty state — to somebody who has
+   * no health data yet, whose sync is therefore the slowest one the app ever
+   * does: a permission sheet, six HealthKit queries, up to five writes and an
+   * eleven-query rebuild. Seconds of nothing visibly happening, on the one
+   * button whose whole purpose is to make something happen.
+   *
+   * Two taps started two full syncs against the same day. Same shape as the
+   * offline double-submit Chain A found, minus the offline part.
+   */
+  connectPending?: boolean;
   onLogWorkout?: () => void;
 }
 
@@ -121,7 +137,13 @@ interface Props extends ActivityInput {
  * card saying where it came from. See `lib/activity.ts` for why the
  * measurement always wins when there is one.
  */
-export function ActivityRingsCard({ size = 110, onConnectHealth, onLogWorkout, ...input }: Props) {
+export function ActivityRingsCard({
+  size = 110,
+  onConnectHealth,
+  connectPending = false,
+  onLogWorkout,
+  ...input
+}: Props) {
   const i18n = useI18n();
   const { rings, hasAny } = activityModel(input);
 
@@ -180,12 +202,22 @@ export function ActivityRingsCard({ size = 110, onConnectHealth, onLogWorkout, .
           {onConnectHealth ? (
             <PressScale
               accessibilityRole="button"
-              style={[styles.emptyBtn, styles.emptyBtnPrimary]}
+              accessibilityState={{ busy: connectPending, disabled: connectPending }}
+              disabled={connectPending}
+              style={[styles.emptyBtn, styles.emptyBtnPrimary, connectPending && styles.emptyBtnBusy]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onConnectHealth();
               }}>
-              <Text style={styles.emptyBtnPrimaryText}>{i18n.dcActivityConnect}</Text>
+              {/* A spinner rather than a dimmed label: this button is pressed
+                  by somebody who has never seen the app hold data, so "it is
+                  working" has to be visible, not merely implied by the tap
+                  being refused. */}
+              {connectPending ? (
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
+              ) : (
+                <Text style={styles.emptyBtnPrimaryText}>{i18n.dcActivityConnect}</Text>
+              )}
             </PressScale>
           ) : null}
           {onLogWorkout ? (
@@ -319,5 +351,8 @@ const styles = StyleSheet.create({
   },
   emptyBtnText: { fontSize: 13, fontWeight: '600', color: colors.foreground },
   emptyBtnPrimary: { backgroundColor: colors.primary },
+  /* Dimmed, not hidden: the button keeps its footprint so the card does not
+     reflow under the finger that just pressed it. */
+  emptyBtnBusy: { opacity: 0.6 },
   emptyBtnPrimaryText: { fontSize: 13, fontWeight: '600', color: colors.primaryForeground },
 });
