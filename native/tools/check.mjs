@@ -220,6 +220,20 @@ const STEPS = [
   ['tải buổi tập', 'node', ['tools/session-load.mjs']],
   ['mục tiêu → tập luyện', 'node', ['tools/goal-training.mjs']],
   ['điều chỉnh tải', 'node', ['tools/load-progression.mjs']],
+  /*
+    `load-progression.mjs` runs the engine. This runs the **wiring**, and the
+    wiring is where it was wrong: the one screen that turns the engine into a
+    sentence handed it the field where the person says how hard *today* felt as
+    the `target` the engine defines as what the workout *asks for*. Same history,
+    type 6 and it says ease off, type 9 and it says add ten per cent — the harder
+    you call today, the more load it offers.
+
+    Plus the guard that switched itself off: two of the three gates on "add load"
+    are keyed on a confidence that `useUserState` returns as `none` whenever the
+    streak is not already in the query cache, which the first launch of any new
+    day guarantees.
+  */
+  ['dây nối điều chỉnh tải', 'node', ['tools/progression.mjs']],
   ['lệnh ghi có người nghe', 'node', ['tools/write-heard.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],

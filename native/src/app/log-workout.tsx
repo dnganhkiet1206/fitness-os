@@ -24,6 +24,7 @@ import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
+import { useDailyStreak } from '@/hooks/use-mascot-room';
 import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useExercises, useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
@@ -148,6 +149,38 @@ export default function LogWorkoutSheet() {
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
   const { data: recentSessions } = useWorkoutSessions(14);
+  /*
+    ── the two safety gates need an input, and this is the screen that needs them ──
+
+    `useUserState` deliberately subscribes to nothing: it reads the React Query
+    **cache** and mounts no observer, because the companion layer's awareness of
+    somebody must not cost the app requests. A screen that never fetched the
+    streak therefore gets `UNKNOWN_STATE` — `settling_in`, confidence `none`.
+
+    For the koala that is the right answer: it simply has no opinion. For *this*
+    screen it is not, because `suggestLoad` reads that confidence as a switch.
+    Both gates that can stop an "add load" suggestion are written
+    `situationConfidence != null && !== 'none'`, so an unread cache turns them
+    off — run against the real engine:
+
+        overreaching, confidence high  → hold
+        overreaching, confidence none  → up, +10%
+        returning,    confidence none  → up, +10%
+
+    And it is reachable without anything going wrong: the streak's query key
+    carries today's date (`['mascot_streak', user, today]`), so on the first
+    launch of a new day the key is fresh and empty. Open the app, go straight to
+    the workouts tab, log a session — the gates were never consulted, and the
+    sheet offers ten per cent more to somebody the app itself would have called
+    overreached.
+
+    So the one screen that acts on the state asks for it. One query, ten-minute
+    `staleTime`, and Today warms the same key — on the ordinary path this is a
+    cache hit and no request at all. The shared rule is untouched: it says a
+    consumer that needs the answer should read it, and this is the consumer that
+    turns it into advice.
+  */
+  useDailyStreak();
   const userState = useUserState();
   /* Today's readiness, if it has been computed. `null` when it has not, and the
      engine treats that as "no opinion" rather than as green — the difference
@@ -159,6 +192,31 @@ export default function LogWorkoutSheet() {
     | 'yellow'
     | 'red'
     | null;
+  /*
+    What this workout asks for, from the saved workout of the same name.
+
+    ── the midpoint, because that is the rule the app already has ──
+
+    `effortRange` returns the two ends a template runs between, and turning a
+    band into the single number `suggestLoad` aims at is a question
+    `goal-training.ts` has already answered once: `goalRpeTarget` is
+    `(lo + hi) / 2`. Following it rather than picking an end keeps one rule for
+    one question — and picking an end would be a choice with nothing behind it,
+    which is how a session of three easy exercises and one all-out finisher ends
+    up measured against the finisher.
+
+    `null` when no saved workout carries this name, which is the honest answer
+    for something typed in freehand and is what `goal` is the fallback for.
+  */
+  const askedRpe = useMemo(() => {
+    const key = name.trim().toLowerCase();
+    if (!key) return null;
+    const tpl = (templates ?? []).find((t) => (t.name ?? '').trim().toLowerCase() === key);
+    const exs: TplExercise[] = Array.isArray(tpl?.exercises) ? (tpl.exercises as TplExercise[]) : [];
+    const band = effortRange(exs);
+    return band ? (band[0] + band[1]) / 2 : null;
+  }, [templates, name]);
+
   const loadHint = useMemo(() => {
     const key = name.trim().toLowerCase();
     if (!key) return null;
@@ -168,11 +226,46 @@ export default function LogWorkoutSheet() {
     if (mine.length === 0) return null;
     const suggestion = suggestLoad({
       reported: mine.map((s) => s.session_rpe),
-      target: rpe,
-      /* The chip above already carries the template's effort, so `target` is
-         almost always set and the goal is the fallback for the case it is not.
-         Passed anyway rather than conditionally: a caller that decides when the
-         engine may see an input is a caller making the engine's decision. */
+      /*
+        ── the effort the workout ASKS FOR, which is not the one being typed ──
+
+        This passed `rpe` — the chip row further down, the field where the person
+        says how hard *today* felt. That value is saved as `session_rpe`, which
+        `load-progression.ts` defines as "the effort the person **reported**",
+        and it was being handed to the input that file defines as "the effort the
+        workout **asks for**". The engine exists to compare those two; the one
+        call site fed the same quantity into both sides.
+
+        What that produced, run against the real engine with an unchanging
+        history of three sessions reported at 7:
+
+            hôm nay gõ 6  → down, −5%     "sessions felt harder than 6, ease off"
+            hôm nay gõ 7  → hold
+            hôm nay gõ 8  → up,   +5%
+            hôm nay gõ 9  → up,  +10%     "sessions felt easier than 9, add 10%"
+
+        The person's actual history is identical in all four. The advice moves
+        entirely with the number they type about today — so **the harder you say
+        today was, the more the app tells you to add**, which is the inversion of
+        the one piece of advice in this app that can contribute to an injury.
+
+        The intent was already written down, in the comment this replaces: *"the
+        chip above already carries the template's effort"*. That is true only in
+        the moment the plan chip is pressed — the chip is optional, it disappears
+        once used, the default without it is the literal 7, and the field's whole
+        purpose is that the person then changes it.
+
+        So the target is read from the workout itself, by the same name the
+        history above is matched on. No template of that name — a one-off typed
+        in freehand — leaves it null, and `goal` below is the documented fallback
+        for exactly that case.
+      */
+      target: askedRpe,
+      /* The fallback when the workout states no effort at all: somebody training
+         for strength and somebody training to hold steady should not both be
+         measured against the same default. Passed unconditionally rather than
+         only when `target` is null — a caller that decides when the engine may
+         see an input is a caller making the engine's decision. */
       goal: profile?.goal,
       situation: userState.situation,
       situationConfidence: userState.confidence,
@@ -180,14 +273,19 @@ export default function LogWorkoutSheet() {
     });
     if (suggestion.advice === 'unknown' || suggestion.advice === 'hold') return null;
     const pct = Math.round(Math.abs(suggestion.step) * 100);
+    /* The number the engine actually aimed at, not the one this screen happens
+       to be holding — see `LoadSuggestion.target`. The sentence named `rpe`,
+       which is the field for how today felt, so it quoted a figure the verdict
+       was not about. */
+    const aim = suggestion.target;
     return suggestion.advice === 'up'
       ? (vi
-          ? `Mấy buổi "${name.trim()}" gần đây bạn thấy nhẹ hơn mức ${rpe} — có thể thử tăng ~${pct}%`
-          : `Your recent "${name.trim()}" sessions felt easier than ${rpe} — you could try about ${pct}% more`)
+          ? `Mấy buổi "${name.trim()}" gần đây bạn thấy nhẹ hơn mức ${aim} — có thể thử tăng ~${pct}%`
+          : `Your recent "${name.trim()}" sessions felt easier than ${aim} — you could try about ${pct}% more`)
       : (vi
-          ? `Mấy buổi "${name.trim()}" gần đây bạn thấy nặng hơn mức ${rpe} — có thể giảm ~${pct}%`
-          : `Your recent "${name.trim()}" sessions felt harder than ${rpe} — easing off about ${pct}% is fine`);
-  }, [recentSessions, name, rpe, profile?.goal, userState.situation, userState.confidence, readinessStatus, vi]);
+          ? `Mấy buổi "${name.trim()}" gần đây bạn thấy nặng hơn mức ${aim} — có thể giảm ~${pct}%`
+          : `Your recent "${name.trim()}" sessions felt harder than ${aim} — easing off about ${pct}% is fine`);
+  }, [recentSessions, name, askedRpe, profile?.goal, userState.situation, userState.confidence, readinessStatus, vi]);
 
   const updateSet = (idx: number, field: keyof SetRow, value: string) => {
     setSets((prev) =>

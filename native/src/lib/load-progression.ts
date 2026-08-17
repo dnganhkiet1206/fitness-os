@@ -57,6 +57,21 @@ export interface LoadSuggestion {
    * somebody squatting 140.
    */
   step: number;
+  /**
+   * The effort this verdict was measured against, after the fallbacks below.
+   *
+   * ── returned rather than re-derived ──
+   *
+   * The one screen that shows this advice also names the number in its sentence
+   * — *"your recent sessions felt easier than N"*. It had `N` as its own local
+   * value, so the sentence and the verdict were two readings of the same thing
+   * and only one of them applied `goalRpeTarget`. A screen that recomputed the
+   * fallback would be a second copy of this file's rule, drifting the first time
+   * either moved.
+   *
+   * So the engine says what it aimed at, and the sentence quotes it.
+   */
+  target: number;
   /** why, for the debug screen and for the sentence a screen chooses */
   because: string;
 }
@@ -115,7 +130,7 @@ export interface LoadInput {
   readiness?: 'green' | 'yellow' | 'red' | null;
 }
 
-const NOTHING: LoadSuggestion = {
+const NOTHING: Omit<LoadSuggestion, 'target'> = {
   advice: 'unknown',
   confidence: 'none',
   step: 0,
@@ -132,6 +147,7 @@ export function suggestLoad(input: LoadInput): LoadSuggestion {
   if (said.length < MIN_SESSIONS) {
     return {
       ...NOTHING,
+      target,
       because: `mới ${said.length} buổi có ghi mức gắng sức, cần ${MIN_SESSIONS}`,
     };
   }
@@ -153,6 +169,7 @@ export function suggestLoad(input: LoadInput): LoadSuggestion {
     return {
       advice: 'down',
       confidence,
+      target,
       step: -Math.min(STEP * Math.round(gap), MAX_STEP),
       because: `trung bình ${mean.toFixed(1)} so với mức đặt ${target} qua ${said.length} buổi`,
     };
@@ -184,6 +201,7 @@ export function suggestLoad(input: LoadInput): LoadSuggestion {
       return {
         advice: 'hold',
         confidence,
+        target,
         step: 0,
         because: 'nhẹ hơn mức đặt, nhưng tải đang chạy trước xa thói quen — giữ nguyên',
       };
@@ -192,6 +210,7 @@ export function suggestLoad(input: LoadInput): LoadSuggestion {
       return {
         advice: 'hold',
         confidence,
+        target,
         step: 0,
         because: 'nhẹ hơn mức đặt, nhưng đây là những buổi đầu quay lại — nhẹ là đúng ý đồ',
       };
@@ -200,6 +219,7 @@ export function suggestLoad(input: LoadInput): LoadSuggestion {
       return {
         advice: 'hold',
         confidence,
+        target,
         step: 0,
         because: 'nhẹ hơn mức đặt, nhưng điểm sẵn sàng hôm nay đang đỏ',
       };
@@ -207,6 +227,7 @@ export function suggestLoad(input: LoadInput): LoadSuggestion {
     return {
       advice: 'up',
       confidence,
+      target,
       step: Math.min(STEP * Math.round(-gap), MAX_STEP),
       because: `trung bình ${mean.toFixed(1)} so với mức đặt ${target} qua ${said.length} buổi`,
     };
@@ -215,6 +236,7 @@ export function suggestLoad(input: LoadInput): LoadSuggestion {
   return {
     advice: 'hold',
     confidence,
+    target,
     step: 0,
     because: `trung bình ${mean.toFixed(1)}, đúng quanh mức đặt ${target}`,
   };

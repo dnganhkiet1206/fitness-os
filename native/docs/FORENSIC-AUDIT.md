@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (92 bước). Ngày rà: 2026-08-17.
+Bộ kiểm: `node tools/check.mjs` (93 bước). Ngày rà: 2026-08-17.
 
 ---
 
@@ -983,6 +983,251 @@ những con số không ai nhìn thấy được. Điều kiện kích hoạt đ
 `use-health-sync.ts`: **ngày nào có một màn vẽ chúng theo lịch sử, đoạn chú thích
 đó là chỗ phải sửa.** Đây là ranh giới có bằng chứng, không phải thu hẹp phạm vi
 trong im lặng.
+
+---
+
+## Vòng 4 — Chain C: Goal → kế hoạch → buổi tập → điều chỉnh tải → tiến độ mục tiêu
+
+Ngày rà: 2026-08-17. Bộ kiểm: 93 bước.
+
+---
+
+### KIẾN TRÚC THẬT — đọc ra, không suy từ tên file
+
+Chuỗi trong đề bài giả định một bước **sinh kế hoạch từ mục tiêu**. Bước đó
+**không tồn tại**: `grep goal` trên `workout-builder.tsx`, `routine.tsx`,
+`templates.tsx`, `template-list.tsx` → **0 kết quả**. Mẫu tập do người dùng tự
+viết; `routine_days` do người dùng tự gán. Nên các lớp lỗi
+`STALE-TRAINING-PLAN` và `GOAL-STATE-DESYNC` **không có instance nào** ở đây —
+không có cache kế hoạch để cũ đi.
+
+Chuỗi có thật:
+
+```
+profiles.goal
+ ├→ goalTraining().strengthDays ─┐
+ │                               ├→ thẻ tập luyện: "Ngày tập cơ · 7 ngày qua  n/target"
+ │   useWorkoutSessions(7) ──────┘   (strengthDaysIn — gom theo NGÀY địa phương)
+ ├→ goalTraining().rpeBand → goalRpeTarget ──┐
+ └→ goalTraining().aerobicMin → KHÔNG AI ĐỌC │  (đã ghi trong goal-training.mjs)
+                                             │
+workout_templates.exercises[].rpe → effortRange ─┤
+                                             ├→ suggestLoad → MỘT câu chữ trên
+workout_sessions.session_rpe (14 ngày, lọc ──┤   sheet ghi buổi tập
+  theo template_name) ───────────────────────┤
+user-state.situation/confidence ─────────────┤
+daily_logs.readiness_status ─────────────────┘
+```
+
+**`suggestLoad` có đúng MỘT nơi tiêu thụ** (`log-workout.tsx`) và **không ghi gì
+cả** — đầu ra là một câu người ta có thể làm theo hoặc bỏ qua. Điều đó giới hạn
+thiệt hại của mọi lỗi dưới đây ở "lời khuyên sai", không phải "dữ liệu hỏng" —
+nhưng đây cũng là lời khuyên duy nhất trong app có thể góp phần gây chấn thương,
+nên tiêu chuẩn cao hơn chứ không thấp hơn.
+
+**"Progression" ở app này nghĩa là gì** — đọc từ code, không đoán: *điều chỉnh
+TẢI theo mức gắng sức tự báo cáo* (RPE autoregulation). Không phải tăng rep,
+không phải tăng buổi, không phải tăng volume. `LoadAdvice = 'up' | 'hold' |
+'down'` và `step` là **phân số của tải hiện tại**.
+
+---
+
+### BUG-18 — Càng nói hôm nay nặng, app càng bảo thêm tạ
+
+| | |
+|---|---|
+| **AREA** | `log-workout.tsx` → `suggestLoad` |
+| **SEVERITY** | P1 — lời khuyên bị đảo chiều, ở đúng chỗ có thể góp phần gây chấn thương |
+| **STATUS** | ĐÃ SỬA |
+
+**TRIGGER** Có ≥3 buổi cùng tên workout trong 14 ngày. Mở sheet ghi buổi tập,
+kéo hàng chip RPE.
+
+**EXPECTED** Lời khuyên phản ánh **lịch sử** của người ta so với mức mẫu tập
+**đặt ra**.
+
+**ACTUAL** — chạy thật engine, lịch sử cố định 3 buổi đều báo 7:
+
+```
+hôm nay gõ 6  → down, −5%    "mấy buổi gần đây bạn thấy nặng hơn mức 6 — giảm 5%"
+hôm nay gõ 7  → hold
+hôm nay gõ 8  → up,   +5%
+hôm nay gõ 9  → up,  +10%    "…nhẹ hơn mức 9 — có thể thử tăng ~10%"
+```
+
+Lịch sử **giống hệt nhau ở cả bốn dòng**. Lời khuyên đổi hoàn toàn theo con số
+người ta gõ về *hôm nay*.
+
+**ROOT CAUSE**
+`load-progression.ts` tồn tại để so **hai** đại lượng mà chính header nó đặt
+tên: mức workout **ĐẶT RA** (`rpe` trên mẫu, gộp bởi `effortRange`) và mức người
+ta **BÁO CÁO** (`session_rpe`). Sheet đưa `rpe` — biến state của hàng chip, thứ
+được lưu thẳng thành `session_rpe` — vào tham số `target`, thứ engine định nghĩa
+là mức đặt ra. Hai vế của phép so thành một.
+
+**EVIDENCE**
+Ý đồ đã được viết sẵn, trong chính chú thích bị thay: *"chip ở trên đã mang sẵn
+mức gắng sức của mẫu tập, nên `target` gần như luôn được đặt"*. Câu đó chỉ đúng
+**tại đúng khoảnh khắc bấm chip**: chip là tuỳ chọn, dùng xong thì biến mất
+(`planUsed`), mặc định khi không bấm là hằng số 7, và cả mục đích của ô đó là để
+người dùng sửa nó. Chú thích mô tả một bất biến mà code không giữ.
+
+**FIX**
+`target` đọc từ **chính workout**, tra theo đúng cái tên mà lịch sử đang được lọc
+theo. Không có mẫu nào mang tên đó (một buổi gõ tay tự do) → `null`, và `goal` là
+fallback đã được ghi rõ cho đúng trường hợp ấy.
+
+Chuyển một dải thành một số dùng **trung điểm**, vì đó là luật app đã có:
+`goalRpeTarget` là `(lo + hi) / 2`. Chọn một đầu dải sẽ là quyết định không có
+căn cứ — và chọn đầu cao chính là cách một buổi gồm ba bài nhẹ cộng một bài
+finisher bị đem đo bằng cái finisher.
+
+**Và câu chữ trích số của engine.** `LoadSuggestion` giờ trả về `target`. Câu gợi
+ý nhắc `${rpe}` — con số vừa gõ — trong khi kết luận tính trên một mức khác; đó
+đúng là hình dạng *"màn Tiến trình nói 40, phần kê buổi tập nói 45"*. Một màn
+tự tính lại fallback sẽ là bản sao thứ hai của luật trong `load-progression.ts`.
+
+**VERIFICATION** `tools/progression.mjs` luật 5. Trả `target: rpe` về → đỏ.
+
+**REGRESSION RISK** Thấp. Engine không đổi một luật nào; chỉ thêm một trường trả
+về. Với người không dùng mẫu tập, `target` giờ là `null` → rơi về mục tiêu theo
+goal, đúng thiết kế đã ghi.
+
+---
+
+### BUG-19 — Hai cổng an toàn tự tắt vào lần mở app đầu tiên mỗi ngày
+
+| | |
+|---|---|
+| **AREA** | `log-workout.tsx` → `useUserState` → `suggestLoad` |
+| **SEVERITY** | P1 |
+| **STATUS** | ĐÃ SỬA |
+
+**TRIGGER** Mở app lần đầu trong ngày → vào thẳng tab Tập luyện → ghi buổi tập.
+Không cần gì hỏng cả.
+
+**EXPECTED** Người đang **quá tải** hoặc **vừa quay lại** không được nghe "thêm
+tạ".
+
+**ACTUAL** — chạy thật engine:
+
+```
+quá tải, độ tin cậy high  → hold
+quá tải, độ tin cậy none  → up, +10%
+vừa quay lại,      none  → up, +10%
+```
+
+**ROOT CAUSE**
+Hai trong ba cổng viết là `situationConfidence != null && !== 'none'`.
+`useUserState` **chỉ đọc cache** React Query và cố ý không mount observer nào —
+luật "sự nhận biết của app về một người không được tốn request của app". Màn nào
+chưa từng fetch chuỗi ngày sẽ nhận `UNKNOWN_STATE` (confidence `none`).
+
+Và khoá của chuỗi ngày mang **ngày hôm nay**
+(`['mascot_streak', user, today]`), nên **lần mở app đầu tiên của một ngày mới**
+là đủ: khoá mới, cache rỗng, cổng không được hỏi tới.
+
+Với con koala, `none` là câu trả lời đúng — nó đơn giản là không có ý kiến. Với
+màn này thì không, vì `suggestLoad` đọc đúng độ tin cậy đó **như một công tắc**.
+
+**FIX** Màn duy nhất biến trạng thái ấy thành lời khuyên thì mount
+`useDailyStreak()`. Một truy vấn, `staleTime` 10 phút, và Today làm ấm cùng khoá
+— đường thông thường là cache hit, không request nào. Luật chung không đổi: nó
+nói màn nào **cần** câu trả lời thì phải tự đọc.
+
+**VERIFICATION** `tools/progression.mjs` luật 6, đứng trên luật 3 — luật 3 **chạy
+engine** để chứng minh `none` thật sự gỡ cả hai cổng, rồi luật 6 mới ép màn tiêu
+thụ phải cấp nguồn. Gỡ `useDailyStreak()` ra → đỏ.
+
+**REGRESSION RISK** Thấp. Một query đã tồn tại, dùng chung khoá với Today.
+
+---
+
+## Chain C — PRODUCT SEMANTICS REQUIRED
+
+### BUG-20 — `session_rpe` ghi từ bảng ngày trong tuần là mức mẫu tập ĐẶT RA, không phải mức người ta báo
+
+| | |
+|---|---|
+| **AREA** | `day-plan.tsx` → `workout_sessions.session_rpe` → `suggestLoad`, `sessionLoad`/ACWR |
+| **SEVERITY** | P2 |
+| **STATUS** | **CHƯA SỬA — cần quyết định sản phẩm** |
+
+**TRIGGER** Mở tuần tập, tick hết set, bấm "Hoàn thành", **không chạm vào hàng
+mức gắng sức**.
+
+**ACTUAL** `sessionRpe = Math.max(...sets.map(s => rpe[s.key] ?? s.plannedRpe))`.
+Không chạm hàng nào → mọi phần tử là `plannedRpe` của mẫu → `session_rpe` **bằng
+đúng mức mẫu tập đặt ra**, và được lưu vào cột mà `load-progression.ts` định
+nghĩa là *mức người ta báo cáo*.
+
+Hệ quả: `suggestLoad.reported` bằng `target` một cách hệ thống → gap 0 → engine
+**câm vĩnh viễn** với người chỉ dùng bảng ngày. Và ở mức hẹp hơn: chạm đúng một
+hàng để báo 6 trong khi mẫu đặt 8 thì `Math.max` vẫn giữ 8 — **kế hoạch thắng
+báo cáo của chính người tập**.
+
+**VÌ SAO CHƯA SỬA — hai lựa chọn, cả hai đều mất một thứ**
+
+| | ghi `plannedRpe` (hiện tại) | ghi `null` khi không ai chạm |
+|---|---|---|
+| `suggestLoad` | được nuôi bằng báo cáo bịa | đúng: null bị bỏ, không phải 0 |
+| `sessionLoad` / ACWR | buổi **đo được** | buổi thành **không đo được**, rơi khỏi cả hai vế tỉ lệ |
+| điểm sẵn sàng | có thành phần tải | **mất** thành phần tải |
+
+Nửa dưới là chính cái lỗi `session-load.ts` được viết ra để sửa (buổi tay không
+bị tính 0). Chọn `null` sẽ dựng lại nó ở hình dạng khác.
+
+Sửa đúng cần **phân biệt nguồn** cho `session_rpe` — báo cáo thật vs kế hoạch
+mang sang — tức một cột mới và một quyết định về việc `sessionLoad` được dùng
+loại nào. Đó là quyết định sản phẩm, không phải một bản sửa.
+
+**Câu hỏi cần chủ dự án trả lời:**
+1. Một buổi mà không ai báo mức gắng sức thì có nên đóng góp vào ACWR bằng mức
+   mẫu tập đặt ra không?
+2. Khi người tập có chạm vào một số hàng, `session_rpe` nên là max của **các
+   hàng đã chạm** hay max của **tất cả**?
+
+Cả hai đều **không** được đoán. `tools/progression.mjs` không kiểm mục này.
+
+---
+
+## Chain C — đã kiểm và **KHÔNG** phải lỗi
+
+### N8. Đơn vị kg/lb trong cả chuỗi tải — sạch
+
+Quét số học thật, không đọc code: mọi bậc của stepper trong `workout-set-sheet`
+(2.5 kg và 5 lb, tới 500 kg / 1100 lb) đi qua `weightToKg → tidy(2 chữ số) →
+displayWeight` và **quay về đúng con số** — 0/441 bậc lệch. Gõ tay theo bậc
+0.5 lb tới 1000 lb: 0/2001 lệch. Mẫu tập lưu **kg** (`weightToKg` lúc ghi,
+`displayWeight` lúc đọc), nên `day-plan` cộng `volume` bằng kg là đúng.
+
+Và `suggestLoad` **không bao giờ trả về khối lượng** — chỉ một phân số, hiển thị
+thành phần trăm. Nên các lớp `UNIT-CONVERSION` và `LOAD-ROUNDING` **không chạm
+tới lời khuyên** chút nào.
+
+### N9. Không có `STALE-TRAINING-PLAN`, không có `GOAL-STATE-DESYNC`
+
+App không sinh kế hoạch từ mục tiêu (xem phần kiến trúc). Đổi mục tiêu thì
+`edit-profile` invalidate `['profile']`, nên `goalTraining()` tính lại ngay ở
+mọi nơi đọc. Không có object kế hoạch nào được cache.
+
+### N10. "Ngày tập cơ · 7 ngày qua" không phải lỗi biên tuần
+
+Nhãn nói đúng cửa sổ mà truy vấn dùng (7 ngày trượt), **không** nói "tuần này".
+Thử thách tuần và weekly-review dùng tuần lịch bắt đầu thứ Hai; hai khái niệm
+tuần cùng tồn tại có chủ ý và mỗi cái được dán nhãn đúng.
+
+### N11. Lọc lịch sử theo `template_name` — đúng, và buổi từ đồng hồ không lọt
+
+Buổi import từ Apple Health mang tên dạng `"Chạy bộ · 32′ · 250 kcal"` nên không
+khớp tên gõ tay, và `session_rpe` của chúng là null nên bị `suggestLoad` bỏ.
+Không có đường nào để một buổi chạy tham gia vào lời khuyên tải.
+
+### N12. Đầu vào bệnh lý của `suggestLoad` — đã chạy, đều an toàn
+
+Rỗng / thiếu / null / NaN / âm / toàn 0 → `unknown`, bước 0. `target` bằng
+0/null/NaN rơi về mục tiêu theo goal chứ không so với 0 (so với 0 sẽ đọc **mọi**
+buổi từng ghi là quá nặng). Chênh lệch cực lớn bị chặn ở `MAX_STEP`.
 
 ---
 
