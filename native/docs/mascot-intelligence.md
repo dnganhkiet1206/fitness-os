@@ -3,6 +3,9 @@
 Tài liệu này mô tả **những gì đang có trong code**, kể cả những chỗ chưa làm.
 Chỗ nào chưa làm được ghi rõ ở mục [Giới hạn đã biết](#giới-hạn-đã-biết).
 
+Từng chỉ số một — định nghĩa, công thức, và **thiếu dữ liệu thì làm gì** — nằm ở
+[`fitness-scores.md`](./fitness-scores.md).
+
 ---
 
 ## 1. Luồng dữ liệu
