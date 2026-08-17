@@ -41,8 +41,11 @@
  *    "no row" — and there are three live sync mutations, so two can be in
  *    flight against the same day. The natural key belongs in the statement.
  */
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { globSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -324,6 +327,200 @@ if (inferable.size === 0) {
   }
 }
 
+/* ── 5: a finished day is finished, and the app comes back for it ──
+
+   `daily_logs.steps` for a past date used to be whatever was true at the last
+   foreground: leave the house at nine in the evening on 9,000 steps and 9,000
+   is what that day is worth for ever. The Steps screen averages seven of those
+   and trends three against three; the weekly `steps_50k` challenge sums the
+   week. Both were summing days that had stopped early, and the error only ever
+   ran one way — down.
+
+   Two halves to hold. The sync has to *ask* for the finished days, and the
+   answer has to land on the right calendar day without inventing zeros. */
+{
+  const sync = strip(read(SYNC));
+  if (!/getDailyStepHistory\(\)/.test(sync)) {
+    problems.push(
+      `${SYNC}: chỉ hỏi HealthKit về HÔM NAY — ngày đã kết thúc giữ nguyên con số đúng lúc ` +
+        'app lên foreground lần cuối, và không có gì quay lại hoàn tất nó. ' +
+        'Màn Bước chân lấy trung bình 7 ngày và so 3 với 3 trên đúng những ngày đó',
+    );
+  }
+  /* Asking is not writing. The shape that would pass the rule above while
+     changing nothing is a query whose result is read and dropped. */
+  if (!/stepDays\.map\(/.test(sync) || !/from\('daily_logs'\)\s*\.\s*upsert\(/.test(sync)) {
+    problems.push(
+      `${SYNC}: đọc lịch sử bước chân nhưng không ghi nó bằng upsert theo khoá tự nhiên — ` +
+        'một lần backfill phải chạy lại được nhiều lần mà ra cùng kết quả',
+    );
+  }
+}
+
+/* ── 6: and the aggregation itself, run rather than read ──
+
+   `dailyStepsFrom` is the whole of what this round can execute: the HealthKit
+   query above it needs an iPhone. So the file is compiled and the real function
+   is called, in real processes with `TZ` set — which is the only way to observe
+   `localDateStr` doing its job, and the method `tools/goal-training.mjs` and
+   `tools/user-state.mjs` already use for the same class of bug. */
+{
+  const out = mkdtempSync(path.join(tmpdir(), 'stepdays-'));
+  try {
+    execFileSync(
+      'npx',
+      ['tsc', 'src/lib/step-days.ts', 'src/lib/local-date.ts', '--ignoreConfig', '--outDir', out,
+       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+      { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch {
+    /* No project tsconfig here, so tsc exits non-zero over the `@/` mapping
+       while still emitting the JS — the trick `tools/streak.mjs` documents. */
+  }
+  const emitted = path.join(out, 'step-days.js');
+  writeFileSync(
+    emitted,
+    readFileSync(emitted, 'utf8').replaceAll('@/lib/local-date', './local-date'),
+  );
+  const { dailyStepsFrom, STEP_HISTORY_DAYS } = createRequire(import.meta.url)(emitted);
+
+  /** run the real function in a process pinned to `tz` */
+  const inTZ = (tz, buckets, today) =>
+    JSON.parse(
+      execFileSync(
+        process.execPath,
+        [
+          '-e',
+          `const {dailyStepsFrom}=require(${JSON.stringify(emitted)});` +
+            `process.stdout.write(JSON.stringify(dailyStepsFrom(${JSON.stringify(buckets)}, ${JSON.stringify(today)})))`,
+        ],
+        { env: { ...process.env, TZ: tz }, encoding: 'utf8' },
+      ),
+    );
+
+  /** a bucket anchored at local midnight of `date` in zone `tz`, as HealthKit returns one */
+  const bucketAt = (tz, date, sum) => {
+    const iso = execFileSync(
+      process.execPath,
+      ['-e', `const d=new Date(${JSON.stringify(date + 'T00:00:00')});process.stdout.write(d.toISOString())`],
+      { env: { ...process.env, TZ: tz }, encoding: 'utf8' },
+    );
+    return sum == null ? { startDate: iso } : { startDate: iso, sumQuantity: { quantity: sum } };
+  };
+
+  const ZONES = ['UTC', 'America/Los_Angeles', 'America/New_York', 'Asia/Ho_Chi_Minh'];
+
+  /* Test 6 — the same local midnight is a different UTC date in half the world,
+     and the bucket must still land on the day the person lived. */
+  for (const tz of ZONES) {
+    const got = inTZ(tz, [bucketAt(tz, '2026-08-14', 9000), bucketAt(tz, '2026-08-15', 12500)], '2026-08-16');
+    const want = [
+      { date: '2026-08-14', steps: 9000 },
+      { date: '2026-08-15', steps: 12500 },
+    ];
+    if (JSON.stringify(got) !== JSON.stringify(want)) {
+      problems.push(
+        `dailyStepsFrom ở ${tz}: gói ngày rơi sai lịch — ra ${JSON.stringify(got)}, đáng lẽ ` +
+          `${JSON.stringify(want)}. Đang lấy ngày THEO UTC chứ không phải ngày của người dùng`,
+      );
+    }
+  }
+
+  /* Test 7 — a day HealthKit holds nothing for is not a day with zero steps.
+     Writing 0 would also flip `useStepsAvailable`, which asks
+     `.not('steps','is',null)`, to "this account has a step source". */
+  {
+    const got = inTZ('Asia/Ho_Chi_Minh', [
+      bucketAt('Asia/Ho_Chi_Minh', '2026-08-13', null),
+      bucketAt('Asia/Ho_Chi_Minh', '2026-08-14', 0),
+      bucketAt('Asia/Ho_Chi_Minh', '2026-08-15', 7000),
+    ], '2026-08-16');
+    const want = [
+      { date: '2026-08-14', steps: 0 },
+      { date: '2026-08-15', steps: 7000 },
+    ];
+    if (JSON.stringify(got) !== JSON.stringify(want)) {
+      problems.push(
+        `dailyStepsFrom không phân biệt "không có số đo" với "không bước bước nào" — ra ` +
+          `${JSON.stringify(got)}, đáng lẽ ${JSON.stringify(want)}: ngày không có mẫu phải bị BỎ, ` +
+          'ngày đo được 0 phải được ghi',
+      );
+    }
+  }
+
+  /* Test 8 — today belongs to `getTodaySteps`, whose window ends *now* rather
+     than at midnight. Two writers on one row inside one sync is a race with
+     itself, and a future-dated bucket (a device clock running fast) would sit
+     at the right-hand end of every chart until the clock caught up. */
+  {
+    const tz = 'America/New_York';
+    const got = inTZ(tz, [
+      bucketAt(tz, '2026-08-15', 5000),
+      bucketAt(tz, '2026-08-16', 300),
+      bucketAt(tz, '2026-08-17', 10),
+    ], '2026-08-16');
+    if (JSON.stringify(got) !== JSON.stringify([{ date: '2026-08-15', steps: 5000 }])) {
+      problems.push(
+        `dailyStepsFrom trả về hôm nay hoặc ngày tương lai: ${JSON.stringify(got)} — ` +
+          'hôm nay do getTodaySteps ghi (cửa sổ của nó kết thúc ở BÂY GIỜ, không phải nửa đêm)',
+      );
+    }
+  }
+
+  /* Test 9 — idempotent, and stable under two syncs running together: same
+     buckets in, same rows out, so whichever upsert lands second writes the same
+     numbers the first one did. */
+  {
+    const tz = 'Asia/Ho_Chi_Minh';
+    const buckets = [bucketAt(tz, '2026-08-14', 9000), bucketAt(tz, '2026-08-15', 12500)];
+    const runs = [inTZ(tz, buckets, '2026-08-16'), inTZ(tz, buckets, '2026-08-16'), inTZ(tz, buckets, '2026-08-16')];
+    if (new Set(runs.map((r) => JSON.stringify(r))).size !== 1) {
+      problems.push('dailyStepsFrom không ổn định giữa các lần chạy — backfill phải chạy lại được');
+    }
+  }
+
+  /* Test 10 — both daylight-saving transitions. The 23-hour day and the
+     25-hour day are where a hand-rolled `+ 864e5` breaks, and where two buckets
+     can land on one local date. One row per date, and the fuller one wins. */
+  for (const [tz, dstDay, before, after] of [
+    ['America/New_York', '2026-03-08', '2026-03-07', '2026-03-09'], // spring forward, 23h
+    ['America/New_York', '2026-11-01', '2026-10-31', '2026-11-02'], // fall back, 25h
+  ]) {
+    const got = inTZ(tz, [
+      bucketAt(tz, before, 4000),
+      bucketAt(tz, dstDay, 6000),
+      bucketAt(tz, after, 8000),
+    ], '2026-12-01');
+    const want = [
+      { date: before, steps: 4000 },
+      { date: dstDay, steps: 6000 },
+      { date: after, steps: 8000 },
+    ];
+    if (JSON.stringify(got) !== JSON.stringify(want)) {
+      problems.push(
+        `dailyStepsFrom quanh mốc đổi giờ ${dstDay} ở ${tz}: ra ${JSON.stringify(got)}, ` +
+          `đáng lẽ ${JSON.stringify(want)}`,
+      );
+    }
+  }
+
+  /* And the window is the one the readers need. Fourteen is the Steps screen's
+     `useStepsHistory(14)`; anything smaller leaves bars nothing can fill. */
+  const readerWindow = Number(
+    strip(read('src/app/steps.tsx')).match(/useStepsHistory\((\d+)\)/)?.[1] ?? 0,
+  );
+  if (!readerWindow) {
+    console.error('tự kiểm hỏng: không đọc được cửa sổ useStepsHistory từ steps.tsx');
+    process.exit(2);
+  }
+  if (STEP_HISTORY_DAYS < readerWindow) {
+    problems.push(
+      `STEP_HISTORY_DAYS = ${STEP_HISTORY_DAYS} nhưng màn Bước chân đọc ${readerWindow} ngày — ` +
+        'những ngày ngoài cửa sổ backfill sẽ giữ mãi con số dở dang',
+    );
+  }
+}
+
 if (problems.length > 0) {
   for (const p of problems) console.error(`  ✗ ${p}`);
   console.error(`\nđồng bộ sức khoẻ: ${problems.length} vấn đề`);
@@ -337,5 +534,9 @@ console.log(
     'và buổi tập từ Apple Health chưa từng ghi được dòng nào); mọi lệnh ghi và mọi select trong ' +
     'use-health-sync đều hứng error; không còn maybeSingle() rồi ghi theo id đọc trước; ' +
     'và số đo sinh trắc mang giờ của chính mẫu đo cùng một danh tính, nên đồng bộ lại là cập nhật ' +
-    'một dòng chứ không phải bản sao thứ n',
+    'một dòng chứ không phải bản sao thứ n. ' +
+    'Ngày đã kết thúc được hoàn tất chứ không giữ mãi con số lúc mở app lần cuối, và phép gộp ngày ' +
+    'được CHẠY THẬT trong tiến trình có TZ qua 4 múi giờ, cả hai mốc đổi giờ (ngày 23 và 25 tiếng), ' +
+    'ngày không có số đo (BỎ, không ghi 0 — ghi 0 sẽ lật useStepsAvailable), ngày đo được 0 (GHI), ' +
+    'hôm nay và ngày tương lai (BỎ — hôm nay do getTodaySteps ghi), và ba lần chạy ra cùng kết quả',
 );

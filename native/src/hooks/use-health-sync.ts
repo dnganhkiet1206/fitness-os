@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   activityName,
   APPLE_SOURCE,
+  getDailyStepHistory,
   getLastNightSleep,
   getLatestBiometrics,
   getRecentWorkouts,
@@ -68,13 +69,17 @@ function useSyncMutation(silent: boolean) {
       const granted = silent ? await healthAlreadyAsked() : await requestHealthPermissions();
       if (!granted) throw new Error('Health access was not granted');
 
-      const [bio, steps, activeKcal, exerciseMin, sleep, workouts] = await Promise.all([
+      const [bio, steps, activeKcal, exerciseMin, sleep, workouts, stepDays] = await Promise.all([
         getLatestBiometrics(),
         getTodaySteps(),
         getTodayActiveEnergy(),
         getTodayExerciseMinutes(),
         getLastNightSleep(),
         getRecentWorkouts(),
+        /* The days that are already finished — see `getDailyStepHistory`. One
+           query, not fourteen, and the same `cumulativeSum` today is counted
+           with. */
+        getDailyStepHistory(),
       ]);
       if (
         !bio &&
@@ -82,7 +87,8 @@ function useSyncMutation(silent: boolean) {
         activeKcal == null &&
         exerciseMin == null &&
         !sleep &&
-        workouts.length === 0
+        workouts.length === 0 &&
+        stepDays.length === 0
       ) {
         throw new Error('No health data found — open the Health app to confirm data exists');
       }
@@ -263,6 +269,40 @@ function useSyncMutation(silent: boolean) {
         const { error } = await supabase
           .from('daily_logs')
           .upsert({ user_id: user.id, date: localDateStr(), ...measured }, { onConflict: 'user_id,date' });
+        if (error) throw error;
+      }
+
+      /*
+        ── and the days that finished while nobody was looking ──
+
+        The three lines above ask HealthKit for *today* and file the answer under
+        today. That is all this sync has ever done, and it means a completed day
+        keeps whatever number happened to be true at the last foreground: log out
+        at nine in the evening on 9,000 steps, walk home, and 9,000 is what that
+        day is worth for ever. Nothing came back to finish it.
+
+        Every reader of a past day's steps therefore read a partial figure. The
+        Steps screen averages seven of them and trends three against three; the
+        weekly `steps_50k` challenge sums the week. Both were summing days that
+        had stopped early, and the error only ever runs one way — down.
+
+        One `upsert` with an array is one request, so the cost of this is a
+        single HealthKit query and a single round trip however many days moved.
+        Idempotent by `(user_id, date)`, and deterministic when two syncs run
+        together: they read the same buckets and write the same numbers.
+
+        Only `steps`. `active_kcal` and `active_minutes` come from the same
+        three-line block and are just as partial — but nothing in the app reads
+        either for a day other than today (`activity-rings` takes them from
+        today's row and there is no history query for them), so backfilling them
+        would be two more HealthKit queries to correct numbers nobody can see.
+        The day a screen plots them, this is the paragraph that has to change.
+      */
+      if (stepDays.length > 0) {
+        const { error } = await supabase.from('daily_logs').upsert(
+          stepDays.map((d) => ({ user_id: user.id, date: d.date, steps: d.steps })),
+          { onConflict: 'user_id,date' },
+        );
         if (error) throw error;
       }
 

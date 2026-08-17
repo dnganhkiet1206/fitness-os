@@ -9,6 +9,9 @@
  */
 import { Platform } from 'react-native';
 
+import { localDateStr } from '@/lib/local-date';
+import { dailyStepsFrom, STEP_HISTORY_DAYS, type StepBucket } from '@/lib/step-days';
+
 type HealthKitModule = typeof import('@kingstinct/react-native-healthkit');
 
 let hk: HealthKitModule | null = null;
@@ -195,6 +198,45 @@ export function getTodaySteps(): Promise<number | null> {
 /** Apple's Move ring — active calories only, not the resting burn. */
 export function getTodayActiveEnergy(): Promise<number | null> {
   return todayTotal('HKQuantityTypeIdentifierActiveEnergyBurned', 'kcal');
+}
+
+/**
+ * The last `STEP_HISTORY_DAYS` of finished days, as HealthKit counts them.
+ *
+ * One query, not fourteen. `queryStatisticsCollectionForQuantity` is Apple's
+ * bucketing API: anchored at local midnight with a one-day interval, it returns
+ * one `cumulativeSum` per calendar day, computed by the same aggregation
+ * `todayTotal` already uses for today. That matters more than the saving — a
+ * chart whose last bar is summed one way and whose other thirteen are summed
+ * another is a chart comparing two different quantities.
+ *
+ * Interval arithmetic is HealthKit's, which means it is the device's calendar's.
+ * The two days a year that are 23 or 25 hours long are therefore Apple's
+ * problem rather than this file's, which is the right place for them: a
+ * hand-rolled `+ 864e5` is exactly how the app got DST wrong before
+ * (`lib/local-date.ts`, `weekDates`).
+ */
+export async function getDailyStepHistory(): Promise<{ date: string; steps: number }[]> {
+  if (!hk) return [];
+  try {
+    const anchor = new Date();
+    anchor.setHours(0, 0, 0, 0);
+    const start = new Date(anchor);
+    start.setDate(start.getDate() - (STEP_HISTORY_DAYS - 1));
+    const buckets = await hk.queryStatisticsCollectionForQuantity(
+      'HKQuantityTypeIdentifierStepCount',
+      ['cumulativeSum'],
+      anchor,
+      { day: 1 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { filter: { date: { startDate: start, endDate: new Date() } }, unit: 'count' as any },
+    );
+    return dailyStepsFrom(buckets as readonly StepBucket[], localDateStr());
+  } catch {
+    /* Same contract as every other reader here: unavailable is an empty answer,
+       not a thrown sync. The day's own steps still land through `getTodaySteps`. */
+    return [];
+  }
 }
 
 /** Apple's Exercise ring — minutes at brisk-walk intensity or above. */

@@ -710,14 +710,14 @@ việc khoá đó trỏ đúng một truy vấn có thật.
 
 ---
 
-## Chain B — đã chứng minh là lỗi, **CHƯA** sửa
+## Chain B — đã chứng minh là lỗi, sửa ở vòng sau
 
 ### BUG-17 — `daily_logs.steps` của ngày đã qua là "số lúc mở app lần cuối", không phải tổng của ngày
 
 | | |
 |---|---|
 | **SEVERITY** | P2 |
-| **STATUS** | XÁC NHẬN — CHƯA SỬA (có chủ ý, xem dưới) |
+| **STATUS** | ĐÃ SỬA ở Vòng 3 — mục đầy đủ ở phần dưới |
 
 **TRIGGER** 21:00 mở app lần cuối (9.000 bước) → đi bộ thêm → hôm sau 10:00 mới
 mở lại.
@@ -735,7 +735,9 @@ hàm cửa sổ ngày mới trong `health.ts` cùng một quyết định về v
 xa. Đó là năng lực mới, không phải một dòng sửa, và lô này đã có bảy mục. Không
 gộp vào để tránh phá một lô đang xanh.
 
-**Đây là mục đầu tiên của vòng sau.**
+**Đã là mục đầu tiên của vòng sau, và đã xong** — xem *Vòng 3* để biết ngữ
+nghĩa được chứng minh thế nào, cửa sổ 14 ngày được dẫn ra từ đâu, và mười phép
+kiểm chạy thật.
 
 ---
 
@@ -766,6 +768,221 @@ số mà cả màn hình đó tồn tại để đáng tin.
 Quyết định đơn vị theo **giá trị** (0.7–1.0 là phân số, 70–100 là phần trăm; hai
 dải không giao nhau). Đã có ghi chú giải thích vì sao không tin tài liệu
 `HKUnit.percent()`.
+
+---
+
+## Vòng 3 — BUG-17: ngày đã kết thúc không bao giờ được hoàn tất
+
+Một mục, một dòng chảy: HealthKit → gộp theo ngày địa phương → `daily_logs.steps`
+→ màn Bước chân + thử thách tuần. Ngày rà: 2026-08-17. Bộ kiểm: 92 bước.
+
+---
+
+### SEMANTICS — `daily_logs.steps` nghĩa là gì
+
+Câu hỏi phải trả lời **trước** khi sửa: cột đó là
+
+```
+A. tổng bước chân của ngày lịch địa phương đó
+B. giá trị tích luỹ HealthKit trả về gần nhất cho ngày đó
+C. giá trị tốt nhất biết được tính đến lần đồng bộ cuối
+```
+
+**Kết luận: A.** Không phải suy đoán — đọc ra từ chính các nơi tiêu thụ:
+
+| nơi đọc | cách đọc | chỉ đúng nếu cột là |
+|---|---|---|
+| `steps.tsx` | trung bình 7 ngày, so 3 ngày với 3 ngày trước đó, biểu đồ 14 cột | tổng của từng ngày |
+| `use-extras.ts:514` `steps_50k` | `SUM(steps)` cả tuần | tổng của từng ngày |
+| `use-daily-quests.ts` | `steps >= stepsGoal` (hôm nay) | tổng của ngày |
+| `use-extras.ts:281` huy hiệu `steps_10k` | `>= 10000` (hôm nay) | tổng của ngày |
+| `useStepsAvailable` | `.not('steps','is',null)` | có/không có số đo |
+
+B bị loại vì HealthKit không đưa ra một bộ đếm tích luỹ nào cả — app gọi
+`queryStatisticsForQuantity(['cumulativeSum'], nửa đêm → bây giờ)`, tức một phép
+**tổng trên một cửa sổ**, không phải đọc một biến đếm. C bị loại vì đó chính là
+lỗi: không một nơi tiêu thụ nào ở trên coi cột là "tính đến lần đồng bộ cuối";
+trung bình 7 ngày và tổng cả tuần đều vô nghĩa nếu vậy.
+
+**Không có đường nhập tay.** `grep` mọi `insert/update/upsert` có `steps` trong
+`src/` → chỉ một chỗ, chính lượt đồng bộ. Nên không có dữ liệu người dùng tự ghi
+để bảo vệ, và không cần thêm cột provenance.
+
+---
+
+### BUG-17 — Ngày đã qua giữ mãi con số đúng lúc mở app lần cuối
+
+| | |
+|---|---|
+| **AREA** | HealthKit → `daily_logs.steps` → Steps screen, `steps_50k` · `health.ts`, `use-health-sync.ts` |
+| **SEVERITY** | P2 — dữ liệu lịch sử sai một chiều, luôn thấp hơn thực tế |
+| **STATUS** | ĐÃ SỬA |
+
+**TRIGGER**
+Ngày D: mở app lúc 12:00 (5.000 bước) và 18:00 (8.000). Đi bộ tiếp tới 23:00
+(10.000). Hôm sau 10:00 mới mở lại.
+
+**EXPECTED** `daily_logs.steps` của ngày D = 10.000.
+
+**ACTUAL** = 8.000. Vĩnh viễn.
+
+**ROOT CAUSE**
+`todayTotal()` hỏi HealthKit cửa sổ *nửa đêm địa phương → bây giờ*, và kết quả
+được ghi dưới `localDateStr()`. Cả hai đều đúng — cho **hôm nay**. Không có gì
+trong app hỏi HealthKit về một ngày nào khác, bao giờ. Một ngày kết thúc lúc
+người ta khoá màn hình, không phải lúc nửa đêm.
+
+Sai số chỉ chạy **một chiều**: mọi lần đọc lịch sử đều thấp hơn thực tế.
+
+**EVIDENCE — chạy thật, không suy luận**
+Hàm gộp thật (`dailyStepsFrom` biên dịch từ `src/lib/step-days.ts`) + Postgres
+16.13 dựng từ mọi migration + đúng câu lệnh app gửi:
+
+```
+--- ĐÃ SHIP: sync 12:00, rồi 18:00, rồi mở lại hôm sau ---
+ 2026-08-15 |  8000     ← người ta đi 10.000
+ 2026-08-16 |  1200
+
+--- SAU KHI SỬA: cùng kịch bản ---
+ dailyStepsFrom → [{"date":"2026-08-15","steps":10000}]
+ 2026-08-15 | 10000
+ 2026-08-16 |  1200
+
+--- backfill × 3 ---
+ so_dong = 2, tong = 11200   (không đổi)
+```
+
+**AFFECTED MODULES**
+Màn Bước chân (biểu đồ 14 cột, trung bình 7 ngày, xu hướng 3-vs-3) và thử thách
+tuần `steps_50k`. **Không** chạm tới điểm sẵn sàng: `recomputeDailyLog` không
+đọc cũng không ghi cột `steps` — đã kiểm, nên không có trạng thái dẫn xuất nào
+bị bỏ lại cũ.
+
+**FIX**
+`getDailyStepHistory()` — **một** truy vấn
+`queryStatisticsCollectionForQuantity` neo ở nửa đêm địa phương, bước `{day: 1}`,
+trả về `cumulativeSum` từng ngày bằng **đúng phép gộp** mà hôm nay đang dùng.
+Rồi **một** `upsert` mảng theo `(user_id, date)`.
+
+Ba quyết định, mỗi cái là một cách làm sai:
+
+- **Ngày lấy từ `startDate` của chính gói, qua `localDateStr`.** Gói neo ở nửa
+  đêm địa phương và `localDateStr` đọc `Date` theo giờ địa phương, nên hai bên
+  khớp nhau theo cấu trúc. `toISOString().slice(0,10)` là lớp lỗi vòng 1 đã tìm
+  ra ở sáu chỗ và `day-window.mjs` giờ cấm.
+- **Gói không có `sumQuantity` thì BỎ, không ghi 0.** Ghi 0 là khẳng định người
+  ta không đi bước nào vào một ngày không ai đo — và nó còn lật
+  `useStepsAvailable` (`.not('steps','is',null)`) thành "tài khoản này có nguồn
+  bước chân", dựa trên đúng cái ngày chứng minh điều ngược lại.
+- **Hôm nay bị loại.** Hôm nay do `getTodaySteps()` ghi, cửa sổ của nó kết thúc
+  ở *bây giờ* chứ không phải nửa đêm. Một dòng, một người ghi.
+
+Số học ngày do **HealthKit** làm, tức do lịch của thiết bị làm — nên hai ngày
+23 và 25 tiếng mỗi năm là việc của Apple, không phải của file này. Một phép
+`+ 864e5` tự viết đúng là cách app từng sai DST (`local-date.ts`, `weekDates`).
+
+**CỬA SỔ = 14 NGÀY, dẫn ra chứ không chọn**
+Cửa sổ lớn nhất mà một nơi tiêu thụ đọc là `useStepsHistory(14)` của màn Bước
+chân. `steps_50k` tối đa 7. Điểm sẵn sàng: 0. Nên 14 là số nhỏ nhất làm mọi nơi
+đọc hiện có trở nên đúng, và 15 sẽ là một ngày không màn nào hiển thị được.
+`tools/health-sync.mjs` đọc con số `useStepsHistory(n)` **ra khỏi `steps.tsx`**
+và đỏ nếu cửa sổ backfill nhỏ hơn — nên cửa sổ không thể lệch khỏi lý do của nó.
+
+**CHI PHÍ**
+
+| | đã ship | sau sửa |
+|---|---|---|
+| truy vấn HealthKit / lượt | 6 | 7 |
+| lệnh ghi DB / lượt | ≤ 5 | ≤ 6 |
+| ngày được sửa / lượt | 0 | ≤ 14, trong **một** request |
+
+Có giới hạn, không phụ thuộc số ngày vắng mặt.
+
+**VERIFICATION — 10 phép kiểm, chạy thật**
+`tools/health-sync.mjs` luật 5 và 6. Luật 6 biên dịch `src/lib/step-days.ts` và
+gọi hàm thật trong **tiến trình có `TZ`**:
+
+| # | ca | kết quả |
+|---|---|---|
+| 1–3 | 12:00 / 18:00 / hôm sau (Postgres thật) | 8000 → 10000 |
+| 4 | backfill × 3 | không đổi |
+| 5 | hai lượt đồng thời cùng một ngày (khoá dòng thật) | 10000, một dòng |
+| 6 | UTC, Los_Angeles, New_York, Ho_Chi_Minh | gói rơi đúng ngày lịch |
+| 7 | ngày không có số đo vs ngày đo được 0 | BỎ vs GHI |
+| 8 | hôm nay và ngày tương lai | BỎ |
+| 9 | ba lần chạy | cùng kết quả |
+| 10 | 2026-03-08 (23 tiếng) và 2026-11-01 (25 tiếng) | đúng cả ba ngày quanh mốc |
+
+**Chưa chạy được:** chính truy vấn HealthKit. Nó cần một iPhone. `step-days.ts`
+tồn tại như một file riêng chính vì lý do đó — `health.ts` mở đầu bằng
+`import { Platform } from 'react-native'` nên không nạp được ở Node — và ranh
+giới được đặt ở chỗ mọi quyết định *sai được* nằm về phía chạy được. Cùng lý do
+với `curve.ts`, `water-scale.ts`, `session-load.ts`.
+
+Chứng minh detector có răng: phá đúng một cách mỗi lần →
+
+```
+lấy ngày theo UTC              → đỏ ca 6 (Ho_Chi_Minh lệch một ngày)
+coi "không có số đo" là 0      → đỏ ca 7
+bỏ chốt hôm-nay/tương-lai      → đỏ ca 8
+bỏ hẳn backfill (bản đã ship)  → đỏ luật 5, cả hai nửa
+```
+
+**REGRESSION RISK**
+Thấp. Đường ghi hôm nay không đổi một dòng. Backfill chỉ ghi cột `steps`, upsert
+chỉ chạm cột có trong payload, nên `sleep`, `active_kcal`, `active_minutes`,
+`kcal`, `readiness_*` và mọi thứ người dùng tự nhập không bị đụng tới.
+
+Một điểm trung thực: nếu dữ liệu tới muộn rơi vào **giữa** hai lượt đồng bộ chạy
+song song thì lượt đọc bucket cũ hơn có thể ghi sau và đè con số cũ. Cửa sổ đó
+là vài giây, và lượt đồng bộ kế tiếp sửa lại — trong khi bản đã ship không có
+giới hạn nào cả.
+
+Và một lệch nhịp có giới hạn: `steps_50k` giữ `current_value` đã lưu, chỉ được
+tính lại bởi `useUpdateChallengeProgress` khi Today được focus. Sau một lần
+backfill, tiến trình thử thách có thể chậm **một lần mở app**. Không sửa ở đây:
+gọi phần tính thử thách từ trong lượt đồng bộ sẽ nối hai hệ thống mà app cố tình
+để tách.
+
+---
+
+### LỚP LỖI: `SYNC-TIME-AS-DATA-TIME` — đã quét hết
+
+> Mốc thời gian của **lần đồng bộ** bị dùng làm mốc thời gian của **số đo**.
+
+Quét toàn bộ đường health (`health.ts`, `use-health-sync.ts`, `offline-write.ts`,
+`use-fitness-data.ts`, `use-biometrics.ts`, `use-water.ts`):
+
+| chỗ | trạng thái |
+|---|---|
+| `getLatestBiometrics` — `date_time` = giờ đồng bộ | **BUG-11, đã sửa vòng 2** |
+| `getLastNightSleep` — dùng mốc thật của mẫu | đúng từ đầu |
+| `getRecentWorkouts` — dùng `w.startDate` | đúng từ đầu |
+| hàng đợi offline — mọi biến thể mang đồng hồ riêng | đúng, `offline-durable.mjs` giữ |
+| `useLogWeight` — `date: localDateStr()` | đúng: lần cân *là* của bây giờ |
+
+**Không còn instance nào.** Nhưng BUG-17 là một lớp **hàng xóm**, không phải
+cùng lớp, và đáng đặt tên riêng:
+
+> **`SYNC-DAY-AS-ONLY-DAY`** — mốc của số đo thì đúng, nhưng lượt đồng bộ chỉ
+> bao giờ hỏi về **ngày nó tình cờ chạy**, nên mọi ngày khác đóng băng ở lần
+> chạy cuối cùng chạm tới nó.
+
+**Instance đã biết: 3**, cùng sinh ra từ ba dòng `measured` trong
+`use-health-sync.ts`:
+
+| cột | có ai đọc ngày quá khứ không | xử lý |
+|---|---|---|
+| `steps` | **có** — biểu đồ 14 ngày, trung bình 7, xu hướng 3-vs-3, `steps_50k` | ĐÃ SỬA |
+| `active_kcal` | không — `activity-rings` chỉ đọc dòng hôm nay | để nguyên, có ghi lý do |
+| `active_minutes` | không — cùng lý do | để nguyên, có ghi lý do |
+
+Hai cột sau **cũng dở dang y hệt**. Không sửa vì không màn nào trong app đọc
+chúng cho một ngày khác hôm nay, nên sửa là hai truy vấn HealthKit nữa để chỉnh
+những con số không ai nhìn thấy được. Điều kiện kích hoạt được ghi thẳng trong
+`use-health-sync.ts`: **ngày nào có một màn vẽ chúng theo lịch sử, đoạn chú thích
+đó là chỗ phải sửa.** Đây là ranh giới có bằng chứng, không phải thu hẹp phạm vi
+trong im lặng.
 
 ---
 
