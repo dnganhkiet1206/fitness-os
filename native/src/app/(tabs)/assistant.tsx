@@ -31,6 +31,7 @@ import { briefFor } from '@/lib/assistant-brief';
 import { analyse, WINDOW_DAYS, type MetricKind } from '@/lib/metric-analysis';
 import { suggestionsFor } from '@/lib/assistant-suggestions';
 import { getLocale } from '@/lib/i18n';
+import { localDateStr } from '@/lib/local-date';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 
 /**
@@ -351,7 +352,18 @@ export default function AssistantScreen() {
     for (const smp of bioHistory.data ?? []) {
       const hr = Number(smp.hr_bpm);
       if (!hr) continue;
-      const day = String(smp.date_time).slice(0, 10);
+      /*
+        Grouped by the day the reading was taken where the person was, not by
+        the day UTC was having.
+
+        `String(smp.date_time).slice(0, 10)` is the calendar date of a
+        `timestamptz` in **UTC**, and east of Greenwich that is the previous
+        date for anything before 07:00 — which is when resting heart rate is
+        measured. So the readings this chart is entirely about were the ones
+        most likely to be filed a day early, and a morning reading could take
+        the minimum for a day it did not belong to.
+      */
+      const day = localDateStr(new Date(String(smp.date_time)));
       byDay.set(day, Math.min(byDay.get(day) ?? hr, hr));
     }
     return [...byDay].map(([date, value]) => ({ date, value }));

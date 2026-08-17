@@ -172,6 +172,18 @@ const STEPS = [
   ['TDEE thích ứng', 'node', ['tools/adaptive-tdee.mjs']],
   ['sẵn sàng deploy', 'node', ['tools/deployable.mjs']],
   ['ghi khi mất mạng', 'node', ['tools/offline-durable.mjs']],
+  /*
+    `offline-durable.mjs` proves the queue works, and every one of its rules is
+    about a call site that *already uses* the key. Three things it therefore
+    cannot see, all of which had shipped: a screen that finishes a workout with
+    no durable path at all (the week's day panel — the one people tick sets on
+    while training); an offline branch outside the button's double-submit guard,
+    so a second tap during the dismiss animation queues the same session twice;
+    and a replay whose verb differs from the online write it exists to repeat —
+    `insert` into a table the online path upserts, refused by every day that
+    already has a row, inside `resumePausedMutations` where no screen hears it.
+  */
+  ['gửi khi mất mạng', 'node', ['tools/offline-submit.mjs']],
   ['ngân sách ảnh', 'node', ['tools/photo-budget.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],

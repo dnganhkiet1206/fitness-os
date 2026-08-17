@@ -234,11 +234,42 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
       return;
     }
     case 'weight': {
-      const { error } = await supabase.from('weight_logs').insert({
-        user_id: w.userId,
-        weight_kg: w.kg,
-        date: w.date,
-      });
+      /*
+        ── upsert, because the online twin does and the column is unique ──
+
+        This was `.insert()` while `useLogWeight` — the same write, made with
+        signal — has always been `.upsert(…, { onConflict: 'user_id,date' })`.
+        `weight_logs` carries `UNIQUE (user_id, date)`
+        (`20260212044110_….sql:14`), so the two verbs are not two spellings of
+        one thing: against a day that already has a row the insert is *rejected*.
+
+        Both ways of reaching that are ordinary:
+
+          · weigh in at breakfast with signal, correct the number later in the
+            day without any — the queued correction is refused on reconnect;
+          · correct a typo twice while still offline — the first queued write
+            lands and the second is refused, so the number that survives is the
+            one that was wrong.
+
+        And nothing says so. The write resumes inside `resumePausedMutations`,
+        which belongs to no screen, so the rejection is an unhandled mutation
+        error and the weigh-in is simply not there. Weight feeds the BMI band,
+        the chart's scale and `adaptiveTDEE`'s fourteen-day regression, so the
+        surviving wrong number is not inert.
+
+        A replay cannot overwrite a *newer* reading for the same date, because
+        there is no way in the app to enter a weight for a past date — the only
+        row an upsert here can land on is one for its own day, which is exactly
+        the row it is meant to correct.
+      */
+      const { error } = await supabase.from('weight_logs').upsert(
+        {
+          user_id: w.userId,
+          weight_kg: w.kg,
+          date: w.date,
+        },
+        { onConflict: 'user_id,date' },
+      );
       if (error) throw error;
       /* Same rule as the online path: the profile's current weight is what
          every target is computed from, and a weigh-in that only lands in

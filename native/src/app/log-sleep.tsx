@@ -246,11 +246,34 @@ export default function LogSleepSheet() {
            it. */
         accessibilityRole="button"
         accessibilityLabel={i18n.nSaveSleep}
+        /*
+          ── the offline branch is a submit too ──
+
+          The guard read `save`, and offline the tap goes to `queue` — a
+          different mutation, so the button stayed live through the dismiss
+          animation with nothing on it changed. Two taps therefore ran the whole
+          offline branch twice: `router.back()` twice, which pops the screen
+          *behind* this sheet as well, two "will sync" toasts, and two
+          `kind: 'sleep'` rows for one night.
+
+          The duplicate night is the expensive half. `sleep_logs` has no
+          uniqueness for hand-entered rows on purpose — two naps in a day are
+          two rows — so nothing rejects it, and `daily-log-service` then takes
+          the *latest* `waketime` as the night while `sleepDebt7d` averages over
+          a row count that has gained a phantom entry. Sleep is 0.30 of the
+          readiness score, and the debt term carries the error for a week.
+        */
         style={[
           styles.saveButton,
-          (save.isPending || !!stageError || !!durationError) && styles.saveDisabled,
+          (save.isPending || queue.isPending || !!stageError || !!durationError) &&
+            styles.saveDisabled,
         ]}
-        disabled={save.isPending || save.isSuccess || !!stageError || !!durationError}
+        /* `save.isPending` stays on the anchor line: `tools/plausible.mjs`
+           keys this screen's plausibility gate to it by name, and a rule whose
+           anchor has drifted is a rule that checks nothing. */
+        disabled={save.isPending || save.isSuccess ||
+          queue.isPending || queue.isSuccess ||
+          !!stageError || !!durationError}
         onPress={() => {
           /* Offline this write used to pause for ever: the button stayed
              disabled on `isPending`, no toast fired, the sheet never closed,

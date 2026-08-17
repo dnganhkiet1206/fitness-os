@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Check, Minus, Moon, Pencil, Plus, Timer } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -12,10 +13,13 @@ import { RestTimer } from '@/components/ascnd/rest-timer';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
+import { useAuth } from '@/hooks/use-auth';
 import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
 import { mergeProgress, type SessionSet } from '@/lib/day-progress';
-import { dayProgressKey, staleDayProgress } from '@/lib/local-date';
+import { dayProgressKey, localDateStr, staleDayProgress } from '@/lib/local-date';
+import { offlineNow } from '@/lib/offline';
+import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { DEFAULT_REST, DEFAULT_RPE, restLabel } from '@/lib/prescription';
 import { toast } from '@/lib/toast';
 import { displayWeight, weightLabel } from '@/lib/units';
@@ -214,6 +218,31 @@ export function DayPlan({
 }) {
   const { weight: wUnit } = useUnits();
   const log = useLogWorkoutSession();
+  const { user } = useAuth();
+  /*
+    ── the durable twin, which this screen did not have ──
+
+    `useLogWorkoutSession`'s own header says two screens finish a workout: the
+    free-form log sheet and this one. Only the sheet was given an offline path.
+
+    What that left here is the failure `log-workout.tsx` describes and then
+    fixes for itself: the write needs the network twice — once to read history
+    for records, once to insert — so offline React Query pauses it, `isPending`
+    stays true for ever, `canFinish` goes false, and the button greys out with
+    no toast and no explanation. Worse than stuck: the paused mutation *is*
+    persisted, but it carries no `mutationKey`, so on the next launch it comes
+    back with no `mutationFn` to hand its variables to and is dropped. The sets
+    are gone, and the local resume point under `dayProgressKey` was the only
+    other copy.
+
+    This is the screen you tick sets on **while training** — a basement, a
+    stairwell, a gym with one bar of signal — which makes it the more likely of
+    the two to be used without a connection, not the less.
+
+    No `mutationFn` here on purpose: what comes back from storage is the default
+    registered in `offline-write`, not this closure.
+  */
+  const queue = useMutation<void, Error, OfflineWrite>({ mutationKey: [...OFFLINE_WRITE_KEY] });
   const wl = weightLabel(wUnit);
 
   const exercises: TplExercise[] = Array.isArray(template?.exercises)
@@ -405,7 +434,15 @@ export function DayPlan({
     way round — the common mistake is logging the same workout twice by coming
     back to a day that already has it, and the rare case has somewhere to go.
   */
-  const logged = sessions.length > 0 || log.isSuccess;
+  /*
+    `queue.isPending` counts as recorded, and that is not a shortcut.
+
+    A paused write stays pending until there is signal, which can be hours. From
+    where the person is standing the workout *is* logged — it is in durable
+    storage and the toast said so — and a button that stayed live for those
+    hours is a button that writes the session a second time when it lands.
+  */
+  const logged = sessions.length > 0 || log.isSuccess || queue.isPending || queue.isSuccess;
   const canFinish = doneRows.length > 0 && !log.isPending && !logged;
   const volume = doneRows.reduce((s, r) => s + r.weight * r.reps, 0);
 
@@ -418,13 +455,63 @@ export function DayPlan({
       reps: r.reps,
       rpe: rpe[r.key] ?? r.plannedRpe,
     }));
+    // A session is remembered by its hardest part, and every set that happened
+    // has a number of its own now, so this is read rather than asked for a
+    // second time. Read once here because both paths below need it.
+    const sessionRpe = Math.max(...sets.map((s) => s.rpe));
+
+    if (offlineNow() && user) {
+      /*
+        The same session, down the durable pipe.
+
+        `dateTime` follows the rule `useLogWorkoutSession` states for the online
+        path: the day being *looked at*, stamped at local noon when that is not
+        today. Midnight is the boundary this app has been bitten by twice; noon
+        is the furthest point from it in both directions, so no offset or DST
+        hour can push the session into a neighbouring day on the device that
+        eventually replays it. For today it is the actual moment, because that
+        is known and is what the online insert would have recorded.
+
+        No record is claimed, exactly as on the sheet's offline path: a personal
+        record is a comparison against history, and there is no history to read
+        without a connection. Inventing one would be the app celebrating
+        something it cannot know.
+      */
+      const today = localDateStr();
+      queue.mutate({
+        kind: 'workout',
+        userId: user.id,
+        dateTime:
+          dateStr === today ? new Date().toISOString() : new Date(`${dateStr}T12:00:00`).toISOString(),
+        /* The same shape the online insert writes, so a session that arrives
+           through the queue is indistinguishable from one that did not — the
+           week's day panel reads `sets` back to work out which planned rows a
+           session accounts for (`lib/day-progress.ts`). */
+        sets: sets.map((s, i) => ({
+          exerciseId: s.exerciseId,
+          exerciseName: s.exerciseName.trim() || 'Exercise',
+          setIndex: i + 1,
+          weight: Math.round(s.weight * 100) / 100,
+          reps: s.reps,
+          rpe: s.rpe >= 1 && s.rpe <= 10 ? s.rpe : null,
+        })),
+        volumeLoad: Math.round(sets.reduce((sum, s) => sum + s.weight * s.reps, 0)),
+        templateId: template?.id ?? null,
+        templateName: template?.name?.trim() || 'Workout',
+        sessionRpe,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      /* Cleared after the intention is queued, never before: the resume point
+         is the only other copy of these sets until the write is in the cache. */
+      if (storeKey) AsyncStorage.removeItem(storeKey).catch(() => {});
+      toast.success(i18n.logMealQueued);
+      return;
+    }
+
     log.mutate(
       {
         templateName: template?.name ?? '',
-        // A session is remembered by its hardest part, and every set that
-        // happened has a number of its own now, so this is read rather than
-        // asked for a second time.
-        sessionRpe: Math.max(...sets.map((s) => s.rpe)),
+        sessionRpe,
         sets,
         // The day being looked at, not the day it is — you can tick Monday's
         // last set on Tuesday morning and it still belongs to Monday.

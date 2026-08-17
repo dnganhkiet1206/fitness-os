@@ -60,10 +60,17 @@ try {
      than a second 56 typed here, so the emitted alias has to be rewritten to a
      relative path — the same one-line substitution `tools/streak.mjs` and
      `tools/koa-decide.mjs` both document. It is a path, not behaviour. */
+  /* `local-date` joins it for the same reason and by the same substitution:
+     `progressionOf` groups a session's `timestamptz` into a calendar day with
+     `localDateStr`, because bucketing by UTC filed every session before 07:00
+     east of Greenwich a day early — which is also why this tool's timezone
+     cases below are worth running rather than reading. */
   const statePath = path.join(out, 'user-state.js');
   writeFileSync(
     statePath,
-    readFileSync(statePath, 'utf8').replaceAll('@/lib/training-card', './training-card'),
+    readFileSync(statePath, 'utf8')
+      .replaceAll('@/lib/training-card', './training-card')
+      .replaceAll('@/lib/local-date', './local-date'),
   );
 
   const {
@@ -408,6 +415,81 @@ try {
       `PROGRESS_DAYS = ${PROGRESS_DAYS} — nó phải là TREND_WEEKS × 7 của training-card, tức cùng cửa ` +
         'sổ mà thẻ tập luyện đã fetch và vẽ; lệch đi là hai ý kiến khác nhau về "gần đây" cạnh nhau trên một màn',
     );
+  }
+
+  /*
+    ── the sessions are bucketed by the lifter's day, not by UTC's ──
+
+    `progressionOf` compares each session's calendar day against `today`, and
+    `today` is local. It used to take the session's day with
+    `date_time.slice(0, 10)` — the date in **UTC** — so east of Greenwich every
+    session before 07:00 was counted one day older than it was.
+
+    That is not cosmetic here. The window is split at its midpoint
+    (`PROGRESS_DAYS / 2`), and a session sitting on the seam moves from `recent`
+    to `older` when it is aged by a day — which changes the two means the
+    plateau verdict is drawn from. The case below is built on that seam: every
+    session at 06:00 Saigon time, one of them exactly at day 27, and volumes
+    chosen so the verdict is 'stalled' only while that session is counted as
+    recent. Bucketing by UTC ages it to day 28 and the answer flips.
+
+    Run in real processes with TZ set, because that is the only way to observe
+    `localDateStr` doing its job — the same method `tools/goal-training.mjs`
+    uses, and for the same bug found in the same shape one file over.
+  */
+  {
+    /* 06:00 in Asia/Ho_Chi_Minh is 23:00 UTC on the *previous* date — that
+       one-day disagreement is the whole subject of this case. */
+    const at6amSaigon = (daysAgo) =>
+      new Date(Date.parse(`${TODAY}T00:00:00Z`) - daysAgo * DAY - 3600_000).toISOString();
+    /*
+      Eight sessions — the minimum the plateau read will speak on — with the
+      seam session at day 27 carrying the only heavy tonnage.
+
+        counted locally:  recent {5000, 5000, 5000, 9000} → 6000
+                          older  {5000 × 4}               → 5000   ⇒ +20%, not stalled
+        counted in UTC:   recent {5000 × 3}               → 5000
+                          older  {9000, 5000 × 4}         → 5800   ⇒ no growth, stalled
+
+      One session moving across the midpoint is the entire difference between
+      "you are progressing" and "you have plateaued".
+    */
+    const SEAM = [
+      ...[3, 10, 17].map((n) => ({ date_time: at6amSaigon(n), volume_load: 5000, pr_detected: false })),
+      { date_time: at6amSaigon(27), volume_load: 9000, pr_detected: false },
+      ...[31, 38, 45, 52].map((n) => ({ date_time: at6amSaigon(n), volume_load: 5000, pr_detected: false })),
+    ];
+    const ask = (tz) =>
+      execFileSync(
+        process.execPath,
+        [
+          '-e',
+          `const {userStateFrom}=require(${JSON.stringify(statePath)});` +
+            `process.stdout.write(userStateFrom({loggedDates:${JSON.stringify(span(59, 0))},` +
+            `today:${JSON.stringify(TODAY)},sessions:${JSON.stringify(SEAM)}}).situation)`,
+        ],
+        { env: { ...process.env, TZ: tz }, encoding: 'utf8' },
+      ).trim();
+
+    const saigon = ask('Asia/Ho_Chi_Minh');
+    const utc = ask('UTC');
+    if (saigon === 'stalled') {
+      problems.push(
+        'giờ Việt Nam: buổi 06:00 ở ngày thứ 27 phải nằm trong nửa GẦN ĐÂY của cửa sổ, và với nó ' +
+          "khối lượng đang TĂNG 20% — nhưng kết luận vẫn ra 'stalled'. Đang gom buổi tập theo ngày " +
+          'UTC chứ không phải ngày của người tập, nên buổi sáng sớm bị già đi một ngày và rơi sang ' +
+          'nửa kia: app nói một người đang tiến bộ rằng họ đã chững lại',
+      );
+    }
+    /* And the case has teeth: on a device actually running in UTC, 06:00 Saigon
+       *is* the previous date, so the same input must land on the other answer.
+       Two zones agreeing would mean the case is not measuring the grouping. */
+    if (utc !== 'stalled') {
+      problems.push(
+        `ca kiểm múi giờ không có răng: ở UTC ca này ra '${utc}' chứ không phải 'stalled', ` +
+          'nên nó không phân biệt được gom theo ngày người tập với gom theo ngày UTC',
+      );
+    }
   }
 
   if (AWAY_DAYS < 2) problems.push('AWAY_DAYS dưới 2 — một ngày nghỉ không phải là vắng mặt');

@@ -101,7 +101,23 @@ export default function LogMeasurementSheet() {
     const v = fields[key]?.trim();
     return v != null && v.length > 0 && !isNaN(Number(v));
   });
-  const canSave = hasValue && !anyBad && !upsert.isPending && !upsert.isSuccess;
+  /*
+    The offline branch is a submit too — see `log-workout.tsx` for the shape.
+
+    Cheapest of the three, and included anyway: `body_measurements` is upserted
+    on `(user_id, date)`, so a second queued write lands on the same row and the
+    data is safe. What is not safe is the navigation — the offline branch calls
+    `router.back()` inline, so a second tap during the dismiss animation pops
+    the screen behind this sheet and drops the user somewhere they did not ask
+    to be, with two "will sync" toasts to explain it.
+  */
+  const canSave =
+    hasValue &&
+    !anyBad &&
+    !upsert.isPending &&
+    !upsert.isSuccess &&
+    !queue.isPending &&
+    !queue.isSuccess;
 
   const save = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

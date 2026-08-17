@@ -212,6 +212,76 @@ for (const file of walk(SRC)) {
   }
 }
 
+/*
+  ── the third form of the same mistake, on the client this time ──
+
+  Everything above is about a bare date string meeting a `timestamptz`, and
+  about a server inventing a calendar day. This is the mirror: a **UTC instant
+  cut down to a calendar date** and then used where a local one is meant.
+
+      .gte('date', daysAgoISO(days).split('T')[0])
+
+  `toISOString()` converts to UTC first, so that string is the date in UTC, and
+  the window it opens is a day wide of the one it claims — in both directions,
+  depending which side of Greenwich you are on:
+
+      Los Angeles, 20:30 local   → 2026-08-04, where local says 2026-08-03
+      Hanoi,       03:30 local   → 2026-08-02, where local says 2026-08-03
+
+  So west of Greenwich the oldest day drops off the far edge of every chart from
+  mid-afternoon and a "14-day" average is taken over thirteen; east of it a
+  fifteenth day appears before dawn. No error, nothing empty — the number is
+  simply computed over a different window than its own label promises.
+
+  Five hooks in `use-fitness-data.ts` had it, feeding the weight chart, the step
+  chart, the sleep and calorie histories and the readiness history. And a sixth
+  site printed one: `coach-memory.tsx` showed `last_confirmed.split('T')[0]`,
+  which is yesterday's date for anything confirmed before 07:00 in Hanoi.
+
+  The give-away is that the fix was already in the repository. `weight-changes.
+  tsx` carries a note about this precise bug — *"at 01:00 in Hanoi three days
+  ago came out as four days ago"* — found there, fixed there with
+  `localDaysAgoStr`, and left standing in the five hooks that feed it. The same
+  history as `localDayRangeISO`, which is why this rule exists at all: the
+  correct form is not more obvious than the broken one, so the broken one has to
+  stop passing.
+
+  Narrow on purpose. It flags cutting a date out of an ISO string, which is only
+  ever the UTC date; it says nothing about `toISOString()` itself, which is the
+  right thing to hand a `timestamptz`.
+*/
+const UTC_CAL_DATE = /\.\s*(?:split\(\s*['"]T['"]\s*\)\s*\[0\]|slice\(\s*0\s*,\s*10\s*\))/g;
+for (const [line, shouldFlag] of [
+  ["      .gte('date', daysAgoISO(days).split('T')[0])", true],
+  ['      {prefix + m.last_confirmed.split("T")[0]}', true],
+  ["      .gte('date', localDaysAgoStr(days))", false],
+  ["      .gte('date_time', daysAgoISO(days))", false],
+  ['      const s = name.split(sep)[0];', false],
+]) {
+  if (new RegExp(UTC_CAL_DATE.source).test(line) !== shouldFlag) {
+    console.error(
+      `tự kiểm tra hỏng: ${JSON.stringify(line)} đáng lẽ ${shouldFlag ? 'bị bắt' : 'được bỏ qua'}`,
+    );
+    process.exit(1);
+  }
+}
+for (const file of walk(SRC)) {
+  const text = readFileSync(file, 'utf8');
+  /* Comments blanked, newlines kept — this file's own note about the bug
+     contains the string it looks for. Same reason as `code_only` above. */
+  const code = text
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+    .replace(/\/\/[^\n]*/g, '');
+  for (const m of code.matchAll(UTC_CAL_DATE)) {
+    hits.push({
+      where: `${path.relative(NATIVE, file)}:${code.slice(0, m.index).split('\n').length}`,
+      code:
+        `${m[0].trim()} — cắt ngày ra khỏi chuỗi ISO là lấy ngày THEO UTC. ` +
+        'Dùng localDaysAgoStr(n) cho cửa sổ, localDateStr(new Date(ts)) để hiển thị.',
+    });
+  }
+}
+
 if (hits.length) {
   console.error('cửa sổ ngày dùng chuỗi ngày trần trên cột timestamptz:\n');
   for (const h of hits) console.error(`  ${h.where}\n    ${h.code}\n`);
@@ -220,7 +290,11 @@ if (hits.length) {
 }
 
 console.log(
-  `cửa sổ ngày OK — ${SELF_TEST.length + SERVER_SELF.length} ca tự kiểm tra đúng, không chỗ nào dùng chuỗi trần; ` +
+  `cửa sổ ngày OK — ${SELF_TEST.length + SERVER_SELF.length + 5} ca tự kiểm tra đúng, không chỗ nào dùng chuỗi trần; ` +
+    'không chỗ nào cắt ngày lịch ra khỏi một chuỗi ISO nữa — đó là ngày THEO UTC, ' +
+    'nên ở Los Angeles buổi chiều thì ngày cũ nhất rơi khỏi mọi biểu đồ (trung bình "14 ngày" lấy trên 13) ' +
+    'còn ở Hà Nội trước bình minh thì mọc thêm ngày thứ 15; và số đo lúc 6 giờ sáng — đúng giờ đo nhịp nghỉ, ' +
+    'đúng giờ nhiều người tập — bị xếp vào hôm trước; ' +
     'không edge function nào tự tính ngày lịch từ đồng hồ UTC của server, ' +
     'và không cái nào đọc GIỜ từ đồng hồ đó nữa (prompt rẽ nhánh "sáng hay tối" từng lệch bảy tiếng ở UTC+7); ' +
     'luật quét code chứ không quét chú thích, nên nó không tự báo chính lời giải thích của mình',

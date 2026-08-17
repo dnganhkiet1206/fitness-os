@@ -6,7 +6,7 @@ import { syncProfileWeight } from '@/lib/weight-sync';
 // aliased: this file already has its own `LoggedSet`, a much richer row
 import { trainingMinutes, type LoggedSet as TimedSet } from '@/lib/activity';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
-import { localDateStr, localDayRangeISO } from '@/lib/local-date';
+import { localDateStr, localDaysAgoStr, localDayRangeISO } from '@/lib/local-date';
 import {
   PR_HISTORY,
   bestsFrom,
@@ -17,6 +17,34 @@ import {
 import { useAuth } from './use-auth';
 import { useInvalidateToday } from './useTodayData';
 
+/**
+ * An absolute instant `days` ago — for `timestamptz` columns only.
+ *
+ * ── and never for a `date` column ──
+ *
+ * Five queries in this file used to take this and cut the calendar date out of
+ * it with `.split('T')[0]`, then compare that against a real `date` column.
+ * `toISOString()` converts to UTC first, so the string is the date **in UTC**,
+ * and the window it opens is a day wide of the one it says:
+ *
+ *     Los Angeles, 20:30 local   `daysAgoISO(14)` → 2026-08-04, local → 2026-08-03
+ *     Hanoi,       03:30 local   `daysAgoISO(14)` → 2026-08-02, local → 2026-08-03
+ *
+ * Both directions are wrong and neither looks it. In the Americas the oldest
+ * day silently drops off the far edge of every chart from mid-afternoon
+ * onwards, so a "14-day" mean is taken over thirteen; east of Greenwich a
+ * fifteenth day appears before dawn. Nothing errors, nothing is empty, and the
+ * number is simply computed over a different window than the label promises.
+ *
+ * `localDaysAgoStr` is the local-calendar answer and is what the rest of the
+ * app already uses — `weight-changes.tsx` carries a note about this exact bug,
+ * found there and fixed there, while the five hooks *feeding* it kept it. Same
+ * shape as `localDayRangeISO`, which was written for the nutrition diary and
+ * left out of three other hooks for weeks.
+ *
+ * This stays because `date_time` is a `timestamptz` and an instant is the right
+ * comparison for one.
+ */
 function daysAgoISO(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
@@ -429,7 +457,7 @@ export function useWeightHistory(days = 30) {
         .from('weight_logs')
         .select('date, weight_kg')
         .eq('user_id', user!.id)
-        .gte('date', daysAgoISO(days).split('T')[0])
+        .gte('date', localDaysAgoStr(days))
         .order('date', { ascending: true });
       if (error) throw error;
       return (data ?? []).map((d) => ({ date: d.date, value: Number(d.weight_kg) }));
@@ -496,7 +524,7 @@ export function useStepsHistory(days = 14) {
         .from('daily_logs')
         .select('date, steps')
         .eq('user_id', user!.id)
-        .gte('date', daysAgoISO(days).split('T')[0])
+        .gte('date', localDaysAgoStr(days))
         .order('date', { ascending: true });
       if (error) throw error;
       return (data ?? []).map((d) => ({ date: d.date as string, steps: Number(d.steps) || 0 }));
@@ -574,7 +602,7 @@ export function useSleepDurationHistory(days = 14, enabled = true) {
         .from('daily_logs')
         .select('date, sleep_duration_min')
         .eq('user_id', user!.id)
-        .gte('date', daysAgoISO(days).split('T')[0])
+        .gte('date', localDaysAgoStr(days))
         .not('sleep_duration_min', 'is', null)
         .order('date', { ascending: true });
       if (error) throw error;
@@ -605,7 +633,7 @@ export function useKcalHistory(days = 14, enabled = true) {
         .from('daily_logs')
         .select('date, kcal')
         .eq('user_id', user!.id)
-        .gte('date', daysAgoISO(days).split('T')[0])
+        .gte('date', localDaysAgoStr(days))
         .not('kcal', 'is', null)
         .order('date', { ascending: true });
       if (error) throw error;
@@ -626,7 +654,7 @@ export function useReadinessHistory(days = 14, enabled = true) {
         .from('daily_logs')
         .select('date, readiness_score, readiness_status')
         .eq('user_id', user!.id)
-        .gte('date', daysAgoISO(days).split('T')[0])
+        .gte('date', localDaysAgoStr(days))
         .not('readiness_score', 'is', null)
         .order('date', { ascending: true });
       if (error) throw error;

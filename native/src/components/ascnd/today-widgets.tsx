@@ -149,7 +149,28 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
           <PressScale
             style={[styles.weightBtn, weightError ? styles.weightBtnOff : null]}
             onPress={submit}
-            disabled={logWeight.isPending || !!weightError}>
+            /*
+              ── the offline branch is a submit too ──
+
+              `logWeight` is the online mutation; offline the tap goes to
+              `queue`, whose state nothing here read, so the button stayed live.
+
+              And it stays *visible*: `setEditing(false)` above is meant to close
+              the logger, but `showLogger` is `editing || todayWeight == null`,
+              and on the first weigh-in of a day `todayWeight` is null and — with
+              no signal — is not going to stop being null. So the form sat open
+              with the number still typed in it, one tap away from a second
+              write, which is exactly the shape that produces one.
+
+              The value is not patched into the cache to close it, deliberately:
+              `lib/offline.ts` is the rule that a paused mutation never rolls
+              back, so an optimistic weight would sit in the persisted cache as a
+              reading nobody took. Disabling is the honest half — the toast has
+              already said what happened.
+            */
+            disabled={
+              logWeight.isPending || queue.isPending || queue.isSuccess || !!weightError
+            }>
             {logWeight.isPending ? (
               <ActivityIndicator color={colors.primaryForeground} size="small" />
             ) : (

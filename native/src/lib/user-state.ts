@@ -52,6 +52,7 @@
  *      standard nobody was consulted about.
  */
 
+import { localDateStr } from '@/lib/local-date';
 import { TREND_WEEKS } from '@/lib/training-card';
 
 /**
@@ -506,7 +507,23 @@ function progressionOf(
 
   const lifts = sessions
     .map((s) => ({
-      days: daysBefore((s.date_time ?? '').slice(0, 10), today),
+      /*
+        The day the person trained, not the day UTC was having.
+
+        This read `(s.date_time ?? '').slice(0, 10)` — the calendar date of a
+        `timestamptz` in **UTC** — and compared it against `today`, which is
+        local. East of Greenwich those are different dates for any session
+        before 07:00, so an early-morning lifter had every one of their sessions
+        counted a day older than it was: the 56-day window loses its far edge
+        and the recent-vs-baseline split moves under them.
+
+        `goal-training.ts` was corrected for exactly this and
+        `tools/goal-training.mjs` runs it in Asia/Ho_Chi_Minh to prove it — two
+        sessions at 06:00 and 20:00 on one Monday must count as one day, and
+        bucketing by UTC makes them two. The rule was proved there and left
+        standing here.
+      */
+      days: daysBefore(localDateStr(new Date(s.date_time ?? '')), today),
       volume: Number(s.volume_load) || 0,
       pr: s.pr_detected === true,
     }))

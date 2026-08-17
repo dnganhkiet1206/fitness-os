@@ -459,9 +459,40 @@ export default function LogWorkoutSheet() {
     );
   }, [records]);
 
-  // Stays disabled after success so the closing sheet can't double-submit
+  /*
+    Stays disabled after success so the closing sheet can't double-submit.
+
+    ── and the offline branch is a submit too ──
+
+    `save.isPending || save.isSuccess` covers the online path and covered
+    nothing else, because offline the tap goes to `queue` instead — a different
+    mutation, whose state nothing here read. So the guard that exists to stop a
+    second submit was watching the one path that was not taken.
+
+    `router.back()` starts an animation; the sheet stays mounted and hit-testable
+    while it plays, and offline the button changes in no way at all — no spinner,
+    no tick, the same label — which is the shape that *invites* the second tap.
+    `finish()`'s own latch stopped the second `router.back()`, so what came of it
+    was silent: two `kind: 'workout'` intentions in the durable queue, two
+    inserts on reconnect, and one workout recorded twice.
+
+    A phantom session is not one extra row. `useDeleteWorkoutSession` lists what
+    it moves: the day's `volume_load`, the 7- and 28-day load windows behind the
+    readiness score, the lifetime count that unlocks mascots, the award
+    thresholds, and the `workouts_N` challenges. The queue is deliberately not
+    idempotent for this kind — two sessions in one day is a real thing — so
+    nothing downstream can undo it.
+  */
   const canSave =
-    validSets.length > 0 && !firstSetError && !save.isPending && !save.isSuccess;
+    validSets.length > 0 &&
+    !firstSetError &&
+    !save.isPending &&
+    !save.isSuccess &&
+    /* A paused mutation stays `isPending` until it sends, which is exactly the
+       window the button must stay shut for. Same test `log-meal` gets for free
+       by sending both paths through one mutation. */
+    !queue.isPending &&
+    !queue.isSuccess;
 
   return (
     <KeyboardAvoidingView

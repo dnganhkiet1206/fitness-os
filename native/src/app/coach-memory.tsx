@@ -13,6 +13,7 @@ import { press } from '@/constants/motion';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
+import { localDateStr } from '@/lib/local-date';
 import { confirmWrite } from '@/lib/write-result';
 
 interface Memory {
@@ -138,8 +139,16 @@ export default function CoachMemoryScreen() {
                 <GlassCard key={m.id} style={styles.row}>
                   <View style={styles.rowBody}>
                     <Text style={styles.fact}>{m.fact}</Text>
+                    {/* `localDateStr(new Date(…))`, not `.split('T')[0]`.
+                        `last_confirmed` is a `timestamptz` and its ISO text is
+                        the instant in **UTC**, so cutting the date out of the
+                        string printed the previous day for anything confirmed
+                        before 07:00 in Hanoi — a date the user can read, off by
+                        one, on the screen whose whole subject is what the coach
+                        remembers and when. */}
                     <Text style={styles.meta}>
-                      {(vi ? 'Nhắc lần cuối ' : 'Last mentioned ') + m.last_confirmed.split('T')[0]}
+                      {(vi ? 'Nhắc lần cuối ' : 'Last mentioned ') +
+                        localDateStr(new Date(m.last_confirmed))}
                     </Text>
                   </View>
                   <PressScale
