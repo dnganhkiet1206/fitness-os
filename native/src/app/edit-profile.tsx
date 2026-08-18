@@ -28,7 +28,7 @@ import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { toast } from '@/lib/toast';
-import { calcAge, calcPlan } from '@/lib/fitness-calc';
+import { planFromEntry } from '@/lib/fitness-calc';
 import {
   COMMON_ALLERGIES,
   allergyLabel,
@@ -36,7 +36,7 @@ import {
   dislikesText,
   parseDislikes,
 } from '@/lib/food-preferences';
-import { outOfRangeMessage, readStat } from '@/lib/plausible';
+import { readStat, statMessage } from '@/lib/plausible';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import {
   displayHeight,
@@ -164,10 +164,25 @@ export default function EditProfileSheet() {
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
 
-  /* Empty is allowed — the profile may legitimately not have these yet, and
-     `outOfRangeMessage` treats a blank string as nothing to complain about. */
-  const heightError = outOfRangeMessage('height_cm', form.height_cm, i18n.outOfRange);
-  const weightError = outOfRangeMessage('weight_kg', form.weight_kg, i18n.outOfRange);
+  /*
+    ── one reading, three consumers ──
+
+    The message under the field, the Save button, and the number that actually
+    gets written all come from these two calls now. They used to come from
+    three separate parses: `outOfRangeMessage` for the message, the same again
+    for the button, and a fresh `Number(form.height_cm) || null` inside the
+    save payload. A screen that validates one parse and persists another is
+    only ever accidentally correct — and the payload's parse was the one with
+    no bounds attached to it at all.
+
+    Empty is allowed here, unlike onboarding: the profile may legitimately not
+    have these yet, and `null` is how that is stored. What is not allowed is a
+    number appearing where the person left a blank.
+  */
+  const heightRead = readStat('height_cm', form.height_cm, false);
+  const weightRead = readStat('weight_kg', form.weight_kg, false);
+  const heightError = statMessage('height_cm', heightRead.problem, i18n.outOfRange);
+  const weightError = statMessage('weight_kg', weightRead.problem, i18n.outOfRange);
   const statsBad = !!heightError || !!weightError;
 
   /** Recompute calorie / macro / water targets from the current stats —
@@ -186,20 +201,28 @@ export default function EditProfileSheet() {
       Refusing is the whole fix. There is no number to fall back to, because a
       fallback here is the bug.
     */
-    const height = readStat('height_cm', form.height_cm, true);
-    const weight = readStat('weight_kg', form.weight_kg, true);
-    if (height.value === null || weight.value === null || !form.dob) {
-      toast.error(i18n.statsRequired);
-      return;
-    }
-    const plan = calcPlan({
-      weight_kg: weight.value,
-      height_cm: height.value,
-      age: calcAge(form.dob),
+    const attempt = planFromEntry({
+      heightText: form.height_cm,
+      weightText: form.weight_kg,
+      dob: form.dob,
       sex: form.sex as 'male' | 'female' | 'other',
       goal: form.goal,
       activity_level: form.activity_level,
     });
+    if (!attempt.ok) {
+      /* Named, not just refused. "Something is missing" on a screen with twenty
+         fields is a dead end; the person has to be told which one to go and
+         fill in. `PlanInputError` never reaches them — it is a guard for the
+         next caller, and this is the sentence for the human. */
+      const label: Record<string, string> = {
+        height_cm: i18n.settingsHeight,
+        weight_kg: i18n.settingsWeight,
+        dob: i18n.settingsDob,
+      };
+      toast.error(`${i18n.statsRequired}: ${attempt.missing.map((f) => label[f]).join(', ')}`);
+      return;
+    }
+    const plan = attempt.plan;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setForm((f) => ({
       ...f,
@@ -224,8 +247,11 @@ export default function EditProfileSheet() {
             dob: form.dob || null,
             sex: form.sex,
             activity_level: form.activity_level,
-            height_cm: Number(form.height_cm) || null,
-            weight_kg: Number(form.weight_kg) || null,
+            /* The validated reading, not a second parse of the same box.
+               Blank stays blank (`null`), which is what preserves an absent
+               measurement instead of inventing one on the way out. */
+            height_cm: heightRead.value,
+            weight_kg: weightRead.value,
             goal: form.goal,
             tdee_target_kcal: Number(form.tdee_target_kcal) || null,
             macro_protein_g: Number(form.macro_protein_g) || null,

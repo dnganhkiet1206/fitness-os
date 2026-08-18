@@ -49,14 +49,28 @@
  *
  * ── how the rules work ──
  *
- * A and B **run** the real `readStat` and `calcPlan`: what a blank field
- * becomes, and what the chain does when handed a body it was not given. C is
- * the coupling that made the typo dangerous — the height floor and the
- * "no height" fallback are the same number, and a bound loosened below the
+ * A and B **run** the real `readStat`, `calcPlan` and `planFromEntry`: what a
+ * blank field becomes, and what the chain does when handed a body it was not
+ * given. C is the coupling that made the typo dangerous — the height floor and
+ * the "no height" fallback are the same number, and a bound loosened below the
  * fallback would let through exactly the values that disable it. D and E read
- * the two screens, because "the button is disabled" and "the plan is written
- * from the validated reading" are wiring, not arithmetic. F forbids the
- * substitution coming back anywhere, in the spelling it had.
+ * the two screens, because "the button is disabled" and "the payload persists
+ * the reading that was validated" are wiring, not arithmetic. F forbids the
+ * substitution coming back anywhere. G enumerates the writers to `profiles` and
+ * requires each to reach the shared boundary — there is no `CHECK` on that
+ * table, so the application *is* the boundary, and a writer that skips it makes
+ * the rest of this file decorative.
+ *
+ * ── a rule of mine that did not have teeth, and what replaced it ──
+ *
+ * E used to read `recalcTargets` and assert the refusal was written there: two
+ * `=== null` checks and a `return` above the `calcPlan` call. Changing the
+ * guard to `if (false && … )` left every one of those tokens in place, the rule
+ * stayed green, and the screen computed a plan for a body nobody described.
+ *
+ * A rule that reads a guard cannot tell you the guard works. So the gate became
+ * `planFromEntry` — one function, both screens — and B2 **drives** it. The same
+ * break now reports `plan:2508` where `incomplete:height_cm` belongs.
  */
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -106,6 +120,24 @@ try {
      o.zero            = r('weight_kg', '0', true);
      o.negative        = r('weight_kg', '-500', true);
      o.notANumber      = r('height_cm', 'cao', true);
+     /* Shapes that are not number entry. \`Number()\` is a JS-literal parser and
+        takes three radix prefixes and an exponent; all four below landed INSIDE
+        the bounds on the shipped reader and were accepted as a height. */
+     o.hex             = r('height_cm', '0xAA', true);
+     o.binary          = r('height_cm', '0b10101010', true);
+     o.octal           = r('height_cm', '0o252', true);
+     o.exponent        = r('height_cm', '1e2', true);
+     o.infinity        = r('weight_kg', 'Infinity', true);
+     o.negInfinity     = r('weight_kg', '-Infinity', true);
+     o.overflowExp     = r('weight_kg', '1e400', true);
+     o.nanText         = r('weight_kg', 'NaN', true);
+     o.comma           = r('height_cm', '1,70', true);
+     o.trailingJunk    = r('height_cm', '170abc', true);
+     o.underscored     = r('height_cm', '1_7_0', true);
+     /* …while these are number entry and must still work */
+     o.padded          = r('height_cm', ' 170 ', true);
+     o.trailingPoint   = r('height_cm', '170.', true);
+     o.leadingZeros    = r('height_cm', '00170', true);
      /* the message the screen shows names the range for either problem */
      o.msgMissing = statMessage('height_cm', readStat('height_cm', '', true).problem, '{min}-{max} {unit}');
      o.msgRange   = statMessage('height_cm', readStat('height_cm', '17', true).problem, '{min}-{max} {unit}');
@@ -140,6 +172,37 @@ try {
      o.ageAbsurd  = plan(70, 170, 200);
      o.ageNaN     = plan(70, 170, NaN);
      o.newborn    = plan(70, 170, 0).split('/')[0] > 0;
+
+     /* ── B2. the four downstream states, driven through the REAL shared gate ──
+
+        This runs \`planFromEntry\` itself. An earlier version of the rule read
+        the screen and checked that a refusal was written there; changing the
+        guard to \`if (false && … )\` left every token it looked for in place and
+        it stayed green while the screen computed a plan for nobody. The gate is
+        a function now precisely so this can drive it. */
+     const state = (hText, wText, dob) => {
+       let a;
+       try {
+         a = fc.planFromEntry({ heightText: hText, weightText: wText, dob,
+           sex: 'male', goal: 'maintain', activity_level: 'moderate' });
+       } catch (e) { return 'threw:' + (e.field || e.message); }
+       return a.ok ? 'plan:' + a.plan.tdee_target_kcal : 'incomplete:' + a.missing.join('+');
+     };
+     const DOB = '2000-01-01';
+     o.stComplete   = state('170', '70', DOB);
+     o.stPartialH   = state('', '70', DOB);
+     o.stPartialW   = state('170', '', DOB);
+     o.stPartialDob = state('170', '70', null);
+     o.stEmptyDob   = state('170', '70', '');
+     o.stEmpty      = state('', '', null);
+     o.stMalformedH = state('17', '70', DOB);
+     o.stMalformedW = state('170', '700', DOB);
+     o.stHex        = state('0xAA', '70', DOB);
+     o.stInfinity   = state('170', 'Infinity', DOB);
+     o.stFutureDob  = state('170', '70', '2199-01-01');
+     /* the gate must never throw at a caller: refusal is a value, not an exception */
+     o.stNeverThrows = ['', '  ', '0xAA', 'NaN', 'Infinity', '-1', '1e2', 'abc']
+       .every((t) => !state(t, t, DOB).startsWith('threw'));
 
      /* ── C. the bound and the "no height" fallback are the same number ── */
      o.heightFloor = BOUNDS.height_cm.min;
@@ -181,6 +244,28 @@ try {
     `câu báo lỗi không nêu khoảng cần nhập: ${r.msgMissing} / ${r.msgRange}`,
   );
   want(r.legacyBlank === null && r.legacyBad === '100-250 cm', `outOfRangeMessage đổi nghĩa: ${r.legacyBlank} / ${r.legacyBad}`);
+  want(
+    r.hex === 'null/out-of-range' && r.binary === 'null/out-of-range' &&
+      r.octal === 'null/out-of-range' && r.exponent === 'null/out-of-range',
+    `một chuỗi KHÔNG PHẢI số nhập tay vẫn thành một chiều cao hợp lệ: ` +
+      `0xAA→${r.hex} 0b10101010→${r.binary} 0o252→${r.octal} 1e2→${r.exponent}. ` +
+      'Number() là bộ đọc HẰNG SỐ JavaScript chứ không phải bộ đọc ô nhập số: ba tiền tố cơ số ' +
+      'và ký hiệu mũ đều lọt, và cả bốn giá trị trên rơi vào GIỮA khoảng hợp lệ — đúng hình dạng ' +
+      'nguy hiểm nhất của vòng này. keyboardType chỉ đổi bàn phím trên màn hình, dán và bàn phím rời đi thẳng qua nó',
+  );
+  want(
+    r.infinity === 'null/out-of-range' && r.negInfinity === 'null/out-of-range' &&
+      r.overflowExp === 'null/out-of-range' && r.nanText === 'null/out-of-range' &&
+      r.comma === 'null/out-of-range' && r.trailingJunk === 'null/out-of-range' &&
+      r.underscored === 'null/out-of-range',
+    `Infinity/NaN/1e400/1,70/170abc/1_7_0 không còn bị từ chối: ${r.infinity} ${r.nanText} ` +
+      `${r.overflowExp} ${r.comma} ${r.trailingJunk} ${r.underscored}`,
+  );
+  want(
+    r.padded === '170/null' && r.trailingPoint === '170/null' && r.leadingZeros === '170/null',
+    `luật hình dạng đã chặt tay: ' 170 '→${r.padded}, '170.'→${r.trailingPoint}, ` +
+      `'00170'→${r.leadingZeros} — đều là cách gõ thật của một chiều cao thật`,
+  );
 
   /* ── B ── */
   want(
@@ -208,6 +293,35 @@ try {
       'ghi thẳng vào cột dob được (DB không chặn), và bản đã ship quy ra 4081 kcal',
   );
   want(r.newborn, 'tuổi 0 bị từ chối — 0 là tuổi thật của một người, không phải giá trị thiếu');
+  want(
+    r.stComplete === 'plan:2539',
+    `hồ sơ ĐỦ không còn ra đúng một thực đơn: ${r.stComplete} (chờ plan:2539)`,
+  );
+  want(
+    r.stPartialH === 'incomplete:height_cm' && r.stPartialW === 'incomplete:weight_kg' &&
+      r.stPartialDob === 'incomplete:dob' && r.stEmptyDob === 'incomplete:dob',
+    'hồ sơ THIẾU một ô không ra trạng thái "chưa tính được" gọi đúng tên ô đó: ' +
+      `${r.stPartialH} / ${r.stPartialW} / ${r.stPartialDob} / ${r.stEmptyDob}. ` +
+      'Tên ô là thứ màn hình dùng để nói người dùng còn thiếu gì — "thiếu gì đó" trên một ' +
+      'màn hai mươi ô là một ngõ cụt',
+  );
+  want(
+    r.stEmpty === 'incomplete:height_cm+weight_kg+dob',
+    `hồ sơ RỖNG ra ${r.stEmpty} — phải kể ra cả ba ô còn thiếu, không phải dừng ở ô đầu tiên`,
+  );
+  want(
+    r.stMalformedH === 'incomplete:height_cm' && r.stMalformedW === 'incomplete:weight_kg' &&
+      r.stHex === 'incomplete:height_cm' && r.stInfinity === 'incomplete:weight_kg' &&
+      r.stFutureDob === 'incomplete:dob',
+    'hồ sơ MÉO vẫn ra một thực đơn: 17cm→' + r.stMalformedH + ', 700kg→' + r.stMalformedW +
+      ', 0xAA→' + r.stHex + ', Infinity→' + r.stInfinity + ', dob 2199→' + r.stFutureDob +
+      '. "Chưa tính được" là một trạng thái, không phải một con số nghe hợp lý',
+  );
+  want(
+    r.stNeverThrows,
+    'cổng ném ngoại lệ ra tới người gọi — từ chối phải là một GIÁ TRỊ trả về. ' +
+      'PlanInputError là chốt cho lập trình viên tiếp theo, không phải câu để hiện lên màn hình',
+  );
 
   /* ── C ── */
   want(
@@ -233,46 +347,55 @@ try {
   const onb = read('src/components/ascnd/onboarding-flow.tsx');
   const code = strip(onb);
 
-  if (!/readStat\(\s*'height_cm'\s*,\s*heightCm\s*,\s*true\s*\)/.test(code) ||
-      !/readStat\(\s*'weight_kg'\s*,\s*weightKg\s*,\s*true\s*\)/.test(code)) {
+  /* ── the gate, not a spelling ──
+
+     This rule named `readStat('height_cm', heightCm, true)` until the screens
+     moved onto the shared `planFromEntry`. The property never changed; the
+     identifiers did. What it asks now is structural: the row this screen
+     persists is the gate's own answer, and nothing in the payload re-derives a
+     number the gate never saw. */
+  if (!/planFromEntry\(/.test(code)) {
     problems.push(
-      'onboarding không còn đọc chiều cao/cân nặng qua readStat(..., true) — đây là màn DUY NHẤT ' +
-        'tạo ra con số cho cả tài khoản, và nó ghi kèm onboarding_completed: true',
+      'onboarding không còn đi qua cổng chung planFromEntry — đây là màn DUY NHẤT tạo ra ' +
+        'con số cho cả tài khoản, và nó ghi kèm onboarding_completed: true',
     );
   }
-  /* The row that everything downstream is derived from — read inside the
-     upsert and nowhere else. Searching the whole file was not a rule: the
-     `calcPlan({ ... height_cm: height.value })` call five lines up satisfied
-     it, so the upsert could go back to `Number(heightCm) || 170` and this
-     stayed green. Measured, on a deliberately broken copy. */
+
   const at = code.indexOf("from('profiles').upsert(");
   const row = at === -1 ? '' : code.slice(at, at + 1600);
   if (at === -1) {
     problems.push('không tìm thấy upsert profiles trong onboarding — luật này không còn đọc đúng chỗ');
   }
-  if (!/height_cm:\s*height\.value\b/.test(row) || !/weight_kg:\s*weight\.value\b/.test(row)) {
-    problems.push('upsert của onboarding không ghi height.value/weight.value — số đã kiểm và số được ghi phải là một');
-  }
-  for (const col of ['tdee_target_kcal', 'macro_protein_g', 'macro_carbs_g', 'macro_fat_g', 'macro_fiber_g', 'water_target_ml']) {
-    if (!new RegExp(`${col}:\\s*plan\\.${col}\\b`).test(row)) {
-      problems.push(`onboarding ghi ${col} từ đâu đó không phải calcPlan — thực đơn phải đến từ một chuỗi tính duy nhất`);
+  for (const col of ['height_cm', 'weight_kg']) {
+    if (!new RegExp(`${col}:\\s*\\w+\\.${col}\\b`).test(row)) {
+      problems.push(`upsert của onboarding không ghi ${col} từ kết quả của cổng — số đã kiểm và số được ghi phải là một`);
     }
   }
-  /* the plan cannot exist without a body */
-  if (!/statsBad\s*\n?\s*\?\s*null\s*\n?\s*:\s*calcPlan\(/.test(code) && !/statsBad\s*\?\s*null\s*:\s*calcPlan\(/.test(code)) {
-    problems.push('plan không còn là null khi thiếu số đo — một thực đơn cho một cơ thể không ai mô tả');
+  for (const col of ['tdee_target_kcal', 'macro_protein_g', 'macro_carbs_g', 'macro_fat_g', 'macro_fiber_g', 'water_target_ml']) {
+    if (!new RegExp(`${col}:\\s*[\\w.]*plan\\.${col}\\b`).test(row)) {
+      problems.push(`onboarding ghi ${col} từ đâu đó không phải thực đơn của cổng — thực đơn phải đến từ một chuỗi tính duy nhất`);
+    }
   }
-  if (!/if\s*\(\s*!plan\b[^)]*\)\s*\{?\s*\n?\s*throw/.test(code)) {
-    problems.push('mutationFn của onboarding không chặn khi thiếu plan — "không với tới được" là phát biểu về màn hình, không phải về câu ghi');
-  }
-  /* and the step that collects them cannot be walked past */
-  if (!/disabled=\{step === 0 && statsBad\}/.test(code)) {
+  /* nothing in the payload re-parses what the gate already read */
+  if (/Number\(|parseFloat\(|\?\?\s*[1-9]|\|\|\s*[1-9]/.test(row)) {
     problems.push(
-      'nút Tiếp ở bước 0 không còn khoá khi số đo sai — mọi bước sau đều là câu hỏi về một cơ thể chưa biết',
+      'payload upsert của onboarding còn phân tích lại một con số — màn hình kiểm một bản ' +
+        'phân tích rồi ghi một bản khác chỉ đúng do may mắn',
+    );
+  }
+  /* the write itself refuses, whatever the screen did */
+  if (!/if\s*\(\s*!\w+\.ok\s*\)\s*\{?\s*\n?\s*throw/.test(code)) {
+    problems.push('mutationFn của onboarding không chặn khi cổng từ chối — "không với tới được" là phát biểu về màn hình, không phải về câu ghi');
+  }
+  /* and step 0 cannot be walked past */
+  if (!/disabled=\{step === 0 && \w+\}/.test(code) || !/!\w*\.ok\b/.test(code)) {
+    problems.push(
+      'nút Tiếp ở bước 0 không còn khoá theo phán quyết của cổng — mọi bước sau đều là câu hỏi ' +
+        'về một cơ thể chưa biết',
     );
   }
   if (!/statsBad/.test(code.split('onboardingDone')[0].slice(-800))) {
-    problems.push('nút Hoàn tất không xét statsBad');
+    problems.push('nút Hoàn tất không xét trạng thái số đo');
   }
   if (!/styles\.fieldError/.test(code)) {
     problems.push('onboarding không hiện câu báo lỗi dưới ô — khoá nút mà không nói vì sao là một màn hình chết');
@@ -297,16 +420,71 @@ try {
   if (/height_cm:\s*'1\d\d'|weight_kg:\s*'\d/.test(code)) {
     problems.push('EMPTY của form lại mang sẵn một cơ thể — form còn hiện trước khi hồ sơ về');
   }
-  if (!/readStat\(\s*'height_cm'\s*,\s*form\.height_cm\s*,\s*true\s*\)/.test(code) ||
-      !/readStat\(\s*'weight_kg'\s*,\s*form\.weight_kg\s*,\s*true\s*\)/.test(code) ||
-      !/!form\.dob/.test(code)) {
-    problems.push(
-      'Tính lại không còn đòi đủ chiều cao, cân nặng và ngày sinh — bản đã ship thay bằng ' +
-        '70 kg / 170 cm / 30 tuổi rồi ghi kết quả vào hồ sơ như thể đó là mục tiêu của người dùng',
-    );
+  /* ── the two writers, read structurally ──
+
+     Anchored to shape, not to spelling. An earlier version of this rule named
+     the identifiers (`readStat('height_cm', form.height_cm, true)`,
+     `toast.error(i18n.statsRequired)`) and went red the moment the screen was
+     refactored to take one reading instead of two — the property had not
+     changed at all. A rule that a rename can break is a rule about names. */
+
+  /** The body of a top-level `const <name> = ... => {` … `\n  };` in this file. */
+  const bodyOf = (name) => {
+    const at = code.indexOf(`const ${name} =`);
+    if (at === -1) return null;
+    const end = code.indexOf('\n  };', at);
+    return end === -1 ? code.slice(at) : code.slice(at, end);
+  };
+
+  const recalc = bodyOf('recalcTargets');
+  if (recalc === null) {
+    problems.push('không tìm thấy recalcTargets — luật này không còn đọc đúng chỗ');
+  } else {
+    if (!/planFromEntry\(/.test(recalc)) {
+      problems.push('Tính lại không còn đi qua cổng chung planFromEntry — chuỗi tính lại bị chép tay lần nữa');
+    }
+    /* refuses before it reads a plan, and says so out loud */
+    const guardAt = recalc.search(/if\s*\(\s*!\w+\.ok\s*\)/);
+    const planAt = recalc.search(/\w+\.plan\b/);
+    if (guardAt === -1 || planAt === -1 || guardAt > planAt) {
+      problems.push(
+        'Tính lại đọc thực đơn trước khi kiểm phán quyết của cổng — bản đã ship thay bằng ' +
+          '70 kg / 170 cm / 30 tuổi rồi ghi kết quả vào hồ sơ như thể đó là mục tiêu của người dùng',
+      );
+    } else {
+      const guard = recalc.slice(guardAt, planAt);
+      if (!/\breturn\b/.test(guard)) {
+        problems.push('chốt của Tính lại không thoát ra — kiểm rồi tính tiếp thì chốt đó không tồn tại');
+      }
+      if (!/toast\.(error|success)\(/.test(guard) || !/i18n\./.test(guard)) {
+        problems.push('Tính lại từ chối trong im lặng — một nút không phản ứng là một nút hỏng');
+      }
+      if (!/missing/.test(guard)) {
+        problems.push('Tính lại không nói THIẾU Ô NÀO — "thiếu gì đó" trên một màn hai mươi ô là một ngõ cụt');
+      }
+    }
+    if (/Number\(|parseFloat\(|\?\?\s*[1-9]|\|\|\s*[1-9]/.test(recalc)) {
+      problems.push('Tính lại còn phân tích lại một con số thay vì dùng kết quả của cổng');
+    }
   }
-  if (!/toast\.error\(i18n\.statsRequired\)/.test(code)) {
-    problems.push('Tính lại từ chối trong im lặng — một nút không phản ứng là một nút hỏng');
+
+  /* The save payload must persist the reading that was validated, not a second
+     parse of the same box. This is the boundary the UI error does not cover:
+     "the button was disabled" is a statement about a screen, and the payload is
+     what reaches the table. */
+  const upAt = code.indexOf('.update({');
+  const payload = upAt === -1 ? '' : code.slice(upAt, upAt + 1400);
+  if (upAt === -1) {
+    problems.push('không tìm thấy payload update của Sửa hồ sơ — luật này không còn đọc đúng chỗ');
+  }
+  for (const col of ['height_cm', 'weight_kg']) {
+    if (!new RegExp(`${col}:\\s*\\w+\\.value\\b`).test(payload)) {
+      problems.push(
+        `payload Lưu của Sửa hồ sơ ghi ${col} bằng một lần phân tích khác với lần đã kiểm — ` +
+          'một màn hình kiểm một bản phân tích rồi ghi một bản khác chỉ đúng do may mắn, ' +
+          'và bản được ghi là bản KHÔNG có khoảng giá trị nào gắn vào',
+      );
+    }
   }
 }
 
@@ -364,6 +542,47 @@ try {
         );
         break;
       }
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Rule G — every writer to `profiles` goes through the shared boundary
+   ───────────────────────────────────────────────────────────────────────── */
+{
+  const files = [];
+  (function walk(dir) {
+    for (const e of readdirSync(dir)) {
+      const p = path.join(dir, e);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (/\.tsx?$/.test(e)) files.push(p);
+    }
+  })(path.join(NATIVE, 'src'));
+
+  /* Traced rather than assumed, because assuming is how this round started:
+     onboarding was treated as the only screen that writes a body, and it was
+     not. Today the writers are onboarding, Sửa hồ sơ, and `weight-sync` — the
+     one that is not a screen at all and persists straight into the column
+     `calcPlan` later reads. A fourth one added without a bound goes red here. */
+  const writers = [];
+  for (const f of files) {
+    const code = strip(readFileSync(f, 'utf8'));
+    if (!/from\('profiles'\)/.test(code)) continue;
+    /* a writer, not a reader */
+    if (!/from\('profiles'\)[\s\S]{0,120}?\.\s*(insert|upsert|update)\(/.test(code)) continue;
+    writers.push([path.relative(NATIVE, f), code]);
+  }
+
+  if (writers.length < 3) {
+    problems.push(`chỉ thấy ${writers.length} chỗ ghi vào profiles — luật này không còn tìm đúng chỗ (chờ ít nhất 3)`);
+  }
+  for (const [rel, code] of writers) {
+    if (!/plausible\(|readStat\(|planFromEntry\(/.test(code)) {
+      problems.push(
+        `${rel} ghi vào profiles mà không đi qua ranh giới kiểm chung (plausible / readStat / ` +
+          'planFromEntry) — không có CHECK nào trên bảng profiles, nên tầng ứng dụng LÀ ranh giới, ' +
+          'và một chỗ ghi bỏ qua nó thì cả vòng này không còn ý nghĩa gì',
+      );
     }
   }
 }

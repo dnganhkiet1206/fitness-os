@@ -3333,6 +3333,286 @@ chính nó**. Chéo tài khoản thì không (mục 1 ở trên), nên phạm vi
 
 ---
 
+## Vòng 12b — Chain K, đợt củng cố: chứng minh, không chỉ sửa
+
+Cùng bốn lỗi của Vòng 12, kiểm lại theo đúng thứ tự đề bài đòi: **bằng chứng →
+bản sửa tối thiểu → chứng minh bộ dò có răng → chứng minh trên PostgreSQL → cả
+bộ kiểm**. Ba thứ mới lộ ra trong lúc làm, và một trong ba là một luật của chính
+tôi **không có răng**.
+
+**VERIFICATION:** `node tools/check.mjs` (101 bước) · `npx tsc --noEmit` ·
+`node tools/profile-onboarding.mjs` (CHẠY THẬT `readStat`, `calcPlan`,
+`planFromEntry`) · `node tools/plausible.mjs` · `node tools/nutrition-targets.mjs`
+(401.940 hồ sơ) · PostgreSQL 16.13 dựng lại từ 29 migration trên một cluster
+sạch, chạy ma trận 15 ca bằng **chính payload mà mã đã sửa sinh ra**
+
+---
+
+### Ba chỗ ghi vào `profiles` — truy hết, không đoán
+
+Đề bài dặn *đừng cho rằng onboarding là chỗ ghi duy nhất*. Truy thật:
+
+| chỗ ghi | ghi gì | trạng thái |
+| --- | --- | --- |
+| `handle_new_user` (trigger SQL) | `INSERT (user_id, name)`, phần còn lại do `DEFAULT` cột | không phải lỗi — cổng onboarding chặn không cho ai vào app với dòng đó |
+| `onboarding-flow.tsx` | `upsert` toàn bộ hồ sơ + `onboarding_completed` | **đã sửa** |
+| `edit-profile.tsx` | `update` cả danh sách cột | **đã sửa** |
+| `lib/weight-sync.ts` | `update({ weight_kg })` — **không phải một màn hình** | **đã sửa**: chốt cũ là `> 0`, nay là `plausible('weight_kg', …)` |
+
+Không edge function nào ghi `profiles` (bốn hàm AI chỉ `select`). Không RPC nào
+khác chạm vào bảng.
+
+`weight-sync` đáng nói riêng: cả hai chỗ gọi nó (`useLogWeight` sau chốt
+`plausible` của thẻ Today, và bản phát lại offline của chính lệnh ghi đó) đều đã
+kiểm trước, nên bản sửa **không từ chối bất kỳ thứ gì đang được gửi hôm nay**.
+Nó tồn tại để ranh giới nằm ở chỗ ghi, không rải ra ở các chỗ gọi — và luật G
+của bộ dò từ nay bắt mọi chỗ ghi mới vào `profiles` không đi qua ranh giới chung.
+
+---
+
+### BUG-55 (P2, mới). `Number()` biến `0xAA` thành một chiều cao 170 cm — `NON-NUMERIC-TEXT-BECOMES-A-MEASUREMENT`
+
+**TRIGGER:** dán `0xAA` (hoặc `0b10101010`, `0o252`, `1e2`) vào ô chiều cao.
+
+**ACTUAL:** đo trên bản đã sửa của Vòng 12, trước đợt này:
+
+```
+readStat('height_cm', '0xAA')       → 170 cm, NHẬN
+readStat('height_cm', '0b10101010') → 170 cm, NHẬN
+readStat('height_cm', '0o252')      → 170 cm, NHẬN
+readStat('height_cm', '1e2')        → 100 cm, NHẬN
+```
+
+**ROOT CAUSE:** `Number()` là bộ đọc **hằng số JavaScript**, không phải bộ đọc ô
+nhập số: nó nhận ba tiền tố cơ số và ký hiệu mũ. Cả bốn giá trị trên rơi vào
+**giữa** khoảng hợp lệ, nên không chốt nào chạm tới chúng — đúng hình dạng nguy
+hiểm nhất của cả vòng này: một chuỗi không phải số đo trở thành một số đo trông
+hợp lệ. `keyboardType` chỉ đổi bàn phím **trên màn hình**; dán và bàn phím rời
+đi thẳng qua nó.
+
+`Infinity`, `NaN`, `1e400`, `1,70`, `170abc`, `1_7_0` thì vốn đã bị từ chối — bởi
+khoảng giá trị, không phải bởi hình dạng. Nay cả hai lớp đều có.
+
+**FIX:** một luật hình dạng trong `readStat`, ngay trước phép đo khoảng:
+`/^-?(?:\d+(?:\.\d*)?|\.\d+)$/`. Dấu `-` được cho qua có chủ ý — một cân nặng âm
+phải chết ở cái bound nói cân nặng là gì, không phải ở một luật cú pháp.
+` 170 `, `170.`, `00170` vẫn được nhận: đó là cách gõ thật của một chiều cao
+thật. Vì `outOfRangeMessage` và `plausibleText` nay đều định nghĩa **trên**
+`readStat`, cùng luật đó bảo vệ luôn cả bảy màn nhập số sức khoẻ khác.
+
+**REGRESSION:** luật A của `tools/profile-onboarding.mjs`, 15 ca hình dạng. Gỡ
+dòng luật hình dạng → đỏ với đúng bốn giá trị `170/null`, và trạng thái cuối
+chuỗi của `0xAA` nhảy từ `incomplete` sang `plan`.
+
+---
+
+### Một luật của tôi không có răng, và thứ thay thế nó
+
+Luật E (Vòng 12) **đọc** `recalcTargets` và khẳng định lời từ chối *có ở đó*: hai
+phép kiểm `=== null` và một `return` phía trên lời gọi `calcPlan`. Đổi chốt
+thành
+
+```ts
+if (false && height === null && weight === null || !dob)
+```
+
+giữ nguyên **mọi** ký tự mà luật đó tìm. Luật vẫn xanh. Màn hình vẫn dựng một
+thực đơn cho một cơ thể không ai mô tả. Đo được: `plan:2508`.
+
+**Một luật đọc cái chốt không nói được cái chốt có hoạt động không.** Nên cái
+cổng chuyển thành một hàm chạy được:
+
+```ts
+planFromEntry({ heightText, weightText, dob, sex, goal, activity_level })
+  → { ok: true,  plan, height_cm, weight_kg, age }
+  → { ok: false, missing: ('height_cm'|'weight_kg'|'dob')[] }
+```
+
+Cả hai màn hình gọi nó; bộ dò **chạy** nó. Cùng phép phá ở trên nay ra
+`plan:2508` ở chỗ phải là `incomplete:height_cm`, và luật đỏ. Kiểu union có phân
+biệt cũng khiến `attempt.plan` **không đọc được** cho tới khi `attempt.ok` được
+kiểm — thứ mà một hàm trả `Plan | null` không làm được.
+
+Đây cũng là câu trả lời cụ thể cho yêu cầu *một đường đọc và kiểm duy nhất*: lời
+từ chối và phép tính là **cùng một quyết định**, nên chúng ở cùng một chỗ.
+
+Ba luật khác cũng bị neo lại theo cấu trúc chứ không theo tên: D và E không còn
+nhắc tên biến nào, và `tools/plausible.mjs` — vốn truy một chốt về
+`plausible|plausibleText|outOfRangeMessage` — nay nhận thêm `readStat` và
+`planFromEntry`, **nhưng không nhận `statMessage`**: `statMessage` chỉ định dạng
+một câu từ một kết luận do người khác đưa ra, nên một chốt chỉ chạm tới nó là một
+chốt hiện lỗi mà chưa từng tính lỗi. Đã thử: đổi `heightError` sang
+`statMessage('height_cm', 'missing', …)` → **đỏ**, đúng như phải thế.
+
+---
+
+### Sửa hồ sơ kiểm một bản phân tích rồi ghi một bản khác
+
+Phát hiện trong lúc truy chỗ ghi. Payload Lưu vẫn là:
+
+```ts
+height_cm: Number(form.height_cm) || null,
+weight_kg: Number(form.weight_kg) || null,
+```
+
+trong khi câu báo lỗi và nút Lưu đọc một lần `readStat` **khác**. Nút bị khoá nên
+không với tới được — nhưng *"nút bị khoá"* là phát biểu về một màn hình, còn
+payload là thứ tới được cái bảng, và bản phân tích trong payload là bản **không
+có khoảng giá trị nào gắn vào**. Nay cả ba (câu báo lỗi, nút, payload) đến từ
+đúng một lần đọc. Luật E kiểm chuyện đó ngay trong thân `.update({`.
+
+---
+
+### Phân loại mọi chỗ còn `??` / `||` / `Number(` quanh số đo
+
+Đề bài đòi phân loại, không đòi xoá máy móc.
+
+| chỗ | biểu thức | phân loại | xử lý |
+| --- | --- | --- | --- |
+| `today-widgets.tsx:60` | `Number(profile?.height_cm) \|\| 0` | **UI PLACEHOLDER** — `0` là cách nói "không có chiều cao", và BMI bên dưới có `heightCm > 0` | giữ |
+| `edit-profile.tsx` đổi đơn vị | `Number(form.weight_kg) \|\| 0` | **UI PLACEHOLDER** — `0` cho ô hiển thị rỗng khi đổi kg/lbs | giữ |
+| `use-extras`, `use-mascot`, `water`, `index`, `weekly-review` | `Number(profile?.water_target_ml) \|\| 2500`, `\|\| 8` | **REAL PRODUCT DEFAULT** — mục tiêu mặc định của sản phẩm, không phải một số đo cơ thể; và cột có `DEFAULT` nên nhánh này gần như không chạy | giữ, xem PS-1 |
+| `macro-targets.ts` | `\|\| 2200`, `\|\| 150` | **REAL PRODUCT DEFAULT** ở tầng hiển thị | giữ, xem PS-1 |
+| `smart-goals.tsx:146` | `calcTargetCalories(measured, …)` | **hợp lệ** — áp hệ số mục tiêu lên một TDEE **đo được**, không chạm chiều cao/cân nặng | giữ |
+| `edit-profile` payload các cột mục tiêu | `Number(form.x) \|\| null` | **giữ vắng mặt** — `null` là cách lưu "chưa có", không phải một giá trị bịa | giữ |
+| ~~`onboarding` `\|\| 170` / `\|\| 70`~~ | — | **FABRICATED USER DATA** | đã xoá |
+| ~~`edit-profile` `?? 175` / `?? 70` / `?? 2200`…~~ | — | **FABRICATED USER DATA** | đã xoá |
+| ~~`recalcTargets` `\|\| 170` / `\|\| 70` / `: 30`~~ | — | **VALIDATION FALLBACK** | đã xoá |
+| ~~`weight-sync` `> 0`~~ | — | **VALIDATION FALLBACK** (chốt yếu hơn bound thật) | đã thay |
+
+Luật F cấm hình dạng `FABRICATED USER DATA` quay lại ở **bất kỳ** file nào trong
+`src`, và cố ý **không** bắt `|| 0`.
+
+---
+
+### Ma trận PostgreSQL 16.13 — payload thật, cluster sạch
+
+Dựng lại 29 migration trên một cluster mới, seed hai người dùng qua
+`auth.users` (trigger `handle_new_user` tạo dòng), rồi với **mỗi ca**: chụp
+trạng thái dòng → chạy đúng payload mà mã đã sửa sinh ra (nếu có) → so lại.
+
+```
+CASE                              gửi câu lệnh?   db_unchanged   kết quả
+onboarding 170/70 hợp lệ          CÓ              f              tdee 2539, onboarding_completed t
+onboarding chiều cao 17           KHÔNG           t              170/62/2200/f  (nguyên vẹn)
+onboarding chiều cao 70           KHÔNG           t              nguyên vẹn
+onboarding cân nặng 700           KHÔNG           t              nguyên vẹn
+onboarding chiều cao trống        KHÔNG           t              nguyên vẹn
+onboarding cân nặng trống         KHÔNG           t              nguyên vẹn
+onboarding chiều cao 0xAA         KHÔNG           t              nguyên vẹn
+onboarding cân nặng -500          KHÔNG           t              nguyên vẹn
+onboarding cân nặng Infinity      KHÔNG           t              nguyên vẹn
+onboarding thiếu ngày sinh        KHÔNG           t              nguyên vẹn
+onboarding ngày sinh 2199         KHÔNG           t              nguyên vẹn
+```
+
+**Không có câu lệnh nào được gửi** cho mười ca sai — đây là điểm đề bài nhấn
+mạnh: *một câu báo lỗi trên giao diện là chưa đủ*. Cổng từ chối **trước** khi có
+payload, nên không có gì để gửi.
+
+BUG-53, đúng kịch bản đề bài yêu cầu:
+
+```
+hồ sơ weight=NULL height=NULL → mở Sửa hồ sơ → Lưu KHÔNG sửa gì
+  → payload {height_cm: null, weight_kg: null} → db_unchanged = t, vẫn NULL
+
+rồi người dùng gõ 70 vào ô cân nặng → Lưu
+  → payload {height_cm: null, weight_kg: 70}  → weight_kg = 70, height_cm vẫn NULL
+
+hồ sơ thật 170/62 → Lưu không sửa gì → db_unchanged = t (không bị viết đè)
+hồ sơ thật 170/62 → gõ 17 cm         → nút Lưu khoá, không câu lệnh nào, nguyên vẹn
+```
+
+Chéo tài khoản, đo lại trên cluster sạch: `b_can_see_A = 0`, `b_updated_A = 0`,
+`b_deleted_A = 0`; `INSERT` mang `user_id` của A và chuyển sở hữu dòng của chính
+mình sang A đều ra `new row violates row-level security policy`.
+
+---
+
+### Chuỗi dẫn xuất, bốn trạng thái, chạy thật
+
+`planFromEntry` chạy trực tiếp trong bộ dò:
+
+```
+đủ (170/70/2000-01-01)   → plan:2539
+thiếu chiều cao          → incomplete:height_cm
+thiếu cân nặng           → incomplete:weight_kg
+thiếu ngày sinh          → incomplete:dob
+rỗng hoàn toàn           → incomplete:height_cm+weight_kg+dob
+méo: 17 cm               → incomplete:height_cm
+méo: 700 kg              → incomplete:weight_kg
+méo: 0xAA                → incomplete:height_cm
+méo: Infinity            → incomplete:weight_kg
+méo: ngày sinh 2199      → incomplete:dob
+```
+
+Hồ sơ rỗng kể ra **cả ba** ô còn thiếu chứ không dừng ở ô đầu — vì màn hình dùng
+danh sách đó để nói người dùng còn thiếu gì, và *"thiếu gì đó"* trên một màn hai
+mươi ô là một ngõ cụt. Sửa hồ sơ nay hiện
+`Cần chiều cao, cân nặng và ngày sinh hợp lệ trước khi tính: Chiều cao, Ngày sinh`.
+`PlanInputError` **không bao giờ** tới người dùng: nó là chốt cho lập trình viên
+tiếp theo, và bộ dò kiểm rằng cổng **trả về** lời từ chối chứ không ném ra.
+
+---
+
+### Quyết định về `CHECK` dưới cơ sở dữ liệu — **KHÔNG thêm trong đợt này**
+
+Đã đo lại trên cluster sạch: `profiles` không có một `CHECK` nào, và một
+`UPDATE` mang `goal='bay-len-troi'`, `weight_kg=-500`, `height_cm=0`,
+`dob='2199-01-01'` được nhận trọn.
+
+Lý do **không** thêm:
+
+1. Ranh giới hiện tại **là** tầng ứng dụng, và giờ nó thật sự là một ranh giới:
+   cả ba chỗ ghi đều đi qua nó, và luật G bắt chỗ ghi thứ tư.
+2. Phạm vi của lỗ hổng còn lại là **tự hại**: chéo tài khoản bị RLS chặn hoàn
+   toàn (đo ở trên). Không ai làm hỏng được số của người khác.
+3. Một `CHECK` là hợp đồng ghi cho **mọi** client đang chạy, kể cả bản cũ trên
+   máy người dùng. Thêm nó mà không biết dữ liệu hiện có nằm ở đâu là cách tạo ra
+   một lỗi ghi mà không ai gỡ được từ xa — và repo này không có ảnh chụp dữ liệu
+   production nào để kiểm trước.
+4. `goal`/`activity_level`/`sex` cần một danh sách giá trị hợp lệ, mà danh sách
+   đó là **quyết định sản phẩm** (xem PS-4), không phải hệ quả của một bất biến
+   đã có.
+
+Ghi lại **nguyên trạng là một lỗ hổng phòng-thủ-nhiều-lớp còn mở**, có chủ ý, có
+lý do, không phải một chỗ bị bỏ quên.
+
+---
+
+### PS-3 — **CHƯA GIẢI QUYẾT**, và không được sửa lén trong đợt này
+
+`edit-profile` ghi cả danh sách cột trong khi `weight-sync` chỉ ghi `weight_kg`.
+Một form mở lâu ghi đè lần cân vừa đồng bộ. Đây là **lost update thật**, không có
+CAS, khác hẳn `daily_logs` sau Chain I.
+
+Đợt này **không** đụng vào nó. Cần khẳng định rõ vì bản sửa ở trên đã chạm đúng
+những dòng đó: payload nay ghi `heightRead.value` / `weightRead.value` thay cho
+`Number(form.height_cm) || null`. Đó là đổi **con số từ đâu ra**, không phải đổi
+*cột nào được ghi* hay *khi nào được ghi* — tập cột giữ nguyên, thứ tự ghi giữ
+nguyên, không có phát hiện xung đột nào được thêm vào. Cuộc đua vẫn còn y như
+trước.
+
+Quyết định còn thiếu: Lưu nên **từ chối** khi hồ sơ đã đổi dưới chân form (như
+`daily_logs`), hay nên ghi theo từng ô đã sửa? **KHÔNG tự chọn.**
+
+---
+
+## Chain K (đợt củng cố) — trạng thái xác minh
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `readStat` (15 ca hình dạng + 11 ca khoảng), `calcPlan`, `planFromEntry` (11 ca trạng thái) chạy thật; `nutrition-targets` quét lại 401.940 hồ sơ |
+| **PostgreSQL** | 16.13, cluster **sạch**, 29 migration, 15 ca ma trận chạy bằng chính payload mã sinh ra; mười ca sai đều **không gửi câu lệnh nào** và `db_unchanged = t` |
+| **RLS** | 5 đòn chéo tài khoản, đo lại trên cluster sạch: 0/0/0 + hai lần `new row violates row-level security policy` |
+| **bộ dò** | 12 phép phá, mỗi phép đỏ đúng câu định trước rồi xanh lại; **một luật cũ bị chứng minh là không có răng và đã bị thay bằng luật chạy được** |
+| **TypeScript** | `npx tsc --noEmit` sạch |
+| **cả bộ** | `node tools/check.mjs` — 101/101 |
+| **tác động production** | **KHÔNG**. Không dữ liệu, không snapshot, không log kiểm toán |
+| **runtime iOS thật** | **KHÔNG**. Không màn hình nào được chạy trên máy |
+
+---
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,

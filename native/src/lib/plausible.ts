@@ -222,11 +222,16 @@ export function plausible(q: Quantity, v: number | null | undefined): boolean {
   return v >= b.min && v <= b.max;
 }
 
-/** Parses a text field the way the screens do, then checks it. `''` is blank, not zero. */
+/**
+ * Parses a text field the way the screens do, then checks it. `''` is blank,
+ * not zero.
+ *
+ * Defined on `readStat` so there is one opinion about what a typed measurement
+ * is — including the shape rule, which is why `0xAA` is not a sleep stage of
+ * 170 minutes either.
+ */
 export function plausibleText(q: Quantity, text: string): boolean {
-  const t = text.trim();
-  if (t === '') return true;
-  return plausible(q, Number(t));
+  return readStat(q, text, false).problem === null;
 }
 
 /** What is wrong with a stat somebody typed — nothing, nothing given, or not a body. */
@@ -273,9 +278,40 @@ export interface StatReading {
  * inventing a different way to be wrong. Onboarding is the moment the plan is
  * built, so there it is required.
  */
+/**
+ * The shape a typed measurement has: digits, at most one decimal point, and a
+ * sign that only ever gets as far as the bound that refuses it.
+ *
+ * ── why `Number()` is not enough ──
+ *
+ * `Number()` is a JavaScript-literal parser, not a number-entry parser, and it
+ * accepts three radix prefixes and exponent notation. Measured on the shipped
+ * reader:
+ *
+ *     readStat('height_cm', '0xAA')       → 170 cm, accepted
+ *     readStat('height_cm', '0b10101010') → 170 cm, accepted
+ *     readStat('height_cm', '0o252')      → 170 cm, accepted
+ *     readStat('height_cm', '1e2')        → 100 cm, accepted
+ *
+ * None of those is a height somebody typed, and all four land **inside** the
+ * bounds — which is the exact failure this whole round is about: a string that
+ * is not a measurement becoming a valid-looking body measurement, silently.
+ * `keyboardType` narrows the on-screen keys and nothing else; paste and a
+ * hardware keyboard both go straight past it.
+ *
+ * `Infinity`, `NaN`, `1e400`, `1,70` and `170abc` were already refused, by the
+ * range check rather than by shape. They still are.
+ */
+const DECIMAL_TEXT = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
+
 export function readStat(q: Quantity, text: string, required: boolean): StatReading {
   const t = text.trim();
   if (t === '') return { value: null, problem: required ? 'missing' : null };
+  /* Shape first, so `0xAA` is refused for what it is rather than accidentally
+     passing a range check it was never measured against. A leading `-` is
+     allowed through on purpose: a negative weight should die at the bound that
+     says what a weight is, not at a syntax rule. */
+  if (!DECIMAL_TEXT.test(t)) return { value: null, problem: 'out-of-range' };
   const n = Number(t);
   if (!plausible(q, n)) return { value: null, problem: 'out-of-range' };
   return { value: n, problem: null };

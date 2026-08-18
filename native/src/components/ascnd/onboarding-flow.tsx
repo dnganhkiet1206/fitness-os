@@ -42,11 +42,11 @@ import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
-import { calcAge, calcPlan } from '@/lib/fitness-calc';
+import { planFromEntry } from '@/lib/fitness-calc';
 import { isHealthKitAvailable, requestHealthPermissions } from '@/lib/health';
 import { getLegal, type LegalDoc } from '@/lib/legal-content';
 import { localDateStr } from '@/lib/local-date';
-import { readStat, statMessage } from '@/lib/plausible';
+import { statMessage } from '@/lib/plausible';
 import { requestNotificationPermission } from '@/lib/notifications';
 import { displayVolume, volumeLabel } from '@/lib/units';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -174,25 +174,21 @@ export function OnboardingFlow() {
     numbers are in the first place, and stores them with
     `onboarding_completed: true` — did not.
   */
-  const height = readStat('height_cm', heightCm, true);
-  const weight = readStat('weight_kg', weightKg, true);
-  const heightError = statMessage('height_cm', height.problem, i18n.outOfRange);
-  const weightError = statMessage('weight_kg', weight.problem, i18n.outOfRange);
-  const statsBad = height.value === null || weight.value === null;
+  const attempt = planFromEntry({
+    heightText: heightCm,
+    weightText: weightKg,
+    dob: localDateStr(dob),
+    sex: sex as 'male' | 'female' | 'other',
+    goal,
+    activity_level: activityLevel,
+  });
+  const statsBad = !attempt.ok;
+  const missing = attempt.ok ? [] : attempt.missing;
+  const heightError = missing.includes('height_cm') ? statMessage('height_cm', 'out-of-range', i18n.outOfRange) : null;
+  const weightError = missing.includes('weight_kg') ? statMessage('weight_kg', 'out-of-range', i18n.outOfRange) : null;
 
   // Live targets (web auto-calc box) — null until there is a body to compute for
-  const age = calcAge(localDateStr(dob));
-  const plan =
-    statsBad
-      ? null
-      : calcPlan({
-          weight_kg: weight.value!,
-          height_cm: height.value!,
-          age,
-          sex: sex as 'male' | 'female' | 'other',
-          goal,
-          activity_level: activityLevel,
-        });
+  const plan = attempt.ok ? attempt.plan : null;
   const sleepHours = (() => {
     const bedMin = bedtime.getHours() * 60 + bedtime.getMinutes();
     const wakeMin = waketime.getHours() * 60 + waketime.getMinutes();
@@ -218,7 +214,7 @@ export function OnboardingFlow() {
       /* The Next button on step 0 makes this unreachable. It is here anyway
          because the row this writes is the one every later number is derived
          from, and "unreachable" is a claim about a screen, not about a write. */
-      if (!plan || height.value === null || weight.value === null) {
+      if (!attempt.ok) {
         throw new Error(i18n.statsRequired);
       }
       const { error } = await supabase.from('profiles').upsert(
@@ -227,8 +223,8 @@ export function OnboardingFlow() {
           name: name.trim() || 'Athlete',
           sex,
           dob: localDateStr(dob),
-          height_cm: height.value,
-          weight_kg: weight.value,
+          height_cm: attempt.height_cm,
+          weight_kg: attempt.weight_kg,
           goal,
           activity_level: activityLevel,
           training_level: trainingLevel,
@@ -237,12 +233,12 @@ export function OnboardingFlow() {
           disliked_foods: dislikedFoods
             ? parseDislikes(dislikedFoods)
             : [],
-          tdee_target_kcal: plan.tdee_target_kcal,
-          macro_protein_g: plan.macro_protein_g,
-          macro_carbs_g: plan.macro_carbs_g,
-          macro_fat_g: plan.macro_fat_g,
-          macro_fiber_g: plan.macro_fiber_g,
-          water_target_ml: plan.water_target_ml,
+          tdee_target_kcal: attempt.plan.tdee_target_kcal,
+          macro_protein_g: attempt.plan.macro_protein_g,
+          macro_carbs_g: attempt.plan.macro_carbs_g,
+          macro_fat_g: attempt.plan.macro_fat_g,
+          macro_fiber_g: attempt.plan.macro_fiber_g,
+          water_target_ml: attempt.plan.water_target_ml,
           sleep_target_hours: sleepHours,
           sleep_target_bedtime: timeToHHMM(bedtime),
           sleep_target_waketime: timeToHHMM(waketime),

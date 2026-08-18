@@ -1,6 +1,6 @@
 // ASCND – Fitness calculation utilities
 
-import { plausible } from '@/lib/plausible';
+import { plausible, readStat } from '@/lib/plausible';
 
 /** Mifflin-St Jeor BMR */
 export function calcBMR(weight_kg: number, height_cm: number, age: number, sex: 'male' | 'female' | 'other'): number {
@@ -261,6 +261,87 @@ export function calcPlan(i: PlanInput): Plan {
     macro_fat_g: macros.fat_g,
     macro_fiber_g: macros.fiber_g,
     water_target_ml: calcWaterTarget(i.weight_kg, i.height_cm),
+  };
+}
+
+/** The three things a plan cannot be computed without. */
+export type StatField = 'height_cm' | 'weight_kg' | 'dob';
+
+/**
+ * A plan, or the list of things still needed for one.
+ *
+ * "Cannot calculate yet" is a state, not a number — and it has to be a state
+ * the caller cannot accidentally read as a plan. A discriminated union is what
+ * makes `attempt.plan` unavailable until `attempt.ok` has been checked, which
+ * a `Plan | null` return would not.
+ */
+export type PlanAttempt =
+  | { ok: true; plan: Plan; height_cm: number; weight_kg: number; age: number }
+  | { ok: false; missing: StatField[] };
+
+/**
+ * The whole gate: read what was typed, refuse if anything is missing, and only
+ * then compute.
+ *
+ * ── why this is a function and not four lines in each screen ──
+ *
+ * It was four lines in each screen, and the reason it is not any more is a
+ * failed test of my own detector. That detector read the screen and asserted
+ * the refusal was *there* — two `=== null` checks and a `return` above the
+ * `calcPlan` call. Changing the guard to
+ *
+ *     if (false && height === null && weight === null || !dob)
+ *
+ * left every one of those tokens in place and the rule stayed green, while the
+ * screen computed a plan for a body nobody described. A rule that reads a
+ * guard cannot tell you the guard works; only running it can.
+ *
+ * So the gate moved here, where a test can **drive** it, and the screens call
+ * it. That is also what the one-authoritative-path requirement means in
+ * practice: the refusal and the arithmetic are the same decision, so they live
+ * in the same place.
+ *
+ * `missing` names the fields rather than describing them, so each screen can
+ * put its own words on it — the sentence a person reads belongs to the screen,
+ * and `PlanInputError` never reaches anybody.
+ */
+export function planFromEntry(input: {
+  heightText: string;
+  weightText: string;
+  dob: string | null;
+  sex: Sex;
+  goal: string;
+  activity_level: string;
+}): PlanAttempt {
+  const height = readStat('height_cm', input.heightText, true);
+  const weight = readStat('weight_kg', input.weightText, true);
+  const dob = input.dob && input.dob.trim() !== '' ? input.dob : null;
+
+  const missing: StatField[] = [];
+  if (height.value === null) missing.push('height_cm');
+  if (weight.value === null) missing.push('weight_kg');
+  if (dob === null) missing.push('dob');
+  if (missing.length > 0) return { ok: false, missing };
+
+  const age = calcAge(dob as string);
+  /* `calcPlan` still throws on an age this could not produce — a stored `dob`
+     of 2199 is writable straight into the column, and the bound that catches it
+     is not a text bound, so it cannot live in `readStat`. */
+  if (!Number.isFinite(age) || age < 0 || age > 130) return { ok: false, missing: ['dob'] };
+
+  return {
+    ok: true,
+    plan: calcPlan({
+      weight_kg: weight.value as number,
+      height_cm: height.value as number,
+      age,
+      sex: input.sex,
+      goal: input.goal,
+      activity_level: input.activity_level,
+    }),
+    height_cm: height.value as number,
+    weight_kg: weight.value as number,
+    age,
   };
 }
 

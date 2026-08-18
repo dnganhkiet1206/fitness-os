@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
+import { plausible } from '@/lib/plausible';
 
 /**
  * A weigh-in updates the profile's current weight.
@@ -45,7 +46,21 @@ export async function syncProfileWeight(
   weightKg: number,
   date: string = localDateStr(),
 ): Promise<void> {
-  if (!Number.isFinite(weightKg) || weightKg <= 0) return;
+  /*
+    ── the third writer to `profiles` ──
+
+    Onboarding and *Edit profile* are the two screens; this is the one that is
+    not a screen, and it persists straight into `profiles.weight_kg` — the
+    column `calcPlan` later reads to decide what somebody eats. Its own guard
+    was `> 0`, which is not what a weight is.
+
+    Both callers today validate first (`useLogWeight` behind the Today tile's
+    `plausible` check, and the offline replay of that same write), so this
+    refuses nothing that is currently sent. It exists so the boundary is where
+    the write is, not spread across the callers: the same bound, from the same
+    table, as the two screens.
+  */
+  if (!plausible('weight_kg', weightKg)) return;
 
   /* A later weigh-in already exists, so this one is history. */
   const { data: newer, error: readError } = await supabase

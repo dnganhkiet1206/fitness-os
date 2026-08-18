@@ -277,13 +277,29 @@ function bindings(src) {
   return map;
 }
 
+/**
+ * The entry points of the bounds boundary — the calls that actually *consult*
+ * `BOUNDS`.
+ *
+ * `readStat` and `planFromEntry` joined the list when the profile screens moved
+ * onto them; both go through `plausible` and `readStat` adds the shape rule on
+ * top, so tracing to either is tracing to a real check.
+ *
+ * `statMessage` is deliberately **absent**. It only formats a sentence out of a
+ * problem somebody else decided on, so a gate that reached `statMessage` and
+ * nothing else would be a gate that renders an error it never computed — which
+ * is exactly the "a right-looking name is not a check" failure this rule is
+ * named after.
+ */
+const BOUNDARY = /\b(plausible|plausibleText|outOfRangeMessage|readStat|planFromEntry)\s*\(/;
+
 /** Does `ident` trace back to a plausibility call within `depth` hops? */
 function fromPlausible(ident, map, depth = 4, seen = new Set()) {
   if (depth === 0 || seen.has(ident)) return false;
   seen.add(ident);
   const rhs = map.get(ident);
   if (!rhs) return false;
-  if (/\b(plausible|plausibleText|outOfRangeMessage)\s*\(/.test(rhs)) return true;
+  if (BOUNDARY.test(rhs)) return true;
   for (const ref of rhs.matchAll(/\b([A-Za-z_$][\w$]*)\b/g)) {
     if (ref[1] !== ident && fromPlausible(ref[1], map, depth - 1, seen)) return true;
   }
