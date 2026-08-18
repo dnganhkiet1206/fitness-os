@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (104 bước). Ngày rà: 2026-08-18.
+Bộ kiểm: `node tools/check.mjs` (105 bước). Ngày rà: 2026-08-18.
 
 ---
 
@@ -4407,6 +4407,213 @@ prompt thô hay phản hồi thô — đó là điều đo được ở phía ap
 | **nhà cung cấp thật** | **KHÔNG**. `PROVIDER-PAYLOAD-PROVEN`, `REAL-PROVIDER-UNVERIFIED` — không yêu cầu nào tới Lovable, không mô hình nào chạy |
 | **runtime iOS thật** | **KHÔNG** |
 | **tác động production** | **KHÔNG**. Không dữ liệu, không snapshot, không log |
+
+---
+
+## Vòng 16 — Chain O: ảnh → hàm scan-food → mô hình thị giác → bữa ăn
+
+**Câu hỏi mở đầu:** ảnh là đầu vào không đáng tin. Cái gì tới được máy chủ, cái
+gì tới được nhà cung cấp trả tiền, và kết quả rơi vào bữa ăn của **ai**?
+
+**VERIFICATION:** `node tools/check.mjs` (105 bước) · `npx tsc --noEmit` ·
+`node tools/scan-food-boundary.mjs` (CHẠY THẬT handler `scan-food` +
+`lib/scan-bridge.ts`) · `node tools/scan-handoff.mjs` · PostgreSQL 16.13 dựng
+lại từ 29 migration
+
+### Hình dạng thật của hàm — một nửa bề mặt tấn công không tồn tại
+
+`scan-food` là **một hàm thuần của bức ảnh**. Nó đọc ba trường —
+`image_base64`, `lang`, `mode` — và không gì khác; nó **không chạm** cơ sở dữ
+liệu ngoài việc trừ hạn mức; nó **không nhận** meal id, entry id hay user id; và
+nó **không ghi** gì cả. Ghi lại như một sự thật đo được, không phải một khoảng
+trống mà người sau phải tự suy ra:
+
+| câu hỏi | trả lời, đo bằng cách chạy |
+| --- | --- |
+| SSRF trong app? | **KHÔNG** — không có trường URL. Mười một đầu vào hình dạng URL (`http://127.0.0.1:9`, `169.254.169.254`, `file:`, `javascript:`, `gopher:`, userinfo, `[::1]`, `0.0.0.0`, RFC1918, `data:`, đường dẫn storage) và năm tên trường URL khác: **host duy nhất từng được gọi là gateway** |
+| SSRF ở nhà cung cấp? | **KHÔNG** — ảnh đi *inline* trong `data:image/jpeg;base64,…`, nên nhà cung cấp không có gì để tải |
+| MIME do client cung cấp? | **KHÔNG** — kiểu được gõ cứng trong data URL; không có chỗ nào để client khai |
+| máy chủ có giải mã ảnh? | **KHÔNG** — chuỗi base64 đi thẳng qua, nên không có bộ giải mã nào ở đây để một quả bom nén làm cạn bộ nhớ |
+| mục tiêu bữa ăn từ client? | **KHÔNG** — `mealId`, `entry_id`, `userId` trong thân yêu cầu bị bỏ qua hoàn toàn |
+| kích thước có chặn trước tiền? | **CÓ** — `MAX_IMAGE_CHARS` được kiểm **trước** `claimCall` |
+
+Đo trần kích thước:
+
+```
+      1.000 ký tự → 200, payload      4.152, hạn mức 1
+  4.000.000 ký tự → 200, payload  4.003.128, hạn mức 1
+  4.000.001 ký tự → 413, payload          0, hạn mức 0   ← từ chối TRƯỚC khi trừ
+ 40.000.000 ký tự → 413, payload          0, hạn mức 0
+```
+
+Vì hàm không ghi gì, **toàn bộ rủi ro quy kết nằm ở client** — và đó là nơi có
+lỗi.
+
+---
+
+### BUG-67 (P2). Ô bàn giao ảnh quét sống sót qua đăng xuất — `USER-BOUND-STATE-SURVIVES-LOGOUT`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **FUNCTION** | `native/src/lib/scan-bridge.ts` |
+| **INPUT** | món ăn đã quét, giữ ở phạm vi module |
+| **AUTHORITY** | không có — ô không mang chủ sở hữu |
+| **DATABASE TARGET** | `meal_entry_items` của người dùng **kế tiếp** |
+
+**TRIGGER:** A quét một đĩa ăn, đăng xuất, B đăng nhập và mở sheet ghi bữa ăn —
+trong vòng `SCAN_TTL_MS` (5 phút).
+
+**EXPECTED:** B không nhận gì.
+
+**ACTUAL:** chạy thật `setPendingScan` → `runUserScopedResets()` (đúng hàm mà
+handler `SIGNED_OUT` gọi) → `consumePendingScan()`:
+
+```
+B nhận được ["ALPHA_MEAL_123 111kcal"]
+```
+
+và sheet **nối** món đó vào bữa của B, rồi calo và macro đi tiếp vào
+`meal_entries`, `recomputeDailyLog`, vòng calo, nhiệm vụ ngày và điểm sẵn sàng.
+
+**ROOT CAUSE:** đây là state ở phạm vi module mô tả đĩa ăn của một người. Sáu
+kho cùng loại đăng ký reset với `user-scoped-reset`; kho này thì không — vì nó
+**không có khoá nào trên đĩa** để từng bị chú ý tới. Chain E đã nói đúng điều
+này: xoá một khoá AsyncStorage không bao giờ với tới một `let`.
+
+**FIX:** một `onUserScopedReset(() => { pending = null; })`, đúng khuôn sáu kho
+kia dùng.
+
+**REGRESSION RISK:** thấp. `SCAN_TTL_MS` đã giới hạn hậu quả ở 5 phút — đó là
+khác biệt duy nhất giữa mục này và các lỗi Chain E tìm thấy, và một chiếc máy
+vừa được đưa cho người khác nằm gọn trong cửa sổ đó.
+
+---
+
+### BUG-68 (P3). Một phản hồi mô hình không dùng được thoát ra thành 500 — `MALFORMED-TOOL-ARGS-500`
+
+**TRIGGER:** mô hình trả về tool call có `arguments` không phải JSON hợp lệ —
+một kiểu hỏng bình thường của LLM.
+
+**ACTUAL:**
+
+```
+{"error":"Expected property name or '}' in JSON at position 1 (line 1 column 2)"}
+HTTP 500 · hạn mức đã bị trừ
+```
+
+**EXPECTED:** `{"items":[]}`, giống **mọi** hình dạng không dùng được khác.
+
+**ROOT CAUSE:** `JSON.parse(toolCall.function.arguments)` không có chốt. Đo
+được, mọi phản hồi khác đều đã kết thúc giống nhau: không có tool call, `choices`
+rỗng, kcal âm, `Infinity`, khổng lồ, `null`, `items` là mảng — tất cả ra
+`{"items":[]}`. Chỉ `arguments` hỏng là ngoại lệ, và nó còn trả nguyên câu của
+bộ phân tích JSON cho client.
+
+Khác biệt giữa *"không nhận ra món ăn nào, chụp lại thử"* và một lỗi 500 mờ mịt
+là khác biệt giữa một người chụp lại và một người nghĩ app hỏng — sau khi đã bị
+trừ một lượt.
+
+**FIX:** `try { JSON.parse } catch { return json({ items: [] }) }`. Phân tích ở
+đây chứ không phải trong `clampItems`, để hàm đó vẫn nhận một *giá trị* và
+`tools/ai-coach.mjs` vẫn chạy thẳng được nó.
+
+---
+
+## Chain O — đã kiểm và **KHÔNG** phải lỗi
+
+**1. Không SSRF, cả app lẫn nhà cung cấp.** Xem bảng trên. Bộ dò khẳng định
+**cả hai**: host mà app gọi, *và* hình dạng của `image_url` trao cho nhà cung
+cấp phải luôn bắt đầu bằng `data:`. Hai câu hỏi khác nhau — nếu một URL của
+client được chuyển tiếp, app này không tải gì cả nhưng nhà cung cấp sẽ tải một
+địa chỉ tuỳ ý thay mặt người gọi.
+
+**2. Danh tính do mô hình bịa ra không ra khỏi hàm.** Cho mô hình trả
+`{user_id:'ALPHA', meal_id:'ALPHA_MEAL_123', entry_id:'ALPHA_MEAL_123', reward:9999}`
+kèm một món hợp lệ:
+
+```
+{"items":[{"food_name":"x","serving_g":100,"kcal":100,"protein_g":1,"carbs_g":1,"fat_g":1,"fiber_g":1}]}
+```
+
+`clampItems` **dựng lại** từng món thay vì lan truyền.
+
+**3. Quy kết sai bữa ăn không tồn tại ở tầng này.** Hàm không nhận meal id và
+không ghi gì; kết quả về client, người dùng **xem lại** rồi bấm xác nhận. Nên
+`STALE-AI-RESULT-OVERWRITES-USER-DATA` cũng vắng mặt: không có đường nào để một
+kết quả về muộn tự ghi đè một chỉnh sửa tay.
+
+**4. Quét đồng thời bị chặn ngay tại màn hình** bằng `busyRef`, và kết quả nằm
+trong state React chứ không phải trong ô bàn giao — ô chỉ được ghi khi người
+dùng bấm xác nhận.
+
+**5. Ô bàn giao chỉ phục vụ một lần** (`firstRead 1, secondRead null`), nên một
+lần focus lại không nối món hai lần. Và nó **hết hạn sau 5 phút**.
+
+**6. Hai lần xác nhận trước khi sheet đọc** → lần đầu bị bỏ im lặng. Đo được và
+ghi lại; khả năng với tới thấp vì `stackHasMealSheet` đưa scanner về đúng sheet,
+sheet focus và tiêu thụ ngay. **Không sửa** — chưa có bằng chứng về một đường đi
+thật tới nó.
+
+**7. Danh tính ở cửa:** không token / token rác / **khoá anon** đều 401 ở
+`scan-food`, và nhà cung cấp không được gọi lần nào.
+
+**8. Lỗi gateway được chuyển tiếp đúng mã** — 429 → 429, 402 → 402, 500 → 500.
+
+**9. Chuỗi base64 không được kiểm hình dạng** — chữ, HTML, khoảng trắng, unicode
+đều tới được nhà cung cấp. **Không phải lỗi:** trần 4M ký tự và hạn mức theo
+ngày giới hạn chi phí y hệt như với một tấm ảnh thật 4 MB, và một tấm ảnh tối
+cũng tốn đúng một lượt.
+
+**10. Không lưu ảnh ở đâu cả.** Không bucket, không bảng, không khoá
+AsyncStorage. Chỉ base64 trong bộ nhớ trong một lần gọi, và `preview` là URI cục
+bộ của máy ảnh. Vòng đời dữ liệu ảnh: **client → hàm → nhà cung cấp → hết**.
+
+**11. Ghi vào bữa ăn của người khác bị chặn ở máy chủ**, đo trên cluster sạch:
+
+```
+B chèn item vào bữa của A → 42501
+B UPDATE bữa của A        → 0 dòng
+B SELECT bữa của A        → 0 dòng
+bữa của A sau đó          → total_kcal vẫn 111
+```
+
+---
+
+## Chain O — PRODUCT SEMANTICS REQUIRED
+
+### PS-1. Hai lần quét xác nhận trước khi sheet đọc
+
+Lần đầu bị bỏ im lặng (mục 6). Nên xếp hàng, nên nối cả hai, hay giữ nguyên?
+**KHÔNG tự chọn.**
+
+### PS-2. Trần 4.000.000 ký tự
+
+Con số đã có sẵn và vòng này không đổi. Nó tương ứng ~2,9 MB sau giải mã, còn
+máy ảnh chụp ở `quality: 0.5`. Có nên chặt hơn nữa để giảm chi phí mỗi lượt
+không là quyết định sản phẩm. **KHÔNG tự đổi.**
+
+### PS-3. Ảnh không được lưu lại
+
+Không có lịch sử quét. Nếu sau này muốn cho người dùng xem lại ảnh đã quét thì
+đó là một vòng đời dữ liệu mới cần quyết định riêng.
+
+---
+
+## Chain O — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `clampItems` qua 11 hình dạng phản hồi; `scan-bridge` qua TTL, đọc-một-lần, ghi đè |
+| **runtime hàm edge** | handler `scan-food` THẬT, gọi bằng `Request` thật qua stand-in cho `serve`/`createClient`/`Deno` |
+| **mock network** | `fetch` thay bằng máy ghi **host** — 16 đầu vào hình dạng URL, không host nào ngoài gateway |
+| **mock provider** | payload được khẳng định là **byte rời khỏi hàm**, gồm cả hình dạng `image_url` |
+| **PostgreSQL / RLS** | 16.13, cluster sạch, 29 migration: B chèn item vào bữa của A → 42501; UPDATE/SELECT → 0 dòng |
+| **bộ dò** | 7 phép phá, mỗi phép đỏ đúng câu định trước rồi xanh lại |
+| **cả bộ** | `node tools/check.mjs` — 105/105 · `npx tsc --noEmit` sạch |
+| **nhà cung cấp thật** | **KHÔNG**. `REAL-PROVIDER-UNVERIFIED` |
+| **runtime iOS thật** | **KHÔNG**. `DEVICE-UNVERIFIED` — chưa tấm ảnh nào được chụp trên máy |
+| **tác động production** | **KHÔNG** |
 
 ---
 

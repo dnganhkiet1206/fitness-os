@@ -36,7 +36,7 @@
  *     "should never happen" into "cannot be served hours later".
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -52,13 +52,21 @@ const out = mkdtempSync(path.join(tmpdir(), 'scan-'));
 try {
   execFileSync(
     'npx',
-    ['tsc', 'src/lib/scan-bridge.ts', '--ignoreConfig', '--outDir', out,
+    ['tsc', 'src/lib/scan-bridge.ts', 'src/lib/user-scoped-reset.ts', '--ignoreConfig', '--outDir', out,
      '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
 } catch {
   /* no project tsconfig here — tsc exits non-zero over the `@/` mapping and
      still emits, which is all this uses */
+}
+/* The slot registers its own reset with `user-scoped-reset` — a scan is one
+   person's plate and must not outlive their session — so that module comes
+   along and its `@/` import is joined up by hand, the same way every other
+   tool here does it. */
+{
+  const js = path.join(out, 'scan-bridge.js');
+  writeFileSync(js, readFileSync(js, 'utf8').replace('require("@/lib/user-scoped-reset")', 'require("./user-scoped-reset.js")'));
 }
 const { setPendingScan, consumePendingScan, stackHasMealSheet, SCAN_TTL_MS } =
   createRequire(import.meta.url)(path.join(out, 'scan-bridge.js'));

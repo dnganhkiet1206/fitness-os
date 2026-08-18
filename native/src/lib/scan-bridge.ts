@@ -5,6 +5,8 @@
  * item list. Carries the full macro set so AI-scanned dishes keep protein
  * / carbs / fat / fiber, not just calories.
  */
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
+
 export interface ScannedFood {
   food_name: string;
   kcal: number;
@@ -41,6 +43,32 @@ export interface ScannedFood {
 export const SCAN_TTL_MS = 5 * 60 * 1000;
 
 let pending: { at: number; items: ScannedFood[] } | null = null;
+
+/*
+  ── the slot is one person's plate, and it outlived their session ──
+
+  This is module-scope state describing what somebody photographed, and it was
+  the one such store not registered with `user-scoped-reset`. Chain E's whole
+  point was that `clearUserScopedStorage()` deleting an AsyncStorage key never
+  reaches a `let`; six stores register their own reset for exactly that reason
+  and this one did not, because it has no key on disk to have been noticed by.
+
+  Driven through the real modules — `setPendingScan`, then the same
+  `runUserScopedResets()` that the `SIGNED_OUT` handler calls, then
+  `consumePendingScan()`:
+
+      A scans a plate, signs out, B opens a meal sheet
+      → B receives ["ALPHA_MEAL_123 111kcal"]
+
+  and the sheet appends it to B's meal, whose calories and macros then go into
+  `meal_entries`, `recomputeDailyLog`, the calorie ring and the readiness score.
+  `SCAN_TTL_MS` bounds it to five minutes, which is the difference between this
+  and the bugs Chain E found — a handset handed over, or a second account signed
+  into straight away, is inside that window.
+*/
+onUserScopedReset(() => {
+  pending = null;
+});
 
 export function setPendingScan(items: ScannedFood | ScannedFood[], now = Date.now()) {
   pending = { at: now, items: Array.isArray(items) ? items : [items] };

@@ -369,7 +369,34 @@ ${
       visibly missing, and the review screen this feeds is where somebody can
       add it by hand.
     */
-    const result = clampItems(JSON.parse(toolCall.function.arguments));
+    /*
+      ── the one unusable reply that escaped as a 500 ──
+
+      Every other shape this model can return already lands on `{items: []}`:
+      no tool call, empty `choices`, items whose numbers are not measurements.
+      Malformed *arguments* did not. `JSON.parse` threw, the outer catch turned
+      it into a 500, and the body handed the caller the parser's own sentence:
+
+          {"error":"Expected property name or '}' in JSON at position 1 …"}
+
+      A model emitting not-quite-JSON in a tool call is an ordinary failure, not
+      an exceptional one — and the quota was already spent, so the difference
+      between "no food found, try another photo" and an opaque 500 is the
+      difference between a person retaking the picture and a person thinking the
+      app is broken.
+
+      Parsed here rather than inside `clampItems`, which takes a value: keeping
+      that function about *what the numbers are* is what lets `tools/ai-coach.mjs`
+      drive it directly.
+    */
+    let args: unknown;
+    try {
+      args = JSON.parse(toolCall.function.arguments);
+    } catch {
+      console.error("scan-food: tool arguments were not JSON");
+      return json({ items: [] });
+    }
+    const result = clampItems(args);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
