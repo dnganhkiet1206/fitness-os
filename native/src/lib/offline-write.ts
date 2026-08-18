@@ -248,6 +248,71 @@ export class WrongAccountError extends Error {
 }
 
 /**
+ * A queued record this build cannot execute.
+ *
+ * ── the two things that used to happen instead ──
+ *
+ * The queue is written by one build of the app and replayed by whichever build
+ * is installed when the signal comes back. Those are not always the same build:
+ * a TestFlight rollback, a phone restored from a backup, or simply a `kind` that
+ * existed for a release and was renamed.
+ *
+ * **A kind this build has never heard of reported success.** The `switch` below
+ * is exhaustive over the union, so TypeScript is satisfied and there was no
+ * `default`. A persisted `kind` outside the union therefore fell out of the
+ * bottom, `applyOfflineWrite` returned `undefined`, and React Query marked the
+ * mutation **resolved**. Driven through the real client with the real
+ * registration:
+ *
+ *     kind: 'telepathy'  →  status: success, statements sent: 0
+ *
+ * The person's write was destroyed and the app recorded it as done. That is the
+ * worst available outcome: a loud failure would at least have left the write in
+ * the queue to try again.
+ *
+ * **And a structurally broken record was retried as weather.** `variables`
+ * missing, `null`, or a string all reach the body and throw a `TypeError`,
+ * which `permanentFailure` did not recognise — so a record that can never
+ * execute was sent three more times over seven seconds of backoff, holding the
+ * serialised queue behind it while it waited.
+ *
+ * Both are the same gap: nothing distinguished *"this failed"* from *"this can
+ * never run"*.
+ */
+export class UnusableWriteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnusableWriteError';
+  }
+}
+
+/** Every `kind` this build knows how to replay. */
+const KNOWN_KINDS = [
+  'water', 'workout', 'weight', 'meal', 'sleep', 'measurement', 'biometrics',
+] as const;
+
+/**
+ * Is this thing off the disk a write this build can perform?
+ *
+ * Deliberately shallow: it checks the two fields every branch below depends on
+ * before it can do anything at all — who it belongs to, and what it is. The
+ * per-kind fields are not checked here because the database checks them, and
+ * `permanentFailure` already reads its refusals (`23502`, `23514`, `22P02`) as
+ * permanent. Duplicating the column list here would be a second schema to keep
+ * in step with the first.
+ */
+function unusableReason(w: unknown): string | null {
+  if (typeof w !== 'object' || w === null) return `queued record is ${w === null ? 'null' : typeof w}`;
+  const rec = w as { kind?: unknown; userId?: unknown };
+  if (typeof rec.userId !== 'string' || rec.userId === '') return 'queued record has no userId';
+  if (typeof rec.kind !== 'string') return 'queued record has no kind';
+  if (!(KNOWN_KINDS as readonly string[]).includes(rec.kind)) {
+    return `queued record is a '${rec.kind}', which this build cannot replay`;
+  }
+  return null;
+}
+
+/**
  * Failures that will never succeed no matter how many times they are sent.
  *
  * ── why retrying these is not merely wasteful ──
@@ -278,6 +343,9 @@ export class WrongAccountError extends Error {
 export function permanentFailure(error: unknown): boolean {
   /* A different account will not become the right one by asking again. */
   if (error instanceof WrongAccountError) return true;
+  /* Nor will a record this build cannot read become readable by asking again —
+     and while it waits, the shared scope holds every write behind it. */
+  if (error instanceof UnusableWriteError) return true;
   const code = (error as { code?: unknown } | null)?.code;
   if (typeof code !== 'string') return false;
   return (
@@ -324,6 +392,16 @@ async function rebuildAfterReplay(userId: string, date: string) {
  * less-tested version of the online one.
  */
 export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
+  /*
+    ── is this a write at all ──
+
+    First, because everything below reads fields off it, and what arrives here
+    came out of JSON written by some build of this app — not necessarily this
+    one. See `UnusableWriteError`.
+  */
+  const unusable = unusableReason(w);
+  if (unusable) throw new UnusableWriteError(unusable);
+
   /*
     ── whose write is this ──
 
@@ -536,6 +614,17 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
       return;
     }
   }
+
+  /*
+    Unreachable for the union above, and that is exactly why it is here: the
+    `switch` is exhaustive over the *types*, and what comes off the disk is not
+    typed. Falling out of the bottom used to mean `return undefined`, which
+    React Query reads as a completed write. `KNOWN_KINDS` should have caught it
+    already; if the two ever disagree, this is the side that refuses.
+  */
+  throw new UnusableWriteError(
+    `queued record is a '${(w as { kind?: string }).kind}', which this build cannot replay`,
+  );
 }
 
 /**

@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (102 bước). Ngày rà: 2026-08-18.
+Bộ kiểm: `node tools/check.mjs` (103 bước). Ngày rà: 2026-08-18.
 
 ---
 
@@ -3920,6 +3920,248 @@ lực hay phải dựng lại là hành vi nền tảng — **không kiểm ch�
 | **runtime iOS thật** | **KHÔNG**. `SCHEDULE-PERSISTENCE-PROVEN`, `FIRING-ON-DEVICE-UNVERIFIED` — chưa thông báo nào nổ trên một chiếc iPhone, chưa lịch nào được soi qua `UNUserNotificationCenter` thật. Con số 64 là giới hạn Apple ghi trong tài liệu, không phải số đo ở đây |
 | **PostgreSQL** | **KHÔNG dùng ở vòng này** — không bảng nào, không RLS nào dính tới thông báo. Đây là kết quả của việc lập bản đồ, không phải một bước bị bỏ |
 | **bộ dò** | 9 phép phá, mỗi phép đỏ đúng câu định trước rồi xanh lại |
+| **tác động production** | **KHÔNG**. Không dữ liệu, không snapshot, không log |
+
+---
+
+## Vòng 14 — Chain M: khởi động lạnh → nạp lại cache → phục hồi phiên → phát lại hàng đợi
+
+**Câu hỏi mở đầu:** *khi khởi động lạnh, một lệnh ghi đã lưu có thể được nạp lại
+và phát đi **trước khi** biết ai đang đăng nhập, hoặc **dưới sai người**, không?*
+
+**Bất biến:** không lệnh ghi nào đã lưu được chạy trước khi danh tính đã xác
+thực được biết **và** khớp với chủ của nó. Nạp lại từ đĩa là **đọc dữ liệu**,
+không phải cấp quyền.
+
+**VERIFICATION:** `node tools/check.mjs` (103 bước) · `npx tsc --noEmit` ·
+`node tools/offline-cold-launch.mjs` (CHẠY THẬT `QueryClient` 5.101.2 +
+`registerOfflineWrites` + `applyOfflineWrite` qua vòng dehydrate → JSON →
+hydrate) · `node tools/offline-queue.mjs` · PostgreSQL 16.13 dựng lại từ 29
+migration
+
+### Trả lời câu hỏi mở đầu — **KHÔNG**, đo bằng số câu lệnh ra tới mạng
+
+Không đọc mã: dựng `QueryClient` thật, xếp lệnh ghi thật khi mất mạng, dehydrate
+đúng cách persister làm, hydrate vào một client **mới**, rồi **đếm câu lệnh rời
+khỏi client**.
+
+```
+khởi động lạnh, phiên = A        → 2 câu, cả hai mang user_id của A
+khởi động lạnh, phiên = B        → 0 câu
+khởi động lạnh, chưa biết phiên  → 0 câu
+phiên về CHẬM 300ms rồi mới là A → 2 câu, cả hai của A
+```
+
+Hai dòng giữa là điểm mấu chốt: **lệnh ghi của sai người không ra tới mạng lấy
+một câu**. Chain F đã chứng minh PostgreSQL từ chối bằng 42501 nếu nó có ra —
+lớp đó còn nguyên và độc lập. Đo lại ở vòng này trên cluster sạch, phát lại cả
+bảy loại lệnh ghi của A dưới phiên B:
+
+```
+water_logs · weight_logs · workout_sessions · meal_entries
+sleep_logs · body_measurements · biometric_samples
+---- accepted: 0   refused: 7   (tất cả 42501)
+---- và cùng câu đó dưới phiên của A: accepted: 1
+```
+
+**CLIENT PREVENTION và SERVER PREVENTION được đo riêng, và cả hai đều đứng.**
+
+### Vì sao thứ tự khởi tạo không phải một cuộc đua — và điều đó dựa vào đâu
+
+`PersistQueryClientProvider` nằm **ngoài** `AuthProvider` trong `_layout`, và
+`onSuccess` của nó gọi `resumePausedMutations()` ngay khi đọc xong cache — trước
+khi React biết ai đăng nhập. Trông như một cuộc đua, và không phải, vì một lý do
+đáng viết ra vì trước đây không chỗ nào trong repo nói: chốt ở đầu
+`applyOfflineWrite` hỏi `supabase.auth.getSession()`, và trong
+`@supabase/auth-js` **2.110.6** hàm đó `await this.initializePromise` trước khi
+trả lời. Nó **không thể** báo "chưa đăng nhập" chỉ vì đọc từ storage chưa xong.
+
+Đọc thẳng trong `node_modules`, không suy đoán:
+
+```js
+async getSession() {
+    await this.initializePromise;      // ← dòng quyết định
+    ...
+}
+```
+
+và trên đường phục hồi, một lần refresh **hỏng vì mạng** (`isAuthRetryableFetchError`)
+**không** xoá phiên — chỉ một refresh token bị máy chủ từ chối mới xoá. Nên khởi
+động lạnh khi đang offline vẫn có phiên, và hàng đợi của A không bị huỷ oan.
+
+Luật A của bộ dò ghim hành vi đó bằng một stand-in có `getSession()` chặn 300ms.
+Nếu về sau chốt danh tính đọc phiên **đồng bộ** — từ context React, từ một `let`
+ở phạm vi module — luật này đỏ, vì kết quả khi phiên về chậm sẽ khác kết quả khi
+phiên về nhanh.
+
+---
+
+### BUG-60 (P1). Một `kind` build này không biết được coi là **THÀNH CÔNG** — `UNKNOWN-MUTATION-REPLAY`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P1 |
+| **AUTH STATE** | đúng chủ, đã đăng nhập |
+| **MUTATION OWNER** | A |
+| **HYDRATION ORDER** | nạp lại xong → resume |
+| **REPLAY TRIGGER** | `onSuccess` của persister |
+| **NETWORK STATE** | online |
+| **STATUS** | đã sửa |
+
+**TRIGGER:** hàng đợi được ghi bởi một build, phát lại bởi build khác — rollback
+TestFlight, máy khôi phục từ backup, hoặc một `kind` từng tồn tại rồi được đổi
+tên.
+
+**EXPECTED:** từ chối rõ ràng, giữ lại việc chưa làm.
+
+**ACTUAL:** chạy thật qua client thật với đăng ký thật:
+
+```
+kind: 'telepathy'  →  status: success, số câu lệnh gửi đi: 0
+```
+
+**ROOT CAUSE:** `switch (w.kind)` vét cạn theo **kiểu TypeScript**, nên không có
+`default` — và thứ đọc từ đĩa **không có kiểu**. Nó rơi khỏi đáy `switch`,
+`applyOfflineWrite` trả `undefined`, React Query đọc đó là *đã xong*.
+
+Đây là kết cục **tệ nhất có thể**: việc của người dùng bị xoá và app ghi nhận là
+đã làm. Một thất bại ồn ào ít nhất còn để lại lệnh ghi trong hàng đợi.
+
+**FIX:** `unusableReason()` kiểm `userId` và `kind` **trước** mọi thứ khác, và
+một `throw new UnusableWriteError(...)` ở đáy `switch` — hai lớp cố ý: danh sách
+`KNOWN_KINDS` là lớp đọc được, câu `throw` là lớp không thể vượt qua nếu hai bên
+lệch nhau.
+
+---
+
+### BUG-61 (P2). Bản ghi hỏng cấu trúc bị thử lại như thời tiết — `MALFORMED-MUTATION-RETRIED`
+
+**TRIGGER:** `variables` thiếu, `null`, hoặc là một chuỗi; `userId` thiếu.
+
+**ACTUAL:** cả bốn ném `TypeError` từ trong thân hàm, và `permanentFailure`
+không nhận ra nó:
+
+```
+trước: variables = null → 4 lần thử, 0 câu lệnh, ~7 giây backoff
+sau:   variables = null → 1 lần thử, 0 câu lệnh
+```
+
+**ROOT CAUSE:** không có gì phân biệt *"lần này hỏng"* với *"cái này không bao
+giờ chạy được"*. Và vì cả hàng đợi dùng chung một `scope`, mọi lệnh ghi phía sau
+**đứng chờ** hết chừng ấy giây.
+
+**FIX:** `UnusableWriteError` được `permanentFailure` đọc là vĩnh viễn, cùng chỗ
+với `WrongAccountError` và các mã của PostgREST.
+
+**Lỗi mạng thật vẫn giữ nguyên bốn lần thử** — đo lại: `attempts 4, statements 4`.
+Đi ra khỏi vùng phủ sóng giữa chừng chính là thứ hàng đợi này tồn tại để chịu.
+
+---
+
+## Chain M — đã kiểm và **KHÔNG** phải lỗi
+
+Mười hai thứ, tất cả **chạy** chứ không đọc.
+
+**1. Nạp lại không cấp quyền.** Phiên B → 0 câu; chưa biết phiên → 0 câu.
+
+**2. Phiên về chậm không đổi kết quả** — 300ms vẫn ra đúng 2 câu của A.
+
+**3. Ba chỗ gọi resume không nhân đôi.** `focusManager`, `onlineManager` (cả hai
+do `QueryClient.mount()` đăng ký) và `onSuccess` của persister. Ba lượt tuần tự
+→ 2 câu; ba lượt **đồng thời** → 2 câu.
+
+**4. Chỉ có MỘT `new QueryClient()`** trong cả `query-client.ts` và `_layout.tsx`
+— luật I ghim lại. Hai client cùng nạp một cache sẽ phát lại hai lần.
+
+**5. `registerOfflineWrites` chạy ở phạm vi module**, ngay cạnh client nó dạy,
+nên hàm đã sẵn sàng trước khi persister đọc xong cache.
+
+**6. Thứ tự sống sót qua đĩa**, và **kể cả khi `scope` bị xoá khỏi bản lưu** —
+`setMutationDefaults` cấp lại lúc đăng ký. Đo với **độ trễ giảm dần** để "đúng
+thứ tự" chỉ có thể đúng nếu thật sự chạy nối tiếp: `w1,k70,w2,k71`. Bỏ `scope`
+khỏi đăng ký → `k71,w2,k70,w1`, đảo ngược.
+
+**7. Phiên đổi sang B **giữa lúc** phát lại**: câu đang bay hoàn tất dưới A
+(đúng — nó đã rời client khi phiên còn là A), và mọi câu còn lại bị từ chối. Không
+câu nào chạy dưới tên B.
+
+**8. Mất mạng lúc khởi động → 0 câu**, lệnh ghi ở trạng thái `pending`, chờ.
+
+**9. Dữ liệu lưu hỏng không làm `hydrate` ném.** Bảy dạng méo khác nhau, không
+dạng nào kéo sập lần khởi động. `MALFORMED-MUTATION-CRASH` không có ở đây.
+
+**10. `mutationKey` thiếu hoặc lạ → lỗi sạch, 0 câu lệnh.** React Query không có
+`mutationFn` cho khoá lạ, nên không có chuyện chạy **nhầm** hàm.
+
+**11. Phát lại sau khi mất phản hồi vẫn idempotent** — hai lần khởi động lạnh
+liên tiếp gửi 2 câu `upsert` mang **cùng một id do client sinh**. Đây là bảo
+đảm Chain F, đo lại qua đường khởi động lạnh.
+
+**12. Cache truy vấn của A nằm cạnh lệnh ghi của A, khởi động dưới B** → lệnh ghi
+vẫn 0 câu. Và khoá truy vấn có gắn user (`['profile', A]`), nên `useProfile()`
+của B đọc `['profile', B]` và không bao giờ thấy dữ liệu của A; `queryClient.clear()`
+của Chain E dọn nốt phần còn lại.
+
+**Điều gì đang lưu trên đĩa** — đọc thẳng từ bản dehydrate:
+
+```
+keys       : mutationKey, state, scope
+state keys : error, failureCount, failureReason, isPaused, status, variables, submittedAt
+mutationKey: ["offline-write"]
+variables  : { kind, userId, rowId, amountMl, date, at }
+isPaused   : true
+```
+
+Danh tính chủ sở hữu **có** nằm trong `variables.userId` — không phải token,
+không phải JWT. Chốt so nó với `session.user.id`, chứ **không** so "có token hay
+không". Chỉ những mutation đang `isPaused` mới được lưu (mặc định của
+`shouldDehydrateMutation`).
+
+---
+
+## Chain M — PRODUCT SEMANTICS REQUIRED
+
+### PS-1. Phiên hết hạn khi hàng đợi còn việc — giữ hay bỏ?
+
+Mã đang trả lời là **bỏ**: refresh token bị máy chủ từ chối → `SIGNED_OUT` →
+Chain E xoá cache mutation. Việc chưa gửi của A biến mất. Có thể đúng (không giữ
+việc của một phiên đã chết) hoặc sai (người dùng đăng nhập lại ngay và mất buổi
+tập). **KHÔNG tự chọn.**
+
+### PS-2. Đăng xuất chủ động khi còn việc chưa gửi
+
+Cùng cơ chế, nhưng người dùng **cố ý** bấm. Không màn nào cảnh báo "còn 3 việc
+chưa gửi". Có nên chặn, cảnh báo, hay im lặng bỏ? **KHÔNG tự chọn.**
+
+### PS-3. Không có phiên bản/di trú cho dữ liệu đã lưu
+
+`CACHE_BUSTER = 'v1'` vô hiệu hoá **toàn bộ** cache khi đổi, kể cả hàng đợi chưa
+gửi. Không có cơ chế di trú cho riêng mutation. Sau BUG-60 thì một bản ghi không
+đọc được **bị từ chối sạch** thay vì bị nuốt, nên rủi ro có trần — nhưng "bump
+buster có nên vứt việc chưa gửi không" vẫn là quyết định sản phẩm. **KHÔNG tự
+làm một hệ di trú.**
+
+### PS-4. Nhiều tài khoản trên một máy
+
+App không có chuyển tài khoản; đăng xuất rồi đăng nhập là đường duy nhất, và nó
+xoá hàng đợi. Nếu sau này có chuyển nhanh, hàng đợi phải gắn theo người dùng chứ
+không theo máy. **Chưa cần làm gì.**
+
+---
+
+## Chain M — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `permanentFailure` phân loại 5 loại lỗi |
+| **QueryClient runtime** | `@tanstack/query-core` **5.101.2 thật**: mutation cache, `execute`, `resumePausedMutations`, `mount()`/`unmount()`, scope nối tiếp |
+| **persistence/hydration** | vòng `dehydrate` → JSON → `hydrate` **thật**, vào một client mới, với `shouldDehydrateMutation` mặc định của persister |
+| **PostgreSQL** | 16.13, cluster sạch, 29 migration: 7 câu lệnh của A phát lại dưới B → **0 nhận, 7 từ chối 42501**; cùng câu dưới A → nhận |
+| **RLS** | như trên, đo riêng khỏi chốt client — hai lớp phòng thủ, hai bằng chứng |
+| **bộ dò** | 5 phép phá, mỗi phép đỏ đúng câu định trước rồi xanh lại |
+| **TypeScript** | `npx tsc --noEmit` sạch |
+| **cả bộ** | `node tools/check.mjs` — 103/103 |
+| **runtime iOS thật** | **KHÔNG**. `COLD-LAUNCH-BEHAVIOUR-PROVEN-IN-QUERY-CORE`, `DEVICE-COLD-LAUNCH-UNVERIFIED` — app chưa được khởi động trên iPhone, chưa tiến trình nào bị giết thật, Supabase và AsyncStorage là stand-in |
 | **tác động production** | **KHÔNG**. Không dữ liệu, không snapshot, không log |
 
 ---
