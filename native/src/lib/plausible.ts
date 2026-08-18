@@ -229,15 +229,80 @@ export function plausibleText(q: Quantity, text: string): boolean {
   return plausible(q, Number(t));
 }
 
+/** What is wrong with a stat somebody typed — nothing, nothing given, or not a body. */
+export type StatProblem = 'missing' | 'out-of-range';
+
+export interface StatReading {
+  /**
+   * The number to use, or `null`.
+   *
+   * Never a substitute. That is the whole point of this type existing rather
+   * than the screens writing `Number(text) || 70`: a blank height field and a
+   * height of 170 cm are different facts, and the second one is about a body.
+   */
+  value: number | null;
+  problem: StatProblem | null;
+}
+
+/**
+ * Read a typed stat without ever inventing one.
+ *
+ * ── the bug this exists for ──
+ *
+ * Onboarding computed the account's entire plan from
+ *
+ *     const w = Number(weightKg) || 70;
+ *     const h = Number(heightCm) || 170;
+ *
+ * and stored the result with `onboarding_completed: true`. Two things followed
+ * from that, both measured on the real `fitness-calc` chain:
+ *
+ *   - A cleared field became a 70 kg, 170 cm person. The screen showed an
+ *     empty box; the database got a body.
+ *   - Nothing checked the range, on the one screen where these numbers are
+ *     first entered. A height typed as `17` produced a 1,500 kcal/day target —
+ *     and worse, `proteinReferenceWeight` and `calcWaterTarget` both read
+ *     `height_cm < 100` as *"no height given"*, so the mistyped digit switched
+ *     two guards **off** instead of tripping anything. `edit-profile` had
+ *     validated the identical two fields against the identical bounds since
+ *     they were written.
+ *
+ * `required` is the difference between the two screens and is deliberate:
+ * *Edit profile* may legitimately be opened on a profile that has no height
+ * yet, and refusing to let somebody leave a field they never filled would be
+ * inventing a different way to be wrong. Onboarding is the moment the plan is
+ * built, so there it is required.
+ */
+export function readStat(q: Quantity, text: string, required: boolean): StatReading {
+  const t = text.trim();
+  if (t === '') return { value: null, problem: required ? 'missing' : null };
+  const n = Number(t);
+  if (!plausible(q, n)) return { value: null, problem: 'out-of-range' };
+  return { value: n, problem: null };
+}
+
 /**
  * The sentence shown under a refused field, or `null` when there is nothing
  * wrong. `template` carries `{min}`, `{max}` and `{unit}`.
+ *
+ * Both problems get the same sentence, and that reads correctly for either: a
+ * blank field and a 17 are both answered by "must be between 100 and 250 cm".
  */
-export function outOfRangeMessage(q: Quantity, text: string, template: string): string | null {
-  if (plausibleText(q, text)) return null;
+export function statMessage(q: Quantity, problem: StatProblem | null, template: string): string | null {
+  if (!problem) return null;
   const b = BOUNDS[q];
   return template
     .replace('{min}', String(b.min))
     .replace('{max}', String(b.max))
     .replace('{unit}', b.unit);
+}
+
+/**
+ * The sentence shown under a refused field, or `null` when there is nothing
+ * wrong. `template` carries `{min}`, `{max}` and `{unit}`.
+ *
+ * Blank is not refused here — see `readStat`'s `required`.
+ */
+export function outOfRangeMessage(q: Quantity, text: string, template: string): string | null {
+  return statMessage(q, readStat(q, text, false).problem, template);
 }

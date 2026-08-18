@@ -465,6 +465,8 @@ interface Translations {
   logBioSaved: string;
   /** Shown under a field whose value is outside anything a body produces. Carries {min}, {max}, {unit}. */
   outOfRange: string;
+  /** Refusing to work out a plan for a body nobody has described yet. */
+  statsRequired: string;
   /** Sleep stages adding up to more than the night itself. Carries {sum}, {total}. */
   sleepStagesOverrun: string;
 
@@ -1203,6 +1205,7 @@ const vi: Translations = {
   logBioResp: 'Nhịp thở (rpm)',
   logBioSaved: 'Đã lưu chỉ số sinh trắc!',
   outOfRange: 'Cần nằm trong khoảng {min}–{max} {unit}',
+  statsRequired: 'Cần chiều cao, cân nặng và ngày sinh hợp lệ trước khi tính',
   sleepStagesOverrun: 'Các giai đoạn cộng lại {sum} phút, dài hơn cả đêm ({total} phút)',
 
   logMealTitle: 'Ghi Bữa Ăn',
@@ -1922,6 +1925,7 @@ const en: Translations = {
   logBioResp: 'Respiratory rate (rpm)',
   logBioSaved: 'Biometrics saved!',
   outOfRange: 'Must be between {min} and {max} {unit}',
+  statsRequired: 'A valid height, weight and date of birth are needed first',
   sleepStagesOverrun: 'Stages add up to {sum} min, longer than the night itself ({total} min)',
 
   logMealTitle: 'Log Meal',

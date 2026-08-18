@@ -217,6 +217,7 @@ const STEPS = [
   ['trạng thái người dùng', 'node', ['tools/user-state.mjs']],
   ['thưởng thử thách', 'node', ['tools/challenge-reward.mjs']],
   ['trạng thái tích luỹ', 'node', ['tools/streak-challenge.mjs']],
+  ['hồ sơ và onboarding', 'node', ['tools/profile-onboarding.mjs']],
   ['lối vào màn hình', 'node', ['tools/entry-points.mjs']],
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],

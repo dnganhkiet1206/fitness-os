@@ -1,5 +1,7 @@
 // ASCND – Fitness calculation utilities
 
+import { plausible } from '@/lib/plausible';
+
 /** Mifflin-St Jeor BMR */
 export function calcBMR(weight_kg: number, height_cm: number, age: number, sex: 'male' | 'female' | 'other'): number {
   const base = 10 * weight_kg + 6.25 * height_cm - 5 * age;
@@ -177,6 +179,89 @@ export function calcWaterTarget(weight_kg: number, height_cm?: number): number {
   if (bmi < 30) return Math.round(weight_kg * perKg);
   const weightAtBmi30 = 30 * m * m;
   return Math.round(Math.max(weight_kg * 25, weightAtBmi30 * perKg));
+}
+
+/**
+ * A stat this chain will not compute without.
+ *
+ * Thrown rather than defaulted. Every caller of `calcPlan` has already been
+ * through `readStat` and cannot reach here, which is exactly why it throws: the
+ * one thing that must not happen quietly is this chain producing a number for a
+ * body nobody described.
+ */
+export class PlanInputError extends Error {
+  constructor(public readonly field: 'weight_kg' | 'height_cm' | 'age') {
+    super(`calcPlan: ${field} is not a measurement`);
+    this.name = 'PlanInputError';
+  }
+}
+
+export interface PlanInput {
+  weight_kg: number;
+  height_cm: number;
+  age: number;
+  sex: Sex;
+  goal: string;
+  activity_level: string;
+}
+
+/** Every target the app derives from a body, in the columns `profiles` stores them in. */
+export interface Plan {
+  /** Shown during onboarding, not stored. */
+  bmr: number;
+  /** Shown during onboarding, not stored. */
+  tdee: number;
+  tdee_target_kcal: number;
+  macro_protein_g: number;
+  macro_carbs_g: number;
+  macro_fat_g: number;
+  macro_fiber_g: number;
+  water_target_ml: number;
+}
+
+/**
+ * BMR → TDEE → goal-adjusted calories → macros → water, in one place.
+ *
+ * ── why this is one function ──
+ *
+ * This chain was written out twice, in `onboarding-flow.tsx` and in
+ * `edit-profile.tsx`'s *Recalculate*, and the two copies had already drifted:
+ * onboarding stood in `170` for a missing height and the recalculate button
+ * stood in `170` too but `175` three lines above it, in the same file, for the
+ * same column. Three defaults, two bodies, one person.
+ *
+ * Both copies also substituted. The substitution is now impossible to write
+ * here, because there is nothing to substitute *with*: an input that is not a
+ * measurement is refused, and the caller has to have asked somebody.
+ */
+export function calcPlan(i: PlanInput): Plan {
+  if (!Number.isFinite(i.weight_kg) || !plausible('weight_kg', i.weight_kg)) {
+    throw new PlanInputError('weight_kg');
+  }
+  if (!Number.isFinite(i.height_cm) || !plausible('height_cm', i.height_cm)) {
+    throw new PlanInputError('height_cm');
+  }
+  /* Not a `BOUNDS` quantity — an age is not a body measurement. The ceiling is
+     past the oldest documented human life (122) and the floor is the day
+     somebody is born, which `calcAge` reports as 0. */
+  if (!Number.isFinite(i.age) || i.age < 0 || i.age > 130) {
+    throw new PlanInputError('age');
+  }
+
+  const bmr = calcBMR(i.weight_kg, i.height_cm, i.age, i.sex);
+  const tdee = calcTDEE(bmr, i.activity_level);
+  const tdee_target_kcal = calcTargetCalories(tdee, i.goal, i.sex);
+  const macros = calcMacros(tdee_target_kcal, i.weight_kg, i.goal, i.height_cm);
+  return {
+    bmr,
+    tdee,
+    tdee_target_kcal,
+    macro_protein_g: macros.protein_g,
+    macro_carbs_g: macros.carbs_g,
+    macro_fat_g: macros.fat_g,
+    macro_fiber_g: macros.fiber_g,
+    water_target_ml: calcWaterTarget(i.weight_kg, i.height_cm),
+  };
 }
 
 /** Age from DOB (parsed as local so the birthday doesn't shift a day in negative-offset timezones) */

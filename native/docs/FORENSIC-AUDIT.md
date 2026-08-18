@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (100 bước). Ngày rà: 2026-08-17.
+Bộ kiểm: `node tools/check.mjs` (101 bước). Ngày rà: 2026-08-18.
 
 ---
 
@@ -3029,6 +3029,307 @@ nên thu hồi không là quyết định sản phẩm; đề bài cấm tự b�
 | **đồng thời** | **KHÔNG** đo ở vòng này — phần trả tiền đã được Chain D đo (khoá theo người dùng trước khi đọc số dư) và `ref_key` là thứ chặn trùng |
 | **tác động production** | **KHÔNG**. Repo không có dữ liệu production, snapshot hay log kiểm toán nào |
 | **runtime iOS thật** | **KHÔNG** |
+
+---
+
+## Vòng 12 — Chain K: auth.users → profiles → onboarding → mọi con số dẫn xuất
+
+**Câu hỏi mở đầu:** *một hồ sơ thiếu, cũ, méo, mặc định hoặc của người khác có
+thể khiến logic fitness phía sau cho ra một kết quả **tự tin nhưng sai** không?*
+
+**Bất biến:** một giá trị fitness dẫn xuất KHÔNG BAO GIỜ được lặng lẽ coi thông
+tin hồ sơ còn thiếu là một giá trị thật của người dùng.
+
+**VERIFICATION:** `node tools/check.mjs` (101 bước) · `npx tsc --noEmit` ·
+`node tools/profile-onboarding.mjs` (CHẠY THẬT `readStat` + `calcPlan`) ·
+PostgreSQL 16.13 dựng lại từ 29 migration, đăng nhập bằng
+`SET LOCAL ROLE authenticated` + `request.jwt.claim.sub`
+
+### Trả lời câu hỏi mở đầu — bằng chứng, không suy đoán
+
+| loại hồ sơ | có làm hỏng số dẫn xuất không? | bằng chứng |
+| --- | --- | --- |
+| **của người khác** | **KHÔNG** | đo trên Postgres thật: B → hồ sơ A ra `0 rows` ở SELECT, `0` ở UPDATE, `0` ở DELETE; `INSERT` mang `user_id` của A và cả việc chuyển sở hữu dòng của chính mình sang A đều ra `new row violates row-level security policy`. Policy UPDATE **không có** `WITH CHECK` riêng, nên Postgres áp chính biểu thức `USING` lên dòng mới — đó là thứ chặn đòn chuyển sở hữu |
+| **thiếu / dở dang** | **KHÔNG** | `onboarding_completed` có `DEFAULT false`, `handle_new_user` chỉ ghi `(user_id, name)` nên để nguyên false, `_layout` render `OnboardingFlow` khi nó false, và `finish` ghi **mọi cột và cả cờ trong một upsert** — không có cửa sổ nửa vời |
+| **không có dòng nào** | **KHÔNG** | `useProfile` dùng `.single()`, nên 0 dòng là `PGRST116`, là `profileFailed`, là màn `LoadFailed` có nút thử lại — hỏng công khai, không phải mặc định thầm lặng |
+| **méo (ngoài khoảng)** | **CÓ** | xem BUG-51 |
+| **mặc định thay cho thiếu** | **CÓ** | xem BUG-52, BUG-53, BUG-54 |
+
+Đo trên DB thật, dòng mà `handle_new_user` tạo ra:
+
+```
+weight_kg 70 | height_cm 170 | goal maintain | activity_level moderate
+tdee_target_kcal 2200 | macro_protein_g 150 | onboarding_completed f | dob NULL
+```
+
+Mọi cột đều có `DEFAULT` trừ `dob`. Bản thân điều đó **không** phải lỗi — cổng
+onboarding chặn không cho ai vào app với dòng đó. Lỗi nằm ở hai màn hình **ghi**
+lên nó.
+
+Và DB **không kiểm gì cả**. Đo thật, đăng nhập như người dùng thường:
+
+```sql
+UPDATE profiles SET goal='bay-len-troi', activity_level='sieu-nhan',
+  sex='helicopter', weight_kg=-500, height_cm=0, dob='2199-01-01',
+  tdee_target_kcal=999999, macro_fat_g=-9, name=repeat('x',5000) …
+→ UPDATE 1, mọi giá trị nằm nguyên trong bảng
+```
+
+Không có một `CHECK` nào trên `profiles`. Đây là lý do tầng ứng dụng phải là chỗ
+kiểm — và tại sao BUG-51 nặng hơn vẻ ngoài của nó.
+
+---
+
+### BUG-51 (P1). Màn onboarding nhận mọi con số làm số đo cơ thể — `UNVALIDATED-BODY-AT-ACCOUNT-CREATION`
+
+**TRIGGER:** cài app, ở bước 1 gõ chiều cao `17` (hoặc `70`, hoặc cân nặng
+`700`), bấm Tiếp tới hết, Hoàn tất.
+
+**ROOT CAUSE:** `onboarding-flow.tsx` đọc hai ô bằng
+`Number(heightCm) || 170` / `Number(weightKg) || 70` và không gọi `plausible`
+lấy một lần — trong khi `edit-profile.tsx` đã kiểm **đúng hai cột đó, đúng bảng
+`BOUNDS` đó, đúng hàm `outOfRangeMessage` đó** từ ngày nó được viết. Màn duy
+nhất **tạo ra** con số là màn duy nhất không kiểm.
+
+Chạy thật chuỗi `fitness-calc` (`tools/profile-onboarding.mjs`):
+
+```
+70 kg / 170 cm → 2.539 kcal · 126 P · 349 C · 71 F ·  2.450 ml   ← đúng
+70 kg /  17 cm → 1.500 kcal · 126 P · 155 C · 42 F ·  2.450 ml
+70 kg /  70 cm → 1.570 kcal · 126 P · 168 C · 44 F ·  2.450 ml
+700 kg / 170 cm → 12.304 kcal · 156 P · 2151 C · 342 F · 17.500 ml
+```
+
+Một chữ số gõ nhầm lấy đi **gần một nghìn kcal mỗi ngày** và không nói gì. Và nó
+**tệ hơn vẻ ngoài**: `proteinReferenceWeight` lẫn `calcWaterTarget` đều đọc
+`height_cm < 100` là *"KHÔNG có chiều cao"*, nên con số nước 2.450 ml ở trên là
+nhánh **chưa hiệu chỉnh**, còn trần đạm theo BMI 30 thì không bao giờ áp. Một
+chữ số sai **TẮT hai cái chốt** chứ không chạm vào chúng — đó là hình dạng nguy
+hiểm nhất của lỗi kiểm tra đầu vào: nó không kêu, nó làm phần còn lại im theo.
+
+Kết quả đi thẳng vào `profiles` cùng `onboarding_completed: true`, rồi thành
+vòng calo trên Today, ba vòng macro, mục tiêu nước, và về sau là điểm xuất phát
+của `adaptiveTDEE`.
+
+**FIX:** `readStat()` trong `lib/plausible.ts` — đọc một ô đã gõ mà **không bao
+giờ bịa** — cộng với `calcPlan()` trong `lib/fitness-calc.ts`, thứ **từ chối**
+một số đo không phải số đo thay vì thay thế nó. Onboarding khoá nút Tiếp ở bước
+0 và hiện đúng câu báo lỗi mà `edit-profile` vẫn hiện.
+
+**REGRESSION:** `tools/profile-onboarding.mjs` luật B. Bỏ chốt height ra khỏi
+`calcPlan` → đỏ với đúng những con số của bản đã ship (`1500/…` cho 17 cm,
+`1570/…` cho 70 cm). Đưa upsert về `Number(heightCm) || 170` → luật D và F đỏ.
+
+---
+
+### BUG-52 (P1). Ô để trống thành một cơ thể 70 kg / 170 cm — `BLANK-FIELD-BECOMES-A-BODY`
+
+**TRIGGER:** ở bước 1 xoá trắng ô chiều cao (nó vốn có sẵn `170`), đi tiếp,
+Hoàn tất.
+
+**ROOT CAUSE:** cùng một dòng `Number(heightCm) || 170`. Màn hình hiện một ô
+rỗng; cơ sở dữ liệu nhận một cơ thể. Không có gì ở giữa nói rằng con số đó là
+app tự nghĩ ra.
+
+Đây chính là bất biến của vòng này, viết ra thành mã: *một ô đã bị xoá trắng* và
+*một người cao 170 cm* là hai sự thật khác nhau, và cái thứ hai là điều app nói
+với người dùng về chính họ.
+
+**FIX:** như trên. `readStat(q, text, true)` trả `{ value: null, problem:
+'missing' }`, và không có gì phía sau nhận `null` làm số đo.
+
+**REGRESSION:** luật A. Cho `readStat` bịa lại mặc định khi gặp ô trống → đỏ
+ngay dòng đầu, với đúng giá trị `170/null`.
+
+---
+
+### BUG-53 (P2). Sửa hồ sơ mở ra bằng những con số bịa, và một lần bấm Lưu biến chúng thành số đo — `INVENTED-DEFAULT-BECOMES-STORED-FACT`
+
+**TRIGGER:** để trống một cột số (ví dụ chiều cao) rồi Lưu — hôm nay được phép,
+`Number('') || null` ghi `NULL`. Mở lại Sửa hồ sơ: ô hiện `175`. Bấm Lưu.
+
+**ROOT CAUSE:** `edit-profile.tsx` nạp form bằng `profile.height_cm ?? 175`,
+`weight_kg ?? 70`, `tdee_target_kcal ?? 2200`, `macro_protein_g ?? 150`,
+`macro_carbs_g ?? 250`, `macro_fat_g ?? 70`, `macro_fiber_g ?? 30`,
+`water_target_ml ?? 2500`, `sleep_target_hours ?? 8` — và `EMPTY` (trạng thái
+form **trước khi** hồ sơ về) mang sẵn đúng bộ đó. Không có gì phân biệt "app
+đoán" với "người dùng khai": sau một lần Lưu thì không còn phân biệt được nữa,
+kể cả bằng cách đọc bảng.
+
+Bằng chứng rằng chúng là số bịa nằm ngay trong chính file: **`175`** ở phần nạp
+form, **`170`** ở `recalcTargets` mười hai dòng dưới, **`170`** lần nữa ở
+onboarding. Ba con số cho một cột nghĩa là không con số nào là của ai cả.
+
+**FIX:** `numText()` — cột `null` mở ra thành ô trống. Ô trống vốn đã là trạng
+thái hợp lệ ở màn này (`outOfRangeMessage` không phàn nàn, `Number('') || null`
+ghi `null`), nên bản sửa chỉ là thôi nói dối ở chỗ nạp.
+
+Bốn cột **giữ nguyên `??`** một cách có chủ ý: `sex`, `goal`, `activity_level`,
+`units_*`. Chúng là lựa chọn hữu hạn hiển thị bằng chip, cột nào cũng có
+`DEFAULT` trong migration nên `handle_new_user` không bao giờ để chúng `null` —
+nhánh `??` đó không bao giờ chạy, và một lưới chip không chọn gì là một màn hình
+tệ hơn.
+
+**REGRESSION:** luật E. Trả `height_cm` về `String(profile.height_cm ?? 175)` →
+đỏ ở cả luật E lẫn luật F.
+
+---
+
+### BUG-54 (P1). Nút *Tính lại* dựng cả thực đơn cho một cơ thể không ai mô tả — `RECALC-FROM-SUBSTITUTED-STATS`
+
+**TRIGGER:** mở Sửa hồ sơ trên một hồ sơ thiếu chiều cao/cân nặng/ngày sinh, bấm
+*Tính lại*, bấm Lưu.
+
+**ROOT CAUSE:** `recalcTargets` bắt đầu bằng ba lần thay thế —
+`Number(form.weight_kg) || 70`, `|| 170`, và `form.dob ? calcAge(form.dob) : 30`
+— rồi ghi kết quả vào form, và từ form vào hồ sơ. Một thực đơn calo, macro và
+nước **đầy đủ** cho một người 70 kg, 170 cm, 30 tuổi, trình bày như *mục tiêu đã
+tính lại của chính bạn*. Đo được: 2.539 kcal/ngày cho một hồ sơ trống rỗng.
+
+Nút này khác BUG-53 ở chỗ nó không chỉ hiện một số bịa — nó **suy ra** năm sáu
+con số nữa từ số bịa đó, và đó là những con số người ta ăn theo.
+
+**FIX:** từ chối. `readStat(..., true)` cho cả hai số đo cộng với `!form.dob`,
+và nếu thiếu thì `toast.error(i18n.statsRequired)` nói thiếu gì. Ở đây không có
+con số nào để lùi về, vì một con số để lùi về **chính là lỗi**.
+
+**REGRESSION:** luật E. Thay ba lần substitute vào lại → đỏ ở luật E (cả hai
+mệnh đề: không còn đòi đủ, và từ chối trong im lặng) lẫn luật F.
+
+---
+
+### Bản sửa gốc dùng chung — một chuỗi, một ý kiến về "số đo là gì"
+
+Bốn mục trên là **một** nguyên nhân gốc nhìn từ bốn phía: chuỗi BMR → TDEE →
+kcal → macro → nước được **chép tay hai lần** (onboarding và *Tính lại*), và hai
+bản chép đã lệch nhau rồi — đó là lý do có ba mặc định cho một cột. Nên bản sửa
+không phải bốn miếng vá:
+
+| chỗ | trước | sau |
+| --- | --- | --- |
+| `lib/plausible.ts` | `BOUNDS` + `plausible` (chỉ `edit-profile` dùng) | thêm `readStat` — đọc mà không bịa — và `statMessage`; `outOfRangeMessage` viết lại **trên** chúng nên chỉ còn một chỗ định dạng câu |
+| `lib/fitness-calc.ts` | năm hàm rời | thêm `calcPlan` — cả chuỗi, một chỗ — **ném** `PlanInputError` chứ không thay thế |
+| `onboarding-flow.tsx` | `Number(x) \|\| 170`, không kiểm, không khoá | `readStat(..., true)`, `plan` là `null` khi thiếu, nút Tiếp bước 0 khoá và nói vì sao, upsert ghi `height.value`/`weight.value` và `plan.*` |
+| `edit-profile.tsx` | `?? 175`, chuỗi chép tay, ba lần substitute | `numText`, `calcPlan`, *Tính lại* từ chối |
+
+`tools/profile-onboarding.mjs` luật F cấm cả hai hình dạng cũ quay lại ở **bất
+kỳ** file nào trong `src`: gọi thẳng một hàm nhận một cơ thể (`calcBMR`,
+`calcMacros`, `calcWaterTarget`, `proteinReferenceWeight`) ngoài
+`fitness-calc.ts`, và cú pháp `weight_kg … || 70` / `height_cm … ?? 175`.
+`|| 0` **cố ý không bị bắt** — 0 là cách vài chỗ nói "không có chiều cao", và đó
+là câu trả lời trung thực.
+
+**Anchor drift:** `tools/nutrition-targets.mjs` đỏ ngay sau bản sửa, vì nó
+transpile mỗi `fitness-calc.ts` và `calcPlan` nay import bảng `BOUNDS`. Đã
+**neo chặt hơn** (dịch kèm `plausible.ts`, nối import bằng tay, chấp nhận
+TS2307 như các công cụ khác) chứ không nới.
+
+---
+
+## Chain K — đã kiểm và **KHÔNG** phải lỗi
+
+Ghi lại để không ai đi lại đúng những đường này.
+
+**1. RLS của `profiles` kín.** Đo thật, không đọc code: sáu đòn (B SELECT / B
+UPDATE / B DELETE / B INSERT mang `user_id` của A / B chuyển dòng của mình sang
+A / tham số `user_id` trong câu ghi) đều bị chặn. `profiles_user_id_key
+UNIQUE (user_id)` chặn hồ sơ thứ hai, `ON DELETE CASCADE` gắn với `auth.users`.
+Policy UPDATE không có `WITH CHECK` riêng — và **đó là đúng**: Postgres áp
+`USING` lên dòng mới khi thiếu `WITH CHECK`, nên đòn chuyển sở hữu bị chặn bằng
+chính điều khoản đó.
+
+**2. Cổng onboarding không có cửa sổ nửa vời.** `finish` ghi mọi cột **và**
+`onboarding_completed: true` trong **một** `upsert` với `onConflict: 'user_id'`.
+Không có đường nào để tồn tại một hồ sơ "đã xong nhưng thiếu".
+
+**3. Hồ sơ cũ trong cache không rò sang người khác.** Khoá là
+`['profile', user?.id]` — theo người dùng — và Chain E đã xoá cache khi đăng
+xuất (`clearPersistedCache` → `queryClient.clear()`). Đã kiểm lại, vẫn còn.
+
+**4. `useUnits()` đọc đơn vị **từ hồ sơ**, không từ một kho riêng**, nên không
+có chuyện hai nơi bất đồng về kg/lbs. Và cổng ở `_layout` chờ truy vấn hồ sơ
+**xong hoặc hỏng** trước khi render, nên không màn nào quy đổi bằng đơn vị mặc
+định trong lúc hồ sơ chưa về.
+
+**5. Đổi đơn vị trong Sửa hồ sơ quy đổi đúng.** `form.weight_kg` luôn là mét hệ;
+ô hiển thị là bản quy đổi; đổi chip đọc lại từ giá trị mét hệ. 154 lb không có
+đường nào thành 154 kg.
+
+**6. Ngày sinh bị chặn ở cả hai màn.** `maximumDate={new Date()}` ở cả
+`onboarding-flow` lẫn `edit-profile`. Tuổi âm **ghi thẳng vào DB thì được**
+(`dob='2199-01-01'` → `UPDATE 1`), và bản cũ quy nó ra **4.081 kcal**; nay
+`calcPlan` từ chối. Không màn nào tạo ra được nó.
+
+**7. Mục tiêu thử thách không tụt về 0 khi cột `null`.**
+`Number(profile?.sleep_target_hours) || 8` và `|| 2500` lùi về mặc định thật chứ
+không phải 0, nên `sleep_7`/`water_7` không thể tự thắng. (Đây là một `||` với
+số dương và **không** bị luật F bắt, vì luật F chỉ nhắm hai cột số đo cơ thể.)
+
+**8. `syncProfileWeight` không kiểm khoảng — nhưng không có lối vào nào sai.**
+Hai chỗ gọi là `useLogWeight` (ô cân nặng trên Today đã kiểm `plausible`) và
+phát lại offline của chính lệnh ghi đó. Không có hậu quả sai nào đo được, nên
+**không sửa**: đề bài cấm bịa ra lỗi.
+
+**9. `calcTargetCalories` ở `smart-goals.tsx` **không** phải bản chép thứ ba của
+chuỗi.** Nó áp hệ số mục tiêu lên một TDEE **đo được** từ `adaptiveTDEE`, thứ
+không hề chạm tới chiều cao hay cân nặng. Vì thế luật F chỉ cấm bốn hàm **nhận
+một cơ thể**, không cấm `calcTDEE`/`calcTargetCalories`.
+
+---
+
+## Chain K — PRODUCT SEMANTICS REQUIRED
+
+### PS-1. Vòng calo hiện `2.200` khi hồ sơ không có mục tiêu — nên hiện gì?
+
+`calorieTargetFor(null)` → **2.200**, `macroTargetsFor(null)` →
+`{protein:150, carbs:250, fat:70, fiber:30}`. Chạy thật, không đọc code. Đây là
+đúng cùng một hình dạng với BUG-52/53, nhưng ở **tầng hiển thị**: không có gì bị
+ghi xuống, và sau các bản sửa trên thì một cột `null` chỉ tới được bằng cách
+người dùng tự xoá trắng ô rồi Lưu.
+
+Câu hỏi sản phẩm: một vòng calo **không có mục tiêu** nên hiện `2.200 kcal`
+(một con số app tự nghĩ, trông y hệt một mục tiêu thật), hay hiện `—` kèm lối
+vào Sửa hồ sơ? Cả hai đều biểu diễn được. **KHÔNG tự chọn.**
+
+### PS-2. Ngày sinh mặc định `2000-01-01` trong onboarding
+
+Ô ngày sinh mở sẵn ở `2000-01-01`, và không có cách nào biết người dùng đã chạm
+vào nó hay chưa. Ai bấm thẳng qua sẽ được tính BMR theo **26 tuổi**. Khác với
+chiều cao/cân nặng, con số này **hiện rõ trên spinner** suốt bước 1, nên nó nằm
+giữa "mặc định thấy được" và "giá trị bịa". Bắt buộc phải chạm vào là một quyết
+định UX. **KHÔNG tự chọn.**
+
+### PS-3. Sửa hồ sơ ghi cả danh sách cột, `weight-sync` ghi một cột
+
+Mở Sửa hồ sơ → form chụp `weight_kg` lúc đó → trong lúc form đang mở,
+`syncProfileWeight` ghi một lần cân mới → bấm Lưu ghi đè bằng số cũ. Không có
+CAS, không có phát hiện xung đột (khác `daily_logs` sau Chain I).
+
+Đây là **lost update** thật, nhưng con số bị ghi vào là một con số **thật của
+chính người đó** đang hiển thị trên màn hình họ vừa bấm Lưu — không phải một số
+bịa, nên nó không vi phạm bất biến của vòng này. Sửa nó cần một quyết định: Lưu
+nên **từ chối** khi hồ sơ đã đổi (như `daily_logs`), hay nên ghi từng ô đã sửa?
+**KHÔNG tự chọn.**
+
+### PS-4. Không có `CHECK` nào trên `profiles`
+
+Mọi kiểm tra là ở client. Một script gọi thẳng PostgREST vẫn ghi được
+`goal='bay-len-troi'`, `weight_kg=-500`, `name` dài 5.000 ký tự vào **hồ sơ của
+chính nó**. Chéo tài khoản thì không (mục 1 ở trên), nên phạm vi là tự hại. Đưa
+`CHECK` xuống DB là một migration thay đổi hợp đồng ghi của mọi client hiện có
+— quyết định sản phẩm, không phải bản sửa lỗi. **KHÔNG tự làm.**
+
+---
+
+## Chain K — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `readStat` và `calcPlan` chạy thật qua 30 ca; `nutrition-targets.mjs` quét lại 401.940 hồ sơ sau khi `fitness-calc` đổi |
+| **PostgreSQL đã đo** | 16.13 từ 29 migration: 6 đòn chéo tài khoản trên `profiles`, dòng `handle_new_user` sinh ra, và một `UPDATE` toàn giá trị vô lý được bảng nhận trọn |
+| **đồng thời** | **KHÔNG** đo ở vòng này — xung đột ghi hồ sơ nằm ở PS-3 và cần quyết định sản phẩm trước |
+| **tác động production** | **KHÔNG**. Repo không có dữ liệu production, snapshot hay log kiểm toán nào. Không có khẳng định nào về người dùng thật |
+| **runtime iOS thật** | **KHÔNG**. Không màn hình nào được chạy trên máy; luật D và E đọc mã của hai màn đó, không bấm được nút nào |
 
 ---
 

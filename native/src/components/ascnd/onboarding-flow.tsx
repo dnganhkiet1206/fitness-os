@@ -42,17 +42,11 @@ import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  calcAge,
-  calcBMR,
-  calcMacros,
-  calcTargetCalories,
-  calcTDEE,
-  calcWaterTarget,
-} from '@/lib/fitness-calc';
+import { calcAge, calcPlan } from '@/lib/fitness-calc';
 import { isHealthKitAvailable, requestHealthPermissions } from '@/lib/health';
 import { getLegal, type LegalDoc } from '@/lib/legal-content';
 import { localDateStr } from '@/lib/local-date';
+import { readStat, statMessage } from '@/lib/plausible';
 import { requestNotificationPermission } from '@/lib/notifications';
 import { displayVolume, volumeLabel } from '@/lib/units';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -159,15 +153,46 @@ export function OnboardingFlow() {
     setNotifyGranted(await requestNotificationPermission());
   };
 
-  // Live targets (web auto-calc box)
-  const w = Number(weightKg) || 70;
-  const h = Number(heightCm) || 170;
+  /*
+    ── the two numbers the whole account is built from ──
+
+    `Number(weightKg) || 70` and `Number(heightCm) || 170` used to stand here,
+    and between them they did both halves of the same damage. A cleared field
+    became a 70 kg, 170 cm person without saying so, and a typo was accepted at
+    face value: measured on this exact chain, a height typed as `17` prescribes
+    1,500 kcal a day, and one typed as `70` prescribes 1,570 instead of 2,539 —
+    a thousand calories a day, arrived at silently. A weight typed as `700`
+    prescribes 12,304 kcal and 17.5 litres of water.
+
+    None of it announces itself, because `proteinReferenceWeight` and
+    `calcWaterTarget` both read a height under 100 cm as *"no height was
+    given"*: the mistyped digit turns their guards off rather than tripping
+    them, and the plan comes out looking like any other plan.
+
+    `edit-profile` has validated these same two fields against these same
+    bounds since it was written. This screen — the one that decides what the
+    numbers are in the first place, and stores them with
+    `onboarding_completed: true` — did not.
+  */
+  const height = readStat('height_cm', heightCm, true);
+  const weight = readStat('weight_kg', weightKg, true);
+  const heightError = statMessage('height_cm', height.problem, i18n.outOfRange);
+  const weightError = statMessage('weight_kg', weight.problem, i18n.outOfRange);
+  const statsBad = height.value === null || weight.value === null;
+
+  // Live targets (web auto-calc box) — null until there is a body to compute for
   const age = calcAge(localDateStr(dob));
-  const bmr = calcBMR(w, h, age, sex as 'male' | 'female' | 'other');
-  const tdee = calcTDEE(bmr, activityLevel);
-  const targetKcal = calcTargetCalories(tdee, goal, sex as 'male' | 'female' | 'other');
-  const macros = calcMacros(targetKcal, w, goal, h);
-  const waterTarget = calcWaterTarget(w, h);
+  const plan =
+    statsBad
+      ? null
+      : calcPlan({
+          weight_kg: weight.value!,
+          height_cm: height.value!,
+          age,
+          sex: sex as 'male' | 'female' | 'other',
+          goal,
+          activity_level: activityLevel,
+        });
   const sleepHours = (() => {
     const bedMin = bedtime.getHours() * 60 + bedtime.getMinutes();
     const wakeMin = waketime.getHours() * 60 + waketime.getMinutes();
@@ -190,14 +215,20 @@ export function OnboardingFlow() {
   const finish = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
+      /* The Next button on step 0 makes this unreachable. It is here anyway
+         because the row this writes is the one every later number is derived
+         from, and "unreachable" is a claim about a screen, not about a write. */
+      if (!plan || height.value === null || weight.value === null) {
+        throw new Error(i18n.statsRequired);
+      }
       const { error } = await supabase.from('profiles').upsert(
         {
           user_id: user.id,
           name: name.trim() || 'Athlete',
           sex,
           dob: localDateStr(dob),
-          height_cm: h,
-          weight_kg: w,
+          height_cm: height.value,
+          weight_kg: weight.value,
           goal,
           activity_level: activityLevel,
           training_level: trainingLevel,
@@ -206,12 +237,12 @@ export function OnboardingFlow() {
           disliked_foods: dislikedFoods
             ? parseDislikes(dislikedFoods)
             : [],
-          tdee_target_kcal: targetKcal,
-          macro_protein_g: macros.protein_g,
-          macro_carbs_g: macros.carbs_g,
-          macro_fat_g: macros.fat_g,
-          macro_fiber_g: macros.fiber_g,
-          water_target_ml: waterTarget,
+          tdee_target_kcal: plan.tdee_target_kcal,
+          macro_protein_g: plan.macro_protein_g,
+          macro_carbs_g: plan.macro_carbs_g,
+          macro_fat_g: plan.macro_fat_g,
+          macro_fiber_g: plan.macro_fiber_g,
+          water_target_ml: plan.water_target_ml,
           sleep_target_hours: sleepHours,
           sleep_target_bedtime: timeToHHMM(bedtime),
           sleep_target_waketime: timeToHHMM(waketime),
@@ -347,7 +378,7 @@ export function OnboardingFlow() {
                   <View style={styles.halfField}>
                     <Field label={`${i18n.settingsHeight} (cm)`}>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, heightError && styles.inputBad]}
                         keyboardType="number-pad"
                         value={heightCm}
                         onChangeText={setHeightCm}
@@ -357,7 +388,7 @@ export function OnboardingFlow() {
                   <View style={styles.halfField}>
                     <Field label={`${i18n.settingsWeight} (kg)`}>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, weightError && styles.inputBad]}
                         keyboardType="decimal-pad"
                         value={weightKg}
                         onChangeText={setWeightKg}
@@ -365,6 +396,8 @@ export function OnboardingFlow() {
                     </Field>
                   </View>
                 </View>
+                {heightError ? <Text style={styles.fieldError}>{heightError}</Text> : null}
+                {weightError ? <Text style={styles.fieldError}>{weightError}</Text> : null}
               </>
             )}
 
@@ -500,9 +533,9 @@ export function OnboardingFlow() {
                     <Text style={styles.calcTitle}>{i18n.onboardingAutoCalc}</Text>
                   </View>
                   <View style={styles.calcGrid}>
-                    <CalcItem label="BMR" value={`${bmr} kcal`} />
-                    <CalcItem label="TDEE" value={`${tdee} kcal`} />
-                    <CalcItem label={i18n.target} value={`${targetKcal} kcal`} highlight />
+                    <CalcItem label="BMR" value={plan ? `${plan.bmr} kcal` : '—'} />
+                    <CalcItem label="TDEE" value={plan ? `${plan.tdee} kcal` : '—'} />
+                    <CalcItem label={i18n.target} value={plan ? `${plan.tdee_target_kcal} kcal` : '—'} highlight />
                     <CalcItem label={i18n.navSleep} value={`${sleepHours}h`} />
                   </View>
                 </View>
@@ -582,11 +615,14 @@ export function OnboardingFlow() {
                     <Text style={styles.calcTitle}>{i18n.onboardingSummary}</Text>
                   </View>
                   <View style={styles.calcGrid}>
-                    <CalcItem label="Calories" value={`${targetKcal} kcal`} highlight />
-                    <CalcItem label="Protein" value={`${macros.protein_g}g`} />
-                    <CalcItem label="Carbs" value={`${macros.carbs_g}g`} />
-                    <CalcItem label="Fat" value={`${macros.fat_g}g`} />
-                    <CalcItem label={i18n.navWater} value={`${displayVolume(waterTarget, vUnit)} ${volumeLabel(vUnit)}`} />
+                    <CalcItem label="Calories" value={plan ? `${plan.tdee_target_kcal} kcal` : '—'} highlight />
+                    <CalcItem label="Protein" value={plan ? `${plan.macro_protein_g}g` : '—'} />
+                    <CalcItem label="Carbs" value={plan ? `${plan.macro_carbs_g}g` : '—'} />
+                    <CalcItem label="Fat" value={plan ? `${plan.macro_fat_g}g` : '—'} />
+                    <CalcItem
+                      label={i18n.navWater}
+                      value={plan ? `${displayVolume(plan.water_target_ml, vUnit)} ${volumeLabel(vUnit)}` : '—'}
+                    />
                     <CalcItem label="Supps" value={`${selectedSupps.size}`} />
                   </View>
                 </View>
@@ -692,15 +728,19 @@ export function OnboardingFlow() {
 
           {step < TOTAL_STEPS - 1 ? (
             <PressScale
-              style={styles.nextBtn}
+              /* Step 0 is where height and weight are typed, and every number
+                 the account gets is derived from them. Nothing past this step
+                 is worth filling in for a body that has not been described. */
+              style={[styles.nextBtn, step === 0 && statsBad && styles.disabled]}
+              disabled={step === 0 && statsBad}
               onPress={goNext}>
               <Text style={styles.nextText}>{i18n.onboardingNext}</Text>
               <Icon icon={ChevronRight} size={16} color={colors.primaryForeground} />
             </PressScale>
           ) : (
             <PressScale
-              style={[styles.nextBtn, (!termsAccepted || finish.isPending) && styles.disabled]}
-              disabled={!termsAccepted || finish.isPending}
+              style={[styles.nextBtn, (!termsAccepted || statsBad || finish.isPending) && styles.disabled]}
+              disabled={!termsAccepted || statsBad || finish.isPending}
               onPress={() => finish.mutate()}>
               {finish.isPending ? (
                 <ActivityIndicator color={colors.primaryForeground} />
@@ -925,6 +965,10 @@ const styles = StyleSheet.create({
     color: colors.foreground,
     fontSize: 16,
   },
+  /* Same two rules as `edit-profile`, which has always shown these — the point
+     of this round is that one screen refused a bad stat and the other did not. */
+  inputBad: { borderColor: colors.readinessRed, borderWidth: 1 },
+  fieldError: { ...type.footnote, color: colors.readinessRed },
   rowFields: { flexDirection: 'row', gap: spacing.md },
   halfField: { flex: 1 },
   pickerWrap: {

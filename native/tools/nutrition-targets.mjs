@@ -36,7 +36,7 @@
  * (3) fire, and (1) is what stops (3) from firing at the other end.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -45,12 +45,22 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const problems = [];
 
 const out = mkdtempSync(path.join(tmpdir(), 'nutri-'));
-execFileSync(
-  'npx',
-  ['tsc', 'src/lib/fitness-calc.ts', '--ignoreConfig', '--outDir', out,
-   '--module', 'esnext', '--target', 'es2020', '--moduleResolution', 'bundler', '--skipLibCheck'],
-  { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
-);
+try {
+  execFileSync(
+    'npx',
+    ['tsc', 'src/lib/fitness-calc.ts', 'src/lib/plausible.ts', '--ignoreConfig', '--outDir', out,
+     '--module', 'esnext', '--target', 'es2020', '--moduleResolution', 'bundler', '--skipLibCheck'],
+    { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+} catch {
+  /* `@/` is unmapped without the project tsconfig — TS2307, emitted anyway.
+     `fitness-calc` imports the bounds table since `calcPlan` refuses a stat
+     that is not a measurement, so the import has to be resolved by hand. */
+}
+{
+  const fc = path.join(out, 'fitness-calc.js');
+  writeFileSync(fc, readFileSync(fc, 'utf8').replace("'@/lib/plausible'", "'./plausible.js'"));
+}
 const {
   calcBMR, calcTDEE, calcTargetCalories, calcMacros, calcWaterTarget, proteinReferenceWeight, FIBER_G_PER_1000_KCAL,
 } = await import(pathToFileURL(path.join(out, 'fitness-calc.js')).href);

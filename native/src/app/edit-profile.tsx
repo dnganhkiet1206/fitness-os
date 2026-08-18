@@ -28,7 +28,7 @@ import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { toast } from '@/lib/toast';
-import { calcAge, calcBMR, calcMacros, calcTargetCalories, calcTDEE, calcWaterTarget } from '@/lib/fitness-calc';
+import { calcAge, calcPlan } from '@/lib/fitness-calc';
 import {
   COMMON_ALLERGIES,
   allergyLabel,
@@ -36,7 +36,7 @@ import {
   dislikesText,
   parseDislikes,
 } from '@/lib/food-preferences';
-import { outOfRangeMessage } from '@/lib/plausible';
+import { outOfRangeMessage, readStat } from '@/lib/plausible';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import {
   displayHeight,
@@ -70,13 +70,34 @@ type Form = {
   sleep_target_waketime: string;
 };
 
+/*
+  ── nothing, until the profile says otherwise ──
+
+  Every numeric field here used to open on an invented value — `175` cm, `70`
+  kg, `2200` kcal, `150` g of protein — in the form's initial state *and* again
+  as a `?? default` when the profile loaded with the column null. Neither was
+  visible as a guess. Opening *Edit profile* on a profile with no height and
+  pressing Save stored 175 cm as that person's height, and from then on it was
+  indistinguishable from a measurement they had given.
+
+  The height default is the tell: `175` here, `170` in `recalcTargets` twelve
+  lines below, and `170` again in onboarding. Three numbers for one column
+  means none of them is anybody's.
+
+  Blank is a legitimate state throughout — `outOfRangeMessage` treats it as
+  nothing to complain about, `Number('') || null` stores it as null, and
+  `recalcTargets` now refuses rather than filling it in.
+*/
 const EMPTY: Form = {
   name: '', dob: '', sex: 'male', activity_level: 'moderate',
-  height_cm: '175', weight_kg: '70', goal: 'maintain', tdee_target_kcal: '2200',
-  macro_protein_g: '150', macro_carbs_g: '250', macro_fat_g: '70', macro_fiber_g: '30',
-  water_target_ml: '2500', units_weight: 'kg', units_height: 'cm',
-  sleep_target_hours: '8', sleep_target_bedtime: '23:00', sleep_target_waketime: '07:00',
+  height_cm: '', weight_kg: '', goal: 'maintain', tdee_target_kcal: '',
+  macro_protein_g: '', macro_carbs_g: '', macro_fat_g: '', macro_fiber_g: '',
+  water_target_ml: '', units_weight: 'kg', units_height: 'cm',
+  sleep_target_hours: '', sleep_target_bedtime: '23:00', sleep_target_waketime: '07:00',
 };
+
+/** A stored number as text, and an absent one as absent — never as a number. */
+const numText = (v: number | string | null | undefined): string => (v == null ? '' : String(v));
 
 /** "HH:MM[:SS]" → Date for the time spinner */
 function timeToDate(t: string): Date {
@@ -107,9 +128,11 @@ export default function EditProfileSheet() {
     if (!profile) return;
     const uW: WeightUnit = profile.units_weight === 'lbs' ? 'lbs' : 'kg';
     const uH: HeightUnit = profile.units_height === 'in' ? 'in' : 'cm';
-    setWDisp(String(displayWeight(Number(profile.weight_kg ?? 70), uW)));
-    setHDisp(String(displayHeight(Number(profile.height_cm ?? 175), uH)));
-    setWaterDisp(String(displayVolume(Number(profile.water_target_ml ?? 2500), vUnit)));
+    setWDisp(profile.weight_kg == null ? '' : String(displayWeight(Number(profile.weight_kg), uW)));
+    setHDisp(profile.height_cm == null ? '' : String(displayHeight(Number(profile.height_cm), uH)));
+    setWaterDisp(
+      profile.water_target_ml == null ? '' : String(displayVolume(Number(profile.water_target_ml), vUnit)),
+    );
     /* Folded onto the canonical values so an account that stored the
        Vietnamese labels shows its chips selected instead of blank — see
        `canonicalAllergy`. */
@@ -122,18 +145,18 @@ export default function EditProfileSheet() {
       dob: profile.dob ?? '',
       sex: profile.sex ?? 'male',
       activity_level: profile.activity_level ?? 'moderate',
-      height_cm: String(profile.height_cm ?? 175),
-      weight_kg: String(profile.weight_kg ?? 70),
+      height_cm: numText(profile.height_cm),
+      weight_kg: numText(profile.weight_kg),
       goal: profile.goal ?? 'maintain',
-      tdee_target_kcal: String(profile.tdee_target_kcal ?? 2200),
-      macro_protein_g: String(profile.macro_protein_g ?? 150),
-      macro_carbs_g: String(profile.macro_carbs_g ?? 250),
-      macro_fat_g: String(profile.macro_fat_g ?? 70),
-      macro_fiber_g: String(profile.macro_fiber_g ?? 30),
-      water_target_ml: String(profile.water_target_ml ?? 2500),
+      tdee_target_kcal: numText(profile.tdee_target_kcal),
+      macro_protein_g: numText(profile.macro_protein_g),
+      macro_carbs_g: numText(profile.macro_carbs_g),
+      macro_fat_g: numText(profile.macro_fat_g),
+      macro_fiber_g: numText(profile.macro_fiber_g),
+      water_target_ml: numText(profile.water_target_ml),
       units_weight: profile.units_weight ?? 'kg',
       units_height: profile.units_height ?? 'cm',
-      sleep_target_hours: String(profile.sleep_target_hours ?? 8),
+      sleep_target_hours: numText(profile.sleep_target_hours),
       sleep_target_bedtime: (profile.sleep_target_bedtime ?? '23:00').slice(0, 5),
       sleep_target_waketime: (profile.sleep_target_waketime ?? '07:00').slice(0, 5),
     });
@@ -150,25 +173,44 @@ export default function EditProfileSheet() {
   /** Recompute calorie / macro / water targets from the current stats —
    *  same chain as onboarding (BMR → TDEE → goal-adjusted kcal → macros). */
   const recalcTargets = () => {
-    const w = Number(form.weight_kg) || 70;
-    const h = Number(form.height_cm) || 170;
-    const age = form.dob ? calcAge(form.dob) : 30;
-    const bmr = calcBMR(w, h, age, form.sex as 'male' | 'female' | 'other');
-    const tdee = calcTDEE(bmr, form.activity_level);
-    const targetKcal = calcTargetCalories(tdee, form.goal, form.sex as 'male' | 'female' | 'other');
-    const macros = calcMacros(targetKcal, w, form.goal, h);
-    const waterMl = calcWaterTarget(w, h);
+    /*
+      ── it used to answer without asking ──
+
+      `Number(form.weight_kg) || 70`, `|| 170`, and `form.dob ? calcAge(form.dob)
+      : 30`. Three substitutions, and the result was written into the form and
+      then into the profile: a complete calorie, macro and water plan for a
+      70 kg, 170 cm, 30-year-old, presented as *this person's* recalculated
+      targets. Pressing a button labelled *Recalculate* on an empty profile
+      produced 2,539 kcal a day and nothing anywhere said whose body that was.
+
+      Refusing is the whole fix. There is no number to fall back to, because a
+      fallback here is the bug.
+    */
+    const height = readStat('height_cm', form.height_cm, true);
+    const weight = readStat('weight_kg', form.weight_kg, true);
+    if (height.value === null || weight.value === null || !form.dob) {
+      toast.error(i18n.statsRequired);
+      return;
+    }
+    const plan = calcPlan({
+      weight_kg: weight.value,
+      height_cm: height.value,
+      age: calcAge(form.dob),
+      sex: form.sex as 'male' | 'female' | 'other',
+      goal: form.goal,
+      activity_level: form.activity_level,
+    });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setForm((f) => ({
       ...f,
-      tdee_target_kcal: String(targetKcal),
-      macro_protein_g: String(macros.protein_g),
-      macro_carbs_g: String(macros.carbs_g),
-      macro_fat_g: String(macros.fat_g),
-      macro_fiber_g: String(macros.fiber_g),
-      water_target_ml: String(waterMl),
+      tdee_target_kcal: String(plan.tdee_target_kcal),
+      macro_protein_g: String(plan.macro_protein_g),
+      macro_carbs_g: String(plan.macro_carbs_g),
+      macro_fat_g: String(plan.macro_fat_g),
+      macro_fiber_g: String(plan.macro_fiber_g),
+      water_target_ml: String(plan.water_target_ml),
     }));
-    setWaterDisp(String(displayVolume(waterMl, vUnit)));
+    setWaterDisp(String(displayVolume(plan.water_target_ml, vUnit)));
     toast.success(i18n.settingsRecalcDone);
   };
 
