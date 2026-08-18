@@ -5,6 +5,7 @@ import { Check, Minus, Moon, Pencil, Plus, Timer } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import * as Crypto from 'expo-crypto';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -481,6 +482,7 @@ export function DayPlan({
       queue.mutate({
         kind: 'workout',
         userId: user.id,
+        rowId: Crypto.randomUUID(),
         dateTime:
           dateStr === today ? new Date().toISOString() : new Date(`${dateStr}T12:00:00`).toISOString(),
         /* The same shape the online insert writes, so a session that arrives

@@ -60,13 +60,37 @@ const problems = [];
         'mutation khôi phục từ bộ nhớ sẽ không có hàm nào để chạy và bị vứt đi trong im lặng',
     );
   }
-  /* Retries are what let an online mutation that loses signal mid-flight enter
-     the paused state instead of failing outright. */
-  const retry = Number(w.match(/retry: (\d+)/)?.[1] ?? 0);
+  /*
+    Retries are what let an online mutation that loses signal mid-flight enter
+    the paused state instead of failing outright.
+
+    ── the count can be a predicate, and the predicate is the better answer ──
+
+    This read `retry: (\d+)` and nothing else. `retry` now classifies the
+    failure first — weather is retried, a refusal is not — and a plain number
+    cannot express that: an RLS rejection was being sent four times over seven
+    seconds of backoff, holding the rest of the queue behind it, and the answer
+    was never going to change.
+
+    So both forms are read, and what is checked is the property that matters:
+    **there is at least one retry left for a transient failure.** `retry: 0` and
+    a predicate that can only return false are still caught.
+  */
+  const literal = w.match(/retry:\s*(\d+)/)?.[1];
+  const bounded = w.match(/retry:\s*\([^)]*\)\s*=>[^,\n]*failureCount\s*<\s*(\d+)/)?.[1];
+  const retry = Number(literal ?? bounded ?? 0);
   if (retry < 1) {
     problems.push(
       `${WRITE}: retry = ${retry} — mutation bắt đầu lúc còn mạng rồi mất sóng giữa chừng ` +
         'chỉ chuyển sang trạng thái tạm dừng khi còn lượt thử lại; hết lượt là hỏng hẳn và mất luôn',
+    );
+  }
+  /* And a predicate has to actually classify, or it is a number with extra
+     syntax — the whole point is that a permanent refusal stops early. */
+  if (bounded && !/permanentFailure\s*\(/.test(w)) {
+    problems.push(
+      `${WRITE}: retry là một hàm nhưng không phân loại lỗi — ` +
+        'gửi lại một lệnh ghi bị RLS từ chối không đổi được câu trả lời',
     );
   }
 
@@ -275,7 +299,22 @@ const SELF = [
     const v = "{ kind: 'water'; amountMl: number }";
     return !/userId: string/.test(v);
   }],
-  ['retry 0 — bị bắt', () => Number('0') < 1],
+  ['retry 0 — bị bắt', () => {
+    const w = 'setMutationDefaults([...KEY], { mutationFn: f, retry: 0 });';
+    const lit = w.match(/retry:\s*(\d+)/)?.[1];
+    const b = w.match(/retry:\s*\([^)]*\)\s*=>[^,\n]*failureCount\s*<\s*(\d+)/)?.[1];
+    return Number(lit ?? b ?? 0) < 1;
+  }],
+  ['retry là hàm có phân loại — không bị bắt', () => {
+    const w = 'retry: (failureCount, error) => !permanentFailure(error) && failureCount < 3,';
+    const b = w.match(/retry:\s*\([^)]*\)\s*=>[^,\n]*failureCount\s*<\s*(\d+)/)?.[1];
+    return Number(b ?? 0) >= 1 && /permanentFailure\s*\(/.test(w);
+  }],
+  ['retry là hàm luôn từ chối — bị bắt', () => {
+    const w = 'retry: (failureCount) => failureCount < 0,';
+    const b = w.match(/retry:\s*\([^)]*\)\s*=>[^,\n]*failureCount\s*<\s*(\d+)/)?.[1];
+    return Number(b ?? 0) < 1;
+  }],
   ['biến thể nhiều dòng không bị cắt ở dấu ;', () => {
     const src = "export type OfflineWrite =\n  | {\n      kind: 'a';\n      userId: string;\n    };\n\nconst x = 1;";
     const t = src.match(/export type OfflineWrite =([\s\S]*?)\n\n/)?.[1] ?? '';

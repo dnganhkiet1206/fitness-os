@@ -83,11 +83,47 @@ import { syncProfileWeight } from '@/lib/weight-sync';
  * on the other side: `localDateStr` on the replaying device would answer for
  * the replay day, not the logged one.
  */
+/**
+ * ── and its own primary key, minted at the tap ──
+ *
+ * Every write here that is an `INSERT` carries `rowId`: the value the row's
+ * `id` column will take, chosen on this device before the row exists anywhere.
+ *
+ * It is what makes a replay safe. A queued write is retried whenever the
+ * request fails — and "the request failed" includes the case where the server
+ * committed the row and the reply never arrived, which is the ordinary shape of
+ * walking out of signal range. Measured on PostgreSQL 16.13 with the app's own
+ * statements, replaying once produced **two** rows for water, workouts, sleep
+ * and biometrics: one 250 ml tap became 500 ml, one session was counted twice
+ * by volume load, ACWR, readiness and the streak, and one night was slept
+ * twice.
+ *
+ * `weight` and `measurement` are the two that were already safe, because both
+ * upsert on a natural key (`user_id,date`). The other five had nothing, and the
+ * meal was the worst of them — see `entryId`.
+ *
+ * `id UUID PRIMARY KEY DEFAULT gen_random_uuid()` takes a supplied value
+ * happily; the default only applies when the column is omitted. So no migration
+ * is involved: the key already exists, it was simply being left to the server,
+ * where it can never be the same twice.
+ *
+ * Required rather than optional, so a new call site cannot forget it and lose
+ * the property silently — the one failure mode this whole file is written
+ * against.
+ */
 export type OfflineWrite =
-  | { kind: 'water'; userId: string; amountMl: number; date: string; at: string }
+  | {
+      kind: 'water';
+      userId: string;
+      rowId: string;
+      amountMl: number;
+      date: string;
+      at: string;
+    }
   | {
       kind: 'workout';
       userId: string;
+      rowId: string;
       dateTime: string;
       sets: unknown;
       volumeLoad: number;
@@ -118,6 +154,10 @@ export type OfflineWrite =
       mealType: string;
       totals: { kcal: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number };
       items: {
+        /* Minted at the tap like `entryId`, and for the same reason one level
+           down: without it a replay that reaches the items statement inserts a
+           second copy of every food. */
+        id: string;
         food_item_id: string | null;
         food_name: string;
         servings: number;
@@ -131,6 +171,7 @@ export type OfflineWrite =
   | {
       kind: 'biometrics';
       userId: string;
+      rowId: string;
       dateTime: string;
       hrBpm: number | null;
       hrvSdnnMs: number | null;
@@ -148,6 +189,7 @@ export type OfflineWrite =
       */
       kind: 'sleep';
       userId: string;
+      rowId: string;
       bedtime: string;
       waketime: string;
       quality: number;
@@ -166,6 +208,83 @@ export type OfflineWrite =
 
 /** The one key every durable write is filed under. */
 export const OFFLINE_WRITE_KEY = ['offline-write'] as const;
+
+/**
+ * `INSERT … ON CONFLICT (id) DO NOTHING`, which is what a replay needs.
+ *
+ * The row already carries the id this device chose, so a conflict on it can
+ * only mean *this exact write already landed* — never somebody else's row, and
+ * never a different write of ours. Doing nothing is then the correct answer,
+ * and it is the difference between a retry being a no-op and a retry being a
+ * second workout.
+ *
+ * `ignoreDuplicates` rather than an update, because these are records of things
+ * that happened rather than settings: the second copy of an event carries no
+ * new information, and overwriting would let a stale queued copy clobber an
+ * edit made since. (`weight` and `measurement` are the two that genuinely are
+ * corrections, and both deliberately upsert on their natural key instead.)
+ *
+ * RLS is untouched by this. `ON CONFLICT DO NOTHING` is still an INSERT, so the
+ * `WITH CHECK (auth.uid() = user_id)` policy fires exactly as before — measured
+ * on PostgreSQL 16.13: all seven operations replayed under a second account are
+ * refused with 42501.
+ */
+const IDEMPOTENT = { onConflict: 'id', ignoreDuplicates: true } as const;
+
+/**
+ * A queued write reached a session that is not the one that made it.
+ *
+ * Its own class rather than a message, for the same reason
+ * `DailyLogRebuildError` is one: `permanentFailure` has to decide on it, and a
+ * decision keyed on the wording of a string breaks the first time somebody
+ * rewords the string — silently, in the direction of sending one account's
+ * writes under another account's token four times before giving up.
+ */
+export class WrongAccountError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WrongAccountError';
+  }
+}
+
+/**
+ * Failures that will never succeed no matter how many times they are sent.
+ *
+ * ── why retrying these is not merely wasteful ──
+ *
+ * `retry: 3` treated every failure as weather. A queued write refused by RLS —
+ * which is what happens the moment it is replayed under a different account —
+ * was sent four times over seven seconds of backoff before being dropped, and a
+ * row rejected by a check constraint did the same. The retries cannot change
+ * the answer; all they do is delay the point at which the write is discarded,
+ * while holding the rest of the queue behind them.
+ *
+ * The codes are PostgREST's, forwarded from PostgreSQL:
+ *
+ *   · `42501` — row-level security refused the row. Permanent for this session.
+ *   · `23505` — unique violation. With `IDEMPOTENT` above this should no longer
+ *     occur for our own replays, and if it does it means a genuinely different
+ *     row is already there.
+ *   · `23503` — foreign key. The thing it points at does not exist.
+ *   · `23514` / `23502` — check constraint, not-null. The values are wrong.
+ *   · `22P02` / `22007` — malformed input. A queued write from an older app
+ *     version whose shape no longer parses lands here.
+ *   · `PGRST…` — PostgREST's own schema-level refusals (unknown column,
+ *     unusable conflict target). A schema drift, not a network blip.
+ *
+ * Everything else — no response at all, a 5xx, a timeout — is weather, and is
+ * exactly what the retries exist for.
+ */
+export function permanentFailure(error: unknown): boolean {
+  /* A different account will not become the right one by asking again. */
+  if (error instanceof WrongAccountError) return true;
+  const code = (error as { code?: unknown } | null)?.code;
+  if (typeof code !== 'string') return false;
+  return (
+    code.startsWith('PGRST') ||
+    ['42501', '42703', '23505', '23503', '23514', '23502', '22P02', '22007'].includes(code)
+  );
+}
 
 /**
  * Rebuild the day a replayed write belongs to, without letting a failed rebuild
@@ -205,27 +324,62 @@ async function rebuildAfterReplay(userId: string, date: string) {
  * less-tested version of the online one.
  */
 export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
+  /*
+    ── whose write is this ──
+
+    Every row below carries `user_id: w.userId`, and the database is what
+    enforces it: measured on PostgreSQL 16.13, all eight statements replayed
+    under a second account are refused with 42501, because every policy is
+    `WITH CHECK (auth.uid() = user_id)`. That is the authorization, it is
+    server-side, and this check does not replace it.
+
+    What this adds is a refusal with a name. A queued write can only reach the
+    wrong session through a bug — signing out clears the mutation cache
+    (`clearPersistedCache` calls `queryClient.clear()`, which empties both
+    caches) — but "can only happen through a bug" is a description of every bug
+    before it happens. Without this the symptom would be a bare 42501 from a
+    table nobody is looking at, in a code path that belongs to no screen.
+
+    `getSession()` reads the in-memory session and does not go to the network,
+    so this costs nothing on the ordinary path.
+  */
+  const { data } = await supabase.auth.getSession();
+  const signedIn = data.session?.user?.id;
+  if (signedIn !== w.userId) {
+    throw new WrongAccountError(
+      `queued ${w.kind} belongs to ${w.userId}, session is ${signedIn ?? 'signed out'}`,
+    );
+  }
+
   switch (w.kind) {
     case 'water': {
-      const { error } = await supabase.from('water_logs').insert({
-        user_id: w.userId,
-        amount_ml: w.amountMl,
-        date: w.date,
-        logged_at: w.at,
-      });
+      const { error } = await supabase.from('water_logs').upsert(
+        {
+          id: w.rowId,
+          user_id: w.userId,
+          amount_ml: w.amountMl,
+          date: w.date,
+          logged_at: w.at,
+        },
+        IDEMPOTENT,
+      );
       if (error) throw error;
       return;
     }
     case 'workout': {
-      const { error } = await supabase.from('workout_sessions').insert({
-        user_id: w.userId,
-        date_time: w.dateTime,
-        sets: w.sets as never,
-        volume_load: w.volumeLoad,
-        template_id: w.templateId,
-        template_name: w.templateName,
-        session_rpe: w.sessionRpe,
-      });
+      const { error } = await supabase.from('workout_sessions').upsert(
+        {
+          id: w.rowId,
+          user_id: w.userId,
+          date_time: w.dateTime,
+          sets: w.sets as never,
+          volume_load: w.volumeLoad,
+          template_id: w.templateId,
+          template_name: w.templateName,
+          session_rpe: w.sessionRpe,
+        },
+        IDEMPOTENT,
+      );
       if (error) throw error;
       /* The rebuild travels with the insert. A queue of bare inserts would
          replay the row and leave the readiness score derived from a day that
@@ -284,22 +438,45 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
          carries named operations and not rows: replaying these as two
          independent inserts would put an entry with no food in it on somebody's
          day, and it would look like a bug in the meal screen. */
-      const { error } = await supabase.from('meal_entries').insert({
-        id: w.entryId,
-        user_id: w.userId,
-        date_time: w.dateTime,
-        meal_type: w.mealType,
-        total_kcal: w.totals.kcal,
-        total_protein_g: w.totals.protein_g,
-        total_carbs_g: w.totals.carbs_g,
-        total_fat_g: w.totals.fat_g,
-        total_fiber_g: w.totals.fiber_g,
-      });
+      /*
+        ── and both statements ignore a duplicate, which is what made this the
+        worst of the seven ──
+
+        `entryId` made the *entry* idempotent by primary key, and stopped there.
+        The insert still threw on a repeat, and `throw` here means the items
+        statement below never runs. Measured on PostgreSQL 16.13 with these two
+        statements: server commits the entry, the reply is lost, the queue
+        replays, the entry insert fails 23505 — and the day is left holding
+
+            bua_an | mon_trong_bua | kcal_bua_an
+                 1 |             0 |         520
+
+        a 520 kcal breakfast with no food in it, permanently, plus a mutation
+        that then errors and is dropped. Idempotent by key is not idempotent
+        unless the repeat is also *allowed*.
+      */
+      const { error } = await supabase.from('meal_entries').upsert(
+        {
+          id: w.entryId,
+          user_id: w.userId,
+          date_time: w.dateTime,
+          meal_type: w.mealType,
+          total_kcal: w.totals.kcal,
+          total_protein_g: w.totals.protein_g,
+          total_carbs_g: w.totals.carbs_g,
+          total_fat_g: w.totals.fat_g,
+          total_fiber_g: w.totals.fiber_g,
+        },
+        IDEMPOTENT,
+      );
       if (error) throw error;
 
       const { error: itemsErr } = await supabase
         .from('meal_entry_items')
-        .insert(w.items.map((it) => ({ ...it, meal_entry_id: w.entryId })));
+        .upsert(
+          w.items.map((it) => ({ ...it, meal_entry_id: w.entryId })),
+          IDEMPOTENT,
+        );
       if (itemsErr) throw itemsErr;
 
       /* The day the food was eaten, not the day the queue drained. */
@@ -307,15 +484,19 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
       return;
     }
     case 'sleep': {
-      const { error } = await supabase.from('sleep_logs').insert({
-        user_id: w.userId,
-        bedtime: w.bedtime,
-        waketime: w.waketime,
-        quality: w.quality,
-        deep_min: w.deepMin,
-        rem_min: w.remMin,
-        light_min: w.lightMin,
-      });
+      const { error } = await supabase.from('sleep_logs').upsert(
+        {
+          id: w.rowId,
+          user_id: w.userId,
+          bedtime: w.bedtime,
+          waketime: w.waketime,
+          quality: w.quality,
+          deep_min: w.deepMin,
+          rem_min: w.remMin,
+          light_min: w.lightMin,
+        },
+        IDEMPOTENT,
+      );
       if (error) throw error;
       /* Sleep is the readiness score's second-largest term; a night that
          arrives without rebuilding its day is a night the score never sees. */
@@ -332,18 +513,22 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
       return;
     }
     case 'biometrics': {
-      const { error } = await supabase.from('biometric_samples').insert({
-        user_id: w.userId,
-        source: 'manual',
-        confidence: 0.7,
-        date_time: w.dateTime,
-        hr_bpm: w.hrBpm,
-        hrv_sdnn_ms: w.hrvSdnnMs,
-        hrv_rmssd_ms: w.hrvRmssdMs,
-        spo2_pct: w.spo2Pct,
-        resp_rate_rpm: w.respRateRpm,
-        vo2max_mlkgmin: w.vo2maxMlkgmin,
-      });
+      const { error } = await supabase.from('biometric_samples').upsert(
+        {
+          id: w.rowId,
+          user_id: w.userId,
+          source: 'manual',
+          confidence: 0.7,
+          date_time: w.dateTime,
+          hr_bpm: w.hrBpm,
+          hrv_sdnn_ms: w.hrvSdnnMs,
+          hrv_rmssd_ms: w.hrvRmssdMs,
+          spo2_pct: w.spo2Pct,
+          resp_rate_rpm: w.respRateRpm,
+          vo2max_mlkgmin: w.vo2maxMlkgmin,
+        },
+        IDEMPOTENT,
+      );
       if (error) throw error;
       /* HRV is the readiness score's largest term. A reading that arrives
          without rebuilding its day is a reading the score never sees. */
@@ -369,7 +554,38 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
 export function registerOfflineWrites(client: QueryClient): void {
   client.setMutationDefaults([...OFFLINE_WRITE_KEY], {
     mutationFn: (variables: unknown) => applyOfflineWrite(variables as OfflineWrite),
-    retry: 3,
+    /*
+      ── one at a time, in the order they were made ──
+
+      `resumePausedMutations` fires every paused mutation inside one
+      `Promise.all`, and an unscoped mutation's `canRun` returns `true`
+      unconditionally — so the whole queue went to the server at once, and which
+      one committed last was whichever the network happened to settle last.
+
+      Two things depend on that order:
+
+        · `weight` and `measurement` upsert on `(user_id, date)`. Correct a typo
+          twice while offline and the number that survives is a coin toss —
+          which is the same wrong-number-survives outcome the upsert was
+          introduced to fix, arriving by a different route.
+        · every rebuild here calls `recomputeDailyLog`, which is eleven reads
+          followed by one upsert. Two writes for the same day rebuilding at once
+          both read before either writes, and the day ends up counting one of
+          them. Nothing looks wrong; the totals are simply short until something
+          else writes to that day.
+
+      A shared `scope.id` is TanStack's own answer: mutations sharing one run
+      serially, in the order they entered the cache. It costs the parallelism,
+      which was never worth anything here — this queue is a handful of writes
+      draining once.
+    */
+    scope: { id: 'offline-write' },
+    /*
+      Weather is worth retrying; a refusal is not. See `permanentFailure`.
+      Four attempts at a row RLS will never accept only delays the moment the
+      write is discarded, and holds the queue behind it while it waits.
+    */
+    retry: (failureCount, error) => !permanentFailure(error) && failureCount < 3,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30_000),
     /*
       ── the refresh has to be a default too ──

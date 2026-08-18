@@ -486,6 +486,8 @@ export default function LogMealSheet() {
         fiber_g: Math.round(totals.fiber_g),
       },
       items: items.map((it) => ({
+        /* One key per food, for the same reason `entryId` has one. */
+        id: Crypto.randomUUID(),
         food_item_id: it.food_item_id,
         food_name: it.food_name,
         servings: it.servings,

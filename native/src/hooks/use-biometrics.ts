@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Crypto from 'expo-crypto';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateToday } from '@/hooks/useTodayData';
@@ -108,6 +109,9 @@ export function useLogBiometrics() {
         {
           kind: 'biometrics',
           userId: user.id,
+          /* The row's primary key, chosen at the tap so a replay after a lost
+             response is a no-op — see `rowId` in `lib/offline-write.ts`. */
+          rowId: Crypto.randomUUID(),
           /* There is no date picker here — a reading is always for now — but
              the moment is still captured at the tap rather than at replay. */
           dateTime: new Date().toISOString(),

@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { Angry, Check, Frown, Laugh, Meh, Smile, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
+import * as Crypto from 'expo-crypto';
 import {
   ActivityIndicator,
   Alert,
@@ -285,6 +286,7 @@ export default function LogSleepSheet() {
             queue.mutate({
               kind: 'sleep',
               userId: user.id,
+              rowId: Crypto.randomUUID(),
               bedtime: bedDate.toISOString(),
               waketime: wakeDate.toISOString(),
               quality,

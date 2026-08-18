@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (95 bước). Ngày rà: 2026-08-17.
+Bộ kiểm: `node tools/check.mjs` (96 bước). Ngày rà: 2026-08-17.
 
 ---
 
@@ -1787,6 +1787,291 @@ chốt in-flight gỡ trong `finally`, không phải bộ nhớ đệm — bộ 
 | RLS, cascade, `handle_new_user`, `SECURITY DEFINER` | **migration có sẵn**; đo trên PostgreSQL 16.13 dựng lại từ mọi migration trong repo, **không** đo trên production |
 
 Không có khẳng định nào ở đây về hành vi production.
+
+---
+
+## Vòng 7 — Chain F: thao tác → hàng đợi → lưu trữ → khởi động lại → phát lại → hoà giải
+
+**Bất biến gốc:** *một lệnh ghi do A tạo ra KHÔNG BAO GIỜ được chạy dưới phiên của B.*
+**Bất biến phụ:** phát lại phải idempotent, đúng thứ tự khi thứ tự có nghĩa, an toàn
+khi thử lại, và không được âm thầm mất hay nhân đôi thao tác của người dùng.
+
+**VERIFICATION:** `node tools/check.mjs` (96 bước) · `npx tsc --noEmit` ·
+`node tools/offline-queue.mjs` (chạy thật @tanstack/query-core) ·
+PostgreSQL 16.13 dựng lại từ 28 migration
+
+### Bản đồ hàng đợi thật (đọc mã, không suy từ tên)
+
+| câu hỏi | câu trả lời đo được |
+| --- | --- |
+| kho chứa | mutation cache của React Query, ghi vào AsyncStorage khoá `ascnd_rq_cache` qua `createAsyncStoragePersister` (throttle 1s) |
+| định dạng | JSON `dehydrate()`; **chỉ mutation ở trạng thái `isPaused`** được lưu (`shouldDehydrateMutation` mặc định), nên một mutation đã HỎNG không tồn tại sau lần khởi động sau |
+| vòng đời | tới 24 giờ (`maxAge`), `buster: CACHE_BUSTER = 'v1'` |
+| ràng buộc danh tính | `variables.userId`, đúc tại chỗ bấm từ `user.id`. **Không** phải uỷ quyền — RLS mới là |
+| khoá | đúng một: `['offline-write']`, một `mutationFn` duy nhất qua `setMutationDefaults` |
+| đăng ký lúc nào | `registerOfflineWrites(queryClient)` ở **module scope** trong `query-client.ts`, trước khi provider mount |
+| phát lại lúc nào | `onSuccess` của `PersistQueryClientProvider` → `resumePausedMutations()` |
+| 7 thao tác | water, workout, weight, meal, sleep, measurement, biometrics |
+
+---
+
+### BUG-31 (P1). Phát lại nhân đôi dữ liệu — `RESPONSE-LOST-DUPLICATION`
+
+**TRIGGER:** máy chủ ghi xong, hồi đáp không về (ra khỏi vùng phủ sóng giữa
+request) → React Query gửi lại.
+**EXPECTED:** một thay đổi trạng thái logic.
+**ACTUAL:** đo trên PostgreSQL 16.13, gửi 1 lần rồi phát lại 1 lần:
+
+```
+ t           | count
+ water       |     2      ← một lần bấm 250 ml thành 500 ml
+ workout     |     2      ← một buổi tập bị đếm hai lần bởi volume load,
+ sleep       |     2        ACWR, điểm sẵn sàng và chuỗi ngày
+ biometrics  |     2
+ weight      |     1  ✓   (upsert theo user_id,date)
+ measurement |     1  ✓   (upsert theo user_id,date)
+```
+
+**ROOT CAUSE:** năm nhánh dùng `.insert()` và để máy chủ sinh khoá chính. Một
+khoá do máy chủ sinh không thể giống nhau hai lần, nên không có gì để `ON
+CONFLICT` bám vào. Hai nhánh đã an toàn từ trước vì chúng upsert theo khoá tự
+nhiên — và đó chính là bằng chứng rằng vấn đề được nhìn thấy ở hai chỗ rồi dừng
+lại ở đó.
+
+**FIX:** mỗi lệnh ghi dạng sự kiện mang `rowId` — giá trị của cột `id`, đúc trên
+máy TRƯỚC khi dòng tồn tại ở đâu — và mọi câu ghi đổi thành
+`upsert(row, { onConflict: 'id', ignoreDuplicates: true })`, tức
+`INSERT … ON CONFLICT (id) DO NOTHING`. Không cần migration: cột `id UUID
+PRIMARY KEY DEFAULT gen_random_uuid()` nhận giá trị truyền vào, mặc định chỉ áp
+dụng khi bỏ trống cột. `rowId` là **bắt buộc** trong type, nên một chỗ gọi mới
+không thể quên mà vẫn biên dịch được.
+
+**REGRESSION RISK:** một thao tác thứ tám thêm vào union sẽ được TypeScript ép
+mang `rowId`, và `tools/offline-queue.mjs` luật D ép nó dùng `IDEMPOTENT`.
+
+---
+
+### BUG-32 (P1). Bữa ăn phát lại thành bữa ăn KHÔNG CÓ MÓN NÀO
+
+**TRIGGER:** hồi đáp của câu ghi `meal_entries` bị mất; câu ghi
+`meal_entry_items` vì thế chưa từng chạy; hàng đợi phát lại.
+**ACTUAL:** đo thật:
+
+```
+ bua_an | mon_trong_bua | kcal_bua_an
+      1 |             0 |         520
+```
+
+Một bữa sáng 520 kcal không mở ra được món nào, vĩnh viễn — và mutation sau đó
+báo lỗi 23505 rồi bị vứt.
+
+**ROOT CAUSE:** `entryId` làm cho *dòng entry* idempotent theo khoá chính, và
+dừng ở đó. Câu `.insert()` vẫn **ném** khi gặp trùng, mà `throw` nằm TRƯỚC câu
+ghi items. Idempotent theo khoá không phải là idempotent nếu lần lặp lại không
+được **cho phép**.
+
+**FIX:** cả hai câu dùng `IDEMPOTENT`, và mỗi món cũng mang `id` đúc tại chỗ bấm
+(nếu không, lần phát lại chạy tới câu items sẽ chèn bản sao của mọi món). Đo lại
+sau khi sửa: gửi 1 lần, phát lại 2 lần → 1 entry, 1 item, 0 lỗi.
+
+---
+
+### BUG-33 (P1). Hàng đợi phát lại song song, không có thứ tự — `CONCURRENT-REPLAY-LOST-UPDATE`
+
+**ROOT CAUSE:** `resumePausedMutations` bắn cả hàng đợi trong một `Promise.all`,
+và `canRun` của một mutation **không có scope** trả `true` vô điều kiện
+(`node_modules/@tanstack/query-core/src/mutationCache.ts`). `mutationKey` không
+phải hàng rào tuần tự — nó chỉ dùng để tra `setMutationDefaults` và để dehydrate
+tìm lại hàm.
+
+**Hậu quả 1 — bản sửa thua bản sai.** `weight` và `measurement` upsert theo
+`(user_id, date)`. Sửa nhầm hai lần lúc mất mạng thì con số sống sót là con số
+commit sau cùng, và cái nào sau cùng là chuyện của mạng. Đây đúng là kết cục mà
+việc đổi `.insert()` thành `.upsert()` được làm ra để tránh, quay lại bằng một
+cửa khác.
+
+**Hậu quả 2 — hai lần dựng lại ngày nuốt lẫn nhau.** `recomputeDailyLog` là 11
+lần đọc rồi một lần upsert. Hai lệnh ghi cùng ngày dựng lại đồng thời thì cả hai
+đọc trước khi một trong hai ghi. Đo thật, hai bữa ăn 500 + 700 kcal:
+
+```
+ thuc_te_da_an | vong_calo_hien_thi
+          1200 |                500
+```
+
+Vòng calo hiện 500 cho tới khi có thứ khác ghi vào ngày đó. Không có gì trông
+giống lỗi.
+
+**FIX:** `scope: { id: 'offline-write' }` trong mutation defaults. TanStack chạy
+các mutation cùng scope **tuần tự, theo thứ tự vào cache**. Mất tính song song,
+thứ chưa bao giờ đáng giá ở đây — hàng đợi này là vài lệnh ghi thoát ra một lần.
+
+**EVIDENCE (chạy thật, không đọc mã):** 4 lệnh ghi tạo lúc mất mạng → đóng băng
+qua `dehydrate` → JSON → `hydrate` vào một QueryClient **mới** (đúng nghĩa khởi
+động lại app) → bật mạng → resume. Con thoi supabase trả lời lệnh ghi ĐẦU TIÊN
+chậm nhất, nên "đúng thứ tự" chỉ có thể đúng nếu chúng được GỬI tuần tự:
+
+```
+có scope  → 1,2,3,4
+bỏ scope  → 4,3,2,1
+```
+
+---
+
+### BUG-34 (P2). `retry: 3` gửi lại cả những lỗi không bao giờ đổi câu trả lời
+
+Một lệnh ghi bị RLS từ chối (42501 — chính là điều xảy ra nếu nó chạy dưới tài
+khoản khác) được gửi **4 lần** qua 7 giây backoff rồi mới bị vứt, và giữ cả hàng
+đợi đứng sau nó trong lúc chờ. Cùng chuyện với vi phạm ràng buộc kiểm tra, khoá
+ngoại, và dữ liệu sai định dạng — kể cả một lệnh ghi xếp hàng từ phiên bản app
+cũ mà cấu trúc không còn phân tích được (`QUEUE-SCHEMA-DRIFT` rơi vào đây).
+
+**FIX:** `retry: (failureCount, error) => !permanentFailure(error) && failureCount < 3`.
+`permanentFailure` phân loại theo mã PostgREST/PostgreSQL — `42501`, `42703`,
+`23505`, `23503`, `23514`, `23502`, `22P02`, `22007`, mọi mã `PGRST*` — cộng
+`WrongAccountError`. Mọi thứ khác (không có hồi đáp, 5xx, timeout) là thời tiết
+và vẫn được gửi lại, vì đó chính là lý do các lượt thử lại tồn tại: một mutation
+bắt đầu lúc còn mạng rồi mất sóng giữa chừng chỉ **tạm dừng** khi còn lượt.
+
+Đo thật: lỗi vĩnh viễn → 1 lần gửi (trước: 4). Lỗi thời tiết → 3 lần và tới nơi.
+
+---
+
+### BUG-35 (P2). Client vẫn gửi lệnh ghi của tài khoản khác — `QUEUE-USER-IDENTITY-MISSING`
+
+`applyOfflineWrite` gửi `user_id: w.userId` rồi phó thác hoàn toàn cho RLS. RLS
+giữ được (đo: 42501 cả 8 câu), nhưng phía client không hề biết mình đang làm gì:
+triệu chứng là một mã 42501 trần từ một bảng không ai đang nhìn, trong đường chạy
+không thuộc màn hình nào.
+
+**FIX (phòng thủ chiều sâu, KHÔNG thay thế uỷ quyền):** đối chiếu
+`supabase.auth.getSession()` với `w.userId` trước khi phát câu lệnh đầu tiên;
+lệch thì ném `WrongAccountError`, được phân loại là vĩnh viễn. `getSession()` đọc
+phiên trong bộ nhớ, không đi mạng. Đo thật: dưới phiên sai, **0 câu lệnh** được
+phát ra (trước: 1).
+
+---
+
+### Sửa điểm neo cho hai bộ dò cũ (không nới lỏng)
+
+- **`health-sync.mjs` luật 1** tìm bảng của một `onConflict` bằng `.from('x')`
+  gần nhất **phía trên**. `IDEMPOTENT` là một hằng số dùng chung nên không có
+  `.from()` nào phía trên nó. Giờ luật **phân giải hằng số tại các chỗ DÙNG** —
+  chặt hơn bản cũ: một hằng số dùng bởi bảy câu lệnh nay được kiểm bảy lần.
+- **`health-sync.mjs` parseSchema** không coi PRIMARY KEY là arbiter suy luận
+  được. Nó là — và bản sửa ở trên phụ thuộc vào điều đó: `ON CONFLICT (id) DO
+  NOTHING` chạy được trên cả 8 bảng, đo trên PostgreSQL 16.13.
+- **`offline-durable.mjs`** đọc `retry: (\d+)`, nên một predicate bị đọc thành
+  `retry = 0`. Giờ luật đọc **cả hai dạng** và kiểm đúng tính chất cần có (còn ít
+  nhất một lượt cho lỗi thời tiết), cộng thêm một luật mới: predicate phải thật
+  sự phân loại (`permanentFailure`), nếu không nó chỉ là một con số viết dài hơn.
+  `retry: 0` và `retry: () => failureCount < 0` vẫn bị bắt.
+
+---
+
+## Chain F — đã kiểm và **KHÔNG** phải lỗi
+
+### F1. Cách ly tài khoản ở tầng phát lại — bất biến GIỮ ĐƯỢC
+
+Hai hàng rào độc lập, cả hai đều đo được:
+
+1. **Máy chủ.** Cả 8 câu lệnh phát lại dưới tài khoản thứ hai đều bị từ chối
+   `42501 new row violates row-level security policy`, vì mọi policy là
+   `WITH CHECK (auth.uid() = user_id)`. `ON CONFLICT DO NOTHING` vẫn là INSERT
+   nên policy vẫn nổ — bản sửa idempotency không làm mỏng hàng rào này.
+2. **Client.** `clearPersistedCache()` gọi `queryClient.clear()`, và
+   `clear()` trong query-core 5.101.2 là
+   `this.#queryCache.clear(); this.#mutationCache.clear()` — nên hàng đợi của A
+   bị xoá ngay tại `SIGNED_OUT`, TRƯỚC khi B có thể đăng nhập. Sau Chain E điều
+   này đúng ở **mọi** cửa kết thúc phiên, không chỉ cái nút.
+
+Nên tấn công 3 (A ngoại tuyến → đăng xuất → B đăng nhập) và tấn công 4 (app bị
+kill → B đăng nhập) đều không dựng ra được cảnh B chạy lệnh ghi của A: đường thứ
+nhất hàng đợi đã bị xoá, đường thứ hai muốn có phiên của B thì phải qua một lần
+đăng xuất, tức qua đường thứ nhất.
+
+### F2. Không có closure ôm danh tính cũ — `STALE-MUTATION-CLOSURE` không tồn tại
+
+`OfflineWrite` là dữ liệu thuần: không closure, không `supabase` handle, không
+`user` bắt từ hook. `userId` được đọc từ `user.id` **tại chỗ bấm** ở cả 8 chỗ
+gọi, và `registerOfflineWrites` nhận `client` làm tham số chứ không đọc auth.
+Thiết kế này được viết ra có chủ đích (chú thích trong `offline-write.ts` nói
+đúng lý do) và nó đứng vững.
+
+### F3. Thứ tự đăng ký so với khôi phục — `REPLAY-BEFORE-AUTH` không dựng được
+
+`registerOfflineWrites(queryClient)` chạy ở module scope, trước khi
+`PersistQueryClientProvider` mount, nên hàm luôn có mặt trước biến. Về phiên:
+supabase-js `v2` chờ `initializePromise` của chính nó bên trong `_useSession`,
+nên một request phát ra trước khi `AuthProvider` gọi `getSession()` xong vẫn mang
+phiên đã lưu. Không dựng được cảnh "phát lại khi auth còn null rồi B khôi phục".
+Chốt ở BUG-35 phủ nốt phần còn lại.
+
+### F4. Kinh tế không đi qua hàng đợi — `OFFLINE-ECONOMY-BYPASS` không áp dụng
+
+Union `OfflineWrite` có 7 thao tác và không thao tác nào chạm tới
+`mascot_transactions`, `mascot_inventory`, `streak_freezes`, `entitlements` hay
+`weekly_challenges`. `offline-write.ts` nói rõ đây là quyết định: *"Anything that
+cannot mean anything offline: AI calls, purchases, account deletion, the shop."*
+Chain D đã đo rằng client không có quyền ghi vào ba bảng sổ cái. Không có đường
+nào để tạo hay tiêu tiền lúc mất mạng.
+
+### F5. Ghi sức khoẻ từ HealthKit không đi qua hàng đợi
+
+`use-health-sync.ts` ghi trực tiếp, không qua `OFFLINE_WRITE_KEY`. Một lần đồng
+bộ thất bại lúc mất mạng đơn giản là không chạy, và lần foreground sau chạy lại
+từ HealthKit — nguồn dữ liệu vẫn ở đó. Không có gì xếp hàng để phát lại dưới sai
+tài khoản hay với ngày cũ.
+
+### F6. Ghi hỏng vĩnh viễn thì không còn dấu vết — GHI NHẬN, chưa sửa
+
+`shouldDehydrateMutation` mặc định chỉ lưu mutation `isPaused`. Một mutation đã
+chuyển sang `error` không được lưu, và `onSettled` chỉ invalidate. Nên một lệnh
+ghi xếp hàng thất bại vĩnh viễn biến mất không để lại gì người dùng thấy được.
+Sau BUG-34 nó biến mất **nhanh hơn** (1 lần gửi thay vì 4) — cùng một mất mát,
+sớm hơn. Kênh duy nhất khả dĩ là toast, mà `lib/` chưa có đường đọc ngôn ngữ đang
+chọn; nửa vời ở đây tệ hơn không làm. Xem PRODUCT SEMANTICS bên dưới.
+
+---
+
+## Chain F — PRODUCT SEMANTICS REQUIRED
+
+### PS-1. Đăng xuất có nên vứt các thao tác chưa gửi không?
+
+Hôm nay: **có**, và không ai chọn điều đó. `clearPersistedCache()` được viết cho
+*query* cache — chú thích của nó nói *"Drop the in-memory + persisted cache — call
+on sign-out to avoid leaking one user's data into the next session"* — và
+`queryClient.clear()` tiện thể mang cả mutation cache đi. Không có dòng nào trong
+repo bàn về các thao tác đang chờ.
+
+Hậu quả: ghi 5 hiệp trong phòng tập không sóng, về nhà bấm Đăng xuất → mất, không
+một lời. Và sau Chain E điều này đúng ở **mọi** cửa `SIGNED_OUT`, kể cả refresh
+token hết hạn qua đêm — đó là hệ quả của chính bản sửa Chain E, và mất dữ liệu vì
+token hết hạn không phải một quyết định sản phẩm ai đó đưa ra.
+
+Ba lối đi, đều hợp lý, đều đổi hành vi:
+1. giữ nguyên và **nói trước** khi đăng xuất ("N thao tác chưa gửi sẽ mất");
+2. giữ hàng đợi qua đăng xuất, ràng theo `userId` (đã có sẵn trong biến);
+3. chỉ vứt ở cửa đăng xuất chủ động, giữ ở cửa hết phiên.
+
+Không có bằng chứng nào trong repo chọn giúp. **KHÔNG sửa.**
+
+### PS-2. Một lệnh ghi xếp hàng thất bại vĩnh viễn có được nói ra không?
+
+Xem F6. Cần một quyết định về kênh (toast lúc khởi động lạnh? một dòng trong
+Cài đặt? im lặng có chủ đích?) trước khi viết.
+
+---
+
+## Chain F — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `permanentFailure`, hình dạng của bảy nhánh — đọc và chạy |
+| **cơ chế thật (Node)** | `@tanstack/query-core` 5.101.2 thật + `registerOfflineWrites` thật: tạm dừng, lưu, dehydrate → JSON → hydrate vào client mới, resume, thứ tự, lượt thử lại, chốt phiên |
+| **cơ sở dữ liệu** | PostgreSQL 16.13 dựng lại từ 28 migration: RLS 8/8 từ chối, phát lại 3 lần ra 1 dòng, mất-hồi-đáp trước khi sửa ra 2 dòng, bữa ăn 0 món, lost update 1200 → 500 |
+| **runtime giả lập** | con thoi `supabase` (bảng ghi lại câu lệnh + độ trễ theo dòng) |
+| **runtime iOS thật** | **KHÔNG** có. Không có khẳng định nào ở đây về hành vi trên máy thật |
 
 ---
 

@@ -199,6 +199,7 @@ const STEPS = [
     already has a row, inside `resumePausedMutations` where no screen hears it.
   */
   ['gửi khi mất mạng', 'node', ['tools/offline-submit.mjs']],
+  ['hàng đợi ngoại tuyến', 'node', ['tools/offline-queue.mjs']],
   ['ngân sách ảnh', 'node', ['tools/photo-budget.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],

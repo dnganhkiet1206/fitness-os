@@ -7,6 +7,7 @@ import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { offlineNow } from '@/lib/offline';
 import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
+import * as Crypto from 'expo-crypto';
 
 /**
  * The day a write belongs to, read when the write happens.
@@ -186,6 +187,9 @@ export function useAddWater() {
         {
           kind: 'water',
           userId: user.id,
+          /* The row's primary key, chosen at the tap so a replay after a lost
+             response is a no-op — see `rowId` in `lib/offline-write.ts`. */
+          rowId: Crypto.randomUUID(),
           amountMl,
           /* Read here, in the tap. See the note on `today` above: the hook body
              runs at render, and an app left open crosses midnight. */

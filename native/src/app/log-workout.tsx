@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { CalendarDays, Check, Plus, X } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import * as Crypto from 'expo-crypto';
 import {
   ActivityIndicator,
   Alert,
@@ -814,6 +815,7 @@ export default function LogWorkoutSheet() {
               queue.mutate({
                 kind: 'workout',
                 userId: user.id,
+                rowId: Crypto.randomUUID(),
                 dateTime: new Date().toISOString(),
                 sets: validSets.map((s, i) => ({
                   exerciseId: s.exerciseId,

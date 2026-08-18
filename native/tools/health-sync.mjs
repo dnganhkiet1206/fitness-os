@@ -95,6 +95,13 @@ function parseSchema(text) {
   for (const m of text.matchAll(/CREATE\s+TABLE\s+(?:public\.)?(\w+)\s*\(([\s\S]*?)\n\);/gi)) {
     const [, table, body] = m;
     for (const u of body.matchAll(/UNIQUE\s*\(([^)]*)\)/gi)) inferable.add(`${table}:${cols(u[1])}`);
+    /* A primary key is a unique constraint, and Postgres infers it from a bare
+       column list like any other — measured, because the offline queue depends
+       on it: `INSERT … ON CONFLICT (id) DO NOTHING` against every one of these
+       tables succeeds on PostgreSQL 16.13 and turns a replay into a no-op. The
+       table-level form is here; the column-level `id UUID PRIMARY KEY` is
+       picked up by the per-line pass below. */
+    for (const p of body.matchAll(/PRIMARY\s+KEY\s*\(([^)]*)\)/gi)) inferable.add(`${table}:${cols(p[1])}`);
     /* `user_id UUID REFERENCES auth.users(id) … NOT NULL UNIQUE` — a column-level
        constraint, which `profiles` uses and `onboarding-flow.tsx` upserts
        against. `UNIQUE` not followed by `(` is what separates it from the
@@ -106,6 +113,7 @@ function parseSchema(text) {
       if (!col) continue;
       if (/^(UNIQUE|PRIMARY|FOREIGN|CONSTRAINT|CHECK)$/i.test(col[1])) continue;
       if (/\bUNIQUE\b\s*(?!\()/i.test(col[2])) inferable.add(`${table}:${col[1]}`);
+      if (/\bPRIMARY\s+KEY\b/i.test(col[2])) inferable.add(`${table}:${col[1]}`);
     }
   }
   for (const m of text.matchAll(
@@ -205,8 +213,43 @@ if (inferable.size === 0) {
   let checked = 0;
   for (const f of files) {
     const code = strip(read(f));
+
+    /*
+      ── an option object can be a named constant, and usually should be ──
+
+      `offline-write.ts` writes seven statements and shares one
+      `const IDEMPOTENT = { onConflict: 'id', ignoreDuplicates: true }` between
+      them. Read literally, that declaration is an `onConflict` with no
+      `.from()` anywhere above it, and the rule reported the only thing it could:
+      that it could not tell which table this was.
+
+      So a named option object is resolved at its **use** sites instead — which
+      is where the table is, and which is also stricter: one constant reused by
+      seven statements now gets seven checks rather than one.
+    */
+    const named = new Map();
+    for (const d of code.matchAll(
+      /(?:const|let)\s+(\w+)\s*(?::[^=]+)?=\s*\{[^}]*onConflict:\s*'([^']+)'[^}]*\}/g,
+    )) {
+      named.set(d[1], { target: d[2], at: d.index });
+    }
+
+    /** every place a conflict target is named, literal or through a constant */
+    const sites = [];
     for (const m of code.matchAll(/onConflict:\s*'([^']+)'/g)) {
-      const wanted = cols(m[1]);
+      /* the declaration of a named object is not itself a statement */
+      if ([...named.values()].some((v) => m.index > v.at && m.index < v.at + 200)) continue;
+      sites.push({ target: m[1], index: m.index });
+    }
+    for (const [name, v] of named) {
+      for (const u of code.matchAll(new RegExp(`\\b${name}\\b`, 'g'))) {
+        if (u.index === v.at + code.slice(v.at).indexOf(name)) continue; // the declaration
+        sites.push({ target: v.target, index: u.index });
+      }
+    }
+
+    for (const m of sites) {
+      const wanted = cols(m.target);
       const before = code.slice(0, m.index);
       const table = [...before.matchAll(/\.from\('(\w+)'\)/g)].pop()?.[1];
       const line = before.split('\n').length;
