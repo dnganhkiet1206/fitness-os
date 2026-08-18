@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (101 bước). Ngày rà: 2026-08-18.
+Bộ kiểm: `node tools/check.mjs` (102 bước). Ngày rà: 2026-08-18.
 
 ---
 
@@ -3610,6 +3610,317 @@ Quyết định còn thiếu: Lưu nên **từ chối** khi hồ sơ đã đổi
 | **cả bộ** | `node tools/check.mjs` — 101/101 |
 | **tác động production** | **KHÔNG**. Không dữ liệu, không snapshot, không log kiểm toán |
 | **runtime iOS thật** | **KHÔNG**. Không màn hình nào được chạy trên máy |
+
+---
+
+## Vòng 13 — Chain L: trạng thái người dùng → bộ lập lịch → thông báo cục bộ của hệ điều hành
+
+**Câu hỏi mở đầu:** *một thông báo do người dùng A đặt có thể sống sót qua đăng
+xuất rồi nổ khi người dùng B đang dùng chính chiếc máy đó không?*
+
+**Bất biến:** một thông báo đã đặt là **trạng thái bền gắn với người dùng** và
+không được sống lâu hơn vòng đời của chủ nó nếu không có lý do sản phẩm rõ ràng.
+
+**VERIFICATION:** `node tools/check.mjs` (102 bước) · `npx tsc --noEmit` ·
+`node tools/notifications.mjs` (CHẠY THẬT `scheduleReminderPlan` /
+`cancelAllReminders` trên một trung tâm thông báo có trần 64 như iOS) ·
+`node tools/reminders.mjs`
+
+### Trả lời câu hỏi mở đầu — **KHÔNG**, và được chứng minh bằng cách chạy
+
+```
+đặt kế hoạch đầy đủ  → 77 thông báo đang chờ
+cancelAllReminders() → 0
+B đăng nhập, bật nhắc đi ngủ → 7 cái, toàn của B
+```
+
+Chain E đã đóng đòn này rồi, và đóng ở **đúng chỗ**: `forgetPreviousAccount()`
+treo vào sự kiện `SIGNED_OUT` của supabase-js chứ không vào nút trong Settings,
+nên mọi cửa ra khỏi một phiên đều đi qua nó — nút đăng xuất, refresh token hết
+hiệu lực, đổi mật khẩu làm thu hồi phiên, và xoá tài khoản (bản thân nó gọi
+`signOut()`). Vòng này chỉ **chứng minh** điều đó bằng hành vi thay vì đọc mã, và
+khoá lại bằng luật H.
+
+### Bản đồ hệ thống — nhỏ hơn nhiều so với giả định của đề bài
+
+| lớp | thực tế |
+| --- | --- |
+| module nói chuyện với hệ điều hành | **một** file: `lib/notifications.ts` |
+| quyết định đặt gì | `lib/reminder-plan.ts` (thuần, chạy được trong Node) |
+| ai gọi | `hooks/use-reminders.ts` — `useReminders()` trên màn Reminders và `useReminderSync()` trên Today |
+| loại nhắc | 5: nước, thực phẩm bổ sung, giờ ngủ, cân, tập |
+| trigger | `DATE` một lần, dựng từ giờ địa phương, chân trời 7 ngày |
+| định danh | **không có** — không lưu id nào; `cancelAll` + đặt lại toàn bộ là cách quản lý |
+| payload | `{ title, body }`, **không có `data`** |
+| bộ lắng nghe khi bấm vào | **không tồn tại** |
+
+Ba thứ **không có** nên không thể hỏng, ghi lại để không ai đi tìm:
+
+1. **Không có `addNotificationResponseReceivedListener`** ở bất kỳ đâu. Bấm vào
+   một nhắc chỉ mở app. Nên không có "hành động của A chạy dưới phiên của B" —
+   đòn định danh hàng đợi của Chain F không có bề mặt ở đây.
+2. **Không có `data` payload**, nên không có gì để coi là thẩm quyền, và không
+   có id thực thể nào để deep-link. Mục 18–20 của đề bài không áp dụng.
+3. **`use-daily-quests` và `use-smart-nudges` không đặt thông báo nào.** Chúng
+   là bề mặt trong app; hệ điều hành không hề biết tới chúng, nên một nhiệm vụ
+   hết đủ điều kiện không để lại thông báo nào. Mục 16–17 không áp dụng.
+
+Cả bốn lỗi dưới đây là **một** nguyên nhân gốc: *không có một chủ sở hữu duy
+nhất, được kiểm chứng, cho cái lịch của hệ điều hành.*
+
+---
+
+### BUG-56 (P1). Chân trời xin nhiều hơn số iOS giữ được — `SCHEDULE-OVERFLOW-SILENTLY-TRUNCATED`
+
+| | |
+| --- | --- |
+| **AREA** | `lib/reminder-plan.ts` → `lib/notifications.ts` |
+| **SEVERITY** | P1 |
+| **STATUS** | đã sửa |
+| **OWNER USER** | người đang đăng nhập |
+| **SESSION STATE** | bất kỳ |
+| **SCHEDULE ID** | không có — app không giữ id |
+| **PERSISTENCE LAYER** | bộ lập lịch native của iOS |
+| **CLEANUP PATH** | `cancelAllScheduledNotificationsAsync` |
+
+**TRIGGER:** bật cả năm nhắc với **cấu hình mặc định của chính app** (nước 2
+giờ/lần).
+
+**EXPECTED:** bảy ngày nhắc như chân trời hứa.
+
+**ACTUAL:** đo trên bộ lập kế hoạch thật:
+
+```
+nước 1 giờ/lần → 119 cái  (55 quá trần)
+nước 2 giờ/lần →  77 cái  (13 quá trần)   ← mặc định
+nước 3 giờ/lần →  63 cái       vừa
+nước 4 giờ/lần →  56 cái       vừa
+```
+
+Chạy qua `scheduleReminderPlan` thật trên trung tâm có trần 64: **xin 77, đang
+chờ 64**, cái cuối cùng sống sót rơi vào **ngày 5** trong khi kế hoạch xin tới
+**ngày 7**.
+
+**ROOT CAUSE:** `UNUserNotificationCenter` giữ 64 yêu cầu chờ cho mỗi app. Tệ
+hơn số học: vòng lặp nằm trong **một** `try` với `catch` rỗng, nên cái bị từ
+chối **đầu tiên** kết thúc luôn vòng lặp — mọi nhắc sau đó không được thử lấy
+một lần. Không có gì hiện lên nói điều đó.
+
+**FIX:** `MAX_PENDING = 64` trong `reminder-plan.ts`, cắt **sau khi đã sắp theo
+giờ**, nên phần sống sót là những cái sớm nhất: đủ cả năm loại nhắc, đúng thứ
+tự, chân trời ngắn lại. Việc này cũng làm `planSignature` mô tả đúng cái đang
+thật sự chờ — thứ mà chỗ gọi đem ra so để thoát sớm. Và vòng lặp `try` chuyển
+vào **từng** lần đặt, nên một lời từ chối mất một nhắc chứ không mất phần còn
+lại.
+
+**REGRESSION:** luật B của `tools/notifications.mjs`. Bỏ `.slice(0, MAX_PENDING)`
+→ đỏ với đúng `119,77,63,56`.
+
+**REGRESSION RISK:** thấp. Người dùng đặt nước 1 giờ/lần nay được nhắc trong
+khoảng 4 ngày thay vì "7 ngày" mà thực tế chưa bao giờ có.
+
+---
+
+### BUG-57 (P1). Hai bản hook cùng sở hữu một cái lịch — `STALE-OWNER-REVERTS-SCHEDULE`
+
+| | |
+| --- | --- |
+| **AREA** | `hooks/use-reminders.ts` |
+| **SEVERITY** | P1 |
+| **STATUS** | đã sửa |
+| **PERSISTENCE LAYER** | `useState` của từng bản hook (trước) → kho phạm vi module (sau) |
+
+**TRIGGER:** mở Reminders, bật nhắc đi ngủ, quay lại Today, để bất kỳ truy vấn
+nào trong sáu truy vấn dùng chung cập nhật.
+
+**ACTUAL:** dựng lại bằng bộ lập kế hoạch thật và một trung tâm ghi lại nó đang
+giữ gì:
+
+```
+1. Today gắn vào, mọi nhắc tắt        → 0 đang chờ
+2. màn Reminders: bật nhắc đi ngủ     → 7 đang chờ
+3. một truy vấn cập nhật, Today đồng bộ lại → 0 đang chờ
+   đĩa nói nhắc đi ngủ = true | hệ điều hành giữ 0 thông báo
+```
+
+**ROOT CAUSE:** `prefs` là `useState` **bên trong** `useReminders`, và
+`useReminders` được gắn **hai lần** — `useReminderSync()` trên Today, và màn
+Reminders gắn bản của nó lên trên (một route đẩy vào Stack không gỡ tab bên
+dưới). Mỗi bản đọc giá trị đã lưu **một lần, lúc chính nó gắn vào**, và không
+bản nào thấy sửa đổi của bản kia. Cả hai đều ghi một cái lịch toàn cục.
+
+**FIX:** một kho ở phạm vi module với `useSyncExternalStore` — đúng khuôn mà
+`use-steps-goal` / `use-weight-goal` đã dùng — và như chúng, nó đăng ký reset với
+`user-scoped-reset` (Chain E: xoá khoá AsyncStorage không chạm tới biến module,
+nên người kế tiếp thừa hưởng công tắc của người trước).
+
+**REGRESSION:** luật H. Đưa `prefs` về `useState` → đỏ.
+
+---
+
+### BUG-58 (P2). Hai lượt đặt lịch chồng nhau nhân đôi cả bộ — `DUPLICATE-NOTIFICATION-SCHEDULE`
+
+**TRIGGER:** hai chỗ gọi cùng đặt lịch trong cùng một khoảnh khắc — chính là
+tình huống BUG-57 mô tả (hai bản hook cùng sống).
+
+**ACTUAL:** năm lần chạy trên năm, qua hàm thật:
+
+```
+kế hoạch 56 · đang chờ 112   (56 bản trùng)
+```
+
+**ROOT CAUSE:** đặt lịch là *huỷ hết rồi thêm lại từng cái*, có `await` ở mỗi
+bước. Hai lượt đan vào nhau thành `huỷ → huỷ → thêm×n → thêm×n` và cả hai bộ
+cùng sống.
+
+**FIX:** một hàng đợi tuần tự ở phạm vi module trong `notifications.ts`, phủ cả
+`scheduleReminderPlan` lẫn `cancelAllReminders`. Đặt ở đây chứ không ở chỗ gọi
+vì **module này là chỗ sở hữu hệ điều hành**: một luật giữ ở chỗ gọi là luật mà
+chỗ gọi tiếp theo không biết. Dây chuyền được làm sạch lỗi sau mỗi mắt, nếu
+không một lần hỏng sẽ nuốt mọi lần ghi về sau.
+
+**REGRESSION:** luật C — hai lượt đồng thời, và bốn lượt cộng một lượt huỷ ném
+vào giữa. Bỏ `serialised` → đỏ. Luật D: hai mươi lượt liên tiếp phải hội tụ.
+
+---
+
+### BUG-59 (P2). Sổ được ghi trước khi việc được làm — `RESCHEDULE-LEAK`
+
+**TRIGGER:** hệ điều hành từ chối một yêu cầu (chạm trần, hoặc bất kỳ lỗi native
+nào).
+
+**ACTUAL:** trung tâm từ chối từ yêu cầu thứ 20:
+
+```
+kế hoạch 56 · đặt được 19 · chữ ký đã ghi: cả 56
+```
+
+Lần đồng bộ sau đọc chữ ký, thấy khớp, **thoát sớm** — nên lịch không bao giờ
+được đặt lại nữa, cho tới khi một thay đổi *khác* làm kế hoạch đổi. Đúng cơ chế
+mà `query-client.ts` đã mô tả cho `ascnd_reminder_plan`, đến qua một cửa khác.
+
+**ROOT CAUSE:** cả hai chỗ gọi làm `setItem(PLAN_KEY, signature)` **trước** khi
+hỏi hệ điều hành, và lời gọi đó nuốt mọi lỗi. Sổ nói "đã đặt" bất kể chuyện gì
+xảy ra.
+
+**FIX:** `scheduleReminderPlan` trả về `{ requested, scheduled, supported }` —
+nó **báo lại việc thật sự làm được** — và `commitPlan()` chỉ ghi chữ ký khi
+`scheduled === requested`. Một lần đặt dở dang cố ý **không** được ghi: nó không
+phải kế hoạch, và ghi nó lại là tự khoá mình khỏi lần thử tiếp theo.
+
+**REGRESSION:** luật E và H. Bỏ điều kiện `scheduled !== requested` → đỏ; đảo
+thứ tự ghi/đặt → đỏ.
+
+---
+
+## Chain L — đã kiểm và **KHÔNG** phải lỗi
+
+**1. Đăng xuất huỷ sạch, qua mọi cửa.** Đo bằng cách chạy: 77 → 0. Và cửa là sự
+kiện `SIGNED_OUT`, không phải nút bấm, nên token hết hạn, đổi mật khẩu và xoá
+tài khoản đều được phủ. Xoá tài khoản gọi `signOut()` ngay sau khi hàm edge trả
+về.
+
+**2. Cả hai khoá AsyncStorage đều nằm trong danh sách xoá khi đăng xuất** —
+`ascnd_reminders` và `ascnd_reminder_plan` có trong `USER_KEYS`. Luật H kiểm lại.
+
+**3. Đổi múi giờ giữ nguyên GIỜ ĐỊA PHƯƠNG.** Cùng một cấu hình nhắc 20:00, đo ở
+bốn múi:
+
+```
+America/Chicago      epoch 1787101200000 = 20:00
+America/Los_Angeles  epoch 1787108400000 = 20:00
+America/New_York     epoch 1787097600000 = 20:00
+America/Denver       epoch 1787104800000 = 20:00
+```
+
+Epoch khác nhau nên **chữ ký cũng khác**, nghĩa là chuyển múi giờ làm kế hoạch
+được viết lại ở lần render tiếp theo. Tự lành. Giới hạn nói thẳng: những thông
+báo **đã** đặt vẫn nổ theo thời điểm tuyệt đối cũ cho tới khi app được mở lại.
+
+**4. DST không nhân đôi cũng không nuốt mất.** Chạy bộ lập kế hoạch thật qua cả
+hai mốc, ở Chicago và Los Angeles:
+
+```
+ngày 23 giờ (nhắc 02:30): 6 nhắc / 6 ngày khác nhau — 3/8 trôi 02:30 → 03:30
+ngày 25 giờ (nhắc 01:30): 6 nhắc / 6 ngày khác nhau — 01:30, một lần mỗi ngày
+```
+
+02:30 của ngày mùa xuân **không tồn tại**, và JS đẩy nó tới 03:30 — kết quả duy
+nhất hợp lý. 01:30 xảy ra hai lần vào ngày mùa thu và chỉ lần đầu được chọn.
+
+**5. Gọi lặp lại tuần tự vốn đã idempotent** — hai mươi lượt liên tiếp vẫn ra
+đúng một bộ. `cancelAll` + đặt lại toàn bộ là một phát biểu đầy đủ, nên các
+đường mà đề bài nêu (mở app, foreground, đổi hồ sơ, mở Settings, xong onboarding,
+làm mới nhiệm vụ ngày) không thể cộng dồn. Vấn đề là **đồng thời**, không phải
+lặp lại — xem BUG-58.
+
+**6. Không thông báo nào được đặt vào thời điểm đã qua.** `push()` trong
+`planReminders` bỏ mọi thời điểm không lớn hơn `now`. Luật F kiểm lại.
+
+**7. Quyền bị từ chối CÓ được nói ra.** `showPermHint` trên màn Reminders hiện
+cảnh báo khi `available && !permission && có công tắc bật`. Nên app không nói
+"đã bật" trong khi hệ điều hành đang chặn. (Giới hạn: `permission` chỉ được đọc
+lúc gắn hook, nên thu hồi quyền trong lúc màn đang mở sẽ không cập nhật ngay.)
+
+**8. Đổi mục tiêu hồ sơ CÓ đặt lại lịch.** `water_target_ml` đi vào
+`ctx.waterDone`; đổi 2500 → 3500 làm `waterDone` lật, kế hoạch đổi, chữ ký đổi,
+lịch được viết lại. Không có chuyện "nhắc theo mục tiêu cũ" nằm lại cạnh nhắc
+mới.
+
+**9. Lịch là cục bộ theo máy, không có bản sao trên máy chủ.** Không bảng nào,
+không edge function nào biết tới thông báo. Nhiều máy sẽ có lịch độc lập — ghi
+lại chứ **không** đồng bộ hoá (xem PS-3 của vòng này).
+
+---
+
+## Chain L — PRODUCT SEMANTICS REQUIRED
+
+### PS-1. Khi chạm trần 64, nên cắt cái gì?
+
+Bản sửa cắt **phần đuôi thời gian**: đặt xa nhất trong khả năng của hệ điều
+hành, đủ cả năm loại. Lựa chọn khác là **thưa bớt** — bỏ một nửa số nhắc nước để
+giữ được nhắc đi ngủ của ngày 6 và ngày 7. Cả hai đều biểu diễn được; cái nào
+đúng phụ thuộc vào việc nhắc nước hay chân trời quan trọng hơn. **KHÔNG tự chọn.**
+
+### PS-2. Nhắc nước tính theo một mục tiêu bịa khi hồ sơ chưa đủ
+
+`ctx.waterDone` dùng `Number(profile?.water_target_ml) || 2500` — đúng lớp mà
+Chain K vừa dọn ở nơi khác. Ở đây hậu quả nhỏ (chỉ quyết định có tắt các nhắc
+nước còn lại của **hôm nay** hay không), nhưng nó vẫn là "lên lịch từ một con số
+không phải của người dùng". Nên nhắc nước bị **tắt** khi chưa có mục tiêu, hay
+vẫn chạy theo mặc định? **KHÔNG tự chọn.**
+
+### PS-3. Nhiều máy
+
+Lịch hoàn toàn cục bộ. Hai chiếc máy cùng một tài khoản sẽ nhắc độc lập — có thể
+đúng ý (mỗi máy nhắc chủ nó) hoặc không (nhắc hai lần). Đề bài dặn không thêm
+đồng bộ khi sản phẩm chưa ngụ ý điều đó. **KHÔNG làm.**
+
+### PS-4. Cài lại app
+
+Đề bài nói lịch sống sót qua cài lại. Ở môi trường này **không kiểm chứng được**
+— `PLATFORM-BEHAVIOR-UNVERIFIED`. Không bịa kết quả. (Nếu iOS thật sự giữ lịch
+qua cài lại thì `cancelAllReminders` lúc đăng xuất vẫn là chốt đúng, vì nó chạy
+trước khi app biến mất.)
+
+### PS-5. Thu hồi quyền rồi cấp lại
+
+`permission` chỉ được đọc lúc gắn hook. Sau khi cấp lại quyền, lịch cũ còn hiệu
+lực hay phải dựng lại là hành vi nền tảng — **không kiểm chứng được ở đây**.
+
+---
+
+## Chain L — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `planReminders` chạy thật: kích thước kế hoạch ở 4 mức nước, hai mốc DST × 2 múi giờ, 4 múi giờ cho ngữ nghĩa giờ địa phương |
+| **bộ lập lịch giả** | `scheduleReminderPlan` / `cancelAllReminders` THẬT, chạy trên một trung tâm thông báo mô phỏng trần 64 và lời từ chối của iOS: đăng xuất, tràn trần, đồng thời, lặp lại, hỏng một phần |
+| **bộ lập lịch native** | **KHÔNG**. `expo-notifications` không hề được nạp |
+| **runtime iOS thật** | **KHÔNG**. `SCHEDULE-PERSISTENCE-PROVEN`, `FIRING-ON-DEVICE-UNVERIFIED` — chưa thông báo nào nổ trên một chiếc iPhone, chưa lịch nào được soi qua `UNUserNotificationCenter` thật. Con số 64 là giới hạn Apple ghi trong tài liệu, không phải số đo ở đây |
+| **PostgreSQL** | **KHÔNG dùng ở vòng này** — không bảng nào, không RLS nào dính tới thông báo. Đây là kết quả của việc lập bản đồ, không phải một bước bị bỏ |
+| **bộ dò** | 9 phép phá, mỗi phép đỏ đúng câu định trước rồi xanh lại |
+| **tác động production** | **KHÔNG**. Không dữ liệu, không snapshot, không log |
 
 ---
 

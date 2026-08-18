@@ -80,6 +80,37 @@ export const WATER_END_HOUR = 20;
 /** How far ahead one-shot reminders are laid down. See the note above. */
 export const HORIZON_DAYS = 7;
 
+/**
+ * The most pending notification requests iOS will hold for one app.
+ *
+ * ── the horizon wrote cheques the OS does not cash ──
+ *
+ * `UNUserNotificationCenter` keeps 64 pending requests per app and refuses the
+ * rest. Seven days of one-shots goes past that on the app's **own default
+ * settings**, measured on the real planner:
+ *
+ *     water every 1h → 119 planned   (55 over)
+ *     water every 2h →  77 planned   (13 over)   ← the default
+ *     water every 3h →  63 planned        fits
+ *
+ * Driven through the real `scheduleReminderPlan` against a centre that enforces
+ * the cap: 77 requested, **64 pending**, and the last one that survives is on
+ * day 5 while the plan asked through day 7. Worse than the arithmetic, the
+ * rejection is thrown from `scheduleNotificationAsync`, the loop is inside one
+ * `try`, and the `catch` is empty — so the first refusal ends the loop and
+ * everything after it is never even attempted.
+ *
+ * Trimming here rather than letting the OS do it is what makes the outcome
+ * knowable: the plan is already sorted by time, so keeping the first `MAX` is
+ * "schedule as far ahead as the OS will hold" — every kind of reminder, in
+ * order, over a shorter horizon. It also makes `planSignature` describe what is
+ * actually pending, which is what the caller's early-exit compares against.
+ *
+ * Which reminders to *thin* instead — dropping every other water ping to keep
+ * day 6 and day 7's bedtime, say — is a product decision and is not made here.
+ */
+export const MAX_PENDING = 64;
+
 /** Monday-first weekday index, matching `routine_days.day_of_week`. */
 export function routineIndexOf(d: Date): number {
   return (d.getDay() + 6) % 7;
@@ -148,7 +179,8 @@ export function planReminders(
   }
 
   out.sort((a, b) => a.at.getTime() - b.at.getTime());
-  return out;
+  /* Sorted first, so the survivors are the soonest ones — see `MAX_PENDING`. */
+  return out.slice(0, MAX_PENDING);
 }
 
 /**

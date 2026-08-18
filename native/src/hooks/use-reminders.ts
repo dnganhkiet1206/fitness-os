@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 
 import { useI18n } from '@/hooks/use-app-settings';
 import { useRoutineDays } from '@/hooks/use-library';
@@ -17,7 +17,8 @@ import {
   type ReminderCopy,
   type ReminderPrefs,
 } from '@/lib/notifications';
-import { planReminders, planSignature, type ReminderContext } from '@/lib/reminder-plan';
+import { planReminders, planSignature, type PlannedReminder, type ReminderContext } from '@/lib/reminder-plan';
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
 const PREFS_KEY = 'ascnd_reminders';
 /** the signature of the plan last written to the OS — see the effect below */
@@ -34,15 +35,106 @@ function merge(stored: Partial<ReminderPrefs> | null): ReminderPrefs {
   };
 }
 
+/*
+  ── the switches are one person's answer, and there were two copies of it ──
+
+  `prefs` was `useState` inside `useReminders`, and `useReminders` is mounted
+  **twice**: `useReminderSync()` runs on Today, and the Reminders screen mounts
+  its own on top of it — a pushed route leaves the tab underneath mounted. Each
+  copy loaded the stored value once, at its own mount, and neither ever saw the
+  other's edit. Both then wrote the one global OS schedule.
+
+  Re-enacted against the real planner and a notification centre that records
+  what it holds:
+
+      1. Today mounted, all reminders off        → 0 pending
+      2. Reminders screen: bedtime ON            → 7 pending
+      3. a shared query updates, Today re-syncs  → 0 pending
+
+  Step 3 is Today's instance rebuilding from the prefs it read at *its* mount,
+  which still say bedtime is off. The switch is on, the stored preference is
+  on, and the OS holds nothing. Nothing on any screen says so.
+
+  So the answer lives in one place, the module-scope store this codebase uses
+  for exactly this — and, like the others, it registers its reset with
+  `user-scoped-reset` so the value does not outlive the account that gave it
+  (Chain E: deleting the key never reached the `let`).
+*/
+let prefsState: ReminderPrefs = DEFAULT_REMINDERS;
+let hydrated = false;
+let settled = false;
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((l) => l());
+
+async function hydratePrefs(): Promise<void> {
+  if (hydrated) return;
+  hydrated = true;
+  try {
+    const raw = await AsyncStorage.getItem(PREFS_KEY);
+    prefsState = merge(raw ? JSON.parse(raw) : null);
+  } catch {
+    prefsState = DEFAULT_REMINDERS;
+  } finally {
+    settled = true;
+    emit();
+  }
+}
+
+function subscribePrefs(cb: () => void) {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+}
+
+/** Back to the state a fresh launch has — the latch goes too, or the next
+    account never reads its own switches either. */
+onUserScopedReset(() => {
+  prefsState = DEFAULT_REMINDERS;
+  hydrated = false;
+  settled = false;
+  emit();
+});
+
+function writePrefs(next: ReminderPrefs): void {
+  prefsState = next;
+  emit();
+  AsyncStorage.setItem(PREFS_KEY, JSON.stringify(next)).catch(() => {});
+}
+
+/**
+ * Lay the plan down, and only then claim it was laid down.
+ *
+ * ── the signature used to be written first ──
+ *
+ * Both call sites did `setItem(PLAN_KEY, signature)` and *then* asked the OS,
+ * and the OS call swallowed every failure. So the record said "this plan is
+ * pending" whatever happened, and the next sync compares against that record
+ * and returns early. One refusal therefore meant no reminder was ever
+ * rescheduled again — not until some *other* change altered the plan.
+ *
+ * Measured through the real function against a centre that refuses from the
+ * twentieth request: 19 of 56 pending, and the signature claiming all 56.
+ *
+ * Writing it afterwards, and only on a complete result, turns that into a
+ * retry: the next sync sees a signature that does not match, and tries again.
+ * A partial write is left unrecorded on purpose — it is not the plan.
+ */
+async function commitPlan(plan: PlannedReminder[], copy: ReminderCopy): Promise<void> {
+  const outcome = await scheduleReminderPlan(plan, copy);
+  if (!outcome.supported) return;
+  if (outcome.scheduled !== outcome.requested) return;
+  await AsyncStorage.setItem(PLAN_KEY, planSignature(plan)).catch(() => {});
+}
+
 /**
  * Reminder preferences + OS scheduling. Persists to AsyncStorage and
  * re-schedules local notifications whenever prefs change.
  */
 export function useReminders() {
   const i18n = useI18n();
-  const [prefs, setPrefs] = useState<ReminderPrefs>(DEFAULT_REMINDERS);
+  /* One store, however many instances of this hook are mounted. */
+  const prefs = useSyncExternalStore(subscribePrefs, () => prefsState);
+  const loaded = useSyncExternalStore(subscribePrefs, () => settled);
   const [permission, setPermission] = useState(false);
-  const [loaded, setLoaded] = useState(false);
 
   const copy: ReminderCopy = {
     water: { title: i18n.nReminderWater, body: i18n.nReminderWaterBody },
@@ -82,22 +174,15 @@ export function useReminders() {
 
   useEffect(() => {
     (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(PREFS_KEY);
-        setPrefs(merge(raw ? JSON.parse(raw) : null));
-      } catch {
-        setPrefs(DEFAULT_REMINDERS);
-      }
+      await hydratePrefs();
       setPermission(await hasNotificationPermission());
-      setLoaded(true);
     })();
   }, []);
 
   /** Persist + reschedule; requests permission the first time anything turns on. */
   const apply = useCallback(
     async (next: ReminderPrefs) => {
-      setPrefs(next);
-      AsyncStorage.setItem(PREFS_KEY, JSON.stringify(next)).catch(() => {});
+      writePrefs(next);
 
       const anyOn = Object.values(next).some((r) => r.enabled);
       let granted = permission;
@@ -107,8 +192,7 @@ export function useReminders() {
       }
       if (granted) {
         const plan = planReminders(next, ctx);
-        await AsyncStorage.setItem(PLAN_KEY, planSignature(plan)).catch(() => {});
-        await scheduleReminderPlan(plan, copy);
+        await commitPlan(plan, copy);
       }
     },
     [permission, copy, ctx],
@@ -130,8 +214,7 @@ export function useReminders() {
     (async () => {
       const last = await AsyncStorage.getItem(PLAN_KEY).catch(() => null);
       if (last === signature) return;
-      await AsyncStorage.setItem(PLAN_KEY, signature).catch(() => {});
-      await scheduleReminderPlan(plan, copy);
+      await commitPlan(plan, copy);
     })();
     // `copy` is rebuilt every render from `i18n`; including it would reschedule
     // on every render. The signature guard above is what makes that safe to
