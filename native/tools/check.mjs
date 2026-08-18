@@ -220,6 +220,7 @@ const STEPS = [
   ['hồ sơ và onboarding', 'node', ['tools/profile-onboarding.mjs']],
   ['vòng đời thông báo', 'node', ['tools/notifications.mjs']],
   ['khởi động lạnh', 'node', ['tools/offline-cold-launch.mjs']],
+  ['ranh giới AI', 'node', ['tools/ai-boundary.mjs']],
   ['lối vào màn hình', 'node', ['tools/entry-points.mjs']],
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],

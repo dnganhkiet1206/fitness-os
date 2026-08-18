@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, json, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { claimCall, corsHeaders, json, localDate, quotaExceeded, requireUser } from "../_shared/guard.ts";
 
 /** Output ceiling — the reply is a structured review, not an essay. */
 const MAX_TOKENS = 1200;
@@ -24,7 +24,15 @@ serve(async (req) => {
       `ai-coach` already applies to its own `date`.
     */
     const { week_start, lang = "vi" } = await req.json().catch(() => ({}));
-    if (typeof week_start !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(week_start)) {
+    /*
+      The shape check this used to do was `^\d{4}-\d{2}-\d{2}$` and nothing
+      more, which `9999-99-99` satisfies — and `new Date("9999-99-99")` is an
+      Invalid Date whose `toISOString()` throws four lines down. Same 500, same
+      already-counted quota, from the same parameter the earlier fix was about;
+      a shape is not a date. `localDate` does both, in one place the other
+      functions use too.
+    */
+    if (localDate(week_start) === null) {
       return json({ error: "week_start must be YYYY-MM-DD" }, 400);
     }
 

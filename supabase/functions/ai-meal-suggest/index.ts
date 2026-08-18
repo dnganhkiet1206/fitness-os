@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { claimCall, corsHeaders, localDate, oneOf, quotaExceeded, requireUser } from "../_shared/guard.ts";
 import { localHour } from "../_shared/sleep.ts";
 
 /** Output ceiling — the reply is a short list of meals. */
 const MAX_TOKENS = 900;
+
+/** The six `meal_type` values `log-meal.tsx` writes, plus the client's "any". */
+const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack", "preworkout", "postworkout", "any"] as const;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -24,9 +27,19 @@ serve(async (req) => {
     */
     const { meal_type, lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
 
+    /*
+      `meal_type` is copied into the prompt below. It used to go there exactly
+      as sent, with no length limit and no domain — measured, a 200,000-char
+      `meal_type` produced a 202,240-char request to a paid gateway for one unit
+      of a quota that counts calls, not size. The client only ever sends one of
+      the seven words below, so anything else is not a shorter version of a
+      request, it is a different request.
+    */
+    const mealType = oneOf(meal_type, MEAL_TYPES);
+
     if (!(await claimCall(supabase, "ai-meal-suggest"))) return quotaExceeded();
-    // Prefer the client's local calendar date; fall back to server UTC
-    const today = date ?? new Date().toISOString().split("T")[0];
+    /* Validated for the same reason `ai-smart-nudges` is — see `localDate`. */
+    const today = localDate(date) ?? new Date().toISOString().split("T")[0];
 
     const [profileRes, dailyLogRes, favFoodsRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
@@ -81,7 +94,7 @@ serve(async (req) => {
       allergies: profile?.allergies,
       disliked_foods: profile?.disliked_foods,
       remaining_macros: remaining,
-      meal_type: meal_type || "any",
+      meal_type: mealType ?? "any",
       favorite_foods: favFoods,
       /* Was the hour in UTC, on a Deno host — "fit the time of day" below then
          fitted a time of day the caller was not in. `null` when the client did

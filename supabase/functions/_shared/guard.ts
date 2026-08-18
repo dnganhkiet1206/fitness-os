@@ -103,6 +103,51 @@ export async function claimCall(supabase: SupabaseClient, kind: string): Promise
   return data !== false;
 }
 
+/**
+ * A calendar date the caller sent, or `null` if they did not send a usable one.
+ *
+ * ── the same bug, in two functions that did not get the fix ──
+ *
+ * `ai-weekly-review` learned this the hard way: `week_start` was taken on trust
+ * and handed to `new Date()`, and anything that is not a date makes an Invalid
+ * Date whose `toISOString()` throws — a 500, **with the quota already claimed**.
+ * It got a regex. `ai-coach` has one of its own. `ai-meal-suggest` and
+ * `ai-smart-nudges` were left as `date ?? new Date()...`, and nudges does the
+ * identical arithmetic:
+ *
+ *     date: "not-a-date"  →  RangeError: Invalid time value
+ *                         →  HTTP 500, claim_ai_call already counted 1
+ *
+ * Measured by driving the real handler. So the check lives here now, once,
+ * rather than as a fourth hand-written regex — a rule kept at the call sites is
+ * a rule the next call site does not know about.
+ *
+ * `null` rather than a throw: an older client may send no date at all, and the
+ * server's own UTC day is the established fallback for that. An unusable date
+ * is the same situation as an absent one.
+ */
+export function localDate(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  /* The shape is not enough: `9999-99-99` matches it and is not a day. */
+  return Number.isNaN(Date.parse(`${value}T00:00:00Z`)) ? null : value;
+}
+
+/**
+ * One of a known set, or `null`.
+ *
+ * For request fields whose values the app itself chooses. `meal_type` is the
+ * one that needed it: it was copied straight from the body into the prompt with
+ * no length limit and no domain, so a 200,000-character `meal_type` produced a
+ * **202,240-character** request to a paid gateway — measured — for one unit of
+ * a quota that counts calls, not size. The client only ever sends one of seven
+ * words, so a list is a tighter and more honest bound than a length cap.
+ */
+export function oneOf<T extends string>(value: unknown, allowed: readonly T[]): T | null {
+  return typeof value === "string" && (allowed as readonly string[]).includes(value)
+    ? (value as T)
+    : null;
+}
+
 /** The reply for a caller who has used the day up. */
 export const quotaExceeded = () =>
   json({ error: "Đã dùng hết lượt AI hôm nay. Vui lòng thử lại vào ngày mai." }, 429);

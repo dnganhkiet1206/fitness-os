@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { claimCall, corsHeaders, localDate, quotaExceeded, requireUser } from "../_shared/guard.ts";
 import { asleepMinutes, localHour, SLEEP_COLUMNS } from "../_shared/sleep.ts";
 
 /** Output ceiling — the reply is a handful of one-line nudges. */
@@ -25,8 +25,13 @@ serve(async (req) => {
     const { lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
 
     if (!(await claimCall(supabase, "ai-smart-nudges"))) return quotaExceeded();
-    // Prefer the client's local calendar date; fall back to server UTC
-    const today = date ?? new Date().toISOString().split("T")[0];
+    /* Prefer the client's local calendar date; fall back to server UTC.
+       Validated, because the arithmetic two lines down is `new Date(...)` and
+       an unusable string makes an Invalid Date whose `toISOString()` throws —
+       a 500 with the quota above already counted. `ai-weekly-review` was fixed
+       for exactly this; the check is shared now so a third function cannot
+       miss it. Measured: date "not-a-date" → RangeError → 500, quota 1. */
+    const today = localDate(date) ?? new Date().toISOString().split("T")[0];
     const threeDaysAgo = new Date(`${today}T00:00:00Z`);
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
     const daysAgo3 = threeDaysAgo.toISOString().split("T")[0];
