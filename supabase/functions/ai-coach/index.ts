@@ -56,12 +56,26 @@ serve(async (req) => {
     if (caller instanceof Response) return caller;
     const { userId, supabase } = caller;
 
-    if (!(await claimCall(supabase, "ai-coach"))) return quotaExceeded();
+    /*
+      Read and checked before the quota is spent.
 
+      `claimCall` is an increment, not a reservation: it counts the request
+      whether or not anything reaches the gateway. With it first, a request
+      that never could have gone anywhere — no image, no messages, a body that
+      is not JSON — still cost the caller one of their calls for the day, and a
+      client retrying a request it had malformed could burn the whole
+      allowance without a single model invocation.
+
+      Whether a *provider* failure should refund a call is a genuine question
+      and is left exactly as it was. This is the other case: nothing was spent,
+      so nothing should be counted.
+    */
     const body = await req.json();
     const lang = body?.lang === "en" ? "en" : "vi";
     const messages = sanitize(body?.messages);
     if (messages.length === 0) return json({ error: "No messages" }, 400);
+
+    if (!(await claimCall(supabase, "ai-coach"))) return quotaExceeded();
     /*
       ── the server does not know what day it is for this person ──
 

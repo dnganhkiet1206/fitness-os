@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { claimCall, corsHeaders, json, quotaExceeded, requireUser } from "../_shared/guard.ts";
 
 /** Output ceiling — the reply is a structured review, not an essay. */
 const MAX_TOKENS = 1200;
@@ -16,9 +16,19 @@ serve(async (req) => {
     if (caller instanceof Response) return caller;
     const { userId, supabase } = caller;
 
-    if (!(await claimCall(supabase, "ai-weekly-review"))) return quotaExceeded();
+    /*
+      `week_start` was taken on trust and handed to `new Date()`. Anything that
+      is not a date makes an Invalid Date, `toISOString()` throws two lines
+      later, and the request ends as a 500 — with the call already counted,
+      because the quota was claimed before the body was read. Same shape check
+      `ai-coach` already applies to its own `date`.
+    */
+    const { week_start, lang = "vi" } = await req.json().catch(() => ({}));
+    if (typeof week_start !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(week_start)) {
+      return json({ error: "week_start must be YYYY-MM-DD" }, 400);
+    }
 
-    const { week_start, lang = "vi" } = await req.json();
+    if (!(await claimCall(supabase, "ai-weekly-review"))) return quotaExceeded();
 
     const weekEnd = new Date(week_start);
     weekEnd.setDate(weekEnd.getDate() + 6);

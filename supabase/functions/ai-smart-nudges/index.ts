@@ -17,9 +17,14 @@ serve(async (req) => {
     if (caller instanceof Response) return caller;
     const { userId, supabase } = caller;
 
-    if (!(await claimCall(supabase, "ai-smart-nudges"))) return quotaExceeded();
-
+    /*
+      The body first, the quota after. `claimCall` counts a request whether or
+      not the gateway is reached, so a malformed one used to cost a call for
+      nothing — see the same note in `ai-coach`.
+    */
     const { lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
+
+    if (!(await claimCall(supabase, "ai-smart-nudges"))) return quotaExceeded();
     // Prefer the client's local calendar date; fall back to server UTC
     const today = date ?? new Date().toISOString().split("T")[0];
     const threeDaysAgo = new Date(`${today}T00:00:00Z`);

@@ -22,6 +22,80 @@ const MAX_TOKENS = 1500;
  */
 const MAX_IMAGE_CHARS = 4_000_000;
 
+/**
+ * What a single food item may plausibly be.
+ *
+ * These are `lib/plausible.ts`'s `meal_kcal` and `macro_g` bounds, restated
+ * because an edge function cannot import from the app. `tools/ai-coach.mjs`
+ * asserts the two agree, so a change on either side that forgets the other
+ * fails rather than drifts.
+ */
+const ITEM_MAX_KCAL = 10_000;
+const ITEM_MAX_MACRO_G = 2_000;
+/** A serving heavier than this is not one item on a plate. */
+const ITEM_MAX_SERVING_G = 5_000;
+/** More than this in one photo is not a meal being logged. */
+const MAX_ITEMS = 20;
+
+/**
+ * A number the app is willing to treat as a measurement, or `null`.
+ *
+ * `Number(v)` alone is not the check it looks like: it turns `null`, `""` and
+ * `[]` into a perfectly finite `0`, so a missing macro would have arrived in
+ * the diary as a measured zero rather than as a reason to drop the item. Only
+ * a number, or a string that is entirely a number, counts as one.
+ */
+function measured(v: unknown, max: number): number | null {
+  const n =
+    typeof v === "number" ? v
+    : typeof v === "string" && v.trim() !== "" ? Number(v)
+    : NaN;
+  if (!Number.isFinite(n) || n < 0 || n > max) return null;
+  return Math.round(n * 10) / 10;
+}
+
+/**
+ * The model's items, reduced to ones worth writing into somebody's diary.
+ *
+ * Exported so `tools/ai-coach.mjs` can run it directly: this is the boundary
+ * between a model's guess and a number the rest of the app treats as fact, and
+ * a boundary that is only asserted in a comment is one that stops holding.
+ */
+export function clampItems(raw: unknown): { items: unknown[] } {
+  const items = Array.isArray((raw as { items?: unknown })?.items)
+    ? ((raw as { items: unknown[] }).items)
+    : [];
+  const out: unknown[] = [];
+  for (const it of items) {
+    if (!it || typeof it !== "object") continue;
+    const f = it as Record<string, unknown>;
+    const food_name = typeof f.food_name === "string" ? f.food_name.trim().slice(0, 120) : "";
+    if (!food_name) continue;
+    const kcal = measured(f.kcal, ITEM_MAX_KCAL);
+    if (kcal === null) continue;
+    const protein_g = measured(f.protein_g, ITEM_MAX_MACRO_G);
+    const carbs_g = measured(f.carbs_g, ITEM_MAX_MACRO_G);
+    const fat_g = measured(f.fat_g, ITEM_MAX_MACRO_G);
+    const fiber_g = measured(f.fiber_g, ITEM_MAX_MACRO_G);
+    const serving_g = measured(f.serving_g, ITEM_MAX_SERVING_G);
+    /* A macro that cannot be a measurement takes the item with it. Keeping the
+       calories and dropping the protein would put an item in the diary whose
+       macros do not describe it, which is worse than not having it. */
+    if (protein_g === null || carbs_g === null || fat_g === null || fiber_g === null) continue;
+    out.push({
+      food_name,
+      serving_g: serving_g ?? 0,
+      kcal,
+      protein_g,
+      carbs_g,
+      fat_g,
+      fiber_g,
+    });
+    if (out.length >= MAX_ITEMS) break;
+  }
+  return { items: out };
+}
+
 const MODES = new Set(["food", "barcode", "label"]);
 
 serve(async (req) => {
@@ -34,8 +108,20 @@ serve(async (req) => {
     if (caller instanceof Response) return caller;
     const { supabase } = caller;
 
-    if (!(await claimCall(supabase, "scan-food"))) return quotaExceeded();
+    /*
+      Read and checked before the quota is spent.
 
+      `claimCall` is an increment, not a reservation: it counts the request
+      whether or not anything reaches the gateway. With it first, a request
+      that never could have gone anywhere — no image, no messages, a body that
+      is not JSON — still cost the caller one of their calls for the day, and a
+      client retrying a request it had malformed could burn the whole
+      allowance without a single model invocation.
+
+      Whether a *provider* failure should refund a call is a genuine question
+      and is left exactly as it was. This is the other case: nothing was spent,
+      so nothing should be counted.
+    */
     const body = await req.json();
     const image_base64 = typeof body?.image_base64 === "string" ? body.image_base64 : "";
     const lang = body?.lang === "en" ? "en" : "vi";
@@ -45,6 +131,8 @@ serve(async (req) => {
     if (image_base64.length > MAX_IMAGE_CHARS) {
       return json({ error: "Ảnh quá lớn. Vui lòng chụp lại." }, 413);
     }
+
+    if (!(await claimCall(supabase, "scan-food"))) return quotaExceeded();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -257,7 +345,31 @@ ${
       );
     }
 
-    const result = JSON.parse(toolCall.function.arguments);
+    /*
+      The model's arguments, which are a suggestion until they are checked.
+
+      A tool schema is something the gateway is *asked* for, not something it
+      enforces, and this used to `JSON.parse` the arguments and hand them
+      straight back. Everything downstream then treated them as measurements:
+      `scan-food.tsx` rounds each field and nothing else, the items go into a
+      meal, the meal is summed into `meal_entries`, and `recomputeDailyLog`
+      turns that into `daily_logs.kcal` — which the calorie ring, the macro
+      rings, the daily quests, the readiness score and `adaptiveTDEE`'s
+      fourteen-day regression all read.
+
+      So a vision model's bad guess on a dark photo became a fact about
+      somebody's diet, permanently, with no gate anywhere on the path. The app
+      already has that gate for numbers a person types — `lib/plausible.ts`,
+      whose `meal_kcal` tops out at 10,000 per item and `macro_g` at 2,000 —
+      and the one source that is not a person was the one source not passing
+      through it.
+
+      Implausible items are dropped rather than clamped. A clamped 10,000 kcal
+      is still a wrong number wearing a plausible costume; a missing item is
+      visibly missing, and the review screen this feeds is where somebody can
+      add it by hand.
+    */
+    const result = clampItems(JSON.parse(toolCall.function.arguments));
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -39,12 +39,24 @@ const MIGRATIONS = path.join(REPO, 'supabase', 'migrations');
 
 const problems = [];
 
-/** Every migration concatenated — a policy dropped later has to win. */
+/**
+ * Every migration concatenated — a policy dropped later has to win.
+ *
+ * ── comments are stripped, and that is not cosmetic ──
+ *
+ * The price check below reads seeded rows with `('key', 123)`, which is a shape
+ * that also occurs in prose: a migration whose header quoted
+ * `claim_ai_call(repeat('x', 100000))` as evidence made this file report a shop
+ * item named `x` priced at 100,000. A rule that reads explanations as data is a
+ * rule that goes red for the wrong reason, and the next person's fix is to
+ * reword a comment rather than to look.
+ */
 const sql = readdirSync(MIGRATIONS)
   .filter((f) => f.endsWith('.sql'))
   .sort()
   .map((f) => readFileSync(path.join(MIGRATIONS, f), 'utf8'))
-  .join('\n');
+  .join('\n')
+  .replace(/--[^\n]*/g, '');
 
 /*
   ── 1: the ledger and the inventory take no client writes ──

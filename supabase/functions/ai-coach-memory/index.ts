@@ -250,7 +250,6 @@ serve(async (req) => {
     if (caller instanceof Response) return caller;
     const { userId, supabase } = caller;
 
-    if (!(await claimCall(supabase, "ai-coach-memory"))) return quotaExceeded();
     if (!LOVABLE_API_KEY) return json({ error: "AI not configured" }, 500);
 
     const body = await req.json();
@@ -258,6 +257,16 @@ serve(async (req) => {
     /* One line is not a relationship. Below this there is nothing durable to
        learn and the call is pure cost. */
     if (turns.length < 2) return json({ saved: 0, reason: "too short" });
+
+    /*
+      Claimed here, after the shape of the request is known.
+
+      `claimCall` counts the request whether or not the gateway is reached, and
+      this function returns early for a conversation too short to learn from —
+      so with the claim first, closing a one-line chat twenty times spent
+      twenty of the day's calls on twenty requests that never left the server.
+    */
+    if (!(await claimCall(supabase, "ai-coach-memory"))) return quotaExceeded();
 
     /* Read with the caller's token — the SELECT policy is theirs. `id` travels
        with it because deletion below is by primary key, not by matching the

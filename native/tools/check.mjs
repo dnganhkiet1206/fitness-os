@@ -179,6 +179,7 @@ const STEPS = [
   ['đồng bộ sức khoẻ', 'node', ['tools/health-sync.mjs']],
   ['quyền kinh tế', 'node', ['tools/economy-authority.mjs']],
   ['trí nhớ coach', 'node', ['tools/coach-memory.mjs']],
+  ['lớp AI', 'node', ['tools/ai-coach.mjs']],
   ['quyền lợi gói', 'node', ['tools/entitlement.mjs']],
   ['vòng đời quyền lợi', 'node', ['tools/entitlements.mjs']],
   ['sửa sai được', 'node', ['tools/correctable.mjs']],
