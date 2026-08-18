@@ -120,8 +120,9 @@ hay không. Toàn bộ luồng entitlement phía server đã xong — Apple veri
 webhook, chống hoàn tiền — nhưng **chưa có gì bị khoá cả**, kể cả màn diễn đó:
 hằng số `PEEK_TIER` đang là `null`.
 
-Đó là chủ ý. Chưa có IAP, chưa có paywall, chưa có webhook nào ghi vào bảng
-`entitlements`, nên hôm nay một phép thử tier chỉ có nghĩa là "tắt với **mọi**
+Đó là chủ ý. Chưa có IAP, chưa có paywall, và `store-webhook` **có mã nguồn
+nhưng chưa được deploy lên project nào** — nên chưa có gì ghi vào bảng
+`entitlements`, và hôm nay một phép thử tier chỉ có nghĩa là "tắt với **mọi**
 tài khoản" — không phải mô hình kinh doanh, mà là một tính năng chưa ai từng
 nhìn thấy. Đổi `PEEK_TIER` về `'max'` là một từ, đúng vào ngày có thứ để bán.
 

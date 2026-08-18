@@ -57,9 +57,11 @@ import { DAILY_QUESTS, levelFromXp, questRefKey, type QuestKey } from '@/lib/mas
  * putting behind a tier.
  *
  * `PEEK_TIER` is that gate, and it is `null` for now: nobody can buy anything
- * yet (there is no IAP, no paywall, and no webhook writing `entitlements`), so
- * a tier test today only means "off for every single account", which is not a
- * business model, it is a feature nobody has seen. It goes back to `'max'` the
+ * yet. There is no IAP and no paywall, and while `store-webhook` and
+ * `verify-purchase` exist in `supabase/functions/`, neither has been deployed
+ * to any project — so nothing writes `entitlements`, and a tier test today only
+ * means "off for every single account", which is not a business model, it is a
+ * feature nobody has seen. It goes back to `'max'` the
  * day there is something to sell — one word, and the check below already reads
  * it — see LAUNCH.md.
  *

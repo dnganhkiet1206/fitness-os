@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (96 bước). Ngày rà: 2026-08-17.
+Bộ kiểm: `node tools/check.mjs` (97 bước). Ngày rà: 2026-08-17.
 
 ---
 
@@ -2072,6 +2072,274 @@ Cài đặt? im lặng có chủ đích?) trước khi viết.
 | **cơ sở dữ liệu** | PostgreSQL 16.13 dựng lại từ 28 migration: RLS 8/8 từ chối, phát lại 3 lần ra 1 dòng, mất-hồi-đáp trước khi sửa ra 2 dòng, bữa ăn 0 món, lost update 1200 → 500 |
 | **runtime giả lập** | con thoi `supabase` (bảng ghi lại câu lệnh + độ trễ theo dòng) |
 | **runtime iOS thật** | **KHÔNG** có. Không có khẳng định nào ở đây về hành vi trên máy thật |
+
+---
+
+## Vòng 8 — Chain G: StoreKit → verify → webhook → entitlements → current_tier → cổng tính năng
+
+**Bất biến gốc:** *client không bao giờ được tự cấp cho mình quyền lợi trả phí.*
+
+**VERIFICATION:** `node tools/check.mjs` (97 bước) · `npx tsc --noEmit` ·
+`node tools/entitlements.mjs` (CHẠY THẬT hai edge function) ·
+PostgreSQL 16.13 dựng lại từ 28 migration
+
+### Phạm vi thật — nói trước cho rõ
+
+Nửa **server** tồn tại đầy đủ và là thứ được rà ở vòng này. Nửa **client thì
+không**: không có `expo-in-app-purchases`, không `react-native-iap`, không màn
+paywall, không màn khôi phục mua hàng, và **không dòng nào gọi
+`EDGE_FUNCTIONS.verifyPurchase`**. Cổng tính năng duy nhất là `PEEK_TIER` trong
+`use-quest-autoclaim.ts`, đang là `null` (tắt với mọi tài khoản).
+
+Nên các mục sau **không được rà, vì chúng chưa tồn tại**: đua khi mua hàng,
+thời điểm `finishTransaction`, khôi phục mua hàng, Family Sharing. Không có
+khẳng định nào ở đây về chúng.
+
+`current_tier()` cũng chưa được ai gọi — không migration nào, không client nào.
+Nó là cổng của tương lai, và vì thế được đo kỹ ở E4 dưới đây trước khi có thứ
+gì phụ thuộc vào nó.
+
+### Nguồn sự thật, đo được
+
+```
+StoreKit (chưa có)  →  verify-purchase / store-webhook
+                          ↓ hỏi Apple qua TLS, KHÔNG tin thân request
+                       entitlements  (RLS: chỉ SELECT của chính mình, KHÔNG policy ghi)
+                          ↓
+                       current_tier()  (auth.uid() + expires_at)
+                       useEntitlement() (đọc bảng, TỰ kiểm hạn, rơi về free)
+```
+
+Không có nguồn thứ hai. Client không có đường nào cấp quyền cho mình.
+
+---
+
+### BUG-36 (P1). Một webhook cũ tới muộn huỷ gói của người đang trả tiền — `STALE-TRANSACTION-DOWNGRADE`
+
+**ATTACK / TRIGGER:** không cần kẻ tấn công. Apple thử lại thông báo trong nhiều
+ngày; một `DID_RENEW` hoặc `EXPIRED` của kỳ 1 tới sau khi kỳ 2 đã gia hạn.
+
+**EXPECTED:** trạng thái cuối là trạng thái hiện tại của gói.
+**ACTUAL:** chạy thật hai handler với Apple giả lập:
+
+```
+1. webhook DID_RENEW cho kỳ 2 (đúng thứ tự)      200  max exp=tương lai
+2. CÙNG webhook đó gửi lại lần 2                 200  max exp=tương lai
+3. CÙNG webhook đó gửi lại lần 3                 200  max exp=tương lai
+4. webhook CŨ của kỳ 1 tới muộn                  200  free exp=null   ← đây
+5. webhook EXPIRED của kỳ 1 tới muộn             200  free exp=null
+7. verify-purchase với tx kỳ 1 (cũ)              200  free exp=null   ← và đây
+```
+
+**ROOT CAUSE:** mỗi lần gia hạn sinh một `transactionId` **mới**; chỉ
+`originalTransactionId` gọi tên cả vòng đời gói. Cả hai handler tra cứu đúng
+transaction mà *sự kiện* nêu tên, tức hỏi *"kỳ này thế nào"* trong khi câu hỏi
+là *"gói này thế nào"*. Tra cứu kỳ 1 trả về kỳ 1: `expiresDate` đã qua,
+`entitlementFrom` trả null, handler ghi `free`. Không có gì kiểm lại sau đó —
+người trả tiền mất quyền cho tới sự kiện Apple kế tiếp (có thể một tháng) hoặc
+tới khi tự nghĩ ra việc bấm khôi phục.
+
+Cùng hình dạng ở `verify-purchase`, nơi **client** chọn `transactionId`: khôi
+phục mua hàng trả về cả lịch sử, nên gửi id kỳ cũ là chuyện bình thường và nó
+tự hạ cấp chính mình.
+
+**FIX:** `resolveEntitlementTransaction()` trong `_shared/apple.ts` trả về hai
+thứ khác nhau có chủ đích — `identity` (transaction được hỏi, mang
+`appAccountToken`, dùng để chứng minh của ai) và `current` (trạng thái hiện tại
+của gói, lấy qua `GET /inApps/v1/subscriptions/{originalTransactionId}`, dùng để
+ghi xuống). Thứ tự thông báo tới nơi thôi có ý nghĩa: mọi sự kiện — sớm, muộn,
+hay lặp — đều quy về cùng một câu trả lời hiện tại.
+
+`status` (1 active · 2 expired · 3 billing retry · 4 grace · 5 revoked) chỉ được
+**ghi log**. Gói đang billing-retry hay grace-period có giữ quyền hay không là
+một quyết định sản phẩm chưa ai trong repo này đưa ra — xem PS-1.
+
+**REGRESSION RISK:** `tools/entitlements.mjs` luật A chạy đúng kịch bản này.
+
+---
+
+### BUG-37 (P1). Một biến môi trường bị đổi tên huỷ gói của **tất cả** người đang trả tiền
+
+**TRIGGER:** `PRODUCT_ID_PLUS` / `PRODUCT_ID_MAX` thiếu hoặc bị đổi tên trên
+server.
+**ACTUAL:** `200`, và ghi `tier: 'free'` cho người đang trả tiền, kèm một dòng
+log vui vẻ.
+
+**ROOT CAUSE:** `tierFor` trả `null` cho **cả hai** trường hợp — "không phải sản
+phẩm của mình" và "server này không biết sản phẩm của mình là gì" — còn
+`entitlementFrom` biến `null` thành *không có quyền lợi*, mà handler ghi xuống
+là `free`. Hai chuyện khác hẳn nhau bị nén thành một giá trị.
+
+**FIX:** `tierFor` trả thêm `"unconfigured"`, và cả hai handler **từ chối ghi**
+khi gặp nó. Webhook trả 500 — đúng, vì đây là lỗi mà một lần thử lại **sau khi
+sửa config** sẽ qua được, khác hẳn hai trường hợp ở BUG-38.
+
+---
+
+### BUG-38 (P2). Hai loại hỏng không thể sửa lại bắt Apple thử lại nhiều ngày
+
+`appAccountToken` không phải uuid (Postgres: `22P02`) và token trỏ vào một tài
+khoản đã bị xoá (`23503`) đều rơi vào nhánh `return json({error}, 500)`. Apple
+thử lại mọi mã không phải 2xx trong nhiều ngày, và không lần nào trong số đó đổi
+được câu trả lời. Chính docstring của handler nói *"Only a genuine internal fault
+returns 500, where a retry might work"* — hai trường hợp này thì không.
+
+**FIX:** chốt hình dạng uuid trước khi ghi, và bắt riêng `22P02`/`23503` để trả
+200 kèm log. Đo: `500 → 200` cho cả hai.
+
+---
+
+### BUG-39 (P2). Gói thuê bao thiếu `expiresDate` được cấp **vĩnh viễn**
+
+`current_tier()` đọc `expires_at IS NULL OR expires_at > now()`, nên
+`expires_at = NULL` nghĩa là *không bao giờ hết hạn*. Đúng với một lần mua đứt,
+và là cách đọc tệ nhất có thể với một gói thuê bao mà `expiresDate` không trở về:
+một hồi đáp thiếu trường là một tài khoản `max` trọn đời, không gì trong app
+nhận ra được.
+
+**FIX:** mang trường `type` của Apple vào `AppleTransaction` — đó là thứ duy
+nhất phân biệt được hai chuyện — và từ chối cấp quyền cho một
+`"Auto-Renewable Subscription"` không có `expiresDate`. Trạng thái bất khả thi
+bị **từ chối** thay vì được giải quyết theo hướng có lợi cho khách; thông báo kế
+tiếp hoặc một lần khôi phục sẽ ghi câu trả lời thật.
+
+Đo: gói thuê bao thiếu hạn → `free`; mua đứt `Non-Consumable` thiếu hạn → vẫn
+`max` trọn đời. Phép phân biệt không đi quá tay.
+
+---
+
+### Sửa điểm neo cho `tools/entitlement.mjs` (chặt hơn, không nới lỏng)
+
+Luật cũ kiểm `/fetchTransaction\(/` có mặt trong mỗi handler. Cả hai giờ gọi
+`resolveEntitlementTransaction`, nên luật đỏ vì **cách viết** đổi chứ không phải
+vì **tính chất** đổi. Luật giờ **đi theo lời gọi** vào `_shared/apple.ts` và đòi
+nó thật sự chạm tới `fetch()` vào host của Apple. Chặt hơn bản cũ: một helper
+chỉ *mang cái tên đúng* mà không hỏi Apple nay bị bắt — đo bằng cách thay thân
+`resolveEntitlementTransaction` bằng một object dựng tay:
+
+```
+verify-purchase: không hỏi Apple — chỉ tin những gì client gửi lên
+```
+
+---
+
+## Chain G — đã kiểm và **KHÔNG** phải lỗi
+
+### G1. Client không có đường tự cấp quyền — đo trên PostgreSQL 16.13
+
+| tấn công | kết quả |
+| --- | --- |
+| A `INSERT` vào `entitlements` | `42501 new row violates row-level security policy` |
+| A `UPDATE` bậc của chính mình | 0 dòng (không có policy UPDATE) |
+| A `DELETE` hàng của chính mình | 0 dòng |
+| B `SELECT` hàng của A | 0 dòng |
+| B `UPDATE` hàng của A | 0 dòng |
+
+Bảng có đúng một policy, `FOR SELECT USING (auth.uid() = user_id)`, và migration
+ghi thẳng dòng chú thích *"deliberately no INSERT/UPDATE/DELETE policy for any
+user role"*. Người ghi duy nhất là service role, sống trong hai edge function.
+
+### G2. Transaction của A không cấp gì cho B
+
+`verify-purchase` so `tx.appAccountToken` với `userId` lấy từ JWT. Chạy thật:
+B gửi transaction của A → **403**, và B không có hàng nào. Transaction id không
+phải bí mật — nó nằm trong hoá đơn, email hỗ trợ, lịch sử mua hàng của bất kỳ ai
+— nên đây là thứ duy nhất biến "Apple xác nhận giao dịch này có thật" thành một
+câu nói về **một người**.
+
+Giao dịch **không có** `appAccountToken` bị từ chối chứ không được tin: không có
+cách nào biết nó của ai, và "không biết" không phải là "của bạn".
+
+### G3. Webhook giả không làm được gì
+
+Endpoint công khai và không xác thực — bắt buộc, vì Apple gọi nó và không cầm
+token người dùng. Cái làm nó an toàn là **không tin gì trong thân request**:
+payload chỉ được mở đủ để tìm một transaction id, rồi trạng thái thật được hỏi
+lại Apple qua TLS. Một POST giả mạo đạt được đúng một trong hai thứ: một lỗi,
+hoặc server này xác nhận lại một quyền lợi vốn đã đúng.
+
+`apple.ts` ghi rõ vì sao không đi đường xác minh chữ ký JWS + chuỗi `x5c`: đó là
+X.509 trong Deno, không kiểm được từ đây, và **hỏng theo kiểu mở** — một hàm
+kiểm chuỗi luôn trả true trông y hệt một hàm chạy đúng, cho tới khi có người
+nhận ra ai POST cũng có gói miễn phí. Kiến trúc "hỏi lại Apple" xoá luôn nhu cầu
+làm đúng chuyện đó. **Đây là một đánh đổi có ghi chép, không phải một lỗ hổng.**
+
+### G4. Webhook trùng lặp là vô hại
+
+Cùng một payload gửi 3 lần: `max → max → max`. Idempotent theo cấu tạo chứ không
+nhờ một cờ nào — handler ghi **trạng thái tuyệt đối** lấy từ Apple, upsert theo
+`user_id`, nên lần thứ n ghi đúng thứ lần thứ nhất đã ghi. Không có "đã xử lý"
+trong bộ nhớ để mất khi khởi động lại tiến trình.
+
+### G5. `current_tier()` — đo thật, sáu trạng thái
+
+| trạng thái hàng | `current_tier()` |
+| --- | --- |
+| max, hạn ở tương lai | `max` |
+| max, hạn đã qua | `free` |
+| max, `expires_at NULL` | `max` |
+| max, hạn 100 năm | `max` |
+| không có hàng nào | `free` |
+| chưa đăng nhập (`auth.uid()` null) | `free` |
+
+Hết hạn **không** cần webhook để có hiệu lực: nó là một phép so trong câu SELECT,
+nên một thông báo hạ cấp tới muộn không giữ được quyền cho ai. `useEntitlement`
+làm lại đúng phép so đó ở client, nên cả hai tầng đều không phụ thuộc vào webhook
+đúng giờ.
+
+### G6. Hoàn tiền được kiểm **trước** hạn dùng
+
+`entitlementFrom` đọc `revocationDate` trước `expiresDate`. Thứ tự này quan
+trọng: một gói đã hoàn tiền vẫn có thể có `expiresDate` ở tương lai — Apple ghi
+lại việc khách được trả tiền mà không viết lại ngày kỳ hạn — nên đọc hạn trước sẽ
+giữ người đã lấy lại tiền ở trạng thái trả phí cho tới ngày họ không còn trả cho
+nữa. Chạy thật: `REFUND` → `free`.
+
+### G7. Không có bậc trả phí nào cất trên máy
+
+Quét toàn bộ `src/`: không file nào ghi `tier`/`premium`/`entitle`/`subscri` vào
+AsyncStorage. `useEntitlement` khoá truy vấn theo `user?.id` (nên Chain E đã phủ
+phần cách ly tài khoản) và rơi về `free` khi lỗi — hướng an toàn, và là hướng
+thỉnh thoảng làm phiền người đã trả tiền, đó là lý do `refetch` được lộ ra.
+
+---
+
+## Chain G — PRODUCT SEMANTICS REQUIRED
+
+### PS-1. Billing retry và grace period có giữ quyền không?
+
+`fetchSubscriptionState` giờ đọc được `status` của Apple (1 active · 2 expired ·
+3 billing retry · 4 grace period · 5 revoked) và **chỉ ghi log**. Quyền lợi vẫn
+được quyết bởi `revocationDate` và `expiresDate` của chính transaction, đúng như
+trước — chỉ có transaction được quyết là đổi.
+
+Nghĩa là hôm nay: hết hạn thanh toán → mất quyền ngay khi `expiresDate` qua, kể
+cả khi Apple đang thử thu tiền lại. Đó là hành vi hiện có, không phải một lựa
+chọn ai đó đã cân nhắc. Ba lối đi đều hợp lý (giữ quyền suốt grace period; giữ
+suốt billing retry; không giữ gì cả) và repo không có bằng chứng chọn giúp.
+**KHÔNG sửa.**
+
+### PS-2. Quyền lợi có nên sống sót qua việc xoá tài khoản không?
+
+`entitlements.user_id` là `REFERENCES auth.users(id) ON DELETE CASCADE`, nên xoá
+tài khoản xoá luôn hàng quyền lợi — trong khi gói Apple vẫn còn và vẫn tính tiền.
+Người đó đăng ký lại bằng cùng Apple ID sẽ nhận lại quyền ở lần thông báo kế
+tiếp, **nếu** `appAccountToken` khớp — mà nó không khớp, vì tài khoản mới có
+`user_id` mới. Cần một quyết định (chặn xoá khi đang có gói? gọi ra để huỷ
+trước? chấp nhận?) trước khi viết bất cứ dòng nào.
+
+---
+
+## Chain G — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **StoreKit giả lập** | **KHÔNG** — không có client StoreKit để giả lập |
+| **payload có chữ ký Apple, đã xác minh** | **KHÔNG**, và có chủ đích: kiến trúc hỏi lại Apple thay vì xác minh `x5c` (xem G3) |
+| **PostgreSQL đã đo** | 16.13 dựng từ 28 migration: 5 tấn công RLS, 6 trạng thái `current_tier()` |
+| **runtime cục bộ đã đo** | hai edge function transpile và **chạy thật** với Apple giả lập, `guard.ts` thật, bảng `entitlements` giả có kiểm uuid + khoá ngoại |
+| **runtime iOS thật / Apple thật** | **KHÔNG**. Không có khẳng định nào ở đây về hành vi với máy chủ Apple thật |
+| **trạng thái deploy** | `verify-purchase` và `store-webhook` **có mã nguồn, CHƯA deploy lên project nào** |
 
 ---
 

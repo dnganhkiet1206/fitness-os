@@ -54,6 +54,25 @@ export interface AppleTransaction {
   expiresDate?: number;
   revocationDate?: number;
   environment?: string;
+  /**
+   * Apple's own word for what kind of product this is — `"Auto-Renewable
+   * Subscription"`, `"Non-Consumable"`, `"Consumable"`, `"Non-Renewing
+   * Subscription"`.
+   *
+   * Modelled because it is the only thing that can tell a *lifetime purchase*
+   * from a *subscription whose expiry did not arrive*, and those two produce
+   * the same shape here: no `expiresDate`. Read `entitlementFrom` for what is
+   * done with the distinction.
+   */
+  type?: string;
+}
+
+/** One entry of Apple's Get All Subscription Statuses response. */
+interface SubscriptionStatus {
+  originalTransactionId?: string;
+  /** 1 active · 2 expired · 3 billing retry · 4 grace period · 5 revoked */
+  status?: number;
+  signedTransactionInfo?: string;
 }
 
 function b64urlToBytes(s: string): Uint8Array {
@@ -171,10 +190,118 @@ export async function fetchTransaction(transactionId: string): Promise<AppleTran
   return null;
 }
 
-/** Which product ids map to which tier. The only place that mapping exists. */
-export function tierFor(productId: string): "plus" | "max" | null {
+/**
+ * The subscription's state **now**, rather than one period's.
+ *
+ * ── the bug this exists for ──
+ *
+ * `fetchTransaction` answers "what is the state of *this transaction*". For an
+ * auto-renewable subscription that is the wrong question, and the difference is
+ * a paying customer losing access.
+ *
+ * Every renewal mints a **new** `transactionId`; only `originalTransactionId`
+ * names the subscription across its whole life. Apple retries a notification
+ * for days, so one about period 1 can easily land after period 2 has started —
+ * and looking up period 1 returns period 1: `expiresDate` in the past,
+ * `entitlementFrom` returns null, and the handler writes `free` over an active
+ * subscription. Measured against the real handlers:
+ *
+ *     1. webhook DID_RENEW cho kỳ 2        200  max exp=tương lai
+ *     4. webhook CŨ của kỳ 1 tới muộn      200  free exp=null      ← đây
+ *
+ * Nothing re-checks afterwards, so the customer stays downgraded until the next
+ * Apple event — up to a month — or until they think to press restore.
+ *
+ * ── Get All Subscription Statuses ──
+ *
+ * `/inApps/v1/subscriptions/{originalTransactionId}` returns the *latest*
+ * transaction for each subscription in the group, whatever triggered the
+ * lookup. That is the state this server should be writing down, and asking for
+ * it makes the ordering of notifications stop mattering: every event, early,
+ * late or duplicated, resolves to the same current answer.
+ *
+ * `status` is read only for the log. Whether a billing-retry or grace-period
+ * subscription keeps paid access is a product decision nothing in this
+ * repository has made, so the entitlement is still decided by the transaction's
+ * own `revocationDate` and `expiresDate`, exactly as before — only the
+ * transaction it decides on has changed.
+ *
+ * Returns `null` when the product is not a subscription at all (a lifetime
+ * purchase has no subscription status), and the caller falls back to the
+ * transaction it already has.
+ */
+export async function fetchSubscriptionState(
+  originalTransactionId: string,
+  env: AppleEnv,
+): Promise<{ tx: AppleTransaction; status?: number } | null> {
+  const jwt = await appleJwt();
+  const res = await fetch(
+    `${HOSTS[env]}/inApps/v1/subscriptions/${encodeURIComponent(originalTransactionId)}`,
+    { headers: { Authorization: `Bearer ${jwt}` } },
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    console.error("App Store subscription status", env, res.status, await res.text());
+    return null;
+  }
+  const body = await res.json();
+  const groups: { lastTransactions?: SubscriptionStatus[] }[] = body?.data ?? [];
+  for (const group of groups) {
+    for (const entry of group.lastTransactions ?? []) {
+      if (entry.originalTransactionId !== originalTransactionId) continue;
+      const tx = decodeJwsPayloadUnverified<AppleTransaction>(entry.signedTransactionInfo ?? "");
+      if (tx) return { tx: { ...tx, environment: env }, status: entry.status };
+    }
+  }
+  return null;
+}
+
+/**
+ * The transaction an entitlement should be decided from, given any transaction
+ * id from any event.
+ *
+ * Two answers come back, and they are different on purpose:
+ *
+ *   · `identity` is the transaction that was actually asked about. Its
+ *     `appAccountToken` is what proves whose purchase this is, and it is the
+ *     one the caller compares against the signed-in user.
+ *   · `current` is the subscription's latest state, which is what gets written
+ *     down.
+ *
+ * For a lifetime purchase the two are the same object.
+ */
+export async function resolveEntitlementTransaction(
+  transactionId: string,
+): Promise<{ identity: AppleTransaction; current: AppleTransaction; status?: number } | null> {
+  const identity = await fetchTransaction(transactionId);
+  if (!identity) return null;
+  const env = (identity.environment as AppleEnv) ?? "production";
+  const latest = identity.originalTransactionId
+    ? await fetchSubscriptionState(identity.originalTransactionId, env)
+    : null;
+  return { identity, current: latest?.tx ?? identity, status: latest?.status };
+}
+
+/**
+ * Which product ids map to which tier. The only place that mapping exists.
+ *
+ * ── "not our product" and "we do not know our products" are not the same ──
+ *
+ * This returned `null` for both, and `entitlementFrom` turns `null` into *no
+ * entitlement*, which the handlers write down as `free`. So a missing or
+ * renamed `PRODUCT_ID_MAX` on the server did not fail loudly — it quietly
+ * cancelled every paying subscriber the moment Apple sent their next renewal
+ * notification, with a 200 and a cheerful log line. Measured:
+ *
+ *     PRODUCT_ID_MAX chưa cấu hình  →  200  ghi được: free
+ *
+ * `unconfigured` says which of the two happened, so a handler can refuse to
+ * write anything rather than write a downgrade it has no basis for.
+ */
+export function tierFor(productId: string): "plus" | "max" | "unconfigured" | null {
   const plus = Deno.env.get("PRODUCT_ID_PLUS");
   const max = Deno.env.get("PRODUCT_ID_MAX");
+  if (!plus && !max) return "unconfigured";
   if (max && productId === max) return "max";
   if (plus && productId === plus) return "plus";
   return null;
@@ -191,11 +318,30 @@ export function tierFor(productId: string): "plus" | "max" | null {
 export function entitlementFrom(tx: AppleTransaction): {
   tier: "plus" | "max";
   expiresAt: string | null;
-} | null {
+} | null | "unconfigured" {
   if (tx.revocationDate) return null;
   const tier = tierFor(tx.productId);
+  if (tier === "unconfigured") return "unconfigured";
   if (!tier) return null;
   if (tx.expiresDate && tx.expiresDate <= Date.now()) return null;
+  /*
+    ── a subscription with no expiry is not a lifetime membership ──
+
+    `expiresAt: null` means *forever* to `current_tier()`, which reads
+    `expires_at IS NULL OR expires_at > now()`. That is correct for a
+    non-consumable somebody bought outright, and it is the worst possible
+    reading of an auto-renewable subscription whose `expiresDate` did not come
+    back — one malformed response and the account is `max` for ever, with
+    nothing in the app able to notice.
+
+    Apple's own `type` is what separates the two, so the impossible state is
+    refused rather than resolved in the customer's favour: the next
+    notification, or a restore, writes the real answer.
+  */
+  if (!tx.expiresDate && tx.type === "Auto-Renewable Subscription") {
+    console.error("subscription without expiresDate — refusing to grant forever", tx.transactionId);
+    return null;
+  }
   return {
     tier,
     expiresAt: tx.expiresDate ? new Date(tx.expiresDate).toISOString() : null,

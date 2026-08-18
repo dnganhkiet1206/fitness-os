@@ -5,7 +5,7 @@ import {
   type AppleTransaction,
   decodeJwsPayloadUnverified,
   entitlementFrom,
-  fetchTransaction,
+  resolveEntitlementTransaction,
 } from "../_shared/apple.ts";
 import { corsHeaders, json } from "../_shared/guard.ts";
 
@@ -42,6 +42,9 @@ import { corsHeaders, json } from "../_shared/guard.ts";
  * logged. Only a genuine internal fault returns 500, where a retry might work.
  */
 
+/** The shape a `user_id` has to have to name a row in `entitlements`. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface NotificationPayload {
   notificationType?: string;
   subtype?: string;
@@ -74,20 +77,46 @@ serve(async (req) => {
       return json({ ok: true, ignored: "no transaction" });
     }
 
-    // The only statement in this function whose answer is trusted.
-    const tx = await fetchTransaction(transactionId);
-    if (!tx) {
+    /*
+      The only statement in this function whose answer is trusted — and it asks
+      about the *subscription*, not about the transaction the notification names.
+
+      Apple retries for days, so a notification about last month's period can
+      arrive after this month's renewal. Looking up that period returns that
+      period: expired. Writing it down cancelled a paying customer.
+      `resolveEntitlementTransaction` resolves through `originalTransactionId`
+      to whatever Apple says is current, which makes the order notifications
+      arrive in stop mattering — see `_shared/apple.ts`.
+    */
+    const resolved = await resolveEntitlementTransaction(transactionId);
+    if (!resolved) {
       console.warn("webhook transaction not found at Apple", transactionId);
       return json({ ok: true, ignored: "not found" });
     }
+    const { identity, current, status } = resolved;
 
-    const userId = tx.appAccountToken?.toLowerCase();
+    const userId = identity.appAccountToken?.toLowerCase();
     if (!userId) {
       console.warn("webhook transaction has no appAccountToken", transactionId);
       return json({ ok: true, ignored: "unlinked purchase" });
     }
+    /* A token that is not a uuid cannot name a row in `entitlements`, and no
+       number of Apple retries will turn it into one. Acknowledged, not 500. */
+    if (!UUID.test(userId)) {
+      console.warn("webhook appAccountToken is not a user id", transactionId);
+      return json({ ok: true, ignored: "token is not a user id" });
+    }
 
-    const ent = entitlementFrom(tx);
+    const ent = entitlementFrom(current);
+    if (ent === "unconfigured") {
+      /* No product ids on this server. Writing `free` here would cancel a
+         paying subscriber because of a missing environment variable, so
+         nothing is written — and 500 is right, because a retry after the
+         config is fixed will work. */
+      console.error("PRODUCT_ID_PLUS/PRODUCT_ID_MAX not configured — refusing to write");
+      return json({ error: "product mapping not configured" }, 500);
+    }
+
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -98,20 +127,33 @@ serve(async (req) => {
         user_id: userId,
         tier: ent?.tier ?? "free",
         store: "apple",
-        store_txn_id: tx.originalTransactionId,
+        store_txn_id: current.originalTransactionId,
         expires_at: ent?.expiresAt ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" },
     );
     if (error) {
-      /* A database fault is the one thing a retry can fix, so it is the one
-         thing that gets a 500. */
+      /* A foreign key violation means the account this purchase points at is
+         gone — deleted, most likely. Apple will resend for days and the answer
+         will not change, so it is acknowledged rather than retried. Everything
+         else is a genuine fault a retry might get past. */
+      if (error.code === "23503" || error.code === "22P02") {
+        console.warn("webhook names an account that does not exist", userId, error.code);
+        return json({ ok: true, ignored: "unknown account" });
+      }
       console.error("webhook upsert failed", error.message);
       return json({ error: "upsert failed" }, 500);
     }
 
-    console.log("entitlement updated", payload?.notificationType, payload?.subtype, ent?.tier ?? "free");
+    console.log(
+      "entitlement updated",
+      payload?.notificationType,
+      payload?.subtype,
+      ent?.tier ?? "free",
+      "status",
+      status ?? "-",
+    );
     return json({ ok: true, tier: ent?.tier ?? "free" });
   } catch (e) {
     console.error("store-webhook error:", e);

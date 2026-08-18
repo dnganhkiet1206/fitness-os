@@ -97,7 +97,7 @@ const sql = readdirSync(path.join(REPO, 'supabase', 'migrations'))
         'không có cách nào biết nó của ai, và "không biết" không phải là "của bạn"',
     );
   }
-  if (!/fetchTransaction\(/.test(code)) {
+  if (!asksApple(code)) {
     problems.push(`${VERIFY}: không hỏi Apple — chỉ tin những gì client gửi lên`);
   }
   if (!/SUPABASE_SERVICE_ROLE_KEY/.test(code)) {
@@ -105,10 +105,55 @@ const sql = readdirSync(path.join(REPO, 'supabase', 'migrations'))
   }
 }
 
+/**
+ * Does this handler's answer come from Apple over TLS rather than from the
+ * request body?
+ *
+ * ── why this is not `/fetchTransaction\(/` any more ──
+ *
+ * It was, and the property drifted away from the spelling. Both handlers now
+ * call `resolveEntitlementTransaction`, which asks Apple twice — once for the
+ * named transaction, to learn whose purchase it is, and once for the
+ * subscription's current state, because a notification about last month's
+ * period arriving after this month's renewal used to cancel a paying customer.
+ *
+ * So the rule follows the call into `_shared/apple.ts` instead of naming one
+ * function: whatever the handler reaches has to end at `fetch(` against
+ * Apple's host. That is stricter than the old spelling, not looser — a helper
+ * that merely *looked* like it asked would fail.
+ */
+function asksApple(code) {
+  const apple = read('supabase/functions/_shared/apple.ts');
+  const called = [...code.matchAll(/\b(fetchTransaction|fetchSubscriptionState|resolveEntitlementTransaction)\s*\(/g)]
+    .map((m) => m[1]);
+  if (called.length === 0) return false;
+  /* and each of those really does reach Apple's API */
+  const reaches = (name, depth = 0) => {
+    if (depth > 3) return false;
+    const at = apple.indexOf(`export async function ${name}`);
+    if (at < 0) return false;
+    /* The body's brace, not the one inside `Promise<{ … }>`. A return type's
+       brace is followed by a space; a body's opens the line. */
+    const open = apple.indexOf('{\n', at);
+    if (open < 0) return false;
+    let d = 0;
+    let end = open;
+    for (; end < apple.length; end++) {
+      if (apple[end] === '{') d++;
+      else if (apple[end] === '}' && --d === 0) break;
+    }
+    const fn = apple.slice(open, end + 1);
+    if (/await fetch\(`\$\{HOSTS\[/.test(fn)) return true;
+    return [...fn.matchAll(/\b(fetchTransaction|fetchSubscriptionState)\s*\(/g)]
+      .some((m) => reaches(m[1], depth + 1));
+  };
+  return called.some((n) => reaches(n));
+}
+
 // ── 3: the webhook is a signal, never a source ──
 {
   const code = body(read(HOOK));
-  if (!/fetchTransaction\(/.test(code)) {
+  if (!asksApple(code)) {
     problems.push(
       `${HOOK}: không hỏi lại Apple — endpoint này công khai và không xác thực, ` +
         'tin vào thân request là ai POST cũng tự cấp gói được',

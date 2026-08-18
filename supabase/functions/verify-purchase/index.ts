@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { entitlementFrom, fetchTransaction } from "../_shared/apple.ts";
+import { entitlementFrom, resolveEntitlementTransaction } from "../_shared/apple.ts";
 import { corsHeaders, json, requireUser } from "../_shared/guard.ts";
 
 /**
@@ -42,8 +42,20 @@ serve(async (req) => {
       return json({ error: "transactionId required" }, 400);
     }
 
-    const tx = await fetchTransaction(transactionId);
-    if (!tx) return json({ error: "Transaction not found" }, 404);
+    /*
+      Two answers: the transaction the caller named, which is what proves whose
+      purchase this is, and the subscription's *current* state, which is what
+      gets written down.
+
+      They are not the same when the client sends an older transaction id — and
+      it can, because restoring hands back the whole purchase history. Deciding
+      on the named transaction meant a restore could downgrade the person doing
+      it: measured against this handler, `verify-purchase` with last period's id
+      wrote `free` over an active `max`. See `_shared/apple.ts`.
+    */
+    const resolved = await resolveEntitlementTransaction(transactionId);
+    if (!resolved) return json({ error: "Transaction not found" }, 404);
+    const { identity: tx, current } = resolved;
 
     /*
       The check the whole function exists for.
@@ -60,7 +72,13 @@ serve(async (req) => {
       return json({ error: "This purchase belongs to another account" }, 403);
     }
 
-    const ent = entitlementFrom(tx);
+    const ent = entitlementFrom(current);
+    if (ent === "unconfigured") {
+      /* Writing `free` because this server does not know its own product ids
+         would cancel a subscription somebody is paying for. */
+      console.error("PRODUCT_ID_PLUS/PRODUCT_ID_MAX not configured — refusing to write");
+      return json({ error: "Store not configured" }, 500);
+    }
 
     /* `entitlements` has no write policy for any user role — a client that
        could write it could grant itself the product. The service role is the
@@ -74,7 +92,7 @@ serve(async (req) => {
       /* Expired or refunded. Written down rather than ignored, so the row
          reflects Apple's answer instead of keeping yesterday's. */
       await admin.from("entitlements").upsert(
-        { user_id: userId, tier: "free", store: "apple", store_txn_id: tx.originalTransactionId, expires_at: null, updated_at: new Date().toISOString() },
+        { user_id: userId, tier: "free", store: "apple", store_txn_id: current.originalTransactionId, expires_at: null, updated_at: new Date().toISOString() },
         { onConflict: "user_id" },
       );
       return json({ tier: "free" });
@@ -85,7 +103,7 @@ serve(async (req) => {
         user_id: userId,
         tier: ent.tier,
         store: "apple",
-        store_txn_id: tx.originalTransactionId,
+        store_txn_id: current.originalTransactionId,
         expires_at: ent.expiresAt,
         updated_at: new Date().toISOString(),
       },

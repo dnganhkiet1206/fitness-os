@@ -180,6 +180,7 @@ const STEPS = [
   ['quyền kinh tế', 'node', ['tools/economy-authority.mjs']],
   ['trí nhớ coach', 'node', ['tools/coach-memory.mjs']],
   ['quyền lợi gói', 'node', ['tools/entitlement.mjs']],
+  ['vòng đời quyền lợi', 'node', ['tools/entitlements.mjs']],
   ['sửa sai được', 'node', ['tools/correctable.mjs']],
   ['rỗng ≠ hỏng', 'node', ['tools/empty-vs-failed.mjs']],
   ['hợp lý sinh lý', 'node', ['tools/plausible.mjs']],
