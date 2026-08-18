@@ -243,6 +243,7 @@ const STEPS = [
   ['giờ nhắc nhở', 'node', ['tools/reminder-timing.mjs']],
   ['đã nối chưa', 'node', ['tools/linked.mjs']],
   ['ghi ngày', 'node', ['tools/daily-log-write.mjs']],
+  ['phép chiếu ngày', 'node', ['tools/daily-log.mjs']],
   ['bàn giao quét', 'node', ['tools/scan-handoff.mjs']],
   /*
     Reads `supabase/migrations/`, not `src/`. It is here because the bug it was

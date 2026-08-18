@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (98 bước). Ngày rà: 2026-08-17.
+Bộ kiểm: `node tools/check.mjs` (99 bước). Ngày rà: 2026-08-17.
 
 ---
 
@@ -2590,6 +2590,241 @@ phẩm.
 | **runtime cục bộ đã đo** | `clampItems` transpile và chạy thật trong Node |
 | **hành vi tính tiền thật** | **KHÔNG** đo |
 | **trạng thái deploy** | sáu function AI có mã nguồn; migration `20260818120000_claim_ai_call_kind_shape.sql` **chưa apply lên project nào** |
+
+---
+
+## Vòng 10 — Chain I: nguồn → recomputeDailyLog → daily_logs → mọi thứ đọc lại
+
+**Bất biến gốc:** *`daily_logs` là một phép chiếu tất định của các bản ghi nguồn
+cho đúng người dùng đó và đúng ngày lịch địa phương đó — không phải nguồn sự thật
+thứ hai.*
+
+**VERIFICATION:** `node tools/check.mjs` (99 bước) · `npx tsc --noEmit` ·
+`node tools/daily-log.mjs` (CHẠY THẬT `recomputeDailyLog`) ·
+PostgreSQL 16.13 dựng lại từ 29 migration, hàm thật chạy qua một client
+hình-dạng-supabase nối vào database thật
+
+### Bản đồ nguồn → cột
+
+| cột `daily_logs` | loại | nguồn |
+| --- | --- | --- |
+| `kcal`, `protein_g`, `carbs_g`, `fat_g`, `fiber_g` | tổng hợp tất định | `meal_entries.total_*` trong cửa sổ ngày địa phương |
+| `workout_count`, `volume_load` | tổng hợp tất định | `workout_sessions` trong cửa sổ |
+| `sleep_duration_min`, `sleep_quality` | tổng hợp tất định | `sleep_logs` có `waketime` trong cửa sổ (đêm mới nhất) |
+| `supplement_taken`, `supplement_planned` | tổng hợp tất định | `supplements` + `supplement_intake_logs` |
+| `readiness_*`, `acwr` | giá trị máy tính | 4 nguồn trên + 28 ngày sinh trắc + 7/28 ngày tải |
+| **`steps`, `active_kcal`, `active_minutes`** | **quan sát chụp lại** | **`use-health-sync`, KHÔNG phải recompute** |
+
+Hai người ghi, mỗi người một bộ cột, và không ai đụng cột của người kia — quy tắc
+này được viết thành lời trong `use-health-sync.ts` và nó đứng vững. Nhưng đúng
+chỗ nối giữa hai bộ cột là BUG-47.
+
+---
+
+### BUG-46 (P1). Hai người ghi cùng lúc, một bữa ăn biến mất — `RECOMPUTE-LOST-UPDATE`
+
+**SOURCE STATE:** hai bữa ăn cùng ngày, 500 + 700 kcal.
+**EXPECTED PROJECTION:** 1200.
+**ACTUAL PROJECTION:** 500.
+**CONCURRENCY CONTEXT:** hai người ghi, một người trên đường truyền chậm.
+
+Chạy CHÍNH hàm thật hai lần trên PostgreSQL 16.13:
+
+```
+thuc_te_da_an | vong_calo_hien
+         1200 |            500
+```
+
+**ROOT CAUSE:** `recomputeDailyLog` là mười một lần đọc, rồi số học, rồi một lần
+ghi. Đó là một cửa sổ, và trên điện thoại nó rộng gần một giây. Hai người ghi lọt
+vào trong đó đều đọc, đều tính, đều ghi — và lần ghi thứ hai là **một ảnh chụp
+đầy đủ của một thế giới cũ hơn**, nên nó không hoà vào lần thứ nhất mà thay thế
+nó. Không gì dựng lại một ngày mà không ai ghi thêm nữa, nên con số sai đứng đó
+vĩnh viễn.
+
+Chain F tìm ra đúng hình dạng này từ hàng đợi ngoại tuyến và sửa hàng đợi. Đây là
+cánh cửa còn lại, và nó không cần hàng đợi nào: một lần đồng bộ sức khoẻ ở
+foreground trùng với một bữa ăn vừa ghi là đủ.
+
+**FIX:** đọc `(id, updated_at)` của dòng **trước** khối đọc nguồn, rồi ghi bằng
+`update(...).eq('id', seen.id).eq('updated_at', seen.updated_at).select('id')`.
+Chạm 0 dòng nghĩa là dòng đã đổi dưới chân mình → đọc lại thế giới và ghi lại
+(tối đa `REBUILD_ATTEMPTS`). Hết lượt không phải là thất bại: kẻ thắng đã đọc
+muộn hơn ta, nên thứ đang nằm trên đĩa là phép chiếu tươi hơn.
+
+*Bản sửa đầu của tôi SAI và phép đo bắt được.* Tôi đặt token vào **cùng**
+`Promise.all` với các nguồn, nghĩ rằng một request song song nữa thì không tốn
+gì. Nó không trả lời được gì cả: mười một request song song lắng xuống theo thứ
+tự bất kỳ, nên token có thể được đọc **sau** nguồn, và khi đó nó chứng nhận một
+dòng vừa bị ghi trong lúc bản dựng này đang đọc:
+
+```
+[2] xong                       (ghi 1200)
+[trace] seen= {updated_at: …}  kcal= 500   ← đọc token SAU khi 2 đã ghi
+[trace] update touched [{id}]              ← và ghi đè
+cuối cùng: 500
+```
+
+Một cái chốt có thể được đọc sau thứ nó canh thì không phải là cái chốt. Một
+round trip tuần tự mua lấy thứ tự đó. Đo lại sau khi sửa đúng: **1200 ở cả hai
+thứ tự**.
+
+**REGRESSION RISK:** `tools/daily-log.mjs` luật A chạy đúng kịch bản này ở cả hai
+thứ tự; luật B từ chối cả việc quay lại `upsert` lẫn việc đọc token trong
+`Promise.all`.
+
+---
+
+### BUG-47 (P1). Một nhiệm vụ được hiện ra mỗi ngày và không bao giờ hoàn thành được
+
+**TRIGGER:** một tài khoản trên máy không cấp dữ liệu bước chân, ghi một bữa ăn.
+
+`daily_logs.steps` là `nullable` nhưng có `DEFAULT 0`, và `recomputeDailyLog`
+**không bao giờ đặt tên cột đó** — nên mặc định điền vào. Đo trên schema thật:
+
+```
+steps | khong_null | lon_hon_0
+    0 | t          | f
+```
+
+`useStepsAvailable` hỏi `steps IS NOT NULL`, đúng với **mọi dòng từng tồn tại**.
+`useDailyQuests` hiện nhiệm vụ bước chân khi tín hiệu đó nói có dữ liệu, rồi chấm
+`(dailyLog?.steps ?? 0) >= stepsGoal`. Nên mọi tài khoản không có HealthKit được
+hiện một nhiệm vụ không bao giờ hoàn thành được, mỗi ngày, vĩnh viễn.
+
+**ROOT CAUSE:** cột không phân biệt được "không có dữ liệu" với "không bước nào",
+và `use-health-sync` đã rất cẩn thận để **không ghi số 0** đúng vì lý do này
+(Chain B: *"ghi 0 sẽ lật useStepsAvailable"*). Giá trị mặc định của cột ghi thay.
+
+**FIX:** hỏi câu mà dữ liệu trả lời được — `.gt('steps', 0)`. Chú thích của chính
+hàm nói nó *"lật nhiều nhất một lần trong đời một tài khoản"*, tức là "máy này có
+bao giờ cấp bước chân không"; một ngày 0 bước trả lời "chưa", và ngày đầu tiên có
+bước lật nó vĩnh viễn.
+
+---
+
+## Chain I — đã kiểm và **KHÔNG** phải lỗi
+
+### I1. `recomputeDailyLog` là một phép chiếu đầy đủ, tất định — chạy thật
+
+| phép thử | kết quả |
+| --- | --- |
+| dựng lại 4 lần trên cùng nguồn | 1200, 1200, 1200, 1200 |
+| đổi thứ tự chèn nguồn | 1200 |
+| sửa muộn 500 → 800 | 1500 |
+| xoá muộn bữa 700 | 800 |
+| xoá nốt bữa cuối | 0 |
+| chèn lại 300 | 300 |
+
+Đây là **rebuild toàn phần**, không phải vá tăng dần — nên xoá, sửa và chèn muộn
+đều hội tụ mà không cần sổ sách phụ nào. Đó là lý do bản sửa BUG-46 chỉ cần một
+phép so-rồi-ghi chứ không cần đổi kiến trúc.
+
+### I2. Ngày lịch địa phương — khít ở mọi múi giờ, kể cả lệch 30 và 45 phút
+
+Bất biến kiểm: cửa sổ ngày phải **khít và không chồng** — `end` của ngày `d` đúng
+bằng `start` của `d+1` — nên mọi thời điểm thuộc đúng một ngày. Quét 400 ngày
+liên tiếp:
+
+| múi giờ | kết quả | độ dài ngày gặp được |
+| --- | --- | --- |
+| America/Los_Angeles, New_York, Lisbon | KHÍT | 23, 24, 25 tiếng |
+| Pacific/Chatham (+12:45) | KHÍT | 23, 24, 25 |
+| Australia/Lord_Howe | KHÍT | **23.5, 24, 24.5** |
+| Asia/Ho_Chi_Minh | KHÍT | 24 |
+
+*Một báo động giả của chính tôi, ghi lại để không ai đuổi theo nó lần nữa:* phép
+thử đầu của tôi đặt bữa ăn bằng một hàm tự viết đổi giờ tường thành UTC, và hàm
+đó lấy offset ở **sai thời điểm** khi vắt qua mốc đổi giờ — nên Lord Howe báo
+"SAI". Lỗi ở hàm dựng test, không ở app; `localDayRangeISO` đúng ở cả năm múi giờ
+bắt buộc và cả hai chiều đổi giờ.
+
+### I3. Mọi lệnh ghi nguồn đều tới được ngày của nó
+
+`use-fitness-data` và `use-biometrics` dựng lại `day` **rồi** `today` khi khác
+nhau. Ba chỗ chỉ dựng hôm nay, và cả ba đều **không thể lùi ngày**, có lý do
+kiểm được:
+
+- `use-nutrition` — sổ ăn chỉ hiển thị và sửa được hôm nay: `TodayMeals` chỉ được
+  dựng ở tab Nutrition với dữ liệu hôm nay, không màn nào khác dùng nó.
+- `log-sleep` — `sleepSpan` đặt `waketime` lên **ngày tham chiếu**, nên đêm vừa
+  ghi luôn thuộc hôm nay.
+- `use-health-sync` — đồng bộ nền chỉ hỏi HealthKit về hôm nay; phần backfill quá
+  khứ chỉ ghi cột `steps`, mà recompute không tính cột đó.
+
+`offline-write.ts` dùng `localDateStr(new Date(w.dateTime))` — ngày của bản ghi,
+không phải ngày phát lại (Chain F).
+
+Luật C của bộ dò giữ danh sách miễn này kèm lý do, nên một chỗ gọi mới chỉ dựng
+hôm nay sẽ đỏ.
+
+### I4. RLS của `daily_logs` — kiểm lại từ đầu sau các migration mới
+
+| đòn | kết quả |
+| --- | --- |
+| A đọc/ghi của mình | 1 dòng / ghi được |
+| B ĐỌC của A | 0 dòng |
+| B GHI cho A | `42501` |
+| B SỬA / XOÁ của A | 0 dòng |
+| B ghi **bản ghi nguồn** cho A | `42501` |
+
+B không làm sai được phép chiếu của A, kể cả bằng đường vòng qua bảng nguồn.
+
+### I5. Không có vòng `daily_logs` → nguồn
+
+Quét toàn bộ `src/`: không chỗ nào ghi vào bảng nguồn dựa trên `daily_logs`. Phép
+chiếu chỉ chảy một chiều, nên không có đường khuếch đại sai số.
+
+### I6. Ghi một lần, nguyên tử
+
+Sau bản sửa, lệnh ghi là **một** câu `UPDATE` (hoặc một `INSERT` cho ngày chưa có
+dòng). Không có đường nào để `kcal` cập nhật mà `protein_g` thì không — trạng
+thái nửa vời trong một dòng `daily_logs` không dựng ra được.
+
+### I7. Đọc hỏng thì không ghi
+
+Cả mười một truy vấn nguồn đều được kiểm lỗi và một lỗi làm cả bản dựng ném
+(`DailyLogRebuildError`), nên một ngày đọc không nổi là một ngày **không bị ghi**
+— dòng cũ còn nguyên. Bản sửa BUG-46 thêm truy vấn thứ mười hai (token) và nó
+cũng ném theo đúng cách ấy.
+
+---
+
+## Chain I — PRODUCT SEMANTICS REQUIRED
+
+### PS-1. Một ngày không còn nguồn nào có nên còn dòng không?
+
+Xoá bữa ăn cuối cùng của một ngày để lại một dòng `daily_logs` toàn số 0 chứ
+không xoá dòng. Với vòng calo thì hai cách đọc như nhau; với các truy vấn lịch sử
+thì không: một dòng 0 kcal là một điểm trên biểu đồ, còn không có dòng thì là một
+khoảng trống. Repo không có dòng nào chọn giúp. **KHÔNG sửa.**
+
+### PS-2. Dữ liệu quá khứ có phải luôn chính xác không?
+
+Không có đường dựng lại một khoảng ngày. Mọi ngày đều hội tụ **khi có ai đó ghi
+vào nó**, và không có gì quét lại quá khứ. Với các đường ghi hiện tại thì đủ (xem
+I3), nhưng nó là một thuộc tính của những đường ghi ấy, không phải một bảo đảm.
+Ngày một màn hình cho sửa dữ liệu quá khứ, đoạn này phải đổi.
+
+### PS-3. `steps` cho một ngày quá khứ mà HealthKit không có
+
+Sau BUG-47, `useStepsAvailable` đúng. Nhưng một ngày quá khứ được recompute tạo
+dòng vẫn mang `steps = 0` từ mặc định cột, và các truy vấn lịch sử bước chân đọc
+nó như một ngày 0 bước. Sửa tận gốc là bỏ `DEFAULT 0` để "không biết" là NULL —
+một migration đụng tới mọi dòng đã có và mọi chỗ đọc `steps ?? 0`. Cần quyết định
+trước khi làm.
+
+---
+
+## Chain I — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **phép gộp thuần** | `localDayRangeISO` quét 400 ngày × 6 múi giờ |
+| **PostgreSQL đã đo** | 16.13 từ 29 migration; hàm THẬT chạy qua một client hình-dạng-supabase nối vào database thật: hội tụ, hoán vị, sửa/xoá muộn, xoá hết, chèn lại, và cuộc đua hai người ghi ở cả hai thứ tự (trước và sau khi sửa) |
+| **đồng thời đã đo** | hai tiến trình Node thật, một tiến trình có độ trễ mỗi round trip |
+| **RLS đã đo** | 7 đòn trên `daily_logs` và bảng nguồn |
+| **runtime iOS thật** | **KHÔNG**. Không có khẳng định nào về hành vi trên máy thật |
 
 ---
 

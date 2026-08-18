@@ -503,11 +503,37 @@ export function useStepsAvailable() {
        is pure noise. */
     staleTime: 1000 * 60 * 60,
     queryFn: async () => {
+      /*
+        ── `> 0`, because `IS NOT NULL` is a question this column cannot answer ──
+
+        `daily_logs.steps` is nullable but carries `DEFAULT 0`, and the row is
+        created by `recomputeDailyLog`, which does not name `steps` at all — so
+        the default fills it in. Log one meal on a phone that feeds no step data
+        and the row reads `steps = 0`, `steps IS NOT NULL` is **true**, and this
+        returned true for an account that has never had a single step.
+
+        What that cost, measured against the schema:
+
+            steps | khong_null | lon_hon_0
+                0 | t          | f
+
+        `useDailyQuests` shows the steps quest whenever this says the data
+        exists, and then judges it `(dailyLog?.steps ?? 0) >= stepsGoal`. So
+        every account without HealthKit was shown a quest it could never
+        complete, every day, for ever — and `use-health-sync` was already
+        careful never to *write* a zero for exactly this reason. The default
+        wrote it instead.
+
+        `> 0` is the question this signal actually asks — its own note says it
+        flips at most once in an account's life, which is "does this device ever
+        feed us steps". A genuine zero-step day answers "not yet", and the first
+        day with steps flips it for good.
+      */
       const { count, error } = await supabase
         .from('daily_logs')
         .select('date', { count: 'exact', head: true })
         .eq('user_id', user!.id)
-        .not('steps', 'is', null);
+        .gt('steps', 0);
       if (error) throw error;
       return (count ?? 0) > 0;
     },

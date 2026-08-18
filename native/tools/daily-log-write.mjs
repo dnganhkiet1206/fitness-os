@@ -63,13 +63,32 @@ const problems = [];
     );
   }
 
-  /* Anchored on the upsert's own error branch. `throw` appearing *somewhere* in
-     a 350-line file proves nothing: the reads above already throw, and it was
-     precisely the write below them that did not. */
-  const upsertAt = src.lastIndexOf('.upsert(');
-  const tail = upsertAt >= 0 ? src.slice(upsertAt) : '';
-  if (!/if\s*\(\s*error\s*\)[\s\S]{0,200}throw/.test(tail)) {
-    problems.push('nhánh lỗi của lệnh upsert không ném — ngày ghi hỏng lại im lặng');
+  /*
+    Anchored on the write's own error branch. `throw` appearing *somewhere* in a
+    350-line file proves nothing: the reads above already throw, and it was
+    precisely the write below them that did not.
+
+    ── and the write is no longer one verb ──
+
+    It was `.upsert(`, and this rule went red when the write became
+    `.insert(` plus a compare-and-set `.update(...)` — the fix for two devices
+    overwriting each other's snapshot. The spelling changed; the property did
+    not. So every statement that writes `daily_logs` from this file is found,
+    and each one's error branch has to throw. That is stricter than before: one
+    verb was checked, now both are, and a third would be too.
+  */
+  const writes = [...src.matchAll(/from\('daily_logs'\)[\s\S]{0,80}?\.\s*(insert|upsert|update)\(/g)];
+  if (writes.length === 0) {
+    problems.push('không tìm thấy lệnh ghi daily_logs nào trong recomputeDailyLog — luật này đã lạc mục tiêu');
+  }
+  const silent = writes.filter((m) => {
+    const tail = src.slice(m.index, m.index + 900);
+    return !/if\s*\(\s*error\s*\)[\s\S]{0,220}throw/.test(tail);
+  });
+  if (silent.length > 0) {
+    problems.push(
+      `nhánh lỗi của lệnh ${silent.map((m) => m[1]).join(', ')} vào daily_logs không ném — ngày ghi hỏng lại im lặng`,
+    );
   }
 }
 

@@ -94,7 +94,17 @@ export function asleepMinutes(sleep: {
   return Math.max(0, Math.round((wake - bed) / 60000));
 }
 
-export async function recomputeDailyLog(userId: string, date: string) {
+/**
+ * How many times a rebuild will re-read and try again after losing a race.
+ *
+ * Each loss means somebody else wrote a *complete* snapshot taken after our
+ * reads started, so giving up leaves a correct row rather than a wrong one —
+ * the bound exists to stop two devices ping-ponging, not to stop the day from
+ * converging.
+ */
+const REBUILD_ATTEMPTS = 3;
+
+export async function recomputeDailyLog(userId: string, date: string, attempt = 0) {
   // Local-day window as UTC instants for timestamptz columns
   const day = localDayRangeISO(date);
 
@@ -127,6 +137,40 @@ export async function recomputeDailyLog(userId: string, date: string) {
     visible problem with a real cause; a rebuild that guesses leaves a quiet
     wrong number in the one table everything trusts.
   */
+  /*
+    ── the version of the row this rebuild is allowed to replace ──
+
+    Read **before** the sources, and on its own, which is the whole point.
+
+    The first attempt at this put it inside the `Promise.all` below, on the
+    reasoning that one more parallel request costs nothing. It answers nothing
+    though: eleven concurrent requests settle in whatever order the network
+    gives them, so the token can be fetched *after* the sources — and then it
+    certifies a row that was written while this rebuild was already reading.
+    Measured, with one copy of this function on a slow connection:
+
+        [2] xong                       (ghi 1200)
+        [trace] seen= {updated_at: …}  kcal= 500   ← đọc token SAU khi 2 đã ghi
+        [trace] update touched [{id}]              ← và ghi đè
+        cuối cùng: 500
+
+    A guard that can be read after the thing it guards is not a guard. One
+    sequential round trip buys the ordering: whatever the token says, every
+    source read below happened after it, so a row that changed since is a row
+    written by somebody whose reads were at least as fresh as ours.
+  */
+  const existingRes = await supabase
+    .from('daily_logs')
+    .select('id, updated_at')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle();
+  if (existingRes.error) {
+    throw new DailyLogRebuildError(
+      `Không đọc được ngày ${date}: ${existingRes.error.message}`,
+    );
+  }
+
   const [
     mealsRes,
     workoutsRes,
@@ -405,29 +449,83 @@ export async function recomputeDailyLog(userId: string, date: string) {
     }
   }
 
-  // 6. Upsert daily_log
-  const { error } = await supabase
+  // 6. Write the day — but only over the row we actually read
+  const row = {
+    user_id: userId,
+    date,
+    kcal,
+    protein_g,
+    carbs_g,
+    fat_g,
+    fiber_g,
+    sleep_duration_min,
+    sleep_quality,
+    workout_count,
+    volume_load,
+    supplement_taken,
+    supplement_planned,
+    readiness_score,
+    readiness_status,
+    readiness_explain,
+    readiness_recommendation,
+    acwr,
+  };
+
+  /*
+    ── this used to be one `upsert`, and two phones could lose a meal ──
+
+    Everything above is eleven reads followed by arithmetic. That is a window,
+    and it is not a small one: eleven round trips at a phone's latency is most
+    of a second before the write even starts. Two writers inside it both read,
+    both compute, and both write — and the second write is a *complete snapshot
+    of an older world*, so it does not merge with the first, it replaces it.
+
+    Measured by running this exact function twice against PostgreSQL 16.13, one
+    copy on a slow connection:
+
+        thuc_te_da_an | vong_calo_hien
+                 1200 |            500
+
+    Two meals eaten, the calorie ring showing one of them — permanently, because
+    nothing rebuilds a day that nobody writes to again. Chain F found the same
+    shape from the offline queue and fixed the queue; this is the other door
+    into it, and it needs no queue at all: a foreground health sync and a meal
+    logged at the same moment is enough.
+
+    ── so the write states what it believed ──
+
+    `existingRes` is the row as it was when the reads began. The update refuses
+    unless it is still that row, and a refusal means somebody else wrote a
+    snapshot taken *later than ours* — which is the better answer, and which we
+    then go and read. Both orderings converge on the full total; neither can
+    leave the older snapshot standing.
+
+    `updated_at` is the token because a trigger moves it on every update, so it
+    changes even when the derived numbers do not. It is sent back exactly as it
+    was read, never through `new Date()`, because a round trip through
+    milliseconds would not match a microsecond-precision column.
+  */
+  const seen = existingRes.data as { id: string; updated_at: string } | null;
+
+  if (!seen) {
+    const { error } = await supabase.from('daily_logs').insert(row);
+    if (error) {
+      /* 23505: somebody created the row between our read and our insert. Their
+         snapshot is at least as fresh as ours, and re-reading settles it. */
+      if (error.code === '23505' && attempt + 1 < REBUILD_ATTEMPTS) {
+        return recomputeDailyLog(userId, date, attempt + 1);
+      }
+      throw new DailyLogRebuildError(`Không lưu được ngày ${date}: ${error.message}`);
+    }
+    return;
+  }
+
+  const { data: written, error } = await supabase
     .from('daily_logs')
-    .upsert({
-      user_id: userId,
-      date,
-      kcal,
-      protein_g,
-      carbs_g,
-      fat_g,
-      fiber_g,
-      sleep_duration_min,
-      sleep_quality,
-      workout_count,
-      volume_load,
-      supplement_taken,
-      supplement_planned,
-      readiness_score,
-      readiness_status,
-      readiness_explain,
-      readiness_recommendation,
-      acwr,
-    }, { onConflict: 'user_id,date' });
+    .update(row)
+    .eq('id', seen.id)
+    .eq('updated_at', seen.updated_at)
+    .select('id');
 
   /*
     ── the write refuses too, now ──
@@ -439,7 +537,7 @@ export async function recomputeDailyLog(userId: string, date: string) {
     `onError`"* — held for the eleven **reads** above and not for the one
     **write** below them.
 
-    What that cost: log a meal, `meal_entries` inserts fine, this upsert is
+    What that cost: log a meal, `meal_entries` inserts fine, this write is
     refused (RLS, a dropped connection on the twelfth request of the sequence, a
     constraint). The mutation resolves, `onSuccess` fires, a green toast says
     saved, and the meal appears in the diary — while the calorie ring, the macro
@@ -453,5 +551,14 @@ export async function recomputeDailyLog(userId: string, date: string) {
   */
   if (error) {
     throw new DailyLogRebuildError(`Không lưu được ngày ${date}: ${error.message}`);
+  }
+
+  if (!written || written.length === 0) {
+    /* Touched nothing: the row moved under us. Read the world again and write
+       what it says now. Out of attempts is not a failure — whoever won read
+       later than we did, so the row on file is the fresher projection. */
+    if (attempt + 1 < REBUILD_ATTEMPTS) {
+      return recomputeDailyLog(userId, date, attempt + 1);
+    }
   }
 }
