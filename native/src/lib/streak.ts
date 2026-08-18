@@ -46,6 +46,47 @@ export interface Streak {
  */
 export const STREAK_WINDOW = 400;
 
+/**
+ * What makes a `daily_logs` row a day the person actually logged.
+ *
+ * ── the bug this exists for ──
+ *
+ * The rule used to be *"a day with a `daily_logs` row"*, and that was true when
+ * the only thing that created a row was `recomputeDailyLog` — which runs
+ * because somebody logged a meal, a workout, a night's sleep or a reading.
+ *
+ * It stopped being true when the health sync began backfilling past days:
+ * `use-health-sync` upserts `{ user_id, date, steps }` for up to thirteen days
+ * of HealthKit step buckets, and an upsert **creates** the row when there is
+ * none. So a phone that counted steps in a pocket manufactures days. Run
+ * against the real `streakFrom`:
+ *
+ *     streakFromBackfillAlone: 13
+ *
+ * Thirteen days of streak on the first sync, for an account that has never
+ * logged anything — past `streak_3` and `streak_7`, and those are granted into
+ * `awards`, which nothing ever revokes.
+ *
+ * The same rule also counted a day whose every source record had been deleted:
+ * Chain I proved the row survives with all its numbers at zero.
+ *
+ * ── and why these columns ──
+ *
+ * They are exactly the ones `recomputeDailyLog` writes, which is to say exactly
+ * the ones derived from the person's own records. `steps`, `active_kcal` and
+ * `active_minutes` are deliberately absent: those belong to the health sync,
+ * which writes them for days nobody opened the app. Water is absent because it
+ * was already absent — logging water does not rebuild the day, so a water-only
+ * day never had a row to count.
+ *
+ * The filter is sent to the database rather than applied after the read, and
+ * that is not an optimisation. `STREAK_WINDOW` is a `limit`: filtering
+ * afterwards would fill those 400 rows with days that do not count and cap the
+ * streak somewhere short of the truth, silently.
+ */
+export const LOGGED_DAY_FILTER =
+  'kcal.gt.0,workout_count.gt.0,sleep_duration_min.gt.0,supplement_taken.gt.0';
+
 /** Yesterday's date string, from today's. */
 function dayBefore(date: string): string {
   const d = parseLocalDate(date);
@@ -65,6 +106,28 @@ export function streakFrom(
   today: string,
   frozen: readonly string[] = [],
 ): Streak {
+  /*
+    ── a day that has not happened yet is not a day in the run ──
+
+    `datesDesc[0]` is the newest row, and the two guards below both read it as
+    "where the run ends". A row dated in the future therefore ends the run
+    *there*, and since it is neither today nor yesterday the whole streak reads
+    zero. Measured with this function:
+
+        ngày tương lai +30 rồi 2 ngày thật: 0
+        chỉ 2 ngày thật                   : 2
+
+    Nobody has to be attacking for that: a phone whose clock is a day fast
+    writes tomorrow's `localDateStr()` into `daily_logs`, and the streak — plus
+    every streak medal, which is granted from this number — silently goes to
+    nothing. `training-card.ts` already drops future-dated sessions for exactly
+    this reason; this is the same device and the same wrong clock.
+
+    Dropped rather than clamped: a future row is not evidence about any day, so
+    counting it as today would be inventing one.
+  */
+  datesDesc = datesDesc.filter((d) => d <= today);
+
   const loggedToday = datesDesc[0] === today;
 
   /* Merged and re-sorted rather than handled as a special case inside the loop.

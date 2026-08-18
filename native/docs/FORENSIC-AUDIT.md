@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (99 bước). Ngày rà: 2026-08-17.
+Bộ kiểm: `node tools/check.mjs` (100 bước). Ngày rà: 2026-08-17.
 
 ---
 
@@ -2825,6 +2825,210 @@ trước khi làm.
 | **đồng thời đã đo** | hai tiến trình Node thật, một tiến trình có độ trễ mỗi round trip |
 | **RLS đã đo** | 7 đòn trên `daily_logs` và bảng nguồn |
 | **runtime iOS thật** | **KHÔNG**. Không có khẳng định nào về hành vi trên máy thật |
+
+---
+
+## Vòng 11 — Chain J: daily_logs → chuỗi → thử thách → huy hiệu → phần thưởng
+
+**Câu hỏi mở đầu:** *một `daily_logs` sai từ BUG-46 hay BUG-47 có thể đã để lại
+hậu quả tích luỹ không tự sửa khi `daily_logs` được sửa lại không?*
+
+**VERIFICATION:** `node tools/check.mjs` (100 bước) · `npx tsc --noEmit` ·
+`node tools/streak-challenge.mjs` (CHẠY THẬT `streakFrom` + `challengeStep`) ·
+PostgreSQL 16.13 dựng lại từ 29 migration
+
+### Trả lời câu hỏi mở đầu — bằng chứng, không suy đoán
+
+| BUG | trạng thái dẫn xuất sai | người tiêu thụ | hậu quả bền? | tự sửa? | bằng chứng |
+| --- | --- | --- | --- | --- | --- |
+| BUG-46 | `daily_logs.kcal` sai | **chuỗi ngày** | **KHÔNG** | — | chuỗi đọc **sự tồn tại của dòng**, không đọc giá trị nào trong dòng; BUG-46 không bao giờ xoá dòng |
+| BUG-46 | như trên | **huy hiệu chuỗi** | **KHÔNG** | — | `streakFrom` chỉ nhận danh sách ngày; mốc buổi tập đếm thẳng `workout_sessions` |
+| BUG-46 | như trên | **tiến trình thử thách** | KHÔNG | **CÓ** | tiến trình là **rebuild toàn phần** mỗi lượt: `newValue` được tính lại từ `daily_logs` từ đầu |
+| BUG-46 | giá trị bị **thổi lên** (ảnh chụp cũ khôi phục tổng sau khi xoá một bữa) | **hoàn thành thử thách → xu** | **CÓ** | không (xu không đòi lại) | `challengeStep` cho `completed` khi `measured >= target`; `justCompleted` trả tiền |
+| BUG-47 | `daily_logs.steps = 0` | nhiệm vụ bước chân | KHÔNG | có | 0 chỉ có thể **trượt** nhiệm vụ, không bao giờ đạt — không xu nào được trả |
+| BUG-47 | như trên | `steps_50k` | KHÔNG | có | `sum(steps ?? 0)` — số 0 không đóng góp gì |
+
+**Kết luận:** đường duy nhất trả tiền sớm là một giá trị bị **thổi lên** hoàn
+thành thử thách tuần trước khi điều kiện thật sự đạt. Tiền bị chặn ở đúng một
+lần bởi `challengeRefKey(tier, weekStart, key)` cố định theo tuần dưới
+`UNIQUE(user_id, ref_key)` — nên hậu quả là **một phần thưởng tuần trả sớm, không
+bao giờ trả hai lần**.
+
+**`CODE-PATH-PROVEN` — KHÔNG phải `PRODUCTION-IMPACT-PROVEN`.** Repo không chứa
+dữ liệu production, không snapshot, không log kiểm toán nào để nói bất kỳ tài
+khoản thật nào đã đi qua đường đó. Không có khẳng định nào về người dùng thật.
+
+---
+
+### BUG-48 (P1). Chuỗi đếm cả những ngày không ai ghi gì — `STREAK-FROM-NON-LOGGED-ROW`
+
+**TRIGGER:** cài app, cấp quyền HealthKit, đồng bộ lần đầu. Không ghi gì cả.
+
+**ROOT CAUSE:** quy tắc là *"ngày có một dòng `daily_logs`"*, và nó đúng khi thứ
+duy nhất tạo dòng là `recomputeDailyLog` — thứ chỉ chạy vì ai đó đã ghi một bữa
+ăn, một buổi tập, một đêm ngủ, một số đo. Nó thôi đúng khi đồng bộ sức khoẻ bắt
+đầu backfill: `use-health-sync` **upsert** `{user_id, date, steps}` cho tới 13
+ngày bucket bước chân, và upsert **tạo** dòng khi chưa có.
+
+Chạy thật `streakFrom`:
+
+```
+streakFromBackfillAlone: 13
+```
+
+**13 ngày chuỗi ngay lần đồng bộ đầu tiên**, cho một tài khoản chưa ghi gì —
+vượt `streak_3` và `streak_7`, và cả hai đi vào `awards`, thứ không gì thu hồi.
+
+Cùng quy tắc đó còn đếm cả ngày mà **mọi bản ghi nguồn đã bị xoá**: Chain I đã
+chứng minh dòng sống sót với toàn số 0. Đo trên schema thật, cùng một tài khoản:
+
+```
+CŨ (không lọc):            15 ngày
+MỚI (lọc ngày ghi thật):    3 ngày
+```
+
+**FIX:** `LOGGED_DAY_FILTER` trong `lib/streak.ts` — đúng những cột
+`recomputeDailyLog` ghi, tức đúng những cột dẫn xuất từ bản ghi của chính người
+đó. `steps`, `active_kcal`, `active_minutes` **cố ý vắng mặt**: chúng thuộc về
+đồng bộ sức khoẻ, thứ ghi cả cho những ngày không ai mở app. Nước cũng vắng mặt
+vì nó vốn đã vắng — ghi nước không dựng lại ngày, nên ngày chỉ-uống-nước chưa
+bao giờ có dòng để đếm.
+
+Bộ lọc gửi **xuống database** chứ không lọc sau khi đọc, và đó không phải tối ưu:
+`STREAK_WINDOW` là một `limit`, nên lọc sau sẽ làm 400 dòng đó đầy những ngày
+không tính và **cắt cụt chuỗi trong im lặng**.
+
+---
+
+### BUG-49 (P2). Màn ăn mừng thử thách phát lại — `NON-MONOTONIC-FLAG-AS-EVENT`
+
+`completed` là phát biểu về **lần đọc hiện tại** và được phép quay về false: xoá
+một bữa ăn, gỡ một buổi tập, hay sửa lại một `daily_logs` đều hạ số đếm. Nên
+`completed && !was` không phải "lần đầu thắng" mà là "thắng lại". Chạy thật:
+
+```
+v=4 → v=5 (justCompleted) → v=5 → v=4 → v=5 (justCompleted)
+số lần ăn mừng: 2
+```
+
+Tiền thì an toàn — `challengeRefKey` cố định theo tuần khiến lần trả thứ hai là
+no-op — nhưng màn ăn mừng toàn màn hình là thứ **duy nhất** trong luồng này phải
+hiếm, và đây đúng là lần lặp mà `tools/challenge-reward.mjs` được viết ra để
+chặn, quay lại bằng một cửa khác.
+
+**FIX:** `justCompleted = completed && !was && !row.completed_at`, và
+`completed_at` trở thành **ghi một lần** — không còn bị xoá về null khi thử thách
+tụt lại dưới đích. Đo lại: bảy lượt với ba lần đạt đích → **một** màn ăn mừng, và
+dấu vết lần thắng còn nguyên.
+
+---
+
+### BUG-50 (P2). Một dòng mang ngày tương lai xoá sạch chuỗi — `FUTURE-ROW-ZEROES-STREAK`
+
+`datesDesc[0]` là dòng mới nhất, và hai cái chốt trong `streakFrom` đều đọc nó
+là *chỗ chuỗi kết thúc*. Một dòng mang ngày mai kết thúc chuỗi **ở đó**, và vì
+đó không phải hôm nay cũng không phải hôm qua, cả chuỗi về 0. Chạy thật:
+
+```
+ngày tương lai +30 rồi 2 ngày thật: 0
+chỉ 2 ngày thật                   : 2
+```
+
+Không cần ai tấn công: một chiếc điện thoại chạy nhanh một ngày ghi
+`localDateStr()` của ngày mai vào `daily_logs`. `training-card.ts` **đã** loại
+buổi tập mang ngày tương lai đúng vì lý do này — cùng một thiết bị, cùng một
+chiếc đồng hồ sai. Và mọi huy hiệu chuỗi đều trao từ con số này.
+
+**FIX:** loại các ngày `> today` trước khi đếm. Loại chứ không kẹp: một dòng
+tương lai không phải bằng chứng về bất kỳ ngày nào, nên coi nó là hôm nay là bịa
+ra một ngày.
+
+---
+
+## Chain J — đã kiểm và **KHÔNG** phải lỗi
+
+### J1. Không ai chạm được vào trạng thái tích luỹ của người khác
+
+| đòn | kết quả |
+| --- | --- |
+| B tạo ngày chuỗi cho A (`daily_logs`) | `42501` |
+| B trao huy hiệu cho A (`awards`) | `42501` |
+| B hoàn thành thử thách của A | 0 dòng |
+| B đọc huy hiệu của A | 0 dòng |
+
+### J2. Phần thưởng thử thách là **một lần một tuần**, kể cả khi điều kiện chập chờn
+
+`challengeRefKey(tier, weekStart, key)` cố định theo tuần +
+`UNIQUE(user_id, ref_key)`. Một điều kiện bật-tắt-bật không trả tiền hai lần.
+Và thứ tự vẫn là **trả tiền trước, ghi hoàn thành sau** (Chain D, BUG-22): bước
+idempotent đi trước, nên cả hai chiều hỏng đều phục hồi được.
+
+### J3. Tiến trình thử thách là rebuild toàn phần
+
+Mỗi lượt tính lại `newValue` từ `daily_logs`/`workout_sessions`/`water_logs` từ
+đầu. Nên sửa nguồn muộn, xoá muộn, hay sửa lại `daily_logs` đều hội tụ ở lượt
+đọc kế tiếp — không có sổ sách tăng dần nào để lệch.
+
+### J4. Số đọc bệnh lý không thành tiến trình
+
+`challengeStep` kẹp hai đầu: `NaN → 0`, `-3 → 0`, `99 (đích 5) → 5`.
+
+### J5. Chuỗi không phụ thuộc thứ tự dòng và freeze vẫn che đúng
+
+Ba hoán vị của cùng bốn ngày ra cùng một con số; một ngày được freeze che nối
+liền chuỗi; một ngày trống cắt chuỗi; chuỗi đã đứt trả 0 chứ không khoe độ dài cũ.
+
+---
+
+## Chain J — PRODUCT SEMANTICS REQUIRED
+
+### PS-1. Huy hiệu do client tự quyết — `awards` nhận INSERT từ người dùng
+
+Đo thật: đăng nhập như người dùng thường và
+
+```sql
+INSERT INTO awards(user_id, award_type, award_key, title)
+  VALUES (<chính mình>, 'streak', 'streak_365', 'Huyền thoại');
+→ A TỰ TRAO ĐƯỢC: streak_365
+```
+
+Policy `Users can insert own awards FOR a` tồn tại **vì hệ huy hiệu chạy hoàn
+toàn ở client**: `useCheckAwards` tự đếm chuỗi, tự đối chiếu mốc, tự ghi dòng.
+Bỏ policy đi là bỏ luôn tính năng.
+
+Giới hạn của hậu quả, đo được: **chéo tài khoản bị chặn** (B → A ra `42501`),
+`UNIQUE(user_id, award_key)` chặn nhân bản, và `grant()` **không trả xu nào** —
+nó ghi `awards` rồi bắn pháo giấy. Nên đây là tự lừa mình, không phải lợi ích
+kinh tế.
+
+Đưa quyền quyết định về server là một thay đổi kiến trúc, không phải một bản sửa
+lỗi. **KHÔNG sửa.**
+
+### PS-2. `completed` là điều kiện hiện tại hay thành tích lịch sử?
+
+Mã đối xử nó như **điều kiện hiện tại**: một thử thách đã xong có thể trở lại
+chưa xong khi người ta xoá một bữa ăn, trong khi xu đã nằm trong ví và không bao
+giờ trả lại lần nữa. Sau BUG-49 thì `completed_at` giữ lại dấu vết lần thắng,
+nên hai cách đọc đều biểu diễn được. Chọn cách nào là quyết định sản phẩm.
+
+### PS-3. Dữ liệu lùi ngày có nên sửa lại chuỗi quá khứ không?
+
+Chuỗi được tính **trực tiếp** từ `daily_logs` mỗi lần đọc, nên nó tự sửa ngay khi
+dữ liệu tới — kể cả dữ liệu lùi ngày. Nhưng **huy hiệu thì không**: đã trao là
+vĩnh viễn. Nên một chuỗi từng bị thổi lên rồi xẹp xuống vẫn để lại huy hiệu. Có
+nên thu hồi không là quyết định sản phẩm; đề bài cấm tự bịa ra clawback.
+
+---
+
+## Chain J — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `streakFrom` và `challengeStep` chạy thật qua 20 ca |
+| **PostgreSQL đã đo** | 16.13 từ 29 migration: 15 dòng → 3 ngày sau khi lọc; 6 đòn chéo tài khoản; tự trao huy hiệu |
+| **đồng thời** | **KHÔNG** đo ở vòng này — phần trả tiền đã được Chain D đo (khoá theo người dùng trước khi đọc số dư) và `ref_key` là thứ chặn trùng |
+| **tác động production** | **KHÔNG**. Repo không có dữ liệu production, snapshot hay log kiểm toán nào |
+| **runtime iOS thật** | **KHÔNG** |
 
 ---
 

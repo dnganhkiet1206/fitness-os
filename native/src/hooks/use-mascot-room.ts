@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { localDateStr } from '@/lib/local-date';
-import { missedDates, streakFrom, STREAK_WINDOW, type Streak } from '@/lib/streak';
+import { LOGGED_DAY_FILTER, missedDates, streakFrom, STREAK_WINDOW, type Streak } from '@/lib/streak';
 import { offlineNow } from '@/lib/offline';
 import {
   buyRefKey,
@@ -138,6 +138,10 @@ export function useDailyStreak() {
           .from('daily_logs')
           .select('date')
           .eq('user_id', user!.id)
+          /* Only days this person logged — see `LOGGED_DAY_FILTER`. Both
+             readers of the streak have to ask the same question, and this file
+             and `use-extras` have already drifted apart twice. */
+          .or(LOGGED_DAY_FILTER)
           .order('date', { ascending: false })
           .limit(STREAK_WINDOW),
         supabase.from('streak_freezes').select('used_on').eq('user_id', user!.id),

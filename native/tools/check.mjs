@@ -216,6 +216,7 @@ const STEPS = [
   ['quyết định Koa', 'node', ['tools/koa-decide.mjs']],
   ['trạng thái người dùng', 'node', ['tools/user-state.mjs']],
   ['thưởng thử thách', 'node', ['tools/challenge-reward.mjs']],
+  ['trạng thái tích luỹ', 'node', ['tools/streak-challenge.mjs']],
   ['lối vào màn hình', 'node', ['tools/entry-points.mjs']],
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],

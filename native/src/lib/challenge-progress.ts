@@ -29,6 +29,24 @@ export interface ChallengeRow {
   target_value: number;
   /** what the last pass concluded */
   completed: boolean;
+  /**
+   * When this challenge was **first** finished, or null if it never has been.
+   *
+   * Write-once, and that is the point. `completed` is a statement about the
+   * *current* reading and is allowed to go back to false — a meal deleted, a
+   * workout removed, or a `daily_logs` row corrected all lower the count. So
+   * `completed && !was` is not "finished for the first time", it is "finished
+   * again", and it fired every time the condition came back:
+   *
+   *     v=4 → v=5 (justCompleted) → v=5 → v=4 → v=5 (justCompleted)
+   *
+   * Two celebrations for one weekly challenge. The coins were safe —
+   * `challengeRefKey` is fixed for the week and `UNIQUE(user_id, ref_key)`
+   * makes the repeat a no-op — but the full-screen award animation is the one
+   * thing in this file that is supposed to be rare, and this is the same repeat
+   * `challenge-reward.mjs` was written for, arriving through a different door.
+   */
+  completed_at?: string | null;
 }
 
 export interface ChallengeStep {
@@ -62,11 +80,16 @@ export function challengeStep(row: ChallengeRow, newValue: number): ChallengeSte
   const value = Math.max(0, Math.min(measured, target));
   const completed = measured >= target;
   const was = row.completed === true;
+  /* Ever finished, not currently finished — see `completed_at`. */
+  const everCompleted = !!row.completed_at;
 
   return {
     value,
     completed,
-    justCompleted: completed && !was,
+    justCompleted: completed && !was && !everCompleted,
+    /* `completed_at` is written once and never cleared, so a challenge that
+       dips below its target does not lose the moment it was won. Without that,
+       the guard above would forget too and the celebration would come back. */
     unchanged: value === Number(row.current_value) && completed === was,
   };
 }

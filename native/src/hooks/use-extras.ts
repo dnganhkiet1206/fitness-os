@@ -16,7 +16,7 @@ import { macroTargetsFor } from '@/lib/macro-targets';
 import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { TIER_MAGNITUDE } from '@/lib/koa-event';
 import { emitKoa } from '@/lib/koa-stage';
-import { streakFrom, STREAK_WINDOW } from '@/lib/streak';
+import { LOGGED_DAY_FILTER, streakFrom, STREAK_WINDOW } from '@/lib/streak';
 import { challengeStep } from '@/lib/challenge-progress';
 import { CHALLENGE_REWARD, challengeRefKey } from '@/lib/mascot-room';
 import type { Json } from '@/integrations/supabase/types';
@@ -192,6 +192,10 @@ export function useCheckAwards() {
         .from('daily_logs')
         .select('date')
         .eq('user_id', user.id)
+        /* Only days this person logged. A bare row is no longer evidence of one
+           — the health sync creates rows for backfilled steps, and thirteen of
+           those alone measured a streak of thirteen. See `LOGGED_DAY_FILTER`. */
+        .or(LOGGED_DAY_FILTER)
         .order('date', { ascending: false })
         .limit(STREAK_WINDOW);
 
@@ -647,7 +651,13 @@ export function useUpdateChallengeProgress() {
               .update({
                 current_value: step.value,
                 completed: step.completed,
-                completed_at: step.completed ? new Date().toISOString() : null,
+                /* Write-once. It used to be cleared whenever the challenge
+                   dipped back below its target, which threw away the only
+                   record of when it was won — and with it the guard that stops
+                   the celebration replaying when the condition comes back. */
+                ...(step.completed && !ch.completed_at
+                  ? { completed_at: new Date().toISOString() }
+                  : {}),
               })
               .eq('id', ch.id),
             'Không cập nhật được tiến trình thử thách',
