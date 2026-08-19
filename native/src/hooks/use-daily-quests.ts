@@ -66,6 +66,15 @@ export interface DailyQuests {
   ready: boolean;
   /** today's local date, the same string the claim keys are built from */
   today: string;
+  /**
+   * The steps target the `steps` quest is actually judged against.
+   *
+   * Carried here so the label and the condition cannot disagree: the quest name
+   * holds `{n}` and the room fills it from this. It used to read a hard-coded
+   * "5,000" while this compared against the person's own goal — see
+   * `DAILY_QUESTS`.
+   */
+  stepsGoal: number;
 }
 
 export function useDailyQuests(): DailyQuests {
@@ -145,6 +154,7 @@ export function useDailyQuests(): DailyQuests {
       */
       ready: logOk && waterOk && sleepOk && profileOk && stepsGoalOk && stepsAvailOk,
       today,
+      stepsGoal,
     };
   }, [
     dailyLog, profile, waterMl, sleep, wallet, today,

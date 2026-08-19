@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (114 bước). Ngày rà: 2026-08-19.
+Bộ kiểm: `node tools/check.mjs` (115 bước). Ngày rà: 2026-08-19.
 
 ---
 
@@ -6748,6 +6748,342 @@ chú thích tôi viết để ghi lại sai lầm số 2. `node --check` bắt c
 | **AsyncStorage thật** | **KHÔNG** — kho trong bộ đo là stand-in |
 | **runtime iOS thật** | **KHÔNG** |
 | **tác động production** | **KHÔNG** |
+
+---
+
+## Chain Y — vòng đời quest
+
+**Bộ kiểm:** `node tools/quest-lifecycle.mjs` (mới) · `node tools/check.mjs` · `npx tsc --noEmit`
+
+### Câu hỏi trung tâm, và câu trả lời
+
+*Chính xác thì cái gì biến MỘT lần hoàn thành quest thành MỘT sự kiện kinh tế?*
+
+`UNIQUE(user_id, ref_key)`. Không có gì khác.
+
+**Không có bảng hoàn thành quest.** 36 bảng dựng từ `supabase/migrations`, không
+bảng nào ghi lại rằng một quest đã xong. `done === true` là **điều kiện hiện
+tại**, tính lại từ `daily_logs` / nước / ngủ / hồ sơ, và nó **được phép quay về
+false** — xoá bữa ăn thì nó quay về. Bản ghi lâu bền duy nhất là dòng sổ cái.
+
+Nên bất biến không phải "hoàn thành là đơn điệu". Bất biến là: **phần thưởng thì
+đơn điệu.**
+
+---
+
+### BUG-95 (P1). Người gọi tự định giá phần thưởng của mình — `CLIENT-DEFINES-REWARD`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P1 |
+| **CHAIN INTERACTION** | D × Y |
+| **EVENT ORDER** | client gọi `earn_mascot_coins(p_ref_key, p_amount)` → hàm chặn p_amount ở 300 → ghi thẳng con số đó |
+| **EXPECTED** | quest `meal` trả đúng 10 xu như `DAILY_QUESTS` định nghĩa |
+| **ACTUAL** | trả **300** |
+
+**EVIDENCE** — cluster dựng từ mọi migration, `SET LOCAL ROLE authenticated`
+trong transaction tường minh:
+
+```
+DAILY_QUESTS: meal = 10
+earn_mascot_coins('d:2026-08-19:meal',  10)  → sổ: … = 10
+earn_mascot_coins('d:2026-08-19:meal', 300)  → sổ: … = 300     ← lỗi
+earn_mascot_coins('d:2026-08-19:meal', 301)  → REFUSED: reward out of range
+```
+
+Và `p_ref_key` không được kiểm gì cả. Tất cả những khoá này đều được nhận và trả
+đủ tiền:
+
+```
+d:2026-08-19:ghost   d:2026-08-19:   d:not-a-date:meal   d:2099-01-01:meal
+d:1970-01-01:meal    meal            ""                  d:2026-08-19:meal:extra
+```
+
+**ROOT CAUSE:** trần 300/claim và 800/ngày không phải chặn trên của việc giả
+mạo — nó là **bảng giá** cho việc giả mạo. `buy_mascot_item`, thêm ở
+`20260810120000` cùng lúc drop policy INSERT, chỉ nhận `p_item_key` và tra giá
+từ `shop_prices`; header của chính nó nói *"the item key is the only thing the
+caller supplies"*. Bên **tiêu** có thẩm quyền máy chủ từ đó; bên **kiếm** chưa
+bao giờ có. XP thì lại suy ra từ khoá (`xpForRefKey`), nên XP không phồng được
+mà xu thì có — đó là hình dạng của một chỗ bỏ sót, không phải một quyết định.
+
+**BLAST RADIUS:** bất kỳ người gọi nào đã đăng nhập, 300 xu một claim, 800 xu
+một ngày, trên những khoá không đặt tên cho thứ gì. Client đã ship **luôn gửi
+đúng `def.coins`** (payload đo được: `{refKey:'d:2026-08-19:meal', amount:10}`)
+— đây là lỗ ở mặt API, không phải lỗi của client.
+
+**FIX:** `20260819120000_reward_amount_authority.sql`.
+
+- bảng `reward_prices`, anh em với `shop_prices`: một dòng cho mỗi phần thưởng
+  mà thiết kế có **hằng số**. RLS chỉ cho SELECT — đo được `UPDATE 0` từ một
+  phiên đã đăng nhập.
+- `reward_amount_for(ref_key)` tách riêng để đọc và thử được mà không đúc gì.
+- `claim_quest_reward(p_ref_key, p_reason)` — người gọi đặt tên sự kiện, máy chủ
+  định giá.
+- **`earn_mascot_coins` giữ nguyên chữ ký ba tham số và VỨT `p_amount` đi.** Đây
+  là nửa quan trọng hơn: những bản app đã nằm trên máy người ta vẫn gọi chữ ký
+  đó cho tới khi họ cập nhật, và một hàm mới thôi thì bỏ lại đúng những người
+  không sửa được bằng cách ship code.
+
+**Cửa sổ ngày là +1/−2 chứ không phải "hôm nay"**, và cả hai đầu đều có lý do đo
+được: `questRefKey` dùng ngày **địa phương** còn hàm này thấy UTC (ở Kiritimati
+ngày địa phương đi trước), và một claim hỏng lúc 23:59 được thử lại sau nửa đêm.
+
+**Một chỗ KHÔNG sửa được, nói thẳng:** `d:<date>:streak` trả
+`streakCoins(streak) = min(5 + streak*2, 25)` — một hàm của lịch sử người dùng
+chứ không phải hằng số. Suy ra nó ở đây nghĩa là viết lại luật streak
+(`LOGGED_DAY_FILTER`, cửa sổ 400 dòng, phủ freeze) lần thứ **ba**, và
+`use-mascot-room.ts` đã ghi rằng hai bản hiện có *"đã lệch nhau hai lần"*. Bản
+thứ ba lệch sẽ trả sai tiền thưởng trong im lặng — tệ hơn cái đang sửa. Nên khoá
+streak bị chặn ở **cực đại của chính hàm đó, 25**, và điều này được ghi là một
+bản sửa **một phần** chứ không hoá trang thành thẩm quyền: giả mạo nó đáng 25 xu
+thay vì 300. Mọi thứ có hằng số thì chính xác.
+
+**VERIFICATION:** `tools/quest-lifecycle.mjs` — 5 quest × 3 đường gọi, 14 khoá
+xấu, 6 mốc ngày, 4 hạng thử thách, ẩn danh, chéo người dùng, và **100 lần claim
+ĐỒNG THỜI** cùng một khoá qua hai kết nối riêng → đúng một dòng 10 xu, 100/100.
+
+---
+
+### BUG-96 (P2). Quest hoàn thành lúc app đóng bị ghi là THẤT BẠI — `COMPLETED-QUEST-RECORDED-AS-A-MISS`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN INTERACTION** | U × V × X × Y |
+| **EVENT ORDER** | Koa hỏi 'meal' → app đóng → HealthKit/log làm quest xong → mở app → lần đọc đầu đã thấy done |
+| **EXPECTED** | một quan sát THÀNH CÔNG, đúng một lần |
+| **ACTUAL** | không học gì, rồi hôm sau `settleStale` tính là một THẤT BẠI |
+
+**EVIDENCE** — lái hook thật qua một runtime hook có `useRef` bền:
+
+```
+lần đọc đầu đã done : claims 2 · credits 0 · peek 0 · koa 0
+quan sát trực tiếp  : claims 2 · credits 2 · peek 1 · koa 0
+
+ask sau khi hoàn thành ngoài tầm quan sát : {"meal":"2026-08-19"}   (vẫn treo)
+arm sau settleStale                        : {3,2} → {3,3}          THẤT BẠI
+cùng việc đó, quan sát trực tiếp           : {3,2} → {4,2}          THÀNH CÔNG
+```
+
+**ROOT CAUSE:** việc học nằm sau `before && !before[key]`, và `before` là `null`
+ở lần đọc đầu của mỗi phiên. Xu vẫn được trả — sổ cái không quan tâm ai nhìn
+thấy — nhưng ask vẫn treo, nên hôm sau nó bị kết sổ thành một lần trượt. Mô hình
+học **ngược lại** điều đã xảy ra, cho một quest đã hoàn thành VÀ đã trả tiền.
+Cùng lớp lỗi mà header của `bandit.ts` nói sổ ask được dựng ra để chặn, đến bằng
+một cửa khác.
+
+**BLAST RADIUS:** ngủ và tập đều thoả mãn được bằng một lần đồng bộ HealthKit
+rơi về lúc app đang đóng, nên đây là hình dạng bình thường của một ngày.
+
+**FIX:** tách **niềm tin** khỏi **đồng hồ**.
+
+- `creditQuest(quest, date)` mới trong `personal-model.ts`: chỉ quy công, không
+  ghi giờ. Idempotent theo danh tính đã có sẵn — `credit` chỉ chạy khi
+  `asked[quest] === date` và **xoá** ask khi chạy, nên gọi mỗi lần đọc là an
+  toàn.
+- `useQuestAutoClaim` gọi nó cho **mọi** quest done-và-chưa-nhận.
+- `noteDone` (ghi giờ) **ở nguyên sau chuyển trạng thái**: giờ có được ở lần đọc
+  đầu là giờ **mở app**, không phải giờ người ta ăn, và `observeHour` là tổng
+  cộng dồn không có đường lùi — đúng lý do `steps` bị loại khỏi `CLOCK_TRUSTED`.
+
+**PS-Y2 giữ nguyên:** hoàn thành lúc app đóng vẫn **không** diễn — đo lại sau
+bản sửa: `peek 0, koa 0`.
+
+**VERIFICATION:** `lateArm === liveArm` (cả hai `{4,2}`), `lateCredits === 1`,
+đọc lại ba lần vẫn `1`, `lateHourObs === 0`, và một quest Koa **chưa hỏi** không
+làm đổi arm.
+
+---
+
+### BUG-97 (P2). Xu kiếm trước nửa đêm chết lúc nửa đêm — `UNCLAIMED-QUEST-LOST-AT-MIDNIGHT`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **EVENT ORDER** | claim bị từ chối lúc 23:59 → sang ngày → không lần đọc nào mời lại |
+| **EXPECTED** | một yêu cầu kinh tế hỏng phải thử lại được cho cùng sự kiện logic |
+| **ACTUAL** | `claims: 1, coins: 0`, vĩnh viễn |
+
+**ROOT CAUSE:** `unclaimed` dựng từ **hôm nay**, nên vòng lặp chỉ mời được khoá
+của hôm nay. Bản sửa `onError` trước đó chữa được trường hợp trong ngày và dừng
+đúng ở nửa đêm.
+
+**FIX:** một tập `owed` sống qua ranh giới ngày (`sent` thì không), và một lượt
+thử lại cuối effect. Không gì ở đó quyết định *có nợ hay không* — điều đó đã
+quyết định lúc quest hoàn thành — và không gì trả được hai lần:
+`UNIQUE(user_id, ref_key)` làm lần lặp thành no-op, và `claim_quest_reward` tự
+định giá khoá nên một khoá cũ không thể đáng hơn lúc trước. Cửa sổ hai ngày của
+máy chủ là nửa còn lại và tồn tại vì việc này.
+
+**ĐÂY LÀ PHẠM VI PHIÊN, và cố ý không hơn.** Sống qua một lần kill app nghĩa là
+lưu lại một *ý định* nhận thưởng, và hàng đợi offline của app này nói rõ nó dành
+cho **ghi chép** — những lần ghi mà người ta đã biết chuyện gì xảy ra và app chỉ
+là tờ giấy. Một phần thưởng không phải thế. Phần dư được ghi ra chứ không lấp
+liếm: kill app giữa lúc hỏng và nửa đêm thì số xu đó vẫn mất.
+
+---
+
+### BUG-98 (P3). Nhãn quest bước chân nói một con số nó không đo — `STEPS-QUEST-LABEL-LIES`
+
+Nhãn: `Đi 5.000 bước` / `Walk 5,000 steps`. Điều kiện:
+`steps >= stepsGoal` — mục tiêu người dùng tự đặt, mặc định **10.000**, chỉnh
+được 1k–50k.
+
+Người dùng mặc định đi 5.000 bước, đọc thấy đã xong, và chưa xong. Người hạ mục
+tiêu xuống 3.000 thì hoàn thành một quest tự nhận là muốn 5.000.
+
+**FIX:** nhãn mang `{n}`, `useDailyQuests` xuất `stepsGoal`, phòng Koa điền từ
+đó — cùng nguồn mà điều kiện đọc. Không có chữ số nào trong chuỗi nữa. Huy chương
+`steps_10k` giữ nguyên 10.000 literal, vì nó được **đặt tên** theo con số đó.
+
+---
+
+### BUG-99 (P3). `day_complete` phát năm lần cho một ngày
+
+Đo được: `koa.emit(day:2026-08-19)` × 5 — kiểm tra `doneCount >= total` nằm
+**trong** vòng lặp từng quest. `emitKoa` khử trùng theo id nên bốn cái bị hấp
+thụ và **kết quả vốn đã đúng**; đây chỉ là app hỏi cùng một câu năm lần. Nâng ra
+ngoài vòng lặp sau một cờ `sawTransition`, giữ nguyên điều kiện. Bộ dò khẳng
+định đúng **một** lần phát.
+
+---
+
+### Chain Y — đã kiểm và **KHÔNG** phải lỗi
+
+**1. Xoá nguồn rồi tạo lại không đúc thêm gì.** Đo qua hook thật:
+
+```
+hoàn thành → 1 claim · 1 credit · 1 peek · 10 xu
+xoá bữa ăn → không đổi gì; sổ vẫn giữ d:2026-08-19:meal
+ghi lại    → KHÔNG claim thứ hai, KHÔNG quan sát thứ hai, KHÔNG màn diễn thứ hai
+```
+
+Kinh tế đơn điệu dù hoàn thành thì không, vì `ref_key` mới là sự kiện. Nhất quán
+từ trong ra — **ngữ nghĩa sản phẩm, không phải lỗi.** Cùng cơ chế trả lời luôn
+câu hỏi "đổi mục tiêu quest trước khi nhận".
+
+**2. Đồng thời, RLS, và danh tính đều đúng.** 100 lần claim đồng thời cùng khoá
+→ 0 trùng. Trần dưới 10 actor đồng thời → đúng 800, 30/30. `d:<date>:<quest>`
+không mang `user_id` và **không cần**: `UNIQUE(user_id, ref_key)` tách chúng ra
+— đo được ALPHA và BRAVO cùng khoá, hai dòng riêng. INSERT thẳng vào sổ bị RLS
+từ chối kể cả **cho chính mình**; UPDATE trả `UPDATE 0`.
+
+**3. Chéo người dùng sạch.** Qua đúng seam reset **và** đúng lần unmount
+(`Gate` trả `<AuthScreen/>` khi `!user`): BRAVO phát 3 claim với ref_key của
+**BRAVO**, dưới JWT của BRAVO. peek/hours/koaSeen/reaction của ALPHA đều về 0.
+
+**4. DST đúng.** Ngày 23 giờ và ngày 25 giờ đều cho đúng một ngày địa phương;
+Lord Howe với lệch nửa giờ cũng vậy.
+
+**5. Oracle độc lập: 0/1000.** 1000 chuỗi vòng đời (14 668 sự kiện: đổi tài
+khoản, xoá, sang ngày, mất phản hồi) đối chiếu với một oracle chỉ biết
+`(user, quest, date)` và không import quest/wallet/bandit — **0 lệch**.
+
+---
+
+### Chain Y — PRODUCT DECISION, ghi lại chứ không tự quyết
+
+**PS-Y1. Bandit học từ *hoàn thành* hay từ *phần thưởng thành công*?** Hiện tại:
+hoàn thành. Đo được thứ tự thật (claim bất đồng bộ, đúng như `mutate`):
+
+```
+claim.mutate → bandit.credit → bandit.noteDone → celebration.peekAt → claim.ok|err|lost
+```
+
+Giống hệt nhau ở cả ba kết cục. **Mọi tác dụng phụ vĩnh viễn xảy ra TRƯỚC khi
+biết kết quả kinh tế.** Lập luận cho hiện trạng: bandit mô hình hoá *sự thuyết
+phục*, không phải *việc trả tiền* — người ta đã làm việc đó, dù mạng có rớt hay
+không. **KHÔNG tự đổi.**
+
+**PS-Y2. Quest hoàn thành lúc app đóng có nên được ăn mừng?** Hiện tại: không.
+Giữ nguyên qua bản sửa BUG-96, và có luật riêng canh.
+
+**PS-Y3. `QUEST-DATE-SPLIT-BRAIN` — hai hệ ngày, cố ý.** `questRefKey` dùng ngày
+**địa phương**; trần 800 dùng `date_trunc('day', now())` tức **UTC**. Đo được ở
+Los Angeles: 6/7 thời điểm lấy mẫu lệch nhau.
+
+Không ép hội tụ, và đây là số học chứ không phải phẩy tay: trần là một hạn mức
+chống lạm dụng, không phải một ngày lịch, và máy chủ **không biết** múi giờ của
+máy. Một ngày địa phương tối đa hợp lệ ~700 (quà chào mừng 300 chỉ có một lần
+trong đời); trạng thái ổn định là 75 + 25 + thử thách ≈ 100–200. Hai ngày như
+thế chồng lên một cửa sổ UTC vẫn < 800. Nên không thể gây từ chối oan cho người
+dùng thật. **Ghi là ngữ nghĩa sản phẩm.**
+
+---
+
+### Chain Y — sai lầm của chính bộ đo
+
+**1. Tôi suýt báo một lỗi mà cổng đăng nhập đã chặn sẵn.** Lần chạy chéo-người-
+dùng đầu tiên dùng lại **một** instance component qua lúc đăng xuất và cho thấy
+BRAVO không nhận được gì — vì `sent`/`seen` còn giữ khoá của ALPHA. Nhưng `Gate`
+trả `<AuthScreen/>` khi `!user`, nên production **unmount** cả cây và gắn lại
+với ref mới. Bộ đo đã bỏ qua một ranh giới có thật. Sửa; nay đo cả hai hình
+dạng.
+
+**2. Bản giả lập claim của tôi settle ĐỒNG BỘ**, đặt `claim.success` **trước**
+`bandit.noteDone` — tức đảo ngược đúng cái phát hiện trung tâm về thứ tự.
+`mutate` là bắn-rồi-quên. Sửa thành bất đồng bộ, và thứ tự đảo lại.
+
+**3. Ba lỗi trong chính `quest-lifecycle.mjs`, bắt được ở lần chạy đầu:** thư
+mục cha `mkdtempSync` là 0700 root nên postgres không đi vào được (báo ra thành
+"không khởi động được PostgreSQL", trông như máy không có server); một luật
+khẳng định *số lần gọi* `creditQuest` trong khi bất biến là *hậu nghiệm có đổi
+không*, nên nó đỏ trên hành vi đúng; và luật nhãn bước chân viết ngược điều
+kiện.
+
+**4. Bộ dò để lại một postmaster đang chạy.** Lệnh dừng nằm ở nhánh thành công,
+nên một luật đỏ để cụm giữ cổng và **lần chạy sau** báo lỗi bootstrap không liên
+quan gì tới bản phá. Bắt được giữa lúc break-test: phá 1 đỏ đúng, phá 2 trả về
+một lỗi khác hẳn. Chuyển vào `finally` — và lần đầu vẫn không dừng được, vì
+`pg_ctl` **từ chối chạy dưới root** và lời gọi trần đó im lặng không làm gì.
+
+**5. Ba luật CŨ đỏ vì đổi tên, và tôi CHỈNH LẠI MỎ NEO chứ không nới lỏng.**
+`claim_quest_reward` thay chỗ `earn_mascot_coins` ở hai chỗ gọi, và
+`reward_prices` thêm những dòng seed hình dạng `('key', 123)`. Hậu quả:
+
+- `economy-authority.mjs` quét CẢ khối SQL tìm `('key', 123)`, nên
+  `('weekly', 40)` và `('welcome', 300)` của bảng mới bị đọc thành món shop
+  không còn trong catalogue. **Luật đúng, chỗ nhìn thì sai** — nay chỉ đọc
+  trong đúng câu `INSERT … INTO public.shop_prices … VALUES`, tức là CHẶT HƠN:
+  bảng tiếp theo có seed hình dạng giá cũng không bị nhầm nữa.
+- `challenge-reward.mjs` và `economy-ledger.mjs` neo vào chuỗi
+  `earn_mascot_coins`. Cái sau tự bắt được mình: nó in *"luật B không kiểm gì
+  cả"* thay vì lặng lẽ xanh — đúng loại tự kiểm mà mấy chain trước đã dựng.
+  Nay cả hai neo vào **khoản chi**, dù RPC nào viết ra nó.
+
+Cả ba đều được phá lại sau khi chỉnh: giá lệch → đỏ, khoản chi ra khỏi nhánh
+`justCompleted` → đỏ, mỏ neo mất → tự kiểm đỏ. Phục hồi xanh.
+
+**6. Một câu báo lỗi nói sai chuyện.** Luật nền nói *"bộ dò hỏng"* khi thứ hỏng
+có thể là production; đổi thành nêu cả hai khả năng, sau khi phá 5 làm nó đỏ vì
+đúng lý do thứ hai.
+
+---
+
+### Chain Y — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **PURE LOGIC** | `dayGap` qua hai mốc DST; `reward_amount_for` tách riêng để gọi được |
+| **POSTGRES** | cluster THẬT 16.13 dựng từ **mọi** migration, 36 bảng |
+| **RLS** | `SET LOCAL ROLE authenticated` **trong transaction tường minh**; ROW_COUNT chứ không phải exit status ở chỗ UPDATE |
+| **ECONOMY** | 5 quest × 3 đường gọi, 14 khoá xấu, 6 mốc ngày, 4 hạng thử thách |
+| **QUEST** | hook thật trên runtime hook có `useRef` bền |
+| **BANDIT** | arm ngoài-tầm-quan-sát === arm trực-tiếp; credit đúng một lần; giờ không bị đụng |
+| **KOA** | một `day_complete` cho một ngày |
+| **CELEBRATION** | PS-Y2 giữ nguyên, có luật canh |
+| **WEEKLY CHALLENGE** | 4 hạng + `w:` đều do máy chủ định giá |
+| **CONCURRENCY** | 100 lần claim đồng thời, hai kết nối riêng |
+| **TIMEZONE** | UTC · NY · LA · Chicago · HCM · Lord Howe · Chatham; DST 23h và 25h |
+| **DETECTORS** | **11 phép phá**, mỗi phép đỏ đúng câu định trước, phục hồi xanh |
+| **ORACLE** | 1000 chuỗi, không import quest/wallet/bandit — 0 lệch |
+| **TYPESCRIPT** | `npx tsc --noEmit` sạch |
+| **OFFLINE** | **KHÔNG có bề mặt**: hàng đợi offline mang 7 thao tác ghi chép, không có claim nào |
+| **PERSISTENCE** | claim **không có `mutationKey`** → không khôi phục được sau cold launch. Đọc code, **KHÔNG chạy** |
+| **AsyncStorage thật** | **KHÔNG** — kho trong bộ đo là stand-in |
+| **REAL iOS** | **KHÔNG** |
+| **PRODUCTION** | **KHÔNG** |
 ---
 
 ## Cách dùng sổ này

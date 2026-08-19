@@ -246,15 +246,25 @@ export function useClaimReward() {
         await writeLocal(LOCAL_TX_KEY, rows);
         return;
       }
-      /* Through the function, not the table.
+      /* Through the function, and the function names its own price.
 
-         `mascot_transactions` no longer takes client inserts at all — a POST to
-         it with `amount: 999999` unlocked the whole shop for one request. The
-         RPC clamps a claim to the economy's real maxima and keeps the `ref_key`
-         idempotency, so a duplicate is still a no-op. */
-      const { error } = await supabase.rpc('earn_mascot_coins', {
+         `mascot_transactions` has taken no client inserts since
+         20260810120000 — a POST with `amount: 999999` unlocked the whole shop
+         for one request. What that left behind was the *amount*: the RPC
+         bounded it to 300 and never asked what the key was worth, so measured
+         against a real cluster, `earn_mascot_coins('d:<today>:meal', 300)`
+         wrote **300** for a quest the catalogue prices at 10 — and every
+         ref_key was accepted, `d:…:ghost` and `""` included.
+
+         `claim_quest_reward` takes the key alone and looks the price up in
+         `reward_prices`, the same shape `buy_mascot_item` has always used for
+         spending. See 20260819120000.
+
+         `amount` stays in the variables and is **not sent**: the room floats
+         the coins off the scene on success and needs a number to draw. It is a
+         label now, not an instruction. */
+      const { error } = await supabase.rpc('claim_quest_reward', {
         p_ref_key: refKey,
-        p_amount: amount,
         p_reason: reason,
       });
       // duplicate = already claimed elsewhere; treat as success

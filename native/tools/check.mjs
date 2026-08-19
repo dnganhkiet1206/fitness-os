@@ -231,6 +231,7 @@ const STEPS = [
   ['mô hình cá nhân', 'node', ['tools/personal-model.mjs']],
   ['ngân sách xuất hiện', 'node', ['tools/mascot-budget.mjs']],
   ['bandit / Thompson', 'node', ['tools/bandit.mjs']],
+  ['vòng đời quest', 'node', ['tools/quest-lifecycle.mjs']],
   ['lối vào màn hình', 'node', ['tools/entry-points.mjs']],
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],

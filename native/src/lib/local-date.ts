@@ -33,6 +33,28 @@ export function parseLocalDate(dateStr: string): Date {
 }
 
 /**
+ * Whole days from `from` to `to`, both YYYY-MM-DD, in local time.
+ *
+ * Negative when `to` is earlier. `NaN` for anything unparseable, which callers
+ * must treat as "no answer" rather than as zero.
+ *
+ * ── why it is not `(b - a) / 86400000` ──
+ *
+ * Because a local day is not always 86 400 000 ms. The two DST changes make one
+ * 23 hours and one 25, so the naive division answers 0.958 and 1.042 for two
+ * dates that are plainly one day apart, and `Math.floor` turns the first into
+ * **0**. Rounding each end to its own local midnight first and rounding the
+ * quotient is what survives both — this file's own header exists because of the
+ * same class of mistake at the other boundary.
+ */
+export function dayGap(from: string, to: string): number {
+  const a = parseLocalDate(from).getTime();
+  const b = parseLocalDate(to).getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return NaN;
+  return Math.round((b - a) / 86_400_000);
+}
+
+/**
  * UTC instants bounding a local calendar day — for range queries
  * against timestamptz columns (date_time, waketime, logged_at).
  */

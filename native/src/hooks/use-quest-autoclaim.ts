@@ -5,9 +5,10 @@ import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useClaimReward, useMascotWallet } from '@/hooks/use-mascot-room';
 import { emitKoa } from '@/lib/koa-stage';
-import { askPeek, levelStep, noteDone } from '@/lib/personal-model';
+import { askPeek, creditQuest, levelStep, noteDone } from '@/lib/personal-model';
 import { peekAt } from '@/lib/quest-peek';
 import { DAILY_QUESTS, levelFromXp, questRefKey, type QuestKey } from '@/lib/mascot-room';
+import { dayGap } from '@/lib/local-date';
 
 /**
  * Rewards land by themselves, and Koa says so.
@@ -76,6 +77,15 @@ import { DAILY_QUESTS, levelFromXp, questRefKey, type QuestKey } from '@/lib/mas
 /** Tier the peek needs, or `null` while it is on for everybody. */
 const PEEK_TIER: Tier | null = null;
 
+/**
+ * How long a refused claim keeps being retried.
+ *
+ * Matched to the window `claim_quest_reward` accepts, because a key the server
+ * has started refusing on principle is not worth asking about again — and a set
+ * that only ever grows is a leak. See 20260819120000.
+ */
+const CLAIM_RETRY_DAYS = 2;
+
 export function useQuestAutoClaim() {
   const quests = useDailyQuests();
   const claim = useClaimReward();
@@ -90,6 +100,14 @@ export function useQuestAutoClaim() {
   const seenDay = useRef<string | null>(null);
   /** ref keys already sent this session, so a re-render cannot re-send */
   const sent = useRef(new Set<string>());
+  /**
+   * Claims that were refused and are still owed.
+   *
+   * Kept across the day boundary, which `sent` is not: the whole point is the
+   * coins somebody earned before midnight and the network refused. See the
+   * retry pass at the end of the effect.
+   */
+  const owed = useRef(new Set<string>());
 
   /*
     ── the level, which nothing could see before ──
@@ -128,10 +146,15 @@ export function useQuestAutoClaim() {
       seenDay.current = quests.today;
       seen.current = null;
       sent.current = new Set();
+      /* `owed` deliberately survives this. See the retry pass at the bottom. */
     }
 
     const before = seen.current;
     seen.current = { ...quests.done };
+    /* Whether anything went from undone to done on THIS pass. The all-five
+       event is one event about the day, so it is decided once after the loop
+       rather than once per quest — see below. */
+    let sawTransition = false;
 
     for (const key of quests.unclaimed) {
       const def = DAILY_QUESTS.find((q) => q.key === key);
@@ -169,33 +192,48 @@ export function useQuestAutoClaim() {
           "rewards land by themselves" path and a red toast for a blip on a
           ten-coin quest is the tax this whole hook exists to remove. The next
           render tries again; nothing is lost.
+
+          `owed` is the half that survives midnight — see the retry pass below.
         */
         claim.mutate(
           { refKey, amount: def.coins, reason: key },
-          { onError: () => sent.current.delete(refKey) },
+          {
+            onError: () => {
+              sent.current.delete(refKey);
+              owed.current.add(refKey);
+            },
+            onSuccess: () => owed.current.delete(refKey),
+          },
         );
       }
 
+      /*
+        ── the belief is credited whether or not anybody saw it happen ──
+
+        This whole block used to sit behind the transition test below, and that
+        made the learning depend on the app having been open at the right
+        moment. It was not merely a gap: the ask stays outstanding, so the next
+        day `settleStale` charges the arm a **loss** for a quest that was
+        finished and paid for. Sleep and workout can both be satisfied by a
+        HealthKit sync while the app is closed, so this is an ordinary shape of
+        day rather than an edge.
+
+        Safe to run on every reading: `creditQuest` is idempotent on the ask
+        ledger — it fires only while an ask for this quest is outstanding today
+        and consumes it — so a re-render, a refetch and a second session all
+        land on the same single observation. See `creditQuest`.
+      */
+      creditQuest(key, quests.today);
+
       /* A change seen while watching is also the app's only chance to learn
          *when* this person does things — the hour is now, and there is no
-         history query anywhere that could recover it later. It is recorded for
-         every observed completion, celebrated or not. */
+         history query anywhere that could recover it later. That half stays
+         behind the transition, because the hour on a first reading is the hour
+         the app was opened and not the hour anybody ate. */
       if (before && !before[key]) {
         noteDone(key, new Date().getHours(), quests.today);
+        sawTransition = true;
 
-        /* ── the one daily moment that is genuinely rare ──
-
-           Finishing all five is the only thing on this screen that does not
-           happen most days, and it was the one event with a written line and
-           nothing able to fire it. The individual boxes stay with the card peek
-           — they already have a reaction there, and sending them here as well
-           would give one glass of water two performances. */
-        if (quests.doneCount >= quests.total) {
-          emitKoa(
-            { id: `day:${quests.today}`, kind: 'day_complete', magnitude: 0.6 },
-            refreshKoaContext(koaCtx),
-          );
-        }
         /* And even then, not always. `askPeek` is the rationing — a cooldown so
            a catch-up burst is one performance rather than four, and a daily cap
            so the character stays worth looking at. The all-five moment is the
@@ -204,6 +242,79 @@ export function useQuestAutoClaim() {
           peekAt(key, def.coins);
         }
       }
+    }
+
+    /*
+      ── the one daily moment that is genuinely rare ──
+
+      Finishing all five is the only thing on this screen that does not happen
+      most days, and it was the one event with a written line and nothing able
+      to fire it. The individual boxes stay with the card peek — they already
+      have a reaction there, and sending them here as well would give one glass
+      of water two performances.
+
+      It sat inside the loop above, so the last quest of the day emitted
+      `day:<date>` once per unclaimed quest — measured at **five** calls for one
+      day. `emitKoa` dedupes on the event id, so four were absorbed and the
+      outcome was already correct; this only stops the app asking the same
+      question five times. The condition is unchanged: all five done, and at
+      least one of them seen going done on this pass.
+    */
+    if (sawTransition && quests.doneCount >= quests.total) {
+      emitKoa(
+        { id: `day:${quests.today}`, kind: 'day_complete', magnitude: 0.6 },
+        refreshKoaContext(koaCtx),
+      );
+    }
+
+    /*
+      ── coins somebody earned yesterday and the network ate ──
+
+      `quests.unclaimed` is built from **today**, so the loop above can only
+      ever offer today's keys. Measured: a claim refused at 23:59 and a day
+      rollover before the next reading left `claims: 1, coins: 0`, and nothing
+      in the app ever went back for it. The `onError` retry above fixed the
+      within-the-day case and stopped exactly at midnight.
+
+      So a refused key is remembered by identity and re-offered until it lands.
+      Nothing here decides *whether* it is owed — that was decided when the
+      quest was completed and claimed — and nothing here can pay twice:
+      `UNIQUE(user_id, ref_key)` makes a repeat a no-op, and
+      `claim_quest_reward` prices the key itself, so a stale key cannot be worth
+      more than it was.
+
+      The server's two-day window is the other half of this and exists for it:
+      see 20260819120000. Past that, the key is dropped rather than retried for
+      ever — a claim that has failed for two days is not a blip, and a set that
+      only grows is a leak.
+
+      **This is session-scoped**, and deliberately not more. Making it survive
+      an app kill means persisting a claim intention, and this app's offline
+      queue is explicitly for *logging* — writes where the person already knows
+      what happened and the app is only the paper. A reward is not that. The
+      residue is recorded in the ledger rather than papered over: kill the app
+      between the failure and midnight and those coins are still lost.
+    */
+    for (const refKey of owed.current) {
+      if (sent.current.has(refKey)) continue;
+      const day = refKey.split(':')[1];
+      if (day && dayGap(day, quests.today) > CLAIM_RETRY_DAYS) {
+        owed.current.delete(refKey);
+        continue;
+      }
+      sent.current.add(refKey);
+      /* `amount` is not sent to the server any more — `claim_quest_reward`
+         prices the key itself. It is still filled in from the catalogue rather
+         than left at zero, because it is what a caller's `onSuccess` draws, and
+         a "+0" burst would be a lie about a claim that paid. */
+      const quest = refKey.split(':')[2] as QuestKey;
+      claim.mutate(
+        { refKey, amount: DAILY_QUESTS.find((q) => q.key === quest)?.coins ?? 0, reason: 'retry' },
+        {
+          onError: () => sent.current.delete(refKey),
+          onSuccess: () => owed.current.delete(refKey),
+        },
+      );
     }
     /* `claim` is a stable mutation object; listing it would re-run this on every
        mutation state change, which is exactly when it must not re-run.

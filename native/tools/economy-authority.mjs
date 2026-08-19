@@ -136,8 +136,26 @@ for (const f of walk(path.join(NATIVE, 'src'))) {
     pathToFileURL(path.join(out, 'mascot-room.js')).href
   );
 
+  /*
+    ── read only the rows that are actually shop prices ──
+
+    This used to scan the whole concatenated SQL for `('key', 123)`, which is
+    the shape of a seeded price and also the shape of every other two-column
+    seed in the directory. `20260819120000` adds `reward_prices` — the quest
+    catalogue, server-side — and its rows `('weekly', 40)` and
+    `('welcome', 300)` were promptly read as shop items that no longer exist in
+    `SHOP_ITEMS`. The rule was right that they are not shop items; it was
+    looking in the wrong place.
+
+    Scoped to the `INSERT … INTO public.shop_prices … VALUES` statements it is
+    about, which is strictly stricter: the next table with a price-shaped seed
+    cannot be mistaken for this one either.
+  */
+  const shopInserts = [...sql.matchAll(
+    /INSERT\s+INTO\s+public\.shop_prices\b[\s\S]*?VALUES([\s\S]*?);/gi,
+  )].map((m) => m[1]).join('\n');
   const seeded = new Map(
-    [...sql.matchAll(/\('([a-z0-9_]+)',\s*(\d+)\)/g)].map((m) => [m[1], Number(m[2])]),
+    [...shopInserts.matchAll(/\('([a-z0-9_]+)',\s*(\d+)\)/g)].map((m) => [m[1], Number(m[2])]),
   );
   /* Consumables are a second catalogue for a good reason (they are not worn),
      and they are bought with the same coins from the same price table — so the

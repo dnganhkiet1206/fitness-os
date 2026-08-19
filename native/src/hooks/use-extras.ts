@@ -572,12 +572,13 @@ export function useUpdateChallengeProgress() {
         if (step.justCompleted) {
           const tier = ch.reward_tier ?? 'bronze';
           const reward = CHALLENGE_REWARD[tier] ?? CHALLENGE_REWARD.bronze;
-          /* Same gate as every other reward — the ledger takes no client
-             inserts. The tier still decides the amount here, and the function
-             bounds it. */
-          const { error: payError } = await supabase.rpc('earn_mascot_coins', {
+          /* Same gate as every other reward, and now the same authority: the
+             tier is already written into the ref_key, so the server reads it
+             from there and prices it itself. It used to be sent as
+             `p_amount`, which meant a caller could name any tier's key and any
+             price up to 300 — see 20260819120000. */
+          const { error: payError } = await supabase.rpc('claim_quest_reward', {
             p_ref_key: challengeRefKey(tier, weekStart, ch.challenge_key),
-            p_amount: reward.coins,
             p_reason: `challenge ${ch.challenge_key}`,
           });
           if (payError && !payError.message.includes('duplicate')) throw payError;

@@ -142,7 +142,12 @@ const files = globSync('src/**/*.{ts,tsx}', { cwd: NATIVE }).sort();
 {
   const f = 'src/hooks/use-extras.ts';
   const code = strip(read(f));
-  const pay = code.indexOf('earn_mascot_coins');
+  /* The payment, whichever RPC spells it — see `challenge-reward.mjs` for why
+     both names are named. Anchoring on one literal is what made this rule's own
+     self-test fire ("luật B không kiểm gì cả") the day the call moved to
+     `claim_quest_reward`; the self-test was right and the anchor was stale. */
+  const payMatch = code.match(/claim_quest_reward|earn_mascot_coins/);
+  const pay = payMatch ? payMatch.index : -1;
   const mark = code.indexOf("from('weekly_challenges')\n              .update(");
   const markAny = mark >= 0 ? mark : code.search(/from\('weekly_challenges'\)[\s\S]{0,120}?\.update\(/);
   if (pay < 0 || markAny < 0) {

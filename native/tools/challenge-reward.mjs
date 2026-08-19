@@ -254,7 +254,13 @@ try {
         }
       }
       const block = src.slice(open, end + 1);
-      if (!/earn_mascot_coins/.test(block)) {
+      /* Either claim RPC counts as "the payment". `claim_quest_reward` is the
+         one to call — the server prices the key there — and `earn_mascot_coins`
+         is the old signature kept alive for builds already on phones. Naming
+         only the old one made this rule go red the day the call was moved, and
+         naming only the new one would make it silently match nothing on any
+         branch that still uses the old. See 20260819120000. */
+      if (!/claim_quest_reward|earn_mascot_coins/.test(block)) {
         problems.push('tiền thưởng không nằm trong nhánh justCompleted');
       }
       if (!/reward_title/.test(block) || !/CHALLENGE_TEXT/.test(block)) {

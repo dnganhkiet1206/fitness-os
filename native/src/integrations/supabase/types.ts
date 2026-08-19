@@ -1417,6 +1417,14 @@ export type Database = {
         Args: { p_kind: string }
         Returns: boolean
       }
+      /* The caller names the event; the server prices it from `reward_prices`.
+         `earn_mascot_coins` is the old three-argument form, kept so app builds
+         already on somebody's phone keep working — its `p_amount` is now
+         accepted and discarded. Nothing new should call it. */
+      claim_quest_reward: {
+        Args: { p_ref_key: string; p_reason?: string }
+        Returns: number
+      }
       earn_mascot_coins: {
         Args: { p_ref_key: string; p_amount: number; p_reason?: string }
         Returns: number

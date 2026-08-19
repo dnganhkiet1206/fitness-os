@@ -300,7 +300,7 @@ export default function MascotRoomScreen() {
 
   /* "Done" is defined once, in `use-daily-quests`, because Today shows the same
      five now — see that file for why it moved out of this screen. */
-  const { done: questDone, active: activeQuests, today } = useDailyQuests();
+  const { done: questDone, active: activeQuests, today, stepsGoal } = useDailyQuests();
 
   const reward = (refKey: string, amount: number, reason: string, xpGain: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -757,7 +757,10 @@ export default function MascotRoomScreen() {
             <View key={q.key} style={styles.questRow}>
               <View style={styles.questInfo}>
                 <Text style={[styles.questName, isClaimed && styles.questNameDone]}>
-                  {q.name[lang]}
+                  {/* `{n}` is the steps goal, from the same source the quest's
+                      own condition reads — see DAILY_QUESTS. Every other label
+                      has no placeholder and passes through untouched. */}
+                  {q.name[lang].replace('{n}', stepsGoal.toLocaleString())}
                 </Text>
                 <View style={styles.questCoins}>
                   <Icon icon={Coins} size={11} />

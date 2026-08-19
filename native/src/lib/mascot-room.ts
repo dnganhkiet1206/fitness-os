@@ -23,7 +23,26 @@ export const DAILY_QUESTS: QuestDef[] = [
   { key: 'workout', coins: 25, xp: 30, name: { vi: 'Hoàn thành 1 buổi tập', en: 'Complete a workout' } },
   { key: 'water', coins: 15, xp: 15, name: { vi: 'Đạt mục tiêu nước', en: 'Hit your water target' } },
   { key: 'sleep', coins: 15, xp: 15, name: { vi: 'Ghi giấc ngủ', en: 'Log your sleep' } },
-  { key: 'steps', coins: 10, xp: 12, name: { vi: 'Đi 5.000 bước', en: 'Walk 5,000 steps' } },
+  /*
+    ── the number in this label was not the number being measured ──
+
+    It read "Đi 5.000 bước" / "Walk 5,000 steps" while `use-daily-quests`
+    decided the quest with `steps >= stepsGoal` — the goal the person set
+    themselves, default 10 000 and adjustable from 1 000 to 50 000. So somebody
+    on the default walked 5 000, read that they had finished, and had not; and
+    somebody who had lowered their goal to 3 000 finished a quest that claimed
+    to want 5 000.
+
+    That is the same disagreement the `steps` condition was corrected for once
+    already — the header in `use-daily-quests` describes the app having had
+    "three opinions about how far a day's walk is" — surviving in the one place
+    nobody thought to look, the string.
+
+    `{n}` is filled from `useStepsGoal`, the same source the condition reads, so
+    the sentence cannot drift from the test again. The `steps_10k` medal keeps
+    its literal 10 000 for the reason given there: it is *named* for the number.
+  */
+  { key: 'steps', coins: 10, xp: 12, name: { vi: 'Đi {n} bước', en: 'Walk {n} steps' } },
 ];
 
 /** Coins/XP for each completed weekly challenge (claimed on the room page) */

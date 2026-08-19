@@ -309,6 +309,60 @@ export function noteDone(quest: QuestKey, hour: number, date: string) {
 }
 
 /**
+ * They did it — but nobody was watching *when*.
+ *
+ * ── the miss that was recorded as a miss ──
+ *
+ * `noteDone` is called from the one place that can see a quest go from undone
+ * to done, and that place only sees it if it was mounted and reading at the
+ * moment it happened. `useQuestAutoClaim` gates on `before && !before[key]`,
+ * and `before` is `null` on the first reading of every session. So a quest that
+ * was already finished when the app opened paid its coins and taught the model
+ * nothing. Measured, driving the real hook: a first reading with two quests
+ * done gave **2 claims, 0 observations, 0 celebrations**, against 2 claims and
+ * 2 observations for the same two seen live.
+ *
+ * Not learning would be tolerable on its own. What is not is what happens next:
+ * the ask is still outstanding, so the following day `settleStale` reads it as
+ * unanswered and charges the arm a **loss** — for a quest that was completed,
+ * and paid for.
+ *
+ *     Koa hỏi 'meal' → hoàn thành ngoài tầm quan sát → settleStale
+ *       arm {3,2} → {3,3}      một THẤT BẠI
+ *     cùng việc đó, quan sát trực tiếp
+ *       arm {3,2} → {4,2}      một THÀNH CÔNG
+ *
+ * The model learns the reverse of what happened — the same failure
+ * `bandit.ts`'s own header describes the ask ledger as having been built to
+ * prevent, arriving through a different door. It is reachable without anything
+ * unusual: sleep and workout can both be satisfied by a HealthKit sync that
+ * lands while the app is closed.
+ *
+ * ── why this is separate from `noteDone` rather than a flag on it ──
+ *
+ * Because the *hour* must not come along. `observeHour` is a running sum with
+ * no way back, and the hour available on a first reading is the hour the app
+ * was opened, not the hour anybody ate. Feeding that in would teach the clock
+ * model the shape of somebody's launch habit — the same mistake `steps` is
+ * excluded from `CLOCK_TRUSTED` for. So the belief is credited here and the
+ * clock is left alone; `noteDone` keeps both, for the case where both are true.
+ *
+ * Idempotent by construction, and by the identity that already exists:
+ * `credit` fires only while `asked[quest] === date` and deletes the ask as it
+ * does. A second call the same day finds nothing outstanding and changes
+ * nothing, so this may be called on every reading. A quest Koa never asked
+ * about is likewise a no-op — there is no ask to attribute, and inventing one
+ * would be the base-rate trap `bandit.ts` warns about.
+ */
+export function creditQuest(quest: QuestKey, date: string) {
+  const led = credit({ arms: model.arms, asked: model.asked }, quest, date);
+  if (led.asked === model.asked) return;
+  model = { ...model, ...led };
+  save();
+  emit();
+}
+
+/**
  * A new day has started and yesterday's ask never landed — that is a miss.
  *
  * Without this the model only ever learns from successes, which is the classic
