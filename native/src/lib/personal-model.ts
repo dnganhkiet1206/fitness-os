@@ -2,7 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 import { credit, newArm, noteAsk, rankArms, settle, type Arm } from '@/lib/bandit';
-import { allowPeek, allowPraise, freshBudget, type PeekBudget } from '@/lib/mascot-budget';
+import {
+  allowPeek,
+  allowPraise,
+  freshBudget,
+  mergeBudget,
+  normaliseBudget,
+  type PeekBudget,
+} from '@/lib/mascot-budget';
 import { emptyHours, habit, observeHour, type HourStat } from '@/lib/user-rhythm';
 import { localDateStr } from '@/lib/local-date';
 import type { QuestKey } from '@/lib/mascot-room';
@@ -193,18 +200,22 @@ export async function loadPersonalModel() {
          rather than making everybody start again for a field that changed. */
       const storedAsked =
         parsed.asked ?? (parsed.pending ? { [parsed.pending.quest]: parsed.pending.date } : {});
-      const storedBudget = parsed.budget ?? base.budget;
+      /* Coerced before anything compares it against the cap — a stored `count`
+         of −999999 satisfied `count < PEEK_DAILY_CAP` for ever, which is an
+         unlimited day bought with one truncated write. See `normaliseBudget`. */
+      const storedBudget = normaliseBudget(parsed.budget, base.budget.day);
 
       model = {
         arms: { ...base.arms, ...(parsed.arms ?? {}) },
         hours: { ...base.hours, ...(parsed.hours ?? {}) },
         asked: { ...storedAsked, ...live.asked },
-        /* Whichever has spent more of today is the truthful one; on different
-           days the stored budget is stale and the live one is today's. */
-        budget:
-          live.budget.day === storedBudget.day && live.budget.count > storedBudget.count
-            ? live.budget
-            : storedBudget,
+        /* Whichever has spent more of today is the truthful one — compared on
+           what is LEFT rather than on the raw count, so the two branches this
+           used to have (same day, different day) become one. The old spelling
+           only implemented the rule for the same-day branch and let storage win
+           unconditionally otherwise, which handed back spending that had already
+           happened. See `mergeBudget`. */
+        budget: mergeBudget(live.budget, storedBudget, localDateStr()),
         praisedOn: live.praisedOn ?? parsed.praisedOn ?? null,
         /* Union, newest last: an id recorded before the read landed is a
            reaction that already happened, and forgetting it would replay it. */

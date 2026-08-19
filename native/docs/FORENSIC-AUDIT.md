@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (112 bước). Ngày rà: 2026-08-19.
+Bộ kiểm: `node tools/check.mjs` (113 bước). Ngày rà: 2026-08-19.
 
 ---
 
@@ -6312,6 +6312,197 @@ xoá khi đổi múi giờ? giữ và để nó tự trôi? lưu kèm offset? **
 | **AsyncStorage thật** | **KHÔNG.** Kho trong bộ đo là stand-in; hành vi khi hết dung lượng hoặc ghi dở dang chưa đo |
 | **runtime iOS thật** | **KHÔNG** |
 | **múi giờ / DST** | **CHƯA ĐO Ở VÒNG NÀY** — xem PS-2; `tools/health-sync.mjs` và `tools/streak.mjs` giữ lớp múi giờ cho các nguồn khác |
+| **tác động production** | **KHÔNG** |
+
+---
+
+## Vòng 24 — Chain W: ngân sách xuất hiện, chỗ app quyết định được phép làm phiền bao nhiêu
+
+**Câu hỏi mở đầu:** *ngân sách làm phiền có thể sai, vượt trần, làm sống lại
+lượt đã tiêu, rò qua người khác, hay lệch giữa bộ nhớ và ổ đĩa không?*
+
+**VERIFICATION:** `node tools/check.mjs` (113 bước) · `npx tsc --noEmit` ·
+`node tools/mascot-budget.mjs` (CHẠY THẬT `allowPeek`, `mergeBudget`,
+`normaliseBudget` và `personal-model` trên một kho thật; bất biến đối chiếu bằng
+một phép đếm "còn lại bao nhiêu lượt" viết ĐỘC LẬP)
+
+### Trước hết: ngân sách này chặn cái gì, đo trước khi giả định
+
+`PeekBudget` rành mạch chỉ chặn **một** thứ: lượt Koa ló ra sau thẻ khi một
+nhiệm vụ ngày hoàn thành. **Một** chỗ gọi duy nhất:
+
+```
+use-quest-autoclaim.ts:203   if (mayPeek && askPeek(...)) peekAt(key, def.coins);
+```
+
+Hỏi và tiêu là **cùng một lời gọi đồng bộ**, nên mục 6 của brief (TOCTOU) không
+có khe hở để mà đua, và mục 5 (tiêu đồng thời) không có hai tác nhân để mà chạy:
+JavaScript một luồng, `askPeek` đọc-sửa-ghi `model.budget` trong một tick.
+
+Không chạm vào: huy chương (`enqueueAward`), phản ứng `emitKoa` (có luật riêng:
+tập `seen` và `QUIET_BELOW`), thông báo (Chain L), hàng đợi offline, kinh tế và
+quyền lợi. Đó là **phạm vi**, không phải lỗ hổng — file tự nói *"That is exactly
+what a peek is"*.
+
+**Ngữ nghĩa (mục 25), đọc từ chỗ gọi chứ không tự chọn: đây là một CƠ CHẾ ĐIỀU
+NHỊP GIAO DIỆN.** Hoàn toàn trên máy, chặn một hoạt ảnh, không có giá trị nào
+phía sau. Một cuộc đua ở đây tốn thêm đúng một con koala.
+
+---
+
+### BUG-89 (P3). Merge trả lại lượt đã tiêu — `MERGE-RESURRECTS-SPENT-BUDGET`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P3 |
+| **CHAIN INTERACTION** | V (mô hình cá nhân) × W (ngân sách) |
+| **EVENT ORDER** | bộ nhớ đã tiêu hôm nay → `loadPersonalModel` đọc một blob **của ngày khác** → merge |
+| **EXPECTED** | số lượt còn lại không bao giờ tăng lên |
+| **ACTUAL** | 3 màn diễn đã cho quay lại nguyên vẹn |
+
+**ROOT CAUSE:** chú thích nói *"Whichever has spent more of today is the truthful
+one"* — đúng luật. Code cài nó cho **một** trong hai nhánh:
+
+```ts
+live.budget.day === storedBudget.day && live.budget.count > storedBudget.count
+  ? live.budget
+  : storedBudget
+```
+
+Khi hai bên **không** cùng ngày, ổ đĩa thắng vô điều kiện — kể cả khi ổ đĩa cũ
+hơn. Đo bằng một phép đếm "còn lại" viết độc lập:
+
+```
+bộ nhớ { hôm nay, 3 }   ổ đĩa { hôm qua, 0 }  → merge lấy ổ đĩa → còn 3 lượt (đúng ra 0)
+bộ nhớ { hôm nay, 2 }   ổ đĩa { day:'', 0 }   → merge lấy ổ đĩa → còn 3 lượt (đúng ra 1)
+```
+
+**2/8 cặp dựng tay và 77/500 cặp sinh ngẫu nhiên** vi phạm bất biến.
+
+Cặp thứ hai là cặp **tới được**: `fresh()` khởi tạo `freshBudget('')`, nên một
+blob rỗng trên đĩa chính là thứ bản đăng xuất cũ để lại. (Bản sửa Chain V xoá
+hẳn khoá thay vì ghi rỗng, nên đường đó đã hẹp lại — nhưng logic vẫn sai và
+nhánh "ổ đĩa của hôm qua" vẫn tới được: app mở qua nửa đêm, đĩa giữ lần ghi hôm
+qua, rồi một lần reset.)
+
+**FIX:** so trên **số lượt còn lại**, thứ mà luật vốn nói về, trong một hàm
+thuần `mergeBudget(live, stored, today)` ở `mascot-budget.ts` — hai nhánh cũ gộp
+thành một, bên chặt hơn thắng, hoà thì ổ đĩa thắng (nó sống sót qua khởi động
+lại). Nguyên khối, không ghép trường: lấy `count` của bên này và `lastAt` của
+bên kia sẽ dựng ra một trạng thái chưa máy nào từng ở trong.
+
+---
+
+### BUG-90 (P3). Một ngân sách lưu hỏng mua được cả ngày không giới hạn — `CORRUPT-BUDGET-AS-VALID`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P3 |
+| **CHAIN INTERACTION** | V × W |
+| **EVENT ORDER** | blob lưu bị cắt cụt/đổi shape → `parsed.budget ?? base` → `allowPeek` làm số học trên nó |
+| **EXPECTED** | ngân sách hỏng rơi về ngân sách mới |
+| **ACTUAL** | `count: -999999` cho **50/50** màn diễn liên tiếp |
+
+**ROOT CAUSE:** `count < PEEK_DAILY_CAP` đúng vĩnh viễn với số âm. Đo cả bốn
+kiểu hỏng:
+
+```
+count: -999999  →  50 màn diễn   (trần là 3)   ← lỗi
+count: null     →   3            (ép về 0, đúng)
+count: "5"      →   0            (chặt hơn, chấp nhận được)
+lastAt: 1e300   →   0            (tắt hẳn tới khi sang ngày)
+```
+
+**FIX:** `normaliseBudget(raw, day)` — một hàm thuần ở đúng ranh giới nạp. Mọi
+trường ép về kiểu mà phép số học giả định, và thứ không phải một con số thật trở
+thành giá trị **dè dặt** chứ không phải rộng rãi: một `count` không đọc được là
+một `count` đã tiêu hết. Một ngày không dùng được để nguyên là chuỗi rỗng, thứ
+`allowPeek` đọc là "ngày khác" và trả lời bằng một sổ mới — đúng như nó làm với
+hôm qua.
+
+---
+
+## Chain W — đã kiểm và **KHÔNG** phải lỗi
+
+**1. Không có TOCTOU, vì không có T và O tách nhau.** `askPeek` gọi `allowPeek`
+rồi gán `model.budget` trong cùng một tick đồng bộ. Không có `await` ở giữa.
+
+**2. Trần và hồi chiêu đúng ở mọi biên.** 9 ca: lần đầu trong ngày, `CD − 1`,
+đúng `CD`, `CD + 1`, `CAP − 1`, đúng `CAP`, `CAP` + xong-cả-năm, `CAP` +
+xong-cả-năm-đã-dùng, và sổ của hôm qua sang ngày mới.
+
+**3. Một lượt bị TỪ CHỐI không làm tăng `count`.** Ngân sách chỉ đi lên khi thật
+sự có màn diễn.
+
+**4. Ngoại lệ "xong cả năm việc" dùng được đúng một lần mỗi ngày.** Năm lần hỏi
+liên tiếp cho đúng một màn diễn.
+
+**5. Merge không bao giờ ghép trường.** Nó chọn nguyên một trong hai đối tượng,
+nên giả thuyết `COUNTER-TIMESTAMP INCONSISTENCY` của brief không tới được — đo,
+không suy.
+
+**6. Ranh giới ngày đúng.** Sổ đầy của hôm qua sang hôm nay là sổ mới; ngày
+23-giờ và ngày 25-giờ vẫn chỉ là một lần đổi chuỗi ngày, vì `allowPeek` so
+`b.day === ask.today` trên chuỗi `localDateStr` chứ không làm số học trên mốc
+thời gian.
+
+**7. Đăng xuất dọn sạch ngân sách** — qua bản sửa Chain V (`resetPersonalModel`
+xoá khoá và await được).
+
+**8. Không có mặt phẳng nào khác.** Không server, không đồng bộ nhiều máy, không
+hàng đợi offline, không đường tới xu/XP/huy chương/quyền lợi. Ngân sách chỉ có
+trên đúng một thiết bị, và điều đó là cố ý.
+
+---
+
+## Chain W — sai lầm của chính bộ đo
+
+**1. Tôi thử `allowPeek` bằng những đầu vào nó không bao giờ nhận.** Phép thử
+"blob hỏng" đầu tiên đưa thẳng `null` và `'nope'` vào `allowPeek`, và nó ném khi
+đọc `b.day`. Nhưng đường thật không làm thế: `normaliseBudget` đứng giữa. Thử
+một lời gọi không tồn tại thì chứng minh được đúng bằng không. Đã đổi để đi qua
+đúng ranh giới mà đường nạp dùng.
+
+**2. Backtick trong chú thích của driver cắt đứt template literal — lần thứ ba
+trong sổ này** (Chain O, Chain V, và lần này là chính đoạn tôi vừa thêm vào để
+sửa sai lầm số 1). Bắt được bằng `node --check` trước khi tin bất cứ kết quả nào.
+
+---
+
+## Chain W — PRODUCT DECISION REQUIRED
+
+### PS-1. Ngân sách theo MÁY, và đăng xuất xoá nó
+
+Sau Chain V, đăng xuất xoá cả ngân sách. Nên hai người dùng chung một máy trong
+cùng một ngày mỗi người có trọn ba lượt — tổng sáu màn diễn trên một thiết bị.
+Nếu mục đích của trần là bảo vệ *sự chú ý của người xem màn hình này*, thì con
+số đúng có lẽ là theo máy chứ không theo tài khoản. Nếu mục đích là "mỗi người
+được ba khoảnh khắc của riêng họ", thì hành vi hiện tại đúng. **KHÔNG tự chọn.**
+
+### PS-2. Hoà thì ổ đĩa thắng
+
+`mergeBudget` cho ổ đĩa thắng khi hai bên còn lại bằng nhau, vì nó là bên sống
+sót qua khởi động lại. Khi cả hai cùng ngày và cùng `count`, hai bên vẫn có thể
+khác `lastAt` — tức hồi chiêu dài hơn hoặc ngắn hơn vài giây. Không quan trọng ở
+mức 45 giây, và được ghi ra để nó là một lựa chọn chứ không phải một tai nạn.
+
+---
+
+## Chain W — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `allowPeek` 9 ca biên; `mergeBudget` 8 cặp dựng tay + **500 cặp sinh ngẫu nhiên**; `normaliseBudget` 11 blob hỏng |
+| **oracle độc lập** | phép đếm "còn lại bao nhiêu lượt" viết từ định nghĩa, không gọi `mergeBudget` |
+| **lưu trữ** | kho khoá-giá trị thật; tiêu 3 lượt rồi đọc lại từ đĩa |
+| **cô lập người dùng** | qua `resetPersonalModel` (bản sửa Chain V): khoá biến mất |
+| **đồng thời** | **không áp dụng, và đó là kết quả**: một chỗ gọi, hỏi-và-tiêu là một lời gọi đồng bộ |
+| **múi giờ / DST** | ranh giới ngày là so sánh CHUỖI `localDateStr`, nên ngày 23 giờ và 25 giờ vẫn là một lần đổi; 4 múi giờ + 2 mốc DST |
+| **bộ dò** | 6 phép phá, mỗi phép đỏ đúng câu định trước; phép phá số 1 là chính biểu thức đã ship |
+| **cả bộ** | `node tools/check.mjs` — 113/113 · `npx tsc --noEmit` sạch |
+| **AsyncStorage thật** | **KHÔNG** — kho trong bộ đo là stand-in |
+| **runtime iOS thật** | **KHÔNG** |
+| **nhiều máy** | **KHÔNG có bề mặt** — ngân sách chỉ tồn tại trên một thiết bị |
 | **tác động production** | **KHÔNG** |
 
 ---
