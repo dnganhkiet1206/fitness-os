@@ -3,9 +3,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import type { KoaContext } from '@/lib/koa-decide';
 import { koaOnScreen } from '@/lib/koa-presence';
+import { RISK_HOUR } from '@/lib/mascot-emotion';
+import { habitFor } from '@/lib/personal-model';
 import { useUserState } from '@/hooks/use-user-state';
 import { localDateStr } from '@/lib/local-date';
 import type { Streak } from '@/lib/streak';
+import { lateHour } from '@/lib/user-rhythm';
 
 /**
  * What Koa knows right now — read from what the app already fetched, never
@@ -53,6 +56,35 @@ export function useKoaContext(): KoaContext {
         (log.workout_count ?? 0) === 0 &&
         (log.steps ?? 0) === 0
       : false,
+    /*
+      ── their evening, not the app's ──
+
+      `streakInDanger` takes `riskHour` and falls back to `RISK_HOUR` when it is
+      absent, and this hook never set it — so the *held face* ran on the hour
+      this person actually logs (`use-mascot-emotion` passes exactly the line
+      below) while the *spoken event* ran on a stranger's six o'clock. `decide`
+      even read it as `{ ...ctx, riskHour: ctx.riskHour }`, a spread that
+      assigns a field to itself, which is what is left when the line that was
+      meant to supply it went missing.
+
+      `mascot-emotion.ts` records that these two had already drifted once — the
+      event version skipped the hour entirely — and the repair was to make both
+      call one function. They still disagreed, because one of them was called
+      with nothing. Measured, for somebody who logs at one in the morning:
+
+          khuôn mặt lo (giờ của họ)  : 00:00–06:00
+          sự kiện có lời (mặc định)  : 18:00–00:00
+
+      Not one hour in common. At three in the morning the face worries and
+      nothing is ever said; at seven in the evening the sentence arrives about a
+      day they have not finished yet.
+
+      This costs no request, which is the rule this whole hook is built on:
+      `habitFor` reads module state that `resetPersonalModel` clears on
+      sign-out, and `lateHour` is arithmetic. A person with no habit yet gets
+      `RISK_HOUR` back, so nothing changes for them.
+    */
+    riskHour: lateHour(habitFor('meal'), RISK_HOUR),
     /* Asked, not assumed. `true` here used to be a shrug that cost real
        moments: a record earned on another tab was declared handled and never
        played. See `lib/koa-presence.ts`. */

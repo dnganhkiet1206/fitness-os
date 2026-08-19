@@ -239,7 +239,9 @@ export function decide(event: KoaEvent, ctx: KoaContext): KoaDecision {
          person's own clock rather than on a magnitude. The test is
          `streakInDanger` — the same function the held face uses, because this
          had already drifted into a second opinion that skipped the hour. */
-      if (!streakInDanger({ ...ctx, riskHour: ctx.riskHour })) {
+      /* `ctx` whole, not a spread that re-assigns one field to itself — that
+         spelling is what hid the missing `riskHour` for as long as it did. */
+      if (!streakInDanger(ctx)) {
         return quiet(
           ctx.streak < 3
             ? 'chuỗi còn quá ngắn để đáng lo'

@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (110 bước). Ngày rà: 2026-08-19.
+Bộ kiểm: `node tools/check.mjs` (111 bước). Ngày rà: 2026-08-19.
 
 ---
 
@@ -5886,6 +5886,212 @@ thứ gì có giá thì câu này đã có sẵn.
 | **ăn mừng / Koa** | **KHÔNG chạy ở vòng này.** Ranh giới người dùng của chúng do Chain R đo (`tools/cross-chain.mjs`) |
 | **runtime iOS thật** | **KHÔNG** |
 | **HealthKit / Apple thật** | **KHÔNG** |
+| **tác động production** | **KHÔNG** |
+
+---
+
+## Vòng 22 — Chain U: ngữ cảnh Koa, đầu vào quyết định cắt ngang mọi chuỗi
+
+**Câu hỏi mở đầu:** *một ảnh chụp cũ, thiếu, lẫn người dùng hay tự mâu thuẫn của
+app có thể trở thành một quyết định của Koa không?*
+
+**VERIFICATION:** `node tools/check.mjs` (111 bước) · `npx tsc --noEmit` ·
+`node tools/koa-context.mjs` (CHẠY THẬT `useKoaContext` và `useUserState` trên
+một `QueryClient` THẬT — `@tanstack/query-core` của chính app)
+
+### Trước hết: nó nhỏ hơn nhiều so với hình dung
+
+Điều quan trọng nhất vòng này tìm được **không phải một lỗi**, mà một tính chất
+của thiết kế, và nó bác bỏ cả một họ giả thuyết:
+
+> `useKoaContext` **không fetch gì cả.** Nó đọc `queryClient.getQueryData` cho
+> hai khoá và gọi hai hàm đồng bộ. `refreshKoaContext` đọc lại đúng hai trường
+> từ đồng hồ và bộ đếm hiện diện. **Cả hai hàm đều đồng bộ từ đầu tới cuối.**
+
+Hệ quả, và đây là câu trả lời đo được cho các mục 8, 9, 20, 21, 22 của brief:
+
+- **không có cửa sổ bất đồng bộ** → không có "refresh cũ đè lên refresh mới",
+  nên không cần generation id / abort controller / sequence counter;
+- **không có kết quả nào trả về muộn** → không có kịch bản "A refresh còn bay
+  thì A đăng xuất, B đăng nhập, rồi kết quả của A rơi vào B";
+- **không có lần đọc nào hỏng được** → không có trạng thái lỗi để mà kẹt lại;
+- **không ghi gì** → xoá tài khoản giữa chừng không hồi sinh được gì.
+
+Không phát minh ra bề mặt không tồn tại là một phần của công việc.
+
+### Bảng trường ngữ cảnh
+
+| TRƯỜNG | NGUỒN | ĐỘ TƯƠI | CACHE | KHI KHÔNG BIẾT | THEO NGƯỜI DÙNG |
+| --- | --- | --- | --- | --- | --- |
+| `hour` | `new Date()` | ngay lúc dùng | — | — | không |
+| `visible` | `koaOnScreen()` | ngay lúc dùng | bộ đếm mount | — | không (sự thật về giao diện) |
+| `streak` | `['mascot_streak', uid, today]` | cache | React Query | `0` — hướng an toàn, nhánh duy nhất đọc nó cần `>= 3` | **có, khoá theo uid** |
+| `emptyToday` | `['daily_log', uid, today]` | cache | React Query | **`false`** — chưa đọc ≠ trống | **có, khoá theo uid** |
+| `state` | `useUserState` (cùng hai khoá + `workout_sessions`) | cache | React Query | `UNKNOWN_STATE`, `confidence: 'none'` | **có, khoá theo uid** |
+| `riskHour` | `lateHour(habitFor('meal'), RISK_HOUR)` | module state | `personal-model` | rơi về `RISK_HOUR` | **có, `resetPersonalModel` xoá** |
+
+### Ranh giới người dùng — lớp nào thật sự chịu lực
+
+Cả hai lần đọc cache đều khoá `[tên, user.id, hôm nay]`. Đo thật, **cố ý để
+nguyên dữ liệu của ALPHA trong cache** rồi hỏi với tư cách BRAVO:
+
+```
+ALPHA: streak 30, state biết được, emptyToday false
+→ BRAVO đăng nhập (cache của ALPHA vẫn còn nguyên)
+→ BRAVO thấy: streak 0, state không xác định, emptyToday false
+→ BRAVO nạp dữ liệu của mình: streak 4, emptyToday true   (vẫn sống)
+```
+
+**Khoá là thứ giữ, không phải lệnh xoá cache.** `clearPersistedCache()` cũng dọn
+sạch khi `SIGNED_OUT`, nhưng nó cố ý **không được `await`** (`use-auth` phải trả
+về ngay, nếu không đăng nhập sẽ deadlock — Chain E ghi rõ), nên nó **đua** với
+lần đăng nhập kế tiếp. Nếu một ngày nào đó ai đó bỏ `user?.id` ra khỏi khoá vì
+"dù sao cache cũng đã bị xoá", đó là lúc lỗ hổng mở ra. Phép phá số 2 giữ chỗ đó.
+
+---
+
+### BUG-86 (P3). Khuôn mặt lo và câu nói lo chạy trên hai chiếc đồng hồ khác nhau — `KOA-EVENT-USES-GENERIC-HOUR`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P3 |
+| **CHAIN INTERACTION** | K/R (`personal-model`, nhịp của người dùng) × J (chuỗi ngày) × chính engine quyết định |
+| **EVENT ORDER** | người ghi bữa lúc 01:00 → chuỗi 30 ngày → hôm nay chưa ghi → 03:00 |
+| **EXPECTED** | khuôn mặt lo và sự kiện có lời cùng một khung giờ |
+| **ACTUAL** | hai khung **không trùng nhau một giờ nào** |
+
+**ROOT CAUSE:** `streakInDanger` nhận `riskHour` và lấy `?? RISK_HOUR` khi thiếu.
+`use-mascot-emotion` (khuôn mặt) truyền `lateHour(habitFor('meal'), RISK_HOUR)`.
+Đường sự kiện đi qua `useKoaContext`, và hook **chưa bao giờ đặt `riskHour`**.
+`decide` còn đọc nó bằng
+
+```js
+streakInDanger({ ...ctx, riskHour: ctx.riskHour })
+```
+
+— một spread gán một trường cho chính nó, thứ còn lại sau khi dòng đáng lẽ cung
+cấp nó biến mất. Đo thật, với người ghi lúc 01:00:
+
+```
+khuôn mặt lo (giờ của họ)  : 00:00–06:00
+sự kiện có lời (mặc định)  : 18:00–00:00
+```
+
+Lúc 03:00 khuôn mặt lo và **không ai nói gì**; lúc 19:00 câu nói tới về một ngày
+họ còn chưa sống hết.
+
+**Điều làm mục này đáng ghi hơn con số P3 của nó:** phần đầu `mascot-emotion.ts`
+kể rằng hai bên **đã lệch nhau một lần rồi** — bản sự kiện bỏ qua giờ hoàn toàn —
+và bản sửa là hợp nhất thành **một hàm**. Chúng vẫn lệch, vì được gọi với **đầu
+vào khác nhau**. Hợp nhất hàm không hợp nhất tham số.
+
+**FIX:** `useKoaContext` đặt `riskHour: lateHour(habitFor('meal'), RISK_HOUR)` —
+không tốn một request nào, đúng luật mà cả hook được xây trên đó: `habitFor` đọc
+module state mà `resetPersonalModel` dọn khi đăng xuất, `lateHour` là số học. Và
+`decide` nhận `ctx` nguyên vẹn thay vì spread tự gán.
+
+**Sau khi sửa:** hai khung trùng nhau ở cả 24 giờ; người chưa có thói quen vẫn
+nhận `RISK_HOUR` mặc định.
+
+---
+
+## Chain U — đã kiểm và **KHÔNG** phải lỗi
+
+**1. Không-biết không bao giờ thành số 0 ở chỗ số 0 đổi hành vi.** Ba trường,
+ba cách xử lý, cả ba đều viết rõ lý do trong code:
+
+```
+cache trống → emptyToday = false      (không phải "ngày trống")
+cache trống → confidence = 'none'     (mọi nhánh đọc state đều gác trên nó)
+cache trống → streak = 0              (nhánh duy nhất đọc nó cần >= 3 → im lặng)
+```
+
+Và `streak_at_risk` với cache trống: `shouldReact: false`. Đo được.
+
+**2. Cổng `confidence !== 'none'` thật sự chịu lực.** Một trạng thái khai
+`returning` mà thú nhận `confidence: 'none'` **không** được chào `welcome_back`;
+người quay lại thật (confidence cao) thì có. *Phép thử đầu tiên của tôi cho mục
+này KHÔNG có răng* — xem phần sai lầm bộ đo bên dưới.
+
+**3. `refreshKoaContext` đọc lại đúng hai trường.** `hour` và `visible` tươi;
+`streak`, `emptyToday`, `state`, `riskHour` giữ nguyên như lúc chụp.
+
+**4. Bất biến và đối xứng.** Cùng một ngữ cảnh qua 100 lần cho cùng một quyết
+định; A → B → A quay lại đúng quyết định của A.
+
+**5. Koa không đọc bậc trả phí.** Không trường nào của `KoaContext` là `tier`.
+`PEEK_TIER` trong `use-quest-autoclaim` là `null` và nằm ngoài ngữ cảnh này. Mục
+14 của brief không có bề mặt — sự thật kiến trúc, không phải một phép thử bị bỏ.
+
+**6. Koa không gửi gì cho AI và không đặt thông báo nào.** Không chỗ nào truyền
+`KoaContext` vào `coach_memory`, vào prompt, hay vào `scheduleReminderPlan`. Mục
+16 và 17 cũng không có bề mặt.
+
+**7. Koa không đọc sổ cái kinh tế.** Nó nhận `coins` như một *nhãn* trên sự kiện
+(`emitKoa({ coins })`), không tra `mascot_transactions`. Nên nó không thể nói
+người ta đã được trả tiền trong khi giao dịch hỏng — vì nó không biết gì về giao
+dịch. Mục 13: không có bề mặt.
+
+**8. `koa-presence.mounted` không phải state của người dùng.** Là bộ đếm hình
+đang vẽ, tăng/giảm đối xứng qua hàm dọn mà `koaMounted()` trả về. `resetKoaPresence`
+tồn tại và được ghi là "testing only" — đúng, vì không có dữ liệu người dùng nào
+trong đó để mà rò rỉ.
+
+**9. Koa không chạm PostgreSQL.** Nó đọc cache React Query. Không có ma trận RLS
+nào để chạy ở tầng này — ranh giới RLS của các nguồn đã được đo ở Chain I, S và T.
+
+---
+
+## Chain U — sai lầm của chính bộ đo, ghi lại vì cả hai đã suýt lừa được tôi
+
+**1. Ảnh chụp ALPHA dựng sai và luật ranh giới người dùng thành rỗng tuếch.**
+`StreakState` mang `loggedDates`, tôi gieo `dates`. `useUserState` trả
+`UNKNOWN_STATE`, nên luật "BRAVO không được thấy state của ALPHA" **đúng vì
+ALPHA cũng chẳng có state nào**. Chốt chặn mốc-ban-đầu bắt được (`ngữ cảnh của
+ALPHA không dựng được`) — đó chính là lý do mỗi bộ dò trong sổ này có một chốt
+như thế.
+
+**2. Phép phá số 5 vẫn XANH.** Bỏ cổng `confidence !== 'none'` mà bộ dò không
+đỏ, vì luật của tôi thử `streak_at_risk` — nhánh **không** đọc `situation`.
+Theo đúng luật của brief: **sửa bộ dò, không nới code.** Thêm một luật lái thẳng
+nhánh `koa_greeted` với `{situation:'returning', confidence:'none'}` và đòi nó
+KHÔNG nói `welcome_back`, kèm một luật ngược lại để cổng không đi quá tay.
+
+---
+
+## Chain U — PRODUCT DECISION REQUIRED
+
+### PS-1. `decide` không có thứ tự ưu tiên khai báo giữa các tín hiệu mâu thuẫn
+
+Engine rẽ theo **loại sự kiện** trước, rồi mới đọc ngữ cảnh trong từng nhánh. Nên
+"chuỗi 30 ngày + điểm sẵn sàng rất thấp + hôm nay đã xong việc + chưa tập gì"
+không có một câu trả lời được định nghĩa ở đâu cả — nó phụ thuộc vào sự kiện nào
+tình cờ được phát. Đây có thể đúng là điều mong muốn (Koa phản ứng với *việc vừa
+xảy ra*, không phán xét toàn cảnh). **KHÔNG tự chọn** — định ra một thứ tự ưu
+tiên là thiết kế một nhân vật khác.
+
+### PS-2. `streak` rơi về 0 khi cache chưa có
+
+Hướng an toàn hôm nay, vì nhánh duy nhất đọc nó cần `>= 3`. Nếu sau này có nhánh
+nào phản ứng với chuỗi **thấp** ("bắt đầu lại nhé"), thì `0` sẽ thành một khẳng
+định sai về một người có chuỗi 200 ngày trên một màn hình chưa nạp cache. Ghi ra
+đây để câu đó có sẵn trước khi nhánh ấy được viết.
+
+---
+
+## Chain U — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `decide` qua các nhánh ngữ cảnh; `streakInDanger` đối chiếu 24/24 giờ giữa hai đường |
+| **runtime hook** | `useKoaContext` và `useUserState` THẬT, trên `QueryClient` THẬT của app; `useAuth` và `useQueryClient` là stand-in cung cấp đúng hai giá trị chúng đọc |
+| **ranh giới người dùng** | cache của ALPHA để nguyên **có chủ ý**, hỏi với tư cách BRAVO — chứng minh khoá, không chứng minh lệnh xoá |
+| **đồng thời** | **không áp dụng, và đó là kết quả**: cả hai hàm đồng bộ, không có cửa sổ bay |
+| **PostgreSQL / RLS** | **không chạy ở tầng này** — Koa đọc cache, không chạm DB. RLS của các nguồn đã đo ở Chain I, S, T |
+| **bộ dò** | 5 phép phá, mỗi phép đỏ đúng câu định trước — sau khi phép thứ 5 bị bắt là không có răng và được sửa |
+| **cả bộ** | `node tools/check.mjs` — 111/111 · `npx tsc --noEmit` sạch |
+| **React thật** | **KHÔNG.** `useMemo`/`useRef` là stand-in chạy ngay; thứ tự render và vòng đời focus đọc từ mã nguồn |
+| **runtime iOS thật** | **KHÔNG** |
 | **tác động production** | **KHÔNG** |
 
 ---

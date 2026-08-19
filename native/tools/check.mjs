@@ -227,6 +227,7 @@ const STEPS = [
   ['ranh giới liên chuỗi', 'node', ['tools/cross-chain.mjs']],
   ['daily_logs đồng thời', 'node', ['tools/daily-log-concurrency.mjs']],
   ['huy chương', 'node', ['tools/awards-concurrency.mjs']],
+  ['ngữ cảnh Koa', 'node', ['tools/koa-context.mjs']],
   ['lối vào màn hình', 'node', ['tools/entry-points.mjs']],
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],
