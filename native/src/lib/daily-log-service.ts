@@ -104,6 +104,37 @@ export function asleepMinutes(sleep: {
  */
 const REBUILD_ATTEMPTS = 3;
 
+/**
+ * The columns this function owns — the projection.
+ *
+ * `daily_logs` is shared by column on purpose: `steps`, `active_kcal` and
+ * `active_minutes` belong to the health sync and appear nowhere here, so a meal
+ * cannot wipe the rings and a sync cannot wipe the readiness score. Naming the
+ * set once means the give-up check below compares exactly what was written
+ * rather than a list that drifts from `row`.
+ */
+const PROJECTION_COLUMNS =
+  'kcal, protein_g, carbs_g, fat_g, fiber_g, sleep_duration_min, sleep_quality, ' +
+  'workout_count, volume_load, supplement_taken, supplement_planned, ' +
+  'readiness_score, readiness_status, readiness_explain, readiness_recommendation, acwr';
+
+/**
+ * Is the row on file already the projection we were going to write?
+ *
+ * Numbers are compared as numbers: `numeric` columns come back from PostgREST
+ * as strings often enough that `===` on the raw values would answer "different"
+ * for two identical days and turn a settled rebuild into an error.
+ */
+function projectionEquals(stored: Record<string, unknown>, computed: Record<string, unknown>): boolean {
+  return PROJECTION_COLUMNS.split(',').map((c) => c.trim()).every((col) => {
+    const a = stored[col];
+    const b = computed[col];
+    if (a == null || b == null) return a == null && b == null;
+    if (typeof b === 'number') return Number(a) === b;
+    return String(a) === String(b);
+  });
+}
+
 export async function recomputeDailyLog(userId: string, date: string, attempt = 0) {
   // Local-day window as UTC instants for timestamptz columns
   const day = localDayRangeISO(date);
@@ -555,10 +586,46 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
 
   if (!written || written.length === 0) {
     /* Touched nothing: the row moved under us. Read the world again and write
-       what it says now. Out of attempts is not a failure — whoever won read
-       later than we did, so the row on file is the fresher projection. */
+       what it says now. */
     if (attempt + 1 < REBUILD_ATTEMPTS) {
       return recomputeDailyLog(userId, date, attempt + 1);
     }
+
+    /*
+      ── out of attempts, and "whoever won read later than we did" is not true ──
+
+      That sentence used to stand here as the reason giving up was safe, and it
+      rests on the winner having written a *projection*. Not every writer of
+      this row does. `daily_logs` is deliberately shared by column — health sync
+      owns `steps`, `active_kcal` and `active_minutes`, and `recomputeDailyLog`
+      owns everything else — but the CAS token is `updated_at`, and the trigger
+      that moves it is `BEFORE UPDATE ON daily_logs FOR EACH ROW`. So a
+      steps-only upsert bumps the token while writing no projection at all.
+
+      Three of those inside one rebuild's read window and this function returned
+      **normally**, having written nothing. Measured against PostgreSQL 16.13
+      with the real function and a steps writer running beside it:
+
+          threw?    NO — resolved normally
+          derived:  kcal 500        oracle: kcal 1200
+
+      Silently, permanently, in the one table every other feature reads.
+
+      So the row is read once more and the two cases are told apart. If it now
+      holds the projection this rebuild was going to write, the day is correct
+      and there is nothing left to do — that is the benign case, and it stays
+      silent. Anything else is a rebuild that did not happen, and this file's
+      whole contract is that such a thing says so.
+    */
+    const settled = await supabase
+      .from('daily_logs')
+      .select(PROJECTION_COLUMNS)
+      .eq('id', seen.id)
+      .maybeSingle();
+    const stored = settled.data as Record<string, unknown> | null;
+    if (!settled.error && stored && projectionEquals(stored, row)) return;
+    throw new DailyLogRebuildError(
+      `Không dựng lại được ngày ${date}: hàng bị ghi đè liên tục sau ${REBUILD_ATTEMPTS} lần thử`,
+    );
   }
 }

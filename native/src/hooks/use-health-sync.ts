@@ -25,6 +25,7 @@ import {
 } from '@/lib/health';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { touchedDays } from '@/lib/health-days';
 import { localDateStr } from '@/lib/local-date';
 
 /**
@@ -306,11 +307,42 @@ function useSyncMutation(silent: boolean) {
         if (error) throw error;
       }
 
-      /* Readiness reads HRV, resting HR, sleep and load, and this sync can now
-         move all four — so it recomputes whenever any of them arrived, not just
-         on a biometric sample. `recomputeDailyLog` is also what writes
-         `sleep_duration_min` and `workout_count` from the rows just inserted. */
-      if (bio || sleep || workouts.length > 0) await recomputeDailyLog(user.id, localDateStr());
+      /*
+        ── every day this sync touched, not the day the sync happened ──
+
+        Readiness reads HRV, resting HR, sleep and load, and this sync can move
+        all four — so it recomputes whenever any of them arrived, not just on a
+        biometric sample. `recomputeDailyLog` is also what writes
+        `sleep_duration_min`, `workout_count` and `volume_load` from the rows
+        just inserted.
+
+        It used to rebuild `localDateStr()` and nothing else, and the rows it
+        writes are not all today's. `getRecentWorkouts()` imports **seven days**
+        of sessions and `getLastNightSleep()` looks **36 hours** back, so a run
+        the watch recorded on Monday lands in `workout_sessions` on Monday while
+        Thursday is the only day rebuilt. Measured, with a run on day −2 and
+        meals on −3, −1 and today:
+
+            workout_sessions thật sự nằm ở: 2026-08-17
+            daily_logs:  08-19 ✓   08-18 ✓   08-16 ✓   08-17 KHÔNG CÓ HÀNG NÀO
+
+        Nothing repairs it: a later sync rebuilds its own day, so only an edit
+        made to that specific day ever corrects it. And the consequence is not
+        confined to a number on a chart — `LOGGED_DAY_FILTER` asks
+        `kcal>0 OR workout_count>0 OR …` against `daily_logs`, so:
+
+            ngày chuỗi đếm là hoạt động: 08-19, 08-18, 08-16
+
+        A day the person genuinely trained is invisible, their streak breaks at
+        it, and the medals `useCheckAwards` grants from that streak are withheld.
+
+        The set is bounded by the import windows — at most eight days — and they
+        run one at a time: two rebuilds of the same day race each other, and two
+        rebuilds of different days would still queue behind the same connection.
+      */
+      for (const day of touchedDays({ bio, sleep, workouts })) {
+        await recomputeDailyLog(user.id, day);
+      }
 
       return { steps, bio, sleep, workouts: workouts.length };
     },

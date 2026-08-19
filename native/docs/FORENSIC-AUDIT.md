@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (108 bước). Ngày rà: 2026-08-19.
+Bộ kiểm: `node tools/check.mjs` (109 bước). Ngày rà: 2026-08-19.
 
 ---
 
@@ -5460,6 +5460,223 @@ lặng lẽ nằm trong danh sách miễn.
 | **HealthKit thật** | **KHÔNG** |
 | **Apple thật** | **KHÔNG** (Chain Q không đổi) |
 | **múi giờ** | **CHƯA ĐO Ở VÒNG NÀY.** `tools/day-window.mjs` và `tools/health-sync.mjs` đã canh lớp này từ Chain A/H; Chain R không thêm phép đo múi giờ nào và không tuyên bố gì về nó |
+| **tác động production** | **KHÔNG** |
+
+---
+
+## Vòng 20 — Chain S: daily_logs dưới nhiều người ghi cùng lúc
+
+**Câu hỏi mở đầu:** *khi nhiều lệnh ghi nguồn và nhiều lượt `recomputeDailyLog`
+chồng lên nhau theo thứ tự bất kỳ, `daily_logs` có LUÔN hội tụ về đúng phép
+chiếu của các bảng nguồn không?*
+
+**VERIFICATION:** `node tools/check.mjs` (109 bước) · `npx tsc --noEmit` ·
+`node tools/daily-log-concurrency.mjs` (CHẠY THẬT `recomputeDailyLog` trên
+PostgreSQL 16.13 dựng từ toàn bộ migration, vai `authenticated`, RLS còn hiệu
+lực, kỳ vọng là một phép chiếu SQL **độc lập**)
+
+### Bản đồ người ghi
+
+```
+NGUỒN                   NGƯỜI GHI              KÍCH HOẠT RECOMPUTE
+bữa ăn                  use-fitness-data       ngày của bữa ăn        ✓
+buổi tập (tay)          use-fitness-data       ngày của buổi tập      ✓
+giấc ngủ (tay)          log-sleep              ngày thức dậy          ✓
+phát lại offline        offline-write          ngày của bản ghi       ✓
+buổi tập (đồng hồ)      use-health-sync        HÔM NAY                ✗
+giấc ngủ (đồng hồ)      use-health-sync        HÔM NAY                ✗
+steps/active_*          use-health-sync        không cần (cột riêng)  —
+```
+
+`daily_logs` được chia **theo cột** có chủ ý: health sync sở hữu `steps`,
+`active_kcal`, `active_minutes`; `recomputeDailyLog` sở hữu phần còn lại. Hai
+lỗi vòng này đều nằm ở chỗ ranh giới ấy gặp thứ khác.
+
+### Trả lời câu hỏi mở đầu — **KHÔNG**, ở hai chỗ, và cả hai đo được
+
+CAS của Chain I **vẫn đúng với việc nó được viết ra để làm**: A đọc 500, B chèn
+bữa thứ hai rồi ghi 1200 trọn vẹn, A ghi muộn bằng ảnh chụp cũ → bị từ chối,
+đọc lại, ghi 1200. Bỏ `.eq('updated_at', …)` ra thì kết quả là 500 trong khi
+nguồn nói 1200 (phép phá số 4). Nhưng CAS là **máy dò xung đột**, không phải
+bằng chứng hội tụ.
+
+---
+
+### BUG-82 (P2). Ngày người ta thật sự có tập biến mất khỏi chuỗi — `LATE-SOURCE-WRITE-WITHOUT-RECOMPUTE`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **SOURCE CHAINS** | H (health sync) × I (daily_logs) × J (chuỗi/huy hiệu) |
+| **EVENT ORDER** | đồng hồ ghi một buổi chạy ngày −2 → sync nhập nó vào `workout_sessions` ngày −2 → sync recompute `localDateStr()` |
+| **EXPECTED** | ngày −2 được dựng lại |
+| **ACTUAL** | ngày −2 **không có hàng `daily_logs` nào** |
+
+**ROOT CAUSE:** `getRecentWorkouts()` nhập **bảy ngày** buổi tập và
+`getLastNightSleep()` lùi **36 giờ**, nhưng sync kết thúc bằng
+`recomputeDailyLog(user.id, localDateStr())` — hôm nay, và chỉ hôm nay. Đo
+thật, với một buổi chạy ngày −2 và bữa ăn ngày −3, −1, hôm nay:
+
+```
+workout_sessions thật sự nằm ở: 2026-08-17
+daily_logs:  08-19 ✓   08-18 ✓   08-16 ✓   08-17 KHÔNG CÓ HÀNG NÀO
+```
+
+Không gì sửa lại: sync sau chỉ dựng ngày của chính nó, nên **chỉ một lần ghi
+vào đúng ngày đó** mới chữa được.
+
+**Và hậu quả không dừng ở một con số trên biểu đồ.** `LOGGED_DAY_FILTER` hỏi
+`kcal>0 OR workout_count>0 OR sleep_duration_min>0 OR supplement_taken>0` trên
+`daily_logs`:
+
+```
+ngày chuỗi đếm là hoạt động: 08-19, 08-18, 08-16
+```
+
+Chuỗi 4 ngày thành 2, đứt ngay tại ngày người ta thật sự có tập — và
+`useCheckAwards` cấp huy hiệu **từ con số chuỗi đó**, nên một tấm huy chương bị
+giữ lại vì một ngày không được dựng.
+
+**FIX:** quy tắc "sync này đã chạm vào những ngày nào" thành một hàm thuần
+trong `src/lib/health-days.ts` — cùng lý do `step-days.ts` được tách ra: hook
+import React và HealthKit nên không chạy được trong Node, mà đây đúng là loại
+quy tắc sai theo kiểu đọc không thấy. Đêm gán theo ngày **thức dậy** (đúng cửa
+sổ `recomputeDailyLog` đọc lại), buổi tập theo `date_time` của nó, biometrics
+theo hôm nay; sắp xếp, loại trùng, bỏ mốc thời gian không parse được. Sync
+dựng lại từng ngày một, tuần tự.
+
+**Sau khi sửa:** ngày −2 khớp phép chiếu độc lập, và chuỗi đếm cả 08-17.
+
+---
+
+### BUG-83 (P2). Dựng lại thất bại được báo là thành công — `SOURCE-CHANGE-BYPASSES-DERIVED-CAS`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **SOURCE CHAINS** | H (health sync) × I (daily_logs) |
+| **EVENT ORDER** | recompute đọc nguồn → health sync upsert `steps` ba lần trong cửa sổ đọc → recompute ghi |
+| **EXPECTED** | ngày hội tụ, hoặc lỗi nổi lên |
+| **ACTUAL** | `recomputeDailyLog` **trả về bình thường**, `kcal` 500 trong khi nguồn nói 1200 |
+
+**ROOT CAUSE:** chỗ hết lượt thử lại có một câu biện minh:
+
+> *"Out of attempts is not a failure — whoever won read later than we did, so
+> the row on file is the fresher projection."*
+
+Câu đó chỉ đúng nếu người thắng **đã ghi một phép chiếu**. Không phải ai ghi
+hàng này cũng thế. `daily_logs` chia theo cột, nhưng token CAS là `updated_at`,
+và trigger đẩy nó là `BEFORE UPDATE ON daily_logs FOR EACH ROW` — nên một
+upsert **chỉ có `steps`** đẩy token mà không ghi phép chiếu nào. Đo thật với
+`recomputeDailyLog` thật và một người ghi steps chạy bên cạnh:
+
+```
+threw?    NO — resolved normally
+derived:  kcal 500        oracle: kcal 1200
+```
+
+Im lặng, vĩnh viễn, trong đúng cái bảng mọi tính năng khác đều đọc — và trái
+ngược hẳn với hợp đồng phần đầu file: *"một lần dựng lại thất bại phải nói ra"*.
+
+**FIX:** hết lượt thì đọc hàng thêm một lần và phân biệt hai trường hợp. Nếu nó
+**đã** mang đúng phép chiếu ta định ghi thì ngày đúng rồi, không còn gì để làm —
+trường hợp lành, im lặng như cũ. Bất kỳ trạng thái nào khác là một lần dựng lại
+đã **không** xảy ra, và nó ném `DailyLogRebuildError`. Danh sách cột phép chiếu
+được đặt tên một chỗ (`PROJECTION_COLUMNS`) nên phép so sánh không trôi khỏi
+`row`.
+
+**Sau khi sửa:** ném, và lỗi nổi lên qua `onError` của người gọi.
+
+**CÒN LẠI, nói thẳng:** bản sửa biến hỏng-im-lặng thành hỏng-nói-ra. Nó
+**không** làm app thắng một cuộc bỏ đói không giới hạn — một người ghi đẩy token
+liên tục vẫn chặn được lượt dựng lại, giờ thì kèm một lỗi thay vì một lời nói
+dối. Sửa triệt để cần một token riêng cho phép chiếu (một cột mới, một
+migration), và trong đo đạc thực tế health sync chỉ ghi `daily_logs` hai lần
+mỗi lần chạy — nằm trong `REBUILD_ATTEMPTS` hiện có.
+
+---
+
+## Chain S — đã kiểm và **KHÔNG** phải lỗi
+
+**1. CAS của Chain I vẫn giữ.** Bỏ `.eq('updated_at', …)` ra thì đua ghi-đè
+quay lại ngay (500 trong khi nguồn 1200) — phép phá số 4.
+
+**2. Xoá × dựng lại hội tụ.** Một lượt dựng lại chậm hoàn tất **sau** khi bữa
+ăn bị xoá ghi 1200; lượt dựng lại của chính lệnh xoá đưa về 500 = nguồn.
+
+**3. Đổi nguồn giữa chừng KHÔNG qua mặt được CAS theo kiểu tai hại.** Đúng là
+CAS chấp nhận một phép chiếu chụp trước khi bữa ăn tồn tại (token không đổi vì
+không ai ghi `daily_logs`) — nhưng lượt dựng lại **của chính lệnh chèn ấy** sửa
+xong. Hội tụ dựa vào hợp đồng "mỗi lệnh ghi nguồn kéo theo một lượt dựng lại
+ngày của nó", chứ không dựa vào CAS. Đó chính là hợp đồng BUG-82 phá vỡ.
+
+**4. Bất biến theo số lần.** Chạy 10 lần liên tiếp và 10 lần **đồng thời** cho
+cùng một kết quả, khớp phép chiếu độc lập.
+
+**5. RLS.** ALPHA gọi dựng lại ngày của BRAVO → `new row violates row-level
+security policy`, hàng của BRAVO nguyên vẹn.
+
+**6. Quét rộng.** 64 thứ tự đồng thời có chủ đích (bữa ăn / buổi tập / steps /
+recompute, mọi hoán vị bộ ba + một lượt chốt) và 320 trạng thái nguồn ngẫu
+nhiên — gồm 0, 0.5, 9999, 50000, nửa đêm, 23 giờ, và ngày kế bên phải **không**
+lọt vào — tất cả khớp phép chiếu SQL độc lập.
+
+---
+
+## Chain S — sai lầm của chính bộ đo, ghi lại vì cả hai suýt thành lỗi báo oan
+
+**1. `pg` phân giải `timestamptz` thành `Date` của JS.** `Date` chính xác tới
+mili-giây; token CAS là cột micro-giây so sánh bằng `=`. Với parser mặc định,
+**mọi** lần compare-and-set trong bộ đo đều trượt, và app trông như hỏng hoàn
+toàn trong khi chính bộ đo đã vứt đi độ chính xác. PostgREST trao cho app một
+**chuỗi** và app gửi lại đúng chuỗi ấy; `setTypeParser(1184|1114)` khôi phục
+điều đó. Nếu tin lần chạy đầu, vòng này đã báo hai lỗi P1 không tồn tại.
+
+**2. Dùng chung một `pg.Client` cho nhiều tác nhân "đồng thời".** `pg` xếp hàng
+truy vấn theo từng kết nối, nên "đồng thời" là một hàng đợi. Mỗi tác nhân một
+kết nối riêng.
+
+**3. Độ trễ toàn cục không dựng được đua ghi-đè.** Phép thử đầu đặt một độ trễ
+chung rồi *hy vọng* thứ tự rơi đúng — và khi bỏ CAS ra nó vẫn xanh. Độ trễ nay
+theo từng tác nhân: A đọc xong rồi **kẹt 400 ms trước khi ghi**, B chèn bữa ăn
+và ghi trọn một ảnh chụp mới trong khoảng kẹt đó. Bỏ CAS ra là đỏ ngay.
+
+---
+
+## Chain S — PRODUCT DECISION REQUIRED
+
+### PS-1. Không có gì đối chiếu lại các ngày đã qua
+
+BUG-82 được sửa ở nguồn, nhưng **những ngày đã hỏng trên máy người dùng thật
+thì vẫn hỏng**: không có công việc nền nào dựng lại một ngày cũ, và bản sửa chỉ
+áp dụng cho lần nhập tiếp theo. Một lượt "dựng lại N ngày gần nhất" khi mở app
+sẽ chữa, và nó là một tính năng có giá (N lần đọc 11 truy vấn), không phải một
+bản sửa lỗi. **KHÔNG tự chọn.**
+
+### PS-2. Chuỗi đã đứt và huy hiệu đã bị giữ lại thì sao?
+
+Nếu một ngày được chữa muộn, chuỗi dài ra một cách hồi tố. Huy hiệu có được cấp
+bù không? Đây là cùng họ câu hỏi với PS-1 của Chain R (thưởng sau khi nguồn
+được sửa) và vẫn chưa ai trả lời.
+
+---
+
+## Chain S — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `touchedDays` qua 8 ca gồm mốc thời gian không parse được, trùng ngày, rỗng |
+| **PostgreSQL** | 16.13, cluster sạch, toàn bộ migration, 35 bảng; `recomputeDailyLog` THẬT chạy trên đó |
+| **RLS** | vai `authenticated` + `request.jwt.claim.sub`; ALPHA không chạm được ngày của BRAVO |
+| **đồng thời** | độ trễ **theo từng tác nhân** trên kết nối riêng; 64 thứ tự có chủ đích; 10 lượt dựng lại đồng thời |
+| **property test** | 320 trạng thái nguồn ngẫu nhiên so với phép chiếu SQL độc lập |
+| **oracle** | SQL thuần trên bảng nguồn, **không hề gọi vào app** — không có chuyện triển-khai-so-với-chính-nó |
+| **bộ dò** | 4 phép phá, mỗi phép đỏ đúng câu định trước, kể cả bỏ hẳn CAS |
+| **cả bộ** | `node tools/check.mjs` — 109/109 · `npx tsc --noEmit` sạch |
+| **readiness/acwr** | **KHÔNG có oracle độc lập.** Chúng là đầu ra của `readiness-engine`, nên so sánh sẽ là triển-khai-với-chính-nó; chỉ các cột tổng hợp được đối chiếu độc lập |
+| **HealthKit thật** | **KHÔNG**. `getRecentWorkouts`/`getLastNightSleep` không chạy được ngoài iPhone; cửa sổ 7 ngày và 36 giờ đọc từ mã nguồn |
+| **runtime iOS thật** | **KHÔNG** |
+| **PostgREST thật** | **KHÔNG**. Client trong bộ đo nói SQL trực tiếp; hình dạng câu lệnh mô phỏng PostgREST chứ không phải chính nó |
 | **tác động production** | **KHÔNG** |
 
 ---
