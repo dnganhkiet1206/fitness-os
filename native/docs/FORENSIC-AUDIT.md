@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (109 bước). Ngày rà: 2026-08-19.
+Bộ kiểm: `node tools/check.mjs` (110 bước). Ngày rà: 2026-08-19.
 
 ---
 
@@ -5677,6 +5677,215 @@ bù không? Đây là cùng họ câu hỏi với PS-1 của Chain R (thưởng 
 | **HealthKit thật** | **KHÔNG**. `getRecentWorkouts`/`getLastNightSleep` không chạy được ngoài iPhone; cửa sổ 7 ngày và 36 giờ đọc từ mã nguồn |
 | **runtime iOS thật** | **KHÔNG** |
 | **PostgREST thật** | **KHÔNG**. Client trong bộ đo nói SQL trực tiếp; hình dạng câu lệnh mô phỏng PostgREST chứ không phải chính nó |
+| **tác động production** | **KHÔNG** |
+
+---
+
+## Vòng 21 — Chain T: huy chương, thứ app không bao giờ lấy lại
+
+**Câu hỏi mở đầu:** *một trạng thái dẫn xuất sai, cũ, trùng hay tạm thời không
+nhất quán có thể VĨNH VIỄN tạo ra — hoặc VĨNH VIỄN chặn — một huy chương không?*
+
+**VERIFICATION:** `node tools/check.mjs` (110 bước) · `npx tsc --noEmit` ·
+`node tools/awards-concurrency.mjs` (CHẠY THẬT quyết định cấp + PostgreSQL 16.13
+dựng từ toàn bộ migration, vai `authenticated`, RLS còn hiệu lực, đối chứng bằng
+phép đếm chuỗi ngày ĐỘC LẬP) · `node tools/streak.mjs`
+
+### Đồ thị huy chương
+
+```
+NGUỒN                    DẪN XUẤT              CẤP                BỀN VỮNG   HỆ QUẢ
+daily_logs (+filter)  →  streakFrom        →  streak_3…365   →  awards  →  ăn mừng + Koa
+workout_sessions      →  count             →  first_workout,
+                                              workouts_10/50/100
+workout_sessions.pr   →  count             →  first_pr, pr_5
+daily_logs.steps      →  hôm nay           →  steps_10k
+```
+
+15 huy chương, tất cả đơn điệu (cấp một lần, không bao giờ xét lại).
+**Không huy chương nào trả xu, XP hay mở khoá vật phẩm** — đó là một sự thật
+kiến trúc đã đo, không phải một giả định: kinh tế đi đường riêng
+(`earn_mascot_coins` từ nhiệm vụ và thử thách). Mở khoá linh vật suy từ `stats`,
+không từ bảng `awards`, và tập "đã xem" của nó là một khoá `USER_KEYS`.
+
+### Trả lời câu hỏi mở đầu — **chặn: có. Tạo: không.**
+
+---
+
+### BUG-84 (P2). Trùng khoá được nhận ra bằng tiếng Anh — `DUPLICATE-BY-PROSE`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN INTERACTION** | J (huy chương) × P (bài học "đừng khoá theo câu chữ") |
+| **EVENT ORDER** | cấp một huy chương đã có → PostgREST trả lỗi → `grant` quyết định theo `message` |
+| **EXPECTED** | nhận ra là trùng, bỏ qua, đi tiếp |
+| **ACTUAL** | đúng hôm nay, và hỏng im lặng vào ngày câu chữ đổi |
+
+```js
+if (error && !error.message.includes('duplicate')) throw error;
+```
+
+**ROOT CAUSE:** PostgreSQL thật sự nói `duplicate key value violates unique
+constraint "awards_user_id_award_key_key"` — đo trên 16.13 — nên nó chạy được.
+Nhưng đây là **lần thứ ba** hình dạng này bị bắt trong chính repo này:
+`DailyLogRebuildError` và `WrongAccountError` đều là *lớp* chứ không phải tiền
+tố thông điệp, với đúng lý do "một quyết định khoá theo câu chữ sẽ hỏng ngay lần
+đầu ai đó viết lại câu chữ"; và bản sửa Chain P đã đổi neo từ tên biến sang
+`404 || user_not_found`. `code` nằm ngay đó, nó là `23505`, và nó là phần của
+hợp đồng không bị viết lại.
+
+**Và bán kính không phải một huy chương.** `grant` ném ra thì cái `catch {}` duy
+nhất ở ngoài nuốt, và **mọi huy chương còn lại trong lượt đó bị bỏ qua** — im
+lặng.
+
+**FIX:** `isDuplicateAward(error)` → `error.code === '23505'`, trong
+`lib/award-grant.ts`.
+
+**Sau khi sửa:** lỗi trùng khoá THẬT từ PostgreSQL được nhận ra; `42501` với
+chữ "duplicate" trong thông điệp thì KHÔNG.
+
+---
+
+### BUG-85 (P2). Một lần cấp hỏng kéo theo mọi huy chương còn lại — `AWARD-PASS-ABORTS-ON-ONE-FAILURE`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN INTERACTION** | J (huy chương) × chính cái `catch` bảo vệ dashboard |
+| **EVENT ORDER** | `streak_3` cấp hỏng → `first_workout` và `steps_10k` không bao giờ được xét trong lượt đó |
+| **EXPECTED** | mỗi huy chương độc lập |
+| **ACTUAL** | cả lượt dừng, không một dòng log |
+
+**ROOT CAUSE:** bốn lần đọc và bốn vòng cấp bện vào nhau trong **một** `try`.
+Cái `catch` ngoài cùng phải nuốt (*"Award granting must never break the
+dashboard"* — đúng), nên hậu quả là vô hình. Huy chương là những sự thật độc
+lập về một con người: không có gì trong một huy chương chuỗi ngày bị từ chối nói
+được điều gì về việc họ đã tập buổi đầu tiên hay chưa. Nếu lỗi đó lặp lại được
+(một lần từ chối chứ không phải một cú chớp mạng), những huy chương không liên
+quan **không bao giờ** được cấp.
+
+**FIX:** đọc hết → `awardsToGrant` quyết một lần → `grantAll` cấp từng cái trong
+`try` của riêng nó. Vòng lặp nằm trong lib vì *"một cái hỏng không được làm mất
+những cái khác"* là một bất biến, mà một bất biến nằm trong callback React thì
+không chạy được.
+
+**Sau khi sửa:** cấp được `streak_3,steps_10k`, hỏng đúng `first_workout`.
+
+---
+
+### Bản sửa kiến trúc, không phải hai miếng vá
+
+`src/lib/award-grant.ts` giữ danh mục, quyết định và vòng cấp — cùng lý do
+`health-days.ts` (Chain S) và `step-days.ts` được tách ra: quyết định nằm trong
+một hook không nạp được trong Node, mà huy chương là thứ **vĩnh viễn**.
+`AwardSources` phân biệt `null` ("không đọc được") với `0` ("chưa đủ"), và
+`null` không bao giờ được đem so với ngưỡng — bốn lần đọc trước đây đều bỏ
+`error` xuống sàn, đúng hình dạng mà `daily-log-service` và `use-health-sync`
+đều đã phải sửa.
+
+---
+
+## Chain T — đã kiểm và **KHÔNG** phải lỗi
+
+**1. Không bao giờ có hai huy chương cùng khoá.** 10 lượt cấp **đồng thời**
+trên 10 kết nối riêng: đúng **một** hàng, chín lượt thua trả `23505`.
+
+**2. Hai huy chương KHÁC nhau cấp song song đều còn.** Không có lost update —
+chúng là hai dòng.
+
+**3. Lịch sử bất biến.** `awards` không có policy `UPDATE`: `UPDATE … SET
+tier='platinum'` chạm **0 dòng** dưới vai `authenticated`.
+
+**4. Không cấp chéo người dùng.** ALPHA ghi cho BRAVO → `42501`.
+
+**5. Tài khoản đã xoá không nhận được huy chương.** Lượt kiểm tới muộn sau khi
+`auth.users` đã mất → `23503`, không dòng nào được tạo. Trùng với kết luận
+Chain R về hàng đợi offline: khoá ngoại là thứ chặn, không phải cổng phía client.
+
+**6. Huy chương không đi vào hàng đợi offline.** `offline-write.ts` chỉ có bảy
+`kind` và không cái nào là huy chương — *"Anything that cannot mean anything
+offline… is deliberately not queued"*. Không có bề mặt để mà thử, và đó là một
+sự thật kiến trúc đã đo chứ không phải một phép thử bị bỏ.
+
+**7. Hai chỗ đếm chuỗi ngày nay đồng ý.** `use-mascot-room` (số hiện trên màn)
+và `use-extras` (số cấp huy chương) dùng cùng `LOGGED_DAY_FILTER`, cùng
+`STREAK_WINDOW`, cùng `streakFrom(dates, today, frozen)` — kể cả tham số freeze,
+thứ hai chỗ này từng lệch nhau. *Nhưng chính sách khi ĐỌC HỎNG thì trước vòng
+này là ngược nhau:* màn hình `throw`, còn bộ cấp huy chương bỏ `error` đi và im
+lặng không cấp gì. Nay cả hai cùng một câu hỏi hỏi một kiểu.
+
+**8. Ngưỡng và biên.** 19 ca qua `awardsToGrant`: 0, dưới ngưỡng, đúng ngưỡng,
+trên ngưỡng, âm, `NaN`, `Infinity`, `null`, 10¹². Không giá trị bệnh lý nào trở
+thành một thành tựu.
+
+**9. Bộ dò của chính repo bắt được việc tôi dời danh mục.** `tools/streak.mjs`
+đọc `AWARD_DEFINITIONS` bằng cách phân tích `use-extras.ts`; dời sang
+`award-grant.ts` làm nó đỏ với đúng câu *"không đọc được mốc streak nào"*. Đó là
+điều một luật PHẢI làm khi không còn tìm thấy thứ nó đo. Đã **trỏ lại**, không
+nới ra.
+
+---
+
+## Chain T — PRODUCT DECISION REQUIRED
+
+### PS-1. Huy chương chỉ được cấp từ chuỗi ngày HIỆN TẠI
+
+Đo được, dựng lại đúng kịch bản Chain S — tám ngày ghi liên tiếp, thiếu **một**
+hàng `daily_logs`:
+
+```
+chuỗi app: 3        chuỗi thật (đếm độc lập từ meal_entries): 8
+app cấp   : streak_3
+thật sự đạt: streak_3, streak_7        → bị nén: streak_7
+```
+
+Vá lại ngày đó thì chuỗi về 8 và `streak_7` được cấp ở lượt kiểm kế tiếp — **nếu
+chuỗi còn sống**. Vì huy chương chỉ hỏi *"chuỗi HIỆN TẠI có ≥ N không"*, một lần
+nén kéo dài qua đỉnh rồi mới được vá sau khi chuỗi đã đứt nghĩa là huy chương
+cho lần chạy đó không bao giờ được trao.
+
+Nguyên nhân gốc (BUG-82) đã sửa ở Chain S. Còn lại là câu hỏi chính sách: huy
+chương chuỗi nên trao theo **chuỗi hiện tại** hay theo **chuỗi dài nhất trong
+cửa sổ 400 ngày**? Dữ liệu để tính cái thứ hai đã nằm sẵn trong tay. **KHÔNG tự
+chọn** — nó đổi ý nghĩa của tấm huy chương.
+
+### PS-2. Huy chương ở lại khi nguồn được sửa thành không đủ điều kiện
+
+Mọi huy chương đều đơn điệu: cấp một lần, không xét lại. Xoá bữa ăn, xoá buổi
+tập, sửa giấc ngủ — không gì gỡ một tấm huy chương. Đọc như ngữ nghĩa *thành tựu
+lịch sử*, và **không chỗ nào trong repo phát biểu điều đó**. Cùng họ với PS-1 của
+Chain R (thưởng sau khi nguồn được sửa) và PS-2 của Chain S.
+
+### PS-3. Người dùng tự ghi và tự xoá được huy chương của chính mình
+
+`awards` có policy `INSERT` và `DELETE` cho chủ sở hữu, và **không có CHECK** nào
+trên `award_type`/`award_key` — đo được: chèn `award_key='made_up_key'` được
+chấp nhận. Ai đọc được lưu lượng mạng của app đều tự trao được cho mình bất kỳ
+tấm huy chương nào, và xoá được huy chương của mình.
+
+Điều này **không** giống lỗ hổng `entitlements` (Chain Q): huy chương không trả
+xu, không mở tính năng, không đáng tiền — nên đây là đồ trang trí, và cấp từ
+client là thiết kế có chủ ý. Ghi ra đây để lần đầu tiên một huy chương gắn với
+thứ gì có giá thì câu này đã có sẵn.
+
+---
+
+## Chain T — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `awardsToGrant` 19 ca ngưỡng/biên; `isDuplicateAward` theo mã và theo câu chữ; `grantAll` với một lần cấp hỏng ở giữa danh sách |
+| **PostgreSQL** | 16.13, cluster sạch, toàn bộ migration; 10 lượt cấp đồng thời trên 10 kết nối riêng |
+| **RLS** | vai `authenticated` + `request.jwt.claim.sub`; cấp chéo, sửa bậc, tài khoản đã xoá |
+| **đối chứng độc lập** | phép đếm chuỗi ngày tự viết, đọc thẳng `meal_entries`, **không** gọi `streakFrom` và không gọi app |
+| **tích hợp** | kịch bản Chain S dựng lại đầy đủ: thiếu hàng → nén → vá → hồi phục |
+| **bộ dò** | 5 phép phá, mỗi phép đỏ đúng câu định trước |
+| **cả bộ** | `node tools/check.mjs` — 110/110 · `npx tsc --noEmit` sạch |
+| **runtime React** | **KHÔNG.** `useCheckAwards` không chạy được trong Node; thứ được chạy là quyết định đã tách ra khỏi nó. Các mốc kích hoạt (Today focus, mở màn Awards) đọc từ mã nguồn |
+| **ăn mừng / Koa** | **KHÔNG chạy ở vòng này.** Ranh giới người dùng của chúng do Chain R đo (`tools/cross-chain.mjs`) |
+| **runtime iOS thật** | **KHÔNG** |
+| **HealthKit / Apple thật** | **KHÔNG** |
 | **tác động production** | **KHÔNG** |
 
 ---

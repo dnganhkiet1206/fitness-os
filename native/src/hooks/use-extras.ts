@@ -16,6 +16,14 @@ import { macroTargetsFor } from '@/lib/macro-targets';
 import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { TIER_MAGNITUDE } from '@/lib/koa-event';
 import { emitKoa } from '@/lib/koa-stage';
+import {
+  AWARD_DEFINITIONS,
+  awardsToGrant,
+  grantAll,
+  isDuplicateAward,
+  type AwardDef,
+  type AwardSources,
+} from '@/lib/award-grant';
 import { LOGGED_DAY_FILTER, streakFrom, STREAK_WINDOW } from '@/lib/streak';
 import { challengeStep } from '@/lib/challenge-progress';
 import { CHALLENGE_REWARD, challengeRefKey } from '@/lib/mascot-room';
@@ -58,41 +66,14 @@ export function useRecentAwards(limit = 3) {
 }
 
 /**
- * Award catalog — structure/thresholds only. Display text lives in
- * gamification-i18n (AWARD_TEXT) keyed by `key`; the English string is
- * written to the DB as the canonical/history value.
- */
-export const AWARD_DEFINITIONS = [
-  { key: 'streak_3', type: 'streak', icon: 'flame', tier: 'bronze', requirement: 3 },
-  { key: 'streak_7', type: 'streak', icon: 'flame', tier: 'silver', requirement: 7 },
-  { key: 'streak_14', type: 'streak', icon: 'flame', tier: 'gold', requirement: 14 },
-  { key: 'streak_30', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 30 },
-  /* Past a month the ladder used to stop, which is the wrong end to stop at:
-     the people still logging on day 100 are the ones the app is working for,
-     and they were being told nothing. Duolingo's own milestones run to a year
-     for the same reason. These stay platinum because a new tier would mean a
-     new colour in `TIER_CONFIG` and a value the awards table has never seen —
-     the escalation is in the names and in how rare they are. */
-  { key: 'streak_60', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 60 },
-  { key: 'streak_100', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 100 },
-  { key: 'streak_180', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 180 },
-  { key: 'streak_365', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 365 },
-  { key: 'first_workout', type: 'first_workout', icon: 'dumbbell', tier: 'bronze' },
-  { key: 'workouts_10', type: 'volume_milestone', icon: 'dumbbell', tier: 'silver', requirement: 10 },
-  { key: 'workouts_50', type: 'volume_milestone', icon: 'dumbbell', tier: 'gold', requirement: 50 },
-  { key: 'workouts_100', type: 'volume_milestone', icon: 'dumbbell', tier: 'platinum', requirement: 100 },
-  { key: 'first_pr', type: 'pr', icon: 'trophy', tier: 'silver' },
-  { key: 'pr_5', type: 'pr', icon: 'trophy', tier: 'gold', requirement: 5 },
-  { key: 'steps_10k', type: 'steps_goal', icon: 'footprints', tier: 'bronze' },
-] as const;
-
-type AwardDef = (typeof AWARD_DEFINITIONS)[number];
-
-/**
  * Award auto-grant engine — port of the web useCheckAwards. Run once per
  * app session (Today mount). Without this the native app never grants
  * awards; they only appeared when the web app happened to run.
  */
+/* Re-exported so the screens already reading the catalogue from this module
+   keep working; the list itself lives beside the decision it feeds. */
+export { AWARD_DEFINITIONS };
+
 export function useCheckAwards() {
   const { user } = useAuth();
   const { lang } = useAppSettings();
@@ -120,8 +101,13 @@ export function useCheckAwards() {
       tier: def.tier,
       metadata: metadata as Json,
     });
-    // duplicate unique-violation = already earned elsewhere; ignore
-    if (error && !error.message.includes('duplicate')) throw error;
+    /*
+      Already earned — on this device, on another one, or by the pass that ran a
+      moment ago. Recognised by SQLSTATE rather than by the English words in
+      PostgreSQL's message: see `isDuplicateAward`, and see `DailyLogRebuildError`
+      and `WrongAccountError`, both of which are classes for the same reason.
+    */
+    if (error && !isDuplicateAward(error)) throw error;
     if (!error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // Fire the confetti overlay in the user's language
@@ -145,6 +131,80 @@ export function useCheckAwards() {
         refreshKoaContext(koaCtxRef.current),
       );
     }
+  };
+
+  /*
+    ── the four reads the medals are decided from ──
+
+    Each answers `null` when it could not be read, and `null` never reaches a
+    threshold comparison. Every one of these used to be destructured as
+    `const { data: x } = …` with the `error` dropped on the floor, so a failed
+    query became "there is none of that" — which is the same shape
+    `daily-log-service` and `use-health-sync` were both corrected for, and it
+    decides permanent history here.
+
+    `use-mascot-room` runs the very same streak query for the number on screen
+    and does `if (logs.error) throw logs.error`. The two are now consistent: the
+    number and the medal come from one question asked one way.
+  */
+  const readSources = useCallback(async (): Promise<AwardSources> => {
+    const uid = user!.id;
+
+    const [logsRes, freezeRes, workoutRes, prRes, todayRes] = await Promise.all([
+      supabase
+        .from('daily_logs')
+        .select('date')
+        .eq('user_id', uid)
+        /* Only days this person logged. A bare row is no longer evidence of one
+           — the health sync creates rows for backfilled steps, and thirteen of
+           those alone measured a streak of thirteen. See `LOGGED_DAY_FILTER`. */
+        .or(LOGGED_DAY_FILTER)
+        .order('date', { ascending: false })
+        .limit(STREAK_WINDOW),
+      supabase.from('streak_freezes').select('used_on').eq('user_id', uid),
+      supabase.from('workout_sessions').select('id', { count: 'exact', head: true }).eq('user_id', uid),
+      supabase
+        .from('workout_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', uid)
+        .eq('pr_detected', true),
+      supabase.from('daily_logs').select('steps').eq('user_id', uid).eq('date', localDateStr()).maybeSingle(),
+    ]);
+
+    /*
+      The freeze read is allowed to fail, and only this one. `streak_freezes`
+      arrives with a migration, and migrations reach production later than app
+      builds do; between those two moments an unreadable freeze list means "no
+      freezes", which is what every account has until then. The same exception,
+      with the same reasoning, is written out in `use-mascot-room`.
+    */
+    const frozen = freezeRes.error
+      ? []
+      : (freezeRes.data ?? []).map((r) => r.used_on).filter((d): d is string => !!d);
+
+    /* `streakFrom` with all three arguments — the freeze argument is the one
+       these two call sites drifted on last time. Somebody whose day 40 was
+       covered by a freeze saw "40 ngày" on their level card and was never
+       granted `streak_30`. */
+    const streak = logsRes.error
+      ? null
+      : streakFrom((logsRes.data ?? []).map((l) => l.date), localDateStr(), frozen).count;
+
+    return {
+      streak,
+      workoutCount: workoutRes.error ? null : workoutRes.count ?? null,
+      prCount: prRes.error ? null : prRes.count ?? null,
+      steps: todayRes.error ? null : todayRes.data?.steps ?? null,
+    };
+  }, [user?.id]);
+
+  /** What the medal records about the moment it was earned. */
+  const metadataFor = (def: AwardDef, s: AwardSources): Record<string, unknown> => {
+    if (def.type === 'streak') return { streak: s.streak };
+    if (def.key === 'steps_10k') return { steps: s.steps };
+    if (def.type === 'volume_milestone') return { count: s.workoutCount };
+    if (def.key === 'pr_5') return { count: s.prCount };
+    return {};
   };
 
   /*
@@ -173,122 +233,33 @@ export function useCheckAwards() {
   const checkAndGrant = useCallback(async () => {
     if (!user || !existingAwards) return;
     const earned = new Set(existingAwards.map((a) => a.award_key));
-    const byKey = (key: string) => AWARD_DEFINITIONS.find((d) => d.key === key)!;
-    let granted = false;
 
+    /*
+      ── read everything, decide once, then grant each medal on its own ──
+
+      This used to be four reads and four grant loops braided together inside a
+      single `try`, which meant one insert failing took every award after it
+      with it — silently, because the `catch` below has to swallow (an award
+      must never break the dashboard). Awards are independent facts about a
+      person: nothing about a refused streak medal says anything about whether
+      they have logged their first workout.
+
+      So the reads happen, `awardsToGrant` decides, and each grant stands alone.
+      A source that could not be read arrives as `null` and is not compared
+      against anything — `null` is "not known", never "not enough".
+    */
+    let sources: Awaited<ReturnType<typeof readSources>>;
     try {
-      /* Streaks from consecutive daily_logs dates.
-
-         The counting is `streakFrom` — the same function Koa's room uses. It
-         was a second copy here, and the copy was subtly wrong: it started the
-         count at 1 and only ran the loop when the newest row was today or
-         yesterday, so a lapsed streak came out as 1 instead of 0. No medal
-         needs fewer than three days, so nothing ever showed for it.
-
-         The window is `STREAK_WINDOW`, not the 35 it was. A medal is only
-         grantable if the query can see far enough back to count to it, and the
-         ladder now goes to a year. */
-      const { data: logs } = await supabase
-        .from('daily_logs')
-        .select('date')
-        .eq('user_id', user.id)
-        /* Only days this person logged. A bare row is no longer evidence of one
-           — the health sync creates rows for backfilled steps, and thirteen of
-           those alone measured a streak of thirteen. See `LOGGED_DAY_FILTER`. */
-        .or(LOGGED_DAY_FILTER)
-        .order('date', { ascending: false })
-        .limit(STREAK_WINDOW);
-
-      /* ── the same streak the rest of the app shows ──
-
-         This called `streakFrom(dates, today)` and left the third argument off,
-         while `use-mascot-room.ts` passes `frozen`. So somebody whose day 40 was
-         covered by a streak freeze saw "40 ngày" on their level card and was
-         never granted `streak_30` or `streak_100`: the app sold a 150-coin item
-         to protect a number, protected the number, and quietly did not protect
-         the medals that number is for.
-
-         `lib/streak.ts` has a header explaining that it exists *because these
-         two call sites had already drifted apart once*. They drifted again, on
-         the argument added since.
-
-         The freeze read is allowed to fail for the reason spelled out in
-         `use-mascot-room.ts`: the table arrives with a migration, and an
-         unreadable freeze list means "no freezes", which is what every account
-         has until then. The streak itself still comes from `daily_logs`. */
-      const { data: freezeRows, error: freezeError } = await supabase
-        .from('streak_freezes')
-        .select('used_on')
-        .eq('user_id', user.id);
-      const frozen = freezeError
-        ? []
-        : (freezeRows ?? []).map((r) => r.used_on).filter((d): d is string => !!d);
-
-      if (logs && logs.length > 0) {
-        const { count: streak } = streakFrom(
-          logs.map((l) => l.date),
-          localDateStr(),
-          frozen,
-        );
-        for (const def of AWARD_DEFINITIONS) {
-          if (def.type !== 'streak') continue;
-          if ('requirement' in def && streak >= def.requirement && !earned.has(def.key)) {
-            await grant(def, { streak });
-            granted = true;
-          }
-        }
-      }
-
-      // Workout milestones
-      const { count: workoutCount } = await supabase
-        .from('workout_sessions')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-      if (workoutCount != null) {
-        if (workoutCount >= 1 && !earned.has('first_workout')) {
-          await grant(byKey('first_workout'));
-          granted = true;
-        }
-        for (const key of ['workouts_10', 'workouts_50', 'workouts_100'] as const) {
-          const def = byKey(key);
-          if ('requirement' in def && workoutCount >= def.requirement && !earned.has(key)) {
-            await grant(def, { count: workoutCount });
-            granted = true;
-          }
-        }
-      }
-
-      // PRs
-      const { count: prCount } = await supabase
-        .from('workout_sessions')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('pr_detected', true);
-      if (prCount != null) {
-        if (prCount >= 1 && !earned.has('first_pr')) {
-          await grant(byKey('first_pr'));
-          granted = true;
-        }
-        if (prCount >= 5 && !earned.has('pr_5')) {
-          await grant(byKey('pr_5'), { count: prCount });
-          granted = true;
-        }
-      }
-
-      // Steps 10k today
-      const { data: todayLog } = await supabase
-        .from('daily_logs')
-        .select('steps')
-        .eq('user_id', user.id)
-        .eq('date', localDateStr())
-        .maybeSingle();
-      if (todayLog && (todayLog.steps ?? 0) >= 10000 && !earned.has('steps_10k')) {
-        await grant(byKey('steps_10k'), { steps: todayLog.steps });
-        granted = true;
-      }
+      sources = await readSources();
     } catch {
-      // Award granting must never break the dashboard
+      /* Nothing was read, so nothing can be decided. The next focus tries again. */
+      return;
     }
+
+    const outcome = await grantAll(awardsToGrant(sources, earned), (def) =>
+      grant(def, metadataFor(def, sources)),
+    );
+    const granted = outcome.granted.length > 0;
 
     if (granted) {
       queryClient.invalidateQueries({ queryKey: ['awards', user.id] });

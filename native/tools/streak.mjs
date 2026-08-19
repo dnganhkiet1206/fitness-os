@@ -271,8 +271,14 @@ if (!TZ) {
   }
 }
 
-/* ── 3: every milestone inside the window ── */
-const extras = read('src/hooks/use-extras.ts');
+/* ── 3: every milestone inside the window ──
+
+   The catalogue moved to `lib/award-grant.ts` when the grant decision was
+   pulled out of the hook (Chain T). This step caught the move on its own —
+   "không đọc được mốc streak nào" is exactly what a rule should say when it
+   can no longer find the thing it measures, rather than passing on an empty
+   list. Repointed, not softened. */
+const extras = read('src/lib/award-grant.ts');
 const defs = [...extras.matchAll(/\{ key: '([\w]+)', type: '([\w]+)'[^}]*?requirement: (\d+)/g)].map(
   (m) => ({ key: m[1], type: m[2], requirement: Number(m[3]) }),
 );
