@@ -228,6 +228,7 @@ const STEPS = [
   ['daily_logs đồng thời', 'node', ['tools/daily-log-concurrency.mjs']],
   ['huy chương', 'node', ['tools/awards-concurrency.mjs']],
   ['ngữ cảnh Koa', 'node', ['tools/koa-context.mjs']],
+  ['mô hình cá nhân', 'node', ['tools/personal-model.mjs']],
   ['lối vào màn hình', 'node', ['tools/entry-points.mjs']],
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],

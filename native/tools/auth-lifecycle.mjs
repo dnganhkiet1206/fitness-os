@@ -314,8 +314,12 @@ try {
     checked++;
 
     const owner = owns.map((k) => OWNED_ELSEWHERE.get(k)).find((o) => o && o[0] === f);
+    /* `async` since Chain V: `resetPersonalModel` deletes the key itself and is
+       awaited now, rather than scheduling a fire-and-forget save. The anchor
+       matches either spelling so it cannot drift again on a keyword — what it
+       has to prove is that the named owner exists, not how it is declared. */
     const registers = owner
-      ? new RegExp(`export function ${owner[1]}`).test(src)
+      ? new RegExp(`export (?:async )?function ${owner[1]}`).test(src)
       : /onUserScopedReset\s*\(/.test(src);
     if (!registers) {
       problems.push(

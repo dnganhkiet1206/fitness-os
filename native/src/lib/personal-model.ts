@@ -409,11 +409,41 @@ export function levelStep(next: number): { from: number | null; crossed: boolean
  * `praisedThisSession` goes with it: it is a once-a-day gate keyed to nothing
  * but the process, so leaving it set would deny the next person their first
  * piece of praise for no reason either of them could see.
+ *
+ * ── and it has to reach the disk before it says it has ──
+ *
+ * `ascnd_personal_model_v1` is the one user-owned key that is **not** in
+ * `USER_KEYS`, so `clearUserScopedStorage()` never calls `removeItem` on it —
+ * this function is the whole of its cleanup. It used to do that by calling
+ * `save()`, which is a `setTimeout(0)` followed by a fire-and-forget
+ * `setItem(...).catch(() => {})`; and it returned `void`, so the
+ * `await resetPersonalModel()` at that call site awaited nothing.
+ *
+ * Sign-out therefore completed while the previous account's learned model was
+ * still on the device. Measured against the real module and a real key-value
+ * store: memory clean, **disk still ALPHA's**. Normally the deferred write
+ * lands a tick later and nobody notices. When it does not — the process
+ * suspended on sign-out, or the write threw into that swallowed `catch` — the
+ * habit hours, the bandit's beliefs, `koaSeen` and the level all survive, and
+ * the next launch reads them into whoever signs in. Chain U made one of those
+ * fields (`riskHour`) a live decision input, so this stopped being cosmetic.
+ *
+ * So: cancel whatever save is pending — it would write a model that no longer
+ * belongs to anybody — and delete the key, awaited, like every other user key.
  */
-export function resetPersonalModel() {
+export async function resetPersonalModel() {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
   model = fresh();
   loaded = false;
   praisedThisSession = false;
-  save();
   emit();
+  try {
+    await AsyncStorage.removeItem(STORE_KEY);
+  } catch {
+    /* Same reasoning as every other key in `clearUserScopedStorage`: one that
+       refuses to delete must not take the rest of the sign-out with it. */
+  }
 }

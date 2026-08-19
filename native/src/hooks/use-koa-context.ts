@@ -72,7 +72,7 @@ export function useKoaContext(): KoaContext {
       call one function. They still disagreed, because one of them was called
       with nothing. Measured, for somebody who logs at one in the morning:
 
-          khuôn mặt lo (giờ của họ)  : 00:00–06:00
+          khuôn mặt lo (giờ của họ)  : 02:00–08:00
           sự kiện có lời (mặc định)  : 18:00–00:00
 
       Not one hour in common. At three in the morning the face worries and

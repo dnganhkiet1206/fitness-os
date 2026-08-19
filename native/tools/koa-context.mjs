@@ -54,7 +54,7 @@
  * anything. For somebody who logs at one in the morning the two windows do not
  * overlap at all:
  *
- *     khuôn mặt lo (giờ của họ)  : 00:00–06:00
+ *     khuôn mặt lo (giờ của họ)  : 02:00–08:00
  *     sự kiện có lời (mặc định)  : 18:00–00:00
  *
  * so at 03:00 the face worries and the sentence never comes, and at 19:00 the
@@ -213,7 +213,7 @@ console.log(
     'không-biết không bao giờ thành số 0 ở chỗ số 0 đổi hành vi. Lỗi đã sửa: useKoaContext nay đặt riskHour ' +
     'theo giờ của chính người đó (lateHour(habitFor("meal"), RISK_HOUR)), nên khuôn mặt lo và sự kiện có lời ' +
     'dùng CÙNG một khung giờ — bản đã ship để riskHour undefined và streakInDanger lấy `?? RISK_HOUR`, ' +
-    'nên với người ghi lúc 01:00 hai khung là 00:00–06:00 và 18:00–00:00, không trùng nhau một giờ nào. ' +
+    'nên với người ghi lúc 01:00 hai khung là 02:00–08:00 và 18:00–00:00, không trùng nhau một giờ nào. ' +
     'refreshKoaContext chỉ đọc lại hour và visible và giữ nguyên phần đã chụp; cùng một ngữ cảnh qua 100 lần ' +
     'cho cùng một quyết định, và A→B→A quay lại đúng quyết định của A. ' +
     'Không có cửa sổ bất đồng bộ nào trong cả hai hàm, nên không có đua refresh để mà chặn',
@@ -287,8 +287,17 @@ const TODAY = ds(0);
 
   /* ── C. the person's own hour ── */
   await resetPersonalModel();
-  /* somebody who logs their meals at one in the morning */
-  for (let i = 0; i < 12; i++) noteDone('meal', new Date(2026, 0, 1 + i, 1, 0, 0));
+  /* Somebody who logs their meals at one in the morning.
+
+     noteDone(quest, HOUR, dateStr) — an hour, not a Date. Chain V caught this
+     seeding a Date here: toAngle does ((h % 24) + 24) % 24, and dates one day
+     apart are 86,400,000 ms apart, which wraps to 0 every time. Twelve
+     identical angles gave R = 1 and a confident "habit at midnight" out of
+     nonsense, and this rule was only red because that nonsense happened to
+     land somewhere other than RISK_HOUR. */
+  for (let i = 0; i < 12; i++) {
+    noteDone('meal', 1, '2026-01-' + String(1 + i).padStart(2, '0'));
+  }
   H.user = { id: ALPHA };
   const owl = useKoaContext();
   o.ctxHasRiskHour = typeof owl.riskHour === 'number';

@@ -49,6 +49,20 @@ const toAngle = (hour: number) => (TAU * (((hour % 24) + 24) % 24)) / 24;
 
 /** Fold one "they did it at this hour" into the running sums. */
 export function observeHour(s: HourStat, hour: number): HourStat {
+  /*
+    ── one bad observation is permanent, so it never goes in ──
+
+    These are *running sums*. `NaN + anything` is `NaN` for ever, so a single
+    non-finite hour does not produce one wrong reading — it kills that quest's
+    habit for the life of the stored model, and nothing but a full reset brings
+    it back. Measured: eight `NaN` observations followed by eight perfect ones
+    at 14:00 still answered `{ hour: NaN }`.
+
+    A finite number is a different matter and is left exactly as it was: hours
+    are a circle, `toAngle` wraps, and −5 meaning 19:00 is the documented
+    arithmetic rather than an accident.
+  */
+  if (!Number.isFinite(hour)) return s;
   const a = toAngle(hour);
   return { n: s.n + 1, sin: s.sin + Math.sin(a), cos: s.cos + Math.cos(a) };
 }
@@ -81,9 +95,29 @@ export interface Habit {
 
 /** The habit, or `null` when there is not enough agreement to claim one. */
 export function habit(s: HourStat): Habit | null {
+  /*
+    ── the gate has to be able to fail ──
+
+    `r < MIN_R` refuses a pattern too loose to act on. It cannot refuse `NaN`:
+    every comparison against `NaN` is false, so a stat whose sums are not
+    numbers walked straight through the one check written to stop exactly that
+    and came out as `{ hour: NaN, strength: NaN }`.
+
+    That is reachable without anybody writing a bad hour. `loadPersonalModel`
+    spreads the parsed blob in field by field, so a truncated or hand-edited
+    `ascnd_personal_model_v1` — `{"hours":{"meal":"nope"}}` parses fine — is a
+    live model. And the consequence is not a wrong time, it is silence:
+    `riskHour` becomes `NaN`, `streakInDanger` asks `since < RISK_SPAN`, and
+    that is false at all twenty-four hours, so the streak nudge switches itself
+    off and nothing ever says so.
+
+    `null` is the honest answer for a stat that is not a stat, and it is the
+    answer every caller already handles.
+  */
+  if (!Number.isFinite(s.n) || !Number.isFinite(s.sin) || !Number.isFinite(s.cos)) return null;
   if (s.n < MIN_OBS) return null;
   const r = Math.sqrt(s.sin * s.sin + s.cos * s.cos) / s.n;
-  if (r < MIN_R) return null;
+  if (!Number.isFinite(r) || r < MIN_R) return null;
 
   let angle = Math.atan2(s.sin, s.cos);
   if (angle < 0) angle += TAU;

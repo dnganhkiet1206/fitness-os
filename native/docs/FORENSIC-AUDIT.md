@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (111 bước). Ngày rà: 2026-08-19.
+Bộ kiểm: `node tools/check.mjs` (112 bước). Ngày rà: 2026-08-19.
 
 ---
 
@@ -5973,7 +5973,7 @@ streakInDanger({ ...ctx, riskHour: ctx.riskHour })
 cấp nó biến mất. Đo thật, với người ghi lúc 01:00:
 
 ```
-khuôn mặt lo (giờ của họ)  : 00:00–06:00
+khuôn mặt lo (giờ của họ)  : 02:00–08:00
 sự kiện có lời (mặc định)  : 18:00–00:00
 ```
 
@@ -6092,6 +6092,226 @@ nào phản ứng với chuỗi **thấp** ("bắt đầu lại nhé"), thì `0`
 | **cả bộ** | `node tools/check.mjs` — 111/111 · `npx tsc --noEmit` sạch |
 | **React thật** | **KHÔNG.** `useMemo`/`useRef` là stand-in chạy ngay; thứ tự render và vòng đời focus đọc từ mã nguồn |
 | **runtime iOS thật** | **KHÔNG** |
+| **tác động production** | **KHÔNG** |
+
+---
+
+## Vòng 23 — Chain V: mô hình cá nhân, thứ duy nhất trong app biết HỌC
+
+**Câu hỏi mở đầu:** *state đã học được có thể thành state của nhầm người, state
+cũ, state dị dạng, hay một thiên lệch vĩnh viễn không?*
+
+**VERIFICATION:** `node tools/check.mjs` (112 bước) · `npx tsc --noEmit` ·
+`node tools/personal-model.mjs` (CHẠY THẬT `personal-model` trên một kho
+khoá-giá trị thật có ghi nhật ký, đối chứng bằng phép thống kê vòng tròn ĐỘC LẬP)
+
+### Bảng state
+
+| TRƯỜNG | LƯU | NGƯỜI GHI | NGƯỜI ĐỌC | RESET | MẶC ĐỊNH |
+| --- | --- | --- | --- | --- | --- |
+| `hours[quest]` | có | `noteDone` | `habitFor` → **`riskHour` (Chain U)**, `reminder-timing` | `resetPersonalModel` | `{n:0,sin:0,cos:0}` |
+| `arms[quest]` | có | `noteAsked`/`noteDone`/`settleStale` | `rankQuests` | ↑ | `PRIOR`, mềm |
+| `asked` | có | `noteAsked` | `settleStale` | ↑ | `{}` |
+| `budget` | có | `askPeek` | `askPeek` | ↑ | `freshBudget('')` |
+| `praisedOn` | có | `notePraised` | `mayPraise` | ↑ | `null` |
+| `koaSeen` | có | `koaSeenAdd` | `koaSeenHas` | ↑ | `[]`, trần 40 |
+| `level` | có | `levelStep` | `levelStep` | ↑ | `null` |
+| `loaded` | không | `loadPersonalModel` | ↑ | ↑ | `false` |
+| `praisedThisSession` | không | `notePraised` | `mayPraise` | ↑ | `false` |
+
+Một khoá lưu trữ duy nhất, `ascnd_personal_model_v1`, cho cả máy — **không**
+theo người dùng. Đó là lý do BUG-87 quan trọng.
+
+### Không có bề mặt, đo được chứ không phải bỏ qua
+
+- **Hàng đợi offline:** `offline-write.ts` có bảy `kind` và không cái nào là sự
+  kiện học. Mô hình không bao giờ đi qua hàng đợi.
+- **AI:** không chỗ nào truyền `PersonalModel` vào prompt, `coach_memory` hay
+  provider.
+- **Kinh tế / huy chương:** không đường nào từ mô hình tới xu, XP hay `awards`.
+- **Bất đồng bộ khi học:** `noteDone`, `noteAsked`, `settleStale`, `askPeek`,
+  `koaSeenAdd`, `levelStep` đều **đồng bộ**; chỉ việc *lưu* là hoãn. Nên không
+  có "A đang học thì B đăng nhập rồi kết quả của A rơi vào B" — mục 8 của brief
+  không có cửa sổ để mà đua.
+
+---
+
+### BUG-87 (P2). Đăng xuất kết thúc trong lúc mô hình đã học vẫn nằm trên đĩa — `RESET-PERSISTS-ASYNCHRONOUSLY`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN INTERACTION** | E (cơ chế quên tài khoản) × U (`riskHour` vừa thành đầu vào quyết định) |
+| **EVENT ORDER** | ALPHA học thói quen → `SIGNED_OUT` → `clearUserScopedStorage()` → `await resetPersonalModel()` → trả về |
+| **EXPECTED** | cả bộ nhớ lẫn ổ đĩa sạch khi hàm trả về |
+| **ACTUAL** | bộ nhớ sạch, **ổ đĩa vẫn là mô hình của ALPHA** |
+
+**ROOT CAUSE:** `ascnd_personal_model_v1` là khoá người-dùng **duy nhất không
+nằm trong `USER_KEYS`**. Mọi khoá khác bị `clearUserScopedStorage()` xoá bằng
+`removeItem` **có await**. Khoá này chỉ được dọn bởi `resetPersonalModel()`,
+vốn:
+
+- trả về `void`, nên `await resetPersonalModel()` ở chỗ gọi duy nhất **await một
+  thứ không phải promise**;
+- dọn *đĩa* bằng cách gọi `save()` — một `setTimeout(0)` rồi
+  `AsyncStorage.setItem(...).catch(() => {})`, tức fire-and-forget và nuốt lỗi.
+
+Bình thường lệnh ghi hoãn ấy tới nơi một tick sau và không ai thấy gì. Khi nó
+không tới — tiến trình bị treo lúc đăng xuất, hoặc lệnh ghi ném vào đúng cái
+`catch` bị nuốt — thì giờ sinh hoạt đã học, niềm tin của bandit, `koaSeen` và
+level đều ở lại trên máy, và lần khởi động sau đọc chúng vào phiên của bất kỳ ai
+đăng nhập. Chain U vừa biến một trong các trường đó (`riskHour`) thành đầu vào
+quyết định sống, nên đây không còn là chuyện trang trí.
+
+**FIX:** `resetPersonalModel` thành `async`, **huỷ** lệnh lưu đang chờ (nó sẽ
+ghi một mô hình không còn thuộc về ai), và `await AsyncStorage.removeItem(...)`
+— đúng cách mọi khoá người dùng khác được dọn.
+
+**Sau khi sửa:** ngay khi hàm trả về, đĩa sạch.
+
+---
+
+### BUG-88 (P2). Cái cổng chặn "không đủ mẫu" không chặn được NaN — `CORRUPT-PERSONAL-MODEL-AS-VALID`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN INTERACTION** | V (mô hình) × U (`riskHour`) × J (chuỗi ngày) |
+| **EVENT ORDER** | blob lưu bị cắt cụt/sửa tay → `loadPersonalModel` merge → `habitFor` → `riskHour` → `streakInDanger` |
+| **EXPECTED** | mô hình hỏng rơi về mô hình mới |
+| **ACTUAL** | `{ hour: NaN }` thành mô hình đang chạy, và lời nhắc chuỗi ngày **tắt hẳn ở cả 24 giờ** |
+
+**ROOT CAUSE:** hai nửa.
+
+Phần đầu `loadPersonalModel` tuyên bố *"Anything missing or malformed falls back
+to the fresh model rather than throwing"*. Chỉ đúng với `JSON.parse` **ném**.
+Các trường bên trong được spread thẳng:
+
+```ts
+hours: { ...base.hours, ...(parsed.hours ?? {}) }
+```
+
+nên `{"hours":{"meal":"nope"}}` parse được, được merge vào, và thành mô hình
+sống. Rồi `habit()`:
+
+```ts
+const r = Math.sqrt(s.sin * s.sin + s.cos * s.cos) / s.n;   // NaN
+if (r < MIN_R) return null;                                  // NaN < 0.6 là FALSE
+```
+
+Mọi phép so với `NaN` đều sai, nên nó **đi qua đúng cái cổng sinh ra để chặn**
+một mẫu quá lỏng, và trả về `{ hour: NaN, strength: NaN }`. Đo được: 2/12 blob
+hỏng thành mô hình sống.
+
+Hậu quả không phải một giờ sai, mà là **im lặng**: `riskHour` thành `NaN`,
+`streakInDanger` hỏi `since < RISK_SPAN`, và với `NaN` phép so ấy sai ở **cả 24
+giờ** — lời nhắc chuỗi ngày tự tắt và không có gì nói ra.
+
+**Và một nửa nữa ở đầu vào.** `observeHour` cộng thẳng vào tổng chạy, nên **một**
+quan sát không-phải-số-hữu-hạn giết vĩnh viễn thói quen của quest đó: đo được,
+tám `NaN` rồi tám quan sát hoàn hảo lúc 14:00 vẫn trả `NaN`, vì `NaN + x = NaN`.
+
+**FIX:** `observeHour` bỏ qua giá trị không hữu hạn (số hữu hạn **vẫn cuộn
+vòng** như tài liệu nói — −5 là 19:00, và luật đó không đổi); `habit()` trả
+`null` khi `n`/`sin`/`cos`/`r` không hữu hạn — `null` là câu trả lời trung thực
+cho một thống kê không phải thống kê, và mọi chỗ gọi đều đã xử lý nó.
+
+---
+
+## Chain V — đã kiểm và **KHÔNG** phải lỗi
+
+**1. `habit()` là trung bình trên ĐƯỜNG TRÒN, và nó đúng.** Đối chiếu với một
+phép tính viết độc lập từ định nghĩa (vector đơn vị trung bình → hướng và độ
+dài): khớp tới `1e-9`. Phép phá số 4 đổi nó thành trung bình số học và oracle
+bắt được ngay (6.88 so với 1.13).
+
+**2. Lặp lại một quan sát **cộng dồn**, và đó là đúng.** 100 lần `noteDone` cho
+`n = 100`. Mô hình đếm quan sát; nếu nó idempotent thì một người ăn trưa mỗi
+ngày sẽ mãi mãi chỉ có một quan sát và không bao giờ đạt `MIN_OBS`. Ghi ra đây
+vì "idempotent" là kỳ vọng mặc định ở mọi chương khác của sổ này, và ở đây nó
+**sai**.
+
+**3. `koaSeen` có trần.** 200 lần thêm → 40 mục.
+
+**4. Bandit giữ thứ tự hợp lệ** qua 0/1/10/100 vòng thưởng: luôn đúng 5 quest,
+không trùng.
+
+**5. `steps` cố ý KHÔNG được học giờ.** `CLOCK_TRUSTED` bỏ nó ra, vì giờ ghi
+được là giờ *đồng bộ HealthKit* — mô hình sẽ học chính lịch polling của app.
+
+**6. Không có state phạm vi module nào của mô hình thoát reset.** `model`,
+`loaded`, `praisedThisSession`, `saveTimer` — cả bốn đều được `resetPersonalModel`
+dọn sau vòng này.
+
+---
+
+## Chain V — sai lầm của chính bộ đo, và một lỗi tôi đã gieo ở vòng trước
+
+**1. Chain U gieo `noteDone('meal', new Date(…))` — sai cả arity lẫn kiểu.**
+Chữ ký là `noteDone(quest, HOUR, dateStr)`. `toAngle` làm `((h % 24) + 24) % 24`,
+và các `Date` cách nhau đúng một ngày là 86 400 000 ms — **chia hết cho 24**,
+nên cả mười hai quan sát rơi vào góc 0. R = 1, và bộ đo có một "thói quen lúc
+nửa đêm" hoàn toàn tự bịa.
+
+Lỗi Chain U báo là **thật** và bản sửa vẫn đứng: `riskHour` quả thật chưa bao
+giờ được đặt, và `decide` quả thật đọc nó bằng một spread tự gán. Nhưng **luật
+ấy chỉ đỏ nhờ may**: nếu mô hình không có thói quen nào thì `theirHour` sẽ là
+`RISK_HOUR` và cả hai bên cùng bằng 18 — luật xanh trong khi lỗi vẫn còn. Đã sửa
+`koa-context.mjs` để gieo giờ thật (12 quan sát lúc 01:00), và **chạy lại phép
+phá**: bỏ `riskHour` ra thì nó đỏ, với hai khung 02:00–08:00 và 18:00–00:00. Con
+số trong sổ Chain U đã được sửa theo lần đo mới.
+
+**2. Một backtick trong chú thích của driver cắt đứt template literal.** Cùng
+cái bẫy Chain O đã dính. Bắt được lúc `node --check`.
+
+**3. Luật "giờ vô lý" đầu tiên của tôi quá rộng.** Nó đòi từ chối cả `-5`,
+`24.5`, `1e9` — những giá trị mà việc cuộn vòng là hành vi **có tài liệu và
+đúng**. Đã thu hẹp đúng vào lớp gây hại: giá trị không hữu hạn, thứ đầu độc bộ
+cộng dồn vĩnh viễn. Sửa một luật quá tay cũng quan trọng như sửa một luật quá
+lỏng.
+
+**4. Hai bộ dò sẵn có bắt được thay đổi của tôi.** `signed-out.mjs` và
+`auth-lifecycle.mjs` đều neo vào `export function resetPersonalModel` và đỏ khi
+nó thành `async`. Cả hai nói đúng câu cần nói (*"luật này đã lạc mục tiêu"*). Đã
+**trỏ lại** bằng `export (?:async )?function`, không nới lỏng điều chúng chứng
+minh.
+
+---
+
+## Chain V — PRODUCT DECISION REQUIRED
+
+### PS-1. Một khoá cho cả máy, không phải một khoá cho mỗi người
+
+`ascnd_personal_model_v1` là khoá duy nhất cho toàn thiết bị. Sau BUG-87, đăng
+xuất **xoá** nó — nên một người quay lại máy cũ bắt đầu học lại từ đầu. Cách
+khác là khoá theo `user.id` và giữ mô hình của từng người, đổi lại là dữ liệu
+hành vi của những người từng mượn máy nằm lại trên máy. Xoá là lựa chọn riêng tư
+hơn và là hành vi hiện tại. **KHÔNG tự đổi.**
+
+### PS-2. Đổi múi giờ không được ghi lại
+
+Giờ được học là `new Date().getHours()` **địa phương**, và tổng vòng tròn không
+mang múi giờ. Bay từ Sài Gòn sang New York thì mọi quan sát cũ được đọc như thể
+chúng ở giờ mới, nên thói quen sai đúng bằng độ lệch múi giờ cho tới khi đủ
+quan sát mới kéo nó về. Đây là hành vi tất định và không rõ ngữ nghĩa sản phẩm:
+xoá khi đổi múi giờ? giữ và để nó tự trôi? lưu kèm offset? **KHÔNG tự chọn.**
+
+---
+
+## Chain V — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `habit`/`observeHour` qua ngưỡng, biên, và 8 giá trị không hữu hạn |
+| **oracle độc lập** | thống kê vòng tròn viết lại từ định nghĩa, không gọi `observeHour`/`habit` |
+| **lưu trữ** | kho khoá-giá trị thật có ghi nhật ký; 12 blob hỏng; đọc lại sau reset |
+| **cô lập người dùng** | ALPHA học → `resetPersonalModel()` → kiểm **cả** bộ nhớ **và** đĩa ngay khi hàm trả về |
+| **đồng thời** | **không áp dụng cho việc học, và đó là kết quả**: mọi hàm học đều đồng bộ; chỉ lệnh lưu là hoãn, và nó bị huỷ khi reset |
+| **bộ dò** | 5 phép phá, mỗi phép đỏ đúng câu định trước; thêm một phép phá chạy lại cho `koa-context.mjs` sau khi phát hiện nó chỉ đỏ nhờ may |
+| **cả bộ** | `node tools/check.mjs` — 112/112 · `npx tsc --noEmit` sạch |
+| **AsyncStorage thật** | **KHÔNG.** Kho trong bộ đo là stand-in; hành vi khi hết dung lượng hoặc ghi dở dang chưa đo |
+| **runtime iOS thật** | **KHÔNG** |
+| **múi giờ / DST** | **CHƯA ĐO Ở VÒNG NÀY** — xem PS-2; `tools/health-sync.mjs` và `tools/streak.mjs` giữ lớp múi giờ cho các nguồn khác |
 | **tác động production** | **KHÔNG** |
 
 ---

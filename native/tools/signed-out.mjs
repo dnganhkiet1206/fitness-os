@@ -188,7 +188,10 @@ if (device && user) {
 /* ── 6. resetting the model clears the load guard, not just the value ── */
 {
   const pm = strip(readFileSync(path.join(NATIVE, 'src/lib/personal-model.ts'), 'utf8'));
-  const at = pm.indexOf('export function resetPersonalModel');
+  /* `async` since Chain V — the reset now deletes the key itself and is awaited,
+     rather than scheduling a fire-and-forget save. Matched either way so this
+     anchor does not drift again on a keyword. */
+  const at = pm.search(/export (?:async )?function resetPersonalModel/);
   const body = at < 0 ? '' : pm.slice(at, pm.indexOf('\n}', at));
   if (!body) {
     problems.push('không tìm thấy resetPersonalModel — luật này đã lạc mục tiêu');
