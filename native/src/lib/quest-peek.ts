@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 import type { QuestKey } from '@/lib/mascot-room';
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
 /**
  * Which card Koa should come up behind, right now.
@@ -52,6 +53,24 @@ export function peekAt(quest: QuestKey, coins: number, now = Date.now()) {
   state = { n: state.n + 1, quest, coins, at: now };
   listeners.forEach((l) => l());
 }
+
+/**
+ * A staged celebration belongs to whoever earned it.
+ *
+ * `PEEK_DEFER_MS` bounds this to five minutes, which is not a guard — handing
+ * somebody the phone and having them sign in takes well under five minutes, and
+ * that is precisely the situation. Measured against the real reset seam, BRAVO
+ * arrived to `{"n":1,"quest":"meal","coins":40}` and Today would have played
+ * Koa coming up behind the meal card crediting BRAVO with ALPHA's forty coins.
+ *
+ * `n` goes back to 0 with everything else: it is the counter a card compares
+ * against, so leaving it high would make the next account's first genuine peek
+ * look like a repeat.
+ */
+onUserScopedReset(() => {
+  state = { n: 0, quest: null, coins: 0, at: 0 };
+  listeners.forEach((l) => l());
+});
 
 function subscribe(cb: () => void) {
   listeners.add(cb);

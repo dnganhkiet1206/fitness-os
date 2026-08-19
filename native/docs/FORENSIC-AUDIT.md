@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (107 bước). Ngày rà: 2026-08-19.
+Bộ kiểm: `node tools/check.mjs` (108 bước). Ngày rà: 2026-08-19.
 
 ---
 
@@ -5215,6 +5215,252 @@ chiếu định kỳ là một tính năng, không phải một bản sửa.
 | **chữ ký JWS / chuỗi x5c** | **KHÔNG kiểm** — có chủ ý, xem mục 1 phần "KHÔNG phải lỗi" |
 | **runtime iOS thật** | **KHÔNG**. Ứng dụng chưa có StoreKit; không màn nào gọi `verify-purchase` |
 | **tác động production** | **KHÔNG**. Toàn bộ luồng mua hàng chưa từng chạy một lần thật (`LAUNCH.md` mục 5) |
+
+---
+
+## Vòng 19 — Chain R: chỗ hai hệ thống đúng gặp nhau
+
+**Câu hỏi mở đầu:** *hai hệ thống con, mỗi cái đều đúng khi đứng một mình, có
+thể để lại một trạng thái sai khi ranh giới của chúng gặp nhau không?*
+
+**VERIFICATION:** `node tools/check.mjs` (108 bước) · `npx tsc --noEmit` ·
+`node tools/cross-chain.mjs` (CHẠY THẬT các kho module qua đúng cơ chế dọn dẹp
+của app) · `node tools/auth-lifecycle.mjs` · PostgreSQL 16.13 dựng lại từ 29
+migration
+
+### Trả lời câu hỏi mở đầu — **CÓ**, và lỗ hổng có đúng hình dạng của luật đi tìm nó
+
+Chain E cho app một cách duy nhất để quên một tài khoản:
+
+```
+clearUserScopedStorage()
+  ├─ xoá 13 khoá USER_KEYS khỏi AsyncStorage
+  ├─ resetPersonalModel()          ← gọi thẳng theo tên
+  └─ runUserScopedResets()         ← sổ đăng ký
+```
+
+`tools/auth-lifecycle.mjs` canh sổ đăng ký ấy — và canh nó **bằng cách duyệt
+`USER_KEYS`**: với mỗi khoá lưu trữ, tìm module nào cache nó, và bắt module đó
+đăng ký reset. Đó là luật đúng cho lỗi nó được viết ra để bắt, và nó có một lỗ
+đúng hình dạng **một kho không lưu gì cả**.
+
+Ba kho như thế tồn tại, và cả ba giữ những thứ riêng tư nhất app tạo ra. Chạy
+thật, qua đúng cơ chế reset:
+
+```
+ALPHA nhận huy chương, mở khoá linh vật, xong nhiệm vụ bữa ăn,
+Koa ăn mừng chuỗi 30 ngày, và vừa quét một đĩa ăn
+→ SIGNED_OUT → resetPersonalModel() + runUserScopedResets()
+→ BRAVO đăng nhập và app đang giữ:
+
+    celebration head : {"kind":"award","award":{"title":"ALPHA 100 buổi tập"}}
+    quest peek       : {"n":1,"quest":"meal","coins":40}
+    koa stage        : award:streak_30, celebrate, intensity 0.95
+    scan bridge      : null                                   ← Chain O, đúng
+```
+
+Cái `scan bridge: null` là mẫu đối chứng: cơ chế reset **hoạt động**, và đó
+chính là điều làm ba dòng trên đọc được thành lỗi chứ không phải thành một
+harness hỏng.
+
+---
+
+### BUG-77 (P2). Huy chương của người này được chiếu cho người kia — `USER-BOUND-STATE-SURVIVES-USER-SWITCH`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN A** | E — cơ chế quên tài khoản |
+| **CHAIN B** | J — huy hiệu, mở khoá linh vật |
+| **EVENT ORDER** | ALPHA nhận huy chương → xếp hàng → SIGNED_OUT → BRAVO đăng nhập → host ăn mừng có chỗ trống |
+| **EXPECTED** | BRAVO không thấy gì |
+| **ACTUAL** | BRAVO bị chiếu toàn màn hình *"ALPHA 100 buổi tập"* |
+
+**ROOT CAUSE:** `celebration-queue.ts` giữ hàng đợi ở phạm vi module và **không
+lưu khoá AsyncStorage nào**, nên không luật nào của Chain E nhìn thấy nó.
+
+**Và nửa thứ hai tệ hơn nửa thứ nhất.** `enqueueMascot` từ chối một id đã có
+trong hàng đợi. BRAVO mở khoá đúng `koa_gold` mà ALPHA từng mở → **không có
+dòng nào được xếp hàng**. Đo được: hàng đợi BRAVO được chiếu chứa hai lễ ăn
+mừng của ALPHA và không có cái nào của BRAVO.
+
+**FIX:** đăng ký `onUserScopedReset`. `seq` cố ý để chạy tiếp — nó chỉ là khoá
+React, hàng đợi đã rỗng, và một bộ đếm quay về 0 là thêm một cách sinh ra hai
+phần tử cùng khoá.
+
+**Sau khi sửa:** head = `null`; lễ mở khoá của BRAVO được xếp hàng (id 3).
+
+---
+
+### BUG-78 (P2). Koa ghi công cho BRAVO số xu ALPHA kiếm được — `USER-BOUND-STATE-SURVIVES-USER-SWITCH`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN A** | E |
+| **CHAIN B** | J/D — nhiệm vụ ngày và sổ cái xu |
+| **EVENT ORDER** | ALPHA xong nhiệm vụ bữa ăn (+40 xu) → peek chờ diễn → SIGNED_OUT → BRAVO mở Today |
+| **EXPECTED** | không diễn gì |
+| **ACTUAL** | `{"n":1,"quest":"meal","coins":40}` — Koa ló ra sau thẻ bữa ăn, ghi công BRAVO 40 xu |
+
+**ROOT CAUSE:** cùng lớp với BUG-77. `PEEK_DEFER_MS` là 5 phút, và đó **không
+phải một hàng rào**: đưa máy cho người khác rồi họ đăng nhập mất chưa tới 5
+phút, mà đó đúng là tình huống này.
+
+**FIX:** đăng ký reset, đưa `n` về 0 cùng mọi thứ khác — `n` là con số thẻ so
+sánh, để nó cao nghĩa là lượt ló ra thật đầu tiên của người kế tiếp trông như
+một lần lặp lại.
+
+---
+
+### BUG-79 (P2). Chuỗi 30 ngày của BRAVO trôi qua trong im lặng — `USER-BOUND-STATE-SURVIVES-USER-SWITCH`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN A** | E |
+| **CHAIN B** | J — huy hiệu · và chính `personal-model` |
+| **EVENT ORDER** | ALPHA nhận `award:streak_30` → SIGNED_OUT → BRAVO đạt `award:streak_30` |
+| **EXPECTED** | Koa phản ứng cho BRAVO |
+| **ACTUAL** | `shouldReact: false`, `because: "sự kiện này đã xử lý rồi"` |
+
+**ROOT CAUSE:** `emitKoa` chống trùng bằng **hai tầng** — `seen` trong bộ nhớ và
+`koaSeen` lưu xuống đĩa trong `personal-model`. Tầng lưu đĩa **luôn** được xoá
+(`resetPersonalModel`); tầng bộ nhớ thì không. Hai tầng của cùng một cơ chế bất
+đồng ý kiến về chuyện chúng thuộc về ai, và tầng sống sót giữ id của ALPHA suốt
+vòng đời tiến trình.
+
+Đây là cái sắc nhất trong ba: **bản sửa đã tồn tại sẵn.** `resetKoaStage()` xoá
+đúng những thứ cần xoá và được nối vào **một màn hình debug**.
+
+**FIX:** `onUserScopedReset(resetKoaStage)` — một dòng.
+
+**Sau khi sửa:** BRAVO → `shouldReact: true`, `"huy hiệu/cấp độ, độ lớn 0.90"`.
+
+*(Một lần đo trung gian nói bản sửa không chạy. Nó chạy — cái sai là harness:
+nó chỉ gọi `runUserScopedResets()` mà bỏ `resetPersonalModel()`, nên tầng lưu
+đĩa vẫn giữ id và tiếp tục chặn. Harness của bộ dò nay gọi **cả hai**, đúng thứ
+tự `clearUserScopedStorage` gọi, và có ghi chú nói vì sao.)*
+
+---
+
+### Bản sửa ranh giới, chứ không phải ba bản vá
+
+Ba lỗi trên là **một** lỗ hổng. Luật của Chain E bắt đầu từ khoá AsyncStorage,
+nên một kho không lưu gì thì vô hình với nó. `tools/cross-chain.mjs` Rule C bắt
+đầu **từ chính cái kho**:
+
+> state mutable ở phạm vi module mà React đăng ký đọc qua `useSyncExternalStore`
+> thì PHẢI đăng ký `onUserScopedReset`, hoặc nằm trong danh sách miễn **kèm lý
+> do**.
+
+12 kho được quét, 8 đăng ký, 4 được miễn kèm lý do (`toast` — một dòng thông
+báo trên màn hình; `personal-model` — reset gọi thẳng theo tên; `use-volume-unit`
+— tuỳ chọn của MÁY, cố ý giữ; `use-mascot-emotion` — cờ "đã chào chưa" mỗi lần
+mở app, chính file đó nói là "một sự thật về cây React này, không phải về tài
+khoản"). Một kho mới chưa phân loại làm bước này đỏ — phép phá số 6 chứng minh.
+
+---
+
+## Chain R — đã kiểm và **KHÔNG** phải lỗi
+
+**1. Tài khoản đã xoá KHÔNG sống lại được qua hàng đợi offline.** Máy cũ vẫn
+giữ JWT hợp lệ chưa hết hạn của ALPHA, và `applyOfflineWrite` gọi
+`getSession()` — thứ đọc bộ nhớ chứ không hỏi mạng — nên cổng *chủ tài khoản*
+**đi qua được**. Thứ chặn lại là khoá ngoại. Đo trên PostgreSQL 16.13 sau khi
+xoá `auth.users` của ALPHA, với `SET LOCAL ROLE authenticated` và
+`request.jwt.claim.sub = ALPHA`:
+
+```
+water 23503 · workout 23503 · weight 23503 · meal 23503
+sleep 23503 · measurement 23503 · biometrics 23503 · daily_logs 23503
+```
+
+`permanentFailure` đọc `23503` là vĩnh viễn, nên bản ghi bị bỏ chứ không thử
+lại. **Không dòng nào được tạo, không tài khoản nào sống lại.**
+
+**2. `resumePausedMutations()` chạy TRƯỚC `AuthProvider` — và không sao.**
+`PersistQueryClientProvider` nằm *trên* `AuthProvider` trong `_layout.tsx`, nên
+`onSuccess` bắn khi cây auth chưa gắn. Đọc cây component thì đó trông như một
+cuộc đua: lệnh ghi hợp lệ bị `WrongAccountError` giết vì phiên chưa kịp khôi
+phục. **Không phải.** `@supabase/auth-js` 2.110.6 `getSession()` mở đầu bằng
+`await this.initializePromise` (GoTrueClient.js:2364-2365), nên nó đợi phiên
+được đọc khỏi bộ nhớ. Cuộc đua không tồn tại. *Suýt thành một lỗi báo oan đọc
+ra từ sơ đồ provider.*
+
+**3. `autoSyncInFlight` không kẹt được.** Cờ phạm vi module trong
+`use-health-sync`, đặt trước `await` đầu tiên và xoá trong `finally`. Đăng xuất
+giữa chừng một lần sync không khoá được sync đầu tiên của BRAVO.
+
+**4. Thưởng không bao giờ đúc hai lần.** `UNIQUE(user_id, ref_key)` với
+`ref_key = d:<ngày>:<nhiệm vụ>`. Đo thật: gọi `earn_mascot_coins` hai lần cho
+cùng khoá → **một** dòng `mascot_transactions`, số dư 40.
+
+**5. Quyền lợi × hạn mức AI: chưa có ranh giới nào để mà hỏng.**
+`claim_ai_call` không nhắc tới `tier` ở bất kỳ đâu (kiểm bằng
+`pg_get_functiondef ILIKE '%tier%'` → NO), và `PEEK_TIER` trong
+`use-quest-autoclaim` là `null`. Một quyền lợi cũ không thể cho thêm hay chặn
+bớt lời gọi AI nào, vì hạn mức không hề đọc bậc. Đây là **chưa nối**, không
+phải **đã kiểm là đúng**.
+
+**6. `step-days.ts` không dùng ngày UTC.** `grep` bắt được
+`toISOString().slice(0, 10)` trong file này — nó nằm trong một **chú thích** nói
+rằng đó chính là thứ không được dùng. Hàm thật gọi `localDateStr`. *Suýt thành
+lỗi báo oan thứ hai, từ một lần grep.*
+
+**7. Trạng thái dẫn xuất hội tụ.** Xoá bữa ăn → `meal_entries` 0,
+`daily_logs.kcal` 0. Nguồn và dẫn xuất khớp nhau.
+
+---
+
+## Chain R — PRODUCT DECISION REQUIRED
+
+### PS-1. Thưởng đã trả không được thu lại khi nguồn bị sửa
+
+Đo được, đúng chuỗi sự kiện mục 4 của brief:
+
+```
+t=0  bữa ăn 1000 kcal → daily_logs.kcal = 1000
+t=1  nhiệm vụ đọc trạng thái dẫn xuất đó và TRẢ 40 xu
+t=2  bữa ăn bị xoá → daily_logs.kcal = 0, meal_entries = 0
+t=3  số dư: 40 xu, một dòng giao dịch, ref_key d:2026-08-19:meal
+```
+
+Tính toàn vẹn còn nguyên — không đúc hai lần, không chặn mất khoản thưởng hợp
+lệ nào. Nhưng **một trạng thái trung gian sai đã đúc ra một thứ không thu lại
+được**, và nó ở lại sau khi nguồn đã hội tụ về sự thật.
+
+Ba đường, không đường nào là bản sửa lỗi: để nguyên (xu là lời cảm ơn cho một
+thói quen, không phải một khoản kế toán); thu hồi khi nguồn đổi (sổ cái đúng
+hơn, nhưng người dùng thấy xu bị lấy đi vì họ sửa một lỗi gõ); hoãn trả tới khi
+ngày đã đóng (đúng nhất, và giết mất khoảnh khắc — xem lý do `use-quest-autoclaim`
+bỏ cái nút đi). **KHÔNG tự chọn.**
+
+### PS-2. `use-mascot-emotion.greeted` sống qua lần đổi tài khoản
+
+Được miễn kèm lý do vì chính file đó tuyên bố nó thuộc về lần mở app. Hệ quả
+thật: đổi tài khoản giữa một lần mở app thì BRAVO không được Koa chào. Chỉ là
+thiếu một câu chào, nhưng nó **là** một khác biệt và được ghi ra đây thay vì
+lặng lẽ nằm trong danh sách miễn.
+
+---
+
+## Chain R — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | phân loại kho phạm vi module; luật ranh giới quét 12 kho |
+| **runtime tích hợp** | các kho THẬT (`celebration-queue`, `quest-peek`, `koa-stage`, `scan-bridge`, `personal-model`) chạy qua **đúng** cơ chế dọn dẹp, đúng thứ tự `clearUserScopedStorage` gọi hai nửa |
+| **PostgreSQL** | 16.13, cluster sạch, 29 migration; 8 loại lệnh ghi offline phát lại sau khi xoá tài khoản; vòng thưởng → xoá nguồn → hội tụ |
+| **RLS** | vai `authenticated` với `request.jwt.claim.sub`, trong `BEGIN…COMMIT` |
+| **thư viện** | `getSession()` đọc thẳng từ mã nguồn `@supabase/auth-js` 2.110.6 đã cài, không suy từ tài liệu |
+| **bộ dò** | 7 phép phá cho `cross-chain.mjs`, mỗi phép đỏ đúng câu định trước — kể cả phép phá **chỉ** quên `seen.clear()`, chứng minh nửa đó tự nó chịu lực |
+| **cả bộ** | `node tools/check.mjs` — 108/108 · `npx tsc --noEmit` sạch · `auth-lifecycle.mjs` vẫn xanh |
+| **runtime iOS thật** | **KHÔNG**. Không lần đổi tài khoản nào chạy trên máy thật |
+| **HealthKit thật** | **KHÔNG** |
+| **Apple thật** | **KHÔNG** (Chain Q không đổi) |
+| **múi giờ** | **CHƯA ĐO Ở VÒNG NÀY.** `tools/day-window.mjs` và `tools/health-sync.mjs` đã canh lớp này từ Chain A/H; Chain R không thêm phép đo múi giờ nào và không tuyên bố gì về nó |
+| **tác động production** | **KHÔNG** |
 
 ---
 

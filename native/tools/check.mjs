@@ -224,6 +224,7 @@ const STEPS = [
   ['ranh giới ảnh quét', 'node', ['tools/scan-food-boundary.mjs']],
   ['xoá tài khoản', 'node', ['tools/delete-account.mjs']],
   ['webhook cửa hàng', 'node', ['tools/store-webhook.mjs']],
+  ['ranh giới liên chuỗi', 'node', ['tools/cross-chain.mjs']],
   ['lối vào màn hình', 'node', ['tools/entry-points.mjs']],
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],

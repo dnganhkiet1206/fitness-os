@@ -4,6 +4,7 @@ import { holdEmotion } from '@/lib/mascot-emotion';
 import { decide, outranks, type KoaContext, type KoaDecision } from '@/lib/koa-decide';
 import type { KoaEvent } from '@/lib/koa-event';
 import { koaSeenAdd, koaSeenHas } from '@/lib/personal-model';
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
 /**
  * The one door between what happened and what Koa does about it.
@@ -149,6 +150,20 @@ export function resetKoaStage() {
   seen.clear();
   emit();
 }
+
+/**
+ * And sign-out, which is the reason it matters.
+ *
+ * This function already did exactly the right thing and was wired to one debug
+ * screen. `seen` is the half that bites: it holds stable ids — `award:streak_30`,
+ * `pr:<session>` — and `emitKoa` drops any id it has seen. So ALPHA's leftover
+ * ids **suppress BRAVO's identical events**, permanently for the life of the
+ * process, and BRAVO's thirty-day streak passes without Koa reacting at all.
+ * The persisted half of the same set (`koaSeen` in `personal-model`) was always
+ * cleared by `resetPersonalModel`; only the in-memory copy was not, so the two
+ * layers disagreed about whose events they were.
+ */
+onUserScopedReset(resetKoaStage);
 
 const snapshot = () => current;
 function subscribe(cb: () => void) {
