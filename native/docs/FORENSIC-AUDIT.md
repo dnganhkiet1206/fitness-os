@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (113 bước). Ngày rà: 2026-08-19.
+Bộ kiểm: `node tools/check.mjs` (114 bước). Ngày rà: 2026-08-19.
 
 ---
 
@@ -6505,6 +6505,249 @@ mức 45 giây, và được ghi ra để nó là một lựa chọn chứ khôn
 | **nhiều máy** | **KHÔNG có bề mặt** — ngân sách chỉ tồn tại trên một thiết bị |
 | **tác động production** | **KHÔNG** |
 
+
+---
+
+## Chain X — bandit / Thompson sampling
+
+**Bộ kiểm:** `node tools/bandit.mjs` (mới) · `node tools/check.mjs` · `npx tsc --noEmit`
+
+### Điều đã có trước, và vì sao nó không đủ
+
+Toàn bộ chứng cứ hành-được về bandit nằm trong `tools/personal-model.mjs`, quy tắc E:
+
+```js
+if (order.length !== 5 || uniq.size !== 5) bFail = { n, order };
+```
+
+`rankQuests()` trả về năm khoá khác nhau. Điều đó cũng đúng với `Object.keys()`.
+Nó đúng với một bộ lấy mẫu trả về hằng số. **Nó đúng với từng lỗi dưới đây.**
+
+### Phần số học: đã soi, và nó đúng
+
+Nói trước cho rõ, vì đó là lý do mọi lỗi bên dưới nằm ở chỗ giáp ranh với ổ đĩa
+chứ không nằm trong bộ lấy mẫu. Đối chiếu bằng một bộ sinh Beta **Marsaglia–Tsang**
+(thuật toán khác, phân phối trung gian khác, dòng số ngẫu nhiên khác) và trung
+bình/phương sai giải tích:
+
+```
+                bandit.ts          Marsaglia–Tsang     giải tích
+Beta(1,1)   μ=0.49982 σ²=0.083682  μ=0.50070 …0.083181  0.50000 0.083333
+Beta(9,1)   μ=0.90046 σ²=0.008129  μ=0.90076 …0.008253  0.90000 0.008182
+Beta(1,9)   μ=0.09972 σ²=0.008161  μ=0.09930 …0.008288  0.10000 0.008182
+Beta(4,2)   μ=0.66539 σ²=0.031774  μ=0.67011 …0.031350  0.66667 0.031746
+Beta(20,20) μ=0.49998 σ²=0.006107  μ=0.50227 …0.006206  0.50000 0.006098
+Beta(21,1)  μ=0.95439 σ²=0.001905  μ=0.95420 …0.001878  0.95455 0.001886
+```
+
+1000 lịch sử × 200 quan sát: **0** hậu nghiệm hỏng, min α = 1, min β = 1,
+max α+β = 40 = CAP. Một arm p=0.8 thắng một arm p=0.3 trong **2000/2000** lịch
+sử 80 quan sát. `reward()` giữ đúng bất biến nó tuyên bố, ở mọi hình dạng.
+
+**Nhưng đầu vào nó được viết cho không phải đầu vào nó nhận.** `loadPersonalModel`
+làm `arms: { ...base.arms, ...(parsed.arms ?? {}) }`, nên nội dung của
+`ascnd_personal_model_v1` **chính là** hậu nghiệm.
+
+---
+
+### BUG-91 (P1). Một con số trên đĩa làm app không bao giờ vẽ lại — `POISONED-COUNT-HANGS-RANKING`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P1 |
+| **CHAIN INTERACTION** | V × W × X |
+| **EVENT ORDER** | blob lưu chứa `alpha` lớn → spread thẳng vào `model.arms` → `rankQuests` trong `useMemo` màn Hôm nay |
+| **EXPECTED** | xếp hạng năm quest xong trong vài micro giây |
+| **ACTUAL** | **không bao giờ trả về** |
+
+**ROOT CAUSE:** `sampleBeta` rút Gamma(k) bằng tổng k biến mũ — chính xác, rẻ, và
+không có chặn trên. Vòng lặp chạy đúng `alpha` lần. Đo bằng tiến trình con có
+đồng hồ treo tường:
+
+```
+alpha 1e6              →  0.9999998   trong    37ms
+alpha 1e7              →  0.99999997  trong   322ms
+alpha 1e8              →  0.99999999  trong  3212ms
+alpha 1e9              →  giết ở 8 giây, chưa trả về
+alpha 9007199254740991 →  giết ở 8 giây, chưa trả về
+alpha 1e308            →  giết ở 8 giây, chưa trả về
+alpha Infinity         →  không bao giờ kết thúc
+```
+
+`1e9` là một số **JSON viết ra bình thường**. `reward()` chặn ở CAP=40 nên đường
+ghi thật không tới được đây; đường đọc thì không kiểm gì cả. Và `rankQuests` chạy
+trong `useMemo` trên đường vẽ màn Hôm nay (`use-mascot.tsx:161`), nên đây không
+phải một khung hình chậm mà là **luồng JS chết — mọi lần mở app, vĩnh viễn**, vì
+con số nằm trên đĩa.
+
+**FIX:** `normaliseArms` ở `src/lib/bandit-state.ts`. Số đếm ngoài
+`[1, CAP−1]` **không được kẹp lại** mà rơi về prior: một `alpha` kẹp xuống 39
+không phải niềm tin đã sửa, đó là ba mươi chín lần thắng người ta chưa từng cho.
+
+**VERIFICATION:** `node tools/bandit.mjs` — bốn blob độc chạy trong bốn tiến trình
+riêng có timeout; một treo là một phép đo chứ không phải một bộ đo treo.
+
+---
+
+### BUG-92 (P2). Một ask sống lâu hơn cái arm của nó, và kết sổ thì ném — `GHOST-ASK-CRASHES-SETTLE`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN INTERACTION** | X |
+| **EVENT ORDER** | `asked` có khoá mà `arms` không có → `settle()` → `reward(undefined, false)` |
+| **EXPECTED** | quên cái ask không còn nghĩa |
+| **ACTUAL** | `TypeError: Cannot destructure property 'alpha' of 'arm' as it is undefined` |
+
+**ROOT CAUSE:** Kiểu nói rằng chuyện này không xảy ra được — `asked` khoá theo `K`,
+`arms` toàn phần trên `K`. Lúc chạy cả hai ra từ **một** `JSON.parse`, và ổ đĩa
+chưa bao giờ đọc kiểu. Ba blob đưa được khoá lạ vào, cả ba đo qua module thật:
+
+```
+{"asked":{"ghost":"2026-08-18"}}          → THREW
+{"asked":"nope"}   (trải thành {0:'n',…}) → THREW
+{"pending":{"quest":"ghost","date":"…"}}  → THREW
+```
+
+Cái thứ ba là **đường di trú v1 của chính app**: nó chép `pending.quest` sang mà
+không hỏi nó còn là quest không. Và chỗ ném thì tệ hai lần: `loadPersonalModel`
+gọi `settleStale` **sau** khối `try`, nên thành unhandled rejection; `use-mascot`
+gọi nó từ một `useEffect`, nên đó là **màn hình đỏ**. Nó cũng ném **trước** khi
+lưu, nên khoá hỏng còn nguyên để làm lại ở lần mở sau.
+
+**FIX:** `normaliseAsked` — khoá lấy từ `base.arms` và không từ đâu khác.
+**Không** thêm chốt trong `settle()`: sau khi ranh giới lọc, nhánh đó không tới
+được, và một nhánh không tới được là một nhánh không luật nào chứng minh nổi.
+Điều kiện tiên quyết được ghi thành chú thích ở `settle`, chỉ về nơi nó được lập.
+
+---
+
+### BUG-93 (P2). Một lần ghi hỏng trở thành niềm tin chắc chắn nhất trong mô hình — `STRING-COUNT-BECOMES-CONFIDENCE`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN INTERACTION** | X |
+| **EVENT ORDER** | `{alpha:"5",beta:"2"}` trên đĩa → một quest hoàn thành → `reward(arm, true)` |
+| **EXPECTED** | năm-trên-bảy, hoặc rơi về prior |
+| **ACTUAL** | `{alpha:26, beta:1}` — hai mươi sáu trên hai mươi bảy |
+
+**ROOT CAUSE:** `reward()` làm `alpha += 1`, và `+` trên chuỗi là **nối**.
+`"5" + 1` = `"51"`; `"51" + "2"` đọc ra 512, quá CAP; phép chia đôi cho `{26,1}`.
+Kết quả là **số nguyên hợp lệ**, nên không gì phía sau nhận ra được. Và
+`mean()` với `sampleBeta()` **không đồng ý về cùng một arm**: `5/"52"` = 0.096
+trong khi bộ lấy mẫu rút Beta(5,2) ≈ 0.87 — con số hiển thị và con số dùng để
+chọn là hai niềm tin khác nhau.
+
+---
+
+### BUG-94 (P2). Một arm không thể thua, và một arm không thể được chọn — `CORRUPT-ARM-DRAWS-A-CONSTANT`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **CHAIN INTERACTION** | X |
+| **EVENT ORDER** | `{alpha:0,beta:0}` trên đĩa → một quest hoàn thành → `{1,0}` → mọi lượt rút |
+| **EXPECTED** | Thompson sampling, tức là một phân phối |
+| **ACTUAL** | một **hằng số**: 5000/5000 lần đứng đầu |
+
+**ROOT CAUSE:** `{0,0}` không bao giờ chạm nhánh `α+β > CAP`, nên `beta` ở nguyên
+0 qua **mọi** lần reward; `sampleBeta` chia `x/(x+0)` = **đúng bằng 1** ở mọi lượt.
+`{alpha:-5}` là tấm gương ngược: vòng lặp chạy không lần nào, mẫu rút ra **đúng
+bằng 0**, quest đó xuống cuối vĩnh viễn. Cả hai **không ném**.
+
+Một điểm bộ đo suýt bỏ sót: `{0,0}` lúc vừa nạp rút ra **0.5**, không phải 1 —
+`gamma(0)` là 0 ở cả hai vế và `sampleBeta` trả 0.5 khi `x+y === 0`. Hằng số chỉ
+xuất hiện **sau một lần reward**. Xếp hạng cái blob mà không sống qua một ngày
+với nó thì không thấy gì cả.
+
+---
+
+### Chain X — đã kiểm và **KHÔNG** phải lỗi
+
+**1. Phép chia đôi PHỤ THUỘC THỨ TỰ.** Cùng 24 thắng / 36 thua, 1000 hoán vị →
+5 hậu nghiệm khác nhau, trung bình từ **0.3182** đến **0.5000**:
+
+```
+mọi lần thắng ở CUỐI  → {12,10}  mean 0.5455
+xen kẽ                → { 9,13}  mean 0.4091
+mọi lần thắng ở ĐẦU   → { 7,15}  mean 0.3182
+```
+
+Đó **chính là việc nó làm** — chứng cứ gần đây nặng hơn, đúng như tài liệu của
+`CAP` nói. Luật G không cấm chuyện đó; nó cấm một thứ tự **vượt qua chính trường
+hợp tốt nhất của mình** (mọi lần thắng ở cuối). Đo được: cao nhất 0.52 so với
+chặn 0.60.
+
+**2. Arm lạ từ ổ đĩa KHÔNG lọt tới người dùng.** `{"arms":"nope"}` trải thành
+`{0:'n',1:'o',2:'p',3:'e'}` và bốn khoá đó **có** được xếp hạng
+(`workout,steps,sleep,meal,0,1,2,3,water`) — nhưng `use-mascot` lọc bằng
+`isMascotThing`, một danh sách bốn khoá, **sau khi** đã sắp xếp, nên thứ tự
+tương đối của các quest thật không đổi. Vẫn được dọn ở bản sửa vì chúng được ghi
+ngược ra đĩa mãi mãi, nhưng **không** phải một lỗi hiển thị.
+
+**3. Một arm tệ KHÔNG bị bỏ đói.** Một arm ở `{1,21}` không thắng nổi một lượt
+nào trong 20 000 lần xếp hạng. Nhưng `mascotLine` chọn `gaps[0]` — cái **còn dở**
+xếp cao nhất — nên một quest chưa làm vẫn được nhắc kể cả khi niềm tin về nó thấp
+nhất. Câu trong `bandit.ts` — *"Koa có thể học rằng bạn phản ứng với nước. Nó
+không thể học cách thôi nhắc chuyện tập"* — **đúng**, và đúng vì chỗ tiêu thụ chứ
+không vì bandit.
+
+**4. Ngữ nghĩa quy công đã đo, và đúng.** `noteAsk` idempotent trong ngày;
+`credit` chỉ ăn cái ask **của hôm nay** và xoá nó; `credit` lần hai là no-op;
+`settle` idempotent; `credit` cho một ngày không được hỏi là no-op. Một arm học
+1000 lần không đụng tới arm khác — byte-identical.
+
+**5. Đồng thời: KHÔNG có bề mặt.** Mọi phép ghi bandit là đồng bộ trên một luồng
+JS. Chỗ duy nhất có xen kẽ là hydrate về muộn, và merge đã nêu rõ bên nào thắng.
+100 kịch bản nạp-muộn: 0 hậu nghiệm hỏng, 100/100 giữ được cái ask của phiên.
+
+---
+
+### Chain X — sai lầm của chính bộ đo
+
+**1. Bộ đối chiếu "độc lập" đầu tiên của tôi HỎNG.** Tôi viết xorshift128+ bằng
+32 bit. Nó là thuật toán 64 bit và không sống sót khi bị cắt đôi: lệch trung bình
+Beta(4,2) **0.0076 trên 40 000 lượt rút** — tám phẩy năm sai số chuẩn, tức không
+phải nhiễu. Luật nền bắt được **trước khi** nó kịp chấm bộ lấy mẫu production.
+Một oracle hỏng tệ hơn không có oracle, vì nó hỏng về phía tự tin. Đổi sang sfc32.
+
+**2. Luật F chấm 300 000 lần mà chưa từng chạm nhánh chia đôi.** Bản đầu rải 60
+ngày cho cả năm quest, nên mỗi arm được ~12 quan sát và `α+β > CAP` — **nhánh duy
+nhất** trong `reward()` có thể sinh số đếm hỏng — không chạy lần nào. Phát hiện
+bằng một phép phá (`Math.max(0, Math.floor(…))`) mà luật vẫn **xanh**. Nay mỗi
+lượt dồn một quest trong 120 ngày, và `seqDecays` đếm số lần chia đôi để luật tự
+nói được nó có tới đó không: **5000** lần.
+
+**3. Và ngay cả thế vẫn chưa đủ.** Phép phá đó vẫn xanh, vì đưa `alpha` xuống 1
+rồi gặp chia đôi ở đó chỉ xảy ra với một chuỗi **toàn thua**; một bước ngẫu nhiên
+40% thắng không bao giờ tới. Đã thêm kiểm tra tính hợp lệ vào đúng chuỗi toàn
+thua đó, và `lossReachedFloor` canh cho luật không xanh rỗng. Nay phép phá đỏ ở
+ngày 56 với `{alpha:0, beta:20}`.
+
+**4. Backtick trong chú thích cắt đứt template literal — lần thứ tư và thứ năm
+trong sổ này** (Chain O, V, W, và ở đây hai lần), lần cuối nằm trong chính đoạn
+chú thích tôi viết để ghi lại sai lầm số 2. `node --check` bắt cả hai.
+
+---
+
+### Chain X — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **oracle độc lập** | bộ sinh Beta **Marsaglia–Tsang** trên **sfc32**, cộng trung bình/phương sai giải tích; bất biến viết từ **định nghĩa** hậu nghiệm, không đọc từ code |
+| **lấy mẫu** | **100 000** lượt rút × 5 hình dạng, khớp giải tích |
+| **hậu nghiệm** | **600 000** phép kiểm qua 1000 chuỗi 120 ngày thật, **5000** lần chia đôi thật sự chạm tới |
+| **thứ tự** | 1000 hoán vị + 1000 lịch sử cặp 75% vs 25% |
+| **treo/loop** | 4 blob độc, mỗi cái một tiến trình riêng có timeout |
+| **lưu trữ hỏng** | 12 blob, chạy qua `loadPersonalModel` thật chứ không gọi thẳng hàm |
+| **đồng thời** | 100 kịch bản hydrate-về-muộn |
+| **cô lập người dùng** | qua bản sửa Chain V (`resetPersonalModel` xoá khoá) |
+| **bộ dò** | **7 phép phá**; 5 đỏ đúng câu định trước, 1 là **no-op đã chứng minh** (`max(0)` ≡ `max(1)` khi α ≥ 1), 1 vạch ra chính lỗ hổng của bộ đo |
+| **cả bộ** | `node tools/check.mjs` · `npx tsc --noEmit` sạch |
+| **AsyncStorage thật** | **KHÔNG** — kho trong bộ đo là stand-in |
+| **runtime iOS thật** | **KHÔNG** |
+| **tác động production** | **KHÔNG** |
 ---
 
 ## Cách dùng sổ này

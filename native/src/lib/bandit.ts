@@ -188,6 +188,23 @@ export function credit<K extends string>(l: AskLedger<K>, key: K, date: string):
  *
  * A learner that records only its successes convinces itself everything works,
  * and the failures are the half that makes the arithmetic mean anything.
+ *
+ * ── this line requires `asked ⊆ arms`, and the types are not what enforces it ──
+ *
+ * `reward(arms[k], false)` below assumes every key in `asked` names an arm. The
+ * types say it does — `asked` is keyed by `K`, `arms` is total over `K` — and at
+ * runtime both came out of one `JSON.parse`, which has never read them. Three
+ * blobs put a key here that `arms` did not have: an unknown key, `asked` as a
+ * string (which spreads into `{0:'n', 1:'o', …}`), and the app's own v1
+ * `pending` migration, which copied `pending.quest` across without asking
+ * whether it still named a quest. Each threw `Cannot destructure property
+ * 'alpha' of 'arm'` — from a `useEffect` in `use-mascot`, so a red screen, and
+ * before the save, so the bad key survived to do it again next launch.
+ *
+ * The precondition is now established where the state enters, by
+ * `normaliseAsked` in `bandit-state.ts`, rather than re-checked here. There is
+ * deliberately no guard on this line: a branch that nothing can reach is a
+ * branch no rule can honestly prove, and this file's job is the arithmetic.
  */
 export function settle<K extends string>(l: AskLedger<K>, today: string): AskLedger<K> {
   const stale = (Object.keys(l.asked) as K[]).filter((k) => l.asked[k] !== today);

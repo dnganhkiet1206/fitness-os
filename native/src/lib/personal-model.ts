@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 import { credit, newArm, noteAsk, rankArms, settle, type Arm } from '@/lib/bandit';
+import { normaliseArms, normaliseAsked } from '@/lib/bandit-state';
 import {
   allowPeek,
   allowPraise,
@@ -198,15 +199,28 @@ export async function loadPersonalModel() {
       /* The v1 shape had a single `pending`; carrying it across as one entry
          keeps the learned hours and beliefs, which are the expensive part,
          rather than making everybody start again for a field that changed. */
-      const storedAsked =
-        parsed.asked ?? (parsed.pending ? { [parsed.pending.quest]: parsed.pending.date } : {});
+      /* Keys filtered against the quests that exist, because `settle` walks
+         these and rewards `arms[k]` — and a key that is here without being
+         there threw. The v1 branch is one of the three ways that happened:
+         it copies `pending.quest` across without asking whether it still names
+         a quest. See `normaliseAsked`. */
+      const storedAsked = normaliseAsked(
+        base.arms,
+        parsed.asked ?? (parsed.pending ? { [parsed.pending.quest]: parsed.pending.date } : {}),
+      );
       /* Coerced before anything compares it against the cap — a stored `count`
          of −999999 satisfied `count < PEEK_DAILY_CAP` for ever, which is an
          unlimited day bought with one truncated write. See `normaliseBudget`. */
       const storedBudget = normaliseBudget(parsed.budget, base.budget.day);
 
       model = {
-        arms: { ...base.arms, ...(parsed.arms ?? {}) },
+        /* Coerced to counts the sampler's preconditions hold for, rather than
+           spread in whole. `sampleBeta` draws Gamma(k) as a sum of k
+           exponentials, so a stored `alpha` of 1e9 — a number JSON writes
+           without comment — is a loop that does not finish, inside the `useMemo`
+           that ranks quests on Today. Measured: 1e8 took 3.2s, 1e9 never
+           returned. See `normaliseArms`. */
+        arms: normaliseArms(base.arms, parsed.arms),
         hours: { ...base.hours, ...(parsed.hours ?? {}) },
         asked: { ...storedAsked, ...live.asked },
         /* Whichever has spent more of today is the truthful one — compared on
