@@ -200,6 +200,21 @@ PRODUCT_ID_PLUS  PRODUCT_ID_MAX
 Phải thử trong Sandbox trước. Toàn bộ luồng verify được viết dựa trên tài liệu,
 không dựa trên một lần chạy thật.
 
+**Và một biến thứ bảy: `APPLE_ENV`.** Mặc định là `production`. Server chỉ chấp
+nhận quyền lợi đến từ môi trường được liệt kê ở đây — `production`, `sandbox`,
+hoặc cả hai ngăn bằng dấu phẩy.
+
+Trước khi có nó, `fetchTransaction` hỏi production rồi hỏi tiếp sandbox vô điều
+kiện. Mua trong sandbox không mất một đồng nào và người mua tự đặt
+`appAccountToken`, nên bất kỳ ai có một bản TestFlight đều tự cấp được `max`
+cho tài khoản bất kỳ — đo được ở cả `store-webhook` lẫn `verify-purchase`.
+
+Nên trong lúc thử Sandbox thì đặt `APPLE_ENV=sandbox`. **Còn khi nộp duyệt thì
+đây là một quyết định phải cân**: người của App Review mua thật trong sandbox
+nhưng gọi vào chính backend production này. Xem *Chain Q — PRODUCT SEMANTICS
+REQUIRED, PS-1* trong `docs/FORENSIC-AUDIT.md` — mọi hàng được cấp từ sandbox đều mang
+`store = 'apple-sandbox'`, nên dù chọn cách nào cũng vẫn tìm và thu hồi lại được.
+
 ---
 
 ## 6. Những thứ App Store sẽ hỏi

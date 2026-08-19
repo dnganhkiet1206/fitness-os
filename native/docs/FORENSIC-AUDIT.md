@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (106 bước). Ngày rà: 2026-08-18.
+Bộ kiểm: `node tools/check.mjs` (107 bước). Ngày rà: 2026-08-19.
 
 ---
 
@@ -4812,6 +4812,409 @@ phẩm.
 | **Supabase Auth thật** | **KHÔNG**. `REAL-SUPABASE-UNVERIFIED` — chưa tài khoản nào bị xoá trên một project thật |
 | **runtime iOS thật** | **KHÔNG** |
 | **tác động production** | **KHÔNG**. Không dữ liệu, không snapshot, không log |
+
+---
+
+## Vòng 18 — Chain Q: store-webhook, người ghi từ bên ngoài không có danh tính
+
+**Câu hỏi mở đầu:** *một yêu cầu HTTP không xác thực có tạo, gia hạn, hạ cấp
+hay xoá được một quyền lợi không?*
+
+**VERIFICATION:** `node tools/check.mjs` (107 bước) · `npx tsc --noEmit` ·
+`node tools/store-webhook.mjs` (CHẠY THẬT hai handler với một Apple giả lập có
+**hai môi trường** và tiêm lỗi theo từng endpoint) · `node tools/entitlements.mjs` ·
+PostgreSQL 16.13 dựng lại từ 29 migration
+
+`store-webhook` là **cửa duy nhất trong dự án không có ổ khoá**. `verify_jwt`
+tắt trong `config.toml` và điều đó là bắt buộc: Apple gọi vào đây và Apple không
+cầm token của người dùng nào cả. Mọi hàm khác đứng sau `requireUser`. Hàm này
+không.
+
+### Trả lời câu hỏi mở đầu — **KHÔNG**, và đo được chứ không phải đọc được
+
+Kiến trúc của hàm là *không tin một chữ nào trong thân yêu cầu*: chữ ký JWS
+**không** được kiểm, payload chỉ được mở đủ để lấy một transaction id, rồi trạng
+thái thật được hỏi lại Apple qua TLS. Phần đầu file nói vậy. Một chú thích không
+phải một phép kiểm, nên nó được đo bằng cách gửi một thông báo giả mạo khai láo
+mọi thứ có thể khai:
+
+```
+body khai:  appAccountToken = BRAVO,  type = "Non-Consumable" (mua đứt trọn đời)
+Apple nói:  appAccountToken = ALPHA,  hết hạn sau 28 ngày
+
+→ 200 {"ok":true,"tier":"max"}
+→ hàng ghi ra: ALPHA, max, hết hạn sau 28 ngày
+→ BRAVO: KHÔNG CÓ HÀNG NÀO
+```
+
+Không một trường nào của kẻ gửi đi vào cơ sở dữ liệu. Và thứ tự cũng được đo,
+không suy luận — bảng giả ghi lại **số lần hỏi Apple đã hoàn tất trước mỗi lệnh
+ghi**:
+
+```
+hỏi Apple:   1. production/transactions   2. production/subscriptions
+lệnh ghi:    1 lệnh, at = 2
+```
+
+Không có thay đổi quyền lợi nào xảy ra trước khi Apple trả lời. Một transaction
+bịa ra thì `200 {"ignored":"not found"}` và **0 lệnh ghi**.
+
+**Bất biến chính giữ được.** Sáu thứ khác thì không.
+
+---
+
+### BUG-71 (P1). Một lần mua miễn phí ở sandbox mua được gói trả phí thật — `SANDBOX-GRANTS-PRODUCTION`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P1 |
+| **FUNCTION** | `_shared/apple.ts` → `store-webhook` **và** `verify-purchase` |
+| **AUTHORITY** | không có (webhook) / JWT của chính kẻ tấn công (verify) |
+| **DATABASE TARGET** | `entitlements` của **bất kỳ ai** |
+
+**TRIGGER:** một bản TestFlight, một tài khoản sandbox tester, hoặc bất kỳ
+đường nào tạo ra một giao dịch tồn tại ở sandbox. Không cần biết bí mật nào.
+
+**ACTUAL:** `fetchTransaction` hỏi production, và khi nhận 404 thì hỏi tiếp
+sandbox — **vô điều kiện**. Chạy thật, với một giao dịch chỉ tồn tại ở sandbox:
+
+```
+webhook, transaction chỉ có ở sandbox         200  {"ok":true,"tier":"max"}
+verify-purchase, cùng transaction đó          200  {"tier":"max"}
+đã hỏi: production/transactions → 404
+        sandbox/transactions    → 200
+        sandbox/subscriptions   → 200
+→ hàng: BRAVO, max, hết hạn sau 365 ngày
+```
+
+Trên PostgreSQL 16.13, hàng đó đọc ra đúng như một lần mua thật:
+
+```
+BEGIN; SET LOCAL ROLE authenticated; SET LOCAL request.jwt.claim.sub = BRAVO;
+  SELECT public.current_tier();  →  max
+```
+
+**ROOT CAUSE:** hai điều cộng lại. Mua trong sandbox **không mất một đồng nào**,
+và `appAccountToken` do *người mua* đặt lúc mua — nên nó gọi tên tài khoản nào
+cũng được, kể cả tài khoản của người khác. Không chỗ nào trong dự án hỏi câu
+"giao dịch này đến từ thế giới nào". Tệ hơn: `fetchTransaction` **ghi đè**
+trường `environment` của chính Apple bằng tên host đã trả lời, nên ngay cả lời
+khai của Apple về môi trường cũng không còn để mà kiểm.
+
+**FIX:** môi trường trở thành một quyết định triển khai **nói ra thành lời** chứ
+không phải một mặc định câm là "luôn luôn có". `appleEnvironments()` đọc
+`APPLE_ENV`; mặc định `production`; `sandbox` hoặc `production,sandbox` mới mở.
+Giá trị gõ sai **rơi về production** chứ không mở cửa. Và khi sandbox được bật
+có chủ ý, hàng ghi ra mang `store = 'apple-sandbox'` — cột `store` vốn được giữ
+"để trả lời được một câu hỏi hỗ trợ", và *"đây có phải một lần mua thật không"*
+là câu hỏi đầu tiên trong số đó.
+
+Đây **không** phải một bản sửa đóng hẳn cửa: bản App Review mua thật trong
+sandbox nhưng gọi vào chính backend production. Xem PS-1 bên dưới.
+
+**Sau khi sửa:** `APPLE_ENV` rỗng/`production`/rác → `200 {"ignored":"not found"}`,
+chỉ hỏi production, **không hàng nào**; `verify-purchase` → 404;
+`APPLE_ENV=production,sandbox` → `max` kèm `store='apple-sandbox'`.
+
+---
+
+### BUG-72 (P1). Apple hỏng được ghi nhận là "không có lần mua nào" — `TRANSIENT-READ-AS-ABSENT`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P1 |
+| **FUNCTION** | `_shared/apple.ts` → `fetchTransaction` |
+| **AUTHORITY** | không có |
+| **DATABASE TARGET** | không ghi gì — và đó chính là lỗi |
+
+**TRIGGER:** Apple trả 500, 429 hay 503. Không phải giả thuyết: hạn mức của App
+Store Server API tính theo **khoá của cả app**, và BUG-74 cho bất kỳ ai trên
+internet cách tiêu cạn nó.
+
+**ACTUAL:**
+
+```
+Apple /transactions → 500   webhook đáp  200  {"ok":true,"ignored":"not found"}
+Apple /transactions → 429   webhook đáp  200  {"ok":true,"ignored":"not found"}
+Apple /transactions → 503   webhook đáp  200  {"ok":true,"ignored":"not found"}
+```
+
+**ROOT CAUSE:** `!res.ok` và 404 cùng trả `null`. Người gọi đọc `null` như một
+sự thật về **lần mua**, trong khi nó là một sự thật về **đường truyền**. Mà 2xx
+là cách duy nhất nói với Apple "đã nhận" — nên Apple **không gửi lại**. Một lần
+Apple trục trặc là một lần gia hạn hoặc một lần hoàn tiền mất hẳn, im lặng.
+
+Cùng lỗi ấy ở cửa xác thực: `verify-purchase` trả `404 {"error":"Transaction
+not found"}` — một lời nói dối đẩy thẳng người đang trả tiền sang bộ phận hỗ
+trợ, cho một sự cố sẽ tự hết sau vài phút.
+
+**FIX:** một lớp riêng, `AppleUnavailableError`, để hai thứ không bao giờ lẫn
+lại được bằng tay. 404 vẫn là "không có thứ đó"; mọi mã khác **dừng** yêu cầu
+thay vì trả lời nó. Cả hai handler đổi thành 503.
+
+**Sau khi sửa:** `503 {"error":"Store unavailable"}`, **0 lệnh ghi**, và không
+thử sang sandbox sau một lỗi production (một câu hỏi chưa được trả lời không
+phải một câu trả lời "không"). `verify-purchase` → 503.
+
+---
+
+### BUG-73 (P1). Bản sửa "thứ tự thông báo không còn quan trọng" hỏng theo kiểu mở — `STALE-FALLBACK-ON-OUTAGE`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P1 |
+| **FUNCTION** | `_shared/apple.ts` → `fetchSubscriptionState` / `resolveEntitlementTransaction` |
+| **AUTHORITY** | không có |
+| **DATABASE TARGET** | `entitlements` của người **đang trả tiền** |
+
+**TRIGGER:** một thông báo cũ của kỳ trước tới muộn — Apple thử lại nhiều ngày,
+nên đây là chuyện thường — **đúng lúc** `/subscriptions` không trả lời được.
+
+**ACTUAL:** cùng một thông báo, hai tình trạng Apple:
+
+```
+thông báo CŨ kỳ 1 tới muộn, Apple khoẻ       200  max/còn hạn
+thông báo CŨ kỳ 1 tới muộn, /subs trả 500    200  free/null    ← đây
+thông báo CŨ kỳ 1 tới muộn, /subs trả 429    200  free/null
+```
+
+Trên PostgreSQL 16.13, sau lệnh ghi ấy:
+
+```
+SELECT public.current_tier() với tư cách ALPHA  →  free
+```
+
+**ROOT CAUSE:** đây chính là lỗi mà `fetchSubscriptionState` được viết ra để
+chặn (vòng trước, `tools/entitlements.mjs`) — mỗi lần gia hạn sinh một
+`transactionId` mới, nên tra cứu transaction của thông báo trả về kỳ đã hết hạn.
+Bản sửa hỏi Apple "kỳ nào đang là hiện tại". Nhưng khi câu hỏi đó không trả lời
+được, `resolveEntitlementTransaction` **quay về tin đúng cái transaction cũ
+trong thông báo** — `latest?.tx ?? identity`. Bản sửa hỏng theo kiểu **mở**:
+nó chỉ hoạt động đúng khi mọi thứ khác đã hoạt động đúng.
+
+Và vì trả 200, Apple không gửi lại. Người dùng ở lại `free` cho tới sự kiện
+Apple kế tiếp — có thể cả tháng — hoặc tới khi họ tự nghĩ ra việc bấm khôi phục.
+
+**FIX:** cùng lớp lỗi ở BUG-72. 404 giữ nguyên nghĩa **"đây không phải gói thuê
+bao"** — một lần mua đứt không có subscription status, và rơi về `identity` ở
+đó là đúng. Mọi mã khác không phải một câu trả lời, nên không được rơi về gì
+cả.
+
+**Sau khi sửa:** `503`, và hàng của người đang trả tiền **vẫn là `max`, vẫn còn
+hạn**. Hết hạn thật thì vẫn hạ được xuống `free` — kiểm riêng, để bản sửa này
+không lặng lẽ biến thành "không bao giờ hạ cấp nữa".
+
+---
+
+### BUG-74 (P2). Mỗi POST vô danh đổi lấy một lời gọi có ký vào hạn mức của cả app — `UNAUTHENTICATED-AMPLIFICATION`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **FUNCTION** | `store-webhook` |
+| **AUTHORITY** | không có |
+| **DATABASE TARGET** | không có — cái bị tiêu là hạn mức API và CPU |
+
+**TRIGGER:** một vòng lặp `curl`.
+
+**ACTUAL:** không có giới hạn nào, ở bất kỳ đâu:
+
+```
+signedPayload 8 MiB  → giải base64 + JSON.parse trọn vẹn, 63 ms một worker, 200
+transactionId 5000 ký tự → gửi thẳng tới Apple
+một POST hợp lệ      → 2 lần gọi Apple + 2 lần ký ES256
+```
+
+**ROOT CAUSE:** mọi hàm khác chỉ đọc thân yêu cầu của người đã đăng nhập. Hàm
+này mở ra internet và **chưa từng được viết như thể nó mở ra internet**. Đây
+cũng là điều biến BUG-72 và BUG-73 từ "rủi khi Apple trục trặc" thành "kích
+hoạt được": hạn mức App Store Server API là hạn mức của **khoá app**, nên dùng
+cạn nó bằng rác chính là cách làm cho mọi thông báo thật nhận 429.
+
+**FIX:** hai chặn rẻ tiền, đặt **trước** mọi lời gọi ra ngoài. `signedPayload`
+tối đa 64 KiB (thông báo thật vài KB); transaction id tối đa 64 ký tự — đúng
+con số `verify-purchase` đã dùng, không phải một con số đoán về định dạng của
+Apple.
+
+**Sau khi sửa:** body 2 MiB → `413`, **0 lần gọi Apple**; id 5000 ký tự →
+`200 {"ignored":"no transaction"}`, **0 lần gọi Apple**; id 64 ký tự hợp lệ vẫn
+được hỏi Apple như thường.
+
+**Điều này KHÔNG đóng hẳn.** Một kẻ gửi id đúng hình dạng vẫn tiêu được một lời
+gọi mỗi POST. Xem PS-2.
+
+---
+
+### BUG-75 (P2). Hàng thuộc về một người, nội dung hàng thuộc về người khác — `IDENTITY-CURRENT-MISMATCH`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **FUNCTION** | `store-webhook` và `verify-purchase` |
+| **AUTHORITY** | không có / JWT |
+| **DATABASE TARGET** | `entitlements` của người **không** sở hữu gói |
+
+**TRIGGER:** `appAccountToken` đặt theo **từng lần mua**, nên một gói được mua
+lại trong khi tài khoản khác đang đăng nhập mang token khác ở kỳ hiện tại so
+với kỳ cũ. Một thông báo muộn của kỳ cũ là đủ.
+
+**ACTUAL:**
+
+```
+thông báo gọi tên tx-1 (token ALPHA); Apple nói kỳ hiện tại là tx-2 (token BRAVO)
+→ 200 {"ok":true,"tier":"max"}
+→ hàng ALPHA: max, hết hạn sau 28 ngày
+→ hàng BRAVO: KHÔNG CÓ
+```
+
+**ROOT CAUSE:** `resolveEntitlementTransaction` trả về hai transaction có chủ ý
+khác nhau — `identity` (cái được hỏi tới, dùng để **chứng minh của ai**) và
+`current` (trạng thái hiện tại, dùng để **ghi xuống**). Webhook lấy chủ hàng từ
+`identity` và nội dung từ `current`. Ở `verify-purchase`, `identity` đúng là thứ
+phải so với người gọi — nhưng chỉ so **một mình nó** thì cấp phép trên lần mua
+của người này rồi ghi xuống gói của người kia.
+
+**FIX:** ở webhook — không có người gọi nào cả, nên chủ hàng là chủ của **trạng
+thái đang được ghi vào đó**: `current.appAccountToken`, không rơi về `identity`
+(một kỳ hiện tại không có token là một lần mua chưa gắn tài khoản, đúng nhánh
+`unlinked purchase` sẵn có). Ở `verify-purchase` — giữ nguyên phép kiểm
+`identity` (đó là phép cấp quyền) và **thêm** một phép kiểm cho `current`.
+
+**Sau khi sửa:** hàng đi tới chủ kỳ hiện tại; tài khoản bị thông báo gọi tên
+không nhận gì. `verify-purchase` trả `403` và **0 lệnh ghi**.
+
+---
+
+### BUG-76 (P3). Người lạ hỏi một câu, server kể tình trạng cấu hình của mình — `INTERNAL-ERROR-DISCLOSURE`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P3 |
+| **FUNCTION** | `store-webhook` (và `verify-purchase`) |
+| **AUTHORITY** | không có |
+| **DATABASE TARGET** | không có |
+
+**ACTUAL:**
+
+```
+thiếu APPLE_PRIVATE_KEY → 500 {"error":"Apple credentials not configured"}
+body không phải JSON    → 500 {"error":"Unexpected token o in JSON at position 1"}
+```
+
+**ROOT CAUSE:** `catch` ngoài cùng trả `e.message` nguyên văn. Ở mọi hàm khác
+thì người đọc nó ít nhất đã đăng nhập; ở đây thì không ai cả. Vế thứ hai còn
+tệ theo hướng khác: 5xx bắt Apple gửi lại **nhiều ngày** một thân yêu cầu không
+bao giờ parse được — mà một thân như thế thì chắc chắn không đến từ Apple.
+
+**FIX:** chi tiết đi vào log, không đi ra ngoài. Lỗi parse được bắt riêng và trả
+`400` trước khi tới `catch` ngoài cùng.
+
+**Sau khi sửa:** `500 {"error":"Internal error"}` và `400 {"error":"Bad request"}`.
+
+---
+
+## Chain Q — đã kiểm và **KHÔNG** phải lỗi
+
+**1. Không kiểm chữ ký JWS — và đó là một lựa chọn đúng, đã đo.** Kiến trúc thay
+thế việc kiểm chuỗi chứng chỉ `x5c` bằng việc hỏi lại Apple, đúng như phần đầu
+`_shared/apple.ts` mô tả. Phép giả mạo ở đầu vòng này chứng minh nó hiệu quả:
+mọi trường trong body bị vứt bỏ. Một phép kiểm chữ ký hỏng theo kiểu mở (luôn
+trả true) thì **không** nhìn thấy được từ bên ngoài; kiến trúc này thì nhìn thấy
+được, vì kết quả luôn là câu trả lời của Apple.
+
+**2. Gửi lại cùng một thông báo nhiều lần không đổi gì.** Ba lần gửi song song
+(`DID_RENEW` kỳ 2, `EXPIRED` kỳ 1 muộn, `DID_RENEW` kỳ 2) → 200/200/200, cả ba
+lệnh ghi ra **cùng một giá trị** `max/orig-1`. Việc mọi sự kiện đều phân giải về
+"kỳ hiện tại" làm cho thứ tự đến và số lần đến không còn ý nghĩa — khi Apple trả
+lời được (BUG-73).
+
+**3. `notificationType` chỉ được ghi log, không rẽ nhánh.** Đúng như thiết kế:
+loại sự kiện là lời khai của người gửi, còn trạng thái đến từ Apple. Một
+`notificationType` bịa ra không mở được đường nào.
+
+**4. Chèn đường dẫn qua transaction id: không.** `encodeURIComponent` bọc id
+trước khi ghép vào URL, nên không id nào thoát ra khỏi một path segment.
+
+**5. Không có đường ghi `entitlements` nào khác.** Hai handler, cùng một cột
+`onConflict: user_id`. Đo trên PostgreSQL 16.13 với `GET DIAGNOSTICS`:
+
+```
+authenticated, INSERT hàng người khác  →  refused by RLS (không có policy INSERT)
+authenticated, UPDATE hàng của mình    →  ROW_COUNT = 0
+authenticated, UPDATE hàng của ALPHA   →  ROW_COUNT = 0
+authenticated, DELETE hàng của mình    →  ROW_COUNT = 0
+anon, SELECT                           →  0 dòng · current_tier() = free
+BRAVO, SELECT                          →  1 dòng (chỉ của chính mình)
+tier = 'god'                           →  refused by CHECK
+```
+
+*(Lần đo đầu tiên dùng `SET LOCAL` **ngoài** transaction. PostgreSQL cảnh báo và
+bỏ qua nó, nên vai trò chưa từng được nhận và mọi con số đọc ra đều là số của
+`postgres`. Đo lại trong `BEGIN…COMMIT` mới ra bảng trên. Ghi lại đây vì cách
+hỏng đó **im lặng** và trông y hệt một kết quả.)*
+
+**6. `tierFor` trả `unconfigured` vẫn từ chối ghi và trả 500.** Không đổi ở vòng
+này; `tools/entitlements.mjs` vẫn giữ luật đó.
+
+**7. Bundle id trong thông báo không được kiểm — và đó là một *giả định*, không
+phải một phép kiểm.** Xem phần trạng thái xác minh.
+
+---
+
+## Chain Q — PRODUCT SEMANTICS REQUIRED
+
+### PS-1. App Review mua trong sandbox, gọi vào backend production
+
+`APPLE_ENV` mặc định `production` vì một mặc định cấp gói miễn phí thì không
+phải một mặc định. Nhưng người duyệt app mua **thật** trong sandbox, và họ gọi
+vào chính backend này. Ba đường, không đường nào là bản sửa lỗi:
+
+- bật `production,sandbox` trong lúc duyệt rồi tắt đi;
+- bật vĩnh viễn và chấp nhận lỗ, dựa vào `store='apple-sandbox'` để rà lại;
+- chỉ chấp nhận sandbox cho một danh sách `appAccountToken` định trước.
+
+**KHÔNG tự chọn.** Cột `store` đã ghi lại môi trường nên dù chọn cách nào cũng
+tìm và thu hồi lại được.
+
+### PS-2. Không có giới hạn tần suất trên cửa duy nhất không khoá
+
+BUG-74 chặn được rác lớn và id sai hình dạng, **không** chặn được một kẻ gửi id
+đúng hình dạng với tốc độ cao. Giới hạn tần suất thật cần một thứ dự án này chưa
+có — đếm theo IP ở tầng nền tảng, hay một bộ đếm dùng chung. Đây là quyết định
+triển khai, không phải một dòng code.
+
+### PS-3. Trạng thái billing retry và grace period vẫn không được đọc
+
+`status` (1 hoạt động · 2 hết hạn · 3 đang thử lại thanh toán · 4 ân hạn · 5 bị
+thu hồi) chỉ đi vào log. Người đang trong ân hạn có được giữ quyền trả phí
+không? Đó là một quyết định sản phẩm chưa ai ra. Không đổi ở vòng này.
+
+### PS-4. Không có gì đối chiếu lại
+
+Nếu một thông báo bị mất — và BUG-72 vừa cho thấy chúng **có** mất — không có
+công việc nền nào hỏi lại Apple. Người dùng phải tự bấm khôi phục. Một job đối
+chiếu định kỳ là một tính năng, không phải một bản sửa.
+
+---
+
+## Chain Q — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | `appleEnvironments()` qua 6 giá trị `APPLE_ENV`; phân loại 404 với 500/429/503 |
+| **runtime hàm edge** | `store-webhook` **và** `verify-purchase` THẬT, gọi bằng `Request` thật, `_shared/apple.ts` thật |
+| **Apple giả lập** | hai môi trường tách hẳn (production/sandbox), tiêm lỗi theo **từng endpoint từng môi trường**, ghi lại mọi lời gọi ra ngoài kèm thứ tự |
+| **thứ tự** | đo bằng số lời gọi Apple đã hoàn tất **trước** mỗi lệnh ghi, không suy từ vị trí dòng code |
+| **PostgreSQL** | 16.13, cluster sạch, 29 migration; các hàng mà harness quan sát được ghi lại thật, rồi đọc bằng `current_tier()` |
+| **RLS** | đo trong `BEGIN…COMMIT` với `GET DIAGNOSTICS`: không lệnh ghi nào của user token chạm được bảng này |
+| **tiêm lỗi** | 500/429/503 ở `/transactions`; 500/429 ở `/subscriptions`; thiếu khoá riêng; body không phải JSON |
+| **bộ dò** | 10 phép phá cho `store-webhook.mjs`, mỗi phép đỏ đúng câu định trước — kể cả một phép phá **bất biến chính** (tin `appAccountToken` trong body) |
+| **cả bộ** | `node tools/check.mjs` — 107/107 · `npx tsc --noEmit` sạch |
+| **Apple thật** | **KHÔNG**. `REAL-APPLE-UNVERIFIED` — chưa một lời gọi nào tới `api.storekit.itunes.apple.com`. Không hình dạng phản hồi nào ở đây được xác nhận bởi Apple |
+| **bundle id** | **KHÔNG kiểm được.** Server không tự kiểm `bundleId` trong thông báo; nó dựa hoàn toàn vào việc App Store Server API chỉ trả lời về app của khoá đang ký (`bid` trong JWT). Đó là một **giả định chưa đo** — cần một tài khoản Apple thật để chứng minh |
+| **chữ ký JWS / chuỗi x5c** | **KHÔNG kiểm** — có chủ ý, xem mục 1 phần "KHÔNG phải lỗi" |
+| **runtime iOS thật** | **KHÔNG**. Ứng dụng chưa có StoreKit; không màn nào gọi `verify-purchase` |
+| **tác động production** | **KHÔNG**. Toàn bộ luồng mua hàng chưa từng chạy một lần thật (`LAUNCH.md` mục 5) |
 
 ---
 

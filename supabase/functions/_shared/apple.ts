@@ -44,6 +44,69 @@ const HOSTS = {
 
 export type AppleEnv = keyof typeof HOSTS;
 
+/**
+ * Apple could not answer — as opposed to Apple answering "no such transaction".
+ *
+ * ── the two were the same value, and that cost a paying customer ──
+ *
+ * Both lookups below returned `null` for a 404 *and* for a 500, a 429 or a 503.
+ * The callers read `null` as a fact about the purchase, and the two facts they
+ * inferred were both wrong:
+ *
+ *   · the webhook answered `200 {"ignored":"not found"}` to a transient Apple
+ *     failure. 2xx is how Apple is told a notification was delivered, so it
+ *     stops resending — the renewal or the refund is gone for good. Measured:
+ *
+ *         Apple /transactions → 500   200  {"ok":true,"ignored":"not found"}
+ *         Apple /transactions → 429   200  {"ok":true,"ignored":"not found"}
+ *
+ *   · `resolveEntitlementTransaction` fell back to the transaction the *event*
+ *     named, which is the exact stale-period bug the subscription lookup exists
+ *     to prevent. One 429 and a late notification downgrades an active
+ *     subscriber. Measured, against a subscription Apple says is active:
+ *
+ *         late EXPIRED for period 1, healthy       200  max/future
+ *         late EXPIRED for period 1, /subs 500     200  free/null   ← đây
+ *         late EXPIRED for period 1, /subs 429     200  free/null
+ *
+ * A separate type so neither can be reached by accident: 404 still means "no
+ * such thing", and anything else stops the request instead of answering it.
+ */
+export class AppleUnavailableError extends Error {
+  constructor(where: string, status: number) {
+    super(`App Store Server API ${where} answered ${status}`);
+    this.name = "AppleUnavailableError";
+  }
+}
+
+/**
+ * Which of Apple's two worlds this deployment will accept an entitlement from.
+ *
+ * ── sandbox purchases are free, and they were granting real subscriptions ──
+ *
+ * `fetchTransaction` asked production and then, on a 404, sandbox — with no
+ * condition attached. A sandbox transaction is minted by any sandbox tester or
+ * TestFlight build at no cost, and the buyer chooses `appAccountToken`, so it
+ * names whichever account it likes. Measured against both real handlers:
+ *
+ *     webhook, sandbox-only transaction         200  {"tier":"max"}
+ *     verify-purchase, sandbox-only transaction 200  {"tier":"max"}
+ *     → row: max, expires in 365 days, nothing paid
+ *
+ * The environment is not something this server can infer — a review build
+ * really does buy in sandbox against the production backend — so it is a
+ * deployment decision, and it is now made explicitly rather than silently as
+ * "always yes". `APPLE_ENV` is `production` (the default), `sandbox`, or both
+ * comma-separated. An unrecognised value is ignored rather than obeyed.
+ */
+export function appleEnvironments(): AppleEnv[] {
+  const raw = Deno.env.get("APPLE_ENV");
+  if (!raw) return ["production"];
+  const wanted = raw.split(",").map((s) => s.trim().toLowerCase());
+  const envs = (["production", "sandbox"] as const).filter((e) => wanted.includes(e));
+  return envs.length ? [...envs] : ["production"];
+}
+
 export interface AppleTransaction {
   transactionId: string;
   originalTransactionId: string;
@@ -160,23 +223,22 @@ async function appleJwt(): Promise<string> {
 /**
  * Everything Apple knows about one transaction, fetched over TLS.
  *
- * Sandbox is tried when production says "not found", which is the documented
- * shape of this: a TestFlight or review build's transactions do not exist in
- * production, and hard-coding one environment means either review fails or
- * real purchases do.
+ * The environments consulted are the ones this deployment has opted into — see
+ * `appleEnvironments`. `null` means every one of them said 404; a host that
+ * could not answer throws instead, so "Apple is down" is never mistaken for
+ * "this purchase does not exist".
  */
 export async function fetchTransaction(transactionId: string): Promise<AppleTransaction | null> {
   const jwt = await appleJwt();
-  const order: AppleEnv[] = ["production", "sandbox"];
 
-  for (const env of order) {
+  for (const env of appleEnvironments()) {
     const res = await fetch(`${HOSTS[env]}/inApps/v1/transactions/${encodeURIComponent(transactionId)}`, {
       headers: { Authorization: `Bearer ${jwt}` },
     });
     if (res.status === 404) continue;
     if (!res.ok) {
       console.error("App Store Server API", env, res.status, await res.text());
-      return null;
+      throw new AppleUnavailableError(`transactions/${env}`, res.status);
     }
     const body = await res.json();
     /* The response is a JWS that arrived over TLS from Apple's own host. The
@@ -239,10 +301,14 @@ export async function fetchSubscriptionState(
     `${HOSTS[env]}/inApps/v1/subscriptions/${encodeURIComponent(originalTransactionId)}`,
     { headers: { Authorization: `Bearer ${jwt}` } },
   );
+  /* 404 is an answer: this product has no subscription status, so it is not a
+     subscription, and the caller falls back to the transaction it already has.
+     Anything else is not an answer — falling back on it writes down a period
+     Apple never said was current. */
   if (res.status === 404) return null;
   if (!res.ok) {
     console.error("App Store subscription status", env, res.status, await res.text());
-    return null;
+    throw new AppleUnavailableError(`subscriptions/${env}`, res.status);
   }
   const body = await res.json();
   const groups: { lastTransactions?: SubscriptionStatus[] }[] = body?.data ?? [];

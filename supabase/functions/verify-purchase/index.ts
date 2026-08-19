@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { entitlementFrom, resolveEntitlementTransaction } from "../_shared/apple.ts";
+import { AppleUnavailableError, entitlementFrom, resolveEntitlementTransaction } from "../_shared/apple.ts";
 import { corsHeaders, json, requireUser } from "../_shared/guard.ts";
 
 /**
@@ -71,6 +71,18 @@ serve(async (req) => {
       console.warn("appAccountToken mismatch", { userId, token: token ?? null });
       return json({ error: "This purchase belongs to another account" }, 403);
     }
+    /*
+      And the *current* period has to be the caller's too, not only the one they
+      named. `appAccountToken` is set per purchase, so a subscription resumed
+      while somebody else was signed in carries their token now. Checking only
+      the named transaction would authorise on one person's purchase and then
+      write down another person's subscription.
+    */
+    const currentToken = current.appAccountToken?.toLowerCase();
+    if (!currentToken || currentToken !== userId.toLowerCase()) {
+      console.warn("appAccountToken mismatch on current period", { userId, token: currentToken ?? null });
+      return json({ error: "This purchase belongs to another account" }, 403);
+    }
 
     const ent = entitlementFrom(current);
     if (ent === "unconfigured") {
@@ -92,7 +104,14 @@ serve(async (req) => {
       /* Expired or refunded. Written down rather than ignored, so the row
          reflects Apple's answer instead of keeping yesterday's. */
       await admin.from("entitlements").upsert(
-        { user_id: userId, tier: "free", store: "apple", store_txn_id: current.originalTransactionId, expires_at: null, updated_at: new Date().toISOString() },
+        {
+          user_id: userId,
+          tier: "free",
+          store: current.environment === "sandbox" ? "apple-sandbox" : "apple",
+          store_txn_id: current.originalTransactionId,
+          expires_at: null,
+          updated_at: new Date().toISOString(),
+        },
         { onConflict: "user_id" },
       );
       return json({ tier: "free" });
@@ -102,7 +121,7 @@ serve(async (req) => {
       {
         user_id: userId,
         tier: ent.tier,
-        store: "apple",
+        store: current.environment === "sandbox" ? "apple-sandbox" : "apple",
         store_txn_id: current.originalTransactionId,
         expires_at: ent.expiresAt,
         updated_at: new Date().toISOString(),
@@ -116,7 +135,13 @@ serve(async (req) => {
 
     return json({ tier: ent.tier, expires_at: ent.expiresAt });
   } catch (e) {
+    /* Apple could not answer. Nothing was written, and 404 "Transaction not
+       found" would be a lie that sends a paying customer to support. */
+    if (e instanceof AppleUnavailableError) {
+      console.error("verify-purchase:", e.message);
+      return json({ error: "Could not reach the App Store. Please try again." }, 503);
+    }
     console.error("verify-purchase error:", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json({ error: "Internal error" }, 500);
   }
 });

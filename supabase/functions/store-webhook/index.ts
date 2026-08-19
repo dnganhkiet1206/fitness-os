@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import {
   type AppleTransaction,
+  AppleUnavailableError,
   decodeJwsPayloadUnverified,
   entitlementFrom,
   resolveEntitlementTransaction,
@@ -45,6 +46,23 @@ import { corsHeaders, json } from "../_shared/guard.ts";
 /** The shape a `user_id` has to have to name a row in `entitlements`. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * What this endpoint will read before it stops reading.
+ *
+ * Every other function here stands behind `requireUser`, so the only bodies
+ * they ever parse belong to somebody who signed in. This one is open to the
+ * internet by design, and it had no bound of any kind: an 8 MiB `signedPayload`
+ * was base64-decoded and JSON-parsed in full — measured at 63 ms of a single
+ * worker — and any string at all was then spent on an authenticated call to
+ * Apple's API, whose rate limit belongs to this app's key.
+ *
+ * Apple's notifications are a few kilobytes and its transaction ids are short;
+ * 64 KiB and the 64 characters `verify-purchase` already enforces are both far
+ * above anything real and far below anything worth sending.
+ */
+const MAX_PAYLOAD = 64 * 1024;
+const MAX_TXN_ID = 64;
+
 interface NotificationPayload {
   notificationType?: string;
   subtype?: string;
@@ -60,9 +78,22 @@ serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
   try {
-    const body = await req.json();
+    /* A body that is not JSON did not come from Apple, and no number of retries
+       will make it parse — so it is refused here rather than reaching the outer
+       catch, which answers 500 and buys days of resends for a bad request. */
+    let body: { signedPayload?: unknown };
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: "Bad request" }, 400);
+    }
+
     const signed = typeof body?.signedPayload === "string" ? body.signedPayload : "";
     if (!signed) return json({ ok: true, ignored: "no signedPayload" });
+    if (signed.length > MAX_PAYLOAD) {
+      console.warn("webhook signedPayload too large", signed.length);
+      return json({ error: "Payload too large" }, 413);
+    }
 
     /* Unverified on purpose — see the note above. This is used to find *which*
        transaction to go and ask about, and for nothing else. */
@@ -72,8 +103,8 @@ serve(async (req) => {
       : null;
 
     const transactionId = txHint?.transactionId;
-    if (!transactionId) {
-      console.warn("webhook without a transaction id", payload?.notificationType);
+    if (typeof transactionId !== "string" || !transactionId || transactionId.length > MAX_TXN_ID) {
+      console.warn("webhook without a usable transaction id", payload?.notificationType);
       return json({ ok: true, ignored: "no transaction" });
     }
 
@@ -93,9 +124,26 @@ serve(async (req) => {
       console.warn("webhook transaction not found at Apple", transactionId);
       return json({ ok: true, ignored: "not found" });
     }
-    const { identity, current, status } = resolved;
+    const { current, status } = resolved;
 
-    const userId = identity.appAccountToken?.toLowerCase();
+    /*
+      The row belongs to whoever owns the state being written into it, and that
+      is `current` — not `identity`, which is only the transaction the *event*
+      happened to name.
+
+      `appAccountToken` is set per purchase, so a subscription that was resumed
+      while a different account was signed in carries a different token on its
+      current period than on an older one. Taking the row from `identity` and
+      the tier from `current` writes one person's subscription onto another
+      person's account. Measured, with a late notification for period 1:
+
+          notification names tx-1 (token ALPHA), Apple says current is tx-2 (token BRAVO)
+          → ALPHA row: max, expires in 28 days   BRAVO row: nothing
+
+      There is no fallback to `identity`'s token: a current period with no token
+      is an unlinked purchase, which is exactly what the next branch says.
+    */
+    const userId = current.appAccountToken?.toLowerCase();
     if (!userId) {
       console.warn("webhook transaction has no appAccountToken", transactionId);
       return json({ ok: true, ignored: "unlinked purchase" });
@@ -126,7 +174,11 @@ serve(async (req) => {
       {
         user_id: userId,
         tier: ent?.tier ?? "free",
-        store: "apple",
+        /* Which of Apple's worlds paid for this. A deployment that has opted
+           into sandbox (`APPLE_ENV`) can still tell the two apart afterwards —
+           `store` is the column kept so a support question can be answered, and
+           "was this a real purchase" is the first such question. */
+        store: current.environment === "sandbox" ? "apple-sandbox" : "apple",
         store_txn_id: current.originalTransactionId,
         expires_at: ent?.expiresAt ?? null,
         updated_at: new Date().toISOString(),
@@ -156,7 +208,18 @@ serve(async (req) => {
     );
     return json({ ok: true, tier: ent?.tier ?? "free" });
   } catch (e) {
+    /* Apple could not be reached or could not answer. Nothing has been written,
+       and 503 is the one honest reply: it is not this notification's fault, and
+       a resend is exactly what should happen. */
+    if (e instanceof AppleUnavailableError) {
+      console.error("store-webhook:", e.message);
+      return json({ error: "Store unavailable" }, 503);
+    }
+    /* The detail goes to the log, not to the caller. Anyone on the internet can
+       reach this handler, and `Apple credentials not configured` — which is
+       what it answered with the private key missing — tells a stranger the
+       state of this project's App Store setup for the price of one POST. */
     console.error("store-webhook error:", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json({ error: "Internal error" }, 500);
   }
 });
