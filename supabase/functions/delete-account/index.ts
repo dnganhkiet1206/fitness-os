@@ -69,6 +69,11 @@ const BUCKET = "progress-photos";
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  /* Flipped the moment anything is actually destroyed, so a later failure can
+     say so rather than claim nothing happened. Declared out here because the
+     `catch` at the bottom needs it too — see the note on thrown failures. */
+  let destroyedSomething = false;
+
   try {
     const caller = await requireUser(req);
     if (caller instanceof Response) return caller;
@@ -88,10 +93,6 @@ serve(async (req) => {
       hundred, which would look identical from the outside and leave the rest
       behind for ever.
     */
-    /* Flipped the moment anything is actually destroyed, so a later failure
-       can say so rather than claim nothing happened. */
-    let destroyedSomething = false;
-
     for (;;) {
       const { data: files, error: listErr } = await admin.storage
         .from(BUCKET)
@@ -118,6 +119,39 @@ serve(async (req) => {
     /* Everything else goes with the auth row, through the cascades. */
     const { error: delErr } = await admin.auth.admin.deleteUser(userId);
     if (delErr) {
+      /*
+        ── an account that is already gone is the state that was asked for ──
+
+        The reply to this request is the one most likely to be lost: it is the
+        last thing the app does before signing out, often on a phone whose
+        owner is walking away from it. When it is lost the person taps again,
+        and the second call arrives with an access token that is still
+        perfectly valid — `getClaims` verifies a signature and an expiry, not
+        whether the subject still exists — so it runs the whole way down to
+        here and GoTrue answers 404.
+
+        That used to become `{"error": …, "partial": false}` and a 500, which
+        the app renders as **"nothing has been deleted"**. Measured by driving
+        the real handler twice:
+
+            1st call → 200 {"ok":true}          account and photos gone
+            2nd call → 500 partial:false        app says nothing was deleted
+
+        Both halves of that sentence are false, on the one screen where being
+        told the wrong thing is least recoverable. Deleting something that is
+        already deleted has reached the intended end state, so it is reported
+        as reaching it. Retrying converges instead of accusing.
+
+        Keyed on the status rather than the sentence: `AuthApiError` carries
+        `status` and `code`, and a message is a thing that gets reworded.
+      */
+      const gone =
+        (delErr as { status?: number }).status === 404 ||
+        (delErr as { code?: string }).code === "user_not_found";
+      if (gone) {
+        console.log("account already deleted", userId);
+        return json({ ok: true });
+      }
       console.error("deleteUser failed", delErr.message);
       return json({ error: "Could not delete the account", partial: destroyedSomething }, 500);
     }
@@ -125,7 +159,22 @@ serve(async (req) => {
     console.log("account deleted", userId);
     return json({ ok: true });
   } catch (e) {
+    /*
+      ── the flag was on the returned errors and not on the thrown ones ──
+
+      Every failure the two APIs *return* carries `partial`. A failure they
+      **throw** — a dropped connection mid-call, which is the ordinary way
+      these fail — landed here, and here reported no flag at all. So the app
+      showed "nothing has been deleted" after the storage loop had already
+      destroyed every progress photo. Measured by making `deleteUser` throw
+      after the photos were removed: `{"error":"network dropped"}`, photos
+      gone, account standing, and the person told their pictures are safe.
+
+      That is the exact sentence the `partial` flag was added to prevent,
+      reached through the one exit that did not set it. The message is fixed
+      here too: the other paths do not hand the caller an internal string.
+    */
     console.error("delete-account error:", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json({ error: "Could not delete the account", partial: destroyedSomething }, 500);
   }
 });

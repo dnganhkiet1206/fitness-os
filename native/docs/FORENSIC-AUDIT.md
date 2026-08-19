@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (105 bước). Ngày rà: 2026-08-18.
+Bộ kiểm: `node tools/check.mjs` (106 bước). Ngày rà: 2026-08-18.
 
 ---
 
@@ -4614,6 +4614,204 @@ Không có lịch sử quét. Nếu sau này muốn cho người dùng xem lại
 | **nhà cung cấp thật** | **KHÔNG**. `REAL-PROVIDER-UNVERIFIED` |
 | **runtime iOS thật** | **KHÔNG**. `DEVICE-UNVERIFIED` — chưa tấm ảnh nào được chụp trên máy |
 | **tác động production** | **KHÔNG** |
+
+---
+
+## Vòng 17 — Chain P: delete-account, thao tác không thể hoàn tác
+
+**Câu hỏi mở đầu:** *một yêu cầu xác thực là B có xoá được tài khoản của A
+không?*
+
+**VERIFICATION:** `node tools/check.mjs` (106 bước) · `npx tsc --noEmit` ·
+`node tools/delete-account.mjs` (CHẠY THẬT handler) · `node tools/deployable.mjs` ·
+PostgreSQL 16.13 dựng lại từ 29 migration
+
+### Trả lời câu hỏi mở đầu — **KHÔNG**, và lý do mạnh hơn một phép kiểm
+
+`delete-account` **không hề gọi `req.json()`**. Không có thân yêu cầu nào để mà
+tin. Chạy thật với tư cách B, tám thân khác nhau đặt tên A:
+
+```
+{userId:A} {user_id:A} {id:A} {sub:A} {account:A} {target:A} {email:'alpha@x'}
+{userId:A,user_id:A,id:A,sub:A}
+→ lần nào cũng xoá ĐÚNG B; A còn nguyên, ảnh của A còn nguyên (2/2)
+```
+
+Ma trận xác thực, đo bằng số **hành động service-role** chứ không bằng mã HTTP:
+
+```
+không token → 401, 0 hành động
+token rác   → 401, 0 hành động
+KHOÁ ANON   → 401, 0 hành động     (khoá nằm sẵn trong file cài đặt của app)
+A hợp lệ    → 200, xoá A, B nguyên
+B hợp lệ    → 200, xoá B, A nguyên
+```
+
+Điều này quan trọng ở đây hơn bất kỳ hàm nào khác: client mà hàm này dựng
+**chính là** service role.
+
+### Phạm vi xoá — đo bằng cách làm, không bằng cách đọc
+
+Hàm cố ý **không giữ danh sách bảng viết tay**: nó xoá Storage trước, rồi xoá
+`auth.users`, và để khoá ngoại lo phần còn lại. Điều đó chỉ đúng khi mọi bảng
+thật sự cascade, và các vòng I–O đã thêm migration kể từ khi hàm được viết. Dựng
+lại PostgreSQL 16.13 từ **29 migration**, seed A và B qua **mọi** bảng người
+dùng bằng cách nội soi schema, rồi xoá dòng `auth.users` của A:
+
+```
+trước:  31 bảng có user_id → A 31 dòng, B 31 dòng
+        3 bảng con qua cha  → A có đủ
+sau :   A 0 dòng ở cả 31 bảng · bảng con 0 · dấu ALPHA còn lại ở toàn bộ DB: KHÔNG CÓ
+        B 31 dòng, nguyên vẹn · auth.users A 0, B 1
+```
+
+Bản đồ khoá ngoại hiện tại: **35 bảng public** = 31 mang `user_id` (tất cả
+CASCADE tới `auth.users`) + 3 bảng con tới cha CASCADE (`ai_messages`,
+`meal_entry_items`, `meal_plan_items`) + 1 bảng dùng chung không thuộc ai
+(`shop_prices`).
+
+---
+
+### BUG-69 (P2). Một phản hồi bị mất biến thành lời buộc tội — `DELETE-NOT-RETRY-SAFE`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P2 |
+| **FUNCTION** | `delete-account` |
+| **AUTHORITY** | JWT (đúng) |
+| **DATABASE TARGET** | `auth.users` của chính người gọi |
+
+**TRIGGER:** phản hồi bị mất (hoặc người dùng bấm hai lần). Đây là phản hồi
+**dễ mất nhất trong app** — việc cuối cùng trước khi đăng xuất, thường trên một
+chiếc máy mà chủ nó đang cất đi.
+
+**ACTUAL:** chạy thật hai lần:
+
+```
+lần 1 → 200 {"ok":true}                     tài khoản và ảnh đã mất
+lần 2 → 500 {"error":…,"partial":false}     app hiện "KHÔNG có gì bị xoá"
+```
+
+Cả hai vế của câu đó đều sai, trên đúng màn hình mà nói sai là ít cứu được nhất.
+
+**ROOT CAUSE:** access token vẫn hợp lệ sau khi tài khoản đã mất — `getClaims`
+kiểm **chữ ký và hạn**, không kiểm chủ thể còn tồn tại — nên lần gọi thứ hai đi
+hết đường xuống `deleteUser`, và GoTrue trả 404.
+
+**FIX:** xoá một thứ đã bị xoá **là** đạt được trạng thái đích, nên nó được báo
+là đạt. Khoá theo `status === 404` hoặc `code === 'user_not_found'` — `AuthApiError`
+mang cả hai — chứ không theo câu chữ tiếng Anh, thứ sẽ bị viết lại.
+
+**Sau khi sửa:** `200 / 200`, kể cả hai lời gọi **đồng thời**.
+
+---
+
+### BUG-70 (P2). Cờ `partial` không sống sót qua lối thoát bằng ngoại lệ — `PARTIAL-DELETION-UNREPORTED`
+
+**TRIGGER:** kết nối đứt giữa chừng — cách hỏng bình thường nhất — sau khi vòng
+lặp Storage đã xoá ảnh.
+
+**ACTUAL:**
+
+```
+deleteUser NÉM sau khi ảnh đã bị xoá
+→ {"error":"network dropped"}        (không có cờ partial)
+→ app hiện: "KHÔNG có gì bị xoá"
+→ sự thật: mọi tấm ảnh tiến trình đã mất vĩnh viễn
+```
+
+**ROOT CAUSE:** mọi lỗi hai API **trả về** đều mang `partial`; lỗi chúng **ném**
+rơi xuống `catch` ngoài cùng, và chỗ đó không có cờ nào. `destroyedSomething`
+được khai báo *bên trong* `try` nên `catch` cũng không nhìn thấy nó. Đây đúng là
+câu mà cờ `partial` được thêm vào để tránh, đến qua lối thoát duy nhất không đặt
+nó. Phản hồi đó còn trả nguyên câu lỗi nội bộ ra ngoài, khác mọi nhánh khác.
+
+**FIX:** đưa `destroyedSomething` ra ngoài `try`, và `catch` trả cùng thông điệp
+cố định kèm `partial`.
+
+**Sau khi sửa:** `partial=true` và app hiện *"một phần dữ liệu đã bị xoá"*, còn
+lỗi xảy ra **trước** khi phá gì vẫn `partial=false`.
+
+---
+
+## Chain P — đã kiểm và **KHÔNG** phải lỗi
+
+**1. Không có đường xoá tài khoản nào khác.** Một chỗ gọi duy nhất
+(`settings.tsx`), một hàm edge duy nhất, không RPC nào.
+
+**2. Client chỉ đăng xuất khi `res.ok`.** `SIGNEDOUT-HIDES-DELETE-FAILURE` vắng
+mặt: `signOut()` nằm **sau** nhánh `if (!res.ok) return`, nên dọn dẹp của Chain E
+không bao giờ chạy trên đường hỏng.
+
+**3. `callEdge` chỉ báo `ok` khi 2xx**, và giữ nguyên body để cờ `partial` tới
+được màn hình. `DELETE-SUCCESS-LIES` (báo thành công khi hỏng) vắng mặt.
+
+**4. Thứ tự Storage → auth là đúng và có chủ ý.** Sau khi xoá auth user thì
+không còn id nào để liệt kê thư mục của họ. Đổi thứ tự sẽ tạo ra rác Storage
+vĩnh viễn.
+
+**5. Thử lại sau một lần hỏng dở dang hội tụ:** `500` rồi `200`, tài khoản mất
+hẳn. Vòng lặp Storage gặp thư mục rỗng và `deleteUser` chạy lại.
+
+**6. Hai lời gọi đồng thời** ra `200/200`, chỉ A bị xoá.
+
+**7. `partial` nói đúng sự thật ở cả ba nhánh trả-về:** hỏng khi *liệt kê* →
+`false` (chưa phá gì); hỏng khi *xoá tệp* → `true` (`remove` xoá được cái nào
+hay cái đó rồi mới báo lỗi); hỏng ở `deleteUser` → `true`.
+
+**8. Storage phân trang đúng** — vòng lặp `list(limit:100)` chạy tới khi một
+trang về ngắn, nên người có hơn 100 ảnh không bị bỏ lại phần sau.
+
+**9. Chỉ có hai chỗ dùng service role trong toàn dự án**, và cả hai đã được
+kiểm: `ai-coach-memory` (Chain N) và `delete-account` (vòng này).
+
+**10. Không có state thông báo phía máy chủ để dọn.** Chain L đã đo: lịch thông
+báo hoàn toàn cục bộ trên máy, không bảng nào, không push token nào.
+
+---
+
+## Chain P — PRODUCT SEMANTICS REQUIRED
+
+### PS-1. Đăng ký Apple còn hiệu lực sau khi tài khoản bị xoá
+
+`entitlements` cascade theo `auth.users` (Chain G đã đo), nên quyền lợi biến
+mất cùng tài khoản trong khi **đăng ký ở phía Apple vẫn còn**. Người đó tạo tài
+khoản mới sẽ không có quyền lợi cho tới khi khôi phục mua hàng. Có nên tự huỷ,
+tự khôi phục, hay cảnh báo trước khi xoá? **KHÔNG tự chọn.**
+
+### PS-2. Không có thời gian ân hạn, không có khôi phục
+
+Xoá là ngay lập tức và vĩnh viễn. Không có bản nháp, không có 30 ngày, không
+đường quay lại. Đó có thể là điều mong muốn. **KHÔNG tự đổi.**
+
+### PS-3. Không giữ lại gì cho mục đích tài chính
+
+`mascot_transactions` và `entitlements` biến mất hoàn toàn. Nếu sau này cần giữ
+hồ sơ giao dịch thì đó là một quyết định về lưu trữ, không phải một bản sửa lỗi.
+
+### PS-4. Xoá dở dang không có state trên máy chủ
+
+Sau một lần hỏng dở dang, chỉ có người dùng biết để bấm lại. Không có hàng đợi,
+không có cờ trong bảng, không có công việc nền. Bản sửa vòng này làm việc bấm
+lại **hội tụ**, nhưng "nếu họ không bao giờ bấm lại thì sao" vẫn là câu hỏi sản
+phẩm.
+
+---
+
+## Chain P — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **logic thuần** | phân loại lỗi, cờ `partial`, hội tụ khi thử lại |
+| **runtime hàm edge** | handler `delete-account` THẬT, gọi bằng `Request` thật; Supabase Auth admin + Storage là stand-in có **tiêm lỗi** (trả lỗi *và* ném lỗi) |
+| **PostgreSQL** | 16.13, cluster sạch, 29 migration, seed bằng nội soi schema qua **mọi** bảng người dùng, xoá thật, đếm thật: A về 0, B nguyên vẹn, không dấu vết nào còn lại |
+| **RLS** | không áp dụng — hàm này chạy bằng service role có chủ ý; ranh giới là JWT, và đó là thứ được đo |
+| **tiêm lỗi** | 5 kịch bản: list hỏng, remove hỏng, deleteUser hỏng, remove NÉM, deleteUser NÉM |
+| **bộ dò** | 8 phép phá cho `delete-account.mjs`, mỗi phép đỏ đúng câu định trước; thêm một phép **không được đỏ** (bảng mới có cascade) để chắc luật không báo oan |
+| **cả bộ** | `node tools/check.mjs` — 106/106 · `npx tsc --noEmit` sạch |
+| **Supabase Auth thật** | **KHÔNG**. `REAL-SUPABASE-UNVERIFIED` — chưa tài khoản nào bị xoá trên một project thật |
+| **runtime iOS thật** | **KHÔNG** |
+| **tác động production** | **KHÔNG**. Không dữ liệu, không snapshot, không log |
 
 ---
 

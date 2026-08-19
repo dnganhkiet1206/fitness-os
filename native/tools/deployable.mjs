@@ -160,20 +160,69 @@ for (const fn of folders) {
     */
     for (const m of code.matchAll(/const \{[^}]*error: (\w+)[^}]*\} = await [\s\S]{0,160}?;/g)) {
       const err = m[1];
-      /* `\n\s*}` rather than a fixed indent: the storage guard sits inside the
-         paging loop and closes two levels in, which a hard-coded four spaces
-         read as "never checked at all". */
-      const guard = code.slice(m.index).match(new RegExp(`if \\(${err}\\)\\s*\\{([\\s\\S]{0,300}?)\\n\\s*\\}`));
-      if (!guard) {
+      const body = errorBranch(code, m.index, err);
+      if (body === null) {
         problems.push(`delete-account: lỗi "${err}" không được kiểm — bước hỏng mà hàm vẫn đi tiếp`);
-      } else if (!/, (4|5)\d\d\)/.test(guard[1])) {
+        continue;
+      }
+      if (!/, (4|5)\d\d\)/.test(body)) {
         problems.push(
           `delete-account: nhánh lỗi "${err}" không trả 4xx/5xx — ` +
             'app chỉ đăng xuất khi nhận 2xx, nên trả 200 sau khi hỏng là nói dối đúng chỗ không sửa được',
         );
       }
+      /*
+        ── the one 2xx an error branch may contain ──
+
+        `deleteUser` answering 404 means the account is already gone, which is
+        the state the caller asked for; reporting that as a failure is how a
+        lost response became "nothing has been deleted" while everything had
+        been. So a 2xx inside an error branch is allowed — but only guarded by
+        a condition that actually names that case, never bare.
+      */
+      for (const ok of body.matchAll(/json\(\{\s*ok:\s*true\s*\}\)/g)) {
+        const before = body.slice(0, ok.index);
+        /* The *signal*, not a variable that happens to be named after it.
+           Keying this on `\bgone\b` let `const gone = true;` through — a
+           right-looking name is not a check, which is the Chain K lesson
+           arriving in my own rule. */
+        const guarded = /if\s*\([^)]*\)\s*\{[^{}]*$/.test(before) &&
+          /\b404\b|user_not_found/.test(before);
+        if (!guarded) {
+          problems.push(
+            `delete-account: nhánh lỗi "${err}" trả 200 mà không nói vì sao — ` +
+              'một 2xx trong nhánh lỗi chỉ hợp lệ khi nó nêu rõ trường hợp "đã bị xoá rồi" (404 / user_not_found)',
+          );
+        }
+      }
     }
   }
+}
+
+/**
+ * The body of `if (<err>) { … }`, matched by braces rather than by a character
+ * window.
+ *
+ * The window was 300 characters, and it broke the day the `deleteUser` branch
+ * grew a nested `if` for the already-deleted case: the window ended at the
+ * inner closing brace, so the 500 two lines further down was invisible and the
+ * rule reported a function that was correct. Counting braces is what makes the
+ * rule about the branch instead of about its length.
+ */
+function errorBranch(code, from, err) {
+  const at = code.indexOf(`if (${err})`, from);
+  if (at === -1) return null;
+  const open = code.indexOf('{', at);
+  if (open === -1) return null;
+  let depth = 0;
+  for (let i = open; i < code.length; i++) {
+    if (code[i] === '{') depth++;
+    else if (code[i] === '}') {
+      depth--;
+      if (depth === 0) return code.slice(open + 1, i);
+    }
+  }
+  return null;
 }
 
 /**
