@@ -8787,6 +8787,168 @@ Nhưng đó là một quyết định sản phẩm, và Chain AE **không** đư
 | **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
 
 
+## Chain AF — "hôm nay có tập không?" hỏi hai nơi, hai câu trả lời
+
+**Bộ kiểm (giai đoạn bằng chứng):** cluster PostgreSQL 16.13 THẬT dựng từ toàn bộ
+migration, chạy **`recomputeDailyLog`, `computeReadiness`, `streakFrom`,
+`awardsToGrant`, `sessionLoad`, `touchedDays` thật**, chấm bằng oracle đọc
+`workout_sessions` và tách riêng hai câu hỏi *"có buổi tập"* và *"đo được tải"*.
+
+### Chain AF — ba định nghĩa, và ai dùng cái nào
+
+| định nghĩa | proxy | ai dùng |
+| --- | --- | --- |
+| **TỒN TẠI** (phe phép chiếu) | `daily_logs.workout_count` | quest tập, Koa, smart-nudges, cảm xúc Koa, **chuỗi ngày** (`LOGGED_DAY_FILTER`) |
+| **TỒN TẠI** (phe bảng nguồn) | đếm hàng `workout_sessions` | huy chương (`useCheckAwards`, toàn thời gian), thử thách tuần `workouts_5/3`, `weekly-review.workoutCount`, `daysSinceWorkout` của trợ lý |
+| **ĐO ĐƯỢC TẢI** | `volume_load` (tấn) và `sessionLoad` (RPE×reps) | thẻ tập luyện, ACWR, điểm sẵn sàng |
+
+**Hai phe cùng trả lời một câu hỏi bằng hai proxy khác nhau.** Chúng chỉ khớp
+khi ngày đó đã được dựng lại.
+
+---
+
+### Chain AF — ma trận nhất quán (§2), 5 trạng thái × 6 múi giờ
+
+| trạng thái | oracle: tồn tại / đo được | quest | Koa | chuỗi | sessions | thử thách | trợ lý | volume | acwr | sẵn sàng |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| A · tạ thủ công | có / **có** | ✓ | ✓ | 1 | 1 | 1 | 0 | 2.100 | **1.00** | 71 |
+| B · Apple Watch | có / **không** | ✓ | ✓ | 1 | 1 | 1 | 0 | 0 | **null** | 65 |
+| C · thủ công không đo được | có / **không** | ✓ | ✓ | 1 | 1 | 1 | 0 | 0 | **null** | 65 |
+| D · ngày nghỉ | không / không | ✗ | ✗ | — | 0 | 0 | null | 0 | null | 65 |
+| E · trộn đồng hồ + tạ | có / **có** | ✓ | ✓ | 1 | 2 | 2 | 0 | 2.100 | **1.00** | 71 |
+
+**Ở trạng thái ổn định, KHÔNG có mâu thuẫn.** Mọi consumer "tồn tại" khớp
+oracle; mọi consumer "tải" đi theo `đo được` — `acwr` là `null` đúng chỗ và
+`readiness` vẫn chấm được từ giấc ngủ. Giống hệt ở cả sáu múi giờ.
+
+Đây là **thiết kế đang chạy đúng**, và nó được ghi lại ở đây để lần sau không ai
+"sửa" trạng thái B thành có tonnage.
+
+---
+
+### BUG-105 (P2). Buổi tập có trong bảng, không có trong phép chiếu — **VĨNH VIỄN** — `SESSIONS-STRANDED-BY-FAILED-SYNC`
+
+**ĐỀ XUẤT — CHƯA SỬA.**
+
+**Mạch gốc: thứ tự trong `use-health-sync`.**
+
+```
+dòng 198–210   workout_sessions.upsert   ← buổi tập ĐÃ NẰM TRÊN SERVER
+dòng 271–273   daily_logs.upsert  →  if (error) throw error
+dòng 303–307   daily_logs.upsert  →  if (error) throw error
+dòng 343–345   for (const day of touchedDays(...)) await recomputeDailyLog(...)
+```
+
+Bất kỳ lỗi nào ở **273** hoặc **307** — RLS từ chối, rớt kết nối ở request thứ
+N, một ràng buộc — đều làm hàm ném **sau khi** buổi tập đã ghi và **trước khi**
+vòng dựng lại chạy. Vòng ở 343 cũng **không có try/catch**, nên một ngày hỏng
+làm những ngày còn lại không bao giờ được dựng.
+
+**Đo được — hai phe tách đôi:**
+
+| consumer | proxy | câu trả lời |
+| --- | --- | --- |
+| oracle (nguồn) | `workout_sessions` | **CÓ TẬP** |
+| quest tập | `workout_count` | **không** |
+| Koa "chưa tập" | `workout_count` | **đúng, chưa tập** |
+| chuỗi ngày | `LOGGED_DAY_FILTER` | **0 — ngày này không tính** |
+| huy chương | bảng sessions | **1 buổi** |
+| thử thách tuần | bảng sessions | **1 buổi** |
+| `daysSinceWorkout` | bảng sessions | **0 — "tập hôm nay"** |
+
+**Và nó KHÔNG tự lành.** `getRecentWorkouts()` chỉ nhập **bảy ngày**, nên sau
+tám ngày buổi tập rơi khỏi cửa sổ import và `touchedDays` không còn nhắc tới
+ngày đó nữa. Đo trên cluster thật, buổi tập ở ngày −9:
+
+```
+ngay sau đồng bộ hỏng     : {bảng sessions: 1, workout_count: null, chuỗi tính ngày này: false}
+touchedDays của đồng bộ #2: ["2026-08-20"]   ← ngày −9 KHÔNG có mặt
+sau đồng bộ #2            : {bảng sessions: 1, workout_count: null, chuỗi tính ngày này: false}
+```
+
+Một ngày người ta **thật sự có tập** biến mất khỏi chuỗi **vĩnh viễn**, và huy
+chương chuỗi thì trao từ con số đó.
+
+**Đây KHÔNG phải mở lại Chain S.** Chain S sửa **tập hợp ngày nào** được dựng
+lại (`touchedDays`, trước đó chỉ dựng hôm nay). Ở đây tập hợp đã đúng — vấn đề
+là **vòng dựng lại không bao giờ chạy tới**, vì một lệnh ghi không liên quan đã
+ném trước nó, và vòng không cô lập lỗi theo từng ngày. Cơ chế khác, hậu quả
+khác, và nó vượt qua bản sửa của Chain S.
+
+**Bản sửa nhỏ nhất được đề xuất** (chưa thực hiện, chờ vòng sửa): đưa vòng dựng
+lại lên **trước** hai lệnh upsert `daily_logs`, hoặc bọc chúng sao cho một lệnh
+ghi cột-của-health hỏng không cướp mất phần dựng lại; và cô lập lỗi **theo từng
+ngày** trong vòng để một ngày hỏng không kéo theo các ngày còn lại. Không đổi
+`touchedDays`, không đổi `volume_load`, không đổi chính sách chuỗi.
+
+---
+
+### Chain AF — DATA-CONTRACT GAP (§6): `workout_count: 1, volume_load: 0`
+
+Payload gửi mô hình mang `volume_load` theo ngày (`ai-smart-nudges`) và
+`workouts[].volume` theo buổi (`ai-weekly-review`, `ai-coach`). Một buổi từ đồng
+hồ xuất hiện là `volume: 0` — **không có gì nói rằng 0 ở đây nghĩa là "không đo
+được tonnage" chứ không phải "không tập"**. Koa cũng vậy: `use-mascot` đọc
+`workout_count ?? 0` và chú thích của chính nó nói *"0 — not 'unknown', but a
+confident nothing"*.
+
+Phân loại là **DATA-CONTRACT GAP**, không tự sửa: sửa nó là đổi hợp đồng với mô
+hình, và §6 nói đừng đổi khi ngữ nghĩa chưa rõ.
+
+---
+
+### Chain AF — đã kiểm và **KHÔNG** phải lỗi
+
+- **Buổi từ đồng hồ tính vào quest tập, chuỗi ngày và huy chương** — đúng, và đã
+  được ghi rõ trong `use-health-sync`: chúng *"raise `workout_count` and reset
+  `daysSinceWorkout` … while leaving the load ratio untouched"*. **PRODUCT
+  SEMANTICS đã quyết**, không phải câu hỏi còn treo.
+- **Buổi từ đồng hồ không ảnh hưởng ACWR** — đúng, `sessionLoad` trả `null` và
+  `session-load.ts` viết ra lý do. Đo được: trạng thái B cho `acwr = null` chứ
+  không phải 0.
+- **`readiness` vẫn chấm được ở trạng thái B** (65, từ giấc ngủ) — đúng, các
+  chiều thiếu được bỏ ra chứ không bị chấm 0.
+- **`use-mascot` dùng cả hai proxy** — nhưng cho **hai câu hỏi khác nhau**: đếm
+  bảng sessions cho mở khoá *toàn thời gian*, đọc `workout_count` cho cảm xúc
+  *hôm nay*. Không mâu thuẫn.
+- **Xoá buổi tập**: quest → false, tonnage → 0, khớp oracle.
+- **Phát lại cùng `external_id`**: vẫn 1 buổi.
+- **Chéo tài khoản**: buổi tập của B không làm quest của A bật.
+- **Phát lại offline** dựng lại đúng ngày của buổi tập, và chỗ nuốt lỗi ở đó có
+  lý do viết sẵn — nhưng nó là **cùng một cửa sổ** với BUG-105, chỉ khác đường
+  vào.
+
+---
+
+### Chain AF — vì sao vòng này CHƯA có bộ dò
+
+§8 yêu cầu một bộ dò. Nhưng bảy trong chín quy tắc của nó **đang đúng hôm nay**,
+còn quy tắc thứ tám — *"buổi tập muộn hội tụ sau khi dựng lại"* — **đang sai**.
+Một bộ dò viết bây giờ hoặc phải ghim lại trạng thái hỏng, hoặc phải đỏ ngay khi
+thêm vào bộ kiểm. Cả hai đều tệ hơn là viết nó **cùng với** bản sửa, khi nó có
+thể khoá lại hành vi đúng và có phép phá thật.
+
+Khác với Chain AE — ở đó hành vi **chưa được quyết**, nên ghim là câu trả lời
+đúng. Ở đây hành vi **sai đã được chứng minh**, nên ghim sẽ là ban phước cho nó.
+
+---
+
+### Chain AF — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory` |
+| **HÀM THẬT** | `recomputeDailyLog`, `computeReadiness`, `streakFrom`, `awardsToGrant`, `sessionLoad`, `touchedDays` |
+| **ORACLE** | đọc `workout_sessions`, tách riêng "có buổi tập" và "đo được tải"; không gọi hàm quyết định nào của production |
+| **MÚI GIỜ** | 6 múi — ma trận và BUG-105 giống hệt ở cả sáu (đây là số học, không phải ngày tháng) |
+| **THAY ĐỔI PRODUCTION** | **KHÔNG CÓ** |
+| **DETECTOR** | **CHƯA** — có lý do ở trên |
+| **REGRESSION** | bộ kiểm 121/121 xanh, `tsc` sạch (không có thay đổi nào để hồi quy) |
+| **REAL iOS / HealthKit** | **KHÔNG** — buổi tập từ đồng hồ dựng bằng đúng câu upsert của `use-health-sync`; thứ tự dòng 210/273/307/343 đọc từ mã nguồn chứ không chạy trên máy thật |
+| **PRODUCTION** | **KHÔNG** |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,
