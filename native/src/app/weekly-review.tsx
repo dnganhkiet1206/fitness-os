@@ -35,6 +35,7 @@ import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr, localDayRangeISO, weekStartOf } from '@/lib/local-date';
 import { metricMean } from '@/lib/nutrition-mean';
+import { latestAcwr } from '@/lib/training-card';
 
 interface AIInsight {
   category: string;
@@ -151,7 +152,7 @@ export default function WeeklyReviewScreen() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('daily_logs')
-        .select('date, kcal, protein_g, volume_load, readiness_score')
+        .select('date, kcal, protein_g, volume_load, readiness_score, acwr')
         .eq('user_id', user!.id)
         .gte('date', startStr)
         .lt('date', endStr)
@@ -203,23 +204,6 @@ export default function WeeklyReviewScreen() {
         .eq('user_id', user!.id)
         .gte('date', localDateStr(prevStart))
         .lt('date', startStr);
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const { data: monthLogs } = useQuery({
-    queryKey: ['wr_month', user?.id, startStr],
-    enabled: !!user,
-    queryFn: async () => {
-      const d = new Date(weekEnd);
-      d.setDate(d.getDate() - 28);
-      const { data, error } = await supabase
-        .from('daily_logs')
-        .select('volume_load')
-        .eq('user_id', user!.id)
-        .gte('date', localDateStr(d))
-        .lt('date', endStr);
       if (error) throw error;
       return data ?? [];
     },
@@ -356,11 +340,20 @@ export default function WeeklyReviewScreen() {
     };
   });
 
-  // ACWR
-  const load7d = totalVolume;
-  const load28d = sum((monthLogs ?? []).map((l) => Number(l.volume_load) || 0));
-  const chronicAvg = load28d / 28;
-  const acwr = chronicAvg > 0 ? +((load7d / 7) / chronicAvg).toFixed(2) : 0;
+  /*
+    ── the ratio is read, not recomputed — see `latestAcwr` ──
+
+    This block used to be four lines of its own arithmetic over
+    `daily_logs.volume_load` divided by a flat 28, which is a second ACWR
+    implementation and disagreed with the canonical one by a factor of four for
+    a new account training perfectly evenly. `daily_logs.acwr` is written by
+    `recomputeDailyLog` from `computeReadiness`; this screen now shows that.
+
+    `null` when no day in the week carries a ratio, and it stays `null` all the
+    way to the tile — the engine refuses to score a week it cannot measure, and
+    substituting 0 here would put that refusal back.
+  */
+  const acwr = latestAcwr(logs);
 
   // Pain flags
   const painFlags = (workouts ?? []).flatMap((w) => {
@@ -373,7 +366,20 @@ export default function WeeklyReviewScreen() {
   // Adaptive training recommendations (web rules) — localized per lang
   const L = (vi: string, en: string) => (lang === 'vi' ? vi : en);
   const recommendations: { kind: 'success' | 'warning' | 'info'; text: string }[] = [];
-  if (acwr > 1.5) {
+  /*
+    Nothing to say about a ratio that does not exist. The old chain ran on a
+    number that was always present because its own formula fell back to 0, so a
+    week the engine had declined to score still produced training advice.
+
+    The `load7d > 0` guard the "train more" branch used to carry is gone with
+    it: `acwr` is non-null only when `training_load_28d > 0`, so a baseline
+    provably exists by the time this runs, and `acwr === 0` now means what it
+    says — a real week of nothing against a real baseline, which is exactly the
+    person that branch is addressed to.
+  */
+  if (acwr == null) {
+    /* no ratio, no verdict */
+  } else if (acwr > 1.5) {
     recommendations.push({ kind: 'warning', text: L(
       `ACWR cao (${acwr}). Giảm 15-20% volume tuần tới để tránh chấn thương.`,
       `ACWR high (${acwr}). Cut volume 15-20% next week to avoid injury.`) });
@@ -381,7 +387,7 @@ export default function WeeklyReviewScreen() {
     recommendations.push({ kind: 'warning', text: L(
       `ACWR hơi cao (${acwr}). Giảm 5-10% volume hoặc bớt 1-2 sets/bài tập.`,
       `ACWR slightly high (${acwr}). Cut 5-10% volume or drop 1-2 sets per exercise.`) });
-  } else if (acwr < 0.6 && load7d > 0) {
+  } else if (acwr < 0.6) {
     recommendations.push({ kind: 'info', text: L(
       `ACWR thấp (${acwr}). Có thể tăng 10-15% volume dần dần.`,
       `ACWR low (${acwr}). You can add 10-15% volume gradually.`) });
@@ -442,7 +448,7 @@ export default function WeeklyReviewScreen() {
     { icon: Beef, label: i18n.weeklyReviewAvgProtein, value: `${Math.round(avgProtein)}g`, sub: `/${targets.protein}g`, d: delta(avgProtein, prevAvgProtein) },
     { icon: Moon, label: i18n.weeklyReviewAvgSleep, value: `${avgSleepH.toFixed(1)}h`, sub: `/${targets.sleepH}h`, d: null },
     { icon: Dumbbell, label: i18n.weeklyReviewVolume, value: `${Math.round(totalVolume / 1000)}k`, sub: `${workoutCount} ${i18n.weeklyReviewSessions}`, d: delta(totalVolume, prevTotalVolume) },
-    { icon: Activity, label: i18n.weeklyReviewReadiness, value: `${Math.round(avgReadiness)}`, sub: acwr ? `ACWR ${acwr}` : '—', d: null },
+    { icon: Activity, label: i18n.weeklyReviewReadiness, value: `${Math.round(avgReadiness)}`, sub: acwr != null ? `ACWR ${acwr}` : '—', d: null },
   ];
 
   const REC_STYLE = {

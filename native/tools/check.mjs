@@ -236,6 +236,7 @@ const STEPS = [
   ['toàn vẹn kinh tế', 'node', ['tools/economic-integrity.mjs']],
   ['ngày được ghi log', 'node', ['tools/logged-day.mjs']],
   ['trung bình dinh dưỡng', 'node', ['tools/nutrition-averages.mjs']],
+  ['ACWR nhất quán', 'node', ['tools/acwr-consistency.mjs']],
   ['lối vào màn hình', 'node', ['tools/entry-points.mjs']],
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],

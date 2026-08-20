@@ -29,6 +29,74 @@ import { localDateStr, parseLocalDate } from './local-date';
 export type AcwrZoneKey = 'detraining' | 'low' | 'optimal' | 'elevated' | 'spike';
 
 /**
+ * The one acute:chronic ratio that stands for a range of days.
+ *
+ * ── the bug this exists for (BUG-103) ──
+ *
+ * The weekly review computed its **own** ACWR, from a different quantity, with
+ * a different denominator:
+ *
+ *     const load28d   = sum(monthLogs.map((l) => Number(l.volume_load) || 0));
+ *     const chronicAvg = load28d / 28;
+ *     const acwr = chronicAvg > 0 ? (load7d / 7) / chronicAvg : 0;
+ *
+ * Four differences from the canonical path, every one of them a regression that
+ * `readiness-engine.ts` had already fixed and written down:
+ *
+ *   - **tonnage instead of internal load.** A watch import carries
+ *     `volume_load: 0` and `sets: []` on purpose, so a running week reads as a
+ *     week of no training rather than a week that cannot be scored.
+ *   - **a flat 28.** `getACWR` divides by `max(chronicDays, 7)` — the days the
+ *     window actually covers — precisely so a new account is not averaged over
+ *     three weeks that never happened.
+ *   - **zero for "cannot tell".** The engine returns `null`.
+ *   - **no `hasEnoughData` gate.**
+ *
+ * Measured on PostgreSQL 16.13, one barbell session every other day — training
+ * perfectly evenly — with the real `recomputeDailyLog` and the real engine:
+ *
+ *     lịch sử    engine (Today)      weekly review
+ *     1 tuần     1.00 · optimal      4.00 · spike   → "Giảm 15-20% volume … tránh chấn thương"
+ *     2 tuần     1.06 · optimal      2.29 · spike   → "Giảm 15-20% …"
+ *     4 tuần     1.10 · optimal      1.14 · optimal
+ *
+ * Identical in all six timezones including both DST days, so it was arithmetic
+ * rather than date handling. Two screens, two verdicts, same person, same day —
+ * and the screen with the wrong one is the screen that tells people to deload
+ * to avoid injury.
+ *
+ * ── so the ratio is read, never recomputed ──
+ *
+ * `daily_logs.acwr` is written by `recomputeDailyLog` from `computeReadiness`,
+ * and that is the only place this number is produced. This function picks
+ * *which* day's ratio represents a range; it does not compute one.
+ *
+ * **The newest day that has one.** ACWR is already a rolling window ending on
+ * its own day, so the last day of a range carries the answer for that range;
+ * averaging seven rolling ratios would be a ratio of nothing. Days are compared
+ * as `YYYY-MM-DD` strings, which sort correctly and need no timezone.
+ *
+ * **`null` survives.** A row whose `acwr` is null is a day the engine refused to
+ * score, and skipping it is not the same as substituting zero: the column is
+ * nullable with no default exactly so the two can be told apart. If no day in
+ * the range has a ratio, the answer is `null` — "we cannot tell you yet" — and
+ * never `0`, which means "you trained nothing against a baseline that exists".
+ */
+export function latestAcwr(
+  rows: readonly { date?: string | null; acwr?: number | string | null }[],
+): number | null {
+  let best: { date: string; acwr: number } | null = null;
+  for (const r of rows ?? []) {
+    if (r?.acwr == null) continue;
+    const v = Number(r.acwr);
+    if (!Number.isFinite(v)) continue;
+    const d = String(r.date ?? '');
+    if (best === null || d > best.date) best = { date: d, acwr: v };
+  }
+  return best === null ? null : best.acwr;
+}
+
+/**
  * Which band a ratio is in.
  *
  * This is `readiness-engine.ts:66-70` written out in the engine's own order,

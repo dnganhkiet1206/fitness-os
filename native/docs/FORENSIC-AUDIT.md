@@ -8440,6 +8440,158 @@ Hai cái, cả hai đều suýt thành kết luận sai:
 | **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
 
 
+### BUG-103 (P2). Hai ACWR mâu thuẫn, và cái sai là cái khuyên người ta giảm tải — `SECOND-ACWR-DIVIDES-BY-28` — **ĐÃ SỬA**
+
+**Nguồn chính tắc:** `daily_logs.acwr`, do `recomputeDailyLog` ghi từ
+`computeReadiness` → `getACWR(load7d, load28d, chronicDays)` trên **tải trong**
+(`sessionLoad` = RPE × reps). Đó là nơi DUY NHẤT con số này được sinh ra.
+
+**Trước.** `weekly-review.tsx` tự dựng bản thứ hai:
+
+```ts
+const load28d    = sum(monthLogs.map(l => Number(l.volume_load) || 0));
+const chronicAvg = load28d / 28;
+const acwr = chronicAvg > 0 ? +((load7d / 7) / chronicAvg).toFixed(2) : 0;
+```
+
+Bốn khác biệt, mỗi cái là một bước lùi mà `readiness-engine.ts` đã sửa và ghi
+lại: tonnage thay vì tải trong · **28 cố định** thay vì `max(chronicDays, 7)` ·
+**0** thay vì `null` cho "không đo được" · không có cổng `hasEnoughData`.
+
+**Sau.** Đo lại trên PostgreSQL 16.13 với hàm thật, người tập **đều đặn** một
+buổi cách ngày:
+
+| lịch sử | chính tắc | weekly-review TRƯỚC | weekly-review SAU |
+| --- | --- | --- | --- |
+| 1 tuần | **1.00 · optimal** | 4.00 · spike → *"Giảm 15-20% … tránh chấn thương"* | **1.00 · optimal** |
+| 2 tuần | **1.06 · optimal** | 2.29 · spike → *"Giảm 15-20% …"* | **1.06 · optimal** |
+| 4 tuần | 1.10 · optimal | 1.14 · optimal | **1.10 · optimal** |
+
+Khớp ở **cả sáu múi giờ**.
+
+**Ngữ nghĩa `null`, giữ nguyên suốt đường đi.** `daily_logs.acwr` là NULLABLE
+không DEFAULT đúng để phân biệt hai chuyện. Đã đo, cả bốn đều ra `null` chứ
+không phải 0: thiếu sinh trắc và giấc ngủ · người **chỉ tập bằng đồng hồ** ·
+tuần không có hàng nào · tuần đủ hàng nhưng mọi `acwr` là NULL.
+
+**Và `0` sống sót.** Ô hiển thị đổi từ `acwr ? …` sang `acwr != null ? …`:
+`0` là một tỉ lệ **thật** — *"tuần này không tập gì, trên một nền có thật"* —
+và truthiness ẩn nó đi y như thể không đo được.
+
+**Đã sửa những gì:**
+
+| nơi | trước | sau |
+| --- | --- | --- |
+| `weekly-review.tsx` | tự tính ACWR từ tonnage ÷ 28 | `latestAcwr(logs)` |
+| `weekly-review.tsx` truy vấn tuần | không lấy `acwr` | `.select('… , acwr')` |
+| `weekly-review.tsx` chuỗi khuyến nghị | luôn chạy (giá trị luôn có vì tự rơi về 0) | chặn bởi `if (acwr == null)` |
+| `weekly-review.tsx` ô hiển thị | `acwr ? …` | `acwr != null ? …` |
+| `weekly-review.tsx` truy vấn `wr_month` | đọc 28 ngày `volume_load` | **xoá** — chỉ tồn tại để nuôi công thức đã bỏ |
+| `training-card.ts` | — | thêm `latestAcwr` |
+
+**`latestAcwr` là một quy tắc CHỌN, không phải một phép tính.** Nó lấy ngày
+**mới nhất có tỉ lệ** trong dải, vì ACWR vốn đã là cửa sổ trượt kết thúc ở ngày
+của nó — trung bình bảy tỉ lệ trượt là tỉ lệ của không cái gì. Đo được: không
+phụ thuộc thứ tự hàng, và một ngày mới hơn mang `acwr` NULL **không** xoá mất
+tỉ lệ của ngày trước đó. Nó nằm trong `training-card.ts` — module ACWR sẵn có,
+đã nạp được bằng Node và đã có mười tool import — nên **không thêm file mới,
+không thêm phép tính mới**.
+
+**Nhánh `load7d > 0` đã bỏ, có lý do.** `acwr` chỉ khác null khi
+`training_load_28d > 0`, tức nền đã tồn tại; nên `acwr === 0` nghĩa đúng như nó
+nói — một tuần không tập trên một nền có thật — và đó chính là người mà câu
+*"có thể tăng 10-15% volume"* nhắm tới.
+
+---
+
+### BUG-104 — `avg_volume_28d`: **PRODUCT DECISION REQUIRED**, cố ý KHÔNG sửa
+
+Đã truy đúng sáu bước brief yêu cầu, trước khi quyết:
+
+1. **Nhãn người dùng: KHÔNG CÓ.** `avg_volume_28d` không bao giờ tới màn hình
+   nào. Nó chỉ tồn tại trong `ctx` JSON gửi cho mô hình.
+2. **Chú thích / tooltip giải thích: KHÔNG CÓ.** System prompt chỉ
+   `JSON.stringify(ctx)` rồi kèm bốn nguyên tắc về y tế — không câu nào nói
+   trường này nghĩa là gì.
+3. **Consumer: đúng MỘT** — `supabase/functions/ai-weekly-review/index.ts:113`.
+   Quét toàn repo, không nơi nào khác nhắc tới nó.
+4. **A, B hay C?** **Không xác định được.** Thứ duy nhất đọc nó là một mô hình
+   ngôn ngữ, và không có gì nói cho mô hình biết đây là cái nào. Tên khoá nói
+   *"28d"* (gợi ý B) trong khi mã chia cho **số hàng** — không phải A cũng
+   không phải B.
+5. **So thuật ngữ:** `chronicDays` chia cho ngày lịch **thật sự có lịch sử**;
+   vế mạn tính của ACWR là per-ngày-lịch; `totalVolume` của weekly-review là một
+   **tổng**, không phải trung bình. Repo **không có** quy ước "avg volume" nào
+   sẵn để kế thừa.
+6. → **Còn mơ hồ. Giữ nguyên phép tính.**
+
+Số đo vẫn đứng: sự thật 6.300 kg trên 3 ngày tập; hiện tại **630**; theo ngày có
+tải **2.100**; theo 28 ngày lịch **225**. Mẫu số hiện tại là *"bao nhiêu hàng
+tình cờ tồn tại"* nên **sai dưới mọi cách hiểu** — nhưng 2.100 và 225 đều thành
+thật cho hai câu hỏi khác nhau, và tên khoá không phải bằng chứng về ý định.
+**Không suy ngữ nghĩa tải từ ngữ nghĩa dinh dưỡng.**
+
+---
+
+### Chain AD — bộ dò và phép phá
+
+`tools/acwr-consistency.mjs` (mới, đã đăng ký — bộ kiểm giờ **120 bước**).
+
+- **Cấu trúc** (bỏ chú thích trước khi khớp): weekly-review không được chứa
+  `chronicAvg`, `load28d`, phép chia cho `28`, hay `load7d / 7`; phải lấy qua
+  `latestAcwr(logs)`; phải `select` cột `acwr`; ô phải dùng `!= null`; chuỗi
+  khuyến nghị phải chặn bởi `acwr == null`; `latestAcwr` không được `?? 0` hay
+  `|| 0`; và **quét toàn bộ `src/` + `supabase/functions/`** để bảo đảm chỉ
+  `readiness-engine.ts` chứa hình dạng `acute / chronic`.
+- **Hành vi**: chạy **`recomputeDailyLog`, `computeReadiness`, `latestAcwr`
+  thật** trên PostgreSQL 16.13 dựng từ mọi migration, ở **sáu múi giờ**. Bất
+  biến được chứng minh không phải một con số mà là một **quan hệ**: thứ
+  weekly-review hiện ra **bằng** `daily_logs.acwr`, kể cả khi đó là `null`.
+
+**Tám phép phá, tất cả đúng kỳ vọng, khôi phục XANH:**
+
+| phép phá | kỳ vọng | bắt bởi |
+| --- | --- | --- |
+| 1 · khôi phục công thức tonnage ÷ 28 | ĐỎ | cấu trúc (`chronicAvg`, `load28d`) |
+| 2 · `null` chính tắc thành 0 | ĐỎ | cấu trúc **và** hành vi (`displayed: 0` khi chính tắc null) |
+| 3 · thêm bản dựng ACWR thứ hai ở file khác | ĐỎ | quét toàn repo, nêu đúng tên file |
+| 4/5/6 · mẫu số engine quay về 28 cố định | ĐỎ | ghim số: chính tắc ra 4 / 2.29 thay vì 1 / 1.06 |
+| 7 · nguồn chính tắc biến mất | **ĐỎ ồn ào** | ghim số (`null` thay vì 1); và nếu **cột** `daily_logs.acwr` biến mất thì harness **ném** trước khi đo |
+| 7b · ô quay lại truthiness | ĐỎ | cấu trúc |
+| 7c · bỏ cổng `acwr == null` | ĐỎ | cấu trúc |
+| 8 · công thức bị cấm **chỉ trong chú thích** | **XANH** | chú thích bị bỏ trước khi khớp |
+
+Phép phá 8 không phải giả định: tài liệu của `latestAcwr` **trích nguyên** công
+thức cũ để giải thích vì sao nó bị cấm, nên nếu quy tắc không bỏ chú thích thì
+nền đã đỏ ngay từ đầu.
+
+---
+
+### Chain AD — hồi quy
+
+`node tools/check.mjs` **120/120 xanh** · `npx tsc --noEmit` sạch. Chạy riêng và
+xanh: `acwr-consistency`, `nutrition-averages` (AC), `logged-day` (AB),
+`quest-lifecycle` (Y), `streak-freeze` (Z), `awards-concurrency` (T),
+`economic-integrity` (AA), `streak-challenge`, `daily-log-concurrency` (S),
+`readiness`, `training-card`, `session-load`.
+
+---
+
+### Chain AD — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory`, cổng suy từ thư mục tạm |
+| **HÀM THẬT** | `recomputeDailyLog`, `computeReadiness`, `latestAcwr`, `acwrZone` — chạy thật, không bản chép lại |
+| **MÚI GIỜ** | cả sáu, mỗi lần chạy bộ dò |
+| **BREAK-TESTS** | 8/8 đúng kỳ vọng (7 đỏ, 1 xanh có chủ đích); khôi phục xanh |
+| **BỘ KIỂM** | 120/120 xanh |
+| **TYPESCRIPT** | sạch |
+| **REAL iOS / HealthKit** | **KHÔNG** — hàng buổi tập đồng hồ dựng bằng đúng câu upsert của `use-health-sync`; HealthKit không được gọi |
+| **PRODUCTION** | **KHÔNG** |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,
