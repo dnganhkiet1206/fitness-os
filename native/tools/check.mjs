@@ -233,6 +233,7 @@ const STEPS = [
   ['bandit / Thompson', 'node', ['tools/bandit.mjs']],
   ['vòng đời quest', 'node', ['tools/quest-lifecycle.mjs']],
   ['freeze chuỗi ngày', 'node', ['tools/streak-freeze.mjs']],
+  ['toàn vẹn kinh tế', 'node', ['tools/economic-integrity.mjs']],
   ['lối vào màn hình', 'node', ['tools/entry-points.mjs']],
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],

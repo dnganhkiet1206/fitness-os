@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (116 bước). Ngày rà: 2026-08-20.
+Bộ kiểm: `node tools/check.mjs` (117 bước). Ngày rà: 2026-08-20.
 
 ---
 
@@ -7342,6 +7342,165 @@ một freeze không ai trả tiền.
 | **PERSISTENCE / COLD LAUNCH** | mutation không có `mutationKey` → không khôi phục được. **Đọc code, KHÔNG chạy** |
 | **REAL iOS** | **KHÔNG** |
 | **PRODUCTION** | **KHÔNG** |
+
+---
+
+## Chain AA — quét toàn vẹn kinh tế
+
+**Bộ kiểm:** `node tools/economic-integrity.mjs` (mới) · `node tools/check.mjs` · `npx tsc --noEmit`
+
+### Bất biến chính
+
+*Không đầu vào nào do client kiểm soát được phép tạo ra giá trị kinh tế nằm
+ngoài luật máy chủ đã ghi ra.*
+
+Chain này **không tìm thấy lỗi P0/P1**, và phần lớn công việc của nó là **đo rồi
+ghim lại** những thứ vốn đã đúng, để lần sau ai thêm một bảng, một policy, hay
+một lớp ref_key thì phải đi qua một phép thử đỏ chứ không phải đi qua một đoạn
+văn.
+
+Bắt đầu từ **schema**, không từ tên file.
+
+---
+
+### Chain AA — bản đồ mọi nơi ghi giá trị
+
+| bảng | client ghi được gì | ranh giới |
+| --- | --- | --- |
+| `mascot_transactions` | **không gì** | INSERT bị RLS chặn, UPDATE/DELETE `0 dòng`; chỉ hàm SECURITY DEFINER ghi |
+| `streak_freezes` | **không gì** | như trên |
+| `entitlements` | **không gì** | webhook ghi; `current_tier()` suy ra tier còn hiệu lực |
+| `shop_prices` / `reward_prices` | **không gì** | `UPDATE 0` |
+| `ai_usage` | **không gì** | RPC ghi |
+| `mascot_inventory` | chỉ UPDATE | **trigger `mascot_inventory_no_swap`**: `item_key`/`user_id` không đổi được |
+| `awards` | INSERT + DELETE của chính mình | RLS theo chủ sở hữu; không có policy UPDATE |
+| `weekly_challenges` | INSERT/UPDATE/DELETE của chính mình | RLS theo chủ sở hữu |
+
+**Một giả thuyết của tôi SAI, và đó là tin tốt.** Tôi nghĩ policy UPDATE trên
+`mascot_inventory` cho phép đổi `item_key` — một cú nâng cấp miễn phí từ món
+80 xu lên món 800 xu bằng một câu SQL. Đo ra: bị từ chối, bởi một **trigger** mà
+tôi chưa từng thấy. Chuyển quyền sở hữu sang tài khoản khác: cũng bị từ chối.
+
+**Và phép phá 2b chứng minh cái gì đang thật sự đỡ.** Nới rộng policy mà **giữ**
+trigger → bộ dò vẫn XANH. Nên trigger, chứ không phải policy, là thứ chắn cả
+`item_key` lẫn `user_id`. Ghi lại như một no-op đã chứng minh.
+
+---
+
+### Chain AA — awards: đã trả lời câu Chain T để ngỏ
+
+Chain T ghi rằng `awards` nhận INSERT/DELETE từ client và không có CHECK trên
+`award_key`. Câu để ngỏ là: **có thứ gì coi một huy chương bịa ra là bằng chứng
+đã đạt được không?**
+
+Đã lần theo mọi nơi đọc: hai màn hình hiển thị chúng, `useCheckAwards` đọc để
+tránh cấp trùng, và người tiêu thụ còn lại là hàng đợi ăn mừng — một hoạt ảnh.
+Mở khoá linh vật đếm `workout_sessions` và `meal_entries`, **không** đọc awards.
+
+Đo trực tiếp: cấp một huy chương `made_up_key` hạng platinum → **xu không đổi,
+kho không đổi**. Một huy chương giả mua được một bức tranh huy chương.
+
+Luật G ghim **danh sách nơi đọc**, vì "vô hại" là một sự thật về tập người đọc
+chứ không phải về bảng. Ngày có thứ gì đó bắt đầu quy huy chương thành giá trị,
+phải có người thêm tên file vào đây và nói ra điều đó.
+
+---
+
+### Chain AA — thứ CỐ Ý không kiểm
+
+`claim_quest_reward` suy ra số tiền từ ref_key và **không xác minh sự kiện đã
+kiếm được**. Đo trên cluster sạch, chưa làm gì:
+
+```
+ch:platinum:2026-08-17:never_did_this  → 120 xu
+w:99999                                → 40 xu
+set:runner                             → 180 xu   (chưa sở hữu bộ nào)
+20 thử thách bịa ra                    → 720 xu, trần ngày chặn ở 800
+```
+
+**Đây là NGỮ NGHĨA KINH TẾ, không phải lỗi**, và kho đã ghi rõ như thế từ trước.
+`20260815130000`: *"This ceiling is not a game-balance knob… the RPC's job is to
+bound what a forged call can mint."*
+
+Bộ dò **cố ý KHÔNG** khẳng định "mọi ref_key thưởng phải có một dòng hoàn thành
+đứng sau", vì quest hằng ngày **không có bảng hoàn thành nào** — Chain Y đã
+chứng minh `done === true` là trạng thái hiện tại suy ra, không phải sự kiện.
+Một luật như thế không thể thoả mãn nếu không có thay đổi kiến trúc mà chain đó
+đã hoãn lại có chủ ý.
+
+Xu cũng là đường cụt: chúng chỉ mua đồ trang trí cho một con koala (8 530 xu cả
+cửa hàng), không có mặt tiền tiền thật nào, và tier trả phí đi qua Apple chứ
+không qua xu.
+
+---
+
+### Chain AA — GAP PHÒNG THỦ CHIỀU SÂU, ghi lại và KHÔNG sửa trong chain này
+
+`ch:`, `w:` và `set:` **có** điều kiện tiên quyết kiểm được trong các bảng đang
+tồn tại (`weekly_challenges.completed_at`, `mascot_inventory`). `d:<ngày>:<quest>`
+thì không.
+
+Thêm kiểm cho ba lớp kia mà bỏ lớp thứ tư sẽ tạo ra ngữ nghĩa **không nhất
+quán**: thưởng thử thách và bộ sưu tập do máy chủ quyết, thưởng quest hằng ngày
+thì không. Đó là quyết định sản phẩm/kiến trúc, không phải một bản vá cơ hội.
+
+---
+
+### Chain AA — đã đo và ĐÚNG
+
+| phép đo | kết quả |
+| --- | --- |
+| **oracle độc lập, 1000 hợp lệ + 1000 thù địch** | **0/2000 lệch**, 0 số dư âm, 0 lần vượt trần |
+| ma trận thử lại, 7 mutation kinh tế | tất cả hội tụ, **trừ** `buy_streak_freeze()` không tham số — đúng phần dư Chain Z đã ghi |
+| chéo tài khoản, mọi nơi ghi | A không chạm được gì của B; cùng ref_key ở hai tài khoản → hai dòng riêng |
+| xoá tài khoản | `ON DELETE CASCADE` dọn sạch; tạo lại cùng id không thừa kế gì |
+| ẩn danh | mọi RPC và mọi INSERT đều bị từ chối |
+| XP | **không lưu ở đâu cả** — suy từ ref_key trong sổ; khoá lạ cho 0 XP |
+| entitlements | bảng chỉ đọc, `current_tier()` ở máy chủ có hạn dùng, client hỏng về `free` |
+| offline / khởi động lạnh | **không mutation kinh tế nào có `mutationKey`**; 7 thao tác trong hàng đợi đều là GHI CHÉP. Hỏng an toàn khi tiến trình chết |
+
+---
+
+### Chain AA — sai lầm của chính bộ đo
+
+**1. Luật G đỏ vì một CÂU CHÚ THÍCH.** `progress.tsx` có một dòng ghi rằng
+`useAwards` *"used to be read here"* — tức là điều ngược lại với một nơi đọc — và
+regex của tôi khớp vào văn xuôi. Một cái chốt mà một câu văn làm đỏ được là một
+cái chốt sẽ bị người ta tắt đi. Nay chú thích bị bóc trước khi khớp, và luật vì
+thế **chặt hơn**: một nơi đọc THẬT vẫn làm nó đỏ.
+
+**2. Phép phá 2b XANH, và đó là kết quả chứ không phải luật yếu.** Nới policy
+UPDATE trên `mascot_inventory` mà giữ trigger không đổi gì cả — chứng minh
+trigger là thứ duy nhất đang đỡ, và policy chỉ tồn tại để bật/tắt `equipped`.
+
+---
+
+### Chain AA — PRODUCT / ECONOMIC SEMANTICS
+
+- Thưởng **không** được xác minh là đã kiếm; trần ngày là biên, và điều đó đã
+  được viết ra trong `20260815130000`.
+- `awards` là **đồ trang trí client ghi được** — đã đo là không quy ra giá trị.
+- `weekly_challenges` client ghi được dưới RLS; một dòng thử thách tự nó không
+  phải là tiền.
+- Quest hằng ngày **không có bảng sự kiện hoàn thành**, nên không thể xác minh
+  từ phía máy chủ (Chain Y).
+- Mutation kinh tế **không** vào hàng đợi offline, và **không** được thêm vào.
+
+---
+
+### Chain AA — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, có khẳng định `SHOW data_directory` |
+| **RLS** | `SET LOCAL ROLE authenticated` trong transaction tường minh; ROW_COUNT ở mọi UPDATE/DELETE |
+| **ORACLE** | chỉ suy từ dòng dữ liệu + hằng số máy chủ; không import hàm kinh tế nào |
+| **DETECTORS** | **12 phép phá**; 11 đỏ đúng câu định trước, 1 là no-op đã chứng minh (2b) |
+| **REGRESSION** | Chain T/X/Y/Z/Q detector đều còn xanh |
+| **TYPESCRIPT** | `npx tsc --noEmit` sạch |
+| **REAL iOS** | **KHÔNG** |
+| **PRODUCTION** | **KHÔNG** |
+| **AsyncStorage thật** | **KHÔNG** |
 ---
 
 ## Cách dùng sổ này
