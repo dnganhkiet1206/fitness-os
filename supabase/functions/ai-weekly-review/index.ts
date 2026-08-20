@@ -60,9 +60,52 @@ serve(async (req) => {
     const sleepLogs = sleepRes.data ?? [];
     const workouts = workoutRes.data ?? [];
 
+    /*
+      ── the model was being handed the same trap the screen fell into ──
+
+      `weekLogs` is one row per `daily_logs` row, and a row is not a meal. The
+      health sync upserts `{ user_id, date, steps }` for finished HealthKit days
+      and an upsert **creates** the row; a day whose only meal is deleted keeps
+      its row at zero too. So the payload carried days reading
+      `kcal: 0, protein_g: 0, steps: 7400`, and any average taken over them is
+      the truth multiplied by `days logged / 7` — measured on PostgreSQL 16.13
+      as 900 kcal for somebody eating 2,100 on each of the three days they
+      logged.
+
+      The rows stay: a per-day fact is a fact, and the model can see which days
+      have food and which do not. What is added is the average *already taken
+      over the right population*, so the number the model reasons from is not
+      one it has to derive from rows whose zeros mean "not recorded".
+
+      Per metric, not one shared "logged day" predicate: `LOGGED_DAY_FILTER`
+      answers *"was this a logged day"*, and a workout-only day answers yes
+      while carrying no calories. Measured, three meal days plus two
+      workout-only days plus two step-only days — truth 2,100, that filter
+      1,260, per-metric 2,100. The same convention `adaptiveTDEE` keeps.
+    */
+    const nutritionMean = (rows: any[], key: string) => {
+      const vals = rows.map((l) => Number(l[key])).filter((v) => Number.isFinite(v) && v > 0);
+      return vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null;
+    };
+    /* Block-bodied like the one above, and deliberately so: `tools/nutrition-averages.mjs`
+       lifts both of these out of this file and runs them, rather than keeping a
+       second copy that would agree with itself. One extraction shape for both. */
+    const nutritionDays = (rows: any[], key: string) => {
+      return rows.filter((l) => Number(l[key]) > 0).length;
+    };
+
     const ctx = {
       profile: profile ? { goal: profile.goal, tdee: profile.tdee_target_kcal, protein: profile.macro_protein_g, sleep_target: profile.sleep_target_hours, training_level: profile.training_level } : null,
       week: {
+        /* Averages over the days that carry each metric; `null` when there are
+           none, because "no nutrition was recorded" is not the number 0. */
+        nutrition: {
+          avg_kcal: nutritionMean(weekLogs, "kcal"),
+          kcal_days: nutritionDays(weekLogs, "kcal"),
+          avg_protein_g: nutritionMean(weekLogs, "protein_g"),
+          protein_days: nutritionDays(weekLogs, "protein_g"),
+          days_in_week: weekLogs.length,
+        },
         logs: weekLogs.map(l => ({ date: l.date, kcal: l.kcal, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g, volume_load: l.volume_load, readiness: l.readiness_score, readiness_status: l.readiness_status, steps: l.steps, sleep_min: l.sleep_duration_min })),
         sleep: sleepLogs.map(s => ({ date: new Date(s.waketime).toISOString().split("T")[0], quality: s.quality, deep_min: s.deep_min, rem_min: s.rem_min, light_min: s.light_min })),
         workouts: workouts.map(w => ({ date: new Date(w.date_time).toISOString().split("T")[0], name: w.template_name, volume: w.volume_load, rpe: w.session_rpe, pain_flags: w.pain_flags })),

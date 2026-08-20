@@ -8055,6 +8055,163 @@ số ngày nào — ngày đã ghi, hay ngày lịch?
 | **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
 
 
+### BUG-102 (P2). Một ngày không ai ghi gì bị tính là một ngày ăn 0 calo — `ZERO-ROW-DILUTES-MEANS` — **ĐÃ SỬA**
+
+**Mạch gốc.** Các consumer dinh dưỡng dùng *"có dòng"* làm đại diện cho *"có dữ
+liệu dinh dưỡng"*. `avg(logs.map((l) => Number(l.kcal) || 0))` lấy trung bình
+một chỉ số trên những hàng mà chỉ số đó không tồn tại, nên mẫu số là "bao nhiêu
+hàng tình cờ có mặt" — một con số thay đổi theo việc người dùng có bật HealthKit
+hay không.
+
+**Trước.** Sự thật 2.100 kcal / 150 g đạm trên mỗi ngày người ta thật sự ăn;
+HealthKit đã tạo hàng cho cả bảy ngày:
+
+| ngày ghi thật | TB calo | TB đạm | cảnh báo "đạm thấp" |
+| --- | --- | --- | --- |
+| 3 | 900 | 64 | **CÓ** |
+| 5 | 1.500 | 107 | **CÓ** |
+| 6 | 1.800 | 129 | – |
+| 7 | 2.100 | 150 | – |
+
+**Sau.** 2.100 / 150 ở cả bốn hàng, khớp oracle đọc `meal_entries`.
+
+**Vì sao `LOGGED_DAY_FILTER` KHÔNG phải bản sửa.** Nó trả lời ngữ nghĩa
+*ngày-đã-ghi-log*, không phải ngữ nghĩa *dân số của một chỉ số*. Một ngày chỉ có
+buổi tập **là** ngày đã ghi log — đúng, và đó là câu hỏi nó sinh ra để trả lời —
+nhưng nó mang `kcal = 0`. Đo được: 3 ngày ăn + 2 ngày chỉ tập + 2 ngày bước chân
+→ sự thật 2.100, bộ lọc đó cho **1.260**. Nó giảm sai số mà không xoá, và để lại
+một con số **trông** đã được sửa. `tools/nutrition-averages.mjs` vì thế **cấm**
+hình dạng đó chứ không đòi hỏi nó.
+
+**Bất biến đúng:**
+
+```
+trung bình dinh dưỡng
+        ↓
+ngày mang chính chỉ số đó
+        ↓
+TB calo → ngày có calo · TB đạm → ngày có đạm
+```
+
+Mỗi chỉ số một dân số riêng: ngày có đạm mà không có calo **vẫn** tính cho trung
+bình đạm, và ngược lại. Đây là quy ước repo vốn đã giữ ở ba nơi —
+`adaptiveTDEE` (`d.kcal > 0`), `useKcalHistory`, `useSleepDurationHistory` — và
+lý do được `adaptive-tdee.ts` viết thành một câu: *"A day with no meals logged is
+a day with no information, not a day of eating nothing"*.
+
+**Đã sửa những gì:**
+
+| nơi | trước | sau |
+| --- | --- | --- |
+| `weekly-review.tsx` `avgKcal` / `avgProtein` | `avg(... \|\| 0)` trên mọi hàng | `metricMean` theo cột của chính nó |
+| `weekly-review.tsx` `prevAvgKcal` / `prevAvgProtein` | như trên | như trên — nửa kia của một hiệu số phải cùng dân số |
+| `weekly-review.tsx` cổng khuyến nghị đạm | `daysWithData >= 3` (đếm HÀNG) | `proteinDays >= 3` |
+| `weekly-review.tsx` cổng khuyến nghị deload | `daysWithData >= 3` | `readinessDays >= 3` |
+| `ai-weekly-review/index.ts` | chỉ gửi từng hàng ngày, mô hình tự chia | thêm `ctx.week.nutrition.{avg_kcal, avg_protein_g, kcal_days, protein_days}`, **null** khi không có ngày nào |
+| `smart-goals.tsx` cổng thẻ đạm | `dailyLogs.length === 0` | `nutritionDays(...) === 0` |
+
+`src/lib/nutrition-mean.ts` là file mới, và nó là một file vì lý do repo đã ghi
+sẵn cho `step-days.ts` và `health-days.ts`: `weekly-review.tsx` import React và
+Reanimated nên Node không nạp được nó, mà **một bộ dò không chạy được hàm thật
+thì buộc phải chép lại hàm đó — và một phép kiểm tự chép lại thứ nó kiểm thì
+luôn đồng ý với chính mình.**
+
+---
+
+### BUG-102 — mẫu số của `lowDays`: **PRODUCT DECISION REQUIRED**, cố ý chưa sửa
+
+Nhãn `smartGoalsLowDays` đọc là **"ngày thấp/14 ngày"** — nó nói thẳng mẫu số là
+mười bốn ngày lịch. Nhưng phép đếm lại chạy trên `dailyLogs`, tức **không phải**
+mười bốn ngày và cũng **không phải** những ngày có ăn: nó là những hàng tình cờ
+tồn tại. Nên hôm nay, một ngày có được tính là "thấp" hay không vẫn phụ thuộc
+vào việc HealthKit có ghi hàng cho ngày đó không.
+
+Hai cách đọc đều mạch lạc, và chúng cho hai con số khác nhau:
+
+1. **ngày thấp trong số ngày CÓ dữ liệu dinh dưỡng** — quy ước
+   `adaptive-tdee.ts` phát biểu thẳng ra;
+2. **ngày thấp trong 14 ngày lịch**, trong đó một ngày không ghi gì được tính là
+   thấp — đúng như nhãn hứa.
+
+Brief của Chain AC yêu cầu: *"If the wording explicitly means calendar days, stop
+and report the semantic conflict rather than silently choosing."* Nhãn nói rõ
+mười bốn ngày lịch, nên dòng đếm **giữ nguyên** và câu hỏi được ghi lại ở đây.
+
+**Phần đã sửa** là phần sai dưới **cả hai** cách đọc: thẻ này tự tắt bằng
+`dailyLogs.length`, nên một tài khoản chưa từng ghi bữa nào — sau đúng một lần
+đồng bộ — thấy **"14 ngày thấp/14 ngày"** màu đỏ thay vì chính câu trống của nó,
+*"Chưa có dữ liệu dinh dưỡng. Ghi bữa ăn để nhận gợi ý."*
+
+---
+
+### Chain AC — đã kiểm và **KHÔNG** phải lỗi
+
+- **Tổng không bị pha loãng bởi số 0**: `totalVolume`, `prevTotalVolume`,
+  `monthLogs` đều đúng và không đổi.
+- `avgReadiness` vốn đã lọc `l.readiness_score` — chỉ có **cổng** của nó dùng sai
+  số đếm, và đó là thứ đã sửa.
+- `adaptiveTDEE`, `useKcalHistory`, `useSleepDurationHistory`,
+  `useReadinessHistory` đều đã lọc theo cột của chúng từ trước.
+- Thử thách tuần `sleep_7` / `protein_7` / `calories_5` / `steps_50k` tự lọc.
+- `ai-weekly-review.month_context.avg_volume_28d` chia cho `allLogs.length` và
+  **cũng** bị pha loãng — nhưng đó là một chỉ số **tải**, không phải dinh dưỡng,
+  và brief của vòng này giới hạn ở dinh dưỡng. **Ghi lại, chưa sửa.**
+
+---
+
+### Chain AC — bộ dò và phép phá
+
+`tools/nutrition-averages.mjs` (mới, đã đăng ký trong `check.mjs` — bộ kiểm giờ
+**119 bước**).
+
+- **Cấu trúc** (bỏ chú thích trước khi khớp): `metricMean` phải lọc theo chính
+  giá trị và **không được nhắc tên cột nào**; bốn trung bình của weekly-review
+  phải đi qua nó; hình dạng `avg(... || 0)` bị cấm; hai cổng khuyến nghị phải
+  đếm ngày của chính chỉ số; edge function phải mang `ctx.week.nutrition`; và
+  `LOGGED_DAY_FILTER` bị **cấm** xuất hiện trong hai màn dinh dưỡng.
+- **Hành vi**: chạy **`metricMean` thật** và **hai hàm thật lấy ra từ
+  `ai-weekly-review`** trên PostgreSQL 16.13 dựng từ mọi migration, chấm bằng
+  oracle đọc `meal_entries` — không bao giờ đọc `daily_logs`.
+- **Ca**: A 7 ngày · B 5+2 bước chân · C 3+4 · D 1+6 · E không có ngày nào
+  (không bịa trung bình, thẻ ẩn) · F calo và đạm ở **hai tập ngày khác nhau** ·
+  G xoá bữa ăn thì trung bình trả lại · H 3 ăn + 2 **chỉ tập** + 2 bước chân.
+
+**Chín phép phá, cả chín ĐỎ đúng câu định trước, khôi phục XANH:**
+
+| phép phá | bắt bởi |
+| --- | --- |
+| 1 · bỏ bộ lọc calo | cấu trúc A2 |
+| 2 · bỏ bộ lọc đạm | cấu trúc A2 |
+| 3 · thay bằng `LOGGED_DAY_FILTER` | cấu trúc A5 |
+| 4 · đạm dùng dân số của calo | A1 **và** ca F (`proteinDays 0` ≠ oracle 1) |
+| 5 · calo dùng dân số của đạm | A1 **và** ca F đảo (`kcalDays 0` ≠ oracle 2) |
+| 6 · cho hàng bước chân vào | A1 **và** ca B (1.500 ≠ 2.100) |
+| 7 · thẻ đạm mở cổng bằng số hàng | cấu trúc A6 |
+| 8 · edge function quay lại phép tính thô | A4 **và** ca AI (900/64 ≠ 2.100/150) |
+| 9 · vị từ đúng chỉ nằm trong chú thích | A1 — chú thích bị bỏ trước khi khớp |
+
+Phép phá 8 in ra đúng hai con số đã ship — **900 / 64** — từ payload rời khỏi
+edge function, nên biên AI được chứng minh chứ không phải được suy ra.
+
+---
+
+### Chain AC — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory`, cổng suy từ thư mục tạm |
+| **HÀM THẬT** | `metricMean` và `nutritionMean`/`nutritionDays` **lấy ra từ file production** rồi chạy — không bản chép lại |
+| **ORACLE** | đọc `meal_entries`, không bao giờ đọc `daily_logs` |
+| **BIÊN AI** | đã chứng minh: giá trị rời khỏi `ai-weekly-review` khớp oracle, và là `null` khi không có ngày nào |
+| **BREAK-TESTS** | 9/9 đỏ đúng lý do; khôi phục xanh |
+| **REGRESSION** | Chain Y, Z, T (awards-concurrency), AA, AB (logged-day), S (daily-log-concurrency), streak-challenge — tất cả XANH |
+| **BỘ KIỂM** | `node tools/check.mjs` — **119/119 xanh** |
+| **TYPESCRIPT** | `npx tsc --noEmit` sạch |
+| **REAL iOS / HealthKit** | **KHÔNG** — hàng do đồng bộ tạo ra được dựng lại bằng đúng câu upsert của nó, chứ không lấy từ HealthKit thật |
+| **PRODUCTION** | **KHÔNG** — edge function chưa deploy; phép chứng minh chạy trên mã nguồn của nó |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,

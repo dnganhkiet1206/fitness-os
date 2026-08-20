@@ -34,6 +34,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr, localDayRangeISO, weekStartOf } from '@/lib/local-date';
+import { metricMean } from '@/lib/nutrition-mean';
 
 interface AIInsight {
   category: string;
@@ -308,21 +309,31 @@ export default function WeeklyReviewScreen() {
     sleepH: Number(profile?.sleep_target_hours) || 8,
   };
 
-  const avgKcal = avg(logs.map((l) => Number(l.kcal) || 0));
-  const avgProtein = avg(logs.map((l) => Number(l.protein_g) || 0));
+  /* Each over its own population — see `metricMean`. `proteinDays` is what the
+     protein recommendation below gates on: `daysWithData` counts rows, and a
+     row is not a meal. */
+  const { mean: avgKcal } = metricMean(logs, (l) => Number(l.kcal));
+  const { mean: avgProtein, count: proteinDays } = metricMean(logs, (l) => Number(l.protein_g));
   const avgSleepMin = avg(
     (sleepLogs ?? []).map((s) => (s.deep_min ?? 0) + (s.rem_min ?? 0) + (s.light_min ?? 0)),
   );
   const avgSleepH = avgSleepMin / 60;
   const totalVolume = sum(logs.map((l) => Number(l.volume_load) || 0));
   const workoutCount = (workouts ?? []).length;
+  /* Already population-correct before this round — kept as it was, and the day
+     count now travels with it for the same reason the other two carry one. */
+  const readinessDays = logs.filter((l) => l.readiness_score).length;
   const avgReadiness = avg(
     logs.filter((l) => l.readiness_score).map((l) => Number(l.readiness_score)),
   );
 
   const pLogs = prevLogs ?? [];
-  const prevAvgKcal = avg(pLogs.map((l) => Number(l.kcal) || 0));
-  const prevAvgProtein = avg(pLogs.map((l) => Number(l.protein_g) || 0));
+  /* The same population rule, because these two are the other half of a delta:
+     comparing a mean over meal days against a mean over every row would report
+     a change in eating that is really a change in how many days HealthKit
+     happened to write. */
+  const prevAvgKcal = metricMean(pLogs, (l) => Number(l.kcal)).mean;
+  const prevAvgProtein = metricMean(pLogs, (l) => Number(l.protein_g)).mean;
   const prevTotalVolume = sum(pLogs.map((l) => Number(l.volume_load) || 0));
 
   const chartData = DAYS.map((day, i) => {
@@ -379,7 +390,11 @@ export default function WeeklyReviewScreen() {
       `ACWR tối ưu (${acwr}). Giữ nguyên hoặc tăng nhẹ 5% volume.`,
       `ACWR optimal (${acwr}). Hold steady or bump volume ~5%.`) });
   }
-  if (avgReadiness < 50 && daysWithData >= 3) {
+  /* `readinessDays`, not `daysWithData`: the gate has to count the days the
+     mean was actually built from. A row written by the step sync carries no
+     readiness score, so it was padding this threshold with days that
+     contributed nothing to the number being judged. */
+  if (avgReadiness < 50 && readinessDays >= 3) {
     recommendations.push({ kind: 'warning', text: L(
       'Readiness trung bình thấp. Cân nhắc tuần deload: giảm 40-50% volume, giữ cường độ.',
       'Low average readiness. Consider a deload week: cut volume 40-50%, keep intensity.') });
@@ -393,7 +408,11 @@ export default function WeeklyReviewScreen() {
       `Thiếu ngủ (${avgSleepH.toFixed(1)}h vs ${targets.sleepH}h). Ưu tiên ngủ trước khi tăng volume.`,
       `Sleep debt (${avgSleepH.toFixed(1)}h vs ${targets.sleepH}h). Prioritize sleep before adding volume.`) });
   }
-  if (avgProtein < targets.protein * 0.8 && daysWithData >= 3) {
+  /* `proteinDays`: three days of *protein*, not three rows. This is the
+     sentence Chain AC measured being produced for somebody hitting 150 g on
+     every day they ate — five logged days out of seven read as 107 g, and the
+     three that made the threshold were step-only rows. */
+  if (avgProtein < targets.protein * 0.8 && proteinDays >= 3) {
     recommendations.push({ kind: 'info', text: L(
       `Protein thấp (${Math.round(avgProtein)}g vs ${targets.protein}g). Tăng protein để hỗ trợ phục hồi.`,
       `Low protein (${Math.round(avgProtein)}g vs ${targets.protein}g). Increase protein to support recovery.`) });

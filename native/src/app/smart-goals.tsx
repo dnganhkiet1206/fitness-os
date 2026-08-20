@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { adaptiveTDEE, worthMentioning } from '@/lib/adaptive-tdee';
 import { calcTargetCalories } from '@/lib/fitness-calc';
 import { localDateStr, weekStartOf } from '@/lib/local-date';
+import { nutritionDays } from '@/lib/nutrition-mean';
 import { convertWeight, displayWeight, weightLabel } from '@/lib/units';
 
 /*
@@ -166,11 +167,60 @@ export default function SmartGoalsScreen() {
   }, [weightLogs, dailyLogs, profile]);
 
   const protein = useMemo(() => {
-    if (!dailyLogs || dailyLogs.length === 0 || !profile) return null;
+    /*
+      ── "has a row" was standing in for "has eaten" ──
+
+      This card's own empty state says *"Chưa có dữ liệu dinh dưỡng. Ghi bữa ăn
+      để nhận gợi ý."* — and it was gated on `dailyLogs.length`, which counts
+      `daily_logs` rows. A row is not a meal: `use-health-sync` upserts
+      `{ user_id, date, steps }` for up to thirteen finished HealthKit days and
+      an upsert **creates** the row, and Chain AB measured that a day whose only
+      meal is deleted keeps its row at zero.
+
+      So an account that had never logged a single meal, after one first sync,
+      did not get that message. It got the coach card, with a red
+
+          14   ngày thấp/14 ngày
+
+      — measured on PostgreSQL 16.13 against exactly the rows the sync writes.
+      Fourteen low-protein days for somebody who has never recorded any protein
+      at all.
+
+      The gate is now the thing the message names: nutrition data. `kcal` **or**
+      `protein_g`, because either one is food that was recorded, and a meal
+      logged with no protein is still a meal.
+    */
+    const withNutrition = nutritionDays(
+      dailyLogs ?? [],
+      (d) => Number(d.kcal),
+      (d) => Number(d.protein_g),
+    );
+    if (withNutrition === 0 || !profile) return null;
     const target = Number(profile.macro_protein_g) || 150;
     const perMeal = Math.round(target / 4);
-    const lowDays = dailyLogs.filter((d) => Number(d.protein_g) < target * 0.7);
-    return { target, perMeal, lowDays: lowDays.length, totalDays: dailyLogs.length };
+    /*
+      ── the denominator is NOT settled, and this line is deliberately unchanged ──
+
+      `smartGoalsLowDays` reads *"ngày thấp/14 ngày"* — the label states a
+      fourteen-calendar-day denominator. But the count below is over
+      `dailyLogs`, which is neither fourteen days nor the days with food: it is
+      the rows that happen to exist, so whether a day counts as "low" still
+      depends on whether HealthKit wrote a row for it.
+
+      Two coherent readings, and they disagree:
+
+        - low days among days with nutrition data — the convention
+          `adaptive-tdee.ts` states outright, *"A day with no meals logged is a
+          day with no information, not a day of eating nothing"*;
+        - low days among fourteen calendar days, where a day with no food
+          recorded counts as low — which is what the label promises.
+
+      Chain AC reports the conflict rather than picking one silently. The guard
+      above is fixed because it is wrong under **both** readings; this line
+      waits for the product answer.
+    */
+    const lowDays = dailyLogs!.filter((d) => Number(d.protein_g) < target * 0.7);
+    return { target, perMeal, lowDays: lowDays.length, totalDays: dailyLogs!.length };
   }, [dailyLogs, profile]);
 
   const goalLabels: Record<string, string> = {
