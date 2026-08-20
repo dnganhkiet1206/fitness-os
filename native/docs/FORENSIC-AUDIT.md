@@ -7503,6 +7503,303 @@ trigger là thứ duy nhất đang đỡ, và policy chỉ tồn tại để b�
 | **AsyncStorage thật** | **KHÔNG** |
 ---
 
+## Chain AB — `recomputeDailyLog`: ngày nào là ngày nào
+
+**Bộ kiểm (giai đoạn bằng chứng):** cluster PostgreSQL 16.13 THẬT dựng từ toàn bộ
+migration, chạy **`recomputeDailyLog` thật**, chấm bằng **oracle SQL độc lập**,
+qua **sáu múi giờ**.
+
+### Câu hỏi trung tâm
+
+*`recomputeDailyLog(user, day)` có tạo ra đúng trạng thái mà người dùng phải có
+cho NGÀY ĐỊA PHƯƠNG đó, tính từ các bản ghi nguồn hay không?*
+
+Không so bằng cách đối chiếu một hàm production với một hàm production khác.
+Oracle được dựng riêng.
+
+---
+
+### Chain AB — oracle độc lập ở chỗ nào, và KHÔNG độc lập ở chỗ nào
+
+Nói thẳng, vì đây là chỗ dễ tự lừa mình nhất.
+
+Oracle là một câu SQL chạy trong PostgreSQL, tự suy ra cửa sổ ngày địa phương
+bằng **`AT TIME ZONE`** — cơ chế hoàn toàn khác với `localDayRangeISO()` bên JS
+mà app dùng. Nó **không** import `daily-log-service.ts`, `recomputeDailyLog()`,
+`readDailyLog()`, engine readiness, engine chuỗi ngày hay engine quest.
+
+- **Độc lập** ở đúng chỗ then chốt: *một mốc thời gian thuộc về ngày địa phương
+  nào*. Hai cơ chế khác nhau cùng trả lời, và chúng khớp nhau — đó mới là bằng
+  chứng.
+- **KHÔNG độc lập** về *quy tắc tổng hợp*: oracle cố tình mã hoá cùng luật
+  (ưu tiên `asleep_min` khi `> 0`, chọn giấc ngủ có `waketime` mới nhất, đếm
+  `supplements` không theo cửa sổ ngày). Ở những chỗ đó oracle là **bản phát
+  biểu lại luật để khoá nó lại**, không phải bằng chứng luật đó đúng. Luật nào
+  đúng là **PRODUCT SEMANTICS**, và mục dưới ghi rõ từng cái.
+
+---
+
+### Chain AB — bản đồ ghi: nguồn nào ra cột nào
+
+| nguồn | cửa sổ | phép | cột `daily_logs` |
+| --- | --- | --- | --- |
+| `meal_entries.date_time` | ngày địa phương | SUM | `kcal`, `protein_g`, `carbs_g`, `fat_g`, `fiber_g` |
+| `workout_sessions.date_time` | ngày địa phương | COUNT + SUM | `workout_count`, `volume_load` |
+| `sleep_logs.waketime` | ngày địa phương | **1 dòng**, `order(waketime desc).limit(1)` | `sleep_duration_min`, `sleep_quality` |
+| `supplements` | **không có cửa sổ** | COUNT | `supplement_planned` |
+| `supplement_intake_logs.date_time` | ngày địa phương, `taken=true` | COUNT | `supplement_taken` |
+| `biometric_samples` + lịch sử 28 ngày | nhiều cửa sổ | `computeReadiness` | `readiness_*`, `acwr` |
+
+**Không nằm trong hàng được ghi:** `steps`, `active_kcal`, `active_minutes` —
+đó là cột của health sync. Một cột một người ghi, cố ý. Đo lại: dựng lại một
+ngày đã có `steps=8500, active_kcal=320, active_minutes=45` giữ nguyên cả ba,
+ở cả sáu múi giờ.
+
+**Không có cột nước trong `daily_logs`** — nên "ngày có uống nước" không bao giờ
+là một ngày có dòng.
+
+---
+
+### Chain AB — hai giả thuyết của tôi bị phép đo bác bỏ
+
+Ghi lại vì cả hai đều là lỗi tôi suýt báo.
+
+1. **"`sleeps?.[0]` là chọn ngẫu nhiên khi có hai giấc ngủ."** Sai. Câu truy vấn
+   có `.order('waketime', { ascending: false }).limit(1)`. Đo với hai giấc ngủ
+   trong cùng một ngày: luôn ra giấc có `waketime` muộn hơn, ở cả sáu múi giờ.
+2. **"Một nguồn đọc lỗi sẽ âm thầm thành 0."** Sai. `recomputeDailyLog` gom
+   mười phép đọc vào một mảng `failed` và **ném** `DailyLogRebuildError` kể tên
+   bảng hỏng. Đo bằng cách đổi tên từng bảng nguồn một (xem bảng dưới).
+
+---
+
+### Chain AB — ma trận ngày: 23 giờ, 24 giờ, 25 giờ
+
+Bốn bữa ăn đặt đúng bốn mép: `23:59` hôm trước, `00:00`, `23:59`, `00:00` hôm
+sau. Ngày đúng phải nhận **555** (222 + 333) và không nhận 111 hay 444.
+
+| múi giờ | 2026-03-08 | 2026-11-01 | ngày thường | kết quả |
+| --- | --- | --- | --- | --- |
+| America/New_York | **23 giờ** | **25 giờ** | 24 | 4/4 khớp oracle |
+| America/Los_Angeles | **23 giờ** | **25 giờ** | 24 | 4/4 |
+| America/Chicago | **23 giờ** | **25 giờ** | 24 | 4/4 |
+| America/Denver | **23 giờ** | **25 giờ** | 24 | 4/4 |
+| America/Phoenix | 24 | 24 | 24 | 4/4 (không có DST — đúng) |
+| Asia/Ho_Chi_Minh | 24 | 24 | 24 | 4/4 |
+
+`kcal = 555` ở tất cả 24 ô. Ngày 23 giờ và ngày 25 giờ **không** làm lệch mép.
+
+---
+
+### Chain AB — giấc ngủ qua nửa đêm thuộc về ngày nào
+
+| giấc ngủ | ngày trước | ngày sau |
+| --- | --- | --- |
+| 23:00 → 07:00 | 0 | **480** |
+| 23:30 → 00:30 | 0 | **60** |
+| 01:00 → 08:00 | — | 420 |
+| 22:00 → 23:00 (cùng tối) | 60 | — |
+
+Quy tắc: **ngày thức dậy sở hữu giấc ngủ**, vì cửa sổ lọc trên `waketime`. Giống
+nhau ở cả sáu múi giờ. Đây là **PRODUCT SEMANTICS đã được viết ra** trong
+`daily-log-service.ts` (*"sleep ending on this date"*), không phải lỗi — nhưng
+hệ quả cần nói ra: một người đi ngủ lúc 22:00 và dậy lúc 23:00 cùng tối có
+`sleep_duration_min = 60` cho **hôm đó**, còn một đêm thật 23:00 → 07:00 tính
+cho **hôm sau**. Hai chuyện khác nhau nằm chung một cột.
+
+---
+
+### Chain AB — ma trận nguồn đọc lỗi: SOURCE ERROR → ZERO?
+
+**Không.** Từng bảng bị đổi tên một lần, sau khi đã có một hàng ĐÚNG và một bữa
+ăn mới chờ được nhận:
+
+| bảng bị giấu | có ném? | hàng cũ |
+| --- | --- | --- |
+| `meal_entries` | **CÓ** | giữ nguyên |
+| `workout_sessions` | **CÓ** | giữ nguyên |
+| `sleep_logs` | **CÓ** | giữ nguyên |
+| `supplements` | **CÓ** | giữ nguyên |
+| `supplement_intake_logs` | **CÓ** | giữ nguyên |
+| `biometric_samples` | **CÓ** | giữ nguyên |
+| `daily_logs` (đọc token) | **CÓ** | giữ nguyên |
+| `profiles` | **KHÔNG** | dựng lại bình thường |
+
+`profiles` được miễn có chủ đích: nó dùng `.single()`, và người chưa xong
+onboarding thật sự không có dòng nào (PGRST116) — mục tiêu giờ ngủ đã có mặc
+định. Bảy bảng còn lại: **không có đường nào biến lỗi đọc thành số 0**, và
+không có đường nào làm hỏng hàng đang đúng.
+
+---
+
+### Chain AB — ma trận đồng thời
+
+Mỗi tác nhân **một kết nối riêng**. Người chen ngang bắn đúng một lần, **giữa
+các phép đọc và phép ghi** — đúng cửa sổ mà CAS trên `updated_at` canh.
+
+| người chen ngang | có ném? | khớp oracle |
+| --- | --- | --- |
+| chỉ ghi `steps` (đẩy token, không ghi phép chiếu) | không | **có** |
+| ghi đè một phép chiếu mới hơn | không | **có** |
+| **xoá** hẳn hàng của ngày đó | không | **có** |
+| chèn bữa ăn của phiên khác + đẩy token | không | **có** |
+
+Cả bốn ở cả sáu múi giờ. Đây là **xác nhận lại** bản sửa Chain I/S, không phải
+phát hiện mới — `tools/daily-log-concurrency.mjs` đã khoá phần này từ trước.
+
+---
+
+### Chain AB — bù dữ liệu, xoá nguồn, xoá tài khoản
+
+- **Bù 13 ngày** (kịch bản HealthKit của Chain S) theo **ba thứ tự giao**: xuôi,
+  ngược, ngẫu nhiên → 6 × 3 × 13 = **234 lượt kiểm ngày, 0 lệch**.
+- **Xoá nguồn rồi dựng lại**: bữa ăn / buổi tập / giấc ngủ — cả ba về đúng 0,
+  hàng vẫn còn (đây là lý do `LOGGED_DAY_FILTER` tồn tại).
+- **Chạy lại 20 lần** trên cùng dữ liệu: byte-for-byte như nhau, đúng **1 hàng**.
+- **Chéo tài khoản**: bữa ăn của B không lọt vào ngày của A; dựng ngày cho A
+  không tạo hàng cho B.
+- **Xoá tài khoản**: `ON DELETE CASCADE` dọn hàng `daily_logs`; dựng lại cho một
+  `user_id` không còn tồn tại **ném** lỗi khoá ngoại và **không** tạo hàng mồ côi.
+
+---
+
+### Chain AB — hội tụ ngẫu nhiên: 12.000 chuỗi, 0 lệch
+
+| chế độ | mỗi múi giờ | tổng | lệch | ném |
+| --- | --- | --- | --- | --- |
+| hợp lệ | 1.000 | 6.000 | **0** | 0 |
+| thù địch | 1.000 | 6.000 | **0** | 0 |
+
+Chuỗi "thù địch" gồm những hình dạng mà **cột dữ liệu thật sự nhận**: calo âm,
+`1e6` calo, `volume_load` âm, bữa ăn của hôm qua/ngày mai, giấc ngủ **đảo ngược**
+(`waketime < bedtime`), `asleep_min = 0` với `quality = null`, `asleep_min =
+100000`, hai dòng bữa ăn trùng khít.
+
+**Giấc ngủ đảo ngược** đáng nói riêng: `asleepMinutes` kẹp về 0 chứ không trả số
+âm, nên `sleep_duration_min` không bao giờ âm. Oracle mã hoá cùng luật đó bằng
+`GREATEST(0, …)` — nên ô này là **luật được khoá lại**, không phải luật được
+chứng minh.
+
+**Kết luận của chain về câu hỏi trung tâm: `recomputeDailyLog` ĐÚNG.** Không tìm
+được đầu vào nào — hợp lệ hay thù địch, ở múi giờ nào, ngày 23 hay 25 giờ — làm
+nó lệch khỏi oracle.
+
+---
+
+### BUG-101 (P2). Thử thách "Ghi log đầy đủ 7 ngày" đếm cả ngày không ai ghi gì — `LOG7-COUNTS-BARE-ROWS`
+
+**ĐỀ XUẤT — CHƯA SỬA.** Đây là phát hiện của **bản đồ consumer**, không phải của
+`recomputeDailyLog`.
+
+Ba chỗ trong app hỏi `daily_logs` **cùng một câu**: *"ngày này người ta có ghi
+log không?"* Hai chỗ hỏi bằng `LOGGED_DAY_FILTER`. Chỗ thứ ba không lọc gì cả.
+
+| nơi đọc | câu hỏi | có lọc? |
+| --- | --- | --- |
+| `use-extras.ts:155` (chuỗi ngày) | ngày đã ghi log | `.or(LOGGED_DAY_FILTER)` ✓ |
+| `use-mascot-room.ts:140` (chuỗi ngày) | ngày đã ghi log | `.or(LOGGED_DAY_FILTER)` ✓ |
+| **`use-extras.ts:476` (`log_7`)** | ngày đã ghi log | **không có gì** ✗ |
+| `use-fitness-data.ts:533` | ngày có bước chân | `.gt('steps', 0)` — câu khác, tự khai |
+
+Chú thích ngay trong `use-mascot-room.ts` đã viết: *"Both readers of the streak
+have to ask the same question, and this file and `use-extras` have already
+drifted apart twice."* `log_7` là người đọc **thứ ba** của cùng câu hỏi đó, và
+nó chưa bao giờ được kéo về.
+
+**Vì sao có hàng trống.** `use-health-sync` upsert `{ user_id, date, steps }`
+cho tới 13 ngày HealthKit đã đóng, và `upsert` **tạo** hàng khi chưa có. Một
+chiếc điện thoại đếm bước trong túi tự sinh ra ngày.
+
+**Đo trên cluster thật** — tài khoản chưa từng ghi một bữa ăn, một buổi tập,
+một giấc ngủ, một viên bổ sung nào; mở app lần đầu vào Chủ nhật:
+
+```
+bản ghi nguồn : bữa=0 tập=0 ngủ=0 bổ sung=0
+hàng daily_logs do đồng bộ sức khoẻ tạo : 14
+streakFrom (LOGGED_DAY_FILTER) : 0 ngày
+log_7      (không lọc gì)      : 7/7
+```
+
+`log_7` là thử thách **hạng VÀNG**, và mô tả của chính nó là *"Ghi log đầy đủ 7
+ngày trong tuần"*. Hoàn thành nó gọi
+`claim_quest_reward('ch:gold:<tuần>:log_7')` — nên nó **được trả công**.
+
+**Vì sao P2 chứ không phải P0/P1.** Không có gì bị mất, không có gì bị hỏng, và
+Chain AA đã chứng minh giá tiền là do máy chủ định và có trần theo ngày. Cái sai
+ở đây là **ý nghĩa**: thử thách nói một câu về người dùng mà người dùng không
+làm. Cùng đúng một lớp lỗi Chain I đã sửa cho chuỗi ngày — chỉ là còn sót một
+người đọc.
+
+**Bản sửa nhỏ nhất được đề xuất (một dòng).** Cho `log_7` hỏi đúng câu mà chuỗi
+ngày hỏi:
+
+```ts
+.from('daily_logs')
+.select('date')
+.eq('user_id', user.id)
+.or(LOGGED_DAY_FILTER)          // ← thêm dòng này
+.gte('date', weekStart)
+.lt('date', weekEndStr);
+```
+
+`LOGGED_DAY_FILTER` **đã được import sẵn** trong chính file đó. Không thêm bảng,
+không thêm cột, không đổi luật thưởng. Đo trên cluster thật: người thật sự ghi
+log 7 ngày vẫn ra **7/7** sau khi thêm bộ lọc — bản sửa không lấy đi gì của ai.
+
+**Bộ dò được đề xuất** (`tools/logged-day.mjs`, chưa viết):
+
+- **A (cấu trúc, đã bỏ chú thích).** Mọi chuỗi `.from('daily_logs')` trong `src/`
+  mà `select` **đúng bằng** `date` — tức là đang hỏi *ngày có tồn tại không* —
+  phải mang `LOGGED_DAY_FILTER`, hoặc mang một vị từ tự khai trên một cột cụ thể
+  (`use-fitness-data.ts:533` là ca thứ hai và nó hợp lệ).
+- **B (hành vi, PostgreSQL thật).** Dựng hàng đúng như `use-health-sync` ghi
+  (chỉ `steps`), dịch hằng `LOGGED_DAY_FILTER` đọc từ `streak.ts` sang SQL, và
+  khẳng định **0 ngày** được tính; rồi một tuần ghi log thật vẫn ra **7**.
+- **Phép phá bắt buộc:** gỡ `.or(LOGGED_DAY_FILTER)` khỏi bản sửa → **A đỏ đúng
+  ở `use-extras.ts` dòng `log_7`**; thêm `steps.gt.0` vào hằng số → **B đỏ**.
+
+---
+
+### Chain AB — PRODUCT SEMANTICS, ghi để không ai "sửa" nhầm
+
+1. **Ngày thức dậy sở hữu giấc ngủ.** 23:00 → 07:00 là giấc ngủ của ngày **sau**.
+   Đã viết ra trong code. Hệ quả: một giấc chợp 22:00 → 23:00 cũng vào cột đó.
+2. **`supplement_planned` không có cửa sổ ngày.** Nó đếm *toàn bộ* `supplements`
+   của người dùng, nên dựng lại một ngày của tháng trước sẽ dùng danh sách
+   **hôm nay**. Một ngày trong quá khứ có thể đổi mẫu số khi người dùng thêm
+   một viên bổ sung mới. **PRODUCT DECISION REQUIRED** nếu muốn khác.
+3. **`sleep_quality` mặc định 5 khi có dòng ngủ mà `quality` là null**, và 0 khi
+   không có dòng ngủ nào. Hai số 0 khác nhau nằm chung một cột.
+
+---
+
+### Chain AB — đã kiểm và **KHÔNG** phải lỗi
+
+- `recomputeDailyLog` không ghi `steps`/`active_kcal`/`active_minutes` — **đúng**,
+  đó là cột của health sync, đã đo là giữ nguyên qua mỗi lần dựng lại.
+- Lỗi đọc nguồn **không** biến thành 0 — nó ném và giữ hàng cũ.
+- Chọn giấc ngủ **không** ngẫu nhiên — có `order(...).limit(1)`.
+- CAS trên `updated_at` vẫn hội tụ dưới cả bốn kiểu chen ngang.
+- Dựng lại **idempotent**, đúng một hàng.
+
+---
+
+### Chain AB — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, có khẳng định `SHOW data_directory` |
+| **HÀM THẬT** | `recomputeDailyLog` được transpile và chạy thật; không có bản chép lại |
+| **ORACLE** | SQL riêng, tự suy cửa sổ ngày bằng `AT TIME ZONE`; không import service/readiness/streak/quest |
+| **MÚI GIỜ** | 6 múi, gồm 2 ngày DST (23 giờ và 25 giờ) và 1 múi không DST |
+| **QUY MÔ** | 12.000 chuỗi ngẫu nhiên (6.000 hợp lệ + 6.000 thù địch), **0 lệch** |
+| **DETECTORS** | **CHƯA** — giai đoạn này chỉ có bằng chứng, chưa sửa, chưa viết bộ dò |
+| **REGRESSION** | **CHƯA CHẠY LẠI** — không có thay đổi production nào trong vòng này |
+| **REAL iOS** | **KHÔNG** |
+| **PRODUCTION** | **KHÔNG** |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres`; RLS của `daily_logs` đã được `tools/daily-log-concurrency.mjs` kiểm |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,
