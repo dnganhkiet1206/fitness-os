@@ -7865,6 +7865,196 @@ qua nửa đêm, nguồn đọc lỗi, xoá-rồi-dựng-lại, đồng thời, 
 và 12.000 chuỗi ngẫu nhiên.
 
 
+## Chain AC — hàng do đồng bộ sức khoẻ tạo ra, và mọi thứ đọc chúng
+
+**Bộ kiểm (giai đoạn bằng chứng):** cluster PostgreSQL 16.13 THẬT dựng từ toàn bộ
+migration, chạy **`recomputeDailyLog`, `streakFrom`, `awardsToGrant`,
+`touchedDays`, `dailyStepsFrom` thật**, chấm bằng oracle đọc `meal_entries`.
+
+### Chain AC — oracle độc lập ở chỗ nào
+
+Oracle **không** dựng lại phép chiếu `daily_logs`. Nó trả lời một câu hoàn toàn
+khác: *"người này thật sự đã ăn gì"*, đọc thẳng từ `meal_entries`. Một con số
+thống kê về việc ăn uống mà mâu thuẫn với `meal_entries` là sai, bất kể
+`daily_logs` nói gì. Đó là lý do oracle này có quyền phán xử, còn một bản chép
+lại phép chiếu thì không.
+
+---
+
+### Chain AC — bản đồ đầy đủ: 24 chỗ chạm `daily_logs`, 4 ghi 20 đọc
+
+**Hai người ghi, và chỉ hai.**
+
+| người ghi | ghi gì | tạo hàng mới? |
+| --- | --- | --- |
+| `use-health-sync.ts:145` | `steps`, `active_kcal`, `active_minutes` của **hôm nay** | **CÓ** (upsert) |
+| `use-health-sync.ts:152` | `steps` cho tới **13 ngày đã đóng** | **CÓ** (upsert) |
+| `daily-log-service.ts:307/338` | phép chiếu (kcal, đạm, tập, ngủ, sẵn sàng…) | CÓ |
+
+**Hai mươi chỗ đọc, chia làm ba nhóm.**
+
+| nhóm | nơi đọc | phán quyết |
+| --- | --- | --- |
+| **Hỏi "ngày này có ghi log không"** | `use-extras:122`, `use-mascot-room:99` (chuỗi), `use-extras:340` (`log_7`, đã sửa ở Chain AB) | đều dùng `LOGGED_DAY_FILTER` ✓ |
+| | `use-fitness-data:292` (`useStepsAvailable`) | vị từ riêng `steps.gt.0`, tự khai, hợp lệ ✓ |
+| **Đọc một chỉ số, tự lọc theo chính chỉ số đó** | `use-fitness-data:380/402/423` (`.not(... is null)` + `> 0`), `use-extras:349/357/365/373` (thử thách tuần), `use-extras:136` (`steps_10k`), `useTodayData:35` | ✓ đúng |
+| **TRUNG BÌNH / ĐẾM trên nhiều hàng, KHÔNG lọc gì** | `weekly-review:152`, `weekly-review:200`, `smart-goals:69`, và `ai-weekly-review/index.ts:70` (edge function) | **BUG-102** |
+
+Tổng và biểu đồ theo ngày **không** nằm trong nhóm cuối: một hàng 0 cộng vào một
+tổng là vô hại (`totalVolume`, `prevTotalVolume`, `monthLogs`), và `avgReadiness`
+đã tự lọc `l.readiness_score`. Chỉ **trung bình** và **đếm** mới hỏng.
+
+---
+
+### BUG-102 (P2). Một ngày không ai ghi gì bị tính là một ngày ăn 0 calo — `ZERO-ROW-DILUTES-MEANS`
+
+**ĐỀ XUẤT — CHƯA SỬA.** Cần một **PRODUCT DECISION** trước khi sửa, xem mục dưới.
+
+**Mạch gốc.** `avg(rows.map(r => Number(r.kcal) || 0))` lấy trung bình một chỉ số
+trên **những hàng mà chỉ số đó không tồn tại**. Mẫu số là "bao nhiêu hàng tình cờ
+có mặt", chứ không phải "bao nhiêu ngày người ta ăn" và cũng không phải "bảy ngày
+trong tuần".
+
+**Ai sinh ra hàng 0.** Hai đường, và đường thứ hai không liên quan gì tới HealthKit:
+
+1. `use-health-sync` upsert `{user_id, date, steps}` — tạo hàng cho tới 13 ngày
+   quá khứ chỉ vì điện thoại đếm bước.
+2. **Ghi một bữa rồi xoá nó.** Đo được, không có đồng bộ sức khoẻ nào tham gia:
+
+   ```
+   số hàng daily_logs còn lại : 1 · kcal = 0 · steps = 0
+   ```
+
+   Chain AB đã ghi rằng hàng sống sót ở mọi số 0; đây là hệ quả của nó ở phía
+   người đọc.
+
+**Bán kính, đo trên cluster thật.** Sự thật luôn là **2.100 kcal / 150 g đạm /
+0 ngày đạm thấp / 6.000 tải** — người này ăn đúng như thế vào mọi ngày họ ăn.
+HealthKit tạo hàng cho cả bảy ngày trong tuần:
+
+| ngày ghi thật | `daysWithData` | avg kcal | avg đạm | cảnh báo "đạm thấp" | `lowDays` | `avg_volume_28d` (edge) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | 7 | 0 | 0 | **CÓ** | **7/7** | 0 |
+| 1 | 7 | 300 | 21 | **CÓ** | 6/7 | 857 |
+| 3 | 7 | **900** | **64** | **CÓ** | 4/7 | 2.571 |
+| 5 | 7 | 1.500 | **107** | **CÓ** | 2/7 | 4.286 |
+| 6 | 7 | **1.800** | 129 | – | 1/7 | 5.143 |
+| 7 | 7 | 2.100 | 150 | – | 0/7 | 6.000 |
+
+Con số app hiện ra đúng bằng **sự thật × (số ngày ghi / 7)**. Cụ thể:
+
+- Người ăn **150 g đạm mỗi ngày họ ăn**, ghi 5/7 ngày, được báo là **107 g** và
+  nhận cảnh báo *"Protein thấp (107g vs 140g)"* — một lời khuyên dinh dưỡng dựa
+  trên một phép chia sai.
+- Người ghi 6/7 ngày thấy **1.800 kcal** so với mục tiêu 2.200 — một khoản thiếu
+  hụt 400 kcal không có thật.
+- Tài khoản chưa từng ghi một bữa nào thấy **14/14 ngày đạm thấp**, in màu đỏ.
+- `total_logs` và `avg_volume_28d` đi vào prompt của mô hình trong
+  `ai-weekly-review`, cùng với từng hàng ngày mang `kcal: 0, steps: 7400`.
+
+**Đây KHÔNG phải BUG-101 lần nữa.** BUG-101 là *câu hỏi "ngày này có ghi log
+không" hỏi mà không lọc*. BUG-102 là *trung bình một chỉ số trên những hàng
+thiếu chỉ số đó*. Hai mạch khác nhau, và bản sửa của cái này không phải bản sửa
+của cái kia — xem ngay dưới.
+
+**`LOGGED_DAY_FILTER` KHÔNG phải bản sửa ở đây, và đó là phát hiện quan trọng
+nhất của chain này.** Đo với 3 ngày ăn + tập, 2 ngày **chỉ tập**, 2 ngày chỉ có
+bước chân:
+
+```
+sự thật (từ meal_entries)  : 3 ngày ăn, mỗi ngày 2100 kcal / 150 g đạm
+hiện tại (không lọc)       : ngày=7  kcal=900   đạm=64
+LOGGED_DAY_FILTER          : ngày=5  kcal=1260  đạm=90    ← VẪN LỆCH
+lọc theo chính chỉ số      : ngày=3  kcal=2100  đạm=150   ← khớp sự thật
+```
+
+`LOGGED_DAY_FILTER` nhận một ngày **chỉ có buổi tập** là ngày đã ghi log — đúng
+với câu hỏi nó sinh ra để trả lời — nhưng ngày đó có `kcal = 0`, nên trung bình
+calo vẫn bị kéo xuống. Áp bộ lọc chính tắc ở đây sẽ **giảm sai số mà không xoá
+nó**, và để lại một con số trông đã được sửa. Đó đúng là hình dạng "bản vá sai
+mà trông đúng".
+
+Cách đúng đã có sẵn trong repo và đang được ba nơi khác dùng: **lọc theo chính
+cột đang lấy trung bình** — `adaptiveTDEE` (`d.kcal > 0`), `useKcalHistory`
+(`.not('kcal','is',null)` + `> 0`), `useSleepDurationHistory` (như vậy).
+
+---
+
+### Chain AC — PRODUCT DECISION REQUIRED
+
+*"Trung bình calo tuần này"* nghĩa là gì? Có **hai** câu trả lời đều thành thật,
+và mẫu số hiện tại **không phải cái nào cả**:
+
+1. **Trung bình trên những ngày người ta ăn.** Mẫu số = số ngày có `kcal > 0`.
+   Đây là điều `adaptiveTDEE` làm, và nó trả lời *"khi tôi ăn, tôi ăn bao
+   nhiêu"*. Một tuần ghi 3 ngày ra 2.100.
+2. **Trung bình trên bảy ngày lịch.** Mẫu số = 7, cố định. Trả lời *"năng lượng
+   trung bình mỗi ngày của tôi tuần này"*, và một ngày không ghi thật sự kéo nó
+   xuống — nhưng lúc đó nhãn phải nói rõ, và mẫu số phải là **7**, không phải
+   `rows.length`.
+
+Mẫu số hiện tại là *"bao nhiêu hàng tình cờ tồn tại"* — nó thay đổi theo việc
+người dùng có bật HealthKit hay không, một yếu tố không liên quan gì tới việc họ
+ăn. Vì thế nó sai dưới **cả hai** cách hiểu, nhưng bản sửa thì khác nhau tuỳ
+cách hiểu. Không đoán.
+
+Câu hỏi tương tự cho `lowDays` của `smart-goals`: *"số ngày đạm thấp"* trên tổng
+số ngày nào — ngày đã ghi, hay ngày lịch?
+
+---
+
+### Chain AC — trả lời từng câu hỏi, kèm phép đo
+
+| câu hỏi | trả lời |
+| --- | --- |
+| 1. Lệnh ghi HealthKit nào tạo/sửa `daily_logs`? | đúng **hai** upsert, cả hai **tạo được** hàng: hôm nay (`steps`/`active_*`) và bù 13 ngày (`steps`) |
+| 2. Ai đọc những hàng đó? | 20 chỗ đọc, bảng phân nhóm ở trên |
+| 3a. Bù về có **sửa chuỗi ngày** không? | **KHÔNG** — chuỗi giữ nguyên 3 trước và sau khi bù 11 ngày bước chân |
+| 3b. có **sửa quest** không? | **KHÔNG** — quest chỉ đọc hàng của **hôm nay**, và `dailyStepsFrom` bỏ hôm nay (`date >= today`) |
+| 3c. có **kích huy chương** không? | **KHÔNG** — `awardsToGrant` không đổi (`streak_3` trước và sau) |
+| 3d. có **đổi điểm sẵn sàng** không? | **KHÔNG** — `recomputeDailyLog` không đọc `steps`; điểm của ngày cũ vẫn `null` |
+| 3e. có **đổi trạng thái Koa** không? | **KHÔNG** — Koa đọc chuỗi qua `LOGGED_DAY_FILTER`, và chuỗi không đổi |
+| 4. Có ai dùng hàng thô thay bộ lọc chính tắc? | **CÓ, 4 nơi** — nhưng ở một mạch khác: trung bình/đếm, không phải hỏi ngày tồn tại (BUG-102) |
+| 5. Có ai coi hàng chỉ-có-bước-chân là một ngày đã ghi log? | **CÓ** — `daysWithData`, `totalDays`, `total_logs`; và ngầm hơn: mọi trung bình ở trên |
+| 6. Cập nhật muộn có đổi vĩnh viễn một quyết định kinh tế/huy chương đã ban? | **huy chương: có, và nó dính.** Chuỗi 3 → **8** sau một buổi tập nhập muộn → `streak_7` được cấp → xoá buổi tập → chuỗi về **3**, **3 huy chương vẫn còn**. **Xu: 0** |
+| 7. Đó là lỗi, tính hội tụ, hay ngữ nghĩa sản phẩm? | **Tính hội tụ + ngữ nghĩa đã phân loại.** Giá trị dẫn xuất hội tụ đúng (tải 5.000 → 0 sau khi xoá); chỉ **huy chương** là không thu hồi, và Chain T/AA đã phân loại nó là đồ trang trí client ghi được, không quy ra xu/XP/quyền sở hữu. **Không mở lại** |
+| 8. Ranh giới xoá / tài khoản | sạch: hàng của B không lọt vào A, `ON DELETE CASCADE` dọn hết khi xoá tài khoản |
+| 9. Ranh giới múi giờ / DST của mốc HealthKit | **đúng** — `dailyStepsFrom` chạy thật ở New York, Lord Howe (lệch 30 phút) và giờ Việt Nam: 2026-03-08 và 2026-11-01 đều về đúng ngày của chúng; hôm nay và ngày tương lai bị bỏ; hai bucket rơi vào một ngày địa phương gộp thành **1 dòng** giữ giá trị đầy hơn |
+| 10. Thứ tự ghi nguồn → dựng lại → đọc dẫn xuất | **đúng** — hàng chỉ có bước chân cho chuỗi **0**; thêm bữa ăn rồi dựng lại cho chuỗi **1**, và `steps = 7400` vẫn nguyên bên cạnh `kcal = 2000` |
+
+---
+
+### Chain AC — đã kiểm và **KHÔNG** phải lỗi
+
+- `adaptiveTDEE` tự lọc `d.kcal > 0` — hàng 0 không vào ước lượng TDEE.
+- `useKcalHistory`, `useSleepDurationHistory`, `useReadinessHistory` đều lọc.
+- `avgReadiness` của weekly-review lọc `l.readiness_score`.
+- **Tổng** không bị pha loãng bởi số 0: `totalVolume`, `prevTotalVolume`,
+  `monthLogs` đều đúng.
+- Thử thách tuần `sleep_7` / `protein_7` / `calories_5` / `steps_50k` tự lọc
+  theo cột của chúng.
+- `useStepsAvailable` hỏi `steps > 0`, một câu hỏi khác và hợp lệ.
+- `touchedDays` **không** nhận `stepDays` — và đúng là không nên: bước chân
+  không nằm trong phép chiếu, nên bù bước chân không cần dựng lại ngày.
+
+---
+
+### Chain AC — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, có khẳng định `SHOW data_directory` |
+| **HÀM THẬT** | `recomputeDailyLog`, `streakFrom`, `awardsToGrant`, `touchedDays`, `dailyStepsFrom` — chạy thật, không bản chép lại |
+| **ORACLE** | đọc `meal_entries`, trả lời "đã ăn gì"; **không** dựng lại phép chiếu `daily_logs` |
+| **TRUY VẤN CONSUMER** | chép lại, kèm **shape guard** khẳng định mã nguồn vẫn đúng hình dạng đó (7/7 khẳng định đúng) |
+| **MÚI GIỜ** | `dailyStepsFrom` chạy thật ở 3 múi gồm một múi lệch 30 phút, và cả hai ngày DST |
+| **DETECTORS** | **CHƯA** — giai đoạn này chỉ có bằng chứng; chưa sửa, chưa viết bộ dò |
+| **REGRESSION** | **CHƯA CHẠY LẠI** — không có thay đổi production nào trong vòng này |
+| **REAL iOS / HealthKit** | **KHÔNG** — `dailyStepsFrom` là phần duy nhất chạy được ngoài iPhone, và chỉ nó được chạy; truy vấn `queryStatisticsCollectionForQuantity` **không** được thực thi |
+| **PRODUCTION** | **KHÔNG** |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,
