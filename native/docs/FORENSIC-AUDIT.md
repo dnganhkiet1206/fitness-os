@@ -9046,6 +9046,212 @@ từ chối). Ca A/B+C/D/E/F/G-H/J theo ma trận.
 | **PRODUCTION** | **KHÔNG** |
 | **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
 
+## Chain AG — điểm sẵn sàng: nó có nói đúng thứ nó dựa vào không
+
+**Bộ kiểm (giai đoạn bằng chứng):** cluster PostgreSQL 16.13 THẬT từ mọi
+migration; chạy **`recomputeDailyLog` và `computeReadiness` thật**; oracle
+**không import `readiness-engine`** — nó phát biểu HỢP ĐỒNG từ hàng thô (thành
+phần nào đo được, bao nhiêu thành phần, và điều đó buộc điểm phải tồn tại hay
+không), nên một engine chấm thứ nó không đo được thì không thể khớp.
+
+### Chain AG — kết quả trung tâm: ENGINE TRUNG THỰC
+
+**6 múi giờ × 1.000 trạng thái ngẫu nhiên = 6.000, lệch hợp đồng: 0.**
+Ma trận thiếu dữ liệu 9/9 đúng ở cả sáu múi. Ngày 23 giờ và 25 giờ không đổi gì.
+
+| trạng thái nguồn | thành phần đo được | điểm | acwr |
+| --- | --- | --- | --- |
+| không có gì | – | **null** | null |
+| 1 đêm ngủ | S | **null** (cổng chưa mở) | null |
+| 3 đêm | S | 65 | null |
+| 5 đêm + sinh trắc hôm nay, lịch sử 1 | S | 65 | null |
+| 5 đêm + 5 lần đo | H R S | 56 | null |
+| sinh trắc đủ, KHÔNG ngủ hôm nay | H R | 50 | null |
+| **chỉ buổi tập** | **L** | **null** ← xem BUG-107 | null |
+| chỉ buổi tập từ đồng hồ (+3 đêm) | S | 65 | **null** ✓ |
+| đủ cả bốn | H R S L | 61 | 1.14 |
+
+`acwr` **null** cho người chỉ tập bằng đồng hồ, đúng như Chain AD chốt. Không có
+chỗ nào biến null thành 0 trong engine.
+
+---
+
+### BUG-106 (P2). Điểm sẵn sàng của một ngày CŨ được tính từ cửa sổ của HÔM NAY — `READINESS-WINDOWS-ANCHORED-AT-NOW`
+
+**ĐỀ XUẤT — CHƯA SỬA. Cần PRODUCT DECISION cho bản sửa.**
+
+`daily-log-service.ts:142-145` neo hai cửa sổ lịch sử vào **`new Date()`**, chứ
+không vào ngày đang dựng lại:
+
+```ts
+const thirtyDaysAgo = new Date();  thirtyDaysAgo.setDate(... - 28);
+const sevenDaysAgo  = new Date();  sevenDaysAgo.setDate(... - 7);
+```
+
+Nên `recomputeDailyLog(user, ngày-cũ)` chấm điểm ngày đó bằng **tải, lịch sử
+sinh trắc và nợ ngủ của tuần đang diễn ra**, rồi **ghi đè** vào hàng của ngày cũ.
+
+**Đo trên cluster thật.** Người này tập rất nặng từ ngày −20 đến −14, rồi nghỉ
+hẳn bảy ngày gần đây. Dựng lại ngày **−17** (giữa đợt nặng nhất):
+
+```
+tải nội 7 ngày CỦA CHÍNH NGÀY ĐÓ : 8000
+tải nội 7 ngày kết thúc HÔM NAY  : 0
+ghi vào hàng của ngày −17        : readiness 57 · yellow · acwr 0
+```
+
+`acwr = 0` rơi vào vùng **"detraining"** — được ghi lên đúng tuần người ta tập
+nặng nhất. Đây là số 0 THẬT theo hợp đồng của engine (*"một tuần không tập trên
+một nền có thật"*), không phải null bị ép thành 0; cái sai là nó nói về **tuần
+khác**.
+
+**Đường đi tới đây là thường ngày, không hiếm:** `touchedDays` dựng lại tới
+tám ngày lùi mỗi lần đồng bộ; phát lại offline dựng lại ngày của bản ghi đã xếp
+hàng; xoá một đêm ngủ hay một lần đo sinh trắc dựng lại *"ngày đó và hôm nay"*.
+
+**Repo ĐÃ BIẾT.** `use-fitness-data.ts:210-215` viết thẳng: *"a past day's
+readiness is already an artefact of when it happened to be computed rather than
+a fact about that day. That is a separate question."* Chain AG không phát hiện
+ra nó — Chain AG **đo nó và kể tên những nơi coi nó là sự thật**:
+
+| người tiêu thụ | dùng làm gì |
+| --- | --- |
+| `useReadinessHistory` | vẽ biểu đồ 14 ngày, mỗi điểm là "điểm sẵn sàng ngày đó" |
+| `weekly-review.avgReadiness` | trung bình tuần, và **mở cổng khuyến nghị deload** khi `< 50` |
+| `ai-coach`, `ai-smart-nudges`, `ai-weekly-review` | gửi `readiness` theo từng ngày cho mô hình |
+
+Không nơi nào trong số đó biết con số ấy là một hiện vật của thời điểm tính.
+
+**Hai bản sửa đều đổi nghĩa, nên không tự chọn:**
+
+1. **Neo cửa sổ vào ngày đang dựng.** Số của mỗi ngày trở thành sự thật về ngày
+   đó — nhưng **mọi hàng lịch sử đang có sẽ mang nghĩa khác hàng mới**, và chi
+   phí là các cửa sổ đọc phải đổi theo `date`.
+2. **Thôi ghi điểm sẵn sàng cho ngày không phải hôm nay** (hoặc đánh dấu nó),
+   và để biểu đồ/AI đọc đúng cái được bảo đảm.
+
+---
+
+### BUG-107 (P3). Cổng và máy tính điểm dùng hai dân số khác nhau — `READINESS-GATE-IGNORES-LOAD`
+
+**ĐỀ XUẤT — CHƯA SỬA.**
+
+Chú thích ngay trên cổng nói *"at least 3 days of any logs"*. Mã thì không:
+
+```ts
+const hasEnoughData = (bioHistory && bioHistory.length >= 3) || (sleepLogs7d && sleepLogs7d.length >= 3);
+```
+
+Chỉ **sinh trắc** và **giấc ngủ** mở được cổng. **Tải tập** là một thành phần
+chấm được đầy đủ (`computeLoadScore`) nhưng không mở được cổng.
+
+**Đo được:** người chỉ ghi buổi tập, 14 ngày, tải đo được rõ ràng →
+`hasEnoughData` **sai** → `computeReadiness` không được gọi → **không có điểm,
+không có acwr**, dù dữ liệu của họ thừa sức chấm một chiều.
+
+Đây là mâu thuẫn nội bộ giữa chú thích và mã, và nó khoá luôn `acwr` — thứ mà
+thẻ tập luyện và `suggestLoad` đều đọc. **Bản sửa nhỏ nhất:** thêm điều kiện tải
+đo được vào cổng. Không đụng trọng số, không đụng ngưỡng.
+
+---
+
+### Chain AG — ÍT DỮ LIỆU HƠN ⇒ ĐIỂM CAO HƠN (PRODUCT SEMANTICS, đã có tài liệu)
+
+Đo được, §5:
+
+```
+ngày 1, đủ bốn thành phần              : 61 · yellow · acwr 1.14
+xoá ngủ + sinh trắc của HÔM NAY, dựng lại : 80 · GREEN · acwr 1.14
+```
+
+Xoá dữ liệu làm điểm **tăng** 61 → 80 và màu đổi vàng → **xanh**. Cơ chế đúng
+theo hợp đồng: trọng số được chia lại trên các thành phần còn lại, và chỉ còn
+`load` — đang ở vùng tối ưu — nên nó chiếm 100%.
+
+Đây **không phải lỗi engine**: đó chính là quy tắc *"a score built from fewer
+inputs is thinner, but it is about the person"*. Nhưng hướng của nó đáng nói ra:
+**bỏ bớt thông tin làm app nói bạn hồi phục tốt hơn**, và tín hiệu duy nhất phân
+biệt là chip độ tin cậy (`low`). §15 cấm đụng trọng số, nên ghi lại chứ không
+sửa.
+
+---
+
+### Chain AG — DATA-CONTRACT GAP: mô hình không phân biệt được ba thứ
+
+Payload gửi AI chỉ mang `readiness` và `readiness_status`. **Không** mang độ tin
+cậy, **không** mang số thành phần. Nên mô hình không tách được:
+
+- 80 vì hồi phục thật sự tốt (bốn chiều),
+- 80 vì **chỉ còn một chiều** sau khi dữ liệu biến mất (ca đo ở trên),
+- `null` vì chưa đủ lịch sử.
+
+`readiness_explain` (mang đủ mã từng chiều) **có** trong hàng nhưng **không**
+được gửi. Phân loại **DATA-CONTRACT GAP**, không tự đổi schema.
+
+---
+
+### Chain AG — phòng thủ chiều sâu, và cái không với tới được
+
+- **`asleep_min` không có chặn trên.** Không có CHECK trên `sleep_logs`;
+  `asleepMinutes` kẹp số âm nhưng không kẹp số lớn; `computeSleepScore` cho tỉ
+  lệ ≥ 1 ra 90–100. Đo với `asleep_min = 100000`: **điểm 100 · green**. Người
+  ghi duy nhất là bản nhập HealthKit (`health.ts:485`, `Math.round(asleep)`, chỉ
+  chặn `< 1`); sheet thủ công **không** ghi cột này. Liệu HealthKit có thể trả
+  về số như thế (mẫu chồng nhau từ nhiều nguồn) là **UNVERIFIED PLATFORM
+  BEHAVIOR** — không exercise được ở đây, nên **không thêm chốt chặn**.
+- **`readinessStatus || 'yellow'`** (`index.tsx:214`) — **KHÔNG VỚI TỚI ĐƯỢC**:
+  nó chỉ đọc được khi `readiness_score` khác null mà `readiness_status` là null,
+  và cả hai được ghi cùng một lúc trong một payload hàng. Ghi lại là no-op.
+- **`weekly-review` chartData `readiness … || 0`** — vô hại: chuỗi được lọc
+  `c.readiness > 0` trước khi vẽ.
+- **`suggestLoad`** đọc `readiness === 'red'` bằng so sánh chặt, nên `null` và
+  `'yellow'` đều rơi vào "không có ý kiến". Đúng.
+
+---
+
+### Chain AG — đã kiểm và **KHÔNG** phải lỗi
+
+- Một công thức duy nhất: `computeReadiness` chỉ được gọi ở `daily-log-service`;
+  **không consumer nào tự tính lại điểm sẵn sàng**.
+- Họ chỉ số HRV được chọn theo lần đo HÔM NAY (SDNN hay RMSSD) và baseline lọc
+  theo đúng họ đó — đổi thiết bị thì bắt đầu baseline mới.
+- Đầu vào hỏng không làm hỏng gì: ngủ âm → không có thành phần ngủ; RPE 99 và
+  reps âm → tải không đo được; nhịp tim 600 hay âm → z = 0 trên baseline của
+  chính nó → 50 trung tính. Không ca nào ném, không ca nào ra số ngoài [0,100].
+- Chéo tài khoản sạch: dữ liệu của B không sinh điểm cho A.
+- ACWR đến muộn: trước khi có tải `acwr` null; thêm buổi tập mà chưa dựng lại →
+  **vẫn** null (giá trị được lưu, không tính lại khi đọc); sau khi dựng lại →
+  1.14. Hội tụ đúng.
+
+---
+
+### Chain AG — sai lầm của chính bộ đo
+
+**Oracle neo sai cửa sổ.** Bản đầu tính cổng và lịch sử theo **ngày đang xét**,
+trong khi production neo vào **`new Date()`**. Kết quả: ngày 2026-03-08 báo lệch
+ở cả sáu múi giờ, và tôi suýt ghi đó là một lỗi DST. Đo lại mới thấy 2026-11-01
+(tương lai) thì đạt còn 2026-03-08 (quá khứ) thì không — chính sự bất đối xứng
+đó chỉ ra cửa sổ neo ở hiện tại. Sửa oracle theo production; **và chính lần sai
+này dẫn thẳng tới BUG-106**.
+
+---
+
+### Chain AG — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory` |
+| **HÀM THẬT** | `recomputeDailyLog`, `computeReadiness`, `readinessConfidence` |
+| **ORACLE** | phát biểu hợp đồng từ hàng thô; **không** import `readiness-engine` |
+| **QUY MÔ** | 6 múi giờ × 1.000 trạng thái = **6.000**, lệch **0**; ma trận 9 ca × 6 múi |
+| **MÚI GIỜ** | UTC, New York, Los Angeles, Chicago, Ho Chi Minh, Lord Howe (lệch 30 phút) |
+| **THAY ĐỔI PRODUCTION** | **KHÔNG CÓ** |
+| **DETECTOR** | **CHƯA** — chờ vòng sửa, vì bộ dò phải khoá hành vi ĐÚNG chứ không ghim hành vi sai |
+| **REGRESSION** | bộ kiểm 122/122 xanh, `tsc` sạch (không có thay đổi để hồi quy) |
+| **REAL iOS / HealthKit** | **KHÔNG** — chặn trên của `asleep_min` là UNVERIFIED PLATFORM BEHAVIOR |
+| **PRODUCTION** | **KHÔNG** |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,
