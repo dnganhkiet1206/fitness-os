@@ -8592,6 +8592,201 @@ xanh: `acwr-consistency`, `nutrition-averages` (AC), `logged-day` (AB),
 | **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
 
 
+## Chain AE — `avg_volume_28d`: đi tìm một ý định không tồn tại
+
+**Kết luận: KHÔNG SỬA PRODUCTION.** Chain này đi tìm bằng chứng về ý nghĩa đã
+định của `avg_volume_28d` và **không tìm thấy**. Thay vì chọn bừa, nó ghim hành
+vi hiện tại lại bằng một bộ dò và ghi quyết định còn treo.
+
+### PRODUCT DECISION REQUIRED — AVG_VOLUME_28D
+
+*Mẫu số của `avg_volume_28d` phải là gì?* Ba ứng viên, và con số hiện tại không
+phải ứng viên nào.
+
+---
+
+### Chain AE — §4: đã tìm ở đâu, và không thấy gì
+
+| nơi tìm | kết quả |
+| --- | --- |
+| nhãn người dùng | **không có** — giá trị chưa bao giờ tới một màn hình nào |
+| chú thích quanh phép tính | **không có** |
+| câu mô tả trong system prompt | **không có** — mô hình nhận `JSON.stringify(ctx)` và bốn nguyên tắc về y tế, không câu nào nói trường này nghĩa là gì |
+| tài liệu / spec | **không có** |
+| lịch sử git | không truy được (lịch sử đã squash) |
+| số consumer | **đúng một**: `ai-weekly-review/index.ts` |
+
+**Nhưng repo CÓ đúng một quy ước cho việc lấy trung bình tonnage trên cửa sổ 28
+ngày** — và nó không nằm ở đây:
+
+```ts
+// training-card.ts
+export function averageWeek(volume28d: number, days: number = 28): number {
+  return (volume28d * 7) / Math.max(days, CHRONIC_MIN_DAYS);
+}
+```
+
+Gọi ở `today-widgets-2.tsx:397` là `averageWeek(monthVolume, chronicDays(month))`,
+nhãn người dùng **"thói quen" / "habit"**, và chú thích của nó nói rõ lý do:
+*"This was `volume28d / 4`: a flat four weeks, regardless of how much history the
+window held … a flat 28 made a new lifter's perfectly even week read as a
+fourfold spike."*
+
+**Vậy tại sao vẫn không đủ để sửa?** Vì `averageWeek` trả lời **mẫu số** nhưng
+đồng thời quyết luôn **đơn vị**: nó trả về tonnage **mỗi tuần**, và chú thích của
+chính nó **bác bỏ** đơn vị mỗi-ngày — *"Per-day is how the engine computes it and
+is useless to read — a number about a day nobody trained on."* Trong khi tên
+`avg_volume_28d` lại nói mỗi-ngày. Hai thứ dính vào nhau trong một hàm, nên áp
+quy ước đó vào đây sẽ **đổi con số đó LÀ GÌ**, không chỉ đổi cách chia. Và lý do
+bác bỏ per-day là *đọc trên thẻ cho người*, còn consumer ở đây là một mô hình
+ngôn ngữ — không suy ra được.
+
+**Kết luận §4: D — một cái tên không còn khớp ngữ nghĩa nào,** và ngữ nghĩa
+đúng thì chưa ai đặt ra.
+
+---
+
+### Chain AE — §3: ba cách hiểu, đo trên cluster thật
+
+Sự thật luôn là **2.100 kg mỗi ngày tập**. Oracle đọc `workout_sessions`.
+
+| ca | hàng | **hiện tại** | theo 28 ngày lịch | theo ngày CÓ TẢI | tổng | ngày tập | ngày có tải |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| A · 3 ngày tập / 25 trống | 10 | **630** | 225 | 2.100 | 6.300 | 3 | 3 |
+| B · 7 ngày tập / 21 trống | 14 | **1.050** | 525 | 2.100 | 14.700 | 7 | 7 |
+| C · 14 ngày tập / 14 trống | 21 | **1.400** | 1.050 | 2.100 | 29.400 | 14 | 14 |
+| D · 28 ngày tập | 28 | 2.100 | 2.100 | 2.100 | 58.800 | 28 | 28 |
+| E · chỉ buổi từ đồng hồ | 10 | 0 | 0 | 0 | 0 | 10 | **0** |
+| F · tay + đồng hồ trộn | 10 | **1.050** | 375 | 2.100 | 10.500 | **10** | **5** |
+
+**Ca D là ca duy nhất ba cách hiểu trùng nhau** — một người tập đủ 28/28 ngày.
+Với bất kỳ khoảng trống nào, tức là mọi người thật, chúng tách ra.
+
+**Ca F còn lộ ra một ứng viên thứ tư mà brief không liệt kê:** "ngày có **buổi
+tập**" (10) khác "ngày có **tải**" (5), vì buổi từ đồng hồ có `volume_load = 0`
+một cách cố ý. Với tonnage thì "ngày có tải" mới là dân số đúng; với "đã tập hay
+chưa" thì `workout_count` mới là câu trả lời. Đó là hai câu hỏi, không phải một.
+
+**Quét ngẫu nhiên, 1.000 trạng thái nguồn mỗi múi giờ × 6 múi = 6.000:**
+
+- lệch với "theo 28 ngày lịch": **834/1000**
+- lệch với "theo ngày có tải": **799/1000**
+- lệch với "theo số hàng": **0/1000** ← đây đúng là công thức hiện tại
+
+Sự mơ hồ **không phải chuyện học thuật**: trên dữ liệu thật, chọn nhầm đổi con số
+trong hơn 80% trường hợp.
+
+---
+
+### Chain AE — §7: biên AI
+
+| câu hỏi | trả lời |
+| --- | --- |
+| mô hình có được cho biết con số này nghĩa là gì không? | **KHÔNG** |
+| phân biệt được "không có dữ liệu" với "bằng 0" không? | **KHÔNG.** Cả ba tình huống đều ra `0`: không có hàng nào (`0 / max(0,1)`), chỉ có buổi từ đồng hồ, và tonnage thật bằng 0 |
+| có thể nhầm với ACWR không? | **KHÔNG** — `acwr` **không có mặt** trong payload gửi mô hình (đã grep: 0 lần) |
+| có quyết định tất định nào phụ thuộc nó không? | **KHÔNG** — chỉ đi vào văn bản tự do của mô hình |
+
+Chuyện `null`/`0` không phân biệt được là **cùng lớp với Chain AC**, nhưng nó
+**đi kèm** quyết định mẫu số: nếu ngữ nghĩa "theo ngày lịch" thắng thì số 0 của
+ngày nghỉ **là dữ liệu thật**, còn nếu "theo ngày có tải" thắng thì không. Nên nó
+được ghi vào cùng một quyết định chứ không sửa riêng.
+
+---
+
+### Chain AE — những gì KHÔNG mơ hồ, và đã được khẳng định thẳng
+
+Đo bằng `recomputeDailyLog` thật, oracle đọc `workout_sessions`, ở cả sáu múi giờ:
+
+- **Xoá buổi tập rồi dựng lại** → tonnage về 0, khớp nguồn.
+- **Phát lại cùng `external_id`** → vẫn **1** buổi, tonnage không nhân đôi.
+- **Buổi từ đồng hồ đến muộn 7 ngày** → vào đúng ngày của nó.
+- **Buổi từ đồng hồ giữ `volume_load = 0`** — cố ý, đã ghi ở N6.
+- **Chéo tài khoản** → tonnage của B không lọt sang A.
+- **Ngày 23 giờ và 25 giờ** → bốn buổi ở bốn mép ra đúng 555 kg.
+
+---
+
+### Chain AE — bộ dò: ghim, không tán thành
+
+`tools/workload-volume.mjs` (mới, đã đăng ký — bộ kiểm giờ **121 bước**, chạy
+~90 giây).
+
+Đây là **bộ dò bằng chứng**, không phải bộ dò đúng-sai. Nó:
+
+1. **ghim** công thức hiện tại (chia cho số hàng), lấy biểu thức **thật** ra khỏi
+   `ai-weekly-review` rồi chạy;
+2. **chứng minh sự mơ hồ có thật** — bắt buộc các ứng viên phải khác nhau trên
+   dữ liệu thật, nếu chúng trùng nhau thì câu hỏi đã tự trả lời và bộ dò này phải
+   được thay bằng một bản sửa;
+3. **bắt buộc sổ vẫn ghi** `PRODUCT DECISION REQUIRED — AVG_VOLUME_28D`;
+4. khẳng định thẳng những phần không mơ hồ (hội tụ, khử trùng, chéo tài khoản,
+   DST, tonnage 0 của đồng hồ).
+
+Nó **không** hardcode ứng viên nào thắng.
+
+**Chín phép phá, tất cả đúng kỳ vọng, khôi phục XANH.** Kỳ vọng ở đây **đảo
+ngược** so với một bộ dò thường: hiện trạng là nền XANH, và **mọi ứng viên thay
+thế phải ĐỎ** — vì chọn lặng lẽ chính là thứ bộ dò này ngăn.
+
+| phép phá | kỳ vọng |
+| --- | --- |
+| 1 · chia cho số hàng (hiện trạng) | **XANH** — cái đang được ghim |
+| 2 · chia cho 28 ngày lịch | ĐỎ |
+| 3 · chia cho số ngày có tải | ĐỎ |
+| 4 · loại hàng tonnage 0 | ĐỎ |
+| 5 · bịa tonnage cho buổi từ đồng hồ | ĐỎ |
+| 6 · xoá buổi tập để lại tonnage cũ | ĐỎ |
+| 7 · thôi khử trùng theo `external_id` | ĐỎ |
+| 8 · xoá mục quyết định khỏi sổ | ĐỎ |
+| 9 · công thức ứng viên **chỉ trong chú thích** | **XANH** |
+
+---
+
+### Chain AE — sai lầm của chính bộ đo, và cách sửa
+
+**Hai phép phá ban đầu không bắt được gì.** "Bịa tonnage cho buổi từ đồng hồ" và
+"thôi khử trùng `external_id`" đều nhằm vào `use-health-sync`, trong khi harness
+tự dựng hàng buổi tập bằng helper của chính nó — nên sửa production không làm
+thay đổi điều gì bộ dò đo. Nếu để nguyên, hai quy tắc ấy sẽ là hai câu khẳng
+định về một thứ không được kiểm.
+
+Sửa bằng cách **thêm hai quy tắc cấu trúc đọc `use-health-sync` thật**:
+`volume_load: 0` + `sets: []` cho buổi từ đồng hồ, và
+`onConflict: 'user_id,external_id'`. Giờ cả hai phép phá đỏ đúng lý do.
+
+---
+
+### Chain AE — khuyến nghị (không tự thi hành)
+
+Nếu phải chọn, **"trung bình mỗi tuần trên số ngày lịch sử thật sự có"** là ứng
+viên mạnh nhất, vì đó là quy ước duy nhất repo đã chốt cho đúng đại lượng này
+(`averageWeek` + `chronicDays`), và lý do của nó là về tính đúng chứ không phải
+về trình bày. Nếu chọn nó thì nên **đổi luôn tên trường** — `avg_volume_28d` sẽ
+là một cái tên sai — và **trả `null`** khi không có lịch sử nào, để mô hình phân
+biệt được "chưa đo được" với "không tập".
+
+Nhưng đó là một quyết định sản phẩm, và Chain AE **không** đưa ra nó.
+
+---
+
+### Chain AE — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory`, cổng suy từ thư mục tạm |
+| **HÀM THẬT** | biểu thức `avg_volume_28d` **lấy ra khỏi file production** rồi chạy; `recomputeDailyLog` thật cho hội tụ/DST |
+| **ORACLE** | SQL đọc `workout_sessions`, không đọc `daily_logs`, không gọi biểu thức production |
+| **QUY MÔ** | 6 múi giờ × 1.000 trạng thái ngẫu nhiên = **6.000**, cộng 6 ca có đáp án cụ thể |
+| **BREAK-TESTS** | 9/9 đúng kỳ vọng (7 đỏ, 2 xanh có chủ đích); khôi phục xanh |
+| **THAY ĐỔI PRODUCTION** | **KHÔNG CÓ** — đúng theo §10 |
+| **BỘ KIỂM** | 121/121 xanh |
+| **TYPESCRIPT** | sạch |
+| **REAL iOS / HealthKit** | **KHÔNG** — buổi tập từ đồng hồ dựng bằng đúng câu upsert của `use-health-sync`; HealthKit không được gọi |
+| **PRODUCTION** | **KHÔNG** — edge function chưa deploy |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,
