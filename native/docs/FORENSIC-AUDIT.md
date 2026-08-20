@@ -8949,6 +8949,103 @@ Khác với Chain AE — ở đó hành vi **chưa được quyết**, nên ghim
 | **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
 
 
+### BUG-105 (P2). Buổi tập có trong bảng, không có trong phép chiếu — **ĐÃ SỬA**
+
+**Mạch gốc.** Thứ tự trong `use-health-sync`: ghi `workout_sessions` (dòng 210) →
+`daily_logs.upsert` cột sức khoẻ (273, **ném**) → `daily_logs.upsert` bù bước
+chân (307, **ném**) → vòng dựng lại (343, **không try/catch**). Một lỗi ở giữa
+để buổi tập nằm trên server còn ngày của nó không bao giờ được dựng.
+
+**Trước → sau**, đo trên PostgreSQL 16.13 với cả hai lệnh ghi cột sức khoẻ bị ép
+hỏng, buổi tập ở ngày −9:
+
+| | trước | sau |
+| --- | --- | --- |
+| `workout_sessions` | 1 | 1 |
+| `daily_logs.workout_count` | **null** | **1** |
+| chuỗi ngày tính ngày đó | **không** | **có** |
+| hàm có báo lỗi không | có | **vẫn có** |
+
+**Ngữ nghĩa lỗi — điều này KHÔNG phải "thôi ném".** Hai lệnh ghi cột sức khoẻ
+*ghi nhận* lỗi thay vì ném ngay; vòng dựng lại cô lập lỗi theo từng ngày; rồi
+`writeHealthSync` **ném** nếu còn bất kỳ lỗi nào, kèm tên từng ngày hỏng. Mọi
+thứ cứu được đã cứu xong trước khi báo lỗi, nên `onError` vẫn nổ và người dùng
+vẫn được báo. Đây đúng hình dạng `use-extras` dùng cho thử thách tuần.
+
+**Cô lập theo ngày — có cần, và vì sao.** Mỗi lần dựng lại là chuỗi đọc riêng
+cộng một compare-and-set vào đúng một dòng `(user_id, date)`, **không có
+transaction chung** — nên ngày A hỏng không nói gì về ngày B. Bảo đảm CAS theo
+ngày của Chain S không bị đụng. Đo: ép hỏng ngày cũ → ngày mới **vẫn** ra
+`workout_count = 1`, và tên ngày hỏng có trong thông báo lỗi.
+
+**Không đổi ngữ nghĩa nào:** `volume_load` của buổi từ đồng hồ vẫn 0, `acwr` vẫn
+`null`, `LOGGED_DAY_FILTER` nguyên vẹn, chính sách chuỗi/quest không đụng.
+
+**Tách file, vì bộ dò phải chạy được hàm thật.** `src/lib/health-sync-write.ts`
+theo đúng quy ước `step-days.ts` / `health-days.ts`: hook import React và
+HealthKit nên Node không nạp được, mà một quy tắc thứ tự không chạy được thì chỉ
+còn là một dòng chú thích. Hai khối lý do dài đi theo code sang file mới thay vì
+ở lại mô tả thứ đã chuyển đi.
+
+### BUG-105 — bộ dò và phép phá
+
+`tools/workout-sync-integrity.mjs`: cấu trúc (bỏ chú thích trước khi khớp) +
+hành vi chạy **`writeHealthSync` thật** trên PostgreSQL 16.13, sáu múi giờ, với
+lệnh ghi cột sức khoẻ **ép hỏng tại tầng truyền** (đúng hình dạng một lần RLS
+từ chối). Ca A/B+C/D/E/F/G-H/J theo ma trận.
+
+**10 phép phá.** 9 đỏ đúng lý do ngay từ đầu. Hai ca phải xử lý thật thà:
+
+- **Phép phá 8 xanh sai — lỗ hổng thật.** `writeHealthSync` không ghi
+  `workout_sessions`, nên không có gì chạm tới lệnh upsert đó. Thêm quy tắc cấu
+  trúc bắt payload phải là `workouts.map(...)`; giờ đỏ. **Không nới quy tắc.**
+- **Phép phá 5 (buổi tập ghi hỏng vẫn đẻ ra phép chiếu) — KHÔNG THỂ VỚI TỚI.**
+  `workout_count` được `recomputeDailyLog` suy từ chính bảng `workout_sessions`;
+  Chain AD đã đo một giá trị cắm tay bị xoá sạch khi dựng lại. Phép chiếu không
+  thể khai một buổi tập không tồn tại. Ghi lại là no-op, không dựng phép phá giả.
+
+### Chain AF — hai bộ dò cũ đỏ, cả hai đều KHÔNG phải do bản sửa
+
+1. **`acwr-consistency` đỏ trên cây SẠCH** (bisect bằng `git stash`). Ba con số
+   ghim 1.00 / 1.06 / 1.10 chỉ đúng khi bộ kiểm chạy **trước 18:00 giờ địa
+   phương**: `chronicDays` là `ceil((now − oldest)/24h) + 1`, và fixture đặt buổi
+   tập lúc 18:00 nên quãng là 5d+9h lúc 03:00 (chronicDays 7) nhưng 6d+4h lúc
+   22:32 (chronicDays 8). Đúng lớp lỗi ngày-gõ-cứng của `bandit.mjs`. Sửa: đổi
+   sang khẳng định **tính chất** — người tập đều nằm trong vùng tối ưu ở mọi độ
+   dài lịch sử — thay cho ba con số. Công thức tonnage cũ cho 4.00 và 2.29 ở mốc
+   1 và 2 tuần, **ngoài vùng**, nên vẫn bị bắt, và giờ bắt được ở mọi giờ trong
+   ngày.
+2. **`health-sync` đỏ do refactor**: lệnh upsert bù bước chân chuyển sang file
+   mới nên quy tắc quét hook không thấy. **Repoint** để đọc cả hai nửa; không đổi
+   một vị từ nào.
+3. **`economic-integrity` đỏ vì môi trường**: các cluster PostgreSQL rác của
+   chính tôi chiếm cổng. Dọn xong thì xanh. Không phải lỗi mã.
+
+### Chain AF — sai lầm của chính bộ đo
+
+- **Bộ tiêm lỗi ca D không bao giờ nổ ở Asia/Ho_Chi_Minh.** Nó khớp theo mốc thời
+  gian của cửa sổ đọc bữa ăn, mà dạng văn bản của mốc đó là **giờ UTC** — ở UTC+7
+  nửa đêm địa phương rơi vào ngày UTC hôm trước, nên không khớp và ca D báo đạt
+  giả. Sửa: khớp theo **đối số ngày** trong lần đọc token `daily_logs`, không phụ
+  thuộc múi giờ.
+- **Dấu backtick trong `String.raw`** lần thứ chín qua các chain: một chú thích
+  mới có backtick làm chấm dứt template và `node --check` bắt được.
+
+### Chain AF — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory` |
+| **HÀM THẬT** | `writeHealthSync` lấy từ production rồi chạy; `recomputeDailyLog`, `streakFrom` thật |
+| **ORACLE** | đọc `workout_sessions`, không đọc `daily_logs` |
+| **MÚI GIỜ** | 6 múi |
+| **BREAK-TESTS** | 10 phép phá: 9 đỏ đúng lý do, 1 chứng minh là không thể với tới |
+| **REGRESSION** | `node tools/check.mjs` **122/122 xanh**; Chain S (`daily-log-concurrency`), T, Y, Z, AA, AB, AC, AD, AE đều xanh |
+| **TYPESCRIPT** | sạch |
+| **REAL iOS / HealthKit** | **KHÔNG** — HealthKit không được gọi; buổi tập dựng bằng đúng câu upsert của `use-health-sync` |
+| **PRODUCTION** | **KHÔNG** |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,

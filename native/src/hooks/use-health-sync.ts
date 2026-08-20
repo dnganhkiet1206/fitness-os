@@ -24,8 +24,7 @@ import {
   requestHealthPermissions,
 } from '@/lib/health';
 import { useAppSettings } from '@/hooks/use-app-settings';
-import { recomputeDailyLog } from '@/lib/daily-log-service';
-import { touchedDays } from '@/lib/health-days';
+import { writeHealthSync } from '@/lib/health-sync-write';
 import { localDateStr } from '@/lib/local-date';
 
 /**
@@ -231,118 +230,24 @@ function useSyncMutation(silent: boolean) {
       if (exerciseMin != null) measured.active_minutes = exerciseMin;
 
       /*
-        ── one statement, because the three it replaces could not be made safe ──
+        ── the projection, and the ordering BUG-105 was about ──
 
-        This was: `select('id').maybeSingle()`, then `update` if a row came
-        back, `insert` if one did not. Four faults in eight lines, and the
-        database already had a verb that has none of them.
-
-        1. **A failed lookup was read as "there is no row."** The `error` was
-           destructured away, so a dropped connection, a timeout or an RLS
-           refusal all arrived as `existing === undefined` — and the branch that
-           takes is `insert`, against a table carrying `UNIQUE (user_id, date)`.
-           The insert is then refused for a reason that has nothing to do with
-           the truth, and the day's steps are gone. Exactly the class Chain A
-           found in the offline weight replay.
-
-        2. **Neither write was checked either.** Three statements, zero of them
-           reporting. The mutation went on to `onSuccess` and showed
-           *"Đã đồng bộ"* over a day nothing had been written to.
-
-        3. **Read-then-write is a race with itself.** There are three live sync
-           mutations — the auto one, Today's, and the Health card's — and two
-           can be in flight at once. Both select, both find nothing, both
-           insert; one wins and one hits the unique constraint. The losing one
-           is the silent failure in (2).
-
-        4. And `update(...).eq('id', existing.id)` names a row by an id read a
-           round trip earlier, which is the shape that goes wrong the day
-           anything else can delete a day's row.
-
-        `upsert` on the natural key answers all four: one statement, no read,
-        no id, no window between them, and the conflict is resolved by the
-        database rather than by a guess. It writes only the columns named in
-        the payload, so the "one writer per column" rule this comment block
-        already relies on is untouched — `recomputeDailyLog` keeps its own
-        list and neither can wipe the other's.
+        Everything above this line writes SOURCE rows; everything below is
+        derived. They are separated because a failure in the sync's own columns
+        used to cancel the rebuild of a workout that had already been written,
+        and the two proxies for "did this person work out" then disagreed for
+        ever. `writeHealthSync` carries the rule and the measurement; it lives
+        in `lib/` so `tools/workout-sync-integrity.mjs` can execute it.
       */
-      if (Object.keys(measured).length > 0) {
-        const { error } = await supabase
-          .from('daily_logs')
-          .upsert({ user_id: user.id, date: localDateStr(), ...measured }, { onConflict: 'user_id,date' });
-        if (error) throw error;
-      }
-
-      /*
-        ── and the days that finished while nobody was looking ──
-
-        The three lines above ask HealthKit for *today* and file the answer under
-        today. That is all this sync has ever done, and it means a completed day
-        keeps whatever number happened to be true at the last foreground: log out
-        at nine in the evening on 9,000 steps, walk home, and 9,000 is what that
-        day is worth for ever. Nothing came back to finish it.
-
-        Every reader of a past day's steps therefore read a partial figure. The
-        Steps screen averages seven of them and trends three against three; the
-        weekly `steps_50k` challenge sums the week. Both were summing days that
-        had stopped early, and the error only ever runs one way — down.
-
-        One `upsert` with an array is one request, so the cost of this is a
-        single HealthKit query and a single round trip however many days moved.
-        Idempotent by `(user_id, date)`, and deterministic when two syncs run
-        together: they read the same buckets and write the same numbers.
-
-        Only `steps`. `active_kcal` and `active_minutes` come from the same
-        three-line block and are just as partial — but nothing in the app reads
-        either for a day other than today (`activity-rings` takes them from
-        today's row and there is no history query for them), so backfilling them
-        would be two more HealthKit queries to correct numbers nobody can see.
-        The day a screen plots them, this is the paragraph that has to change.
-      */
-      if (stepDays.length > 0) {
-        const { error } = await supabase.from('daily_logs').upsert(
-          stepDays.map((d) => ({ user_id: user.id, date: d.date, steps: d.steps })),
-          { onConflict: 'user_id,date' },
-        );
-        if (error) throw error;
-      }
-
-      /*
-        ── every day this sync touched, not the day the sync happened ──
-
-        Readiness reads HRV, resting HR, sleep and load, and this sync can move
-        all four — so it recomputes whenever any of them arrived, not just on a
-        biometric sample. `recomputeDailyLog` is also what writes
-        `sleep_duration_min`, `workout_count` and `volume_load` from the rows
-        just inserted.
-
-        It used to rebuild `localDateStr()` and nothing else, and the rows it
-        writes are not all today's. `getRecentWorkouts()` imports **seven days**
-        of sessions and `getLastNightSleep()` looks **36 hours** back, so a run
-        the watch recorded on Monday lands in `workout_sessions` on Monday while
-        Thursday is the only day rebuilt. Measured, with a run on day −2 and
-        meals on −3, −1 and today:
-
-            workout_sessions thật sự nằm ở: 2026-08-17
-            daily_logs:  08-19 ✓   08-18 ✓   08-16 ✓   08-17 KHÔNG CÓ HÀNG NÀO
-
-        Nothing repairs it: a later sync rebuilds its own day, so only an edit
-        made to that specific day ever corrects it. And the consequence is not
-        confined to a number on a chart — `LOGGED_DAY_FILTER` asks
-        `kcal>0 OR workout_count>0 OR …` against `daily_logs`, so:
-
-            ngày chuỗi đếm là hoạt động: 08-19, 08-18, 08-16
-
-        A day the person genuinely trained is invisible, their streak breaks at
-        it, and the medals `useCheckAwards` grants from that streak are withheld.
-
-        The set is bounded by the import windows — at most eight days — and they
-        run one at a time: two rebuilds of the same day race each other, and two
-        rebuilds of different days would still queue behind the same connection.
-      */
-      for (const day of touchedDays({ bio, sleep, workouts })) {
-        await recomputeDailyLog(user.id, day);
-      }
+      await writeHealthSync({
+        userId: user.id,
+        today: localDateStr(),
+        measured,
+        stepDays,
+        bio,
+        sleep,
+        workouts,
+      });
 
       return { steps, bio, sleep, workouts: workouts.length };
     },

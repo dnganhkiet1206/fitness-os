@@ -247,8 +247,25 @@ if (!PGBIN || !existsSync(PGCLIENT)) {
       results.push({ TZ, r });
     }
 
-    /* The pinned numbers Chain AD measured — break-tests 4, 5, 6. */
-    const PINNED = { 1: 1, 2: 1.06, 4: 1.1 };
+    /*
+      ── why this is a band and not three exact numbers ──
+
+      It WAS three exact numbers — 1.00 / 1.06 / 1.10, measured once at 03:00 —
+      and it went red every evening. `chronicDays` is
+      ceil((now - oldest) / 24h) + 1, so the span of any fixture pinned to a
+      wall-clock hour moves with the hour the suite runs: the same sessions
+      spanned 5d+9h at 03:00 and 6d+4h at 22:32, and the ratio moved with them.
+      The same defect as the hardcoded date in bandit.mjs, and the same fix —
+      assert the property, not the reading.
+
+      The property is what BUG-103 was about: somebody training evenly sits in
+      the optimal band at EVERY history length, because getACWR divides by
+      max(chronicDays, 7) rather than a flat 28. The formula this chain removed
+      gave 4.00 at one week and 2.29 at two — both outside the band, at exactly
+      the history lengths where a new lifter lives — so a return to it is still
+      caught here, and now it is caught at any hour.
+    */
+    const BAND = { lo: 0.8, hi: 1.3 };
     for (const { TZ, r } of results) {
       /* the harness must have built the situation, or every assertion is vacuous */
       want(r.sanity.sessions > 0 && r.sanity.nights >= 3,
@@ -256,9 +273,10 @@ if (!PGBIN || !existsSync(PGCLIENT)) {
 
       for (const c of r.evenTraining) {
         want(
-          c.canonical === PINNED[c.weeks],
-          `${TZ} · ${c.weeks} tuần tập ĐỀU: ACWR chính tắc = ${c.canonical}, phải là ${PINNED[c.weeks]} — ` +
-            'đây là con số engine cho người tập đều đặn, và bản dựng cũ của weekly-review cho 4.00 ở mốc 1 tuần',
+          c.canonical != null && c.canonical >= BAND.lo && c.canonical <= BAND.hi,
+          `${TZ} · ${c.weeks} tuần tập ĐỀU: ACWR chính tắc = ${c.canonical}, phải nằm trong ` +
+            `[${BAND.lo}, ${BAND.hi}] — người tập ĐỀU ĐẶN không được đọc thành tăng tải đột ngột ở bất kỳ ` +
+            'độ dài lịch sử nào; công thức tonnage cũ cho 4.00 ở mốc 1 tuần và 2.29 ở mốc 2 tuần',
         );
         want(
           c.displayed === c.canonical,
@@ -301,7 +319,7 @@ if (problems.length) {
 
 console.log(
   'ACWR nhất quán OK — CHẠY THẬT recomputeDailyLog, computeReadiness và latestAcwr trên PostgreSQL 16.13 ' +
-    'dựng từ toàn bộ migration, ở SÁU múi giờ. Người tập ĐỀU ĐẶN nhận 1.00 / 1.06 / 1.10 ở mốc 1 / 2 / 4 ' +
+    'dựng từ toàn bộ migration, ở SÁU múi giờ. Người tập ĐỀU ĐẶN nằm trong vùng tối ưu ở mốc 1 / 2 / 4 ' +
     'tuần lịch sử, và weekly-review hiện ĐÚNG con số ấy cùng đúng vùng — bản đã ship tự tính lấy từ tonnage ' +
     'chia cho 28 cố định và cho 4.00 "spike" ở mốc một tuần, kèm câu "Giảm 15-20% volume tuần tới để tránh ' +
     'chấn thương" cho một người không hề tăng tải. null đi suốt: thiếu sinh trắc và giấc ngủ, người chỉ tập ' +
@@ -427,7 +445,15 @@ const out = {};
   for (const weeks of [1, 2, 4]) {
     await wipe();
     const days = weeks * 7;
-    for (let k = 0; k < days; k += 2) await lifted(await at(await shift(D0, -k), '18:00'));
+    /* One session a day, each at EXACTLY now minus k*24h.
+       chronicDays measures ceil((now - oldest) / 24h) + 1, so a fixture pinned
+       to a wall-clock hour drifts with the time of day the suite runs: sessions
+       at 18:00 spanned 6d+4h at 22:32 (chronicDays 8) but 5d+9h at 03:00
+       (chronicDays 7), and the ratio moved with it. The first version of this
+       rule pinned 1.00/1.06/1.10 measured at 03:00 and went red every evening
+       — the same defect as the hardcoded date in bandit.mjs. Anchoring to now
+       makes the span a whole number of days at any hour. */
+    for (let k = 0; k < days; k += 1) await lifted(new Date(Date.now() - k * 86400000).toISOString());
     await nights(5);
     for (let k = days - 1; k >= 0; k--) await recomputeDailyLog(A, await shift(D0, -k));
     const canonical = await canonicalOf(D0);

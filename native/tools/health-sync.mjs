@@ -382,7 +382,12 @@ if (inferable.size === 0) {
    Two halves to hold. The sync has to *ask* for the finished days, and the
    answer has to land on the right calendar day without inventing zeros. */
 {
-  const sync = strip(read(SYNC));
+  /* The backfill's WRITE moved to `lib/health-sync-write.ts` in Chain AF, so
+     the rule reads both halves: the hook still decides to ask HealthKit for the
+     finished days, and the lib performs the upsert. Repointed rather than
+     loosened — every predicate below is unchanged, it is only looking at the
+     whole path again instead of at half of it. */
+  const sync = strip(read(SYNC)) + '\n' + strip(read('src/lib/health-sync-write.ts'));
   if (!/getDailyStepHistory\(\)/.test(sync)) {
     problems.push(
       `${SYNC}: chỉ hỏi HealthKit về HÔM NAY — ngày đã kết thúc giữ nguyên con số đúng lúc ` +
