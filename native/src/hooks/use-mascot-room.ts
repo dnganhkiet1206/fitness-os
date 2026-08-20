@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +7,7 @@ import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { localDateStr } from '@/lib/local-date';
 import { LOGGED_DAY_FILTER, missedDates, streakFrom, STREAK_WINDOW, type Streak } from '@/lib/streak';
 import { offlineNow } from '@/lib/offline';
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
 import {
   buyRefKey,
   conflictingKeys,
@@ -187,13 +189,57 @@ export function useDailyStreak() {
  * standing between a double tap and two purchases; the database's hold limit is
  * what makes that merely annoying rather than expensive.
  */
+/**
+ * The purchase intention currently outstanding, or `null` when none is.
+ *
+ * ── why this is not inside the mutation, and not a `useRef` either ──
+ *
+ * The id has to be stable across exactly one thing: **a retry of the same
+ * intention**. Generating it inside `mutationFn` would make a new one on every
+ * attempt, which is the bug restated. A `useRef` in the hook would survive
+ * re-renders but not the screen unmounting, and the whole reason this exists is
+ * that the first attempt *failed* — somebody who backs out of the room and comes
+ * back to try again is the ordinary shape of that.
+ *
+ * Module scope, cleared on success and on sign-out. Not persisted: the mutation
+ * is not persisted either, and a purchase intention that outlives the process is
+ * a different product decision from the one being fixed here.
+ *
+ * `onUserScopedReset` is what keeps it from crossing accounts — B pressing buy
+ * must never inherit A's id, or B's first purchase would converge onto A's
+ * ledger row and B would hold a freeze nobody charged them for.
+ */
+let pendingFreezeBuy: string | null = null;
+onUserScopedReset(() => {
+  pendingFreezeBuy = null;
+});
+
 export function useBuyFreeze() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc('buy_streak_freeze');
+      /*
+        ── one intention, one id, however many attempts ──
+
+        Measured before this: buy → lost response → the person taps again →
+        `bal=200 debits=2 freezes=2` from 500, in 100 runs of 100. The server
+        could not tell the retry from a second purchase because the ref_key was
+        `gen_random_uuid()`, fresh every call.
+
+        The id is minted once and kept until a call actually returns. A refused
+        or lost attempt leaves it in place, so the next press carries the same
+        one and `buy_streak_freeze` converges on it — see 20260820120000.
+      */
+      pendingFreezeBuy ??= Crypto.randomUUID();
+      const { error } = await supabase.rpc('buy_streak_freeze', {
+        p_request_id: pendingFreezeBuy,
+      });
       if (error) throw error;
+      /* Settled. The next purchase is a new intention and gets a new id — this
+         must not be cleared in a `finally`, or a lost response would clear the
+         one thing that makes the retry safe. */
+      pendingFreezeBuy = null;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['mascot_wallet', user?.id] });

@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (115 bước). Ngày rà: 2026-08-19.
+Bộ kiểm: `node tools/check.mjs` (116 bước). Ngày rà: 2026-08-20.
 
 ---
 
@@ -7082,6 +7082,264 @@ có thể là production; đổi thành nêu cả hai khả năng, sau khi phá 
 | **OFFLINE** | **KHÔNG có bề mặt**: hàng đợi offline mang 7 thao tác ghi chép, không có claim nào |
 | **PERSISTENCE** | claim **không có `mutationKey`** → không khôi phục được sau cold launch. Đọc code, **KHÔNG chạy** |
 | **AsyncStorage thật** | **KHÔNG** — kho trong bộ đo là stand-in |
+| **REAL iOS** | **KHÔNG** |
+| **PRODUCTION** | **KHÔNG** |
+
+---
+
+## Chain Z — freeze chuỗi ngày
+
+**Bộ kiểm:** `node tools/streak-freeze.mjs` (mới) · `node tools/check.mjs` · `npx tsc --noEmit`
+
+### Câu hỏi trung tâm
+
+*Một người đã đăng nhập có thể tiêu xu để đóng băng chuỗi ngày theo cách vi phạm
+danh tính, giá, điều kiện, tính nguyên tử, tính bất biến khi lặp, hay tính đồng
+thời không?*
+
+**Gần như không chỗ nào.** Một lỗi được xác nhận, và nó không nằm trong sáu thứ
+đó. Phần lớn công việc của chain này là **đo và ghi lại những thứ vốn đã đúng**,
+để chúng không lặng lẽ hỏng sau này.
+
+---
+
+### BUG-100 (P3). Một ý định, hai lần trừ tiền — `FREEZE-RETRY-DOUBLE-CHARGES`
+
+| | |
+| --- | --- |
+| **SEVERITY** | P3 |
+| **CHAIN INTERACTION** | D × Y × Z |
+| **EVENT ORDER** | mua → máy chủ commit → phản hồi mất → người dùng bấm lại |
+| **EXPECTED** | một ý định, một khoản chi, một freeze |
+| **ACTUAL** | 500 xu → 200 xu, hai khoản chi, hai freeze |
+
+**EVIDENCE** — cluster dựng từ mọi migration, 100 lượt:
+
+```
+mua → mất phản hồi → thử lại     bal=200  debits=2  freezes=2   100/100
+thử lại ×5                        bal=200  debits=2  freezes=2   (trần giữ 2 chặn lại)
+```
+
+**ROOT CAUSE:** `buy_streak_freeze()` tự sinh khoá sổ cái —
+`'freeze:' || gen_random_uuid()` — nên **không gì ở phía máy chủ phân biệt được
+một lần thử lại với một lần mua thứ hai**, còn client thì không phân biệt được
+"đã commit, mất phản hồi" với "chưa từng xảy ra". Khoá ngẫu nhiên là **cố ý và
+đúng** cho hai lần mua *thật sự cố ý*: `buy:<item>` là duy nhất theo thiết kế và
+sẽ từ chối cái freeze thứ hai mà bất kỳ ai từng mua. Nó chỉ tình cờ cũng xoá mất
+khả năng nhận ra một lần thử lại.
+
+**BLAST RADIUS:** bị chặn ở hai bởi trần giữ, và người ta *có* nhận được cái
+freeze thứ hai — nên đây là P3 chứ không phải đúc tiền. Vẫn là 150 xu cho một
+thứ không ai yêu cầu, trên món duy nhất giá 150 xu trong app. Nút bấm đã
+`disabled` theo `isPending`, nên phải là một phản hồi mất thật rồi người ta bấm
+lại — không phải một cú double-tap.
+
+**FIX:** `20260820120000_freeze_purchase_idempotency.sql`, dùng **ràng buộc vốn
+đã có ở đó**. Sổ cái mang `UNIQUE(user_id, ref_key)` từ `20260718120000`, và đó
+*chính là* một khoá idempotency — nó chỉ không làm việc đó ở đây vì khoá là ngẫu
+nhiên. Đưa cho người gọi một request id, đặt nó vào khoá, và cái unique index
+sẵn có trở thành thẩm quyền:
+
+```
+ref_key = 'freeze:' || p_request_id
+```
+
+Không bảng mới, không cột mới, không miền idempotency thứ hai phải giữ đồng bộ
+với miền thứ nhất.
+
+**Thứ tự các phép kiểm là một phần của bản sửa.** Kiểm "đã mua chưa" đứng
+**trong** khoá và **trước** kiểm trần: một lần thử lại của chính cái lần mua đã
+làm đầy ngăn kéo không được bị từ chối vì `freeze limit`. Phép phá 4 (bỏ kiểm
+EXISTS) đỏ đúng ở luật đó và **chỉ** ở luật đó.
+
+**Chữ ký không tham số ở lại, và ở lại y nguyên.** Cùng lý do với
+`20260819120000`: bản app đã nằm trên máy người ta vẫn gọi nó. Nó **không thể**
+idempotent — client cũ không gửi gì có thể nhận diện một ý định — và bịa ra một
+id ở phía máy chủ là đúng cái lỗi đó viết dài hơn. Ghi ra chứ không lấp liếm.
+
+**Phía client:** một `pendingFreezeBuy` ở module scope, không phải `useRef` và
+không phải bên trong `mutationFn`. Sinh trong `mutationFn` thì mỗi lần gọi là
+một id mới — chính là lỗi viết lại bằng chữ khác. `useRef` thì sống qua re-render
+nhưng không sống qua lúc màn hình unmount, mà lý do tồn tại của nó là lần thử
+đầu đã **hỏng**: người quay ra rồi quay lại để thử lần nữa là hình dạng bình
+thường của chuyện đó. Xoá khi thành công, và xoá qua `onUserScopedReset` khi
+đăng xuất — nếu không, lần mua đầu tiên của B sẽ hội tụ vào dòng sổ của A và B
+có freeze mà không ai trừ tiền.
+
+**VERIFICATION:** `tools/streak-freeze.mjs` — 100 lời gọi đồng thời cùng một
+request id → đúng một lần mua; thử lại 10 lần → đúng một; hai id khác nhau → hai
+lần mua; B dùng lại id của A → B bị trừ tiền của B.
+
+---
+
+### Chain Z — đã kiểm và **KHÔNG** phải lỗi (phần lớn chain này)
+
+Ghi lại đầy đủ, vì mấy luật trong bộ dò tồn tại để **giữ** những điều này chứ
+không phải để mô tả một đống đổ nát.
+
+**1. Thẩm quyền giá là của máy chủ.** `buy_streak_freeze()` không nhận tham số
+nào — tám hình dạng giả mạo đều bị từ chối ở tầng phân giải hàm:
+
+```
+buy_streak_freeze(150) · (0) · ('<uuid B>') · (p_amount=>0)
+(p_price=>0) · (p_user_id=>…) · (p_count=>5)      → function does not exist
+```
+
+Giá lấy từ `shop_prices` = 150.
+
+**2. Danh tính đến từ JWT.** Không JWT → `not signed in`, cả mua lẫn tiêu.
+
+**3. RLS chặn mọi lần ghi chéo — kể cả ghi cho chính mình.** `INSERT` thẳng vào
+`streak_freezes` bị từ chối cho cả A lẫn B; `UPDATE`/`DELETE` freeze của B →
+`0 dòng`; `SELECT` freeze của B → `0 dòng`; sửa `shop_prices` → `UPDATE 0`, giá
+vẫn 150. Mọi lần ghi đi qua hai hàm `SECURITY DEFINER`.
+
+**4. Sàn số dư.** 149 xu → `insufficient coins`; đúng 150 → mua được, còn 0;
+0 xu → từ chối. **Chưa bao giờ âm.**
+
+**5. Tính nguyên tử.** 40 vòng mua-rồi-dọn: khoản chi và freeze **luôn** là 1 và
+1. Chưa một lần nào thấy chúng rời nhau.
+
+**6. Đồng thời — 100 luồng, kết nối riêng.**
+
+```
+100 người mua, ví 150 xu   → đúng 1 lần mua, 20/20 lượt
+100 người mua, ví 300 xu   → đúng 2 lần mua, 20/20
+100 người mua, ví 149 xu   → 0 lần mua, 0 khoản chi, 50/50
+100 người TIÊU, cùng một ngày → 1 tiêu, 1 giữ, đúng một `true`, KHÔNG ngoại lệ, 20/20
+```
+
+**`20260817130000_freeze_race_returns_false` làm đúng việc tên nó nói.** Brief
+dặn đừng tin cái tên; đã kiểm ở 100 luồng và nó đúng.
+
+**7. Cửa sổ ngày, đo trên chín múi giờ × 24 giờ.** `p_date − CURRENT_DATE` rơi
+đúng vào `[−3, +1]` — **0 vi phạm**, và **lề đúng bằng 0 ở cả hai đầu**.
+
+**8. DST.** Ngày 23 giờ và ngày 25 giờ đều cho đúng một ngày địa phương; bước
+lùi luôn đúng một ngày.
+
+**9. Chuỗi ngày không trôi dạt.** Cả `use-mascot-room` lẫn `use-extras` đều gọi
+`streakFrom`, và `tools/streak.mjs` đã canh việc đó kể cả số tham số. Oracle độc
+lập (số học theo epoch UTC, không import gì từ `streak.ts`): **0/1000** lệch trên
+trạng thái hợp lệ, **0/1000** trên trạng thái thù địch (hàng ngày tương lai,
+freeze cho hôm nay).
+
+**10. Một freeze KHÔNG đúc được xu.** Thưởng streak `d:<ngày>:streak` là 25 xu
+một ngày, một dòng, giá do máy chủ định — xin 300 vẫn trả 25 (Chain Y). **Tiêu**
+một freeze không tốn gì: tiền trả lúc **mua**.
+
+---
+
+### Chain Z — một bất biến chưa ai viết ra, nay chạy được
+
+`FREEZE_MAX` và cửa sổ ngày **ràng buộc nhau**, và không file nào nói thế.
+
+`useStreakGuard` chỉ tiêu khi khoảng trống lọt vào ngăn kéo, nên ngày cũ nhất nó
+gửi được là `local_today − FREEZE_MAX`; ngày địa phương chạy sau UTC tới một
+ngày; nên `p_date − CURRENT_DATE` xuống tới `−(FREEZE_MAX + 1)`. Với
+`FREEZE_MAX = 2` đó là **đúng −3**, tức đúng bằng cửa sổ. Nâng trần lên 3 và lần
+cứu **cũ nhất** — lần quan trọng nhất — bắt đầu ném `freeze window` thành một
+toast đỏ, cho mọi múi giờ phía tây.
+
+Luật W là quan hệ đó, **chạy được**: nó đọc `FREEZE_MAX` từ `mascot-room.ts` và
+hai biên cửa sổ từ SQL (bản định nghĩa **cuối cùng**, vì `CREATE OR REPLACE`),
+rồi khẳng định `FREEZE_MAX + 1 ≤ cửa_sổ_lùi ≤ FREEZE_MAX + 1`. Chặt hai phía:
+rộng hơn thì thành cứu hồi tố, mà mua lưới sau khi đã ngã thì chuỗi ngày hết
+nghĩa.
+
+---
+
+### Chain Z — PRODUCT DECISION, ghi lại chứ không tự quyết
+
+**PS-Z1. Điều kiện mua/tiêu là của client.** Máy chủ **không** kiểm xem ngày đó
+có cần đóng băng không — đo được `true` khi tiêu freeze lên một ngày đã có dòng
+`daily_logs`. Kho không có hợp đồng nào nói *"chỉ được mua freeze cho ngày đang
+cần"*, nên **không đổi**. Cái giá của việc sai là người ta phí freeze của chính
+mình; không có bề mặt bảo mật nào ở đây.
+
+**PS-Z2.** Một ngày một freeze — partial unique index. **PS-Z3.** Mua/tiêu được
+tới 3 ngày về trước. **PS-Z4.** Một freeze **có thể** đẩy chuỗi ngày qua mốc huy
+chương — đó là việc nó sinh ra để làm. **PS-Z5.** Xu trả lúc **mua**; lúc *tiêu*
+thì miễn phí, nên các phép kiểm điều kiện không canh giữ thứ gì có giá trị.
+**PS-Z6.** Một lần mua hỏng không được thử lại sau khi khởi động lại app — không
+`mutationKey`, không có trong hàng đợi offline. **Hỏng an toàn.** **PS-Z7.** Ngày
+được freeze tính là *đã phủ*, không bao giờ tính là `loggedToday`. **PS-Z8.**
+Dựng lại `daily_logs` không hoàn lại một freeze đã tiêu.
+
+---
+
+### Chain Z — sai lầm của chính bộ đo
+
+**1. Phép thử "ẩn danh" đầu tiên của tôi không hề ẩn danh.** Nó truyền một UUID
+không tồn tại làm `sub`, nên `auth.uid()` trả về một người dùng khác chứ không
+phải `NULL`, và kết quả là `insufficient coins` — trông như một phép kiểm đã
+chạy. Ẩn danh thật là **không set `request.jwt.claim.sub`**; bộ dò làm đúng thế.
+
+**2. Bộ sinh trạng thái thù địch đưa vào ngày TRÙNG LẶP.** `streakFrom` cắt cụt
+chuỗi ở một ngày trùng — vòng lặp thấy `diff = 0` rồi `break` — nên nó lệch với
+oracle ở 33/1000. Nhưng `daily_logs` mang `UNIQUE(user_id, date)` **hai lần**,
+nên truy vấn production không thể trả về ngày trùng: tôi đang thử một lời gọi
+không tồn tại. Bỏ trùng đi thì còn **0/1000**. Ghi lại như một chỗ mong manh chứ
+không phải một lỗi — và ghi cả cái bất đối xứng đã gây ra nó: `streakFrom` chỉ
+`new Set(...)` ở nhánh **có freeze**.
+
+**3. Hai luật của tôi kỳ vọng sai định dạng** — bộ format của chính tôi in `+0`
+cho offset 0, và tôi cắt nhầm hai trường khi kiểm "tiêu freeze có tốn tiền
+không". Cả hai đỏ trên hành vi **đúng**. Sửa luật, không sửa code.
+
+**4. `max_connections` mặc định là 100**, nên phép thử 100 luồng đầu tiên chết
+với `too many clients already` — không phải một phát hiện, chỉ là cluster quá
+nhỏ so với câu hỏi. Dựng lại với 300.
+
+**5. Và cái tệ nhất: bộ dò ĐO NHẦM CƠ SỞ DỮ LIỆU trong bốn phép phá liền.**
+Một postmaster mồ côi từ phép phá số 1 giữ cổng 55491 với thư mục dữ liệu đã bị
+`rmSync` xoá dưới chân nó. Lần chạy sau: `initdb` thành công, `pg_ctl start`
+lặng lẽ hỏng vì cổng bận, và `psql` nối vào **cái xác** — nên phép phá 7, 8, 9
+đều báo lại đúng lỗi của phép phá 1, đọc y như ba phép phá không có răng.
+
+Chúng không phải không có răng; bộ đo đang nhìn nhầm chỗ. Đã sửa hai lớp: cổng
+suy ra từ tên thư mục tạm nên hai lần chạy không đụng nhau, **và** một khẳng
+định `SHOW data_directory` phải bằng đúng thư mục vừa dựng — không bằng thì
+*ném*, chứ không chạy tiếp. Một bộ dò lặng lẽ trỏ nhầm cơ sở dữ liệu tệ hơn một
+bộ dò không chạy. Ba phép phá đã chạy lại và đều đỏ đúng câu định trước.
+
+**6. Một luật của Chain X đỏ vì SANG NGÀY, không phải vì Chain Z.** `bandit.mjs`
+gõ cứng `'2026-08-19'` làm "hôm nay" trong phép thử nạp-muộn. `loadPersonalModel`
+kết thúc bằng `settleStale(localDateStr())`, nên sáng hôm sau cái ask đó bị kết
+sổ thành một lần trượt và bị xoá — đúng hành vi, và luật đỏ 100/100. Một luật mà
+câu trả lời phụ thuộc vào tờ lịch thì không phải một luật. Nay nó đọc ngày thật.
+(Và backtick trong template driver lại cắt đứt literal — **lần thứ bảy** trong
+sổ này; `node --check` bắt được.)
+
+**7. Phép phá số 9 XANH, và đó là một no-op đã chứng minh chứ không phải luật
+yếu.** Nó bỏ khối `IF NOT FOUND` sau `INSERT … ON CONFLICT`. Khoá advisory được
+lấy **trước** phép kiểm `EXISTS`, nên hai lời gọi cùng request id bị tuần tự
+hoá và người thứ hai *luôn* quay về ở đó — khối kia không với tới được chừng nào
+khoá còn đấy. Giữ lại kèm lý do: nó không với tới được **nhờ khoá**, và phép phá
+số 5 (bỏ khoá) là lúc nó trở thành thứ duy nhất chắn giữa một khoản chi trùng và
+một freeze không ai trả tiền.
+
+---
+
+### Chain Z — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **PURE LOGIC** | luật W đọc `FREEZE_MAX` và hai biên cửa sổ rồi khẳng định quan hệ giữa chúng |
+| **POSTGRES** | cluster THẬT 16.13 dựng từ **mọi** migration, 36 bảng, `max_connections=300` |
+| **RLS** | `SET LOCAL ROLE authenticated` **trong transaction tường minh**; ROW_COUNT ở chỗ UPDATE/DELETE |
+| **ECONOMY** | giá từ `shop_prices`, 8 hình dạng giả mạo bị từ chối, sàn 149/150/0 |
+| **FREEZE PURCHASE** | idempotent theo `(user_id, ref_key)`; 100 luồng cùng id → một lần mua |
+| **FREEZE CONSUMPTION** | 100 luồng cùng ngày → một lần tiêu, 0 ngoại lệ |
+| **CONCURRENCY** | 100 luồng × 20 lượt cho mỗi kịch bản, kết nối riêng |
+| **IDEMPOTENCY** | tuần tự ×10, đồng thời ×100, và lần thử lại khi ngăn kéo đã đầy |
+| **STREAK** | oracle độc lập, 1000 trạng thái hợp lệ + 1000 thù địch |
+| **DATE/TIMEZONE** | 9 múi giờ × 24 giờ; DST 23h và 25h |
+| **KOA / AWARDS / BANDIT** | không đổi nghĩa của một ngày được freeze; freeze không đúc xu, không đúc XP |
+| **TYPESCRIPT** | `npx tsc --noEmit` sạch |
+| **DETECTORS** | **10 phép phá**, mỗi phép đỏ đúng câu định trước, phục hồi xanh |
+| **OFFLINE** | **KHÔNG có bề mặt**: hàng đợi offline không có thao tác freeze nào |
+| **PERSISTENCE / COLD LAUNCH** | mutation không có `mutationKey` → không khôi phục được. **Đọc code, KHÔNG chạy** |
 | **REAL iOS** | **KHÔNG** |
 | **PRODUCTION** | **KHÔNG** |
 ---

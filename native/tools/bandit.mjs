@@ -442,6 +442,9 @@ const PM = require('./lib/personal-model.js');
 
 const J = JSON.stringify;
 const D = (i) => '2026-' + String(1 + Math.floor(i / 28)).padStart(2, '0') + '-' + String(1 + (i % 28)).padStart(2, '0');
+/* The real local date, for the one rule that has to agree with settleStale. */
+const TODAY = (() => { const t = new Date();
+  return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); })();
 const QUESTS = ['workout', 'meal', 'sleep', 'water', 'steps'];
 /* The priors, restated rather than imported, so this notices if the editorial
    order is quietly changed underneath it. */
@@ -717,10 +720,15 @@ const o = {};
       AS._put(KEY, J({ arms: { meal: { alpha: 7, beta: 3 } }, asked: { water: '2026-01-01' } }));
       AS._latency(1 + (t % 4));
       const inflight = PM.loadPersonalModel();     // deliberately not awaited yet
-      PM.noteAsked('sleep', '2026-08-19');          // a decision this session took
+      /* TODAY, not a literal. loadPersonalModel ends by calling settleStale
+         with the real local date, so an ask stamped with any other day is
+         settled as a miss and removed — which is correct behaviour and made
+         this rule fail 100/100 the morning after it was written. A rule whose
+         answer depends on the calendar is not a rule. */
+      PM.noteAsked('sleep', TODAY);                 // a decision this session took
       await inflight;
       AS._latency(0);
-      if (askedNow().sleep === '2026-08-19') kept += 1;
+      if (askedNow().sleep === TODAY) kept += 1;
       for (const q of QUESTS) {
         if (!O.validPosterior(armsNow()[q], CAP)) {
           invalid += 1;

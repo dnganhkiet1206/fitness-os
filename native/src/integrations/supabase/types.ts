@@ -1433,8 +1433,12 @@ export type Database = {
         Args: { p_item_key: string }
         Returns: number
       }
+      /* `p_request_id` is one intention, stable across its retries — the
+         ledger's UNIQUE(user_id, ref_key) is what makes a repeat converge
+         instead of charging again. See 20260820120000. The zero-argument form
+         still exists for builds already installed and is NOT idempotent. */
       buy_streak_freeze: {
-        Args: Record<PropertyKey, never>
+        Args: { p_request_id: string }
         Returns: number
       }
       use_streak_freeze: {
