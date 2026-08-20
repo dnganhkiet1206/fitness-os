@@ -8212,6 +8212,234 @@ edge function, nên biên AI được chứng minh chứ không phải được 
 | **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
 
 
+## Chain AD — "khối lượng tập" nghĩa là gì, và app có nói cùng một nghĩa không
+
+**Bộ kiểm (giai đoạn bằng chứng):** cluster PostgreSQL 16.13 THẬT dựng từ toàn bộ
+migration, chạy **`recomputeDailyLog`, `computeReadiness`, `sessionLoad`,
+`loadWindow`, `chronicDays`, `acwrZone` thật**, chấm bằng oracle đọc
+`workout_sessions` và gán ngày bằng `AT TIME ZONE`.
+
+### Chain AD — đính chính brief
+
+Brief nhắc `daily_logs.total_volume`. **Cột đó không tồn tại.** Schema có
+`daily_logs.volume_load numeric DEFAULT 0`. Mọi phần dưới nói về cột thật.
+
+---
+
+### Chain AD — bản đồ người ghi
+
+| trường | nguồn sự thật | người ghi | đơn vị | 0 nghĩa là gì |
+| --- | --- | --- | --- | --- |
+| `workout_sessions.volume_load` | chính nó | `log-workout` (thủ công), `offline-write` (phát lại), `use-health-sync` (đồng hồ, **luôn 0**) | kg (tải ngoài) | **0 THẬT** với buổi đồng hồ; NOT NULL DEFAULT 0 |
+| `workout_sessions.session_rpe` | chính nó | sheet hỏi một lần cuối buổi | 1–10 | DEFAULT **5** — buổi đồng hồ nhận 5 chứ không phải null |
+| `workout_sessions.sets` | chính nó | sheet; đồng hồ ghi `[]` | JSONB | `[]` = không đo được reps |
+| `daily_logs.workout_count` | dẫn xuất | **chỉ** `recomputeDailyLog` | số buổi | 0 = không phân biệt được với "chưa dựng" (DEFAULT 0) |
+| `daily_logs.volume_load` | dẫn xuất | **chỉ** `recomputeDailyLog` | kg | như trên |
+| `daily_logs.acwr` | dẫn xuất | **chỉ** `recomputeDailyLog` qua `computeReadiness` | tỉ lệ | **NULLABLE, không DEFAULT** — phân biệt được "không đo được" |
+| `daily_logs.readiness_score` | dẫn xuất | như trên | 0–100 | **NULLABLE** |
+| `daily_logs.active_*`, `steps` | HealthKit | **chỉ** `use-health-sync` | — | DEFAULT 0 |
+
+**Bất đối xứng quan trọng:** `acwr` và `readiness_score` là NULLABLE không
+default — chúng **nói được** "không có dữ liệu". `volume_load` và
+`workout_count` là NOT NULL DEFAULT 0 — chúng **không nói được**. Đây là cùng
+lớp với Chain AC, nhưng lần này lớp đúng đã tồn tại sẵn ở nửa kia.
+
+**Đo được: `daily_logs.volume_load` là dẫn xuất NGHIÊM NGẶT.** Cắm tay 5.000 vào
+cột đó rồi `recomputeDailyLog` → **0**. Không có đường nào ghi vào nó ngoài phép
+chiếu.
+
+---
+
+### Chain AD — HAI đại lượng, cùng gọi là "tải"
+
+| | tải NGOÀI | tải TRONG |
+| --- | --- | --- |
+| đại lượng | `volume_load` = Σ kg×reps | `sessionLoad` = RPE × tổng reps |
+| buổi đồng hồ | **0** (cố ý, có ghi lý do) | **null** (bị loại khỏi CẢ HAI vế) |
+| ai dùng | thẻ buổi tập, biểu đồ, `avg_volume_28d` | **ACWR + điểm sẵn sàng** |
+| mẫu số mạn tính | — | `load28d / max(chronicDays, 7)` |
+
+`session-load.ts` viết thẳng ra: *"`0` says training happened and cost nothing,
+`null` says this cannot be measured. A watch import ... lands on `null` and is
+dropped from **both** sides of the acute:chronic ratio."*
+
+*(Một chú thích hơi lệch, ghi lại chứ không phải lỗi: nó nói buổi đồng hồ "has
+no RPE", nhưng cột có DEFAULT 5 nên hàng đồng hồ mang `session_rpe = 5`. Kết
+quả vẫn đúng — `sets: []` → `totalReps = 0` → `sessionLoad` trả `null` qua nhánh
+`reps <= 0`.)*
+
+---
+
+### BUG-103 (P2). Hai ACWR mâu thuẫn, và cái sai là cái khuyên người ta giảm tải — `SECOND-ACWR-DIVIDES-BY-28`
+
+**ĐỀ XUẤT — CHƯA SỬA.**
+
+`weekly-review.tsx:317-320` **tự tính lại** một ACWR thứ hai:
+
+```ts
+const load7d = totalVolume;                              // Σ daily_logs.volume_load, 7 ngày
+const load28d = sum(monthLogs.map(l => Number(l.volume_load) || 0));
+const chronicAvg = load28d / 28;                         // ← 28 CỐ ĐỊNH
+const acwr = chronicAvg > 0 ? +((load7d / 7) / chronicAvg).toFixed(2) : 0;
+```
+
+Bốn lớp bảo vệ của engine, bản này **không có lớp nào**:
+
+| lớp | `readiness-engine` | `weekly-review` |
+| --- | --- | --- |
+| đại lượng | tải trong (RPE×reps) | tải ngoài (tonnage) |
+| buổi đồng hồ | `null`, loại khỏi hai vế | 0, tính như ngày tải bằng không |
+| không có dữ liệu | `load28d <= 0` → **null** | → **0** |
+| mẫu số mạn tính | `/ max(chronicDays, 7)` | **`/ 28`** |
+
+Dòng cuối chính là lỗi mà chú thích của `getACWR` ghi là đã sửa, kèm số đo của
+nó: *"buổi tập đầu tiên → ACWR 4.00 (spike, nguy hiểm) … Three weeks of being
+told they were ramping dangerously, for training exactly the same amount every
+week."*
+
+**Đo lại trên cluster thật, cùng một người, cùng một ngày, cùng nguồn dữ liệu** —
+tập đều đặn một buổi cách ngày:
+
+| lịch sử | engine (Today) | weekly-review | khuyến nghị của weekly-review |
+| --- | --- | --- | --- |
+| 1 tuần | **1.00 · optimal** | **4.00 · spike** | *"Giảm 15-20% volume tuần tới để tránh chấn thương"* |
+| 2 tuần | **1.06 · optimal** | **2.29 · spike** | *"Giảm 15-20% …"* |
+| 4 tuần | 1.10 · optimal | 1.14 · optimal | — |
+
+Giống hệt nhau ở **cả sáu múi giờ** kể cả hai ngày DST: đây là số học, không phải
+xử lý ngày.
+
+**Nhãn còn khẳng định hai cái là một.** `weekly-review.tsx:445` vẽ ô với
+`label: i18n.weeklyReviewReadiness` và `sub: "ACWR " + acwr` — tức con số suy từ
+tonnage được in **ngay dưới điểm sẵn sàng** mà engine đã tính bằng một ACWR khác
+hẳn. Nhãn không chỉ không phân biệt; nó khẳng định chúng thuộc về nhau.
+
+**Và với một lớp người dùng, con số sai là con số DUY NHẤT họ thấy.**
+`recomputeDailyLog` chỉ chấm điểm sẵn sàng khi `hasEnoughData` — ba lần đo sinh
+trắc **hoặc** ba đêm trong bảy ngày. Ai ghi buổi tập mà không ghi ngủ/sinh trắc
+thì `daily_logs.acwr` là `null`, thẻ Today để trống, còn weekly-review vẫn tự tin
+in ra ACWR tính sai.
+
+**Bản sửa nhỏ nhất được đề xuất:** weekly-review **đọc `daily_logs.acwr`** thay
+vì tự tính. Nó đã có sẵn trong hàng mà màn hình này đang đọc
+(`.select('date, kcal, protein_g, volume_load, readiness_score')` chỉ cần thêm
+`acwr`). Đây là **xoá một định nghĩa trùng**, không phải thêm một định nghĩa mới
+— và `null` phải hiện là "chưa chấm" chứ không phải 0.
+
+---
+
+### BUG-104 (P3). `avg_volume_28d` chia cho số hàng — `AVG-VOLUME-DIVIDES-BY-ROWS`
+
+**ĐỀ XUẤT — CHƯA SỬA. Cần PRODUCT DECISION cho mẫu số.**
+
+`ai-weekly-review/index.ts:75`:
+
+```ts
+avg_volume_28d: allLogs.reduce((s, l) => s + (Number(l.volume_load) || 0), 0) / Math.max(allLogs.length, 1)
+```
+
+Đo với 3 ngày tập 2.100 kg, 7 ngày chỉ có bước chân, 18 ngày không có hàng nào
+(10 hàng / 28 ngày lịch):
+
+| cách hiểu | giá trị |
+| --- | --- |
+| sự thật (oracle từ `workout_sessions`) | 6.300 kg trên 3 ngày tập |
+| **hiện tại — chia cho số HÀNG (10)** | **630** |
+| chia cho ngày CÓ TẢI (3) | 2.100 |
+| chia cho 28 ngày lịch | 225 |
+
+Mẫu số hiện tại là **"bao nhiêu hàng tình cờ tồn tại"** — nó đổi theo việc người
+dùng có bật HealthKit hay không. **Sai dưới mọi cách hiểu**, đúng cùng lớp
+BUG-102.
+
+**Nhưng bản sửa cần câu trả lời sản phẩm, và ở đây khác với dinh dưỡng.** Với
+dinh dưỡng, "ngày không ghi = không có thông tin" đã được repo phát biểu thành
+quy ước. Với **tải**, "ngày nghỉ = tải 0" là một sự thật thật, và chính ACWR
+dùng nó: vế mạn tính chia cho **ngày lịch đã trôi qua**, không phải ngày có tập.
+Nên `2.100` và `225` đều là câu trả lời thành thật cho hai câu hỏi khác nhau
+(*"buổi tập của tôi nặng bao nhiêu"* và *"trung bình mỗi ngày tôi gánh bao
+nhiêu"*), còn `630` thì không trả lời câu nào.
+
+Quy ước repo đã chốt cho vế mạn tính là **chia cho số ngày lịch thật sự có lịch
+sử** (`load28d / max(chronicDays, 7)`) — nếu áp cùng quy ước thì đáp án là
+`chronicDays`, không phải 28 và không phải số hàng. Ghi lại để chọn, không tự
+chọn.
+
+---
+
+### Chain AD — PRODUCT SEMANTICS (không phải lỗi)
+
+**Buổi tập từ đồng hồ mang `volume_load: 0` và `sets: []`.** Cố ý, có lý do viết
+ngay tại chỗ ghi: *"A run has no tonnage, and ACWR is a sum of volume — so these
+raise `workout_count` and reset `daysSinceWorkout` while leaving the load ratio
+untouched. Giving them an invented volume would corrupt the one number on that
+screen whose whole job is to be trustworthy."*
+
+Hệ quả đã đo, cho người **chỉ** tập bằng Apple Watch (14 buổi trong 28 ngày):
+
+```
+oracle          : 14 buổi, 14 ngày có tập, tonnage 0
+workout_count   : > 0        ← quest "đã tập" vẫn xong, chuỗi ngày vẫn tính
+daily_logs.acwr : null       ← ĐÚNG: không có gì đo được thì không chấm
+weekly-review   : 0
+avg_volume_28d  : 0
+```
+
+Đây là **thiết kế**, không phải lỗi. Ghi lại để lần sau không ai "sửa" bằng cách
+bịa tonnage cho buổi chạy bộ.
+
+---
+
+### Chain AD — đã kiểm và **KHÔNG** phải lỗi
+
+- `sessionLoad` / `loadWindow` / `getACWR` / `chronicDays` đã đúng ngữ nghĩa
+  null-vs-0 từ trước, và có phép đo kèm chú thích.
+- `daily_logs.volume_load` **dẫn xuất nghiêm ngặt**: cắm tay 5.000 → dựng lại →
+  0.
+- **Thứ tự và phát lại hội tụ**: buổi tay (1 buổi / 3.000) → thêm buổi đồng hồ
+  (2 / 3.000) → **phát lại cùng `external_id` (2 / 3.000, KHÔNG nhân đôi)** →
+  xoá buổi tay (1 / 0), khớp oracle.
+- **Ranh giới ngày và DST đúng**: bốn buổi đặt ở bốn mép ngày → 555 kg / 2 buổi,
+  khớp oracle ở cả sáu múi giờ, gồm ngày 23 giờ và ngày 25 giờ.
+- **Chéo tài khoản sạch**: buổi tập của B không lọt vào ngày của A.
+- `ai-coach` và `ai-smart-nudges` gửi **hàng thô theo ngày**, không tự tính trung
+  bình nào — nên `avg_volume_28d` là aggregate tải **duy nhất** đi tới mô hình.
+- Tổng (`totalVolume`, `prevTotalVolume`) không bị số 0 làm sai.
+
+---
+
+### Chain AD — sai lầm của chính bộ đo, và cách sửa
+
+Hai cái, cả hai đều suýt thành kết luận sai:
+
+1. **Engine không hề chạy.** Bản harness đầu để `daily_logs.acwr` là `null` ở cả
+   ba mốc lịch sử, và tôi suýt ghi đó là phát hiện. Thật ra
+   `recomputeDailyLog` chấm điểm sẵn sàng chỉ khi `hasEnoughData` — ba lần đo
+   sinh trắc **hoặc** ba đêm trong bảy ngày — và fixture không có cái nào. Thêm
+   5 đêm vào fixture thì engine trả 1.00 / 1.06 / 1.10, và bảng so sánh mới là
+   "hai câu trả lời cho cùng một câu hỏi" thay vì "có chấm vs không chấm".
+2. **Hai cách hiểu trùng nhau do fixture.** Bản đầu cho mọi ngày trong 28 ngày
+   một hàng, nên "chia cho số hàng" và "chia cho 28 ngày lịch" cùng ra 225 và
+   che mất khác biệt. Đổi fixture còn 10 hàng/28 ngày thì ba cách hiểu tách ra
+   rõ: 630 / 2.100 / 225.
+
+---
+
+### Chain AD — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory` |
+| **HÀM THẬT** | `recomputeDailyLog`, `computeReadiness`, `sessionLoad`, `loadWindow`, `chronicDays`, `acwrZone` — chạy thật |
+| **ORACLE** | đọc `workout_sessions`, gán ngày bằng `AT TIME ZONE`; không đọc `daily_logs`, không import hàm ACWR nào |
+| **MÚI GIỜ** | 6 múi, gồm ngày 23 giờ và 25 giờ — kết quả BUG-103 giống hệt ở cả sáu |
+| **DETECTORS** | **CHƯA** — vòng này chỉ có bằng chứng |
+| **REGRESSION** | **CHƯA CHẠY LẠI** — không có thay đổi production nào |
+| **REAL iOS / HealthKit** | **KHÔNG** — hàng buổi tập đồng hồ được dựng lại bằng đúng câu upsert của `use-health-sync`; `queryWorkouts` không được thực thi, tính duy nhất của `external_id` là **UNVERIFIED PLATFORM BEHAVIOR** |
+| **PRODUCTION** | **KHÔNG** — edge function chưa deploy |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,
