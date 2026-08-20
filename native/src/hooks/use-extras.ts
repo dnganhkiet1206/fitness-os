@@ -472,10 +472,43 @@ export function useUpdateChallengeProgress() {
             .lt('date_time', localDayRangeISO(weekEndStr).start);
           newValue = count ?? 0;
         } else if (ch.challenge_key === 'log_7') {
+          /*
+            ── the third reader of "did this person log this day" ──
+
+            `log_7` says *"Ghi log đầy đủ 7 ngày trong tuần"* and counted rows.
+            A row is not that any more: `use-health-sync` upserts
+            `{ user_id, date, steps }` for up to thirteen finished HealthKit
+            days, and an upsert **creates** the row. So a phone counting steps
+            in a pocket manufactures days — the same shape the streak was fixed
+            for, in the one consumer the fix did not reach.
+
+            Measured against PostgreSQL 16.13, an account that has never logged
+            a meal, a workout, a night or a supplement, first sync on a Sunday:
+
+                hàng daily_logs do đồng bộ bước chân tạo : 14
+                streakFrom (LOGGED_DAY_FILTER)          : 0 ngày
+                log_7      (không lọc gì)               : 7/7
+
+            Seven of seven on a gold-tier challenge, paid through
+            `claim_quest_reward`, for a week nobody logged anything in — while
+            the streak, asking the same question of the same rows, said zero.
+
+            So it asks the same question the same way. `LOGGED_DAY_FILTER` is
+            the one definition of a logged day, and the note in
+            `use-mascot-room` already says why it has to stay one: *"Both
+            readers of the streak have to ask the same question, and this file
+            and `use-extras` have already drifted apart twice."* This was the
+            third reader.
+
+            In the query rather than after it, for the same reason the streak
+            reads do it there — and measured: a week somebody genuinely logged
+            still counts 7/7, so the filter takes nothing from anyone.
+          */
           const { data: logs } = await supabase
             .from('daily_logs')
             .select('date')
             .eq('user_id', user.id)
+            .or(LOGGED_DAY_FILTER)
             .gte('date', weekStart)
             .lt('date', weekEndStr);
           newValue = logs?.length ?? 0;

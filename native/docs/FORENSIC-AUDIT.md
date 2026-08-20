@@ -7688,8 +7688,9 @@ nó lệch khỏi oracle.
 
 ### BUG-101 (P2). Thử thách "Ghi log đầy đủ 7 ngày" đếm cả ngày không ai ghi gì — `LOG7-COUNTS-BARE-ROWS`
 
-**ĐỀ XUẤT — CHƯA SỬA.** Đây là phát hiện của **bản đồ consumer**, không phải của
-`recomputeDailyLog`.
+**ĐÃ SỬA.** Đây là phát hiện của **bản đồ consumer**, không phải của
+`recomputeDailyLog` — nguyên nhân gốc là **lệch định nghĩa giữa các nơi đọc**,
+không phải sai ở chỗ dẫn xuất.
 
 Ba chỗ trong app hỏi `daily_logs` **cùng một câu**: *"ngày này người ta có ghi
 log không?"* Hai chỗ hỏi bằng `LOGGED_DAY_FILTER`. Chỗ thứ ba không lọc gì cả.
@@ -7746,17 +7747,57 @@ ngày hỏi:
 không thêm cột, không đổi luật thưởng. Đo trên cluster thật: người thật sự ghi
 log 7 ngày vẫn ra **7/7** sau khi thêm bộ lọc — bản sửa không lấy đi gì của ai.
 
-**Bộ dò được đề xuất** (`tools/logged-day.mjs`, chưa viết):
+**Bộ dò: `tools/logged-day.mjs`** (mới, bước thứ 118 của bộ kiểm).
 
-- **A (cấu trúc, đã bỏ chú thích).** Mọi chuỗi `.from('daily_logs')` trong `src/`
-  mà `select` **đúng bằng** `date` — tức là đang hỏi *ngày có tồn tại không* —
-  phải mang `LOGGED_DAY_FILTER`, hoặc mang một vị từ tự khai trên một cột cụ thể
-  (`use-fitness-data.ts:533` là ca thứ hai và nó hợp lệ).
-- **B (hành vi, PostgreSQL thật).** Dựng hàng đúng như `use-health-sync` ghi
-  (chỉ `steps`), dịch hằng `LOGGED_DAY_FILTER` đọc từ `streak.ts` sang SQL, và
-  khẳng định **0 ngày** được tính; rồi một tuần ghi log thật vẫn ra **7**.
-- **Phép phá bắt buộc:** gỡ `.or(LOGGED_DAY_FILTER)` khỏi bản sửa → **A đỏ đúng
-  ở `use-extras.ts` dòng `log_7`**; thêm `steps.gt.0` vào hằng số → **B đỏ**.
+- **A — cấu trúc, chú thích bị bóc trước khi so.** Mọi chuỗi `.from('daily_logs')`
+  trong `src/` mà `select` **đúng bằng** `date` — tức là đang coi *sự tồn tại của
+  dòng* là bằng chứng đã ghi log — phải mang `LOGGED_DAY_FILTER`, hoặc mang một
+  vị từ **tự khai trên một cột cụ thể**. `user_id` và `date` không tính: truy
+  vấn nào cũng có chúng, nhận chúng là nhận tất cả. Quy tắc đếm được **4** truy
+  vấn dạng này và từ chối chạy nếu tìm thấy ít hơn — một bộ quét lạc mục tiêu
+  thì xanh vì lý do sai.
+- **B — hành vi, và nó chạy CHÍNH CÂU TRUY VẤN ĐANG SHIP.** Không chép lại: câu
+  truy vấn `log_7` được **đọc ra khỏi `use-extras.ts`**, dịch sang SQL và chạy
+  trên PostgreSQL dựng từ toàn bộ migration. Hằng `LOGGED_DAY_FILTER` cũng đọc
+  từ `streak.ts` chứ không gõ lại. Bộ dịch **cố ý hẹp**: gặp toán tử nó không
+  hiểu thì **hỏng**, chứ không bỏ qua — một truy vấn không còn được hiểu là một
+  truy vấn không ai đang canh.
+  - 7 ngày chỉ có bước chân → **0** · một ngày thật → **1** · tuần ghi log thật
+    → **7** · 4 thật + 3 bước chân → **4** · ngày của tài khoản khác → không lọt
+    · ngày ngoài tuần → không lọt.
+- **Vì sao B phải chạy truy vấn chứ không kiểm hằng số.** `tools/streak-challenge.mjs`
+  đã canh *hình dạng* của `LOGGED_DAY_FILTER` từ trước — và BUG-101 vẫn xảy ra,
+  vì hằng số đúng không nói gì về một nơi đọc không hề áp dụng nó.
+
+**Sáu phép phá, cả sáu ĐỎ đúng câu định trước, phục hồi thì XANH lại:**
+
+| phép phá | ai đỏ | câu báo |
+| --- | --- | --- |
+| 1. gỡ `.or(LOGGED_DAY_FILTER)` khỏi `log_7` | A | chỉ chọn `'date'` mà không lọc, nêu đúng file:dòng |
+| 2. cho `log_7` đếm cả dòng chỉ có bước chân (`.gte('steps', 0)`) | B | 7 ngày chỉ có bước chân đếm ra **7/7** |
+| 3. cho `steps.gt.0` vào `LOGGED_DAY_FILTER` | B | như trên |
+| 4. bỏ ràng buộc `user_id` | B | ngày của tài khoản khác lọt vào (**7**, phải là 4) |
+| 5. bỏ mép dưới của tuần | B | ngày ngoài tuần lọt vào (**9**, phải là 4) |
+| 6. đặt vị từ đúng **chỉ trong một chú thích** | A | vẫn đỏ — văn xuôi không thay được bộ lọc |
+
+**Hai sai lầm của chính bộ đo, ghi lại vì cả hai đều làm nó đỏ SAI LÝ DO.**
+
+1. **Ba phép phá đỏ vì harness hỏng, không vì điều được kiểm.** Bộ dịch gắn
+   `$1..$3` vào vị trí cố định, nên khi phép phá 4 và 5 **xoá** một lời gọi thì
+   tham số thừa ra và PostgreSQL từ chối câu lệnh — *"could not determine data
+   type of parameter $1"*. Đỏ, nhưng nói sai chuyện. Một quy tắc báo sai lý do
+   là một quy tắc sẽ được tin về chuyện khác. Nay placeholder được gắn **theo
+   thứ tự truy vấn thật sự dùng**, và giá trị số được nhận là hằng.
+2. **Xanh khi chạy một mình, ĐỎ trong bộ kiểm.** Cổng được suy ra từ thư mục tạm
+   của chính lượt chạy, trong dải 49000–58000 — **nằm trong**
+   `ip_local_port_range` (32768–60999) của kernel này. Đây là bước thứ năm dựng
+   cluster trong một lượt `check.mjs`, và một socket **đi ra** của bốn bước
+   trước đang giữ đúng cổng đó: *"could not bind IPv4 address … Address already
+   in use"*. Bản đầu chỉ báo *"không khởi động được PostgreSQL"* — một câu không
+   nêu nguyên nhân nào. Nay: `pg_ctl -w`, log của postmaster được in ra khi
+   hỏng, dải cổng dời xuống dưới dải ephemeral, **và** vẫn thử lần lượt nhiều
+   cổng. Dải làm va chạm hiếm, thử lại làm va chạm vô hại; không cái nào một
+   mình là đủ.
 
 ---
 
@@ -7793,11 +7834,35 @@ log 7 ngày vẫn ra **7/7** sau khi thêm bộ lọc — bản sửa không l�
 | **ORACLE** | SQL riêng, tự suy cửa sổ ngày bằng `AT TIME ZONE`; không import service/readiness/streak/quest |
 | **MÚI GIỜ** | 6 múi, gồm 2 ngày DST (23 giờ và 25 giờ) và 1 múi không DST |
 | **QUY MÔ** | 12.000 chuỗi ngẫu nhiên (6.000 hợp lệ + 6.000 thù địch), **0 lệch** |
-| **DETECTORS** | **CHƯA** — giai đoạn này chỉ có bằng chứng, chưa sửa, chưa viết bộ dò |
-| **REGRESSION** | **CHƯA CHẠY LẠI** — không có thay đổi production nào trong vòng này |
+| **DETECTORS** | `tools/logged-day.mjs` (mới) — **6 phép phá, cả 6 đỏ đúng câu định trước**, phục hồi thì xanh lại |
+| **REGRESSION** | `node tools/check.mjs` **118/118 xanh**; chạy riêng lại Chain Y (`quest-lifecycle`), Chain Z (`streak-freeze`), Chain AA (`economic-integrity`), cộng `streak-challenge` và `daily-log-concurrency` — tất cả xanh |
+| **TYPESCRIPT** | `npx tsc --noEmit` sạch |
+| **PHẠM VI SỬA** | **một truy vấn**: `use-extras.ts::log_7` thêm `.or(LOGGED_DAY_FILTER)`. `recomputeDailyLog` **không đổi một dòng nào** |
 | **REAL iOS** | **KHÔNG** |
 | **PRODUCTION** | **KHÔNG** |
 | **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres`; RLS của `daily_logs` đã được `tools/daily-log-concurrency.mjs` kiểm |
+
+---
+
+### Chain AB — bất biến liên chuỗi, giờ chỉ còn MỘT định nghĩa
+
+```
+daily_logs (dòng thô)
+        ↓
+LOGGED_DAY_FILTER          ← một chỗ duy nhất, trong lib/streak.ts
+        ↓
+"ngày đã ghi log"
+        ↓
+chuỗi ngày · huy chương · thử thách tuần (log_7)
+```
+
+Ba nơi đọc, một định nghĩa. Trước bản sửa có **hai** định nghĩa không tương
+thích, và nơi đọc thứ ba là nơi duy nhất trả tiền cho câu trả lời của nó.
+
+**`recomputeDailyLog` không đổi**, và đó là kết luận quan trọng nhất của chain
+này: oracle độc lập tìm ra **0 lệch** qua 6 múi giờ, ngày 23/24/25 giờ, giấc ngủ
+qua nửa đêm, nguồn đọc lỗi, xoá-rồi-dựng-lại, đồng thời, bù 13 ngày HealthKit,
+và 12.000 chuỗi ngẫu nhiên.
 
 
 ## Cách dùng sổ này
