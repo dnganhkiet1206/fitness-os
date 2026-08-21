@@ -289,12 +289,16 @@ console.log(`dấu hiệu trong ảnh gốc: ${bounds.w}×${bounds.h} (${((bound
     Math.round((side - bounds.w) / 2),
     Math.round((side - bounds.h) / 2),
   );
-  splash.resize(1024, 1024);
+  /* Left at its natural crop size instead of forced up to 1024.
+     `make-aura-figure.mjs` states the rule this was breaking — never upscale,
+     the source is the better picture by definition — and 1024 was an arbitrary
+     number anyway: Expo draws this at `imageWidth: 120`, so the crop is already
+     nearly eight times the size it is ever seen at. */
   splash.colorType(6);
   splash.deflateLevel(9);
   await write(splash, IMG('splash-icon.png'));
   console.log(
-    `splash-icon.png     1024×1024  ${kb(IMG('splash-icon.png'))}  (dấu hiệu đã cắt sát, ` +
+    `splash-icon.png     ${side}×${side}    ${kb(IMG('splash-icon.png'))}  (dấu hiệu đã cắt sát, ` +
       `imageWidth trong app.json giờ đúng là bề rộng dấu hiệu)`,
   );
 }

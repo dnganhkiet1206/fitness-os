@@ -190,6 +190,45 @@ const num = (re, what) => {
   }
 }
 
+/* ── 3b. no svg id is a literal ──
+
+   Two auras are alive at the same moment: the coach screen is pushed over the
+   assistant tab and each mounts one. On web an svg `id` belongs to the whole
+   document, so a constant id means two definitions of one name and the one
+   registered last wins for both screens.
+
+   Mostly that is invisible, because the copies are identical — except for the
+   `auraState` pool, which is recoloured by today's **readiness**. The two
+   screens read that from different places, so when they disagree one screen
+   paints the other's verdict about somebody's recovery.
+
+   `status-scrim.tsx` already carries this fix and this note: *"This has caught
+   the app three times; `useId` is the rule."* The rule is written here as
+   *shape* — a literal string in an `id` prop — rather than as a list of names,
+   because the next gradient somebody adds will be added the way the last four
+   were. */
+{
+  const literals = [...code.matchAll(/\bid=(?:"([^"]*)"|\{`([^`]*)`\}|\{'([^']*)'\}|\{"([^"]*)"\})/g)]
+    .map((m) => ({ raw: m[0], value: m[1] ?? m[2] ?? m[3] ?? m[4] ?? '' }))
+    /* A template literal is fine as long as something in it varies per mount. */
+    .filter((m) => !/\$\{/.test(m.value));
+  for (const m of literals) {
+    problems.push(
+      `assistant-aura.tsx có id SVG viết cứng: ${m.raw} — hai màn trợ lý cùng gắn một aura, và trên ` +
+        'web id là toàn cục cho cả tài liệu, nên hai định nghĩa trùng tên tranh nhau và cái đăng ký ' +
+        'sau thắng cho cả hai. Với pool auraState — thứ đổi màu theo ĐỘ SẴN SÀNG hôm nay — đó là màn ' +
+        'này vẽ kết luận của màn kia về sự phục hồi của người dùng. Dùng useId() như status-scrim.tsx',
+    );
+  }
+  /* And the ids that do vary must vary by `useId`, not by something that
+     happens to differ today. */
+  const uses = [...code.matchAll(/useId\(\)/g)].length;
+  const svgs = [...code.matchAll(/<(?:RadialGradient|SvgLinearGradient|LinearGradient)\b/g)].length;
+  if (svgs > 0 && uses === 0) {
+    problems.push('assistant-aura.tsx định nghĩa gradient SVG nhưng không gọi useId() ở đâu cả');
+  }
+}
+
 /* ── 4. and the animation stops when nobody is looking ── */
 {
   const body = code.match(/function AuraFigure\([\s\S]*?\n}/);
@@ -247,6 +286,7 @@ console.log(
     'dưới trần chặn hồi quy (ảnh gốc 2074 KB). Hình mờ hơn lớp bụi sáng nhất từng có (0.19) — một hình ' +
     'NGƯỜI ở cùng mức opacity với một đốm bụi thì không phải cùng mức hiện diện; hai lớp bụi còn lại ' +
     'giữ khoảng cách ~1.5× nên vẫn là hai mặt phẳng chứ không phải một tấm. Hình nằm TRONG MaskedView ' +
-    'nên tan dần ở trên dưới thay vì cắt ngang một đường thẳng, hoạt hoạ dừng theo `moving` (ngoài màn ' +
+    'nên tan dần ở trên dưới thay vì cắt ngang một đường thẳng, không id SVG nào viết cứng (hai màn ' +
+    'cùng gắn aura, id trùng thì màn này vẽ kết luận sức khoẻ của màn kia), hoạt hoạ dừng theo `moving` (ngoài màn ' +
     'hoặc Reduce Motion), và prop của <Image> không đổi sau khi mount',
 );

@@ -67,7 +67,22 @@ function gateProblems(src) {
     bad.push('aura: không còn withRepeat nào — nếu ánh sáng thôi chuyển động thì sửa luật này, đừng bỏ nó');
     return bad;
   }
-  if (cancels < 2) {
+  /*
+    Every loop needs its own switch, and the count is what says so.
+
+    This read `cancels < 2`, which was the number of looping components on the
+    day it was written. A third arrived — `AuraFigure`, the background figure —
+    and the rule went quiet about it: with three loops and only two cancels the
+    comparison is still false, so removing the figure's off switch left this
+    step green. The paragraph above already claimed to be counting *"a fifth
+    pool or a fifth dust layer added later"*, so the rule was not doing what it
+    said about itself.
+
+    Tying the floor to `loops` is the shape of the fault rather than a bigger
+    constant: whatever gets added next brings its own `withRepeat`, and the
+    check moves with it.
+  */
+  if (cancels < loops) {
     bad.push(
       `aura: ${loops} vòng lặp vô hạn nhưng chỉ ${cancels} chỗ cancelAnimation — ` +
         'mỗi thành phần lặp mãi phải có chỗ dừng riêng, nếu không nó chạy suốt đời app',
@@ -79,12 +94,13 @@ function gateProblems(src) {
   for (const [what, re] of [
     ['LightPool', /function LightPool\(\{[^}]*moving[^}]*\}/],
     ['DustField', /function DustField\(\{[\s\S]{0,200}?moving[\s\S]{0,200}?\}\)/],
+    ['AuraFigure', /function AuraFigure\(\{[^}]*moving[^}]*\}/],
   ]) {
     if (!re.test(code)) bad.push(`aura: ${what} không nhận cờ dừng — nó sẽ chạy kể cả khi màn hình bị che`);
   }
   const guards = [...code.matchAll(/if \(!moving\) \{\s*cancelAnimation/g)].length;
-  if (guards < 2) {
-    bad.push(`aura: chỉ ${guards} chỗ thật sự dừng khi !moving — cờ được truyền vào mà không dùng thì vô nghĩa`);
+  if (guards < loops) {
+    bad.push(`aura: ${loops} vòng lặp nhưng chỉ ${guards} chỗ thật sự dừng khi !moving — cờ được truyền vào mà không dùng thì vô nghĩa`);
   }
   return bad;
 }

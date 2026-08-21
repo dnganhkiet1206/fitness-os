@@ -1,5 +1,5 @@
 import { useIsFocused } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -155,12 +155,31 @@ function LightPool({ pool, tint, moving }: { pool: Pool; tint?: string; moving: 
 
   const colour = tint ?? pool.colour;
 
+  /*
+    ── the gradient id has to be unique per mount, not per pool ──
+
+    `pool.id` is a constant, and two auras are alive at once: the coach screen
+    is pushed *over* the assistant tab and both mount one. On web an svg `id` is
+    global to the document, so the two definitions collide and the one
+    registered last wins for everybody.
+
+    For most of these that is invisible, because both copies are identical. Not
+    for this one: `auraState` is recoloured by today's **readiness**, and the two
+    screens read that from different places. When they disagree, one screen
+    paints the other screen's verdict about somebody's recovery.
+
+    `status-scrim.tsx` carries the same fix and the same note — *"This has caught
+    the app three times; `useId` is the rule."*
+  */
+  const uid = useId();
+  const gid = `${pool.id}-${uid}`;
+
   return (
     <Animated.View style={[styles.pool, style]} pointerEvents="none">
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <Defs>
           <RadialGradient
-            id={pool.id}
+            id={gid}
             cx={pool.cx}
             cy={pool.cy}
             rx={0.26}
@@ -171,7 +190,7 @@ function LightPool({ pool, tint, moving }: { pool: Pool; tint?: string; moving: 
             ))}
           </RadialGradient>
         </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${pool.id})`} />
+        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid})`} />
       </Svg>
     </Animated.View>
   );
@@ -315,6 +334,9 @@ function DustField({
   width: number;
   moving: boolean;
 }) {
+  /* Unique per mount — see `LightPool`: two screens hold an aura at the same
+     time, and an svg id is global to the document on web. */
+  const uid = useId();
   const t = useSharedValue(0);
 
   useEffect(() => {
@@ -358,7 +380,7 @@ function DustField({
       <Svg width={width} height={height * 2}>
         <Defs>
           {DUST_HUES.map((h) => (
-            <RadialGradient key={h.id} id={`${h.id}${layer.key}`}>
+            <RadialGradient key={h.id} id={`${h.id}${layer.key}-${uid}`}>
               {/*
                 No white core any more.
 
@@ -381,7 +403,7 @@ function DustField({
             cx={sp.x}
             cy={sp.y}
             r={sp.r * 3.2}
-            fill={`url(#${sp.hue}${layer.key})`}
+            fill={`url(#${sp.hue}${layer.key}-${uid})`}
             opacity={sp.o}
           />
         ))}
@@ -623,17 +645,22 @@ function AuraFigure({ moving }: { moving: boolean }) {
  * shape the mask had, inverted, since this paints where that hid.
  */
 function EdgeFade() {
+  /* Same reason as `LightPool`, and this one is mine: a literal id here would
+     be the fourth time this file hands the document two definitions of one
+     name. */
+  const uid = useId();
+  const gid = `auraEdgeFade-${uid}`;
   return (
     <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
-        <SvgLinearGradient id="auraEdgeFade" x1="0" y1="0" x2="0" y2="1">
+        <SvgLinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={colors.background} stopOpacity={1} />
           <Stop offset="0.10" stopColor={colors.background} stopOpacity={0} />
           <Stop offset="0.90" stopColor={colors.background} stopOpacity={0} />
           <Stop offset="1" stopColor={colors.background} stopOpacity={1} />
         </SvgLinearGradient>
       </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill="url(#auraEdgeFade)" />
+      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid})`} />
     </Svg>
   );
 }

@@ -137,8 +137,15 @@ const WIDTH = 512;
  * So the ceiling is set above what the picture actually costs, to catch a
  * *regression* — an uncompressed drop-in, a source swapped for something twice
  * the size — rather than to force a quality decision that has already been made
- * by looking at it. For scale, this repository already ships `logo-glow.png` at
- * 331 KB.
+ * by looking at it. For scale: the source is 2074 KB and what ships is 390 KB,
+ * so the ceiling has room for the artwork to grow without leaving room for
+ * somebody to drop the raw file in.
+ *
+ * (This paragraph used to point at `logo-glow.png`, 331 KB, as evidence that the
+ * repository already carried an asset this size. That file was deleted a commit
+ * later with the rest of the Expo template artwork, and the justification went
+ * on reading as true while pointing at nothing. Numbers measured from the files
+ * this script actually writes cannot rot that way.)
  */
 const MAX_BYTES = 420 * 1024;
 
