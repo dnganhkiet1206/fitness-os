@@ -213,6 +213,15 @@ const STEPS = [
     with straight edges over the cards, because #000 is not the app's #070708.
   */
   ['hình nền trợ lý', 'node', ['tools/aura-figure.mjs']],
+  /*
+    Nothing in the app renders its own icon: no screen shows it, nothing imports
+    it, and every build succeeds whatever the file contains. The feedback comes
+    from App Store Connect — which rejects an alpha channel at *submission*,
+    long after every build has been green — or from somebody's home screen,
+    where artwork that was already rounded gets rounded a second time and leaves
+    pale slivers around the mask.
+  */
+  ['icon app', 'node', ['tools/app-icon.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
   ['camera shop', 'node', ['tools/shop-camera.mjs']],
   ['tư thế mặc đồ', 'node', ['tools/koa-studio/dress.mjs']],
