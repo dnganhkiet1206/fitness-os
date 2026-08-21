@@ -1,7 +1,7 @@
 import MaskedView from '@react-native-masked-view/masked-view';
 import { useIsFocused } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -223,6 +223,25 @@ const POOLS: Pool[] = [
  * means at this size.
  */
 
+/**
+ * How strongly the figure is allowed to be there.
+ *
+ * The single knob for this layer, deliberately. The artwork itself is written
+ * out at its natural brightness by `tools/make-aura-figure.mjs`, which is a
+ * decision and not an oversight: dimming the file *and* dimming it here would
+ * be one number living in two places, and this repository has had to unpick
+ * that six times. Tuning it means changing this line, not re-encoding a png.
+ *
+ * The value came from looking at it on a rendered screen rather than from
+ * reasoning about it, and the test it had to pass is the one written at the top
+ * of this file: the metric tiles have to be readable without noticing it, and
+ * it has to be there when you stop reading.
+ */
+const FIGURE_PEAK = 0.12;
+
+/** One breath, slower than every dust layer. */
+const FIGURE_MS = 40000;
+
 /** The four neon hues, and one gradient each rather than one per speck. */
 const DUST_HUES = [
   { id: 'dCy', colour: '#22e6ff' },
@@ -258,11 +277,22 @@ const DUST: DustLayer[] = [
 
      What is held constant is the *spacing between the layers*, roughly 1.5×
      from each to the next. That ratio is the depth: dim them by different
-     amounts and the four planes collapse into one sheet of specks, which is
+     amounts and the planes collapse into one sheet of specks, which is
      the failure the layering exists to avoid. So when this needs adjusting
-     again, scale all four by the same factor rather than picking new numbers. */
-  { key: 'near', ms: 26000, sway: 14, min: 2.0, max: 3.8, opacity: 0.19, count: 9, seed: 3 },
-  { key: 'mid', ms: 38000, sway: 10, min: 1.5, max: 2.8, opacity: 0.13, count: 12, seed: 17 },
+     again, scale them all by the same factor rather than picking new numbers.
+
+     ── and why the two nearest planes are gone ──
+
+     `AuraFigure` now sits behind this, and it is a far stronger presence than
+     any speck: a body, which the eye finds before it finds anything else on a
+     screen. Keeping `near` at 0.19 and `mid` at 0.13 in front of it made two
+     subjects competing over the same cards.
+
+     The two that remain are the two that were always closest to being weather
+     rather than objects, and they keep their 1.5× spacing to each other — so
+     what is left is still two planes at different depths, not one flat sheet.
+     Their job now is smaller and more specific: something moves, so the figure
+     reads as *held still* rather than as a picture that failed to load. */
   { key: 'far', ms: 54000, sway: 7, min: 1.0, max: 2.0, opacity: 0.09, count: 13, seed: 41 },
   { key: 'haze', ms: 74000, sway: 4, min: 0.8, max: 1.5, opacity: 0.06, count: 15, seed: 89 },
 ];
@@ -467,6 +497,14 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
       */}
       {box ? (
         <MaskedView style={StyleSheet.absoluteFill} maskElement={<DustMask />}>
+          {/*
+            Inside the mask, and first — so it is behind the specks and, more
+            importantly, so it is seen through the same vertical fade. Without
+            that, the figure ends wherever its box ends: a straight horizontal
+            edge across a picture that is otherwise all soft falloff, which is
+            the exact fault the mask was added to fix for the dust.
+          */}
+          <AuraFigure moving={moving} />
           {DUST.map((d) => (
             /* Measured, not `useWindowDimensions`. Everything else here is
                container-relative — the pools are sized in percentages — and the
@@ -478,6 +516,65 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
           ))}
         </MaskedView>
       ) : null}
+    </Animated.View>
+  );
+}
+
+/**
+ * The figure the room is lit around.
+ *
+ * ── what it replaced, and what it must not become ──
+ *
+ * Two of the four dust planes. The specks were weather; this is a body, and a
+ * body is the one shape a person's eye finds before anything else on a screen.
+ * That is the whole risk of putting it here, and it is why this file's oldest
+ * note — *"anything back here bright enough to be looked at is competing with
+ * those numbers, and it will win"* — applies harder to this layer than to
+ * anything that came before it.
+ *
+ * So `FIGURE_PEAK` is set below the brightest speck plane that used to exist,
+ * not above it. The figure is more legible than a dot at the same opacity, so
+ * matching the dots' number would not match their presence.
+ *
+ * ── why it barely moves ──
+ *
+ * A ~40 second breath, a two-percent scale and a slow opacity swell. Slower and
+ * shallower than any dust layer, because motion is what makes the eye come back
+ * to something, and this is the element that least needs the eye coming back.
+ * Stopped — off-screen, or under Reduce Motion — it simply holds, which is what
+ * that setting asks for and costs nothing to honour.
+ *
+ * Only `transform` and `opacity` are animated, and the `<Image>`'s own props are
+ * never touched after mount. Same constraint the pools are built around: what
+ * the platform composites is free, what forces a re-raster is not.
+ */
+function AuraFigure({ moving }: { moving: boolean }) {
+  const t = useSharedValue(0);
+
+  useEffect(() => {
+    if (!moving) {
+      cancelAnimation(t);
+      return;
+    }
+    t.value = withRepeat(withTiming(1, { duration: FIGURE_MS, easing: Easing.inOut(Easing.sin) }), -1, true);
+  }, [moving, t]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: FIGURE_PEAK * (0.85 + t.value * 0.15),
+    transform: [{ scale: 1 + t.value * 0.02 }],
+  }));
+
+  return (
+    <Animated.View style={[styles.figure, style]} pointerEvents="none">
+      <Image
+        source={require('../../../assets/aura/figure.png')}
+        style={styles.figureImage}
+        resizeMode="contain"
+        /* It is decoration with no information in it — the readiness colour is
+           carried by the pools, not by this. A screen reader announcing "image"
+           here would be announcing nothing. */
+        accessible={false}
+      />
     </Animated.View>
   );
 }
@@ -520,4 +617,17 @@ const styles = StyleSheet.create({
   /* Starts at the top and travels up by exactly one screen height. It is two
      screens tall, so the half below the fold is always ready to take over. */
   dust: { position: 'absolute', left: 0, top: 0 },
+  /* Upper-middle, and taller than it is wide — the artwork is a 2:3 portrait
+     and `contain` keeps it that shape whatever the container does. It sits high
+     because the cards stack downward from the top of the screen, so the busiest
+     part of the picture ends up behind the quietest part of the page. */
+  figure: {
+    position: 'absolute',
+    top: '4%',
+    left: 0,
+    right: 0,
+    height: '62%',
+    alignItems: 'center',
+  },
+  figureImage: { width: '86%', height: '100%' },
 });

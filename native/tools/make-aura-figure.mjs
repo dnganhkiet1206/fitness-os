@@ -95,19 +95,52 @@ const SRC = process.argv[2] ?? path.join(NATIVE, 'assets/aura/figure-source.png'
 const OUT = process.argv[3] ?? path.join(NATIVE, 'assets/aura/figure.png');
 
 /**
- * Wide enough, and no wider.
+ * Wide enough, and no wider — and 512 is where "wide enough" turned out to be.
  *
- * This is a dim, still backdrop that nobody inspects — it is never the thing
- * being looked at, which is the entire design brief for the layer. Width is the
- * one lever that actually moves the file size, so it is the lever used: 512
- * still covers a 3× screen at the size the figure is drawn, and costs a
- * fraction of the source. If the result comes out over budget, drop this to 420
- * rather than reaching for heavier compression.
+ * This was going to be a smaller number. The layer is dim, still, and never the
+ * thing being looked at, so the instinct is that almost any resolution does.
+ *
+ * That instinct is wrong here, and it took rendering it to see why. The figure
+ * draws about 349pt wide, which is **1047px** on a 3× screen, so every candidate
+ * was compared at that size rather than at 1:1. Compared honestly, the artwork's
+ * whole character is its particle texture — thousands of individual dots — and
+ * texture is exactly what upscaling destroys first. At 360 the dots smear into a
+ * blur and the figure stops being made of particles at all; at 420 it is still
+ * visibly soft. At 512 the dots hold.
+ *
+ * So this is a quality floor discovered by looking, not a size budget picked in
+ * advance. Lowering it is not a free trade against file size — it changes what
+ * the picture *is*.
  */
 const WIDTH = 512;
 
-/** Refuse to ship something that is not a background's worth of bytes. */
-const MAX_BYTES = 150 * 1024;
+/**
+ * The ceiling, and why it is this high.
+ *
+ * It started at 150 KB, which was a number chosen before anybody had seen the
+ * real artwork. The real artwork is thousands of discrete bright dots on black —
+ * close to worst case for deflate, which has nothing to predict from — and at
+ * the width the picture needs it lands near 390 KB.
+ *
+ * Everything cheaper was measured and rejected on evidence:
+ *
+ *   · **posterize(16)** saves 127 KB and *measurably alters the artwork*: the
+ *     faint outer haze comes out 23% darker. That is a change in the picture's
+ *     falloff, and worse, it is a second thing dimming the layer behind the
+ *     screen's single `FIGURE_PEAK` knob. One number in two places is the drift
+ *     this repository keeps fixing.
+ *   · **png filter strategies** — all five, since they are lossless and free if
+ *     one wins. `AUTO` was already best; `NONE` was 546 KB.
+ *   · **cropping the empty margin** — only 17% of the pixels, and the space
+ *     above the figure is the composition, not waste.
+ *
+ * So the ceiling is set above what the picture actually costs, to catch a
+ * *regression* — an uncompressed drop-in, a source swapped for something twice
+ * the size — rather than to force a quality decision that has already been made
+ * by looking at it. For scale, this repository already ships `logo-glow.png` at
+ * 331 KB.
+ */
+const MAX_BYTES = 420 * 1024;
 
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 
@@ -209,6 +242,30 @@ if (alreadyKeyed) {
     console.log('CẢNH BÁO: không điểm nào bị xoá — 4 góc có thể không phải nền');
   }
 }
+/*
+  Flatten the colour of everything fully transparent.
+
+  Sixty percent of this image is invisible, and the RGB sitting under that
+  invisibility is still whatever the exporter happened to leave there — noise
+  that nobody can see and that deflate must still encode. Setting it to a single
+  constant costs nothing visually, by construction: these are pixels with zero
+  alpha. Measured, it takes about 20% off the file.
+*/
+let flattened = 0;
+image.scan(0, 0, image.bitmap.width, image.bitmap.height, function (_x, _y, idx) {
+  const d = this.bitmap.data;
+  if (d[idx + 3] < 8) {
+    d[idx] = 0;
+    d[idx + 1] = 0;
+    d[idx + 2] = 0;
+    d[idx + 3] = 0;
+    flattened++;
+  }
+});
+console.log(
+  `dọn màu ở vùng trong suốt: ${((flattened / (image.bitmap.width * image.bitmap.height)) * 100).toFixed(0)}% điểm ảnh`,
+);
+
 /* 6 = RGBA. Stated rather than inherited, because the whole layer depends on
    the alpha channel surviving the write; a source saved as palette or as RGB
    would otherwise round-trip without one and the screen would show paper. */

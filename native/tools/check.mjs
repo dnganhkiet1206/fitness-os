@@ -205,6 +205,14 @@ const STEPS = [
   ['ngân sách ảnh', 'node', ['tools/photo-budget.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
+  /*
+    Two of the four speck planes behind the assistant screens became a picture
+    of a body, and a body is not a speck — it is the shape the eye finds first.
+    The failure that would not look like one: re-export the artwork without its
+    alpha channel and nothing throws, the screen simply gains a black rectangle
+    with straight edges over the cards, because #000 is not the app's #070708.
+  */
+  ['hình nền trợ lý', 'node', ['tools/aura-figure.mjs']],
   ['ngân sách vẽ', 'node', ['tools/koa-studio/budget.mjs']],
   ['camera shop', 'node', ['tools/shop-camera.mjs']],
   ['tư thế mặc đồ', 'node', ['tools/koa-studio/dress.mjs']],
