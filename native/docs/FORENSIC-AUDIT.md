@@ -9252,6 +9252,148 @@ này dẫn thẳng tới BUG-106**.
 | **PRODUCTION** | **KHÔNG** |
 | **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
 
+### BUG-107 (P3). Cổng và máy tính điểm dùng hai dân số khác nhau — **ĐÃ SỬA**
+
+**Mạch gốc.** Chú thích trên cổng nói *"at least 3 days of any logs"*; mã chỉ cho
+sinh trắc và giấc ngủ mở cổng. Tải tập là một chiều **chấm được đầy đủ** —
+`computeLoadScore` cho nó một dải và một trọng số như ba chiều kia — nhưng không
+mở được cổng cho ai.
+
+**Thay đổi production — đúng một biểu thức**, `daily-log-service.ts`:
+
+```ts
+const hasEnoughData =
+  (bioHistory && bioHistory.length >= 3) ||
+  (sleepLogs7d && sleepLogs7d.length >= 3) ||
+  trainingLoad28d > 0;              // ← thêm
+```
+
+`trainingLoad28d > 0` **không phải ý kiến thứ tư** về thứ gì đáng kể. Đó là
+**vị từ của chính máy tính điểm**, nguyên văn: `computeLoadScore` mở đầu bằng
+`if (load28d <= 0) return null`. Dùng lại nó là cách khiến cổng và điểm đồng ý
+về dân số **do cấu tạo** chứ không do trùng hợp.
+
+**Trước → sau** (đo trên PostgreSQL 16.13, engine thật, 6 múi giờ):
+
+| nguồn | đo được | trước | sau |
+| --- | --- | --- | --- |
+| không có gì | – | null | null |
+| 3 đêm ngủ | S | 65 | **65** |
+| 5 đêm + 5 lần đo | H R S | 56 | **56** |
+| sinh trắc đủ, không ngủ | H R | 50 | **50** |
+| **chỉ buổi tập đo được** | **L** | **null · acwr null** | **80 · acwr 1.14** |
+| chỉ đồng hồ (+3 đêm) | S | 65 | **65** · acwr vẫn null |
+| đủ cả bốn | H R S L | 61 | **61** · acwr 1.14 |
+
+**Không điểm nào đang có bị dịch chuyển:** ở mọi ca cổng vốn đã mở, đầu vào đưa
+cho engine y nguyên. Chỉ ca từng bị từ chối mới đổi.
+
+**Hai thứ cổng VẪN từ chối, đã đo:**
+
+- **Buổi tập từ đồng hồ.** `sets: []` → `sessionLoad` null → không vào
+  `trainingLoad28d` → không mở cổng. Chỉ có buổi từ đồng hồ mà không có gì khác:
+  **vẫn null**. Ngữ nghĩa Chain AD nguyên vẹn.
+- **Một hàng `daily_logs` trần** do đồng bộ bước chân tạo ra: **vẫn null**. Tổng
+  được dựng từ `workout_sessions` qua `sessionLoad`, không bao giờ từ phép chiếu.
+
+Không đụng trọng số, ngưỡng, ngữ nghĩa ACWR, ngữ nghĩa null/0, hay
+`LOGGED_DAY_FILTER`.
+
+### BUG-107 — bộ dò và phép phá
+
+`tools/readiness-integrity.mjs` (mới, đã đăng ký — bộ kiểm **123 bước**): cấu
+trúc (bỏ chú thích trước khi khớp) + hành vi chạy **`recomputeDailyLog` thật**
+trên PostgreSQL 16.13, **6 múi giờ** gồm cả ngày 23 và 25 giờ, chấm bằng oracle
+SQL đọc nguồn chứ không đọc `daily_logs` và không gọi `computeReadiness`.
+
+Ca A/B/C/**D**/E/E2/F/G/H/J/L: không dữ liệu → null · chỉ ngủ → điểm · chỉ sinh
+trắc → điểm · **chỉ tải đo được → điểm + acwr** · **chỉ đồng hồ → vẫn null** ·
+**chỉ hàng bước chân → vẫn null** · trộn · xoá buổi tập thì cổng đóng lại và
+điểm về null · chéo tài khoản · DST · RPE 99, reps âm, reps 0.
+
+**Sáu phép phá, cả sáu ĐỎ đúng lý do, khôi phục XANH:**
+
+| phép phá | bắt bởi |
+| --- | --- |
+| 1 · bỏ tính hợp lệ của tải (BUG-107 quay lại) | cấu trúc **và** ca D (`điểm=null` ≠ oracle) |
+| 2 · thay vị từ tải bằng "có hàng `daily_logs`" | cấu trúc **và** ca D |
+| 3 · coi `volume_load = 0` là tải đo được | **chỉ cấu trúc** — xem ghi chú dưới |
+| 4 · bỏ tính hợp lệ của ngủ/sinh trắc | cấu trúc **và** ca B |
+| 5 · `sessionLoad` thôi trả null khi không đếm được reps | cấu trúc |
+| 6 · `computeLoadScore` đổi ý về thứ nó chấm được | cấu trúc |
+
+**Phép phá 3 chỉ bị bắt bởi luật cấu trúc, và tôi ghi rõ thay vì nói quá.** Đổi
+cổng thành `workouts?.length > 0` mở được cổng cho một ngày chỉ có buổi đồng hồ,
+nhưng lúc đó `present = 0` nên `computeReadiness` vẫn trả null và ca E vẫn đạt.
+Nghĩa là **hành vi không đổi ở ca đó**; thứ đổi là cổng thôi dùng vị từ chính
+tắc, và đó đúng là điều luật cấu trúc canh.
+
+---
+
+### BUG-106 — **PRODUCT DECISION REQUIRED**, cố ý KHÔNG sửa ở vòng này
+
+Neo cửa sổ lịch sử vào `new Date()` **giữ nguyên**. Điểm sẵn sàng của một ngày
+trong quá khứ vẫn là **hiện vật của thời điểm nó được tính**, không phải sự thật
+về ngày đó — đúng như `use-fitness-data.ts` đã ghi từ trước và như Chain AG đo
+được (ngày −17 giữa đợt tập nặng nhất: `acwr = 0`, vùng "detraining").
+
+**Không có bộ dò nào ban phước cho hành vi này.** `tools/readiness-integrity.mjs`
+không khẳng định gì về ngày quá khứ; oracle của nó neo cửa sổ ở hiện tại **để mô
+tả production như nó đang là**, và điều đó được viết ra ngay trong file chứ không
+được trình bày như một bất biến đúng đắn.
+
+Cũng giữ nguyên: **DATA-CONTRACT GAP** ở biên AI — mô hình vẫn chỉ nhận
+`readiness` và `readiness_status`, không nhận độ tin cậy hay số chiều đo được.
+Không đổi schema AI ở vòng này.
+
+---
+
+### Chain AG — bộ dò cũ đỏ vì bản sửa, đã BISECT trước khi đụng vào
+
+`acwr-consistency` đỏ ngay sau bản sửa. Bisect: fixture tên `noBiometrics` là
+**28 ngày buổi tập tạ đo được, không sinh trắc, không ngủ** — tức **chính ca
+BUG-107** — và khẳng định của nó là `canonical === null`, với lý do viết trong
+thông báo là *"hasEnoughData từ chối chấm"*. Đó là **cái lỗi, không phải luật**.
+
+Ý định đáng giữ — *"đừng bịa ra một tỉ lệ không đo được"* — nằm nguyên ở fixture
+`watchOnly` ngay dưới nó, nơi tải **thật sự** không đo được; fixture đó vẫn xanh
+và không bị đụng.
+
+Nên fixture được **đổi hướng, không nới lỏng**: đổi tên thành `loadOnly` và
+khẳng định điều ngược lại — người chỉ ghi buổi tập đo được **phải** nhận ACWR
+chính tắc, **và** weekly-review phải hiện đúng con số ấy (bất biến Chain AD áp
+lên dân số vừa được nhận vào). Câu tổng kết của bộ dò cũng được sửa theo, vì một
+thông báo đọc lên thành sai còn tệ hơn không có.
+
+---
+
+### Chain AG — sai lầm của chính bộ đo
+
+- **Cluster tự chết giữa chừng.** Lần đo "sau khi sửa" đầu tiên nổ vì cụm
+  PostgreSQL của harness đã bị dọn từ vòng trước. Khẳng định
+  `SHOW data_directory` **bắt được** và từ chối đo — đúng thứ nó sinh ra để làm.
+  Dựng lại rồi đo tiếp.
+- **`economic-integrity` đỏ hai lần vì môi trường, không phải mã.** Các cụm
+  PostgreSQL rác của chính harness chiếm cổng; dọn xong thì xanh. Đã gặp ở Chain
+  AF, ghi lại lần nữa vì nó sẽ còn tái diễn khi số bộ dò dùng PostgreSQL tăng.
+
+---
+
+### Chain AG — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory` |
+| **HÀM THẬT** | `recomputeDailyLog` (chứa chính cái cổng), `computeReadiness`, `latestAcwr` |
+| **ORACLE** | SQL trên nguồn; không đọc `daily_logs`, không gọi `computeReadiness` |
+| **MÚI GIỜ** | 6 múi, gồm ngày 23 và 25 giờ |
+| **BREAK-TESTS** | 6/6 đỏ đúng lý do; phép phá 3 ghi rõ là **chỉ** cấu trúc bắt được |
+| **REGRESSION** | `node tools/check.mjs` **123/123 xanh**; ACWR, daily-log, health-sync, workout-sync, dinh dưỡng, quest, freeze, kinh tế, khối lượng, chuỗi/thử thách, readiness, readiness-confidence — tất cả xanh |
+| **TYPESCRIPT** | sạch |
+| **REAL iOS / HealthKit / AsyncStorage** | **KHÔNG** |
+| **PRODUCTION** | **KHÔNG** |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,

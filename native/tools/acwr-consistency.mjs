@@ -289,9 +289,22 @@ if (!PGBIN || !existsSync(PGCLIENT)) {
         );
       }
 
-      want(r.noBiometrics.canonical === null && r.noBiometrics.displayed === null,
-        `${TZ}: thiếu sinh trắc/giấc ngủ mà vẫn bịa ra ACWR (${JSON.stringify(r.noBiometrics)}) — ` +
-          'hasEnoughData từ chối chấm, và màn hình phải im lặng chứ không thay bằng 0');
+      /*
+        ── this fixture changed meaning with BUG-107, and the change is the point ──
+
+        It used to assert `null`, and the reason it gave was *"hasEnoughData
+        từ chối chấm"* — which was the bug, not the rule. Twenty-eight days of
+        measured barbell sessions IS enough data; the gate simply could not see
+        load. Now that it can, this fixture asserts the opposite, and the
+        invariant it carries is Chain AD's: the ratio the screen shows is the
+        canonical one.
+
+        The "do not invent a ratio you cannot measure" rule did not move — it
+        lives in `watchOnly` below, where the load genuinely is unmeasurable.
+      */
+      want(r.loadOnly.canonical != null && r.loadOnly.displayed === r.loadOnly.canonical,
+        `${TZ}: người CHỈ ghi buổi tập đo được không nhận được ACWR chính tắc ` +
+          `(${JSON.stringify(r.loadOnly)}) — tải đo được là đủ dữ liệu, và màn hình phải hiện đúng con số ấy (BUG-107)`);
       want(r.watchOnly.canonical === null && r.watchOnly.displayed === null,
         `${TZ}: người chỉ tập bằng đồng hồ nhận một ACWR giả (${JSON.stringify(r.watchOnly)}) — ` +
           'buổi từ đồng hồ mang sets rỗng nên sessionLoad là null và tỉ lệ không đo được');
@@ -322,7 +335,8 @@ console.log(
     'dựng từ toàn bộ migration, ở SÁU múi giờ. Người tập ĐỀU ĐẶN nằm trong vùng tối ưu ở mốc 1 / 2 / 4 ' +
     'tuần lịch sử, và weekly-review hiện ĐÚNG con số ấy cùng đúng vùng — bản đã ship tự tính lấy từ tonnage ' +
     'chia cho 28 cố định và cho 4.00 "spike" ở mốc một tuần, kèm câu "Giảm 15-20% volume tuần tới để tránh ' +
-    'chấn thương" cho một người không hề tăng tải. null đi suốt: thiếu sinh trắc và giấc ngủ, người chỉ tập ' +
+    'chấn thương" cho một người không hề tăng tải. Người CHỈ ghi buổi tập đo được nhận đúng ACWR chính tắc — '+
+    'trước BUG-107 cổng từ chối chấm họ. null đi suốt ở nơi THẬT SỰ không đo được: người chỉ tập ' +
     'bằng đồng hồ, tuần trống, và tuần toàn hàng NULL đều ra null chứ không phải 0 — vì 0 là một tỉ lệ THẬT ' +
     '("không tập gì trên một nền có thật") và không được dùng để nói "chưa đo được". latestAcwr lấy ngày mới ' +
     'nhất CÓ tỉ lệ, vì ACWR đã là cửa sổ trượt kết thúc ở ngày của nó. Và toàn repo chỉ còn MỘT công thức ' +
@@ -474,7 +488,7 @@ const out = {};
   await wipe();
   for (let k = 0; k < 28; k += 2) await lifted(await at(await shift(D0, -k), '18:00'));
   for (let k = 27; k >= 0; k--) await recomputeDailyLog(A, await shift(D0, -k));
-  out.noBiometrics = {
+  out.loadOnly = {
     canonical: await canonicalOf(D0),
     displayed: latestAcwr(await weekRows(await shift(D0, -6), await shift(D0, 1))),
   };

@@ -239,6 +239,7 @@ const STEPS = [
   ['ACWR nhất quán', 'node', ['tools/acwr-consistency.mjs']],
   ['khối lượng tập', 'node', ['tools/workload-volume.mjs']],
   ['toàn vẹn đồng bộ buổi tập', 'node', ['tools/workout-sync-integrity.mjs']],
+  ['toàn vẹn điểm sẵn sàng', 'node', ['tools/readiness-integrity.mjs']],
   ['lối vào màn hình', 'node', ['tools/entry-points.mjs']],
   ['ngày của lệnh ghi', 'node', ['tools/write-day.mjs']],
   ['hiệu ứng focus', 'node', ['tools/focus-effects.mjs']],

@@ -434,8 +434,43 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
     sleepDebt7d = Math.max(0, sleepTargetMin - avgSleep);
   }
 
-  // Check if enough data for readiness (at least 3 days of any logs)
-  const hasEnoughData = (bioHistory && bioHistory.length >= 3) || (sleepLogs7d && sleepLogs7d.length >= 3);
+  /*
+    ── the gate and the calculator have to mean the same thing (BUG-107) ──
+
+    The comment here used to say *"at least 3 days of any logs"*, and the code
+    said something narrower: only biometrics and sleep could open it. Training
+    load is a fully scoreable dimension — `computeLoadScore` gives it a band and
+    a weight like the other three — but it could not let anybody through.
+
+    Measured on PostgreSQL 16.13 with the real engine: somebody who logs
+    barbell sessions for a fortnight and nothing else has a perfectly measurable
+    load and got **no readiness score at all**, and with it no `acwr` — which
+    the training card and `suggestLoad` both read.
+
+    `trainingLoad28d > 0` is not a fourth opinion about what counts. It is
+    **the calculator's own predicate**, verbatim: `computeLoadScore` opens with
+    `if (load28d <= 0) return null`. Reusing it is what makes the gate and the
+    score agree on the population by construction rather than by coincidence —
+    the gate can no longer refuse a dimension the engine would have scored, and
+    it still cannot admit one the engine would refuse.
+
+    Two things this deliberately does **not** admit:
+
+      · **A watch-only workout.** `sessionLoad` returns `null` for an import
+        with an empty `sets` array, so it contributes nothing to `loadWindow`
+        and `trainingLoad28d` stays 0. A run still raises `workout_count` and
+        still leaves the load ratio alone — Chain AD's semantics, untouched.
+      · **A bare `daily_logs` row.** The sum is built from `workout_sessions`
+        through `sessionLoad`, never from the projection, so a row that exists
+        because the step sync wrote one cannot open this gate.
+
+    No existing score moves: where the gate already passed, the input handed to
+    the engine is byte-for-byte what it was.
+  */
+  const hasEnoughData =
+    (bioHistory && bioHistory.length >= 3) ||
+    (sleepLogs7d && sleepLogs7d.length >= 3) ||
+    trainingLoad28d > 0;
 
   if (hasEnoughData) {
     const input: ReadinessInput = {
