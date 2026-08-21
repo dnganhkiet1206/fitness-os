@@ -83,13 +83,30 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
   const recoText = readinessRecoText(recommendation, lang);
   const color = STATUS_COLOR[status] ?? colors.readinessYellow;
 
-  // Sub-score tiles (web parity): RHR / Sleep / Load (0–100) + the ACWR ratio
+  // Sub-score tiles: HRV / RHR / Sleep / Load (0–100) + the ACWR ratio
   const subs = readinessSubscores(explain);
   const subColor = (v: number) =>
     v >= 70 ? colors.readinessGreen : v >= 40 ? colors.readinessYellow : colors.readinessRed;
   const acwrColor =
     acwr == null ? colors.mutedForeground : acwr >= 0.8 && acwr <= 1.3 ? colors.readinessGreen : acwr > 1.3 ? colors.readinessYellow : colors.readinessRed;
   const tiles: { label: string; value: string; color: string }[] = [];
+  /*
+    ── the chip counted a tile that was never drawn ──
+
+    This row shipped as RHR / Sleep / Load, carried over from the web card, and
+    `hrv` was parsed out of the token and then dropped. The confidence line
+    below counts `Object.keys(subs)`, which includes it, so the two disagreed
+    about the same string:
+
+        explain "hrv:50"          chip "Dựa trên 1 chỉ số đo được"   tiles: 0
+        explain "hrv:50|rhr:50"   chip "Dựa trên 2 chỉ số đo được"   tiles: 1
+
+    A count of measured inputs with nothing on screen to account for one of them
+    is the same false precision the chip was added to remove. The comment below
+    already claimed the count came from "the same string the tiles are drawn
+    from"; now it does.
+  */
+  if (subs.hrv != null) tiles.push({ label: 'HRV', value: String(subs.hrv), color: subColor(subs.hrv) });
   if (subs.rhr != null) tiles.push({ label: 'RHR', value: String(subs.rhr), color: subColor(subs.rhr) });
   if (subs.sleep != null) tiles.push({ label: 'SLEEP', value: String(subs.sleep), color: subColor(subs.sleep) });
   if (subs.load != null) tiles.push({ label: 'LOAD', value: String(subs.load), color: subColor(subs.load) });
@@ -268,7 +285,8 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
         </View>
       </View>
 
-      {/* Sub-score tiles: RHR · SLEEP · LOAD · ACWR (web parity) */}
+      {/* Sub-score tiles: HRV · RHR · SLEEP · LOAD · ACWR — one per measured
+          component, so this row and the confidence line below always agree. */}
       {tiles.length > 0 && (
         <View style={styles.tileRow}>
           {tiles.map((t) => (

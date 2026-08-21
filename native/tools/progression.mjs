@@ -68,6 +68,7 @@ try {
   execFileSync(
     'npx',
     ['tsc', 'src/lib/load-progression.ts', 'src/lib/goal-training.ts', 'src/lib/prescription.ts',
+     'src/lib/readiness-i18n.ts',
      '--ignoreConfig', '--outDir', out, '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
@@ -82,7 +83,9 @@ try {
     p,
     readFileSync(p, 'utf8')
       .replaceAll('@/lib/goal-training', './goal-training')
-      .replaceAll('@/lib/prescription', './prescription'),
+      .replaceAll('@/lib/prescription', './prescription')
+      /* the red gate asks the one recovery predicate — see readiness-i18n */
+      .replaceAll('@/lib/readiness-i18n', './readiness-i18n'),
   );
 }
 const require_ = createRequire(import.meta.url);
@@ -230,7 +233,11 @@ if (typeof suggestLoad !== 'function' || MIN_SESSIONS == null || RPE_MARGIN == n
   };
   expect('quá tải, biết chắc', { ...light, situation: 'overreaching', situationConfidence: 'high' }, 'hold');
   expect('vừa quay lại, biết chắc', { ...light, situation: 'returning', situationConfidence: 'high' }, 'hold');
-  expect('điểm sẵn sàng đỏ', { ...light, readiness: 'red' }, 'hold');
+  /* The stored token, because the gate asks whether the red measured recovery.
+     With a night behind it this is the case it always was; the line under it is
+     the red this one used to stand for by accident — see Chain AH. */
+  expect('điểm sẵn sàng đỏ, có đo giấc ngủ', { ...light, readiness: 'red', readinessExplain: 'sleep:20' }, 'hold');
+  expect('điểm sẵn sàng đỏ CHỈ dựng từ tải tập', { ...light, readiness: 'red', readinessExplain: 'load:45' }, 'up');
   const blind = suggestLoad({ ...light, situation: 'overreaching', situationConfidence: 'none' });
   if (blind.advice !== 'up') {
     problems.push(
@@ -239,7 +246,7 @@ if (typeof suggestLoad !== 'function' || MIN_SESSIONS == null || RPE_MARGIN == n
     );
   }
   expect('quá nặng, dù đang quá tải', { reported: [10, 10, 10], target: 7, situation: 'overreaching', situationConfidence: 'high' }, 'down');
-  expect('quá nặng, dù điểm sẵn sàng đỏ', { reported: [10, 10, 10], target: 7, readiness: 'red' }, 'down');
+  expect('quá nặng, dù điểm sẵn sàng đỏ', { reported: [10, 10, 10], target: 7, readiness: 'red', readinessExplain: 'sleep:20' }, 'down');
 }
 
 /* ── 4: the goal reaches the engine, and never below the floor ── */

@@ -53,7 +53,7 @@ try {
       'npx',
       ['tsc', 'src/lib/session-load.ts', 'src/lib/readiness-engine.ts', 'src/lib/training-card.ts',
        'src/lib/local-date.ts', 'src/lib/user-state.ts', 'src/lib/load-progression.ts',
-       'src/lib/prescription.ts', 'src/lib/goal-training.ts',
+       'src/lib/prescription.ts', 'src/lib/goal-training.ts', 'src/lib/readiness-i18n.ts',
        '--ignoreConfig', '--outDir', out,
        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },

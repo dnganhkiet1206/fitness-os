@@ -35,6 +35,7 @@ import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr, localDayRangeISO, weekStartOf } from '@/lib/local-date';
 import { metricMean } from '@/lib/nutrition-mean';
+import { deloadWarranted } from '@/lib/readiness-week';
 import { latestAcwr } from '@/lib/training-card';
 
 interface AIInsight {
@@ -152,7 +153,11 @@ export default function WeeklyReviewScreen() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('daily_logs')
-        .select('date, kcal, protein_g, volume_load, readiness_score, acwr')
+        /* `readiness_explain` travels with the score because the deload rule
+           below is a recovery question and the score alone cannot answer it —
+           see `lib/readiness-week.ts`. Same row, one more column, no new table
+           and no new query. */
+        .select('date, kcal, protein_g, volume_load, readiness_score, readiness_explain, acwr')
         .eq('user_id', user!.id)
         .gte('date', startStr)
         .lt('date', endStr)
@@ -400,7 +405,12 @@ export default function WeeklyReviewScreen() {
      mean was actually built from. A row written by the step sync carries no
      readiness score, so it was padding this threshold with days that
      contributed nothing to the number being judged. */
-  if (avgReadiness < 50 && readinessDays >= 3) {
+  /* `deloadWarranted`, not the bare threshold: a deload is a recovery
+     instruction, and a readiness score built from training load alone measured
+     no recovery — it was telling somebody with an ACWR of 0.01 to cut volume.
+     The mean, the threshold and `readinessDays` are unchanged; see
+     `lib/readiness-week.ts` for what was measured. */
+  if (deloadWarranted(logs, avgReadiness, readinessDays)) {
     recommendations.push({ kind: 'warning', text: L(
       'Readiness trung bình thấp. Cân nhắc tuần deload: giảm 40-50% volume, giữ cường độ.',
       'Low average readiness. Consider a deload week: cut volume 40-50%, keep intensity.') });

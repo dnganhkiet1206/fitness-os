@@ -44,6 +44,7 @@ try {
       'npx',
       ['tsc', 'src/lib/goal-training.ts', 'src/lib/load-progression.ts', 'src/lib/prescription.ts',
        'src/lib/training-week.ts', 'src/lib/session-load.ts', 'src/lib/local-date.ts',
+       'src/lib/readiness-i18n.ts',
        '--ignoreConfig', '--outDir', out,
        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
@@ -57,7 +58,8 @@ try {
     lp,
     readFileSync(lp, 'utf8')
       .replaceAll('@/lib/prescription', './prescription')
-      .replaceAll('@/lib/goal-training', './goal-training'),
+      .replaceAll('@/lib/goal-training', './goal-training')
+      .replaceAll('@/lib/readiness-i18n', './readiness-i18n'),
   );
   const tw = path.join(out, 'training-week.js');
   writeFileSync(

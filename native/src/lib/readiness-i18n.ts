@@ -21,6 +21,14 @@ export const READINESS_RECO: Record<string, Bi> = {
     en: 'Ready to train. Watch the volume — ACWR is a bit high.',
     vi: 'Sẵn sàng tập. Theo dõi khối lượng — ACWR hơi cao.',
   },
+  /* Green with no ACWR at all. `green_watch` used to answer this case and told
+     people their ratio was high when none had been computed — see the branch
+     in `readiness-engine.ts`. Says what is true instead: there is no training
+     history yet, so build one gradually. */
+  green_no_load: {
+    en: 'Ready to train. No sessions yet to compute ACWR — add volume gradually.',
+    vi: 'Sẵn sàng tập. Chưa có buổi tập nào để tính ACWR — tăng khối lượng từ từ.',
+  },
   yellow_sleep: {
     en: 'Keep the intensity, cut total sets by 15%. Prioritize sleep tonight.',
     vi: 'Giữ cường độ, giảm 15% tổng sets. Ưu tiên ngủ tối nay.',
@@ -118,4 +126,59 @@ export function readinessSubscores(
   if (!stored) return out;
   for (const p of parseFactors(stored)) out[p.key] = Math.round(p.score);
   return out;
+}
+
+/**
+ * The three dimensions that are measurements of *recovery*.
+ *
+ * Training load is the fourth dimension of readiness and a real one — it has a
+ * band and a weight like the other three, and it belongs in the score. What it
+ * is not is a reading of how somebody recovered. It is a description of what
+ * they did to themselves, computed entirely from sessions they logged.
+ */
+export const RECOVERY_COMPONENTS = ['hrv', 'rhr', 'sleep'] as const;
+
+/**
+ * Did this stored readiness rest on anything that measured recovery?
+ *
+ * ── the two sentences this exists to stop ──
+ *
+ * `readiness_score` and `readiness_status` cross every consumer boundary in
+ * this app carrying no record of what produced them. Measured on PostgreSQL
+ * 16.13, in all six timezones, for somebody with a heavy 28-day base and one
+ * small session in the last week:
+ *
+ *     điểm 45 · trạng thái red · acwr 0.01 · explain "load:45"
+ *
+ * ACWR of **0.01** — this person has barely trained. Nothing about their sleep,
+ * their heart rate or their HRV was measured at all. Two screens then read that
+ * red and acted on it as a recovery failure:
+ *
+ *   · weekly-review offered *"Cân nhắc tuần deload: giảm 40-50% volume"* — cut
+ *     the volume of somebody who is already not training — three lines below
+ *     its own ACWR rule saying *"Có thể tăng 10-15% volume"*.
+ *   · `suggestLoad` turned an `up` into a `hold`, because
+ *     `input.readiness === 'red'`, over the reason *"điểm sẵn sàng hôm nay đang
+ *     đỏ"*. Driven through the real function: `red` → hold, `null` → up.
+ *
+ * Both are the same mistake, and it is not the score's mistake. The score is a
+ * correct weighted answer over what could be read. The mistake is a consumer
+ * asking a recovery question of a number that measured no recovery.
+ *
+ * ── why it lives here, beside the parser ──
+ *
+ * `readiness_explain` already encodes every sub-score the engine measured — it
+ * is what the gauge's confidence chip is counted from — so there is nothing new
+ * to store and no new column. The parsing is `readinessSubscores`, the one
+ * parser, and this sits directly on top of it so that no screen ever matches on
+ * the token by hand: this repository has been bitten by a duplicated rule six
+ * times, and a second idea of "what counts as recovery" is exactly the shape
+ * that goes wrong without a symptom.
+ *
+ * Absent, empty or unparseable is `false`. A row nobody can read is not
+ * evidence that recovery was measured.
+ */
+export function hasRecoverySignal(stored: string | null | undefined): boolean {
+  const subs = readinessSubscores(stored) as Record<string, number | undefined>;
+  return RECOVERY_COMPONENTS.some((k) => subs[k] != null);
 }

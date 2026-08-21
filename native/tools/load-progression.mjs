@@ -44,6 +44,7 @@ try {
     execFileSync(
       'npx',
       ['tsc', 'src/lib/load-progression.ts', 'src/lib/prescription.ts', 'src/lib/goal-training.ts',
+       'src/lib/readiness-i18n.ts',
        '--ignoreConfig', '--outDir', out,
        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
@@ -57,7 +58,9 @@ try {
     p,
     readFileSync(p, 'utf8')
       .replaceAll('@/lib/prescription', './prescription')
-      .replaceAll('@/lib/goal-training', './goal-training'),
+      .replaceAll('@/lib/goal-training', './goal-training')
+      /* the red gate asks the one recovery predicate — see readiness-i18n */
+      .replaceAll('@/lib/readiness-i18n', './readiness-i18n'),
   );
 
   const { suggestLoad, MIN_SESSIONS, RPE_MARGIN, MAX_STEP } =
@@ -115,10 +118,22 @@ try {
       why: 'buổi đầu quay lại VỐN PHẢI nhẹ — cái nhẹ đó là ý đồ chứ không phải lỗi',
     },
     {
-      name: 'nhẹ đều nhưng điểm sẵn sàng đỏ',
-      input: { reported: [6, 6, 6], target: 8, readiness: 'red' },
+      /* `readinessExplain` is not decoration: the gate asks whether the red was
+         a red about RECOVERY. This case supplies a night that was measured, so
+         it is the same case it always was. The one below it is the red this
+         fixture used to stand for by accident — see Chain AH. */
+      name: 'nhẹ đều nhưng điểm sẵn sàng đỏ, có đo giấc ngủ',
+      input: { reported: [6, 6, 6], target: 8, readiness: 'red', readinessExplain: 'sleep:20' },
       want: 'hold',
       why: 'hai phần của cùng một app nói ngược nhau trên cùng một màn còn tệ hơn cả hai cùng im',
+    },
+    {
+      name: 'nhẹ đều, đỏ nhưng điểm CHỈ dựng từ tải tập',
+      input: { reported: [6, 6, 6], target: 8, readiness: 'red', readinessExplain: 'load:45' },
+      want: 'up',
+      why:
+        'điểm đỏ dựng từ mỗi tải tập là điểm của người TẬP QUÁ ÍT — acwr 0.01 — chứ không phải của ' +
+        'người chưa hồi. Giữ tải ở đây là chặn đúng thứ họ cần (BUG-110)',
     },
     {
       name: 'nhẹ đều, quá tải nhưng độ tin cậy none',
@@ -168,34 +183,49 @@ try {
      The sweep, not a spot check: this is the failure with a body attached. */
   const SITUATIONS = ['settling_in', 'steady', 'slipping', 'returning', 'overreaching', 'stalled'];
   const CONFS = ['none', 'low', 'medium', 'high'];
-  const READY = ['green', 'yellow', 'red', null, undefined];
+  /* A readiness status is not one axis but two: the colour, and whether
+     anything about RECOVERY was measured to produce it. A red built from
+     training load alone is the score of somebody training too little — measured
+     at acwr 0.01 — and holding their load is blocking exactly what they need.
+     So the sweep carries the stored token with the status and expects the gate
+     to follow it. */
+  const READY = [
+    { label: 'green', readiness: 'green', readinessExplain: 'sleep:90|load:80', recovery: true },
+    { label: 'yellow', readiness: 'yellow', readinessExplain: 'sleep:60|load:65', recovery: true },
+    { label: 'red (giấc ngủ)', readiness: 'red', readinessExplain: 'sleep:20', recovery: true },
+    { label: 'red (sinh trắc)', readiness: 'red', readinessExplain: 'hrv:20|rhr:25', recovery: true },
+    { label: 'red (CHỈ tải)', readiness: 'red', readinessExplain: 'load:45', recovery: false },
+    { label: 'null', readiness: null, readinessExplain: null, recovery: false },
+    { label: 'undefined', readiness: undefined, readinessExplain: undefined, recovery: false },
+  ];
 
   for (const situation of SITUATIONS) {
     for (const situationConfidence of CONFS) {
-      for (const readiness of READY) {
+      for (const ready of READY) {
         for (const rpe of [5, 6]) {
           const s = suggestLoad({
             reported: rep(6, rpe),
             target: 9,
             situation,
             situationConfidence,
-            readiness,
+            readiness: ready.readiness,
+            readinessExplain: ready.readinessExplain,
           });
           const blocked =
-            readiness === 'red' ||
+            (ready.readiness === 'red' && ready.recovery) ||
             (situationConfidence !== 'none' &&
               (situation === 'overreaching' || situation === 'returning'));
           if (blocked && s.advice === 'up') {
             problems.push(
               `đề xuất TĂNG tải với situation='${situation}' (tin cậy ${situationConfidence}), ` +
-                `sẵn sàng='${readiness}' — đây là lời khuyên duy nhất trong app có thể góp phần ` +
+                `sẵn sàng='${ready.label}' — đây là lời khuyên duy nhất trong app có thể góp phần ` +
                 'gây chấn thương, và mọi cổng chặn phải giữ',
             );
           }
           if (!blocked && s.advice !== 'up') {
             problems.push(
               `KHÔNG đề xuất tăng khi không có gì chặn (situation='${situation}', tin cậy ` +
-                `${situationConfidence}, sẵn sàng='${readiness}') — cổng chặn đang quá tay và ` +
+                `${situationConfidence}, sẵn sàng='${ready.label}') — cổng chặn đang quá tay và ` +
                 `autoregulation không còn hoạt động [${s.because}]`,
             );
           }
@@ -210,18 +240,19 @@ try {
      to the whole branch, and the warning that matters disappears. */
   for (const situation of SITUATIONS) {
     for (const situationConfidence of CONFS) {
-      for (const readiness of READY) {
+      for (const ready of READY) {
         const s = suggestLoad({
           reported: rep(6, 10),
           target: 6,
           situation,
           situationConfidence,
-          readiness,
+          readiness: ready.readiness,
+          readinessExplain: ready.readinessExplain,
         });
         if (s.advice !== 'down') {
           problems.push(
             `báo 10 với mức đặt 6 mà KHÔNG khuyên giảm (situation='${situation}', sẵn sàng=` +
-              `'${readiness}') — một cổng chặn đã bịt mất cảnh báo, đúng kiểu hỏng dễ xảy ra nhất ở đây`,
+              `'${ready.label}') — một cổng chặn đã bịt mất cảnh báo, đúng kiểu hỏng dễ xảy ra nhất ở đây`,
           );
         }
       }
@@ -276,8 +307,9 @@ try {
   console.log(
     `điều chỉnh tải OK — ${CASES.length} ca có đáp án cụ thể đều đúng, và hai bất biến được QUÉT qua ` +
       `${SITUATIONS.length}×${CONFS.length}×${READY.length} tổ hợp: không tổ hợp nào đề xuất TĂNG tải khi ` +
-      'đang quá tải, khi vừa quay lại, hay khi điểm sẵn sàng đỏ (đây là lời khuyên duy nhất trong app ' +
-      'có thể góp phần gây chấn thương) — mà cũng không cổng nào bịt mất lời khuyên GIẢM, thứ dễ hỏng ' +
+      'đang quá tải, khi vừa quay lại, hay khi điểm sẵn sàng đỏ CÓ ĐO PHỤC HỒI (đây là lời khuyên duy ' +
+      'nhất trong app có thể góp phần gây chấn thương) — trong khi một điểm đỏ dựng từ MỖI tải tập, tức ' +
+      'điểm của người tập quá ít, vẫn được khuyên tăng — mà cũng không cổng nào bịt mất lời khuyên GIẢM, thứ dễ hỏng ' +
       `nhất khi ai đó thêm một cổng chặn cho nhánh tăng. Dưới ${MIN_SESSIONS} buổi thì không kết luận gì ` +
       'và độ tin cậy là none: một buổi nặng bất thường có thể chỉ là một đêm mất ngủ. Bước nhảy là TỈ LỆ ' +
       `chứ không phải số kg, và bị chặn ở ${MAX_STEP * 100}% dù chênh lệch lớn đến đâu; mức đặt mặc định ` +

@@ -9394,6 +9394,297 @@ thông báo đọc lên thành sai còn tệ hơn không có.
 | **PRODUCTION** | **KHÔNG** |
 | **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
 
+## Chain AH — hợp đồng độ tin cậy: con số có nói được nó dựa vào gì không
+
+**Câu hỏi trung tâm.** Một người đọc `daily_logs` có phân biệt được bốn thứ
+không: (1) điểm cao vì nhiều tín hiệu phục hồi ĐỘC LẬP cùng đồng ý, (2) điểm cao
+vì chỉ có MỘT thành phần đo được, (3) điểm thấp vì phục hồi thật sự kém, (4)
+`null` vì không đủ thông tin.
+
+**Bộ kiểm (giai đoạn bằng chứng):** cluster PostgreSQL 16.13 THẬT từ mọi
+migration; chạy `recomputeDailyLog` thật; oracle phát biểu **thành phần nào đo
+được** thẳng từ hàng thô — không đọc `daily_logs`, không gọi `computeReadiness`
+(Chain AG đã chứng minh công thức rồi, vòng này hỏi chuyện khác).
+
+### Chain AH — kết quả trung tâm: TẦNG LƯU TRỮ TRUNG THỰC, TẦNG TIÊU THỤ THÌ KHÔNG
+
+**6 múi giờ × 1.000 trạng thái ngẫu nhiên = 6.000, lệch hợp đồng: 0.**
+`readiness_explain` ghi ĐÚNG mọi thành phần engine đo được, ở mọi múi giờ. Bốn
+trạng thái trên **phân biệt được từ hàng đã lưu**.
+
+Nhưng chỉ **một** nơi trong app đọc chuỗi đó — `readiness-gauge.tsx`. Mọi nơi
+khác nhận `readiness_score` + `readiness_status` và không gì nữa:
+
+| nơi đọc | nhận gì | phân biệt được không |
+| --- | --- | --- |
+| `readiness-gauge.tsx` | điểm, trạng thái, explain, khuyến nghị, acwr | ✅ nơi duy nhất |
+| `index.tsx` (Today) | điểm null → thẻ trống | ✅ đúng ca (4) |
+| `assistant.tsx` | điểm null → `—` / "Cần thêm dữ liệu" | ✅ đúng ca (4) |
+| `weekly-review.tsx` | **chỉ điểm** | ❌ **BUG-109** |
+| `log-workout.tsx` → `suggestLoad` | **chỉ trạng thái** | ❌ **BUG-110** |
+| `use-assistant-signal`, 3 hàm AI | điểm + trạng thái | ❌ DATA-CONTRACT GAP |
+| `useReadinessHistory` | điểm + trạng thái | ❌ |
+| `koa-decide` / linh vật | **không đọc gì** | – |
+
+**Cùng một con số, hai dân số khác hẳn.** Quét 400 trạng thái: **30 điểm khác
+nhau** mà mỗi điểm đều dựng được từ CẢ một thành phần lẫn ba–bốn thành phần.
+
+```
+45  ← load | sleep | load+sleep | load+sleep+hrv+rhr | rhr+hrv+load | …
+55  ← load | sleep+load | hrv+sleep+load+rhr | rhr+sleep+hrv+load | …
+35  ← load | hrv+rhr | load+sleep | hrv+load+sleep+rhr
+```
+
+---
+
+### BUG-108 (P2). Điểm xanh dựng từ mỗi giấc ngủ được bảo "ACWR hơi cao" — `GREEN-WATCH-ON-NULL-ACWR` · **ĐÃ SỬA**
+
+`readiness-engine.ts` — `green_watch` là nhánh rơi xuống từ
+`status === 'green' && acwr != null && acwr <= 1.2`. **`null` trượt phép thử
+đó**, nên "chưa đo được" bị định tuyến vào "đo được và cao".
+
+**Đo trên cluster thật, ba fixture chỉ có giấc ngủ:**
+
+```
+ngủ 520 phút → điểm 92 · green · acwr NULL · explain "sleep:92"
+  khoá: green_watch
+  vi:  "Sẵn sàng tập. Theo dõi khối lượng — ACWR hơi cao."
+  en:  "Ready to train. Watch the volume — ACWR is a bit high."
+```
+
+App chưa từng tính một ACWR nào cho người này. Giống hệt ở 560 và 600 phút.
+Đây đúng là lớp lỗi mục 1 của `readiness-confidence.mjs` tồn tại để chặn
+(`acwr ?? 0`), chỉ nằm thấp hơn một nhánh.
+
+**Bản sửa.** Một nhánh mới, đặt TRƯỚC hai nhánh cũ:
+
+```ts
+if (status === 'green' && acwr == null) {
+  recommendationKey = 'green_no_load';
+  recommendation = 'Sẵn sàng tập. Chưa có buổi tập nào để tính ACWR — tăng khối lượng từ từ.';
+} else if (status === 'green' && acwr != null && acwr <= 1.2) {   // nguyên văn cũ
+```
+
+`acwr` là `null` vì đúng một lý do — `training_load_28d === 0` — và đó cũng là
+điều kiện làm `loadScore` null, nên nhánh này chính xác là *"xanh, và chưa ghi
+buổi tập nào"*. Hai khoá cũ giữ nguyên chỗ của chúng: `green_optimal` cho tỉ số
+đo được ≤ 1.2, `green_watch` cho tỉ số đo được > 1.2 — lần đầu tiên câu chữ của
+nó đúng với điều kiện của nó.
+
+**VERIFICATION:** `node tools/readiness-confidence.mjs` — mục 7 chạy **cả năm
+nhánh** qua `computeReadiness` THẬT (xanh/acwr null, xanh/≤1.2, xanh/>1.2,
+vàng/null, đỏ/null) và cấm mọi nhánh có `acwr === null` phát ra câu chứa
+"hơi cao" / "a bit high" ở cả hai ngôn ngữ.
+
+---
+
+### BUG-109 (P1). Cảnh báo deload bắn cho người TẬP QUÁ ÍT — `DELOAD-ON-LOAD-ONLY-READINESS` · **ĐÃ SỬA**
+
+`weekly-review.tsx` — cổng là `avgReadiness < 50 && readinessDays >= 3`, và điểm
+sẵn sàng không mang theo dấu vết nào về thứ đã dựng ra nó.
+
+**Đo trên cluster thật, GIỐNG NHAU Ở CẢ SÁU MÚI GIỜ.** Nền 28 ngày rất nặng,
+một buổi nhỏ duy nhất trong bảy ngày gần đây:
+
+```
+2026-08-21  điểm 45  red  acwr 0.01  explain "load:45"
+2026-08-20  điểm 45  red  acwr 0.01  explain "load:45"
+2026-08-19  điểm 45  red  acwr 0.01  explain "load:45"
+readinessDays 3 · avgReadiness 45 · firesDeload TRUE
+→ "Cân nhắc tuần deload: giảm 40-50% volume, giữ cường độ."
+```
+
+**ACWR 0.01.** Ba dòng phía trên, luật ACWR của CHÍNH màn hình đó nói *"ACWR
+thấp. Có thể tăng 10-15% volume."* Hai câu ngược nhau trong cùng một danh sách,
+về cùng một người. Điểm thấp **chính là** việc tập quá ít, bị đọc ngược thành
+mệt mỏi.
+
+**KHÔNG phải do bản sửa BUG-107.** Tôi đã tưởng vậy rồi đo lại: với đúng **ba**
+lần đo sinh trắc — đủ cho cổng CŨ `bioHistory.length >= 3`, dưới mức `>= 5` mà
+cả HRV lẫn nhịp nghỉ đòi — và không có giấc ngủ, cổng cũ ra **cùng một**
+`45 / red / load:45 / firesDeload true`. BUG-107 mở rộng đường tới đây; nó không
+tạo ra chỗ này.
+
+**Bản sửa.** Một vị từ đọc-phía-sau, dùng lại đúng parser chính tắc:
+
+```ts
+export const RECOVERY_COMPONENTS = ['hrv', 'rhr', 'sleep'] as const;
+export function hasRecoverySignal(stored: string | null | undefined): boolean {
+  const subs = readinessSubscores(stored);
+  return RECOVERY_COMPONENTS.some((k) => subs[k] != null);
+}
+```
+
+và cổng thành `deloadWarranted(logs, avgReadiness, readinessDays)`, tức
+`avgReadiness < 50 && readinessDays >= 3 && recoveryBackedDays(logs) >= 3`.
+Trung bình, ngưỡng 50 và nghĩa của `readinessDays` **không đổi một chữ**; câu hỏi
+mới duy nhất là câu ấy có tư cách được nói hay không.
+
+`readiness-week.ts` là một file chứ không phải ba dòng trên màn hình, cùng lý do
+với `step-days.ts`, `health-days.ts` và `health-sync-write.ts`: `weekly-review.tsx`
+import React và cả tầng thẻ nên không nạp được trong Node, mà đây lại đúng loại
+luật sai theo cách đọc mã không lộ ra.
+
+**VERIFICATION:** `node tools/readiness-confidence.mjs` — mục 8 chạy
+`deloadWarranted` THẬT qua sáu tổ hợp ngày (A–F trong đề bài), và mục 11 dựng
+bốn kiểu ngày đỏ trên PostgreSQL rồi hỏi lại cùng hàm đó.
+
+---
+
+### BUG-110 (P1). Cổng "đỏ thì giữ tải" chặn đúng người cần tăng tải — `RED-HOLD-ON-LOAD-ONLY-READINESS` · **ĐÃ SỬA**
+
+`load-progression.ts` — `if (input.readiness === 'red')`. Chú thích ngay trên nó
+nói nhánh này để làm gì: *"the app's own reading of this morning says recover"*.
+Nhưng một điểm sẵn sàng **không bắt buộc phải là một phép đọc phục hồi** thì mới
+đỏ được.
+
+**Chạy qua `suggestLoad` THẬT**, cùng người ở BUG-109, năm buổi báo RPE 5.0 so
+với mức đặt 8:
+
+```
+readiness 'red', explain "load:45"   → hold, bước 0
+readiness null                       → up,   bước 0.1
+readiness 'green'                    → up,   bước 0.1
+```
+
+Thứ bị giữ lại là lời khuyên tập NHIỀU HƠN, nói với người mà vấn đề đo được duy
+nhất là tập quá ít.
+
+**Bản sửa.** Chỉ mặt quyết định, không đụng toán:
+
+```ts
+if (input.readiness === 'red' && hasRecoverySignal(input.readinessExplain)) {
+```
+
+`LoadInput` nhận thêm `readinessExplain?: string | null` — chuỗi đã lưu, truyền
+nguyên vẹn, chứ không phải một boolean do màn hình tự quyết: luật nằm một chỗ, và
+một màn hình trả lời hộ là một màn hình có thể trả lời khác màn hình bên cạnh.
+`log-workout.tsx` chuyền `todayLog?.readiness_explain` vào.
+
+**VERIFICATION:** `node tools/readiness-confidence.mjs` mục 9 (tám ca qua
+`suggestLoad` thật); `node tools/load-progression.mjs` (quét 6×4×**7** tổ hợp,
+trục sẵn sàng nay mang cả chuỗi explain); `node tools/progression.mjs`.
+
+---
+
+### BUG-111 (P3). Chip độ tin cậy đếm một ô không bao giờ được vẽ — `HRV-COUNTED-NEVER-DRAWN` · **ĐÃ SỬA**
+
+`readiness-gauge.tsx` vẽ ô cho `rhr`, `sleep`, `load` — không bao giờ cho `hrv` —
+trong khi chip đếm `Object.keys(subs).length`, có tính nó. Chú thích ngay dưới
+khẳng định số đếm đến từ *"the same string the tiles above are drawn from"*; với
+HRV thì không đúng.
+
+```
+explain "hrv:50"          chip "Dựa trên 1 chỉ số đo được"   số ô vẽ ra: 0
+explain "hrv:50|rhr:50"   chip "Dựa trên 2 chỉ số đo được"   số ô vẽ ra: 1
+```
+
+**Bản sửa:** một dòng, vẽ ô HRV như ba ô kia. Bộ dò đòi có ô cho **cả bốn** khoá
+mà `readinessSubscores` trả về, nên khoá thứ năm nào thêm vào sau này cũng không
+lặp lại được lỗi này.
+
+---
+
+### Chain AH — KHÔNG phải lỗi (đã đo, đừng "sửa")
+
+- **Null được phân biệt ở nơi cần.** Today vẽ thẻ trống, tab trợ lý hiện `—` +
+  *"Cần thêm dữ liệu"*. Ca (4) không bị hoá trang thành điểm thấp.
+- **Biểu đồ tuần KHÔNG vẽ ngày thiếu thành 0.** Tôi đã nghi
+  `readiness: Number(...) || 0` ở dòng 339; dòng 461 đã lọc `.filter(c => c.readiness > 0)`
+  trước khi vẽ. Nghi sai.
+- **`readinessSubscores` không ném** với bất kỳ chuỗi nào trong 19 ca thù địch.
+- **`koa-decide` / linh vật không đọc điểm sẵn sàng** — không có gì để sửa.
+
+### Chain AH — nhánh đã CHỨNG MINH không tới được (đừng nới luật để chúng xanh)
+
+| nhánh | kết luận |
+| --- | --- |
+| `green_watch` khi `acwr == null` | **TỚI ĐƯỢC — đã đo** → BUG-108 |
+| `readinessConfidence` với sub-score `null` | **KHÔNG TỚI ĐƯỢC.** `{sleep: null}` trong bảng thù địch là `Infinity` bị JSON hoá — `Number('9'×400)` là `Infinity`, lọt qua `!Number.isNaN`. Engine kẹp mọi sub-score vào 0–100 rồi `Math.round`, nên không writer nào tạo ra được |
+| khoá `listen` | **KHÔNG TỚI ĐƯỢC.** `status` luôn là một trong ba, nên `else` cuối là mã chết |
+| `readinessStatus \|\| 'yellow'` (`index.tsx`) | **KHÔNG TỚI ĐƯỢC.** Gauge chỉ mount khi điểm khác null |
+| văn xuôi cũ trong `readinessExplainText` / `readinessRecoText` | **KHÔNG CHỨNG MINH ĐƯỢC theo chiều nào.** Writer duy nhất trong repo này là `recomputeDailyLog` (ghi token hoặc `''`); client web từng có thể ghi văn xuôi đã bị xoá khỏi cây mã, và hàng nó ghi có thể còn trong production. **Không đụng vào.** |
+
+### Chain AH — PRODUCT DECISION đã được chốt
+
+**`READINESS-COMPONENT-AUTHORITY`.** Chủ sản phẩm chốt trong vòng sửa này:
+tải tập **là** một thành phần hợp lệ và được góp vào điểm số; nhưng một
+điểm/trạng thái dựng từ **mỗi tải tập** KHÔNG được đọc như một phép đo phục hồi;
+một nơi tiêu thụ nhạy-cảm-phục-hồi phải có ít nhất một trong ba: `sleep`, `hrv`,
+`rhr`. Đó là toàn bộ nội dung của `hasRecoverySignal`.
+
+### Chain AH — vẫn để nguyên, có chủ đích
+
+- **BUG-106** (neo cửa sổ lịch sử vào `new Date()`): **PRODUCT DECISION REQUIRED**,
+  không sửa, và **không** thêm bất biến nào chúc phúc cho nó. Hệ quả đo được:
+  không ngày quá khứ nào chấm được điểm, nên hai ca DST có ngày cố định trong
+  `readiness-confidence.mjs` đã bị **gỡ bỏ** — chúng xanh dù mã hỏng thế nào.
+- **DATA-CONTRACT GAP (AI).** `ai-coach:165`, `ai-smart-nudges:41`,
+  `ai-weekly-review:109` và `use-assistant-signal:61` vẫn chỉ nhận điểm +
+  trạng thái. Payload đo được cho người ACWR 0.01: `{readiness: 45,
+  readiness_status: "red"}`, trong khi hàng mang `"load:45"`. Không đổi schema
+  vòng này.
+- **`red_recover`** (*"Chỉ phục hồi tích cực"*) vẫn phát ra trên một điểm đỏ
+  load-only. Điều kiện tiên quyết của khoá đó chỉ là `status === 'red'`, và đề
+  bài vòng này giới hạn phần câu chữ ở khẳng định về ACWR. **Ghi nhận, chưa sửa.**
+
+### Chain AH — sai sót của chính bộ kiểm, ghi rõ
+
+1. **Tôi ghi đè `tools/readiness-confidence.mjs` mà chưa đọc nó.** File đã tồn
+   tại từ trước (250 dòng, sáu mục về `acwr` null và thang độ tin cậy) và lệnh
+   `Write` xoá sạch. Lấy lại từ `git show HEAD:` và **gộp** — sáu mục cũ còn
+   nguyên, mục 6 được mở rộng cho ô HRV. Không mất bất biến nào, nhưng chỉ vì
+   file đã được commit.
+2. **Tưởng BUG-109 do bản sửa Chain AG gây ra.** Đo lại với ba lần đo sinh trắc
+   (cổng CŨ) ra cùng kết quả. Nếu không đo, tôi đã báo cáo bản sửa của chính mình
+   là một hồi quy.
+3. **Đọc `{sleep: null}` thành sub-score null.** Nó là `Infinity` mất trong JSON.
+   Truy ra biến một "phát hiện" thành một mục *chứng minh không tới được*.
+4. **Nghi biểu đồ tuần vẽ ngày thiếu thành 0.** Dòng 461 đã lọc sẵn. Nghi sai.
+5. **Ba ca hành vi xanh RỖNG, đã gỡ.** `acwr > 1.2` dựng từ fixture không bao giờ
+   ra green (spike chấm 35–55, kéo ngày khỏi xanh) nên mệnh đề điều kiện không
+   bao giờ đúng; hai ca DST ngày cố định chấm được **0 ngày**. Cả ba xanh dù mã
+   hỏng thế nào. Thay bằng mục 7 chạy thẳng `computeReadiness` với hai giá trị
+   tải đặt chính xác, và một chú thích nói rõ vì sao không có ca DST ngày cố định.
+6. **Bốn bộ dò anh em gãy khi nạp** vì `load-progression.ts` có thêm import:
+   `progression`, `load-progression`, `goal-training`, `session-load` đều
+   transpile theo danh sách file cố định. Thêm `readiness-i18n.ts` vào cả bốn.
+   Đây là lỗi harness, không phải hồi quy sản phẩm.
+7. **`nutrition-averages.mjs` ghim VỊ TRÍ chứ không phải bất biến.** Luật A3 của
+   Chain AC tìm `avgReadiness < 50 && readinessDays >= 3` **trong
+   `weekly-review.tsx`**; biểu thức nay nằm trong `readiness-week.ts`, nguyên
+   văn. Bất biến còn nguyên, chỗ đứng thì không. **Chỉnh hướng theo mã, không
+   nới:** màn hình phải gọi `deloadWarranted(logs, avgReadiness, readinessDays)`,
+   VÀ module nó uỷ quyền tới phải còn đúng ngưỡng ấy — hai luật thay cho một, nên
+   bỏ đường uỷ quyền hay đổi ngưỡng đều đỏ.
+8. **`score-doc.mjs` gãy khi nạp** cùng lý do với bốn bộ dò kia. Thêm
+   `readiness-i18n.ts` vào danh sách transpile.
+9. **Hai fixture anh em mã hoá HÀNH VI CŨ.** `progression.mjs` khẳng định
+   `readiness: 'red'` (không explain) → `hold`, và vòng quét của
+   `load-progression.mjs` coi mọi `'red'` là bị chặn. Cả hai được **chỉnh hướng,
+   không nới**: ca cũ nay mang `readinessExplain: 'sleep:20'` nên vẫn kiểm đúng
+   thứ nó vẫn kiểm, và **thêm** ca `'load:45'` khẳng định `'up'`. Trục sẵn sàng
+   của vòng quét từ 5 giá trị thành 7 cặp (trạng thái + chuỗi đã lưu).
+
+### Chain AH — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory` |
+| **HÀM THẬT** | `computeReadiness`, `recomputeDailyLog`, `hasRecoverySignal`, `deloadWarranted`, `recoveryBackedDays`, `suggestLoad`, `readinessSubscores`, `readinessRecoText` |
+| **ORACLE** | phát biểu thành phần đo được từ hàng thô; không đọc `daily_logs`, không gọi engine |
+| **MÚI GIỜ** | 6 múi, gồm `Australia/Lord_Howe` (bước DST nửa giờ) |
+| **NGÀY DST 23/25 GIỜ** | **KHÔNG** chấm được — xem BUG-106; ca rỗng đã gỡ thay vì để xanh giả |
+| **BREAK-TESTS** | 10/10 đỏ đúng lý do; khôi phục xanh |
+| **REGRESSION** | `node tools/check.mjs` **123/123 xanh**; ACWR, daily-log, dinh dưỡng, workout-sync, quest, freeze, kinh tế, khối lượng, readiness, progression, session-load, goal-training, score-doc — tất cả xanh |
+| **TYPESCRIPT** | sạch |
+| **REAL iOS / HealthKit / AsyncStorage** | **KHÔNG** |
+| **PRODUCTION** | **KHÔNG** |
+| **HÀNG DỰNG BỞI CLIENT WEB CŨ** | **KHÔNG** — không tới được từ repo này |
+| **RLS** | **KHÔNG** trong vòng này — harness chạy bằng `postgres` |
+| **BỐ CỤC 5 Ô TRÊN MÁY THẬT** | **KHÔNG** — hàng ô nay có thể tới 5 ô (HRV·RHR·SLEEP·LOAD·ACWR); `flex: 1` chia đều nhưng chưa ai nhìn nó trên thiết bị |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,

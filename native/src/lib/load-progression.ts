@@ -1,5 +1,6 @@
 import { goalRpeTarget } from '@/lib/goal-training';
 import { DEFAULT_RPE } from '@/lib/prescription';
+import { hasRecoverySignal } from '@/lib/readiness-i18n';
 import type { Confidence, Situation } from '@/lib/user-state';
 
 /**
@@ -128,6 +129,14 @@ export interface LoadInput {
   situationConfidence?: Confidence;
   /** Today's readiness status, when it has been computed. */
   readiness?: 'green' | 'yellow' | 'red' | null;
+  /**
+   * `daily_logs.readiness_explain` for the same day — the token the engine
+   * wrote, passed through untouched. The red gate below is a recovery
+   * question and the status alone cannot answer it; `hasRecoverySignal` reads
+   * this. Absent means "nothing here says recovery was measured", which is
+   * what an unread row honestly is.
+   */
+  readinessExplain?: string | null;
 }
 
 const NOTHING: Omit<LoadSuggestion, 'target'> = {
@@ -215,7 +224,30 @@ export function suggestLoad(input: LoadInput): LoadSuggestion {
         because: 'nhẹ hơn mức đặt, nhưng đây là những buổi đầu quay lại — nhẹ là đúng ý đồ',
       };
     }
-    if (input.readiness === 'red') {
+    /*
+      ── the red has to be a red about recovery ──
+
+      This was `if (input.readiness === 'red')`, and the comment above it says
+      what the branch is for: *"the app's own reading of this morning says
+      recover"*. A readiness score does not have to be a reading of recovery to
+      be red. Training load is a full dimension of it, and a load-only score is
+      low for exactly one reason — the person has not been training.
+
+      Driven through this function, with the score a real account produces from
+      a heavy 28-day base and one small session in the last week
+      (`45 / red / acwr 0.01 / explain "load:45"`):
+
+          readiness 'red', explain "load:45"   → hold, step 0
+          readiness null                       → up,   step 0.1
+
+      So the hold fired on somebody whose only measured problem was training too
+      little, and the thing it withheld was the suggestion to train more.
+
+      `hasRecoverySignal` is the shared rule over the engine's own token — sleep,
+      HRV or resting heart rate. A red backed by any of those still holds,
+      exactly as before; the mathematics above and below is untouched.
+    */
+    if (input.readiness === 'red' && hasRecoverySignal(input.readinessExplain)) {
       return {
         advice: 'hold',
         confidence,

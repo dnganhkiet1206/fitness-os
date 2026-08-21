@@ -368,10 +368,34 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult | null 
   // Recommendation — keep prose + a stable key so the UI can localize it
   let recommendation: string;
   let recommendationKey: string;
-  if (status === 'green' && acwr != null && acwr <= 1.2) {
+  if (status === 'green' && acwr == null) {
+    /*
+      ── "not measured" was being routed to "measured and high" ──
+
+      This branch did not exist. `green_watch` was the fallthrough from the
+      `acwr != null && acwr <= 1.2` test above, so a `null` ratio — which fails
+      that test — landed on copy that reads *"Theo dõi khối lượng — ACWR hơi
+      cao."* / *"Watch the volume — ACWR is a bit high."*
+
+      Measured, three sleep-only fixtures: 520 minutes asleep scores **92**,
+      status green, `acwr` **null**, explain `"sleep:92"` — and the app told
+      that person their ACWR was high. It had never computed one.
+
+      `acwr` is `null` for exactly one reason (see its definition above):
+      `training_load_28d` is zero, so there is no chronic base to be a ratio of.
+      That is the same condition that makes `loadScore` null, so this is
+      precisely "green, and nothing about training was logged" — which is worth
+      its own sentence rather than borrowing one that makes a claim about a
+      number that does not exist.
+    */
+    recommendationKey = 'green_no_load';
+    recommendation = 'Sẵn sàng tập. Chưa có buổi tập nào để tính ACWR — tăng khối lượng từ từ.';
+  } else if (status === 'green' && acwr != null && acwr <= 1.2) {
     recommendationKey = 'green_optimal';
     recommendation = 'Tập theo kế hoạch — đẩy top set + backoff sets.';
   } else if (status === 'green') {
+    /* Now only reachable with a ratio that exists and is above 1.2, which is
+       what the copy has always said. */
     recommendationKey = 'green_watch';
     recommendation = 'Sẵn sàng tập. Theo dõi khối lượng — ACWR hơi cao.';
   } else if (status === 'yellow' && sleepScore !== null && sleepScore < 50) {

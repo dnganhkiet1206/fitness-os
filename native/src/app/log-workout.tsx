@@ -271,6 +271,12 @@ export default function LogWorkoutSheet() {
       situation: userState.situation,
       situationConfidence: userState.confidence,
       readiness: readinessStatus,
+      /* The same row's explain token, so the red gate can tell a recovery red
+         from a load-only one — see `hasRecoverySignal`. Passed as the stored
+         string rather than a boolean decided here: the rule belongs in one
+         place, and a screen that pre-answers it is a screen that can answer it
+         differently from the next screen. */
+      readinessExplain: todayLog?.readiness_explain,
     });
     if (suggestion.advice === 'unknown' || suggestion.advice === 'hold') return null;
     const pct = Math.round(Math.abs(suggestion.step) * 100);
@@ -286,7 +292,7 @@ export default function LogWorkoutSheet() {
       : (vi
           ? `Mấy buổi "${name.trim()}" gần đây bạn thấy nặng hơn mức ${aim} — có thể giảm ~${pct}%`
           : `Your recent "${name.trim()}" sessions felt harder than ${aim} — easing off about ${pct}% is fine`);
-  }, [recentSessions, name, askedRpe, profile?.goal, userState.situation, userState.confidence, readinessStatus, vi]);
+  }, [recentSessions, name, askedRpe, profile?.goal, userState.situation, userState.confidence, readinessStatus, todayLog?.readiness_explain, vi]);
 
   const updateSet = (idx: number, field: keyof SetRow, value: string) => {
     setSets((prev) =>

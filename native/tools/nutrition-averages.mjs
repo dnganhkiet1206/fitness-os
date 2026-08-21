@@ -131,9 +131,20 @@ const want = (ok, message) => { if (!ok) problems.push(message); };
       'số ngày CÓ ĐẠM — đo được: người ăn 150 g mỗi ngày họ ăn, ghi 5/7 ngày, bị báo 107 g và ' +
       'nhận lời khuyên ăn thêm đạm, với ba ngày làm đủ ngưỡng là ba hàng chỉ có bước chân',
   );
+  /* The deload gate moved into `lib/readiness-week.ts` in Chain AH — the screen
+     imports React so the rule could not be driven in Node where it sat. The
+     invariant is unchanged and is followed rather than loosened: the screen must
+     still delegate, and the module it delegates to must still count the days the
+     mean was built from. */
+  const week = strip(read('src/lib/readiness-week.ts'));
   want(
-    /avgReadiness < 50 && readinessDays >= 3/.test(wr),
-    'weekly-review: khuyến nghị deload mở cổng bằng số hàng chứ không phải số ngày CÓ ĐIỂM SẴN SÀNG',
+    /deloadWarranted\(logs, avgReadiness, readinessDays\)/.test(wr),
+    'weekly-review: khuyến nghị deload không còn hỏi deloadWarranted với chính trung bình và số ngày ' +
+      'CÓ ĐIỂM của nó — cổng deload vừa rời khỏi dân số mà Chain AC ghim',
+  );
+  want(
+    /avgReadiness < 50 && readinessDays >= 3/.test(week),
+    'readiness-week: khuyến nghị deload mở cổng bằng số hàng chứ không phải số ngày CÓ ĐIỂM SẴN SÀNG',
   );
 
   /* A4 — the model is handed the average already taken over the right
