@@ -9,12 +9,16 @@
  * The source stays in the repository so a later pass starts from something
  * lossless rather than from the already-shrunk copy.
  *
- * ── why the white has to come off ──
+ * ── why the paper has to come off, whichever paper it is ──
  *
- * The app's background is `#070708`. The artwork is a glowing figure on
- * **white**. Dropped in as-is it is not a subtle backdrop, it is a bright white
- * rectangle in the middle of a near-black screen — the exact opposite of what
- * the layer is for.
+ * The app's background is `#070708`. The artwork has arrived on **white** and
+ * on **black**, and both need removing — white because it drops a bright
+ * rectangle into a near-black screen, black because `#000` is not `#070708` and
+ * a not-quite-black rectangle has visible straight edges down its sides.
+ *
+ * So the paper is measured at the corners, not assumed. Getting it wrong is not
+ * a subtle failure: keying white out of a black-backed picture erases the
+ * picture and keeps the background.
  *
  * ── and why the key is `min(r, g, b)` ──
  *
@@ -131,6 +135,20 @@ const corners = [
 ].map(([x, y]) => Jimp.intToRGBA(image.getPixelColor(x, y)));
 const alreadyKeyed = corners.every((c) => c.a < 8);
 
+/*
+  Which paper is it on?
+
+  The artwork has arrived both ways — a glow on white, and the same glow on
+  black — so the paper is measured rather than assumed. Guessing wrong is not a
+  subtle failure: keying white out of a black-backed image erases the entire
+  picture and leaves the background, which is as wrong as an image can be.
+
+  The corners are the sample for the same reason as above: they are where the
+  paper is, and no version of this artwork puts the figure in a corner.
+*/
+const corner = corners.reduce((sum, c) => sum + (c.r + c.g + c.b) / 3, 0) / corners.length;
+const onWhite = corner > 127;
+
 /* Never upscale. The source is the better picture by definition, and inventing
    pixels above it spends bytes on detail that was never drawn — on a layer
    whose whole purpose is to not be looked at closely. */
@@ -146,16 +164,38 @@ if (alreadyKeyed) {
   let cleared = 0;
   image.scan(0, 0, w, h, function (_x, _y, idx) {
     const d = this.bitmap.data;
-    const a = (255 - Math.min(d[idx], d[idx + 1], d[idx + 2])) / 255;
+    /*
+      Distance from the paper, and the two papers are mirror images.
+
+      On white, the surviving channel is the SMALLEST — white is the one colour
+      with no small channel, so a saturated speck always keeps one.
+      On black it is the LARGEST, for the mirror reason: black is the one colour
+      with no large channel, and any glow has one.
+    */
+    const a = onWhite
+      ? (255 - Math.min(d[idx], d[idx + 1], d[idx + 2])) / 255
+      : Math.max(d[idx], d[idx + 1], d[idx + 2]) / 255;
     if (a <= 0) {
       d[idx + 3] = 0;
       cleared++;
       return;
     }
-    /* Unmix the paper: C = F·a + 255·(1−a)  ⇒  F = (C − 255·(1−a)) / a */
-    const white = 255 * (1 - a);
+    /*
+      Unmix the paper, so the colour is the one that was drawn rather than the
+      one that was drawn plus paper:
+
+        on white   C = F·a + 255·(1−a)  ⇒  F = (C − 255·(1−a)) / a
+        on black   C = F·a +   0·(1−a)  ⇒  F = C / a
+
+      The black case matters more than it looks. A dim outer speck of
+      `(10,30,40)` is a *faint cyan*, not a dark grey-blue: leaving it
+      premultiplied would composite it at 16% of an already-dark colour and the
+      whole outer haze would go dead. Dividing restores it to the cyan it is,
+      seen faintly.
+    */
+    const paper = onWhite ? 255 * (1 - a) : 0;
     for (let k = 0; k < 3; k++) {
-      d[idx + k] = Math.max(0, Math.min(255, Math.round((d[idx + k] - white) / a)));
+      d[idx + k] = Math.max(0, Math.min(255, Math.round((d[idx + k] - paper) / a)));
     }
     /* Multiplied into whatever alpha the file already had rather than
        overwriting it: a source that is partly transparent already stays that
@@ -164,9 +204,9 @@ if (alreadyKeyed) {
     if (d[idx + 3] < 8) cleared++;
   });
   const pct = ((cleared / (w * h)) * 100).toFixed(1);
-  console.log(`khử nền trắng: ${pct}% số điểm ảnh trở thành trong suốt`);
+  console.log(`khử nền ${onWhite ? 'TRẮNG' : 'ĐEN'} (đo ở 4 góc): ${pct}% số điểm ảnh trở thành trong suốt`);
   if (cleared === 0) {
-    console.log('CẢNH BÁO: không điểm nào bị xoá — ảnh gốc có thể không có nền trắng');
+    console.log('CẢNH BÁO: không điểm nào bị xoá — 4 góc có thể không phải nền');
   }
 }
 /* 6 = RGBA. Stated rather than inherited, because the whole layer depends on
