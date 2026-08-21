@@ -1,4 +1,3 @@
-import MaskedView from '@react-native-masked-view/masked-view';
 import { useIsFocused } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
@@ -496,13 +495,13 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
         comments about a warm phone necessary.
       */}
       {box ? (
-        <MaskedView style={StyleSheet.absoluteFill} maskElement={<DustMask />}>
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
           {/*
-            Inside the mask, and first — so it is behind the specks and, more
-            importantly, so it is seen through the same vertical fade. Without
-            that, the figure ends wherever its box ends: a straight horizontal
-            edge across a picture that is otherwise all soft falloff, which is
-            the exact fault the mask was added to fix for the dust.
+            Inside the faded group, and first — so it is behind the specks and,
+            more importantly, so it is seen through the same vertical fade.
+            Without that, the figure ends wherever its box ends: a straight
+            horizontal edge across a picture that is otherwise all soft falloff,
+            which is the exact fault the fade was added to fix for the dust.
           */}
           <AuraFigure moving={moving} />
           {DUST.map((d) => (
@@ -514,7 +513,10 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
                they differ the canvas no longer lines up with what is on screen. */
             <DustField key={d.key} layer={d} height={box.h} width={box.w} moving={moving} />
           ))}
-        </MaskedView>
+          {/* Painted last, so it fades everything in this group and nothing
+              outside it — the pools keep their own falloff. */}
+          <EdgeFade />
+        </View>
       ) : null}
     </Animated.View>
   );
@@ -580,25 +582,53 @@ function AuraFigure({ moving }: { moving: boolean }) {
 }
 
 /**
- * The fade the dust is seen through.
+ * The fade the figure and the specks are seen through.
  *
- * Opaque across the middle so the field is unchanged where it is meant to be
- * read, and falling away over the last tenth at each end. `black` is *hide* and
- * `white` is *show* — a mask reads luminance, so the stops here are not colours
- * anybody sees.
+ * ── it was a mask, and a mask did not survive the web ──
+ *
+ * This was a `MaskedView` wrapping the same children. On iOS that works, and it
+ * is the more obviously correct tool: a luminance mask makes content genuinely
+ * transparent at the edges.
+ *
+ * `@react-native-masked-view/masked-view` ships this as its entire web build:
+ *
+ *     function MaskedView({ maskElement, ...props }) {
+ *       return React.createElement(View, props, maskElement);
+ *     }
+ *
+ * It drops `children` and renders **the mask itself**. So on web the specks and
+ * the figure were not dimmed at the edges — they were not drawn at all — and
+ * the mask's own white gradient became a visible white block on a near-black
+ * screen. It had been that way since the mask was introduced.
+ *
+ * ── and why a scrim is not a workaround ──
+ *
+ * This layer sits directly on `colors.background`, opaque, with nothing between.
+ * Hiding content by taking its alpha away and hiding it by painting the
+ * background colour over it produce *the same pixels* on that background — not
+ * approximately, exactly. For a speck of colour `D` at alpha `a` under a fade of
+ * strength `f`, both routes land on `(1−f)·a·D + (1−(1−f)·a)·bg`.
+ *
+ * So the mask bought nothing here that a gradient of the background colour does
+ * not, and it cost a native dependency, an offscreen composite per frame, and
+ * a layer that could not be seen by the one tool this project uses to look at
+ * its own screens.
+ *
+ * Opaque at the very top and bottom, gone by a tenth in from each end — the same
+ * shape the mask had, inverted, since this paints where that hid.
  */
-function DustMask() {
+function EdgeFade() {
   return (
-    <Svg style={StyleSheet.absoluteFill}>
+    <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
-        <SvgLinearGradient id="dustFade" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#000" />
-          <Stop offset="0.10" stopColor="#fff" />
-          <Stop offset="0.90" stopColor="#fff" />
-          <Stop offset="1" stopColor="#000" />
+        <SvgLinearGradient id="auraEdgeFade" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={colors.background} stopOpacity={1} />
+          <Stop offset="0.10" stopColor={colors.background} stopOpacity={0} />
+          <Stop offset="0.90" stopColor={colors.background} stopOpacity={0} />
+          <Stop offset="1" stopColor={colors.background} stopOpacity={1} />
         </SvgLinearGradient>
       </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill="url(#dustFade)" />
+      <Rect x="0" y="0" width="100%" height="100%" fill="url(#auraEdgeFade)" />
     </Svg>
   );
 }

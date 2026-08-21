@@ -143,16 +143,49 @@ const num = (re, what) => {
   }
 }
 
-/* ── 3. it is inside the mask ── */
+/* ── 3. it is inside the faded group, and the fade comes last ── */
 {
-  const mask = code.match(/<MaskedView[\s\S]*?<\/MaskedView>/);
-  if (!mask) {
-    problems.push('không tìm thấy khối MaskedView — bộ quét hỏng');
-  } else if (!/<AuraFigure\b/.test(mask[0])) {
+  const group = code.match(/\{box \? \([\s\S]*?\) : null\}/);
+  if (!group) {
+    problems.push('không tìm thấy nhóm được làm mờ mép — bộ quét hỏng');
+  } else {
+    const g = group[0];
+    if (!/<AuraFigure\b/.test(g)) {
+      problems.push(
+        'AuraFigure nằm NGOÀI nhóm được làm mờ mép — nó sẽ kết thúc ở đúng nơi cái hộp của nó kết ' +
+          'thúc, tức một đường ngang thẳng băng cắt qua một bức tranh mà mọi thứ khác đều mờ dần. ' +
+          'Đây đúng là lỗi mà lớp mờ đã được thêm vào để sửa cho phần bụi',
+      );
+    }
+    if (!/<EdgeFade \/>/.test(g)) {
+      problems.push('nhóm không còn lớp EdgeFade — hình và bụi sẽ cắt ngang ở mép hộp');
+    } else if (g.lastIndexOf('<EdgeFade') < g.lastIndexOf('<AuraFigure')) {
+      problems.push(
+        'EdgeFade được vẽ TRƯỚC AuraFigure — nó là một lớp PHỦ màu nền, nên phải nằm cuối cùng để ' +
+          'phủ lên thứ nó cần làm mờ; vẽ trước thì nó bị hình đè lên và không làm gì cả',
+      );
+    }
+  }
+
+  /*
+    ── and the mask must not come back ──
+
+    `@react-native-masked-view/masked-view` ships a web build that is one line:
+    it drops `children` and renders the MASK. So on web this layer was not
+    dimmed at its edges, it was not drawn at all, and the mask's own white
+    gradient became a white block on a near-black screen.
+
+    That is bad on its own, and it is worse for this project than for most: the
+    only tool that looks at these screens is a headless browser, so a layer
+    rendered through `MaskedView` is a layer nothing can check. This rule exists
+    because the obvious future edit — "the fade should really be a mask" — is
+    correct on iOS and silently blinds the harness.
+  */
+  if (/MaskedView/.test(code)) {
     problems.push(
-      'AuraFigure nằm NGOÀI MaskedView — nó sẽ kết thúc ở đúng nơi cái hộp của nó kết thúc, tức một ' +
-        'đường ngang thẳng băng cắt qua một bức tranh mà mọi thứ khác đều mờ dần. Đây đúng là lỗi mà ' +
-        'mặt nạ đã được thêm vào để sửa cho phần bụi',
+      'assistant-aura.tsx dùng lại MaskedView. Bản web của thư viện đó vứt bỏ children và render ' +
+        'CHÍNH cái mặt nạ, nên lớp này vừa biến mất khỏi web vừa để lại một khối trắng — và live.mjs, ' +
+        'thứ duy nhất nhìn được các màn này, sẽ không kiểm được gì ở đây nữa',
     );
   }
 }
