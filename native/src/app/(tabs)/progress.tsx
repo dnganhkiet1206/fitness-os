@@ -13,6 +13,7 @@ import Animated, {
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { Segmented } from '@/components/ascnd/segmented';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -405,17 +406,7 @@ export default function ProgressScreen() {
         card, not under a heading called More.
       */>
       {/* Segmented tabs (web TabsList) */}
-      <View style={styles.tabBar}>
-        {tabs.map((t) => (
-          <Pressable
-            key={t.key}
-            style={[styles.tab, tab === t.key && styles.tabActive]}
-            onPress={() => { Haptics.selectionAsync(); setTab(t.key); }}>
-            <Icon icon={t.icon} size={13} color={tab === t.key ? colors.foreground : colors.mutedForeground} />
-            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <Segmented value={tab} onChange={setTab} options={tabs} />
 
       {/*
         `—` and `0 records` and "not enough data" are all true of an account
@@ -929,30 +920,11 @@ const styles = StyleSheet.create({
   },
 
   // Segmented tabs (web TabsList bg-secondary/60)
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(24,24,27,0.6)',
-    borderRadius: radius.sm,
-    padding: 3,
-    gap: 3,
-  },
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
      without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
      floor, and on a page with room to spare it also stops the row reading as
      an afterthought. */
-  tab: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.sm - 3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-  },
-  tabActive: { backgroundColor: colors.accent },
-  tabText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
-  tabTextActive: { color: colors.foreground },
 
   // Stat tiles
   tileRow: { flexDirection: 'row', gap: spacing.sm },

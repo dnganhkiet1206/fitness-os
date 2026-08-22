@@ -1220,23 +1220,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: spacing.sm,
   },
-  tabRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.secondary,
-    borderRadius: radius.full,
-    padding: 3,
-    marginBottom: spacing.md,
-  },
-  tab: {
-    flex: 1,
-    height: 32,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabActive: { backgroundColor: colors.card },
-  tabText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  tabTextActive: { color: colors.foreground },
   sheetScroll: { paddingBottom: spacing.lg },
   shopStage: { alignItems: 'center', paddingBottom: spacing.sm },
 

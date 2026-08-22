@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { Segmented } from '@/components/ascnd/segmented';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { BAND_ASPECT } from '@/components/ascnd/shop/shop-camera';
@@ -304,27 +305,20 @@ export default function ShopScreen() {
         />
       </View>
 
-      <View style={styles.tabRow}>
-        {(
-          [
-            ['overview', i18n.nRoomOverview],
-            ['stage', i18n.nRoomStageSkins],
-            ['outfit', i18n.nRoomOutfits],
-            ['closet', i18n.nRoomCloset],
-          ] as const
-        ).map(([key, label]) => (
-          <Pressable
-            key={key}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setTab(key);
-              setIndex(0);
-            }}
-            style={[styles.tab, tab === key && styles.tabActive]}>
-            <Text style={[styles.tabText, tab === key && styles.tabTextActive]}>{label}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <Segmented
+        value={tab}
+        onChange={(k) => {
+          setTab(k);
+          setIndex(0);
+        }}
+        compact
+        options={[
+          { key: 'overview' as const, label: i18n.nRoomOverview },
+          { key: 'stage' as const, label: i18n.nRoomStageSkins },
+          { key: 'outfit' as const, label: i18n.nRoomOutfits },
+          { key: 'closet' as const, label: i18n.nRoomCloset },
+        ]}
+      />
 
       {tab === 'outfit' || tab === 'closet' ? (
         <CategoryRow
@@ -584,22 +578,6 @@ const styles = StyleSheet.create({
      without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
      floor, and on a page with room to spare it also stops the row reading as
      an afterthought. */
-  tab: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabActive: { backgroundColor: colors.card },
-  tabRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.secondary,
-    borderRadius: radius.full,
-    padding: 3,
-    marginBottom: spacing.md,
-  },
-  tabText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
   overviewHint: {
     ...type.footnote,
     color: colors.mutedForeground,
@@ -607,5 +585,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
   },
-  tabTextActive: { color: colors.foreground },
 });

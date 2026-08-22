@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Segmented } from '@/components/ascnd/segmented';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings } from '@/hooks/use-app-settings';
@@ -27,19 +28,7 @@ export default function LegalScreen() {
 
   return (
     <Screen back title={legal.pageTitle}>
-      <View style={styles.tabBar}>
-        {tabs.map((t) => (
-          <Pressable
-            key={t.key}
-            style={[styles.tab, tab === t.key && styles.tabActive]}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setTab(t.key);
-            }}>
-            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <Segmented value={tab} onChange={setTab} options={tabs} />
 
       <Text style={styles.docTitle}>{doc.title}</Text>
 
@@ -63,16 +52,6 @@ export default function LegalScreen() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: { flexDirection: 'row', backgroundColor: colors.secondary, borderRadius: radius.md, padding: 3, gap: 3 },
-  /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
-     screen — and `tap-targets.mjs` never saw it, because it skipped anything
-     without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
-     floor, and on a page with room to spare it also stops the row reading as
-     an afterthought. */
-  tab: { flex: 1, height: 44, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  tabActive: { backgroundColor: colors.primary },
-  tabText: { ...type.footnote, color: colors.secondaryForeground, fontWeight: '600' },
-  tabTextActive: { color: colors.primaryForeground },
   docTitle: { ...type.title, color: colors.foreground, marginTop: spacing.xs },
   warnCard: { borderColor: colors.readinessRed, borderWidth: 1 },
   blockTitle: { ...type.headline, color: colors.foreground, marginBottom: 4 },

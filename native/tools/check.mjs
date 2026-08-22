@@ -170,6 +170,13 @@ const STEPS = [
   ['trò chuyện coach', 'node', ['tools/coach-chat.mjs']],
   ['chi phí aura', 'node', ['tools/aura-cost.mjs']],
   ['luật chuyển động', 'node', ['tools/motion.mjs']],
+  /*
+    Five screens each built the same segmented control by hand, and none of them
+    moved: pressing a segment cut the highlight from one box to the next between
+    frames. One of the five had already rotted — the mascot room kept all its
+    tab styles after the markup using them was gone.
+  */
+  ['segmented', 'node', ['tools/segmented.mjs']],
   ['nguồn sức khoẻ', 'node', ['tools/health-source.mjs']],
   /*
     The Apple Health sleep and workout import had never written a row. The

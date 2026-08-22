@@ -12,6 +12,7 @@ import { NutritionCard, WaterWidget } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
+import { Segmented } from '@/components/ascnd/segmented';
 import { Icon } from '@/components/ascnd/icon';
 import { MealLogActions } from '@/components/ascnd/meal-log-actions';
 import { ShortcutRow } from '@/components/ascnd/shortcut-row';
@@ -399,21 +400,15 @@ export default function NutritionScreen() {
       */}
       <Screen title={i18n.nutritionTitle}>
         {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
-        <View style={styles.tabBar}>
-          {[
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          options={[
             { key: 'today' as const, label: lang === 'vi' ? 'Hôm nay' : 'Today', icon: ClipboardList },
             { key: 'foods' as const, label: i18n.nutritionFoods, icon: Search },
             { key: 'plans' as const, label: i18n.nutritionMealPlan, icon: Utensils },
-          ].map((t) => (
-            <Pressable
-              key={t.key}
-              style={[styles.tab, tab === t.key && styles.tabActive]}
-              onPress={() => { Haptics.selectionAsync(); setTab(t.key); }}>
-              <Icon icon={t.icon} size={13} color={tab === t.key ? colors.foreground : colors.mutedForeground} />
-              <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
-            </Pressable>
-          ))}
-        </View>
+          ]}
+        />
 
         {tab === 'today' ? (
           <>
@@ -693,30 +688,11 @@ const styles = StyleSheet.create({
     color: colors.mutedForeground,
   },
 
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(24,24,27,0.6)',
-    borderRadius: radius.sm,
-    padding: 3,
-    gap: 3,
-  },
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
      without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
      floor, and on a page with room to spare it also stops the row reading as
      an afterthought. */
-  tab: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.sm - 3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-  },
-  tabActive: { backgroundColor: colors.accent },
-  tabText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
-  tabTextActive: { color: colors.foreground },
 
   searchRow: { flexDirection: 'row', gap: spacing.sm },
   /* 30pt on its own, so hitSlop 8 takes it to 46 — past Apple's 44pt floor

@@ -468,6 +468,56 @@ async function pressEverything(page, label, problems) {
  */
 const SCENARIOS = [
   {
+    /*
+      An animation is the one thing a screenshot cannot answer.
+
+      Every rule about the segmented control reads the source: it says
+      `translateX`, it says `withTiming`, it does not animate layout. All of
+      that can be true of a control that still jumps, and this project has been
+      caught twice by exactly that gap — a shadow whose props were correct and
+      drew nothing, and a companion whose opacity multiplier was read but never
+      written. So this presses the segment and watches where the pill actually
+      is, twice, while it should still be moving.
+    */
+    name: 'segmented: viên chọn ĐI sang mục mới chứ không nhảy cóc',
+    route: '/nutrition', mode: 'full',
+    async run(page) {
+      /* The pill is the one absolutely-positioned child of the row that is not
+         a segment — found by walking up from a label rather than by a test id,
+         so this keeps working if the markup is rearranged. */
+      const pillX = () =>
+        page.evaluate(() => {
+          const label = [...document.querySelectorAll('div')]
+            .find((d) => d.textContent?.trim() === 'Today' && d.getAttribute('role') === 'tab');
+          const row = label?.parentElement;
+          if (!row) return null;
+          const pill = [...row.children].find((c) => getComputedStyle(c).position === 'absolute');
+          return pill ? pill.getBoundingClientRect().x : null;
+        });
+
+      const start = await pillX();
+      if (start == null) return 'không tìm thấy viên chọn trong hàng segmented';
+
+      await page.getByRole('tab', { name: 'Foods' }).click();
+      /* Well inside the 220ms slide. If the control jumps, this already reads
+         the destination; if it travels, it is somewhere between. */
+      await page.waitForTimeout(70);
+      const mid = await pillX();
+      await page.waitForTimeout(600);
+      const end = await pillX();
+
+      if (mid == null || end == null) return 'mất dấu viên chọn giữa chừng';
+      if (Math.abs(end - start) < 4) return `bấm sang Foods mà viên chọn không dịch (${start} → ${end})`;
+      if (Math.abs(mid - end) < 2) {
+        return `viên chọn NHẢY thẳng tới đích: sau 70ms đã ở ${mid}, đích là ${end} — không có chuyển động`;
+      }
+      if (Math.abs(mid - start) < 2) {
+        return `viên chọn chưa nhúc nhích sau 70ms (${mid}) — hoặc nó không chạy, hoặc quá chậm`;
+      }
+      return null;
+    },
+  },
+  {
     name: 'màn đăng nhập: nút mờ khi thiếu trường, sáng khi đủ',
     route: '/', mode: 'signedout',
     async run(page) {

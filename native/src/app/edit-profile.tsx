@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 
+import { Segmented } from '@/components/ascnd/segmented';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -640,24 +641,6 @@ function Field({ label, children, style }: { label: string; children: React.Reac
   );
 }
 
-function Segmented({ options, value, onChange }: { options: { key: string; label: string }[]; value: string; onChange: (v: string) => void }) {
-  return (
-    <View style={styles.segmented}>
-      {options.map((o) => (
-        <Pressable
-          key={o.key}
-          style={[styles.segment, value === o.key && styles.segmentActive]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            onChange(o.key);
-          }}>
-          <Text style={[styles.segmentText, value === o.key && styles.segmentTextActive]}>{o.label}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
 function ChipGrid({ options, value, onChange }: { options: { key: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
     <View style={styles.chipGrid}>
@@ -738,22 +721,11 @@ const styles = StyleSheet.create({
   },
   recalcText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
   pickerWrap: { alignItems: 'flex-start' },
-  segmented: {
-    flexDirection: 'row',
-    backgroundColor: colors.secondary,
-    borderRadius: radius.md,
-    padding: 3,
-    gap: 3,
-  },
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
      without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
      floor, and on a page with room to spare it also stops the row reading as
      an afterthought. */
-  segment: { flex: 1, height: 44, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  segmentActive: { backgroundColor: colors.primary },
-  segmentText: { ...type.footnote, color: colors.secondaryForeground, fontWeight: '600' },
-  segmentTextActive: { color: colors.primaryForeground },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   gridChip: {
     paddingHorizontal: spacing.md,
