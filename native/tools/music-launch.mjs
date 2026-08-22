@@ -136,6 +136,34 @@ const app = JSON.parse(read('app.json')).expo;
   }
 }
 
+/* ── 2b. and it is on the screens where somebody is training ──
+
+   The row can stop existing without anything failing: delete the two lines
+   that mount it and the component still compiles, still passes every rule
+   above, and is simply nowhere. `tools/linked.mjs` catches an export nobody
+   calls, which is why this is about *which* screens rather than merely one.
+
+   Two, and they are different moments. `/log-workout` is where a session gets
+   recorded, which for many people is afterwards. `/routine` is the panel you
+   tick sets off on while you are in the middle of it — the screen where "put
+   something on" is a live thought. A shortcut that only existed on the second
+   one would miss the person who opens the log first; only on the first, the
+   person following a plan. */
+{
+  const WHERE = [
+    ['src/app/log-workout.tsx', 'màn ghi buổi tập'],
+    ['src/app/routine.tsx', 'màn tick set trong lúc tập'],
+  ];
+  for (const [file, what] of WHERE) {
+    if (!/<MusicLaunch\b/.test(strip(read(file)))) {
+      problems.push(
+        `${file} (${what}) không còn gắn <MusicLaunch />. Lối tắt có thể biến mất mà không gì hỏng: ` +
+          'component vẫn biên dịch, vẫn qua mọi luật khác, và chỉ đơn giản là không ở đâu cả',
+      );
+    }
+  }
+}
+
 /* ── 3. it does not pretend to be a player ──
 
    Spotify's own documentation: "it isn't possible to play Spotify audio
@@ -167,7 +195,7 @@ console.log(
     '(thiếu khai hoặc viết hoa thì canOpenURL trả FALSE trong im lặng, và hàng nút không bao giờ hiện ' +
     'trên bất kỳ máy nào — không lỗi, không cảnh báo, tsc vẫn sạch); không khai thừa scheme nào app ' +
     'không dùng; chỉ app THẬT SỰ đã cài mới được mời, không có app nào thì không vẽ gì cả; cả ' +
-    'canOpenURL lẫn openURL đều có .catch; và lớp này KHÔNG giả vờ làm trình phát — Spotify không cho ' +
+    'canOpenURL lẫn openURL đều có .catch; nó có mặt ở CẢ HAI màn người ta đang tập (ghi buổi tập, và bảng tick set); và lớp này KHÔNG giả vờ làm trình phát — Spotify không cho ' +
     'phát audio của họ trong app bên thứ ba, còn Apple Music cần entitlement, khoá ký, quyền và gói ' +
     'đang hoạt động',
 );

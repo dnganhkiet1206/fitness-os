@@ -141,6 +141,10 @@ const ROUTES = [
     screen it sits on.
   */
   '/log-workout',
+  /* And the panel people tick sets off on while they are training — the other
+     screen the music shortcut lives on, and the one a plan is actually read
+     from. It was missing for the same reason `/log-workout` was. */
+  '/routine',
 ];
 
 // ── build & serve ─────────────────────────────────────────────────────────

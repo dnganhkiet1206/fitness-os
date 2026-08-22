@@ -5,6 +5,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 're
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { MusicLaunch } from '@/components/ascnd/music-launch';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { DayPlan } from '@/components/ascnd/day-plan';
@@ -248,6 +249,21 @@ export default function RoutineScreen() {
           </View>
         );
       })()}
+
+      {/*
+        The shortcut out to music, on the screen where somebody is actually
+        training.
+
+        `/log-workout` has one too, but that screen is where a session gets
+        *recorded* — which for a lot of people is afterwards. This is the panel
+        you tick sets off on while you are in the middle of it, so it is the
+        screen where "put something on" is a live thought rather than a
+        retrospective one.
+
+        Only on a day that has work in it. A music row under a rest day is
+        offering to soundtrack nothing.
+      */}
+      {!byDay.get(selected)?.is_rest && byDay.get(selected)?.template_id ? <MusicLaunch /> : null}
 
       {/*
         Keyed by the day.

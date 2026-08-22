@@ -47,7 +47,8 @@ export type GlyphName =
   | 'clock'
   | 'trash'
   | 'user'
-  | 'alert';
+  | 'alert'
+  | 'dumbbell';
 
 const disc = (cx: number, cy: number, r: number) =>
   `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
@@ -115,6 +116,14 @@ const PATHS: Record<GlyphName, string> = {
     'M12 2.9c.78 0 1.5.42 1.89 1.1l8.4 14.6A2.18 2.18 0 0 1 20.4 21.9H3.6a2.18 2.18 0 0 1-1.89-3.3l8.4-14.6A2.18 2.18 0 0 1 12 2.9Z' +
     'M12 7.8a1.15 1.15 0 0 0-1.15 1.2l.3 4.9a.85.85 0 0 0 1.7 0l.3-4.9A1.15 1.15 0 0 0 12 7.8Z' +
     'M12 16.4a1.3 1.3 0 1 0 0 2.6a1.3 1.3 0 1 0 0-2.6Z',
+  /* Two plates a side and a bar between them.
+     Drawn rather than borrowed because the set had no training mark at all:
+     `pulse` is training *load*, which is a different idea, and the exercise
+     library wanted something literal. Five rounded rectangles, unioned — the
+     overlap between bar and inner plates is deliberate and `nonzero` fill
+     resolves it into one solid shape. */
+  dumbbell:
+    'M2.7 8.6H3.1A1.1 1.1 0 0 1 4.2 9.7V14.3A1.1 1.1 0 0 1 3.1 15.4H2.7A1.1 1.1 0 0 1 1.6 14.3V9.7A1.1 1.1 0 0 1 2.7 8.6ZM6.2 6H6.6A1.3 1.3 0 0 1 7.9 7.3V16.7A1.3 1.3 0 0 1 6.6 18H6.2A1.3 1.3 0 0 1 4.9 16.7V7.3A1.3 1.3 0 0 1 6.2 6ZM8.6 10.7H15.4A1.2 1.2 0 0 1 16.6 11.9V12.1A1.2 1.2 0 0 1 15.4 13.3H8.6A1.2 1.2 0 0 1 7.4 12.1V11.9A1.2 1.2 0 0 1 8.6 10.7ZM17.4 6H17.8A1.3 1.3 0 0 1 19.1 7.3V16.7A1.3 1.3 0 0 1 17.8 18H17.4A1.3 1.3 0 0 1 16.1 16.7V7.3A1.3 1.3 0 0 1 17.4 6ZM20.9 8.6H21.3A1.1 1.1 0 0 1 22.4 9.7V14.3A1.1 1.1 0 0 1 21.3 15.4H20.9A1.1 1.1 0 0 1 19.8 14.3V9.7A1.1 1.1 0 0 1 20.9 8.6Z',
 };
 
 /**
@@ -146,6 +155,10 @@ export const GLYPH_TINT: Record<GlyphName, readonly [string, string]> = {
   trash: ['#ff8fa8', '#ff3b5c'],
   user: ['#e8e8ee', '#a8afbd'],
   alert: ['#fff0a8', '#ffd93d'],
+  /* Steel. Nothing else in the set owns a cool grey-blue, and it is what the
+     object is made of — the one glyph here where the literal reading is also
+     the distinctive one. */
+  dumbbell: ['#cfe0f5', '#7f9cc4'],
 };
 
 /** Glyphs whose shape needs a hole punched through it. */

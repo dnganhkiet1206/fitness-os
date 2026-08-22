@@ -2,12 +2,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { CalendarDays, ChevronDown, ChevronUp, Dumbbell, Plus } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Dumbbell, Plus } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { rise } from '@/lib/entrance';
 
+import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -319,22 +320,24 @@ export default function WorkoutsScreen() {
         */}
         <PressScale
           accessibilityRole="button"
-          style={styles.outlineBtn}
+          accessibilityLabel={i18n.workoutsWeeklyPlan}
+          style={[styles.outlineBtn, { borderColor: `${GLYPH_TINT.calendar[1]}3d` }]}
           onPress={() => {
             Haptics.selectionAsync();
             router.push('/routine');
           }}>
-          <Icon icon={CalendarDays} size={14} color={colors.metricBlue} />
+          <Glyph name="calendar" size={16} />
           <Text style={styles.outlineBtnText}>{i18n.workoutsWeeklyPlan}</Text>
         </PressScale>
-        <View style={styles.actionButtons}>
-          <PressScale
-            style={styles.outlineBtn}
+        <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.workoutsExercises}
+            style={[styles.outlineBtn, { borderColor: `${GLYPH_TINT.dumbbell[1]}3d` }]}
             onPress={() => {
               Haptics.selectionAsync();
               router.push('/exercises');
             }}>
-            <Icon icon={Dumbbell} size={14} />
+            <Glyph name="dumbbell" size={16} />
             <Text style={styles.outlineBtnText}>{i18n.workoutsExercises}</Text>
           </PressScale>
           <PressScale
@@ -346,17 +349,24 @@ export default function WorkoutsScreen() {
             <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
             <Text style={styles.primaryBtnText}>{i18n.workoutsCreateNew}</Text>
           </PressScale>
-        </View>
       </View>
 
       {/* Log workout — native carries this next to templates for daily use */}
+      {/*
+        The one people press daily, and it looked like the least important
+        thing on the page: a grey `+` on a full-width bar with no colour in it
+        at all. It carries the same `pulse` mark that "Log workout" carries on
+        Today, so the two are recognisably the same act on two screens.
+      */}
       <PressScale
-        style={styles.logChip}
+        accessibilityRole="button"
+        accessibilityLabel={i18n.nLogWorkoutBtn}
+        style={[styles.logChip, { borderColor: `${GLYPH_TINT.pulse[1]}52` }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/log-workout');
         }}>
-        <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
+        <Glyph name="pulse" size={17} />
         <Text style={styles.logChipText}>{i18n.nLogWorkoutBtn}</Text>
       </PressScale>
 
@@ -477,6 +487,15 @@ const styles = StyleSheet.create({
      tools belonging to the list below them. With the week in front, the row is
      the page's three doorways and reads left to right like one, so it starts
      at the left margin and wraps from there. */
+  /*
+    Three siblings, wrapping on their own.
+
+    Two of them used to sit inside a grouping `<View>`, which has no styling of
+    its own and one visible effect: the group is a single flex item, so it wraps
+    as a block. With the pills at 44pt that put one button on the first row and
+    two on the second, leaving a long empty gap at the top of the tab. Flat,
+    they pack — two, then one.
+  */
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -484,41 +503,55 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   sectionLabel: { fontSize: 14, fontWeight: '600', color: colors.foreground },
-  actionButtons: { flexDirection: 'row', gap: spacing.sm },
+  /*
+    Pills, and 44 points tall.
+
+    These were 34 — ten points under Apple's floor for a touch target, on the
+    three ways into this tab. `tools/tap-targets.mjs` exists in this repository
+    because of that exact number, and its note quotes the same 44.
+
+    The border colour is passed in per button, from the glyph's own tint, the
+    way the assistant's chips work and the way Today's log row now works. One
+    rule for "a tinted pill you tap", three screens, no fourth palette.
+  */
   outlineBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    height: 34,
-    paddingHorizontal: spacing.md - 4,
-    borderRadius: radius.sm,
+    gap: 7,
+    height: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(24,24,27,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  outlineBtnText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
+  outlineBtnText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  /* The filled one keeps its fill — it is the only button on the page that
+     makes something new — but takes the same pill and the same height, so the
+     row reads as three of a kind with one of them emphasised. */
   primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    height: 34,
-    paddingHorizontal: spacing.md - 4,
-    borderRadius: radius.sm,
+    gap: 6,
+    height: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
   },
-  primaryBtnText: { fontSize: 13, fontWeight: '600', color: colors.primaryForeground },
+  primaryBtnText: { ...type.footnote, fontWeight: '600', color: colors.primaryForeground },
+  /* Full width, 52 tall, and a shade more border than the pills above it.
+     It is the thing this tab is for, and it had been the flattest control on
+     the page. */
   logChip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    height: 36,
-    borderRadius: radius.sm,
+    gap: 8,
+    height: 52,
+    borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.3)',
-    backgroundColor: 'rgba(24,24,27,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  logChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
+  logChipText: { ...type.headline, fontWeight: '600', color: colors.foreground },
   libSection: { gap: spacing.sm },
   libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   libAll: { ...type.footnote, color: colors.primary },
