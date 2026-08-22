@@ -16,6 +16,7 @@ import { BottomTabInset } from '@/constants/expo-template-theme';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { useCelebrationHead } from '@/lib/celebration-queue';
 import { useKoaContext } from '@/hooks/use-koa-context';
+import { useKoaReaction } from '@/lib/koa-stage';
 import { useMascotIdentity, useMascotSettings } from '@/hooks/use-mascot';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { baseEmotion } from '@/lib/mascot-emotion';
@@ -77,8 +78,31 @@ const SIZE = 46;
  */
 const BOTTOM_RESERVE = BottomTabInset;
 
-/** One travel, slow enough to read as walking rather than snapping. */
-const TRAVEL_MS = 900;
+/**
+ * How long a move takes, and why it is not the 900ms it started at.
+ *
+ * Nielsen Norman Group put the usable range at **100–500ms**, with 400 reserved
+ * for large movements, and are blunt about the far end: past 500ms animations
+ * "start to feel like a real drag for users — they become cumbersome and
+ * annoying." A character ambling for nearly a second is not premium, it is
+ * slow, and it is slow in the corner of your eye while you are trying to read.
+ *
+ * The easing changed with it. This was `inOut`, which starts slowly — so the
+ * move began with a lag before anything happened. NN/g's guidance for an
+ * element moving into place is **ease-out**: "starts quickly but slows down…
+ * makes the animation feel responsive, but allows the eye time to focus on the
+ * element as it comes to rest." That is exactly the two things this movement
+ * has to do at once.
+ */
+const TRAVEL_MS = 420;
+
+/**
+ * Surfacing, when you arrive on a tab where Koa lives.
+ *
+ * Longer than a move, because NN/g notes entrances need more time than exits —
+ * something appearing has to be noticed, something leaving only has to go.
+ */
+const SURFACE_MS = 520;
 
 /**
  * The tabs the companion stands on — a list of where it *is*, not of where it
@@ -135,8 +159,23 @@ export function KoaCompanion() {
   const { enabled, mascot } = useMascotIdentity();
   const { companion } = useMascotSettings();
   const koa = useKoaContext();
+  /*
+    ── the character is tied to what you just did ──
+
+    Duolingo's own account of their characters is that they are anchored to the
+    exercise: they speak the sentence being translated and they animate when the
+    answer is right. That is the difference between a companion and an ornament,
+    and it was what this file was missing — Koa stood on the Nutrition tab with
+    a mood and did nothing at all when you logged a meal.
+
+    `useKoaReaction` is the store `koa-stage` already fills whenever something
+    real happens, and reading it is free: a `useSyncExternalStore` snapshot, no
+    query, and non-destructive, so Today's figure still gets its own copy. `n`
+    is monotonic, which is what lets a genuinely new event be told from a repeat.
+  */
+  const reaction = useKoaReaction();
   const celebrating = useCelebrationHead();
-  const emotion = baseEmotion({
+  const settled = baseEmotion({
     mood: koa.mood,
     streak: koa.streak,
     hour: koa.hour,
@@ -146,7 +185,21 @@ export function KoaCompanion() {
        in the corner there would be the second one. */
     onWorkoutScreen: false,
   });
+
+  /*
+    What just happened outranks how the day has been going, for as long as
+    `koa-stage` keeps it — it clears itself, so this reverts without a timer of
+    its own. No bubble either way: being *seen* reacting and *speaking* are
+    different things, and only the second one is rationed.
+  */
+  const emotion = reaction?.decision.emotion ?? settled;
   const reduceMotion = useReducedMotion();
+
+  const hidden =
+    !enabled ||
+    !companion ||
+    !!celebrating ||
+    !COMPANION_ROUTES.includes(pathname);
 
   const [box, setBox] = useState<{ width: number; height: number } | null>(null);
   const [perchId, setPerchId] = useState<PerchId | null>(null);
@@ -175,8 +228,15 @@ export function KoaCompanion() {
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const scale = useSharedValue(1);
-  /* Placed before it is shown, so the first appearance is not a slide in from
-     the corner of the screen. */
+  /*
+    0 while it is still under the edge, 1 once it has surfaced.
+
+    Multiplied into the perch's own `rise`, so arriving on a tab is the
+    character coming *up* out of the bottom edge rather than appearing already
+    standing there. It is the same motion the mood already uses, which is why it
+    needs no new art and reads as the same creature rather than as a transition.
+  */
+  const surfaced = useSharedValue(0);
   const placed = useRef(false);
 
   useEffect(() => {
@@ -198,11 +258,37 @@ export function KoaCompanion() {
       placed.current = true;
       return;
     }
-    const timing = { duration: TRAVEL_MS, easing: Easing.inOut(Easing.cubic) };
+    const timing = { duration: TRAVEL_MS, easing: Easing.out(Easing.cubic) };
     tx.value = withTiming(l, timing);
     ty.value = withTiming(t, timing);
     scale.value = withTiming(perch.scale, timing);
   }, [emotion, box, perchId, reduceMotion, tx, ty, scale]);
+
+  /*
+    Surface on arrival.
+
+    Written as an effect on `hidden` rather than as an entrance on mount,
+    because the component stays mounted while you move between the tabs it
+    lives on — there it should walk from one perch to the next, not dive and
+    resurface. It only comes up out of the edge when it has actually been away.
+
+    Leaving is a cut, not an animation, and that is deliberate: `hidden` returns
+    `null` on the same render, so the view is gone before a single frame of an
+    exit could draw. Easing it down would be code describing something nothing
+    can see. Setting it flat still has a real job — it is what makes the *next*
+    arrival start from under the edge instead of from wherever it left off.
+  */
+  useEffect(() => {
+    if (hidden) {
+      surfaced.value = 0;
+      return;
+    }
+    if (reduceMotion) {
+      surfaced.value = 1;
+      return;
+    }
+    surfaced.value = withTiming(1, { duration: SURFACE_MS, easing: Easing.out(Easing.cubic) });
+  }, [hidden, reduceMotion, surfaced]);
 
   /*
     Gone while you are reading, back when you stop.
@@ -216,15 +302,14 @@ export function KoaCompanion() {
   const fade = useDerivedValue(() => tabBarVisible.value);
 
   const style = useAnimatedStyle(() => ({
-    opacity: fade.value,
-    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
+    opacity: fade.value * surfaced.value,
+    transform: [
+      { translateX: tx.value },
+      /* Still below the edge at `surfaced` 0, at its perch by 1. */
+      { translateY: ty.value + SIZE * (1 - surfaced.value) },
+      { scale: scale.value },
+    ],
   }));
-
-  const hidden =
-    !enabled ||
-    !companion ||
-    !!celebrating ||
-    !COMPANION_ROUTES.includes(pathname);
 
   if (hidden) return null;
 

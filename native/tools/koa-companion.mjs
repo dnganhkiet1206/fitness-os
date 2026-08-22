@@ -157,6 +157,37 @@ const code = strip(read(FILE));
   }
 }
 
+/* ── 4b. every shared value the style reads is actually written ──
+
+   Caught while writing this: `surfaced` was multiplied into the opacity and
+   into the translate, and the effect meant to set it never landed in the file.
+   `tsc` was clean, every other rule here was green, and the companion was
+   permanently invisible — a shared value that starts at 0 and is never assigned
+   silently multiplies the whole character away.
+
+   Nothing throws on that, and nothing looks wrong in review. The only two
+   things that would have found it are a rendered screenshot and this. */
+{
+  const declared = [...code.matchAll(/const (\w+) = useSharedValue\(/g)].map((m) => m[1]);
+  const styleBlock = code.match(/useAnimatedStyle\(\(\) => \(\{[\s\S]*?\}\)\)/);
+  if (!styleBlock) {
+    problems.push(`không tìm thấy useAnimatedStyle trong ${FILE} — bộ quét hỏng`);
+  }
+  for (const name of declared) {
+    const readInStyle = styleBlock && new RegExp(`\\b${name}\\.value`).test(styleBlock[0]);
+    if (!readInStyle) continue;
+    /* Assigned anywhere outside the style itself. */
+    const assigned = new RegExp(`\\b${name}\\.value\\s*=`).test(code);
+    if (!assigned) {
+      problems.push(
+        `${FILE}: '${name}' được style ĐỌC nhưng không chỗ nào GÁN — nó đứng yên ở giá trị khởi tạo. ` +
+          'Với một hệ số nhân vào opacity thì đó là nhân vật vô hình vĩnh viễn, tsc vẫn sạch, và ' +
+          'không có ngoại lệ nào ném ra',
+      );
+    }
+  }
+}
+
 /* ── 5. and it does not talk ── */
 {
   if (/Bubble|bubble|mascotLine|useMascotMessage/.test(code)) {
