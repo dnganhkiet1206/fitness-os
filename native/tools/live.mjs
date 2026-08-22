@@ -130,6 +130,17 @@ const ROUTES = [
   '/templates', '/exercises', '/supplements', '/grocery', '/food-list',
   '/meal-plans', '/progress-photos', '/awards', '/challenges', '/smart-goals',
   '/weekly-review', '/settings', '/coach-memory', '/shop', '/ai-coach',
+  /*
+    The screens people actually type into were missing from this list, which is
+    an odd shape for a harness whose whole purpose is that static rules cannot
+    see a rendered page. `/log-workout` is the one somebody opens every session,
+    and it was never once opened here.
+
+    Found while adding the music shortcut to it: the row rendered, `tsc` was
+    clean, every rule was green, and nothing in this tool had ever drawn the
+    screen it sits on.
+  */
+  '/log-workout',
 ];
 
 // ── build & serve ─────────────────────────────────────────────────────────

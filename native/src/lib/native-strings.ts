@@ -322,6 +322,7 @@ const en = {
   // Mascot
   nMascotTitle: 'Companion',
   nMascotToggleHint: 'Your companion nudges you based on today\u2019s data',
+  nMusicLabel: 'Music',
   nKoaCompanionTitle: 'Koa follows you',
   nKoaCompanionHint: 'Koa stands beside you on every screen and moves as your day changes. Turn this off to keep Koa on Today only.',
   nMascotRoomTitle: 'Companion room, shop & challenges',
@@ -982,6 +983,7 @@ const vi: typeof en = {
 
   nMascotTitle: 'Bạn đồng hành',
   nMascotToggleHint: 'Linh vật sẽ nhắc bạn dựa trên dữ liệu hôm nay',
+  nMusicLabel: 'Nhạc',
   nKoaCompanionTitle: 'Koa đi cùng bạn',
   nKoaCompanionHint: 'Koa đứng cạnh bạn ở mọi màn và đổi chỗ theo diễn biến trong ngày. Tắt đi thì Koa chỉ ở lại màn Hôm nay.',
   nMascotRoomTitle: 'Phòng bạn đồng hành, cửa hàng & thử thách',

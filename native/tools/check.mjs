@@ -238,6 +238,14 @@ const STEPS = [
     cannot be switched off.
   */
   ['bạn đồng hành Koa', 'node', ['tools/koa-companion.mjs']],
+  /*
+    A shortcut whose only failure mode is never appearing. `canOpenURL` answers
+    false — silently, with no error — for any scheme missing from
+    `LSApplicationQueriesSchemes`, so a forgotten declaration in `app.json`
+    filters the row down to nothing on every device for ever, while the code
+    reads correctly and `tsc` stays clean.
+  */
+  ['lối tắt nhạc', 'node', ['tools/music-launch.mjs']],
   ['trạng thái người dùng', 'node', ['tools/user-state.mjs']],
   ['thưởng thử thách', 'node', ['tools/challenge-reward.mjs']],
   ['trạng thái tích luỹ', 'node', ['tools/streak-challenge.mjs']],

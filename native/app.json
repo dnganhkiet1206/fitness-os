@@ -13,7 +13,8 @@
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "CFBundleAllowMixedLocalizations": true
+        "CFBundleAllowMixedLocalizations": true,
+        "LSApplicationQueriesSchemes": ["music", "spotify"]
       }
     },
     "android": {
@@ -59,7 +60,8 @@
         }
       ],
       "expo-notifications",
-      "./plugins/with-free-test-entitlements.js"
+      "./plugins/with-free-test-entitlements.js",
+      "./plugins/with-music-app-queries.js"
     ],
     "experiments": {
       "typedRoutes": true,

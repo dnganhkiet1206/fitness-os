@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { MusicLaunch } from '@/components/ascnd/music-launch';
 import { Icon } from '@/components/ascnd/icon';
 import { RecordCelebration } from '@/components/ascnd/record-celebration';
 import type { TplExercise } from '@/components/ascnd/template-list';
@@ -620,6 +621,10 @@ export default function LogWorkoutSheet() {
             <Text style={styles.planUse}>{i18n.nRdUsePlan}</Text>
           </PressScale>
         ) : null}
+
+        {/* Before the first set, because that is when somebody puts music on —
+            and it hands off rather than playing here; see `lib/music-app.ts`. */}
+        <MusicLaunch />
 
         <TextInput
           style={styles.input}
