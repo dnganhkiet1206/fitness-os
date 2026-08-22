@@ -72,9 +72,26 @@ export const FIXTURES = {
     { id: 'g2', user_id: UID, weight_kg: 72.1, date: dayStr(7) },
     { id: 'g3', user_id: UID, weight_kg: 72.8, date: dayStr(21) },
   ],
+  /*
+    Two sessions, not one, and the second one is deliberately lighter.
+
+    `sessions.tsx` draws each row's volume bar as `volume / peak`, so a fixture
+    with a single session gives the only bar the runner can see a ratio of
+    exactly 1 — permanently full, on every shot, forever. A full bar looks the
+    same whether it grows from its left edge or from its own centre, so that
+    fixture could not have caught `BarFill` losing `transformOrigin: 'left'`,
+    which is the one way that component can draw a wrong quantity while
+    type-checking clean and throwing nothing.
+
+    3,200 / 8,450 is 38%: far enough from both ends that a wrong origin, a
+    wrong clamp or a reversed direction all land somewhere visibly different.
+  */
   workout_sessions: [{
     id: 'k1', user_id: UID, date_time: day(0.4), template_name: 'Push A',
     volume_load: 8450, session_rpe: 7, sets: [], source: 'manual',
+  }, {
+    id: 'k2', user_id: UID, date_time: day(2.4), template_name: 'Pull A',
+    volume_load: 3200, session_rpe: 6, sets: [], source: 'manual',
   }],
   meal_entries: [{
     id: 'm1', user_id: UID, date_time: day(0.25), meal_type: 'breakfast',

@@ -1,9 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
+import { duration } from '@/constants/motion';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
@@ -60,7 +61,7 @@ export interface SegmentOption<K extends string> {
  * element as it comes to rest." Linear is explicitly ruled out there — it
  * "looks weird and unnatural".
  */
-const SLIDE_MS = 220;
+const SLIDE_MS = duration.move;
 
 export function Segmented<K extends string>({
   options,
@@ -162,3 +163,59 @@ const styles = StyleSheet.create({
   label: { ...type.caption, fontWeight: '600', color: colors.mutedForeground },
   labelOn: { color: colors.foreground },
 });
+
+/**
+ * The panel under the control, when the control changes.
+ *
+ * Sliding the pill and then cutting the content is half a transition: the eye
+ * follows the pill, arrives, and the thing it came to look at was replaced
+ * between frames.
+ *
+ * ── the shape of the fade is not a preference ──
+ *
+ * `day-plan.tsx` had already found this and left the reasoning: it first used a
+ * staggered spring cascade, and "every tap replayed up to half a second of
+ * staggered springing for what should be an immediate swap. Tapping T2, T3, T4
+ * in sequence left three cascades overlapping each other."
+ *
+ * So: one uniform fade, no stagger, at `duration.appear` — the token for
+ * "something arriving that was not on screen a moment ago", which is exactly
+ * what a panel you have just switched to is. day-plan reached 140ms by moving
+ * away from half a second of staggered springing, and 200 does not walk that
+ * back: it is still a short uniform fade, and it is a number the motion
+ * vocabulary already has a name for rather than a fifth one invented here.
+ * The panel is being **replaced**, not
+ * arriving, and that is enough to stop it being a hard cut without becoming a
+ * movement anybody has to wait through.
+ *
+ * That rule lived in one file and five other segmented controls never got it.
+ * It is here now, beside the control it belongs to, and `day-plan` uses this
+ * one rather than its own copy.
+ *
+ * ── and why this is not the thing `screen.tsx` rejected ──
+ *
+ * That file records two failed attempts at animating **tab** changes, both of
+ * which blinked, "because `FadeInDown` begins at invisible… it is wrong on a
+ * page that is already drawn: replaying an entrance there has to un-draw it
+ * first."
+ *
+ * This is the opposite case and the distinction is the whole reason it is safe:
+ * the panel here genuinely is not on screen yet. Nothing is being un-drawn,
+ * because what it replaces is already gone.
+ */
+export const SEGMENT_SWAP = FadeIn.duration(duration.appear);
+
+/**
+ * Wraps a segmented control's panel so it fades when the segment changes.
+ *
+ * `key` is the whole mechanism: React tears the old subtree down and mounts a
+ * new one, which is what gives `entering` something to animate. Without it the
+ * same node is reused and nothing enters.
+ */
+export function SegmentPanel({ segment, children }: { segment: string; children: React.ReactNode }) {
+  return (
+    <Animated.View key={segment} entering={SEGMENT_SWAP}>
+      {children}
+    </Animated.View>
+  );
+}

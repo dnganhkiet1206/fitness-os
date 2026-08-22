@@ -7,10 +7,12 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Crypto from 'expo-crypto';
 
+import { BarFill } from '@/components/ascnd/bar-fill';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { RestTimer } from '@/components/ascnd/rest-timer';
+import { SEGMENT_SWAP } from '@/components/ascnd/segmented';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
@@ -67,10 +69,17 @@ import { displayWeight, weightLabel } from '@/lib/units';
  * T2, T3, T4 in sequence left three cascades overlapping each other.
  *
  * A short uniform fade instead. The panel is being *replaced*, not arriving,
- * and 140ms is enough to stop it being a hard cut without becoming a movement
- * anybody has to wait through.
+ * and it only has to be long enough to stop being a hard cut without becoming
+ * a movement anybody has to wait through — `duration.appear`, not the half
+ * second this replaced.
+ *
+ * That finding now lives in `segmented.tsx` as `SEGMENT_SWAP`, because it was
+ * never about this screen — it is what a segmented panel swap should be
+ * anywhere. Five other segmented controls in the app never got it. Keeping a
+ * second `FadeIn.duration(140)` here would be the same shape of bug this
+ * repository keeps finding: one rule, N copies, and the copies drift.
  */
-const SWAP = FadeIn.duration(140);
+const SWAP = SEGMENT_SWAP;
 
 /** The scale the builder offers, so the two screens ask for the same thing. */
 const RPE_CHOICES = [6, 7, 8, 9, 10] as const;
@@ -596,9 +605,7 @@ export function DayPlan({
       {/* A bar rather than a percentage: what you want mid-workout is "how much
           is left", which is a length, not a number to read. */}
       <View style={styles.barTrack}>
-        <View
-          style={[styles.barFill, { width: `${rows.length ? (doneRows.length / rows.length) * 100 : 0}%` }]}
-        />
+        <BarFill ratio={rows.length ? doneRows.length / rows.length : 0} style={styles.barFill} />
       </View>
 
       {rows.map((row, i) => {

@@ -12,7 +12,7 @@ import { NutritionCard, WaterWidget } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
-import { Segmented } from '@/components/ascnd/segmented';
+import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { Icon } from '@/components/ascnd/icon';
 import { MealLogActions } from '@/components/ascnd/meal-log-actions';
 import { ShortcutRow } from '@/components/ascnd/shortcut-row';
@@ -410,6 +410,7 @@ export default function NutritionScreen() {
           ]}
         />
 
+        <SegmentPanel segment={tab}>
         {tab === 'today' ? (
           <>
             {/*
@@ -656,6 +657,7 @@ export default function NutritionScreen() {
         ) : (
           <MealPlanTab i18n={i18n} vi={lang === 'vi'} />
         )}
+        </SegmentPanel>
       </Screen>
       {/*
         ── nothing floats over this page any more ──

@@ -13,7 +13,7 @@ import Animated, {
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
-import { Segmented } from '@/components/ascnd/segmented';
+import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -414,6 +414,7 @@ export default function ProgressScreen() {
         The reading is the same either way, and the thing a person does about
         it — go and log a weight they already logged — is wrong in one case.
       */}
+      <SegmentPanel segment={tab}>
       {tab === 'weight' && weightFailed && (
         <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
       )}
@@ -894,6 +895,7 @@ export default function ProgressScreen() {
         </>
       )}
 
+      </SegmentPanel>
     </Screen>
   );
 }

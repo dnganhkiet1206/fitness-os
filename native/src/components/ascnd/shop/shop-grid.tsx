@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Backpack, Check, Coins, Crown, Droplets, Dumbbell, Flame, Footprints, Ghost, Gift, Glasses, Headphones, LayoutGrid, Moon, Shirt, Snowflake, Sparkles, Star, Store, Trophy, Wind, type LucideIcon } from 'lucide-react-native';
 
+import { BarFill } from '@/components/ascnd/bar-fill';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -159,14 +160,9 @@ export function CollectionRow({
         )}
       </View>
       <View style={styles.setTrack}>
-        <View
-          style={[
-            styles.setFill,
-            {
-              width: `${Math.round((have / total) * 100)}%`,
-              backgroundColor: complete ? colors.readinessGreen : colors.metricPurple,
-            },
-          ]}
+        <BarFill
+          ratio={total ? have / total : 0}
+          style={[styles.setFill, { backgroundColor: complete ? colors.readinessGreen : colors.metricPurple }]}
         />
       </View>
     </GlassCard>

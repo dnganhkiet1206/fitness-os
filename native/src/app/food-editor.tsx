@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 
+import { BarFill } from '@/components/ascnd/bar-fill';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -270,7 +271,7 @@ function MacroField({
         <Text style={styles.macroMeta}>{pct}%</Text>
       </View>
       <View style={styles.macroBarTrack}>
-        <View style={[styles.macroBarFill, { width: `${Math.min(pct, 100)}%`, backgroundColor: color }]} />
+        <BarFill ratio={pct / 100} style={[styles.macroBarFill, { backgroundColor: color }]} />
       </View>
     </View>
   );

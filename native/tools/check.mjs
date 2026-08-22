@@ -177,6 +177,7 @@ const STEPS = [
     tab styles after the markup using them was gone.
   */
   ['segmented', 'node', ['tools/segmented.mjs']],
+  ['thanh tiến độ', 'node', ['tools/bar-fill.mjs']],
   ['nguồn sức khoẻ', 'node', ['tools/health-source.mjs']],
   /*
     The Apple Health sleep and workout import had never written a row. The

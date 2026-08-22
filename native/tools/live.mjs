@@ -145,6 +145,18 @@ const ROUTES = [
      screen the music shortcut lives on, and the one a plan is actually read
      from. It was missing for the same reason `/log-workout` was. */
   '/routine',
+  /*
+    And the room itself. Two things are drawn nowhere else in the app — the
+    segmented energy ring and the level bar — so for as long as this list did
+    not contain `/mascot-room`, no screenshot in this repository had ever
+    contained either of them. `entry-points.mjs` had already written the room up
+    as "a room with only vanishing doors"; it turned out the harness could not
+    find the door either.
+
+    Found the same way `/log-workout` was: making the ring animate, and having
+    nowhere to look at the result.
+  */
+  '/mascot-room',
 ];
 
 // ── build & serve ─────────────────────────────────────────────────────────

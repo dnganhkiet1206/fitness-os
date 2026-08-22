@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { BarFill } from '@/components/ascnd/bar-fill';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
@@ -392,17 +393,9 @@ export default function SettingsScreen() {
                   {!m.unlocked && m.unlock && (
                     <View style={styles.mascotProgress}>
                       <View style={styles.mascotProgressTrack}>
-                        <View
-                          style={[
-                            styles.mascotProgressFill,
-                            {
-                              backgroundColor: m.accent,
-                              width: `${Math.min(
-                                (mascot.unlockStats[m.unlock.kind] / m.unlock.count) * 100,
-                                100,
-                              )}%`,
-                            },
-                          ]}
+                        <BarFill
+                          ratio={mascot.unlockStats[m.unlock.kind] / m.unlock.count}
+                          style={[styles.mascotProgressFill, { backgroundColor: m.accent }]}
                         />
                       </View>
                       <Text style={styles.mascotProgressText}>

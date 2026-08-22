@@ -303,6 +303,72 @@ for (const f of files) {
     );
   }
 }
+
+/* ── the same rule, for the two ways a duration gets past it ──
+
+   The rule above reads `duration: <số>`. Three durations written this session
+   walked straight through it, and not by being clever:
+
+     const SLIDE_MS = 220;  …  withTiming(x, { duration: SLIDE_MS })
+     FadeIn.duration(140)
+
+   Neither form is a literal after `duration:`, so neither was ever asked which
+   of the four beats it was. That is the rule's own stated purpose — "what stops
+   the eighth place inventing 190" — defeated by naming a constant, which is the
+   thing a careful author is most likely to do.
+
+   ── why the existing sites are grandfathered, and labelled as debt ──
+
+   Closing the hole exposes 19 files that predate this rule. `constants/motion`
+   is explicit about what a mass migration would cost: "the first time somebody
+   'harmonised' them the sequence would be gone." So they are listed, and the
+   list says plainly what it is — not reviewed, not justified, just older than
+   the rule. Inventing a reason for each would be worse than admitting there
+   isn't one: a false explanation reads exactly like a true one.
+
+   The twentieth site still gets stopped, which is the whole job. */
+const LEGACY = new Set([
+  'src/app/(tabs)/assistant.tsx', 'src/app/food-list.tsx', 'src/app/water.tsx',
+  'src/components/ascnd/assistant-aura.tsx', 'src/components/ascnd/day-plan.tsx',
+  'src/components/ascnd/help-button.tsx', 'src/components/ascnd/koa-companion.tsx',
+  'src/components/ascnd/line-chart.tsx', 'src/components/ascnd/liquid-tab-bar.tsx',
+  'src/components/ascnd/onboarding-flow.tsx', 'src/components/ascnd/readiness-gauge.tsx',
+  'src/components/ascnd/rest-timer.tsx', 'src/components/ascnd/studio/sky-live.tsx',
+  'src/components/ascnd/template-list.tsx', 'src/components/ascnd/today-meals.tsx',
+  'src/components/ascnd/water-chart.tsx', 'src/components/ascnd/weight-log-list.tsx',
+]);
+for (const f of files) {
+  if (RIG.test(f) || LEGACY.has(f)) continue;
+  const code = strip(read(f));
+  /* only same-file numeric consts; `const X = duration.move` resolves to
+     nothing here, which is exactly the shape we want to stop asking about */
+  const named = {};
+  for (const m of code.matchAll(/const ([A-Za-z_$][\w$]*) = (\d+);/g)) named[m[1]] = Number(m[2]);
+  const sites = [
+    ...code.matchAll(/\.duration\(\s*(\d+|[A-Za-z_$][\w$]*)\s*\)/g),
+    ...code.matchAll(/duration:\s*([A-Za-z_$][\w$]*)[,\s}]/g),
+  ];
+  for (const m of sites) {
+    const v = /^\d+$/.test(m[1]) ? Number(m[1]) : named[m[1]];
+    if (v == null || v === 0 || v > 800 || TOKENS.has(v)) continue;
+    if (COMPOSED[f]?.[v]) continue;
+    const line = code.slice(0, m.index).split('\n').length;
+    problems.push(
+      `${f}:${line}: nhịp ${v} (qua \`${m[1]}\`) không thuộc bốn nhịp phản hồi (180/200/240/320) — ` +
+        'đặt tên cho một con số không làm nó thoát khỏi thang nhịp, mà đó chính là cách ba nhịp mới ' +
+        'lọt qua luật này. Chọn nhịp gần nhất theo "màn hình đổi bao nhiêu", hoặc ghi vào COMPOSED kèm lý do',
+    );
+  }
+}
+
+/* A grandfather list that outlives its file is the same stale-reason problem as
+   COMPOSED, one level up. */
+for (const f of LEGACY) {
+  if (!files.includes(f)) {
+    problems.push(`LEGACY còn ghi ${f} nhưng tệp đó không còn — xoá dòng đó đi`);
+  }
+}
+
 /* Same staleness guard as BOUNDED_LAYOUT: a reason outlives the code it
    describes far too easily, and then it is just a false statement in a file. */
 for (const [f, allowed] of Object.entries(COMPOSED)) {
@@ -539,7 +605,7 @@ console.log(
     `(${Object.keys(BOUNDED_LAYOUT).length} ngoại lệ có lý do ghi lại, không cái nào lặp vô hạn); ` +
     `${loopFiles} tệp có vòng lặp vô hạn, mọi vòng đều nằm trong useEffect có điều kiện dừng; ` +
     `${clockFiles} tệp dùng frame clock và đều đọc Reduce Motion; ` +
-    `dải phản hồi chỉ dùng ${TOKENS.size} nhịp có tên (${[...TOKENS].join('/')}), ` +
+    `dải phản hồi chỉ dùng ${TOKENS.size} nhịp có tên (${[...TOKENS].join('/')}) — kể cả khi nhịp đó được ĐẶT TÊN cho một hằng số hay đi qua .duration(), hai lối mà ba nhịp mới đã lọt qua trong phiên này; ${LEGACY.size} tệp có trước luật được ghi thẳng là NỢ CHƯA DUYỆT chứ không bịa lý do, ` +
     `${Object.values(COMPOSED).reduce((n, o) => n + Object.keys(o).length, 0)} số thuộc cascade được miễn kèm lý do, rig nhân vật không bị ép vào thang; ` +
     'PressScale và AnimatedNumber giữ đủ chốt chặn (không nuốt chạm, đọc được bằng screen reader, không rung hai lần); ' +
     `${pressScaleCount} chỗ nhấn dùng PressScale, ${Object.keys(AD_HOC_OK).length - 1} chỗ giữ callback vì phản hồi là đổi nền`,

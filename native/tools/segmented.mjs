@@ -125,6 +125,81 @@ const code = strip(read(COMPONENT));
   }
 }
 
+/* ── 4. a segmented control that swaps panels must not swap them by hard cut ──
+
+   `day-plan.tsx` worked this out on its own screen and wrote it down: the
+   panel under a segmented control is being *replaced*, not arriving, so it
+   wants one short uniform fade — not the app's `rise(i)` cascade, which
+   "left three cascades overlapping each other" when you tapped T2, T3, T4 in
+   sequence. Then that finding sat in one file while five other segmented
+   controls kept cutting.
+
+   That is the shape being guarded, and it is the shape this repository keeps
+   meeting: one rule, N copies, and only one copy knows the rule.
+
+   `screen.tsx` records the opposite mistake twice — animating a whole tab
+   screen with `FadeInDown`, which "begins at invisible… wrong on a page that
+   is already drawn: replaying an entrance there has to un-draw it first". So
+   this rule deliberately does NOT ask every `<Segmented>` to animate. It asks
+   only the ones whose value gates a block of JSX — the panel genuinely is not
+   drawn yet, so nothing is being un-drawn. A `<Segmented>` used as a value
+   picker (sex, kg/lbs in edit-profile) changes no panel and is left alone.
+
+   And the wrapper has to sit BETWEEN the control and the panel. A
+   `SegmentPanel` imported, rendered somewhere else, and never actually put
+   around the conditional would satisfy a name check while the cut stayed —
+   which is exactly how `koa-companion.mjs` and `segmented.mjs`'s own reduce-
+   motion rule managed to pass on code that did not do the thing. */
+{
+  const walk = (dir) =>
+    readdirSync(dir).flatMap((e) => {
+      const p = path.join(dir, e);
+      return statSync(p).isDirectory() ? walk(p) : /\.tsx$/.test(e) ? [p] : [];
+    });
+  const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  for (const file of walk(path.join(NATIVE, 'src'))) {
+    const rel = path.relative(NATIVE, file);
+    if (rel === COMPONENT) continue;
+    const src = readFileSync(file, 'utf8');
+
+    for (const m of src.matchAll(/<Segmented\b/g)) {
+      /* the value bound to this control — search only the tag itself */
+      const tag = src.slice(m.index, src.indexOf('/>', m.index) + 2);
+      const v = tag.match(/value=\{([A-Za-z_$][\w$.]*)\}/);
+      if (!v) continue;
+      const key = v[1];
+
+      /* does this value gate JSX? `{key === '…'` / `{key !== '…'` in an
+         expression container is a conditional render (or a conditional style,
+         which is the same swap seen from the other side). */
+      const cond = new RegExp(`\\{\\s*${esc(key)}\\s*(===|!==)\\s*'`, 'g');
+      let first = -1;
+      for (const c of src.matchAll(cond)) {
+        if (c.index > m.index) { first = c.index; break; }
+      }
+      if (first < 0) continue; /* a value picker, not a panel switcher */
+
+      const wrap = src.indexOf(`<SegmentPanel segment={${key}}>`);
+      if (wrap < 0) {
+        problems.push(
+          `${rel}: <Segmented value={${key}}> đổi panel bên dưới nhưng panel đó bị CẮT CỤP — không có ` +
+            `<SegmentPanel segment={${key}}>. day-plan.tsx đã tìm ra và ghi lại điều này cho màn của ` +
+            'nó rồi để năm control còn lại nguyên như cũ: một luật, N bản chép, chỉ một bản biết luật',
+        );
+        continue;
+      }
+      if (!(wrap > m.index && wrap < first)) {
+        problems.push(
+          `${rel}: có <SegmentPanel segment={${key}}> nhưng nó KHÔNG nằm giữa control và panel ` +
+            `(control ở ${m.index}, bọc ở ${wrap}, panel ở ${first}) — bọc nhầm chỗ thì cú cắt vẫn còn ` +
+            'nguyên trong khi phép kiểm theo tên vẫn xanh, đúng kiểu đã lọt hai lần ở repo này',
+        );
+      }
+    }
+  }
+}
+
 if (problems.length) {
   console.log('segmented CÓ LỖI:\n');
   for (const p of problems.slice(0, 12)) console.log(`  • ${p}`);
@@ -138,5 +213,5 @@ console.log(
     'chuyển bằng translateX chứ không animate width/left — animate layout là chạy lại bố cục mỗi khung ' +
     'hình, đúng lỗi tools/motion.mjs đã bắt ở bạn đồng hành Koa; tôn trọng Reduce Motion; không file ' +
     'nào dựng bản thứ sáu bằng cặp styles.tab + styles.tabActive, và không file nào để lại style chết ' +
-    'của bản cũ — phòng Koa từng giữ nguyên cả năm style tab mà không render cái nào',
+    'của bản cũ — phòng Koa từng giữ nguyên cả năm style tab mà không render cái nào; và mọi control ĐỔI PANEL đều phải bọc panel bằng SegmentPanel dùng chung, đặt ĐÚNG giữa control và panel, trong khi control chỉ dùng để chọn giá trị (giới tính, kg/lbs) thì không bị đòi — screen.tsx đã ghi hai lần thất bại vì làm hoạt ảnh vào thứ đã vẽ xong',
 );

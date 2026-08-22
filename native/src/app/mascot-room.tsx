@@ -49,6 +49,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { BarFill } from '@/components/ascnd/bar-fill';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { fireCelebration } from '@/components/ascnd/award-celebration';
 import { EnergyRing } from '@/components/ascnd/energy-ring';
@@ -645,11 +646,9 @@ export default function MascotRoomScreen() {
             )}
           </View>
           <View style={styles.levelTrack}>
-            <View
-              style={[
-                styles.levelFill,
-                { width: `${Math.round((intoLevel / LEVEL_XP) * 100)}%`, backgroundColor: rank.color },
-              ]}
+            <BarFill
+              ratio={intoLevel / LEVEL_XP}
+              style={[styles.levelFill, { backgroundColor: rank.color }]}
             />
           </View>
           <Text style={styles.levelHint}>

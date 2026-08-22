@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
-import { Segmented } from '@/components/ascnd/segmented';
+import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { BAND_ASPECT } from '@/components/ascnd/shop/shop-camera';
@@ -320,6 +320,7 @@ export default function ShopScreen() {
         ]}
       />
 
+      <SegmentPanel segment={tab}>
       {tab === 'outfit' || tab === 'closet' ? (
         <CategoryRow
           current={cat}
@@ -419,6 +420,8 @@ export default function ShopScreen() {
       {/* Collections stays a sheet. It is a detail *of* the shop rather than a
           place of its own, and pushing a route for it would put the camera
           through a move to show a list of tick-boxes. */}
+      </SegmentPanel>
+
       <Modal
         visible={collectionsOpen}
         transparent

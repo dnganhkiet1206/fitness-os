@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { BarFill } from '@/components/ascnd/bar-fill';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, effortTint, radius, spacing } from '@/constants/ascnd';
@@ -95,9 +96,7 @@ export function SessionRow({
           */}
           {volumeRatio != null ? (
             <View style={styles.barTrack}>
-              <View
-                style={[styles.barFill, { width: `${Math.max(3, Math.min(volumeRatio, 1) * 100)}%` }]}
-              />
+              <BarFill ratio={volumeRatio} min={0.03} style={styles.barFill} />
             </View>
           ) : null}
         </View>
