@@ -9,6 +9,7 @@ import Animated from 'react-native-reanimated';
 import { rise } from '@/lib/entrance';
 
 import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
+import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -321,24 +322,30 @@ export default function WorkoutsScreen() {
         <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.workoutsWeeklyPlan}
-          style={[styles.outlineBtn, { borderColor: `${GLYPH_TINT.calendar[1]}3d` }]}
           onPress={() => {
             Haptics.selectionAsync();
             router.push('/routine');
           }}>
-          <Glyph name="calendar" size={16} />
-          <Text style={styles.outlineBtnText}>{i18n.workoutsWeeklyPlan}</Text>
+          <LiquidGlass style={styles.pill} radius={radius.full} tint={GLYPH_TINT.calendar[1]}>
+            <View style={styles.pillInner}>
+              <Glyph name="calendar" size={16} />
+              <Text style={styles.outlineBtnText}>{i18n.workoutsWeeklyPlan}</Text>
+            </View>
+          </LiquidGlass>
         </PressScale>
         <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.workoutsExercises}
-            style={[styles.outlineBtn, { borderColor: `${GLYPH_TINT.dumbbell[1]}3d` }]}
             onPress={() => {
               Haptics.selectionAsync();
               router.push('/exercises');
             }}>
-            <Glyph name="dumbbell" size={16} />
-            <Text style={styles.outlineBtnText}>{i18n.workoutsExercises}</Text>
+            <LiquidGlass style={styles.pill} radius={radius.full} tint={GLYPH_TINT.dumbbell[1]}>
+              <View style={styles.pillInner}>
+                <Glyph name="dumbbell" size={16} />
+                <Text style={styles.outlineBtnText}>{i18n.workoutsExercises}</Text>
+              </View>
+            </LiquidGlass>
           </PressScale>
           <PressScale
             style={styles.primaryBtn}
@@ -361,13 +368,16 @@ export default function WorkoutsScreen() {
       <PressScale
         accessibilityRole="button"
         accessibilityLabel={i18n.nLogWorkoutBtn}
-        style={[styles.logChip, { borderColor: `${GLYPH_TINT.pulse[1]}52` }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/log-workout');
         }}>
-        <Glyph name="pulse" size={17} />
-        <Text style={styles.logChipText}>{i18n.nLogWorkoutBtn}</Text>
+        <LiquidGlass style={styles.logChip} radius={radius.full} tint={GLYPH_TINT.pulse[1]}>
+          <View style={styles.logChipInner}>
+            <Glyph name="pulse" size={17} />
+            <Text style={styles.logChipText}>{i18n.nLogWorkoutBtn}</Text>
+          </View>
+        </LiquidGlass>
       </PressScale>
 
       <MuscleGrid exercises={exercises ?? []} failed={exercisesFailed} vi={vi} />
@@ -514,15 +524,15 @@ const styles = StyleSheet.create({
     way the assistant's chips work and the way Today's log row now works. One
     rule for "a tinted pill you tap", three screens, no fourth palette.
   */
-  outlineBtn: {
+  /* The glass carries the shape; padding lives inside — the split the
+     assistant's state pill uses. */
+  pill: { borderRadius: radius.full },
+  pillInner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
     height: 44,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   outlineBtnText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
   /* The filled one keeps its fill — it is the only button on the page that
@@ -535,21 +545,23 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
+    /* The one filled control on the page keeps its fill rather than becoming
+       glass: it is the only button here that makes something new, and glass
+       over glass would flatten it into the two beside it. */
     backgroundColor: colors.primary,
   },
   primaryBtnText: { ...type.footnote, fontWeight: '600', color: colors.primaryForeground },
   /* Full width, 52 tall, and a shade more border than the pills above it.
      It is the thing this tab is for, and it had been the flattest control on
      the page. */
-  logChip: {
+  logChip: { borderRadius: radius.full },
+  /* Taller than the pills above it — it is what this tab is for. */
+  logChipInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     height: 52,
-    borderRadius: radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   logChipText: { ...type.headline, fontWeight: '600', color: colors.foreground },
   libSection: { gap: spacing.sm },

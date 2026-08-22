@@ -148,6 +148,15 @@ const STEPS = [
   ['thẻ tập luyện', 'node', ['tools/training-card.mjs']],
   ['ẩn thanh tab', 'node', ['tools/tab-bar-hide.mjs']],
   ['thang chữ', 'node', ['tools/type-scale.mjs']],
+  /*
+    The page is #070708, so a black drop shadow under a dark pill is black on
+    black — a compositing pass that separates nothing. Every pill lifts in its
+    own accent instead, the rule `neon-toast.tsx` established. The failure this
+    catches is somebody tidying a tinted shadow into `'#000'` because that is
+    what shadows are: nothing breaks, every check stays green, and the pills
+    quietly lie flat again.
+  */
+  ['pill nổi', 'node', ['tools/raised-pill.mjs']],
   ['hình huy hiệu', 'node', ['tools/glyph-collision.mjs']],
   ['ngôn ngữ AI', 'node', ['tools/ai-language.mjs']],
   ['worklet đo được', 'node', ['tools/measured-worklet.mjs']],

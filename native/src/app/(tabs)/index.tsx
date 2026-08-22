@@ -72,6 +72,7 @@ import { useTodayWater } from '@/hooks/use-water';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
 import type { QuestKey } from '@/lib/mascot-room';
 import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
+import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { getLocale } from '@/lib/i18n';
 import { recordHeight } from '@/lib/widget-heights';
@@ -552,15 +553,29 @@ export default function TodayScreen() {
                 key={a.route}
                 accessibilityRole="button"
                 accessibilityLabel={a.label}
-                /* Tinted by the glyph's own colour, the way the assistant's
-                   chips are — one border rule, two screens, no third palette. */
-                style={[styles.quickChip, { borderColor: `${GLYPH_TINT[a.glyph][1]}3d` }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push(a.route);
                 }}>
-                <Glyph name={a.glyph} size={16} />
-                <Text style={styles.quickChipText}>{a.label}</Text>
+                {/*
+                  The same material as the assistant's state pill — blurred
+                  glass with a lit top edge — rather than a flat fill with a
+                  border. That pill reads as sitting *on* the page, and the
+                  reason is the material: a lit edge and a dark shade at the
+                  bottom right are what make a surface look raised on a page
+                  this dark. A drop shadow cannot do it, because #070708 under
+                  #070708 is nothing.
+
+                  `tint` is the glyph's own colour, washed across the glass from
+                  the top-left — where the glyph sits. The pill is lit by the
+                  thing it contains.
+                */}
+                <LiquidGlass style={styles.quickChip} radius={radius.full} tint={GLYPH_TINT[a.glyph][1]}>
+                  <View style={styles.quickChipInner}>
+                    <Glyph name={a.glyph} size={16} />
+                    <Text style={styles.quickChipText}>{a.label}</Text>
+                  </View>
+                </LiquidGlass>
               </PressScale>
             ))}
           </View>
@@ -832,15 +847,15 @@ const styles = StyleSheet.create({
     of exactly this, and its note quotes the same 44. A row used several times a
     day is the last place to be eight points short.
   */
-  quickChip: {
+  /* The glass carries the shape; the padding lives inside it — the same split
+     the assistant's state pill uses. */
+  quickChip: { borderRadius: radius.full },
+  quickChipInner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
     height: 44,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   quickChipText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
 

@@ -180,6 +180,7 @@ const mono = Platform.select({ ios: 'Menlo', default: 'monospace' });
  * Type scale. Big numbers use a monospace face + tabular figures to match
  * the web's `font-mono` metrics.
  */
+
 export const type = {
   largeTitle: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.4 },
   title: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.3 },

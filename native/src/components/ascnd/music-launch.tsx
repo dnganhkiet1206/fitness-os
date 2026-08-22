@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
+import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -64,7 +65,6 @@ export function MusicLaunch() {
           key={a.id}
           accessibilityRole="button"
           accessibilityLabel={`${i18n.nMusicLabel}: ${a.label}`}
-          style={styles.chip}
           onPress={() => {
             Haptics.selectionAsync();
             /* Nothing to report if this fails: the app was there a moment ago
@@ -73,7 +73,13 @@ export function MusicLaunch() {
                nothing. */
             Linking.openURL(a.url).catch(() => {});
           }}>
-          <Text style={styles.chipText}>{a.label}</Text>
+          {/* Same material as every other pill — and tinted by the service, the
+              one colour these two unambiguously own. */}
+          <LiquidGlass style={styles.chip} radius={radius.full} tint={a.tint}>
+            <View style={styles.chipInner}>
+              <Text style={styles.chipText}>{a.label}</Text>
+            </View>
+          </LiquidGlass>
         </PressScale>
       ))}
     </View>
@@ -83,13 +89,10 @@ export function MusicLaunch() {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   label: { fontSize: 12, color: colors.mutedForeground, marginRight: 'auto' },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 7,
-    borderRadius: radius.full,
-    backgroundColor: colors.secondary,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.10)',
-  },
+  /* 44 tall like every other pill in the app, and lifted the same way — see
+     `raisedPill`. These two are the only pills with no glyph, so the colour
+     comes from the service instead. */
+  chip: { borderRadius: radius.full },
+  chipInner: { height: 44, justifyContent: 'center', paddingHorizontal: spacing.md },
   chipText: { fontSize: 12, fontWeight: '600', color: colors.foreground },
 });

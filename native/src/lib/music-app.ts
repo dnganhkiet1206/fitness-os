@@ -49,15 +49,25 @@ export interface MusicApp {
   scheme: string;
   /** what actually gets opened */
   url: string;
+  /**
+   * The service's own colour, used for the chip's border and its lift.
+   *
+   * On a `#070708` page a black shadow is black on black, so the only shadow
+   * that separates a pill from the background is a tinted one — the rule
+   * `neon-toast.tsx` established and `raisedPill` records. Every other pill in
+   * the app takes that colour from its glyph; these two have no glyph, so they
+   * take the one thing they unambiguously own.
+   */
+  tint: string;
 }
 
 export const MUSIC_APPS: readonly MusicApp[] = [
   /* `music://` opens the Music app, which is where an Apple Music subscription
      lives. */
-  { id: 'apple', label: 'Apple Music', scheme: 'music', url: 'music://' },
+  { id: 'apple', label: 'Apple Music', scheme: 'music', url: 'music://', tint: '#fa2d48' },
   /* `spotify:` is the scheme Spotify's own content-linking documentation tells
      third parties to declare and open. */
-  { id: 'spotify', label: 'Spotify', scheme: 'spotify', url: 'spotify://' },
+  { id: 'spotify', label: 'Spotify', scheme: 'spotify', url: 'spotify://', tint: '#1db954' },
 ];
 
 /**
