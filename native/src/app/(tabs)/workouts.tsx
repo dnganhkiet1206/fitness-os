@@ -526,7 +526,20 @@ const styles = StyleSheet.create({
   */
   /* The glass carries the shape; padding lives inside — the split the
      assistant's state pill uses. */
-  pill: { borderRadius: radius.full },
+  pill: {
+    borderRadius: radius.full,
+  /* A firmer edge than a card's.
+
+     `glass.border` is 12% white at half a point, and that is right for a large
+     panel sitting in the aura on the assistant screen, where there is light
+     behind the glass for the edge to catch. Today has `AmbientLight`, which is
+     much quieter, and a pill is a fraction of a card's area — the same hairline
+     that outlines a whole panel disappears around something this small. So the
+     edge is carried here, where the surface is little and the light behind it
+     is low. */
+  borderColor: 'rgba(255,255,255,0.22)',
+  borderWidth: 1,
+  },
   pillInner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -554,7 +567,20 @@ const styles = StyleSheet.create({
   /* Full width, 52 tall, and a shade more border than the pills above it.
      It is the thing this tab is for, and it had been the flattest control on
      the page. */
-  logChip: { borderRadius: radius.full },
+  logChip: {
+    borderRadius: radius.full,
+  /* A firmer edge than a card's.
+
+     `glass.border` is 12% white at half a point, and that is right for a large
+     panel sitting in the aura on the assistant screen, where there is light
+     behind the glass for the edge to catch. Today has `AmbientLight`, which is
+     much quieter, and a pill is a fraction of a card's area — the same hairline
+     that outlines a whole panel disappears around something this small. So the
+     edge is carried here, where the surface is little and the light behind it
+     is low. */
+  borderColor: 'rgba(255,255,255,0.22)',
+  borderWidth: 1,
+  },
   /* Taller than the pills above it — it is what this tab is for. */
   logChipInner: {
     flexDirection: 'row',

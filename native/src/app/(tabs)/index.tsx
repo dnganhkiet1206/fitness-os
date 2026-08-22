@@ -849,7 +849,20 @@ const styles = StyleSheet.create({
   */
   /* The glass carries the shape; the padding lives inside it — the same split
      the assistant's state pill uses. */
-  quickChip: { borderRadius: radius.full },
+  quickChip: {
+    borderRadius: radius.full,
+  /* A firmer edge than a card's.
+
+     `glass.border` is 12% white at half a point, and that is right for a large
+     panel sitting in the aura on the assistant screen, where there is light
+     behind the glass for the edge to catch. Today has `AmbientLight`, which is
+     much quieter, and a pill is a fraction of a card's area — the same hairline
+     that outlines a whole panel disappears around something this small. So the
+     edge is carried here, where the surface is little and the light behind it
+     is low. */
+  borderColor: 'rgba(255,255,255,0.22)',
+  borderWidth: 1,
+  },
   quickChipInner: {
     flexDirection: 'row',
     alignItems: 'center',
