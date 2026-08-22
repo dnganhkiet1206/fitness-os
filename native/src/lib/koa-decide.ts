@@ -1,5 +1,6 @@
 import { streakInDanger, type MascotEmotion } from '@/lib/mascot-emotion';
 import type { KoaEvent } from '@/lib/koa-event';
+import type { MascotMood } from '@/hooks/use-mascot';
 import type { UserState } from '@/lib/user-state';
 
 /**
@@ -39,6 +40,15 @@ import type { UserState } from '@/lib/user-state';
 export interface KoaContext {
   /** local hour, 0–23 */
   hour: number;
+  /**
+   * The day's mood, computed by `moodFrom` from cache.
+   *
+   * Here rather than in the companion component because this interface *is* the
+   * companion layer's view of the day, and because the alternative was a second
+   * place that reads the same two cache entries. `decide` does not read it; the
+   * character's face does.
+   */
+  mood: MascotMood;
   /** consecutive days, 0 when the run is over */
   streak: number;
   /**

@@ -125,6 +125,32 @@ export interface EmotionInput {
  * Held emotion derived purely from current state (no one-shots).
  * Priority: workout flow → birthday hat → late-night sleep → cold coat → mood.
  */
+/**
+ * The day's mood, from the day's facts.
+ *
+ * Extracted from `useMascotMood` so that the companion — which follows you onto
+ * every tab and is therefore forbidden from mounting query observers — can
+ * reach the same answer from cache. Two copies of this arithmetic is the
+ * failure this repository keeps finding: the character on Today and the
+ * character beside you would disagree about the same day, and neither would be
+ * wrong on its own terms.
+ *
+ * `read` is whether the day was actually read. Unread is `neutral`, never
+ * `tired`: a face that droops because a query has not come back yet is a
+ * statement about the person, made out of a gap in the app's own records.
+ */
+export function moodFrom(i: {
+  read: boolean;
+  hour: number;
+  mealCount: number;
+  workedOut: boolean;
+}): MascotMood {
+  if (!i.read) return 'neutral';
+  if (i.mealCount > 0 && i.workedOut) return 'happy';
+  if ((i.hour >= 12 && i.mealCount === 0) || (i.hour >= 18 && !i.workedOut)) return 'tired';
+  return 'neutral';
+}
+
 export function baseEmotion(i: EmotionInput): MascotEmotion {
   // Actively logging a workout → doing curls alongside the user.
   if (i.onWorkoutScreen) return 'curl';

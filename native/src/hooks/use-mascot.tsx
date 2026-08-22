@@ -11,6 +11,7 @@ import { seeded } from '@/lib/bandit';
 import { KOA_LINE_KEY } from '@/lib/koa-decide';
 import { useKoaReaction } from '@/lib/koa-stage';
 import { localDateStr } from '@/lib/local-date';
+import { moodFrom } from '@/lib/mascot-emotion';
 import { GAP_FROM, mascotLine, type MascotThing } from '@/lib/mascot-message';
 import { habitFor, mayPraise, rankQuests, settleStale, usePersonalModel } from '@/lib/personal-model';
 import { lateHour } from '@/lib/user-rhythm';
@@ -19,6 +20,17 @@ import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
 const ENABLED_KEY = 'ascnd_mascot_enabled';
 const SELECTED_KEY = 'ascnd_mascot_selected';
+/**
+ * Whether Koa follows you around the app, separate from whether Koa exists.
+ *
+ * Two switches rather than one, because they are two different objections.
+ * "I don't want a mascot" is `enabled`, and it turns everything off. "I like
+ * Koa but I don't want it moving about while I read" is this one, and somebody
+ * who feels that should not have to give up the character to say so.
+ *
+ * Defaults on: a companion nobody has been shown cannot be judged.
+ */
+const COMPANION_KEY = 'ascnd_mascot_companion';
 
 /** Lifetime counters that drive character unlocks */
 export function useUnlockStats() {
@@ -47,7 +59,7 @@ export function useUnlockStats() {
 // Module-level store so every mounted instance (Today's mascot, the
 // Settings picker, the unlock celebration) sees changes immediately —
 // per-component useState copies would go stale across screens.
-let settingsState = { enabled: true, selectedId: DEFAULT_MASCOT_ID };
+let settingsState = { enabled: true, companion: true, selectedId: DEFAULT_MASCOT_ID };
 const settingsListeners = new Set<() => void>();
 let settingsHydrated = false;
 
@@ -56,7 +68,7 @@ let settingsHydrated = false;
    `settingsHydrated` stopped the next account's own choice from ever being
    read. See `lib/user-scoped-reset.ts`. */
 onUserScopedReset(() => {
-  settingsState = { enabled: true, selectedId: DEFAULT_MASCOT_ID };
+  settingsState = { enabled: true, companion: true, selectedId: DEFAULT_MASCOT_ID };
   settingsHydrated = false;
   settingsListeners.forEach((l) => l());
 });
@@ -70,12 +82,14 @@ async function hydrateSettings() {
   if (settingsHydrated) return;
   settingsHydrated = true;
   try {
-    const [e, s] = await Promise.all([
+    const [e, c, s] = await Promise.all([
       AsyncStorage.getItem(ENABLED_KEY),
+      AsyncStorage.getItem(COMPANION_KEY),
       AsyncStorage.getItem(SELECTED_KEY),
     ]);
     patchSettings({
       enabled: e != null ? e === '1' : true,
+      companion: c != null ? c === '1' : true,
       selectedId: s || DEFAULT_MASCOT_ID,
     });
   } catch {
@@ -100,12 +114,16 @@ export function useMascotSettings() {
     patchSettings({ enabled: v });
     AsyncStorage.setItem(ENABLED_KEY, v ? '1' : '0').catch(() => {});
   };
+  const setCompanion = (v: boolean) => {
+    patchSettings({ companion: v });
+    AsyncStorage.setItem(COMPANION_KEY, v ? '1' : '0').catch(() => {});
+  };
   const setSelectedId = (id: string) => {
     patchSettings({ selectedId: id });
     AsyncStorage.setItem(SELECTED_KEY, id).catch(() => {});
   };
 
-  return { ...snap, setEnabled, setSelectedId };
+  return { ...snap, setEnabled, setCompanion, setSelectedId };
 }
 
 /**
@@ -340,15 +358,18 @@ export function useMascotMood(): MascotMood {
   const { data: log, isSuccess: logRead } = useDailyLog();
   const { data: meals, isSuccess: mealsRead } = useTodayMeals();
 
-  return useMemo(() => {
-    if (!logRead || !mealsRead) return 'neutral';
-    const hour = new Date().getHours();
-    const mealCount = meals?.length ?? 0;
-    const workedOut = Number(log?.workout_count ?? 0) > 0;
-    if (mealCount > 0 && workedOut) return 'happy';
-    if ((hour >= 12 && mealCount === 0) || (hour >= 18 && !workedOut)) return 'tired';
-    return 'neutral';
-  }, [log, meals, logRead, mealsRead]);
+  /* The arithmetic lives in `moodFrom` so the companion can reach the same
+     answer from cache without mounting an observer — see the note there. */
+  return useMemo(
+    () =>
+      moodFrom({
+        read: logRead && mealsRead,
+        hour: new Date().getHours(),
+        mealCount: meals?.length ?? 0,
+        workedOut: Number(log?.workout_count ?? 0) > 0,
+      }),
+    [log, meals, logRead, mealsRead],
+  );
 }
 
 /**

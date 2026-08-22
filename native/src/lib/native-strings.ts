@@ -322,6 +322,8 @@ const en = {
   // Mascot
   nMascotTitle: 'Companion',
   nMascotToggleHint: 'Your companion nudges you based on today\u2019s data',
+  nKoaCompanionTitle: 'Koa follows you',
+  nKoaCompanionHint: 'Koa stands beside you on every screen and moves as your day changes. Turn this off to keep Koa on Today only.',
   nMascotRoomTitle: 'Companion room, shop & challenges',
   nStreakFreezeFailed: 'Could not use your streak insurance — we will try again next time you open the app',
   nMascotSleep: 'Morning! How did you sleep? Log it so I can compute your readiness 😴',
@@ -980,6 +982,8 @@ const vi: typeof en = {
 
   nMascotTitle: 'Bạn đồng hành',
   nMascotToggleHint: 'Linh vật sẽ nhắc bạn dựa trên dữ liệu hôm nay',
+  nKoaCompanionTitle: 'Koa đi cùng bạn',
+  nKoaCompanionHint: 'Koa đứng cạnh bạn ở mọi màn và đổi chỗ theo diễn biến trong ngày. Tắt đi thì Koa chỉ ở lại màn Hôm nay.',
   nMascotRoomTitle: 'Phòng bạn đồng hành, cửa hàng & thử thách',
   nStreakFreezeFailed: 'Chưa dùng được bảo hiểm chuỗi — app sẽ thử lại lần mở tới',
   nMascotSleep: 'Chào buổi sáng! Đêm qua ngủ sao rồi? Ghi lại để mình tính điểm sẵn sàng nhé 😴',

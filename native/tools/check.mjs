@@ -231,6 +231,13 @@ const STEPS = [
   ['mô hình cá nhân', 'node', ['tools/personalize.mjs']],
   ['icon tô đặc', 'node', ['tools/icon-fill.mjs']],
   ['quyết định Koa', 'node', ['tools/koa-decide.mjs']],
+  /*
+    Koa used to think everywhere and appear in one place. Now it follows you,
+    and that turns three harmless faults into app-wide ones: a query subscription
+    on every screen, a layout animation on every screen, and something that
+    cannot be switched off.
+  */
+  ['bạn đồng hành Koa', 'node', ['tools/koa-companion.mjs']],
   ['trạng thái người dùng', 'node', ['tools/user-state.mjs']],
   ['thưởng thử thách', 'node', ['tools/challenge-reward.mjs']],
   ['trạng thái tích luỹ', 'node', ['tools/streak-challenge.mjs']],

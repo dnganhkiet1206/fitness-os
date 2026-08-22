@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { moodFrom } from '@/lib/mascot-emotion';
 
 import { useAuth } from '@/hooks/use-auth';
 import type { KoaContext } from '@/lib/koa-decide';
@@ -41,9 +42,21 @@ export function useKoaContext(): KoaContext {
     user?.id,
     today,
   ]);
+  /* The other half of the day's mood, read the same way — no observer. */
+  const meals = qc.getQueryData<unknown[]>(['today_meals', user?.id, today]);
+
+  const hour = new Date().getHours();
 
   return {
-    hour: new Date().getHours(),
+    hour,
+    /* `read` is whether the day is actually in the cache. An unread day is
+       `neutral`, never `tired` — see `moodFrom`. */
+    mood: moodFrom({
+      read: !!log,
+      hour,
+      mealCount: meals?.length ?? 0,
+      workedOut: Number(log?.workout_count ?? 0) > 0,
+    }),
     streak: streak?.count ?? 0,
     /* What kind of stretch this person is in. Read from the same cache and on
        the same terms as everything else here — `useUserState` mounts no

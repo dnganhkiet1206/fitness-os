@@ -110,6 +110,7 @@ const USER_KEYS = [
   'ascnd-widget-config',
   'ascnd-widget-heights',
   'ascnd_mascot_enabled',
+  'ascnd_mascot_companion',
   'ascnd_mascot_selected',
   'ascnd_mascot_seen_unlocked',
   'ascnd_test_mascot_inventory',

@@ -281,6 +281,31 @@ export default function SettingsScreen() {
           />
         </View>
         {/*
+          Two switches, because they are two different objections. "I don't want
+          a mascot" is the one above and it turns everything off. "I like Koa but
+          I don't want it moving about while I read" is this one — and somebody
+          who feels that should not have to give up the character to say it.
+
+          Hidden when the mascot is off entirely: a switch for how a thing that
+          does not exist should behave is a switch that cannot mean anything.
+        */}
+        {mascot.enabled ? (
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleInfo}>
+              <Text style={styles.cardTitle}>{i18n.nKoaCompanionTitle}</Text>
+              <Text style={styles.cardHint}>{i18n.nKoaCompanionHint}</Text>
+            </View>
+            <Switch
+              value={mascot.companion}
+              onValueChange={(v) => {
+                Haptics.selectionAsync();
+                mascot.setCompanion(v);
+              }}
+              trackColor={{ true: colors.readinessGreen, false: colors.secondary }}
+            />
+          </View>
+        ) : null}
+        {/*
           ── the only way back into the room, when the figure is switched off ──
 
           There were exactly two doors to `/mascot-room` in the whole app: the
