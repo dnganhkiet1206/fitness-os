@@ -60,7 +60,7 @@ import {
 import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useReminderSync } from '@/hooks/use-reminders';
@@ -71,6 +71,7 @@ import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
 import type { QuestKey } from '@/lib/mascot-room';
+import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { getLocale } from '@/lib/i18n';
 import { recordHeight } from '@/lib/widget-heights';
@@ -241,11 +242,28 @@ export default function TodayScreen() {
 
   const waterTarget = Number(profile?.water_target_ml) || 2500;
 
+  /*
+    ── the four ways in, and why they stopped looking alike ──
+
+    These shipped as four identical chips: the same grey `+`, the same hairline
+    box, the same near-transparent fill. Nothing but the words told them apart,
+    so reading the row meant reading four labels — and this is the row somebody
+    uses several times a day, which is exactly the row that should be
+    recognisable without reading.
+
+    Each one now carries the glyph the app already uses for that part of itself:
+    `flame` is calories wherever they appear, `moon` is sleep, `heart` is
+    biometrics, and `pulse` is training load in every assistant suggestion. The
+    row teaches nothing new — it just stops hiding what it already knows.
+
+    The `+` is gone with them. Once a chip has its own mark, a plus in front of
+    it is a second icon saying something the shape of the row already said.
+  */
   const quickActions = [
-    { label: i18n.dashLogMealAction, route: '/log-meal' as const },
-    { label: i18n.dashLogWorkoutAction, route: '/log-workout' as const },
-    { label: i18n.dashLogSleepAction, route: '/log-sleep' as const },
-    { label: i18n.dashEnterBiometrics, route: '/log-biometrics' as const },
+    { label: i18n.dashLogMealAction, route: '/log-meal' as const, glyph: 'flame' as const },
+    { label: i18n.dashLogWorkoutAction, route: '/log-workout' as const, glyph: 'pulse' as const },
+    { label: i18n.dashLogSleepAction, route: '/log-sleep' as const, glyph: 'moon' as const },
+    { label: i18n.dashEnterBiometrics, route: '/log-biometrics' as const, glyph: 'heart' as const },
   ];
 
   // Web Index renderWidget — one place mapping WidgetKey → card
@@ -532,12 +550,16 @@ export default function TodayScreen() {
             {quickActions.map((a) => (
               <PressScale
                 key={a.route}
-                style={styles.quickChip}
+                accessibilityRole="button"
+                accessibilityLabel={a.label}
+                /* Tinted by the glyph's own colour, the way the assistant's
+                   chips are — one border rule, two screens, no third palette. */
+                style={[styles.quickChip, { borderColor: `${GLYPH_TINT[a.glyph][1]}3d` }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push(a.route);
                 }}>
-                <Icon icon={Plus} size={12} color="rgba(237,237,237,0.6)" strokeWidth={2.5} />
+                <Glyph name={a.glyph} size={16} />
                 <Text style={styles.quickChipText}>{a.label}</Text>
               </PressScale>
             ))}
@@ -798,18 +820,29 @@ const styles = StyleSheet.create({
 
   // Quick chips (web: rounded-xl bordered secondary/20)
   quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  /*
+    A pill, and 44 points tall.
+
+    `radius.sm` made these read as small buttons; the pill is what the
+    assistant's chips already are, and matching it means the app has one shape
+    for "a thing you tap to go somewhere" instead of two.
+
+    The height is Apple's floor for a touch target, and it was 36. That is not a
+    rounding error — `tools/tap-targets.mjs` exists in this repository because
+    of exactly this, and its note quotes the same 44. A row used several times a
+    day is the last place to be eight points short.
+  */
   quickChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    height: 36,
-    paddingHorizontal: spacing.md - 2,
-    borderRadius: radius.sm,
+    gap: 7,
+    height: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.3)',
-    backgroundColor: 'rgba(24,24,27,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  quickChipText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
+  quickChipText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
 
   syncButton: {
     flexDirection: 'row',
