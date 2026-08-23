@@ -1268,6 +1268,67 @@ try {
     }
   }
 
+  /* ── 26. the sparkline is laid out on real dates ─────────────────────── */
+  {
+    /*
+      `LineChart` lays out by time when every date parses and falls back to even
+      spacing when one does not — silently. That fallback is right for the
+      component and it is how this screen came to be drawing an evenly-spaced
+      chart while its author believed it was drawing a time axis: it was passing
+      `'00'`, `'01'`, `'02'` as dates, the chart parses `${date}T00:00:00`,
+      every one of those is `NaN`, and the picture came out plausible for a
+      reason that was not true.
+
+      Evenly spaced is not a small difference. Three sessions in a week and one
+      six weeks later is a shape, and even spacing erases it.
+    */
+    const r = readOf('Bench Press', [[55, 7], [55, 8], [55, 9], [55, 10]]);
+    const ser = r.evidence.find((e) => e.kind === 'series');
+    if (!ser) {
+      note('insight không còn kèm chuỗi chỉ số — sparkline sẽ không có gì để vẽ');
+    } else {
+      if (!Array.isArray(ser.dates) || ser.dates.length !== ser.values.length) {
+        note(
+          `chuỗi chỉ số có ${ser.values.length} giá trị nhưng ${ser.dates?.length ?? 0} ngày — ` +
+            'biểu đồ sẽ ghép giá trị với sai ngày, hoặc rơi về khoảng cách đều',
+        );
+      }
+      for (const d of ser.dates ?? []) {
+        /* Parsed the way the chart parses it, not the way that happens to work
+           here. `new Date('00')` is a valid date; `new Date('00T00:00:00')` is
+           not, and the chart only ever tries the second. */
+        if (!Number.isFinite(new Date(`${d}T00:00:00`).getTime())) {
+          note(
+            `ngày "${d}" trong chuỗi chỉ số KHÔNG parse được theo cách LineChart parse ` +
+              `(\`${d}T00:00:00\`) — biểu đồ sẽ lặng lẽ rơi về khoảng cách đều`,
+          );
+        }
+      }
+      /* Ascending, or the line doubles back on itself. */
+      for (let i = 1; i < (ser.dates ?? []).length; i++) {
+        if (ser.dates[i] < ser.dates[i - 1]) {
+          note(`ngày trong chuỗi chỉ số không tăng dần (${ser.dates[i - 1]} rồi ${ser.dates[i]})`);
+          break;
+        }
+      }
+    }
+
+    /* And the screen must hand them to the chart rather than making some up. */
+    const screen = readFileSync(path.join(NATIVE, 'src/app/exercise-insight.tsx'), 'utf8');
+    const spark = screen.match(/const spark = useMemo\([\s\S]*?\);/);
+    if (!spark) {
+      note('không tìm thấy chỗ dựng điểm cho sparkline');
+    } else if (!/index\.dates\[/.test(spark[0])) {
+      note(
+        'màn insight tự dựng ngày cho sparkline thay vì dùng ngày thật của buổi tập — đó chính là ' +
+          'cách nó từng truyền "00", "01", "02" và biểu đồ lặng lẽ bỏ trục thời gian',
+      );
+    }
+    if (/String\(n\)\.padStart|date: String\(/.test(spark?.[0] ?? '')) {
+      note('màn insight lại đang bịa ngày cho biểu đồ');
+    }
+  }
+
   if (problems.length) {
     console.log('trí tuệ bài tập CÓ LỖI:\n');
     for (const p of problems.slice(0, 14)) console.log(`  • ${p}`);

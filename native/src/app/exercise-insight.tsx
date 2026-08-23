@@ -157,16 +157,22 @@ function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weig
   const pct = change && change.kind === 'change' ? Math.round(change.pct * 100) : null;
 
   /*
-    The sparkline is drawn from the INDEX, not from the readable series: the
-    index is what the verdict was computed from, so the picture and the words
-    cannot disagree. `date` is only an ordering key here — the chart is not
-    labelled, and a sparkline's own note says it is for when "the only question
-    is which way the line is going".
+    Drawn from the INDEX, on the sessions' own dates.
+
+    The index because it is what the verdict was computed from, so the picture
+    and the words cannot disagree. The real dates because `LineChart` lays out
+    by time — three sessions in a week and one six weeks later is a shape, and
+    even spacing erases it.
+
+    The first version passed `'00'`, `'01'`, `'02'` as dates. The chart parses
+    `` `${date}T00:00:00` ``, all of those are `NaN`, and it fell back to even
+    spacing without saying so. The chart looked fine and was laid out for a
+    reason that was not true.
   */
   const spark = useMemo(
     () =>
       index && index.kind === 'series'
-        ? index.values.map((v, n) => ({ date: String(n).padStart(2, '0'), value: v }))
+        ? index.values.map((v, n) => ({ date: index.dates[n] ?? '', value: v }))
         : [],
     [index],
   );

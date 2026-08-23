@@ -253,6 +253,8 @@ export interface TrendReading {
   unit: IndexUnit;
   /** the index of each comparable session, oldest first — the evidence */
   series: number[];
+  /** the local day of each of those sessions, same order and same length */
+  dates: string[];
   /**
    * True when the bodyweight index fell back to a raw rep count because no
    * weigh-in was on record. Carried so the caller can lower its confidence and
@@ -309,6 +311,7 @@ export function readTrend(
     if (v !== null && Number.isFinite(v)) points.push({ p, v });
   }
   const series = points.map((q) => q.v);
+  const seriesDates = points.map((q) => q.p.date);
 
   /*
     Measured from the most recent session that could be PLACED on the scale, not
@@ -337,6 +340,7 @@ export function readTrend(
     sessions: points.length,
     unit,
     series,
+    dates: seriesDates,
     bodyweightUnknown,
     lastTrainedDays,
     stale,
@@ -516,7 +520,24 @@ export function readinessFor(t: TrendReading): Readiness {
  * shows kilograms or pounds by preference and speaks two languages.
  */
 export type Evidence =
-  | { kind: 'series'; unit: IndexUnit; values: number[] }
+  /**
+   * The index per comparable session, with the local day each one happened on.
+   *
+   * ── the dates are not decoration ──
+   *
+   * A sparkline drawn from `values` alone has to space them evenly, which says
+   * the sessions were evenly spaced. They are not: somebody who trained three
+   * times in a week and then once six weeks later has a shape that even spacing
+   * hides completely.
+   *
+   * `LineChart` lays out by time when every date parses and falls back to even
+   * spacing when they do not — silently, which is how the first version of this
+   * screen came to be drawing an evenly-spaced chart while believing it was
+   * drawing a time axis. It was passing `'00'`, `'01'`, `'02'` as dates; the
+   * chart parses `` `${date}T00:00:00` ``, those are `NaN`, and the fallback
+   * caught it. The picture was plausible and the reason for it was wrong.
+   */
+  | { kind: 'series'; unit: IndexUnit; values: number[]; dates: string[] }
   /**
    * The best set of each comparable session, in the person's own terms.
    *
@@ -618,7 +639,7 @@ export function insightFor(
 
   const evidence: Evidence[] = [];
   if (t.sessions > 0) {
-    evidence.push({ kind: 'series', unit: t.unit, values: t.series });
+    evidence.push({ kind: 'series', unit: t.unit, values: t.series, dates: t.dates });
     /* Only the sessions that made it onto the scale, so the two series line up
        row for row — a readable series one longer than the one the verdict came
        from would be quietly showing a session the verdict ignored. */

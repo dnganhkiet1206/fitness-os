@@ -88,6 +88,44 @@ if (edge !== null && markerR !== null && markerStroke !== null && dotR !== null 
   }
 }
 
+/* ── the curve cannot invent a value that is not in the data ──
+
+   The line is smoothed with a cubic per segment. A smoothing that puts its
+   control points anywhere other than between the two endpoint heights will
+   overshoot: a series that only goes up gets drawn with a dip in it, and a
+   sparkline whose whole job is "which way is this going" answers wrong.
+
+   The one here is horizontally symmetric — both control points share the
+   segment's midpoint x, and take the previous and the current y — so every
+   point on the curve lies between the two endpoints vertically. That is the
+   property, and it is a property of the string, so it is checked as one. */
+{
+  const seg = src.match(/path \+= ` C \$\{([^}]+)\} \$\{([^}]+)\}, \$\{([^}]+)\} \$\{([^}]+)\}, \$\{([^}]+)\} \$\{([^}]+)\}`/);
+  if (!seg) {
+    problems.push(`không lấy được công thức đoạn cong ra khỏi ${FILE} — luật này đang không kiểm gì cả`);
+  } else {
+    const [, c1x, c1y, c2x, c2y, ex, ey] = seg.map((v) => v.trim());
+    if (c1x !== c2x) {
+      problems.push(
+        `hai điểm điều khiển của đoạn cong có x khác nhau (${c1x} vs ${c2x}) — đường sẽ không còn đối ` +
+          'xứng theo phương ngang và có thể vọt quá giá trị hai đầu',
+      );
+    }
+    const prevY = 'y(values[i - 1])';
+    const curY = 'y(values[i])';
+    if (c1y !== prevY || c2y !== curY) {
+      problems.push(
+        `điểm điều khiển đang ở (${c1y}, ${c2y}) chứ không phải (${prevY}, ${curY}) — đường cong sẽ ` +
+          'vượt ra ngoài khoảng giữa hai điểm dữ liệu, tức VẼ RA một giá trị không hề có trong dữ liệu: ' +
+          'một chuỗi chỉ đi lên sẽ có một chỗ trũng',
+      );
+    }
+    if (ex !== 'x(i)' || ey !== curY) {
+      problems.push(`đoạn cong không kết thúc đúng tại điểm dữ liệu (${ex}, ${ey})`);
+    }
+  }
+}
+
 if (problems.length) {
   console.log('mép biểu đồ CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);
@@ -98,5 +136,8 @@ console.log(
   `mép biểu đồ OK — hình học được LẤY RA khỏi ${FILE} và tính lại: chấm cuối (bán kính ${markerR} + ` +
     `nửa viền ${markerStroke / 2}) vừa trong khoảng chừa ${edge} ở CẢ HAI đầu, và plotW thật sự trừ ` +
     'khoảng chừa ở mép phải. Trước đó điểm cuối nằm đúng trên cạnh khung SVG nên một nửa chấm bị cắt ' +
-    'trên mọi biểu đồ của bốn màn — và nó không đọc ra như một lỗi, nó đọc ra như một đường dừng lại',
+    'trên mọi biểu đồ của bốn màn — và nó không đọc ra như một lỗi, nó đọc ra như một đường dừng lại. ' +
+    'Và đoạn cong vẫn đối xứng ngang với hai điểm điều khiển lấy đúng y của hai đầu, nên đường không ' +
+    'thể vọt ra ngoài khoảng giữa hai điểm dữ liệu — một chuỗi chỉ đi lên không thể bị vẽ thành có ' +
+    'chỗ trũng',
 );
