@@ -166,6 +166,9 @@ const ROUTES = [
   */
   '/edit-profile',
   '/log-meal',
+  /* Exercise Intelligence's only surface. It reads inside `workout_sessions.sets`,
+     which no other screen does, so nothing else here would notice it breaking. */
+  '/exercise-insight',
 ];
 
 // ── build & serve ─────────────────────────────────────────────────────────

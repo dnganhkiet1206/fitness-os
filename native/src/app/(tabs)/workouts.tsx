@@ -333,6 +333,28 @@ export default function WorkoutsScreen() {
             </View>
           </LiquidGlass>
         </PressScale>
+        {/*
+          The door to Exercise Intelligence.
+
+          Beside the weekly plan and the library rather than inside Progress,
+          because the question it answers — "how is my bench going" — is asked
+          while looking at training, and `entry-points.mjs` exists because this
+          app has previously built a room with only vanishing doors.
+        */}
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={i18n.nXiOpen}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/exercise-insight');
+          }}>
+          <LiquidGlass style={styles.pill} radius={radius.full} tint={GLYPH_TINT.gauge[1]}>
+            <View style={styles.pillInner}>
+              <Glyph name="gauge" size={16} />
+              <Text style={styles.outlineBtnText}>{i18n.nXiOpen}</Text>
+            </View>
+          </LiquidGlass>
+        </PressScale>
         <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.workoutsExercises}

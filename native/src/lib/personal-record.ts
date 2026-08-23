@@ -58,6 +58,19 @@ export interface RecordSet {
   /** kilograms; 0 is bodyweight and is a real value, not a missing one */
   weight: number;
   reps: number;
+  /**
+   * A warm-up, when the sheet was told so.
+   *
+   * Optional because it did not exist until Exercise Intelligence needed it, and
+   * absent on every row written before then — which is the whole installed base.
+   * `undefined` therefore has to mean "working set", or every historical record
+   * would vanish the day this field appeared.
+   */
+  warmup?: boolean;
+  /** seconds held, for movements that are a hold rather than repetitions */
+  durationSec?: number;
+  /** per-set effort, when the sheet collected one */
+  rpe?: number;
 }
 
 /** The best that has ever been done for one exercise. */
@@ -140,8 +153,20 @@ export const weightKey = (w: number): string =>
 const round2 = (w: number) => Math.round(w * 100) / 100;
 const clamp01 = (n: number) => Math.min(Math.max(n, 0), 1);
 
-/** A set only counts once it has a rep in it; the rest is an unfinished row. */
+/**
+ * A set only counts once it has a rep in it; the rest is an unfinished row.
+ *
+ * And a warm-up is not a record. A ramp to a working weight is one set of work
+ * and several rehearsals of it, and rehearsals were never eligible: a warm-up
+ * is lighter than the working set by definition, so it could not beat a weight
+ * best anyway. What it *could* do is post a rep record — twelve easy reps at
+ * 40 kg, at a load the person has used before — and that is a record nobody
+ * earned. Nothing in the database carries this flag yet, so this changes the
+ * verdict on exactly zero existing rows; it changes what happens once the sheet
+ * starts asking.
+ */
 const counts = (s: RecordSet): boolean =>
+  s.warmup !== true &&
   Number.isFinite(s.weight) && Number.isFinite(s.reps) && s.reps >= 1 && s.weight >= 0;
 
 /** Fold every set ever logged into one best-per-exercise table. */
@@ -262,8 +287,30 @@ export function setsFromJson(value: unknown): RecordSet[] {
     const name = typeof r.exerciseName === 'string' ? r.exerciseName : '';
     const weight = Number(r.weight);
     const reps = Number(r.reps);
-    if (!name.trim() || !Number.isFinite(weight) || !Number.isFinite(reps)) continue;
-    out.push({ exerciseName: name, weight, reps });
+    const duration = Number(r.durationSec);
+    const rpe = Number(r.rpe);
+
+    /*
+      A held set has no repetitions, and requiring them dropped it on the floor.
+
+      `Number(undefined)` is `NaN`, so the original finiteness test discarded any
+      row without a rep count — which is every plank ever logged. A row is real
+      if it names a movement and carries *either* repetitions or a duration; the
+      other one comes back as zero, and `counts()` above still refuses to let a
+      rep-less set near a personal record.
+    */
+    const hasReps = Number.isFinite(reps);
+    const hasDuration = Number.isFinite(duration) && duration > 0;
+    if (!name.trim() || !Number.isFinite(weight) || (!hasReps && !hasDuration)) continue;
+
+    out.push({
+      exerciseName: name,
+      weight,
+      reps: hasReps ? reps : 0,
+      ...(r.warmup === true ? { warmup: true } : {}),
+      ...(hasDuration ? { durationSec: duration } : {}),
+      ...(Number.isFinite(rpe) && rpe >= 1 && rpe <= 10 ? { rpe } : {}),
+    });
   }
   return out;
 }

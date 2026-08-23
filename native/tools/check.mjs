@@ -313,6 +313,7 @@ const STEPS = [
   ['dây nối điều chỉnh tải', 'node', ['tools/progression.mjs']],
   ['lệnh ghi có người nghe', 'node', ['tools/write-heard.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
+  ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],
   ['giờ nhắc nhở', 'node', ['tools/reminder-timing.mjs']],
   ['đã nối chưa', 'node', ['tools/linked.mjs']],

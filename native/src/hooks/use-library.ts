@@ -130,7 +130,10 @@ export function useExercises() {
       // Seed exercises have user_id NULL and are visible to everyone (web parity)
       const { data, error } = await supabase
         .from('exercises')
-        .select('id, user_id, name, muscle_group, equipment')
+        /* `exercise_kind` is what tells the trend engine whether an estimated
+           one-rep-max means anything for this movement — a curl's is a category
+           error, a squat's is not. See `lib/exercise-kind.ts`. */
+        .select('id, user_id, name, muscle_group, equipment, exercise_kind')
         .or(`user_id.is.null,user_id.eq.${user!.id}`)
         .order('muscle_group')
         .order('name');

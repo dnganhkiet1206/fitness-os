@@ -441,6 +441,7 @@ export type Database = {
           common_mistakes: string[] | null
           created_at: string
           equipment: string | null
+          exercise_kind: string | null
           form_cues: string[] | null
           id: string
           muscle_group: string
@@ -453,6 +454,7 @@ export type Database = {
           common_mistakes?: string[] | null
           created_at?: string
           equipment?: string | null
+          exercise_kind?: string | null
           form_cues?: string[] | null
           id?: string
           muscle_group?: string
@@ -465,6 +467,7 @@ export type Database = {
           common_mistakes?: string[] | null
           created_at?: string
           equipment?: string | null
+          exercise_kind?: string | null
           form_cues?: string[] | null
           id?: string
           muscle_group?: string

@@ -41,6 +41,8 @@ try {
        'src/lib/load-progression.ts', 'src/lib/prescription.ts', 'src/lib/user-state.ts',
        'src/lib/training-card.ts', 'src/lib/streak.ts', 'src/lib/adaptive-tdee.ts',
        'src/lib/local-date.ts', 'src/lib/readiness-engine.ts', 'src/lib/readiness-i18n.ts',
+       'src/lib/exercise-trend.ts', 'src/lib/exercise-performance.ts', 'src/lib/exercise-kind.ts',
+       'src/lib/personal-record.ts', 'src/lib/exercise-key.ts',
        '--ignoreConfig', '--outDir', out,
        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
@@ -50,7 +52,8 @@ try {
        this needs */
   }
   /* `@/lib/x` → `./x` in everything emitted, so `require` can resolve them. */
-  for (const f of ['load-progression', 'training-week', 'user-state', 'streak', 'training-card']) {
+  for (const f of ['load-progression', 'training-week', 'user-state', 'streak', 'training-card',
+                   'exercise-trend', 'exercise-performance', 'personal-record']) {
     const p = path.join(out, `${f}.js`);
     writeFileSync(p, readFileSync(p, 'utf8').replace(/@\/lib\//g, './'));
   }
@@ -66,6 +69,8 @@ try {
   const tdee = load('adaptive-tdee');
   const card = load('training-card');
   const ready = load('readiness-engine');
+  const xtrend = load('exercise-trend');
+  const xperf = load('exercise-performance');
 
   const doc = readFileSync(path.join(NATIVE, 'docs/fitness-scores.md'), 'utf8');
 
@@ -101,6 +106,15 @@ try {
     ['TDEE thích ứng: khoảng ngày', /khoảng ≥ (\d+) ngày/, tdee.MIN_SPAN_DAYS],
     ['TDEE thích ứng: ngày khác biệt', /≥ (\d+) ngày khác biệt/, tdee.MIN_DISTINCT_DAYS],
     ['TDEE thích ứng: chênh lệch kcal', /chênh lệch ≥ (\d+) kcal/, tdee.MIN_GAP_KCAL],
+
+    /* ── trí tuệ bài tập ──
+       Cả bốn ngưỡng đều được tài liệu giải thích bằng một lý do; nếu con số
+       trong code đổi mà lý do ở lại thì lý do đó thành một câu nói sai. */
+    ['bài tập: số buổi tối thiểu', /`MIN_SESSIONS` \| (\d+)/, xtrend.MIN_SESSIONS],
+    ['bài tập: ngưỡng gọi là chững', /`PLATEAU_SESSIONS` \| (\d+)/, xtrend.PLATEAU_SESSIONS],
+    ['bài tập: thay đổi đáng kể', /`MEANINGFUL_CHANGE` \| (\d+)%/, xtrend.MEANINGFUL_CHANGE * 100],
+    ['bài tập: cửa sổ xu hướng', /`TREND_WINDOW` \| (\d+) buổi/, xtrend.TREND_WINDOW],
+    ['bài tập: trần rep của e1RM', /\*\*chỉ tới (\d+) rep\*\*/, xperf.E1RM_MAX_REPS],
   ];
 
   for (const [what, re, actual] of PINS) {
@@ -131,6 +145,53 @@ try {
         if (ready.readinessConfidence(n) !== label) {
           problems.push(
             `tài liệu nói ${n} chiều là '${label}' nhưng engine trả '${ready.readinessConfidence(n)}'`,
+          );
+        }
+      }
+    }
+  }
+
+  /* ── the two numbers the trend document uses to justify its own method ──
+
+     The document claims best-of-half and a regression agree on the plateau
+     example and disagree on one-bad-day-after-progress, and quotes four
+     percentages. Those are the entire argument for the design, so they are
+     recomputed here rather than trusted: a comparison that has quietly stopped
+     being true is worse than no comparison, because it reads as evidence. */
+  {
+    const halves = (v) => {
+      const h = Math.floor(v.length / 2);
+      const p = Math.max(...v.slice(0, h));
+      const c = Math.max(...v.slice(v.length - h));
+      return ((c - p) / p) * 100;
+    };
+    const regression = (v) => {
+      const n = v.length;
+      const mx = (n - 1) / 2;
+      const my = v.reduce((a, b) => a + b, 0) / n;
+      let sxy = 0;
+      let sxx = 0;
+      v.forEach((y, i) => { sxy += (i - mx) * (y - my); sxx += (i - mx) ** 2; });
+      return ((sxy / sxx) * n / my) * 100;
+    };
+    const e = (w, r) => xperf.estimate1rm(w, r);
+    const CASES = [
+      ['plateau', [6, 6, 6, 5, 6].map((r) => e(60, r)), /best-of-half đọc (0,0)%/, /hồi quy đọc −(1,4)%/],
+      ['một ngày tệ', [8, 9, 10, 5].map((r) => e(55, r)), /cho best-of-half \*\*\+([\d,]+)%\*\*/, /hồi quy \*\*−([\d,]+)%\*\*/],
+    ];
+    for (const [what, series, reHalf, reReg] of CASES) {
+      const got = { half: halves(series), reg: regression(series) };
+      for (const [side, re, actual] of [['best-of-half', reHalf, got.half], ['hồi quy', reReg, got.reg]]) {
+        const m = doc.match(re);
+        if (!m) {
+          problems.push(`tài liệu không còn ghi con số ${side} cho ca "${what}" theo dạng bám được (${re})`);
+          continue;
+        }
+        const said = Number(m[1].replace(',', '.'));
+        if (Math.abs(said - Math.abs(actual)) > 0.05) {
+          problems.push(
+            `ca "${what}", ${side}: tài liệu ghi ${said}% nhưng tính lại ra ${Math.abs(actual).toFixed(1)}% — ` +
+              'đây là TOÀN BỘ lập luận cho cách chọn phương pháp, nên một con số lệch ở đây là bằng chứng giả',
           );
         }
       }

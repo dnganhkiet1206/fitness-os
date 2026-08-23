@@ -86,13 +86,49 @@ export const FIXTURES = {
     3,200 / 8,450 is 38%: far enough from both ends that a wrong origin, a
     wrong clamp or a reversed direction all land somewhere visibly different.
   */
-  workout_sessions: [{
-    id: 'k1', user_id: UID, date_time: day(0.4), template_name: 'Push A',
-    volume_load: 8450, session_rpe: 7, sets: [], source: 'manual',
-  }, {
-    id: 'k2', user_id: UID, date_time: day(2.4), template_name: 'Pull A',
-    volume_load: 3200, session_rpe: 6, sets: [], source: 'manual',
-  }],
+  /*
+    The sessions carry real sets now, and there are enough of them to hold a
+    trend.
+
+    Two sessions with `sets: []` was enough for every screen that reads a
+    session as a single row — the diary, the volume bar, the load windows — and
+    it was nothing at all to Exercise Intelligence, which reads *inside* the
+    sets and needs several sessions of the same movement before it will say
+    anything. A fixture that produces INSUFFICIENT_DATA for every exercise
+    cannot show whether the engine works.
+
+    Two histories, chosen because they are the two the specification uses:
+    a bench press that is progressing on reps at a fixed load, and a pull-up
+    that is not moving. The pull-up is also the case where the body is the load,
+    so it exercises the weigh-in lookup rather than only the arithmetic.
+  */
+  workout_sessions: [
+    ...[
+      /* days ago, bench reps, pull-up reps */
+      [0.4, 10, 8],
+      [2.4, 9, 8],
+      [5.4, 9, 9],
+      [8.4, 8, 8],
+      [12.4, 8, 8],
+      [15.4, 7, 9],
+    ].map(([d, bench, pull], i) => ({
+      id: `k${i + 1}`,
+      user_id: UID,
+      date_time: day(d),
+      template_name: i % 2 === 0 ? 'Push A' : 'Pull A',
+      volume_load: Math.round(55 * bench * 3),
+      session_rpe: 7,
+      sets: [
+        ...Array.from({ length: 3 }, (_, n) => ({
+          exerciseId: '', exerciseName: 'Bench Press', setIndex: n + 1, weight: 55, reps: bench,
+        })),
+        ...Array.from({ length: 3 }, (_, n) => ({
+          exerciseId: '', exerciseName: 'Pull-up', setIndex: n + 4, weight: 0, reps: pull,
+        })),
+      ],
+      source: 'manual',
+    })),
+  ],
   meal_entries: [{
     id: 'm1', user_id: UID, date_time: day(0.25), meal_type: 'breakfast',
     total_kcal: 520, total_protein_g: 38, total_carbs_g: 54, total_fat_g: 14, total_fiber_g: 7,

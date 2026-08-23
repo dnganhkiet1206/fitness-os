@@ -47,6 +47,7 @@ import { outOfRangeMessage } from '@/lib/plausible';
 import { suggestLoad } from '@/lib/load-progression';
 import { effortRange } from '@/lib/prescription';
 import { localDateStr, routineIndex } from '@/lib/local-date';
+import { entered, parseRepEntry } from '@/lib/rep-entry';
 import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/units';
 
 const RPE_VALUES = [6, 7, 8, 9, 10] as const;
@@ -55,10 +56,20 @@ interface SetRow {
   exerciseId: string;
   exerciseName: string;
   weight: string; // kept as text for input friendliness
+  /** repetitions, or a hold written as `45s` — see `lib/rep-entry.ts` */
   reps: string;
+  /**
+   * A rehearsal, not a working set.
+   *
+   * It changes two things and both matter: a warm-up cannot post a personal
+   * record — twelve easy reps at a load you have used before would otherwise
+   * be a rep record nobody earned — and it is left out of the numbers Exercise
+   * Intelligence reads a trend from.
+   */
+  warmup: boolean;
 }
 
-const EMPTY_SET: SetRow = { exerciseId: '', exerciseName: '', weight: '', reps: '' };
+const EMPTY_SET: SetRow = { exerciseId: '', exerciseName: '', weight: '', reps: '', warmup: false };
 
 /**
  * Turn today's planned workout into the rows you are about to fill in.
@@ -83,6 +94,9 @@ function rowsFromTemplate(exercises: TplExercise[], unit: WeightUnit): SetRow[] 
         exerciseName: ex.exerciseName ?? '',
         weight: ex.weight ? String(displayWeight(ex.weight, unit)) : '',
         reps: ex.reps ? String(ex.reps) : '',
+        /* A planned row is work, not a rehearsal. Templates carry no warm-ups
+           and inventing one would leave a set out of the record silently. */
+        warmup: false,
       });
     }
   }
@@ -296,7 +310,7 @@ export default function LogWorkoutSheet() {
           : `Your recent "${name.trim()}" sessions felt harder than ${aim} — easing off about ${pct}% is fine`);
   }, [recentSessions, name, askedRpe, profile?.goal, userState.situation, userState.confidence, readinessStatus, todayLog?.readiness_explain, vi]);
 
-  const updateSet = (idx: number, field: keyof SetRow, value: string) => {
+  const updateSet = (idx: number, field: 'exerciseName' | 'weight' | 'reps', value: string) => {
     setSets((prev) =>
       prev.map((s, i) => {
         if (i !== idx) return s;
@@ -305,6 +319,11 @@ export default function LogWorkoutSheet() {
         return { ...s, [field]: value };
       }),
     );
+  };
+
+  const toggleWarmup = (idx: number) => {
+    Haptics.selectionAsync();
+    setSets((prev) => prev.map((s, i) => (i === idx ? { ...s, warmup: !s.warmup } : s)));
   };
 
   const pickExercise = (idx: number, ex: { id: string; name: string }) => {
@@ -329,6 +348,11 @@ export default function LogWorkoutSheet() {
       return [
         ...prev,
         {
+          /* A new set inherits the previous row's movement and load, and NOT its
+             warm-up flag: the set after a warm-up is usually the working one,
+             and a flag that carried would quietly delete a real set from the
+             record every time somebody tapped Add. */
+          warmup: false,
           exerciseId: last?.exerciseId ?? '',
           exerciseName: last?.exerciseName ?? '',
           weight: last?.weight ?? '',
@@ -361,7 +385,9 @@ export default function LogWorkoutSheet() {
     `0 × reps = 0` to the load, which is what volume load means; what it gains
     is a session that says the set happened.
   */
-  const validSets = sets.filter((s) => Number(s.reps) > 0);
+  /* A row counts once it records something — repetitions, or a hold. The test
+     was `Number(s.reps) > 0`, which reads `45s` as `NaN` and drops it. */
+  const validSets = sets.filter((s) => entered(parseRepEntry(s.reps)));
 
   /*
     ── the one numeric input in the app with no bound at all ──
@@ -519,12 +545,17 @@ export default function LogWorkoutSheet() {
       log.mutateAsync({
         templateName: name,
         sessionRpe: rpe,
-        sets: validSets.map((s) => ({
-          exerciseId: s.exerciseId,
-          exerciseName: s.exerciseName,
-          weight: weightToKg(Number(s.weight) || 0, wUnit),
-          reps: Number(s.reps),
-        })),
+        sets: validSets.map((s) => {
+          const e = parseRepEntry(s.reps);
+          return {
+            exerciseId: s.exerciseId,
+            exerciseName: s.exerciseName,
+            weight: weightToKg(Number(s.weight) || 0, wUnit),
+            reps: e.reps,
+            ...(e.durationSec !== null ? { durationSec: e.durationSec } : {}),
+            ...(s.warmup ? { warmup: true } : {}),
+          };
+        }),
       }),
     onSuccess: (res) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -650,6 +681,11 @@ export default function LogWorkoutSheet() {
           <Text style={[styles.colLabel, styles.colName]}>{i18n.nExercise}</Text>
           <Text style={[styles.colLabel, styles.colNum]}>{wl}</Text>
           <Text style={[styles.colLabel, styles.colNum]}>{i18n.nReps}</Text>
+          {/* The warm-up toggle's column. Unlabelled — a header over a 26pt
+              button would be wider than the button — but it has to be here, or
+              every label above shifts by 34pt and stops naming the box under
+              it. */}
+          <View style={styles.colWarm} />
           <View style={styles.colRemove} />
         </View>
 
@@ -691,6 +727,28 @@ export default function LogWorkoutSheet() {
                   value={s.reps}
                   onChangeText={(v) => updateSet(idx, 'reps', v)}
                 />
+                {/*
+                  Warm-up, in the row rather than behind a menu.
+
+                  It is one tap and it is visible without being loud: the button
+                  is the width of the "W" it holds, and it only fills in when it
+                  is on. A rehearsal that cannot be marked is a rehearsal that
+                  posts personal records.
+                */}
+                <Pressable
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: s.warmup }}
+                  accessibilityLabel={i18n.nLgWarmup}
+                  /* 26 + 9 + 9 = 44. Eight was the number every other row in
+                     this file uses and it lands at 42 — under Apple's floor,
+                     and `tools/tap-targets.mjs` measures rather than eyeballs it. */
+                  hitSlop={9}
+                  onPress={() => toggleWarmup(idx)}
+                  style={[styles.warmBtn, s.warmup && styles.warmBtnOn]}>
+                  <Text style={[styles.warmText, s.warmup && styles.warmTextOn]}>
+                    {i18n.nLgWarmupShort}
+                  </Text>
+                </Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={8} onPress={() => removeSet(idx)} style={styles.removeSet}>
                   <Icon icon={X} size={14} color={colors.mutedForeground} />
                 </Pressable>
@@ -739,6 +797,9 @@ export default function LogWorkoutSheet() {
         </View>
 
         <Text style={styles.fieldHint}>{i18n.nLgBwHint}</Text>
+        {/* Said where it can be acted on, and only once. `45s` is a convention
+            rather than a control, so it has to be written down somewhere. */}
+        <Text style={styles.fieldHint}>{i18n.nLgHoldHint}</Text>
 
         <View style={styles.summaryRow}>
           <Text style={styles.sectionLabel}>{i18n.nVolume}</Text>
@@ -926,8 +987,9 @@ const styles = StyleSheet.create({
   colHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   colLabel: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
   colIdx: { width: 16 },
-  colName: { flex: 1, textAlign: 'left', paddingHorizontal: spacing.sm },
+  colName: { flex: 1, minWidth: 0, textAlign: 'left', paddingHorizontal: spacing.sm },
   colNum: { width: 64 },
+  colWarm: { width: 26 },
   colRemove: { width: 24 },
   /* The gap that says a new exercise starts here. A rule rather than a bigger
      gap alone, because the rows are already 8pt apart and a 16pt gap reads as
@@ -947,9 +1009,34 @@ const styles = StyleSheet.create({
   addExerciseText: { color: colors.primary },
   fieldHint: { ...type.caption, color: colors.mutedForeground },
   rangeError: { ...type.caption, color: colors.readinessRed },
-  setName: { flex: 1, paddingHorizontal: spacing.sm, height: 44 },
+  /*
+    `minWidth: 0`, and it is not cosmetic.
+
+    A flex item does not shrink below its own content unless it is told it may,
+    so this input held the row open at the width of its placeholder and pushed
+    whatever came after it off the edge of the card. Measured on the harness:
+    content ran to x=384 inside a card ending at 386, with the delete button
+    entirely outside — before the warm-up toggle was added, and worse after.
+    The row simply had no visible way to remove a set.
+
+    `minWidth: 0` is the idiom this repository already uses for the same thing
+    in `shop-grid.tsx` and `exercise-insight.tsx`.
+  */
+  setName: { flex: 1, minWidth: 0, paddingHorizontal: spacing.sm, height: 44 },
   setNum: { width: 64, paddingHorizontal: spacing.xs, height: 44, textAlign: 'center' },
   removeSet: { width: 24, alignItems: 'center' },
+  warmBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: radius.sm - 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  warmBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  warmText: { ...type.caption, fontWeight: '700', color: colors.mutedForeground },
+  warmTextOn: { color: colors.primaryForeground },
   suggestRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

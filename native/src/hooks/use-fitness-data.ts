@@ -241,6 +241,13 @@ export interface LoggedSet {
   weight: number;
   reps: number;
   rpe?: number | null;
+  /**
+   * A rehearsal rather than work. Kept off records and off trends — see
+   * `lib/personal-record.ts` and `lib/exercise-performance.ts`.
+   */
+  warmup?: boolean;
+  /** seconds held, for a movement that is a hold rather than repetitions */
+  durationSec?: number;
 }
 
 /**
@@ -342,6 +349,17 @@ export function useLogWorkoutSession() {
         ...(when ? { date_time: when.toISOString() } : {}),
         template_name: templateName.trim() || 'Workout',
         session_rpe: sessionRpe,
+        /*
+          Rebuilt field by field rather than spread, so that nothing reaches the
+          database that this file has not named — and every field a caller sends
+          therefore has to be added HERE as well.
+
+          That cost a bug the moment the set shape grew: `log-workout.tsx`
+          started sending `warmup` and `durationSec`, TypeScript was perfectly
+          happy — extra properties on an object literal passed through a
+          variable are not an error — and both were dropped on the floor. The
+          warm-up toggle worked, saved, and did nothing at all.
+        */
         sets: sets.map((s, i) => ({
           exerciseId: s.exerciseId,
           exerciseName: s.exerciseName.trim() || 'Exercise',
@@ -350,8 +368,16 @@ export function useLogWorkoutSession() {
           weight: Math.round(s.weight * 100) / 100,
           reps: s.reps,
           rpe: s.rpe && s.rpe >= 1 && s.rpe <= 10 ? s.rpe : null,
+          ...(s.warmup === true ? { warmup: true } : {}),
+          ...(Number(s.durationSec) > 0 ? { durationSec: Math.round(Number(s.durationSec)) } : {}),
         })),
-        volume_load: Math.round(sets.reduce((sum, s) => sum + s.weight * s.reps, 0)),
+        /* Warm-ups are excluded, for the same reason they are excluded from
+           records and trends: a rehearsal is not the session's work, and
+           counting it would inflate the tonnage that feeds the load windows and
+           through them the readiness score. */
+        volume_load: Math.round(
+          sets.reduce((sum, s) => (s.warmup === true ? sum : sum + s.weight * s.reps), 0),
+        ),
         pain_flags: [],
         pr_detected: records.length > 0,
       });

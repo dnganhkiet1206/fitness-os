@@ -183,12 +183,120 @@ Ghi ra để không bị hiểu là bỏ sót:
   nhịp tim theo buổi thì mọi "vùng" đều là suy diễn.
 - **Không có phút aerobic so với sàn WHO** — xem giới hạn 3 trong
   `mascot-intelligence.md`.
-- **Không có e1RM hay tiến bộ sức mạnh theo từng bài.** Kỷ lục cá nhân được phát
-  hiện lúc ghi buổi (`lib/personal-record.ts`) và chỉ để ăn mừng; app **chưa**
-  trả lời được "tôi có đang mạnh lên ở bài đẩy ngực không". Đây là lỗ hổng lớn
-  nhất còn lại của phần thể lực.
 - **Không có phân tích khối lượng theo nhóm cơ.** `exercises.muscle_group` là
   free text, ba nơi ghi ba kiểu — `lib/muscle-group.ts` ghi nhận đây là một
   defect thật của data model, và nó là **gốc** của mục trên.
 - **Không có "điểm thể lực tổng"**, và sẽ không có. Gộp các chiều không cùng đơn
   vị vào một con số làm mất chính thông tin khiến từng chiều có ích.
+
+---
+
+# Trí tuệ bài tập (Exercise Intelligence V1)
+
+Trả lời câu "tôi đang tiến bộ thế nào ở từng bài tập". Ba tệp, đều là hàm
+thuần: `lib/exercise-kind.ts`, `lib/exercise-performance.ts`,
+`lib/exercise-trend.ts`. Chúng không đọc và không ghi cơ sở dữ liệu, không kéo
+React, và **không thay đổi buổi tập của ai** — V1 chỉ cung cấp thông tin.
+
+## Danh tính và nguồn
+
+Bài tập được khớp bằng **tên**, qua `exerciseKey`, chứ không bằng `exerciseId`:
+`day-plan.tsx` ghi `exerciseId: ''` cho mọi set nó lưu, và `log-workout.tsx`
+chỉ điền id khi người dùng chọn từ thư viện. Đây là cùng lý do
+`personal-record.ts` đã chọn khớp theo tên.
+
+Ngày của một buổi là **ngày địa phương**, qua `localDateStr`. Cắt 10 ký tự đầu
+của `date_time` sẽ đẩy mọi buổi tập sáng sớm ở UTC+7 về hôm trước.
+
+## Bốn loại động tác
+
+| loại | chỉ số xu hướng | e1RM |
+|---|---|---|
+| `compound` | e1RM của set tốt nhất | có |
+| `isolation` | tấn của set tốt nhất (tạ × rep) | **không** |
+| `bodyweight` | (cân nặng + tạ ngoài) × rep | có |
+| `timed` | thời gian giữ lâu nhất | không |
+
+Nguồn: `exercises.exercise_kind` nếu có ai khai; nếu không thì **suy** từ dữ
+liệu. Suy luận nhận ra `timed` (có thời lượng, không rep) và `bodyweight`
+(**từ một nửa số set trở lên không có tạ ngoài**), và **không bao giờ** tự nhận
+`isolation` — không có gì trong một cột số phân biệt cuốn tay với chèo, và đoán
+sai ở đây quyết định một con số e1RM có được hiện ra hay không.
+
+Với bài `bodyweight`, `weight` trong set là **tạ ngoài**, không phải cân nặng —
+đúng quy ước màn ghi buổi tập đã dùng: *"Leave the weight empty for a bodyweight
+set"*.
+
+## e1RM
+
+Epley, `weight × (1 + reps / 30)`, và **chỉ tới 10 rep**. Trên 10 rep hàm trả
+`null` chứ không trả số.
+
+`personal-record.ts` từng từ chối có hàm này, với lý do vẫn còn nguyên giá trị:
+quá 10–12 rep thì công thức thổi phồng, và app không được bịa một con số rồi
+chúc mừng người ta vì nó. Hàng rào rep chính là lý do đó, viết thành code. Và
+**không estimate nào đi vào bảng kỷ lục** — `findRecords` không đổi một dòng.
+
+Nó là *ước lượng*, không phải mức tối đa đã nâng, và màn hình nói đúng như vậy.
+
+## Xu hướng
+
+So **tốt nhất của nửa gần** với **tốt nhất của nửa xa**, trên cửa sổ 6 buổi
+gần nhất (`TREND_WINDOW`). Số buổi lẻ thì bỏ buổi ở giữa.
+
+Không dùng đường hồi quy. Trên ví dụ plateau kinh điển (`60×6, 6, 6, 5, 6`) hai
+cách cho cùng kết quả — best-of-half đọc 0,0%, hồi quy đọc −1,4%, cả hai đều ra
+PLATEAU. Chúng chỉ khác nhau khi có **một ngày tệ sau một đợt tiến bộ thật**:
+`55 × 8, 9, 10, 5` cho best-of-half **+2,6%** và hồi quy **−8,4%**, tức PLATEAU
+so với DECLINING. Đường trung bình bị điểm cuối kéo tụt; "tốt nhất của một nửa"
+thì không, vì một buổi tệ đơn giản không phải cái tốt nhất của gì cả.
+
+| ngưỡng | giá trị | vì sao |
+|---|---|---|
+| `MIN_SESSIONS` | 3 | lấy thẳng từ `load-progression.ts`, không khai lại |
+| `PLATEAU_SESSIONS` | 4 | nói "bạn đang chững" là một lời về CON NGƯỜI, phải cần nhiều bằng chứng hơn lời khen |
+| `MEANINGFUL_CHANGE` | 3% | dưới bước tiến nhỏ nhất có thật trên một bài nặng (100×5 → 100×6 là 2,8%), trên nhiễu duy nhất của phép đo (vòng lặp kg↔lb, dưới 0,03 kg) |
+| `TREND_WINDOW` | 6 buổi | đủ chỗ cho một ngày tệ ở mỗi nửa; xu hướng trên cả lịch sử không phải xu hướng, nó là tiểu sử |
+
+Trạng thái: `IMPROVING` · `STABLE` · `PLATEAU` · `DECLINING` ·
+`INSUFFICIENT_DATA`. Dưới `MIN_SESSIONS` buổi **luôn** là
+`INSUFFICIENT_DATA` — thiếu dữ liệu là một câu trả lời hợp lệ, không phải chỗ
+để đoán.
+
+## Sẵn sàng tăng tải
+
+`READY_TO_PROGRESS` cần **cả ba**: xu hướng đi lên, đủ bằng chứng để tin, và
+buổi gần nhất là buổi tốt nhất trong cửa sổ — điều kiện thứ ba chặn việc khen
+sau một đỉnh đã trôi qua.
+
+`NOT_READY` cho bài đang đi xuống hoặc chưa đủ dữ liệu. Mọi thứ còn lại là
+`MAINTAIN`.
+
+**Đây không phải là giấy phép.** Cổng an toàn toàn thân — không bảo tăng tải
+cho người đang trong đợt tăng tải đột ngột — thuộc về `load-progression.ts` và
+**cố ý không được chép lại ở đây**. Adaptive Training Engine sẽ là chỗ ghép hai
+câu đó lại.
+
+## Độ tin cậy
+
+Dùng đúng thang của `user-state.ts` (`none` / `low` / `medium` / `high`), không
+dựng thang thứ hai. `low` khi dưới 3 buổi; `medium` khi là bài bodyweight mà
+chưa có lần cân nào (chỉ số tụt xuống thành số rep trần, thấy được sự tiến bộ
+kém đi); `high` từ 4 buổi trở lên.
+
+## Bằng chứng
+
+Engine trả **structured facts**, không trả câu chữ: `series`, `change`,
+`no-upward-trend`, `too-few-sessions`, `bodyweight-unknown`, `best-set`,
+`e1rm`. Màn hình chọn từ ngữ, ngôn ngữ và đơn vị. App này nói hai thứ tiếng và
+hiện hai đơn vị, nên một câu tiếng Anh nằm trong một phép tính là một lỗi.
+
+## Giới hạn đã biết của V1
+
+- **Không lọc khởi động cho dữ liệu cũ.** Cờ `warmup` mới có; mọi dòng đã ghi
+  trước đó không có cờ và **được tính là set làm việc** — nếu không, cả kho dữ
+  liệu cũ sẽ biến mất.
+- **Suy luận không phân biệt được `isolation`.** Bài do người dùng tự tạo mà
+  không khai loại sẽ được coi là `compound`, tức có e1RM.
+- **Không phân tích khối lượng theo nhóm cơ.** `exercises.muscle_group` vẫn là
+  free text ba kiểu — xem `lib/muscle-group.ts`.
