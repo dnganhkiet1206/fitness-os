@@ -133,7 +133,38 @@ export function indexUnit(kind: ExerciseKind): IndexUnit {
  * entering it as a bad one. That is the same rule `session-load.ts` states for
  * its own `null`, for the same reason.
  */
-export function performanceIndex(p: ExercisePerformance): number | null {
+export function performanceIndex(
+  p: ExercisePerformance,
+  /**
+   * Whether the bodyweight scale is available for the WHOLE series this
+   * performance belongs to.
+   *
+   * ── the +7,100% this parameter exists for ──
+   *
+   * A bodyweight movement has two possible indexes and they are not the same
+   * size: body-times-reps is in the hundreds, a bare rep count is in single
+   * figures. Which one a session got used to depend on whether a weigh-in
+   * existed on or before that day — decided per session.
+   *
+   * So a history that crossed the first weigh-in mixed them. Measured on four
+   * identical sessions of eight pull-ups with a weigh-in appearing halfway:
+   *
+   *     8, 8, 576, 576   →   IMPROVING
+   *
+   * Nothing about the training changed. Stepping onto a scale had become the
+   * largest improvement that person had ever made.
+   *
+   * The scale is therefore decided once, for the series, by `readTrend`: if any
+   * comparable session lacks a bodyweight, every session is read in reps.
+   * Coarser, and the same coarseness the whole way along.
+   *
+   * Required, with no default. A default of `true` is the shape of the original
+   * bug: a caller mapping this over a history one session at a time gets the
+   * mixed scale back, and it reads perfectly well. Making the caller answer the
+   * question is what stops the question being skipped.
+   */
+  bodyweightScale: boolean,
+): number | null {
   switch (p.kind) {
     case 'timed':
       return p.bestDurationSec ?? null;
@@ -148,7 +179,7 @@ export function performanceIndex(p: ExercisePerformance): number | null {
       /* Body plus belt when the body is known, and reps alone when it is not.
          The two are different scales, so a history that crosses between them is
          reported at lower confidence — see `confidenceFor`. */
-      if (p.bodyweightKg === null) return p.bestReps;
+      if (!bodyweightScale || p.bodyweightKg === null) return p.bestReps;
       return round2((p.bodyweightKg + (p.bestWeightKg ?? 0)) * p.bestReps);
     }
     case 'isolation':
@@ -186,14 +217,24 @@ export function readTrend(history: readonly ExercisePerformance[]): TrendReading
   const unit = indexUnit(kind);
 
   const window = history.slice(-TREND_WINDOW);
+
+  /*
+    One scale for the whole window, decided before any session is placed on it.
+    A session with no measurable set is left out of this — it is not going on
+    the scale either way, so it cannot be the reason everybody else drops to a
+    coarser one.
+  */
+  const measurable = window.filter((p) => performanceIndex(p, false) !== null);
+  const bodyweightUnknown =
+    kind === 'bodyweight' && measurable.some((p) => p.bodyweightKg === null);
+  const bodyweightScale = !bodyweightUnknown;
+
   const points: { p: ExercisePerformance; v: number }[] = [];
   for (const p of window) {
-    const v = performanceIndex(p);
+    const v = performanceIndex(p, bodyweightScale);
     if (v !== null && Number.isFinite(v)) points.push({ p, v });
   }
   const series = points.map((q) => q.v);
-  const bodyweightUnknown =
-    kind === 'bodyweight' && points.some((q) => q.p.bodyweightKg === null);
 
   const base = {
     sessions: points.length,
@@ -279,16 +320,22 @@ export function confidenceFor(t: TrendReading): Confidence {
  * about. 60×5, 60×4, 60×5 is neither — it is `MAINTAIN`, which is the answer
  * that means "keep doing this", not "we don't know".
  */
-export function readinessFor(
-  t: TrendReading,
-  history: readonly ExercisePerformance[],
-): Readiness {
+export function readinessFor(t: TrendReading): Readiness {
   if (t.trend === 'INSUFFICIENT_DATA' || t.trend === 'DECLINING') return 'NOT_READY';
   if (t.trend !== 'IMPROVING') return 'MAINTAIN';
   if (confidenceFor(t) === 'low' || confidenceFor(t) === 'none') return 'NOT_READY';
 
-  const last = performanceIndex(history[history.length - 1]!);
-  if (last === null) return 'MAINTAIN';
+  /*
+    Read out of the series rather than recomputed from the history.
+
+    Recomputing called `performanceIndex` with its default scale while the
+    series had been built on whatever scale the window settled on — so for a
+    bodyweight movement with a partial weigh-in history the two numbers were in
+    different units, and "is the latest session the best one" compared 8 against
+    576. The series already holds the answer, on the scale the verdict used.
+  */
+  const last = t.series[t.series.length - 1];
+  if (last === undefined) return 'MAINTAIN';
   /* Strictly the best, within the same tolerance a change is measured at, so
      that finishing level with an earlier peak is not read as being on top of
      one. */
@@ -371,7 +418,7 @@ export function insightFor(
 
   const t = readTrend(history);
   const confidence = confidenceFor(t);
-  const readiness = readinessFor(t, history);
+  const readiness = readinessFor(t);
   const window = history.slice(-TREND_WINDOW);
 
   const pick = <K extends keyof ExercisePerformance>(k: K): number | null => {
@@ -392,7 +439,11 @@ export function insightFor(
     evidence.push({
       kind: 'best-sets',
       values: window
-        .filter((p) => performanceIndex(p) !== null)
+        /* `false` — "can this session be placed at all", which is the same
+           question `readTrend` asks when it decides the scale. Asking it with
+           the bodyweight scale on would drop a session that has reps but no
+           weigh-in, and the two series would stop lining up. */
+        .filter((p) => performanceIndex(p, false) !== null)
         .map((p) => ({
           weightKg: p.bestWeightKg,
           reps: p.bestReps,

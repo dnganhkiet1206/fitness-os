@@ -236,11 +236,20 @@ export function performancesFrom(
           if (bestWeightKg === null || w > bestWeightKg) bestWeightKg = w;
           if (bestReps === null || reps > bestReps) bestReps = reps;
           if (usesE1rm(kind)) {
-            /* Bodyweight movements are loaded by the body doing them. A pull-up
-               at 53 kg and the same pull-up with a 10 kg belt are 53 and 63, and
-               reading only the belt would call the first one weightless. */
-            const load = kind === 'bodyweight' ? (bodyweightKg ?? 0) + w : w;
-            const e = estimate1rm(load, reps);
+            /*
+              Bodyweight movements are loaded by the body doing them. A pull-up
+              at 53 kg and the same pull-up with a 10 kg belt are 53 and 63, and
+              reading only the belt would call the first one weightless.
+
+              And when the body is unknown there is no estimate, rather than an
+              estimate of the belt. `(bodyweightKg ?? 0) + w` was the first
+              version: a pull-up with a ten-kilo belt and no weigh-in on record
+              came out at **11.67 kg**, printed on the card as this person's
+              estimated one-rep-max. Not a rough figure — a figure about a
+              different exercise, arrived at confidently.
+            */
+            const load = kind === 'bodyweight' ? (bodyweightKg === null ? null : bodyweightKg + w) : w;
+            const e = load === null ? null : estimate1rm(load, reps);
             if (e !== null && (bestE1rmKg === null || e > bestE1rmKg)) bestE1rmKg = e;
           }
         }

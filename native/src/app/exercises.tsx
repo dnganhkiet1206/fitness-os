@@ -13,6 +13,7 @@ import { Field, FormSheet } from '@/components/ascnd/form-sheet';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
+import { EXERCISE_KINDS, isExerciseKind, type ExerciseKind } from '@/lib/exercise-kind';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -58,6 +59,16 @@ export default function ExercisesScreen() {
   const [name, setName] = useState(create ?? '');
   const [muscleGroup, setMuscleGroup] = useState(MUSCLE_GROUPS[0]);
   const [equipment, setEquipment] = useState('');
+  /*
+    Starts unset, and unset is a real answer.
+
+    `exercise_kind` decides what the trend engine reads for this movement — an
+    estimated one-rep-max for a squat, tonnage for a curl, seconds for a hold.
+    Left blank, `lib/exercise-kind.ts` infers, and it says openly that it cannot
+    tell a curl from a row. Defaulting the picker to "Compound" would turn that
+    honest gap into a claim somebody never made, on every exercise they create.
+  */
+  const [kind, setKind] = useState<ExerciseKind | null>(null);
 
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -77,11 +88,17 @@ export default function ExercisesScreen() {
     if (!name.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     addEx.mutate(
-      { name: name.trim(), muscle_group: muscleGroup, equipment: equipment.trim() || undefined },
+      {
+        name: name.trim(),
+        muscle_group: muscleGroup,
+        equipment: equipment.trim() || undefined,
+        ...(kind ? { exercise_kind: kind } : {}),
+      },
       {
         onSuccess: () => {
           setName('');
           setEquipment('');
+          setKind(null);
           setAdding(false);
         },
         onError: (e: Error) => Alert.alert('ASCND', e.message),
@@ -195,6 +212,35 @@ export default function ExercisesScreen() {
           </PickRow>
         </Field>
 
+        <Field label={i18n.nExKind} hint={i18n.nExKindHint}>
+          <PickRow
+            value={kind ?? ''}
+            fill={colors.primary}
+            slotFill={colors.secondary}
+            radius={radius.full}
+            gap={spacing.sm}
+            style={styles.chipWrap}>
+            {EXERCISE_KINDS.map((k) => (
+              <PickRow.Item
+                key={k}
+                itemKey={k}
+                accessibilityLabel={i18n[`nExKind${k}` as keyof typeof i18n] as string}
+                style={styles.chip}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  /* Tapping the chosen one clears it, so "nobody has said" stays
+                     reachable after a mis-tap. Without that, the first tap on
+                     this row is irreversible. */
+                  setKind((cur) => (cur === k ? null : k));
+                }}>
+                <Text style={[styles.chipText, kind === k && styles.chipTextActive]}>
+                  {i18n[`nExKind${k}` as keyof typeof i18n] as string}
+                </Text>
+              </PickRow.Item>
+            ))}
+          </PickRow>
+        </Field>
+
         <Field label={i18n.exercisesEquipment} hint={i18n.nExGearHint}>
           <TextInput
             style={styles.input}
@@ -221,6 +267,21 @@ export default function ExercisesScreen() {
               {list.map((e, i) => (
                 <View key={e.id} style={[styles.row, i > 0 && styles.rowBorder]}>
                   <Text style={styles.name} numberOfLines={1}>{e.name}</Text>
+                  {/*
+                    The declared kind, where the person who declared it can see
+                    it. It could be set and could not be read back, which is a
+                    setting that has to be taken on trust — and this one decides
+                    whether an estimated one-rep-max appears for the movement.
+
+                    Nothing here when it is unset, rather than a word for
+                    "unset": the honest state is that nobody has said, and a
+                    label for that would be noise on every seeded row.
+                  */}
+                  {isExerciseKind(e.exercise_kind) ? (
+                    <Text style={styles.kind}>
+                      {i18n[`nExKind${e.exercise_kind}` as keyof typeof i18n] as string}
+                    </Text>
+                  ) : null}
                   {e.equipment ? <Text style={styles.equipment}>{e.equipment}</Text> : null}
                   {/* Only user-created exercises are deletable (seeds are shared) */}
                   {e.user_id === user?.id && (
@@ -315,6 +376,20 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },
-  name: { ...type.body, color: colors.foreground, flex: 1 },
+  /* `minWidth: 0` beside the flex: a long exercise name held the row open at
+     its own width and pushed the badges off the card — the same failure
+     measured on the log sheet's set row. */
+  name: { ...type.body, color: colors.foreground, flex: 1, minWidth: 0 },
   equipment: { ...type.caption, color: colors.mutedForeground },
+  /* Quieter than the equipment beside it: the equipment is what you look for
+     when scanning the list, and this is confirmation of something you set. */
+  kind: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.full,
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+  },
 });

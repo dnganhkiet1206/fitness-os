@@ -1,99 +1,30 @@
-// ASCND – Core Types
-
-export interface UserProfile {
-  id: string;
-  name: string;
-  dob: string;
-  sex: string;
-  height_cm: number;
-  weight_kg: number;
-  units: { weight: 'kg' | 'lb'; height: 'cm' | 'in' };
-  goal: 'bulk' | 'cut' | 'maintain' | 'recomp' | 'strength' | 'endurance';
-  activity_level: 'sedentary' | 'light' | 'moderate' | 'high' | 'athlete';
-  tdee_target_kcal: number;
-  macro_targets: { protein_g: number; carbs_g: number; fat_g: number; fiber_g: number };
-  sleep_targets: { hours: number; bedtime: string; waketime: string };
-}
-
-export interface DailyLog {
-  id: string;
-  userId: string;
-  date: string;
-  nutritionSummary: { kcal: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number };
-  activitySummary: { steps: number; active_minutes: number; active_kcal: number };
-  sleepSummary: { duration_min: number; quality_1_10: number };
-  readiness: { score_0_100: number; status: 'green' | 'yellow' | 'red'; explain: string };
-}
-
-export interface BiometricSample {
-  id: string;
-  userId: string;
-  dateTime: string;
-  source: 'wearable' | 'camera_rppg' | 'manual';
-  metrics: {
-    hr_bpm?: number;
-    hrv_rmssd_ms?: number;
-    spo2_pct?: number;
-    vo2max_mlkgmin?: number;
-    resp_rate_rpm?: number;
-  };
-  confidence_0_1: number;
-  notes?: string;
-}
-
-export interface WorkoutSession {
-  id: string;
-  userId: string;
-  dateTime: string;
-  templateId?: string;
-  templateName?: string;
-  sessionRPE_1_10: number;
-  painFlags: { bodyPart: string; pain_0_10: number }[];
-  sets: { exerciseId: string; exerciseName: string; setIndex: number; weight: number; reps: number; rpe?: number }[];
-  computed: { volumeLoad: number; prDetected: boolean };
-}
-
-export interface SleepLog {
-  id: string;
-  userId: string;
-  bedtime: string;
-  waketime: string;
-  quality_1_10: number;
-  sleepStages?: { light_min: number; deep_min: number; rem_min: number };
-}
-
-export interface HabitNudge {
-  id: string;
-  userId: string;
-  type: 'sleep' | 'hydration' | 'protein' | 'steps' | 'recovery';
-  message: string;
-  priority: 'low' | 'medium' | 'high';
-  enabled: boolean;
-  frequencyCapPerDay: number;
-}
-
-export interface WeeklyReview {
-  id: string;
-  userId: string;
-  weekStartDate: string;
-  stats: {
-    avg_kcal: number;
-    avg_protein_g: number;
-    workout_completion_pct: number;
-    avg_sleep_min: number;
-    readiness_avg: number;
-  };
-  insights: string[];
-  recommendations: string[];
-}
-
-export interface WearableSource {
-  id: string;
-  userId: string;
-  provider: 'apple_health' | 'google_fit' | 'oura' | 'whoop' | 'other';
-  connected: boolean;
-  lastSync?: string;
-}
+/**
+ * The readiness contract, and nothing else any more.
+ *
+ * ── what was in here, and why it went ──
+ *
+ * This file was "ASCND – Core Types": twelve declarations covering the profile,
+ * the daily log, a workout session, sleep, nudges, the weekly review. Nine of
+ * them were imported by nothing at all, and they described a database the app
+ * does not have — `WorkoutSession` named its fields `dateTime`,
+ * `sessionRPE_1_10` and `computed.volumeLoad`, where the real columns are
+ * `date_time`, `session_rpe` and `volume_load`.
+ *
+ * That is the failure mode of a description with no consumer: nothing breaks
+ * when it drifts, so nothing stops it drifting, and it stays the first thing
+ * anybody opening this repository for "what is a workout session" will find.
+ * `BiometricSample` had gone one step further — `use-biometrics.ts` declares its
+ * own, so there were two types of that name for one table and the app used the
+ * other one.
+ *
+ * What is left is the three the readiness engine actually imports. They are
+ * kept true by `tsc`, which is the only thing that ever keeps a type true.
+ *
+ * The real shapes live where they are used: `hooks/use-fitness-data.ts` for a
+ * logged set, `lib/personal-record.ts` for a parsed one, and
+ * `integrations/supabase/types.ts` for the tables themselves — that last one
+ * generated from the schema rather than written beside it.
+ */
 
 export interface ReadinessInput {
   hrv_today?: number | null;
@@ -176,4 +107,3 @@ export interface ReadinessResult {
  */
 export type ReadinessConfidence = 'high' | 'medium' | 'low';
 
-export type ReadinessStatus = 'green' | 'yellow' | 'red';

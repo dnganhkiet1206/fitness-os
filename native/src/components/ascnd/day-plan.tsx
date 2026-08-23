@@ -499,6 +499,21 @@ export function DayPlan({
            through the queue is indistinguishable from one that did not — the
            week's day panel reads `sets` back to work out which planned rows a
            session accounts for (`lib/day-progress.ts`). */
+        /*
+          No warm-up flag here, and that is a decision rather than an omission.
+
+          A planned row IS work: the template says three sets of five at a
+          hundred, and those three are the session. A warm-up is the ramp you do
+          before the plan starts, which is why it belongs on the free-form sheet
+          where you write down what you actually did — `log-workout.tsx` has the
+          toggle. Absent means working set, so every row from here is counted,
+          which is correct.
+
+          It would also cost a fifth control on every row of this panel, and the
+          note beside the effort chips below already argues against that: nine
+          controls per set on a six-set workout is fifty-four, "all the same
+          shape and none of them the one you want".
+        */
         sets: sets.map((s, i) => ({
           exerciseId: s.exerciseId,
           exerciseName: s.exerciseName.trim() || 'Exercise',

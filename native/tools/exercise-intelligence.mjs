@@ -241,7 +241,7 @@ try {
     eq('kéo xà không tạ → kind', pull[0].kind, 'bodyweight');
 
     /* The body is the load: 53 kg × 8 reps, not zero. */
-    const idx = trend.performanceIndex(pull[0]);
+    const idx = trend.performanceIndex(pull[0], true);
     if (Math.abs(idx - 53 * 8) > 0.01) {
       note(`chỉ số kéo xà = ${idx}, phải là 53×8 = ${53 * 8} — cơ thể CHÍNH LÀ tải`);
     }
@@ -264,7 +264,7 @@ try {
     const light = perf.performancesFrom([S(1, reps('Dip', 0, 10))], {
       weighIns: [{ date: '2000-01-01', value: 70 }],
     });
-    if (!(trend.performanceIndex(heavy[0]) > trend.performanceIndex(light[0]))) {
+    if (!(trend.performanceIndex(heavy[0], true) > trend.performanceIndex(light[0], true))) {
       note('dip ở 80 kg không được chấm cao hơn cùng số rep ở 70 kg');
     }
 
@@ -530,6 +530,244 @@ try {
             'mà app này nói hai thứ tiếng và hiện hai đơn vị');
         }
       }
+    }
+  }
+
+  /* ── 21. the library actually reaches the engine ─────────────────────── */
+  {
+    /*
+      The engine takes `declaredKinds` and the guard above proves it obeys them.
+      What that does not prove is that anything ever fills the map — and the map
+      is built in a React hook, which cannot be loaded here.
+
+      Three links, and the whole authoritative half of the taxonomy is dead if
+      any one of them is missing. It would be dead SILENTLY: inference would
+      answer every question, plausibly, and the only visible symptom would be an
+      estimated one-rep-max quietly appearing on curls.
+
+      The screenshot cannot settle this either — in the fixture only Dumbbell
+      Curl is classified differently by declaration than by inference, and its
+      card falls below the fold.
+    */
+    const hook = readFileSync(path.join(NATIVE, 'src/hooks/use-exercise-insights.ts'), 'utf8');
+    const LINKS = [
+      [/exercise_kind/, 'không đọc cột exercise_kind ra khỏi thư viện'],
+      [/exerciseKey\(/, 'không khoá theo exerciseKey — set đã ghi mang TÊN chứ không mang id, nên map sẽ không bao giờ khớp'],
+      /*
+        Inside the CALL, not anywhere in the file.
+
+        The first version looked for the name and stayed green when the argument
+        was deleted — `const declaredKinds = useMemo(...)` still spells it, and a
+        map that is computed and then not passed is exactly the dead state this
+        rule is for. Fourth time in this session a rule of mine has matched a
+        spelling instead of a behaviour.
+      */
+      /*
+        Bounded to the call's own brackets. A window of "the next 200
+        characters" reached past the closing paren into the `useMemo`
+        dependency array on the following line, which also names
+        `declaredKinds` — so deleting the argument left the rule green a second
+        time, matching a dependency list instead of an argument.
+      */
+      [
+        /performancesFrom\((?:[^()]|\([^()]*\))*declaredKinds/,
+        'tính ra declaredKinds rồi KHÔNG truyền nó vào performancesFrom',
+      ],
+    ];
+    for (const [re, why] of LINKS) {
+      if (!re.test(hook)) {
+        note(
+          `use-exercise-insights.ts ${why} — nửa "có người khai" của phân loại chết trong im lặng, ` +
+            'suy luận trả lời mọi thứ một cách hợp lý, và triệu chứng duy nhất là e1RM lặng lẽ mọc ra trên bài cuốn tay',
+        );
+      }
+    }
+    /* And the library query has to select the column, or the hook reads
+       `undefined` from every row and the map comes out empty. */
+    const lib = readFileSync(path.join(NATIVE, 'src/hooks/use-library.ts'), 'utf8');
+    const sel = lib.match(/\.from\('exercises'\)\s*\n[\s\S]{0,400}?\.select\('([^']+)'\)/);
+    if (!sel) {
+      note('không tìm thấy câu select thư viện bài tập');
+    } else if (!/exercise_kind/.test(sel[1])) {
+      note(
+        `câu select thư viện là '${sel[1]}' — thiếu exercise_kind, nên mọi dòng trả về undefined ` +
+          'và map khai báo luôn rỗng dù người dùng đã khai',
+      );
+    }
+  }
+
+  /* ── 20. no unread description of the schema ────────────────────────── */
+  {
+    /*
+      `src/lib/types.ts` held twelve declarations titled "ASCND – Core Types".
+      Nine were imported by nothing, and they described a database the app does
+      not have: `WorkoutSession` named its fields `dateTime`, `sessionRPE_1_10`
+      and `computed.volumeLoad`, where the real columns are `date_time`,
+      `session_rpe` and `volume_load`. `BiometricSample` had a rival of the same
+      name declared inside `use-biometrics.ts`, and that was the one the app
+      used.
+
+      A description with no consumer cannot be kept true — nothing fails when it
+      drifts — and it stays the first thing anybody opening this repository for
+      "what is a workout session" will find.
+
+      Checked per DECLARATION and not per file, because the file itself was
+      live: three readiness types in it are imported, which is what made the
+      other nine invisible. A whole-file rule passed on it happily, and a
+      whole-file rule was also what made the first version of THIS check wrong —
+      it looked for `lib/types` and missed `./types`.
+    */
+    const TYPES = 'src/lib/types.ts';
+    const walk = (dir) =>
+      require('node:fs').readdirSync(dir).flatMap((e) => {
+        const p2 = path.join(dir, e);
+        return require('node:fs').statSync(p2).isDirectory() ? walk(p2) : /\.tsx?$/.test(e) ? [p2] : [];
+      });
+    const others = walk(path.join(NATIVE, 'src'))
+      .filter((f) => path.relative(NATIVE, f) !== TYPES)
+      .map((f) => readFileSync(f, 'utf8'))
+      .join('\n');
+
+    /*
+      What counts is an IMPORT, not the name turning up somewhere.
+
+      The first version looked for the name anywhere else in `src`, and blanked
+      out other files' declarations of it before looking. That was not enough:
+      `use-biometrics.ts` declares its own `BiometricSample` AND uses it, so the
+      name was still there and the dead one in this file read as live. Blanking
+      a declaration does not blank its uses, and the uses are what the search
+      found — which is precisely how that type stayed unnoticed.
+
+      An import list is exact. Nothing outside this file can put a name in it by
+      accident.
+    */
+    const imported = new Set();
+    for (const m of others.matchAll(/import\s+type\s*\{([^}]*)\}\s*from\s*['"](?:\.\/types|@\/lib\/types)['"]/g)) {
+      for (const n of m[1].split(',')) {
+        const clean = n.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0].trim();
+        if (clean) imported.add(clean);
+      }
+    }
+    const decl = readFileSync(path.join(NATIVE, TYPES), 'utf8');
+    for (const m of decl.matchAll(/^export (?:interface|type) (\w+)/gm)) {
+      const name = m[1];
+      if (!imported.has(name)) {
+        note(
+          `${TYPES} khai báo \`${name}\` mà không file nào dùng — một bản mô tả không ai đọc thì ` +
+            'không giữ cho đúng được: nó lệch đi mà chẳng có gì hỏng, và vẫn là thứ đầu tiên người ' +
+            'đọc repo này gặp khi đi tìm "một buổi tập là gì"',
+        );
+      }
+    }
+  }
+
+  /* ── 19. the kind is something a person can actually say ─────────────── */
+  {
+    /*
+      `exercises.exercise_kind` is the authoritative answer, and inference is
+      openly the weakest thing in this engine — it cannot tell a curl from a
+      row, and that decides whether an estimated one-rep-max is computed at all.
+
+      For a whole release the column existed, had a CHECK constraint, was
+      backfilled for the ten seeded exercises, was read by the hook and used by
+      the engine — and there was NO WAY for anybody to set it. Every exercise a
+      user created fell through to the guess. A column nobody can write is not a
+      feature with a gap in it; it is a feature that is not there.
+
+      Three links, and all three have to hold: the form offers it, the mutation
+      accepts it, and the insert carries it.
+    */
+    const form = readFileSync(path.join(NATIVE, 'src/app/exercises.tsx'), 'utf8');
+    const lib = readFileSync(path.join(NATIVE, 'src/hooks/use-library.ts'), 'utf8');
+
+    if (!/EXERCISE_KINDS/.test(form)) {
+      note('màn thư viện không còn cho chọn loại động tác — cột exercise_kind lại thành thứ không ai ghi được');
+    }
+    if (!/exercise_kind/.test(form)) {
+      note('màn thư viện có bộ chọn nhưng KHÔNG gửi exercise_kind đi — người dùng chọn xong và nó rơi mất');
+    }
+    const add = lib.match(/export function useAddExercise\(\)[\s\S]*?\n\}/);
+    if (!add) {
+      note('không tìm thấy useAddExercise — luật này đang không kiểm gì cả');
+    } else {
+      if (!/exercise_kind\?: string/.test(add[0])) {
+        note('useAddExercise không nhận exercise_kind — màn hình gửi lên và mutation vứt đi');
+      }
+      if (!/\.\.\.ex\b/.test(add[0]) && !/exercise_kind/.test(add[0].split('insert')[1] ?? '')) {
+        note('useAddExercise nhận exercise_kind nhưng lệnh insert không mang nó theo');
+      }
+    }
+
+    /* And an unset kind must stay unset. A picker that starts on "Compound"
+       would put a claim nobody made on every exercise ever created, and every
+       curl would get a one-rep-max estimate. */
+    if (/useState<ExerciseKind[^>]*>\((?!null)/.test(form)) {
+      note(
+        'bộ chọn loại động tác có giá trị mặc định — "chưa ai nói" là một câu trả lời THẬT, ' +
+          'và đặt sẵn một loại là gán cho mọi bài tập người dùng tạo một khẳng định họ chưa từng đưa ra',
+      );
+    }
+
+    /* The four the engine knows, the four the database allows, and the four the
+       screen offers must be the same four. */
+    const mig = readFileSync(
+      path.join(NATIVE, '..', 'supabase', 'migrations', '20260823120000_exercise_kind.sql'),
+      'utf8',
+    );
+    const inSql = [...(mig.match(/IN \('compound'[^)]*\)/) ?? [''])[0].matchAll(/'(\w+)'/g)].map((m) => m[1]);
+    const inCode = kindMod.EXERCISE_KINDS;
+    if (inSql.length !== inCode.length || inSql.some((k) => !inCode.includes(k))) {
+      note(
+        `CHECK trong migration cho phép [${inSql}] còn engine biết [${inCode}] — một loại được lưu ` +
+          'mà engine không hiểu sẽ lặng lẽ rơi xuống nhánh suy luận, tức người dùng khai mà app bỏ qua',
+      );
+    }
+  }
+
+  /* ── 18. one scale per series ─────────────────────────────────────────── */
+  {
+    /*
+      A bodyweight movement has two possible indexes and they are NOT the same
+      size: body-times-reps is in the hundreds, and a bare rep count is in single
+      figures. Which one a session gets depends on whether a weigh-in existed on
+      or before that day.
+
+      So a history that crosses the first weigh-in mixes them, and the crossing
+      itself looks like the largest improvement anybody has ever made.
+    */
+    const late = perf.performancesFrom(
+      [S(6, reps('Pull-up', 0, 8)), S(5, reps('Pull-up', 0, 8)),
+       S(4, reps('Pull-up', 0, 8)), S(3, reps('Pull-up', 0, 8))],
+      /* the scale arrives partway through the history */
+      { weighIns: [{ date: perf.dayOf(at(4)), value: 72 }] },
+    );
+    /* The series the VERDICT was built on, not a per-session mapping — that is
+       the thing that has to be on one scale. */
+    const lateRead = trend.readTrend(perf.historyOf(late, 'pull-up'));
+    const idx = lateRead.series;
+    const span = Math.max(...idx) / Math.min(...idx);
+    if (span > 5) {
+      note(
+        `chuỗi kéo xà trộn HAI THANG ĐO trong cùng một lịch sử: ${idx.join(', ')} — ` +
+          'buổi trước lần cân đầu tiên được chấm bằng số rep, buổi sau bằng cân nặng × rep, ' +
+          'nên chính việc bước lên cân trở thành mức tiến bộ lớn nhất đời người đó',
+      );
+    }
+    const r = trend.insightFor(perf.historyOf(late, 'pull-up'));
+    if (r.trend === 'IMPROVING') {
+      note('bốn buổi kéo xà 8 rep y hệt nhau bị đọc thành IMPROVING vì có thêm một lần cân');
+    }
+
+    /*
+      And an estimate for a bodyweight movement whose body is unknown is not a
+      smaller estimate — it is an estimate of the belt alone.
+    */
+    const belted = perf.performancesFrom([S(1, reps('Pull-up', 0, 8, 2).concat(reps('Pull-up', 10, 5)))], {});
+    if (belted[0].bestE1rmKg !== null && belted[0].bestE1rmKg < 40) {
+      note(
+        `kéo xà đeo 10 kg mà chưa biết cân nặng ra e1RM = ${belted[0].bestE1rmKg} kg — đó là ước ` +
+          'lượng của MỖI CÁI ĐAI, hiện ra như thể là sức mạnh của người đó',
+      );
     }
   }
 

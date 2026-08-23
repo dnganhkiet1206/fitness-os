@@ -163,11 +163,22 @@ export function useAddExercise() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (ex: { name: string; muscle_group: string; equipment?: string }) => {
+    mutationFn: async (ex: {
+      name: string;
+      muscle_group: string;
+      equipment?: string;
+      /**
+       * What kind of movement it is, which decides what the trend engine reads
+       * for it — see `lib/exercise-kind.ts`. Optional, and `undefined` is a real
+       * answer: it means nobody has said, and the engine infers. What it must
+       * never be is a default, because a default is a claim.
+       */
+      exercise_kind?: string;
+    }) => {
       const { data, error } = await supabase
         .from('exercises')
         .insert({ ...ex, user_id: user!.id })
-        .select('id, name, muscle_group, equipment')
+        .select('id, name, muscle_group, equipment, exercise_kind')
         .single();
       if (error) throw error;
       return data;

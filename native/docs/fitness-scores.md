@@ -217,7 +217,8 @@ của `date_time` sẽ đẩy mọi buổi tập sáng sớm ở UTC+7 về hôm
 | `bodyweight` | (cân nặng + tạ ngoài) × rep | có |
 | `timed` | thời gian giữ lâu nhất | không |
 
-Nguồn: `exercises.exercise_kind` nếu có ai khai; nếu không thì **suy** từ dữ
+Nguồn: `exercises.exercise_kind` nếu có ai khai — khai được ở màn Thư viện bài
+tập lúc tạo bài, và hiện lại trên chính hàng đó; nếu không thì **suy** từ dữ
 liệu. Suy luận nhận ra `timed` (có thời lượng, không rep) và `bodyweight`
 (**từ một nửa số set trở lên không có tạ ngoài**), và **không bao giờ** tự nhận
 `isolation` — không có gì trong một cột số phân biệt cuốn tay với chèo, và đoán
@@ -226,6 +227,28 @@ sai ở đây quyết định một con số e1RM có được hiện ra hay kh�
 Với bài `bodyweight`, `weight` trong set là **tạ ngoài**, không phải cân nặng —
 đúng quy ước màn ghi buổi tập đã dùng: *"Leave the weight empty for a bodyweight
 set"*.
+
+### Một thang đo cho cả chuỗi
+
+Bài `bodyweight` có **hai** chỉ số khả dĩ và chúng không cùng cỡ: cân nặng × rep
+nằm ở hàng trăm, số rep trần nằm ở hàng đơn vị. Thang đo được chọn **một lần cho
+cả cửa sổ**, không phải từng buổi: chỉ cần một buổi đo được mà thiếu cân nặng
+thì cả chuỗi đọc bằng số rep.
+
+Bản đầu quyết định theo từng buổi. Đo trên bốn buổi kéo xà 8 rep y hệt nhau, với
+lần cân đầu tiên xuất hiện ở giữa:
+
+```
+8, 8, 576, 576   →   IMPROVING
+```
+
+Không có gì trong việc tập thay đổi. **Bước lên cân đã trở thành mức tiến bộ lớn
+nhất đời người đó.**
+
+Cùng lý do: bài `bodyweight` chưa biết cân nặng thì **không có** e1RM, chứ không
+phải có một e1RM nhỏ hơn. `(cân nặng ?? 0) + tạ ngoài` cho ra 11,67 kg cho một
+lần kéo xà đeo đai 10 kg — một ước lượng về **mỗi cái đai**, in ra như thể là sức
+mạnh của người đó.
 
 ## e1RM
 
@@ -297,6 +320,12 @@ hiện hai đơn vị, nên một câu tiếng Anh nằm trong một phép tính
   trước đó không có cờ và **được tính là set làm việc** — nếu không, cả kho dữ
   liệu cũ sẽ biến mất.
 - **Suy luận không phân biệt được `isolation`.** Bài do người dùng tự tạo mà
-  không khai loại sẽ được coi là `compound`, tức có e1RM.
+  **không khai** loại sẽ được coi là `compound`, tức có e1RM. Khai được lúc tạo
+  bài, nhưng chưa sửa lại được sau đó — màn Thư viện chưa có chức năng sửa bài
+  tập nào cả.
+- **Kế hoạch tuần không đánh dấu khởi động được.** Một dòng trong kế hoạch theo
+  định nghĩa là set làm việc; khởi động là phần ramp trước khi kế hoạch bắt đầu,
+  nên nó nằm ở màn ghi tự do. Đây là quyết định, không phải thiếu sót — lý do
+  ghi trong `day-plan.tsx`.
 - **Không phân tích khối lượng theo nhóm cơ.** `exercises.muscle_group` vẫn là
   free text ba kiểu — xem `lib/muscle-group.ts`.

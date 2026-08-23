@@ -119,15 +119,50 @@ export const FIXTURES = {
       volume_load: Math.round(55 * bench * 3),
       session_rpe: 7,
       sets: [
+        /* A warm-up, so the flag is exercised on a real screen: it must not
+           count toward the volume, the best set, or a record. */
+        { exerciseId: '', exerciseName: 'Bench Press', setIndex: 0, weight: 30, reps: 12, warmup: true },
         ...Array.from({ length: 3 }, (_, n) => ({
           exerciseId: '', exerciseName: 'Bench Press', setIndex: n + 1, weight: 55, reps: bench,
         })),
         ...Array.from({ length: 3 }, (_, n) => ({
           exerciseId: '', exerciseName: 'Pull-up', setIndex: n + 4, weight: 0, reps: pull,
         })),
+        /* A hold. Nothing else in this fixture has a duration, so without it the
+           whole `timed` path — the kind, the seconds index, the card that shows
+           them — is never drawn by anything. */
+        { exerciseId: '', exerciseName: 'Plank', setIndex: 7, weight: 0, durationSec: 40 + (6 - i) * 4 },
+        /*
+          The one movement where the DECLARED kind and the inferred kind
+          disagree, which is the only way a screenshot can show that the
+          declaration is being read at all.
+
+          A dumbbell curl is loaded, so inference calls it `compound` and
+          computes an estimated one-rep-max for it. The library row says
+          `isolation`, and `usesE1rm` refuses one — a curl's one-rep-max is not
+          a smaller version of a squat's, it is a category error. Every other
+          exercise in this fixture is classified the same either way, so without
+          this row the authoritative branch was never drawn.
+        */
+        { exerciseId: '', exerciseName: 'Dumbbell Curl', setIndex: 8, weight: 12, reps: 10 + (6 - i) },
       ],
       source: 'manual',
     })),
+  ],
+  /*
+    A library, so the DECLARED half of the taxonomy is exercised.
+
+    `exercise_kind` is the authoritative answer and inference is the fallback;
+    with no `exercises` rows at all, every screenshot in this repository was
+    taken with inference doing the whole job, and the branch that reads a
+    declaration had never been drawn. Plank is the case that matters: nothing in
+    a duration says whether it is a hold or an isolation movement done slowly.
+  */
+  exercises: [
+    { id: 'e1', user_id: null, name: 'Bench Press', muscle_group: 'Ngực', equipment: 'Barbell', exercise_kind: 'compound' },
+    { id: 'e2', user_id: null, name: 'Pull-up', muscle_group: 'Lưng', equipment: 'Bodyweight', exercise_kind: 'bodyweight' },
+    { id: 'e3', user_id: UID, name: 'Plank', muscle_group: 'Bụng', equipment: 'Bodyweight', exercise_kind: 'timed' },
+    { id: 'e4', user_id: UID, name: 'Dumbbell Curl', muscle_group: 'Bắp tay trước', equipment: 'Dumbbell', exercise_kind: 'isolation' },
   ],
   meal_entries: [{
     id: 'm1', user_id: UID, date_time: day(0.25), meal_type: 'breakfast',
