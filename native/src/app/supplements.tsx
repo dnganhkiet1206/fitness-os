@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -111,16 +112,24 @@ export default function SupplementsScreen() {
             onChangeText={setDose}
           />
           <Text style={styles.fieldLabel}>{i18n.supplementsTiming}</Text>
-          <View style={styles.chipRow}>
+          <PickRow
+            value={timing}
+            fill={colors.primary}
+            slotFill={colors.secondary}
+            radius={radius.full}
+              gap={spacing.sm}
+            style={styles.chipRow}>
             {TIMINGS.map((t) => (
-              <Pressable
+              <PickRow.Item
                 key={t.key}
-                style={[styles.chip, timing === t.key && styles.chipActive]}
+                itemKey={t.key}
+                accessibilityLabel={t.label}
+                style={styles.chip}
                 onPress={() => { Haptics.selectionAsync(); setTiming(t.key); }}>
                 <Text style={[styles.chipText, timing === t.key && styles.chipTextActive]}>{t.label}</Text>
-              </Pressable>
+              </PickRow.Item>
             ))}
-          </View>
+          </PickRow>
           <PressScale
             style={[styles.submitBtn, (!name.trim() || addSup.isPending) && styles.submitDisabled]}
             disabled={!name.trim() || addSup.isPending}
@@ -208,14 +217,12 @@ const styles = StyleSheet.create({
     color: colors.foreground,
     fontSize: 15,
   },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chipRow: { flexWrap: 'wrap' },
+  /* No background and no radius — the row measures this and draws both. */
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.secondary,
   },
-  chipActive: { backgroundColor: colors.primary },
   chipText: { ...type.footnote, color: colors.secondaryForeground },
   chipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
   submitBtn: {

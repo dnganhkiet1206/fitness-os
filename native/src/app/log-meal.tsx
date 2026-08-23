@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
@@ -535,19 +536,28 @@ export default function LogMealSheet() {
         <Text style={styles.title}>{i18n.nLogMealTitle}</Text>
 
         {/* Meal type */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <PickRow
+          scroll
+          value={mealType}
+          fill={colors.primary}
+          slotFill={colors.secondary}
+          radius={radius.full}
+          gap={spacing.sm}
+          contentStyle={styles.chips}>
           {MEAL_TYPES.map(({ key, label }) => (
-            <Pressable
+            <PickRow.Item
               key={key}
+              itemKey={key}
+              accessibilityLabel={label}
               onPress={() => {
                 Haptics.selectionAsync();
                 setMealType(key);
               }}
-              style={[styles.chip, mealType === key && styles.chipActive]}>
+              style={styles.chip}>
               <Text style={[styles.chipText, mealType === key && styles.chipTextActive]}>{label}</Text>
-            </Pressable>
+            </PickRow.Item>
           ))}
-        </ScrollView>
+        </PickRow>
 
         {/*
           Meals you have already eaten.
@@ -917,14 +927,13 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.card },
   content: { padding: spacing.lg, gap: spacing.sm + 4 },
   title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
-  chips: { gap: spacing.sm, paddingRight: spacing.sm },
+  chips: { paddingRight: spacing.sm },
+  /* No background and no radius: the row measures this chip and draws both the
+     resting box and the travelling highlight to match. */
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.secondary,
   },
-  chipActive: { backgroundColor: colors.primary },
   chipText: { ...type.footnote, color: colors.secondaryForeground },
   chipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
   input: {

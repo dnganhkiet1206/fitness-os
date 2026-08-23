@@ -4,6 +4,7 @@ import { Plus, Trash2 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { StaggerItem } from '@/components/ascnd/stagger-item';
@@ -171,22 +172,27 @@ export default function ExercisesScreen() {
         </Field>
 
         <Field label={i18n.exercisesMuscleGroup} hint={i18n.nExGroupHint}>
-          <View style={styles.chipWrap}>
+          <PickRow
+            value={muscleGroup}
+            fill={colors.primary}
+            slotFill={colors.secondary}
+            radius={radius.full}
+              gap={spacing.sm}
+            style={styles.chipWrap}>
             {MUSCLE_GROUPS.map((g) => (
-              <Pressable
+              <PickRow.Item
                 key={g}
-                accessibilityRole="button"
-                accessibilityState={{ selected: muscleGroup === g }}
-                hitSlop={{ top: 6, bottom: 6 }}
-                style={[styles.chip, muscleGroup === g && styles.chipActive]}
+                itemKey={g}
+                accessibilityLabel={g}
+                style={styles.chip}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setMuscleGroup(g);
                 }}>
                 <Text style={[styles.chipText, muscleGroup === g && styles.chipTextActive]}>{g}</Text>
-              </Pressable>
+              </PickRow.Item>
             ))}
-          </View>
+          </PickRow>
         </Field>
 
         <Field label={i18n.exercisesEquipment} hint={i18n.nExGearHint}>
@@ -271,14 +277,12 @@ const styles = StyleSheet.create({
     color: colors.foreground,
     fontSize: 15,
   },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chipWrap: { flexWrap: 'wrap' },
+  /* No background and no radius — the row measures this and draws both. */
   chip: {
     paddingHorizontal: spacing.md - 2,
     paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.secondary,
   },
-  chipActive: { backgroundColor: colors.primary },
   chipText: { ...type.footnote, color: colors.secondaryForeground },
   chipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
   submitBtn: {

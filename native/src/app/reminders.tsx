@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { Bell, Droplets, Dumbbell, type LucideIcon, Moon, Pill, Scale } from 'lucide-react-native';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
@@ -108,11 +109,19 @@ export default function RemindersScreen() {
           />
         </View>
         {prefs.water.enabled && (
-          <View style={styles.intervalRow}>
+          <PickRow
+            value={String(prefs.water.everyHours)}
+            fill={colors.primary}
+            slotFill={colors.secondary}
+            radius={radius.md}
+              gap={spacing.sm}
+            style={styles.intervalRow}>
             {WATER_INTERVALS.map((n) => (
-              <Pressable
+              <PickRow.Item
                 key={n}
-                style={[styles.intervalChip, prefs.water.everyHours === n && styles.intervalChipActive]}
+                itemKey={String(n)}
+                accessibilityLabel={i18n.nReminderEveryHours.replace('{n}', String(n))}
+                style={styles.intervalChip}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setWaterInterval(n);
@@ -121,9 +130,9 @@ export default function RemindersScreen() {
                   style={[styles.intervalText, prefs.water.everyHours === n && styles.intervalTextActive]}>
                   {i18n.nReminderEveryHours.replace('{n}', String(n))}
                 </Text>
-              </Pressable>
+              </PickRow.Item>
             ))}
-          </View>
+          </PickRow>
         )}
       </GlassCard>
 
@@ -205,7 +214,7 @@ const styles = StyleSheet.create({
   iconBadge: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   rowTitle: { ...type.headline, color: colors.foreground, flexShrink: 1 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  intervalRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  intervalRow: { marginTop: spacing.md },
   /* Quiet, and below the control it talks about: this is the app explaining
      something it noticed, not a second setting competing with the picker. */
   smartRow: {
@@ -231,15 +240,13 @@ const styles = StyleSheet.create({
      without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
      floor, and on a page with room to spare it also stops the row reading as
      an afterthought. */
+  /* Background drawn by the row — see `pick-row.tsx`. */
   intervalChip: {
     flex: 1,
     height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  intervalChipActive: { backgroundColor: colors.primary },
   intervalText: { ...type.footnote, color: colors.secondaryForeground },
   intervalTextActive: { color: colors.primaryForeground, fontWeight: '600' },
 });

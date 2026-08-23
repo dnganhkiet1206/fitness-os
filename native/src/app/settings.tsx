@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -417,21 +418,29 @@ export default function SettingsScreen() {
       <Animated.View entering={rise(2)}>
       <GlassCard>
         <Text style={styles.cardTitle}>Language / Ngôn ngữ</Text>
-        <View style={styles.langRow}>
+        <PickRow
+          value={lang}
+          fill={colors.primary}
+          slotFill={colors.secondary}
+          radius={radius.md}
+          gap={spacing.sm}
+          style={styles.langRow}>
           {(['vi', 'en'] as const).map((l) => (
-            <Pressable
+            <PickRow.Item
               key={l}
+              itemKey={l}
+              accessibilityLabel={l === 'vi' ? 'Tiếng Việt' : 'English'}
               onPress={() => {
                 Haptics.selectionAsync();
                 setLang(l);
               }}
-              style={[styles.langChip, lang === l && styles.langChipActive]}>
+              style={styles.langChip}>
               <Text style={[styles.langText, lang === l && styles.langTextActive]}>
                 {l === 'vi' ? 'Tiếng Việt' : 'English'}
               </Text>
-            </Pressable>
+            </PickRow.Item>
           ))}
-        </View>
+        </PickRow>
       </GlassCard>
       </Animated.View>
 
@@ -677,16 +686,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     minHeight: 26,
   },
-  langRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  langRow: { marginTop: spacing.md },
+  /* No background and no radius here: the row paints the resting box, so the
+     travelling highlight has a layer to sit in between it and this label. */
   langChip: {
     flex: 1,
     height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  langChipActive: { backgroundColor: colors.primary },
   langText: { ...type.footnote, fontWeight: '600', color: colors.secondaryForeground },
   langTextActive: { color: colors.primaryForeground },
   signOut: {

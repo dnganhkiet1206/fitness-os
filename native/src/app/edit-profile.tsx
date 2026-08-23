@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { Segmented } from '@/components/ascnd/segmented';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
@@ -643,19 +644,28 @@ function Field({ label, children, style }: { label: string; children: React.Reac
 
 function ChipGrid({ options, value, onChange }: { options: { key: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
-    <View style={styles.chipGrid}>
+    <PickRow
+      value={value}
+      fill="rgba(168,178,196,0.12)"
+      slotFill={colors.secondary}
+      border={{ width: 1, color: colors.primary }}
+      radius={radius.full}
+      gap={spacing.sm}
+      style={styles.chipGrid}>
       {options.map((o) => (
-        <Pressable
+        <PickRow.Item
           key={o.key}
-          style={[styles.gridChip, value === o.key && styles.gridChipActive]}
+          itemKey={o.key}
+          accessibilityLabel={o.label}
+          style={styles.gridChip}
           onPress={() => {
             Haptics.selectionAsync();
             onChange(o.key);
           }}>
           <Text style={[styles.gridChipText, value === o.key && styles.gridChipTextActive]}>{o.label}</Text>
-        </Pressable>
+        </PickRow.Item>
       ))}
-    </View>
+    </PickRow>
   );
 }
 
@@ -727,15 +737,12 @@ const styles = StyleSheet.create({
      floor, and on a page with room to spare it also stops the row reading as
      an afterthought. */
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  /* No background, no radius, no border: the row measures this chip and draws
+     the resting box, the travelling highlight and its outline to match. */
   gridChip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.secondary,
-    borderWidth: 1,
-    borderColor: 'transparent',
   },
-  gridChipActive: { borderColor: colors.primary, backgroundColor: 'rgba(168,178,196,0.12)' },
   gridChipText: { ...type.footnote, color: colors.secondaryForeground },
   gridChipTextActive: { color: colors.foreground, fontWeight: '600' },
 });

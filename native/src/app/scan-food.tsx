@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -275,21 +276,28 @@ export default function ScanFoodScreen() {
       </Pressable>
 
       {/* Mode toggle */}
-      <View style={[styles.modeRow, { top: insets.top + spacing.sm }]}>
+      <PickRow
+        value={mode}
+        fill="#fff"
+        radius={radius.full}
+        gap={spacing.sm}
+        style={[styles.modeRow, { top: insets.top + spacing.sm }]}>
         {(['food', 'label'] as const).map((m) => (
-          <Pressable
+          <PickRow.Item
             key={m}
+            itemKey={m}
+            accessibilityLabel={m === 'food' ? i18n.nScanModeFood : i18n.nScanModeLabel}
             onPress={() => {
               Haptics.selectionAsync();
               setMode(m);
             }}
-            style={[styles.modeChip, mode === m && styles.modeChipActive]}>
+            style={styles.modeChip}>
             <Text style={[styles.modeText, mode === m && styles.modeTextActive]}>
               {m === 'food' ? i18n.nScanModeFood : i18n.nScanModeLabel}
             </Text>
-          </Pressable>
+          </PickRow.Item>
         ))}
-      </View>
+      </PickRow>
 
       <View style={styles.overlay} pointerEvents="none">
         <View style={styles.frame} />
@@ -346,18 +354,15 @@ const styles = StyleSheet.create({
   modeRow: {
     position: 'absolute',
     alignSelf: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
     backgroundColor: 'rgba(0,0,0,0.4)',
     padding: 4,
     borderRadius: radius.full,
   },
+  /* No background: the only fill is the travelling highlight the row draws. */
   modeChip: {
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
-    borderRadius: radius.full,
   },
-  modeChipActive: { backgroundColor: '#fff' },
   modeText: { ...type.footnote, color: '#fff', fontWeight: '600' },
   modeTextActive: { color: '#000' },
   shutterRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },

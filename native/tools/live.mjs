@@ -157,6 +157,15 @@ const ROUTES = [
     nowhere to look at the result.
   */
   '/mascot-room',
+  /*
+    And the two screens whose choice-rows were the last ones still cutting.
+    `/edit-profile` is where the app asks who you are — goal, activity level,
+    training level — and `/log-meal` is the most-used logging screen there is.
+    Neither had ever been drawn here, which is why the bordered chip grid on one
+    and the scrolling meal-type row on the other were both changed blind.
+  */
+  '/edit-profile',
+  '/log-meal',
 ];
 
 // ── build & serve ─────────────────────────────────────────────────────────

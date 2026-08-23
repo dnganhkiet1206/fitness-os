@@ -2,9 +2,10 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Plus, Search } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { Icon } from '@/components/ascnd/icon';
@@ -102,13 +103,18 @@ export default function FoodListScreen() {
 
   return (
     <Screen back title={vi ? 'Thực phẩm' : 'Foods'}>
-      <View style={styles.segBar}>
+      <PickRow
+        value={seg}
+        fill={colors.accent}
+        radius={radius.sm - 3}
+        gap={3}
+        style={styles.segBar}>
         {segments.map((s) => (
-          <Pressable
+          <PickRow.Item
             key={s.key}
-            accessibilityRole="button"
-            accessibilityState={{ selected: seg === s.key }}
-            style={[styles.seg, seg === s.key && styles.segActive]}
+            itemKey={s.key}
+            accessibilityLabel={s.label}
+            style={styles.seg}
             onPress={() => {
               Haptics.selectionAsync();
               setSeg(s.key);
@@ -116,9 +122,9 @@ export default function FoodListScreen() {
             <Text style={[styles.segText, seg === s.key && styles.segTextActive]}>{s.label}</Text>
             {/* The size of the list, before you switch to it. */}
             <Text style={[styles.segCount, seg === s.key && styles.segCountActive]}>{s.count}</Text>
-          </Pressable>
+          </PickRow.Item>
         ))}
-      </View>
+      </PickRow>
 
       <View style={styles.tools}>
         <View style={styles.searchWrap}>
@@ -204,7 +210,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(24,24,27,0.6)',
     borderRadius: radius.sm,
     padding: 3,
-    gap: 3,
   },
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
@@ -220,7 +225,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  segActive: { backgroundColor: colors.accent },
   segText: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground },
   segTextActive: { color: colors.foreground, fontWeight: '600' },
   segCount: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },

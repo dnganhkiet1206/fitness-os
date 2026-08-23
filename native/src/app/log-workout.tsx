@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { MusicLaunch } from '@/components/ascnd/music-launch';
 import { Icon } from '@/components/ascnd/icon';
@@ -780,19 +781,26 @@ export default function LogWorkoutSheet() {
         {loadHint ? <Text style={styles.loadHint}>{loadHint}</Text> : null}
 
         <Text style={styles.sectionLabel}>{i18n.nRpe}</Text>
-        <View style={styles.chips}>
+        <PickRow
+          value={String(rpe)}
+          fill={colors.primary}
+          slotFill={colors.secondary}
+          radius={radius.md}
+          gap={spacing.sm}>
           {RPE_VALUES.map((v) => (
-            <Pressable
+            <PickRow.Item
               key={v}
+              itemKey={String(v)}
+              accessibilityLabel={String(v)}
               onPress={() => {
                 Haptics.selectionAsync();
                 setRpe(v);
               }}
-              style={[styles.chip, rpe === v && styles.chipActive]}>
+              style={styles.chip}>
               <Text style={[styles.chipText, rpe === v && styles.chipTextActive]}>{v}</Text>
-            </Pressable>
+            </PickRow.Item>
           ))}
-        </View>
+        </PickRow>
 
         {/* Said next to the button it explains, and only while it is true —
             a permanent instruction is read once and then stops being read. */}
@@ -976,16 +984,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   volume: { ...type.headline, color: colors.foreground },
-  chips: { flexDirection: 'row', gap: spacing.sm },
+  /* No background here on purpose: the row paints the resting box so the
+     travelling highlight can sit between it and this label. */
   chip: {
     flex: 1,
     height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipActive: { backgroundColor: colors.primary },
   chipText: { ...type.headline, color: colors.secondaryForeground },
   chipTextActive: { color: colors.primaryForeground },
   saveButton: {

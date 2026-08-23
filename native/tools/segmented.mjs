@@ -25,7 +25,7 @@
  * where you are. Replace the slide with a fade and the control still works and
  * has stopped saying anything.
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,13 +35,36 @@ const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$
 const problems = [];
 
 const COMPONENT = 'src/components/ascnd/segmented.tsx';
-const code = strip(read(COMPONENT));
+/*
+  The moving part moved.
+
+  `Segmented` used to compute its own pill; it is now a control on top of
+  `pick-row.tsx`, which is the app's ONLY travelling highlight — for equal
+  segments and for chips that fit their label alike. So rules about how the
+  highlight moves have to read the file that moves it, or they go on passing
+  while checking nothing. Pointing this at `segmented.tsx` after the rewrite
+  gave exactly that: two rules green against a file with no animation left in
+  it at all.
+*/
+const MOVER = 'src/components/ascnd/pick-row.tsx';
+const code = strip(read(MOVER));
 
 /* ── 1. the pill travels, and it travels by transform ── */
 {
-  if (!/translateX/.test(code)) {
+  /*
+    Inside an animated style, not anywhere in the file.
+
+    The first version searched the whole file, and stayed green when every
+    animated `translateX` was deleted — because the resting boxes behind the
+    chips are also placed with `transform: [{ translateX }]`, statically. The
+    highlight had stopped moving and the rule was reading a static placement.
+    Third time in one session that a rule of mine matched a spelling instead of
+    a behaviour.
+  */
+  const animated = (code.match(/useAnimatedStyle\(\(\) => \(\{[\s\S]*?\}\)\)/g) ?? []).join('\n');
+  if (!/translateX/.test(animated)) {
     problems.push(
-      `${COMPONENT} không còn dịch chuyển pill. Một segmented control là một câu nói về VỊ TRÍ — chuyển ` +
+      `${MOVER} không còn dịch chuyển pill. Một segmented control là một câu nói về VỊ TRÍ — chuyển ` +
         'động chính là câu trả lời "cái nào trong số này", vì nó mang theo quan hệ giữa chỗ bạn vừa ở ' +
         'và chỗ bạn đang tới. Đổi sang mờ dần thì control vẫn chạy và đã thôi nói gì',
     );
@@ -50,7 +73,7 @@ const code = strip(read(COMPONENT));
      which is what `tools/motion.mjs` was written for. */
   if (/withTiming\([^)]*\)\s*,?\s*\n?\s*(width|left|right):/.test(code) || /(width|left):\s*withTiming/.test(code)) {
     problems.push(
-      `${COMPONENT} animate thuộc tính layout (width/left). Chạy lại bố cục mỗi khung hình — đúng lỗi ` +
+      `${MOVER} animate thuộc tính layout (width/left). Chạy lại bố cục mỗi khung hình — đúng lỗi ` +
         'mà tools/motion.mjs đã bắt ở bạn đồng hành Koa vài commit trước. Các segment chia đều nên vị ' +
         'trí thứ i là i × bề rộng, và translateX làm được cả việc',
     );
@@ -63,15 +86,63 @@ const code = strip(read(COMPONENT));
     line still carried the word. Checking a name rather than a behaviour, which
     is the flaw this repository keeps finding in its own guards.
   */
-  if (!/useReducedMotion\(\)/.test(code)) {
-    problems.push(`${COMPONENT} không GỌI useReducedMotion() — cài đặt hệ thống tồn tại đúng cho loại chuyển động này`);
-  }
-  const styleBlock = code.match(/useAnimatedStyle\(\(\) => \(\{[\s\S]*?\}\)\)/);
-  if (styleBlock && !/reduceMotion/.test(styleBlock[0])) {
-    problems.push(
-      `${COMPONENT} đọc Reduce Motion nhưng không dùng nó trong style động — cờ được lấy về rồi bỏ đi ` +
+  const flag = code.match(/const (\w+) = useReducedMotion\(\)/);
+  if (!flag) {
+    problems.push(`${MOVER} không GỌI useReducedMotion() — cài đặt hệ thống tồn tại đúng cho loại chuyển động này`);
+  } else {
+    /*
+      Where the branch lives is not the test; whether the flag reaches a branch
+      that skips the animation is.
+
+      The first version demanded `reduceMotion` inside `useAnimatedStyle`, which
+      was true of the old `Segmented` and is false of every component in this
+      app that got the architecture right afterwards — `progress-bar.tsx` and
+      `pick-row.tsx` both branch where the shared value is ASSIGNED, and their
+      worklets read nothing but shared values. A rule that insists on one shape
+      of correct code fails the other one, and it failed it loudly the moment
+      the rewrite landed.
+
+      So: follow the flag. Names derived from it count as the flag, and one of
+      them has to gate a `withTiming` — that is the branch that means "arrive
+      without travelling".
+    */
+    const names = new Set([flag[1]]);
+    for (let pass = 0; pass < 3; pass++) {
+      for (const m of code.matchAll(/const (\w+) = ([^;\n]*(?:\n[^;\n]*)?);/g)) {
+        if ([...names].some((n) => new RegExp(`\\b${n}\\b`).test(m[2]))) names.add(m[1]);
+      }
+    }
+    /*
+      The timing call gets followed too, not just the flag.
+
+      This rule already had to stop caring WHERE the branch lives. It then broke
+      a second time, on a refactor that changed nothing about behaviour:
+
+          const go = (v) => withTiming(v, { duration, easing });
+          x.value = jump ? here.x : go(here.x);
+
+      `withTiming` is still what the false branch reaches; it now reaches it
+      through a name. A rule that only recognises the literal call is reading
+      the spelling. So: collect the names whose definition leads to a timing
+      call, and let the branch mention any of them.
+    */
+    const timed = new Set(['withTiming', 'withSpring', 'withDelay']);
+    for (let pass = 0; pass < 3; pass++) {
+      for (const m of code.matchAll(/const (\w+) = ([^;]*?);/g)) {
+        if ([...timed].some((t) => new RegExp(`\\b${t}\\b`).test(m[2]))) timed.add(m[1]);
+      }
+    }
+    const reach = [...timed].join('|');
+    const gates = [...code.matchAll(new RegExp(`([\\w.$]+)\\s*\\?[^;]*?\\b(?:${reach})\\b`, 'g'))]
+      .some((m) => [...names].some((n) => new RegExp(`\\b${n}\\b`).test(m[1])));
+    const inStyle = (code.match(/useAnimatedStyle\(\(\) => \(\{[\s\S]*?\}\)\)/g) ?? [])
+      .some((b) => [...names].some((n) => new RegExp(`\\b${n}\\b`).test(b)));
+    if (!gates && !inStyle) {
+      problems.push(
+      `${MOVER} đọc Reduce Motion nhưng không dùng nó trong style động — cờ được lấy về rồi bỏ đi ` +
         'thì cũng như không có',
-    );
+      );
+    }
   }
 }
 
@@ -247,6 +318,71 @@ const code = strip(read(COMPONENT));
       `SegmentPanel lấy gap mặc định là \`${def[1].trim()}\` chứ không phải \`spacing.stack\` — chép GIÁ TRỊ ` +
         'của thang khoảng cách thay vì trỏ vào nó thì hôm nào thang được chỉnh, bốn màn này lệch đi trong im lặng',
     );
+  }
+}
+
+/* ── 6. no hand-built exclusive picker anywhere ──
+
+   Rule 2 looks for `styles.tab` + `styles.tabActive`, because that is what the
+   five copies it was written for were called. Nine more rows were doing exactly
+   the same thing under different names — `chip`/`chipActive`, `seg`/`segActive`,
+   `modeChip`, `poseChip`, `intervalChip`, `langChip` — and every one of them
+   sailed past a rule whose whole purpose was to catch them. It was matching the
+   word `tab`.
+
+   The shape has nothing to do with the name. It is:
+
+       style={[styles.X, <something> === <something> && styles.XActive]}
+
+   An equality test is what makes it EXCLUSIVE — one of these, not some of
+   these — and exclusive is what earns a travelling highlight. Rows that test
+   membership (`allergies.includes(a.value)`) or a boolean (`aiOpen`,
+   `editMode`) are multi-select or toggles: several can be on at once, so there
+   is no single place for a highlight to be and this must NOT ask them to have
+   one. That distinction is the rule, not an exception to it. */
+{
+  const walk = (dir) =>
+    readdirSync(dir).flatMap((e) => {
+      const p = path.join(dir, e);
+      return statSync(p).isDirectory() ? walk(p) : /\.tsx$/.test(e) ? [p] : [];
+    });
+  /* Rows that are exclusive but are not a row of buttons, kept out by name and
+     with the reason next to them — the same shape as motion.mjs's LEGACY. */
+  const NOT_A_ROW = {
+    'src/app/ai-coach.tsx': 'danh sách hội thoại đã lưu — một danh sách dọc cuộn được, không phải một hàng nút; ' +
+      'dấu chọn chạy dọc qua các dòng chữ dài ngắn khác nhau là một thứ khác hẳn và chưa ai xin',
+  };
+  for (const file of walk(path.join(NATIVE, 'src'))) {
+    const rel = path.relative(NATIVE, file);
+    if (rel === COMPONENT || rel === MOVER) continue;
+    const body = strip(readFileSync(file, 'utf8'));
+    for (const m of body.matchAll(/style=\{\[\s*styles\.(\w+)\s*,\s*([^\]]*?)&&\s*styles\.\1Active\s*\]\}/g)) {
+      if (!/===|!==/.test(m[2])) continue; /* multi-select or a toggle — leave it alone */
+      if (NOT_A_ROW[rel]) continue;
+      /*
+        The container, not the label.
+
+        `styles.chipText` + `styles.chipTextActive` is the same expression on a
+        `<Text>`, and switching a label's colour outright is CORRECT here — it
+        is what `Segmented` has always done while its pill slides underneath.
+        The first draft flagged six of those. Excluding names that end in `Text`
+        would be reading the spelling again, so this reads the element the style
+        is on: a travelling highlight is a thing that happens to a box.
+      */
+      const tag = [...body.slice(0, m.index).matchAll(/<([A-Za-z][\w.]*)/g)].pop()?.[1];
+      if (tag === 'Text') continue;
+      const line = body.slice(0, m.index).split('\n').length;
+      problems.push(
+        `${rel}:${line} dựng một hàng chọn-MỘT bằng tay (styles.${m[1]} + styles.${m[1]}Active). Bấm sang ` +
+          'nút khác là tắt đèn chỗ này bật đèn chỗ kia trong cùng một khung hình: hai sự kiện rời nhau, ' +
+          'không có gì nói rằng đó vẫn là một lựa chọn. Dùng <PickRow> để dấu chọn ĐI sang',
+      );
+    }
+  }
+  for (const rel of Object.keys(NOT_A_ROW)) {
+    if (!existsSync(path.join(NATIVE, rel))) {
+      problems.push(`NOT_A_ROW còn ghi ${rel} nhưng tệp đó không còn — xoá dòng đó đi`);
+    }
   }
 }
 

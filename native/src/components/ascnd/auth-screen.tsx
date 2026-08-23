@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -118,22 +119,31 @@ export function AuthScreen() {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Language selector (web top-right) */}
-      <View style={[styles.langRow, { top: insets.top + spacing.sm }]}>
+      <PickRow
+        value={lang}
+        fill="rgba(168,175,189,0.15)"
+        radius={radius.sm - 4}
+        gap={6}
+        style={[styles.langRow, { top: insets.top + spacing.sm }]}>
+        {/* Not a choice, and not measured — only `PickRow.Item`s report a box,
+            so a plain child like this sits in the row without the highlight
+            ever being able to land on it. */}
         <Icon icon={Globe} size={15} color={colors.mutedForeground} />
         {(['vi', 'en'] as const).map((l) => (
-          <Pressable
+          <PickRow.Item
             key={l}
+            itemKey={l}
             onPress={() => {
               Haptics.selectionAsync();
               setLang(l);
             }}
-            style={[styles.langChip, lang === l && styles.langChipActive]}>
+            style={styles.langChip}>
             <Text style={[styles.langText, lang === l && styles.langTextActive]}>
               {l.toUpperCase()}
             </Text>
-          </Pressable>
+          </PickRow.Item>
         ))}
-      </View>
+      </PickRow>
 
       <ScrollView
         contentContainerStyle={[
@@ -240,16 +250,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: spacing.md,
     zIndex: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
   },
   langChip: {
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 4,
     borderRadius: radius.sm - 4,
   },
-  langChipActive: { backgroundColor: 'rgba(168,175,189,0.15)' },
   langText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
   langTextActive: { color: colors.primary },
   content: {

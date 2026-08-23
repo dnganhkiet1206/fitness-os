@@ -1,12 +1,11 @@
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { Easing, FadeIn, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
 import { duration } from '@/constants/motion';
+import { PickRow } from '@/components/ascnd/pick-row';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 /**
  * One segmented control, and the selection travels between segments.
@@ -37,9 +36,17 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
  * this repository because animating layout re-runs layout every frame, and it
  * caught exactly that mistake in the companion a few commits ago.
  *
- * The width is a fraction of the measured row rather than a number, which is
- * what lets `translateX` do the whole job: with every segment the same width,
- * position `i` is `i × width` and there is nothing to resize.
+ * ── it no longer owns the moving part ──
+ *
+ * It used to compute the pill itself: every segment is `flex: 1`, so segment
+ * `i` sits at `i × (row / n)` and `translateX` did the whole job with nothing
+ * to resize. That was true and it was still a second implementation, sitting
+ * next to `pick-row.tsx`, which does the same thing for chips that are not all
+ * one width. Two mechanisms for one behaviour is the bug this repository keeps
+ * finding, and it had already been found twice in the two commits before this
+ * one. So this is now a thin control on top of `PickRow`: it supplies the
+ * track, the equal-width segments and the label styling, and the travelling
+ * highlight is the app's only travelling highlight.
  */
 
 export interface SegmentOption<K extends string> {
@@ -48,20 +55,6 @@ export interface SegmentOption<K extends string> {
   /** optional leading glyph — nutrition and progress use one, the shop does not */
   icon?: React.ComponentProps<typeof Icon>['icon'];
 }
-
-/**
- * How long the pill takes to cross.
- *
- * Nielsen Norman Group put the usable band at 100–500ms and reserve the top of
- * it for large movements; past 500ms an animation "starts to feel like a real
- * drag". This is a short hop inside one control, so it sits low in the band.
- *
- * Ease-out, because the pill is arriving: "starts quickly but slows down…
- * makes the animation feel responsive, but allows the eye time to focus on the
- * element as it comes to rest." Linear is explicitly ruled out there — it
- * "looks weird and unnatural".
- */
-const SLIDE_MS = duration.move;
 
 export function Segmented<K extends string>({
   options,
@@ -78,62 +71,23 @@ export function Segmented<K extends string>({
   /** the mascot room's row is a smaller control inside a card */
   compact?: boolean;
 }) {
-  const [row, setRow] = useState(0);
-  const reduceMotion = useReducedMotion();
-
-  const index = Math.max(0, options.findIndex((o) => o.key === value));
   const pad = 3;
-  const seg = row > 0 ? (row - pad * 2) / options.length : 0;
-
-  /*
-    Only the transform is animated.
-
-    `width` is a plain style below, not a member of this block. It changes when
-    the row is measured — a rotation, a split view — and never between frames,
-    so it belongs to React rather than to the UI thread. `tools/motion.mjs`
-    flags any layout property inside `useAnimatedStyle` for exactly this reason,
-    and it flagged this file's first version.
-  */
-  const pill = useAnimatedStyle(() => ({
-    /* Reduce Motion is a request about movement, not about which segment is
-       selected — so it arrives, it just does not travel. */
-    transform: [
-      { translateX: reduceMotion ? index * seg : withTiming(index * seg, { duration: SLIDE_MS, easing: Easing.out(Easing.cubic) }) },
-    ],
-  }));
-
-  const onLayout = (e: LayoutChangeEvent) => {
-    const { width } = e.nativeEvent.layout;
-    setRow((p) => (Math.abs(p - width) < 1 ? p : width));
-  };
-
   const r = compact ? radius.full : radius.sm;
 
   return (
-    <View style={[styles.row, { borderRadius: r, padding: pad }]} onLayout={onLayout}>
-      {/*
-        Drawn before the segments so it sits behind the labels. It is only
-        rendered once the row has been measured — a pill one frame wide, sliding
-        in from nothing, is a flash nobody asked for.
-      */}
-      {seg > 0 ? (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.pill,
-            { top: pad, bottom: pad, width: seg, borderRadius: compact ? radius.full : r - pad },
-            pill,
-          ]}
-        />
-      ) : null}
-
+    <PickRow
+      value={value}
+      fill={colors.accent}
+      radius={compact ? radius.full : r - pad}
+      height={height}
+      gap={0}
+      style={[styles.row, { borderRadius: r, padding: pad }]}>
       {options.map((o) => {
         const on = o.key === value;
         return (
-          <Pressable
+          <PickRow.Item
             key={o.key}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
+            itemKey={o.key}
             accessibilityLabel={o.label}
             style={[styles.seg, { height }]}
             onPress={() => {
@@ -147,18 +101,15 @@ export function Segmented<K extends string>({
             <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
               {o.label}
             </Text>
-          </Pressable>
+          </PickRow.Item>
         );
       })}
-    </View>
+    </PickRow>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', backgroundColor: 'rgba(24,24,27,0.6)' },
-  /* Positioned from the left and moved by transform only — see the note above
-     about `tools/motion.mjs`. */
-  pill: { position: 'absolute', left: 3, backgroundColor: colors.accent },
   seg: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   label: { ...type.caption, fontWeight: '600', color: colors.mutedForeground },
   labelOn: { color: colors.foreground },

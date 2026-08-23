@@ -177,6 +177,7 @@ const STEPS = [
     tab styles after the markup using them was gone.
   */
   ['segmented', 'node', ['tools/segmented.mjs']],
+  ['dấu chọn di chuyển', 'node', ['tools/pick-row.mjs']],
   ['thanh tiến độ', 'node', ['tools/progress-bar.mjs']],
   ['nguồn sức khoẻ', 'node', ['tools/health-source.mjs']],
   /*

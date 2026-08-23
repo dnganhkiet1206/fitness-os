@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -222,19 +223,26 @@ function CaptureView({
         <Icon icon={X} size={16} color="#fff" />
       </Pressable>
 
-      <View style={[styles.poseRow, { top: insets.top + spacing.sm }]}>
+      <PickRow
+        value={pose}
+        fill="#fff"
+        radius={radius.full}
+        gap={spacing.sm}
+        style={[styles.poseRow, { top: insets.top + spacing.sm }]}>
         {poses.map((p) => (
-          <Pressable
+          <PickRow.Item
             key={p.key}
+            itemKey={p.key}
+            accessibilityLabel={p.label}
             onPress={() => {
               Haptics.selectionAsync();
               setPose(p.key);
             }}
-            style={[styles.poseChip, pose === p.key && styles.poseChipActive]}>
+            style={styles.poseChip}>
             <Text style={[styles.poseText, pose === p.key && styles.poseTextActive]}>{p.label}</Text>
-          </Pressable>
+          </PickRow.Item>
         ))}
-      </View>
+      </PickRow>
 
       <View style={[styles.shutterRow, { bottom: insets.bottom + spacing.xl }]}>
         <PressScale onPress={shoot} style={styles.shutter}>
@@ -270,9 +278,9 @@ const styles = StyleSheet.create({
   cancelText: { ...type.body, color: colors.mutedForeground },
   closeBtn: { position: 'absolute', right: spacing.md, zIndex: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   closeText: { color: '#fff', fontSize: 16 },
-  poseRow: { position: 'absolute', alignSelf: 'center', flexDirection: 'row', gap: spacing.sm, backgroundColor: 'rgba(0,0,0,0.4)', padding: 4, borderRadius: radius.full },
-  poseChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.full },
-  poseChipActive: { backgroundColor: '#fff' },
+  poseRow: { position: 'absolute', alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.4)', padding: 4, borderRadius: radius.full },
+  /* No background: the only fill is the travelling highlight the row draws. */
+  poseChip: { paddingHorizontal: spacing.md, paddingVertical: 6 },
   poseText: { ...type.footnote, color: '#fff', fontWeight: '600' },
   poseTextActive: { color: '#000' },
   shutterRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
