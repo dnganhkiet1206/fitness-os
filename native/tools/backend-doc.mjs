@@ -178,6 +178,37 @@ const functions = readdirSync(path.join(ROOT, 'supabase/functions'))
   }
 }
 
+/* ── 6. the troubleshooting section keeps its two load-bearing warnings ──
+
+   §1c tells somebody how to move data out of the project Lovable created. Two
+   sentences in it are the difference between a migration that works and one
+   that silently loses things, and both are the kind of caveat that gets edited
+   out for brevity:
+
+     · `db dump` excludes `auth` and `storage`, so accounts and uploaded files
+       do NOT come across. Somebody who misses this restores a database full of
+       `user_id` values pointing at users that do not exist, and finds out when
+       every screen is empty.
+     · the default-privileges REVOKE before restoring, which is Supabase's own
+       instruction on that command's reference page.
+
+   Both are quoted from the CLI reference rather than remembered. */
+{
+  const MUST = [
+    [/loại trừ schema `auth` và `storage`/, 'db dump bỏ qua auth và storage — tài khoản và file KHÔNG đi theo'],
+    [/ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL/, 'câu REVOKE quyền mặc định trước khi restore'],
+    [/npx supabase projects list/, 'phép thử dứt khoát: projects list liệt kê project tài khoản truy cập được'],
+  ];
+  for (const [re, what] of MUST) {
+    if (!re.test(doc)) {
+      problems.push(
+        `mục chẩn đoán không còn nói: ${what}. Đây là loại cảnh báo bị cắt đi vì "cho gọn", và hậu quả ` +
+          'của việc thiếu nó chỉ lộ ra sau khi đã chuyển xong dữ liệu',
+      );
+    }
+  }
+}
+
 if (problems.length) {
   console.log('tài liệu nối backend CÓ LỖI:\n');
   for (const p of problems.slice(0, 12)) console.log(`  • ${p}`);
@@ -191,5 +222,7 @@ console.log(
     'store-webhook hỏng mà không ai bấm gì cả; không function nào bị tài liệu bảo là "chưa tồn tại" ' +
     'trong khi mã nguồn đã có (delete-account từng như thế); bốn địa chỉ local của CLI được ghim; ' +
     'tài liệu không bảo ai chạy `supabase init`, thứ sẽ ghi đè config.toml; và mọi biến ' +
-    'EXPO_PUBLIC_ mà backend.ts đọc đều được gọi đúng tên trong tài liệu',
+    'EXPO_PUBLIC_ mà backend.ts đọc đều được gọi đúng tên trong tài liệu; và mục chẩn đoán giữ được ' +
+    'hai cảnh báo chịu lực của nó — db dump KHÔNG mang theo auth với storage, và câu REVOKE quyền ' +
+    'mặc định trước khi restore',
 );

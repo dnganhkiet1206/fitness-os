@@ -235,6 +235,94 @@ supabase link --project-ref <project-ref mới>
 Bỏ qua bước này là cách chắc chắn nhất để migration và function của bạn hạ cánh
 xuống project cũ trong khi app nói chuyện với project mới.
 
+### 1c. "Tôi không thấy project của mình trong Supabase"
+
+Triệu chứng: bên Lovable vẫn thấy dữ liệu, nhưng đăng nhập supabase.com thì
+dashboard trống.
+
+**Dữ liệu gần như chắc chắn không mất.** Project mặc định trong repo này —
+`drqgonxrtmomgrftelih`, ghi ở `src/lib/backend.ts` và `supabase/config.toml` —
+kiểm ngày 2026-08-23 vẫn đang phục vụ: `/auth/v1/health` trả 200 và
+`/rest/v1/exercises` trả về đúng bộ seed. App đang chạy được là bằng chứng thứ
+hai cho cùng điều đó. Vấn đề là **nhìn thấy**, không phải mất.
+
+#### Phép thử dứt khoát
+
+```bash
+npx supabase login
+npx supabase projects list
+```
+
+`projects list` liệt kê *mọi project mà tài khoản đang đăng nhập truy cập
+được*. Tìm ref `drqgonxrtmomgrftelih` trong cột REFERENCE ID.
+
+**Có trong danh sách** → project thuộc tài khoản này, bạn chỉ đang nhìn nhầm
+**organization**. Dashboard nhóm project theo organization, và một tài khoản
+vừa tạo có một organization mặc định mới toanh không chứa project cũ. Đổi
+organization ở ô chọn góc trên bên trái, hoặc mở thẳng:
+
+```
+https://supabase.com/dashboard/project/drqgonxrtmomgrftelih
+```
+
+**Không có trong danh sách** → project không nằm trong tài khoản này. Hai khả
+năng, và chúng dẫn tới hai việc khác nhau:
+
+- **Tài khoản Supabase khác.** Lovable nối bằng tài khoản nào thì project nằm ở
+  tài khoản đó. Nếu bạn vừa đăng ký bằng một email khác thì đây là câu trả lời.
+  Đăng nhập lại bằng đúng email cũ, hoặc mời email mới vào organization cũ.
+- **Backend do Lovable tự quản.** Khi project được Lovable cấp phát trong hạ
+  tầng của họ thay vì trong tài khoản Supabase của bạn, nó **không bao giờ** xuất
+  hiện ở dashboard của bạn — không có thao tác nào ở phía Supabase làm nó hiện
+  ra. Phải lấy quyền từ phía Lovable.
+
+Cách phân biệt hai khả năng: xem phần thiết lập backend trong chính project
+Lovable. Nếu ở đó có ref project và bạn mở được nó trên supabase.com sau khi
+đăng nhập đúng email → khả năng thứ nhất. Nếu không có chỗ nào cho bạn một ref
+để mở → khả năng thứ hai.
+
+#### Nếu phải làm lại project mới
+
+Với app đang trong giai đoạn test, đây thường là đường nhanh nhất — dữ liệu
+đang có phần lớn là dữ liệu thử:
+
+```bash
+npx supabase link --project-ref <ref mới>
+npx supabase db push
+```
+
+Rồi đổi `project_id` ở dòng đầu `supabase/config.toml` và hai dòng trong
+`.env` (§1a). Đăng ký lại tài khoản trong app là xong — 32 migration dựng lại
+toàn bộ schema, kể cả bộ bài tập seed.
+
+#### Nếu cần mang dữ liệu cũ sang
+
+Cần **chuỗi kết nối Postgres** hoặc **service role key** của project cũ. Anon
+key nằm trong repo không đủ: nó chỉ đọc được đúng những dòng RLS cho phép, tức
+dữ liệu của chính tài khoản bạn sau khi đăng nhập, và không đọc được gì khác.
+
+Có chuỗi kết nối rồi:
+
+```bash
+npx supabase db dump --db-url '<chuỗi kết nối project cũ>' --data-only -f data.sql
+```
+
+Hai điều phải biết trước khi làm:
+
+- `db dump` **loại trừ schema `auth` và `storage`**. Tài khoản đăng nhập và file
+  trong bucket **không** đi theo. Người dùng sẽ phải đăng ký lại, và ảnh tiến độ
+  phải chép riêng.
+- Khôi phục vào project mới thì bảng nhận quyền mặc định của project đích. Tài
+  liệu Supabase khuyến nghị chạy trước khi restore:
+
+  ```sql
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated;
+  ```
+
+Vì `auth` không đi theo, `user_id` trong dữ liệu cũ sẽ trỏ tới những user không
+tồn tại ở project mới. Với một tài khoản test thì cách gọn nhất là: đăng ký lại
+ở project mới, lấy `id` mới, rồi thay `user_id` trong file dump trước khi nạp.
+
 ---
 
 ## 2. Tạo schema
