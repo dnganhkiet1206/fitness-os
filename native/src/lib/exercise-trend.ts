@@ -1,4 +1,5 @@
 import type { ExerciseKind } from '@/lib/exercise-kind';
+import { localDateStr } from '@/lib/local-date';
 import type { ExercisePerformance } from '@/lib/exercise-performance';
 import { MIN_SESSIONS } from '@/lib/load-progression';
 import type { Confidence } from '@/lib/user-state';
@@ -115,6 +116,44 @@ export const MEANINGFUL_CHANGE = 0.03;
  */
 export const TREND_WINDOW = 6;
 
+/**
+ * When a reading stops being about the training somebody is doing now.
+ *
+ * ── the claim this stops the app making ──
+ *
+ * The engine had no notion of time at all. Six sessions in three weeks and six
+ * sessions in three years produced the same verdict, so a lift somebody
+ * abandoned in March came back in August reading IMPROVING · READY_TO_PROGRESS
+ * — a forward-looking instruction about a movement they have not touched.
+ *
+ * ── what the evidence does and does not say ──
+ *
+ * It is deliberately NOT a claim that they got weaker. The detraining
+ * literature is clear that strength is the resilient part: gains are largely
+ * retained through 16–24 weeks of complete cessation, with muscle size going
+ * first and meaningful strength loss only beyond that
+ * (mdpi.com/2813-0413/1/1/1; PMC4748325). So a stale reading is probably still
+ * roughly true about what the person can lift.
+ *
+ * What it is not true about is what they should do next, which is what
+ * `READY_TO_PROGRESS` is for. "Add load to your bench" and "you have not
+ * benched since March" cannot both be the right thing to say.
+ *
+ * ── the threshold is relative to them, with a floor ──
+ *
+ * A fixed number would be wrong in both directions: 21 days is a long absence
+ * for somebody who benches twice a week and an ordinary interval for somebody
+ * who deadlifts once a month. So the test is against their OWN cadence for that
+ * movement — twice the median gap between their sessions — and 21 days is a
+ * floor under it, not the rule.
+ *
+ * 21 rather than `training-card.ts`'s `STALE_AFTER_DAYS = 7`: that seven is the
+ * acute window of the load ratio, where a week of nothing is genuinely the
+ * signal. Here a week is a normal gap between two sessions of the same lift,
+ * and flagging it would mean flagging almost everybody almost always.
+ */
+export const STALE_FLOOR_DAYS = 21;
+
 export type IndexUnit = 'kg' | 'kg-rep' | 'sec';
 
 /** Which number this movement's trend is measured on, and in what. */
@@ -192,6 +231,17 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export interface TrendReading {
   trend: Trend;
+  /**
+   * Days since the most recent comparable session, or `null` when there is
+   * none. A plain fact, reported whether or not it crosses the line below.
+   */
+  lastTrainedDays: number | null;
+  /**
+   * True when the reading describes a block the person has left — see
+   * `STALE_FLOOR_DAYS`. The trend itself is still reported: it is what
+   * happened, and it did happen.
+   */
+  stale: boolean;
   /** sessions that could be placed on the scale */
   sessions: number;
   /** best of the recent half */
@@ -211,8 +261,32 @@ export interface TrendReading {
   bodyweightUnknown: boolean;
 }
 
+/**
+ * The middle gap between sessions, in days.
+ *
+ * The median rather than the mean, because one long break — a holiday, an
+ * injury — would drag a mean far enough to make everything after it look
+ * normal, which is the opposite of what this is for.
+ */
+function medianGapDays(dates: readonly string[]): number | null {
+  if (dates.length < 2) return null;
+  const gaps: number[] = [];
+  for (let i = 1; i < dates.length; i++) {
+    const a = new Date(`${dates[i - 1]}T00:00:00`).getTime();
+    const b = new Date(`${dates[i]}T00:00:00`).getTime();
+    if (Number.isFinite(a) && Number.isFinite(b) && b > a) gaps.push((b - a) / 86_400_000);
+  }
+  if (gaps.length === 0) return null;
+  gaps.sort((x, y) => x - y);
+  const mid = Math.floor(gaps.length / 2);
+  return gaps.length % 2 === 1 ? gaps[mid] : (gaps[mid - 1] + gaps[mid]) / 2;
+}
+
 /** Read a movement's recent history. Input must be oldest first. */
-export function readTrend(history: readonly ExercisePerformance[]): TrendReading {
+export function readTrend(
+  history: readonly ExercisePerformance[],
+  now: Date = new Date(),
+): TrendReading {
   const kind = history[history.length - 1]?.kind ?? 'compound';
   const unit = indexUnit(kind);
 
@@ -236,11 +310,36 @@ export function readTrend(history: readonly ExercisePerformance[]): TrendReading
   }
   const series = points.map((q) => q.v);
 
+  /*
+    Measured from the most recent session that could be PLACED on the scale, not
+    from the most recent session in the history. A session the verdict ignored
+    cannot be the thing that keeps the verdict fresh.
+  */
+  const dates = points.map((q) => q.p.date);
+  const last = dates[dates.length - 1];
+  const lastTrainedDays =
+    last === undefined
+      ? null
+      : Math.max(
+          0,
+          Math.floor(
+            (new Date(`${localDateStr(now)}T00:00:00`).getTime() -
+              new Date(`${last}T00:00:00`).getTime()) /
+              86_400_000,
+          ),
+        );
+  const gap = medianGapDays(dates);
+  const stale =
+    lastTrainedDays !== null &&
+    lastTrainedDays > Math.max(STALE_FLOOR_DAYS, gap === null ? 0 : gap * 2);
+
   const base = {
     sessions: points.length,
     unit,
     series,
     bodyweightUnknown,
+    lastTrainedDays,
+    stale,
   };
 
   if (points.length < MIN_SESSIONS) {
@@ -286,9 +385,64 @@ export function readTrend(history: readonly ExercisePerformance[]): TrendReading
  * behave as though nothing is known, and every caller already has a branch for
  * it.
  */
+/**
+ * The deepest a session fell below the best of everything before it, as a
+ * fraction of that best.
+ *
+ * ── why session count was not enough on its own ──
+ *
+ * Four sessions of 55×10, 55×10, 55×9, 55×10 and four of 55×10, 55×3, 55×9,
+ * 55×4 both scored `high`. The second person's numbers are all over the place —
+ * something other than their programme is moving them, and a verdict read off
+ * that is a verdict about noise.
+ *
+ * ── and why this measure and not spread ──
+ *
+ * The first version was mean absolute deviation, and measuring it decided the
+ * question. Four cases, on the e1RM index:
+ *
+ *     steady        10, 10, 9, 10       MAD  0.9%   drawdown  2.5%
+ *     noisy         10, 3, 9, 4         MAD  8.2%   drawdown 17.5%
+ *     one bad day   8, 9, 10, 5         MAD  3.9%   drawdown 12.5%
+ *     real progress 55×6 → 65×6         MAD  5.0%   drawdown  0.0%
+ *
+ * Spread around a mean scored a genuine five-session progression (5.0%) as
+ * MORE volatile than a block with a bad day in it (3.9%) — it was measuring
+ * movement, and movement is the thing this engine exists to reward. A drawdown
+ * from the running best cannot do that: a series that only goes up has none.
+ *
+ * It is also a sentence somebody can check against their own logbook — "your
+ * worst session was a fifth below your best" — which a deviation statistic is
+ * not.
+ */
+export function worstDrawdown(series: readonly number[]): number {
+  let best = -Infinity;
+  let worst = 0;
+  for (const v of series) {
+    if (best > 0) worst = Math.max(worst, (best - v) / best);
+    if (v > best) best = v;
+  }
+  return worst;
+}
+
+/**
+ * The drawdown past which the sessions are not describing one thing.
+ *
+ * 15%, and the four measurements above are what places it: it sits above one
+ * ordinary bad day (12.5%) and below a block that is genuinely all over the
+ * place (17.5%). Somebody has bad days; somebody whose worst session is a fifth
+ * under their best, repeatedly, is being moved by something other than their
+ * programme.
+ */
+export const VOLATILE_ABOVE = 0.15;
+
 export function confidenceFor(t: TrendReading): Confidence {
   if (t.sessions === 0) return 'none';
   if (t.sessions < MIN_SESSIONS) return 'low';
+  /* A reading about a block they have left. It is not wrong about what
+     happened; it is out of date about what is happening. */
+  if (t.stale) return 'low';
+  if (worstDrawdown(t.series) > VOLATILE_ABOVE) return 'low';
   /* A rep count standing in for a load is a real reading on a coarser scale —
      it cannot see a belt being added, so it can under-report progress. Enough
      to describe, not enough to act on. */
@@ -322,6 +476,16 @@ export function confidenceFor(t: TrendReading): Confidence {
  */
 export function readinessFor(t: TrendReading): Readiness {
   if (t.trend === 'INSUFFICIENT_DATA' || t.trend === 'DECLINING') return 'NOT_READY';
+  /*
+    A stale reading never says "add load". The trend still stands as a record of
+    what happened — the person really was improving — but "ready for more" is an
+    instruction about today, and the last thing this app should do is hand
+    somebody a heavier bar on the basis of a block they left two months ago.
+
+    `MAINTAIN` rather than `NOT_READY`: nothing here suggests they went
+    backwards, and the detraining evidence says they probably did not.
+  */
+  if (t.stale) return 'MAINTAIN';
   if (t.trend !== 'IMPROVING') return 'MAINTAIN';
   if (confidenceFor(t) === 'low' || confidenceFor(t) === 'none') return 'NOT_READY';
 
@@ -384,10 +548,32 @@ export type Evidence =
   | { kind: 'change'; from: number; to: number; unit: IndexUnit; pct: number }
   | { kind: 'no-upward-trend'; sessions: number }
   | { kind: 'too-few-sessions'; have: number; need: number }
-  | { kind: 'bodyweight-unknown' };
+  | { kind: 'bodyweight-unknown' }
+  /** last trained N days ago, and whether that is out of step with their own cadence */
+  | { kind: 'last-trained'; days: number; stale: boolean }
+  /** the sessions disagree with each other more than a verdict can carry */
+  | { kind: 'volatile'; spread: number }
+  /**
+   * A best set in this window that beat everything before it **in this window**.
+   *
+   * Not "personal record", and the wording matters: the window is ninety days
+   * and a heavier lift from last winter is not in it. `personal-record.ts` owns
+   * the all-time question and answers it at save time, against four hundred
+   * sessions; this is the recent-form version of the same rules, replayed.
+   */
+  | {
+      kind: 'window-best';
+      of: 'weight' | 'reps';
+      value: number;
+      previous: number;
+      atWeightKg: number | null;
+      daysAgo: number | null;
+    };
 
 export interface ExerciseInsight {
   exerciseKey: string;
+  lastTrainedDays: number | null;
+  stale: boolean;
   exerciseName: string;
   kind: ExerciseKind;
   trend: Trend;
@@ -416,7 +602,7 @@ export function insightFor(
   const last = history[history.length - 1];
   if (!last) return null;
 
-  const t = readTrend(history);
+  const t = readTrend(history, now);
   const confidence = confidenceFor(t);
   const readiness = readinessFor(t);
   const window = history.slice(-TREND_WINDOW);
@@ -465,13 +651,51 @@ export function insightFor(
     });
   }
   if (t.trend === 'PLATEAU') evidence.push({ kind: 'no-upward-trend', sessions: t.sessions });
+  if (t.lastTrainedDays !== null) {
+    evidence.push({ kind: 'last-trained', days: t.lastTrainedDays, stale: t.stale });
+  }
+  const spread = worstDrawdown(t.series);
+  if (t.sessions >= MIN_SESSIONS && spread > VOLATILE_ABOVE) {
+    evidence.push({ kind: 'volatile', spread: Math.round(spread * 1000) / 1000 });
+  }
   if (t.bodyweightUnknown) evidence.push({ kind: 'bodyweight-unknown' });
   evidence.push({ kind: 'best-set', weightKg: last.bestWeightKg, reps: last.bestReps });
   const e1 = pick('bestE1rmKg');
   if (e1 !== null) evidence.push({ kind: 'e1rm', value: e1 });
 
+  /*
+    The most recent window-best, and only one of them.
+
+    A movement that improved four sessions running set four of these, and a card
+    listing all four would be a changelog rather than a fact worth reading. The
+    newest is the one that is still true.
+  */
+  for (let i = window.length - 1; i >= 0; i--) {
+    const r = window[i]!.records[0];
+    if (!r) continue;
+    const days =
+      t.lastTrainedDays === null
+        ? null
+        : Math.round(
+            (new Date(`${window[window.length - 1]!.date}T00:00:00`).getTime() -
+              new Date(`${window[i]!.date}T00:00:00`).getTime()) /
+              86_400_000,
+          ) + t.lastTrainedDays;
+    evidence.push({
+      kind: 'window-best',
+      of: r.kind,
+      value: r.value,
+      previous: r.previous,
+      atWeightKg: r.atWeight ?? null,
+      daysAgo: days,
+    });
+    break;
+  }
+
   return {
     exerciseKey: last.exerciseKey,
+    lastTrainedDays: t.lastTrainedDays,
+    stale: t.stale,
     exerciseName: last.exerciseName,
     kind: last.kind,
     trend: t.trend,
@@ -519,5 +743,19 @@ export function insightsFrom(
     STABLE: 3,
     INSUFFICIENT_DATA: 4,
   };
-  return out.sort((a, b) => RANK[a.trend] - RANK[b.trend] || b.sessions - a.sessions);
+  /*
+    Then stale ones, ahead of fresh ones with the same verdict.
+
+    The ordering is by how much the reading asks of the reader, and a movement
+    somebody has stopped doing asks more than one they are still doing well at.
+    Two cards both saying IMPROVING are not equally worth reading when one of
+    them is about a lift last touched in June — and that one was falling to the
+    bottom of the list precisely because its verdict was good.
+  */
+  return out.sort(
+    (a, b) =>
+      RANK[a.trend] - RANK[b.trend] ||
+      Number(b.stale) - Number(a.stale) ||
+      b.sessions - a.sessions,
+  );
 }

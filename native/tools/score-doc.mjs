@@ -115,6 +115,8 @@ try {
     ['bài tập: thay đổi đáng kể', /`MEANINGFUL_CHANGE` \| (\d+)%/, xtrend.MEANINGFUL_CHANGE * 100],
     ['bài tập: cửa sổ xu hướng', /`TREND_WINDOW` \| (\d+) buổi/, xtrend.TREND_WINDOW],
     ['bài tập: trần rep của e1RM', /\*\*chỉ tới (\d+) rep\*\*/, xperf.E1RM_MAX_REPS],
+    ['bài tập: sàn ngưỡng cũ', /`STALE_FLOOR_DAYS` \| (\d+) ngày/, xtrend.STALE_FLOOR_DAYS],
+    ['bài tập: ngưỡng dao động', /`VOLATILE_ABOVE` \| (\d+)%/, xtrend.VOLATILE_ABOVE * 100],
   ];
 
   for (const [what, re, actual] of PINS) {
@@ -148,6 +150,53 @@ try {
           );
         }
       }
+    }
+  }
+
+  /* ── the volatility table, recomputed ──
+
+     The document argues for drawdown over spread with four measured rows, and
+     the decisive one is that spread scores a genuine progression as MORE
+     volatile than a block with a bad day in it. That is the entire case for the
+     measure, so it is recomputed rather than trusted — a comparison that has
+     quietly stopped being true reads as evidence. */
+  {
+    const e = (w, r) => xperf.estimate1rm(w, r);
+    const mad = (v) => {
+      const m = v.reduce((a, b) => a + b, 0) / v.length;
+      return (v.reduce((a, b) => a + Math.abs(b - m), 0) / v.length / m) * 100;
+    };
+    const ROWS = [
+      ['đều', [10, 10, 9, 10].map((r) => e(55, r)), /đều: 10, 10, 9, 10 \| ([\d,]+)% \| ([\d,]+)%/],
+      ['loạn', [10, 3, 9, 4].map((r) => e(55, r)), /loạn: 10, 3, 9, 4 \| ([\d,]+)% \| \*\*([\d,]+)%\*\*/],
+      ['một ngày tệ', [8, 9, 10, 5].map((r) => e(55, r)), /một ngày tệ: 8, 9, 10, 5 \| ([\d,]+)% \| ([\d,]+)%/],
+      ['tiến bộ thật', [[55, 6], [57.5, 6], [60, 6], [62.5, 6], [65, 6]].map(([w, r]) => e(w, r)),
+       /tiến bộ thật 55×6 → 65×6 \| \*\*([\d,]+)%\*\* \| \*\*([\d,]+)%\*\*/],
+    ];
+    for (const [what, series, re] of ROWS) {
+      const m = doc.match(re);
+      if (!m) {
+        problems.push(`bảng dao động: không còn bám được dòng "${what}" (${re})`);
+        continue;
+      }
+      const want = [mad(series), xtrend.worstDrawdown(series) * 100];
+      for (const [i, label] of [[0, 'độ lệch quanh TB'], [1, 'sụt sâu nhất']]) {
+        const said = Number(m[i + 1].replace(',', '.'));
+        if (Math.abs(said - want[i]) > 0.05) {
+          problems.push(
+            `bảng dao động, "${what}" / ${label}: tài liệu ghi ${said}% nhưng tính lại ra ` +
+              `${want[i].toFixed(1)}% — đây là TOÀN BỘ lập luận cho cách chọn phép đo`,
+          );
+        }
+      }
+    }
+    /* And the conclusion the table exists to support. */
+    const prog = xtrend.worstDrawdown([[55, 6], [57.5, 6], [60, 6], [62.5, 6], [65, 6]].map(([w, r]) => e(w, r)));
+    if (prog !== 0) {
+      problems.push(
+        `một khối tiến bộ thật có mức sụt ${(prog * 100).toFixed(1)}% — phép đo đang phạt sự tiến bộ, ` +
+          'đúng lỗi của bản dùng độ lệch quanh trung bình',
+      );
     }
   }
 

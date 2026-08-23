@@ -525,11 +525,227 @@ try {
     const r = readOf('Bench Press', [[55, 8], [55, 9], [55, 10]]);
     for (const e of r.evidence) {
       for (const [k, v] of Object.entries(e)) {
-        if (k !== 'kind' && k !== 'unit' && typeof v === 'string') {
+        /* `of` joins `kind` and `unit`: it is a machine token the screen maps to
+           a word, not a word the engine picked. What this rule is for is a
+           SENTENCE — a unit, a language or a rounding decision escaping into a
+           calculation. */
+        if (k !== 'kind' && k !== 'unit' && k !== 'of' && typeof v === 'string') {
           note(`evidence.${e.kind}.${k} là một chuỗi ("${v}") — engine đang tự chọn CHỮ, ` +
             'mà app này nói hai thứ tiếng và hiện hai đơn vị');
         }
       }
+    }
+  }
+
+  /* ── 22. a reading about a block they have left ──────────────────────── */
+  {
+    /*
+      The engine had no notion of time. Six sessions in three weeks and six in
+      three years produced the same verdict, so a lift abandoned in March came
+      back reading IMPROVING · READY_TO_PROGRESS — a forward-looking
+      instruction about a movement nobody had touched.
+
+      What it must NOT do is call that a decline. The detraining literature is
+      clear that strength is the resilient part: largely retained through 16–24
+      weeks of complete cessation. The person probably can still lift it. The
+      app simply has no business telling them to add to it.
+    */
+    const old = (dayAgo) =>
+      perf.performancesFrom(
+        /* 7→10 reps, not 8→10: at 8, 9, 10, 10 the halves give +2.6% and the
+           verdict is PLATEAU, so the case would prove nothing about staleness. */
+        [[dayAgo + 21, 7], [dayAgo + 14, 8], [dayAgo + 7, 9], [dayAgo, 10]].map(([d, r]) =>
+          S(d, reps('Bench Press', 55, r)),
+        ),
+      );
+    const fresh = trend.insightFor(perf.historyOf(old(2), 'bench press'));
+    const stale = trend.insightFor(perf.historyOf(old(70), 'bench press'));
+
+    eq('tập tuần trước → readiness', fresh.readiness, 'READY_TO_PROGRESS');
+    if (fresh.stale) note('buổi gần nhất cách 2 ngày mà bị coi là cũ');
+
+    if (!stale.stale) {
+      note('bài bỏ 70 ngày không bị đánh dấu cũ — engine vẫn không biết tới thời gian');
+    }
+    /*
+      The exact value, not just "not READY".
+
+      Deleting the stale gate left this green: the low-confidence branch already
+      refuses READY_TO_PROGRESS, so the test passed while the answer changed
+      from MAINTAIN to NOT_READY. Those are different sentences — NOT_READY
+      reads as "you are not in shape for this", and the detraining evidence says
+      the opposite: strength is largely retained through 16–24 weeks. What is
+      out of date is the instruction, not the person.
+    */
+    eq('bài bỏ 70 ngày → readiness', stale.readiness, 'MAINTAIN');
+    if (stale.trend === 'DECLINING') {
+      note(
+        'nghỉ tập bị đọc thành ĐI XUỐNG — tài liệu về detraining nói sức mạnh giữ được 16–24 tuần, ' +
+          'nên đây là app bịa ra một sự sa sút không có trong dữ liệu',
+      );
+    }
+    if (stale.confidence === 'high') note('đọc một khối tập đã rời khỏi mà vẫn tự tin "high"');
+    const ev = stale.evidence.find((e) => e.kind === 'last-trained');
+    if (!ev || !ev.stale || ev.days < 60) {
+      note(`bài cũ không kèm bằng chứng last-trained đúng (${JSON.stringify(ev)})`);
+    }
+
+    /*
+      And the threshold is relative to their own cadence, not a fixed 21 days.
+      Somebody who deadlifts once a month is not absent at day 30.
+    */
+    const monthly = perf.performancesFrom(
+      [[120, 5], [90, 5], [60, 6], [30, 6]].map(([d, r]) => S(d, reps('Deadlift', 120, r))),
+    );
+    const m = trend.insightFor(perf.historyOf(monthly, 'deadlift'));
+    if (m.stale) {
+      note(
+        'người kéo tạ mỗi tháng một lần bị đánh dấu cũ ở ngày thứ 30 — ngưỡng phải so với nhịp ' +
+          'của CHÍNH HỌ, nếu không thì mọi bài tập thưa đều bị phạt oan',
+      );
+    }
+    if (trend.STALE_FLOOR_DAYS <= 7) {
+      note(
+        `STALE_FLOOR_DAYS = ${trend.STALE_FLOOR_DAYS} — bằng hoặc dưới cửa sổ cấp tính của ` +
+          'training-card, mà một tuần là khoảng nghỉ BÌNH THƯỜNG giữa hai buổi của cùng một bài',
+      );
+    }
+  }
+
+  /* ── 22b. what gets read first ───────────────────────────────────────── */
+  {
+    /*
+      The list is ordered by how much a reading asks of the reader, which is why
+      DECLINING and PLATEAU come before IMPROVING. A stale movement asks
+      something too — you stopped doing this — and it was sinking to the bottom
+      precisely because its verdict was good.
+    */
+    /*
+      Five sessions for the fresh one and four for the dropped one, on purpose.
+
+      With four each the tie fell through to `b.sessions - a.sessions`, tied
+      again, and `Array.sort` is stable — so the dropped lift came first anyway,
+      because its oldest session is older and that is the order the Map was
+      built in. The fixture could not tell the rule from the accident. Now the
+      session count actively pushes the FRESH one first, so the only thing that
+      can put the dropped one ahead is the rule being tested.
+    */
+    const mk = (name, dayAgo, reps5) =>
+      reps5.map((r, i) => S(dayAgo + (reps5.length - 1 - i) * 7, reps(name, 55, r)));
+    const both = perf.performancesFrom([
+      ...mk('Fresh Lift', 2, [6, 7, 8, 9, 10]),
+      ...mk('Dropped Lift', 70, [7, 8, 9, 10]),
+    ]);
+    const order = trend.insightsFrom(both).map((i) => i.exerciseName);
+    if (order[0] !== 'Dropped Lift') {
+      note(
+        `thứ tự là [${order}] — bài đã NGỪNG TẬP phải đứng trước bài cùng phán quyết mà vẫn đang tập, ` +
+          'nếu không nó chìm xuống đáy danh sách đúng vì phán quyết của nó tốt',
+      );
+    }
+  }
+
+  /* ── 23. sessions that disagree with each other ──────────────────────── */
+  {
+    /*
+      Session count alone said `high` for both of these. The second one is not a
+      trend, it is noise with four points in it.
+    */
+    const steady = readOf('Row', [[55, 10], [55, 10], [55, 9], [55, 10]]);
+    const wild = readOf('Row', [[55, 10], [55, 3], [55, 9], [55, 4]]);
+    if (steady.confidence !== 'high') note(`bốn buổi đều đặn chỉ được '${steady.confidence}'`);
+    if (wild.confidence === 'high') {
+      note(
+        'bốn buổi 10/3/9/4 rep vẫn được chấm độ tin cậy "high" — có thứ khác ngoài giáo án đang ' +
+          'điều khiển những con số đó, và một phán quyết đọc từ đó là phán quyết về nhiễu',
+      );
+    }
+    if (!wild.evidence.some((e) => e.kind === 'volatile')) {
+      note('chuỗi dao động mạnh mà không nói ra — người đọc không có cách nào biết vì sao độ tin cậy thấp');
+    }
+    if (trend.worstDrawdown([10, 10, 10]) !== 0) note('chuỗi hằng số phải có mức sụt bằng 0');
+    if (trend.worstDrawdown([1, 2, 3, 4, 5]) !== 0) {
+      note(
+        'một chuỗi CHỈ ĐI LÊN vẫn bị chấm là có sụt — đó là dấu hiệu phép đo đang đo CHUYỂN ĐỘNG ' +
+          'thay vì đo nhiễu, đúng lỗi của bản dùng độ lệch quanh trung bình',
+      );
+    }
+    if (!(trend.worstDrawdown([10, 3, 9, 4]) > trend.worstDrawdown([10, 10, 9, 10]))) {
+      note('phép đo không phân biệt được chuỗi loạn với chuỗi đều');
+    }
+    /* The boundary itself. A live fixture landed on exactly 15.0% and produced
+       neither state reliably, which is how boundaries announce themselves. */
+    const at = 1 - trend.VOLATILE_ABOVE;
+    if (trend.worstDrawdown([100, at * 100]) > trend.VOLATILE_ABOVE) {
+      note('mức sụt ĐÚNG BẰNG ngưỡng bị coi là vượt ngưỡng — luật viết là "lớn hơn"');
+    }
+    if (!(trend.worstDrawdown([100, at * 100 - 1]) > trend.VOLATILE_ABOVE)) {
+      note('sụt sâu hơn ngưỡng một chút vẫn không bị bắt');
+    }
+    /* A five-session real progression must be MORE trusted than a block with a
+       bad day in it. Mean absolute deviation got this backwards. */
+    const progress = readOf('Press', [[55, 6], [57.5, 6], [60, 6], [62.5, 6], [65, 6]]);
+    const badDay2 = readOf('Press', [[55, 8], [55, 9], [55, 10], [55, 5]]);
+    if (progress.confidence !== 'high') {
+      note(`một khối tiến bộ thật năm buổi chỉ được '${progress.confidence}' — phép đo đang phạt sự tiến bộ`);
+    }
+    void badDay2;
+  }
+
+  /* ── 24. records, replayed rather than re-invented ───────────────────── */
+  {
+    /*
+      `personal-record.ts` owns the rules and this reuses them: `bestsFrom` and
+      `findRecords`, unchanged. What is checked here is the REPLAY — that each
+      session is judged against what came before it and nothing else.
+    */
+    const run = perf.performancesFrom([
+      S(30, reps('Bench Press', 55, 8)),
+      S(20, reps('Bench Press', 55, 9)),
+      S(10, reps('Bench Press', 60, 8)),
+      S(3, reps('Bench Press', 60, 8)),
+    ]);
+    const h = perf.historyOf(run, 'bench press');
+
+    /* The first session has nothing before it, so it holds no record — the rule
+       `personal-record.ts` states as "an exercise with no history is skipped". */
+    if (h[0].records.length !== 0) {
+      note('buổi ĐẦU TIÊN của một bài vẫn đăng kỷ lục — mọi động tác trong buổi tập đầu đời sẽ thành kỷ lục');
+    }
+    if (h[1].records[0]?.kind !== 'reps') note(`buổi thứ hai (55×9 sau 55×8) phải là kỷ lục rep, được ${JSON.stringify(h[1].records[0])}`);
+    if (h[2].records[0]?.kind !== 'weight') note(`buổi thứ ba (60 sau 55) phải là kỷ lục tạ, được ${JSON.stringify(h[2].records[0])}`);
+    if (h[3].records.length !== 0) note('lặp lại đúng thành tích cũ vẫn tính là kỷ lục');
+
+    /* Order matters and the query hands sessions back newest first. */
+    const reversed = perf.performancesFrom([
+      S(3, reps('Squat', 100, 5)),
+      S(20, reps('Squat', 90, 5)),
+      S(40, reps('Squat', 80, 5)),
+    ]);
+    const sq = perf.historyOf(reversed, 'squat');
+    if (sq[0].records.length !== 0) {
+      note('với dữ liệu trả về mới→cũ, buổi cũ nhất lại giữ kỷ lục — mỗi buổi đang bị so với TƯƠNG LAI của nó');
+    }
+    if (sq[2].records[0]?.kind !== 'weight') note('buổi mới nhất (100 kg) không được ghi nhận là kỷ lục tạ');
+
+    /* Two movements on the same day must not judge each other. */
+    const sameDay = perf.performancesFrom([
+      S(10, [...reps('Squat', 100, 5), ...reps('Bench Press', 60, 5)]),
+      S(3, [...reps('Squat', 105, 5), ...reps('Bench Press', 60, 5)]),
+    ]);
+    const b = perf.historyOf(sameDay, 'bench press');
+    if (b[1].records.length !== 0) {
+      note('đẩy ngực y hệt hai buổi mà vẫn ra kỷ lục — nó đang bị chấm bằng lịch sử của bài squat cùng ngày');
+    }
+
+    /* And it reaches the insight, once, as the most recent one. */
+    const ins = trend.insightFor(h);
+    const best = ins.evidence.filter((e) => e.kind === 'window-best');
+    if (best.length !== 1) {
+      note(`insight kèm ${best.length} bằng chứng window-best — phải đúng một cái, cái gần nhất`);
+    }
+    if (best[0] && best[0].of !== 'weight') {
+      note(`window-best trên insight là '${best[0].of}', phải là kỷ lục GẦN NHẤT (tạ, ở buổi thứ ba)`);
     }
   }
 

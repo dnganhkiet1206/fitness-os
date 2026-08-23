@@ -1,4 +1,11 @@
-import { exerciseKey, setsFromJson, type RecordSet } from '@/lib/personal-record';
+import {
+  bestsFrom,
+  exerciseKey,
+  findRecords,
+  setsFromJson,
+  type PersonalRecord,
+  type RecordSet,
+} from '@/lib/personal-record';
 import { localDateStr } from '@/lib/local-date';
 import { resolveKind, usesE1rm, type ExerciseKind } from '@/lib/exercise-kind';
 
@@ -90,6 +97,24 @@ export interface ExercisePerformance {
   bestE1rmKg: number | null;
   /** longest hold, for movements that are held */
   bestDurationSec: number | null;
+  /**
+   * Records this session set for this movement, judged against every session
+   * before it **in the window this was built from**.
+   *
+   * ── why not the `pr_detected` column ──
+   *
+   * That column is the all-time answer and is computed at save time against
+   * four hundred sessions, which is more history than this ever sees. It is
+   * also per SESSION: it says a record happened, not which movement set it, so
+   * a card about the bench press cannot use it.
+   *
+   * So the rules are replayed — `bestsFrom` and `findRecords`, unchanged, the
+   * same functions the celebration uses. What comes out is "best in this
+   * window", and the screen has to say so rather than saying "personal record":
+   * a lift that was higher four months ago is not beaten by today, and this
+   * cannot see four months ago.
+   */
+  records: PersonalRecord[];
   /**
    * The person's bodyweight on this day, when it is known.
    *
@@ -202,8 +227,22 @@ export function performancesFrom(
   const kindOf = new Map<string, ExerciseKind>();
   for (const [key, sets] of allSets) kindOf.set(key, resolveKind(declared[key], sets));
 
+  /*
+    Sessions in the order they happened, so "before this one" means something.
+
+    The query hands them back newest first. Reading records off that order would
+    compare every session against its own future, and the first session ever
+    logged would hold every record in the window.
+  */
+  const ordered = [...sessions]
+    .filter((r) => typeof r?.date_time === 'string' && !Number.isNaN(new Date(r.date_time).getTime()))
+    .sort((a, b) => (a.date_time! < b.date_time! ? -1 : a.date_time! > b.date_time! ? 1 : 0));
+
+  /** Every set of a movement seen so far, accumulated as the loop walks forward. */
+  const prior = new Map<string, RecordSet[]>();
+
   const out: ExercisePerformance[] = [];
-  for (const row of sessions) {
+  for (const row of ordered) {
     const at = typeof row?.date_time === 'string' ? row.date_time : '';
     if (!at || Number.isNaN(new Date(at).getTime())) continue;
     const date = dayOf(at);
@@ -220,6 +259,12 @@ export function performancesFrom(
 
     for (const [key, sets] of byExercise) {
       const kind = kindOf.get(key) ?? 'compound';
+      /* Everything logged for this movement STRICTLY BEFORE this session. Read
+         before the loop body so that the session being judged is never part of
+         its own history — the same order `useLogWorkoutSession` is careful
+         about, and for the same reason: every set would otherwise tie itself. */
+      const priorSets = prior.get(key) ?? [];
+      const records = priorSets.length > 0 ? findRecords(sets, bestsFrom(priorSets)) : [];
       let totalReps = 0;
       let totalVolumeKg = 0;
       let bestWeightKg: number | null = null;
@@ -273,14 +318,31 @@ export function performancesFrom(
         bestReps,
         bestE1rmKg,
         bestDurationSec,
+        records,
         bodyweightKg,
       });
     }
+
+    /*
+      Fold this session in AFTER every movement in it has been judged.
+
+      Inside the per-movement loop it would be right for the first movement and
+      wrong for the rest of the same session: a squat and a bench pressed on the
+      same day would have the squat in the bench's history. Sessions are the
+      unit `personal-record.ts` judges against — "the whole session is judged
+      against the history that existed before it".
+    */
+    for (const [key, sets] of byExercise) {
+      const list = prior.get(key);
+      if (list) list.push(...sets);
+      else prior.set(key, [...sets]);
+    }
   }
 
-  /* Oldest first. Everything downstream talks about "earlier" and "recent", and
-     the query this is fed from returns newest first — a difference that would
-     otherwise be invisible right up until every trend came out backwards. */
+  /* Already oldest first, because the loop walks that way — but sorted again
+     rather than assumed. Everything downstream talks about "earlier" and
+     "recent", and getting that backwards would be invisible right up until
+     every trend came out reversed. */
   out.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
   return out;
 }

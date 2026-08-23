@@ -92,6 +92,37 @@ function Row({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weigh
   const flat = i.evidence.find((e) => e.kind === 'no-upward-trend');
   const bwUnknown = i.evidence.some((e) => e.kind === 'bodyweight-unknown');
   const thin = i.evidence.find((e) => e.kind === 'too-few-sessions');
+  const last = i.evidence.find((e) => e.kind === 'last-trained');
+  const volatile = i.evidence.find((e) => e.kind === 'volatile');
+  const win = i.evidence.find((e) => e.kind === 'window-best');
+
+  const kg1 = (n: number) => Math.round(displayWeight(n, u) * 10) / 10;
+  /*
+    "Best in 90 days", never "personal record".
+
+    `personal-record.ts` answers the all-time question at save time against four
+    hundred sessions. This is the same rules replayed over the window the screen
+    is showing, so a heavier lift from last winter is not in it — and a card
+    that said "kỷ lục" about a number somebody beat in February would be the app
+    getting the one moment a strength app has to get right, wrong.
+  */
+  const winLine =
+    win && win.kind === 'window-best'
+      ? win.of === 'weight'
+        ? i18n.nXiWindowWeight
+            .replace('{v}', String(kg1(win.value)))
+            .replace('{unit}', weightLabel(u))
+            .replace('{prev}', String(kg1(win.previous)))
+        : (win.atWeightKg ?? 0) > 0
+          ? i18n.nXiWindowReps
+              .replace('{v}', String(win.value))
+              .replace('{w}', String(kg1(win.atWeightKg!)))
+              .replace('{unit}', weightLabel(u))
+              .replace('{prev}', String(win.previous))
+          : i18n.nXiWindowRepsBody
+              .replace('{v}', String(win.value))
+              .replace('{prev}', String(win.previous))
+      : null;
 
   const changeLine =
     change && change.kind === 'change'
@@ -166,6 +197,17 @@ function Row({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weigh
 
       {changeLine ? <Text style={styles.change}>{changeLine}</Text> : null}
 
+      {/* The best of the window, and when. Highlighted, because beating
+          yourself is the moment this whole screen exists around. */}
+      {winLine ? (
+        <Text style={styles.best}>
+          {winLine}
+          {win && win.kind === 'window-best' && win.daysAgo !== null
+            ? `  ·  ${i18n.nXiWindowAgo.replace('{n}', String(win.daysAgo))}`
+            : ''}
+        </Text>
+      ) : null}
+
       {/* The logbook the verdict was read out of. */}
       {series && series.kind === 'best-sets' && series.values.length > 0 ? (
         <View style={styles.evidence}>
@@ -183,6 +225,17 @@ function Row({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weigh
         <Text style={styles.note}>{i18n.nXiNeedMore.replace('{n}', String(MIN_SESSIONS))}</Text>
       ) : null}
       {bwUnknown ? <Text style={styles.note}>{i18n.nXiBodyweightUnknown}</Text> : null}
+      {last && last.kind === 'last-trained' ? (
+        <Text style={last.stale ? styles.warn : styles.note}>
+          {last.days === 0 ? i18n.nXiLastToday : i18n.nXiLastDays.replace('{n}', String(last.days))}
+          {last.stale ? `  ·  ${i18n.nXiStale}` : ''}
+        </Text>
+      ) : null}
+      {volatile && volatile.kind === 'volatile' ? (
+        <Text style={styles.warn}>
+          {i18n.nXiVolatile.replace('{p}', String(Math.round(volatile.spread * 100)))}
+        </Text>
+      ) : null}
       {i.bestE1rmKg !== null ? <Text style={styles.note}>{i18n.nXiE1rmNote}</Text> : null}
 
       <View style={styles.foot}>
@@ -253,6 +306,10 @@ const styles = StyleSheet.create({
   evidenceLabel: { ...type.caption, color: colors.mutedForeground },
   evidenceValues: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
   note: { ...type.caption, color: colors.mutedForeground },
+  /* Louder than a note, quieter than the verdict: these are the two reasons a
+     confident-looking card should not be acted on. */
+  warn: { ...type.caption, color: colors.readinessYellow },
+  best: { ...type.footnote, color: colors.readinessGreen, fontWeight: '700' },
   foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   ready: { ...type.footnote, color: colors.foreground, fontWeight: '700' },
   conf: { ...type.caption, color: colors.mutedForeground },

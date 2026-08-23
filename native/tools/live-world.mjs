@@ -148,6 +148,51 @@ export const FIXTURES = {
       ],
       source: 'manual',
     })),
+
+  /*
+    Two more histories, for the two states a screenshot could not otherwise
+    reach: a movement abandoned months ago, and one whose sessions disagree.
+
+    Both are cards that LOOK confident and must not be acted on, which is
+    exactly the kind of thing only a rendered screen shows. They sit in their
+    own sessions rather than in the six above, because a stale movement has to
+    be absent from the recent ones to be stale at all.
+  */
+  ...[
+    /* Overhead Press: four sessions, then nothing for ten weeks. */
+    [96, 'Overhead Press', 35, 6],
+    [89, 'Overhead Press', 35, 7],
+    [82, 'Overhead Press', 35, 8],
+    [75, 'Overhead Press', 35, 9],
+    /*
+      Lat Pulldown: trained recently, and the sessions disagree with each other.
+
+      Every rep count is 10 or under on purpose. The first draft used 12 for one
+      session and the estimate refused it — past `E1RM_MAX_REPS` there is no
+      index — so that session was dropped, the series fell to three points, and
+      the drawdown came out under the threshold. The fixture had stopped
+      producing the state it existed to show.
+
+      3 rather than 4 for the bad session, too: at 4 the drawdown is exactly
+      15.0% and the rule is `> 15%`, so the fixture sat precisely on the
+      boundary and produced neither state reliably. 3 gives 17.5%.
+    */
+    [24, 'Lat Pulldown', 50, 10],
+    [17, 'Lat Pulldown', 50, 3],
+    [10, 'Lat Pulldown', 50, 9],
+    [3, 'Lat Pulldown', 50, 5],
+  ].map(([d, name, w, r], i) => ({
+    id: `x${i + 1}`,
+    user_id: UID,
+    date_time: day(d),
+    template_name: name,
+    volume_load: Math.round(w * r * 3),
+    session_rpe: 7,
+    sets: Array.from({ length: 3 }, (_, n) => ({
+      exerciseId: '', exerciseName: name, setIndex: n + 1, weight: w, reps: r,
+    })),
+    source: 'manual',
+  })),
   ],
   /*
     A library, so the DECLARED half of the taxonomy is exercised.

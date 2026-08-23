@@ -280,6 +280,58 @@ thì không, vì một buổi tệ đơn giản không phải cái tốt nhất 
 | `PLATEAU_SESSIONS` | 4 | nói "bạn đang chững" là một lời về CON NGƯỜI, phải cần nhiều bằng chứng hơn lời khen |
 | `MEANINGFUL_CHANGE` | 3% | dưới bước tiến nhỏ nhất có thật trên một bài nặng (100×5 → 100×6 là 2,8%), trên nhiễu duy nhất của phép đo (vòng lặp kg↔lb, dưới 0,03 kg) |
 | `TREND_WINDOW` | 6 buổi | đủ chỗ cho một ngày tệ ở mỗi nửa; xu hướng trên cả lịch sử không phải xu hướng, nó là tiểu sử |
+| `STALE_FLOOR_DAYS` | 21 ngày | sàn dưới ngưỡng "cũ", xem mục dưới |
+| `VOLATILE_ABOVE` | 15% | mức sụt sâu nhất so với đỉnh, xem mục dưới |
+
+### Cũ: khi phán quyết nói về một khối tập đã rời khỏi
+
+Engine ban đầu **không có khái niệm thời gian nào**. Sáu buổi trong ba tuần và
+sáu buổi trong ba năm cho cùng một phán quyết, nên một bài bỏ từ tháng Ba quay
+lại vào tháng Tám vẫn đọc IMPROVING · READY_TO_PROGRESS — một chỉ dẫn về HÔM
+NAY, dựa trên một khối tập người ta đã rời khỏi.
+
+Nhưng nó **cố ý không** gọi đó là đi xuống. Tài liệu về detraining nói sức mạnh
+là phần bền nhất: phần lớn giữ được qua **16–24 tuần** ngừng hẳn, khối cơ mất
+trước, sụt sức mạnh đáng kể chỉ xảy ra sau đó
+([mdpi.com/2813-0413/1/1/1](https://www.mdpi.com/2813-0413/1/1/1),
+[PMC4748325](https://pmc.ncbi.nlm.nih.gov/articles/PMC4748325/)). Nên một phán
+quyết cũ nhiều khả năng **vẫn đúng** về việc người đó nâng được bao nhiêu; thứ
+nó không còn đúng là *nên làm gì tiếp*.
+
+Vì vậy bài cũ ra `MAINTAIN`, không phải `NOT_READY` — `NOT_READY` đọc ra là
+"bạn chưa đủ sức", điều bằng chứng nói ngược lại.
+
+Ngưỡng so với **nhịp của chính người đó**: cũ khi khoảng cách từ buổi gần nhất
+vượt `max(21 ngày, 2 × khoảng cách trung vị giữa các buổi)`. Một con số cố định
+sai ở cả hai đầu — 21 ngày là rất lâu với người đẩy ngực hai lần một tuần, và là
+khoảng bình thường với người kéo tạ mỗi tháng.
+
+21 chứ không phải `STALE_AFTER_DAYS = 7` của `training-card.ts`: bảy ngày ở đó
+là cửa sổ cấp tính của tỉ số tải, nơi một tuần trống đúng là tín hiệu. Ở đây một
+tuần là khoảng nghỉ bình thường giữa hai buổi của cùng một bài.
+
+### Dao động: khi các buổi không cùng nói về một thứ
+
+Đếm số buổi thôi thì chưa đủ. Bốn buổi 55×10, 10, 9, 10 và bốn buổi 55×10, 3,
+9, 4 đều được chấm `high`; chuỗi thứ hai không phải xu hướng, nó là nhiễu có bốn
+điểm.
+
+Phép đo là **mức sụt sâu nhất so với đỉnh đã đạt**, không phải độ lệch quanh
+trung bình. Đo trên chỉ số e1RM:
+
+| chuỗi | độ lệch quanh TB | sụt sâu nhất |
+|---|---|---|
+| đều: 10, 10, 9, 10 | 0,9% | 2,5% |
+| loạn: 10, 3, 9, 4 | 8,2% | **17,5%** |
+| một ngày tệ: 8, 9, 10, 5 | 3,9% | 12,5% |
+| tiến bộ thật 55×6 → 65×6 | **5,0%** | **0,0%** |
+
+Độ lệch quanh trung bình chấm một khối tiến bộ thật (5,0%) là **loạn hơn** cả
+khối có một ngày tệ (3,9%) — nó đang đo CHUYỂN ĐỘNG, mà chuyển động chính là thứ
+engine này sinh ra để khen. Mức sụt so với đỉnh không làm được thế: một chuỗi chỉ
+đi lên thì không có mức sụt nào.
+
+15% nằm giữa một ngày tệ (12,5%) và một khối thật sự loạn (17,5%).
 
 Trạng thái: `IMPROVING` · `STABLE` · `PLATEAU` · `DECLINING` ·
 `INSUFFICIENT_DATA`. Dưới `MIN_SESSIONS` buổi **luôn** là
@@ -306,6 +358,52 @@ Dùng đúng thang của `user-state.ts` (`none` / `low` / `medium` / `high`), k
 dựng thang thứ hai. `low` khi dưới 3 buổi; `medium` khi là bài bodyweight mà
 chưa có lần cân nào (chỉ số tụt xuống thành số rep trần, thấy được sự tiến bộ
 kém đi); `high` từ 4 buổi trở lên.
+
+## Thứ tự đọc
+
+Danh sách xếp theo **mức độ phán quyết đòi hỏi người đọc**, không theo mức độ
+tốt: `DECLINING` → `PLATEAU` → `IMPROVING` → `STABLE` → `INSUFFICIENT_DATA`.
+
+Trong cùng một hạng, **bài đã ngừng tập đứng trước**. Một bài bỏ hai tháng vẫn
+mang phán quyết IMPROVING, nên nó chìm xuống đáy danh sách *đúng vì phán quyết
+của nó tốt* — trong khi "bạn đã ngừng tập bài này" là thứ đáng đọc hơn "bạn đang
+tiến bộ ở bài này" khi cả hai cùng nói IMPROVING.
+
+## Kỷ lục trong cửa sổ
+
+Insight kèm **kỷ lục gần nhất trong 90 ngày** — luật của `personal-record.ts`
+(`bestsFrom`, `findRecords`) được **phát lại** nguyên vẹn, mỗi buổi chấm với
+đúng những gì có trước nó.
+
+Nó **không** phải kỷ lục mọi thời, và màn hình phải nói đúng như vậy. Cột
+`pr_detected` mới là câu trả lời mọi thời, tính lúc ghi buổi với 400 buổi lịch
+sử — nhưng nó theo BUỔI chứ không theo bài, nên một thẻ về đẩy ngực không dùng
+được nó. Một mức tạ cao hơn từ mùa đông năm ngoái không nằm trong cửa sổ 90 ngày,
+và gọi con số này là "kỷ lục" sẽ là app nói sai đúng vào khoảnh khắc duy nhất một
+app sức mạnh phải nói đúng.
+
+Buổi đầu tiên của một bài không giữ kỷ lục nào — đúng luật `personal-record.ts`
+đã ghi: không có gì để vượt thì không có kỷ lục. Và lịch sử chỉ được nạp thêm
+SAU khi mọi bài trong buổi đã được chấm, nếu không thì squat và đẩy ngực tập
+cùng ngày sẽ chấm điểm cho nhau.
+
+## e1RM: trần 10 rep có nguồn
+
+Trần này ban đầu đặt theo lập luận. Kiểm lại: mọi công thức dự đoán 1RM đều sụt
+độ chính xác rõ rệt trên khoảng 10 rep, và độ chính xác cải thiện đáng kể khi số
+rep tới lực kiệt ≤ 10
+([SportRxiv](https://sportrxiv.org/index.php/server/preprint/view/768),
+[OpenSIUC](https://opensiuc.lib.siu.edu/cgi/viewcontent.cgi?article=1744&context=gs_rp)).
+
+Không đổi sang Brzycki: Epley chính xác nhất ở tải 3RM, Brzycki ở 5RM — chúng đổi
+chỗ cho nhau tuỳ dải rep và chênh nhau vài kg. Cùng nguồn cũng ghi rằng **mọi
+công thức đều ước lượng THẤP cho deadlift**, tức có sai lệch hệ thống theo động
+tác.
+
+Điều đó không ảnh hưởng tới xu hướng: chỉ số so sánh cùng một người, cùng một
+bài, cùng một công thức, nên một sai lệch hệ thống triệt tiêu khi đo *thay đổi*.
+Nó ảnh hưởng tới con số hiện ra — và đó là lý do màn hình gọi nó là ước lượng và
+nói rõ không phải mức đã nâng thật.
 
 ## Bằng chứng
 
