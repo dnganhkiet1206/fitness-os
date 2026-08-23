@@ -1,10 +1,15 @@
-import { TrendingDown, TrendingUp, Minus, Activity } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { Activity, ChevronDown, Minus, TrendingDown, TrendingUp } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { EmptyState } from '@/components/ascnd/empty-state';
+import { Expander } from '@/components/ascnd/expander';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { LineChart } from '@/components/ascnd/line-chart';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -16,27 +21,44 @@ import type { NativeStrings } from '@/lib/native-strings';
 import { displayWeight, weightLabel, type WeightUnit } from '@/lib/units';
 
 /**
- * Exercise Intelligence, made visible.
+ * Exercise Intelligence, as something you can read at a glance.
  *
- * ── this is a proof, not a dashboard ──
+ * ── what the first build got wrong, measured ──
  *
- * The engine in `lib/exercise-trend.ts` produces structured facts and no
- * sentences, deliberately: it does not know whether the reader wants kilograms
- * or pounds, and it does not know which of two languages they read in. Both of
- * those decisions live here, which is the whole reason the split exists.
+ * Each card was 280pt tall, so two and a half of six fitted on the screen, and
+ * every one of them ended in four to six grey lines of the same size and
+ * colour. Three specific faults, all visible in a screenshot:
  *
- * So this screen's job is to show that the engine works on real logged data —
- * one row per movement, the verdict, and the numbers it was reached from. It is
- * not the Progress Centre; that is a later phase, and building it now would
- * have meant designing a screen around an engine nobody had watched run yet.
+ *   · **A footnote printed four times.** "An estimate from your best set, not a
+ *     max you have lifted" appeared on every card that had an estimate. It is
+ *     true, it is worth saying, and it is worth saying once — it now sits at
+ *     the bottom of the screen.
+ *   · **The series repeated its own constants.** `50 kg × 10 · 50 kg × 3 ·
+ *     50 kg × 9 · 50 kg × 5` spends most of its width on the part that did not
+ *     change. The part that did — 10, 3, 9, 5 — is what somebody is looking
+ *     for, and it was the least visible thing in the line.
+ *   · **The strongest position held the weakest line.** "Keep as is", bold,
+ *     bottom-left: the readiness verdict, which is the one thing on the card
+ *     that only matters once you have already read everything else.
  *
- * ── the evidence is on the card ──
+ * ── what replaces it ──
  *
- * Every verdict shows the series it came from. A card that says "Plateau" and
- * nothing else is an app asserting something about somebody's training; a card
- * that says "Plateau — 8 / 8 / 9 / 8" is showing them their own logbook and
- * letting them agree with it. `exercise-trend.ts` carries the numbers all the
- * way here for exactly this.
+ * A card answers one question at rest — *which way is this going* — with a
+ * name, a shape and a number. Everything that was a grey line is behind a tap,
+ * which is the ordinary way to keep a summary a summary: defer what is only
+ * relevant once somebody has decided to look closer.
+ *
+ * The shape is a sparkline of the index the verdict was computed from, so the
+ * picture and the verdict cannot disagree. `LineChart` already draws these at
+ * 90pt on the biometrics screen, and its own note says a sparkline is for when
+ * "the only question is which way the line is going" — which is this question
+ * exactly.
+ *
+ * ── and it is grouped ──
+ *
+ * Six cards in verdict order is still six cards. Under two headings — the ones
+ * worth a look, and the ones going well — the screen answers "is anything
+ * wrong" before you have read a single number.
  */
 
 const TREND_ICON: Record<Trend, typeof TrendingUp> = {
@@ -56,200 +78,236 @@ const TREND_COLOR: Record<Trend, string> = {
 };
 
 /**
- * One session's best set, written the way the person wrote it down.
+ * Which of the three groups a movement belongs in.
  *
- * ── not the index ──
- *
- * The engine's own series is what the verdict was computed from, and for a
- * bodyweight movement that is body-times-reps: a pull-up history that renders
- * as "655 · 582 · 582" with a kilogram label on it. It shipped that way for one
- * build, and it is tonnage wearing a weight's unit — a number nobody's logbook
- * contains, presented as though it were a load.
- *
- * This is the readable half, which the engine now carries alongside. The
- * bodyweight is printed with it, because otherwise a card can say "9 ×
- * bodyweight" and "Est. 1RM 95 kg" with nothing on it connecting the two.
+ * "Worth a look" is not the same as "bad". A movement that has plateaued, gone
+ * backwards, been dropped, or whose sessions disagree with each other are four
+ * different situations with one thing in common: the card is telling you
+ * something you did not already know.
  */
-function setText(
-  v: { weightKg: number | null; reps: number | null; durationSec: number | null; bodyweightKg: number | null },
+type Group = 'attention' | 'fine' | 'thin';
+const groupOf = (i: ExerciseInsight): Group => {
+  if (i.trend === 'INSUFFICIENT_DATA') return 'thin';
+  if (i.trend === 'DECLINING' || i.trend === 'PLATEAU') return 'attention';
+  if (i.stale || i.evidence.some((e) => e.kind === 'volatile')) return 'attention';
+  return 'fine';
+};
+
+/**
+ * One session's best set, with the part that never changes factored out.
+ *
+ * Returns the constant prefix separately when every session in the window used
+ * the same load, which on a rep-progression block is most of them. `55 kg → 7 ·
+ * 8 · 8 · 9 · 9 · 10` says the same thing as six copies of "55 kg × n" in a
+ * fifth of the width, and puts the varying number where the eye lands.
+ */
+function seriesText(
+  values: { weightKg: number | null; reps: number | null; durationSec: number | null; bodyweightKg: number | null }[],
   u: WeightUnit,
-  i18n: NativeStrings,
-): string {
-  if (v.durationSec !== null && v.reps === null) return `${Math.round(v.durationSec)}s`;
-  if (v.reps === null) return '—';
-  const kg = (n: number) => Math.round(displayWeight(n, u) * 10) / 10;
-  if (v.bodyweightKg !== null) {
-    const total = v.bodyweightKg + (v.weightKg ?? 0);
-    return `${v.reps} × ${kg(total)} ${weightLabel(u)}`;
+): { prefix: string | null; parts: string[] } {
+  const kg = (n: number) => `${Math.round(displayWeight(n, u) * 10) / 10} ${weightLabel(u)}`;
+
+  if (values.every((v) => v.durationSec !== null && v.reps === null)) {
+    return { prefix: null, parts: values.map((v) => `${Math.round(v.durationSec!)}s`) };
   }
-  if ((v.weightKg ?? 0) <= 0) return `${v.reps} × ${i18n.nRdBodyweight.toLowerCase()}`;
-  return `${kg(v.weightKg!)} ${weightLabel(u)} × ${v.reps}`;
+
+  const loads = values.map((v) => (v.bodyweightKg ?? 0) + (v.weightKg ?? 0));
+  const same = loads.every((l) => Math.abs(l - loads[0]) < 0.05);
+  if (same && loads[0] > 0 && values.every((v) => v.reps !== null)) {
+    return { prefix: kg(loads[0]), parts: values.map((v) => String(v.reps)) };
+  }
+  return {
+    prefix: null,
+    parts: values.map((v) =>
+      v.reps === null
+        ? '—'
+        : (v.bodyweightKg ?? 0) + (v.weightKg ?? 0) > 0
+          ? `${kg((v.bodyweightKg ?? 0) + (v.weightKg ?? 0))} × ${v.reps}`
+          : `${v.reps}`,
+    ),
+  };
 }
 
-function Row({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: WeightUnit }) {
-  const series = i.evidence.find((e) => e.kind === 'best-sets');
+function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: WeightUnit }) {
+  const [open, setOpen] = useState(false);
+
+  const sets = i.evidence.find((e) => e.kind === 'best-sets');
+  const index = i.evidence.find((e) => e.kind === 'series');
   const change = i.evidence.find((e) => e.kind === 'change');
   const flat = i.evidence.find((e) => e.kind === 'no-upward-trend');
-  const bwUnknown = i.evidence.some((e) => e.kind === 'bodyweight-unknown');
-  const thin = i.evidence.find((e) => e.kind === 'too-few-sessions');
   const last = i.evidence.find((e) => e.kind === 'last-trained');
   const volatile = i.evidence.find((e) => e.kind === 'volatile');
   const win = i.evidence.find((e) => e.kind === 'window-best');
+  const thin = i.evidence.find((e) => e.kind === 'too-few-sessions');
+  const bwUnknown = i.evidence.some((e) => e.kind === 'bodyweight-unknown');
 
   const kg1 = (n: number) => Math.round(displayWeight(n, u) * 10) / 10;
+  const tint = TREND_COLOR[i.trend];
+
+  /* The headline: the best set, in the shortest true form. */
+  const headline = (() => {
+    if (i.bestDurationSec !== null && i.bestReps === null) return `${Math.round(i.bestDurationSec)}s`;
+    if (i.bestReps === null) return '—';
+    const bw = sets && sets.kind === 'best-sets' ? sets.values[sets.values.length - 1]?.bodyweightKg : null;
+    const load = (bw ?? 0) + (i.bestWeightKg ?? 0);
+    if (load <= 0) return `${i.bestReps}`;
+    return `${kg1(load)} ${weightLabel(u)} × ${i.bestReps}`;
+  })();
+
+  const pct = change && change.kind === 'change' ? Math.round(change.pct * 100) : null;
+
   /*
-    "Best in 90 days", never "personal record".
-
-    `personal-record.ts` answers the all-time question at save time against four
-    hundred sessions. This is the same rules replayed over the window the screen
-    is showing, so a heavier lift from last winter is not in it — and a card
-    that said "kỷ lục" about a number somebody beat in February would be the app
-    getting the one moment a strength app has to get right, wrong.
+    The sparkline is drawn from the INDEX, not from the readable series: the
+    index is what the verdict was computed from, so the picture and the words
+    cannot disagree. `date` is only an ordering key here — the chart is not
+    labelled, and a sparkline's own note says it is for when "the only question
+    is which way the line is going".
   */
-  const winLine =
-    win && win.kind === 'window-best'
-      ? win.of === 'weight'
-        ? i18n.nXiWindowWeight
-            .replace('{v}', String(kg1(win.value)))
-            .replace('{unit}', weightLabel(u))
-            .replace('{prev}', String(kg1(win.previous)))
-        : (win.atWeightKg ?? 0) > 0
-          ? i18n.nXiWindowReps
-              .replace('{v}', String(win.value))
-              .replace('{w}', String(kg1(win.atWeightKg!)))
-              .replace('{unit}', weightLabel(u))
-              .replace('{prev}', String(win.previous))
-          : i18n.nXiWindowRepsBody
-              .replace('{v}', String(win.value))
-              .replace('{prev}', String(win.previous))
-      : null;
+  const spark = useMemo(
+    () =>
+      index && index.kind === 'series'
+        ? index.values.map((v, n) => ({ date: String(n).padStart(2, '0'), value: v }))
+        : [],
+    [index],
+  );
 
-  const changeLine =
-    change && change.kind === 'change'
-      ? (Math.abs(change.pct) < 0.005
-          ? i18n.nXiChangeFlat
-          : (change.pct > 0 ? i18n.nXiChangeUp : i18n.nXiChangeDown).replace(
-              '{p}',
-              String(Math.abs(Math.round(change.pct * 100))),
-            ))
-      : null;
+  const series = sets && sets.kind === 'best-sets' ? seriesText(sets.values, u) : null;
 
   return (
-    <GlassCard style={styles.card}>
-      <View style={styles.head}>
-        <View style={styles.headText}>
-          <Text style={styles.name} numberOfLines={1}>{i.exerciseName}</Text>
-          <Text style={styles.kind}>
-            {i18n[`nXiKind${i.kind}` as keyof NativeStrings] as string}
-            {'  ·  '}
-            {i.sessions === 1
-              ? i18n.nXiOneSession
-              : i18n.nXiSessions.replace('{n}', String(i.sessions))}
-          </Text>
-        </View>
-        <View style={[styles.trendPill, { borderColor: TREND_COLOR[i.trend] }]}>
-          <Icon icon={TREND_ICON[i.trend]} size={13} color={TREND_COLOR[i.trend]} />
-          <Text style={[styles.trendText, { color: TREND_COLOR[i.trend] }]}>
-            {i18n[`nXiTrend${i.trend}` as keyof NativeStrings] as string}
-          </Text>
-        </View>
-      </View>
-
-      {/* The best set, and — only where it means something — the estimate. */}
-      <View style={styles.numbers}>
-        {i.bestWeightKg !== null && i.bestReps !== null ? (
-          <View style={styles.num}>
-            <Text style={styles.numLabel}>{i18n.nXiBest}</Text>
-            <Text style={styles.numValue}>
-              {setText(
-                {
-                  weightKg: i.bestWeightKg,
-                  reps: i.bestReps,
-                  durationSec: null,
-                  bodyweightKg:
-                    i.kind === 'bodyweight'
-                      ? (series && series.kind === 'best-sets'
-                          ? series.values[series.values.length - 1]?.bodyweightKg ?? null
-                          : null)
-                      : null,
-                },
-                u,
-                i18n,
-              )}
+    <PressScale
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      accessibilityLabel={`${i.exerciseName} — ${i18n[`nXiTrend${i.trend}` as keyof NativeStrings] as string}`}
+      onPress={() => {
+        Haptics.selectionAsync();
+        setOpen((v) => !v);
+      }}>
+      <GlassCard style={styles.card}>
+        <View style={styles.head}>
+          <View style={styles.headText}>
+            <Text style={styles.name} numberOfLines={1}>{i.exerciseName}</Text>
+            {/*
+              One muted line where there used to be three. Kind, how many
+              sessions, and how long ago — the context you need to decide
+              whether the number above is worth anything.
+            */}
+            <Text style={styles.meta} numberOfLines={1}>
+              {i18n[`nXiKind${i.kind}` as keyof NativeStrings] as string}
+              {'  ·  '}
+              {i.sessions === 1 ? i18n.nXiOneSession : i18n.nXiSessions.replace('{n}', String(i.sessions))}
+              {/* The short form. "Last trained 75 days ago" is the third thing
+                  on a one-line meta row and was the part that got truncated —
+                  losing the number, which is the only part of it that varies. */}
+              {last && last.kind === 'last-trained'
+                ? `  ·  ${last.days === 0 ? i18n.nXiLastToday : i18n.nXiAgoShort.replace('{n}', String(last.days))}`
+                : ''}
             </Text>
           </View>
-        ) : null}
-        {i.bestDurationSec !== null ? (
-          <View style={styles.num}>
-            <Text style={styles.numLabel}>{i18n.nXiBest}</Text>
-            <Text style={styles.numValue}>{Math.round(i.bestDurationSec)}s</Text>
-          </View>
-        ) : null}
-        {i.bestE1rmKg !== null ? (
-          <View style={styles.num}>
-            <Text style={styles.numLabel}>{i18n.nXiE1rm}</Text>
-            <Text style={styles.numValue}>
-              {Math.round(displayWeight(i.bestE1rmKg, u))} {weightLabel(u)}
+          <View style={[styles.chip, { borderColor: tint }]}>
+            <Icon icon={TREND_ICON[i.trend]} size={12} color={tint} />
+            <Text style={[styles.chipText, { color: tint }]}>
+              {i18n[`nXiTrend${i.trend}` as keyof NativeStrings] as string}
             </Text>
           </View>
-        ) : null}
-      </View>
-
-      {changeLine ? <Text style={styles.change}>{changeLine}</Text> : null}
-
-      {/* The best of the window, and when. Highlighted, because beating
-          yourself is the moment this whole screen exists around. */}
-      {winLine ? (
-        <Text style={styles.best}>
-          {winLine}
-          {win && win.kind === 'window-best' && win.daysAgo !== null
-            ? `  ·  ${i18n.nXiWindowAgo.replace('{n}', String(win.daysAgo))}`
-            : ''}
-        </Text>
-      ) : null}
-
-      {/* The logbook the verdict was read out of. */}
-      {series && series.kind === 'best-sets' && series.values.length > 0 ? (
-        <View style={styles.evidence}>
-          <Text style={styles.evidenceLabel}>{i18n.nXiEvidence}</Text>
-          <Text style={styles.evidenceValues}>
-            {series.values.map((v) => setText(v, u, i18n)).join('  ·  ')}
-          </Text>
         </View>
-      ) : null}
 
-      {flat && flat.kind === 'no-upward-trend' ? (
-        <Text style={styles.note}>{i18n.nXiNoUpward.replace('{n}', String(flat.sessions))}</Text>
-      ) : null}
-      {thin && thin.kind === 'too-few-sessions' ? (
-        <Text style={styles.note}>{i18n.nXiNeedMore.replace('{n}', String(MIN_SESSIONS))}</Text>
-      ) : null}
-      {bwUnknown ? <Text style={styles.note}>{i18n.nXiBodyweightUnknown}</Text> : null}
-      {last && last.kind === 'last-trained' ? (
-        <Text style={last.stale ? styles.warn : styles.note}>
-          {last.days === 0 ? i18n.nXiLastToday : i18n.nXiLastDays.replace('{n}', String(last.days))}
-          {last.stale ? `  ·  ${i18n.nXiStale}` : ''}
-        </Text>
-      ) : null}
-      {volatile && volatile.kind === 'volatile' ? (
-        <Text style={styles.warn}>
-          {i18n.nXiVolatile.replace('{p}', String(Math.round(volatile.spread * 100)))}
-        </Text>
-      ) : null}
-      {i.bestE1rmKg !== null ? <Text style={styles.note}>{i18n.nXiE1rmNote}</Text> : null}
+        <View style={styles.figures}>
+          <View style={styles.headlineWrap}>
+            <Text style={styles.headline} numberOfLines={1}>{headline}</Text>
+            {pct !== null ? (
+              <Text style={[styles.delta, { color: pct === 0 ? colors.mutedForeground : tint }]}>
+                {pct > 0 ? '↑' : pct < 0 ? '↓' : '='}
+                {Math.abs(pct)}%
+              </Text>
+            ) : null}
+          </View>
+          {spark.length >= 2 ? (
+            <View style={styles.spark} pointerEvents="none">
+              {/* No label row. The series is an internal index — for a
+                  bodyweight movement it is body mass times reps — and printing
+                  its extremes put "572" under a pull-up, which reads as a load.
+                  A sparkline here answers one question and the numbers are
+                  behind the tap. */}
+              <LineChart points={spark} color={tint} height={46} labels={false} />
+            </View>
+          ) : null}
+        </View>
 
-      <View style={styles.foot}>
-        <Text style={styles.ready}>
-          {i18n[`nXiReady${i.readiness}` as keyof NativeStrings] as string}
-        </Text>
-        <Text style={styles.conf}>
-          {i18n.nXiConf.replace(
-            '{c}',
-            i18n[`nXiConf${i.confidence}` as keyof NativeStrings] as string,
-          )}
-        </Text>
-      </View>
-    </GlassCard>
+        {/* The one line that changes what somebody should do with this card. */}
+        {volatile && volatile.kind === 'volatile' ? (
+          <Text style={styles.warn} numberOfLines={2}>
+            {i18n.nXiVolatile.replace('{p}', String(Math.round(volatile.spread * 100)))}
+          </Text>
+        ) : last && last.kind === 'last-trained' && last.stale ? (
+          <Text style={styles.warn} numberOfLines={2}>{i18n.nXiStale}</Text>
+        ) : null}
+
+        <Expander open={open}>
+          <View style={styles.detail}>
+            {series && series.parts.length > 0 ? (
+              <View style={styles.block}>
+                <Text style={styles.label}>{i18n.nXiEvidence}</Text>
+                <Text style={styles.values}>
+                  {series.prefix ? `${series.prefix}  →  ` : ''}
+                  {series.parts.join('  ·  ')}
+                </Text>
+              </View>
+            ) : null}
+
+            {win && win.kind === 'window-best' ? (
+              <Text style={styles.best}>
+                {win.of === 'weight'
+                  ? i18n.nXiWindowWeight
+                      .replace('{v}', String(kg1(win.value)))
+                      .replace('{unit}', weightLabel(u))
+                      .replace('{prev}', String(kg1(win.previous)))
+                  : (win.atWeightKg ?? 0) > 0
+                    ? i18n.nXiWindowReps
+                        .replace('{v}', String(win.value))
+                        .replace('{w}', String(kg1(win.atWeightKg!)))
+                        .replace('{unit}', weightLabel(u))
+                        .replace('{prev}', String(win.previous))
+                    : i18n.nXiWindowRepsBody
+                        .replace('{v}', String(win.value))
+                        .replace('{prev}', String(win.previous))}
+                {win.daysAgo !== null ? `  ·  ${i18n.nXiWindowAgo.replace('{n}', String(win.daysAgo))}` : ''}
+              </Text>
+            ) : null}
+
+            {flat && flat.kind === 'no-upward-trend' ? (
+              <Text style={styles.note}>{i18n.nXiNoUpward.replace('{n}', String(flat.sessions))}</Text>
+            ) : null}
+            {thin ? <Text style={styles.note}>{i18n.nXiNeedMore.replace('{n}', String(MIN_SESSIONS))}</Text> : null}
+            {bwUnknown ? <Text style={styles.note}>{i18n.nXiBodyweightUnknown}</Text> : null}
+
+            <View style={styles.foot}>
+              <Text style={styles.ready}>
+                {i18n[`nXiReady${i.readiness}` as keyof NativeStrings] as string}
+              </Text>
+              <View style={styles.footRight}>
+                {i.bestE1rmKg !== null ? (
+                  <Text style={styles.e1rm}>
+                    {i18n.nXiE1rm} {Math.round(displayWeight(i.bestE1rmKg, u))} {weightLabel(u)}
+                  </Text>
+                ) : null}
+                <Text style={styles.conf}>
+                  {i18n.nXiConf.replace(
+                    '{c}',
+                    i18n[`nXiConf${i.confidence}` as keyof NativeStrings] as string,
+                  )}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </Expander>
+
+        {/* A chevron rather than a word: the affordance has to be visible, and a
+            button labelled "Details" on every card is six of them. */}
+        <View style={[styles.more, open && styles.flip]}>
+          <Icon icon={ChevronDown} size={14} color={colors.mutedForeground} />
+        </View>
+      </GlassCard>
+    </PressScale>
   );
 }
 
@@ -258,60 +316,100 @@ export default function ExerciseInsightScreen() {
   const { weight: u } = useUnits();
   const { insights, loading, failed } = useExerciseInsights();
 
+  const groups = useMemo(() => {
+    const out: Record<Group, ExerciseInsight[]> = { attention: [], fine: [], thin: [] };
+    for (const i of insights) out[groupOf(i)].push(i);
+    return out;
+  }, [insights]);
+
+  const heading: Record<Group, string> = {
+    attention: i18n.nXiNeedsAttention,
+    fine: i18n.nXiGoingWell,
+    thin: i18n.nXiNotYet,
+  };
+
   return (
     <Screen back title={i18n.nXiTitle}>
-      <Text style={styles.subtitle}>{i18n.nXiSubtitle}</Text>
-
       {failed ? (
-        /* A failed read and an empty history say different things, and telling
-           somebody their training is missing when the network hiccuped is the
-           worse of the two mistakes. `empty-vs-failed.mjs` guards this. */
         <LoadFailed i18n={i18n} />
       ) : loading ? null : insights.length === 0 ? (
         <EmptyState icon={Activity} title={i18n.nXiEmpty} hint={i18n.nXiEmptyHint} />
       ) : (
-        insights.map((i) => <Row key={i.exerciseKey} i={i} i18n={i18n} u={u} />)
-      )}
+        <>
+          {/* The answer to "is anything wrong", before a single number. */}
+          <Text style={styles.summary}>
+            {i18n.nXiSummary
+              .replace('{a}', String(groups.fine.length))
+              .replace('{b}', String(groups.attention.length))}
+          </Text>
 
-      {insights.length > 0 ? (
-        <Text style={styles.window}>{`${INSIGHT_DAYS}d`}</Text>
-      ) : null}
+          {(['attention', 'fine', 'thin'] as const).map((g) =>
+            groups[g].length === 0 ? null : (
+              <View key={g} style={styles.group}>
+                <Text style={styles.groupTitle}>{heading[g]}</Text>
+                {groups[g].map((i) => (
+                  <Card key={i.exerciseKey} i={i} i18n={i18n} u={u} />
+                ))}
+              </View>
+            ),
+          )}
+
+          {/* Said once. It was on every card that had an estimate — four times
+              on this screen, in a grey the same size as everything else. */}
+          <Text style={styles.footnote}>{i18n.nXiFootnote}</Text>
+          <Text style={styles.window}>{`${INSIGHT_DAYS}d`}</Text>
+        </>
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  subtitle: { ...type.footnote, color: colors.mutedForeground },
+  summary: { ...type.footnote, color: colors.mutedForeground },
+  group: { gap: spacing.sm },
+  groupTitle: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
   card: { gap: spacing.sm },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headText: { flex: 1, minWidth: 0, gap: 2 },
   name: { ...type.headline, color: colors.foreground },
-  kind: { ...type.caption, color: colors.mutedForeground },
-  trendPill: {
+  meta: { ...type.caption, color: colors.mutedForeground },
+  chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: radius.full,
     borderWidth: 1,
   },
-  trendText: { ...type.caption, fontWeight: '700' },
-  numbers: { flexDirection: 'row', gap: spacing.lg, flexWrap: 'wrap' },
-  num: { gap: 2 },
-  numLabel: { ...type.caption, color: colors.mutedForeground },
-  numValue: { ...type.body, color: colors.foreground, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  change: { ...type.footnote, color: colors.foreground },
-  evidence: { gap: 3 },
-  evidenceLabel: { ...type.caption, color: colors.mutedForeground },
-  evidenceValues: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  note: { ...type.caption, color: colors.mutedForeground },
-  /* Louder than a note, quieter than the verdict: these are the two reasons a
-     confident-looking card should not be acted on. */
+  chipText: { ...type.caption, fontWeight: '700' },
+  figures: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  headlineWrap: { flex: 1, minWidth: 0, gap: 2 },
+  headline: { ...type.title2, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  delta: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  /* Half the row, so the number and the shape are read as one statement rather
+     than as a figure with a decoration beside it. */
+  spark: { width: '46%' },
   warn: { ...type.caption, color: colors.readinessYellow },
+  detail: { gap: spacing.sm, paddingTop: spacing.sm },
+  block: { gap: 3 },
+  label: { ...type.caption, color: colors.mutedForeground },
+  values: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
   best: { ...type.footnote, color: colors.readinessGreen, fontWeight: '700' },
-  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  note: { ...type.caption, color: colors.mutedForeground },
+  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  footRight: { alignItems: 'flex-end', gap: 2 },
   ready: { ...type.footnote, color: colors.foreground, fontWeight: '700' },
+  e1rm: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   conf: { ...type.caption, color: colors.mutedForeground },
+  more: { alignItems: 'center' },
+  flip: { transform: [{ rotate: '180deg' }] },
+  footnote: { ...type.caption, color: colors.mutedForeground },
   window: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
 });

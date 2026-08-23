@@ -127,6 +127,7 @@ const STEPS = [
   ['chữ ngoài Text', 'node', ['tools/stray-text.mjs']],
   ['cửa sổ ngày', 'node', ['tools/day-window.mjs']],
   ['backend', 'node', ['tools/backend-config.mjs']],
+  ['mép biểu đồ', 'node', ['tools/chart-edges.mjs']],
   ['tài liệu nối backend', 'node', ['tools/backend-doc.mjs']],
   ['vùng chạm', 'node', ['tools/tap-targets.mjs']],
   ['kinh tế', 'node', ['tools/economy.mjs']],

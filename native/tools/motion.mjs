@@ -130,6 +130,10 @@ const BOUNDED_LAYOUT = {
   'src/components/ascnd/today-meals.tsx':
     'mở thẻ bằng height thật để thẻ bên dưới bị đẩy xuống theo từng frame — ' +
     'LinearTransition đã đo và không làm được (để lại khoảng hở 94px)',
+  'src/components/ascnd/expander.tsx':
+    'mở một mục bằng height thật, vì đó chính là cơ chế: chỉ có height mới đẩy được ' +
+    'phần bên dưới xuống theo từng frame — today-meals.tsx đã đo LinearTransition và ' +
+    'nó để lại khoảng hở 94px',
   'src/components/ascnd/chart-bar.tsx':
     'cột biểu đồ phải chạy mượt giữa hai giá trị khi đổi ô chỉ số; scaleY sẽ nhảy, ' +
     'còn translateY thì bị cắt mất đáy bo tròn vì metric-panel không clip còn steps thì có',

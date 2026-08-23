@@ -1221,6 +1221,53 @@ try {
     }
   }
 
+  /* ── 25. the index never reaches the screen as a number ──────────────── */
+  {
+    /*
+      The trend index is a comparison scale, not a quantity anybody has a unit
+      for. For a bodyweight movement it is body mass times reps, so a pull-up's
+      series is in the high hundreds.
+
+      It reached the screen twice, both times through something that prints
+      numbers generically:
+
+        · the readable series was the index itself — "655 kg · 582 kg · 582 kg"
+          under a pull-up, tonnage wearing a kilogram label;
+        · then the sparkline's own min/latest/max row — "572 · 572 · 655.2",
+          which reads as a load with the unit left off.
+
+      Both are the same mistake with different plumbing, which is why the rule
+      is about the SHAPE: whatever draws the index must not label it.
+    */
+    const screen = readFileSync(path.join(NATIVE, 'src/app/exercise-insight.tsx'), 'utf8');
+
+    const chart = screen.match(/<LineChart[\s\S]*?\/>/);
+    if (!chart) {
+      note('màn insight không còn vẽ sparkline — hình dạng chuỗi là thứ duy nhất đọc được ngay');
+    } else if (!/labels=\{false\}/.test(chart[0])) {
+      note(
+        'sparkline của màn insight đang in dãy nhãn min/mới nhất/max — nhưng nó vẽ CHỈ SỐ nội bộ, ' +
+          'nên với bài kéo xà nó in ra "572", một con số đọc lên như một mức tạ',
+      );
+    }
+    /* And the readable series must still come from `best-sets`, not the index. */
+    if (!/e\.kind === 'best-sets'/.test(screen)) {
+      note('màn insight không còn đọc chuỗi best-sets — nó sẽ quay về hiện chỉ số thô');
+    }
+
+    /* The footnote is said once, not once per card. */
+    const foot = [...screen.matchAll(/nXiFootnote/g)].length;
+    if (foot !== 1) {
+      note(
+        `nXiFootnote xuất hiện ${foot} lần trong màn — nó từng nằm trên MỌI thẻ có ước lượng, tức in ` +
+          'bốn lần trên một màn hình, cùng cỡ chữ và cùng màu với mọi thứ khác',
+      );
+    }
+    if (/styles\.note.*nXiE1rmNote|nXiE1rmNote/.test(screen)) {
+      note('chú thích e1RM lại quay về nằm trên từng thẻ');
+    }
+  }
+
   if (problems.length) {
     console.log('trí tuệ bài tập CÓ LỖI:\n');
     for (const p of problems.slice(0, 14)) console.log(`  • ${p}`);

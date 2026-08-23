@@ -67,6 +67,19 @@ interface LineChartProps {
   grid?: boolean;
   /** A pool of the line's own colour behind the middle of the plot. */
   ambient?: boolean;
+  /**
+   * Print the min / latest / max row under a sparkline. On by default, because
+   * for every caller so far those three numbers are values in a unit the reader
+   * knows — kilograms, beats per minute.
+   *
+   * `exercise-insight.tsx` is the first caller for which they are not. Its
+   * series is an internal comparison index: for a bodyweight movement it is
+   * body mass times reps, so the row came out as `572 · 572 · 655.2` under a
+   * pull-up. Not merely unhelpful — 572 reads as a load, which is the same
+   * failure this repository already fixed once when tonnage was printed with a
+   * kilogram label beside it.
+   */
+  labels?: boolean;
   /** BCP-47 tag for the date axis — pass `getLocale(lang)`. */
   locale?: string;
   /**
@@ -348,7 +361,7 @@ export function niceTicks(lo: number, hi: number, want = 3): { ticks: number[]; 
  * The smoothing is safe to keep: the control points share their endpoints' y,
  * so the curve never bulges past a value that was recorded.
  */
-export function LineChart({ points, color = colors.primary, height = 140, unit = '', emptyLabel = 'Not enough data yet', goal, goalLabel, grid = false, ambient = false, locale, onScrubbing }: LineChartProps) {
+export function LineChart({ points, color = colors.primary, height = 140, unit = '', emptyLabel = 'Not enough data yet', goal, goalLabel, grid = false, ambient = false, labels = true, locale, onScrubbing }: LineChartProps) {
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
@@ -440,8 +453,29 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
     interesting. Everything below measures x from `padX`, so the goal line, the
     curve and the dots all start clear of them without any of them knowing why.
   */
-  const padX = grid ? 34 : 0;
-  const plotW = Math.max(0, width - padX);
+  /**
+   * Room for the marker at each end.
+   *
+   * ── the half-dot every chart in this app was drawing ──
+   *
+   * The last point is a circle of `r = 4.5` with a 2pt stroke, and it was
+   * centred at `x(n - 1) = padX + plotW`, which with `plotW = width - padX` is
+   * exactly the right edge of the SVG. Half of it — five and a half points —
+   * fell outside and was clipped. Measured on the exercise-insight sparkline:
+   * the line ended in a 6px vertical stub at x=364 with nothing after it.
+   *
+   * It was there in every chart this component draws, on four screens, and it
+   * reads as a line that stops rather than a line that ends. The first point
+   * had the same problem on the left whenever `padX` was zero, which is every
+   * sparkline.
+   *
+   * So the plot is inset by the marker's own radius at both ends. `grid` mode
+   * already reserves 34 on the left for the axis labels, which is more than
+   * enough; the right edge needed it either way.
+   */
+  const EDGE = 5.5;
+  const padX = grid ? 34 : EDGE;
+  const plotW = Math.max(0, width - padX - EDGE);
 
   /**
    * Where each reading sits horizontally, by its date.
@@ -941,13 +975,13 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                 </Text>
               ))}
             </View>
-          ) : (
+          ) : labels ? (
             <View style={styles.labels}>
               <Text style={styles.label}>{fmt(min)}</Text>
               <Text style={[styles.label, styles.labelStrong]}>{fmt(values[values.length - 1])}</Text>
               <Text style={styles.label}>{fmt(max)}</Text>
             </View>
-          )}
+          ) : null}
         </>
       )}
     </View>
