@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Activity, ChevronDown, Minus, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -11,10 +12,13 @@ import { LineChart } from '@/components/ascnd/line-chart';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
+import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { INSIGHT_DAYS, useExerciseInsights } from '@/hooks/use-exercise-insights';
+import { useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
+import { planKeys, type PlanScope } from '@/lib/plan-exercises';
 import type { ExerciseInsight, Trend } from '@/lib/exercise-trend';
 import { MIN_SESSIONS } from '@/lib/exercise-trend';
 import type { NativeStrings } from '@/lib/native-strings';
@@ -321,12 +325,49 @@ export default function ExerciseInsightScreen() {
   const i18n = useI18n();
   const { weight: u } = useUnits();
   const { insights, loading, failed } = useExerciseInsights();
+  const { ex } = useLocalSearchParams<{ ex?: string }>();
+  const days = useRoutineDays();
+  const templates = useWorkoutTemplates();
+
+  /*
+    Scoped to the plan, because the plan is what the person is training.
+
+    Ninety days of logging on a routine with twelve exercises a day is sixty
+    cards, and at that size the screen stops answering "how is my bench going"
+    and becomes a catalogue to search. `routine_days` already says which
+    template runs on which weekday — a list nobody maintains, never out of date,
+    and "today" is about a dozen.
+
+    Defaults to the week rather than to today: a movement trained on Mondays is
+    still the thing somebody wants to look at on a Wednesday, and a default that
+    is empty five days out of seven is a default that teaches people the screen
+    is broken.
+  */
+  const [scope, setScope] = useState<PlanScope>('week');
+
+  const keys = useMemo(
+    () => planKeys(scope, days.data ?? [], templates.data ?? []),
+    [scope, days.data, templates.data],
+  );
+
+  /*
+    A chip on a plan row sends you here with one exercise named. Filtering to it
+    is the whole point — arriving at a list of sixty and being told to find it
+    again is the journey this was meant to remove.
+  */
+  const single = typeof ex === 'string' && ex.length > 0 ? ex : null;
+
+  const shown = useMemo(() => {
+    if (single) return insights.filter((i) => i.exerciseKey === single);
+    if (keys === null) return insights;
+    return insights.filter((i) => keys.has(i.exerciseKey));
+  }, [insights, keys, single]);
 
   const groups = useMemo(() => {
     const out: Record<Group, ExerciseInsight[]> = { attention: [], fine: [], thin: [] };
-    for (const i of insights) out[groupOf(i)].push(i);
+    for (const i of shown) out[groupOf(i)].push(i);
     return out;
-  }, [insights]);
+  }, [shown]);
 
   const heading: Record<Group, string> = {
     attention: i18n.nXiNeedsAttention,
@@ -342,13 +383,62 @@ export default function ExerciseInsightScreen() {
         <EmptyState icon={Activity} title={i18n.nXiEmpty} hint={i18n.nXiEmptyHint} />
       ) : (
         <>
-          {/* The answer to "is anything wrong", before a single number. */}
-          <Text style={styles.summary}>
-            {i18n.nXiSummary
-              .replace('{a}', String(groups.fine.length))
-              .replace('{b}', String(groups.attention.length))}
-          </Text>
+          {single ? (
+            /* Arrived from a plan row. One exercise, and a way back to the rest
+               — not a filter somebody has to work out how to clear. */
+            <View style={styles.singleRow}>
+              <Text style={styles.summary}>{i18n.nXiOnly}</Text>
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel={i18n.nXiShowAll}
+                hitSlop={8}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.setParams({ ex: '' });
+                }}>
+                <Text style={styles.showAll}>{i18n.nXiShowAll}</Text>
+              </PressScale>
+            </View>
+          ) : (
+            <>
+              <Segmented
+                value={scope}
+                onChange={setScope}
+                compact
+                options={[
+                  { key: 'today' as const, label: i18n.nXiScopeToday },
+                  { key: 'week' as const, label: i18n.nXiScopeWeek },
+                  { key: 'all' as const, label: i18n.nXiScopeAll },
+                ]}
+              />
+              {/* The answer to "is anything wrong", before a single number. */}
+              <Text style={styles.summary}>
+                {i18n.nXiSummary
+                  .replace('{a}', String(groups.fine.length))
+                  .replace('{b}', String(groups.attention.length))}
+              </Text>
+            </>
+          )}
 
+          {/* An empty scope is not an empty history, and saying "no exercises
+              logged" here would be a statement about their training rather than
+              about their plan. */}
+          {shown.length === 0 ? (
+            <GlassCard>
+              <Text style={styles.emptyScope}>
+                {scope === 'today' ? i18n.nXiScopeEmptyToday : i18n.nXiScopeEmptyWeek}
+              </Text>
+              <Text style={styles.note}>{i18n.nXiScopeHint}</Text>
+            </GlassCard>
+          ) : null}
+
+          {/*
+            The list is this control's panel, so it fades when the scope
+            changes rather than cutting. `tools/segmented.mjs` caught this
+            missing — the rule I wrote three rounds ago, on the screen I was
+            adding the control to.
+          */}
+          <SegmentPanel segment={single ? `one:${single}` : scope}>
           {(['attention', 'fine', 'thin'] as const).map((g) =>
             groups[g].length === 0 ? null : (
               <View key={g} style={styles.group}>
@@ -359,6 +449,7 @@ export default function ExerciseInsightScreen() {
               </View>
             ),
           )}
+          </SegmentPanel>
 
           {/* Said once. It was on every card that had an estimate — four times
               on this screen, in a grey the same size as everything else. */}
@@ -372,6 +463,9 @@ export default function ExerciseInsightScreen() {
 
 const styles = StyleSheet.create({
   summary: { ...type.footnote, color: colors.mutedForeground },
+  singleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  showAll: { ...type.footnote, color: colors.primary, fontWeight: '700' },
+  emptyScope: { ...type.body, color: colors.foreground, fontWeight: '700' },
   group: { gap: spacing.sm },
   groupTitle: {
     ...type.caption,

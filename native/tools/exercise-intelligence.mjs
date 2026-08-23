@@ -1329,6 +1329,87 @@ try {
     }
   }
 
+  /* ── 27. the intelligence reaches the screens that name exercises ────── */
+  {
+    /*
+      For three releases this engine had exactly ONE door: a button on the
+      Workouts tab. Four screens in this app print an exercise name to the
+      reader and not one of them said anything about it, so somebody looking at
+      today's plan — with the exercise in front of them — had to leave, open
+      another screen, and scroll ninety days of history to find the row they
+      were already looking at.
+
+      `tools/entry-points.mjs` already checks that every SCREEN has a door. This
+      is the same failure one level down: a feature with one door is a feature
+      most people never meet.
+    */
+    const NEEDS = {
+      'src/components/ascnd/day-plan.tsx': 'panel lịch tập tuần — nơi người ta nhìn trong lúc quyết định đặt bao nhiêu lên thanh tạ',
+      'src/app/log-workout.tsx': 'màn ghi buổi tập tự do — nơi người ta gõ mức tạ vào',
+    };
+    for (const [rel, why] of Object.entries(NEEDS)) {
+      const body = readFileSync(path.join(NATIVE, rel), 'utf8');
+      if (!/useExerciseInsights/.test(body)) {
+        note(
+          `${rel} in tên bài tập ra cho người dùng nhưng KHÔNG đọc trí tuệ bài tập — ${why}. Người ` +
+            'dùng phải rời màn, mở màn khác, rồi lướt tìm chính cái dòng họ đang nhìn',
+        );
+      }
+      /* `<TrendChip`, not `TrendChip`. The bare name is satisfied by the import
+         line alone — the fifth time in this session a rule of mine has matched
+         a name instead of a use. */
+      if (!/<TrendChip/.test(body)) {
+        note(`${rel} không RENDER TrendChip, nên không có đường nào đi tới chi tiết bài tập từ đó`);
+      }
+    }
+
+    /* One chip, not one per screen. */
+    const walk = (dir) =>
+      require('node:fs').readdirSync(dir).flatMap((e) => {
+        const p2 = path.join(dir, e);
+        return require('node:fs').statSync(p2).isDirectory() ? walk(p2) : /\.tsx$/.test(e) ? [p2] : [];
+      });
+    for (const f of walk(path.join(NATIVE, 'src'))) {
+      const rel = path.relative(NATIVE, f);
+      if (rel === 'src/components/ascnd/trend-chip.tsx') continue;
+      const body = readFileSync(f, 'utf8');
+      if (/pathname: '\/exercise-insight'/.test(body)) {
+        note(
+          `${rel} tự dựng đường link tới /exercise-insight — deep link phải nằm MỘT chỗ ` +
+            '(`insightHref` trong trend-chip.tsx), nếu không tên tham số đổi là các chỗ gọi lệch nhau âm thầm',
+        );
+      }
+    }
+
+    /* The list is scoped by the plan, and the deep link is honoured. */
+    const screen = readFileSync(path.join(NATIVE, 'src/app/exercise-insight.tsx'), 'utf8');
+    /*
+      That the keys GATE the list, not merely that they are computed.
+
+      The first version looked for `planKeys(` and stayed green when the filter
+      body was deleted: `const keys = useMemo(() => planKeys(...))` still spells
+      it, and a value computed and then ignored is exactly the dead state this
+      rule is for.
+    */
+    /* Bounded by the dependency array rather than by counting brackets: the
+       body contains `insights.filter((i) => …)`, which is two levels of nesting,
+       and a one-level bracket matcher stopped short and reported the real code
+       as broken. */
+    const gate = screen.match(/const shown = useMemo\(\(\) => \{([\s\S]*?)\}, \[/);
+    if (!/planKeys\(/.test(screen) || !gate || !/keys\.has\(/.test(gate[1])) {
+      note(
+        'màn danh sách không còn lọc theo lịch tập — 90 ngày trên một giáo án 12 bài/ngày là sáu ' +
+          'mươi thẻ, và ở cỡ đó nó thôi trả lời câu hỏi mà thành một danh mục phải tra',
+      );
+    }
+    if (!/useLocalSearchParams/.test(screen) || !/i\.exerciseKey === single/.test(screen)) {
+      note(
+        'màn danh sách không lọc theo tham số `ex` — chip trên dòng lịch tập sẽ mở ra một danh sách ' +
+          'sáu mươi bài và bảo người ta đi tìm lại đúng bài họ vừa chạm vào',
+      );
+    }
+  }
+
   if (problems.length) {
     console.log('trí tuệ bài tập CÓ LỖI:\n');
     for (const p of problems.slice(0, 14)) console.log(`  • ${p}`);

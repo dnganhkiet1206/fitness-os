@@ -7,6 +7,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Crypto from 'expo-crypto';
 
+import { TrendChip } from '@/components/ascnd/trend-chip';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -16,10 +17,12 @@ import { SEGMENT_SWAP } from '@/components/ascnd/segmented';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { duration } from '@/constants/motion';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
+import { exerciseKey } from '@/lib/personal-record';
 import { mergeProgress, type SessionSet } from '@/lib/day-progress';
 import { dayProgressKey, localDateStr, staleDayProgress } from '@/lib/local-date';
 import { offlineNow } from '@/lib/offline';
@@ -260,6 +263,26 @@ export function DayPlan({
     ? (template.exercises as TplExercise[])
     : [];
   const rows = useMemo(() => expand(exercises), [template?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /*
+    How each movement in this plan is going.
+
+    One extra query on this screen — the engine reads ninety days of sessions
+    and the routine already reads fourteen — and it buys the difference between
+    a plan row that says what to do and a plan row that says what happened last
+    time you did it. `useExerciseInsights` adds nothing else: the weigh-ins and
+    the exercise library are queries other screens already hold.
+
+    Keyed by `exerciseKey`, because a template row carries a typed name and
+    usually no id — the same rule `personal-record.ts` matches on.
+  */
+  const { insights } = useExerciseInsights();
+  const byKey = useMemo(() => {
+    const m = new Map<string, (typeof insights)[number]>();
+    for (const i of insights) m.set(i.exerciseKey, i);
+    return m;
+  }, [insights]);
+  const insightFor = (name: string) => byKey.get(exerciseKey(name)) ?? null;
 
   /** what was done, and at what effort and rest */
   const [done, setDone] = useState<Record<string, boolean>>({});
@@ -637,7 +660,24 @@ export function DayPlan({
         const open = editing === row.key;
         return (
           <Animated.View key={row.key} entering={SWAP}>
-            {row.heads ? <Text style={styles.exName}>{row.exerciseName}</Text> : null}
+            {row.heads ? (
+              /*
+                The name, and how the movement is going, on the same line.
+
+                This is the row somebody is looking at while they decide what to
+                put on the bar, and until now it said nothing about the last six
+                weeks of it. The alternative was leaving the screen, opening the
+                progress list, and scrolling ninety days of exercises to find
+                the one already in front of them.
+              */
+              <View style={styles.exHead}>
+                <Text style={styles.exName} numberOfLines={1}>{row.exerciseName}</Text>
+                <TrendChip
+                  insight={insightFor(row.exerciseName)}
+                  label={`${row.exerciseName} — ${i18n.nXiOpen}`}
+                />
+              </View>
+            ) : null}
             <GlassCard style={[styles.setCard, isDone && styles.setCardDone]}>
               <View style={styles.setRow}>
                 {/*
@@ -871,6 +911,7 @@ const styles = StyleSheet.create({
   /* The exercise name is a heading over its sets, not a row of its own — the
      rows below it are the thing, and giving the name a card would make four
      sets of one movement look like five separate items. */
+  exHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   exName: {
     ...type.footnote,
     color: colors.foreground,

@@ -248,7 +248,22 @@ const code = strip(read(MOVER));
       const conds = [...src.matchAll(cond)].map((c) => c.index).filter((i) => i > m.index);
       if (!conds.length) continue; /* a value picker, not a panel switcher */
 
-      const wrap = src.indexOf(`<SegmentPanel segment={${key}}>`);
+      /*
+        The key has to be IN the segment expression, not be the whole of it.
+
+        What this rule is for is that the panel remounts when the control moves,
+        and `segment={single ? \`one:${single}\` : scope}` does that — the
+        exercise-insight screen keys on the scope AND on a deep-linked single
+        exercise, so both changes fade. Demanding the bare identifier would have
+        forced that screen to drop the second one to satisfy a rule about the
+        first.
+      */
+      /* Bounded by `>` and not by `}`: the expression can contain a template
+         literal — `` `one:${single}` `` — and a `}`-bounded match stops inside
+         it, reporting a correctly keyed panel as missing. */
+      const panel = new RegExp(`<SegmentPanel segment=\\{[^>]*\\b${esc(key)}\\b`);
+      const found = panel.exec(src);
+      const wrap = found ? found.index : -1;
       if (wrap < 0) {
         problems.push(
           `${rel}: <Segmented value={${key}}> đổi panel bên dưới nhưng panel đó bị CẮT CỤP — không có ` +
@@ -269,8 +284,25 @@ const code = strip(read(MOVER));
         remount would throw away its scroll position on every tab change. A
         rule that forces it inside would be asking for that bug by name.
       */
+      /*
+        Something real inside, not necessarily a conditional on the key.
+
+        The first version asked for `{key === '…'}` between the tags, because
+        that is how four of the five screens switch their panel. The fifth
+        filters upstream — `exercise-insight` derives the list from the scope
+        and then renders it — so its wrapper held the whole panel and the rule
+        called it empty.
+
+        What the rule is actually for is a wrapper placed BELOW the panel
+        instead of around it, which leaves the cut in place while a name check
+        stays green. That is an empty wrapper, and emptiness is the thing to
+        test: a conditional on the key counts, and so does any markup at all.
+      */
       const close = src.indexOf('</SegmentPanel>', wrap);
-      const inside = close > 0 && conds.some((i) => i > wrap && i < close);
+      const span = close > 0 ? src.slice(src.indexOf('>', wrap) + 1, close) : '';
+      const bare = span.replace(/\{\/\*[\s\S]*?\*\/\}/g, '').trim();
+      const inside =
+        close > 0 && (conds.some((i) => i > wrap && i < close) || /<[A-Za-z]/.test(bare));
       if (!inside) {
         problems.push(
           `${rel}: có <SegmentPanel segment={${key}}> nhưng KHÔNG có nội dung rẽ nhánh nào nằm BÊN ` +

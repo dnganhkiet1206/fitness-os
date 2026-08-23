@@ -48,6 +48,8 @@ import { suggestLoad } from '@/lib/load-progression';
 import { effortRange } from '@/lib/prescription';
 import { localDateStr, routineIndex } from '@/lib/local-date';
 import { entered, parseRepEntry } from '@/lib/rep-entry';
+import { TrendChip } from '@/components/ascnd/trend-chip';
+import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/units';
 
 const RPE_VALUES = [6, 7, 8, 9, 10] as const;
@@ -101,6 +103,56 @@ function rowsFromTemplate(exercises: TplExercise[], unit: WeightUnit): SetRow[] 
     }
   }
   return rows.length > 0 ? rows : [{ ...EMPTY_SET }];
+}
+
+
+/**
+ * One line: what this movement did last time, and which way it is going.
+ *
+ * ── why it is a component and why it is this small ──
+ *
+ * The instruction for this screen was to keep it to what is needed. A card here
+ * would be four cards on a four-exercise session, in a form somebody is
+ * currently typing into.
+ *
+ * So: the best set of the most recent session, and the trend chip. The number
+ * is the thing you are about to try to beat; the chip is the way through to
+ * everything else, which lives on its own screen.
+ *
+ * It reads `performances` rather than `insights` because "last time" is a fact
+ * about one session and does not need a verdict — and a movement with two
+ * sessions has no verdict but does have a last time.
+ */
+function LastTime({ name }: { name: string }) {
+  const i18n = useI18n();
+  const { weight: wUnit } = useUnits();
+  const { insights, performances } = useExerciseInsights();
+
+  const key = exerciseKey(name);
+  if (!key) return null;
+
+  const mine = performances.filter((p) => p.exerciseKey === key);
+  const last = mine[mine.length - 1];
+  const insight = insights.find((i) => i.exerciseKey === key) ?? null;
+  if (!last) return null;
+
+  const kg = (n: number) => Math.round(displayWeight(n, wUnit) * 10) / 10;
+  const best =
+    last.bestDurationSec !== null && last.bestReps === null
+      ? `${Math.round(last.bestDurationSec)}s`
+      : last.bestReps === null
+        ? null
+        : (last.bestWeightKg ?? 0) > 0
+          ? `${kg(last.bestWeightKg!)} ${weightLabel(wUnit)} × ${last.bestReps}`
+          : `${last.bestReps} × ${i18n.nRdBodyweight.toLowerCase()}`;
+  if (!best) return null;
+
+  return (
+    <View style={styles.lastRow}>
+      <Text style={styles.lastText}>{i18n.nLgLastTime.replace('{v}', best)}</Text>
+      <TrendChip insight={insight} label={`${name} — ${i18n.nXiOpen}`} compact />
+    </View>
+  );
 }
 
 export default function LogWorkoutSheet() {
@@ -753,6 +805,16 @@ export default function LogWorkoutSheet() {
                   <Icon icon={X} size={14} color={colors.mutedForeground} />
                 </Pressable>
               </View>
+              {/*
+                What you did last time, and which way it is going.
+
+                Deliberately two facts and no more. This row is where somebody
+                decides what to put on the bar, and the useful thing at that
+                moment is the number they beat last time — not a card. It shows
+                only on the row that STARTS an exercise, so a four-set movement
+                says it once rather than four times.
+              */}
+              {startsExercise || idx === 0 ? <LastTime name={s.exerciseName} /> : null}
               {/* Library suggestions for the focused row (web: exercise dropdown) */}
               {suggestions.length > 0 && (
                 <View style={styles.suggestRow}>
@@ -1037,6 +1099,8 @@ const styles = StyleSheet.create({
   warmBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   warmText: { ...type.caption, fontWeight: '700', color: colors.mutedForeground },
   warmTextOn: { color: colors.primaryForeground },
+  lastRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 },
+  lastText: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   suggestRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
