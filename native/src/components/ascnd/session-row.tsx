@@ -1,7 +1,7 @@
 import { Trash2 } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { BarFill } from '@/components/ascnd/bar-fill';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, effortTint, radius, spacing } from '@/constants/ascnd';
@@ -95,9 +95,14 @@ export function SessionRow({
             measures, it can only be read as belonging to that line.
           */}
           {volumeRatio != null ? (
-            <View style={styles.barTrack}>
-              <BarFill ratio={volumeRatio} min={0.03} style={styles.barFill} />
-            </View>
+            <ProgressBar
+              pct={Math.max(3, Math.min(volumeRatio, 1) * 100)}
+              height={3}
+              radius={1.5}
+              trackColor="rgba(255,255,255,0.09)"
+              color="rgba(255,255,255,0.32)"
+              style={styles.barTrack}
+            />
           ) : null}
         </View>
         {rpe != null && (
@@ -147,8 +152,9 @@ const styles = StyleSheet.create({
   del: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   /* 96pt, not the row's width. See the comment at the call site: a 2pt rule
      spanning the whole row is a separator, whatever it was drawn to mean. */
-  barTrack: { width: 96, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,0.09)', marginTop: 1 },
-  barFill: { height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,0.32)' },
+  /* Only the bits ProgressBar does not own. It draws its own height, radius,
+     track colour and clip; this is where the bar sits and how wide it is. */
+  barTrack: { width: 96, marginTop: 1 },
 });
 
 /** The group these rows sit in, and the hairline between two of them. */

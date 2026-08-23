@@ -49,7 +49,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { BarFill } from '@/components/ascnd/bar-fill';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { fireCelebration } from '@/components/ascnd/award-celebration';
 import { EnergyRing } from '@/components/ascnd/energy-ring';
@@ -645,12 +645,13 @@ export default function MascotRoomScreen() {
               </View>
             )}
           </View>
-          <View style={styles.levelTrack}>
-            <BarFill
-              ratio={intoLevel / LEVEL_XP}
-              style={[styles.levelFill, { backgroundColor: rank.color }]}
-            />
-          </View>
+          <ProgressBar
+            pct={(intoLevel / LEVEL_XP) * 100}
+            height={6}
+            radius={3}
+            trackColor={colors.secondary}
+            color={rank.color}
+          />
           <Text style={styles.levelHint}>
             {i18n.nRoomLevelHint.replace('{n}', String(LEVEL_XP - intoLevel))}
           </Text>
@@ -1083,13 +1084,6 @@ const styles = StyleSheet.create({
   levelTitleWrap: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexShrink: 1, minWidth: 0 },
   rankName: { ...type.headline, fontWeight: '800' },
   levelTitle: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  levelTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.secondary,
-    overflow: 'hidden',
-  },
-  levelFill: { height: '100%', borderRadius: 3 },
   levelHint: { ...type.caption, color: colors.mutedForeground },
   learned: { ...type.caption, color: colors.metricBlue, marginTop: 4 },
   freezeCard: { gap: spacing.xs },

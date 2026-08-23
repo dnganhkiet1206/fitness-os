@@ -7,13 +7,14 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Crypto from 'expo-crypto';
 
-import { BarFill } from '@/components/ascnd/bar-fill';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { RestTimer } from '@/components/ascnd/rest-timer';
 import { SEGMENT_SWAP } from '@/components/ascnd/segmented';
 import type { TplExercise } from '@/components/ascnd/template-list';
+import { duration } from '@/constants/motion';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -604,9 +605,15 @@ export function DayPlan({
 
       {/* A bar rather than a percentage: what you want mid-workout is "how much
           is left", which is a length, not a number to read. */}
-      <View style={styles.barTrack}>
-        <BarFill ratio={rows.length ? doneRows.length / rows.length : 0} style={styles.barFill} />
-      </View>
+      <ProgressBar
+        pct={rows.length ? (doneRows.length / rows.length) * 100 : 0}
+        height={4}
+        radius={2}
+        trackColor={glass.bg}
+        color={colors.primary}
+        delay={0}
+        duration={duration.move}
+      />
 
       {rows.map((row, i) => {
         const isDone = !!shown[row.key];
@@ -845,8 +852,6 @@ const styles = StyleSheet.create({
   loggedText: { flex: 1, minWidth: 0, gap: 1 },
   loggedName: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
   loggedMeta: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  barTrack: { height: 4, borderRadius: 2, backgroundColor: glass.bg, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 2, backgroundColor: colors.primary },
 
   /* The exercise name is a heading over its sets, not a row of its own — the
      rows below it are the thing, and giving the name a card would make four

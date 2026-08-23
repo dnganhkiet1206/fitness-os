@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Backpack, Check, Coins, Crown, Droplets, Dumbbell, Flame, Footprints, Ghost, Gift, Glasses, Headphones, LayoutGrid, Moon, Shirt, Snowflake, Sparkles, Star, Store, Trophy, Wind, type LucideIcon } from 'lucide-react-native';
 
-import { BarFill } from '@/components/ascnd/bar-fill';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -159,12 +159,13 @@ export function CollectionRow({
           </Text>
         )}
       </View>
-      <View style={styles.setTrack}>
-        <BarFill
-          ratio={total ? have / total : 0}
-          style={[styles.setFill, { backgroundColor: complete ? colors.readinessGreen : colors.metricPurple }]}
-        />
-      </View>
+      <ProgressBar
+        pct={total ? (have / total) * 100 : 0}
+        height={6}
+        radius={3}
+        trackColor={colors.secondary}
+        color={complete ? colors.readinessGreen : colors.metricPurple}
+      />
     </GlassCard>
   );
 }
@@ -254,12 +255,10 @@ const styles = StyleSheet.create({
   rarityBadge: { paddingHorizontal: 8, height: 17, borderRadius: radius.full, justifyContent: 'center' },
   rarityText: { fontSize: 11, fontWeight: '700' },
   setCard: { gap: spacing.sm },
-  setFill: { height: '100%', borderRadius: 3 },
   setInfo: { flex: 1, minWidth: 0, gap: 3 },
   setName: { ...type.body, fontWeight: '700', color: colors.foreground },
   setProgressText: { ...type.footnote, color: colors.mutedForeground, fontWeight: '600', fontVariant: ['tabular-nums'] },
   setTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  setTrack: { height: 6, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
   shopGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   shopItem: {
     width: '31%',

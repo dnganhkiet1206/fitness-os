@@ -14,9 +14,10 @@ import {
   View,
 } from 'react-native';
 
-import { BarFill } from '@/components/ascnd/bar-fill';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
+import { duration } from '@/constants/motion';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { toast } from '@/lib/toast';
@@ -270,9 +271,15 @@ function MacroField({
         <Text style={styles.macroMeta}>g</Text>
         <Text style={styles.macroMeta}>{pct}%</Text>
       </View>
-      <View style={styles.macroBarTrack}>
-        <BarFill ratio={pct / 100} style={[styles.macroBarFill, { backgroundColor: color }]} />
-      </View>
+      <ProgressBar
+        pct={pct}
+        height={4}
+        radius={2}
+        trackColor={colors.background}
+        color={color}
+        delay={0}
+        duration={duration.move}
+      />
     </View>
   );
 }
@@ -366,8 +373,6 @@ const styles = StyleSheet.create({
   },
   macroMetaRow: { flexDirection: 'row', justifyContent: 'space-between' },
   macroMeta: { fontSize: 11, color: colors.mutedForeground },
-  macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: colors.background, overflow: 'hidden' },
-  macroBarFill: { height: '100%', borderRadius: 2 },
   fiberRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   fiberInputWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   fiberInput: {

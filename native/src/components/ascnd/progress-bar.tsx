@@ -144,7 +144,20 @@ function Fill({
   delay: number;
   duration: number;
 }) {
-  const target = Math.min(Math.max(pct, 0), 100);
+  /*
+    `pct > 0` rather than `Math.max(pct, 0)`, and the difference is a crash-free
+    wrong picture: `Math.max(NaN, 0)` is `NaN`, so a percentage computed as
+    `have / 0` used to reach the worklet as `translateX: NaN`. The old
+    hand-built bars survived that by accident — `width: 'NaN%'` is a style React
+    Native simply drops, leaving an empty bar — and moving them onto this
+    component would have turned a harmless no-op into a NaN transform.
+
+    `NaN > 0` and `undefined > 0` are both false, so missing data parks the bar
+    empty, which is what missing data should look like. `Infinity` — `have / 0`
+    with a positive numerator — still clamps to 100, because a numerator that
+    has overrun its denominator is the one case that unambiguously means full.
+  */
+  const target = pct > 0 ? Math.min(pct, 100) : 0;
   const p = useSharedValue(0);
 
   useEffect(() => {

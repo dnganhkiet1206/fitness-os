@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { BarFill } from '@/components/ascnd/bar-fill';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
@@ -392,12 +392,14 @@ export default function SettingsScreen() {
                   </Text>
                   {!m.unlocked && m.unlock && (
                     <View style={styles.mascotProgress}>
-                      <View style={styles.mascotProgressTrack}>
-                        <BarFill
-                          ratio={mascot.unlockStats[m.unlock.kind] / m.unlock.count}
-                          style={[styles.mascotProgressFill, { backgroundColor: m.accent }]}
-                        />
-                      </View>
+                      <ProgressBar
+                        pct={(mascot.unlockStats[m.unlock.kind] / m.unlock.count) * 100}
+                        height={4}
+                        radius={2}
+                        trackColor={colors.background}
+                        color={m.accent}
+                        style={styles.mascotProgressTrack}
+                      />
                       <Text style={styles.mascotProgressText}>
                         {Math.min(mascot.unlockStats[m.unlock.kind], m.unlock.count)}/
                         {m.unlock.count}
@@ -660,14 +662,9 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     marginTop: 2,
   },
-  mascotProgressTrack: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.background,
-    overflow: 'hidden',
-  },
-  mascotProgressFill: { height: '100%', borderRadius: 2 },
+  /* ProgressBar owns the height, radius, track colour and clip; this only says
+     it takes the space left beside the count. */
+  mascotProgressTrack: { flex: 1 },
   mascotProgressText: {
     fontSize: 11,
     fontVariant: ['tabular-nums'],

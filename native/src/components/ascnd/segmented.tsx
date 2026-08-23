@@ -212,9 +212,39 @@ export const SEGMENT_SWAP = FadeIn.duration(duration.appear);
  * new one, which is what gives `entering` something to animate. Without it the
  * same node is reused and nothing enters.
  */
-export function SegmentPanel({ segment, children }: { segment: string; children: React.ReactNode }) {
+export function SegmentPanel({
+  segment,
+  children,
+  gap = spacing.stack,
+}: {
+  segment: string;
+  children: React.ReactNode;
+  /**
+   * The spacing this wrapper has to reproduce.
+   *
+   * ── why this prop is not optional in spirit ──
+   *
+   * A panel is several cards, and before this wrapper existed they were
+   * several children of `Screen`, which stacks its children with
+   * `gap: spacing.stack`. Wrapping them turns N children into ONE, so all N−1
+   * gaps inside collapse and the cards close up against each other. Measured
+   * off `/progress` at x=200, before and after: above the wrapper the page
+   * shows for exactly 20px (y=114–133) — `spacing.stack`, intact. Inside it,
+   * zero: the BMI card's last row is y=194 and the next card's top edge is
+   * y=195. Not "tighter" — touching. What looked like a small gap in the
+   * screenshot was the cards' own lit top edge.
+   *
+   * Nothing catches that. It type-checks, no rule sees it, no route throws, and
+   * the app is still perfectly usable — it just quietly looks worse everywhere
+   * this component is used. All four screens using it stack at
+   * `spacing.stack`, so that is the default; the prop exists for a panel that
+   * one day sits inside a container spacing its children differently, because
+   * the failure there would be just as silent.
+   */
+  gap?: number;
+}) {
   return (
-    <Animated.View key={segment} entering={SEGMENT_SWAP}>
+    <Animated.View key={segment} entering={SEGMENT_SWAP} style={{ gap }}>
       {children}
     </Animated.View>
   );

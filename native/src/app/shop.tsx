@@ -320,7 +320,16 @@ export default function ShopScreen() {
         ]}
       />
 
-      <SegmentPanel segment={tab}>
+      {/*
+        The category row stays OUTSIDE the panel, and that is not a detail.
+
+        It is a horizontal ScrollView, and it is shared by two tabs — Outfits
+        and Closet both render it. Wrapping it with the panel meant the keyed
+        remount reset its scroll: somebody who had scrolled along to Hats and
+        tapped Closet got the row snapped back to the first category, with no
+        way to tell why. It is a second *control*, not the panel's content, so
+        it belongs beside the segmented strip rather than under it.
+      */}
       {tab === 'outfit' || tab === 'closet' ? (
         <CategoryRow
           current={cat}
@@ -334,6 +343,7 @@ export default function ShopScreen() {
         />
       ) : null}
 
+      <SegmentPanel segment={tab}>
       {SELLS[tab] ? (
         items.length === 0 ? (
           /*

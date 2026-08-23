@@ -174,11 +174,8 @@ const code = strip(read(COMPONENT));
          expression container is a conditional render (or a conditional style,
          which is the same swap seen from the other side). */
       const cond = new RegExp(`\\{\\s*${esc(key)}\\s*(===|!==)\\s*'`, 'g');
-      let first = -1;
-      for (const c of src.matchAll(cond)) {
-        if (c.index > m.index) { first = c.index; break; }
-      }
-      if (first < 0) continue; /* a value picker, not a panel switcher */
+      const conds = [...src.matchAll(cond)].map((c) => c.index).filter((i) => i > m.index);
+      if (!conds.length) continue; /* a value picker, not a panel switcher */
 
       const wrap = src.indexOf(`<SegmentPanel segment={${key}}>`);
       if (wrap < 0) {
@@ -189,14 +186,67 @@ const code = strip(read(COMPONENT));
         );
         continue;
       }
-      if (!(wrap > m.index && wrap < first)) {
+      /*
+        The test is that panel content is INSIDE the wrapper, not that the
+        wrapper comes before the first conditional anywhere on the screen.
+
+        The first draft asked for the stricter thing and was wrong about a real
+        screen: `shop.tsx` renders a shared category row between the segmented
+        strip and the panel, gated on `tab === 'outfit' || tab === 'closet'`.
+        That row is a second *control*, and it deliberately sits outside the
+        wrapper — it is a horizontal ScrollView shared by two tabs, so a keyed
+        remount would throw away its scroll position on every tab change. A
+        rule that forces it inside would be asking for that bug by name.
+      */
+      const close = src.indexOf('</SegmentPanel>', wrap);
+      const inside = close > 0 && conds.some((i) => i > wrap && i < close);
+      if (!inside) {
         problems.push(
-          `${rel}: có <SegmentPanel segment={${key}}> nhưng nó KHÔNG nằm giữa control và panel ` +
-            `(control ở ${m.index}, bọc ở ${wrap}, panel ở ${first}) — bọc nhầm chỗ thì cú cắt vẫn còn ` +
-            'nguyên trong khi phép kiểm theo tên vẫn xanh, đúng kiểu đã lọt hai lần ở repo này',
+          `${rel}: có <SegmentPanel segment={${key}}> nhưng KHÔNG có nội dung rẽ nhánh nào nằm BÊN ` +
+            'TRONG nó — bọc nhầm chỗ thì cú cắt vẫn còn nguyên trong khi phép kiểm theo tên vẫn xanh, ' +
+            'đúng kiểu đã lọt hai lần ở repo này',
         );
       }
     }
+  }
+}
+
+/* ── 5. the wrapper must give back the spacing it took away ──
+
+   `SegmentPanel` turns N children of `Screen` into ONE child. `Screen` stacks
+   its children with `gap: spacing.stack`, so every gap inside the wrapper
+   disappears the moment it is added. Measured on `/progress` at x=200 when
+   this component first shipped: above the wrapper the page background shows for
+   exactly 20px, and inside it for none at all — card ends at y=194, next card's
+   top edge at y=195. The cards were touching.
+
+   That is the whole failure. It type-checks. No route throws. Nothing renders
+   blank. The screen is still usable and just quietly looks worse, on four
+   screens at once, which is precisely the kind of thing that survives review.
+
+   So: the wrapper must apply a gap, and its default must be the SYMBOL
+   `spacing.stack` rather than a copy of its value — a literal 20 here would go
+   stale the day somebody tunes the scale, and go stale invisibly. */
+{
+  const wrapper = readFileSync(path.join(NATIVE, COMPONENT), 'utf8');
+  const fn = wrapper.slice(wrapper.indexOf('export function SegmentPanel'));
+
+  if (!/style=\{\{\s*gap\s*\}\}/.test(fn)) {
+    problems.push(
+      'SegmentPanel không đặt gap — nó gộp N con của Screen thành MỘT, nên toàn bộ khe bên trong biến ' +
+        'mất (đo trên /progress tại x=200: trên vòng bọc nền trang lộ ra đúng 20px, bên trong lộ ra 0px — ' +
+        'thẻ kết thúc ở y=194, thẻ kế tiếp bắt đầu ngay y=195, tức DÍNH LIỀN). Không sai kiểu, ' +
+        'không màn nào trắng, không luật nào khác thấy: chỉ là bốn màn cùng lúc trông xấu đi trong im lặng',
+    );
+  }
+  const def = fn.match(/gap = ([^,\n]+),/);
+  if (!def) {
+    problems.push('SegmentPanel không còn giá trị gap mặc định — mỗi chỗ gọi lại phải tự nhớ, và sẽ có chỗ quên');
+  } else if (def[1].trim() !== 'spacing.stack') {
+    problems.push(
+      `SegmentPanel lấy gap mặc định là \`${def[1].trim()}\` chứ không phải \`spacing.stack\` — chép GIÁ TRỊ ` +
+        'của thang khoảng cách thay vì trỏ vào nó thì hôm nào thang được chỉnh, bốn màn này lệch đi trong im lặng',
+    );
   }
 }
 
@@ -213,5 +263,5 @@ console.log(
     'chuyển bằng translateX chứ không animate width/left — animate layout là chạy lại bố cục mỗi khung ' +
     'hình, đúng lỗi tools/motion.mjs đã bắt ở bạn đồng hành Koa; tôn trọng Reduce Motion; không file ' +
     'nào dựng bản thứ sáu bằng cặp styles.tab + styles.tabActive, và không file nào để lại style chết ' +
-    'của bản cũ — phòng Koa từng giữ nguyên cả năm style tab mà không render cái nào; và mọi control ĐỔI PANEL đều phải bọc panel bằng SegmentPanel dùng chung, đặt ĐÚNG giữa control và panel, trong khi control chỉ dùng để chọn giá trị (giới tính, kg/lbs) thì không bị đòi — screen.tsx đã ghi hai lần thất bại vì làm hoạt ảnh vào thứ đã vẽ xong',
+    'của bản cũ — phòng Koa từng giữ nguyên cả năm style tab mà không render cái nào; và mọi control ĐỔI PANEL đều phải bọc panel bằng SegmentPanel dùng chung, đặt ĐÚNG giữa control và panel, trong khi control chỉ dùng để chọn giá trị (giới tính, kg/lbs) thì không bị đòi — screen.tsx đã ghi hai lần thất bại vì làm hoạt ảnh vào thứ đã vẽ xong; và vòng bọc TRẢ LẠI đúng khoảng cách nó vừa lấy đi — gộp N con của Screen thành một là xoá sạch khe giữa chúng, thứ không sai kiểu, không làm màn nào trắng, chỉ khiến bốn màn cùng lúc trông xấu đi trong im lặng',
 );
