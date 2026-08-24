@@ -64,7 +64,12 @@ const PGBIN = ['/usr/lib/postgresql/16/bin', '/usr/lib/postgresql/15/bin']
   .find((d) => existsSync(path.join(d, 'initdb'))) ?? null;
 const pgClientDir = [path.join(NATIVE, 'node_modules'), '/usr/lib/node_modules']
   .find((d) => existsSync(path.join(d, 'pg'))) ?? null;
-const PORT = 54398;
+/* Below the ephemeral range (32768-60999 on Linux): a port inside it can be
+   taken by any outbound socket, and under a full `check.mjs` run there are
+   many. Standalone this file was green and inside the suite it failed with
+   "khong khoi dong duoc PostgreSQL" — bisected to the parent commit, where it
+   failed identically, so it is the port and not the change. */
+const PORT = 24398;
 const DATA = path.join(tmpdir(), `pg-awards-${process.pid}`);
 
 function stopPg() {

@@ -94,7 +94,12 @@ if (!PGBIN || !pgClientDir) {
   process.exit(0);
 }
 
-const PORT = 54399;
+/* Below the ephemeral range (32768-60999 on Linux): a port inside it can be
+   taken by any outbound socket, and under a full `check.mjs` run there are
+   many. Standalone this file was green and inside the suite it failed with
+   "khong khoi dong duoc PostgreSQL" — bisected to the parent commit, where it
+   failed identically, so it is the port and not the change. */
+const PORT = 24399;
 const DATA = path.join(tmpdir(), `pg-dailylog-${process.pid}`);
 const out = mkdtempSync(path.join(tmpdir(), 'dlc-'));
 const sh = (cmd) => spawnSync('sh', ['-c', cmd], { encoding: 'utf8' });

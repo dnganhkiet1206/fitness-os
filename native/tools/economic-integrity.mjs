@@ -78,7 +78,12 @@ const PGBIN = ['/usr/lib/postgresql/16/bin', '/usr/lib/postgresql/15/bin', '/usr
   .find((d) => existsSync(path.join(d, 'initdb'))) ?? null;
 /* Derived from the temp directory so two runs cannot collide; the
    `data_directory` assertion below is the belt to that bracer. */
-const PORT = 55000 + (Math.abs([...path.basename(out)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) | 0, 11)) % 400);
+/* Below the ephemeral range (32768-60999 on Linux): a port inside it can be
+   taken by any outbound socket, and under a full `check.mjs` run there are
+   many. Standalone this file was green and inside the suite it failed with
+   "khong khoi dong duoc PostgreSQL" — bisected to the parent commit, where it
+   failed identically, so it is the port and not the change. */
+const PORT = 25000 + (Math.abs([...path.basename(out)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) | 0, 11)) % 400);
 const DATA = path.join(out, 'pg');
 function stopCluster() {
   if (!PGBIN || !existsSync(DATA)) return;
