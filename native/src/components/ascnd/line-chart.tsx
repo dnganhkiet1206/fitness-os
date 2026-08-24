@@ -536,11 +536,20 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
 
     ── the built-in responder, not a gesture library ──
 
-    `react-native-gesture-handler` is installed but nothing in the app uses it,
-    and `Gesture.Pan` needs a `GestureHandlerRootView` wrapped around the app.
-    Adding a provider at the root to put a readout on one chart is a change to
-    every screen for the benefit of one. The responder system is in RN core,
-    needs nothing, and a horizontal scrubber is exactly what it is for.
+    The responder system is in RN core, needs nothing, and a horizontal scrubber
+    is exactly what it is for.
+
+    This used to read "`react-native-gesture-handler` is installed but nothing
+    in the app uses it, and `Gesture.Pan` needs a `GestureHandlerRootView`
+    wrapped around the app" — the argument being that a root provider was too
+    much to add for one chart. Both halves have since stopped being true:
+    `swipe-row.tsx` and `card-deck.tsx` use the library, and the root view is
+    now at the top of `_layout.tsx` where they need it.
+
+    The choice here still stands on the sentence above it. It is recorded this
+    way rather than deleted because the reason a thing was built is the part
+    that goes stale, and a comment arguing from a fact that is no longer a fact
+    is worse than no comment.
 
     ── giving the touch back to the scroll view ──
 

@@ -158,7 +158,10 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
     is to drop a label rather than the point size — here it is to give the ring
     less room, because a ring reads perfectly well at 150.
   */
-  const grouped = tiles.length > 0;
+  /* Two, not one. A single tile beside a shrunken ring wastes both: the ring
+     gives up 58pt of diameter so that one 47%-wide box can sit in a column of
+     empty space. A grid needs something to be a grid OF. */
+  const grouped = tiles.length >= 2;
   const ringSize = grouped ? 150 : 208;
 
   // Ring geometry — mirrors web: viewBox 120, r=52, strokeWidth 6

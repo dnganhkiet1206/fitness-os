@@ -130,6 +130,7 @@ const STEPS = [
   ['mép biểu đồ', 'node', ['tools/chart-edges.mjs']],
   ['hàng vuốt', 'node', ['tools/swipe.mjs']],
   ['hiệu ứng thu lại', 'node', ['tools/retract.mjs']],
+  ['gốc cử chỉ', 'node', ['tools/gesture-root.mjs']],
   ['số thật của buổi tập', 'node', ['tools/plan-actuals.mjs']],
   ['quyền của migration', 'node', ['tools/migration-privileges.mjs']],
   ['deck thẻ', 'node', ['tools/card-deck.mjs']],

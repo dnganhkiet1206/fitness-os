@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { colors } from '@/constants/ascnd';
 
@@ -77,16 +77,34 @@ export function ReadinessAura({ status }: { status: 'green' | 'yellow' | 'red' |
     <View style={styles.fill} pointerEvents="none">
       <Svg width={width} height={h}>
         <Defs>
-          <RadialGradient id={gid} cx="50%" cy="0%" rx="75%" ry="100%">
+          {/*
+            The shape being filled and the gradient's frame are the same box,
+            and the first version got that wrong in a way that drew NOTHING.
+
+            It filled an ellipse centred on `cy={0}` with `ry={h}`, so the
+            shape's bounding box ran from −h to +h — twice the visible height,
+            half of it above the screen. A gradient in objectBoundingBox units
+            measures against that box, so `cy="0%"` put the bright centre at the
+            TOP of it, off-screen, and the radius ran out at exactly y = 0.
+            Everything anybody could see was past the last stop.
+
+            Measured on the shipped build before the fix: the page's red channel
+            was within one count of its blue at every height, on an AMBER day.
+            It compiled, it mounted, the gradient was in the document, and it
+            painted nothing.
+
+            A rect over exactly the visible band fixes it because the box is now
+            the thing you are looking at. The corners are not a problem the way
+            an earlier note here feared: the last stop is fully transparent, so
+            where the circle does not reach there is nothing to see.
+          */}
+          <RadialGradient id={gid} cx="50%" cy="0%" r="100%">
             <Stop offset="0" stopColor={tint} stopOpacity={AURA_ALPHA} />
             <Stop offset="0.55" stopColor={tint} stopOpacity={AURA_ALPHA * 0.42} />
             <Stop offset="1" stopColor={tint} stopOpacity={0} />
           </RadialGradient>
         </Defs>
-        {/* An ellipse rather than a rect: a rect with a radial fill leaves the
-            gradient's corners visible as four faint blocks where the circle
-            does not reach, which reads as a rendering fault. */}
-        <Ellipse cx={width / 2} cy={0} rx={width * 0.95} ry={h} fill={`url(#${gid})`} />
+        <Rect x={0} y={0} width={width} height={h} fill={`url(#${gid})`} />
       </Svg>
     </View>
   );

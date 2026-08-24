@@ -1,5 +1,6 @@
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useEffect } from 'react';
@@ -216,6 +217,23 @@ function LockedApp() {
 
 export default function RootLayout() {
   return (
+    /*
+      Every gesture in the app hangs off this, and its absence was a crash.
+
+      `GestureDetector` and `ReanimatedSwipeable` both throw on mount without
+      it: "must be used as a descendant of GestureHandlerRootView". It has to be
+      the OUTERMOST thing, above the query client and the providers, because a
+      gesture anywhere below it is a gesture inside it.
+
+      ── why the screenshot runner said everything was fine ──
+
+      It renders the app for web, and on web gesture-handler does not require
+      this wrapper at all. So 31 screens × 3 states came back green while the
+      swipe-to-delete row on /sessions and the hero deck on Today both crashed
+      the moment they mounted on a device. `tools/gesture-root.mjs` is the rule
+      that covers what that runner structurally cannot see.
+    */
+    <GestureHandlerRootView style={styles.root}>
     <PersistQueryClientProvider
       client={queryClient}
       persistOptions={{ persister: asyncStoragePersister, maxAge: 1000 * 60 * 60 * 24, buster: CACHE_BUSTER }}
@@ -243,10 +261,15 @@ export default function RootLayout() {
       </AuthProvider>
       </AppSettingsProvider>
     </PersistQueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  /* The gesture root replaces the window as the app's outermost box, so it has
+     to fill it — without `flex: 1` it collapses to its content and the app
+     renders in a strip at the top. */
+  root: { flex: 1 },
   /* Centred on the app's own background, because this replaces the entire
      screen — it is not a card inside a page that failed, it is the page. */
   gateFail: {
