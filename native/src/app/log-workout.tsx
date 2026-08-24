@@ -48,7 +48,7 @@ import { suggestLoad } from '@/lib/load-progression';
 import { effortRange } from '@/lib/prescription';
 import { localDateStr, routineIndex } from '@/lib/local-date';
 import { entered, parseRepEntry } from '@/lib/rep-entry';
-import { TrendChip } from '@/components/ascnd/trend-chip';
+import { ExerciseProgress } from '@/components/ascnd/exercise-progress';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/units';
 
@@ -105,55 +105,6 @@ function rowsFromTemplate(exercises: TplExercise[], unit: WeightUnit): SetRow[] 
   return rows.length > 0 ? rows : [{ ...EMPTY_SET }];
 }
 
-
-/**
- * One line: what this movement did last time, and which way it is going.
- *
- * ── why it is a component and why it is this small ──
- *
- * The instruction for this screen was to keep it to what is needed. A card here
- * would be four cards on a four-exercise session, in a form somebody is
- * currently typing into.
- *
- * So: the best set of the most recent session, and the trend chip. The number
- * is the thing you are about to try to beat; the chip is the way through to
- * everything else, which lives on its own screen.
- *
- * It reads `performances` rather than `insights` because "last time" is a fact
- * about one session and does not need a verdict — and a movement with two
- * sessions has no verdict but does have a last time.
- */
-function LastTime({ name }: { name: string }) {
-  const i18n = useI18n();
-  const { weight: wUnit } = useUnits();
-  const { insights, performances } = useExerciseInsights();
-
-  const key = exerciseKey(name);
-  if (!key) return null;
-
-  const mine = performances.filter((p) => p.exerciseKey === key);
-  const last = mine[mine.length - 1];
-  const insight = insights.find((i) => i.exerciseKey === key) ?? null;
-  if (!last) return null;
-
-  const kg = (n: number) => Math.round(displayWeight(n, wUnit) * 10) / 10;
-  const best =
-    last.bestDurationSec !== null && last.bestReps === null
-      ? `${Math.round(last.bestDurationSec)}s`
-      : last.bestReps === null
-        ? null
-        : (last.bestWeightKg ?? 0) > 0
-          ? `${kg(last.bestWeightKg!)} ${weightLabel(wUnit)} × ${last.bestReps}`
-          : `${last.bestReps} × ${i18n.nRdBodyweight.toLowerCase()}`;
-  if (!best) return null;
-
-  return (
-    <View style={styles.lastRow}>
-      <Text style={styles.lastText}>{i18n.nLgLastTime.replace('{v}', best)}</Text>
-      <TrendChip insight={insight} label={`${name} — ${i18n.nXiOpen}`} compact />
-    </View>
-  );
-}
 
 export default function LogWorkoutSheet() {
   const i18n = useI18n();
@@ -218,6 +169,28 @@ export default function LogWorkoutSheet() {
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
   const { data: recentSessions } = useWorkoutSessions(14);
+
+  /*
+    Progress per movement, looked up by name.
+
+    The same two maps the weekly plan builds, for the same reason — a set
+    carries a typed name and usually no id. This screen previously had its own
+    inline version of the whole row; it uses the shared one now, so there is one
+    place that decides what "last time" looks like.
+  */
+  const { insights: exInsights, performances: exPerfs } = useExerciseInsights();
+  const insightBy = useMemo(() => {
+    const m = new Map<string, (typeof exInsights)[number]>();
+    for (const i of exInsights) m.set(i.exerciseKey, i);
+    return m;
+  }, [exInsights]);
+  const lastBy = useMemo(() => {
+    const m = new Map<string, (typeof exPerfs)[number]>();
+    for (const p of exPerfs) m.set(p.exerciseKey, p);
+    return m;
+  }, [exPerfs]);
+  const insightFor = (name: string) => insightBy.get(exerciseKey(name)) ?? null;
+  const lastFor = (name: string) => lastBy.get(exerciseKey(name)) ?? null;
   /*
     ── the two safety gates need an input, and this is the screen that needs them ──
 
@@ -814,7 +787,17 @@ export default function LogWorkoutSheet() {
                 only on the row that STARTS an exercise, so a four-set movement
                 says it once rather than four times.
               */}
-              {startsExercise || idx === 0 ? <LastTime name={s.exerciseName} /> : null}
+              {startsExercise || idx === 0 ? (
+                <View style={styles.lastRow}>
+                  <ExerciseProgress
+                    insight={insightFor(s.exerciseName)}
+                    last={lastFor(s.exerciseName)}
+                    name={s.exerciseName}
+                    u={wUnit}
+                    i18n={i18n}
+                  />
+                </View>
+              ) : null}
               {/* Library suggestions for the focused row (web: exercise dropdown) */}
               {suggestions.length > 0 && (
                 <View style={styles.suggestRow}>
@@ -1100,7 +1083,6 @@ const styles = StyleSheet.create({
   warmText: { ...type.caption, fontWeight: '700', color: colors.mutedForeground },
   warmTextOn: { color: colors.primaryForeground },
   lastRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 },
-  lastText: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   suggestRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

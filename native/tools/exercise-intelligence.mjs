@@ -1355,11 +1355,14 @@ try {
             'dùng phải rời màn, mở màn khác, rồi lướt tìm chính cái dòng họ đang nhìn',
         );
       }
-      /* `<TrendChip`, not `TrendChip`. The bare name is satisfied by the import
-         line alone — the fifth time in this session a rule of mine has matched
-         a name instead of a use. */
-      if (!/<TrendChip/.test(body)) {
-        note(`${rel} không RENDER TrendChip, nên không có đường nào đi tới chi tiết bài tập từ đó`);
+      /* `<ExerciseProgress`, not the bare name: the import line alone satisfies
+         a name check — the fifth time in this session a rule of mine has
+         matched a spelling instead of a use. */
+      if (!/<ExerciseProgress/.test(body)) {
+        note(
+          `${rel} không RENDER ExerciseProgress, nên không có đường nào đi tới chi tiết bài tập từ ` +
+            'đó — và cũng không nói được lần trước người ta làm được gì',
+        );
       }
     }
 
@@ -1371,12 +1374,12 @@ try {
       });
     for (const f of walk(path.join(NATIVE, 'src'))) {
       const rel = path.relative(NATIVE, f);
-      if (rel === 'src/components/ascnd/trend-chip.tsx') continue;
+      if (rel === 'src/components/ascnd/exercise-progress.tsx') continue;
       const body = readFileSync(f, 'utf8');
       if (/pathname: '\/exercise-insight'/.test(body)) {
         note(
           `${rel} tự dựng đường link tới /exercise-insight — deep link phải nằm MỘT chỗ ` +
-            '(`insightHref` trong trend-chip.tsx), nếu không tên tham số đổi là các chỗ gọi lệch nhau âm thầm',
+            '(`insightHref` trong exercise-progress.tsx), nếu không tên tham số đổi là các chỗ gọi lệch nhau âm thầm',
         );
       }
     }

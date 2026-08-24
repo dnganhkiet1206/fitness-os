@@ -209,6 +209,32 @@ export const FIXTURES = {
     { id: 'e3', user_id: UID, name: 'Plank', muscle_group: 'Bụng', equipment: 'Bodyweight', exercise_kind: 'timed' },
     { id: 'e4', user_id: UID, name: 'Dumbbell Curl', muscle_group: 'Bắp tay trước', equipment: 'Dumbbell', exercise_kind: 'isolation' },
   ],
+  /*
+    A routine, so the week's day panel actually draws exercise rows.
+
+    Every screenshot of `/routine` in this repository has been of a REST DAY:
+    with no `routine_days` and no `workout_templates` in the fixture, the panel
+    renders "this day has no workout on it" and the rows underneath — the set
+    ticks, the effort chips, and now the trend chip beside each exercise name —
+    have never once been drawn by anything.
+
+    All seven days point at the same template on purpose: the harness runs on
+    whatever weekday it happens to be, and a routine that only covers Monday
+    produces a rest day six times out of seven.
+  */
+  workout_templates: [{
+    id: 't1', user_id: UID, name: 'Push A', type: 'strength',
+    created_at: day(30),
+    exercises: [
+      { exerciseName: 'Bench Press', sets: 3, reps: 10, weight: 55, rpe: 8, restSeconds: 120 },
+      { exerciseName: 'Pull-up', sets: 3, reps: 8, weight: 0, rpe: 8, restSeconds: 120 },
+      { exerciseName: 'Lat Pulldown', sets: 3, reps: 10, weight: 50, rpe: 7, restSeconds: 90 },
+    ],
+  }],
+  routine_days: Array.from({ length: 7 }, (_, i) => ({
+    id: `rd${i}`, user_id: UID, day_of_week: i, is_rest: false, is_deload: false,
+    notes: '', template_id: 't1',
+  })),
   meal_entries: [{
     id: 'm1', user_id: UID, date_time: day(0.25), meal_type: 'breakfast',
     total_kcal: 520, total_protein_g: 38, total_carbs_g: 54, total_fat_g: 14, total_fiber_g: 7,

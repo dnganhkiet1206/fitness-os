@@ -7,7 +7,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Crypto from 'expo-crypto';
 
-import { TrendChip } from '@/components/ascnd/trend-chip';
+import { ExerciseProgress } from '@/components/ascnd/exercise-progress';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -265,6 +265,30 @@ export function DayPlan({
   const rows = useMemo(() => expand(exercises), [template?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /*
+    The sets of one movement, in one card.
+
+    Every set used to be its own `GlassCard`: three sets of a bench press drew
+    three separate cards, each repeating "55 kg × 10", the rest chip and the
+    effort chip — and a nine-set day drew nine cards of it. Measured on the
+    routine screenshot: four cards visible, three of them identical.
+
+    Apple calls the alternative an inset grouped list, and describes exactly the
+    thing that was missing: a continuous background "that extends from the
+    section header, around both sides of list items in the section, and down to
+    the section footer", which "visually groups the items to a greater degree"
+    than separate boxes. The exercise is the group and its sets are the rows.
+  */
+  const blocks = useMemo(() => {
+    const out: { name: string; rows: SetRow[] }[] = [];
+    for (const r of rows) {
+      const tail = out[out.length - 1];
+      if (tail && tail.name === r.exerciseName && !r.heads) tail.rows.push(r);
+      else out.push({ name: r.exerciseName, rows: [r] });
+    }
+    return out;
+  }, [rows]);
+
+  /*
     How each movement in this plan is going.
 
     One extra query on this screen — the engine reads ninety days of sessions
@@ -276,13 +300,22 @@ export function DayPlan({
     Keyed by `exerciseKey`, because a template row carries a typed name and
     usually no id — the same rule `personal-record.ts` matches on.
   */
-  const { insights } = useExerciseInsights();
+  const { insights, performances } = useExerciseInsights();
   const byKey = useMemo(() => {
     const m = new Map<string, (typeof insights)[number]>();
     for (const i of insights) m.set(i.exerciseKey, i);
     return m;
   }, [insights]);
   const insightFor = (name: string) => byKey.get(exerciseKey(name)) ?? null;
+
+  /* The most recent session of a movement — what the strip leads with, because
+     the number you are about to try to beat is the useful fact on this row. */
+  const lastByKey = useMemo(() => {
+    const m = new Map<string, (typeof performances)[number]>();
+    for (const p of performances) m.set(p.exerciseKey, p);
+    return m;
+  }, [performances]);
+  const lastFor = (name: string) => lastByKey.get(exerciseKey(name)) ?? null;
 
   /** what was done, and at what effort and rest */
   const [done, setDone] = useState<Record<string, boolean>>({});
@@ -653,32 +686,44 @@ export function DayPlan({
         duration={duration.move}
       />
 
-      {rows.map((row, i) => {
-        const isDone = !!shown[row.key];
-        const effort = rpe[row.key] ?? row.plannedRpe;
-        const secs = restOf(row);
-        const open = editing === row.key;
-        return (
-          <Animated.View key={row.key} entering={SWAP}>
-            {row.heads ? (
-              /*
-                The name, and how the movement is going, on the same line.
-
-                This is the row somebody is looking at while they decide what to
-                put on the bar, and until now it said nothing about the last six
-                weeks of it. The alternative was leaving the screen, opening the
-                progress list, and scrolling ninety days of exercises to find
-                the one already in front of them.
-              */
-              <View style={styles.exHead}>
-                <Text style={styles.exName} numberOfLines={1}>{row.exerciseName}</Text>
-                <TrendChip
-                  insight={insightFor(row.exerciseName)}
-                  label={`${row.exerciseName} — ${i18n.nXiOpen}`}
-                />
+      {blocks.map((block, bi) => (
+        <Animated.View key={`${block.name}-${bi}`} entering={SWAP}>
+          <GlassCard style={styles.exCard}>
+            {/*
+              The header carries what every set of this movement shares — the
+              load and the rep target — so the rows below do not each repeat it.
+              Same rule the insight screen applies to its series: spend the
+              width on what varies.
+            */}
+            <View style={styles.exHead}>
+              <View style={styles.exTitleRow}>
+                <Text style={styles.exName} numberOfLines={1}>{block.name}</Text>
+                <Text style={styles.exPrescription} numberOfLines={1}>
+                  {block.rows.length} × {block.rows[0].reps}
+                  {'  ·  '}
+                  {block.rows[0].weight > 0
+                    ? `${Math.round(displayWeight(block.rows[0].weight, wUnit) * 10) / 10} ${wl}`
+                    : i18n.nRdBodyweight}
+                </Text>
               </View>
-            ) : null}
-            <GlassCard style={[styles.setCard, isDone && styles.setCardDone]}>
+              <ExerciseProgress
+                insight={insightFor(block.name)}
+                last={lastFor(block.name)}
+                name={block.name}
+                u={wUnit}
+                i18n={i18n}
+              />
+            </View>
+
+            {block.rows.map((row, ri) => {
+              const isDone = !!shown[row.key];
+              const effort = rpe[row.key] ?? row.plannedRpe;
+              const secs = restOf(row);
+              const open = editing === row.key;
+              return (
+                <View key={row.key}>
+                  {ri > 0 ? <View style={styles.hair} /> : null}
+                  <View style={[styles.setBlock, isDone && styles.setCardDone]}>
               <View style={styles.setRow}>
                 {/*
                   The tick.
@@ -705,14 +750,17 @@ export function DayPlan({
                 </PressScale>
 
                 <View style={styles.setText}>
+                  {/*
+                    Just which set it is.
+
+                    The load and the rep target used to be repeated here, on
+                    every row — "55 kg × 10" three times under a heading that
+                    could have said it once. They are in the card's header now.
+                    HIG's own line about list rows is the rule: "keep item text
+                    succinct so row content is comfortable to read".
+                  */}
                   <Text style={[styles.setMain, isDone && styles.setMainDone]} numberOfLines={1}>
                     {i18n.nRdSet.replace('{n}', String(row.ordinal))} / {row.of}
-                    {'   '}
-                    {row.weight > 0
-                      ? `${Math.round(displayWeight(row.weight, wUnit) * 10) / 10} ${wl}`
-                      : i18n.nRdBodyweight}
-                    {' × '}
-                    {row.reps}
                   </Text>
                 </View>
 
@@ -732,9 +780,30 @@ export function DayPlan({
                     Haptics.selectionAsync();
                     setEditing(open ? null : row.key);
                   }}
-                  style={[styles.chip, open && styles.chipOpen]}>
-                  <Icon icon={Timer} size={11} color={colors.mutedForeground} />
-                  <Text style={styles.chipText}>{restLabel(secs)}</Text>
+                  style={[
+                    styles.chip,
+                    /*
+                      Quiet while it still says what the plan said.
+
+                      Three sets of the same movement showed the same "2:00" and
+                      the same "RPE 8", three times, at full contrast — the row
+                      spending its emphasis on the part that never changes. Now
+                      the default is a plain value and a CHANGED one is a chip,
+                      so the eye catches the set you adjusted rather than the two
+                      you did not. The tap target is identical either way; this
+                      is contrast, not affordance.
+                    */
+                    secs === row.plannedRest ? styles.chipDefault : null,
+                    open && styles.chipOpen,
+                  ]}>
+                  <Icon
+                    icon={Timer}
+                    size={11}
+                    color={secs === row.plannedRest ? 'rgba(255,255,255,0.30)' : colors.mutedForeground}
+                  />
+                  <Text style={[styles.chipText, secs === row.plannedRest && styles.chipTextDefault]}>
+                    {restLabel(secs)}
+                  </Text>
                 </PressScale>
                 <PressScale
                   accessibilityRole="button"
@@ -744,8 +813,23 @@ export function DayPlan({
                     Haptics.selectionAsync();
                     setEditing(open ? null : row.key);
                   }}
-                  style={[styles.chip, open && styles.chipOpen, EFFORT_TINT[effort] ? { borderColor: `${EFFORT_TINT[effort]}66` } : null]}>
-                  <Text style={[styles.chipText, { color: tintFor(effort) }]}>RPE {effort}</Text>
+                  style={[
+                    styles.chip,
+                    effort === row.plannedRpe ? styles.chipDefault : null,
+                    open && styles.chipOpen,
+                    effort !== row.plannedRpe && EFFORT_TINT[effort]
+                      ? { borderColor: `${EFFORT_TINT[effort]}66` }
+                      : null,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.chipText,
+                      effort === row.plannedRpe
+                        ? styles.chipTextDefault
+                        : { color: tintFor(effort) },
+                    ]}>
+                    RPE {effort}
+                  </Text>
                 </PressScale>
               </View>
 
@@ -809,10 +893,13 @@ export function DayPlan({
                   </View>
                 </Animated.View>
               ) : null}
-            </GlassCard>
-          </Animated.View>
-        );
-      })}
+                  </View>
+                </View>
+              );
+            })}
+          </GlassCard>
+        </Animated.View>
+      ))}
 
       {/*
         Off for good once it has saved.
@@ -911,7 +998,22 @@ const styles = StyleSheet.create({
   /* The exercise name is a heading over its sets, not a row of its own — the
      rows below it are the thing, and giving the name a card would make four
      sets of one movement look like five separate items. */
-  exHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /* One card per movement, its sets as rows inside — the inset grouped shape
+     Apple describes, where a continuous background does the grouping that four
+     separate boxes were failing to do. */
+  exCard: { padding: 0, overflow: 'hidden', gap: 0 },
+  exHead: { gap: 6, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  exTitleRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  /* What every set of this movement shares, said once — the rows below spend
+     their width on what varies instead. */
+  exPrescription: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  /* A hairline, not a gap: the rows belong to one thing. */
+  hair: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginLeft: spacing.md },
+  setBlock: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  /* Untouched: still the same size and still tappable, just not shouting a
+     number the header already gave. */
+  chipDefault: { borderColor: 'transparent', backgroundColor: 'transparent' },
+  chipTextDefault: { color: 'rgba(255,255,255,0.35)' },
   exName: {
     ...type.footnote,
     color: colors.foreground,

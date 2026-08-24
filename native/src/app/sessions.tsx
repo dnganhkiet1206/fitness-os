@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { Dumbbell } from 'lucide-react-native';
+import { Dumbbell, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
@@ -8,6 +8,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
 import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
+import { SwipeRow } from '@/components/ascnd/swipe-row';
 import { colors, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
@@ -193,6 +194,20 @@ export default function SessionsScreen() {
                 {m.rows.map((s, i) => (
                   <View key={s.id}>
                     {i > 0 ? <View style={sessionListStyles.sep} /> : null}
+                    {/*
+                      Swipe to delete, and the button stays.
+
+                      `today-meals.tsx` argued the principle and it holds here:
+                      a swipe is "invisible until guessed", so it cannot be the
+                      only way to reach an action. It is the fast path for
+                      people who already know it is there — which on a list of
+                      logged workouts is most people, because it is what every
+                      other list on the phone does.
+                    */}
+                    <SwipeRow
+                      icon={Trash2}
+                      label={i18n.a11yDelete}
+                      onAction={() => confirmDelete(s.id, s.date_time, s.template_name ?? '')}>
                     <SessionRow
                       session={s}
                       wUnit={wUnit}
@@ -202,6 +217,7 @@ export default function SessionsScreen() {
                       compactDate
                       volumeRatio={m.peak > 0 ? (Number(s.volume_load) || 0) / m.peak : undefined}
                     />
+                    </SwipeRow>
                   </View>
                 ))}
               </View>
