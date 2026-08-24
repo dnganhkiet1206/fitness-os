@@ -38,9 +38,8 @@
  * variables; nothing else changes.
  */
 
-const DEFAULT_URL = 'https://drqgonxrtmomgrftelih.supabase.co';
-const DEFAULT_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRycWdvbnhydG1vbWdyZnRlbGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4NjQ3MjMsImV4cCI6MjA4NjQ0MDcyM30.aiDCz4d5A9IFWE1M0xGWXAWtN0dIfyJnm5E62stl1Wo';
+const DEFAULT_URL = 'https://guqmbqtgxqleuwajvwvg.supabase.co';
+const DEFAULT_KEY = 'sb_publishable_HU-mMPAU34iCDOHOukYPWA_XY_Vh9nX';
 
 /** Trailing slashes are easy to paste in and break every URL built from this. */
 const trim = (u: string) => u.replace(/\/+$/, '');
@@ -102,8 +101,19 @@ function keyProject(key: string): string | null {
   }
 }
 
-/** True when the app is talking to whatever was configured, not the fallback. */
-export const USING_CONFIGURED_BACKEND = SUPABASE_URL !== DEFAULT_URL;
+/**
+ * True when `.env` actually supplied the backend, rather than the defaults.
+ *
+ * This used to be `SUPABASE_URL !== DEFAULT_URL`, which answered the question
+ * by accident: it was only ever right while the default pointed at a project
+ * nobody would configure on purpose. Now that the default IS the real project,
+ * that test reads false for a correctly configured app — the diagnostics screen
+ * would report "running on the fallback" to somebody whose `.env` is perfect.
+ *
+ * Ask the thing being asked: were the variables set.
+ */
+export const USING_CONFIGURED_BACKEND =
+  Boolean(process.env.EXPO_PUBLIC_SUPABASE_URL) && Boolean(process.env.EXPO_PUBLIC_SUPABASE_KEY);
 
 /**
  * Every edge function the app calls, in one place.
