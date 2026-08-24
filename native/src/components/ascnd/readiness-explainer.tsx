@@ -9,8 +9,9 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
  *
  * ── why a card like this needs one ──
  *
- * It shows a number out of a hundred, a colour, and four tiles captioned RHR,
- * SLEEP, LOAD and ACWR. Every one of those is a term of art. Somebody who does
+ * It shows a number out of a hundred, a colour, and up to five tiles captioned
+ * HRV, RHR, SLEEP, LOAD and ACWR — one per component the score actually
+ * measured. Every one of those is a term of art. Somebody who does
  * not already know what an acute-to-chronic workload ratio is cannot learn it
  * from seeing `1.14` in a small box, and the card's whole job is to change what
  * they do today — advice you cannot interrogate is advice you either obey
@@ -22,7 +23,14 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
  * computes: the 30/20/30/20 split and its no-HRV fallback, the 0.8–1.3 safe
  * band, the four-hour sleep cap. A help sheet that drifts from the code is
  * worse than no help sheet, because it is believed. If the engine changes,
- * this changes with it — `tools/readiness-doc.mjs` fails when they disagree.
+ * this changes with it — `tools/readiness-confidence.mjs` reads every figure
+ * back out of this file and fails when it disagrees with the engine.
+ *
+ * That sentence used to name `tools/readiness-doc.mjs`, which has never
+ * existed. Nothing checked any of these numbers; the claim that something did
+ * was the only thing keeping anyone from noticing. It is the exact shape this
+ * repository has been caught by twice — a comment describing a test that is not
+ * there — and it took an audit of a different bug to find it.
  */
 export function ReadinessExplainer({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const i18n = useI18n();

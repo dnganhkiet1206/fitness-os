@@ -60,6 +60,13 @@ const PLAIN = {
   daysSinceWorkout: 0,
   readiness: 78,
   status: 'green',
+  /* Whether the score rested on a recovery reading. The default person has a
+     night and biometrics behind theirs, so this file keeps exercising the
+     recovery wording; `tải-only` below is the same status with nothing but
+     training load behind it, which is the other sentence entirely. Adding the
+     field without a fixture for `false` would have quietly moved every case in
+     this file onto one branch. */
+  hasRecovery: true,
   acwr: 1.0,
   sleepMin: 472,
   kcal: 1900,
@@ -80,11 +87,17 @@ const DAYS = {
   'tải vọt': day({ acwr: 1.62, daysSinceWorkout: 1 }),
   'chưa ăn gì': day({ kcal: 0 }),
   'ăn quá mục tiêu': day({ kcal: 2600 }),
-  'chưa có sẵn sàng': day({ status: null, readiness: null }),
+  'chưa có sẵn sàng': day({ status: null, readiness: null, hasRecovery: false }),
+  /* Readiness built from training load alone — a real score, and no measurement
+     of recovery behind it. Chain AJ: the state line must talk about capacity,
+     never about how the body recovered. */
+  'đỏ chỉ từ tải': day({ status: 'red', readiness: 45, acwr: 0.01, hasRecovery: false, sleepMin: 0 }),
+  'xanh chỉ từ tải': day({ status: 'green', readiness: 80, acwr: 1.14, hasRecovery: false, sleepMin: 0 }),
+  'vàng chỉ từ tải': day({ status: 'yellow', readiness: 65, acwr: 0.7, hasRecovery: false, sleepMin: 0 }),
   'không tên': day({ name: '' }),
   'tên một chữ': day({ name: 'Kiệt' }),
   'trống hoàn toàn': {
-    name: '', daysSinceWorkout: null, readiness: null, status: null, acwr: null,
+    name: '', daysSinceWorkout: null, readiness: null, status: null, hasRecovery: false, acwr: null,
     sleepMin: 0, kcal: 0, kcalTarget: 0, proteinG: 0, proteinTarget: 0, steps: 0,
   },
 };

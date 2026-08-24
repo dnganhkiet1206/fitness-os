@@ -37,6 +37,18 @@ export const READINESS_RECO: Record<string, Bi> = {
     en: 'Reduce volume 5–10%. Focus on technique and recovery.',
     vi: 'Giảm volume 5–10%. Tập trung kỹ thuật và phục hồi.',
   },
+  /* Red where the only thing measured was training load. `red_recover` used to
+     answer this too and prescribed active recovery to somebody whose sleep,
+     HRV and resting heart rate the app had never read — see the branch in
+     `readiness-engine.ts`. Names the cause it actually has, and says plainly
+     that recovery is unmeasured rather than implying it was measured and bad.
+     Steering "back toward your usual" is right in both directions: a load-only
+     red is a ratio far under 0.65 or far over 1.6, and this copy does not have
+     to guess which. */
+  red_load_only: {
+    en: 'Low from training load, not recovery. Steer volume back toward your usual, and log sleep for a fuller reading.',
+    vi: 'Điểm thấp do tải tập, không phải do phục hồi. Đưa khối lượng về gần thói quen, và ghi giấc ngủ để có thêm cơ sở.',
+  },
   red_rest: {
     en: 'Better to rest. Light cardio, 20–30 min max.',
     vi: 'Nên nghỉ ngơi. Cardio nhẹ tối đa 20–30 phút.',

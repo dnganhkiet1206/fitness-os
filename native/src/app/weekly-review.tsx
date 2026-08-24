@@ -35,7 +35,7 @@ import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr, localDayRangeISO, weekStartOf } from '@/lib/local-date';
 import { metricMean } from '@/lib/nutrition-mean';
-import { deloadWarranted } from '@/lib/readiness-week';
+import { deloadWarranted, recoveryBacked } from '@/lib/readiness-week';
 import { latestAcwr } from '@/lib/training-card';
 
 interface AIInsight {
@@ -415,9 +415,16 @@ export default function WeeklyReviewScreen() {
       'Readiness trung bình thấp. Cân nhắc tuần deload: giảm 40-50% volume, giữ cường độ.',
       'Low average readiness. Consider a deload week: cut volume 40-50%, keep intensity.') });
   } else if (avgReadiness >= 75) {
-    recommendations.push({ kind: 'success', text: L(
-      'Phục hồi tốt! Có thể đẩy progressive overload: +2.5kg hoặc +1 rep mỗi bài chính.',
-      'Great recovery! Push progressive overload: +2.5kg or +1 rep on your main lifts.') });
+    /* The other half of the same rule. The action — push progressive overload —
+       is training-state advice and is right either way; the *reason* given for
+       it is not. "Phục hồi tốt!" over a week of load-only scores praises a
+       recovery nobody measured, which is the deload warning's mistake pointed
+       the opposite way. Threshold, mean and `recoveryBacked` all unchanged. */
+    recommendations.push({ kind: 'success', text: recoveryBacked(logs)
+      ? L('Phục hồi tốt! Có thể đẩy progressive overload: +2.5kg hoặc +1 rep mỗi bài chính.',
+          'Great recovery! Push progressive overload: +2.5kg or +1 rep on your main lifts.')
+      : L('Khả năng tập đang tốt! Có thể đẩy progressive overload: +2.5kg hoặc +1 rep mỗi bài chính.',
+          'Training capacity looks high! Push progressive overload: +2.5kg or +1 rep on your main lifts.') });
   }
   if (avgSleepH < targets.sleepH - 1) {
     recommendations.push({ kind: 'warning', text: L(

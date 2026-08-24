@@ -1,6 +1,7 @@
 // ASCND – Readiness & Recovery Engine
 // Evidence-inspired pseudo-formula using HRV (RMSSD), RHR, sleep, training load
 
+import { hasRecoverySignal } from './readiness-i18n';
 import type { ReadinessConfidence, ReadinessInput, ReadinessResult } from './types';
 
 function clamp(val: number, min: number, max: number): number {
@@ -407,9 +408,34 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult | null 
   } else if (status === 'red' && rhrScore !== null && rhrScore < 40 && sleepScore !== null && sleepScore < 40) {
     recommendationKey = 'red_rest';
     recommendation = 'Nên nghỉ ngơi. Cardio nhẹ tối đa 20–30 phút.';
-  } else if (status === 'red') {
+  } else if (status === 'red' && hasRecoverySignal(explainToken)) {
     recommendationKey = 'red_recover';
     recommendation = 'Chỉ phục hồi tích cực — zone 2, mobility, thở.';
+  } else if (status === 'red') {
+    /*
+      ── a red that measured no recovery must not prescribe recovery ──
+
+      `red_recover` was the catch-all for every red, and readiness is composite
+      training capacity: training load is a full dimension of it, so a red can
+      be built from load alone. Measured on PostgreSQL 16.13, in all six
+      timezones, for somebody with a heavy 28-day base and one small session
+      last week:
+
+          45 · red · acwr 0.01 · explain "load:45"
+          → "Chỉ phục hồi tích cực — zone 2, mobility, thở."
+
+      ACWR **0.01**. Their sleep, HRV and resting heart rate were never read.
+      The app prescribed active recovery to somebody whose only measured
+      problem was training too little.
+
+      The test is `hasRecoverySignal` over the engine's own token rather than
+      `hrvScore !== null || ...` here: the sub-scores and the stored string are
+      two routes to the same fact, and this repository has been bitten six
+      times by a rule typed twice. Deciding from the token the consumers read
+      means the producer cannot disagree with them.
+    */
+    recommendationKey = 'red_load_only';
+    recommendation = 'Điểm thấp do tải tập, không phải do phục hồi. Đưa khối lượng về gần thói quen, và ghi giấc ngủ để có thêm cơ sở.';
   } else {
     recommendationKey = 'listen';
     recommendation = 'Lắng nghe cơ thể. Vận động nhẹ nếu cảm thấy ổn.';

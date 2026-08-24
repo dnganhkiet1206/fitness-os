@@ -49,6 +49,23 @@ export function recoveryBackedDays(logs: readonly ReadinessDay[]): number {
   return logs.filter((l) => l.readiness_score && hasRecoverySignal(l.readiness_explain)).length;
 }
 
+/** How many recovery-backed days a recovery sentence needs behind it. */
+const RECOVERY_DAYS = 3;
+
+/**
+ * May a sentence about this week talk about *recovery* at all?
+ *
+ * One rule, both directions. The deload warning below was gated on it in Chain
+ * AH; the praise line — *"Phục hồi tốt! / Great recovery!"* — was its `else if`
+ * four lines away and was left making the mirror-image claim. A week of
+ * readiness scores built from training load alone is not evidence that somebody
+ * recovered well any more than it is evidence they recovered badly. Measured:
+ * a load-only week scores 80 green per day on nothing but an ACWR of 1.14.
+ */
+export function recoveryBacked(logs: readonly ReadinessDay[]): boolean {
+  return recoveryBackedDays(logs) >= RECOVERY_DAYS;
+}
+
 /**
  * May the weekly review tell this person to cut volume 40–50%?
  *
@@ -62,5 +79,5 @@ export function deloadWarranted(
   avgReadiness: number,
   readinessDays: number,
 ): boolean {
-  return avgReadiness < 50 && readinessDays >= 3 && recoveryBackedDays(logs) >= 3;
+  return avgReadiness < 50 && readinessDays >= 3 && recoveryBacked(logs);
 }

@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useDailyLog, useProfile, useRecentWorkouts } from '@/hooks/useTodayData';
 import type { AssistantSignal } from '@/lib/assistant-suggestions';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
+import { hasRecoverySignal } from '@/lib/readiness-i18n';
 import { daysSince } from '@/lib/training-card';
 
 /**
@@ -60,6 +61,10 @@ export function useAssistantSignal(): AssistantSignal {
       daysSinceWorkout: last ? daysSince(String(last)) : null,
       readiness: dailyLog?.readiness_score != null ? Math.round(Number(dailyLog.readiness_score)) : null,
       status: (dailyLog?.readiness_status as 'green' | 'yellow' | 'red' | null) ?? null,
+      /* The one fact the brief and the chips need beyond the status, read
+         through the one predicate. The row is already loaded — this costs no
+         query and stores nothing new. */
+      hasRecovery: hasRecoverySignal(dailyLog?.readiness_explain),
       acwr: dailyLog?.acwr != null ? Number(dailyLog.acwr) : null,
       sleepMin: Number(dailyLog?.sleep_duration_min) || 0,
       kcal: Math.round(Number(dailyLog?.kcal) || 0),

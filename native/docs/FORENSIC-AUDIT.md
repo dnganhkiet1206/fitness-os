@@ -9685,6 +9685,179 @@ một nơi tiêu thụ nhạy-cảm-phục-hồi phải có ít nhất một tro
 | **BỐ CỤC 5 Ô TRÊN MÁY THẬT** | **KHÔNG** — hàng ô nay có thể tới 5 ô (HRV·RHR·SLEEP·LOAD·ACWR); `flex: 1` chia đều nhưng chưa ai nhìn nó trên thiết bị |
 
 
+## Chain AJ — readiness là KHẢ NĂNG TẬP, và một câu về phục hồi phải có phép đo phục hồi
+
+**QUYẾT ĐỊNH SẢN PHẨM (đã chốt).** `readiness_status` nghĩa là **khả năng tập
+luyện tổng hợp**, không phải trạng thái phục hồi. Tải tập là một thành phần hợp
+lệ và điểm dựng từ mỗi tải tập vẫn là thông tin trạng thái tập luyện có giá trị:
+đỏ vẫn đỏ, xanh vẫn xanh, và nó vẫn được phép ảnh hưởng tới lời khuyên về tải.
+Cái KHÔNG được phép là suy ra ngôn ngữ phục hồi từ mỗi cái status. Thành phần
+phục hồi là `hrv`, `rhr`, `sleep`; vị từ chính tắc là `hasRecoverySignal`.
+
+**Bộ kiểm:** PostgreSQL 16.13 THẬT từ mọi migration, sáu múi giờ; chạy THẬT
+`computeReadiness`, `recomputeDailyLog`, `briefFor`, `suggestionsFor`,
+`deloadWarranted`, `recoveryBacked`, `suggestLoad`, và **hàm `recoveryMeasured`
+được TRÍCH ra khỏi `ai-coach`** rồi biên dịch chạy cạnh `hasRecoverySignal`.
+
+### BUG-112 (P2). Tóm tắt trợ lý khẳng định một sự phục hồi chưa từng được đo — `BRIEF-RECOVERY-FROM-STATUS` · **ĐÃ SỬA**
+
+`assistant-brief.ts` đọc thẳng status thành một câu về cơ thể người ta. Đo được,
+giống nhau ở cả sáu múi giờ:
+
+```
+45 · red · acwr 0.01 · explain "load:45"
+→ vi "Hôm nay cơ thể bạn chưa phục hồi hẳn."
+→ en "Your body has not fully recovered today."
+```
+
+ACWR **0.01** — người này gần như không tập, và app chưa từng đọc giấc ngủ, HRV
+hay nhịp tim nghỉ của họ. Hai dòng bên dưới, chính bản tóm tắt đó nói *"Bạn đã
+nghỉ tập 6 ngày."*
+
+Chiều ngược lại cũng sai: một điểm **xanh** dựng từ mỗi tải tập (80, acwr 1.14)
+ra *"Your recovery looks good today."*
+
+**Bản sửa.** `AssistantSignal` nhận thêm **một** trường, `hasRecovery`, do
+`use-assistant-signal` lấy từ `hasRecoverySignal(readiness_explain)` — hàng đã
+nằm sẵn trong cache, không thêm truy vấn, không thêm cột. Câu tách làm hai: có
+tín hiệu phục hồi thì **giữ nguyên câu cũ**, không có thì nói về khả năng tập.
+Không xoá câu nào — *"Hôm nay khả năng tập của bạn đang thấp." / "Your training
+capacity looks low today."*
+
+**VERIFICATION:** `node tools/readiness-confidence.mjs` mục 12 — chín ca × hai
+ngôn ngữ qua `briefFor` THẬT, cộng một luật cấm hai nhánh trùng câu (một bản sửa
+chỉ tồn tại trên giấy sẽ đỏ), cộng bốn ca đầu-cuối trên hàng do
+`recomputeDailyLog` ghi.
+
+### BUG-113 (P2). Nhánh khen của tuần khen một sự phục hồi chưa từng được đo — `WEEKLY-PRAISE-FROM-SCORE` · **ĐÃ SỬA**
+
+Chain AH sửa `avgReadiness < 50` và **để nguyên `else if (avgReadiness >= 75)`
+cách đó bốn dòng**, nhánh nói *"Phục hồi tốt! / Great recovery!"*. Một tuần điểm
+80 dựng từ mỗi tải tập kích đúng nhánh đó (`weeklyGreatRecovery: true`, đo được).
+
+**Bản sửa.** `recoveryBacked(logs)` — ngưỡng ba ngày rút thành **một** hằng số
+dùng chung cho cả hai nhánh. Hành động (progressive overload) là lời khuyên
+trạng thái tập luyện và ĐÚNG trong cả hai trường hợp, nên chỉ **lý do** đổi:
+*"Khả năng tập đang tốt!"* khi không có tín hiệu phục hồi. Ngưỡng 75, trung
+bình, và `recoveryBackedDays` không đổi.
+
+### BUG-114 (P2). Prompt của ai-coach DẠY mô hình hiểu sai — `AI-LOW-READINESS-MEANS-REST` · **ĐÃ SỬA**
+
+Không phải sự mơ hồ — một mệnh lệnh:
+
+> *"If there are pain flags or **low readiness**, only advise **reducing load and
+> resting**"* / *"Nếu có pain flags hoặc **readiness thấp**, chỉ khuyên **giảm
+> tải và nghỉ ngơi**"*
+
+với payload chỉ có `{readiness, readiness_status}`.
+
+**Bản sửa, nhỏ nhất có thể.** `ai-coach` đã `select("*")`, nên `readiness_explain`
+**vốn đã về tới nơi** — không đổi truy vấn, không đổi schema. Thêm đúng **một
+boolean** `recovery_measured` cho mỗi ngày, và ba câu prompt: readiness là khả
+năng tập; chỉ khuyên phục hồi khi `recovery_measured` là true và chính các chỉ
+số phục hồi nói vậy; khi false thì **cấm** nói hay ám chỉ mệt/kiệt/chưa hồi.
+Pain flags giữ nguyên nhánh cũ của nó. Không gửi cả chuỗi token — đó là bản sao
+của những số đã có trong payload.
+
+**Hai bản của một luật, và cách chúng bị buộc phải khớp.** Deno không import
+được `native/src`, nên `recoveryMeasured` tồn tại hai lần. Bộ dò **trích mã
+nguồn của chính const đó**, biên dịch nó cạnh `hasRecoverySignal`, và chạy cả
+hai trên **29 chuỗi** gồm mọi ca thù địch — lệch một ca là đỏ. Đúng hình dạng
+Chain AC dùng cho `nutritionMean`, kể cả lý do const đó viết dạng block: một
+arrow biểu thức từng làm regex trích vượt biên ở vòng đó.
+
+### BUG-115 (P3). Chip trợ lý nói người dùng đang mệt — `CHIP-FATIGUE-FROM-STATUS` · **ĐÃ SỬA**
+
+*"Vì sao tôi mệt?" / "Why am I flat?"* trên một điểm đỏ load-only. Câu hỏi gửi
+cho AI vốn đã trung tính (*"Vì sao lại thấp…"*), nên **chỉ nhãn đổi**:
+*"Vì sao điểm thấp?" / "Why is readiness low?"* — đúng cho cả hai loại đỏ.
+
+### red_recover — `RED-RECOVER-WITHOUT-RECOVERY` · **ĐÃ SỬA (không xoá)**
+
+`red_recover` là nhánh vét cho MỌI đỏ, nên nó kê *"Chỉ phục hồi tích cực — zone
+2, mobility, thở."* cho người có acwr 0.01.
+
+**Bản sửa.** Một nhánh chèn vào giữa: `status === 'red' && hasRecoverySignal(explainToken)`
+giữ `red_recover` **nguyên vẹn** cho đỏ có đo phục hồi; đỏ còn lại nhận khoá mới
+`red_load_only` — *"Điểm thấp do tải tập, không phải do phục hồi. Đưa khối lượng
+về gần thói quen, và ghi giấc ngủ để có thêm cơ sở."* `red_rest` **không đụng
+tới**, và có luật riêng chứng minh nó vẫn đòi đủ cả nhịp nghỉ lẫn giấc ngủ đo
+được.
+
+Engine hỏi `hasRecoverySignal(explainToken)` chứ **không** hỏi
+`hrvScore !== null || ...`: chuỗi và các sub-score là hai đường tới cùng một sự
+thật, và §7 cấm đúng hình dạng đó. Quyết định từ chuỗi mà mọi nơi tiêu thụ đọc
+thì bên sản xuất không thể bất đồng với chúng.
+
+### BUG-116 (P3). Help sheet trỏ tới một bộ dò chưa từng tồn tại — `EXPLAINER-CITES-MISSING-TOOL` · **ĐÃ SỬA**
+
+`readiness-explainer.tsx` nói mọi con số của nó được `tools/readiness-doc.mjs`
+canh. **Tệp đó chưa bao giờ tồn tại.** Không gì kiểm 30/20/30/20, hàng không-HRV,
+trần 4 tiếng, dải 0.8–1.3, ba vùng màu hay bốn mốc ACWR — và câu nói rằng có thứ
+đang kiểm chính là thứ khiến không ai đi kiểm. Nó cũng vẫn nói "four tiles" từ
+sau khi BUG-111 cho HRV một ô riêng (thành năm).
+
+**Bản sửa:** viết bộ dò thật (mục 16), rồi sửa câu cho đúng. Luật **không phải**
+danh sách đen một cái tên: **mọi `tools/*.mjs` mà tệp đó nhắc tên đều phải tồn
+tại**, nên nó bắt được cả lần sau. Các con số được đọc NGƯỢC ra khỏi chính help
+sheet và so với engine.
+
+### Chain AJ — trước / sau, đo được
+
+| trạng thái | trước | sau |
+| --- | --- | --- |
+| đỏ CHỈ từ tải (45, acwr 0.01) | "Your body has not fully recovered today." · `red_recover` | "Your training capacity looks low today." · `red_load_only` |
+| xanh CHỈ từ tải (80, acwr 1.14) | "Your recovery looks good today." · tuần: "Great recovery!" | "Your training capacity looks good today." · tuần: "Training capacity looks high!" |
+| vàng CHỈ từ tải (65) | "Your recovery is middling today." | "Your training capacity is middling today." |
+| đỏ có giấc ngủ (20) | "Your body has not fully recovered today." · `red_recover` | **không đổi** |
+| đỏ có HRV/RHR (9) | như trên | **không đổi** |
+| đỏ trộn (30) | như trên | **không đổi** |
+| đỏ đủ bốn chiều (19) | `red_rest` | **không đổi** |
+| chip đỏ | "Vì sao tôi mệt?" / "Why am I flat?" | "Vì sao điểm thấp?" / "Why is readiness low?" |
+| payload ai-coach | `{readiness, readiness_status}` | `+ recovery_measured` (một boolean) |
+| prompt ai-coach | "readiness thấp → chỉ khuyên nghỉ" | readiness = khả năng tập; cấm nói mệt khi `recovery_measured` false |
+| không có điểm | không có dòng trạng thái | **không đổi** |
+
+### Chain AJ — sai sót của chính bộ kiểm, ghi rõ
+
+1. **Phép phá 9 XANH — lỗ hổng thật, đã bịt.** Luật `/recovery_measured/` khớp
+   cả phần prompt MÔ TẢ trường đó, nên xoá dòng payload vẫn xanh: mô hình sẽ được
+   dặn đọc một trường không bao giờ tới nơi. Siết thành
+   `/recovery_measured:\s*recoveryMeasured\(/` — trường phải được SINH RA, không
+   phải chỉ được nhắc tên. Đỏ đúng lý do sau khi siết.
+2. **Tôi tự làm đỏ một luật của Chain AH.** Rút ngưỡng ba ngày vào
+   `recoveryBacked` làm luật `recoveryBackedDays(logs) >= 3` không còn khớp.
+   **Chỉnh hướng, không xoá** — bất biến vẫn là bất biến đó, và ngưỡng được ghim
+   riêng ngay bên dưới.
+3. **Luật BUG-116 đầu tiên là danh sách đen sai chỗ.** Nó cấm chuỗi
+   `readiness-doc.mjs` xuất hiện, nên chính ghi chú lịch sử *"tệp đó chưa bao giờ
+   tồn tại"* làm nó đỏ. Thay bằng luật đúng: mọi tool được nhắc tên phải tồn tại.
+4. **`tools/brief.mjs` mất độ phủ trong im lặng.** Fixture của nó không đặt
+   `hasRecovery`, nên sau khi thêm trường, **mọi** ca trong tệp đó rơi sang nhánh
+   khả năng tập và nhánh phục hồi không còn ai chạy — xanh, và yếu hơn. Đặt
+   `hasRecovery: true` cho người mặc định và **thêm ba fixture load-only**
+   (13 → 16 người).
+5. **Không cần sửa harness cho import mới của engine.** Tôi đã định thêm
+   `readiness-i18n.ts` vào danh sách transpile của `tools/readiness.mjs` và
+   `tools/training-card.mjs`; đo trước khi sửa thì cả hai đã xanh — `tsc` đi theo
+   import tương đối và tự phát ra tệp. Không sửa gì.
+
+### Chain AJ — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory` |
+| **HÀM THẬT** | `computeReadiness`, `recomputeDailyLog`, `briefFor`, `suggestionsFor`, `deloadWarranted`, `recoveryBacked`, `suggestLoad`, `hasRecoverySignal`, và `recoveryMeasured` TRÍCH từ ai-coach |
+| **MÚI GIỜ** | 6 múi, gồm `Australia/Lord_Howe` |
+| **BREAK-TESTS** | **14/14 đỏ đúng lý do**; phép phá 9 lộ lỗ hổng thật, đã siết rồi mới đỏ |
+| **REGRESSION** | `node tools/check.mjs` **135/135 xanh** |
+| **TYPESCRIPT** | sạch |
+| **MÔ HÌNH AI THẬT** | **KHÔNG** — đo payload và prompt, KHÔNG đo văn bản mô hình sinh ra |
+| **REAL iOS / HealthKit / AsyncStorage** | **KHÔNG** |
+| **PRODUCTION** | **KHÔNG** |
+| **RLS** | **KHÔNG** trong vòng này |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,

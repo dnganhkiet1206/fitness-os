@@ -80,12 +80,32 @@ const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$
 const want = (ok, message) => { if (!ok) problems.push(message); };
 
 try {
+  /*
+    `ai-coach` runs on Deno and cannot import from `native/src`, so the recovery
+    rule exists twice by force. Rather than assert in prose that the two agree,
+    the edge function's own `recoveryMeasured` is lifted out by source and
+    compiled beside the native `hasRecoverySignal`; section 16 drives BOTH over
+    the same inputs. Same shape Chain AC used for `nutritionMean`, and the
+    reason that const is block-bodied: an expression-bodied arrow made the
+    extraction regex over-run in that round.
+  */
+  const edgeSrc = readFileSync(path.join(ROOT, 'supabase/functions/ai-coach/index.ts'), 'utf8');
+  const edgeFn = edgeSrc.match(/const recoveryMeasured =[\s\S]*?\n    \};/)?.[0];
+  if (!edgeFn) {
+    console.error('tự kiểm hỏng: không trích được recoveryMeasured thật từ ai-coach — đừng tin kết quả');
+    process.exit(1);
+  }
+  mkdirSync(path.join(out, 'src'), { recursive: true });
+  writeFileSync(path.join(out, 'src', 'edge-recovery.ts'),
+    edgeFn.replace(/^\s+/, '') + '\nexport { recoveryMeasured };\n');
+
   try {
     execFileSync(
       'npx',
       ['tsc', 'src/lib/readiness-engine.ts', 'src/lib/readiness-i18n.ts', 'src/lib/training-card.ts',
        'src/lib/local-date.ts', 'src/lib/readiness-week.ts', 'src/lib/load-progression.ts',
        'src/lib/goal-training.ts', 'src/lib/prescription.ts', 'src/lib/user-state.ts',
+       'src/lib/assistant-brief.ts', 'src/lib/assistant-suggestions.ts',
        '--ignoreConfig', '--outDir', out,
        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
@@ -104,11 +124,22 @@ try {
   const { computeReadiness, readinessConfidence } = req(path.join(out, 'readiness-engine.js'));
   const { readinessSubscores, hasRecoverySignal, RECOVERY_COMPONENTS, readinessRecoText } =
     req(path.join(out, 'readiness-i18n.js'));
-  const { deloadWarranted, recoveryBackedDays } = req(path.join(out, 'readiness-week.js'));
+  const { deloadWarranted, recoveryBackedDays, recoveryBacked } = req(path.join(out, 'readiness-week.js'));
   const { suggestLoad } = req(path.join(out, 'load-progression.js'));
+  const { briefFor } = req(path.join(out, 'assistant-brief.js'));
+  const { suggestionsFor } = req(path.join(out, 'assistant-suggestions.js'));
+  try {
+    execFileSync('npx', ['tsc', path.join(out, 'src', 'edge-recovery.ts'), '--ignoreConfig',
+      '--outDir', out, '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+      { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch { /* emit is what matters */ }
+  const { recoveryMeasured: edgeRecoveryMeasured } = req(path.join(out, 'edge-recovery.js'));
   if (typeof hasRecoverySignal !== 'function' || typeof deloadWarranted !== 'function'
-      || typeof suggestLoad !== 'function') {
-    console.error('tự kiểm hỏng: không nạp được hasRecoverySignal/deloadWarranted/suggestLoad thật — đừng tin kết quả');
+      || typeof suggestLoad !== 'function' || typeof briefFor !== 'function'
+      || typeof suggestionsFor !== 'function' || typeof recoveryBacked !== 'function'
+      || typeof edgeRecoveryMeasured !== 'function') {
+    console.error('tự kiểm hỏng: không nạp được một trong các hàm thật (hasRecoverySignal, deloadWarranted, ' +
+      'recoveryBacked, suggestLoad, briefFor, suggestionsFor, recoveryMeasured của ai-coach) — đừng tin kết quả');
     process.exit(1);
   }
 
@@ -343,6 +374,23 @@ try {
         over: { sleep_min_lastnight: 130, training_load_7d: 0, training_load_28d: 0 },
         status: 'red', acwr: null, key: null,
       },
+      /*
+        The two reds Chain AJ separates. A red built from training load alone
+        must not be handed `red_recover` — *"Chỉ phục hồi tích cực"* — because
+        nothing about this person's recovery was read. `training_load_7d` far
+        under the chronic base puts ACWR below 0.65, which scores 45: red, and
+        the only dimension there is.
+      */
+      {
+        name: 'đỏ CHỈ từ tải tập',
+        over: { training_load_7d: 60, training_load_28d: 9000 },
+        status: 'red', acwr: 'number', key: 'red_load_only',
+      },
+      {
+        name: 'đỏ có giấc ngủ đo được',
+        over: { sleep_min_lastnight: 130, training_load_7d: 60, training_load_28d: 9000 },
+        status: 'red', acwr: 'number', key: 'red_recover',
+      },
     ];
     for (const b of BRANCHES) {
       const r = run(b.over);
@@ -384,10 +432,25 @@ try {
     }
     /* the copy has to exist, or the gauge renders the raw key */
     for (const lang of ['vi', 'en']) {
-      const t = readinessRecoText('green_no_load', lang);
-      if (!t || t === 'green_no_load') {
-        problems.push(`READINESS_RECO thiếu bản ${lang} cho green_no_load — gauge sẽ hiện nguyên khoá thô`);
+      for (const key of ['green_no_load', 'red_load_only']) {
+        const t = readinessRecoText(key, lang);
+        if (!t || t === key) {
+          problems.push(`READINESS_RECO thiếu bản ${lang} cho ${key} — gauge sẽ hiện nguyên khoá thô`);
+        }
       }
+    }
+    /* and the load-only red's copy must not prescribe recovery either */
+    for (const lang of ['vi', 'en']) {
+      const t = readinessRecoText('red_load_only', lang);
+      if (/phục hồi tích cực|active recovery|nghỉ ngơi|better to rest/i.test(t)) {
+        problems.push(`copy red_load_only kê đơn phục hồi: "${t}" — đó là câu nó tồn tại để thay thế`);
+      }
+    }
+    /* red_rest keeps its measured prerequisites: it may only be chosen when
+       BOTH resting heart rate and sleep were read and both are bad */
+    const restNoSleep = run({ rhr_today: 95, rhr_history_28d: [52, 52, 53, 52, 54], training_load_7d: 60, training_load_28d: 9000 });
+    if (restNoSleep && restNoSleep.status === 'red' && restNoSleep.recommendationKey === 'red_rest') {
+      problems.push('red_rest được chọn khi KHÔNG có điểm giấc ngủ — điều kiện tiên quyết đo được của nó đã mất');
     }
   }
 
@@ -549,8 +612,12 @@ try {
       'nhánh acwr null không còn đứng trước green_watch — null lại chảy vào lời khuyên "ACWR hơi cao"');
 
     /* BUG-109, in the source */
-    want(/recoveryBackedDays\(logs\) >= 3/.test(week),
-      'deloadWarranted không còn đòi 3 ngày CÓ ĐO phục hồi — cảnh báo deload lại bắn cho người ACWR 0.01 (BUG-109)');
+    /* Chain AH wrote this as `recoveryBackedDays(logs) >= 3` inline. Chain AJ
+       moved that threshold into `recoveryBacked` so the praise branch could
+       share it, so the rule follows it there — the invariant is the same one,
+       and the threshold itself is pinned just below. */
+    want(/recoveryBacked\(logs\)/.test(week),
+      'deloadWarranted không còn đòi ngày CÓ ĐO phục hồi — cảnh báo deload lại bắn cho người ACWR 0.01 (BUG-109)');
     want(/avgReadiness < 50/.test(week) && /readinessDays >= 3/.test(week),
       'ngưỡng cũ (trung bình < 50, đủ 3 ngày có điểm) đã bị đổi — vòng này KHÔNG được đụng vào chúng');
     want(/hasRecoverySignal\(/.test(week), 'readiness-week không còn gọi hasRecoverySignal');
@@ -567,9 +634,57 @@ try {
     want(/readinessExplain: /.test(logw),
       'log-workout không còn truyền readinessExplain vào suggestLoad — cổng đỏ sẽ luôn thấy undefined');
 
+    /* BUG-112 / BUG-115, in the source */
+    const brief = strip(readFileSync(path.join(NATIVE, 'src/lib/assistant-brief.ts'), 'utf8'));
+    const sugg = strip(readFileSync(path.join(NATIVE, 'src/lib/assistant-suggestions.ts'), 'utf8'));
+    const signalHook = strip(readFileSync(path.join(NATIVE, 'src/hooks/use-assistant-signal.ts'), 'utf8'));
+    want(/hasRecovery/.test(brief),
+      'assistant-brief không còn đọc hasRecovery — dòng trạng thái lại nói về phục hồi từ mỗi cái status (BUG-112)');
+    want(/hasRecovery: boolean/.test(sugg),
+      'AssistantSignal không còn mang hasRecovery — hai nơi tiêu thụ mất đường hỏi câu duy nhất chúng cần');
+    want(/hasRecoverySignal\(/.test(signalHook),
+      'use-assistant-signal không còn lấy hasRecovery từ hasRecoverySignal — nó vừa tự nghĩ ra một luật khác');
+
+    /* BUG-113, in the source */
+    want(/recoveryBackedDays\(logs\) >= RECOVERY_DAYS/.test(week),
+      'recoveryBacked không còn là ngưỡng chung của hai nhánh tuần');
+    want(/recoveryBacked\(logs\)/.test(week) && /recoveryBacked\(logs\)/.test(review),
+      'weekly-review hoặc readiness-week không còn dùng recoveryBacked — nhánh khen "Phục hồi tốt!" lại nói ' +
+        'về một tuần chưa đo được gì về phục hồi (BUG-113)');
+    want(/avgReadiness >= 75/.test(review),
+      'ngưỡng 75 của nhánh khen đã đổi — vòng này KHÔNG được đụng vào nó');
+
+    /* red_recover, in the source */
+    want(/status === 'red' && hasRecoverySignal\(explainToken\)/.test(engine),
+      "readiness-engine chọn red_recover cho MỌI red — một điểm đỏ dựng từ mỗi tải tập lại được kê " +
+        '"Chỉ phục hồi tích cực"');
+    want(/recommendationKey = 'red_load_only'/.test(engine),
+      'không còn khoá riêng cho red dựng từ mỗi tải tập');
+    want(/rhrScore !== null && rhrScore < 40 && sleepScore !== null && sleepScore < 40/.test(engine),
+      'điều kiện đo được của red_rest đã đổi — vòng này KHÔNG được đụng vào nó');
+
+    /* BUG-114, in the source */
+    const coach = strip(readFileSync(path.join(ROOT, 'supabase/functions/ai-coach/index.ts'), 'utf8'));
+    want(!/low readiness, only advise reducing load and resting/i.test(coach)
+      && !/readiness thấp, chỉ khuyên giảm tải và nghỉ ngơi/i.test(coach),
+      'prompt ai-coach vẫn dạy mô hình rằng readiness thấp nghĩa là phải nghỉ — dưới nghĩa mới, readiness ' +
+        'thấp là khả năng tập thấp, và một điểm đỏ dựng từ mỗi tải tập không nói gì về phục hồi (BUG-114)');
+    /* The field has to be PRODUCED, not merely mentioned. Written as a bare
+       `/recovery_measured/` first, and break 9 — deleting the payload line and
+       leaving the prompt's description of it — stayed green: the model would be
+       told to read a field it never receives. */
+    want(/recovery_measured:\s*recoveryMeasured\(/.test(coach),
+      'ai-coach không còn ĐẶT recovery_measured vào payload — prompt vẫn tả nó, nên mô hình được dặn đọc ' +
+        'một trường không bao giờ tới nơi');
+    want(/recovery_measured/.test(coach.split('IMPORTANT PRINCIPLES')[0] ?? ''),
+      'recovery_measured được gửi nhưng phần "READING THE DATA" không giải thích nó — một trường không ai định nghĩa là một trường bị đoán');
+    want(!/readiness_explain/.test(coach.replace(/recoveryMeasured\(d\.readiness_explain\)/g, '')),
+      'ai-coach đang gửi cả chuỗi readiness_explain cho mô hình — chỉ cần MỘT boolean, phần còn lại là bản sao của những số đã có trong payload');
+
     /* nobody reads the token by hand */
     for (const [name, src] of [['weekly-review', review], ['load-progression', prog],
-      ['log-workout', logw], ['readiness-week', week]]) {
+      ['log-workout', logw], ['readiness-week', week], ['assistant-brief', brief],
+      ['assistant-suggestions', sugg], ['use-assistant-signal', signalHook]]) {
       const adhoc = /readiness_?[eE]xplain[\s\S]{0,220}?\.(?:includes|indexOf|split|match|startsWith)\(/.test(src)
         || /(?:test|match)\([^)]*(?:hrv|rhr|sleep)\s*:/.test(src);
       want(!adhoc,
@@ -682,6 +797,248 @@ try {
     }
   }
 
+
+  /* ── 12. BUG-112: the briefing must not assert a recovery it did not read ──
+
+     `briefFor` is the real exported function. `hasRecovery` is the one fact it
+     branches on, and it comes from `hasRecoverySignal` in production — here the
+     cases state it directly so the wording rule can be tested apart from the
+     parser, which section 8 already covers on its own. */
+  {
+    const base = {
+      name: '', daysSinceWorkout: 1, acwr: null, sleepMin: 0,
+      kcal: 0, kcalTarget: 2200, proteinG: 0, proteinTarget: 150, steps: 0,
+    };
+    /* Any sentence in either language that claims something about how the
+       person recovered. Deliberately broader than the strings currently
+       shipped: a new phrasing that reintroduces the claim must also trip it. */
+    const RECOVERY_WORDS = /phục hồi|hồi phục|recover|recovery|mệt|kiệt sức|fatigue|flat|tired|rested/i;
+    const CASES = [
+      { name: 'đỏ CHỈ từ tải', status: 'red', readiness: 45, hasRecovery: false, acwr: 0.01, mayClaim: false },
+      { name: 'đỏ có giấc ngủ', status: 'red', readiness: 20, hasRecovery: true, sleepMin: 150, mayClaim: true },
+      { name: 'đỏ có HRV/RHR', status: 'red', readiness: 9, hasRecovery: true, mayClaim: true },
+      { name: 'đỏ trộn', status: 'red', readiness: 30, hasRecovery: true, sleepMin: 150, acwr: 0.01, mayClaim: true },
+      { name: 'xanh CHỈ từ tải', status: 'green', readiness: 80, hasRecovery: false, acwr: 1.14, mayClaim: false },
+      { name: 'xanh có giấc ngủ', status: 'green', readiness: 93, hasRecovery: true, sleepMin: 560, mayClaim: true },
+      { name: 'vàng CHỈ từ tải', status: 'yellow', readiness: 65, hasRecovery: false, acwr: 0.7, mayClaim: false },
+      { name: 'vàng có giấc ngủ', status: 'yellow', readiness: 65, hasRecovery: true, sleepMin: 430, mayClaim: true },
+      { name: 'không có điểm', status: null, readiness: null, hasRecovery: false, mayClaim: false, noLine: true },
+    ];
+    for (const c of CASES) {
+      const signal = { ...base, ...c };
+      for (const vi of [true, false]) {
+        const line = briefFor(signal, 9, vi).lines.find((l) => l.key === 'readiness');
+        if (c.noLine) {
+          if (line) {
+            problems.push(`tóm tắt "${c.name}": có dòng trạng thái dù KHÔNG có điểm sẵn sàng — "${line.text.vi}"`);
+          }
+          continue;
+        }
+        if (!line) {
+          problems.push(`tóm tắt "${c.name}" (${vi ? 'vi' : 'en'}): MẤT dòng trạng thái — bản sửa phải đổi câu, không phải bỏ câu`);
+          continue;
+        }
+        for (const lang of ['vi', 'en']) {
+          const text = line.text[lang];
+          if (!text || text.length < 8) {
+            problems.push(`tóm tắt "${c.name}" (${lang}): câu rỗng hoặc cụt — "${text}"`);
+            continue;
+          }
+          const claims = RECOVERY_WORDS.test(text);
+          if (claims && !c.mayClaim) {
+            problems.push(
+              `tóm tắt "${c.name}" (${lang}) nói về phục hồi: "${text}" — điểm này dựng từ MỖI tải tập, ` +
+                'app chưa đo được gì về phục hồi, và đây là một khẳng định về cơ thể người ta (BUG-112)',
+            );
+          }
+          if (!claims && c.mayClaim) {
+            problems.push(
+              `tóm tắt "${c.name}" (${lang}) KHÔNG còn nói về phục hồi: "${text}" — ngày này CÓ đo phục hồi ` +
+                'và câu cũ phải giữ nguyên; sửa quá tay cũng là một lỗi',
+            );
+          }
+        }
+        /* the two branches must not collapse into the same sentence */
+        const other = briefFor({ ...signal, hasRecovery: !signal.hasRecovery }, 9, vi).lines.find((l) => l.key === 'readiness');
+        if (other && other.text.vi === line.text.vi) {
+          problems.push(
+            `tóm tắt "${c.name}": câu giống hệt nhau dù có hay không có tín hiệu phục hồi — ` +
+              'vị từ đang không được đọc, nên bản sửa chỉ tồn tại trên giấy',
+          );
+        }
+      }
+    }
+  }
+
+  /* ── 13. BUG-113: both weekly branches ask the same question ── */
+  {
+    const D = (explains, score) => explains.map((e) => ({ readiness_score: score, readiness_explain: e }));
+    const CASES = [
+      ['ba ngày cao CHỈ từ tải', ['load:80', 'load:80', 'load:80'], 80, false],
+      ['ba ngày cao có giấc ngủ', ['sleep:90', 'sleep:90', 'sleep:90'], 90, true],
+      ['ba ngày cao có HRV/RHR', ['hrv:88|rhr:85', 'hrv:88|rhr:85', 'hrv:88|rhr:85'], 86, true],
+      ['ba ngày cao trộn', ['sleep:90|load:80', 'hrv:88|load:80', 'rhr:85|load:80'], 85, true],
+      ['hai ngày có phục hồi', ['sleep:90', 'sleep:90', 'load:80'], 85, false],
+      ['một ngày có phục hồi', ['sleep:90', 'load:80', 'load:80'], 83, false],
+    ];
+    for (const [label, explains, score, mayPraise] of CASES) {
+      const logs = D(explains, score);
+      const got = recoveryBacked(logs);
+      if (got !== mayPraise) {
+        problems.push(
+          `tuần "${label}": recoveryBacked = ${got}, đáng lẽ ${mayPraise} (ngày có phục hồi = ${recoveryBackedDays(logs)})` +
+            (mayPraise === false
+              ? ' — "Phục hồi tốt!" nói về một tuần mà app chưa đo được gì về phục hồi (BUG-113)'
+              : ' — một tuần CÓ đo phục hồi vừa mất câu khen đúng của nó'),
+        );
+      }
+    }
+    /* null days count for neither branch */
+    const withNull = [{ readiness_score: null, readiness_explain: 'sleep:90' }];
+    if (recoveryBackedDays(withNull) !== 0) {
+      problems.push('ngày KHÔNG có điểm vẫn được đếm là ngày có đo phục hồi — nó không nằm trong trung bình, nên nó không được mở cổng cho trung bình');
+    }
+    /* and the two gates share one rule rather than two copies of "3" */
+    if (recoveryBacked(D(['sleep:90', 'sleep:90'], 90)) !== false) {
+      problems.push('recoveryBacked nhận 2 ngày — ngưỡng 3 ngày đã đổi, vòng này KHÔNG được đụng vào nó');
+    }
+  }
+
+  /* ── 14. BUG-115: the chip must not tell somebody they are tired ── */
+  {
+    const base = {
+      name: '', daysSinceWorkout: 1, acwr: null, sleepMin: 0, hasRecovery: false,
+      kcal: 0, kcalTarget: 2200, proteinG: 0, proteinTarget: 150, steps: 0,
+    };
+    const FATIGUE = /mệt|kiệt sức|uể oải|flat|tired|fatigue|exhaust|drained|worn out/i;
+    for (const [label, over] of [
+      ['đỏ CHỈ từ tải', { status: 'red', readiness: 45, acwr: 0.01 }],
+      ['đỏ có phục hồi', { status: 'red', readiness: 20, hasRecovery: true, sleepMin: 150 }],
+    ]) {
+      const chip = suggestionsFor({ ...base, ...over }).find((c) => c.key === 'readiness-low');
+      if (!chip) {
+        problems.push(`chip "${label}": readiness-low biến mất — bản sửa phải đổi chữ, không phải bỏ chip`);
+        continue;
+      }
+      for (const lang of ['vi', 'en']) {
+        if (FATIGUE.test(chip.label[lang])) {
+          problems.push(
+            `chip readiness-low (${lang}) vẫn nói người dùng mệt: "${chip.label[lang]}" — điểm đỏ có thể ` +
+              'dựng từ MỖI tải tập, và khi đó app chưa đo được gì về mệt mỏi (BUG-115)',
+          );
+        }
+        if (FATIGUE.test(chip.question[lang])) {
+          problems.push(`chip readiness-low (${lang}): câu hỏi gửi cho AI vẫn khẳng định mệt mỏi — "${chip.question[lang]}"`);
+        }
+      }
+      /* it still has to be about readiness, or the fix removed the meaning */
+      if (!/sẵn sàng|điểm/i.test(chip.label.vi) || !/readiness|low|capacity/i.test(chip.label.en)) {
+        problems.push(`chip readiness-low: nhãn không còn nói về điểm sẵn sàng — "${chip.label.vi}" / "${chip.label.en}"`);
+      }
+    }
+  }
+
+  /* ── 15. BUG-114: the coach's own recovery test, driven ──
+
+     Not "the two files look similar": the edge function's const is compiled and
+     run beside the native predicate over the same inputs, including every
+     hostile token section 8 uses. A drift is a failure here, not a comment. */
+  {
+    const INPUTS = [
+      '', null, undefined, 'khong-phai-token', 'HRV: thấp (30) · Giấc ngủ: kém (20)',
+      'hrv:abc|sleep:def', 'foo:50|bar:60', 'load:45', 'load:45|foo:99',
+      'sleep:10|sleep:90', 'load:10|load:90', 'zzz|sleep:40|', 'sleep=40', ' sleep:40 ',
+      'hrv:50', 'rhr:50', 'sleep:65', 'hrv:50|rhr:50|sleep:65|load:80',
+      'load:' + '9'.repeat(400), 'sleep:' + '9'.repeat(400), 'sleep:0', 'load:0',
+      'hrv:-5', 'sleep:NaN', 'rhr:', ':50', 'sleep', 'hrv:50|', '|sleep:40',
+    ];
+    for (const inp of INPUTS) {
+      let native = null; let edge = null; let threw = null;
+      try { native = hasRecoverySignal(inp); } catch (e) { threw = 'native: ' + e.message; }
+      try { edge = edgeRecoveryMeasured(inp); } catch (e) { threw = (threw ?? '') + ' edge: ' + e.message; }
+      if (threw) {
+        problems.push(`recoveryMeasured(${JSON.stringify(inp).slice(0, 40)}) NÉM: ${threw}`);
+      } else if (native !== edge) {
+        problems.push(
+          `ai-coach và app BẤT ĐỒNG về ${JSON.stringify(inp).slice(0, 40)}: app=${native}, edge=${edge} — ` +
+            'luật phục hồi tồn tại hai bản vì Deno không import được native/src, và hai bản vừa lệch nhau (BUG-114)',
+        );
+      }
+    }
+  }
+
+  /* ── 16. BUG-116: the help sheet's figures, read back out of it ──
+
+     Its own comment says a help sheet that drifts is worse than none because it
+     is believed, and named `tools/readiness-doc.mjs` as the thing that stops
+     that. There has never been such a file. This is it. */
+  {
+    const sheet = readFileSync(path.join(NATIVE, 'src/components/ascnd/readiness-explainer.tsx'), 'utf8');
+    const engineSrc = strip(readFileSync(path.join(NATIVE, 'src/lib/readiness-engine.ts'), 'utf8'));
+
+    /*
+       Not a blacklist of the one wrong name — every tool this file names has to
+       exist. That is the rule that would have caught the original claim, and it
+       keeps catching the next one; a note about the old name may stay in the
+       prose because the note is not a reference to a live tool.
+    */
+    const named = [...sheet.matchAll(/tools\/([\w-]+\.mjs)/g)].map((m) => m[1]);
+    want(named.length > 0, 'readiness-explainer không còn nói tệp nào kiểm các con số của nó');
+    for (const tool of new Set(named)) {
+      const exists = existsSync(path.join(NATIVE, 'tools', tool));
+      const isHistory = new RegExp('(never existed|chưa bao giờ tồn tại|used to name)[\\s\\S]{0,120}?' + tool
+        + '|' + tool + '[\\s\\S]{0,120}?(has never existed|never existed|KHÔNG tồn tại)').test(sheet);
+      want(exists || isHistory,
+        `readiness-explainer trỏ tới tools/${tool} — tệp đó KHÔNG tồn tại. Một chú thích nói rằng có thứ ` +
+          'đang canh những con số này chính là thứ khiến không ai đi kiểm (BUG-116)');
+    }
+    want(existsSync(path.join(NATIVE, 'tools', 'readiness-confidence.mjs')) && /readiness-confidence\.mjs/.test(sheet),
+      'readiness-explainer không còn nói tệp NÀO ĐANG kiểm các con số của nó');
+    want(!/four tiles|bốn ô/.test(sheet),
+      'readiness-explainer vẫn nói "four tiles" — thẻ vẽ tới NĂM ô kể từ khi HRV có ô riêng (BUG-111)');
+
+    /* the weights, in the sheet and in the engine */
+    const FIGURES = [
+      ["trọng số HRV 30%", /tag: 'HRV',[\s\S]{0,220}?weight: '(\d+)%'/, sheet, 30],
+      ["trọng số nhịp nghỉ 20% / 25%", /tag: 'RHR',[\s\S]{0,260}?weight: vi \? '(\d+)% \(25% nếu không có HRV\)'/, sheet, 20],
+      ["trọng số giấc ngủ 30% / 45%", /tag: 'SLEEP',[\s\S]{0,260}?weight: vi \? '(\d+)% \(45% nếu không có HRV\)'/, sheet, 30],
+      ["trọng số tải 20% / 30%", /tag: 'LOAD',[\s\S]{0,260}?weight: vi \? '(\d+)% \(30% nếu không có HRV\)'/, sheet, 20],
+    ];
+    for (const [label, re, src, expect] of FIGURES) {
+      const m = src.match(re);
+      if (!m) { problems.push(`không đọc được "${label}" ra khỏi help sheet — bộ dò lạc mục tiêu`); continue; }
+      if (Number(m[1]) !== expect) {
+        problems.push(`help sheet nói ${label} = ${m[1]}%, engine dùng ${expect}% — tài liệu đang nói sai về mã`);
+      }
+    }
+    /* and the engine really uses those two rows */
+    want(/add\(0\.30, hrvScore\); add\(0\.20, rhrScore\); add\(0\.30, sleepScore\); add\(0\.20, loadScore\);/.test(engineSrc),
+      'hàng trọng số bốn chiều trong engine đã đổi — help sheet đang nói 30/20/30/20');
+    want(/add\(0\.25, rhrScore\); add\(0\.45, sleepScore\); add\(0\.30, loadScore\);/.test(engineSrc),
+      'hàng trọng số không-HRV trong engine đã đổi — help sheet đang nói 25/45/30');
+    /* the four-hour cap */
+    want(/input\.sleep_min_lastnight < 240/.test(engineSrc) && /raw = Math\.min\(raw, 40\)/.test(engineSrc),
+      'trần 40 điểm khi ngủ dưới 4 tiếng đã đổi trong engine — help sheet vẫn nói nó tồn tại');
+    want(/dưới 4 tiếng|Under four hours/.test(sheet),
+      'help sheet không còn nói về trần 4 tiếng, nhưng engine vẫn áp nó');
+    /* the safe band scores 80, which the LOAD paragraph quotes */
+    want(/acwr >= 0\.8 && acwr <= 1\.3\) score = 80;/.test(engineSrc.replace(/\s+/g, ' ')),
+      'dải an toàn ACWR hoặc điểm 80 của nó đã đổi — help sheet vẫn nói "được 80 điểm"');
+    want(/scores 80|được 80 điểm/.test(sheet), 'help sheet không còn nói dải an toàn được 80 điểm');
+    /* the three zones */
+    const zones = sheet.match(/\{ range: '75 – 100'[\s\S]{0,400}?range: '0 – 49'/);
+    want(zones != null, 'không đọc được ba vùng màu ra khỏi help sheet');
+    want(/const status = score >= 75 \? 'green' : score >= 50 \? 'yellow' : 'red';/.test(engineSrc),
+      'ngưỡng vùng màu trong engine đã đổi — help sheet vẫn in 75 / 50');
+    /* and the ACWR bands it prints */
+    for (const band of ["0.8 – 1.3", "1.3 – 1.6", "> 1.6", "< 0.65"]) {
+      want(sheet.includes(band), `help sheet không còn in dải ACWR ${band}`);
+    }
+    const card = strip(readFileSync(path.join(NATIVE, 'src/lib/training-card.ts'), 'utf8'));
+    want(/acwr >= 0\.8 && acwr <= 1\.3/.test(card) && /acwr < 0\.65/.test(card) && /acwr > 1\.3 && acwr <= 1\.6/.test(card),
+      'acwrZone không còn chia theo 0.65 / 0.8 / 1.3 / 1.6 — help sheet in đúng những mốc đó');
+  }
+
   if (problems.length) {
     console.log('độ tin cậy điểm sẵn sàng CÓ LỖI:\n');
     for (const p of problems.slice(0, 12)) console.log(`  • ${p}`);
@@ -701,6 +1058,17 @@ try {
       'deload THẬT từ chối ba ngày chỉ có tải, nhận ba ngày có ngủ, có sinh trắc hoặc trộn, và vẫn từ chối ' +
       'khi chỉ hai ngày có đo phục hồi; suggestLoad THẬT không còn giữ tải trên một điểm đỏ dựng từ mỗi tải ' +
       'tập, nhưng vẫn giữ trên đỏ có ngủ, có sinh trắc và trộn, và vẫn hạ tải khi buổi tập quá nặng. Trên ' +
+      'Và nghĩa mới: readiness là KHẢ NĂNG TẬP tổng hợp, không phải điểm phục hồi. Một điểm đỏ dựng từ mỗi ' +
+      'tải tập nhận red_load_only chứ không phải "Chỉ phục hồi tích cực"; đỏ có đo phục hồi vẫn nhận ' +
+      'red_recover, và red_rest vẫn đòi ĐỦ cả nhịp nghỉ lẫn giấc ngủ đo được. briefFor THẬT nói về khả năng ' +
+      'tập khi không có tín hiệu phục hồi và giữ nguyên câu cũ khi có — kiểm cả hai ngôn ngữ, và hai nhánh ' +
+      'không được trùng câu. Chip readiness-low không còn nói người dùng mệt. recoveryBacked là ngưỡng CHUNG ' +
+      'của cả hai nhánh tuần, nên "Phục hồi tốt!" cũng đòi ba ngày có đo phục hồi như cảnh báo deload. Luật ' +
+      'phục hồi của ai-coach được TRÍCH ra khỏi edge function, biên dịch và chạy cạnh hasRecoverySignal trên ' +
+      '29 chuỗi gồm mọi ca thù địch — lệch một ca là đỏ, chứ không phải một chú thích nói hai bên giống nhau. ' +
+      'Mọi con số trong help sheet (30/20/30/20 và hàng không-HRV, trần 4 tiếng, dải 0.8–1.3 được 80 điểm, ' +
+      'ba vùng 75/50, bốn mốc ACWR) được đọc NGƯỢC ra khỏi chính tệp đó và so với engine; và mọi tools/*.mjs ' +
+      'mà tệp đó nhắc tên đều phải tồn tại thật. Trên ' +
       'PostgreSQL 16.13 dựng từ toàn bộ migration, ở SÁU múi giờ gồm Australia/Lord_Howe (bước DST nửa giờ): ' +
       'ma trận tám tổ hợp cộng 1000 trạng thái ngẫu nhiên mỗi múi giờ, chuỗi explain luôn ghi đúng những gì ' +
       'nguồn đo được, chấm bằng oracle đọc bảng nguồn chứ không đọc daily_logs. KHÔNG có ca nào chấm điểm ' +
@@ -779,8 +1147,9 @@ const { client, conn } = require('./shim.cjs');
 const sb = require('./sb.cjs');
 const { recomputeDailyLog } = require('./lib/daily-log-service.js');
 const { hasRecoverySignal, readinessSubscores, readinessRecoText, RECOVERY_COMPONENTS } = require('./lib/readiness-i18n.js');
-const { deloadWarranted, recoveryBackedDays } = require('./lib/readiness-week.js');
+const { deloadWarranted, recoveryBackedDays, recoveryBacked } = require('./lib/readiness-week.js');
 const { suggestLoad } = require('./lib/load-progression.js');
+const { briefFor } = require('./lib/assistant-brief.js');
 const A = '11111111-1111-1111-1111-111111111111';
 const TZ = process.env.TZ;
 const out = { cases: [] };
@@ -806,7 +1175,7 @@ const add = (label, ok, why) => out.cases.push({ label, ok, why });
     "INSERT INTO workout_sessions (user_id,date_time,volume_load,session_rpe,sets,source) VALUES ($1,$2,3000,$3,$4,'manual')",
     [A, await at(day, '18:00'), rpe === undefined ? 8 : rpe, JSON.stringify([{ reps: reps === undefined ? 50 : reps, weight_kg: 60 }])]);
   const row = async (d) => (await q(
-    'SELECT readiness_score, readiness_status, readiness_explain, readiness_recommendation, acwr FROM daily_logs WHERE user_id=$1 AND date=$2', [A, d])).rows[0] || null;
+    'SELECT readiness_score, readiness_status, readiness_explain, readiness_recommendation, acwr, sleep_duration_min FROM daily_logs WHERE user_id=$1 AND date=$2', [A, d])).rows[0] || null;
 
   /*
     ── ORACLE ──
@@ -990,6 +1359,64 @@ const add = (label, ok, why) => out.cases.push({ label, ok, why });
       readiness: 'red', readinessExplain: f.logs[0].readiness_explain });
     add(label + ' · suggestLoad', (s.advice === 'hold') === mayAdvise,
       "advice='" + s.advice + "' explain=" + JSON.stringify(f.logs[0].readiness_explain) + ' đáng lẽ giữ=' + mayAdvise);
+  }
+
+  /*
+    ── the briefing, on rows a real recomputeDailyLog wrote ──
+
+    Sections 12-14 drive the wording rules directly. This drives the same
+    function over a stored row, so the fact it branches on has travelled the
+    whole way: engine → explain token → hasRecoverySignal → the sentence.
+  */
+  const RECOVERY_WORDS = /phục hồi|hồi phục|recover|recovery|mệt|kiệt sức|fatigue|flat|tired|rested/i;
+  const briefCase = async (label, build, mayClaim) => {
+    await wipe(); await build();
+    await recomputeDailyLog(A, D0);
+    const r = await row(D0);
+    const rec = hasRecoverySignal(r && r.readiness_explain);
+    const signal = {
+      name: '', daysSinceWorkout: 1,
+      readiness: r && r.readiness_score != null ? Math.round(Number(r.readiness_score)) : null,
+      status: (r && r.readiness_status) || null,
+      hasRecovery: rec,
+      acwr: r && r.acwr != null ? Number(r.acwr) : null,
+      sleepMin: Number(r && r.sleep_duration_min) || 0,
+      kcal: 0, kcalTarget: 2200, proteinG: 0, proteinTarget: 150, steps: 0,
+    };
+    const line = briefFor(signal, 9, true).lines.find((l) => l.key === 'readiness');
+    const lineEn = briefFor(signal, 9, false).lines.find((l) => l.key === 'readiness');
+    const claims = line != null && (RECOVERY_WORDS.test(line.text.vi) || RECOVERY_WORDS.test(lineEn.text.en));
+    add('tóm tắt đầu-cuối · ' + label,
+      line != null && claims === mayClaim && rec === mayClaim,
+      'explain=' + JSON.stringify(r && r.readiness_explain) + ' phục hồi=' + rec +
+      ' câu=' + JSON.stringify(line && line.text.vi) + ' nói-phục-hồi=' + claims + ' đáng lẽ=' + mayClaim);
+    return r;
+  };
+  await briefCase('đỏ CHỈ từ tải tập', async () => {
+    for (let k = 8; k <= 27; k++) await lifted(await shift(D0, -k), 9, 120);
+    await lifted(await shift(D0, -6), 6, 5);
+  }, false);
+  await briefCase('xanh CHỈ từ tải tập', async () => {
+    for (let k = 0; k < 28; k++) await lifted(await shift(D0, -k), 7, 40);
+  }, false);
+  await briefCase('đỏ từ giấc ngủ', async () => {
+    for (let k = 0; k <= 6; k++) await night(await shift(D0, -k), 150);
+  }, true);
+  await briefCase('đỏ từ sinh trắc', async () => {
+    for (let k = 3; k <= 12; k++) await bio(await shift(D0, -k), 52, 60);
+    for (const k of [0, 1, 2]) await bio(await shift(D0, -k), 95, 20);
+  }, true);
+
+  /* the load-only red's recommendation, end to end */
+  {
+    await wipe();
+    for (let k = 8; k <= 27; k++) await lifted(await shift(D0, -k), 9, 120);
+    await lifted(await shift(D0, -6), 6, 5);
+    await recomputeDailyLog(A, D0);
+    const r = await row(D0);
+    add('khuyến nghị đầu-cuối · đỏ CHỈ từ tải không kê phục hồi',
+      r != null && r.readiness_status === 'red' && r.readiness_recommendation === 'red_load_only',
+      'khoá=' + (r && r.readiness_recommendation) + ' explain=' + JSON.stringify(r && r.readiness_explain));
   }
 
   /* ══ suggestLoad · the branches that must not move ══ */

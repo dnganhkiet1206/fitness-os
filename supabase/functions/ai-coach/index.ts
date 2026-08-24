@@ -143,6 +143,34 @@ serve(async (req) => {
           .join("\n")
       : null;
 
+    /*
+      Did this day's readiness rest on a measurement of *recovery*?
+
+      ── why the function is here and not imported ──
+
+      This runs on Deno and cannot import from `native/src`, so the rule exists
+      twice by force. `tools/readiness-confidence.mjs` extracts the source of
+      this exact const, transpiles it beside the native `hasRecoverySignal`, and
+      drives BOTH over the same inputs — the same shape Chain AC used for
+      `nutritionMean`. A drift shows up as a behavioural mismatch rather than as
+      a comment claiming they agree. Block-bodied deliberately: Chain AC lost a
+      round to an extraction regex over-running an expression-bodied arrow.
+
+      ── why a boolean and not the token ──
+
+      The model needs one fact — whether recovery was read — to avoid asserting
+      a recovery failure the app never measured. The token also carries every
+      sub-score, which is a second copy of numbers already in the payload and a
+      new thing for the model to misquote.
+    */
+    const recoveryMeasured = (explain: string | null | undefined): boolean => {
+      if (!explain) return false;
+      return explain.split("|").some((p) => {
+        const [key, scoreStr] = p.split(":");
+        return (key === "hrv" || key === "rhr" || key === "sleep") && !Number.isNaN(Number(scoreStr));
+      });
+    };
+
     // Build context
     const ctx = {
       profile: profile ? {
@@ -164,6 +192,7 @@ serve(async (req) => {
         fat_g: d.fat_g,
         readiness: d.readiness_score,
         readiness_status: d.readiness_status,
+        recovery_measured: recoveryMeasured(d.readiness_explain),
       })),
       /*
         `total_min` is the number this list existed to carry and did not.
@@ -219,14 +248,16 @@ Use these so you do not ask again what they have already answered. Do not repeat
 READING THE DATA:
 - A field that is null or missing was NOT MEASURED. It is not a zero and not a reading of nothing. Never say or imply the user slept no hours, has no heart-rate variability, did no training or ate nothing because a field is null — say the app has no reading for it, or leave it out.
 - total_min is how long a night lasted. deep_min, rem_min and light_min are 0 on any night the user typed in by hand rather than synced from a watch; zeroes there mean the stages are unknown, not that the stages did not happen.
-- readiness is 0-100 and is absent on days the app could not score.
+- readiness is 0-100 and is absent on days the app could not score. It measures how much TRAINING CAPACITY the user appears to have today, combining HRV, resting heart rate, sleep and training load over whichever of those were actually measured. It is NOT a recovery score.
+- recovery_measured says whether that day's readiness rested on a recovery reading (HRV, resting heart rate or sleep). When it is false the score came from training load alone: the number is real, but nothing about how the user recovered was measured.
 
 IMPORTANT PRINCIPLES:
 - NEVER predict, diagnose or detect any health condition or illness
 - NEVER give medical advice or act as a substitute for a doctor in any way
 - ONLY suggest simple lifestyle habits that ordinary people know but forget (drink water, sleep enough, eat enough protein, rest after training, etc.)
 - Use the user's real data for personalized reminders
-- If there are pain flags or low readiness, only advise reducing load and resting — do NOT speculate on medical causes
+- Low readiness means lower training capacity today, NOT that the user is poorly recovered. Recovery advice is appropriate only when recovery_measured is true and the recovery readings themselves point that way; when recovery_measured is false, never say or imply the user is tired, fatigued, under-recovered or has not recovered — the app did not measure it. Low readiness from training load alone may still justify conservative load advice, described as load rather than as fatigue
+- If there are pain flags, only advise reducing load and resting — do NOT speculate on medical causes
 - Use markdown formatting for clarity
 - Always end with a reminder: see a doctor if you have any health concerns`
       : `Bạn là AI hỗ trợ theo dõi fitness, dinh dưỡng và phục hồi. Trả lời bằng tiếng Việt, ngắn gọn, thực tế và dựa trên dữ liệu.
@@ -243,14 +274,16 @@ Dùng để không hỏi lại thứ họ đã trả lời. Đừng đọc lại
 CÁCH ĐỌC DỮ LIỆU:
 - Trường nào là null hoặc không có nghĩa là CHƯA ĐO ĐƯỢC. Đó không phải số 0, cũng không phải phép đo ra không. Tuyệt đối không nói hay ám chỉ người dùng không ngủ, không có biến thiên nhịp tim, không tập, hay không ăn gì chỉ vì trường đó null — hãy nói app không có số liệu, hoặc bỏ qua.
 - total_min là độ dài của đêm đó. deep_min, rem_min, light_min bằng 0 với mọi đêm người dùng tự gõ tay thay vì đồng bộ từ đồng hồ; số 0 ở đó nghĩa là không biết các giai đoạn, không phải là các giai đoạn đó không xảy ra.
-- readiness thang 0-100, và vắng mặt vào những ngày app không chấm được điểm.
+- readiness thang 0-100, và vắng mặt vào những ngày app không chấm được điểm. Nó đo KHẢ NĂNG TẬP LUYỆN hôm nay, ghép HRV, nhịp tim nghỉ, giấc ngủ và tải tập trên những chiều thật sự đo được. Nó KHÔNG phải điểm phục hồi.
+- recovery_measured cho biết điểm hôm đó có dựa trên một phép đo phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Khi nó là false, điểm được dựng từ mỗi tải tập: con số vẫn thật, nhưng app chưa đo được gì về việc người dùng phục hồi ra sao.
 
 NGUYÊN TẮC QUAN TRỌNG:
 - KHÔNG BAO GIỜ dự đoán, chẩn đoán hay phát hiện bất kỳ tình trạng sức khoẻ, bệnh lý nào
 - KHÔNG đưa ra lời khuyên y tế hoặc thay thế bác sĩ dưới bất kỳ hình thức nào
 - CHỈ gợi ý những thói quen sinh hoạt đơn giản mà người bình thường đều biết nhưng hay quên (uống nước, ngủ đủ giấc, ăn đủ protein, nghỉ ngơi sau tập, v.v.)
 - Dựa trên dữ liệu thực của người dùng để nhắc nhở cá nhân hóa
-- Nếu có pain flags hoặc readiness thấp, chỉ khuyên giảm tải và nghỉ ngơi, KHÔNG suy đoán nguyên nhân y tế
+- Readiness thấp nghĩa là khả năng tập hôm nay thấp hơn, KHÔNG phải là người dùng chưa phục hồi. Chỉ khuyên về phục hồi khi recovery_measured là true và chính các chỉ số phục hồi nói vậy; khi recovery_measured là false, tuyệt đối không nói hay ám chỉ người dùng đang mệt, kiệt sức, chưa hồi hay hồi phục kém — app KHÔNG đo được điều đó. Readiness thấp chỉ do tải tập vẫn có thể dẫn tới lời khuyên giữ tải thận trọng, nhưng phải nói theo TẢI TẬP chứ không nói theo mệt mỏi
+- Nếu có pain flags, chỉ khuyên giảm tải và nghỉ ngơi, KHÔNG suy đoán nguyên nhân y tế
 - Sử dụng markdown formatting cho rõ ràng
 - Luôn kết thúc với nhắc nhở: nếu có vấn đề sức khoẻ hãy gặp bác sĩ`;
 

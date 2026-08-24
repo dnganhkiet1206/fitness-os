@@ -140,15 +140,45 @@ function facts(s: AssistantSignal, vi: boolean): BriefLine[] {
   }
 
   // ── today's state ──
+  /*
+    ── the same status, and two different things it can mean ──
+
+    This read the status straight into a sentence about the person's body:
+    red became *"Hôm nay cơ thể bạn chưa phục hồi hẳn." / "Your body has not
+    fully recovered today."* — a flat factual claim, in the app's own voice,
+    about how somebody recovered.
+
+    Readiness is composite **training capacity**, and training load is a full
+    dimension of it, so that red can be built from training load and nothing
+    else. Measured on PostgreSQL 16.13, in all six timezones:
+
+        45 · red · acwr 0.01 · explain "load:45"
+        → "Your body has not fully recovered today."
+
+    ACWR **0.01** — that person had barely trained, and the app had never read
+    their sleep, HRV or resting heart rate. It asserted a recovery failure it
+    had no measurement of, two lines above *"Bạn đã nghỉ tập 6 ngày."*
+
+    So the sentence splits by what was actually read. With a recovery signal it
+    is the sentence it always was, unchanged. Without one it says the true
+    thing instead — capacity, which is what the score measures either way — and
+    it is still a real briefing line rather than a hole where one used to be.
+    `hasRecovery` comes from `hasRecoverySignal`; nothing here decides it.
+  */
   if (s.status) {
     state.push({
       key: 'readiness',
-      text:
-        s.status === 'green'
+      text: s.hasRecovery
+        ? s.status === 'green'
           ? { vi: 'Hôm nay cơ thể bạn phục hồi tốt.', en: 'Your recovery looks good today.' }
           : s.status === 'yellow'
             ? { vi: 'Hôm nay bạn phục hồi ở mức vừa phải.', en: 'Your recovery is middling today.' }
-            : { vi: 'Hôm nay cơ thể bạn chưa phục hồi hẳn.', en: 'Your body has not fully recovered today.' },
+            : { vi: 'Hôm nay cơ thể bạn chưa phục hồi hẳn.', en: 'Your body has not fully recovered today.' }
+        : s.status === 'green'
+          ? { vi: 'Hôm nay khả năng tập của bạn đang tốt.', en: 'Your training capacity looks good today.' }
+          : s.status === 'yellow'
+            ? { vi: 'Hôm nay khả năng tập của bạn ở mức vừa phải.', en: 'Your training capacity is middling today.' }
+            : { vi: 'Hôm nay khả năng tập của bạn đang thấp.', en: 'Your training capacity looks low today.' },
     });
   }
 

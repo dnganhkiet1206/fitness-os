@@ -68,6 +68,19 @@ export interface Suggestion {
 export interface AssistantSignal {
   readiness: number | null;
   status: 'green' | 'yellow' | 'red' | null;
+  /**
+   * Whether today's readiness rested on a measurement of *recovery* — sleep,
+   * HRV or resting heart rate — as opposed to training load alone.
+   *
+   * Readiness is composite training capacity, and training load is a full
+   * dimension of it, so a red or a green can be built from load and nothing
+   * else. `false` does not make the score less valid; it makes recovery
+   * wording unavailable, because nothing about recovery was read.
+   *
+   * Filled by `use-assistant-signal` from `hasRecoverySignal(readiness_explain)`
+   * — the one predicate. Never recomputed here.
+   */
+  hasRecovery: boolean;
   acwr: number | null;
   /** minutes; 0 means nothing was logged, which is not the same as no sleep */
   sleepMin: number;
@@ -120,7 +133,13 @@ function candidates(s: AssistantSignal): Suggestion[] {
       key: 'readiness-low',
       topic: 'readiness',
       glyph: 'gauge',
-      label: { vi: 'Vì sao tôi mệt?', en: 'Why am I flat?' },
+      /* Was *"Vì sao tôi mệt?" / "Why am I flat?"* — a chip that tells the
+         person they are tired. A red readiness can be built from training load
+         alone (measured: 45/red at ACWR 0.01, explain "load:45"), and fatigue
+         was then never measured. The question below already asks the neutral
+         thing — why the score is low — so only the label had to change, and it
+         stays true for a recovery-backed red as well. */
+      label: { vi: 'Vì sao điểm thấp?', en: 'Why is readiness low?' },
       question: s.readiness != null
         ? {
             vi: `Điểm sẵn sàng của tôi hôm nay là ${s.readiness}/100. Vì sao lại thấp và hôm nay tôi nên làm gì?`,
