@@ -1,22 +1,33 @@
 /**
- * That the hero deck says it can be swiped, and lands where it should.
+ * That the stacked hero deck occludes, and does not steal the page's scroll.
  *
- * ── the two failures this is built around ──
+ * ── every rule here is something a screenshot caught ──
  *
- * **A gesture nobody can see is a feature nobody has.** This screen has been
- * corrected on that twice already in its own comments — `today-meals.tsx`
- * refusing a swipe because "both are invisible until guessed", and the progress
- * strip on the routine card being rebuilt because a small outlined badge "read
- * as a huy hiệu" rather than a control. A deck whose pages fill the whole width
- * is a card that happens to be swipeable, which on a phone is a card that is
- * not. The sliver of the next card is what says otherwise; the pips alone
- * cannot, because a row of dots reads as decoration until something moves.
+ * **The stack did not hide anything.** `GlassCard` is translucent — that is the
+ * app's whole surface language — so cards laid on top of each other were not on
+ * top of anything: the activity rings and their numbers read straight through
+ * the readiness card, two sets of text in the same place, unreadable. `tsc` was
+ * clean and the geometry was right. Only the picture said so. A stacked card
+ * needs an opaque backing or it is not a stack.
+ *
+ * **The edges did not separate.** In the reference the cards behind are other
+ * colours and separate themselves. Here every card is the same dark surface, so
+ * the lift has to be tall enough to read as a card rather than as a thicker
+ * border, and the backing needs the hairline the rest of the app uses between
+ * surfaces.
  *
  * **A slot that changes height moves the page under your thumb.** The whole of
  * `widget-heights.ts` exists because swapping a 100pt placeholder for a 208pt
  * gauge did that once. Two hero cards became one deck, so the skeleton has one
  * block to draw — and if it still drew two, the fix would have re-created the
- * exact bug it was written for.
+ * exact bug it was written for. The deck's own measured height may only GROW,
+ * for the same reason: a card that renders short for a frame while its data
+ * lands would otherwise pull the deck up and drop everything below it.
+ *
+ * **A pan near the top of a long scroll must be earned.** Today is a tall
+ * vertical page. A pan that took the gesture on the first pixel would swallow
+ * every flick that happened to start on a card, so it has to travel sideways
+ * first and give up if the finger goes vertical.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -43,59 +54,103 @@ const code = (sql) =>
 const src = code(read(DECK));
 const problems = [];
 
-/* ── 1. the next card shows, and the snap accounts for it ── */
+const num = (name) => {
+  const m = src.match(new RegExp(`const ${name}\\s*=\\s*([0-9.]+)`));
+  return m ? Number(m[1]) : null;
+};
+
+/* ── 1. the stack occludes ── */
 {
-  const num = (name) => {
-    const m = src.match(new RegExp(`const ${name}\\s*=\\s*(\\d+)`));
-    return m ? Number(m[1]) : null;
-  };
-  const peek = num('PEEK');
-  const gap = num('GAP');
-  if (peek === null || gap === null) {
-    problems.push(`${DECK}: không đọc được PEEK/GAP`);
-  } else {
-    if (peek <= 0) {
+  const card = src.match(/card:\s*\{([\s\S]*?)\n  \}/);
+  if (!card) problems.push(`${DECK}: không tìm thấy style \`card\``);
+  else {
+    const body = card[1];
+    if (!/backgroundColor:\s*colors\.card/.test(body)) {
       problems.push(
-        `${DECK}: PEEK = ${peek} — trang rộng bằng cả deck thì không thấy thẻ kế bên, ` +
-          'và thứ duy nhất nói rằng vuốt được là chính cái mẩu thẻ đó',
+        `${DECK}: thẻ trong stack không có nền ĐỤC — GlassCard trong suốt, nên thẻ sau sẽ đọc ` +
+          'xuyên qua thẻ trước. Ảnh chụp đã cho thấy hai lớp chữ chồng lên nhau, không đọc được',
       );
     }
-    if (peek < 12) {
-      problems.push(`${DECK}: PEEK = ${peek} quá mỏng để đọc ra là một thẻ khác chứ không phải viền`);
+    if (!/overflow:\s*'hidden'/.test(body) || !/borderRadius:/.test(body)) {
+      problems.push(`${DECK}: nền đục không được bo + clip theo bán kính thẻ — góc vuông sẽ thò ra`);
+    }
+    if (!/borderWidth:/.test(body)) {
+      problems.push(
+        `${DECK}: nền không có hairline — hai mép xếp chồng cùng màu sẽ dính thành một viền dày`,
+      );
     }
   }
-  /* The width the finger travels per page must be the page plus the gap. Snap
-     on the page alone and every card lands one gap further left than the last —
-     a drift that looks fine on page two and broken on page five. */
-  if (!/const step = pageW \+ GAP;/.test(src)) {
-    problems.push(`${DECK}: bước snap không phải pageW + GAP — trang sau sẽ lệch dần mỗi lần vuốt`);
-  }
-  if (!/snapToInterval=\{step/.test(src)) {
-    problems.push(`${DECK}: ScrollView không dùng snapToInterval={step}`);
-  }
-  if (/pagingEnabled/.test(src)) {
-    problems.push(
-      `${DECK}: dùng pagingEnabled — nó snap đúng bằng bề rộng ScrollView, tức là bề rộng ` +
-        'DUY NHẤT không dùng được ở đây, vì phần chênh chính là chỗ thẻ kế bên hiện ra',
-    );
+  if (!/position:\s*'absolute'/.test(src)) {
+    problems.push(`${DECK}: thẻ không xếp chồng (thiếu position: absolute) — đây là stack, không phải danh sách`);
   }
 }
 
-/* ── 2. the pips follow the finger ──
-
-   An indicator driven by a settled page index reports the OUTCOME of a gesture;
-   one driven by the offset reports the gesture. `swipe-row.tsx` made the same
-   call and wrote down why — only the second reads as direct manipulation. */
+/* ── 2. depth reads, and stays cheap ── */
 {
-  if (!/useAnimatedScrollHandler/.test(src)) {
-    problems.push(`${DECK}: không có useAnimatedScrollHandler — pip sẽ chạy theo trạng thái, trễ hơn ngón tay`);
+  const lift = num('LIFT');
+  const behind = num('BEHIND');
+  const shrink = num('SHRINK');
+  if (lift === null || behind === null || shrink === null) {
+    problems.push(`${DECK}: không đọc được LIFT/BEHIND/SHRINK`);
+  } else {
+    if (lift < 12) {
+      problems.push(
+        `${DECK}: LIFT = ${lift} — mọi thẻ ở đây cùng một màu tối, nên mép ló ra phải đủ cao để đọc ` +
+          'ra là một THẺ chứ không phải một cái viền dày hơn (11 đã thử và ảnh nói là chưa đủ)',
+      );
+    }
+    if (behind > 3) {
+      problems.push(
+        `${DECK}: BEHIND = ${behind} — mép thứ tư không thêm thông tin nào, mà mỗi thẻ phía sau là ` +
+          'một thẻ THẬT đang được layout và vẽ',
+      );
+    }
+    if (shrink <= 0) {
+      problems.push(`${DECK}: SHRINK = ${shrink} — không thu nhỏ thì độ nâng đọc ra là danh sách, không phải chiều sâu`);
+    }
   }
-  const pip = src.slice(src.indexOf('function Pip'));
-  if (!/x\.value/.test(pip)) {
-    problems.push(`${DECK}: Pip không đọc x.value — nó đang chờ trang dừng lại rồi mới đổi`);
+}
+
+/* ── 3. the pan is earned, not taken ── */
+{
+  if (!/activeOffsetX/.test(src) || !/failOffsetY/.test(src)) {
+    problems.push(
+      `${DECK}: Pan thiếu activeOffsetX/failOffsetY — nó sẽ giành mọi cú vuốt bắt đầu trên thẻ, ` +
+        'kể cả cú cuộn dọc của cả trang',
+    );
   }
-  if (/useState[^\n]*page|setPage\(/.test(src)) {
-    problems.push(`${DECK}: có state trang — pip phải suy ra từ offset, không phải từ một chỉ số đã chốt`);
+  const hys = num('HYSTERESIS');
+  if (hys !== null && (hys < 8 || hys > 24)) {
+    problems.push(`${DECK}: HYSTERESIS = ${hys} nằm ngoài khoảng dùng được (8–24)`);
+  }
+  const commit = num('COMMIT');
+  if (commit !== null && (commit <= 0 || commit >= 1)) {
+    problems.push(`${DECK}: COMMIT = ${commit} phải là một phần của bề rộng deck (0 < x < 1)`);
+  }
+}
+
+/* ── 4. paint order comes from render order ──
+
+   Animating z-index would be a layout property changing on every frame of every
+   swipe, which is what `tools/motion.mjs` bans; the stack gets its order by
+   drawing the last page first instead. */
+{
+  if (/zIndex/.test(src)) {
+    problems.push(`${DECK}: dùng zIndex — thứ tự vẽ phải đến từ thứ tự render (.reverse()), không phải một thuộc tính layout đổi theo frame`);
+  }
+  if (!/\.reverse\(\)/.test(src)) {
+    problems.push(`${DECK}: không đảo thứ tự render — trang 0 sẽ nằm DƯỚI cùng thay vì trên cùng`);
+  }
+}
+
+/* ── 5. the measured height only grows ── */
+{
+  const grow = src.match(/measureH[\s\S]{0,240}/);
+  if (!grow || !/next > prev/.test(grow[0])) {
+    problems.push(
+      `${DECK}: chiều cao deck không phải chỉ-tăng — một thẻ render ngắn một frame trong lúc dữ liệu ` +
+        'về sẽ kéo cả deck lên và thả mọi thứ bên dưới xuống',
+    );
   }
 }
 
@@ -136,10 +191,14 @@ if (problems.length) {
 }
 
 console.log(
-  'deck thẻ OK — các thẻ ring ở đầu Today gom vào MỘT ô vuốt ngang: trang hẹp hơn deck nên thẻ ' +
-    'kế bên luôn ló ra (thứ duy nhất nói rằng vuốt được — một hàng chấm thì đọc ra là trang trí), ' +
-    'bước snap tính cả khoảng cách nên trang không lệch dần, không dùng pagingEnabled vốn snap ' +
-    'đúng bề rộng không dùng được ở đây, pip chạy theo OFFSET nên bám ngón tay chứ không đợi trang ' +
-    'dừng, và skeleton vẽ MỘT khối cho cả deck — vẽ hai khối ở chỗ sắp hiện một deck chính là cú ' +
-    'nhảy trang mà widget-heights.ts tồn tại để chặn. Không key mới trong WidgetKey, không migration',
+  'deck thẻ OK — các thẻ ring ở đầu Today XẾP CHỒNG: mỗi thẻ có nền ĐỤC nên nó che được thẻ sau ' +
+    '(GlassCard trong suốt, và ảnh chụp đã cho thấy hai lớp chữ đọc xuyên qua nhau khi thiếu nền ' +
+    'này — tsc sạch, hình học đúng, chỉ tấm ảnh nói ra); mép ló đủ cao để đọc ra là một THẺ chứ ' +
+    'không phải viền dày, có hairline để hai mép cùng màu không dính vào nhau, và chỉ 2 thẻ hiện ' +
+    'phía sau vì mép thứ tư không thêm thông tin mà vẫn tốn một lần layout; Pan phải đi ngang mới ' +
+    'giành quyền và bỏ cuộc nếu ngón tay đi dọc, nên nó không nuốt cú cuộn của cả trang; thứ tự vẽ ' +
+    'đến từ thứ tự render chứ không phải zIndex đổi theo frame; chiều cao deck chỉ TĂNG, nên một ' +
+    'thẻ render ngắn một frame không kéo cả trang lên; và skeleton vẽ MỘT khối cho cả deck — vẽ ' +
+    'hai khối ở chỗ sắp hiện một deck chính là cú nhảy trang mà widget-heights.ts tồn tại để chặn. ' +
+    'Không key mới trong WidgetKey, không migration',
 );
