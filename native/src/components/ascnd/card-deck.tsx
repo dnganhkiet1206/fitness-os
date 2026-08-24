@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BlurView } from 'expo-blur';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -9,68 +10,51 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { colors, glass, radius } from '@/constants/ascnd';
+import { colors, radius } from '@/constants/ascnd';
 
 /**
- * The ring cards as a deck you deal through, not a row you scroll.
+ * The ring cards, one at a time, swiped between — and the page's colour comes
+ * with them.
  *
- * ── what the reference actually shows ──
+ * ── what this stopped being, and why ──
  *
- * The first version of this was a horizontal carousel: pages side by side, the
- * next one peeking at the right edge. It worked, and it was the wrong shape.
- * The picture it was meant to match has the cards LAYERED — each one behind the
- * front card and lifted a little above it, so you see three top edges before
- * you see anything else. A carousel says "there is more, to the right"; a stack
- * says "these are the same kind of thing, and there are three of them", which
- * is what a group of rings is.
+ * It was a STACK: cards layered, each lifted above the one in front, edges
+ * peeking. That was read off an App Store montage, and it cost something the
+ * screenshots then measured. A stack has to occlude — a card must hide the ones
+ * behind it — so every card needed an opaque backing. With the deck moved to
+ * the top of Today and the readiness aura behind it, that backing covered the
+ * aura: measured on the shipped build, the day's colour survived in a 55px
+ * strip above the card and everything below it was `rgb(44,44,46)`, flat grey.
  *
- * ── why the stack solves what the carousel could not ──
+ * An opaque card and a coloured page are exclusive. The reference has the ring
+ * ON the colour, so the cards are separate pages now — side by side, clipped,
+ * never overlapping. Nothing needs to hide anything, so nothing needs to be
+ * opaque, so the aura reaches the glass.
  *
- * The carousel had a gap nothing could hide: the deck was as tall as the
- * tallest page, so a shorter card ended partway down and left background under
- * it. Cards were tried top-aligned and centred, photographed both ways, and
- * both read as a card that failed to fill its space.
+ * ── the colour follows the swipe ──
  *
- * Stacked, the slack is not empty any more — it is where the other cards are.
- * The lift zone at the top holds the edges of the cards behind, and the front
- * card sits under them at its own height. Nothing is stretched, nothing floats.
+ * `progress` is owned by the caller, not by this component. That is the whole
+ * mechanism: Today creates it, hands it here, and reads it to cross-fade one
+ * aura layer per page. The alternative — an `onPage` callback firing when the
+ * swipe settles — would change the background AFTER the card had arrived, and
+ * a background that catches up is worse than one that does not move.
  *
  * ── the gesture ──
  *
- * `Gesture.Pan` rather than a ScrollView, and `swipe-row.tsx` explains why that
- * is normally the wrong call — it means owning the conflict with the vertical
- * scroll rather than getting it for free. It is right here because a stack has
- * no scrollable content: the cards are in one place, on top of each other, and
- * there is no offset for a scroll view to hold. The conflict is handled the way
- * the platform does it, by direction: the pan has to travel sideways before it
- * activates, and it gives up entirely if the finger goes vertical first.
- */
-
-/**
- * How far each card behind rises above the one in front of it.
+ * `Gesture.Pan` rather than a scroll view. `swipe-row.tsx` explains why that is
+ * normally the wrong call — it means owning the conflict with the vertical
+ * scroll rather than getting it for free — and it is right here because these
+ * pages are absolutely positioned in one clipped box, so there is no scrollable
+ * content for a scroll view to hold. The conflict is handled the way the
+ * platform does it, by direction: the pan must travel sideways before it
+ * activates and gives up entirely if the finger goes vertical first.
  *
- * 11 first, and the screenshot said it was not enough: every card here is the
- * same dark surface, so unlike the reference — where the cards behind are other
- * COLOURS and separate themselves — the only thing distinguishing one edge from
- * the next is the sliver itself. 15 gives each edge enough height to read as a
- * card rather than as a thicker border, and two of them still cost only 30pt.
+ * And this needs `GestureHandlerRootView` at the app root or it throws on
+ * mount. `tools/gesture-root.mjs` is the rule; it exists because the web
+ * screenshot runner cannot see that crash.
  */
-const LIFT = 15;
 
-/** And how much narrower it is, so the lift reads as depth and not as a list. */
-const SHRINK = 0.045;
-
-/**
- * Two visible behind, however many pages there are.
- *
- * A fourth edge adds no information — it is the same sliver again — and every
- * card behind is a real card being laid out and drawn. The ones past this are
- * parked in the same place as the last visible one and faded out, so a deck of
- * six costs the same on screen as a deck of three.
- */
-const BEHIND = 2;
-
-/** Past this fraction of the deck's width, the release commits to the next card. */
+/** Past this fraction of the deck's width, the release commits to the next page. */
 const COMMIT = 0.28;
 
 /** Sideways travel before the pan takes the gesture from the page's scroll. */
@@ -78,21 +62,26 @@ const HYSTERESIS = 12;
 
 const DOT = 6;
 
-export function CardDeck({ children }: { children: React.ReactNode[] }) {
+export function CardDeck({
+  children,
+  progress,
+}: {
+  children: React.ReactNode[];
+  /** Where the deck is, as a float index. Pass one in to drive something else
+   *  from the same swipe — Today drives the background colour off it. */
+  progress?: SharedValue<number>;
+}) {
   const pages = children.filter(Boolean);
   const [w, setW] = useState(0);
   const [h, setH] = useState(0);
 
-  /** Where the deck is, as a float index — 1.4 means "between the second and third". */
-  const at = useSharedValue(0);
+  const own = useSharedValue(0);
+  const at = progress ?? own;
   const from = useSharedValue(0);
 
   const last = pages.length - 1;
 
   const pan = Gesture.Pan()
-    /* Sideways only, and only after it has meant it. Today is a long vertical
-       scroll and this sits near the top of it, so a pan that grabbed on the
-       first pixel would steal every flick that started on a card. */
     .activeOffsetX([-HYSTERESIS, HYSTERESIS])
     .failOffsetY([-HYSTERESIS, HYSTERESIS])
     .onBegin(() => {
@@ -101,8 +90,8 @@ export function CardDeck({ children }: { children: React.ReactNode[] }) {
     .onUpdate((e) => {
       const span = w > 0 ? w : 1;
       const next = from.value - e.translationX / span;
-      /* Clamped with a soft edge: past either end the card still moves, a
-         third as far, so the deck answers the finger instead of feeling stuck. */
+      /* Soft past either end: the page still moves, a third as far, so the deck
+         answers the finger instead of feeling stuck. */
       at.value = next < 0 ? next / 3 : next > last ? last + (next - last) / 3 : next;
     })
     .onEnd((e) => {
@@ -119,9 +108,9 @@ export function CardDeck({ children }: { children: React.ReactNode[] }) {
     setW((prev) => (Math.abs(prev - next) < 1 ? prev : next));
   };
 
-  /* The tallest card sets the deck's height, and it only ever grows: a card
-     that briefly renders short while its data lands would otherwise pull the
-     whole deck up and drop the page below it. */
+  /* The tallest page sets the height, and it only ever grows: a card that
+     renders short for a frame while its data lands would otherwise pull the
+     deck up and drop everything below it. */
   const measureH = (e: LayoutChangeEvent) => {
     const next = e.nativeEvent.layout.height;
     setH((prev) => (next > prev + 0.5 ? next : prev));
@@ -129,28 +118,19 @@ export function CardDeck({ children }: { children: React.ReactNode[] }) {
 
   if (pages.length === 0) return null;
 
-  /* One card is not a deck. No gesture, no pips, no lift zone reserved above a
-     stack that does not exist. */
+  /* One page is not a deck: no gesture, no pips, no clipped box around a
+     carousel that cannot move. */
   if (pages.length === 1) return <>{pages[0]}</>;
-
-  const lift = LIFT * BEHIND;
 
   return (
     <View onLayout={measureW}>
       <GestureDetector gesture={pan}>
-        <View style={[styles.stage, h > 0 ? { height: h + lift } : null]}>
-          {/* Painted back-to-front: the last page is drawn first so the first
-              page ends up on top, which is what an index of 0 should mean.
-              Doing it with z-index instead would be an animated layout property
-              on every frame of every swipe. */}
-          {pages
-            .map((node, i) => ({ node, i }))
-            .reverse()
-            .map(({ node, i }) => (
-              <Card key={i} index={i} at={at} width={w} top={lift} onHeight={measureH}>
-                {node}
-              </Card>
-            ))}
+        <View style={[styles.stage, h > 0 ? { height: h } : null]}>
+          {pages.map((node, i) => (
+            <Page key={i} index={i} at={at} width={w} onHeight={measureH}>
+              {node}
+            </Page>
+          ))}
         </View>
       </GestureDetector>
 
@@ -163,63 +143,46 @@ export function CardDeck({ children }: { children: React.ReactNode[] }) {
   );
 }
 
-/**
- * One card in the stack.
- *
- * `d` is how far behind the front this card is: 0 is the one you are reading, 1
- * and 2 are the edges above it, and a negative `d` is a card you have already
- * swiped past, which leaves to the left.
- */
-function Card({
+/** One page, parked a full deck-width away for every step it is from the front. */
+function Page({
   index,
   at,
   width,
-  top,
   onHeight,
   children,
 }: {
   index: number;
   at: SharedValue<number>;
   width: number;
-  top: number;
   onHeight: (e: LayoutChangeEvent) => void;
   children: React.ReactNode;
 }) {
-  const style = useAnimatedStyle(() => {
-    const d = index - at.value;
-
-    if (d < 0) {
-      /* Gone forward. It slides out to the left and fades, and it keeps
-         travelling a little past the edge so the corner does not sit visible
-         against the screen border. */
-      return {
-        opacity: Math.max(0, 1 + d * 1.6),
-        transform: [{ translateX: d * (width || 1) * 1.05 }, { translateY: 0 }, { scale: 1 }],
-      };
-    }
-
-    /* Behind. Capped so a deck of six looks like a deck of three: everything
-       past the last visible slot is parked there and faded out. */
-    const depth = Math.min(d, BEHIND);
-    return {
-      opacity: interpolate(d, [BEHIND, BEHIND + 1], [1, 0], 'clamp'),
-      transform: [
-        { translateX: 0 },
-        { translateY: -depth * LIFT },
-        { scale: 1 - depth * SHRINK },
-      ],
-    };
-  });
-
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateX: (index - at.value) * (width || 1) }],
+  }));
   return (
-    <Animated.View style={[styles.card, { top }, style]}>
+    <Animated.View style={[styles.page, style]}>
+      {/*
+        Một dải kính PHẲNG, không phải một cái thẻ.
+
+        `LiquidGlass` có viền và một mặt sáng chéo — đó là thứ làm một tấm kính
+        trông NỔI LÊN khỏi trang, và ở đây hero không nổi lên khỏi trang: nó
+        chạm hai mép và là phần trên cùng của chính trang đó. Nên chỉ có
+        `BlurView` trần: không viền, không bo góc, không gradient bắt sáng.
+
+        Blur chứ không phải một lớp phủ mờ, vì thứ nằm sau nó là aura có MÀU và
+        màu đó đổi khi bạn vuốt. `liquid-glass.tsx` đã đo chuyện này: "a flat
+        white fill over moving colour is a sheet of tracing paper: the light
+        goes under it and nothing comes through."
+      */}
+      <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
       <View onLayout={onHeight}>{children}</View>
     </Animated.View>
   );
 }
 
 /**
- * One pip, brightening and stepping forward as its card arrives — NOT widening.
+ * One pip, brightening and stepping forward as its page arrives — NOT widening.
  *
  * The word matters because widening is what a first draft did and what
  * `tools/motion.mjs` refused: an animated `width` is a layout property running
@@ -240,41 +203,11 @@ function Pip({ index, at }: { index: number; at: SharedValue<number> }) {
 }
 
 const styles = StyleSheet.create({
-  /* The stage reserves the lift zone at the top; the front card starts below it
-     and the cards behind rise into it. Without the reservation the top edges
-     would be clipped by whatever sits above the deck. */
-  stage: { position: 'relative' },
-  /*
-    Each card carries an OPAQUE backing, and without it the stack does not work
-    at all.
-
-    `GlassCard` is translucent by design — that is the whole surface language of
-    this app. Stacked, that meant the card behind was not behind anything: the
-    activity rings and their numbers read straight through the readiness card
-    sitting on top of them, two sets of text in the same place. The screenshot
-    was unreadable.
-
-    So the slot under each card is filled with the page's own card colour, at
-    the same radius, and clipped to it. The glass still does its job against
-    that backing — it is the same colour the card would have been sitting on
-    anyway — and a card now hides the ones behind it, which is the one thing a
-    stack has to do.
-  */
-  card: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    backgroundColor: colors.card,
-    borderRadius: glass.radius,
-    overflow: 'hidden',
-    /* The line that separates one edge from the next. The glass card inside
-       draws its own border, but it is drawn against the card behind rather than
-       against the page, and at that contrast two stacked edges merge into one
-       thick one. This is the same hairline the rest of the app uses for the
-       boundary between surfaces. */
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glass.border,
-  },
+  /* Clipped, and that is what replaces the opaque backing the stack needed: a
+     page one step away sits a full width to the side and is simply cut off, so
+     no card has to paint over another and none of them has to be solid. */
+  stage: { position: 'relative', overflow: 'hidden' },
+  page: { position: 'absolute', left: 0, right: 0, top: 0 },
   pips: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, paddingTop: 12 },
   pip: { width: DOT, height: DOT, borderRadius: radius.full, backgroundColor: colors.foreground },
 });

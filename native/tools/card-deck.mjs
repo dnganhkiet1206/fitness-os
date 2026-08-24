@@ -1,34 +1,29 @@
 /**
- * That the stacked hero deck occludes, and does not steal the page's scroll.
+ * That the deck's pages stay separate, and that the page's colour comes with
+ * them.
  *
- * ── every rule here is something a screenshot caught ──
+ * ── the measurement that decided the design ──
  *
- * **The stack did not hide anything.** `GlassCard` is translucent — that is the
- * app's whole surface language — so cards laid on top of each other were not on
- * top of anything: the activity rings and their numbers read straight through
- * the readiness card, two sets of text in the same place, unreadable. `tsc` was
- * clean and the geometry was right. Only the picture said so. A stacked card
- * needs an opaque backing or it is not a stack.
+ * This was a stack: cards layered, each hiding the ones behind, which meant
+ * every card needed an opaque backing. Once the deck moved to the top of Today
+ * with the readiness aura behind it, that backing covered the aura. Measured on
+ * the shipped build: the day's colour survived in a 55px strip above the card,
+ * and from y=150 down the page read `rgb(44,44,46)` — flat grey, R−B = −2, on
+ * an amber day.
  *
- * **The edges did not separate.** In the reference the cards behind are other
- * colours and separate themselves. Here every card is the same dark surface, so
- * the lift has to be tall enough to read as a card rather than as a thicker
- * border, and the backing needs the hairline the rest of the app uses between
- * surfaces.
+ * An opaque card and a coloured page are exclusive. So the pages are separate
+ * now, side by side and clipped: nothing has to hide anything, so nothing has
+ * to be opaque, so the colour reaches the glass. The rules below are what keeps
+ * that true.
  *
- * **A slot that changes height moves the page under your thumb.** The whole of
- * `widget-heights.ts` exists because swapping a 100pt placeholder for a 208pt
- * gauge did that once. Two hero cards became one deck, so the skeleton has one
- * block to draw — and if it still drew two, the fix would have re-created the
- * exact bug it was written for. The deck's own measured height may only GROW,
- * for the same reason: a card that renders short for a frame while its data
- * lands would otherwise pull the deck up and drop everything below it.
+ * ── and the colour has to follow the finger ──
  *
- * **A pan near the top of a long scroll must be earned.** Today is a tall
- * vertical page. A pan that took the gesture on the first pixel would swallow
- * every flick that happened to start on a card, so it has to travel sideways
- * first and give up if the finger goes vertical.
+ * `progress` is owned by Today, not by the deck, so the background can be
+ * cross-faded from the same value that moves the pages. An `onPage` callback
+ * would change the colour after the swipe SETTLED, and a background that
+ * catches up is worse than one that never moved.
  */
+
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,16 +31,17 @@ import { fileURLToPath } from 'node:url';
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
 const DECK = 'src/components/ascnd/card-deck.tsx';
+
 /* Comments stripped before anything is judged.
 
-   The first run of this rule failed on its own documentation: the file explains
-   why `pagingEnabled` is wrong for a peeking deck, and the rule found that
-   sentence and reported the bug the sentence exists to prevent. Matching the
-   spelling of a thing instead of the thing — the same mistake, for the fourth
-   time in this repository, which is why it is now written into the helper
-   rather than remembered. */
-const code = (sql) =>
-  sql
+   The first run of an earlier version of this rule failed on its own
+   documentation: the file explained why a mechanism was wrong, and the rule
+   found that sentence and reported the bug the sentence exists to prevent.
+   Matching the spelling of a thing instead of the thing — the same mistake, for
+   the fourth time in this repository, which is why it lives in the helper
+   rather than in someone's memory. */
+const code = (t) =>
+  t
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .split('\n')
     .map((l) => l.replace(/(^|\s)\/\/.*$/, '$1'))
@@ -59,55 +55,42 @@ const num = (name) => {
   return m ? Number(m[1]) : null;
 };
 
-/* ── 1. the stack occludes ── */
+/* ── 1. pages are separated by CLIPPING, not by paint ── */
 {
-  const card = src.match(/card:\s*\{([\s\S]*?)\n  \}/);
-  if (!card) problems.push(`${DECK}: không tìm thấy style \`card\``);
-  else {
-    const body = card[1];
-    if (!/backgroundColor:\s*colors\.card/.test(body)) {
-      problems.push(
-        `${DECK}: thẻ trong stack không có nền ĐỤC — GlassCard trong suốt, nên thẻ sau sẽ đọc ` +
-          'xuyên qua thẻ trước. Ảnh chụp đã cho thấy hai lớp chữ chồng lên nhau, không đọc được',
-      );
-    }
-    if (!/overflow:\s*'hidden'/.test(body) || !/borderRadius:/.test(body)) {
-      problems.push(`${DECK}: nền đục không được bo + clip theo bán kính thẻ — góc vuông sẽ thò ra`);
-    }
-    if (!/borderWidth:/.test(body)) {
-      problems.push(
-        `${DECK}: nền không có hairline — hai mép xếp chồng cùng màu sẽ dính thành một viền dày`,
-      );
-    }
+  const stage = src.match(/stage:\s*\{([^}]*)\}/);
+  if (!stage || !/overflow:\s*'hidden'/.test(stage[1])) {
+    problems.push(
+      `${DECK}: sân khấu không clip — trang kế bên nằm cách một bề rộng sẽ tràn ra ngoài thay vì ` +
+        'bị cắt, và khi đó trang này lại phải TÔ ĐÈ lên trang kia',
+    );
+  }
+  if (/backgroundColor:\s*colors\.card/.test(src)) {
+    problems.push(
+      `${DECK}: thẻ có nền ĐỤC — đã đo trên bản ship: nó phủ mất lớp aura, trang đọc ra ` +
+        'rgb(44,44,46) từ y=150 xuống, R−B = −2 trong một ngày hổ phách. Thẻ đục và nền có màu ' +
+        'là hai thứ loại trừ nhau',
+    );
   }
   if (!/position:\s*'absolute'/.test(src)) {
-    problems.push(`${DECK}: thẻ không xếp chồng (thiếu position: absolute) — đây là stack, không phải danh sách`);
+    problems.push(`${DECK}: trang không xếp tuyệt đối — chúng sẽ nằm nối tiếp nhau theo chiều dọc`);
   }
 }
 
-/* ── 2. depth reads, and stays cheap ── */
+/* ── 2. màu nền chạy theo cùng một giá trị với các trang ── */
 {
-  const lift = num('LIFT');
-  const behind = num('BEHIND');
-  const shrink = num('SHRINK');
-  if (lift === null || behind === null || shrink === null) {
-    problems.push(`${DECK}: không đọc được LIFT/BEHIND/SHRINK`);
-  } else {
-    if (lift < 12) {
-      problems.push(
-        `${DECK}: LIFT = ${lift} — mọi thẻ ở đây cùng một màu tối, nên mép ló ra phải đủ cao để đọc ` +
-          'ra là một THẺ chứ không phải một cái viền dày hơn (11 đã thử và ảnh nói là chưa đủ)',
-      );
-    }
-    if (behind > 3) {
-      problems.push(
-        `${DECK}: BEHIND = ${behind} — mép thứ tư không thêm thông tin nào, mà mỗi thẻ phía sau là ` +
-          'một thẻ THẬT đang được layout và vẽ',
-      );
-    }
-    if (shrink <= 0) {
-      problems.push(`${DECK}: SHRINK = ${shrink} — không thu nhỏ thì độ nâng đọc ra là danh sách, không phải chiều sâu`);
-    }
+  if (!/progress\?:\s*SharedValue<number>/.test(src)) {
+    problems.push(`${DECK}: không nhận \`progress\` từ bên ngoài — không gì khác có thể chạy theo cú vuốt`);
+  }
+  if (!/const at = progress \?\? own/.test(src)) {
+    problems.push(`${DECK}: không dùng giá trị được truyền vào — deck và nền sẽ đi theo hai con số khác nhau`);
+  }
+  const today = code(read('src/app/(tabs)/index.tsx'));
+  if (!/<CardDeck progress=\{deckAt\}/.test(today)) {
+    problems.push('index.tsx: không truyền deckAt vào CardDeck — nền sẽ đứng yên khi vuốt');
+  }
+  const auraBlock = today.slice(today.indexOf('heroTints.length > 1'), today.indexOf('heroTints.length > 1') + 400);
+  if (!/AuraLayer[\s\S]*at=\{deckAt\}/.test(auraBlock)) {
+    problems.push('index.tsx: lớp nền không đọc deckAt — màu sẽ NHẢY khi cú vuốt dừng thay vì bám ngón tay');
   }
 }
 
@@ -129,17 +112,10 @@ const num = (name) => {
   }
 }
 
-/* ── 4. paint order comes from render order ──
-
-   Animating z-index would be a layout property changing on every frame of every
-   swipe, which is what `tools/motion.mjs` bans; the stack gets its order by
-   drawing the last page first instead. */
+/* ── 4. no animated layout property ── */
 {
   if (/zIndex/.test(src)) {
-    problems.push(`${DECK}: dùng zIndex — thứ tự vẽ phải đến từ thứ tự render (.reverse()), không phải một thuộc tính layout đổi theo frame`);
-  }
-  if (!/\.reverse\(\)/.test(src)) {
-    problems.push(`${DECK}: không đảo thứ tự render — trang 0 sẽ nằm DƯỚI cùng thay vì trên cùng`);
+    problems.push(`${DECK}: dùng zIndex — các trang không chồng nhau nữa nên không cần, và nó là thuộc tính layout`);
   }
 }
 
@@ -168,7 +144,7 @@ const num = (name) => {
   }
 
   const today = code(read('src/app/(tabs)/index.tsx'));
-  if (!/<CardDeck>/.test(today)) {
+  if (!/<CardDeck[\s>]/.test(today)) {
     problems.push('index.tsx: khu hero không dùng <CardDeck> — các thẻ ring lại xếp chồng');
   }
   /* One recording for the slot. Recording each hero again would leave keys the
@@ -178,7 +154,7 @@ const num = (name) => {
   if (!rec.includes('HERO_DECK')) {
     problems.push('index.tsx: không ghi lại chiều cao của deck dưới HERO_DECK');
   }
-  const heroInsideDeck = today.slice(today.indexOf('<CardDeck>'), today.indexOf('</CardDeck>'));
+  const heroInsideDeck = today.slice(today.indexOf('<CardDeck'), today.indexOf('</CardDeck>'));
   if (/recordHeight\(key/.test(heroInsideDeck)) {
     problems.push('index.tsx: vẫn ghi chiều cao TỪNG hero bên trong deck — skeleton không đọc các khoá đó nữa');
   }
@@ -191,14 +167,11 @@ if (problems.length) {
 }
 
 console.log(
-  'deck thẻ OK — các thẻ ring ở đầu Today XẾP CHỒNG: mỗi thẻ có nền ĐỤC nên nó che được thẻ sau ' +
-    '(GlassCard trong suốt, và ảnh chụp đã cho thấy hai lớp chữ đọc xuyên qua nhau khi thiếu nền ' +
-    'này — tsc sạch, hình học đúng, chỉ tấm ảnh nói ra); mép ló đủ cao để đọc ra là một THẺ chứ ' +
-    'không phải viền dày, có hairline để hai mép cùng màu không dính vào nhau, và chỉ 2 thẻ hiện ' +
-    'phía sau vì mép thứ tư không thêm thông tin mà vẫn tốn một lần layout; Pan phải đi ngang mới ' +
-    'giành quyền và bỏ cuộc nếu ngón tay đi dọc, nên nó không nuốt cú cuộn của cả trang; thứ tự vẽ ' +
-    'đến từ thứ tự render chứ không phải zIndex đổi theo frame; chiều cao deck chỉ TĂNG, nên một ' +
-    'thẻ render ngắn một frame không kéo cả trang lên; và skeleton vẽ MỘT khối cho cả deck — vẽ ' +
-    'hai khối ở chỗ sắp hiện một deck chính là cú nhảy trang mà widget-heights.ts tồn tại để chặn. ' +
-    'Không key mới trong WidgetKey, không migration',
+  'deck thẻ OK — các trang ring TÁCH RỜI: xếp tuyệt đối cạnh nhau và bị CLIP, nên không trang nào ' +
+    'phải tô đè lên trang nào và không trang nào cần nền đục. Đó là điều kiện để lớp aura đọc được ' +
+    'qua kính — bản stack trước đó đã đo: màu của ngày chỉ sống trong một dải 55px, từ y=150 xuống ' +
+    'trang là rgb(44,44,46), R−B = −2 giữa một ngày hổ phách. Màu nền chạy theo CÙNG shared value ' +
+    'với các trang (Today sở hữu nó, deck nhận vào), nên nền bám ngón tay chứ không nhảy khi cú ' +
+    'vuốt dừng; Pan phải đi ngang mới giành quyền và bỏ cuộc nếu ngón tay đi dọc; chiều cao chỉ ' +
+    'TĂNG; và skeleton vẽ MỘT khối cho cả deck, đúng chỗ deck sắp hiện ra',
 );

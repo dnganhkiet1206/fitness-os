@@ -1,9 +1,12 @@
 import { useIsFocused } from 'expo-router';
-import { useEffect, useId } from 'react';
+import * as Haptics from 'expo-haptics';
+import { ChevronDown } from 'lucide-react-native';
+import { useEffect, useId, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   useAnimatedProps,
+  useAnimatedStyle,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -14,11 +17,14 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { AnimatedNumber } from '@/components/ascnd/animated-number';
-import { GlassCard } from '@/components/ascnd/glass-card';
+import { Expander } from '@/components/ascnd/expander';
+import { Icon } from '@/components/ascnd/icon';
+import { PressScale } from '@/components/ascnd/press-scale';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
 import { readinessConfidence } from '@/lib/readiness-engine';
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
 
@@ -48,6 +54,15 @@ interface Props {
   explain?: string | null;
   recommendation?: string | null;
   acwr?: number | null;
+  /**
+   * Chi tiết có đang mở không — và vì sao state này KHÔNG nằm trong file này.
+   *
+   * Mở chi tiết không chỉ bung một khối bên dưới vòng tròn: nó ẩn luôn phần
+   * còn lại của Today. Đó là một quyết định về cả TRANG, nên nó thuộc về trang,
+   * và thẻ này chỉ nhận nó xuống cùng cách để bật tắt.
+   */
+  detailOpen?: boolean;
+  onToggleDetail?: () => void;
 }
 
 /* The ring's fill, named because the score now counts on exactly these two
@@ -63,7 +78,15 @@ const RING_MS = 1600;
  * status label, ACWR tile, explain text, tinted recommendation pill and
  * the three-zone legend.
  */
-export function ReadinessGauge({ score, status, explain, recommendation, acwr }: Props) {
+export function ReadinessGauge({
+  score,
+  status,
+  explain,
+  recommendation,
+  acwr,
+  detailOpen = false,
+  onToggleDetail,
+}: Props) {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -76,6 +99,14 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
     silences, and the only symptom is a tip that never stops.
   */
   const help = useHelpTopic(HELP_TOPIC);
+
+  /* Mũi tên quay 180° chứ không đổi sang một icon khác — hai tư thế của một
+     vật, không phải hai vật. */
+  const spin = useSharedValue(0);
+  useEffect(() => {
+    spin.value = withTiming(detailOpen ? 1 : 0, { duration: duration.toggle });
+  }, [detailOpen, spin]);
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 180}deg` }] }));
 
   // Stored values are language-neutral tokens (legacy rows may hold prose);
   // localize here so the copy follows the active language.
@@ -158,11 +189,20 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
     is to drop a label rather than the point size — here it is to give the ring
     less room, because a ring reads perfectly well at 150.
   */
-  /* Two, not one. A single tile beside a shrunken ring wastes both: the ring
-     gives up 58pt of diameter so that one 47%-wide box can sit in a column of
-     empty space. A grid needs something to be a grid OF. */
-  const grouped = tiles.length >= 2;
-  const ringSize = grouped ? 150 : 208;
+  /*
+    Không còn bố cục hai cột.
+
+    Trước đây vòng tròn thu lại còn 150 để nhường chỗ cho lưới ô số bên cạnh, và
+    ghi chú ở đây lập luận rằng đặt cạnh nhau thì "số đọc và lý do của nó là một
+    cái liếc thay vì hai". Lập luận đó đúng cho một cái THẺ nằm trong danh sách
+    thẻ. Hero giờ không phải vậy: nó chiếm phần trên cùng của trang, và thứ nó
+    phải nói trong nửa giây đầu là MỘT con số. Các ô số vẫn ở đó, sau một cú
+    chạm — xem `Expander` bên dưới.
+  */
+  /* To hơn hẳn, vì cái hộp chứa nó đã rộng hơn hẳn: hero giờ tràn hết bề ngang
+     màn hình thay vì nằm trong padding của trang, nên một vòng 208 đọc ra là
+     nhỏ so với chỗ nó đứng. */
+  const ringSize = 264;
 
   // Ring geometry — mirrors web: viewBox 120, r=52, strokeWidth 6
   const R = 52;
@@ -205,7 +245,7 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
   ];
 
   return (
-    <GlassCard style={styles.card}>
+    <View style={styles.card}>
       {/* Title with pulsing status dot */}
       <View style={styles.titleRow}>
         <Animated.View
@@ -229,11 +269,6 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
         not fall through to the card's own press — Today wraps the whole gauge
         in one that pushes `/biometrics`, and tapping `?` must not navigate.
       */}
-      <HelpButton
-        label={vi ? 'Giải thích điểm sẵn sàng' : 'Explain the readiness score'}
-        onPress={help.openHelp}
-        style={styles.helpBtn}
-      />
 
       {/*
         The hint, at most three times and never again once the `?` is pressed.
@@ -244,17 +279,6 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
         counting is the whole feature, since an uncounted hint on a card you
         open every morning becomes an obstacle by its tenth appearance.
       */}
-      {help.nudge ? (
-        <HelpNudge
-          text={
-            vi
-              ? 'Chưa rõ RHR, LOAD hay ACWR là gì? Bấm vào đây.'
-              : 'Not sure what RHR, LOAD or ACWR mean? Tap here.'
-          }
-          onPress={help.openHelp}
-          onDismiss={help.dismissNudge}
-        />
-      ) : null}
 
       {/*
         Ring and measurements side by side.
@@ -265,7 +289,6 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
         to say one number that the tiles then explain. Beside each other, the
         reading and its reasons are one glance instead of two.
       */}
-      <View style={grouped ? styles.readRow : undefined}>
       <View style={[styles.ringWrap, { width: ringSize, height: ringSize }]}>
         {/* Neon halo behind the ring, tinted to the status colour (web glow) */}
         <View
@@ -325,6 +348,61 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
         </View>
       </View>
 
+      {/*
+        Mũi tên: cách vào phần chi tiết, và cách duy nhất nói rằng có phần đó.
+
+        Vòng tròn đứng một mình ở nửa trên của trang không tự nói rằng nó còn
+        giấu năm phép đo. Một hàng chấm hay một vùng chạm vô hình thì đọc ra là
+        trang trí hoặc không đọc ra gì cả — màn ghi buổi tập trong repo này đã
+        ghi đúng câu đó khi từ chối một cử chỉ ẩn: "cả hai đều vô hình cho tới
+        khi đoán ra".
+
+        Nó XOAY chứ không đổi icon: cùng một vật quay 180°, nên trạng thái đóng
+        và mở là hai tư thế của một thứ chứ không phải hai thứ. `duration.toggle`
+        được đặt tên cho đúng việc này — "an icon swapping between two states in
+        place — a toggle, a chevron flip".
+      */}
+      <PressScale
+        accessibilityRole="button"
+        accessibilityState={{ expanded: detailOpen }}
+        accessibilityLabel={vi ? 'Chi tiết điểm sẵn sàng' : 'Readiness details'}
+        hitSlop={14}
+        onPress={() => {
+          Haptics.selectionAsync();
+          onToggleDetail?.();
+        }}
+        style={styles.moreBtn}>
+        <Animated.View style={chevron}>
+          <Icon icon={ChevronDown} size={20} color={colors.mutedForeground} strokeWidth={2.5} />
+        </Animated.View>
+      </PressScale>
+
+      <Expander open={detailOpen}>
+      <View style={styles.detail}>
+      {/*
+        Nút `?` và lời nhắc của nó đi CÙNG phần chi tiết.
+
+        Chúng giải thích RHR, LOAD và ACWR — mà ở trạng thái đóng không có chữ
+        nào trong ba chữ đó trên màn hình. Một nút trả lời câu hỏi chưa ai hỏi
+        là một nút chiếm chỗ ở góc của thứ đang cần yên tĩnh nhất trên trang.
+      */}
+      <HelpButton
+        label={vi ? 'Giải thích điểm sẵn sàng' : 'Explain the readiness score'}
+        onPress={help.openHelp}
+        style={styles.helpBtn}
+      />
+      {help.nudge ? (
+        <HelpNudge
+          text={
+            vi
+              ? 'Chưa rõ RHR, LOAD hay ACWR là gì? Bấm vào đây.'
+              : 'Not sure what RHR, LOAD or ACWR mean? Tap here.'
+          }
+          onPress={help.openHelp}
+          onDismiss={help.dismissNudge}
+        />
+      ) : null}
+
       {/* Sub-score tiles: HRV · RHR · SLEEP · LOAD · ACWR — one per measured
           component, so this row and the confidence line below always agree. */}
       {tiles.length > 0 && (
@@ -337,7 +415,6 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
           ))}
         </View>
       )}
-      </View>
 
       {/* Explain + recommendation */}
       {explainText ? <Text style={styles.explain}>{explainText}</Text> : null}
@@ -365,20 +442,41 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
           </View>
         ))}
       </View>
+      </View>
+      </Expander>
       <ReadinessExplainer visible={help.open} onClose={help.close} />
-    </GlassCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { alignItems: 'center', paddingVertical: spacing.xl + 8, gap: spacing.lg },
+  /*
+    Không còn là một cái thẻ.
+
+    `GlassCard` cấp nền, viền và `padding: spacing.card`; bỏ nó đi thì phần đệm
+    ngang biến mất cùng, nên nó được viết lại ở đây. Cái mất đi là NỀN — hero
+    này nằm tràn hai mép trên chính lớp aura, và một cái thẻ nổi lên trên đó
+    che mất thứ nó đang nằm trên.
+  */
+  card: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl + 8,
+    paddingHorizontal: spacing.card,
+    gap: spacing.lg,
+  },
   /* Out of the flow, in the corner — see the comment at the button. It is the
      only way to add a trailing accessory to a centred header without the
      header moving. 28pt of ink plus hitSlop 14 is a 56pt target. */
   /* Out of the flow, in the corner — see the comment at the button. It is the
      only way to add a trailing accessory to a centred header without the
      header moving. Size and hit area come from `HelpButton`. */
-  helpBtn: { position: 'absolute', top: spacing.md, right: spacing.md },
+  /* Không còn tuyệt đối ở góc thẻ: nó nằm TRONG phần chi tiết bây giờ, nên nó
+     là một dòng của khối đó và tự nép về mép phải. */
+  helpBtn: { alignSelf: 'flex-end' },
+  /* 44pt là sàn của Apple cho vùng chạm, và `tools/tap-targets.mjs` đo chứ
+     không ước lượng. Icon 20pt nằm giữa một ô 44 là đủ. */
+  moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  detail: { gap: spacing.lg, alignItems: 'center', alignSelf: 'stretch' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   title: {

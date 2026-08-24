@@ -53,7 +53,23 @@ const TINT: Record<string, string> = {
   red: colors.readinessRed,
 };
 
-export function ReadinessAura({ status }: { status: 'green' | 'yellow' | 'red' | null }) {
+export function ReadinessAura({
+  status,
+  tint: override,
+}: {
+  status: 'green' | 'yellow' | 'red' | null;
+  /**
+   * A colour that is not a readiness state.
+   *
+   * Today's hero is a deck now, and the wash follows whichever card you swiped
+   * to — so the activity page paints its own colour rather than the readiness
+   * one. Passing a colour is how a page that is not ABOUT readiness says so;
+   * without it the background would keep asserting a readiness state under a
+   * card that is measuring something else, which is the same class of lie the
+   * `useId` note below is about.
+   */
+  tint?: string;
+}) {
   const { width, height } = useWindowDimensions();
   /*
     Ids in SVG are document-global on native rather than local to the `<Svg>`
@@ -66,7 +82,7 @@ export function ReadinessAura({ status }: { status: 'green' | 'yellow' | 'red' |
   const uid = useId();
   const gid = `readinessAura-${uid}`;
 
-  const tint = status ? TINT[status] : null;
+  const tint = override ?? (status ? TINT[status] : null);
   /* No reading, no colour. A default wash would be the screen asserting a state
      before anything has been measured. */
   if (!tint) return null;

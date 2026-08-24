@@ -17,7 +17,7 @@ import {
   Trash2,
   type LucideIcon,
 } from 'lucide-react-native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -27,7 +27,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActivityRingsCard } from '@/components/ascnd/activity-rings';
@@ -61,6 +69,7 @@ import {
 import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { duration } from '@/constants/motion';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
@@ -215,6 +224,26 @@ export default function TodayScreen() {
   const readinessScore = dailyLog?.readiness_score != null ? Math.round(Number(dailyLog.readiness_score)) : null;
   const readinessStatus = (dailyLog?.readiness_status as 'green' | 'yellow' | 'red') || 'yellow';
 
+  /* Một giá trị, hai thứ đọc nó: deck dịch các trang, còn nền đổi màu. Sở hữu ở
+     đây chứ không ở trong deck, vì thứ cần nó nằm NGOÀI deck. */
+  const deckAt = useSharedValue(0);
+
+  /**
+   * Chế độ tập trung: chi tiết của một vòng tròn đang mở.
+   *
+   * Nó ẩn Koa, bốn nút ghi và toàn bộ các nhóm thẻ. Đó là chủ ý chứ không phải
+   * tác dụng phụ: khi bạn đã hỏi "vì sao 74", thì mười hai thẻ khác trên trang
+   * là mười hai câu trả lời cho những câu hỏi khác. Trang trả lời đúng một câu
+   * tại một thời điểm.
+   *
+   * State nằm ở đây chứ không trong thẻ, vì thứ nó điều khiển nằm ở đây.
+   */
+  const [heroOpen, setHeroOpen] = useState(false);
+  const toggleHero = useCallback(() => {
+    Haptics.selectionAsync();
+    setHeroOpen((v) => !v);
+  }, []);
+
   /*
     Activity rings. `active_kcal` and `active_minutes` are passed through as
     null-or-number rather than defaulted to 0 here: the card draws a different
@@ -304,12 +333,32 @@ export default function TodayScreen() {
     return <PeekHost quest={quest}>{node}</PeekHost>;
   };
 
+  /**
+   * Màu nền cho từng trang hero.
+   *
+   * Chỉ những thẻ THẬT SỰ có một màu riêng mới khai ở đây. Thẻ nào không có thì
+   * mang màu sẵn sàng của ngày — không phải vì tiện, mà vì đó là màu đúng cho
+   * "hôm nay thế nào", và một trang không nói về một phép đo riêng thì vẫn đang
+   * nói về hôm nay.
+   */
+  const heroTints = useMemo(
+    () =>
+      config.heroWidgets.map((key) => ({
+        key,
+        status: key === 'activity' ? null : readinessScore != null ? readinessStatus : null,
+        tint: key === 'activity' ? colors.metricOrange : undefined,
+      })),
+    [config.heroWidgets, readinessScore, readinessStatus],
+  );
+
   const renderWidget = (key: WidgetKey): React.ReactNode => {
     switch (key) {
       case 'readiness':
         return readinessScore != null ? (
           <PressScale onPress={() => { Haptics.selectionAsync(); router.push('/biometrics'); }}>
             <ReadinessGauge
+              detailOpen={heroOpen}
+              onToggleDetail={toggleHero}
               score={readinessScore}
               status={readinessStatus}
               explain={dailyLog?.readiness_explain}
@@ -434,7 +483,27 @@ export default function TodayScreen() {
         the content, so the three layers are in the order they would be in
         physically — room, colour, things.
       */}
-      <ReadinessAura status={readinessScore != null ? readinessStatus : null} />
+      {/*
+        Nền đổi màu theo thẻ bạn đang vuốt tới.
+
+        Một lớp aura cho mỗi trang hero, chồng lên nhau, và độ mờ của chúng
+        chạy thẳng từ `deckAt` — cùng shared value mà deck dùng để dịch các
+        trang. Nên màu nền BÁM NGÓN TAY chứ không nhảy khi cú vuốt dừng lại:
+        vuốt được nửa đường thì nền đã đi được nửa đường.
+
+        Chồng-mờ hai lớp SVG thay vì đổi màu các `Stop` bên trong một lớp, vì
+        cách sau phải animate thuộc tính của SVG trên UI thread; cách này chỉ
+        là opacity, thứ đã chạy ở đó sẵn.
+      */}
+      {heroTints.length > 1 ? (
+        heroTints.map((t: { key: string; status: 'green' | 'yellow' | 'red' | null; tint?: string }, i: number) => (
+          <AuraLayer key={t.key} index={i} at={deckAt}>
+            <ReadinessAura status={t.status} tint={t.tint} />
+          </AuraLayer>
+        ))
+      ) : (
+        <ReadinessAura status={readinessScore != null ? readinessStatus : null} />
+      )}
       <ScrollView
       // Transparent, not `styles.root` as before. The wrapper already paints
       // the page colour; painting it again here would paint straight over the
@@ -482,18 +551,15 @@ export default function TodayScreen() {
       contentInsetAdjustmentBehavior="never">
       {/* Greeting + actions (web Index header) */}
       <View style={styles.headerRow}>
-        <View style={styles.headerText}>
-          {/*
-            Ngày đã bỏ.
+        {/*
+          Ngày và lời chào đều đã bỏ.
 
-            Nó nói một thứ mà thanh trạng thái phía trên nó đã nói, và nó là
-            dòng ĐẦU TIÊN của trang — nửa giây đầu tiên tiêu vào một sự thật
-            người dùng vừa đọc xong. Chỗ đó giờ là chỉ số sẵn sàng.
-          */}
-          <Text style={styles.greeting}>
-            {greeting}, <Text style={styles.greetingName}>{userName}</Text>
-          </Text>
-        </View>
+          Ngày nói lại thứ thanh trạng thái ngay phía trên đã nói. Lời chào nói
+          tên bạn cho chính bạn nghe. Cả hai từng là hai dòng ĐẦU TIÊN của
+          trang, tức nửa giây đầu tiên tiêu vào hai câu không đổi được quyết
+          định nào. Chỗ đó giờ là chỉ số sẵn sàng, và hàng này chỉ còn các nút.
+        */}
+        <View style={styles.headerText} />
         <View style={styles.headerButtons}>
           {/* The streak sits before the buttons because it is a *reading*, not
               an action — and it is only ever here, in the bar you land on. */}
@@ -583,7 +649,7 @@ export default function TodayScreen() {
               style={styles.heroFull}
               onLayout={(e) => recordHeight(HERO_DECK, e.nativeEvent.layout.height)}
               entering={FadeInDown.springify().damping(26).stiffness(180)}>
-              <CardDeck>
+              <CardDeck progress={deckAt}>
                 {config.heroWidgets.map((key) => (
                   <View key={key}>{withPeek(key, renderWidget(key))}</View>
                 ))}
@@ -591,7 +657,20 @@ export default function TodayScreen() {
             </Animated.View>
           )}
 
-          <Mascot />
+          {/*
+            Phần còn lại của trang, biến mất khi chi tiết mở.
+
+            Mount có điều kiện chứ không phải `opacity: 0`: một khối vô hình vẫn
+            chiếm chiều cao của nó, nên trang sẽ có một vùng trống bằng cả
+            dashboard bên dưới vòng tròn. Hiệu ứng ra/vào lo phần chuyển động;
+            việc gỡ khỏi cây lo phần chiều cao.
+          */}
+          {!heroOpen ? (
+            <Animated.View
+              style={styles.rest}
+              entering={FadeIn.duration(duration.appear)}
+              exiting={FadeOut.duration(duration.toggle)}>
+              <Mascot />
 
           {/* Quick log actions (web chips row) */}
           <View style={styles.quickRow}>
@@ -626,6 +705,8 @@ export default function TodayScreen() {
               </PressScale>
             ))}
           </View>
+            </Animated.View>
+          ) : null}
 
           {/* HealthKit sync (native-only necessity, styled as a quick chip row) */}
           {healthAvailable && (
@@ -677,7 +758,7 @@ export default function TodayScreen() {
             carrying fifteen constants that go stale the first time a card gains
             a row.
           */}
-          {dayPending ? (
+          {dayPending && !heroOpen ? (
             <TodaySkeleton part="groups" heroWidgets={config.heroWidgets} groups={config.groups} />
           ) : null}
 
@@ -696,7 +777,7 @@ export default function TodayScreen() {
           */}
 
           {/* Grouped widgets, user-configurable order */}
-          {dayPending || dayFailed ? null : config.groups.map((group, gi) => (
+          {dayPending || dayFailed || heroOpen ? null : config.groups.map((group, gi) => (
             <View key={group.id} style={styles.group}>
               <GroupHeader icon={group.icon} title={group.title[lang] ?? group.title.en} />
               {group.widgets.map((key, wi) => (
@@ -861,6 +942,32 @@ function ArrowBtn({
   );
 }
 
+/**
+ * Một lớp nền, sáng lên đúng bằng mức trang của nó đang ở giữa màn hình.
+ *
+ * Không phải một phép nội suy giữa hai MÀU, mà là hai lớp chồng nhau mờ dần
+ * vào nhau. Đổi màu bên trong một gradient SVG nghĩa là animate thuộc tính của
+ * SVG trên UI thread; chồng-mờ chỉ là opacity, thứ vốn đã chạy ở đó.
+ */
+function AuraLayer({
+  index,
+  at,
+  children,
+}: {
+  index: number;
+  at: SharedValue<number>;
+  children: React.ReactNode;
+}) {
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(Math.abs(at.value - index), [0, 1], [1, 0], 'clamp'),
+  }));
+  return (
+    <Animated.View style={[StyleSheet.absoluteFill, style]} pointerEvents="none">
+      {children}
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   // See the note at the top of the return — transparent so `AmbientLight`,
@@ -871,6 +978,9 @@ const styles = StyleSheet.create({
      Tied to the same token the padding uses, not a second copy of the number —
      change `content` and this follows it. */
   heroFull: { marginHorizontal: -spacing.md },
+  /* Cùng khoảng cách dọc mà `content` cấp, vì khối này thay chỗ cho các con
+     trực tiếp của nó chứ không thêm một tầng bố cục mới. */
+  rest: { gap: spacing.md },
 
   // Header (web: date 13px muted / greeting 22px bold, name silver)
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },

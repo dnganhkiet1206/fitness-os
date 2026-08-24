@@ -12,7 +12,6 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
-import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -192,7 +191,7 @@ export function ActivityRingsCard({
   */
   if (!hasAny) {
     return (
-      <GlassCard style={styles.card}>
+      <View style={styles.card}>
         <Text style={styles.title}>{i18n.dcActivity}</Text>
         <View style={styles.emptyBody}>
           <Icon icon={HeartPulse} size={20} color={colors.mutedForeground} />
@@ -232,14 +231,14 @@ export function ActivityRingsCard({
             </PressScale>
           ) : null}
         </View>
-      </GlassCard>
+      </View>
     );
   }
 
   const estimated = rings.some((r) => r.source === 'estimated');
 
   return (
-    <GlassCard style={styles.card}>
+    <View style={styles.card}>
       <Text style={styles.title}>{i18n.dcActivity}</Text>
 
       <View style={styles.body}>
@@ -281,7 +280,7 @@ export function ActivityRingsCard({
       </View>
 
       {estimated ? <Text style={styles.note}>{i18n.dcActivityEstimated}</Text> : null}
-    </GlassCard>
+    </View>
   );
 }
 
@@ -311,7 +310,9 @@ function Row({ ring, label, unit }: { ring: RingModel; label: string; unit: stri
 }
 
 const styles = StyleSheet.create({
-  card: { gap: spacing.md },
+  /* Phần đệm mà GlassCard vốn cấp, viết lại vì khung đã bỏ — xem ghi chú cùng
+     việc ở readiness-gauge.tsx. */
+  card: { gap: spacing.md, padding: spacing.card },
   title: {
     fontSize: 12,
     fontWeight: '600',
