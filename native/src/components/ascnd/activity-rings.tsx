@@ -348,7 +348,15 @@ function Row({ ring, label, unit }: { ring: RingModel; label: string; unit: stri
 const styles = StyleSheet.create({
   /* Phần đệm mà GlassCard vốn cấp, viết lại vì khung đã bỏ — xem ghi chú cùng
      việc ở readiness-gauge.tsx. */
-  card: { gap: spacing.md, padding: spacing.card, alignItems: 'center' },
+  /* Cùng lý do như readiness-gauge.tsx: đệm của một hero, và không để một gap
+     đứng trước một `Expander` đang đóng. */
+  card: {
+    gap: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.card,
+    alignItems: 'center',
+  },
   ringOnly: { alignItems: 'center' },
   moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   detail: { gap: spacing.md, alignSelf: 'stretch' },

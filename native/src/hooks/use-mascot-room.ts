@@ -56,6 +56,23 @@ async function writeLocal(key: string, rows: unknown[]) {
  * feeds both. The UNIQUE(user_id, ref_key) constraint makes claims
  * idempotent server-side no matter what the UI shows.
  */
+/**
+ * Danh sách ref_key đã nhận thưởng, đọc từ một chỗ có thể trả về bất cứ gì.
+ *
+ * Nguồn của nó là cache React Query được persist xuống AsyncStorage. Một bản
+ * trước của app ghi xuống đó một `Set`, thứ mà JSON.stringify biến thành `{}`,
+ * nên trên máy đã chạy bản đó giá trị này là một OBJECT RỖNG chứ không phải
+ * undefined — `?? []` đi qua nó, và `new Set({})` ném.
+ *
+ * `CACHE_BUSTER` đã bump để dọn một lần. Hàm này là nửa còn lại: sau lần dọn
+ * đó, một giá trị hỏng đến từ bất cứ đâu vẫn không thể làm màn hình đầu tiên
+ * của app ném. Đây là cùng một luật mà `personal-model` và ngân sách xuất hiện
+ * đã ghi — một giá trị lưu hỏng không được phép thành một giá trị đang chạy.
+ */
+export function claimedList(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+}
+
 export function useMascotWallet() {
   const { user } = useAuth();
   return useQuery({

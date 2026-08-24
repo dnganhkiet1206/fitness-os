@@ -52,8 +52,28 @@ export const asyncStoragePersister = createAsyncStoragePersister({
   throttleTime: 1000,
 });
 
-/** Bump when the cache shape changes to invalidate old persisted data. */
-export const CACHE_BUSTER = 'v1';
+/**
+ * Bump when the cache shape changes to invalidate old persisted data.
+ *
+ * ── v2, và vì sao ──
+ *
+ * `use-mascot-room.ts` từng trả về `claimed: new Set(...)`. Cache này đi qua
+ * JSON.stringify, và một `Set` serialize thành `{}` — nên mọi máy đã chạy bản
+ * cũ đang giữ trên đĩa một `claimed` là OBJECT RỖNG.
+ *
+ * Sửa nguồn thành mảng là đúng nhưng chưa đủ: dữ liệu cũ vẫn được hydrate lại
+ * và `{}` thì không phải `undefined`, nên `?? []` không cứu được và
+ * `new Set({})` ném "iterator method is not callable" — vẫn ngay trong Mascot,
+ * vẫn trên màn hình đầu tiên. Đó chính xác là việc mà con số này tồn tại để
+ * làm: hình dạng cache đã đổi, nên bản cũ phải bị bỏ đi chứ không phải được
+ * đọc lại.
+ *
+ * Bump là cách dọn MỘT LẦN. Nó không thay cho việc đọc phòng thủ ở chỗ dùng —
+ * xem `use-daily-quests.ts` — vì một giá trị hỏng có thể tới từ nơi khác, và
+ * repo này đã ghi cùng một luật cho `personal-model` và cho ngân sách xuất
+ * hiện: "một mô hình lưu HỎNG không còn thành mô hình đang chạy".
+ */
+export const CACHE_BUSTER = 'v2';
 
 /** Drop the in-memory + persisted cache — call on sign-out to avoid leaking
  *  one user's data into the next session. */

@@ -105,6 +105,37 @@ for (const abs of walk(path.join(NATIVE, 'src'))) {
   }
 }
 
+/* ── đọc lại thì phải phòng thủ ──
+
+   Bump `CACHE_BUSTER` dọn được dữ liệu cũ MỘT LẦN. Nó không làm cho lần đọc trở
+   nên an toàn: `{}` không phải `undefined`, nên `?? []` đi thẳng qua nó và
+   `new Set({})` ném "iterator method is not callable" — đúng chỗ, đúng màn
+   hình đầu tiên, như đã xảy ra. Nửa còn lại là đọc qua một hàm kiểm hình dạng.
+
+   Đây là luật repo này đã ghi hai lần rồi, cho `personal-model` và cho ngân
+   sách xuất hiện: một giá trị lưu HỎNG không được phép thành một giá trị đang
+   chạy. */
+for (const abs of walk(path.join(NATIVE, 'src'))) {
+  const rel = path.relative(NATIVE, abs);
+  if (rel === 'src/hooks/use-mascot-room.ts') continue;
+  const code = strip(read(rel));
+  for (const m of code.matchAll(/wallet\??\.\s*claimed\b/g)) {
+    const before = code.slice(Math.max(0, m.index - 40), m.index);
+    if (!/claimedList\s*\($/.test(before.trimEnd() + '')) {
+      /* Trong mảng deps của useMemo thì chỉ là một tham chiếu, không phải một
+         lần đọc giá trị — nó không thể ném. */
+      const after = code.slice(m.index, m.index + 40);
+      if (/^wallet\??\.claimed\]/.test(after)) continue;
+      if (/claimedList\(/.test(code.slice(Math.max(0, m.index - 60), m.index))) continue;
+      const line = code.slice(0, m.index).split('\n').length;
+      problems.push(
+        `${rel}:${line}: đọc \`wallet.claimed\` trực tiếp — giá trị này tới từ cache trên đĩa, nơi ` +
+          'một bản cũ đã ghi xuống một Set đã serialize thành `{}`. Đi qua `claimedList()`',
+      );
+    }
+  }
+}
+
 if (problems.length) {
   console.log('dữ liệu truy vấn CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);

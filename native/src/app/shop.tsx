@@ -15,13 +15,7 @@ import { ShopPager } from '@/components/ascnd/shop/shop-pager';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascotIdentity } from '@/hooks/use-mascot';
-import {
-  useBuyItem,
-  useClaimReward,
-  useMascotInventory,
-  useMascotWallet,
-  useToggleEquip,
-} from '@/hooks/use-mascot-room';
+import { claimedList, useBuyItem, useClaimReward, useMascotInventory, useMascotWallet, useToggleEquip } from '@/hooks/use-mascot-room';
 import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import {
   activeStageKey,
@@ -132,7 +126,12 @@ export default function ShopScreen() {
   const equipped = new Set((inventory ?? []).filter((r) => r.equipped).map((r) => r.item_key));
   /* Dựng ở đây, không lưu ở đâu — xem `use-mascot-room.ts`: cache bị persist và
      Set không sống qua JSON. */
-  const claimed = useMemo(() => new Set(wallet?.claimed ?? []), [wallet?.claimed]);
+  /* Đọc phòng thủ: giá trị này tới từ cache trên đĩa, nơi một bản cũ đã từng ghi
+     xuống một Set đã serialize thành `{}`. `?? []` không đủ vì `{}` không phải
+     `undefined`, và `new Set({})` ném "iterator method is not callable". Cùng luật
+     mà repo này đã áp cho personal-model: một giá trị lưu hỏng không được phép
+     thành một giá trị đang chạy. */
+  const claimed = useMemo(() => new Set(claimedList(wallet?.claimed)), [wallet?.claimed]);
   const balance = wallet?.balance ?? 0;
   const level = levelFromXp(wallet?.xp ?? 0);
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useDailyStreak, useMascotWallet } from '@/hooks/use-mascot-room';
+import { claimedList, useDailyStreak, useMascotWallet } from '@/hooks/use-mascot-room';
 import { useStepsAvailable } from '@/hooks/use-fitness-data';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
 import { useTodayWater } from '@/hooks/use-water';
@@ -129,7 +129,12 @@ export function useDailyQuests(): DailyQuests {
 
     /* Dựng trong useMemo này, không nằm trong dữ liệu truy vấn — xem ghi chú ở
        `use-mascot-room.ts`: cache bị persist và Set không sống qua JSON. */
-    const claimed = new Set(wallet?.claimed ?? []);
+    /* Đọc phòng thủ: giá trị này tới từ cache trên đĩa, nơi một bản cũ đã từng ghi
+       xuống một Set đã serialize thành `{}`. `?? []` không đủ vì `{}` không phải
+       `undefined`, và `new Set({})` ném "iterator method is not callable". Cùng luật
+       mà repo này đã áp cho personal-model: một giá trị lưu hỏng không được phép
+       thành một giá trị đang chạy. */
+    const claimed = new Set(claimedList(wallet?.claimed));
     const unclaimed = activeDefs.filter(
       (q) => done[q.key] && !claimed.has(questRefKey(today, q.key)),
     );

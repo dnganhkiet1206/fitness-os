@@ -66,15 +66,7 @@ import { useAwards, useWeeklyChallenges } from '@/hooks/use-extras';
 import { useMascot } from '@/hooks/use-mascot';
 import { habitFor, usePersonalModel } from '@/lib/personal-model';
 import { DEV_EMOTIONS, setDevEmotion } from '@/hooks/use-mascot-emotion';
-import {
-  useBuyItem,
-  useBuyFreeze,
-  useClaimReward,
-  useDailyStreak,
-  useMascotInventory,
-  useMascotWallet,
-  useToggleEquip,
-} from '@/hooks/use-mascot-room';
+import { claimedList, useBuyFreeze, useBuyItem, useClaimReward, useDailyStreak, useMascotInventory, useMascotWallet, useToggleEquip } from '@/hooks/use-mascot-room';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
@@ -295,7 +287,12 @@ export default function MascotRoomScreen() {
   const balance = wallet?.balance ?? 0;
   /* Dựng ở đây, không lưu ở đâu: `use-mascot-room.ts` giải thích vì sao truy
      vấn trả về một mảng — cache bị persist, và Set không sống qua JSON. */
-  const claimed = useMemo(() => new Set(wallet?.claimed ?? []), [wallet?.claimed]);
+  /* Đọc phòng thủ: giá trị này tới từ cache trên đĩa, nơi một bản cũ đã từng ghi
+     xuống một Set đã serialize thành `{}`. `?? []` không đủ vì `{}` không phải
+     `undefined`, và `new Set({})` ném "iterator method is not callable". Cùng luật
+     mà repo này đã áp cho personal-model: một giá trị lưu hỏng không được phép
+     thành một giá trị đang chạy. */
+  const claimed = useMemo(() => new Set(claimedList(wallet?.claimed)), [wallet?.claimed]);
   const owned = new Set((inventory ?? []).map((r) => r.item_key));
   const equippedOutfits = new Set(
     (inventory ?? []).filter((r) => r.equipped).map((r) => r.item_key),

@@ -460,9 +460,19 @@ const styles = StyleSheet.create({
   */
   card: {
     alignItems: 'center',
-    paddingVertical: spacing.xl + 8,
+    /*
+      Đệm của một HERO, không phải của một thẻ trong danh sách.
+
+      Trước đây là paddingVertical 40 và gap 24 — đúng cho một thẻ có viền, nằm
+      giữa các thẻ khác. Ở đây nó đo được 100px trống giữa mũi tên và hàng pip
+      trên ảnh chụp, vì phần tử cuối cùng là `Expander` đang ĐÓNG: cái gap 24
+      trước một khối cao 0 là 24 điểm không có gì trong đó, cộng 40 đệm đáy dưới
+      một mũi tên vốn đã là thứ cuối cùng nhìn thấy được.
+    */
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
     paddingHorizontal: spacing.card,
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   /* Out of the flow, in the corner — see the comment at the button. It is the
      only way to add a trailing accessory to a centred header without the
