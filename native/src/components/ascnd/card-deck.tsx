@@ -73,13 +73,14 @@ export function CardDeck({
 }) {
   const pages = children.filter(Boolean);
   const [w, setW] = useState(0);
-  const [h, setH] = useState(0);
+  const [heights, setHeights] = useState<number[]>([]);
 
   const own = useSharedValue(0);
   const at = progress ?? own;
   const from = useSharedValue(0);
 
   const last = pages.length - 1;
+  const tallest = heights.length > 0 ? Math.max(0, ...heights.filter((n) => Number.isFinite(n))) : 0;
 
   const pan = Gesture.Pan()
     .activeOffsetX([-HYSTERESIS, HYSTERESIS])
@@ -108,12 +109,33 @@ export function CardDeck({
     setW((prev) => (Math.abs(prev - next) < 1 ? prev : next));
   };
 
-  /* The tallest page sets the height, and it only ever grows: a card that
-     renders short for a frame while its data lands would otherwise pull the
-     deck up and drop everything below it. */
-  const measureH = (e: LayoutChangeEvent) => {
+  /**
+   * The tallest page sets the height — measured PER PAGE, not as one number.
+   *
+   * ── why the grow-only version was wrong ──
+   *
+   * It kept a single `max` and refused to come down, which was right while a
+   * page's height was fixed: a card rendering short for one frame as its data
+   * landed would otherwise pull the deck up and drop everything below it.
+   *
+   * Then the pages learnt to expand. Tapping the chevron opens a panel of
+   * sub-scores, and a max that never falls means CLOSING it leaves the deck at
+   * its opened height for the rest of the session — a page-tall hole under the
+   * ring that nothing will ever fill.
+   *
+   * Keeping each page's own height and taking the max of the current values
+   * gets both: the deck follows a real expansion in either direction, and one
+   * page briefly reporting short cannot shrink the deck below a taller sibling
+   * that is still tall.
+   */
+  const measure = (i: number) => (e: LayoutChangeEvent) => {
     const next = e.nativeEvent.layout.height;
-    setH((prev) => (next > prev + 0.5 ? next : prev));
+    setHeights((prev) => {
+      if (Math.abs((prev[i] ?? 0) - next) < 0.5) return prev;
+      const out = prev.slice();
+      out[i] = next;
+      return out;
+    });
   };
 
   if (pages.length === 0) return null;
@@ -125,9 +147,9 @@ export function CardDeck({
   return (
     <View onLayout={measureW}>
       <GestureDetector gesture={pan}>
-        <View style={[styles.stage, h > 0 ? { height: h } : null]}>
+        <View style={[styles.stage, tallest > 0 ? { height: tallest } : null]}>
           {pages.map((node, i) => (
-            <Page key={i} index={i} at={at} width={w} onHeight={measureH}>
+            <Page key={i} index={i} at={at} width={w} onHeight={measure(i)}>
               {node}
             </Page>
           ))}

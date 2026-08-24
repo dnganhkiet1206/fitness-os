@@ -375,6 +375,8 @@ export default function TodayScreen() {
       case 'activity':
         return (
           <ActivityRingsCard
+            detailOpen={heroOpen}
+            onToggleDetail={toggleHero}
             moveKcal={dailyLog?.active_kcal != null ? Number(dailyLog.active_kcal) : null}
             healthMinutes={dailyLog?.active_minutes ?? null}
             loggedMinutes={trainingMin ?? 0}

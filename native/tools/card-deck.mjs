@@ -119,14 +119,29 @@ const num = (name) => {
   }
 }
 
-/* ── 5. the measured height only grows ── */
+/* ── 5. chiều cao đo THEO TỪNG TRANG ──
+
+   Luật cũ ở đây đòi chiều cao chỉ-tăng, và nó đúng chừng nào chiều cao một
+   trang là cố định: một thẻ render ngắn một frame trong lúc dữ liệu về sẽ kéo
+   cả deck lên và thả mọi thứ bên dưới xuống.
+
+   Rồi các trang biết bung ra. Bấm mũi tên là mở một khối chỉ số phụ, và một
+   `max` không bao giờ đi xuống nghĩa là ĐÓNG nó lại để deck đứng nguyên ở chiều
+   cao đã mở suốt phiên — một khoảng trống cao bằng cả trang dưới vòng tròn mà
+   không gì lấp vào.
+
+   Giữ chiều cao của TỪNG trang rồi lấy max của các giá trị hiện tại thì được cả
+   hai: deck theo được một lần bung thật ở cả hai chiều, và một trang tạm báo
+   ngắn không kéo được deck xuống dưới một trang khác đang cao. */
 {
-  const grow = src.match(/measureH[\s\S]{0,240}/);
-  if (!grow || !/next > prev/.test(grow[0])) {
+  if (!/setHeights|const \[heights/.test(src)) {
     problems.push(
-      `${DECK}: chiều cao deck không phải chỉ-tăng — một thẻ render ngắn một frame trong lúc dữ liệu ` +
-        'về sẽ kéo cả deck lên và thả mọi thứ bên dưới xuống',
+      `${DECK}: chiều cao không đo theo từng trang — nếu giữ một con số max chung thì đóng phần chi ` +
+        'tiết lại sẽ để deck đứng nguyên ở chiều cao đã mở, chừa một khoảng trống không gì lấp vào',
     );
+  }
+  if (!/Math\.max\(/.test(src)) {
+    problems.push(`${DECK}: không lấy max các chiều cao — trang cao hơn sẽ bị cắt`);
   }
 }
 

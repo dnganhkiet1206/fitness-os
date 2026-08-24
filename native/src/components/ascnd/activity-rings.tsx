@@ -1,9 +1,10 @@
 import * as Haptics from 'expo-haptics';
-import { HeartPulse } from 'lucide-react-native';
+import { ChevronDown, HeartPulse } from 'lucide-react-native';
 import { useEffect, useId } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
+  useAnimatedStyle,
   useAnimatedProps,
   useSharedValue,
   withDelay,
@@ -11,9 +12,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
+import { Expander } from '@/components/ascnd/expander';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import { useI18n } from '@/hooks/use-app-settings';
 import { activityModel, type ActivityInput, type RingKey, type RingModel } from '@/lib/activity';
 
@@ -94,6 +97,10 @@ function Ring({
 
 interface Props extends ActivityInput {
   size?: number;
+  /** Xem ghi chú cùng tên ở `readiness-gauge.tsx`: mở chi tiết cũng ẩn phần còn
+   *  lại của Today, nên quyết định đó thuộc về trang chứ không về thẻ này. */
+  detailOpen?: boolean;
+  onToggleDetail?: () => void;
   /** shown in the empty state only, when Apple Health can actually be reached */
   onConnectHealth?: () => void;
   /**
@@ -137,7 +144,11 @@ interface Props extends ActivityInput {
  * measurement always wins when there is one.
  */
 export function ActivityRingsCard({
-  size = 110,
+  /* Cùng lý do vòng tròn sẵn sàng to lên: hero chiếm phần trên cùng của trang,
+     và 110 là kích thước của một thẻ nằm trong danh sách thẻ. */
+  size = 200,
+  detailOpen = false,
+  onToggleDetail,
   onConnectHealth,
   connectPending = false,
   onLogWorkout,
@@ -145,6 +156,12 @@ export function ActivityRingsCard({
 }: Props) {
   const i18n = useI18n();
   const { rings, hasAny } = activityModel(input);
+
+  const spin = useSharedValue(0);
+  useEffect(() => {
+    spin.value = withTiming(detailOpen ? 1 : 0, { duration: duration.toggle });
+  }, [detailOpen, spin]);
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 180}deg` }] }));
 
   /*
     SVG ids are document-global on native, not scoped to the <Svg> they are
@@ -241,7 +258,7 @@ export function ActivityRingsCard({
     <View style={styles.card}>
       <Text style={styles.title}>{i18n.dcActivity}</Text>
 
-      <View style={styles.body}>
+      <View style={styles.ringOnly}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {/* Hoisted out of the ring loop: three <Defs> blocks drawing one
               gradient each is three chances to get an id wrong. */}
@@ -272,14 +289,33 @@ export function ActivityRingsCard({
           ))}
         </Svg>
 
-        <View style={styles.rows}>
+      </View>
+
+      {/* Cùng cách vào như thẻ sẵn sàng — xem ghi chú ở đó về vì sao nó XOAY chứ
+          không đổi icon. */}
+      <PressScale
+        accessibilityRole="button"
+        accessibilityState={{ expanded: detailOpen }}
+        accessibilityLabel={i18n.dcActivity}
+        hitSlop={14}
+        onPress={() => {
+          Haptics.selectionAsync();
+          onToggleDetail?.();
+        }}
+        style={styles.moreBtn}>
+        <Animated.View style={chevron}>
+          <Icon icon={ChevronDown} size={20} color={colors.mutedForeground} strokeWidth={2.5} />
+        </Animated.View>
+      </PressScale>
+
+      <Expander open={detailOpen}>
+        <View style={styles.detail}>
           {rings.map((r) => (
             <Row key={r.key} ring={r} label={label[r.key]} unit={unit[r.key]} />
           ))}
+          {estimated ? <Text style={styles.note}>{i18n.dcActivityEstimated}</Text> : null}
         </View>
-      </View>
-
-      {estimated ? <Text style={styles.note}>{i18n.dcActivityEstimated}</Text> : null}
+      </Expander>
     </View>
   );
 }
@@ -312,7 +348,10 @@ function Row({ ring, label, unit }: { ring: RingModel; label: string; unit: stri
 const styles = StyleSheet.create({
   /* Phần đệm mà GlassCard vốn cấp, viết lại vì khung đã bỏ — xem ghi chú cùng
      việc ở readiness-gauge.tsx. */
-  card: { gap: spacing.md, padding: spacing.card },
+  card: { gap: spacing.md, padding: spacing.card, alignItems: 'center' },
+  ringOnly: { alignItems: 'center' },
+  moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  detail: { gap: spacing.md, alignSelf: 'stretch' },
   title: {
     fontSize: 12,
     fontWeight: '600',
