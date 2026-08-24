@@ -1043,7 +1043,13 @@ export function DayPlan({
                     value={loadOf(row)}
                     onChangeText={(v) => setWeightText((prev) => ({ ...prev, [row.key]: v }))}
                   />
-                  <Text style={[styles.unit, !loadOn && styles.unitPlan]}>{wl}</Text>
+                  {/* No unit beside an empty box. A pull-up row read "— kg × 8",
+                      which offers a unit for a number that is not there — and the
+                      card header already says Bodyweight. It comes back the moment
+                      anything is typed, which is when weighted pull-ups need it. */}
+                  {loadOf(row) ? (
+                    <Text style={[styles.unit, !loadOn && styles.unitPlan]}>{wl}</Text>
+                  ) : null}
                   <Text style={styles.times}>×</Text>
                   <TextInput
                     accessibilityLabel={`${row.exerciseName} ${i18n.nRdSet.replace('{n}', String(row.ordinal))} ${i18n.nReps}`}
@@ -1407,7 +1413,9 @@ const styles = StyleSheet.create({
   fieldPlan: { color: 'rgba(255,255,255,0.4)', backgroundColor: 'transparent', borderColor: 'transparent' },
   unit: { ...type.caption, color: colors.mutedForeground },
   unitPlan: { color: 'rgba(255,255,255,0.3)' },
-  times: { ...type.caption, color: 'rgba(255,255,255,0.3)', paddingHorizontal: 1 },
+  /* Room on both sides. At the row gap alone it sat against the unit and read
+     as one clump, "kg ×", instead of separating the two numbers it is between. */
+  times: { ...type.caption, color: 'rgba(255,255,255,0.3)', paddingHorizontal: 3 },
   exNameInput: { flex: 1, minWidth: 0, padding: 0 },
   exRemove: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   addSet: {
