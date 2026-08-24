@@ -45,7 +45,10 @@ const INVOKE_HOME = path.join('src', 'lib', 'edge.ts');
  * lines that used to be in the tree.
  */
 const SELF_TEST = [
-  [URL_RE, "const CHAT_URL = 'https://drqgonxrtmomgrftelih.supabase.co/functions/v1/ai-coach';", true],
+  /* Không nêu tên project thật. Đây là một mẫu để chứng minh biểu thức còn khớp,
+     và một ref thật ở đây là một chỗ thứ năm phải nhớ sửa mỗi lần đổi project —
+     đúng cái loại việc mà lần đổi này vừa cho thấy là sẽ bị quên. */
+  [URL_RE, "const CHAT_URL = 'https://examplerefonly.supabase.co/functions/v1/ai-coach';", true],
   [URL_RE, "const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;", false],
   [INVOKE_RE, "await supabase.functions.invoke('ai-meal-suggest', {", true],
   [INVOKE_RE, 'await callEdge(EDGE_FUNCTIONS.mealSuggest, { lang });', false],

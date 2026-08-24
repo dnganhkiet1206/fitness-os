@@ -20,7 +20,7 @@ const config: CapacitorConfig = {
   },
   server: {
     // Allow WKWebView to cache assets aggressively for offline + speed
-    allowNavigation: ['drqgonxrtmomgrftelih.supabase.co'],
+    allowNavigation: ['guqmbqtgxqleuwajvwvg.supabase.co'],
   },
   plugins: {
     Keyboard: {

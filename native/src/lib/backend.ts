@@ -48,6 +48,60 @@ const trim = (u: string) => u.replace(/\/+$/, '');
 export const SUPABASE_URL = trim(process.env.EXPO_PUBLIC_SUPABASE_URL || DEFAULT_URL);
 export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY || DEFAULT_KEY;
 
+/**
+ * The URL and the key have to name the same project.
+ *
+ * ── the failure this exists to stop ──
+ *
+ * They are two variables and they are a PAIR. Swapping projects by changing one
+ * of them — the URL in the code, the key left in `.env`, or the other way round
+ * — produces an app where every single request is rejected, the sign-in screen
+ * fails with nothing informative, and no screen has any data. There is no error
+ * anywhere that says "these do not match"; there is just an app that does not
+ * work, and a search for the bug in the wrong place.
+ *
+ * A Supabase anon key is a JWT whose payload names its project:
+ * `{"iss":"supabase","ref":"<project-ref>","role":"anon"}`. So the mismatch is
+ * not something to be careful about — it is something that can be READ, here,
+ * before anything tries to use it.
+ *
+ * Newer projects issue `sb_publishable_…` keys instead, which carry no claims.
+ * Those are skipped rather than guessed at: a check that invents a verdict it
+ * cannot support is worse than no check.
+ */
+function projectOf(url: string): string | null {
+  return /https:\/\/([a-z0-9]+)\.supabase\.co/.exec(url)?.[1] ?? null;
+}
+
+function keyProject(key: string): string | null {
+  if (!key.startsWith('ey')) return null; // sb_publishable_… — nothing to read
+  try {
+    const body = key.split('.')[1];
+    if (!body) return null;
+    const json = JSON.parse(
+      /* `atob` rather than Buffer: this runs in the app, where Node globals are
+         not there. base64url is not base64, so the two swapped characters and
+         the missing padding have to be put back first. */
+      atob(body.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(body.length / 4) * 4, '=')),
+    ) as { ref?: unknown };
+    return typeof json.ref === 'string' ? json.ref : null;
+  } catch {
+    return null;
+  }
+}
+
+{
+  const fromUrl = projectOf(SUPABASE_URL);
+  const fromKey = keyProject(SUPABASE_ANON_KEY);
+  if (fromUrl && fromKey && fromUrl !== fromKey) {
+    throw new Error(
+      `Supabase URL and key name different projects: URL is "${fromUrl}", key is "${fromKey}". ` +
+        'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_KEY together from the same ' +
+        "project's API settings — a key from another project is rejected on every request.",
+    );
+  }
+}
+
 /** True when the app is talking to whatever was configured, not the fallback. */
 export const USING_CONFIGURED_BACKEND = SUPABASE_URL !== DEFAULT_URL;
 

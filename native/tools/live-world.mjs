@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 /**
  * The world the app wakes up in, for every tool that boots it.
  *
@@ -18,7 +22,21 @@
  * a coherent day to render.
  */
 
-export const REF = 'drqgonxrtmomgrftelih';
+/**
+ * Đọc ra từ `backend.ts`, không gõ lại.
+ *
+ * Ref này dựng khoá localStorage `sb-<ref>-auth-token` mà supabase-js tìm phiên
+ * đăng nhập trong đó. Gõ cứng thì nó lệch khỏi URL thật ngay lần đổi project
+ * đầu tiên, và hậu quả không phải một lỗi — mà là MỌI ảnh chụp trở thành màn
+ * chưa đăng nhập, trông y như app hỏng. Lấy từ nguồn thì không lệch được.
+ */
+const backendTs = readFileSync(
+  path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'lib', 'backend.ts'),
+  'utf8',
+);
+const refMatch = backendTs.match(/https:\/\/([a-z0-9]+)\.supabase\.co/);
+if (!refMatch) throw new Error('live-world: không đọc được project ref từ src/lib/backend.ts');
+export const REF = refMatch[1];
 export const UID = '11111111-2222-3333-4444-555555555555';
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
