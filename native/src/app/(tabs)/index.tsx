@@ -43,6 +43,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { PeekHost } from '@/components/ascnd/card-peek';
 import { StreakChip } from '@/components/ascnd/streak-chip';
 import { Mascot } from '@/components/ascnd/mascot';
+import { ReadinessAura } from '@/components/ascnd/readiness-aura';
 import { ReadinessGauge } from '@/components/ascnd/readiness-gauge';
 import { StatusScrim } from '@/components/ascnd/status-scrim';
 import {
@@ -426,6 +427,16 @@ export default function TodayScreen() {
     */
     <View style={styles.root}>
       <AmbientLight />
+      {/*
+        The day's colour, behind everything.
+
+        Outside the scroll view for the same reason `AmbientLight` is: a wash
+        that scrolled with the cards would read as a drawing on the page rather
+        than as light in the room. It sits after the ambient light and before
+        the content, so the three layers are in the order they would be in
+        physically — room, colour, things.
+      */}
+      <ReadinessAura status={readinessScore != null ? readinessStatus : null} />
       <ScrollView
       // Transparent, not `styles.root` as before. The wrapper already paints
       // the page colour; painting it again here would paint straight over the

@@ -1,5 +1,5 @@
 import { useIsFocused } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -133,6 +133,34 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
   const statusLabel =
     status === 'green' ? i18n.dcReadinessTrain : status === 'yellow' ? i18n.dcReadinessModerate : i18n.dcReadinessRecover;
 
+  /*
+    The ring's gradient needs a unique id, and the shipped one was a constant.
+
+    SVG ids are document-global on native rather than scoped to the `<Svg>` that
+    declares them, so two of these mounted at once both draw whichever was
+    registered last. `status-scrim.tsx` puts it plainly: "This has caught the
+    app three times; `useId` is the rule."
+
+    It became reachable when the hero cards became a deck — the stack mounts
+    every ring card at once — and the symptom would be one status's colour drawn
+    on another status's number.
+  */
+  const uid = useId();
+  const gradId = `readinessRing-${uid}`;
+
+  /*
+    Beside the tiles the ring is smaller, and that is layout rather than taste.
+
+    The reference puts the ring and the measurements side by side, which only
+    reads if both get room: at 208 the ring leaves about 90pt for the tiles, and
+    "1.46" with a label over it does not fit in 90pt without shrinking the type
+    below the 11pt floor `tools/type-scale.mjs` enforces. That rule says the fix
+    is to drop a label rather than the point size — here it is to give the ring
+    less room, because a ring reads perfectly well at 150.
+  */
+  const grouped = tiles.length > 0;
+  const ringSize = grouped ? 150 : 208;
+
   // Ring geometry — mirrors web: viewBox 120, r=52, strokeWidth 6
   const R = 52;
   const CIRC = 2 * Math.PI * R;
@@ -225,16 +253,25 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
         />
       ) : null}
 
-      {/* Ring */}
-      <View style={styles.ringWrap}>
+      {/*
+        Ring and measurements side by side.
+
+        They were stacked: a 208pt ring, then a row of up to five tiles across
+        the full width. Five tiles in one row is 60pt each — the ratio and its
+        label do not fit — and the ring alone took a third of the card's height
+        to say one number that the tiles then explain. Beside each other, the
+        reading and its reasons are one glance instead of two.
+      */}
+      <View style={grouped ? styles.readRow : undefined}>
+      <View style={[styles.ringWrap, { width: ringSize, height: ringSize }]}>
         {/* Neon halo behind the ring, tinted to the status colour (web glow) */}
         <View
           pointerEvents="none"
           style={[styles.ringGlow, { shadowColor: color, backgroundColor: `${color}0d` }]}
         />
-        <Svg width={208} height={208} viewBox="0 0 120 120">
+        <Svg width={ringSize} height={ringSize} viewBox="0 0 120 120">
           <Defs>
-            <LinearGradient id="readiness-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
               <Stop offset="0%" stopColor={g0} />
               <Stop offset="100%" stopColor={g1} />
             </LinearGradient>
@@ -255,7 +292,7 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
           <AnimatedCircle
             cx="60" cy="60" r={R}
             fill="none"
-            stroke="url(#readiness-grad)"
+            stroke={`url(#${gradId})`}
             strokeWidth={6}
             strokeLinecap="round"
             strokeDasharray={`${CIRC}`}
@@ -288,7 +325,7 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
       {/* Sub-score tiles: HRV · RHR · SLEEP · LOAD · ACWR — one per measured
           component, so this row and the confidence line below always agree. */}
       {tiles.length > 0 && (
-        <View style={styles.tileRow}>
+        <View style={styles.grid}>
           {tiles.map((t) => (
             <View key={t.label} style={styles.tile}>
               <Text style={styles.tileLabel}>{t.label}</Text>
@@ -297,6 +334,7 @@ export function ReadinessGauge({ score, status, explain, recommendation, acwr }:
           ))}
         </View>
       )}
+      </View>
 
       {/* Explain + recommendation */}
       {explainText ? <Text style={styles.explain}>{explainText}</Text> : null}
@@ -361,9 +399,19 @@ const styles = StyleSheet.create({
   ringCenter: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   score: { fontSize: 60, fontWeight: '700', fontFamily: 'Menlo', fontVariant: ['tabular-nums'] },
   statusLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2.4, marginTop: 6 },
-  tileRow: { flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch', paddingHorizontal: spacing.card },
+  readRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    gap: spacing.md,
+    paddingHorizontal: spacing.card,
+  },
+  /* Two per row, however many there are. Five tiles come out 2-2-1, and the odd
+     one keeps its siblings' width instead of stretching to fill the row — a
+     tile twice as wide as the rest reads as the important one. */
+  grid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tile: {
-    flex: 1,
+    width: '47%',
     alignItems: 'center',
     gap: 5,
     backgroundColor: glass.bg,
