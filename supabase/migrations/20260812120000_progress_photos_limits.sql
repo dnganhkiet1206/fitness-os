@@ -38,10 +38,35 @@
 -- where it was written. If a real capture ever approaches 5 MB, the thing to
 -- revisit is `MAX_EDGE`, not this number — a photo that large means the cap is
 -- not being applied.
-UPDATE storage.buckets
-   SET file_size_limit = 5242880,                    -- 5 MiB
-       allowed_mime_types = ARRAY['image/jpeg']
- WHERE id = 'progress-photos';
+-- ── applied, and then checked ──
+--
+-- A bare `UPDATE ... WHERE id = 'progress-photos'` cannot fail. If the bucket
+-- is missing, or row-level security filters it away from the migration role,
+-- the statement matches zero rows, reports success, and the migration is
+-- recorded as applied — leaving a bucket with NO size limit and NO MIME
+-- restriction while every log says the bound is in place. That is the worst
+-- shape a security migration can take: silently absent, and believed present.
+--
+-- So the row count is read back. On a healthy project this is invisible; on a
+-- project where the bucket never arrived it stops the push and says so.
+DO $$
+DECLARE
+  touched integer;
+BEGIN
+  UPDATE storage.buckets
+     SET file_size_limit = 5242880,                    -- 5 MiB
+         allowed_mime_types = ARRAY['image/jpeg']
+   WHERE id = 'progress-photos';
+
+  GET DIAGNOSTICS touched = ROW_COUNT;
+
+  IF touched <> 1 THEN
+    RAISE EXCEPTION
+      'progress-photos bucket was not bounded: UPDATE storage.buckets matched % rows, expected 1. '
+      'The bucket is created by 20260212045102_*.sql — confirm it exists in this project '
+      '(select id from storage.buckets) before re-running.', touched;
+  END IF;
+END $$;
 
 -- ── one type, because the app produces one type ──
 --
@@ -50,5 +75,26 @@ UPDATE storage.buckets
 -- would be allowing something nothing sends, and every extra permitted type is
 -- another shape the bucket has to be reasoned about with. Widen this on the day
 -- a feature needs it, not before.
-COMMENT ON TABLE storage.buckets IS
-  'progress-photos: 5 MiB, image/jpeg only. The app caps capture at 1920px long edge (see native/src/lib/photo-size.ts); this bound exists for anything that does not go through the app.';
+-- ── why the note above is a file comment and not a COMMENT ON TABLE ──
+--
+-- This migration used to end with:
+--
+--     COMMENT ON TABLE storage.buckets IS 'progress-photos: 5 MiB, ...';
+--
+-- It fails on Supabase Cloud with `must be owner of table buckets (42501)`, and
+-- that is correct behaviour rather than an obstacle. `storage.buckets` is owned
+-- by `supabase_storage_admin`; the role that runs migrations is not a member of
+-- it. Since April 2025 Supabase carves out exactly two things on the storage
+-- tables — RLS policies and triggers — and `COMMENT ON TABLE` is neither.
+-- Granting ownership to get it through would hand a project-owned schema to
+-- migrations for the sake of a docstring.
+--
+-- It was also documenting the WRONG OBJECT, which is why nothing is moved
+-- elsewhere in the database to replace it. `storage.buckets` is the table that
+-- holds EVERY bucket. A comment on it describing one row is a sentence that
+-- becomes false the moment a second bucket exists, and the next migration that
+-- comments the same table silently overwrites it. Prose about one row belongs
+-- with the statement that writes that row — here.
+--
+-- The bucket's behaviour is unchanged: 5 MiB, image/jpeg only, and the same RLS
+-- policies from 20260212045102_*.sql, which are untouched by this file.

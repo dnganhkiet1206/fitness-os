@@ -1406,7 +1406,18 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.14)',
   },
-  fieldLoad: { minWidth: 44 },
+  /*
+    Căn phải, và không phải vì thẩm mỹ.
+
+    Ô rộng 44pt với chữ căn giữa đẩy "55" ra giữa hộp, nên nó ở XA đơn vị của
+    chính nó hơn là đơn vị ở xa dấu nhân — mắt gom "kg ×" thành một cụm và tách
+    số ra khỏi nhãn của nó. Căn phải thì "55 kg" dính lại thành một thứ, và dấu
+    nhân tách đúng hai con số nó đứng giữa.
+
+    Kèm theo một thứ đắt hơn: các mức tạ xuống thành một CỘT thẳng hàng, nên
+    55 / 60 / 60 đọc được bằng một cái liếc dọc thay vì phải đọc từng hàng.
+  */
+  fieldLoad: { minWidth: 44, textAlign: 'right' },
   fieldReps: { minWidth: 34 },
   /* Still a box, just not shouting: it holds what the plan said, and the plan
      is already stated in full one line above. */
