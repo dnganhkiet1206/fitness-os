@@ -127,7 +127,9 @@ export function useDailyQuests(): DailyQuests {
     */
     const activeDefs = DAILY_QUESTS.filter((q) => q.key !== 'steps' || stepsAvailable !== false);
 
-    const claimed = wallet?.claimed ?? new Set<string>();
+    /* Dựng trong useMemo này, không nằm trong dữ liệu truy vấn — xem ghi chú ở
+       `use-mascot-room.ts`: cache bị persist và Set không sống qua JSON. */
+    const claimed = new Set(wallet?.claimed ?? []);
     const unclaimed = activeDefs.filter(
       (q) => done[q.key] && !claimed.has(questRefKey(today, q.key)),
     );

@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { Coins, Sparkles, X } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -130,7 +130,9 @@ export default function ShopScreen() {
 
   const owned = new Set((inventory ?? []).map((r) => r.item_key));
   const equipped = new Set((inventory ?? []).filter((r) => r.equipped).map((r) => r.item_key));
-  const claimed = wallet?.claimed ?? new Set<string>();
+  /* Dựng ở đây, không lưu ở đâu — xem `use-mascot-room.ts`: cache bị persist và
+     Set không sống qua JSON. */
+  const claimed = useMemo(() => new Set(wallet?.claimed ?? []), [wallet?.claimed]);
   const balance = wallet?.balance ?? 0;
   const level = levelFromXp(wallet?.xp ?? 0);
 

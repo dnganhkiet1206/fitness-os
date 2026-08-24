@@ -293,7 +293,9 @@ export default function MascotRoomScreen() {
   const welcomeTried = useRef(false);
 
   const balance = wallet?.balance ?? 0;
-  const claimed = wallet?.claimed ?? new Set<string>();
+  /* Dựng ở đây, không lưu ở đâu: `use-mascot-room.ts` giải thích vì sao truy
+     vấn trả về một mảng — cache bị persist, và Set không sống qua JSON. */
+  const claimed = useMemo(() => new Set(wallet?.claimed ?? []), [wallet?.claimed]);
   const owned = new Set((inventory ?? []).map((r) => r.item_key));
   const equippedOutfits = new Set(
     (inventory ?? []).filter((r) => r.equipped).map((r) => r.item_key),
@@ -344,7 +346,7 @@ export default function MascotRoomScreen() {
   // First visit: a welcome purse so the shop is playable right away
   // (idempotent via the 'welcome' ref_key — granted exactly once)
   useEffect(() => {
-    if (!wallet || wallet.claimed.has('welcome') || welcomeTried.current) return;
+    if (!wallet || claimed.has('welcome') || welcomeTried.current) return;
     welcomeTried.current = true;
     claim.mutate(
       { refKey: 'welcome', amount: 300, reason: 'welcome bonus' },

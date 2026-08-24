@@ -78,7 +78,25 @@ export function useMascotWallet() {
         // Buddy XP is re-derived from claimed ref_keys, so quests grant XP
         // alongside coins and purchases never lower the level
         xp: rows.reduce((s, r) => s + xpForRefKey(r.ref_key), 0),
-        claimed: new Set(rows.map((r) => r.ref_key)),
+        /*
+          Một MẢNG, không phải Set — và đây là lỗi đã làm app ném.
+
+          Cache của React Query ở app này được PERSIST xuống AsyncStorage, và
+          `_layout.tsx` không lọc query nào cả, nên mọi thứ trả về từ đây đều đi
+          qua `JSON.stringify`. Một `Set` không sống sót phép đó: nó
+          serialize thành `{}`, rồi hydrate lại thành một object rỗng, và
+          `claimed.has(...)` ở lần khởi động sau là "undefined is not a
+          function" ngay giữa lúc dựng Mascot.
+
+          Nó chỉ nổ bây giờ vì trước đây truy vấn này luôn HỎNG: project cũ
+          không có bảng `mascot_transactions`, nên `wallet` là undefined và
+          `?? new Set()` che mất chuyện đó. Project mới có bảng, truy vấn thành
+          công, và cái Set lần đầu tiên được lưu xuống đĩa.
+
+          Mảng đi qua JSON nguyên vẹn. Chỗ nào cần tra cứu nhanh thì tự dựng
+          `Set` tại chỗ dùng, nơi nó không bao giờ bị đem đi lưu.
+        */
+        claimed: rows.map((r) => r.ref_key),
       };
     },
   });
