@@ -3,6 +3,8 @@ import * as Haptics from 'expo-haptics';
 import { ChevronLeft } from 'lucide-react-native';
 import { useCallback, useRef } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -102,6 +104,32 @@ interface ScreenProps extends ViewProps {
   /** report the header height (insets.top + 44) so content can offset under it */
   onHeaderHeight?: (h: number) => void;
   /**
+   * Shrink the scroll area when the keyboard is up, for pages with text fields
+   * below the fold.
+   *
+   * ── why this exists, and why it is not the banned prop ──
+   *
+   * The note above says every field on these pages sits near the top, so none
+   * of them are behind the keyboard, and that if a form ever grows past that
+   * it should be wrapped in a `KeyboardAvoidingView` rather than having
+   * `automaticallyAdjustKeyboardInsets` put back on the scaffold. The week's
+   * day panel is that form: it grew a weight box and a rep box on every set,
+   * which on a twelve-set day is two dozen fields running the length of a
+   * scrolling list.
+   *
+   * This is the wrap that note asks for, made available to the scaffold's own
+   * scroll view because a tab page does not own one to wrap. It is off by
+   * default, so the other pages behave exactly as before, and it is a
+   * `KeyboardAvoidingView` rather than the inset prop — the inset prop's
+   * failure was that it did not survive `contentInsetAdjustmentBehavior="never"`
+   * and leaked a growing bottom inset. This shrinks a height and puts it back.
+   *
+   * `log-workout.tsx` has used the same wrap around its own scroll view since
+   * it was written, which is the only reason this is a known quantity rather
+   * than a guess.
+   */
+  keyboardAware?: boolean;
+  /**
    * Set false to lock the page while something on it is being dragged.
    *
    * It used to be honoured only by the floating-header layout, which made it a
@@ -127,7 +155,29 @@ interface ScreenProps extends ViewProps {
 /**
  * Page scaffold matching the web app's two header patterns.
  */
-export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, contentScrollEnabled = true, children, style, ...props }: ScreenProps) {
+/**
+ * The scroll area, optionally shrunk by the keyboard.
+ *
+ * A plain `View` when the page did not ask, rather than a KeyboardAvoidingView
+ * with `behavior: undefined` — an untouched page should not gain a component
+ * in its tree at all, so nothing about its layout can change by accident.
+ *
+ * Android is left alone on purpose, the same way `log-workout.tsx` leaves it:
+ * `windowSoftInputMode` already resizes the window there, and padding on top of
+ * that is padding twice.
+ */
+function ScrollFrame({ on, children }: { on: boolean; children: React.ReactNode }) {
+  if (!on) return <>{children}</>;
+  return (
+    <KeyboardAvoidingView
+      style={styles.scroller}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {children}
+    </KeyboardAvoidingView>
+  );
+}
+
+export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
 
@@ -207,17 +257,19 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
       return (
         <View style={styles.root}>
           <AmbientLight />
-          <ScrollView
-            ref={scroller}
-            style={styles.scroller}
-            contentContainerStyle={[styles.subContentFlush, { paddingBottom: insets.bottom + spacing.xl }, style]}
-            contentInsetAdjustmentBehavior="never"
-            scrollEnabled={contentScrollEnabled}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            {...props}>
-            {children}
-          </ScrollView>
+          <ScrollFrame on={keyboardAware}>
+            <ScrollView
+              ref={scroller}
+              style={styles.scroller}
+              contentContainerStyle={[styles.subContentFlush, { paddingBottom: insets.bottom + spacing.xl }, style]}
+              contentInsetAdjustmentBehavior="never"
+              scrollEnabled={contentScrollEnabled}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              {...props}>
+              {children}
+            </ScrollView>
+          </ScrollFrame>
           {/*
             The hero runs under the clock here by design, so this is the one
             sub-page layout that needs the strip. It sits under the floating
@@ -248,17 +300,19 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
         <AmbientLight />
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
         <View style={[styles.pageHeader, { paddingTop: insets.top }]}>{headerBar}</View>
-        <ScrollView
-          ref={scroller}
-          style={styles.scroller}
-          contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
-          contentInsetAdjustmentBehavior="never"
-          scrollEnabled={contentScrollEnabled}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          {...props}>
-          {children}
-        </ScrollView>
+        <ScrollFrame on={keyboardAware}>
+          <ScrollView
+            ref={scroller}
+            style={styles.scroller}
+            contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
+            contentInsetAdjustmentBehavior="never"
+            scrollEnabled={contentScrollEnabled}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            {...props}>
+            {children}
+          </ScrollView>
+        </ScrollFrame>
       </View>
     );
   }
@@ -277,30 +331,32 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
   return (
     <View style={styles.root}>
       <AmbientLight />
-      <ScrollView
-        ref={scroller}
-        style={styles.scroller}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: insets.top + spacing.sm, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
-          style,
-        ]}
-        contentInsetAdjustmentBehavior="never"
-        scrollEnabled={contentScrollEnabled}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}
-        scrollEventThrottle={16}
-        {...props}>
-        <View style={styles.header}>
-          <View style={styles.headerText}>
-            {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-            <Text style={styles.title}>{title}</Text>
+      <ScrollFrame on={keyboardAware}>
+        <ScrollView
+          ref={scroller}
+          style={styles.scroller}
+          contentContainerStyle={[
+            styles.content,
+            { paddingTop: insets.top + spacing.sm, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
+            style,
+          ]}
+          contentInsetAdjustmentBehavior="never"
+          scrollEnabled={contentScrollEnabled}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}
+          scrollEventThrottle={16}
+          {...props}>
+          <View style={styles.header}>
+            <View style={styles.headerText}>
+              {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+              <Text style={styles.title}>{title}</Text>
+            </View>
+            {headerRight}
           </View>
-          {headerRight}
-        </View>
-        {children}
-      </ScrollView>
+          {children}
+        </ScrollView>
+      </ScrollFrame>
       <StatusScrim />
     </View>
   );

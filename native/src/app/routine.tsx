@@ -161,7 +161,10 @@ export default function RoutineScreen() {
   };
 
   return (
-    <Screen back title={i18n.nRoutine}>
+    /* Every set on this page carries a weight box and a rep box, and a
+       twelve-set day runs them well past the fold — the one condition
+       `screen.tsx` names for turning this on. */
+    <Screen back keyboardAware title={i18n.nRoutine}>
       {/*
         The week, and the control that moves you through it.
 

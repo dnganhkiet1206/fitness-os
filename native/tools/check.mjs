@@ -129,6 +129,8 @@ const STEPS = [
   ['backend', 'node', ['tools/backend-config.mjs']],
   ['mép biểu đồ', 'node', ['tools/chart-edges.mjs']],
   ['hàng vuốt', 'node', ['tools/swipe.mjs']],
+  ['hiệu ứng thu lại', 'node', ['tools/retract.mjs']],
+  ['số thật của buổi tập', 'node', ['tools/plan-actuals.mjs']],
   ['tài liệu nối backend', 'node', ['tools/backend-doc.mjs']],
   ['vùng chạm', 'node', ['tools/tap-targets.mjs']],
   ['kinh tế', 'node', ['tools/economy.mjs']],

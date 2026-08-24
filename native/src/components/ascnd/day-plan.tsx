@@ -1,10 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { Check, Minus, Moon, Pencil, Plus, Timer } from 'lucide-react-native';
+import { Check, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import * as Crypto from 'expo-crypto';
 
 import { ExerciseProgress } from '@/components/ascnd/exercise-progress';
@@ -13,9 +13,10 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { RestTimer } from '@/components/ascnd/rest-timer';
+import { Retract } from '@/components/ascnd/retract';
 import { SEGMENT_SWAP } from '@/components/ascnd/segmented';
 import type { TplExercise } from '@/components/ascnd/template-list';
-import { duration } from '@/constants/motion';
+import { duration, press } from '@/constants/motion';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import type { useI18n } from '@/hooks/use-app-settings';
@@ -29,7 +30,8 @@ import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { DEFAULT_REST, DEFAULT_RPE, restLabel } from '@/lib/prescription';
 import { toast } from '@/lib/toast';
-import { displayWeight, weightLabel } from '@/lib/units';
+import { parseRepEntry } from '@/lib/rep-entry';
+import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 
 /**
  * One day of the week, as the thing you do rather than the thing you planned.
@@ -132,6 +134,59 @@ interface SetRow {
   plannedRpe: number;
   /** true when this row is the first of its exercise, so the name is printed */
   heads: boolean;
+  /** set when the row is a movement added today rather than one the plan asked
+      for — carries the id so the card can rename, extend and remove it */
+  adHoc?: string;
+}
+
+/** A movement added on the day: a name, and how many sets of it happened. */
+interface AdHoc {
+  id: string;
+  name: string;
+  sets: number;
+}
+
+/**
+ * The rows for movements that were not in the plan.
+ *
+ * ── why these are rows and not a second list ──
+ *
+ * They arrive on exactly the same `SetRow` shape as planned work, so the
+ * ticking, the resume point, the effort chips, the progress bar and the two
+ * submit paths all pick them up without knowing they exist. The alternative —
+ * a parallel "extras" list carried beside `rows` — is the same feature written
+ * twice, and the second copy is the one that would forget to be counted.
+ *
+ * Their planned load and rep count are ZERO, which is not a placeholder: it is
+ * what "the plan did not ask for this" means, and it is what makes the boxes
+ * open blank and light up the moment anything is typed. The rest and effort
+ * defaults are the app's, because a set you decided to do still has a sensible
+ * rest and still deserves an effort chip.
+ */
+function adHocRows(list: AdHoc[]): SetRow[] {
+  const rows: SetRow[] = [];
+  for (const e of list) {
+    /* Same clamp and same reason as `expand`: this number reaches storage, and
+       storage is a place a value can come back wrong from. */
+    const count = Math.max(1, Math.min(20, Math.round(e.sets)));
+    for (let n = 0; n < count; n++) {
+      rows.push({
+        key: `x${e.id}-${n}`,
+        exerciseName: e.name,
+        ordinal: n + 1,
+        of: count,
+        weight: 0,
+        reps: 0,
+        plannedRest: DEFAULT_REST,
+        plannedRpe: DEFAULT_RPE,
+        /* Always true, so two unnamed additions do not merge into one card the
+           way two planned rows of the same movement deliberately do. */
+        heads: true,
+        adHoc: e.id,
+      });
+    }
+  }
+  return rows;
 }
 
 function expand(exercises: TplExercise[]): SetRow[] {
@@ -262,7 +317,27 @@ export function DayPlan({
   const exercises: TplExercise[] = Array.isArray(template?.exercises)
     ? (template.exercises as TplExercise[])
     : [];
-  const rows = useMemo(() => expand(exercises), [template?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  /**
+   * What you did that the plan did not ask for.
+   *
+   * The complaint this answers was about STEPS: the plan is on this screen, so
+   * an extra movement had to be recorded on a different one, which meant
+   * leaving a half-ticked workout to go and type somewhere else. There is no
+   * version of that which is not worse than a button at the bottom of the list
+   * you are already looking at.
+   *
+   * Today's session only. This does not touch the template — next week's
+   * Monday is still what the plan says, because "I also did some curls" is a
+   * fact about today and editing the programme is a decision, not a side
+   * effect of logging.
+   */
+  const [extra, setExtra] = useState<AdHoc[]>([]);
+
+  const planned = useMemo(() => expand(exercises), [template?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* One list from here down. Everything that reads `rows` — the tick state, the
+     resume point, the progress bar, both submit paths — treats an added
+     movement exactly like a planned one, which is the point. */
+  const rows = useMemo(() => [...planned, ...adHocRows(extra)], [planned, extra]);
 
   /*
     The sets of one movement, in one card.
@@ -321,6 +396,37 @@ export function DayPlan({
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [rpe, setRpe] = useState<Record<string, number>>({});
   const [rest, setRest] = useState<Record<string, number>>({});
+  /**
+   * What actually went on the bar, and what actually came back up.
+   *
+   * ── why this had to exist ──
+   *
+   * Until now this panel ticked boxes and then submitted the TEMPLATE's
+   * numbers as though they had been performed. Load six sets at 55 kg, do the
+   * last two at 60 because it felt light, and the record said 55 six times.
+   * Every number downstream inherited that: volume load, the trend chart, the
+   * "last time" line on the card above, personal records. The screen was
+   * quietly authoring a training history nobody had lifted.
+   *
+   * `log-workout.tsx` already knew: "the third set of a five-set squat is the
+   * one that came in two reps light, and a form that cannot say so is a form
+   * people stop trusting". This panel was that form. The fix is not another
+   * screen to switch to — it is these two boxes, on the row, where the tick is.
+   *
+   * ── text, not numbers ──
+   *
+   * The same reason the sheet gives for its own boxes: a half-typed "6" on the
+   * way to 60 is not the number six, and a cleared box is not zero kilograms.
+   *
+   * ── and absent, not seeded ──
+   *
+   * A key here means "this set differed". Nothing is written when the day
+   * loads, so the common case stores nothing, the row stays quiet, and a plan
+   * edited between sessions still reaches an untouched row as the new plan
+   * rather than as a stale copy of the old one.
+   */
+  const [weightText, setWeightText] = useState<Record<string, string>>({});
+  const [repsText, setRepsText] = useState<Record<string, string>>({});
   /** the one row showing its editors — at most one, so the list stays short */
   const [editing, setEditing] = useState<string | null>(null);
   /**
@@ -356,10 +462,25 @@ export function DayPlan({
               done?: Record<string, boolean>;
               rpe?: Record<string, number>;
               rest?: Record<string, number>;
+              weightText?: Record<string, string>;
+              repsText?: Record<string, string>;
+              extra?: AdHoc[];
             };
             setDone(saved.done ?? {});
             setRpe(saved.rpe ?? {});
             setRest(saved.rest ?? {});
+            /* Absent in a blob written before these existed, which is exactly
+               what "as planned" already means — no migration needed. */
+            setWeightText(saved.weightText ?? {});
+            setRepsText(saved.repsText ?? {});
+            /* Filtered rather than trusted: this came off the disk, where a
+               half-written blob or an older shape can leave an entry with no
+               id, and an id is what every row key here is built from. */
+            setExtra(
+              Array.isArray(saved.extra)
+                ? saved.extra.filter((e) => e && typeof e.id === 'string' && e.id.length > 0)
+                : [],
+            );
           } catch {
             // a corrupt entry is not worth a crash — start the workout fresh
           }
@@ -412,10 +533,15 @@ export function DayPlan({
 
   useEffect(() => {
     if (!storeKey || !loaded) return;
-    AsyncStorage.setItem(storeKey, JSON.stringify({ done, rpe, rest })).catch(() => {
-      // losing the resume point is survivable; interrupting the workout is not
-    });
-  }, [storeKey, loaded, done, rpe, rest]);
+    AsyncStorage.setItem(
+      storeKey,
+      JSON.stringify({ done, rpe, rest, weightText, repsText, extra }),
+    ).catch(
+      () => {
+        // losing the resume point is survivable; interrupting the workout is not
+      },
+    );
+  }, [storeKey, loaded, done, rpe, rest, weightText, repsText, extra]);
 
   /*
     The rest clock.
@@ -441,6 +567,72 @@ export function DayPlan({
   }, [running]);
 
   const restOf = useCallback((row: SetRow) => rest[row.key] ?? row.plannedRest, [rest]);
+
+  const addExercise = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setExtra((prev) => [...prev, { id: Crypto.randomUUID(), name: '', sets: 1 }]);
+  };
+  const renameExtra = (id: string, name: string) =>
+    setExtra((prev) => prev.map((e) => (e.id === id ? { ...e, name } : e)));
+  const addSet = (id: string) => {
+    Haptics.selectionAsync();
+    /* Same ceiling as every other set count in this file. */
+    setExtra((prev) => prev.map((e) => (e.id === id ? { ...e, sets: Math.min(20, e.sets + 1) } : e)));
+  };
+  const removeExtra = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setExtra((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  /*
+    The plan, written the way the boxes below write it: in the unit on screen,
+    to one decimal, and blank when there is no load to carry.
+
+    Blank rather than "0" for the reason `log-workout.tsx` gives — a zero in a
+    numeric field reads as a value somebody entered, and would be saved as a
+    real zero-kilo set. Bodyweight work has nothing to prefill.
+  */
+  const plannedLoad = useCallback(
+    (row: SetRow) =>
+      row.weight > 0 ? String(Math.round(displayWeight(row.weight, wUnit) * 10) / 10) : '',
+    [wUnit],
+  );
+  const plannedReps = (row: SetRow) => (row.reps > 0 ? String(row.reps) : '');
+  const loadOf = (row: SetRow) => weightText[row.key] ?? plannedLoad(row);
+  const repsOf = (row: SetRow) => repsText[row.key] ?? plannedReps(row);
+
+  /**
+   * One set, as performed — the single place the panel turns what is on screen
+   * into what gets written down.
+   *
+   * Both submit paths and the volume total read it, so an offline session and
+   * an online one cannot disagree about what happened, and the number under the
+   * bar cannot disagree with either.
+   *
+   * ── the two fallbacks, and why they are not the same shape ──
+   *
+   * A load that will not parse falls back to **nothing**, because a blank
+   * weight box is what bodyweight work looks like and `0 × reps` is the honest
+   * volume for it.
+   *
+   * A rep entry that will not parse falls back to **the plan**, because ticking
+   * a row is itself a statement that the planned set happened. Writing zero
+   * reps there would delete a set the person just said they did.
+   */
+  const performed = useCallback(
+    (row: SetRow) => {
+      const typed = Number(loadOf(row));
+      const entry = parseRepEntry(repsOf(row));
+      const said = entry.reps > 0 || (entry.durationSec ?? 0) > 0;
+      return {
+        weight: Number.isFinite(typed) && typed > 0 ? weightToKg(typed, wUnit) : 0,
+        reps: said ? entry.reps : row.reps,
+        durationSec: entry.durationSec ?? undefined,
+      };
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [weightText, repsText, wUnit, plannedLoad],
+  );
 
   /*
     What is ticked: what you ticked, filled in by what the day's sessions prove.
@@ -511,15 +703,18 @@ export function DayPlan({
   */
   const logged = sessions.length > 0 || log.isSuccess || queue.isPending || queue.isSuccess;
   const canFinish = doneRows.length > 0 && !log.isPending && !logged;
-  const volume = doneRows.reduce((s, r) => s + r.weight * r.reps, 0);
+  /* What was lifted, not what was written down for you to lift. */
+  const volume = doneRows.reduce((s, r) => {
+    const p = performed(r);
+    return s + p.weight * p.reps;
+  }, 0);
 
   const finish = () => {
     if (!canFinish) return;
     const sets = doneRows.map((r) => ({
       exerciseId: '',
       exerciseName: r.exerciseName,
-      weight: r.weight,
-      reps: r.reps,
+      ...performed(r),
       rpe: rpe[r.key] ?? r.plannedRpe,
     }));
     // A session is remembered by its hardest part, and every set that happened
@@ -565,10 +760,13 @@ export function DayPlan({
           toggle. Absent means working set, so every row from here is counted,
           which is correct.
 
-          It would also cost a fifth control on every row of this panel, and the
-          note beside the effort chips below already argues against that: nine
-          controls per set on a six-set workout is fifty-four, "all the same
-          shape and none of them the one you want".
+          It would also cost another control on every row of this panel, and
+          the row is fuller than it was: the tick, the load, the reps, the rest
+          chip and the effort chip is already five. The note beside the effort
+          chips below is the standing argument — nine controls per set on a
+          six-set workout is fifty-four, "all the same shape and none of them
+          the one you want" — and the two boxes earned their place by being the
+          record itself rather than a setting on it.
         */
         sets: sets.map((s, i) => ({
           exerciseId: s.exerciseId,
@@ -577,6 +775,11 @@ export function DayPlan({
           weight: Math.round(s.weight * 100) / 100,
           reps: s.reps,
           rpe: s.rpe >= 1 && s.rpe <= 10 ? s.rpe : null,
+          /* Carried, not dropped. A plank entered as `45s` has no reps to
+             record, and a queued session that lost the hold would replay as an
+             empty set — `exercise-kind.ts` reads `durationSec` to know the
+             movement is timed at all. */
+          ...(s.durationSec ? { durationSec: s.durationSec } : {}),
         })),
         volumeLoad: Math.round(sets.reduce((sum, s) => sum + s.weight * s.reps, 0)),
         templateId: template?.id ?? null,
@@ -686,25 +889,68 @@ export function DayPlan({
         duration={duration.move}
       />
 
-      {blocks.map((block, bi) => (
-        <Animated.View key={`${block.name}-${bi}`} entering={SWAP}>
+      {blocks.map((block) => {
+        /* Keyed by the first row, never by the name.
+
+           An added movement's name changes on every keystroke, and a key that
+           contains it makes React throw the card away and build a new one for
+           each letter — the field loses focus after the first character and
+           the keyboard shuts. The row key is stable for the life of the
+           movement, which is exactly what a key is supposed to be. */
+        const added = block.rows[0].adHoc;
+        return (
+        <Animated.View key={block.rows[0].key} entering={SWAP}>
           <GlassCard style={styles.exCard}>
             {/*
-              The header carries what every set of this movement shares — the
-              load and the rep target — so the rows below do not each repeat it.
-              Same rule the insight screen applies to its series: spend the
-              width on what varies.
+              The header states THE PLAN: what you came here to do.
+
+              It used to be phrased as "what every set shares, so the rows do
+              not repeat it", and that stopped being true when the rows became
+              editable. They are not repeating it — they start at it. The
+              distinction is the whole point of the screen now: this line is
+              what was asked for, the lines below are what happened, and on a
+              good day they agree and the rows stay grey.
             */}
             <View style={styles.exHead}>
               <View style={styles.exTitleRow}>
-                <Text style={styles.exName} numberOfLines={1}>{block.name}</Text>
-                <Text style={styles.exPrescription} numberOfLines={1}>
-                  {block.rows.length} × {block.rows[0].reps}
-                  {'  ·  '}
-                  {block.rows[0].weight > 0
-                    ? `${Math.round(displayWeight(block.rows[0].weight, wUnit) * 10) / 10} ${wl}`
-                    : i18n.nRdBodyweight}
-                </Text>
+                {added ? (
+                  /* An added movement has no plan to state, so the header holds
+                     the one thing only you can supply — its name — and the way
+                     back out if you tapped the button by accident. */
+                  <TextInput
+                    accessibilityLabel={i18n.nRdExtraName}
+                    style={[styles.exName, styles.exNameInput]}
+                    placeholder={i18n.nRdExtraName}
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    value={block.name}
+                    autoCapitalize="words"
+                    onChangeText={(v) => renameExtra(added, v)}
+                  />
+                ) : (
+                  <Text style={styles.exName} numberOfLines={1}>{block.name}</Text>
+                )}
+                {added ? (
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel={i18n.a11yRemove}
+                    hitSlop={12}
+                    /* Under a finger's width, so the shallow press is invisible
+                       on it — `motion.ts` names the six controls that found
+                       this out separately before there was a token for it. */
+                    to={press.deep}
+                    onPress={() => removeExtra(added)}
+                    style={styles.exRemove}>
+                    <Icon icon={X} size={14} color={colors.mutedForeground} />
+                  </PressScale>
+                ) : (
+                  <Text style={styles.exPrescription} numberOfLines={1}>
+                    {block.rows.length} × {block.rows[0].reps}
+                    {'  ·  '}
+                    {block.rows[0].weight > 0
+                      ? `${Math.round(displayWeight(block.rows[0].weight, wUnit) * 10) / 10} ${wl}`
+                      : i18n.nRdBodyweight}
+                  </Text>
+                )}
               </View>
               <ExerciseProgress
                 insight={insightFor(block.name)}
@@ -720,6 +966,11 @@ export function DayPlan({
               const effort = rpe[row.key] ?? row.plannedRpe;
               const secs = restOf(row);
               const open = editing === row.key;
+              /* Lit only when it stopped agreeing with the plan — the same rule
+                 the two chips below follow, so one glance down the card finds
+                 every set that went differently. */
+              const loadOn = loadOf(row) !== plannedLoad(row);
+              const repsOn = repsOf(row) !== plannedReps(row);
               return (
                 <View key={row.key}>
                   {ri > 0 ? <View style={styles.hair} /> : null}
@@ -749,19 +1000,62 @@ export function DayPlan({
                   />
                 </PressScale>
 
-                <View style={styles.setText}>
-                  {/*
-                    Just which set it is.
+                {/*
+                  What this set actually was — editable, here, on the row.
 
-                    The load and the rep target used to be repeated here, on
-                    every row — "55 kg × 10" three times under a heading that
-                    could have said it once. They are in the card's header now.
-                    HIG's own line about list rows is the rule: "keep item text
-                    succinct so row content is comfortable to read".
-                  */}
-                  <Text style={[styles.setMain, isDone && styles.setMainDone]} numberOfLines={1}>
-                    {i18n.nRdSet.replace('{n}', String(row.ordinal))} / {row.of}
-                  </Text>
+                  ── why the numbers came back after being removed ──
+
+                  They were taken off these rows a version ago as repetition:
+                  "55 kg × 10" three times under a header that could say it
+                  once. That was right while they were a READOUT of the plan.
+                  It stops being right the moment they are the place you record
+                  what you did, because then they are not three copies of one
+                  fact — they are three separate facts that happen to agree
+                  today.
+
+                  The header still states the plan. These start prefilled from
+                  it and stay quiet while they match, so a workout that went
+                  exactly as written still reads as one line of grey per set.
+
+                  ── the ordinal shrank to a numeral ──
+
+                  "Set 1 / 3" spent forty points saying what the header's
+                  "3 ×" and the row's own position already say. The label is
+                  intact for VoiceOver, where position is not available.
+
+                  ── selectTextOnFocus ──
+
+                  Tap the 55 and type 60: the prefill is selected, so the
+                  common edit is a tap and two digits rather than a tap, four
+                  backspaces and two digits. The whole complaint that started
+                  this was step count.
+                */}
+                <View style={styles.setText}>
+                  <Text style={[styles.setNo, isDone && styles.setNoDone]}>{row.ordinal}</Text>
+                  <TextInput
+                    accessibilityLabel={`${row.exerciseName} ${i18n.nRdSet.replace('{n}', String(row.ordinal))} ${i18n.nWeight}`}
+                    style={[styles.field, styles.fieldLoad, !loadOn && styles.fieldPlan]}
+                    placeholder="—"
+                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    keyboardType="decimal-pad"
+                    returnKeyType="done"
+                    selectTextOnFocus
+                    value={loadOf(row)}
+                    onChangeText={(v) => setWeightText((prev) => ({ ...prev, [row.key]: v }))}
+                  />
+                  <Text style={[styles.unit, !loadOn && styles.unitPlan]}>{wl}</Text>
+                  <Text style={styles.times}>×</Text>
+                  <TextInput
+                    accessibilityLabel={`${row.exerciseName} ${i18n.nRdSet.replace('{n}', String(row.ordinal))} ${i18n.nReps}`}
+                    style={[styles.field, styles.fieldReps, !repsOn && styles.fieldPlan]}
+                    placeholder="—"
+                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    keyboardType="number-pad"
+                    returnKeyType="done"
+                    selectTextOnFocus
+                    value={repsOf(row)}
+                    onChangeText={(v) => setRepsText((prev) => ({ ...prev, [row.key]: v }))}
+                  />
                 </View>
 
                 {/*
@@ -834,7 +1128,7 @@ export function DayPlan({
               </View>
 
               {open ? (
-                <Animated.View entering={FadeIn.duration(140)} exiting={FadeOut.duration(100)} style={styles.editors}>
+                <Retract style={styles.editors}>
                   <View style={styles.editorRow}>
                     <Text style={styles.editorLabel}>{i18n.nWbRest}</Text>
                     <View style={styles.stepper}>
@@ -891,15 +1185,51 @@ export function DayPlan({
                       ))}
                     </View>
                   </View>
-                </Animated.View>
+                </Retract>
               ) : null}
                   </View>
                 </View>
               );
             })}
+            {added ? (
+              /* Only on movements you added. A planned exercise says how many
+                 sets it is, and a fourth set of it is a change to the plan
+                 rather than a note about today — a different decision, made
+                 somewhere the plan can actually be edited. */
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel={i18n.nRdAddSet}
+                hitSlop={8}
+                onPress={() => addSet(added)}
+                style={styles.addSet}>
+                <Icon icon={Plus} size={13} color={colors.mutedForeground} strokeWidth={2.5} />
+                <Text style={styles.addSetText}>{i18n.nRdAddSet}</Text>
+              </PressScale>
+            ) : null}
           </GlassCard>
         </Animated.View>
-      ))}
+        );
+      })}
+
+      {/*
+        The way to record something the plan did not ask for, at the bottom of
+        the plan it did.
+
+        Visible rather than tucked behind a menu, and for the reason this screen
+        has been corrected on twice already: a control nobody notices is a
+        control nobody has. It is outlined rather than filled because it is not
+        the action of this screen — finishing is — but it is a full-width row
+        with a label, because "I also did some curls" has to be answerable
+        without leaving a half-ticked workout.
+      */}
+      <PressScale
+        accessibilityRole="button"
+        accessibilityLabel={i18n.nRdAddExercise}
+        onPress={addExercise}
+        style={styles.addEx}>
+        <Icon icon={Plus} size={15} color={colors.mutedForeground} strokeWidth={2.5} />
+        <Text style={styles.addExText}>{i18n.nRdAddExercise}</Text>
+      </PressScale>
 
       {/*
         Off for good once it has saved.
@@ -1021,7 +1351,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: 2,
   },
-  setCard: { padding: spacing.sm + 2, gap: spacing.sm },
   setCardDone: { opacity: 0.6 },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   check: {
@@ -1038,9 +1367,78 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
   checkOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  setText: { flex: 1, minWidth: 0 },
-  setMain: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  setMainDone: { textDecorationLine: 'line-through', color: colors.mutedForeground },
+  setText: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 3 },
+  setNo: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    fontVariant: ['tabular-nums'],
+    width: 12,
+    textAlign: 'center',
+  },
+  setNoDone: { color: 'rgba(255,255,255,0.28)' },
+  /*
+    A box that looks like a box.
+
+    The first draft was bare text with no background, on the theory that a
+    quiet row is a calm row. It read as a label — the same mistake the effort
+    chips made before they were given an edge, and the same one the tick made
+    before that: "a control has to look like one before it can be one".
+  */
+  field: {
+    ...type.footnote,
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
+    textAlign: 'center',
+    height: 28,
+    paddingHorizontal: 4,
+    /* A TextInput carries its own vertical padding on Android and it fights a
+       fixed height — the text sits low and the box looks wrong on one platform
+       only, which is the kind of thing nobody sees until somebody reports it. */
+    paddingVertical: 0,
+    borderRadius: radius.sm,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  fieldLoad: { minWidth: 44 },
+  fieldReps: { minWidth: 34 },
+  /* Still a box, just not shouting: it holds what the plan said, and the plan
+     is already stated in full one line above. */
+  fieldPlan: { color: 'rgba(255,255,255,0.4)', backgroundColor: 'transparent', borderColor: 'transparent' },
+  unit: { ...type.caption, color: colors.mutedForeground },
+  unitPlan: { color: 'rgba(255,255,255,0.3)' },
+  times: { ...type.caption, color: 'rgba(255,255,255,0.3)', paddingHorizontal: 1 },
+  exNameInput: { flex: 1, minWidth: 0, padding: 0 },
+  exRemove: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  addSet: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    height: 34,
+    marginTop: spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  addSetText: { ...type.caption, color: colors.mutedForeground },
+  addEx: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 44,
+    borderRadius: radius.md,
+    /* Solid, not dashed — `tools/training-card.mjs` caught the first draft and
+       says why: iOS refuses a dashed border whose four sides differ and then
+       draws NOTHING rather than falling back, so the button would have been an
+       invisible tap target on the platform this ships to. A quiet fill carries
+       the same "this is available, it is not the main event" without betting on
+       a border style. */
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  addExText: { ...type.footnote, color: colors.mutedForeground },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
