@@ -126,6 +126,39 @@ try {
         problems.push(`câu của app bị đổi: "${msg.slice(0, 40)}" → "${errorText(err, {}).slice(0, 40)}"`);
       }
     }
+    /*
+      ── the one way SQL can still reach a reader ──
+
+      An `Error` the app constructs is shown verbatim, by design. So the design
+      only holds while no app-authored message CONTAINS database text. Chain AM
+      measured the ten `new Error('…')` literals in `src` and none does — this
+      keeps it that way, generalising the `health-sync-write` rule below from
+      one file to all of them, because that file was simply the first to do it.
+    */
+    {
+      const DB_WORDS = /\b(select |insert into|update .* set |delete from|constraint|relation "|column "|violates|sqlstate|pgrst)/i;
+      const walkSrc = (dir, acc) => {
+        for (const f of readdirSync(dir, { withFileTypes: true })) {
+          const q = path.join(dir, f.name);
+          if (f.isDirectory()) walkSrc(q, acc);
+          else if (/\.tsx?$/.test(f.name)) acc.push(q);
+        }
+        return acc;
+      };
+      for (const file of walkSrc(path.join(NATIVE, 'src'), [])) {
+        const rel = path.relative(NATIVE, file);
+        if (rel === 'src/lib/error-copy.ts') continue;
+        for (const m of strip(readFileSync(file, 'utf8')).matchAll(/new Error\(\s*(`[^`]*`|'[^']*'|"[^"]*")/g)) {
+          if (DB_WORDS.test(m[1])) {
+            problems.push(
+              `${rel}: một Error do app tạo mang chữ của cơ sở dữ liệu — ${m[1].slice(0, 70)} — và Error do app ` +
+                'tạo được hiện NGUYÊN VĂN theo thiết kế, nên đây là đường duy nhất SQL còn tới được người đọc',
+            );
+          }
+        }
+      }
+    }
+
     /* and an app error must not smuggle database text inside itself */
     const sync = strip(read('src/lib/health-sync-write.ts'));
     want(!/failures\.push\([^)]*\berror\.message\b/.test(sync) && !/failures\.push\([^)]*\(e as Error\)\.message/.test(sync),
