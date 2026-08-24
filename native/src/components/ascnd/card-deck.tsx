@@ -185,19 +185,19 @@ function Page({
   return (
     <Animated.View style={[styles.page, style]}>
       {/*
-        Một dải kính PHẲNG, không phải một cái thẻ.
+        Không có dải kính nào ở đây, và việc bỏ nó đi là bản sửa cho "thẻ bị cắt
+        ngang".
 
-        `LiquidGlass` có viền và một mặt sáng chéo — đó là thứ làm một tấm kính
-        trông NỔI LÊN khỏi trang, và ở đây hero không nổi lên khỏi trang: nó
-        chạm hai mép và là phần trên cùng của chính trang đó. Nên chỉ có
-        `BlurView` trần: không viền, không bo góc, không gradient bắt sáng.
+        Trước đó mỗi trang có một `BlurView` phủ kín. Nó phẳng và không viền,
+        nhưng nó vẫn có MÉP DƯỚI: chỗ blur kết thúc là một đường ngang cứng vắt
+        qua màn hình, ngay trên Koa. Hero không được phép có mép — nó là phần
+        trên cùng của trang, không phải một tấm đặt lên trang.
 
-        Blur chứ không phải một lớp phủ mờ, vì thứ nằm sau nó là aura có MÀU và
-        màu đó đổi khi bạn vuốt. `liquid-glass.tsx` đã đo chuyện này: "a flat
-        white fill over moving colour is a sheet of tracing paper: the light
-        goes under it and nothing comes through."
+        Và khi không còn thẻ thì cũng không còn gì để làm mờ: thứ duy nhất phía
+        sau vòng tròn là lớp aura, và làm mờ một wash gradient thì cho ra đúng
+        cái wash đó. Blur được chọn hồi phương án còn lại là một cái thẻ ĐỤC che
+        mất màu; giờ không có thẻ nào cả, nên nó không còn việc gì để làm.
       */}
-      <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
       <View onLayout={onHeight}>{children}</View>
     </Animated.View>
   );
@@ -229,7 +229,19 @@ const styles = StyleSheet.create({
      page one step away sits a full width to the side and is simply cut off, so
      no card has to paint over another and none of them has to be solid. */
   stage: { position: 'relative', overflow: 'hidden' },
-  page: { position: 'absolute', left: 0, right: 0, top: 0 },
+  /*
+    Mọi trang đều đúng bằng kích thước của sân khấu.
+
+    `bottom: 0` là cả bản sửa cho "tất cả thẻ phải cùng kích thước". Trước đó
+    mỗi trang cao bằng nội dung của nó, nên hai vòng tròn khác cỡ và hai khối
+    chữ khác độ dài cho ra hai trang khác chiều cao — và cách duy nhất để chúng
+    khớp là chỉnh tay padding của từng thẻ cho tới khi hai con số tình cờ bằng
+    nhau, thứ sẽ lệch lại ngay lần đầu một thẻ thêm một dòng.
+
+    Neo cả trên lẫn dưới thì chúng bằng nhau THEO CẤU TRÚC: sân khấu cao bằng
+    trang cao nhất, và mọi trang cao bằng sân khấu.
+  */
+  page: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
   pips: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, paddingTop: 12 },
   pip: { width: DOT, height: DOT, borderRadius: radius.full, backgroundColor: colors.foreground },
 });

@@ -56,6 +56,7 @@ const TINT: Record<string, string> = {
 export function ReadinessAura({
   status,
   tint: override,
+  tint2,
 }: {
   status: 'green' | 'yellow' | 'red' | null;
   /**
@@ -69,6 +70,20 @@ export function ReadinessAura({
    * `useId` note below is about.
    */
   tint?: string;
+  /**
+   * Màu thứ hai, đặt lệch tâm.
+   *
+   * Một wash tròn duy nhất của MỘT màu đọc ra đơn điệu vì nó không có hướng:
+   * nó sáng ở giữa và tối dần đều ra mọi phía, tức là mắt không có gì để đi
+   * theo. Ảnh tham chiếu có hai tông chuyển vào nhau chéo qua khung hình, và đó
+   * là thứ làm nó ra "một bầu trời" chứ không phải "một vệt sáng".
+   *
+   * Nên lớp thứ hai neo ở một góc khác, phủ chồng lên lớp thứ nhất. Hai hình
+   * tròn lệch tâm chồng nhau cho ra một dải chuyển màu mà không cần đến một
+   * gradient tuyến tính thứ ba, và mỗi lớp vẫn tắt hẳn ở rìa của nó nên không
+   * có mép nào.
+   */
+  tint2?: string;
 }) {
   const { width, height } = useWindowDimensions();
   /*
@@ -81,11 +96,17 @@ export function ReadinessAura({
   */
   const uid = useId();
   const gid = `readinessAura-${uid}`;
+  const gid2 = `readinessAura2-${uid}`;
 
   const tint = override ?? (status ? TINT[status] : null);
   /* No reading, no colour. A default wash would be the screen asserting a state
      before anything has been measured. */
   if (!tint) return null;
+
+  /* Sau cổng, nơi `tint` chắc chắn có giá trị. Mặc định là chính nó — một màu
+     vẫn vẽ được, chỉ là phẳng hơn; không bịa ra một tông thứ hai khi chỗ gọi
+     chưa chọn. */
+  const second = tint2 ?? tint;
 
   const h = height * REACH;
 
@@ -114,13 +135,19 @@ export function ReadinessAura({
             an earlier note here feared: the last stop is fully transparent, so
             where the circle does not reach there is nothing to see.
           */}
-          <RadialGradient id={gid} cx="50%" cy="0%" r="100%">
+          <RadialGradient id={gid} cx="22%" cy="0%" r="95%">
             <Stop offset="0" stopColor={tint} stopOpacity={AURA_ALPHA} />
             <Stop offset="0.55" stopColor={tint} stopOpacity={AURA_ALPHA * 0.42} />
             <Stop offset="1" stopColor={tint} stopOpacity={0} />
           </RadialGradient>
+          <RadialGradient id={gid2} cx="88%" cy="26%" r="85%">
+            <Stop offset="0" stopColor={second} stopOpacity={AURA_ALPHA * 0.85} />
+            <Stop offset="0.6" stopColor={second} stopOpacity={AURA_ALPHA * 0.3} />
+            <Stop offset="1" stopColor={second} stopOpacity={0} />
+          </RadialGradient>
         </Defs>
         <Rect x={0} y={0} width={width} height={h} fill={`url(#${gid})`} />
+        <Rect x={0} y={0} width={width} height={h} fill={`url(#${gid2})`} />
       </Svg>
     </View>
   );

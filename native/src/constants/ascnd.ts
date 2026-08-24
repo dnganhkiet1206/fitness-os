@@ -192,3 +192,13 @@ export const type = {
   /** Monospace numeric — for big metric read-outs (web `font-mono`). */
   mono: { fontFamily: mono, fontVariant: ['tabular-nums'] as ['tabular-nums'] },
 } as const;
+
+/**
+ * Đường kính vòng tròn ở hero, dùng chung cho mọi trang của deck.
+ *
+ * Một con số, hai thẻ. Viết riêng ở mỗi file thì hai vòng tròn lệch nhau ngay
+ * lần đầu một trong hai được chỉnh, và trên một deck vuốt ngang thì hai vòng
+ * khác cỡ đọc ra là hai màn hình khác nhau chứ không phải hai trang của một
+ * thứ.
+ */
+export const HERO_RING = 264;

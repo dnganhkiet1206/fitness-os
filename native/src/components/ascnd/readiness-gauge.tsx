@@ -17,13 +17,14 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { AnimatedNumber } from '@/components/ascnd/animated-number';
+import { SkeletonBlock } from '@/components/ascnd/skeleton';
 import { Expander } from '@/components/ascnd/expander';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
 import { readinessConfidence } from '@/lib/readiness-engine';
-import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { colors, glass, HERO_RING, radius, spacing } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
@@ -69,6 +70,9 @@ interface Props {
    numbers. Left as literals they would drift apart the first time one was
    tuned, and a number that finishes before its ring is the specific thing this
    pairing exists to fix. */
+/** Bốn phép đo sẽ có mặt ở đó, dùng làm nhãn cho khối chờ. */
+const PENDING_TILES = ['RHR', 'SLEEP', 'LOAD', 'ACWR'] as const;
+
 const RING_DELAY = 300;
 const RING_MS = 1600;
 
@@ -120,7 +124,7 @@ export function ReadinessGauge({
     v >= 70 ? colors.readinessGreen : v >= 40 ? colors.readinessYellow : colors.readinessRed;
   const acwrColor =
     acwr == null ? colors.mutedForeground : acwr >= 0.8 && acwr <= 1.3 ? colors.readinessGreen : acwr > 1.3 ? colors.readinessYellow : colors.readinessRed;
-  const tiles: { label: string; value: string; color: string }[] = [];
+  const tiles: { label: string; value: string; color: string; unit: string }[] = [];
   /*
     ── the chip counted a tile that was never drawn ──
 
@@ -137,11 +141,23 @@ export function ReadinessGauge({
     already claimed the count came from "the same string the tiles are drawn
     from"; now it does.
   */
-  if (subs.hrv != null) tiles.push({ label: 'HRV', value: String(subs.hrv), color: subColor(subs.hrv) });
-  if (subs.rhr != null) tiles.push({ label: 'RHR', value: String(subs.rhr), color: subColor(subs.rhr) });
-  if (subs.sleep != null) tiles.push({ label: 'SLEEP', value: String(subs.sleep), color: subColor(subs.sleep) });
-  if (subs.load != null) tiles.push({ label: 'LOAD', value: String(subs.load), color: subColor(subs.load) });
-  if (acwr != null && acwr > 0) tiles.push({ label: 'ACWR', value: String(acwr), color: acwrColor });
+  if (subs.hrv != null) tiles.push({ label: 'HRV', value: String(subs.hrv), color: subColor(subs.hrv), unit: '/100' });
+  if (subs.rhr != null) tiles.push({ label: 'RHR', value: String(subs.rhr), color: subColor(subs.rhr), unit: '/100' });
+  if (subs.sleep != null) tiles.push({ label: 'SLEEP', value: String(subs.sleep), color: subColor(subs.sleep), unit: '/100' });
+  if (subs.load != null) tiles.push({ label: 'LOAD', value: String(subs.load), color: subColor(subs.load), unit: '/100' });
+  /* ACWR là một TỈ SỐ, không phải điểm 0–100, nên mẫu số "/100" sẽ là một câu
+     sai về chính con số đó. */
+  if (acwr != null && acwr > 0)
+    tiles.push({
+      label: 'ACWR',
+      value: String(acwr),
+      color: acwrColor,
+      /* "tỉ số", không phải tên vùng. Ảnh tham chiếu để một chữ đánh giá ở đây
+         ("TỐT"), nhưng gọi tên vùng ACWR cần một bảng nhãn mà file này không có
+         — và bịa một bảng thứ hai bên cạnh `acwrZone` là đúng cái lỗi "một luật,
+         N bản" mà repo này đã gặp sáu lần. Đơn vị nói ĐƠN VỊ; màu đã nói vùng. */
+      unit: vi ? 'tỉ số' : 'ratio',
+    });
 
   /*
     ── how much of this number is actually measured ──
@@ -202,7 +218,7 @@ export function ReadinessGauge({
   /* To hơn hẳn, vì cái hộp chứa nó đã rộng hơn hẳn: hero giờ tràn hết bề ngang
      màn hình thay vì nằm trong padding của trang, nên một vòng 208 đọc ra là
      nhỏ so với chỗ nó đứng. */
-  const ringSize = 264;
+  const ringSize = HERO_RING;
 
   // Ring geometry — mirrors web: viewBox 120, r=52, strokeWidth 6
   const R = 52;
@@ -405,16 +421,34 @@ export function ReadinessGauge({
 
       {/* Sub-score tiles: HRV · RHR · SLEEP · LOAD · ACWR — one per measured
           component, so this row and the confidence line below always agree. */}
-      {tiles.length > 0 && (
-        <View style={styles.grid}>
-          {tiles.map((t) => (
-            <View key={t.label} style={styles.tile}>
-              <Text style={styles.tileLabel}>{t.label}</Text>
-              <Text style={[styles.tileValue, { color: t.color }]}>{t.value}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      {/*
+        Chưa có số thì vẽ CHỖ của số, không vẽ khoảng trống.
+
+        `readiness_explain` rỗng — tài khoản mới, hoặc ngày chưa được chấm — cho
+        ra 0 ô, và trước đây khối này biến mất hoàn toàn. Bấm mũi tên rồi thấy
+        gần như không có gì là một câu trả lời tệ hơn cả việc không có mũi tên:
+        nó nói rằng tính năng hỏng, chứ không nói rằng dữ liệu chưa tới.
+
+        Bốn nhãn vẫn hiện, giá trị là một khối đang thở. Người đọc biết cái gì
+        sắp có ở đó và vì sao nó chưa có.
+      */}
+      <View style={styles.grid}>
+        {tiles.length > 0
+          ? tiles.map((t) => (
+              <View key={t.label} style={styles.tile}>
+                <Text style={styles.tileLabel}>{t.label}</Text>
+                <Text style={[styles.tileValue, { color: t.color }]}>{t.value}</Text>
+                <Text style={styles.tileUnit}>{t.unit}</Text>
+              </View>
+            ))
+          : PENDING_TILES.map((label) => (
+              <View key={label} style={styles.tile}>
+                <Text style={styles.tileLabel}>{label}</Text>
+                <SkeletonBlock height={22} style={styles.tileGhost} />
+                <Text style={styles.tileUnit}>{vi ? 'chờ dữ liệu' : 'waiting'}</Text>
+              </View>
+            ))}
+      </View>
 
       {/* Explain + recommendation */}
       {explainText ? <Text style={styles.explain}>{explainText}</Text> : null}
@@ -532,7 +566,11 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
   },
   tileLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground },
-  tileValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
+  tileValue: { fontSize: 26, fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
+  /* Dòng thứ ba của ô, như trong ảnh tham chiếu: nhãn, số, rồi đơn vị. Không có
+     nó thì "90" và "1.46" trông như hai đại lượng cùng loại. */
+  tileUnit: { fontSize: 11, color: colors.mutedForeground },
+  tileGhost: { width: 44, borderRadius: radius.sm },
   confidence: {
     fontSize: 11,
     color: colors.mutedForeground,

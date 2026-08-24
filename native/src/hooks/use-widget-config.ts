@@ -39,6 +39,25 @@ export type WidgetKey =
  */
 export const RETIRED_WIDGETS: string[] = ['nudges'];
 
+/**
+ * Thẻ đã được CHUYỂN LÊN hero, và vì sao chuyện đó cần một cơ chế riêng.
+ *
+ * `withNewWidgets` cố ý chỉ-thêm: nó không bao giờ di chuyển thứ gì, vì bố cục
+ * là của người dùng. Nhưng hero không còn là "hai thẻ đầu danh sách" nữa — nó
+ * là cả phần trên cùng của Today, một deck vuốt ngang, và một thẻ vòng tròn
+ * nằm lẫn trong nhóm bên dưới thì không bao giờ tới được đó.
+ *
+ * Nên chỉ những khoá trong danh sách này mới được dời, đúng một lần cho mỗi bố
+ * cục đã lưu: gỡ khỏi nhóm, thêm vào hero, giữ nguyên thứ tự tương đối của mọi
+ * thứ khác. Sau lần đó nó là một khoá hero bình thường và người dùng vẫn tự sắp
+ * lại được ở chế độ sửa.
+ *
+ * Danh sách này KHÔNG phải là "hero mặc định" — `DEFAULT_CONFIG.heroWidgets` là
+ * cái đó, và nó chỉ áp cho bản cài mới. Đây là việc dời của những bố cục đã tồn
+ * tại từ trước.
+ */
+export const PROMOTED_TO_HERO: WidgetKey[] = ['nutrition', 'water'];
+
 export interface WidgetGroup {
   id: string;
   title: { en: string; vi: string };
@@ -52,7 +71,7 @@ export interface WidgetConfig {
 }
 
 export const DEFAULT_CONFIG: WidgetConfig = {
-  heroWidgets: ['readiness', 'activity'],
+  heroWidgets: ['readiness', 'activity', 'nutrition', 'water'],
   groups: [
     {
       id: 'health',
@@ -64,7 +83,11 @@ export const DEFAULT_CONFIG: WidgetConfig = {
       id: 'nutrition',
       title: { en: 'Nutrition', vi: 'Dinh dưỡng' },
       icon: '🍎',
-      widgets: ['nutrition', 'water', 'supplements'],
+      /* `nutrition` và `water` không còn ở đây — chúng nằm trong hero deck. Để
+         lại thì phép thăng hạng sẽ dời chúng đi ngay ở lần merge đầu tiên, tức
+         DEFAULT_CONFIG tự sửa chính mình mỗi lần mở app và không bao giờ được
+         trả về nguyên vẹn. */
+      widgets: ['supplements'],
     },
     {
       id: 'fitness',
@@ -149,6 +172,28 @@ export function withNewWidgets(stored: WidgetConfig): WidgetConfig {
     heroWidgets.push(key);
     have.add(key);
     changed = true;
+  }
+
+  /* Dời — thứ duy nhất trong hàm này KHÔNG phải là thêm.
+
+     Idempotent: chạy lại trên một bố cục đã dời thì không tìm thấy gì trong
+     nhóm để gỡ và không thêm gì vào hero, nên `changed` giữ nguyên và caller so
+     sánh bằng identity vẫn thấy một bố cục chưa bị đụng tới. */
+  for (const key of PROMOTED_TO_HERO) {
+    let moved = false;
+    for (const g of groups) {
+      const at = g.widgets.indexOf(key);
+      if (at >= 0) {
+        g.widgets.splice(at, 1);
+        moved = true;
+      }
+    }
+    if (!heroWidgets.includes(key)) {
+      heroWidgets.push(key);
+      have.add(key);
+      moved = true;
+    }
+    if (moved) changed = true;
   }
 
   for (const def of DEFAULT_CONFIG.groups) {

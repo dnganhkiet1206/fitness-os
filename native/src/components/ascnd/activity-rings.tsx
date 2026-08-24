@@ -15,7 +15,7 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Expander } from '@/components/ascnd/expander';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { colors, HERO_RING, radius, spacing } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useI18n } from '@/hooks/use-app-settings';
 import { activityModel, type ActivityInput, type RingKey, type RingModel } from '@/lib/activity';
@@ -146,7 +146,7 @@ interface Props extends ActivityInput {
 export function ActivityRingsCard({
   /* Cùng lý do vòng tròn sẵn sàng to lên: hero chiếm phần trên cùng của trang,
      và 110 là kích thước của một thẻ nằm trong danh sách thẻ. */
-  size = 200,
+  size = HERO_RING,
   detailOpen = false,
   onToggleDetail,
   onConnectHealth,

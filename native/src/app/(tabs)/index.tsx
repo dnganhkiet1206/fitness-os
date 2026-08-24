@@ -341,13 +341,37 @@ export default function TodayScreen() {
    * "hôm nay thế nào", và một trang không nói về một phép đo riêng thì vẫn đang
    * nói về hôm nay.
    */
+  /**
+   * Hai màu cho mỗi trang hero.
+   *
+   * Một wash tròn của MỘT màu không có hướng — nó sáng ở giữa rồi tối đều ra
+   * mọi phía, nên mắt không có gì để đi theo và nó đọc ra đơn điệu. Hai tông
+   * lệch tâm chồng nhau cho ra một dải chuyển màu chéo qua khung hình, thứ làm
+   * nên "một bầu trời" thay vì "một vệt sáng".
+   *
+   * Cặp màu chọn theo NGHĨA của trang chứ không theo khẩu vị: sẵn sàng lấy đúng
+   * ba màu mà vòng tròn của nó đang dùng, vận động lấy màu vòng Move, dinh
+   * dưỡng lấy màu của thẻ nó, nước lấy xanh dương. Nền và con số không được
+   * phép nói hai chuyện khác nhau.
+   */
   const heroTints = useMemo(
     () =>
-      config.heroWidgets.map((key) => ({
-        key,
-        status: key === 'activity' ? null : readinessScore != null ? readinessStatus : null,
-        tint: key === 'activity' ? colors.metricOrange : undefined,
-      })),
+      config.heroWidgets.map((key) => {
+        const pair: Partial<Record<WidgetKey, [string, string]>> = {
+          activity: [colors.metricOrange, colors.metricPurple],
+          nutrition: [colors.readinessGreen, colors.metricOrange],
+          water: [colors.metricBlue, colors.metricCyan],
+        };
+        const own = pair[key];
+        return {
+          key,
+          status: own ? null : readinessScore != null ? readinessStatus : null,
+          tint: own?.[0],
+          /* Trang sẵn sàng không khai cặp: nó lấy màu theo trạng thái, và tông
+             thứ hai là màu lạnh cạnh nó trên cùng thang. */
+          tint2: own?.[1] ?? (readinessStatus === 'red' ? colors.metricOrange : colors.metricBlue),
+        };
+      }),
     [config.heroWidgets, readinessScore, readinessStatus],
   );
 
@@ -498,9 +522,9 @@ export default function TodayScreen() {
         là opacity, thứ đã chạy ở đó sẵn.
       */}
       {heroTints.length > 1 ? (
-        heroTints.map((t: { key: string; status: 'green' | 'yellow' | 'red' | null; tint?: string }, i: number) => (
+        heroTints.map((t, i) => (
           <AuraLayer key={t.key} index={i} at={deckAt}>
-            <ReadinessAura status={t.status} tint={t.tint} />
+            <ReadinessAura status={t.status} tint={t.tint} tint2={t.tint2} />
           </AuraLayer>
         ))
       ) : (

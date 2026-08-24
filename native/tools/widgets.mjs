@@ -103,8 +103,11 @@ try {
     problems.push(`expected steps+water back, got: ${gained.join(',') || '(none)'}`);
   }
   const groupOf = (c, key) => c.groups.find((g) => g.widgets.includes(key))?.id;
-  if (groupOf(merged, 'water') !== 'nutrition') problems.push('water did not land in nutrition');
   if (groupOf(merged, 'steps') !== 'health') problems.push('steps did not land in health');
+  /* `water` không còn rơi vào nhóm: nó nằm trong PROMOTED_TO_HERO, nên chỗ của
+     nó là deck ở đầu trang. Xem khối "thăng lên hero" bên dưới. */
+  if (groupOf(merged, 'water')) problems.push(`water landed in a group: ${groupOf(merged, 'water')}`);
+  if (!merged.heroWidgets.includes('water')) problems.push('water did not reach the hero deck');
 
   // ── 3: the arrangement is untouched ──
   if (merged.groups.map((g) => g.id).join(',') !== old.groups.map((g) => g.id).join(',')) {
@@ -115,8 +118,8 @@ try {
     problems.push(`an untouched group was reordered: ${merged.groups[0].widgets.join(',')}`);
   }
   // added at the end of its group, never in front of what was already there
-  if (merged.groups[2].widgets.join(',') !== 'nutrition,supplements,water') {
-    problems.push(`water was not appended: ${merged.groups[2].widgets.join(',')}`);
+  if (merged.groups[2].widgets.join(',') !== 'supplements') {
+    problems.push(`nutrition group wrong after promotion: ${merged.groups[2].widgets.join(',')}`);
   }
 
   // ── 4: a widget the user moved is found, not duplicated ──
@@ -141,7 +144,7 @@ try {
     heroWidgets: ['readiness', 'activity'],
     groups: [
       { id: 'health', title: { en: 'Health', vi: 'Sức khỏe' }, icon: '❤️',
-        widgets: ['biometrics', 'sleep', 'steps', 'nutrition', 'supplements'] },
+        widgets: ['biometrics', 'sleep', 'steps', 'nutrition'] },
       { id: 'fitness', title: { en: 'Fitness', vi: 'Tập luyện' }, icon: '💪',
         widgets: ['training', 'workout-status', 'weight'] },
       { id: 'insights', title: { en: 'Insights', vi: 'Phân tích' }, icon: '✨',
@@ -151,10 +154,22 @@ try {
   if (noNutrition.groups.some((g) => g.id === 'nutrition')) {
     problems.push('a deleted group came back');
   }
-  if (groupOf(noNutrition, 'water') !== 'insights') {
-    problems.push(`water should fold into the last group, went to ${groupOf(noNutrition, 'water')}`);
+  /* `water` thăng lên hero nên nó không gấp vào nhóm cuối nữa. Cái được kiểm ở
+     đây — một khoá KHÔNG có nhóm nhà thì rơi vào nhóm cuối chứ không bị đánh
+     rơi — vẫn cần một ví dụ, và `nutrition` không dùng được vì nó cũng thăng.
+     Dùng `supplements`: nhóm nhà của nó cũng là 'nutrition', nhóm đã bị xoá. */
+  if (groupOf(noNutrition, 'supplements') !== 'insights') {
+    problems.push(`supplements should fold into the last group, went to ${groupOf(noNutrition, 'supplements')}`);
   }
+  if (groupOf(noNutrition, 'water')) problems.push('water should be in the hero, not a group');
 
+  /* ── 6: nothing to do costs nothing ──
+
+     DEFAULT_CONFIG đã mang nutrition và water ở hero, nên phép thăng hạng không
+     tìm thấy gì để dời và `changed` phải giữ nguyên false. Đó cũng là phép thử
+     rằng việc dời là IDEMPOTENT: chạy trên một bố cục đã dời không được đếm là
+     một thay đổi, nếu không caller so sánh bằng identity sẽ ghi lại đĩa mỗi lần
+     mở app. */
   // ── 6: nothing to do costs nothing ──
   if (withNewWidgets(DEFAULT_CONFIG) !== DEFAULT_CONFIG) {
     problems.push('a complete config was rebuilt instead of returned as-is');
@@ -180,7 +195,9 @@ try {
   if (flat(retiredHero).includes('nudges')) {
     problems.push('nudges survived among the hero widgets');
   }
-  if (retiredHero.heroWidgets.join(',') !== 'readiness,activity') {
+  /* Hai khoá được thăng nối vào SAU thứ tự cũ, không chen vào giữa: người dùng
+     đã sắp readiness trước activity và việc dời không được phép sắp lại. */
+  if (retiredHero.heroWidgets.join(',') !== 'readiness,activity,nutrition,water') {
     problems.push(`pruning disturbed the hero order: ${retiredHero.heroWidgets.join(',')}`);
   }
   /* and the two lists cannot overlap: a key on both would be pruned on load and
@@ -191,6 +208,46 @@ try {
       problems.push(`'${k}' vừa nằm trong RETIRED_WIDGETS vừa còn trong roster — dọn rồi thêm lại ngay`);
     }
   }
+
+  /*
+    ── 8b: thăng lên hero, đúng ca nâng cấp thật ──
+
+    Fixture ở 8 KHÔNG đi qua đường này: nhóm mặc định không còn chứa
+    nutrition/water, nên vòng lặp DEFAULT_CONFIG.heroWidgets đã thêm chúng vào
+    hero trước khi phép dời chạy tới, và phép dời không tìm thấy gì. Một phá thử
+    đổi `push` thành `unshift` vẫn xanh — luật đọc đúng kết quả nhưng chưa bao
+    giờ chạy qua đoạn code nó nói về.
+
+    Đây là bố cục của một người đã dùng app trước khi hero thành deck: hai thẻ
+    kia nằm trong nhóm, và hero mang thứ tự của chính họ.
+  */
+  const upgraded = withNewWidgets({
+    heroWidgets: ['activity', 'readiness'],
+    groups: [
+      { id: 'health', title: { en: 'Health', vi: 'Sức khỏe' }, icon: '❤️',
+        widgets: ['biometrics', 'sleep', 'steps'] },
+      { id: 'nutrition', title: { en: 'Nutrition', vi: 'Dinh dưỡng' }, icon: '🍎',
+        widgets: ['nutrition', 'water', 'supplements'] },
+      { id: 'fitness', title: { en: 'Fitness', vi: 'Tập luyện' }, icon: '💪',
+        widgets: ['training', 'workout-status', 'weight'] },
+      { id: 'insights', title: { en: 'Insights', vi: 'Phân tích' }, icon: '✨',
+        widgets: ['readiness-trend', 'ai-tips', 'awards'] },
+    ],
+  });
+  // nối vào SAU thứ tự người dùng đã sắp, không chen lên đầu
+  if (upgraded.heroWidgets.join(',') !== 'activity,readiness,nutrition,water') {
+    problems.push(`promotion changed the hero order: ${upgraded.heroWidgets.join(',')}`);
+  }
+  // và biến mất khỏi nhóm cũ, không nằm hai chỗ
+  const stillGrouped = upgraded.groups.flatMap((g) => g.widgets).filter((k) => k === 'nutrition' || k === 'water');
+  if (stillGrouped.length) problems.push(`promoted keys left in a group: ${stillGrouped.join(',')}`);
+  if (upgraded.groups[1].widgets.join(',') !== 'supplements') {
+    problems.push(`the rest of the group was disturbed: ${upgraded.groups[1].widgets.join(',')}`);
+  }
+  const upDupes = flat(upgraded).filter((k, i, a) => a.indexOf(k) !== i);
+  if (upDupes.length) problems.push(`promotion duplicated: ${upDupes.join(',')}`);
+  // chạy lại không được tính là một thay đổi, nếu không app ghi đĩa mỗi lần mở
+  if (withNewWidgets(upgraded) !== upgraded) problems.push('promotion is not idempotent');
 
   /*
     ── 9: the check has teeth ──
@@ -212,7 +269,7 @@ try {
   }
   console.log(
     `bố cục Today OK — ${Object.keys(WIDGET_META).length} widget đều có chỗ; ` +
-    `cấu hình cũ nhận lại steps+water đúng nhóm, thứ tự và tên nhóm giữ nguyên, ` +
+    `cấu hình cũ nhận lại steps vào đúng nhóm còn water được DỜI LÊN hero deck (một lần, idempotent, nối vào sau thứ tự người dùng đã sắp chứ không chen vào giữa), thứ tự và tên nhóm giữ nguyên, ` +
     `nhóm đã xoá không sống lại, chạy hai lần không đổi gì; bản cũ (dùng thẳng) mất đúng 2 widget; ` +
     `và widget đã khai tử ('nudges') bị dọn khỏi layout đã lưu ở CẢ hàng hero lẫn trong nhóm — ` +
     `để lại thì nó vẽ một ô rỗng trong nhóm có gap và một chip mang đúng tên khoá tiếng Anh cho ` +
