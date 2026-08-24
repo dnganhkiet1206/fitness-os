@@ -75,7 +75,6 @@ import type { QuestKey } from '@/lib/mascot-room';
 import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
-import { getLocale } from '@/lib/i18n';
 import { CardDeck } from '@/components/ascnd/card-deck';
 import { HERO_DECK, recordHeight } from '@/lib/widget-heights';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
@@ -210,7 +209,6 @@ export default function TodayScreen() {
   const now = new Date();
   const greeting =
     now.getHours() < 12 ? i18n.goodMorning : now.getHours() < 18 ? i18n.goodAfternoon : i18n.goodEvening;
-  const dateStr = now.toLocaleDateString(getLocale(lang), { weekday: 'long', month: 'long', day: 'numeric' });
   const userName = profile?.name || i18n.authYourName;
 
   // Readiness (same mapping as web Index)
@@ -485,7 +483,13 @@ export default function TodayScreen() {
       {/* Greeting + actions (web Index header) */}
       <View style={styles.headerRow}>
         <View style={styles.headerText}>
-          <Text style={styles.dateLine}>{dateStr}</Text>
+          {/*
+            Ngày đã bỏ.
+
+            Nó nói một thứ mà thanh trạng thái phía trên nó đã nói, và nó là
+            dòng ĐẦU TIÊN của trang — nửa giây đầu tiên tiêu vào một sự thật
+            người dùng vừa đọc xong. Chỗ đó giờ là chỉ số sẵn sàng.
+          */}
           <Text style={styles.greeting}>
             {greeting}, <Text style={styles.greetingName}>{userName}</Text>
           </Text>
@@ -556,6 +560,37 @@ export default function TodayScreen() {
 
       {!editMode && (
         <>
+          {/*
+            Chỉ số sẵn sàng là thứ đầu tiên trên trang, và tràn hết bề ngang.
+
+            Nó vốn nằm dưới Koa và bốn nút ghi — tức là dưới hai hàng điều
+            khiển, nên thứ bạn mở app ra để xem lại là thứ cuối cùng bạn thấy.
+            Các nút vẫn ở đây, chỉ là ở dưới: một nút chờ bạn quyết định làm gì,
+            và cái quyết định đó bắt đầu bằng con số này.
+
+            `marginHorizontal` âm để huỷ padding ngang của trang. Deck là thứ
+            duy nhất trên màn hình chạm hai mép — đó là cách nó đọc ra là NỀN
+            của trang chứ không phải một thẻ nữa trong danh sách thẻ.
+          */}
+          {/* Bóng của deck, ĐÚNG chỗ deck sắp hiện ra — không phải dưới các nút. */}
+          {dayPending ? (
+            <View style={styles.heroFull}>
+              <TodaySkeleton part="hero" heroWidgets={config.heroWidgets} groups={config.groups} />
+            </View>
+          ) : null}
+          {dayPending || dayFailed || config.heroWidgets.length === 0 ? null : (
+            <Animated.View
+              style={styles.heroFull}
+              onLayout={(e) => recordHeight(HERO_DECK, e.nativeEvent.layout.height)}
+              entering={FadeInDown.springify().damping(26).stiffness(180)}>
+              <CardDeck>
+                {config.heroWidgets.map((key) => (
+                  <View key={key}>{withPeek(key, renderWidget(key))}</View>
+                ))}
+              </CardDeck>
+            </Animated.View>
+          )}
+
           <Mascot />
 
           {/* Quick log actions (web chips row) */}
@@ -642,7 +677,9 @@ export default function TodayScreen() {
             carrying fifteen constants that go stale the first time a card gains
             a row.
           */}
-          {dayPending ? <TodaySkeleton heroWidgets={config.heroWidgets} groups={config.groups} /> : null}
+          {dayPending ? (
+            <TodaySkeleton part="groups" heroWidgets={config.heroWidgets} groups={config.groups} />
+          ) : null}
 
           {/*
             The hero cards, as one deck rather than a stack.
@@ -657,17 +694,6 @@ export default function TodayScreen() {
             two stacked cards' worth of shape for it would be the page-jump
             that mechanism exists to prevent.
           */}
-          {dayPending || dayFailed || config.heroWidgets.length === 0 ? null : (
-            <Animated.View
-              onLayout={(e) => recordHeight(HERO_DECK, e.nativeEvent.layout.height)}
-              entering={FadeInDown.springify().damping(26).stiffness(180)}>
-              <CardDeck>
-                {config.heroWidgets.map((key) => (
-                  <View key={key}>{withPeek(key, renderWidget(key))}</View>
-                ))}
-              </CardDeck>
-            </Animated.View>
-          )}
 
           {/* Grouped widgets, user-configurable order */}
           {dayPending || dayFailed ? null : config.groups.map((group, gi) => (
@@ -841,11 +867,14 @@ const styles = StyleSheet.create({
   // which sits behind this in the wrapper, is not painted over.
   scroller: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: spacing.md, gap: spacing.md },
+  /* Cancels the page's own horizontal padding so the deck reaches both edges.
+     Tied to the same token the padding uses, not a second copy of the number —
+     change `content` and this follows it. */
+  heroFull: { marginHorizontal: -spacing.md },
 
   // Header (web: date 13px muted / greeting 22px bold, name silver)
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
   headerText: { flex: 1, minWidth: 0 },
-  dateLine: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground, textTransform: 'capitalize' },
   greeting: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, color: colors.foreground, marginTop: 2 },
   greetingName: { color: colors.primary },
   headerButtons: { flexDirection: 'row', gap: spacing.sm },

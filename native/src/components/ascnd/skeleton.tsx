@@ -71,10 +71,25 @@ export function SkeletonBlock({ height, style }: { height: number; style?: objec
  * still the right shape while it loads, and a widget somebody removed does not
  * leave a block waiting for it.
  */
+/**
+ * ── why this takes a `part` ──
+ *
+ * The two halves of Today are no longer next to each other. The readiness deck
+ * moved to the top of the page and Koa and the four log buttons sit between it
+ * and the grouped cards — and those two always render, loading or not.
+ *
+ * A skeleton drawn as one block therefore drew the deck's shape BELOW the
+ * buttons, where the deck is not, and the page jumped when the day landed.
+ * That is precisely the movement `widget-heights.ts` exists to prevent, so the
+ * skeleton is placed the way the page is: the hero part where the hero is, the
+ * groups part where the groups are.
+ */
 export function TodaySkeleton({
+  part,
   heroWidgets,
   groups,
 }: {
+  part: 'hero' | 'groups';
   heroWidgets: string[];
   groups: { id: string; widgets: string[] }[];
 }) {
@@ -94,10 +109,10 @@ export function TodaySkeleton({
       {/* One block, not one per hero: those cards are a deck now, and drawing
           the shape of two stacked cards where one deck will appear is exactly
           the page-jump this whole mechanism exists to avoid. */}
-      {heroWidgets.length > 0 ? (
+      {part === 'hero' && heroWidgets.length > 0 ? (
         <SkeletonBlock height={heightFor(HERO_DECK)} style={styles.stacked} />
       ) : null}
-      {groups.map((group) => (
+      {part === 'groups' && groups.map((group) => (
         <View key={group.id} style={styles.group}>
           {/* the group header's own row: an icon and a short title */}
           <SkeletonBlock height={18} style={styles.header} />
