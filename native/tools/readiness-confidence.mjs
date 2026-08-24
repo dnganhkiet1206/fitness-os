@@ -89,15 +89,37 @@ try {
     reason that const is block-bodied: an expression-bodied arrow made the
     extraction regex over-run in that round.
   */
-  const edgeSrc = readFileSync(path.join(ROOT, 'supabase/functions/ai-coach/index.ts'), 'utf8');
-  const edgeFn = edgeSrc.match(/const recoveryMeasured =[\s\S]*?\n    \};/)?.[0];
-  if (!edgeFn) {
-    console.error('tự kiểm hỏng: không trích được recoveryMeasured thật từ ai-coach — đừng tin kết quả');
-    process.exit(1);
-  }
+  const coachSrc = readFileSync(path.join(ROOT, 'supabase/functions/ai-coach/index.ts'), 'utf8');
+  const nudgeSrc = readFileSync(path.join(ROOT, 'supabase/functions/ai-smart-nudges/index.ts'), 'utf8');
+  const weekSrc = readFileSync(path.join(ROOT, 'supabase/functions/ai-weekly-review/index.ts'), 'utf8');
+  const sharedSrc = readFileSync(path.join(ROOT, 'supabase/functions/_shared/readiness.ts'), 'utf8');
+  const lift = (src, re, what) => {
+    const m = src.match(re)?.[0];
+    if (!m) {
+      console.error(`tự kiểm hỏng: không trích được ${what} — đừng tin kết quả`);
+      process.exit(1);
+    }
+    return m;
+  };
+  /* One definition for three Deno functions, so one thing to lift and drive. */
+  const edgeFn = lift(sharedSrc, /export const recoveryMeasured =[\s\S]*?\n\};/, 'recoveryMeasured từ _shared/readiness.ts')
+    .replace(/^export /, '');
+  /* And the three ctx mappings themselves, so what is asserted is what is built. */
+  const coachMap = lift(coachSrc, /recent_nutrition: dailyLogs\.map\(d => \(\{[\s\S]*?\}\)\),/, 'recent_nutrition của ai-coach')
+    .replace(/^recent_nutrition: /, '').replace(/,$/, '');
+  const nudgeMap = lift(nudgeSrc, /recent_days: dailyLogs\.map\(\(d: any\) => \(\{[\s\S]*?\}\)\),/, 'recent_days của ai-smart-nudges')
+    .replace(/^recent_days: /, '').replace(/,$/, '');
+  const weekMap = lift(weekSrc, /logs: weekLogs\.map\(l => \(\{[\s\S]*?\}\)\),/, 'logs của ai-weekly-review')
+    .replace(/^logs: /, '').replace(/,$/, '');
   mkdirSync(path.join(out, 'src'), { recursive: true });
   writeFileSync(path.join(out, 'src', 'edge-recovery.ts'),
-    edgeFn.replace(/^\s+/, '') + '\nexport { recoveryMeasured };\n');
+    edgeFn.replace(/^\s+/, '') + '\n'
+    /* Parameter names match the identifiers the lifted expressions close over,
+       so the source is compiled verbatim rather than edited into place. */
+    + `export const coachCtx = (dailyLogs: any[]) => (${coachMap});\n`
+    + `export const nudgeCtx = (dailyLogs: any[]) => (${nudgeMap});\n`
+    + `export const weekCtx = (weekLogs: any[]) => (${weekMap});\n`
+    + 'export { recoveryMeasured };\n');
 
   try {
     execFileSync(
@@ -133,11 +155,13 @@ try {
       '--outDir', out, '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
   } catch { /* emit is what matters */ }
-  const { recoveryMeasured: edgeRecoveryMeasured } = req(path.join(out, 'edge-recovery.js'));
+  const { recoveryMeasured: edgeRecoveryMeasured, coachCtx, nudgeCtx, weekCtx } =
+    req(path.join(out, 'edge-recovery.js'));
   if (typeof hasRecoverySignal !== 'function' || typeof deloadWarranted !== 'function'
       || typeof suggestLoad !== 'function' || typeof briefFor !== 'function'
       || typeof suggestionsFor !== 'function' || typeof recoveryBacked !== 'function'
-      || typeof edgeRecoveryMeasured !== 'function') {
+      || typeof edgeRecoveryMeasured !== 'function' || typeof coachCtx !== 'function'
+      || typeof nudgeCtx !== 'function' || typeof weekCtx !== 'function') {
     console.error('tự kiểm hỏng: không nạp được một trong các hàm thật (hasRecoverySignal, deloadWarranted, ' +
       'recoveryBacked, suggestLoad, briefFor, suggestionsFor, recoveryMeasured của ai-coach) — đừng tin kết quả');
     process.exit(1);
@@ -1039,6 +1063,133 @@ try {
       'acwrZone không còn chia theo 0.65 / 0.8 / 1.3 / 1.6 — help sheet in đúng những mốc đó');
   }
 
+
+  /* ── 17. the AI payload contract, driven through the real mappings ──
+
+     Chain AK measured that a load-only red and an HRV/RHR-backed red arrive at
+     `ai-smart-nudges` and `ai-weekly-review` identically: same status, both
+     `sleep_min: 0`, both `volume_load: 0`, and neither function fetches
+     biometrics at all. The advice for the two is opposite — one of those people
+     needs to train MORE — so the payload has to carry the one bit that tells
+     them apart.
+
+     The three ctx mappings are lifted from their own sources and run here, so
+     what is asserted is what is built. */
+  {
+    const STATES = [
+      ['đỏ CHỈ từ tải', { readiness_score: 45, readiness_status: 'red', readiness_explain: 'load:45' }, false],
+      ['đỏ từ giấc ngủ', { readiness_score: 20, readiness_status: 'red', readiness_explain: 'sleep:20' }, true],
+      ['đỏ từ HRV/RHR', { readiness_score: 9, readiness_status: 'red', readiness_explain: 'hrv:5|rhr:14' }, true],
+      ['đỏ trộn', { readiness_score: 30, readiness_status: 'red', readiness_explain: 'sleep:20|load:45' }, true],
+      ['xanh CHỈ từ tải', { readiness_score: 80, readiness_status: 'green', readiness_explain: 'load:80' }, false],
+      ['xanh từ giấc ngủ', { readiness_score: 93, readiness_status: 'green', readiness_explain: 'sleep:93' }, true],
+      ['không có điểm', { readiness_score: null, readiness_status: null, readiness_explain: '' }, false],
+    ];
+    /* every other column the three selects carry, so a mapping that quietly
+       stops forwarding one is caught as well */
+    const REST = {
+      date: '2026-01-02', kcal: 2100, protein_g: 150, carbs_g: 200, fat_g: 70,
+      sleep_duration_min: 430, steps: 9000, volume_load: 3000,
+    };
+    const BUILDERS = [
+      ['ai-coach', coachCtx, ['date', 'kcal', 'protein_g', 'carbs_g', 'fat_g', 'readiness', 'readiness_status', 'recovery_measured']],
+      ['ai-smart-nudges', nudgeCtx, ['date', 'kcal', 'protein_g', 'carbs_g', 'fat_g', 'readiness_score', 'readiness_status', 'recovery_measured', 'sleep_duration_min', 'steps', 'volume_load']],
+      ['ai-weekly-review', weekCtx, ['date', 'kcal', 'protein_g', 'carbs_g', 'fat_g', 'volume_load', 'readiness', 'readiness_status', 'recovery_measured', 'steps', 'sleep_min']],
+    ];
+    for (const [name, build, expectedKeys] of BUILDERS) {
+      for (const [label, readiness, mayClaimRecovery] of STATES) {
+        const row = { ...REST, ...readiness };
+        let outRow = null; let threw = null;
+        try { outRow = build([row])[0]; } catch (e) { threw = e.message; }
+        if (threw) { problems.push(`payload ${name} "${label}" NÉM: ${threw}`); continue; }
+
+        /* the bit that makes the two reds different */
+        if (!('recovery_measured' in outRow)) {
+          problems.push(
+            `payload ${name} không mang recovery_measured — một điểm đỏ dựng từ mỗi tải tập và một điểm ` +
+              'đỏ dựng từ HRV/nhịp nghỉ tới mô hình GIỐNG HỆT nhau, và lời khuyên đúng cho hai người đó ' +
+              'ngược nhau (BUG-117/118)',
+          );
+        } else if (outRow.recovery_measured !== mayClaimRecovery) {
+          problems.push(
+            `payload ${name} "${label}": recovery_measured = ${outRow.recovery_measured}, đáng lẽ ${mayClaimRecovery}`,
+          );
+        }
+
+        /* the token itself must never reach the model */
+        const asJson = JSON.stringify(outRow);
+        if ('readiness_explain' in outRow || /readiness_explain/.test(asJson)) {
+          problems.push(
+            `payload ${name} "${label}" gửi cả chuỗi readiness_explain cho mô hình — đó là token nội bộ ` +
+              'của engine, một bản sao của những số đã có trong payload và một chuỗi nữa để mô hình trích sai',
+          );
+        }
+        for (const tok of ['hrv:', 'rhr:', 'sleep:', 'load:']) {
+          if (asJson.includes(tok)) {
+            problems.push(`payload ${name} "${label}" rò một mảnh token ("${tok}") vào payload gửi mô hình`);
+          }
+        }
+
+        /* and nothing that used to be sent stopped being sent */
+        for (const k of expectedKeys) {
+          if (!(k in outRow)) {
+            problems.push(
+              `payload ${name} "${label}" mất trường "${k}" — thêm recovery_measured KHÔNG được bỏ rơi ` +
+                'thứ gì mô hình vẫn đang đọc',
+            );
+          }
+        }
+      }
+    }
+  }
+
+  /* ── 18. the prompt contract, in all three functions ──
+
+     Structural, on comment-stripped source, and each rule names the thing it
+     protects. A prompt line that merely mentions `recovery_measured` may not
+     satisfy a rule about the payload FIELD — that exact confusion made a Chain
+     AJ break-test pass green. */
+  {
+    const FUNCS = [
+      ['ai-coach', 'supabase/functions/ai-coach/index.ts'],
+      ['ai-smart-nudges', 'supabase/functions/ai-smart-nudges/index.ts'],
+      ['ai-weekly-review', 'supabase/functions/ai-weekly-review/index.ts'],
+    ];
+    for (const [name, rel] of FUNCS) {
+      const src = strip(readFileSync(path.join(ROOT, rel), 'utf8'));
+
+      /* the field is PRODUCED, not merely described */
+      want(/recovery_measured:\s*recoveryMeasured\(/.test(src),
+        `${name} không ĐẶT recovery_measured vào payload — prompt có thể vẫn tả nó, nên mô hình được ` +
+          'dặn đọc một trường không bao giờ tới nơi');
+
+      /* and it comes from the one shared definition */
+      want(/from "\.\.\/_shared\/readiness\.ts"/.test(src),
+        `${name} không nhập recoveryMeasured từ _shared/readiness.ts — nó vừa tự nuôi một bản thứ hai ` +
+          'của luật phục hồi, và bản thứ hai là bản sẽ lệch');
+      want(!/const recoveryMeasured\s*=/.test(src),
+        `${name} định nghĩa recoveryMeasured tại chỗ thay vì dùng bản dùng chung`);
+
+      /* the prompt defines what readiness is, in both languages */
+      want(/TRAINING CAPACITY/.test(src) && /KHẢ NĂNG TẬP LUYỆN/.test(src),
+        `${name}: prompt không còn định nghĩa readiness là khả năng tập ở CẢ hai ngôn ngữ — một trường ` +
+          'không ai định nghĩa là một trường bị đoán');
+      want(/recovery_measured/.test(src.split(/tools:|IMPORTANT PRINCIPLES|NGUYÊN TẮC QUAN TRỌNG/)[0] ?? ''),
+        `${name}: prompt không giải thích recovery_measured trước phần nguyên tắc`);
+
+      /* and it must not teach the old shortcut back */
+      want(!/low readiness[^\n]{0,80}(only advise reducing load and resting|means (the user is )?(tired|fatigued|poorly recovered))/i.test(src),
+        `${name}: prompt lại dạy mô hình rằng readiness thấp nghĩa là phải nghỉ — dưới nghĩa đã chốt, ` +
+          'readiness thấp là khả năng tập thấp (BUG-114/119)');
+      want(!/readiness thấp[^\n]{0,80}chỉ khuyên giảm tải và nghỉ ngơi/i.test(src),
+        `${name}: prompt tiếng Việt lại dạy "readiness thấp → nghỉ"`);
+    }
+    /* the shared predicate is the only definition anywhere in the edge tree */
+    const shared = strip(readFileSync(path.join(ROOT, 'supabase/functions/_shared/readiness.ts'), 'utf8'));
+    want(/"hrv"/.test(shared) && /"rhr"/.test(shared) && /"sleep"/.test(shared) && !/"load"/.test(shared),
+      '_shared/readiness.ts không còn coi phục hồi là đúng ba phép đo (hrv, rhr, sleep) và KHÔNG có tải tập');
+  }
+
   if (problems.length) {
     console.log('độ tin cậy điểm sẵn sàng CÓ LỖI:\n');
     for (const p of problems.slice(0, 12)) console.log(`  • ${p}`);
@@ -1057,15 +1208,21 @@ try {
       'rác, văn xuôi cũ, khoá lạ, khoá trùng, số tràn — không dựng ra tín hiệu phục hồi và không ném; cổng ' +
       'deload THẬT từ chối ba ngày chỉ có tải, nhận ba ngày có ngủ, có sinh trắc hoặc trộn, và vẫn từ chối ' +
       'khi chỉ hai ngày có đo phục hồi; suggestLoad THẬT không còn giữ tải trên một điểm đỏ dựng từ mỗi tải ' +
-      'tập, nhưng vẫn giữ trên đỏ có ngủ, có sinh trắc và trộn, và vẫn hạ tải khi buổi tập quá nặng. Trên ' +
+      'tập, nhưng vẫn giữ trên đỏ có ngủ, có sinh trắc và trộn, và vẫn hạ tải khi buổi tập quá nặng. ' +
       'Và nghĩa mới: readiness là KHẢ NĂNG TẬP tổng hợp, không phải điểm phục hồi. Một điểm đỏ dựng từ mỗi ' +
       'tải tập nhận red_load_only chứ không phải "Chỉ phục hồi tích cực"; đỏ có đo phục hồi vẫn nhận ' +
       'red_recover, và red_rest vẫn đòi ĐỦ cả nhịp nghỉ lẫn giấc ngủ đo được. briefFor THẬT nói về khả năng ' +
       'tập khi không có tín hiệu phục hồi và giữ nguyên câu cũ khi có — kiểm cả hai ngôn ngữ, và hai nhánh ' +
       'không được trùng câu. Chip readiness-low không còn nói người dùng mệt. recoveryBacked là ngưỡng CHUNG ' +
       'của cả hai nhánh tuần, nên "Phục hồi tốt!" cũng đòi ba ngày có đo phục hồi như cảnh báo deload. Luật ' +
-      'phục hồi của ai-coach được TRÍCH ra khỏi edge function, biên dịch và chạy cạnh hasRecoverySignal trên ' +
-      '29 chuỗi gồm mọi ca thù địch — lệch một ca là đỏ, chứ không phải một chú thích nói hai bên giống nhau. ' +
+      'phục hồi của edge sống MỘT chỗ, _shared/readiness.ts, được TRÍCH ra rồi chạy cạnh hasRecoverySignal ' +
+      'trên 29 chuỗi gồm mọi ca thù địch — lệch một ca là đỏ. CẢ BA hàm AI: phép ánh xạ payload của chúng ' +
+      'cũng được trích ra và chạy trên bảy trạng thái — đỏ dựng từ mỗi tải tập ra recovery_measured=false, ' +
+      'còn đỏ từ giấc ngủ, từ HRV/nhịp nghỉ và trộn ra true, nên hai điểm đỏ mà lời khuyên đúng cho chúng ' +
+      'ngược nhau không còn tới mô hình giống hệt nhau; không payload nào rò chuỗi readiness_explain hay ' +
+      'một mảnh token; và không trường nào mô hình vẫn đang đọc bị mất khi thêm trường mới. Prompt của cả ' +
+      'ba định nghĩa readiness là khả năng tập ở CẢ hai ngôn ngữ, và không cái nào được dạy lại lối tắt ' +
+      '"readiness thấp thì nghỉ". ' +
       'Mọi con số trong help sheet (30/20/30/20 và hàng không-HRV, trần 4 tiếng, dải 0.8–1.3 được 80 điểm, ' +
       'ba vùng 75/50, bốn mốc ACWR) được đọc NGƯỢC ra khỏi chính tệp đó và so với engine; và mọi tools/*.mjs ' +
       'mà tệp đó nhắc tên đều phải tồn tại thật. Trên ' +

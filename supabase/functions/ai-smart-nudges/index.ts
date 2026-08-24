@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { claimCall, corsHeaders, localDate, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes, localHour, SLEEP_COLUMNS } from "../_shared/sleep.ts";
 
 /** Output ceiling — the reply is a handful of one-line nudges. */
@@ -38,7 +39,7 @@ serve(async (req) => {
 
     const [profileRes, dailyLogsRes, sleepRes, waterRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
-      supabase.from("daily_logs").select("date, kcal, protein_g, carbs_g, fat_g, readiness_score, readiness_status, sleep_duration_min, steps, volume_load").eq("user_id", userId).gte("date", daysAgo3).order("date", { ascending: false }).limit(3),
+      supabase.from("daily_logs").select("date, kcal, protein_g, carbs_g, fat_g, readiness_score, readiness_status, readiness_explain, sleep_duration_min, steps, volume_load").eq("user_id", userId).gte("date", daysAgo3).order("date", { ascending: false }).limit(3),
       supabase.from("sleep_logs").select(`quality, deep_min, rem_min, light_min, ${SLEEP_COLUMNS}`).eq("user_id", userId).order("waketime", { ascending: false }).limit(3),
       supabase.from("water_logs").select("amount_ml, date").eq("user_id", userId).eq("date", today),
     ]);
@@ -56,7 +57,35 @@ serve(async (req) => {
         sleep_target_hours: profile.sleep_target_hours,
         water_target_ml: profile.water_target_ml,
       } : null,
-      recent_days: dailyLogs,
+      /*
+        ── mapped, because the select now fetches something the model must not see ──
+
+        This was `recent_days: dailyLogs` — the selected rows, forwarded whole.
+        That was fine while every selected column was one the model should read.
+        `readiness_explain` is not: it is the engine's internal token
+        (`"hrv:50|sleep:65"`), a second copy of numbers already in the payload
+        and one more string to misquote. It is fetched only so the boolean below
+        can be derived from it.
+
+        Every field the passthrough sent is listed here. A row carries more
+        columns than a model needs, and the way that goes wrong is silently —
+        so the mapping is explicit and `tools/readiness-confidence.mjs` asserts
+        both halves: the token never leaves, and nothing that used to leave
+        stopped leaving.
+      */
+      recent_days: dailyLogs.map((d: any) => ({
+        date: d.date,
+        kcal: d.kcal,
+        protein_g: d.protein_g,
+        carbs_g: d.carbs_g,
+        fat_g: d.fat_g,
+        readiness_score: d.readiness_score,
+        readiness_status: d.readiness_status,
+        recovery_measured: recoveryMeasured(d.readiness_explain),
+        sleep_duration_min: d.sleep_duration_min,
+        steps: d.steps,
+        volume_load: d.volume_load,
+      })),
       recent_sleep: sleepLogs.map((s: any) => ({
         bedtime: s.bedtime,
         waketime: s.waketime,
@@ -100,6 +129,8 @@ DATA: ${JSON.stringify(ctx)}
 
 IMPORTANT PRINCIPLES:
 - A null or missing field was NOT MEASURED. Never say the user slept nothing, drank nothing or trained none because a field is null — skip that topic instead
+- readiness is 0-100 and measures TRAINING CAPACITY — HRV, resting heart rate, sleep and training load combined over whichever were actually measured. readiness_status describes that capacity state. Neither is a direct measurement of recovery
+- recovery_measured says only whether a recovery component (HRV, resting heart rate or sleep) was measured that day. It does NOT say recovery was good or bad. When it is false, never say or imply from readiness alone that the user is recovered, unrecovered, fatigued or needs recovery — the app has no reading for it. When it is true, recovery wording is allowed only as far as the readings themselves support
 - current_hour is null when the app does not know the local time: then do not mention or assume a time of day
 - NEVER predict or diagnose any health condition or illness
 - ONLY remind about simple things everyone knows but forgets: drink water, sleep enough, eat enough, rest
@@ -115,6 +146,8 @@ DỮ LIỆU: ${JSON.stringify(ctx)}
 
 NGUYÊN TẮC QUAN TRỌNG:
 - Trường nào null hoặc không có nghĩa là CHƯA ĐO ĐƯỢC. Đừng bao giờ nói người dùng không ngủ, không uống nước hay không tập chỉ vì trường đó null — hãy bỏ qua chủ đề đó
+- readiness thang 0-100, đo KHẢ NĂNG TẬP LUYỆN — ghép HRV, nhịp tim nghỉ, giấc ngủ và tải tập trên những chiều thật sự đo được. readiness_status mô tả trạng thái khả năng đó. Cả hai đều KHÔNG phải phép đo trực tiếp về phục hồi
+- recovery_measured chỉ cho biết hôm đó CÓ đo được một chiều phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Nó KHÔNG nói phục hồi tốt hay kém. Khi nó là false, tuyệt đối không dựa vào mỗi readiness để nói hay ám chỉ người dùng đã hồi, chưa hồi, đang mệt hay cần phục hồi — app không có số liệu đó. Khi nó là true, chỉ được dùng ngôn ngữ phục hồi trong phạm vi các chỉ số thật sự cho thấy
 - current_hour là null khi app không biết giờ địa phương: khi đó không nhắc và không suy đoán thời điểm trong ngày
 - KHÔNG BAO GIỜ dự đoán hay chẩn đoán tình trạng sức khoẻ, bệnh lý
 - CHỈ nhắc nhở những việc đơn giản ai cũng biết nhưng hay quên: uống nước, ngủ đủ, ăn đủ chất, nghỉ ngơi

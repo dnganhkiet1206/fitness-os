@@ -9858,6 +9858,119 @@ sheet và so với engine.
 | **RLS** | **KHÔNG** trong vòng này |
 
 
+## Chain AL — hợp đồng AI: một câu về phục hồi cần một phép đo phục hồi, kể cả khi người nói là mô hình
+
+**Nghĩa đã chốt (Chain AJ):** readiness là **khả năng tập luyện tổng hợp**, không
+phải trạng thái phục hồi. Vị từ chính tắc của app là `hasRecoverySignal`; trường
+vận chuyển tới mô hình là `recovery_measured: boolean`.
+
+**Chain AK đã đo:** `ai-coach` phân biệt được; `ai-smart-nudges` **không select**
+`readiness_explain`; `ai-weekly-review` select `*` nhưng **bỏ rơi** nó khi ánh
+xạ; **cả hai prompt không có một dòng nào** định nghĩa readiness; cả hai có
+category/type `"recovery"` ở đầu ra.
+
+### BUG-117 / BUG-118 (P2). Hai điểm đỏ mà lời khuyên đúng cho chúng ngược nhau tới mô hình giống hệt nhau · **ĐÃ SỬA**
+
+Đo trên cluster thật, ánh xạ ctx được TRÍCH từ chính nguồn:
+
+```
+đỏ CHỈ từ tải   45/red  explain "load:45"      sleep_min 0  volume_load 0
+đỏ từ HRV/RHR    9/red  explain "hrv:5|rhr:14" sleep_min 0  volume_load 0
+```
+
+Giống nhau ở mọi trường hai hàm đó nhận, và **không hàm nào fetch
+`biometric_samples`** — nên HRV với nhịp tim nghỉ vô hình với chúng theo cấu
+tạo. Một trong hai người đó cần tập **nhiều hơn**.
+
+**Bản sửa.**
+`ai-smart-nudges`: thêm `readiness_explain` vào select, và thay
+`recent_days: dailyLogs` — một passthrough thô — bằng ánh xạ tường minh liệt kê
+đủ **10 trường cũ** cộng `recovery_measured`. Token KHÔNG đi kèm: nó được fetch
+chỉ để suy ra boolean.
+`ai-weekly-review`: chỉ sửa ánh xạ, vì `select("*")` vốn đã mang token về.
+
+### BUG-119 (P3). Hai prompt nhận readiness mà không ai định nghĩa nó · **ĐÃ SỬA**
+
+Không phải một mệnh lệnh sai như BUG-114 — mà là **không có gì cả**: `readiness`
+và `readiness_status` rơi vào một khối JSON, cạnh một enum đầu ra tên
+`"recovery"`. Thêm hai dòng cho mỗi hàm, ở **cả hai ngôn ngữ**: readiness là khả
+năng tập; `recovery_measured` chỉ nói CÓ ĐO ĐƯỢC hay không, **không** nói phục
+hồi tốt hay kém; khi false thì cấm suy từ mỗi readiness ra mệt/chưa hồi/cần
+phục hồi.
+
+### `_shared/readiness.ts` — một định nghĩa cho ba hàm Deno
+
+Deno không import được `native/src`, nên luật tồn tại hai bản **bắt buộc**. Cái
+không bắt buộc là **bốn** bản. `_shared` đã là chỗ của `asleepMinutes` — cùng vị
+trí, cùng lý do — nên `recoveryMeasured` chuyển vào đó và cả ba hàm import.
+`ai-coach` được sửa theo, và đó là một phép **dời**, không phải đổi hành vi: bộ
+dò trích hàm ra khỏi `_shared`, biên dịch cạnh `hasRecoverySignal` và chạy cả
+hai trên 29 chuỗi — **khớp 29/29**.
+
+### Chain AL — trước / sau, đo được (ánh xạ ctx TRÍCH từ nguồn)
+
+| trạng thái | trước: nudges / weekly | sau: cả ba |
+| --- | --- | --- |
+| đỏ CHỈ từ tải | không phân biệt được | `recovery_measured: false` |
+| đỏ từ giấc ngủ | không phân biệt được | `true` |
+| đỏ từ HRV/RHR | không phân biệt được | `true` |
+| đỏ trộn | không phân biệt được | `true` |
+| xanh CHỈ từ tải | không phân biệt được | `false` |
+| xanh từ giấc ngủ | không phân biệt được | `true` |
+| không có điểm | không phân biệt được | `false` |
+| `readiness_explain` rò ra? | – | **không**, cả ba, mọi trạng thái |
+| trường cũ mất? | – | **không**, 10/10 và 11/11 |
+
+### Chain AL — KHÔNG đụng
+
+- **Enum đầu ra** `"recovery"` của cả hai: giữ nguyên (§4). Chain AK đã đo rằng
+  cả hai **không được đọc ở đâu cả** — nudges dùng `type` làm React key,
+  weekly không đọc `category` — nên chúng vô hại về hành vi; nguy cơ nằm ở prose
+  chúng mời gọi, và prose là thứ prompt vừa chặn.
+- **BUG-106**: không sửa, không ban phước. Ngày quá khứ vẫn được tính lại bằng
+  cửa sổ neo ở hiện tại, nên `recovery_measured` mô tả **hàng như đang lưu**,
+  không phải một sự thật lịch sử đã ổn định. Chú thích trong
+  `ai-weekly-review` nói đúng điều đó và prompt không trình bày nó như thế.
+- Trọng số, ngưỡng, ACWR, schema cột, định nghĩa thành phần phục hồi.
+
+### Chain AL — sai sót của chính bộ kiểm, ghi rõ
+
+1. **`tools/ai-boundary.mjs` ĐỎ vì tệp `_shared` mới.** Nó liệt kê
+   `['guard.ts', 'sleep.ts']` **bằng tay, ở hai chỗ**. Bisect bằng `git stash`
+   trước: cây sạch XANH, nên là do tôi. Sửa bằng cách **liệt kê thư mục** và
+   viết lại mọi `../_shared/*.ts` bằng một regex — thêm tên thứ ba vào hai danh
+   sách chỉ để chờ tên thứ tư.
+2. **`toàn vẹn kinh tế` ĐỎ vì sáu postmaster mồ côi của CHÍNH TÔI.** Tôi để
+   cluster bằng chứng `/tmp/ak/pg` chạy trong lúc bộ kiểm chạy, đúng lỗi môi
+   trường của Chain AF/AG. Không phải hồi quy: dọn xong chạy lại là xanh. Lỗi
+   quy trình của tôi, không phải của mã.
+3. **Bộ dò tự huỷ đúng lúc.** Chuyển `recoveryMeasured` sang `_shared` làm phép
+   trích của mục 15 hỏng, và nó **thoát ngay với "đừng tin kết quả"** thay vì đo
+   một phỏng đoán. Đó là hành vi đúng và tôi để nó xảy ra trước khi sửa.
+4. **Tham số của biểu thức trích bị đặt sai tên.** Tôi bọc ba ánh xạ trong
+   `(rows: any[]) =>` trong khi chúng đóng trên `dailyLogs` / `weekLogs` — 16 ca
+   ném `dailyLogs is not defined`. Đổi tên tham số cho khớp nguồn, thay vì sửa
+   nguồn cho khớp bọc.
+5. **Phép phá 12 KHÔNG ÁP ĐƯỢC** (chuỗi patch của tôi thừa một dấu cách). Lỗi
+   viết phép phá, không phải lỗ hổng bộ dò; sửa chuỗi rồi chạy lại thì ĐỎ đúng
+   lý do.
+6. **Một dòng thông điệp thành công bị vỡ từ Chain AJ.** Chèn đoạn mới vào giữa
+   câu "Trên PostgreSQL 16.13…" để lại chữ "Trên" mồ côi. Sửa.
+
+### Chain AL — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **HÀM THẬT** | `recoveryMeasured` từ `_shared`, và **cả ba ánh xạ ctx** được TRÍCH từ nguồn rồi chạy |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration (giai đoạn đo), khẳng định `SHOW data_directory` |
+| **BREAK-TESTS** | **12/12 đỏ đúng lý do**, khôi phục xanh |
+| **REGRESSION** | `node tools/check.mjs` **137/137 xanh** |
+| **TYPESCRIPT** | sạch |
+| **MÔ HÌNH AI THẬT** | **KHÔNG** — đo payload, prompt và hợp đồng; KHÔNG đo văn bản mô hình sinh ra |
+| **REAL iOS / HealthKit / AsyncStorage** | **KHÔNG** |
+| **PRODUCTION / RLS / GATEWAY** | **KHÔNG** |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,

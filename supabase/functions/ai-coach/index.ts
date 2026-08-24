@@ -7,6 +7,7 @@ import {
   quotaExceeded,
   requireUser,
 } from "../_shared/guard.ts";
+import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
 
 /** Output ceiling. Unbounded generation is an unbounded bill. */
@@ -142,34 +143,6 @@ serve(async (req) => {
           .map((m) => `- [${m.kind}] ${m.fact} (nhắc lần cuối: ${String(m.last_confirmed).split("T")[0]})`)
           .join("\n")
       : null;
-
-    /*
-      Did this day's readiness rest on a measurement of *recovery*?
-
-      ── why the function is here and not imported ──
-
-      This runs on Deno and cannot import from `native/src`, so the rule exists
-      twice by force. `tools/readiness-confidence.mjs` extracts the source of
-      this exact const, transpiles it beside the native `hasRecoverySignal`, and
-      drives BOTH over the same inputs — the same shape Chain AC used for
-      `nutritionMean`. A drift shows up as a behavioural mismatch rather than as
-      a comment claiming they agree. Block-bodied deliberately: Chain AC lost a
-      round to an extraction regex over-running an expression-bodied arrow.
-
-      ── why a boolean and not the token ──
-
-      The model needs one fact — whether recovery was read — to avoid asserting
-      a recovery failure the app never measured. The token also carries every
-      sub-score, which is a second copy of numbers already in the payload and a
-      new thing for the model to misquote.
-    */
-    const recoveryMeasured = (explain: string | null | undefined): boolean => {
-      if (!explain) return false;
-      return explain.split("|").some((p) => {
-        const [key, scoreStr] = p.split(":");
-        return (key === "hrv" || key === "rhr" || key === "sleep") && !Number.isNaN(Number(scoreStr));
-      });
-    };
 
     // Build context
     const ctx = {

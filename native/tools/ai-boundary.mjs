@@ -105,7 +105,12 @@ try {
   for (const name of Object.keys(FNS)) {
     copyFileSync(path.join(FUNCTIONS, name, 'index.ts'), path.join(fnDir, `${name}.ts`));
   }
-  for (const shared of ['guard.ts', 'sleep.ts']) {
+  /* Enumerated, not listed. This was `['guard.ts', 'sleep.ts']` written out
+     twice — here and in the import rewrite below — so `_shared/readiness.ts`
+     arriving broke this whole file with `Cannot find module`, and the fix would
+     have been to type a third name into two places and wait for the fourth. */
+  const SHARED = readdirSync(path.join(FUNCTIONS, '_shared')).filter((f) => f.endsWith('.ts'));
+  for (const shared of SHARED) {
     copyFileSync(path.join(FUNCTIONS, '_shared', shared), path.join(fnDir, shared));
   }
   /* The three imports a Deno function has that Node does not. */
@@ -116,8 +121,7 @@ try {
       readFileSync(p, 'utf8')
         .replace('https://deno.land/std@0.168.0/http/server.ts', './shim-serve.js')
         .replace('https://esm.sh/@supabase/supabase-js@2', './shim-sb.js')
-        .replaceAll('"../_shared/guard.ts"', '"./guard.ts"')
-        .replaceAll('"../_shared/sleep.ts"', '"./sleep.ts"'),
+        .replace(/"\.\.\/_shared\/([\w-]+\.ts)"/g, '"./$1"'),
     );
   }
 
