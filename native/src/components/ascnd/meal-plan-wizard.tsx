@@ -19,6 +19,7 @@ import {
 import { dedupeSeedShadows, useMyFoods } from '@/hooks/use-nutrition';
 import { supabase } from '@/integrations/supabase/client';
 import { MEAL_ORDER, PLAN_DAYS } from '@/lib/planned-meal';
+import { errorText } from '@/lib/error-copy';
 
 /**
  * Making a meal plan, from nothing to food on a day, as one flow.
@@ -178,7 +179,7 @@ export function MealPlanWizard({
           setMadeId(row.id);
           onPlanCreated?.(row.id);
         },
-        onError: (e: Error) => Alert.alert('ASCND', e.message),
+        onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
       },
     );
   };
@@ -215,7 +216,7 @@ export function MealPlanWizard({
           setQuery('');
           setDebounced('');
         },
-        onError: (e: Error) => Alert.alert('ASCND', e.message),
+        onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
       },
     );
   };

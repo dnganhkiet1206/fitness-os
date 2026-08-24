@@ -14,6 +14,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { EXERCISE_KINDS, isExerciseKind, type ExerciseKind } from '@/lib/exercise-kind';
+import { errorText } from '@/lib/error-copy';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -101,7 +102,7 @@ export default function ExercisesScreen() {
           setKind(null);
           setAdding(false);
         },
-        onError: (e: Error) => Alert.alert('ASCND', e.message),
+        onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
       },
     );
   };
@@ -114,7 +115,7 @@ export default function ExercisesScreen() {
         style: 'destructive',
         onPress: () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          deleteEx.mutate(id, { onError: (e: Error) => Alert.alert('ASCND', e.message) });
+          deleteEx.mutate(id, { onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)) });
         },
       },
     ]);

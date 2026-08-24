@@ -112,7 +112,7 @@ export default function LogBiometricsSheet() {
         router.back();
         toast.success(i18n.logBioSaved);
       },
-      onError: (e: Error) => toast.error(e.message),
+      onError: (e: Error) => toast.fail(e),
     });
   };
 

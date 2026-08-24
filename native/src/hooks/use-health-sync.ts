@@ -291,7 +291,7 @@ function useSyncMutation(silent: boolean) {
     /* "No permission" and "no data yet" are the two ordinary outcomes of an
        automatic run, and neither is something to interrupt somebody with. */
     onError: (e: Error) => {
-      if (!silent) toast.error(e.message);
+      if (!silent) toast.fail(e);
     },
   });
 

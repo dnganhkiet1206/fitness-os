@@ -161,7 +161,7 @@ export function TodayMeals({
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   toast.success(i18n.deleted);
                 },
-                onError: (e: Error) => toast.error(e.message),
+                onError: (e: Error) => toast.fail(e),
               },
             ),
         },
@@ -234,7 +234,7 @@ export function TodayMeals({
                 toast.success(i18n.nItemUpdated);
                 setEditing(null);
               },
-              onError: (e: Error) => toast.error(e.message),
+              onError: (e: Error) => toast.fail(e),
             },
           );
         }}

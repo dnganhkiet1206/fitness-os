@@ -49,7 +49,7 @@ export default function ChangePasswordScreen() {
       toast.success(i18n.settingsPasswordChanged);
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      toast.error(e instanceof Error ? e.message : 'Error');
+      toast.fail(e);
     } finally {
       setSaving(false);
     }

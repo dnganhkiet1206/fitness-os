@@ -245,7 +245,7 @@ export default function ShopScreen() {
     setBuyingKey(item.key);
     buy.mutate(item, {
       onSuccess: () => toast.success(i18n.nRoomBought),
-      onError: (e: Error) => toast.error(e.message),
+      onError: (e: Error) => toast.fail(e),
       onSettled: () => setBuyingKey(null),
     });
   };
@@ -264,7 +264,7 @@ export default function ShopScreen() {
       { refKey: collectionRefKey(id), amount, reason: `set:${id}` },
       {
         onSuccess: () => toast.success(i18n.nRoomBought),
-        onError: (e: Error) => toast.error(e.message),
+        onError: (e: Error) => toast.fail(e),
       },
     );
   };

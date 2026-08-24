@@ -97,7 +97,7 @@ export default function FoodEditorSheet() {
         router.back();
         toast.success(isEdit ? i18n.foodUpdated : i18n.foodAdded);
       },
-      onError: (e: Error) => toast.error(e.message),
+      onError: (e: Error) => toast.fail(e),
     };
     if (isEdit && id) update.mutate({ id, ...data }, opts);
     else create.mutate(data, opts);
@@ -117,7 +117,7 @@ export default function FoodEditorSheet() {
               router.back();
               toast.success(i18n.foodDeleted);
             },
-            onError: (e: Error) => toast.error(e.message),
+            onError: (e: Error) => toast.fail(e),
           }),
       },
     ]);

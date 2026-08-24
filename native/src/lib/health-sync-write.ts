@@ -111,7 +111,10 @@ export async function writeHealthSync(input: HealthSyncWrite): Promise<void> {
     const { error } = await supabase
       .from('daily_logs')
       .upsert({ user_id: userId, date: today, ...measured }, { onConflict: 'user_id,date' });
-    if (error) failures.push(`hôm nay: ${error.message}`);
+    if (error) {
+      console.warn('health sync (today):', error.message);
+      failures.push('hôm nay');
+    }
   }
 
   if (stepDays.length > 0) {
@@ -119,7 +122,10 @@ export async function writeHealthSync(input: HealthSyncWrite): Promise<void> {
       stepDays.map((d) => ({ user_id: userId, date: d.date, steps: d.steps })),
       { onConflict: 'user_id,date' },
     );
-    if (error) failures.push(`bù bước chân: ${error.message}`);
+    if (error) {
+      console.warn('health sync (step backfill):', error.message);
+      failures.push('bù bước chân');
+    }
   }
 
   /* Sorted oldest-first by `touchedDays`, so the day a person is most likely to
@@ -128,10 +134,25 @@ export async function writeHealthSync(input: HealthSyncWrite): Promise<void> {
     try {
       await recomputeDailyLog(userId, day);
     } catch (e) {
-      failures.push(`dựng lại ${day}: ${(e as Error).message}`);
+      console.warn(`health sync (rebuild ${day}):`, (e as Error).message);
+      failures.push(`dựng lại ${day}`);
     }
   }
 
+  /*
+    ── the parts that failed, without the words PostgreSQL chose ──
+
+    These lines used to be `${error.message}`, so the aggregate carried strings
+    like *duplicate key value violates unique constraint
+    "daily_logs_user_id_date_key"* — and because this is an `Error` the app
+    constructed rather than one Supabase threw, `error-copy.ts` correctly reads
+    it as a sentence written for a person and shows it verbatim. That is the one
+    way raw SQL could still reach a toast after the boundary went in.
+
+    What a reader can use is *which part* did not land, so that is what is kept.
+    The underlying message is still worth having for whoever is debugging, and
+    it goes to the console rather than to the person holding the phone.
+  */
   if (failures.length > 0) {
     throw new Error(`Đồng bộ sức khoẻ chưa xong — ${failures.join('; ')}`);
   }

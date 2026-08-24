@@ -24,6 +24,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { supabase } from '@/integrations/supabase/client';
+import { errorText } from '@/lib/error-copy';
 
 type Mode = 'signin' | 'signup' | 'forgot';
 
@@ -95,7 +96,7 @@ export function AuthScreen() {
       Haptics.notificationAsync(
         error ? Haptics.NotificationFeedbackType.Error : Haptics.NotificationFeedbackType.Success,
       );
-      Alert.alert('ASCND', error ? error.message : i18n.authResetSent);
+      Alert.alert('ASCND', error ? errorText(error, i18n) : i18n.authResetSent);
       if (!error) setMode('signin');
       return;
     }
@@ -106,12 +107,12 @@ export function AuthScreen() {
     const { error } =
       mode === 'signin' ? await signIn(email, password) : await signUp(email, password, name);
     setBusy(false);
-    if (error) Alert.alert('ASCND', error.message);
+    if (error) Alert.alert('ASCND', errorText(error, i18n));
   };
 
   const apple = async () => {
     const { error } = await signInWithApple();
-    if (error && error.message !== 'Sign in cancelled') Alert.alert('ASCND', error.message);
+    if (error && error.message !== 'Sign in cancelled') Alert.alert('ASCND', errorText(error, i18n));
   };
 
   return (

@@ -138,7 +138,7 @@ export function WeightLogList({
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 toast.success(i18n.deleted);
               },
-              onError: (e: Error) => toast.error(e.message),
+              onError: (e: Error) => toast.fail(e),
             }),
         },
       ],

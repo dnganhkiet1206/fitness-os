@@ -335,7 +335,7 @@ export default function MascotRoomScreen() {
             setCelebrate((c) => c + 1);
           }
         },
-        onError: (e: Error) => toast.error(e.message),
+        onError: (e: Error) => toast.fail(e),
       },
     );
   };

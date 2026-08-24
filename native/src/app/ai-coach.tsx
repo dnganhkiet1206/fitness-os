@@ -438,7 +438,7 @@ export default function AiCoachScreen() {
                              now report that it touched nothing, and a report
                              nobody receives is the row silently reappearing. */
                           deleteConvo.mutate(c.id, {
-                            onError: (e: Error) => toast.error(e.message),
+                            onError: (e: Error) => toast.fail(e),
                           });
                         }}>
                         {/* Neutral in the list. The glyph's own tint is red —

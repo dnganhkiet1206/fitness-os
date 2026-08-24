@@ -27,6 +27,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { errorText } from '@/lib/error-copy';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
@@ -284,7 +285,7 @@ export default function WeeklyReviewScreen() {
     if (analyze.data) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, [analyze.data]);
   useEffect(() => {
-    if (analyze.error) Alert.alert('ASCND', (analyze.error as Error).message);
+    if (analyze.error) Alert.alert('ASCND', errorText(analyze.error, i18n));
   }, [analyze.error]);
 
   const a = analyze.data;

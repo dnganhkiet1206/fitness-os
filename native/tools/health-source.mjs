@@ -282,7 +282,11 @@ const problems = [];
      the two places that speak. */
   for (const [what, re] of [
     ['toast thành công', /if \(silent\) return;[\s\S]{0,200}?toast\.success/],
-    ['toast lỗi', /if \(!silent\) toast\.error/],
+    /* `toast.error` became `toast.fail` when the error-copy boundary went in —
+       a failed sync now shows a sentence rather than PostgreSQL's own words.
+       The invariant here is unchanged and is about the SILENT FLAG, so the rule
+       follows the call rather than pinning a function name. */
+    ['toast lỗi', /if \(!silent\) toast\.(error|fail)\(/],
   ]) {
     if (!re.test(sync)) {
       problems.push(

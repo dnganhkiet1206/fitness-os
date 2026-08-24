@@ -40,6 +40,7 @@ import {
 } from '@/lib/food-preferences';
 import { readStat, statMessage } from '@/lib/plausible';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
+import { errorText } from '@/lib/error-copy';
 import {
   displayHeight,
   displayVolume,
@@ -278,7 +279,7 @@ export default function EditProfileSheet() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     },
-    onError: (e: Error) => Alert.alert('ASCND', e.message),
+    onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
   });
 
   const goals = [

@@ -49,6 +49,7 @@ import { localDateStr } from '@/lib/local-date';
 import { statMessage } from '@/lib/plausible';
 import { requestNotificationPermission } from '@/lib/notifications';
 import { displayVolume, volumeLabel } from '@/lib/units';
+import { errorText } from '@/lib/error-copy';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 
 const TOTAL_STEPS = 7;
@@ -265,7 +266,7 @@ export function OnboardingFlow() {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['supplement_checklist'] });
     },
-    onError: (e: Error) => Alert.alert('ASCND', e.message),
+    onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
   });
 
   const toggleAllergy = (a: string) => {

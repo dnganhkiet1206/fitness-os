@@ -223,7 +223,7 @@ export default function BiometricsScreen() {
                                  readiness score's largest term — a delete whose
                                  rebuild failed must not look like one that
                                  worked. */
-                              onError: (e: Error) => toast.error(e.message),
+                              onError: (e: Error) => toast.fail(e),
                             },
                           ),
                       },

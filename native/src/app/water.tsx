@@ -143,7 +143,7 @@ export default function WaterScreen() {
                 toasted its failures for a long time.
               */
               removeLast.mutate({
-                onError: (e: Error) => toast.error(e.message),
+                onError: (e: Error) => toast.fail(e),
               })
             }>
             <Icon icon={Minus} size={16} color={colors.foreground} strokeWidth={2.5} />
@@ -166,7 +166,7 @@ export default function WaterScreen() {
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 addWater.mutate(volumeToMl(amount, vUnit), {
-                  onError: (e: Error) => toast.error(e.message),
+                  onError: (e: Error) => toast.fail(e),
                 });
               }}>
               <Icon icon={Plus} size={14} color={colors.foreground} strokeWidth={2.5} />
@@ -200,7 +200,7 @@ export default function WaterScreen() {
         onClose={() => setManualOpen(false)}
         onSave={(amount) => {
           addWater.mutate(volumeToMl(amount, vUnit), {
-            onError: (e: Error) => toast.error(e.message),
+            onError: (e: Error) => toast.fail(e),
           });
           setManualOpen(false);
         }}

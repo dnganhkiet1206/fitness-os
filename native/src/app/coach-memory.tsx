@@ -176,7 +176,7 @@ export default function CoachMemoryScreen() {
                         and the half that shows is the one that reads as a bug.
                       */
                       forget.mutate(m.id, {
-                        onError: (e: Error) => toast.error(e.message),
+                        onError: (e: Error) => toast.fail(e),
                       });
                     }}>
                     <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
@@ -207,7 +207,7 @@ export default function CoachMemoryScreen() {
                   style: 'destructive',
                   onPress: () =>
                     forgetAll.mutate(undefined, {
-                      onError: (e: Error) => toast.error(e.message),
+                      onError: (e: Error) => toast.fail(e),
                     }),
                 },
               ],

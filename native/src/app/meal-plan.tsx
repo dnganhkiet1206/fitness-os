@@ -23,6 +23,7 @@ import { useProfile } from '@/hooks/useTodayData';
 import { calorieTargetFor } from '@/lib/macro-targets';
 import { MEAL_ORDER, PLAN_DAYS, plannedMealIsLoggedToday } from '@/lib/planned-meal';
 import { toast } from '@/lib/toast';
+import { errorText } from '@/lib/error-copy';
 
 /**
  * One meal plan, one day at a time.
@@ -121,7 +122,7 @@ export default function MealPlanScreen() {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             toast.success(i18n.nMpEatDone.replace('{m}', mealLabel(meal)));
           },
-          onError: (e: Error) => toast.error(e.message),
+          onError: (e: Error) => toast.fail(e),
         },
       );
     };
@@ -151,7 +152,7 @@ export default function MealPlanScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           deletePlan.mutate(plan.id, {
             onSuccess: () => router.back(),
-            onError: (e: Error) => Alert.alert('ASCND', e.message),
+            onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
           });
         },
       },
@@ -320,7 +321,7 @@ export default function MealPlanScreen() {
                       onPress={() =>
                         deleteItem.mutate(
                           { id: it.id, planId: plan?.id ?? '' },
-                          { onError: (e: Error) => toast.error(e.message) },
+                          { onError: (e: Error) => toast.fail(e) },
                         )
                       }
                       style={styles.rowX}>

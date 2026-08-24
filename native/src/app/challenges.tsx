@@ -42,7 +42,7 @@ export default function ChallengesScreen() {
   */
   const refreshProgress = useCallback(() => {
     updateProgress.mutate(undefined, {
-      onError: (e: Error) => toast.error(e.message),
+      onError: (e: Error) => toast.fail(e),
     });
     // `updateProgress` is a fresh object each render; listing it would re-run
     // the effect below on every render rather than once per screen.

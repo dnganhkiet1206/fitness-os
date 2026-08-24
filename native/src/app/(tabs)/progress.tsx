@@ -849,7 +849,7 @@ export default function ProgressScreen() {
                                     );
                                     toast.success(i18n.deleted);
                                   },
-                                  onError: (e: Error) => toast.error(e.message),
+                                  onError: (e: Error) => toast.fail(e),
                                 }),
                             },
                           ],

@@ -458,7 +458,7 @@ export default function LogMealSheet() {
       toast.success(i18n.logMealSaved);
     },
     onError: (e: Error) => {
-      if (e.message !== 'No items') toast.error(e.message);
+      if (e.message !== 'No items') toast.fail(e);
     },
   });
 

@@ -132,7 +132,7 @@ export default function LogSleepSheet() {
       router.back();
       toast.success(i18n.logSleepSaved);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.fail(e),
   });
 
   return (

@@ -22,6 +22,7 @@ import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
 import { callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
+import { errorText } from '@/lib/error-copy';
 
 /**
  * Everything the account owns, for the export.
@@ -142,7 +143,7 @@ export default function SettingsScreen() {
         message: json,
       });
     } catch (e) {
-      Alert.alert('ASCND', e instanceof Error ? e.message : 'Export failed');
+      Alert.alert('ASCND', errorText(e, i18n));
     } finally {
       setExporting(false);
     }

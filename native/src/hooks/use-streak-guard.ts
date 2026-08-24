@@ -124,7 +124,7 @@ export function useStreakGuard() {
         },
         onError: (e: Error) => {
           tried.current.delete(date);
-          toast.error(e.message || i18n.nStreakFreezeFailed);
+          toast.fail(e);
         },
       });
     }

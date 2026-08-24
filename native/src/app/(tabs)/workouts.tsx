@@ -251,7 +251,7 @@ export default function WorkoutsScreen() {
         /* The delete reports when it matched no rows — see `lib/write-result.ts`.
            Without an ear the row would vanish, the refetch would put it back,
            and nobody would be told why. */
-        onPress: () => del.mutate(id, { onError: (e: Error) => toast.error(e.message) }),
+        onPress: () => del.mutate(id, { onError: (e: Error) => toast.fail(e) }),
       },
     ]);
   };
@@ -277,7 +277,7 @@ export default function WorkoutsScreen() {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 toast.success(i18n.deleted);
               },
-              onError: (e: Error) => toast.error(e.message),
+              onError: (e: Error) => toast.fail(e),
             },
           ),
       },

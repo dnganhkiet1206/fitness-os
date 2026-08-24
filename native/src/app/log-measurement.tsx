@@ -153,7 +153,7 @@ export default function LogMeasurementSheet() {
         router.back();
         toast.success(i18n.progressSaved);
       },
-      onError: (e: Error) => toast.error(e.message),
+      onError: (e: Error) => toast.fail(e),
     });
   };
 

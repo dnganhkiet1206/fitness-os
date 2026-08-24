@@ -25,6 +25,7 @@ import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { PHOTO_QUALITY, pickPictureSize } from '@/lib/photo-size';
 import { parseLocalDate } from '@/lib/local-date';
+import { errorText } from '@/lib/error-copy';
 import {
   useDeleteProgressPhoto,
   useProgressPhotos,
@@ -52,7 +53,7 @@ export default function ProgressPhotosScreen() {
         text: i18n.nPhotoDelete,
         style: 'destructive',
         onPress: () =>
-          del.mutate({ id, photo_url }, { onError: (e: Error) => toast.error(e.message) }),
+          del.mutate({ id, photo_url }, { onError: (e: Error) => toast.fail(e) }),
       },
     ]);
   };
@@ -129,7 +130,7 @@ export default function ProgressPhotosScreen() {
             setCapturing(false);
             upload.mutate(
               { base64, pose },
-              { onError: (e: Error) => Alert.alert('ASCND', e.message) },
+              { onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)) },
             );
           }}
         />

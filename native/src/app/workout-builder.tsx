@@ -29,6 +29,7 @@ import { useAddWorkoutTemplate, useExercises, type TemplateExercise } from '@/ho
 import { useUnits } from '@/hooks/use-units';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { displayWeight, weightLabel } from '@/lib/units';
+import { errorText } from '@/lib/error-copy';
 
 /**
  * Building a workout template, in two steps: pick the exercises, then say how
@@ -332,7 +333,7 @@ export default function WorkoutBuilderSheet() {
       { name: finalName, type: tType, exercises: items },
       {
         onSuccess: () => router.back(),
-        onError: (e: Error) => Alert.alert('ASCND', e.message),
+        onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
       },
     );
   };

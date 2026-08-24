@@ -277,6 +277,13 @@ const STEPS = [
   ['hồ sơ và onboarding', 'node', ['tools/profile-onboarding.mjs']],
   ['vòng đời thông báo', 'node', ['tools/notifications.mjs']],
   ['khởi động lạnh', 'node', ['tools/offline-cold-launch.mjs']],
+  /*
+    A failed write used to put the message PostgreSQL wrote for a developer into
+    the pop-up: table names, constraint names, "invalid input syntax for type
+    date". Forty-odd call sites passed `e.message` straight through, and there
+    was no boundary between a thrown storage error and what a person reads.
+  */
+  ['copy lỗi', 'node', ['tools/error-copy.mjs']],
   ['ranh giới AI', 'node', ['tools/ai-boundary.mjs']],
   ['ranh giới ảnh quét', 'node', ['tools/scan-food-boundary.mjs']],
   ['xoá tài khoản', 'node', ['tools/delete-account.mjs']],

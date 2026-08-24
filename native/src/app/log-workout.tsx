@@ -587,7 +587,7 @@ export default function LogWorkoutSheet() {
       if (res.records.length > 0) setRecords(res.records);
       else finish();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.fail(e),
   });
 
   /*

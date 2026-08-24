@@ -128,7 +128,7 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setEditing(false);
       },
-      onError: (e: Error) => toast.error(e.message),
+      onError: (e: Error) => toast.fail(e),
     });
   };
 

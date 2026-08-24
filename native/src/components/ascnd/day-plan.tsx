@@ -809,7 +809,7 @@ export function DayPlan({
           if (storeKey) AsyncStorage.removeItem(storeKey).catch(() => {});
           toast.success(i18n.nRdSaved);
         },
-        onError: (e: Error) => toast.error(e.message),
+        onError: (e: Error) => toast.fail(e),
       },
     );
   };

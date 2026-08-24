@@ -5,8 +5,16 @@ import Animated, { Easing, FadeInDown, FadeOutUp } from 'react-native-reanimated
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
+import { useI18n } from '@/hooks/use-app-settings';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { dismissToast, useCurrentToast, type ToastKind } from '@/lib/toast';
+
+/** One nested entry keeps the dictionary off `Record<string, string>`, so the
+ *  lookup is checked rather than cast. */
+function errorCopy(dict: Record<string, unknown>, key: string, fallback: string): string {
+  const copy = dict[key];
+  return typeof copy === 'string' ? copy : fallback;
+}
 
 const AUTO_HIDE_MS = 3000;
 
@@ -32,7 +40,23 @@ const ICONS: Record<ToastKind, LucideIcon> = {
  */
 export function NeonToastHost() {
   const t = useCurrentToast();
+  const i18n = useI18n();
   const insets = useSafeAreaInsets();
+
+  /*
+    ── the sentence, resolved here and nowhere else ──
+
+    `toast.fail` stores an i18n KEY when the thrown thing came from PostgreSQL
+    or GoTrue, because the store is module-level and the language is in React
+    context. Resolving it at render is what makes a language switch re-word a
+    toast that is already on screen, and it keeps every screen from having to
+    know the difference between an error written for a person and one written
+    for a developer.
+
+    The fallback is the raw text, which is correct: a key is only ever set for
+    a system error, so anything without one is a sentence the app wrote.
+  */
+  const text = t == null ? '' : t.failureKey ? errorCopy(i18n, t.failureKey, t.message) : t.message;
 
   useEffect(() => {
     if (!t) return;
@@ -54,10 +78,10 @@ export function NeonToastHost() {
       iOS; `accessibilityLiveRegion` on the view below is the Android half of
       the same idea. Both are cheap and neither is a substitute for the other.
     */
-    AccessibilityInfo.announceForAccessibility(t.message);
+    AccessibilityInfo.announceForAccessibility(text);
     const timer = setTimeout(() => dismissToast(t.id), AUTO_HIDE_MS);
     return () => clearTimeout(timer);
-  }, [t]);
+  }, [t, text]);
 
   if (!t) return null;
   const accent = ACCENT[t.kind];
@@ -78,14 +102,14 @@ export function NeonToastHost() {
           accessibilityRole="button"
           /* The message is the label: a bar that announces "button" and nothing
              else is what an unlabelled control sounds like. */
-          accessibilityLabel={t.message}
+          accessibilityLabel={text}
           style={styles.row}
           onPress={() => dismissToast(t.id)}>
           <View style={[styles.neonBar, { backgroundColor: accent }]} />
           <View style={[styles.iconWrap, { backgroundColor: `${accent}24` }]}>
             <Icon icon={ICONS[t.kind]} size={16} color={accent} />
           </View>
-          <Text style={styles.message} numberOfLines={2}>{t.message}</Text>
+          <Text style={styles.message} numberOfLines={2}>{text}</Text>
         </Pressable>
       </Animated.View>
     </View>

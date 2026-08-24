@@ -11,6 +11,7 @@ import { EDGE_FUNCTIONS, functionUrl, SUPABASE_ANON_KEY } from '@/lib/backend';
 import { AI_FAILURE_KEY, classify } from '@/lib/edge-failure';
 import { localDateStr } from '@/lib/local-date';
 import { callEdge } from '@/lib/edge';
+import { errorText } from '@/lib/error-copy';
 
 /**
  * The coach's conversation, held above the screen that shows it.
@@ -368,7 +369,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         // A throw from `fetch` never reached the server; the classifier says so
         // in the user's language rather than leaving a bare English fallback.
-        Alert.alert('AI Coach', e instanceof Error ? e.message : i18n[AI_FAILURE_KEY[classify(e)]]);
+        Alert.alert('AI Coach', errorText(e, i18n) || i18n[AI_FAILURE_KEY[classify(e)]]);
       } finally {
         loadingRef.current = false;
         setIsLoading(false);

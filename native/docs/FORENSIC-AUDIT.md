@@ -9971,6 +9971,99 @@ hai trên 29 chuỗi — **khớp 29/29**.
 | **PRODUCTION / RLS / GATEWAY** | **KHÔNG** |
 
 
+## Chain AM — thông báo lỗi hiện ra chữ của PostgreSQL
+
+**Người dùng báo:** *"Các thông báo pop up hiện thông báo lỗi nhưng lại hiện cả
+code lên."*
+
+### BUG-120 (P2). Toast và Alert hiện nguyên văn câu lỗi của cơ sở dữ liệu — `RAW-ERROR-MESSAGE-IN-POPUP` · **ĐÃ SỬA**
+
+Bốn mươi mấy chỗ gọi là `onError: (e: Error) => toast.error(e.message)`, và thứ
+được ném ra là nguyên vật Supabase trả về. Chạy thật trên PostgreSQL 16.13 dựng
+từ toàn bộ migration của chính app này, đây là những chuỗi ĐÃ tới màn hình:
+
+```
+permission denied for table daily_logs
+duplicate key value violates unique constraint "daily_logs_user_id_date_key"
+null value in column "user_id" of relation "daily_logs" violates not-null constraint
+column "date" of relation "meal_entries" does not exist
+invalid input syntax for type date: "not-a-date"
+```
+
+Tên bảng, tên ràng buộc, tên cột, tên kiểu SQL — bằng tiếng Anh, trong một
+pop-up, cho người vừa bấm Lưu. Nó doạ chứ không báo: không chữ nào nói được
+người đọc phải làm gì, và *"permission denied"* nghe như một lời buộc tội trong
+khi phần lớn trường hợp nó chỉ có nghĩa là phiên đăng nhập đã hết hạn.
+
+**Nguyên nhân gốc:** không có ranh giới nào giữa một lỗi lưu trữ bị ném ra và
+câu chữ người dùng đọc. `edge-failure.ts` đã có ranh giới đó cho edge function
+từ lâu; phía lưu trữ thì không.
+
+**Bản sửa.** `src/lib/error-copy.ts` — thuần, không import gì, nạp được trong
+Node — phân loại lỗi thành bảy mức có thể hành động được (`offline`,
+`signed-out`, `duplicate`, `invalid`, `not-found`, `server`, `unknown`) rồi trả
+về **khoá i18n**, không phải câu.
+
+Phân biệt "lỗi do HỆ THỐNG viết" với "lỗi do CHÍNH APP viết" bằng **hình dạng
+object**, không bằng danh sách chuỗi: lỗi PostgREST/GoTrue mang `code`
+(SQLSTATE như `23505`, hoặc `PGRST116`) hoặc `status` HTTP; một `Error` do app
+tạo thì không mang gì cả. Nhờ vậy một câu tiếng Việt mới thêm ở bất kỳ đâu vẫn
+tự động được giữ nguyên mà không phải khai báo với tệp này.
+
+Câu do app viết PHẢI giữ nguyên — `plausible.ts` giải thích 600 bpm ngoài
+khoảng hợp lý, `health-sync-write.ts` nói ngày nào dựng lại hỏng. Sửa quá tay
+cũng là một lỗi.
+
+`toast.fail(err)` lưu **khoá**, `NeonToastHost` dịch lúc render — cùng lối tách
+"lưu token, dịch khi vẽ" của `readiness-i18n.ts`, và là lý do đổi ngôn ngữ giữa
+chừng làm một toast đang hiện đổi chữ theo. `Alert.alert` không render component
+nên dùng `errorText(err, i18n)`; phân loại vẫn của cùng một tệp, nên alert và
+toast nói cùng một câu về cùng một lỗi.
+
+**Lỗ rò thứ hai, đóng cùng lúc.** `health-sync-write.ts` nhét `${error.message}`
+vào câu tổng hợp của chính nó. Vì đó là `Error` do app tạo, `error-copy` ĐÚNG khi
+hiện nguyên văn — nên chữ của PostgreSQL vẫn lên màn hình qua đường vòng. Giờ
+câu tổng hợp chỉ nêu **phần nào** hỏng (`hôm nay`, `bù bước chân`,
+`dựng lại 2026-01-02`); câu gốc đi ra `console.warn` cho người debug.
+
+**VERIFICATION:** `node tools/error-copy.mjs` — 18 hình dạng lỗi thật của
+PostgREST/GoTrue/React Native; không ca nào để lọt nguyên văn và không câu hiện
+ra nào còn chứa `constraint`, `relation`, `column "`, `PGRST` hay `JWT`. Bốn
+thao tác một người dùng thật có thể làm hỏng được CHẠY trên PostgreSQL dựng từ
+toàn bộ migration, **SQLSTATE của chúng được hỏi chính PostgreSQL** chứ không
+đoán, và mọi mã ấy đều có nhánh phân loại.
+
+### Chain AM — sai sót của chính bộ kiểm, ghi rõ
+
+1. **Luật cấu trúc đầu tiên là regex và nó BỎ SÓT thật.** Viết
+   `Alert\.alert\([^,]*,\s*\w+\.message\s*\)`, và phép phá 2 —
+   `Alert.alert('ASCND', (e as Error).message)` — XANH: một phép ép kiểu không
+   phải `\w+`. Thay bằng cách **đọc lời gọi** (đếm ngoặc) rồi hỏi có `.message`
+   nào bên trong mà không đi qua `errorText` không. Luật mạnh hơn lập tức tìm ra
+   **một chỗ rò thật mà luật yếu đã giấu**: `weekly-review.tsx` gọi
+   `Alert.alert('ASCND', (analyze.error as Error).message)`.
+2. **Phép viết lại hàng loạt sửa luôn chú thích của chính tệp mới.** Regex thay
+   `toast.error(e.message)` khắp `src`, gồm cả dòng trong doc comment của
+   `error-copy.ts` mô tả lỗi cũ — khiến nó tự mâu thuẫn. Khôi phục.
+3. **Regex Alert chạy trước bản vá tay** trên `use-coach-chat.tsx` và để lại
+   `errorText(e, i18n))]]);`. `tsc` bắt được ngay.
+4. **`tools/health-source.mjs` ĐỎ** vì luật của nó ghim tên hàm
+   `if (!silent) toast.error`. Bất biến của nó là về **cờ silent**, không phải
+   về tên hàm — chỉnh hướng thành `toast\.(error|fail)\(` chứ không nới.
+
+### Chain AM — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **HÀM THẬT** | `classifyError`, `errorText` — biên dịch và chạy |
+| **POSTGRES** | cluster THẬT 16.13 từ mọi migration, khẳng định `SHOW data_directory`; SQLSTATE hỏi chính PostgreSQL |
+| **BREAK-TESTS** | **10/10 đỏ đúng lý do**; phép phá 2 lộ lỗ hổng thật, siết rồi mới đỏ |
+| **REGRESSION** | `node tools/check.mjs` **140/140 xanh** |
+| **TYPESCRIPT** | sạch |
+| **REAL iOS / thiết bị** | **KHÔNG** — chưa ai thấy toast mới trên máy thật |
+| **PRODUCTION** | **KHÔNG** |
+
+
 ## Cách dùng sổ này
 
 - Sửa xong một mục → giữ nguyên nó ở đây kèm cách kiểm lại. Sổ này là **hồ sơ**,

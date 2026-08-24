@@ -62,7 +62,7 @@ export default function TemplatesScreen() {
       {
         text: i18n.nDeleteTemplate,
         style: 'destructive',
-        onPress: () => del.mutate(id, { onError: (e: Error) => toast.error(e.message) }),
+        onPress: () => del.mutate(id, { onError: (e: Error) => toast.fail(e) }),
       },
     ]);
   };
