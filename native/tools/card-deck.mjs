@@ -99,29 +99,6 @@ const problems = [];
   }
 }
 
-/* ── 3b. a short page fills its slot ──
-
-   The deck is as tall as its tallest page, so every other page has slack. Left
-   top-aligned, the shorter card ends partway down and the rest is background —
-   measured on the shipped build at 150pt of black between the activity card and
-   the pips, which reads as a card that failed rather than a card that is
-   shorter. The page has to fill the slot and centre what it holds. */
-{
-  const page = src.match(/page:\s*\{([^}]*)\}/);
-  if (!page) problems.push(`${DECK}: không tìm thấy style \`page\``);
-  else {
-    if (/alignSelf:\s*'flex-start'/.test(page[1])) {
-      problems.push(
-        `${DECK}: page căn trên trong một ô cao bằng trang CAO NHẤT — trang ngắn hơn sẽ kết thúc ` +
-          'giữa chừng và để lại một mảng nền bên dưới, đọc ra như thẻ hỏng chứ không phải thẻ ngắn',
-      );
-    }
-    if (!/justifyContent:\s*'center'/.test(page[1])) {
-      problems.push(`${DECK}: page không căn giữa nội dung theo chiều dọc — phần dôi ra sẽ dồn về một phía`);
-    }
-  }
-}
-
 /* ── 3. the deck is what the skeleton draws ── */
 {
   const skel = code(read('src/components/ascnd/skeleton.tsx'));

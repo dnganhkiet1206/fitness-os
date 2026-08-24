@@ -155,26 +155,26 @@ function Pip({ index, step, x }: { index: number; step: number; x: SharedValue<n
 const styles = StyleSheet.create({
   track: { gap: GAP },
   /*
-    The slot stretches; what is inside it does not.
+    Top-aligned, and the gap below a short page is a real cost that is not
+    solved here.
 
     The deck is as tall as its tallest page and STAYS that height across a
     swipe — a container that resized per page would move every section below it
-    every time your thumb moved, which is the 94px-hole family of bug
-    `today-meals.tsx` measured.
+    while your thumb moved, which is the 94px-hole family `today-meals.tsx`
+    measured.
 
-    That leaves shorter pages with slack, and the first draft dealt with it by
-    top-aligning them, reasoning that stretching would "stretch a gauge to fit a
-    list". Half right: stretching the CARD would not stretch the ring inside it,
-    and the screenshot showed what top-aligning actually costs — the activity
-    card ended 150pt above the pips with a black gap under it, reading as a card
-    that failed to load rather than a card that is simply shorter.
+    That leaves shorter pages with slack, and there is no arrangement of this
+    file that hides it. Centring was tried and photographed: it splits the slack
+    above and below, so the card floats in the middle of the deck instead of
+    starting where every other card on the page starts, and it reads worse.
+    Top-aligned keeps the cards' top edges agreeing with each other and with the
+    rest of the page, and puts all the slack in one place.
 
-    So the page fills the slot and centres its child. `justifyContent` does it
-    on the column's main axis, which means the card keeps its own height and
-    just sits in the middle — no cloning a child to force flex onto it, and
-    nothing inside is scaled to fit anything.
+    The slack itself comes from the two cards differing by about 150pt, and
+    closing it is a change to what those cards CONTAIN — not to how they are
+    laid out. Until that is decided, this is the honest arrangement.
   */
-  page: { alignSelf: 'stretch', justifyContent: 'center' },
+  page: { alignSelf: 'flex-start' },
   pageFull: { width: '100%' },
   pips: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, paddingTop: 10 },
   pip: { width: DOT, height: DOT, borderRadius: radius.full, backgroundColor: colors.foreground },
