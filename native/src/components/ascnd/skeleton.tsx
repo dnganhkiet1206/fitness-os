@@ -12,7 +12,7 @@ import Animated, {
 
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { heightFor, hydrateWidgetHeights, useWidgetHeightsVersion } from '@/lib/widget-heights';
+import { HERO_DECK, heightFor, hydrateWidgetHeights, useWidgetHeightsVersion } from '@/lib/widget-heights';
 
 /**
  * The shape of the page, while the page is still arriving.
@@ -91,9 +91,12 @@ export function TodaySkeleton({
        rendering, not about content, and VoiceOver reading twelve empty boxes is
        worse than it reading nothing and then reading the page. */
     <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      {heroWidgets.map((key) => (
-        <SkeletonBlock key={key} height={heightFor(key)} style={styles.stacked} />
-      ))}
+      {/* One block, not one per hero: those cards are a deck now, and drawing
+          the shape of two stacked cards where one deck will appear is exactly
+          the page-jump this whole mechanism exists to avoid. */}
+      {heroWidgets.length > 0 ? (
+        <SkeletonBlock height={heightFor(HERO_DECK)} style={styles.stacked} />
+      ) : null}
       {groups.map((group) => (
         <View key={group.id} style={styles.group}>
           {/* the group header's own row: an icon and a short title */}

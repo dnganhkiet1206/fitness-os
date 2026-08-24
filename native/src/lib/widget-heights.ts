@@ -36,6 +36,15 @@ import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
 const STORAGE_KEY = 'ascnd-widget-heights';
 
+/**
+ * The hero slot's height key.
+ *
+ * The hero cards are one swipeable deck, so the skeleton has one block to draw
+ * there, not one per card. Keyed separately from any widget because it is not
+ * one — it is however tall the tallest page turned out to be.
+ */
+export const HERO_DECK = 'hero-deck';
+
 /** A plain card with a title and a couple of rows. Used once, on a fresh install. */
 export const FALLBACK_HEIGHT = 104;
 

@@ -75,7 +75,8 @@ import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { getLocale } from '@/lib/i18n';
-import { recordHeight } from '@/lib/widget-heights';
+import { CardDeck } from '@/components/ascnd/card-deck';
+import { HERO_DECK, recordHeight } from '@/lib/widget-heights';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
@@ -632,14 +633,30 @@ export default function TodayScreen() {
           */}
           {dayPending ? <TodaySkeleton heroWidgets={config.heroWidgets} groups={config.groups} /> : null}
 
-          {dayPending || dayFailed ? null : config.heroWidgets.map((key, i) => (
+          {/*
+            The hero cards, as one deck rather than a stack.
+
+            `heroWidgets` was already the list of ring cards and it is already
+            ordered by the user in edit mode, so the pages ARE that list — no
+            new key, nothing migrated, and a third hero becomes a third page
+            without anything here changing.
+
+            One `recordHeight` for the whole slot, under `HERO_DECK`: the
+            skeleton has one block to draw where the deck will be, and drawing
+            two stacked cards' worth of shape for it would be the page-jump
+            that mechanism exists to prevent.
+          */}
+          {dayPending || dayFailed || config.heroWidgets.length === 0 ? null : (
             <Animated.View
-              key={key}
-              onLayout={(e) => recordHeight(key, e.nativeEvent.layout.height)}
-              entering={FadeInDown.springify().damping(26).stiffness(180).delay(i * 70)}>
-              {withPeek(key, renderWidget(key))}
+              onLayout={(e) => recordHeight(HERO_DECK, e.nativeEvent.layout.height)}
+              entering={FadeInDown.springify().damping(26).stiffness(180)}>
+              <CardDeck>
+                {config.heroWidgets.map((key) => (
+                  <View key={key}>{withPeek(key, renderWidget(key))}</View>
+                ))}
+              </CardDeck>
             </Animated.View>
-          ))}
+          )}
 
           {/* Grouped widgets, user-configurable order */}
           {dayPending || dayFailed ? null : config.groups.map((group, gi) => (
