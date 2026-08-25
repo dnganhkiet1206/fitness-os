@@ -1348,20 +1348,29 @@ const add = (label, ok, why) => out.cases.push({ label, ok, why });
     const todayBio = (await q(
       'SELECT hr_bpm, hrv_sdnn_ms, hrv_rmssd_ms FROM biometric_samples WHERE user_id=$1 AND date_time >= $2 AND date_time < $3 ORDER BY date_time DESC LIMIT 1',
       [A, lo, hi])).rows[0] || null;
-    /* anchored at NOW because recomputeDailyLog anchors its history windows
-       there; anchoring on the target day is the mistake Chain AG made */
+    /* Anchored at the DAY, both ends closed — Chain AO.
+       It used to be anchored at now() with nothing on top, and the comment
+       here said so: recomputeDailyLog anchored its history windows there, and
+       an oracle that disagreed with production would have been reporting
+       BUG-106 as a component fault. BUG-106 is fixed, so the windows are the
+       twenty-eight and seven local days ENDING with the day being scored, and
+       this oracle would now go red if the writer reached past it. */
+    const histLo = await at(await shift(day, -27), '00:00');
+    const acuteLo = await at(await shift(day, -6), '00:00');
     const hist = (await q(
-      "SELECT hr_bpm, hrv_sdnn_ms, hrv_rmssd_ms FROM biometric_samples WHERE user_id=$1 AND date_time >= now() - interval '28 days'", [A])).rows;
+      'SELECT hr_bpm, hrv_sdnn_ms, hrv_rmssd_ms FROM biometric_samples WHERE user_id=$1 AND date_time >= $2 AND date_time < $3',
+      [A, histLo, hi])).rows;
     const nights7 = (await q(
-      "SELECT count(*)::int n FROM sleep_logs WHERE user_id=$1 AND waketime >= now() - interval '7 days'", [A])).rows[0].n;
+      'SELECT count(*)::int n FROM sleep_logs WHERE user_id=$1 AND waketime >= $2 AND waketime < $3',
+      [A, acuteLo, hi])).rows[0].n;
     const sleepRow = (await q(
       'SELECT asleep_min, bedtime, waketime FROM sleep_logs WHERE user_id=$1 AND waketime >= $2 AND waketime < $3 ORDER BY waketime DESC LIMIT 1',
       [A, lo, hi])).rows[0] || null;
     const load28 = Number((await q(
       "SELECT COALESCE(SUM(rpe*reps),0)::float t FROM (" +
       "  SELECT session_rpe::float rpe, (SELECT COALESCE(SUM((e->>'reps')::float),0) FROM jsonb_array_elements(sets) e) reps" +
-      "  FROM workout_sessions WHERE user_id=$1 AND date_time >= now() - interval '28 days'" +
-      ") x WHERE rpe BETWEEN 1 AND 10 AND reps > 0", [A])).rows[0].t);
+      '  FROM workout_sessions WHERE user_id=$1 AND date_time >= $2 AND date_time < $3' +
+      ') x WHERE rpe BETWEEN 1 AND 10 AND reps > 0', [A, histLo, hi])).rows[0].t);
 
     const usingSdnn = todayBio != null && todayBio.hrv_sdnn_ms != null;
     const fam = hist.map((b) => (usingSdnn ? b.hrv_sdnn_ms : b.hrv_rmssd_ms)).filter((v) => v != null);
@@ -1656,21 +1665,29 @@ const add = (label, ok, why) => out.cases.push({ label, ok, why });
   /*
     ── why there is no case dated 2026-03-08 or 2026-11-01 here ──
 
-    There was, and it asserted nothing. recomputeDailyLog anchors its history
+    There was, and it asserted nothing. recomputeDailyLog anchored its history
     windows at new Date() rather than at the day being rebuilt, so a day five
-    months in the past has no biometrics, no nights and no training inside the
-    windows the gate reads: it scores zero days, deloadWarranted is trivially
-    false, and the case passes however the code is broken. Measured:
+    months in the past had no biometrics, no nights and no training inside the
+    windows the gate read: it scored zero days, deloadWarranted was trivially
+    false, and the case passed however the code was broken. Measured:
 
         DST 2026-03-08 : ngay co phuc hoi=0 trung binh=0 ngay=0
 
-    That anchoring is recorded as BUG-106 and is deliberately not fixed, so this
-    file does not paper over it with a rule that cannot go red, and does not add
-    one that blesses it either. The 23-hour and 25-hour days are still crossed:
-    this whole driver runs in six zones on the current local day, including
-    Australia/Lord_Howe, whose DST step is thirty minutes rather than an hour,
-    and the randomized states below place sleep, biometrics and sessions across
-    the preceding twenty days in each of them.
+    That anchoring was BUG-106, and Chain AO fixed it: the windows are now the
+    seven and twenty-eight local days ending with the day being rebuilt, so a
+    day five months back IS scoreable from its own history. What that history
+    would have to be, though, is five months of fixture — and the day this file
+    is about is the CURRENT one, whose components and confidence banding are
+    what sections 1 to 10 exist for. tools/readiness-anchor.mjs owns the
+    anchoring itself and scores a real 23-hour and a real 25-hour day in every
+    zone, so the case that used to be empty here is now measured there rather
+    than restated in two places.
+
+    The 23-hour and 25-hour days are still crossed here in the sense they always
+    were: this whole driver runs in six zones on the current local day,
+    including Australia/Lord_Howe, whose DST step is thirty minutes rather than
+    an hour, and the randomized states below place sleep, biometrics and
+    sessions across the preceding twenty days in each of them.
   */
 
   await c.end(); await admin.end();

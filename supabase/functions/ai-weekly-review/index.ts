@@ -114,10 +114,18 @@ serve(async (req) => {
           from training load alone is not evidence about how somebody recovered
           — in either direction — and this is the only field that says so.
 
-          It describes the row as stored. Past days are recomputed with windows
-          anchored at the present (BUG-106, open), so this is not a claim that a
-          past day's recovery availability is temporally settled; the prompt
-          does not present it as one.
+          It describes the row as stored, and since Chain AO that is a stronger
+          statement than it was. The windows behind a rebuild used to be
+          anchored at the present with no upper bound (BUG-106), so a past day
+          could be rescored against a week that came after it; they are now the
+          seven and twenty-eight days ending with the day itself, and a rebuilt
+          row is a fact about its own date.
+
+          One caveat survives and is not this function's to fix: a row only
+          takes the new meaning when something rebuilds it. Rows written before
+          the fix, and never touched since, still carry the old semantics. The
+          prompt does not present any day's readiness as temporally settled, so
+          nothing here over-claims either way.
         */
         logs: weekLogs.map(l => ({ date: l.date, kcal: l.kcal, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g, volume_load: l.volume_load, readiness: l.readiness_score, readiness_status: l.readiness_status, recovery_measured: recoveryMeasured(l.readiness_explain), steps: l.steps, sleep_min: l.sleep_duration_min })),
         sleep: sleepLogs.map(s => ({ date: new Date(s.waketime).toISOString().split("T")[0], quality: s.quality, deep_min: s.deep_min, rem_min: s.rem_min, light_min: s.light_min })),

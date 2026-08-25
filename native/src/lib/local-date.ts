@@ -66,6 +66,45 @@ export function localDayRangeISO(dateStr: string): { start: string; end: string 
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
+/** YYYY-MM-DD `days` local days from `dateStr`. Negative goes backwards. */
+export function shiftLocalDate(dateStr: string, days: number): string {
+  const d = parseLocalDate(dateStr);
+  d.setDate(d.getDate() + days);
+  return localDateStr(d);
+}
+
+/**
+ * The UTC instants bounding the last `days` local calendar days, ending with
+ * `endDate` itself — for a rolling window that belongs to a DAY rather than to
+ * the moment somebody asked.
+ *
+ * ── why this exists (BUG-106) ──
+ *
+ * `recomputeDailyLog` built its seven- and twenty-eight-day readiness windows
+ * from `new Date()` and passed them as a lower bound with no upper one. So
+ * rebuilding a day twelve days old read a "seven-day" training load made
+ * entirely of sessions from the six days *after* it, and the day's own training
+ * was not in the window at all. Measured on PostgreSQL 16.13: a heavy current
+ * week moved that historical day from 55 · yellow to 48 · red, and its stored
+ * ACWR from 0.09 to 1.73, with every row belonging to the day byte-identical.
+ *
+ * ── counted in DAYS, never in hours ──
+ *
+ * `days` local calendar days, inclusive of `endDate`. Deliberately not
+ * `end - days * 86_400_000`: `dayGap` above exists because a local day is 23
+ * hours once a year and 25 hours once a year, and a window measured in hours
+ * across the short one starts an hour late — silently dropping a session logged
+ * just after midnight on the oldest day it was supposed to cover. Shifting the
+ * date and re-deriving midnight is what survives both, and the same reasoning
+ * this file's header already makes about `toISOString()`.
+ */
+export function localWindowISO(endDate: string, days: number): { start: string; end: string } {
+  return {
+    start: localDayRangeISO(shiftLocalDate(endDate, -(days - 1))).start,
+    end: localDayRangeISO(endDate).end,
+  };
+}
+
 /**
  * Which slot of the weekly routine a date falls in — Monday is 0.
  *

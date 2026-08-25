@@ -200,20 +200,25 @@ export function useDeleteWorkoutSession() {
       /*
         And today as well, when the session was not today's.
 
-        `recomputeDailyLog` rebuilds the day it is given, but two of its inputs
-        are not about that day at all: `training_load_7d` and
-        `training_load_28d` are windows anchored at `new Date()`
-        (`daily-log-service.ts:29-32`), and they are what the acute:chronic
-        ratio behind the readiness score is computed from. Removing a session
-        from last Tuesday therefore changes *today's* readiness — and rebuilding
-        only Tuesday would leave the Today screen showing a score derived from a
-        session that no longer exists.
+        `recomputeDailyLog` rebuilds the day it is given, and two of its inputs
+        are windows rather than single days: `training_load_7d` and
+        `training_load_28d` end on the day being rebuilt and reach back seven
+        and twenty-eight of them, and they are what the acute:chronic ratio
+        behind the readiness score is computed from. Today's own windows
+        therefore contain last Tuesday, so removing a session from Tuesday
+        changes *today's* readiness — and rebuilding only Tuesday would leave
+        the Today screen showing a score derived from a session that no longer
+        exists.
 
-        Every day in between is left alone deliberately. Fixing those would mean
-        up to fourteen rebuilds of eleven reads each, and a past day's readiness
-        is already an artefact of when it happened to be computed rather than a
-        fact about that day. That is a separate question. Leaving today wrong
-        when one more call fixes it is not.
+        Every day in between is left alone deliberately, and since Chain AO that
+        is a debt rather than a shrug. It used to rest on a past day's readiness
+        being "an artefact of when it happened to be computed" — which it was,
+        and which was BUG-106. Now each intervening day has a correct value that
+        this delete changed, and its stored row is stale until something rebuilds
+        it. Fixing them would still mean up to fourteen rebuilds of eleven reads
+        each; what to do about days nobody reopens is the migration question
+        Chain AO left pending. Leaving *today* wrong when one more call fixes it
+        was never part of that question.
       */
       const todayStr = localDateStr();
       if (day !== todayStr) await recomputeDailyLog(user!.id, todayStr);
@@ -726,8 +731,9 @@ export function useReadinessHistory(days = 14, enabled = true) {
  *
  * Sleep reaches the readiness score twice. `daily-log-service` reads the night
  * that *ends* on a given day for `sleep_min_lastnight`, and separately averages
- * the last seven nights for `sleep_debt_7d_min` — a window anchored at
- * `new Date()`, not at the day being rebuilt.
+ * the seven nights ending on that day for `sleep_debt_7d_min` — so a night
+ * deleted from last Tuesday sits inside today's seven-night mean as well as
+ * inside Tuesday's own.
  *
  * So a bad night poisons two different things on two different days, and
  * rebuilding only the night's own day leaves today's score still averaging a

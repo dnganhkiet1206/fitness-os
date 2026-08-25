@@ -455,7 +455,11 @@ const problems = [];
      green. The same flat-search trap `write-confirmed.mjs` fell into. This
      finds the 28-day `workout_sessions` query by its own window bound and reads
      only that one. */
-  const load28 = [...svc.matchAll(/from\('workout_sessions'\)([\s\S]{0,240}?)thirtyDaysAgo/g)];
+  /* The bound is named `chronic.start` since BUG-106 was fixed — the window is
+     derived from the day being rebuilt rather than from `new Date()`. Only the
+     spelling of the anchor moved; what this rule asks is unchanged, and
+     `readiness-anchor.mjs` is what asserts the anchoring itself. */
+  const load28 = [...svc.matchAll(/from\('workout_sessions'\)([\s\S]{0,240}?)chronic\.start/g)];
   if (load28.length !== 1) {
     problems.push(
       `${SERVICE}: tìm thấy ${load28.length} truy vấn workout_sessions 28 ngày — bộ quét hỏng, đừng tin bước này`,

@@ -148,15 +148,20 @@ export function useLogBiometrics() {
  *
  * The sample's own day, and today. Exactly the rule `useDeleteWorkoutSession`
  * follows and for the same reason: `recomputeDailyLog` rebuilds the day it is
- * handed, but the 28-day baseline is a window anchored at `new Date()`, so
- * deleting last Tuesday's typo changes *today's* score too. Rebuilding only
- * Tuesday would leave the Today screen showing a number derived from a reading
- * that no longer exists.
+ * handed, and today's own 28-day baseline window reaches back over last
+ * Tuesday, so deleting Tuesday's typo changes *today's* score too. Rebuilding
+ * only Tuesday would leave the Today screen showing a number derived from a
+ * reading that no longer exists.
  *
- * The days in between are left alone, deliberately, following the decision
- * already recorded for workouts: a past day's readiness is a product of when it
- * was computed, and up to 27 rebuilds to restate history is a cost this app has
- * already decided not to pay.
+ * The days in between are still left alone, and since Chain AO that is a
+ * plainer statement than it used to be. It used to rest on a past day's
+ * readiness being "a product of when it was computed" — which it was, and which
+ * was BUG-106. Now that the windows belong to the day being rebuilt, each of
+ * those intervening days has a correct value that this delete has changed, and
+ * the stored one is simply **stale** until something rebuilds it. Up to 27
+ * rebuilds of eleven reads each is still a cost this app has not decided to
+ * pay; what to do about days nobody reopens is the migration question Chain AO
+ * left explicitly pending.
  */
 export function useDeleteBiometricSample() {
   const { user } = useAuth();

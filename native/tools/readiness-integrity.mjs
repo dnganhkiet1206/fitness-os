@@ -318,13 +318,24 @@ const out = { cases: [] };
     const todayBio = (await q(
       'SELECT hr_bpm, hrv_sdnn_ms, hrv_rmssd_ms FROM biometric_samples WHERE user_id=$1 AND date_time >= $2 AND date_time < $3 ORDER BY date_time DESC LIMIT 1',
       [A, lo, hi])).rows[0] || null;
-    /* anchored at NOW, because recomputeDailyLog anchors its history windows
-       there (new Date()); anchoring on the target day made an earlier version of
-       this oracle report a false failure on every day that is not today */
+    /* Anchored at the DAY, both ends closed — Chain AO.
+       This used to read now() minus 28 days with no upper bound, and
+       the comment here explained why: anchoring on the target day "made an
+       earlier version of this oracle report a false failure on every day that
+       is not today". That was BUG-106 seen from the oracle's side — production
+       WAS anchored at the clock, so the oracle had to be too or it would have
+       reported the writer's anchoring as a component fault. BUG-106 is fixed;
+       the windows below are the twenty-eight and seven local days ending with
+       the day being scored, and a writer that reached past them would now be
+       caught here as well as by tools/readiness-anchor.mjs. */
+    const histLo = await at(await shift(day, -27), '00:00');
+    const acuteLo = await at(await shift(day, -6), '00:00');
     const hist = (await q(
-      "SELECT hr_bpm, hrv_sdnn_ms, hrv_rmssd_ms FROM biometric_samples WHERE user_id=$1 AND date_time >= now() - interval '28 days'", [A])).rows;
+      'SELECT hr_bpm, hrv_sdnn_ms, hrv_rmssd_ms FROM biometric_samples WHERE user_id=$1 AND date_time >= $2 AND date_time < $3',
+      [A, histLo, hi])).rows;
     const nights7 = (await q(
-      "SELECT count(*)::int n FROM sleep_logs WHERE user_id=$1 AND waketime >= now() - interval '7 days'", [A])).rows[0].n;
+      'SELECT count(*)::int n FROM sleep_logs WHERE user_id=$1 AND waketime >= $2 AND waketime < $3',
+      [A, acuteLo, hi])).rows[0].n;
     const sleepRow = (await q(
       'SELECT asleep_min, bedtime, waketime FROM sleep_logs WHERE user_id=$1 AND waketime >= $2 AND waketime < $3 ORDER BY waketime DESC LIMIT 1',
       [A, lo, hi])).rows[0] || null;
@@ -332,8 +343,8 @@ const out = { cases: [] };
     const load28 = Number((await q(
       "SELECT COALESCE(SUM(rpe*reps),0)::float t FROM (" +
       "  SELECT session_rpe::float rpe, (SELECT COALESCE(SUM((e->>'reps')::float),0) FROM jsonb_array_elements(sets) e) reps" +
-      "  FROM workout_sessions WHERE user_id=$1 AND date_time >= now() - interval '28 days'" +
-      ") x WHERE rpe BETWEEN 1 AND 10 AND reps > 0", [A])).rows[0].t);
+      '  FROM workout_sessions WHERE user_id=$1 AND date_time >= $2 AND date_time < $3' +
+      ') x WHERE rpe BETWEEN 1 AND 10 AND reps > 0', [A, histLo, hi])).rows[0].t);
 
     const usingSdnn = todayBio != null && todayBio.hrv_sdnn_ms != null;
     const fam = hist.map((b) => (usingSdnn ? b.hrv_sdnn_ms : b.hrv_rmssd_ms)).filter((v) => v != null);

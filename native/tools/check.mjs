@@ -394,6 +394,18 @@ const STEPS = [
   */
   ['độ tin cậy điểm sẵn sàng', 'node', ['tools/readiness-confidence.mjs']],
   /*
+    And the window those four terms are measured against belongs to the DAY,
+    not to whenever a rebuild happened to run. `recomputeDailyLog` built its
+    seven- and twenty-eight-day windows from `new Date()` and left them open at
+    the top, so rebuilding a day twelve days old scored it against the six days
+    that came AFTER it: a heavy current week turned that day from 55 · yellow
+    into 48 · red with a stored instruction to do recovery work only, while
+    every row belonging to the day was byte-identical. The product answer is
+    that readiness is day-owned, and this executes that boundary — including a
+    build with the old windows deliberately restored, to watch the rule go red.
+  */
+  ['neo cửa sổ điểm sẵn sàng', 'node', ['tools/readiness-anchor.mjs']],
+  /*
     `docs/fitness-scores.md` says, for every number the app shows, what it is
     made of and what it does when the data is missing. Written down those are
     assertions, and a document is the one place here where an assertion has

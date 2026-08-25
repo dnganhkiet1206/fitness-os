@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { localDayRangeISO } from './local-date';
+import { localDayRangeISO, localWindowISO } from './local-date';
 import { chronicDays } from './training-card';
 import { loadWindow, sessionLoad, type LoadSession } from './session-load';
 import { computeReadiness } from './readiness-engine';
@@ -105,6 +105,22 @@ export function asleepMinutes(sleep: {
 const REBUILD_ATTEMPTS = 3;
 
 /**
+ * How far the two readiness windows reach back, in local calendar days,
+ * counting the day being rebuilt as the last of them.
+ *
+ * Seven days is the acute window — this week's training, and the mean the sleep
+ * debt is measured against. Twenty-eight is the chronic one — the training
+ * baseline the acute load is a ratio *of*, and the population the HRV and
+ * resting-heart-rate z-scores are taken against.
+ *
+ * Named rather than written twice as `- 7` and `- 28`: the pair below and the
+ * `training_days_28d` the engine divides by have to describe the same span, and
+ * a span typed in two places is a span that drifts.
+ */
+const ACUTE_DAYS = 7;
+const CHRONIC_DAYS = 28;
+
+/**
  * The columns this function owns — the projection.
  *
  * `daily_logs` is shared by column on purpose: `steps`, `active_kcal` and
@@ -139,10 +155,42 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
   // Local-day window as UTC instants for timestamptz columns
   const day = localDayRangeISO(date);
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 28);
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  /*
+    ── the history windows belong to the DAY, not to the moment (BUG-106) ──
+
+    These were `new Date()` minus seven and twenty-eight days, and every query
+    below took one as a `gte` with no upper bound. Two consequences, both
+    measured on PostgreSQL 16.13 with the real function, in all six timezones:
+
+    **A day was scored against its own future.** Rebuilding a target twelve days
+    old, the "seven-day" acute load held sessions dated six to twelve days
+    *after* it, and the target day's own training was not inside the window at
+    all. Adding five heavy sessions to the current week — with every row
+    belonging to the target byte-identical — moved it:
+
+        55 · yellow · yellow_reduce · acwr 0.09
+        48 · red    · red_recover   · acwr 1.73
+
+    A stored recommendation of *"chỉ phục hồi tích cực"* about a day whose HRV,
+    resting pulse and sleep never changed.
+
+    **And the gate opened on the future too.** For a day owning one night, with
+    no history before it and a busy present, `hasEnoughData` was satisfied by
+    the present's nights and the day stored `load:80 · acwr 1.14` built from
+    sessions that had not happened yet.
+
+    Chain AN measured all of it and the product answer is Model B: readiness is
+    a day-owned training-capacity value, so the windows state history **as of
+    D** — the `CHRONIC_DAYS`/`ACUTE_DAYS` local days ending with D itself, both
+    ends closed. No row dated after D may reach any of the four queries below.
+
+    Two things this deliberately does not change. The window still ends at the
+    *end* of D, so a session logged later on the day being rebuilt still counts
+    towards it — that row belongs to D. And today is still rebuilt alongside an
+    edited past day, because today's own windows genuinely contain that day.
+  */
+  const acute = localWindowISO(date, ACUTE_DAYS);
+  const chronic = localWindowISO(date, CHRONIC_DAYS);
 
   /*
     ── a day it could not read is a day it must not write ──
@@ -261,7 +309,8 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
       .from('biometric_samples')
       .select('hrv_rmssd_ms, hrv_sdnn_ms, hr_bpm, date_time')
       .eq('user_id', userId)
-      .gte('date_time', thirtyDaysAgo.toISOString())
+      .gte('date_time', chronic.start)
+      .lt('date_time', chronic.end)
       .order('date_time', { ascending: true }),
     supabase
       /* `session_rpe` and `sets` rather than `volume_load` — see the note on
@@ -270,19 +319,22 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
       .from('workout_sessions')
       .select('session_rpe, sets')
       .eq('user_id', userId)
-      .gte('date_time', sevenDaysAgo.toISOString()),
+      .gte('date_time', acute.start)
+      .lt('date_time', acute.end),
     supabase
       /* `date_time` travels with the load because the ratio needs to know how
          many days it is averaging over — see `training_days_28d`. */
       .from('workout_sessions')
       .select('session_rpe, sets, date_time')
       .eq('user_id', userId)
-      .gte('date_time', thirtyDaysAgo.toISOString()),
+      .gte('date_time', chronic.start)
+      .lt('date_time', chronic.end),
     supabase
       .from('sleep_logs')
       .select('bedtime, waketime, asleep_min')
       .eq('user_id', userId)
-      .gte('waketime', sevenDaysAgo.toISOString()),
+      .gte('waketime', acute.start)
+      .lt('waketime', acute.end),
   ]);
 
   /*
