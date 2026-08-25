@@ -66,7 +66,17 @@ import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { duration } from '@/constants/motion';
+import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
+
 import { HERO_RING, colors, radius, spacing, type } from '@/constants/ascnd';
+
+/** Độ đậm của lớp phủ dưới hero. Đủ để kéo tương phản về một mức, chưa đủ để
+ *  giấu nền — vẫn phải nhìn xuyên qua thấy màu của vòng tròn phía trên. */
+const SCRIM = 0.42;
+/** Chiều cao dải chuyển ở mép trên lớp phủ. Cùng con số với `TRAIL` của
+ *  `card-deck.tsx`: hai lớp mờ gặp nhau ở đúng vùng này nên chúng tắt dần trên
+ *  cùng một quãng, nếu lệch thì chỗ chồng nhau lộ ra thành một dải đậm hơn. */
+const SCRIM_FADE = 72;
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useReminderSync } from '@/hooks/use-reminders';
@@ -194,6 +204,10 @@ export default function TodayScreen() {
 
   // Pull-to-refresh (web PullToRefresh: invalidate everything)
   const [refreshing, setRefreshing] = useState(false);
+  /** Đã qua lần dựng đầu chưa — xem ghi chú ở `styles.sheet` về vì sao hiệu ứng
+   *  vào phải im lặng ở lần đầu tiên. */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const onRefresh = useCallback(async () => {
     // The gesture has no button to press, so the tap it never gets is repaid
     // here: the pull is confirmed the moment it takes, not when data lands.
@@ -998,14 +1012,75 @@ export default function TodayScreen() {
 
             Một hộp chứa không có gì để chứa thì không phải một hộp chứa.
           */}
+          {/*
+            `entering` chỉ chạy TỪ LẦN THỨ HAI, và đó là bản sửa cho "Koa và các
+            nút ghi không hiện ra khi mới vào app".
+
+            ── vì sao ──
+
+            Tấm này mọc ngay ở lần render đầu (`heroOpen` khởi tạo là false), nên
+            `FadeIn` chạy đúng lúc luồng JS đang nghẹt nhất: sáu trang hero cùng
+            đo, dữ liệu ngày vừa về, vòng tròn bắt đầu đếm. Một layout animation
+            của Reanimated đặt giá trị đầu (opacity 0) ở luồng UI rồi mới chạy;
+            nếu khung hình bắt đầu bị bỏ lỡ thì cái CÒN LẠI là giá trị đầu. Nội
+            dung đã dựng, đã chiếm chỗ, và vô hình.
+
+            Đúng như đã báo: mở thẻ chỉ số rồi đóng lại thì Koa hiện ra — vì lần
+            đó là tháo ra dựng lại, `FadeIn` chạy trên một luồng đã rảnh.
+
+            Nguyên tắc rút ra rộng hơn một màn hình: một hiệu ứng vào là TRANG
+            TRÍ, nên nó không bao giờ được là thứ quyết định nội dung có nhìn
+            thấy hay không. Ở lần dựng đầu không có chuyển cảnh nào để làm mềm cả
+            — người dùng vừa mở app, họ chưa từng thấy trạng thái trước đó. Chỉ
+            khi bật/tắt chế độ tập trung thì mới có cái để làm mềm.
+
+            `exiting` thì giữ nguyên: nó chỉ chạy lúc tháo, mà tháo chỉ xảy ra do
+            người dùng bấm — không bao giờ ở lần dựng đầu.
+          */}
           {!heroOpen ? (
-          <View style={styles.sheet}>
+          <Animated.View
+            style={styles.sheet}
+            entering={mounted ? FadeIn.duration(duration.appear) : undefined}
+            exiting={FadeOut.duration(duration.toggle)}>
             <ABlurView animatedProps={sheetBlur} tint="dark" style={StyleSheet.absoluteFill} />
-          {!heroOpen ? (
-            <Animated.View
-              style={styles.rest}
-              entering={FadeIn.duration(duration.appear)}
-              exiting={FadeOut.duration(duration.toggle)}>
+            {/*
+              Lớp phủ tối, và nó phải TỐI DẦN chứ không bắt đầu ở mức đầy.
+
+              Việc nó làm: chữ ở đây nằm trên nền gradient của hero, và một
+              gradient thì chỗ đậm chỗ nhạt — cùng một màu chữ đọc rõ ở khúc này
+              và mờ ở khúc kia. Một lớp đen mỏng kéo tương phản về một mức duy
+              nhất mà vẫn thấy màu phía sau.
+
+              Vì sao chia hai lớp: nếu chỉ một tấm phẳng `absoluteFill`, chỗ nó
+              bắt đầu là một ĐƯỜNG NGANG cứng vắt qua màn hình ngay trên Koa —
+              đúng thứ đã bị bắt lỗi hai lần ("thẻ vẫn còn bị cắt ngang", "vết
+              cắt đầy nè"). Nên: một dải chuyển ở trên với chiều cao CỐ ĐỊNH, rồi
+              mới tới phần đặc.
+
+              Cố định theo điểm chứ không theo phần trăm là có chủ ý — tấm này
+              cao bao nhiêu là tùy số thẻ người dùng bật, và một dải chuyển theo
+              phần trăm sẽ đổi độ dốc theo cấu hình dashboard: cùng một màn hình
+              mà người này thấy mềm, người kia thấy gắt.
+
+              Bốn chặng, cùng lập luận với `status-scrim.tsx`: một dốc thẳng
+              chạm đáy ở một hàng xác định và mắt tìm ra đúng hàng đó.
+            */}
+            <View pointerEvents="none" style={styles.scrimBand}>
+              <Svg width="100%" height="100%">
+                <Defs>
+                  <SvgGradient id="sheetScrim" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor="#000" stopOpacity="0" />
+                    <Stop offset="0.3" stopColor="#000" stopOpacity={SCRIM * 0.22} />
+                    <Stop offset="0.65" stopColor="#000" stopOpacity={SCRIM * 0.62} />
+                    <Stop offset="1" stopColor="#000" stopOpacity={SCRIM} />
+                  </SvgGradient>
+                </Defs>
+                <Rect x="0" y="0" width="100%" height="100%" fill="url(#sheetScrim)" />
+              </Svg>
+            </View>
+            {/* Chồng lên một điểm để hai lớp không để lộ sợi tóc sáng ở chỗ nối. */}
+            <View pointerEvents="none" style={styles.scrimBody} />
+            <View style={styles.rest}>
               <Mascot />
 
           {/* Quick log actions (web chips row) */}
@@ -1041,8 +1116,7 @@ export default function TodayScreen() {
               </PressScale>
             ))}
           </View>
-            </Animated.View>
-          ) : null}
+            </View>
 
           {/* HealthKit sync (native-only necessity, styled as a quick chip row) */}
           {/* `!heroOpen` cùng với mọi thứ khác trong tấm: nó nằm ngoài cái cổng
@@ -1133,7 +1207,7 @@ export default function TodayScreen() {
               ))}
             </View>
           ))}
-          </View>
+          </Animated.View>
           ) : null}
         </>
       )}
@@ -1345,6 +1419,15 @@ const styles = StyleSheet.create({
     nó đang đè lên sẽ để lộ hai dải hero ở hai bên và thành ba đường thẳng đứng
     thay vì một mặt phẳng.
   */
+  scrimBand: { position: 'absolute', left: 0, right: 0, top: 0, height: SCRIM_FADE },
+  scrimBody: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: SCRIM_FADE - 1,
+    bottom: 0,
+    backgroundColor: `rgba(0, 0, 0, ${SCRIM})`,
+  },
   sheet: {
     marginHorizontal: -spacing.md,
     marginTop: -spacing.xl,

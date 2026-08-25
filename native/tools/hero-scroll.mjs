@@ -91,6 +91,53 @@ const num = (src, name) => {
   }
 }
 
+/*
+  Nội dung không được phụ thuộc vào một hiệu ứng VÀO để nhìn thấy được.
+
+  Tấm nội dung mọc ngay ở lần render đầu, nên `entering` của nó chạy đúng lúc
+  luồng JS nghẹt nhất: sáu trang hero cùng đo, dữ liệu ngày vừa về, vòng tròn bắt
+  đầu đếm. Layout animation của Reanimated đặt giá trị đầu (opacity 0) rồi mới
+  chạy — khung hình bắt đầu bị bỏ lỡ thì cái CÒN LẠI là giá trị đầu, và Koa với
+  các nút ghi nằm đó, chiếm chỗ, vô hình. Đúng như đã báo: mở thẻ chỉ số rồi đóng
+  lại mới thấy chúng, vì lần đó là dựng lại trên một luồng đã rảnh.
+
+  Một hiệu ứng vào là TRANG TRÍ. Ở lần dựng đầu không có chuyển cảnh nào để làm
+  mềm, nên nó phải im lặng — chỉ chạy khi có thứ để làm mềm thật.
+*/
+{
+  const m = /style=\{styles\.sheet\}\s*\n\s*entering=\{([^}]*)\}/.exec(today);
+  if (!m) {
+    problems.push(`${TODAY}: không đọc được hiệu ứng vào của tấm nội dung`);
+  } else if (!/\?/.test(m[1])) {
+    problems.push(
+      `${TODAY}: tấm nội dung chạy entering ngay lần dựng đầu — nếu khung hình đầu bị bỏ lỡ thì nội dung ` +
+        'đứng lại ở opacity 0 và Koa không bao giờ hiện ra',
+    );
+  }
+}
+
+/*
+  Lớp phủ phải TỐI DẦN ở mép trên.
+
+  Một tấm đen phẳng `absoluteFill` có mép, và mép đó là một đường ngang cứng vắt
+  qua màn hình ngay trên Koa — đúng thứ đã bị bắt lỗi hai lần ("thẻ vẫn còn bị
+  cắt ngang", "vết cắt đầy nè"). Nên phải là hai lớp: một dải chuyển cao CỐ ĐỊNH
+  ở trên rồi mới tới phần đặc, và phần đặc phải bắt đầu ĐÚNG dưới dải đó.
+
+  Cố định theo điểm chứ không theo phần trăm: tấm này cao bao nhiêu tuỳ số thẻ
+  người dùng bật, và một dải chuyển theo phần trăm sẽ đổi độ dốc theo cấu hình
+  dashboard.
+*/
+{
+  const fade = /scrimBand:[^}]*height: (SCRIM_FADE|\d+)/.exec(today);
+  const body = /scrimBody:\s*\{[\s\S]*?top: SCRIM_FADE - 1,[\s\S]*?bottom: 0,/.exec(today);
+  if (!fade) problems.push(`${TODAY}: lớp phủ không có dải chuyển cao cố định ở mép trên`);
+  if (!body) problems.push(`${TODAY}: phần đặc của lớp phủ không nối liền ngay dưới dải chuyển`);
+  if (/scrimBand:[^}]*height: '\d+%'/.test(today)) {
+    problems.push(`${TODAY}: dải chuyển tính theo phần trăm — độ dốc sẽ đổi theo số thẻ người dùng bật`);
+  }
+}
+
 if (problems.length) {
   console.log('hero khi cuộn CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);

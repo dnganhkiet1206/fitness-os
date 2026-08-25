@@ -343,7 +343,19 @@ const styles = StyleSheet.create({
   panel: {
     alignItems: 'center',
     paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
+    /*
+      Không có đệm dưới, và đó không phải cắt cho chật.
+
+      Thứ cuối cùng trong tấm là nút mũi tên, mà nút đó cao 44 điểm quanh một
+      dòng chữ 15 — nó đã tự mang sẵn ~14 điểm khoảng trống dưới chữ, vì lý do
+      tiếp chạm chứ không vì lý do thị giác. Cộng thêm đệm ở đây là cộng vào một
+      khoảng trống đã có, và tổng lại đủ lớn để hàng chấm đọc ra như một DẢI
+      RIÊNG nằm dưới thẻ thay vì phần đuôi của chính thẻ — đúng cái "trang thừa
+      của màn cũ" đã bị bắt lỗi.
+
+      Khoảng cách vẫn còn nguyên; chỉ là nó đến từ vùng chạm đã phải có sẵn.
+    */
+    paddingBottom: 0,
     paddingHorizontal: spacing.card,
     gap: spacing.md,
   },

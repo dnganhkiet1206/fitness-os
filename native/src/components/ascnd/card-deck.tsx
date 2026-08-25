@@ -1,5 +1,5 @@
 import MaskedView from '@react-native-masked-view/masked-view';
-import { useId, useState } from 'react';
+import { useCallback, useId, useState } from 'react';
 import { BlurView } from 'expo-blur';
 import { Platform, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -13,7 +13,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { colors, radius } from '@/constants/ascnd';
+import { colors, radius, spacing } from '@/constants/ascnd';
 
 /**
  * The ring cards, one at a time, swiped between — and the page's colour comes
@@ -229,10 +229,11 @@ export function CardDeck({
       at.value = withSpring(target, SNAP);
     });
 
-  const measureW = (e: LayoutChangeEvent) => {
+  /* Ổn định như `onHeight`, và vì đúng một lý do — xem ghi chú ở đó. */
+  const measureW = useCallback((e: LayoutChangeEvent) => {
     const next = e.nativeEvent.layout.width;
     setW((prev) => (Math.abs(prev - next) < 1 ? prev : next));
-  };
+  }, []);
 
   /**
    * Chiều cao của TỪNG trang, đo riêng.
@@ -257,15 +258,37 @@ export function CardDeck({
    * page briefly reporting short cannot shrink the deck below a taller sibling
    * that is still tall.
    */
-  const measure = (i: number) => (e: LayoutChangeEvent) => {
-    const next = e.nativeEvent.layout.height;
+  /**
+   * Một hàm ỔN ĐỊNH, và việc nó ổn định là cả bản sửa cho cú giật.
+   *
+   * ── lỗi ──
+   *
+   * Trước đây đây là `measure(i)` trả về một closure mới, gắn thẳng vào
+   * `onLayout={measure(i)}`. Mỗi lần render sinh ra một hàm KHÁC, React thấy
+   * prop đổi nên gắn lại handler, React Native bắn `onLayout` lần nữa,
+   * `setHeights` chạy, render lại — và vòng đó không có đáy.
+   *
+   * Trên máy nó đọc ra là thanh ring giật liên tục ngay khi vào app, và Koa với
+   * các nút ghi không kịp hiện ra: khối đó vào bằng một hiệu ứng `entering`, mà
+   * một hiệu ứng bắt đầu lại ở mỗi frame thì không bao giờ tới đích. Bấm mũi tên
+   * rồi đóng lại "sửa" được vì nó tháo và dựng lại cả nhánh, cắt ngang vòng lặp.
+   *
+   * `useCallback` với deps rỗng cho một hàm sống suốt đời component. Chỉ số đi
+   * vào bằng THAM SỐ chứ không bằng closure, nên không cần sinh hàm mới cho từng
+   * trang.
+   *
+   * Ngưỡng một điểm ảnh nguyên, giống `widget-heights.ts`: layout trả về số lẻ,
+   * và một hàng đổi từ 9 sang 10 có thể báo 96.33 thay vì 96 — ghi lại con số đó
+   * là ghi lại nhiễu, và ở đây nhiễu nghĩa là render lại.
+   */
+  const onHeight = useCallback((i: number, next: number) => {
     setHeights((prev) => {
-      if (Math.abs((prev[i] ?? 0) - next) < 0.5) return prev;
+      if (Math.abs((prev[i] ?? 0) - next) < 1) return prev;
       const out = prev.slice();
       out[i] = next;
       return out;
     });
-  };
+  }, []);
 
   if (pages.length === 0) return null;
 
@@ -306,7 +329,7 @@ export function CardDeck({
           }}
           style={[styles.stage, shown > 0 ? { height: shown } : null]}>
           {pages.map((node, i) => (
-            <Page key={i} index={i} at={at} width={w} onHeight={measure(i)}>
+            <Page key={i} index={i} at={at} width={w} onHeight={onHeight}>
               {node}
             </Page>
           ))}
@@ -377,12 +400,18 @@ function Page({
   index: number;
   at: SharedValue<number>;
   width: number;
-  onHeight: (e: LayoutChangeEvent) => void;
+  onHeight: (index: number, height: number) => void;
   children: React.ReactNode;
 }) {
   const style = useAnimatedStyle(() => ({
     transform: [{ translateX: (index - at.value) * (width || 1) }],
   }));
+  /* Ổn định theo `index` — xem ghi chú ở `onHeight` về vì sao một handler đổi
+     danh tính mỗi render là một vòng lặp layout. */
+  const measure = useCallback(
+    (e: LayoutChangeEvent) => onHeight(index, e.nativeEvent.layout.height),
+    [index, onHeight],
+  );
   return (
     <Animated.View style={[styles.page, style]}>
       {/*
@@ -399,7 +428,7 @@ function Page({
         cái wash đó. Blur được chọn hồi phương án còn lại là một cái thẻ ĐỤC che
         mất màu; giờ không có thẻ nào cả, nên nó không còn việc gì để làm.
       */}
-      <View onLayout={onHeight}>{children}</View>
+      <View onLayout={measure}>{children}</View>
     </Animated.View>
   );
 }
@@ -449,6 +478,6 @@ const styles = StyleSheet.create({
   /* Xếp tuyệt đối để không cộng một điểm nào vào chiều cao deck: nó là phần
      ĐUÔI của thẻ, không phải một hàng nữa dưới thẻ. */
   trail: { position: 'absolute', left: 0, right: 0 },
-  pips: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, paddingTop: 12 },
+  pips: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, paddingTop: spacing.sm },
   pip: { width: DOT, height: DOT, borderRadius: radius.full, backgroundColor: colors.foreground },
 });

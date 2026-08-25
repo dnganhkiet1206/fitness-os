@@ -200,6 +200,36 @@ const num = (name) => {
   }
 }
 
+/*
+  Handler đo đạc phải ỔN ĐỊNH.
+
+  `onLayout={measure(i)}` — một factory gọi ngay trong JSX — sinh một hàm khác ở
+  mỗi lần render. React thấy prop đổi nên gắn lại handler và React Native phát
+  lại `onLayout`; ghép với một `setState` ghi chính chiều cao vừa đo, đó là một
+  đường phản hồi render → đo → render.
+
+  Trên máy nó đọc ra là thanh ring giật khi vuốt, và Koa với các nút ghi không
+  kịp hiện ra vì hiệu ứng vào của chúng bị bắt đầu lại ở mỗi khung hình.
+
+  Luật đọc HÀNH VI chứ không đọc chữ: mọi handler `onLayout` trong tệp này phải
+  là một tên đã qua `useCallback`, không phải lời gọi hàm và không phải closure
+  viết thẳng tại chỗ.
+*/
+{
+  const inline = [...src.matchAll(/onLayout=\{(\(|[a-zA-Z_$][\w$]*\()/g)];
+  if (inline.length) {
+    problems.push(
+      `card-deck.tsx: ${inline.length} handler onLayout tạo mới tại chỗ — mỗi render một danh tính khác, đó là đường phản hồi layout`,
+    );
+  }
+  for (const m of src.matchAll(/onLayout=\{([a-zA-Z_$][\w$]*)\}/g)) {
+    const name = m[1];
+    if (!new RegExp(`const ${name} = useCallback\\(`).test(src)) {
+      problems.push(`card-deck.tsx: onLayout={${name}} nhưng ${name} không qua useCallback — danh tính đổi mỗi render`);
+    }
+  }
+}
+
 if (problems.length) {
   console.log('deck thẻ CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);
@@ -212,6 +242,8 @@ console.log(
     'qua kính — bản stack trước đó đã đo: màu của ngày chỉ sống trong một dải 55px, từ y=150 xuống ' +
     'trang là rgb(44,44,46), R−B = −2 giữa một ngày hổ phách. Màu nền chạy theo CÙNG shared value ' +
     'với các trang (Today sở hữu nó, deck nhận vào), nên nền bám ngón tay chứ không nhảy khi cú ' +
-    'vuốt dừng; Pan phải đi ngang mới giành quyền và bỏ cuộc nếu ngón tay đi dọc; chiều cao chỉ ' +
-    'TĂNG; và skeleton vẽ MỘT khối cho cả deck, đúng chỗ deck sắp hiện ra',
+    'vuốt dừng; Pan phải đi ngang mới giành quyền và bỏ cuộc nếu ngón tay đi dọc; chiều cao là ' +
+    'của ĐÚNG trang đang xem chứ không phải trang cao nhất; handler đo đạc ổn định qua useCallback ' +
+    'nên không có đường phản hồi render→đo→render; và skeleton vẽ MỘT khối cho cả deck, đúng chỗ ' +
+    'deck sắp hiện ra',
 );
