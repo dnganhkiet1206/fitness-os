@@ -81,7 +81,7 @@ import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { CardDeck } from '@/components/ascnd/card-deck';
-import { NutritionHero, SleepHero, WaterHero } from '@/components/ascnd/hero-pages';
+import { EmptyHero, NutritionHero, SleepHero, WaterHero } from '@/components/ascnd/hero-pages';
 import { HERO_DECK, recordHeight } from '@/lib/widget-heights';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
@@ -348,6 +348,17 @@ export default function TodayScreen() {
     if (focusSV.value === 1) return { transform: [{ translateY: 0 }] };
     return {
       transform: [{ translateY: Math.min(scrollY.value, cover) }],
+      /*
+        Mờ ở CUỐI, sau khi tấm đã phủ kín — không phải trong lúc đang phủ.
+
+        Che là hiệu ứng chính; nếu mờ chạy song song thì hai thứ cùng làm một
+        việc và hero biến mất trước khi tấm kịp kể xong câu chuyện. Nhưng ghim
+        một tấm ảnh đầy đủ ở phía sau mãi mãi cũng sai: khi trang thông tin đã
+        chiếm hết màn hình thì thứ nằm sau nó không còn là nền của gì nữa.
+
+        Nên 15% cuối của quãng phủ mới là chỗ nó tắt.
+      */
+      opacity: interpolate(scrollY.value, [cover * 0.85, cover], [1, 0], 'clamp'),
     };
   });
 
@@ -516,6 +527,19 @@ export default function TodayScreen() {
               recommendation={dailyLog?.readiness_recommendation}
               acwr={dailyLog?.acwr != null ? Number(dailyLog.acwr) : null}
             />
+        ) : inHero(key) ? (
+          /* Trạng thái rỗng phải mang đúng hình dạng của trạng thái đầy — xem
+             `EmptyHero`. Một thẻ ngắn giữa bốn trang cao là 250pt đen, và "chưa
+             có dữ liệu" khi đó trông hệt như "màn hình bị hỏng". */
+          <EmptyHero
+            title={i18n.dashReadiness}
+            message={i18n.dashReadinessMsg}
+            tint={colors.readinessYellow}
+            icon={Heart}
+            detailOpen={heroOpen}
+            onToggleDetail={toggleHero}
+            onOpenDetail={() => router.push('/biometrics')}
+          />
         ) : (
           <GlassCard style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>{i18n.dashReadiness}</Text>

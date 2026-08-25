@@ -1,4 +1,4 @@
-import { Droplets, Flame, Moon } from 'lucide-react-native';
+import { Droplets, Flame, Moon, type LucideIcon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { HeroPanel, HeroRing, HeroTiles } from '@/components/ascnd/hero-panel';
@@ -59,7 +59,7 @@ export function NutritionHero({
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
       a11yDetail={i18n.nKcalToday}
-      more={onOpenDetail ? { label: i18n.nKcalToday, onPress: onOpenDetail } : undefined}
+      more={onOpenDetail ? { label: i18n.nHeroMore, onPress: onOpenDetail } : undefined}
       ring={
         <HeroRing
           pct={kcal / target}
@@ -122,7 +122,7 @@ export function WaterHero({
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
       a11yDetail={i18n.nWater}
-      more={onOpenDetail ? { label: i18n.nWater, onPress: onOpenDetail } : undefined}
+      more={onOpenDetail ? { label: i18n.nHeroMore, onPress: onOpenDetail } : undefined}
       ring={
         <HeroRing
           pct={ml / target}
@@ -162,6 +162,7 @@ export function WaterHero({
 }
 
 const styles = StyleSheet.create({
+  emptyLine: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', lineHeight: 19 },
   macro: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   macroDot: { width: 7, height: 7, borderRadius: 4 },
   macroLabel: { ...type.footnote, color: colors.mutedForeground, flex: 1 },
@@ -207,7 +208,7 @@ export function SleepHero({
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
       a11yDetail={i18n.nSleep}
-      more={onOpenDetail ? { label: i18n.nSleep, onPress: onOpenDetail } : undefined}
+      more={onOpenDetail ? { label: i18n.nHeroMore, onPress: onOpenDetail } : undefined}
       ring={
         <HeroRing
           pct={totalMin / targetMin}
@@ -231,6 +232,71 @@ export function SleepHero({
           { label: i18n.nWaketime, value: clock(waketime), unit: '' },
         ]}
       />
+    </HeroPanel>
+  );
+}
+
+
+/**
+ * Một trang hero chưa có số.
+ *
+ * ── lỗi nó sửa ──
+ *
+ * Trang sẵn sàng khi chưa đủ dữ liệu vẽ ra một `GlassCard` ngắn, trong khi bốn
+ * trang kia là vỏ hero cao ~400pt. `card-deck.tsx` cho sân khấu cao bằng trang
+ * CAO NHẤT, nên trang ngắn để lại một khoảng đen — đo trên máy: khoảng 250pt
+ * giữa dòng chữ và hàng pip.
+ *
+ * Trạng thái rỗng phải mang đúng hình dạng của trạng thái đầy. Nếu không thì
+ * "chưa có dữ liệu" trông giống hệt "màn hình bị hỏng", và đó là câu người dùng
+ * đọc được đầu tiên khi mở app lần đầu.
+ *
+ * ── vòng tròn vẫn vẽ, chỉ là rỗng ──
+ *
+ * Không phải một khối skeleton nhấp nháy: vòng tròn ở đây KHÔNG chờ dữ liệu về
+ * trong vài giây, nó chờ ba ngày ghi chép. Một hiệu ứng "đang tải" cho một thứ
+ * cần ba ngày là một lời hứa sai. Nên nó là một vòng tròn thật, rỗng, với dấu
+ * gạch ở giữa và câu giải thích ngay bên dưới — hình dạng của thứ sắp có, cộng
+ * lý do nó chưa có.
+ */
+export function EmptyHero({
+  title,
+  message,
+  tint,
+  icon,
+  detailOpen,
+  onToggleDetail,
+  onOpenDetail,
+}: {
+  title: string;
+  message: string;
+  tint: string;
+  icon?: LucideIcon;
+  detailOpen?: boolean;
+  onToggleDetail?: () => void;
+  onOpenDetail?: () => void;
+}) {
+  const i18n = useI18n();
+  return (
+    <HeroPanel
+      title={title}
+      detailOpen={detailOpen}
+      onToggleDetail={onToggleDetail}
+      a11yDetail={title}
+      more={onOpenDetail ? { label: i18n.nHeroMore, onPress: onOpenDetail } : undefined}
+      ring={
+        <HeroRing
+          pct={0}
+          from={tint}
+          to={tint}
+          value={0}
+          caption="—"
+          captionColor={colors.mutedForeground}
+          icon={icon}
+          iconColor={colors.mutedForeground}
+        />
+      }>
+      <Text style={styles.emptyLine}>{message}</Text>
     </HeroPanel>
   );
 }

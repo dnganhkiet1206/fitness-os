@@ -216,6 +216,7 @@ const en = {
   nWeightEntries: '{n} entries',
   nWeightEntriesOne: '1 entry',
   nWeightSeeAll: 'See all {n} entries',
+  nHeroMore: 'See all details',
   nDeleteWeight: 'Remove this weight',
   nDeleteWeightMsg: 'Remove the {x} entry? The chart and your BMI will be recalculated.',
   // ── logged sessions, and correcting them ──
@@ -961,6 +962,7 @@ const vi: typeof en = {
   nWeightEntries: '{n} lần',
   nWeightEntriesOne: '1 lần',
   nWeightSeeAll: 'Xem tất cả {n} lần ghi',
+  nHeroMore: 'Xem chi tiết đầy đủ',
   nDeleteWeight: 'Xoá số cân này',
   nDeleteWeightMsg: 'Xoá bản ghi {x}? Biểu đồ và BMI sẽ được tính lại.',
   // ── buổi tập đã ghi và sửa sai ──

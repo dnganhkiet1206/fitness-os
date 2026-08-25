@@ -102,8 +102,6 @@ interface Props extends ActivityInput {
    *  lại của Today, nên quyết định đó thuộc về trang chứ không về thẻ này. */
   detailOpen?: boolean;
   onToggleDetail?: () => void;
-  /** shown in the empty state only, when Apple Health can actually be reached */
-  onConnectHealth?: () => void;
   /**
    * Whether that connect is already running.
    *
@@ -119,7 +117,6 @@ interface Props extends ActivityInput {
    * Two taps started two full syncs against the same day. Same shape as the
    * offline double-submit Chain A found, minus the offline part.
    */
-  connectPending?: boolean;
   onLogWorkout?: () => void;
 }
 
@@ -150,8 +147,6 @@ export function ActivityRingsCard({
   size = HERO_RING,
   detailOpen = false,
   onToggleDetail,
-  onConnectHealth,
-  connectPending = false,
   onLogWorkout,
   ...input
 }: Props) {
@@ -207,51 +202,19 @@ export function ActivityRingsCard({
     both fixable, neither communicated by drawing an empty chart. So the body
     is replaced by the two things that would put a number in it.
   */
-  if (!hasAny) {
-    return (
-      <View style={styles.card}>
-        <Text style={styles.title}>{i18n.dcActivity}</Text>
-        <View style={styles.emptyBody}>
-          <Icon icon={HeartPulse} size={20} color={colors.mutedForeground} />
-          <Text style={styles.emptyText}>{i18n.dcActivityEmpty}</Text>
-        </View>
-        <View style={styles.emptyActions}>
-          {onConnectHealth ? (
-            <PressScale
-              accessibilityRole="button"
-              accessibilityState={{ busy: connectPending, disabled: connectPending }}
-              disabled={connectPending}
-              style={[styles.emptyBtn, styles.emptyBtnPrimary, connectPending && styles.emptyBtnBusy]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onConnectHealth();
-              }}>
-              {/* A spinner rather than a dimmed label: this button is pressed
-                  by somebody who has never seen the app hold data, so "it is
-                  working" has to be visible, not merely implied by the tap
-                  being refused. */}
-              {connectPending ? (
-                <ActivityIndicator size="small" color={colors.primaryForeground} />
-              ) : (
-                <Text style={styles.emptyBtnPrimaryText}>{i18n.dcActivityConnect}</Text>
-              )}
-            </PressScale>
-          ) : null}
-          {onLogWorkout ? (
-            <PressScale
-              accessibilityRole="button"
-              style={styles.emptyBtn}
-              onPress={() => {
-                Haptics.selectionAsync();
-                onLogWorkout();
-              }}>
-              <Text style={styles.emptyBtnText}>{i18n.dashLogWorkoutAction}</Text>
-            </PressScale>
-          ) : null}
-        </View>
-      </View>
-    );
-  }
+  /*
+    Không còn một nhánh rỗng RIÊNG.
+
+    Nó từng trả về một thẻ ngắn có icon và hai nút. Đúng cho một thẻ nằm trong
+    danh sách; sai hẳn cho một trang của deck — `card-deck.tsx` cho sân khấu cao
+    bằng trang CAO NHẤT, nên một trang ngắn để lại một mảng đen bằng đúng phần
+    chênh lệch. Đo trên máy ở trang sẵn sàng: khoảng 250pt.
+
+    Nay đường chính vẽ cho cả hai trạng thái: ba vòng ở 0 là hình dạng thật của
+    "hôm nay chưa vận động", và câu giải thích đi vào phần chi tiết cùng chỗ với
+    các ô số. Trạng thái rỗng mang đúng hình dạng của trạng thái đầy, nếu không
+    thì "chưa có dữ liệu" trông giống hệt "màn hình bị hỏng".
+  */
 
   const estimated = rings.some((r) => r.source === 'estimated');
 
@@ -323,6 +286,7 @@ export function ActivityRingsCard({
               color: RING_COLORS[r.key][0],
             }))}
           />
+          {!hasAny ? <Text style={styles.note}>{i18n.dcActivityEmpty}</Text> : null}
           {estimated ? <Text style={styles.note}>{i18n.dcActivityEstimated}</Text> : null}
         </View>
       </Expander>
@@ -396,21 +360,6 @@ const styles = StyleSheet.create({
   rowTarget: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   note: { fontSize: 11, color: colors.mutedForeground },
 
-  emptyBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
-  emptyText: { flex: 1, fontSize: 13, lineHeight: 18, color: colors.mutedForeground },
-  emptyActions: { flexDirection: 'row', gap: spacing.sm },
-  emptyBtn: {
-    flex: 1,
-    height: 38,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.secondary,
-  },
-  emptyBtnText: { fontSize: 13, fontWeight: '600', color: colors.foreground },
-  emptyBtnPrimary: { backgroundColor: colors.primary },
   /* Dimmed, not hidden: the button keeps its footprint so the card does not
      reflow under the finger that just pressed it. */
-  emptyBtnBusy: { opacity: 0.6 },
-  emptyBtnPrimaryText: { fontSize: 13, fontWeight: '600', color: colors.primaryForeground },
 });
