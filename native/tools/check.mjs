@@ -132,6 +132,7 @@ const STEPS = [
   ['hiệu ứng thu lại', 'node', ['tools/retract.mjs']],
   ['gốc cử chỉ', 'node', ['tools/gesture-root.mjs']],
   ['dữ liệu truy vấn', 'node', ['tools/persisted-query.mjs']],
+  ['mép lớp nền', 'node', ['tools/aura-edge.mjs']],
   ['số thật của buổi tập', 'node', ['tools/plan-actuals.mjs']],
   ['quyền của migration', 'node', ['tools/migration-privileges.mjs']],
   ['deck thẻ', 'node', ['tools/card-deck.mjs']],

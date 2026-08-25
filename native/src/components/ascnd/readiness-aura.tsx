@@ -140,7 +140,21 @@ export function ReadinessAura({
             <Stop offset="0.55" stopColor={tint} stopOpacity={AURA_ALPHA * 0.42} />
             <Stop offset="1" stopColor={tint} stopOpacity={0} />
           </RadialGradient>
-          <RadialGradient id={gid2} cx="88%" cy="26%" r="85%">
+          {/*
+            r phải NHỎ HƠN khoảng cách từ tâm tới đáy hình chữ nhật, nếu không
+            lớp wash vẫn còn màu đúng lúc hình chữ nhật hết vẽ — và đó là một
+            đường ngang cứng vắt qua màn hình.
+
+            Ở đây tâm là cy=26%, nên khoảng cách tới đáy là 1 − 0.26 = 0.74.
+            Bản đầu để r=85% > 0.74 và cắt thật: đo trên bản đã ship, ngay tại
+            y = height × REACH, cột x=88% (dưới đúng tâm này) nhảy 5 count trong
+            một hàng, còn cột x=6 nhảy 0 — nên phép đo đầu tiên của tôi, đo ở
+            mép trái, đã báo "không có vết cắt" cho một vết cắt có thật.
+
+            Gradient thứ nhất có cy=0% nên khoảng cách của nó là 1.0 và r=95%
+            vẫn an toàn.
+          */}
+          <RadialGradient id={gid2} cx="88%" cy="26%" r="70%">
             <Stop offset="0" stopColor={second} stopOpacity={AURA_ALPHA * 0.85} />
             <Stop offset="0.6" stopColor={second} stopOpacity={AURA_ALPHA * 0.3} />
             <Stop offset="1" stopColor={second} stopOpacity={0} />
