@@ -115,16 +115,17 @@ const HERO_FADE = HERO_RING;
 const HERO_HOLD = HERO_RING * 0.34;
 
 /**
- * Quãng cuộn mà hero mờ hết trong đó: hai phần ba màn hình.
+ * Quãng cuộn mà tấm nội dung phủ kín hero trong đó.
  *
- * Neo vào CHIỀU CAO MÀN HÌNH chứ không vào đường kính vòng tròn, và đó là một
- * đổi ý có lý do. Vòng tròn cùng cỡ trên mọi máy, nên lấy nó làm đơn vị thì trên
- * một máy nhỏ hero tắt sau khi đã cuộn gần hết trang, còn trên máy lớn nó tắt
- * khi mới đi được một phần tư — cùng một con số, hai cảm giác khác nhau.
+ * Tên cũ là HERO_COVER_FRACTION và nó nói về một hiệu ứng MỜ không còn tồn tại —
+ * hero không tan đi nữa, nó bị che. Một hằng số mang tên của cơ chế đã bị thay
+ * là thứ người đọc sau sẽ tin.
  *
- * "Hai phần ba những gì đang nhìn thấy" thì giống nhau ở mọi máy.
+ * Neo vào chiều cao MÀN HÌNH, không vào đường kính vòng tròn: thứ quyết định
+ * tấm phải đi bao xa mới che hết phần đang nhìn thấy là phần đang nhìn thấy,
+ * và nó khác nhau ở mỗi máy.
  */
-const HERO_GONE_FRACTION = 0.66;
+const HERO_COVER_FRACTION = 0.66;
 
 /* `intensity` là một prop chứ không phải một style, nên nó phải đi qua
    `animatedProps`; `useAnimatedStyle` không chạm tới được. */
@@ -289,7 +290,9 @@ export default function TodayScreen() {
   const scrollY = useSharedValue(0);
   /* Đọc một lần ở JS, dùng trong worklet như một hằng số — không phải shared
      value, vì chiều cao màn hình không đổi giữa hai frame. */
-  const gone = useWindowDimensions().height * HERO_GONE_FRACTION;
+  /* Quãng cuộn đủ để tấm phủ kín hero. Neo vào chiều cao màn hình vì đó là thứ
+     quyết định tấm phải đi bao xa mới che hết phần đang nhìn thấy. */
+  const cover = useWindowDimensions().height * HERO_COVER_FRACTION;
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
     /* Thanh tab vẫn cần con số này ở JS thread — nó ẩn/hiện bằng state React. */
@@ -318,33 +321,33 @@ export default function TodayScreen() {
     focusSV.value = heroOpen ? 1 : 0;
   }, [heroOpen, focusSV]);
 
+  /**
+   * Hero có hành động RIÊNG: nó đứng nguyên và bị che dần từ dưới lên.
+   *
+   * ── vì sao không phải mờ, và không phải trôi ──
+   *
+   * Bốn bản trước đều sai vì cùng một lý do: tôi cho hero TỰ làm gì đó — trôi
+   * chậm hơn trang, hoặc tan đi. Cả hai đều là hero phản ứng với cú cuộn, và
+   * mắt đọc ra là hai thứ cùng chuyển động.
+   *
+   * Thứ đúng là hero KHÔNG làm gì cả. Nó đứng đúng chỗ, đầy đủ, sắc nét, và tấm
+   * nội dung bò lên che nó — từ mép dưới lên trên. Cái biến mất không phải là
+   * hero; cái biến mất là phần hero còn nhìn thấy được. Đó là hai câu khác nhau,
+   * và câu thứ hai là thứ một tấm trượt vốn dĩ kể.
+   *
+   * Nên không có opacity và không có scale ở đây. Che là toàn bộ hiệu ứng.
+   *
+   * ── ghim, rồi thả ──
+   *
+   * `translateY = scrollY` giữ nó đứng yên trên màn hình. Nhưng ghim mãi thì nó
+   * treo sau tấm suốt cả trang dài, nên phép bù trừ dừng lại ở `cover` — quãng
+   * vừa đủ để tấm phủ kín nó. Sau mốc đó nó cuộn đi bình thường cùng trang, ở
+   * dưới tấm, nơi không ai còn nhìn thấy.
+   */
   const heroSlide = useAnimatedStyle(() => {
-    if (focusSV.value === 1) return { transform: [{ translateY: 0 }, { scale: 1 }], opacity: 1 };
+    if (focusSV.value === 1) return { transform: [{ translateY: 0 }] };
     return {
-    transform: [
-      /*
-        Hero đi cùng trang, và MỜ là toàn bộ chuyển động của nó.
-
-        ── ba lần tôi làm hỏng chỗ này ──
-
-        Đầu tiên là 0.5: hero trôi ngược lại nửa tốc độ, và người dùng nói nó
-        chạy quá nhiều. Rồi 0.12, rồi 0.05 — vẫn là trôi, chỉ chậm hơn. Rồi tôi
-        đọc "đứng yên" theo nghĩa đen và đặt hệ số 1 để ghim cứng nó vào màn
-        hình; nó ghim thật, và nó sai cảm giác.
-
-        Bản người dùng khen là bản KHÔNG có hệ số nào cả: hero cuộn đi như mọi
-        thứ khác trên trang, và thứ duy nhất xảy ra với nó là mờ dần rồi biến
-        mất. Không có gì trôi ngược, không có gì bị ghim — chỉ có một trang cuộn
-        bình thường và một thứ tan đi đúng lúc nó không còn cần thiết.
-
-        `translateY` giữ nguyên trong mảng chứ không bỏ, vì `scale` cũng ở đây và
-        một mảng transform lúc có lúc không cùng một khoá là cách nhanh nhất để
-        Reanimated nội suy nhầm.
-      */
-      { translateY: 0 },
-      { scale: interpolate(scrollY.value, [HERO_HOLD, gone], [1, 0.97], 'clamp') },
-    ],
-    opacity: interpolate(scrollY.value, [HERO_HOLD, gone], [1, 0], 'clamp'),
+      transform: [{ translateY: Math.min(scrollY.value, cover) }],
     };
   });
 
@@ -356,7 +359,7 @@ export default function TodayScreen() {
     return {
     /* Tấm đục dần theo ĐÚNG quãng hero mờ, nên hai thứ là một chuyển động chứ
        không phải hai cái chạy lệch nhau. */
-    intensity: interpolate(scrollY.value, [HERO_HOLD, gone], [12, 44], 'clamp'),
+    intensity: interpolate(scrollY.value, [HERO_HOLD, cover], [12, 44], 'clamp'),
     };
   });
   const toggleHero = useCallback(() => {
