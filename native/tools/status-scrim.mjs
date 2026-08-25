@@ -67,13 +67,23 @@ function orderProblems(label, src) {
   const scrims = [...src.matchAll(/<StatusScrim\s*\/>/g)];
   for (const m of scrims) {
     const before = src.slice(0, m.index);
-    const closed = before.lastIndexOf('</ScrollView>');
+    /* `<ScrollView` HOẶC `<Animated.ScrollView` — cùng một thứ, hai cách viết.
+
+       Luật này từng chỉ khớp cái tên trần. Ngày Today đổi sang bản Animated để
+       đọc offset cuộn trên UI thread, luật im lặng mù đi: nó không tìm thấy
+       ScrollView nào nên không có gì để so vị trí, và một dải trạng thái đặt sai
+       chỗ sẽ đi qua. Phép tự kiểm ở cuối file là thứ bắt được — nó dựng bản SAI
+       và đòi luật phải đỏ. */
+    const closed = Math.max(
+      before.lastIndexOf('</ScrollView>'),
+      before.lastIndexOf('</Animated.ScrollView>'),
+    );
     if (closed < 0) {
       bad.push(`${label}: <StatusScrim /> đứng trước mọi ScrollView — sẽ bị vẽ đè, không che được gì`);
       continue;
     }
     // a scroll view opening again in between means the strip is inside it
-    if (src.slice(closed, m.index).includes('<ScrollView')) {
+    if (/<(Animated\.)?ScrollView/.test(src.slice(closed, m.index))) {
       bad.push(`${label}: <StatusScrim /> nằm trong ScrollView — nó sẽ cuộn theo nội dung`);
     }
   }
@@ -405,7 +415,7 @@ const SELF = [
         'tự kiểm',
         read('src/app/(tabs)/index.tsx')
           .replace(/\s*<StatusScrim \/>/, '')
-          .replace('<ScrollView', '<StatusScrim />\n      <ScrollView'),
+          .replace(/<(Animated\.)?ScrollView/, (t) => `<StatusScrim />\n      ${t}`),
       ).bad,
   ],
   // the grey rectangle — smooth, well-formed, and visible as an overlay

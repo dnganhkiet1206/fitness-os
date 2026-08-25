@@ -30,6 +30,7 @@ import {
 import { BlurView } from 'expo-blur';
 import Animated, {
   runOnJS,
+  useAnimatedProps,
   useAnimatedScrollHandler,
   FadeIn,
   FadeInDown,
@@ -73,7 +74,7 @@ import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { duration } from '@/constants/motion';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { HERO_RING, colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useReminderSync } from '@/hooks/use-reminders';
@@ -97,6 +98,20 @@ import { handleTabScroll } from '@/lib/tab-bar-visibility';
  * Stored group icons are emoji strings (persisted configs) — map them to
  * code-drawn lucide icons with a neon accent, Apple-Settings style.
  */
+/**
+ * Quãng cuộn mà hero tắt hẳn trong đó.
+ *
+ * Đặt bằng đường kính vòng tròn: khi bạn đã cuộn qua đúng chiều cao của thứ
+ * đang nhìn thì thứ đó không còn lý do gì để còn ở đó. Một con số cố định chứ
+ * không phải một tỉ lệ màn hình, vì thứ nó đo là VÒNG TRÒN, và vòng tròn có
+ * cùng một cỡ trên mọi máy.
+ */
+const HERO_FADE = HERO_RING;
+
+/* `intensity` là một prop chứ không phải một style, nên nó phải đi qua
+   `animatedProps`; `useAnimatedStyle` không chạm tới được. */
+const ABlurView = Animated.createAnimatedComponent(BlurView);
+
 const GROUP_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   '❤️': { icon: Heart, color: '#ff4d6d' },
   '🍎': { icon: Apple, color: colors.readinessGreen },
@@ -260,11 +275,38 @@ export default function TodayScreen() {
     runOnJS(handleTabScroll)(e.contentOffset.y);
   });
 
-  /* Hero đi xuống bằng NỬA tốc độ trang đi lên, nên tấm nội dung bò lên che dần
-     nó. Một tỉ lệ, không phải một khoảng cách: mọi chiều cao màn hình đều cho
-     ra cùng một cảm giác. */
+  /**
+   * Hero gần như ĐỨNG YÊN, và tắt dần thay vì trượt đi.
+   *
+   * Bản trước cho nó đi xuống bằng nửa tốc độ trang đi lên. Nó "đè" đúng, và nó
+   * sai cảm giác: một vòng tròn to đi ngược chiều ngón tay là hai chuyển động
+   * cùng lúc trên một màn hình, và mắt bám cái to hơn. Thứ cần chuyển động là
+   * TẤM, không phải thứ tấm đang phủ lên.
+   *
+   * Nên hero chỉ nhích 12% — đủ để không đọc ra là một ảnh dán chết vào nền —
+   * rồi mờ dần. Đến khi tấm phủ hết vòng tròn thì nó đã tắt, nên không có lúc
+   * nào một vòng tròn mờ nằm sau chữ.
+   */
   const heroSlide = useAnimatedStyle(() => ({
-    transform: [{ translateY: scrollY.value * 0.5 }],
+    transform: [
+      { translateY: scrollY.value * 0.12 },
+      /* Và lùi lại một chút khi mờ đi. Chỉ mờ thôi thì vòng tròn tan ra tại
+         chỗ, còn co nhẹ cùng lúc thì nó ĐI RA XA — mắt đọc hai tín hiệu đó
+         thành một chuyển động, và đó là phần "mượt". 4% là gần hết mức thấy
+         được mà chưa thành một cú thu nhỏ. */
+      { scale: interpolate(scrollY.value, [0, HERO_FADE], [1, 0.96], 'clamp') },
+    ],
+    /* Tắt trước khi tấm phủ tới, không phải cùng lúc: `easing`-kiểu bằng cách
+       cho quãng mờ ngắn hơn quãng phủ (0.82) nên không có khoảnh khắc nào một
+       vòng tròn mờ nằm sau chữ. */
+    opacity: interpolate(scrollY.value, [0, HERO_FADE * 0.82], [1, 0], 'clamp'),
+  }));
+
+  /* Và tấm đục dần lên theo đúng quãng đó: lúc đứng yên nó gần như trong suốt
+     để thấy được mình đang nằm trên cái gì, cuộn hết thì nó là một mặt phẳng
+     để chữ không phải cạnh tranh với bất cứ thứ gì. */
+  const sheetBlur = useAnimatedProps(() => ({
+    intensity: interpolate(scrollY.value, [0, HERO_FADE], [12, 44], 'clamp'),
   }));
   const toggleHero = useCallback(() => {
     Haptics.selectionAsync();
@@ -439,11 +481,15 @@ export default function TodayScreen() {
             stepsTarget={stepsGoal}
             /* Offered only where it can work — the button is HealthKit, and
                HealthKit does not exist in Expo Go or on a simulator. */
-            onConnectHealth={healthAvailable ? () => healthSync.mutate() : undefined}
-            /* The same mutation the sync chip further down already guards on.
-               This button had no guard at all, and it is the one shown to
-               somebody whose first sync is running — the slowest one there is. */
-            connectPending={healthSync.isPending}
+            /*
+              KHÔNG truyền nút kết nối vào hero.
+
+              Hàng "Đồng bộ Apple Health" đã có sẵn ở phần thông tin bên dưới,
+              và đó là chỗ của nó: hero trả lời một phép đo, còn kết nối một
+              nguồn dữ liệu là một việc bạn làm cho CẢ app chứ không riêng cho
+              vòng tròn này. Để cả hai là hai nút cùng một việc ở hai chỗ, và
+              cái nằm trên hero thì dính vào một trang mà nó không thuộc về.
+            */
             onLogWorkout={() => router.push('/log-workout')}
           />
         );
@@ -769,7 +815,7 @@ export default function TodayScreen() {
             the light goes under it and nothing comes through."
           */}
           <View style={styles.sheet}>
-            <BlurView intensity={26} tint="dark" style={StyleSheet.absoluteFill} />
+            <ABlurView animatedProps={sheetBlur} tint="dark" style={StyleSheet.absoluteFill} />
           {!heroOpen ? (
             <Animated.View
               style={styles.rest}
