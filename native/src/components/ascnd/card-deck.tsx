@@ -5,6 +5,7 @@ import { Platform, StyleSheet, View, type LayoutChangeEvent } from 'react-native
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import Animated, {
+  runOnJS,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -120,11 +121,26 @@ const NATIVE_BLUR = Platform.OS === 'ios';
 export function CardDeck({
   children,
   progress,
+  expandedAt = null,
+  onPageChange,
 }: {
   children: React.ReactNode[];
   /** Where the deck is, as a float index. Pass one in to drive something else
    *  from the same swipe — Today drives the background colour off it. */
   progress?: SharedValue<number>;
+  /**
+   * Trang nào đang MỞ CHI TIẾT, hoặc `null` nếu không trang nào.
+   *
+   * Một chỉ số, không phải một boolean. Trước đây Today giữ một `heroOpen` duy
+   * nhất và truyền nó cho CẢ SÁU thẻ, nên mở chi tiết một thẻ là mở chi tiết
+   * sáu thẻ — và chính điều đó thổi phồng chiều cao của mọi trang, rồi phép
+   * `max()` bên dưới áp chiều cao ấy cho tất cả.
+   *
+   * Khoảng trống dọc và rò rỉ trạng thái là CÙNG MỘT LỖI, nhìn từ hai phía.
+   */
+  expandedAt?: number | null;
+  /** Gọi khi cú vuốt dừng ở một trang KHÁC. Today dùng nó để đóng chi tiết. */
+  onPageChange?: (index: number) => void;
 }) {
   const pages = children.filter(Boolean);
   const [w, setW] = useState(0);
@@ -142,9 +158,41 @@ export function CardDeck({
   const from = useSharedValue(0);
 
   const last = pages.length - 1;
-  const tallest = heights.length > 0 ? Math.max(0, ...heights.filter((n) => Number.isFinite(n))) : 0;
+
+  /**
+   * Trang đang xem, ở JS — `at` là shared value và bố cục không đọc được nó.
+   *
+   * Chỉ đổi khi cú vuốt DỪNG. Cập nhật theo từng frame sẽ làm chiều cao nhảy
+   * suốt cú vuốt.
+   */
+  const [page, setPage] = useState(0);
+
+  /**
+   * Chiều cao là của TRANG ĐANG XEM, không phải của trang cao nhất.
+   *
+   * `Math.max(...heights)` là nguyên nhân thật của khoảng trống: mỗi trang phải
+   * dành sẵn chiều cao của trang cao nhất, kể cả khi nội dung của nó ngắn hơn
+   * nhiều. Bố cục khi đó mô tả trang cao nhất chứ không mô tả trang bạn đang
+   * nhìn.
+   *
+   * Trong lúc chưa đo được trang nào thì lùi về trang đầu, rồi về 0 — không có
+   * số nào để đoán, và đoán ở đây là dựng lại đúng khoảng trống vừa gỡ.
+   */
+  const shown = heights[page] ?? heights[0] ?? 0;
+
+  /* Khoá cử chỉ NGANG khi đang mở chi tiết — không dựa vào góc vuốt.
+     Một ngưỡng góc vẫn để lọt cú vuốt hơi lệch, và người đang đọc thì không có
+     lý do nào để đổi sang thẻ khác. */
+  const locked = expandedAt !== null && expandedAt !== undefined;
+
+  /* Chạy ở JS thread — `runOnJS` gọi nó từ worklet. */
+  const settle = (index: number) => {
+    setPage(index);
+    onPageChange?.(index);
+  };
 
   const pan = Gesture.Pan()
+    .enabled(!locked)
     .activeOffsetX([-HYSTERESIS, HYSTERESIS])
     .failOffsetY([-GIVE_UP_Y, GIVE_UP_Y])
     .onBegin(() => {
@@ -163,6 +211,10 @@ export function CardDeck({
       const flung = Math.abs(e.velocityX) > 550;
       const step = flung || Math.abs(moved) > COMMIT ? Math.sign(moved) : 0;
       const target = Math.min(last, Math.max(0, Math.round(from.value) + step));
+      /* Báo ra ở JS khi đã CHỌN xong trang, không phải theo từng frame: Today
+         dùng tín hiệu này để đóng chi tiết và đưa trang về đầu, và làm hai việc
+         đó giữa cú vuốt là làm chúng nhiều lần. */
+      if (target !== Math.round(from.value)) runOnJS(settle)(target);
       at.value = withSpring(target, { damping: 22, stiffness: 190, mass: 0.7 });
     });
 
@@ -172,7 +224,11 @@ export function CardDeck({
   };
 
   /**
-   * The tallest page sets the height — measured PER PAGE, not as one number.
+   * Chiều cao của TỪNG trang, đo riêng.
+     *
+     * Trước đây phép đo này nuôi một `Math.max(...)` và mọi trang phải dành sẵn
+     * chiều cao của trang cao nhất. Nay nó nuôi `heights[page]`: bố cục mô tả
+     * trang bạn đang nhìn.
    *
    * ── why the grow-only version was wrong ──
    *
@@ -209,7 +265,7 @@ export function CardDeck({
   return (
     <View onLayout={measureW}>
       <GestureDetector gesture={pan}>
-        <View style={[styles.stage, tallest > 0 ? { height: tallest } : null]}>
+        <View style={[styles.stage, shown > 0 ? { height: shown } : null]}>
           {pages.map((node, i) => (
             <Page key={i} index={i} at={at} width={w} onHeight={measure(i)}>
               {node}
@@ -219,8 +275,8 @@ export function CardDeck({
       </GestureDetector>
 
       {/* Kính của thẻ kéo dài xuống dưới mép và tắt dần — xem ghi chú ở TRAIL. */}
-      {NATIVE_BLUR && tallest > 0 ? (
-        <View pointerEvents="none" style={[styles.trail, { top: tallest, height: TRAIL }]}>
+      {NATIVE_BLUR && shown > 0 ? (
+        <View pointerEvents="none" style={[styles.trail, { top: shown, height: TRAIL }]}>
           <MaskedView
             style={StyleSheet.absoluteFill}
             maskElement={

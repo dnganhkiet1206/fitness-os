@@ -276,7 +276,23 @@ export default function TodayScreen() {
    *
    * State nằm ở đây chứ không trong thẻ, vì thứ nó điều khiển nằm ở đây.
    */
-  const [heroOpen, setHeroOpen] = useState(false);
+  /**
+   * Trang hero nào đang MỞ CHI TIẾT — một chỉ số, không phải một boolean.
+   *
+   * ── lỗi nó sửa ──
+   *
+   * Đây từng là `heroOpen: boolean`, và nó được truyền cho CẢ SÁU thẻ. Mở chi
+   * tiết một thẻ là mở chi tiết sáu thẻ: sáu khối số cùng bung ra, sáu trang
+   * cùng cao lên, và `card-deck` lấy trang cao nhất làm chiều cao chung. Khoảng
+   * trống dọc và rò rỉ trạng thái giữa các thẻ là CÙNG MỘT LỖI nhìn từ hai
+   * phía — một biến trạng thái dùng chung cho những thứ đáng lẽ độc lập.
+   *
+   * `null` = không thẻ nào mở. Số = đúng thẻ đó, và chỉ thẻ đó.
+   */
+  const [expandedAt, setExpandedAt] = useState<number | null>(null);
+  /* Câu hỏi "có thẻ nào đang mở không" — thứ mà tấm nội dung và hiệu ứng cuộn
+     cần biết. Chúng không cần biết là thẻ NÀO. */
+  const heroOpen = expandedAt !== null;
 
   /**
    * Trang đã cuộn được bao xa, đọc trên UI thread.
@@ -416,10 +432,23 @@ export default function TodayScreen() {
   }));
 
   const scroller = useRef<ScrollView>(null);
-  const toggleHero = useCallback(() => {
+  const toggleHero = useCallback((index: number) => {
     Haptics.selectionAsync();
-    setHeroOpen((v) => !v);
+    setExpandedAt((v) => (v === index ? null : index));
     scroller.current?.scrollTo({ y: 0, animated: true });
+  }, []);
+
+  /**
+   * Vuốt sang thẻ khác thì thẻ mới bắt đầu ở trạng thái MẶC ĐỊNH.
+   *
+   * Đóng chi tiết và đưa trang về đầu. Không phải để cho gọn — mà vì thẻ mới
+   * chưa từng được mở, nên hiện nó ở trạng thái mở là kể một chuyện không xảy
+   * ra. Và vị trí cuộn của thẻ cũ là vị trí trong NỘI DUNG của thẻ cũ; mang nó
+   * sang thẻ khác thì nó không còn nghĩa gì.
+   */
+  const onHeroPageChange = useCallback(() => {
+    setExpandedAt(null);
+    scroller.current?.scrollTo({ y: 0, animated: false });
   }, []);
 
   /*
@@ -556,14 +585,17 @@ export default function TodayScreen() {
   /* Cùng một khoá vẽ ra hai hình dạng tuỳ chỗ nó đứng, và câu hỏi "nó đứng ở
      đâu" chỉ có một chỗ trả lời. */
   const inHero = (key: WidgetKey) => config.heroWidgets.includes(key);
+  /* Vị trí của thẻ trong deck — cùng thứ tự mà `CardDeck` nhận children, nên
+     `expandedAt` và trang đang xem nói về cùng một con số. */
+  const heroIndex = (key: WidgetKey) => config.heroWidgets.indexOf(key);
 
   const renderWidget = (key: WidgetKey): React.ReactNode => {
     switch (key) {
       case 'readiness':
         return readinessScore != null ? (
             <ReadinessGauge
-              detailOpen={heroOpen}
-              onToggleDetail={toggleHero}
+              detailOpen={expandedAt === heroIndex(key)}
+              onToggleDetail={() => toggleHero(heroIndex(key))}
               onOpenDetail={() => router.push('/biometrics')}
               score={readinessScore}
               status={readinessStatus}
@@ -580,8 +612,8 @@ export default function TodayScreen() {
             message={i18n.dashReadinessMsg}
             tint={colors.readinessYellow}
             icon={Heart}
-            detailOpen={heroOpen}
-            onToggleDetail={toggleHero}
+            detailOpen={expandedAt === heroIndex(key)}
+            onToggleDetail={() => toggleHero(heroIndex(key))}
             onOpenDetail={() => router.push('/biometrics')}
           />
         ) : (
@@ -593,8 +625,8 @@ export default function TodayScreen() {
       case 'activity':
         return (
           <ActivityRingsCard
-            detailOpen={heroOpen}
-            onToggleDetail={toggleHero}
+            detailOpen={expandedAt === heroIndex(key)}
+            onToggleDetail={() => toggleHero(heroIndex(key))}
             moveKcal={dailyLog?.active_kcal != null ? Number(dailyLog.active_kcal) : null}
             healthMinutes={dailyLog?.active_minutes ?? null}
             loggedMinutes={trainingMin ?? 0}
@@ -625,8 +657,8 @@ export default function TodayScreen() {
               quality={sleep?.quality != null ? Number(sleep.quality) : null}
               bedtime={sleep?.bedtime}
               waketime={sleep?.waketime}
-              detailOpen={heroOpen}
-              onToggleDetail={toggleHero}
+              detailOpen={expandedAt === heroIndex(key)}
+              onToggleDetail={() => toggleHero(heroIndex(key))}
               onOpenDetail={() => router.push('/sleep-insights')}
             />
           );
@@ -666,8 +698,8 @@ export default function TodayScreen() {
               protein={Number(dailyLog?.protein_g) || 0}
               carbs={Number(dailyLog?.carbs_g) || 0}
               fat={Number(dailyLog?.fat_g) || 0}
-              detailOpen={heroOpen}
-              onToggleDetail={toggleHero}
+              detailOpen={expandedAt === heroIndex(key)}
+              onToggleDetail={() => toggleHero(heroIndex(key))}
             />
           );
         }
@@ -702,8 +734,8 @@ export default function TodayScreen() {
               onOpenDetail={() => router.push('/water')}
               ml={waterMl ?? 0}
               targetMl={waterTarget}
-              detailOpen={heroOpen}
-              onToggleDetail={toggleHero}
+              detailOpen={expandedAt === heroIndex(key)}
+              onToggleDetail={() => toggleHero(heroIndex(key))}
             />
           );
         }
@@ -917,7 +949,7 @@ export default function TodayScreen() {
               style={[styles.heroFull, heroSlide]}
               onLayout={(e) => recordHeight(HERO_DECK, e.nativeEvent.layout.height)}
               entering={FadeInDown.springify().damping(26).stiffness(180)}>
-              <CardDeck progress={deckAt}>
+              <CardDeck progress={deckAt} expandedAt={expandedAt} onPageChange={onHeroPageChange}>
                 {config.heroWidgets.map((key) => (
                   <View key={key}>{withPeek(key, renderWidget(key))}</View>
                 ))}
