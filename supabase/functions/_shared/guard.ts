@@ -60,6 +60,34 @@ export const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * Lỗi trả cho client: một MÃ, không phải một câu chuyện.
+ *
+ * ── rò rỉ nó bịt ──
+ *
+ * Cả sáu function AI từng trả `e instanceof Error ? e.message : "Unknown error"`.
+ * Bất kỳ lỗi nào ném ra đều đi nguyên văn qua mạng — kể cả câu nêu tên biến nhà
+ * cung cấp, và kể cả lỗi DNS/TLS của `fetch`, thứ mang theo đúng hostname mình
+ * đang gọi.
+ *
+ * `native/src/lib/edge.ts` đã cẩn thận ở đầu bên kia: nó giữ `raw` nhưng "never
+ * shown to a user". Nên đây không phải rò rỉ tới mắt người dùng — nó là rò rỉ
+ * TỚI ĐƯỜNG TRUYỀN, và nằm lại trong mọi bản bắt gói, log crash hay proxy trung
+ * gian. Một client không hiển thị nó vẫn là một client đã nhận nó.
+ *
+ * ── vì sao một mã chứ không phải một câu tử tế ──
+ *
+ * Câu tử tế là việc của app, nơi biết ngôn ngữ người dùng đang đọc. Server chỉ
+ * cần nói CHUYỆN GÌ đã xảy ra ở mức phân loại được, và mã thì dịch được, ghi log
+ * được, và không mang theo thứ gì nó không định nói.
+ *
+ * Bản đầy đủ vẫn được ghi — ở server, nơi nó thuộc về.
+ */
+export function opaque(e: unknown, code: string, status = 500): Response {
+  console.error(code, e);
+  return json({ error: code }, status);
+}
+
 export function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,

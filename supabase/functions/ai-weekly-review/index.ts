@@ -1,7 +1,7 @@
 import { aiKey, aiUrl, aiModel } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, json, localDate, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { claimCall, corsHeaders, json, localDate, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 
 /** Output ceiling — the reply is a structured review, not an essay. */
@@ -231,7 +231,7 @@ Trả về insights (quan sát từ dữ liệu) và recommendations (hành đ�
       }
       const t = await response.text();
       console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "ai_unavailable" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const result = await response.json();
@@ -249,8 +249,6 @@ Trả về insights (quan sát từ dữ liệu) và recommendations (hành đ�
     });
   } catch (e) {
     console.error("ai-weekly-review error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return opaque(e, "ai_failed");
   }
 });

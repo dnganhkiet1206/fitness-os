@@ -2,7 +2,7 @@ import { aiKey, aiUrl, aiModel } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { claimCall, corsHeaders, dbServiceKey, dbUrl, json, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { claimCall, corsHeaders, dbServiceKey, dbUrl, json, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
 
 /**
  * What the coach should still know next week.
@@ -251,7 +251,7 @@ serve(async (req) => {
     if (caller instanceof Response) return caller;
     const { userId, supabase } = caller;
 
-    if (!AI_KEY) return json({ error: "AI not configured" }, 500);
+    if (!AI_KEY) return json({ error: "ai_unavailable" }, 500);
 
     const body = await req.json();
     const turns = userTurns(body?.messages);
@@ -308,7 +308,7 @@ serve(async (req) => {
 
     if (!res.ok) {
       console.error("memory gateway error", res.status, await res.text());
-      return json({ error: "AI gateway error" }, 502);
+      return json({ error: "ai_unavailable" }, 502);
     }
 
     const data = await res.json();
@@ -388,6 +388,6 @@ serve(async (req) => {
     return json({ added: add.length, confirmed: confirmIds.length, dropped: dropIds.length });
   } catch (e) {
     console.error("ai-coach-memory error:", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return opaque(e, "ai_failed");
   }
 });

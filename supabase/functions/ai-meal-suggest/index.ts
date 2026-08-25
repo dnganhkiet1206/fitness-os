@@ -1,7 +1,7 @@
 import { aiKey, aiUrl, aiModel } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, localDate, oneOf, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { claimCall, corsHeaders, localDate, oneOf, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
 import { localHour } from "../_shared/sleep.ts";
 
 /** Output ceiling — the reply is a short list of meals. */
@@ -191,7 +191,7 @@ NGUYÊN TẮC:
       }
       const t = await response.text();
       console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "ai_unavailable" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const result = await response.json();
@@ -210,8 +210,6 @@ NGUYÊN TẮC:
     });
   } catch (e) {
     console.error("ai-meal-suggest error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return opaque(e, "ai_failed");
   }
 });

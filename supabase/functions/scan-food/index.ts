@@ -1,13 +1,7 @@
 import { aiKey, aiUrl, aiVisionModel } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import {
-  claimCall,
-  corsHeaders,
-  json,
-  quotaExceeded,
-  requireUser,
-} from "../_shared/guard.ts";
+import { claimCall, corsHeaders, json, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
 
 /** Output ceiling — the reply is a small JSON object, never prose. */
 const MAX_TOKENS = 1500;
@@ -404,9 +398,6 @@ ${
     });
   } catch (e) {
     console.error("scan-food error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return opaque(e, "ai_failed");
   }
 });

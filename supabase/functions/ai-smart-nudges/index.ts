@@ -1,7 +1,7 @@
 import { aiKey, aiUrl, aiModel } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, localDate, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { claimCall, corsHeaders, localDate, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes, localHour, SLEEP_COLUMNS } from "../_shared/sleep.ts";
 
@@ -207,7 +207,7 @@ NGUYÊN TẮC QUAN TRỌNG:
       }
       const t = await response.text();
       console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI error" }), {
+      return new Response(JSON.stringify({ error: "ai_unavailable" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -230,8 +230,6 @@ NGUYÊN TẮC QUAN TRỌNG:
     });
   } catch (e) {
     console.error("ai-smart-nudges error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return opaque(e, "ai_failed");
   }
 });

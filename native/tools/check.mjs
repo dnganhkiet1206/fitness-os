@@ -133,6 +133,7 @@ const STEPS = [
   ['gốc cử chỉ', 'node', ['tools/gesture-root.mjs']],
   ['hero khi cuộn', 'node', ['tools/hero-scroll.mjs']],
   ['database của edge function', 'node', ['tools/edge-db.mjs']],
+  ['ranh giới AI', 'node', ['tools/ai-boundary.mjs']],
   ['dữ liệu truy vấn', 'node', ['tools/persisted-query.mjs']],
   ['mép lớp nền', 'node', ['tools/aura-edge.mjs']],
   ['số thật của buổi tập', 'node', ['tools/plan-actuals.mjs']],

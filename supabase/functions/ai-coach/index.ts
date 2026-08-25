@@ -1,13 +1,8 @@
+import { looksHostile, refusalStream, scopeRule } from "../_shared/scope.ts";
 import { aiKey, aiUrl, aiModel } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import {
-  claimCall,
-  corsHeaders,
-  json,
-  quotaExceeded,
-  requireUser,
-} from "../_shared/guard.ts";
+import { claimCall, corsHeaders, json, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
 
@@ -76,6 +71,22 @@ serve(async (req) => {
     const lang = body?.lang === "en" ? "en" : "vi";
     const messages = sanitize(body?.messages);
     if (messages.length === 0) return json({ error: "No messages" }, 400);
+
+    /*
+      Chặn TRƯỚC khi tiêu một lượt gọi.
+
+      `claimCall` ngay bên dưới trừ hạn mức của người dùng. Để một câu moi cấu
+      hình đi qua đó nghĩa là họ trả tiền cho một câu trả lời mà ta sẽ không đưa
+      — và họ trả bằng chính hạn mức của mình.
+
+      Chỉ xét tin nhắn CUỐI: những tin trước đã được xét ở lượt của chúng, và
+      quét lại cả lịch sử nghĩa là một câu bị chặn sẽ khoá cứng cuộc trò chuyện
+      mãi mãi.
+    */
+    const last = messages[messages.length - 1];
+    if (looksHostile(typeof last?.content === "string" ? last.content : "")) {
+      return refusalStream(lang, corsHeaders);
+    }
 
     if (!(await claimCall(supabase, "ai-coach"))) return quotaExceeded();
     /*
@@ -270,7 +281,7 @@ NGUYÊN TẮC QUAN TRỌNG:
       body: JSON.stringify({
         model: aiModel(),
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: systemPrompt + scopeRule(lang) },
           ...messages,
         ],
         max_tokens: MAX_TOKENS,
@@ -292,7 +303,7 @@ NGUYÊN TẮC QUAN TRỌNG:
       }
       const t = await response.text();
       console.error("AI gateway error:", status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      return new Response(JSON.stringify({ error: "ai_unavailable" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -302,8 +313,6 @@ NGUYÊN TẮC QUAN TRỌNG:
     });
   } catch (e) {
     console.error("ai-coach error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return opaque(e, "ai_failed");
   }
 });
