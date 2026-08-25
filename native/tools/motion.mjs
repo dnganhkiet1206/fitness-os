@@ -430,8 +430,26 @@ for (const [f, allowed] of Object.entries(COMPOSED)) {
 
   const PRESS = 'src/components/ascnd/press-scale.tsx';
   const pcode = strip(read(PRESS));
-  if (!/createAnimatedComponent\(Pressable\)/.test(pcode)) {
+  /* `\w*Pressable`, không phải `Pressable` nguyên văn.
+
+     Luật này từng khớp đúng chuỗi `createAnimatedComponent(Pressable)`. File đó
+     nay dựng HAI bản — một của React Native, một của gesture-handler, đặt tên
+     `RNPressable` và `GHPressable` — và luật lập tức đỏ dù hành vi không đổi
+     một chút nào. Nó đang canh cách viết một cái tên, không canh việc style động
+     nằm ở đâu. Cùng một lỗi, lần thứ bảy trong repo này. */
+  if (!/createAnimatedComponent\(\s*\w*Pressable\s*\)/.test(pcode)) {
     problems.push(`${PRESS}: style động phải nằm trên chính Pressable — bọc thêm View sẽ xê dịch bố cục ở hàng chục chỗ gọi`);
+  }
+  /* Và nó phải THẬT SỰ đeo style đó. Một `createAnimatedComponent` được dựng ra
+     rồi render một `<View style={anim}>` bọc ngoài sẽ qua được phép kiểm trên mà
+     vẫn đúng cái bố cục bị xê dịch mà luật này sinh ra để chặn. */
+  {
+    const rendered = pcode.match(/return \(\s*<(\w+)[\s\S]{0,400}?>/);
+    const tag = rendered?.[1];
+    const wearsStyle = tag && new RegExp(`<${tag}[^>]*style=\\{\\[`).test(pcode);
+    if (!wearsStyle) {
+      problems.push(`${PRESS}: component được render không đeo style động — style nằm ở đâu đó khác`);
+    }
   }
   for (const token of ['press.spring', 'press.opacity']) {
     if (!pcode.includes(token)) {

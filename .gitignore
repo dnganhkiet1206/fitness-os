@@ -33,3 +33,8 @@ ios/App/output
 ios/DerivedData
 ios/capacitor-cordova-ios-plugins
 ios/**/xcuserdata
+
+# local env — không commit
+.env
+.env.*
+!.env.example
