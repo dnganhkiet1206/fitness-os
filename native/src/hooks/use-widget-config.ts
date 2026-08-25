@@ -56,7 +56,7 @@ export const RETIRED_WIDGETS: string[] = ['nudges'];
  * cái đó, và nó chỉ áp cho bản cài mới. Đây là việc dời của những bố cục đã tồn
  * tại từ trước.
  */
-export const PROMOTED_TO_HERO: WidgetKey[] = ['nutrition', 'water'];
+export const PROMOTED_TO_HERO: WidgetKey[] = ['nutrition', 'water', 'sleep'];
 
 export interface WidgetGroup {
   id: string;
@@ -71,13 +71,13 @@ export interface WidgetConfig {
 }
 
 export const DEFAULT_CONFIG: WidgetConfig = {
-  heroWidgets: ['readiness', 'activity', 'nutrition', 'water'],
+  heroWidgets: ['readiness', 'activity', 'nutrition', 'water', 'sleep'],
   groups: [
     {
       id: 'health',
       title: { en: 'Health', vi: 'Sức khỏe' },
       icon: '❤️',
-      widgets: ['biometrics', 'sleep', 'steps'],
+      widgets: ['biometrics', 'steps'],
     },
     {
       id: 'nutrition',

@@ -1,6 +1,6 @@
 import { useIsFocused } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { ChevronDown } from 'lucide-react-native';
+import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useEffect, useId, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -24,7 +24,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
 import { readinessConfidence } from '@/lib/readiness-engine';
-import { colors, glass, HERO_RING, radius, spacing } from '@/constants/ascnd';
+import { colors, glass, HERO_RING, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
@@ -64,6 +64,8 @@ interface Props {
    */
   detailOpen?: boolean;
   onToggleDetail?: () => void;
+  /** đường đi sâu, đặt ở cuối phần chi tiết — xem ghi chú `more` ở hero-panel */
+  onOpenDetail?: () => void;
 }
 
 /* The ring's fill, named because the score now counts on exactly these two
@@ -90,6 +92,7 @@ export function ReadinessGauge({
   acwr,
   detailOpen = false,
   onToggleDetail,
+  onOpenDetail,
 }: Props) {
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -476,6 +479,21 @@ export function ReadinessGauge({
           </View>
         ))}
       </View>
+      {/* Đường đi sâu, ở CUỐI phần chi tiết. Xem ghi chú `more` ở hero-panel.tsx
+          về vì sao nó không còn là một Pressable bọc cả tấm thẻ. */}
+      {onOpenDetail ? (
+        <PressScale
+          accessibilityRole="link"
+          accessibilityLabel={vi ? 'Xem sinh trắc học' : 'Open biometrics'}
+          onPress={() => {
+            Haptics.selectionAsync();
+            onOpenDetail();
+          }}
+          style={styles.moreRow}>
+          <Text style={styles.moreLabel}>{vi ? 'Xem sinh trắc học' : 'Open biometrics'}</Text>
+          <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+        </PressScale>
+      ) : null}
       </View>
       </Expander>
       <ReadinessExplainer visible={help.open} onClose={help.close} />
@@ -521,6 +539,17 @@ const styles = StyleSheet.create({
      không ước lượng. Icon 20pt nằm giữa một ô 44 là đủ. */
   moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   detail: { gap: spacing.lg, alignItems: 'center', alignSelf: 'stretch' },
+  moreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.sm,
+    backgroundColor: 'rgba(255,255,255,0.045)',
+  },
+  moreLabel: { ...type.footnote, color: colors.foreground },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   title: {

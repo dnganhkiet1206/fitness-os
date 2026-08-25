@@ -197,7 +197,7 @@ try {
   }
   /* Hai khoá được thăng nối vào SAU thứ tự cũ, không chen vào giữa: người dùng
      đã sắp readiness trước activity và việc dời không được phép sắp lại. */
-  if (retiredHero.heroWidgets.join(',') !== 'readiness,activity,nutrition,water') {
+  if (retiredHero.heroWidgets.join(',') !== 'readiness,activity,nutrition,water,sleep') {
     problems.push(`pruning disturbed the hero order: ${retiredHero.heroWidgets.join(',')}`);
   }
   /* and the two lists cannot overlap: a key on both would be pruned on load and
@@ -235,7 +235,7 @@ try {
     ],
   });
   // nối vào SAU thứ tự người dùng đã sắp, không chen lên đầu
-  if (upgraded.heroWidgets.join(',') !== 'activity,readiness,nutrition,water') {
+  if (upgraded.heroWidgets.join(',') !== 'activity,readiness,nutrition,water,sleep') {
     problems.push(`promotion changed the hero order: ${upgraded.heroWidgets.join(',')}`);
   }
   // và biến mất khỏi nhóm cũ, không nằm hai chỗ

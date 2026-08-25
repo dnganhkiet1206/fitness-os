@@ -89,7 +89,7 @@ import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { CardDeck } from '@/components/ascnd/card-deck';
-import { NutritionHero, WaterHero } from '@/components/ascnd/hero-pages';
+import { NutritionHero, SleepHero, WaterHero } from '@/components/ascnd/hero-pages';
 import { HERO_DECK, recordHeight } from '@/lib/widget-heights';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
@@ -302,7 +302,19 @@ export default function TodayScreen() {
    * rồi mờ dần. Đến khi tấm phủ hết vòng tròn thì nó đã tắt, nên không có lúc
    * nào một vòng tròn mờ nằm sau chữ.
    */
-  const heroSlide = useAnimatedStyle(() => ({
+  /* Chế độ tập trung tắt hẳn hiệu ứng theo cuộn.
+
+     Khi chi tiết đang mở thì hero VÀ khối số của nó chính là nội dung — cuộn
+     xuống là để đọc tiếp, không phải để rời đi. Làm mờ thứ người ta đang đọc là
+     trả lời sai câu hỏi họ vừa hỏi. */
+  const focusSV = useSharedValue(0);
+  useEffect(() => {
+    focusSV.value = heroOpen ? 1 : 0;
+  }, [heroOpen, focusSV]);
+
+  const heroSlide = useAnimatedStyle(() => {
+    if (focusSV.value === 1) return { transform: [{ translateY: 0 }, { scale: 1 }], opacity: 1 };
+    return {
     transform: [
       /* 0.05, không phải 0.12. Ở 0.12 vòng tròn đi được 30pt trong một cú vuốt
          ngắn, đủ để đọc ra là NÓ đang chuyển động chứ không phải trang. Cái cần
@@ -315,16 +327,20 @@ export default function TodayScreen() {
       { scale: interpolate(scrollY.value, [HERO_HOLD, HERO_GONE], [1, 0.97], 'clamp') },
     ],
     opacity: interpolate(scrollY.value, [HERO_HOLD, HERO_GONE], [1, 0], 'clamp'),
-  }));
+    };
+  });
 
   /* Và tấm đục dần lên theo đúng quãng đó: lúc đứng yên nó gần như trong suốt
      để thấy được mình đang nằm trên cái gì, cuộn hết thì nó là một mặt phẳng
      để chữ không phải cạnh tranh với bất cứ thứ gì. */
-  const sheetBlur = useAnimatedProps(() => ({
+  const sheetBlur = useAnimatedProps(() => {
+    if (focusSV.value === 1) return { intensity: 12 };
+    return {
     /* Tấm đục dần theo ĐÚNG quãng hero mờ, nên hai thứ là một chuyển động chứ
        không phải hai cái chạy lệch nhau. */
     intensity: interpolate(scrollY.value, [HERO_HOLD, HERO_GONE], [12, 44], 'clamp'),
-  }));
+    };
+  });
   const toggleHero = useCallback(() => {
     Haptics.selectionAsync();
     setHeroOpen((v) => !v);
@@ -469,17 +485,16 @@ export default function TodayScreen() {
     switch (key) {
       case 'readiness':
         return readinessScore != null ? (
-          <PressScale onPress={() => { Haptics.selectionAsync(); router.push('/biometrics'); }}>
             <ReadinessGauge
               detailOpen={heroOpen}
               onToggleDetail={toggleHero}
+              onOpenDetail={() => router.push('/biometrics')}
               score={readinessScore}
               status={readinessStatus}
               explain={dailyLog?.readiness_explain}
               recommendation={dailyLog?.readiness_recommendation}
               acwr={dailyLog?.acwr != null ? Number(dailyLog.acwr) : null}
             />
-          </PressScale>
         ) : (
           <GlassCard style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>{i18n.dashReadiness}</Text>
@@ -513,6 +528,20 @@ export default function TodayScreen() {
       case 'biometrics':
         return <BiometricsCard />;
       case 'sleep':
+        if (inHero(key)) {
+          return (
+            <SleepHero
+              totalMin={sleepTotalMin}
+              targetHours={sleepTargetHours}
+              quality={sleep?.quality != null ? Number(sleep.quality) : null}
+              bedtime={sleep?.bedtime}
+              waketime={sleep?.waketime}
+              detailOpen={heroOpen}
+              onToggleDetail={toggleHero}
+              onOpenDetail={() => router.push('/sleep-insights')}
+            />
+          );
+        }
         return sleepTotalMin > 0 ? (
           <PressScale onPress={() => { Haptics.selectionAsync(); router.push('/sleep-insights'); }}>
             <SleepCard
@@ -542,6 +571,7 @@ export default function TodayScreen() {
         if (inHero(key)) {
           return (
             <NutritionHero
+              onOpenDetail={() => router.push('/nutrition')}
               kcal={kcal}
               calorieTarget={calorieTarget}
               protein={Number(dailyLog?.protein_g) || 0}
@@ -580,6 +610,7 @@ export default function TodayScreen() {
         if (inHero(key)) {
           return (
             <WaterHero
+              onOpenDetail={() => router.push('/water')}
               ml={waterMl ?? 0}
               targetMl={waterTarget}
               detailOpen={heroOpen}
@@ -877,7 +908,11 @@ export default function TodayScreen() {
           ) : null}
 
           {/* HealthKit sync (native-only necessity, styled as a quick chip row) */}
-          {healthAvailable && (
+          {/* `!heroOpen` cùng với mọi thứ khác trong tấm: nó nằm ngoài cái cổng
+              đó nên ở chế độ tập trung nó là dòng DUY NHẤT còn sót lại dưới
+              vòng tròn — đúng cái "loạn thông tin" mà chế độ này sinh ra để
+              dọn. */}
+          {healthAvailable && !heroOpen && (
             <PressScale
               style={styles.syncButton}
               disabled={healthSync.isPending}

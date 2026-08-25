@@ -1,4 +1,4 @@
-import { Droplets, Flame } from 'lucide-react-native';
+import { Droplets, Flame, Moon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { HeroPanel, HeroRing } from '@/components/ascnd/hero-panel';
@@ -31,6 +31,7 @@ import { displayVolume, volumeLabel } from '@/lib/units';
  * a card is what this stopped being.
  */
 export function NutritionHero({
+  onOpenDetail,
   kcal,
   calorieTarget,
   protein,
@@ -46,6 +47,7 @@ export function NutritionHero({
   fat: number;
   detailOpen?: boolean;
   onToggleDetail?: () => void;
+  onOpenDetail?: () => void;
 }) {
   const i18n = useI18n();
   const target = calorieTarget > 0 ? calorieTarget : 1;
@@ -57,6 +59,7 @@ export function NutritionHero({
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
       a11yDetail={i18n.nKcalToday}
+      more={onOpenDetail ? { label: i18n.nKcalToday, onPress: onOpenDetail } : undefined}
       ring={
         <HeroRing
           pct={kcal / target}
@@ -93,6 +96,7 @@ function Macro({ label, grams, tint }: { label: string; grams: number; tint: str
 }
 
 export function WaterHero({
+  onOpenDetail,
   ml,
   targetMl,
   detailOpen,
@@ -102,6 +106,7 @@ export function WaterHero({
   targetMl: number;
   detailOpen?: boolean;
   onToggleDetail?: () => void;
+  onOpenDetail?: () => void;
 }) {
   const i18n = useI18n();
   const { unit } = useVolumeUnit();
@@ -114,6 +119,7 @@ export function WaterHero({
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
       a11yDetail={i18n.nWater}
+      more={onOpenDetail ? { label: i18n.nWater, onPress: onOpenDetail } : undefined}
       ring={
         <HeroRing
           pct={ml / target}
@@ -148,3 +154,67 @@ const styles = StyleSheet.create({
   macroValue: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
   waterLine: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
 });
+
+
+/**
+ * Giấc ngủ, dạng hero.
+ *
+ * Vòng tròn là GIỜ NGỦ so với mục tiêu — không phải điểm chất lượng. Hai con số
+ * đều thật, nhưng chỉ một cái là thứ bạn tác động được tối nay: điểm là hệ quả,
+ * giờ là quyết định. Điểm nằm ở phần chi tiết, cạnh giờ đi ngủ và giờ dậy đã
+ * tạo ra nó.
+ */
+export function SleepHero({
+  totalMin,
+  targetHours,
+  quality,
+  bedtime,
+  waketime,
+  detailOpen,
+  onToggleDetail,
+  onOpenDetail,
+}: {
+  totalMin: number;
+  targetHours: number;
+  quality: number | null;
+  bedtime?: string | null;
+  waketime?: string | null;
+  detailOpen?: boolean;
+  onToggleDetail?: () => void;
+  onOpenDetail?: () => void;
+}) {
+  const i18n = useI18n();
+  const targetMin = targetHours > 0 ? targetHours * 60 : 1;
+  const hours = Math.round((totalMin / 60) * 10) / 10;
+  const clock = (v?: string | null) => (v ? String(v).slice(11, 16) : '—');
+
+  return (
+    <HeroPanel
+      title={i18n.nSleep}
+      detailOpen={detailOpen}
+      onToggleDetail={onToggleDetail}
+      a11yDetail={i18n.nSleep}
+      more={onOpenDetail ? { label: i18n.nSleep, onPress: onOpenDetail } : undefined}
+      ring={
+        <HeroRing
+          pct={totalMin / targetMin}
+          from={colors.metricPurple}
+          to={colors.metricBlue}
+          value={hours}
+          decimals={1}
+          caption="h"
+          captionColor={colors.mutedForeground}
+          icon={Moon}
+          iconColor={colors.metricPurple}
+        />
+      }>
+      {/* Không dựng một hàng Macro giả cho có ba dòng — giấc ngủ có giờ đi ngủ,
+          giờ dậy và một điểm, và cả ba nằm gọn trong một dòng. Cùng lý do đã
+          viết ở trang nước. */}
+      <Text style={styles.waterLine}>
+        {clock(bedtime)} → {clock(waketime)}
+        {quality != null ? ` · ${Math.round(quality)}/100` : ''}
+      </Text>
+    </HeroPanel>
+  );
+}

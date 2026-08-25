@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { ChevronDown } from 'lucide-react-native';
+import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useEffect, useId } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -10,7 +10,7 @@ import { Expander } from '@/components/ascnd/expander';
 import { Icon } from '@/components/ascnd/icon';
 import type { LucideIcon } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, HERO_RING, spacing, type } from '@/constants/ascnd';
+import { colors, HERO_RING, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 
 /**
@@ -42,6 +42,7 @@ export function HeroPanel({
   onToggleDetail,
   a11yDetail,
   ring,
+  more,
   children,
 }: {
   title: string;
@@ -51,6 +52,24 @@ export function HeroPanel({
   onToggleDetail?: () => void;
   a11yDetail: string;
   ring: React.ReactNode;
+  /**
+   * Đường đi sâu hơn, đặt ở CUỐI phần chi tiết — không phải trên cả tấm thẻ.
+   *
+   * ── vì sao không bọc cả trang trong một Pressable ──
+   *
+   * Nó từng như thế, và phải bấm HAI lần mới đi được. Cả deck nằm trong một
+   * `GestureDetector`, nên một Pressable của React Native bên trong đang đua
+   * với hệ cử chỉ chứ không hợp tác với nó — tài liệu RNGH nói thẳng rằng cử
+   * chỉ lồng nhau phải được COMPOSE (`Race`, `Exclusive`, `requireToFail`), và
+   * hai hệ chạm khác nhau tranh cùng một cú chạm thì không compose được.
+   *
+   * Cách chắc chắn nhất là bỏ sự lồng nhau. Và nó cũng là thiết kế đúng hơn:
+   * một tấm vừa bung ra khi chạm vừa điều hướng khi chạm là hai câu trả lời cho
+   * một cử chỉ, và người dùng không có cách nào biết mình sắp nhận cái nào.
+   * Vòng tròn trả lời "bao nhiêu", mũi tên trả lời "vì sao", và dòng này trả
+   * lời "cho tôi xem tất cả" — ba việc, ba chỗ.
+   */
+  more?: { label: string; onPress: () => void };
   /** the detail, revealed by the chevron */
   children?: React.ReactNode;
 }) {
@@ -99,7 +118,22 @@ export function HeroPanel({
       </PressScale>
 
       <Expander open={detailOpen}>
-        <View style={styles.detail}>{children}</View>
+        <View style={styles.detail}>
+          {children}
+          {more ? (
+            <PressScale
+              accessibilityRole="link"
+              accessibilityLabel={more.label}
+              onPress={() => {
+                Haptics.selectionAsync();
+                more.onPress();
+              }}
+              style={styles.moreRow}>
+              <Text style={styles.moreLabel}>{more.label}</Text>
+              <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+            </PressScale>
+          ) : null}
+        </View>
       </Expander>
     </View>
   );
@@ -238,6 +272,16 @@ const styles = StyleSheet.create({
      it rather than trusting the eye. */
   moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   detail: { gap: spacing.md, alignSelf: 'stretch' },
+  moreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.sm,
+    backgroundColor: 'rgba(255,255,255,0.045)',
+  },
+  moreLabel: { ...type.footnote, color: colors.foreground },
   ringWrap: { alignItems: 'center', justifyContent: 'center' },
   ringCenter: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 2 },
   value: { ...type.largeTitle, color: colors.foreground, fontVariant: ['tabular-nums'] },
