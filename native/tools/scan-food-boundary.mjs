@@ -142,7 +142,7 @@ try {
      const ss = require(path.join(FN, 'shim-serve.js'));
      const bridge = require('./scan-bridge.js');
      const resets = require('./user-scoped-reset.js');
-     sb.__addToken('tokB', { sub: 'bbbbbbbb-2222-2222-2222-222222222222', role: 'authenticated' });
+     sb.__addToken('tokB', { sub: 'bbbbbbbb-2222-2222-2222-222222222222', role: 'authenticated', aud: 'authenticated' });
      sb.__addToken('anonTok', { role: 'anon' });
 
      let sent = [], hosts = [], reply = null, httpFail = null;

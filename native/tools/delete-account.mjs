@@ -188,7 +188,7 @@ try {
        W.users = new Set([A, B]);
        W.files = { [A]: ['a1.jpg', 'a2.jpg'], [B]: ['b1.jpg'] };
        W.log = []; W.fail = {}; W.latency = 0; W.throwDeleteUser = null; W.throwRemove = null;
-       W.tokens = { tokA: { sub: A, role: 'authenticated' }, tokB: { sub: B, role: 'authenticated' },
+       W.tokens = { tokA: { sub: A, role: 'authenticated', aud: 'authenticated' }, tokB: { sub: B, role: 'authenticated', aud: 'authenticated' },
                     anonTok: { role: 'anon' } };
        Object.assign(W, over || {});
      }

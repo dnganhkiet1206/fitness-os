@@ -134,6 +134,7 @@ const STEPS = [
   ['hero khi cuộn', 'node', ['tools/hero-scroll.mjs']],
   ['database của edge function', 'node', ['tools/edge-db.mjs']],
   ['ranh giới AI', 'node', ['tools/ai-boundary.mjs']],
+  ['xác thực edge function', 'node', ['tools/edge-auth.mjs']],
   ['dữ liệu truy vấn', 'node', ['tools/persisted-query.mjs']],
   ['mép lớp nền', 'node', ['tools/aura-edge.mjs']],
   ['số thật của buổi tập', 'node', ['tools/plan-actuals.mjs']],
@@ -291,6 +292,7 @@ const STEPS = [
   */
   ['copy lỗi', 'node', ['tools/error-copy.mjs']],
   ['ranh giới AI', 'node', ['tools/ai-boundary.mjs']],
+  ['xác thực edge function', 'node', ['tools/edge-auth.mjs']],
   ['ranh giới ảnh quét', 'node', ['tools/scan-food-boundary.mjs']],
   ['xoá tài khoản', 'node', ['tools/delete-account.mjs']],
   ['webhook cửa hàng', 'node', ['tools/store-webhook.mjs']],

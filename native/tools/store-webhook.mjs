@@ -131,7 +131,7 @@ try {
        createClient: () => ({ from: table, auth: { getClaims: async () => ({ data: { claims: M._claims } }) } }),
        _rows: rows, _writes: log, _clock: () => 0,
        _reset: () => { rows.clear(); log.length = 0; },
-       _claims: { sub: 'aaaaaaaa-1111-1111-1111-111111111111', role: 'authenticated' },
+       _claims: { sub: 'aaaaaaaa-1111-1111-1111-111111111111', role: 'authenticated', aud: 'authenticated' },
        _setClaims: (c) => { M._claims = c; },
      };
      module.exports = M;`,
@@ -263,9 +263,9 @@ try {
        o.sandboxDefaultHosts = [...new Set(Apple.calls.map((c) => c.env))].join(',');
 
        fresh(); sandboxOnly();
-       sb._setClaims({ sub: B, role: 'authenticated' });
+       sb._setClaims({ sub: B, role: 'authenticated', aud: 'authenticated' });
        o.sandboxVerifyStatus = (await post(verify, { transactionId: 'sbx-1' }, { authorization: 'Bearer t' })).status;
-       sb._setClaims({ sub: A, role: 'authenticated' });
+       sb._setClaims({ sub: A, role: 'authenticated', aud: 'authenticated' });
 
        /* the same two faults through the authenticated door: Apple failing must
           not come back as "Transaction not found", and a caller whose named

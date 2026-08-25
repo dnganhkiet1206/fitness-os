@@ -119,11 +119,24 @@ export async function requireUser(req: Request): Promise<Caller | Response> {
 
   const token = authHeader.replace("Bearer ", "");
   const { data, error } = await supabase.auth.getClaims(token);
-  const claims = data?.claims as { sub?: string; role?: string } | undefined;
+  const claims = data?.claims as { sub?: string; role?: string; aud?: string | string[] } | undefined;
 
   // `sub` is what the anon key lacks; `role` is what tells a user token from
   // a service one. Both, or nothing.
-  if (error || !claims?.sub || claims.role !== "authenticated") {
+  /*
+    `aud` cũng phải là "authenticated", không chỉ `role`.
+
+    Hai claim này thường đi cùng nhau, và chính vì thế mà kiểm một cái rồi bỏ
+    cái kia nghe như đủ. Chúng trả lời hai câu khác nhau: `role` nói token này
+    NÓI nó là gì, `aud` nói token này được cấp CHO AI. Một token được cấp cho
+    một đối tượng khác mà mang role đúng thì vẫn không phải token của app này.
+
+    `aud` có thể là chuỗi hoặc mảng theo chuẩn JWT, nên phải nhận cả hai dạng —
+    kiểm bằng `===` trên một mảng thì luôn sai, và cái sai đó chặn hết mọi người
+    dùng thật.
+  */
+  const aud = Array.isArray(claims?.aud) ? claims.aud : [claims?.aud];
+  if (error || !claims?.sub || claims.role !== "authenticated" || !aud.includes("authenticated")) {
     return json({ error: "Unauthorized" }, 401);
   }
 

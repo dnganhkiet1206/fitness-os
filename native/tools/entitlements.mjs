@@ -117,7 +117,7 @@ try {
      const M = {
        createClient: () => ({ from: table, auth: { getClaims: async () => ({ data: { claims: M._claims } }) } }),
        _rows: rows,
-       _claims: { sub: 'aaaaaaaa-1111-1111-1111-111111111111', role: 'authenticated' },
+       _claims: { sub: 'aaaaaaaa-1111-1111-1111-111111111111', role: 'authenticated', aud: 'authenticated' },
        _setClaims: (c) => { M._claims = c; },
      };
      module.exports = M;`,
@@ -186,7 +186,7 @@ try {
        await post(webhook, notify('EXPIRED', p1));
        o.afterLateExpired = tierOf(A);
 
-       sb._setClaims({ sub: A, role: 'authenticated' });
+       sb._setClaims({ sub: A, role: 'authenticated', aud: 'authenticated' });
        const v1 = await post(verify, { transactionId: 'tx-1' }, { authorization: 'Bearer t' });
        o.afterVerifyWithOldTxn = tierOf(A);
        o.verifyOldStatus = v1.status;
@@ -207,17 +207,17 @@ try {
        await post(webhook, notify('DID_RENEW', p2));
 
        /* cross-account: B sends A's transaction */
-       sb._setClaims({ sub: B, role: 'authenticated' });
+       sb._setClaims({ sub: B, role: 'authenticated', aud: 'authenticated' });
        const r = await post(verify, { transactionId: 'tx-2' }, { authorization: 'Bearer t' });
        o.crossAccountStatus = r.status;
        o.crossAccountGranted = tierOf(B);
-       sb._setClaims({ sub: A, role: 'authenticated' });
+       sb._setClaims({ sub: A, role: 'authenticated', aud: 'authenticated' });
 
        /* an anon key: a signed project token with no subject */
        sb._setClaims({ role: 'anon' });
        o.anonStatus = (await post(verify, { transactionId: 'tx-2' }, { authorization: 'Bearer anon' })).status;
        o.noAuthStatus = (await post(verify, { transactionId: 'tx-2' })).status;
-       sb._setClaims({ sub: A, role: 'authenticated' });
+       sb._setClaims({ sub: A, role: 'authenticated', aud: 'authenticated' });
 
        /* an appAccountToken that cannot name a row, and one naming nobody */
        const bad = { ...p2, transactionId: 'tx-b', originalTransactionId: 'orig-b', appAccountToken: 'not-a-uuid' };
