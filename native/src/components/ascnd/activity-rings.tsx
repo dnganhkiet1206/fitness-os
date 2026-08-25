@@ -258,6 +258,7 @@ export function ActivityRingsCard({
       {/* Cùng cách vào như thẻ sẵn sàng — xem ghi chú ở đó về vì sao nó XOAY chứ
           không đổi icon. */}
       <PressScale
+          inGesture
         accessibilityRole="button"
         accessibilityState={{ expanded: detailOpen }}
         accessibilityLabel={i18n.dcActivity}

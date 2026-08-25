@@ -103,6 +103,7 @@ export function HeroPanel({
         place — a toggle, a chevron flip".
       */}
       <PressScale
+          inGesture
         accessibilityRole="button"
         accessibilityState={{ expanded: detailOpen }}
         accessibilityLabel={a11yDetail}
@@ -122,6 +123,7 @@ export function HeroPanel({
           {children}
           {more ? (
             <PressScale
+          inGesture
               accessibilityRole="link"
               accessibilityLabel={more.label}
               onPress={() => {

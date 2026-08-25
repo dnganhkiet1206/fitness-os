@@ -382,6 +382,7 @@ export function ReadinessGauge({
         place — a toggle, a chevron flip".
       */}
       <PressScale
+          inGesture
         accessibilityRole="button"
         accessibilityState={{ expanded: detailOpen }}
         accessibilityLabel={vi ? 'Chi tiết điểm sẵn sàng' : 'Readiness details'}
@@ -477,6 +478,7 @@ export function ReadinessGauge({
           về vì sao nó không còn là một Pressable bọc cả tấm thẻ. */}
       {onOpenDetail ? (
         <PressScale
+          inGesture
           accessibilityRole="link"
           accessibilityLabel={vi ? 'Xem sinh trắc học' : 'Open biometrics'}
           onPress={() => {

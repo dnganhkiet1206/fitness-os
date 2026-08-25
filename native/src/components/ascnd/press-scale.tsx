@@ -1,31 +1,41 @@
 import * as Haptics from 'expo-haptics';
-import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable as RNPressable,
+  StyleSheet,
+  type PressableProps,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 /*
-  `Pressable` của gesture-handler, không phải của React Native.
+  Hai bản Pressable, và việc chọn giữa chúng là một phạm vi chứ không phải một
+  sở thích.
 
-  ── lỗi nó sửa ──
+  ── vì sao cần bản của gesture-handler ──
 
-  Deck ở đầu Today nằm trong một `GestureDetector`. Mọi `Pressable` của React
+  Deck ở đầu Today nằm trong một `GestureDetector`. Một `Pressable` của React
   Native bên trong đó ĐUA với hệ cử chỉ chứ không hợp tác: hai hệ chạm khác nhau
-  cùng đòi một cú chạm, và cú chạm đầu tiên bị nuốt. Trên máy thật là phải bấm
-  hai lần mới đi được — rồi cả hai lần cũng không đi.
+  cùng đòi một cú chạm, và cú chạm đầu tiên bị nuốt. Trên máy thật là bấm hai
+  lần vẫn không đi được.
 
-  Tôi đã thử sửa bằng cách bỏ Pressable bọc cả thẻ. Nó không sửa được gì, vì
-  mũi tên và dòng "xem chi tiết" cũng là Pressable nằm trong đúng cái
-  GestureDetector đó — tôi chỉ DỜI chỗ của lỗi.
+  ── vì sao KHÔNG đổi cả app ──
 
-  Tài liệu RNGH nói thẳng: `Pressable` của họ là bản thay thế drop-in dành cho
-  app đã bọc `GestureHandlerRootView`, và app này đã bọc từ vòng sửa
-  `gesture-root.mjs`. Đổi ở ĐÂY chứ không ở từng chỗ gọi, vì gần ba trăm chỗ
-  trong app đi qua component này và không chỗ nào trong số đó nên phải biết về
-  chuyện này.
+  Tôi đã đổi cả app, và bộ chạy bắt được ngay: BỐN kịch bản hỏng cùng lúc, tất
+  cả đều là "bấm mà không có gì xảy ra" — nút Sign In, viên chọn segmented, nút
+  đổi ngôn ngữ, tab ở màn Tiến trình. Không cái nào nằm trong một
+  GestureDetector. Tôi đã sửa một lỗi ở một chỗ bằng cách đổi nền móng của gần
+  ba trăm chỗ khác.
+
+  Nên bản của gesture-handler chỉ dùng ở nơi có lý do dùng: `inGesture`. Mặc
+  định là bản React Native, thứ ba trăm chỗ kia đã chạy đúng từ đầu.
 */
-import { Pressable, type PressableProps } from 'react-native-gesture-handler';
+import { Pressable as GHPressable } from 'react-native-gesture-handler';
+
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { press } from '@/constants/motion';
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const AnimatedRN = Animated.createAnimatedComponent(RNPressable);
+const AnimatedGH = Animated.createAnimatedComponent(GHPressable);
 
 /**
  * A thing you press that presses back.
@@ -73,8 +83,12 @@ export function PressScale({
   onPressIn,
   onPressOut,
   onPress,
+  inGesture = false,
   ...rest
 }: Omit<PressableProps, 'style'> & {
+  /** dùng bản Pressable của gesture-handler — chỉ khi nằm trong một
+   *  `GestureDetector`; xem ghi chú ở đầu file về vì sao không phải mặc định */
+  inGesture?: boolean;
   style?: StyleProp<ViewStyle>;
   /** the depth of the press; the default is the one the app speaks with */
   to?: number;
@@ -119,8 +133,19 @@ export function PressScale({
     opacity: baseOpacity * (1 - t.value * (1 - press.opacity)),
   }));
 
+  /*
+    Ép kiểu, và đây là lý do chứ không phải để cho qua tsc.
+
+    Hai bản Pressable nhận cùng những prop này ở RUNTIME, nhưng khai kiểu sự
+    kiện khác nhau: React Native dùng `GestureResponderEvent`, gesture-handler
+    dùng `PressableEvent`. Component này không đọc sự kiện — nó chỉ chuyển tiếp
+    — nên khác biệt đó không chạm tới gì ở đây, và ba trăm chỗ gọi vẫn viết theo
+    kiểu React Native như từ trước tới nay.
+  */
+  const Base = (inGesture ? AnimatedGH : AnimatedRN) as typeof AnimatedRN;
+
   return (
-    <AnimatedPressable
+    <Base
       {...rest}
       disabled={disabled}
       style={[style, animated]}
@@ -140,6 +165,6 @@ export function PressScale({
         onPress?.(e);
       }}>
       {children}
-    </AnimatedPressable>
+    </Base>
   );
 }
