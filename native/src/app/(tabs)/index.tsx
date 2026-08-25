@@ -85,6 +85,7 @@ import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { CardDeck } from '@/components/ascnd/card-deck';
+import { NutritionHero, WaterHero } from '@/components/ascnd/hero-pages';
 import { HERO_DECK, recordHeight } from '@/lib/widget-heights';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
@@ -375,6 +376,10 @@ export default function TodayScreen() {
     [config.heroWidgets, readinessScore, readinessStatus],
   );
 
+  /* Cùng một khoá vẽ ra hai hình dạng tuỳ chỗ nó đứng, và câu hỏi "nó đứng ở
+     đâu" chỉ có một chỗ trả lời. */
+  const inHero = (key: WidgetKey) => config.heroWidgets.includes(key);
+
   const renderWidget = (key: WidgetKey): React.ReactNode => {
     switch (key) {
       case 'readiness':
@@ -441,6 +446,23 @@ export default function TodayScreen() {
       case 'steps':
         return <StepsWidget steps={steps} target={stepsGoal} labels={{ title: lang === 'vi' ? 'Bước đi' : 'Steps' }} />;
       case 'nutrition':
+        /* Trong deck thì mang vỏ hero. Thẻ danh sách bên dưới vẫn còn nguyên và
+           vẫn đúng: ai dời nutrition xuống một nhóm ở chế độ sửa sẽ nhận lại nó.
+           Hai hình dạng cho hai chỗ, không phải hai bản của một thứ — xem ghi
+           chú đầu `hero-pages.tsx`. */
+        if (inHero(key)) {
+          return (
+            <NutritionHero
+              kcal={kcal}
+              calorieTarget={calorieTarget}
+              protein={Number(dailyLog?.protein_g) || 0}
+              carbs={Number(dailyLog?.carbs_g) || 0}
+              fat={Number(dailyLog?.fat_g) || 0}
+              detailOpen={heroOpen}
+              onToggleDetail={toggleHero}
+            />
+          );
+        }
         // Both states open the Nutrition tab, whose first segment is the day's
         // diary — the numbers on this card, and under them the meals they came
         // from. The card used to be inert when it had something to say and a
@@ -466,6 +488,16 @@ export default function TodayScreen() {
           </PressScale>
         );
       case 'water':
+        if (inHero(key)) {
+          return (
+            <WaterHero
+              ml={waterMl ?? 0}
+              targetMl={waterTarget}
+              detailOpen={heroOpen}
+              onToggleDetail={toggleHero}
+            />
+          );
+        }
         return <WaterWidget ml={waterMl ?? 0} targetMl={waterTarget} labels={{ title: lang === 'vi' ? 'Nước uống' : 'Water' }} />;
       case 'supplements':
         return <SupplementChecklistCard />;
