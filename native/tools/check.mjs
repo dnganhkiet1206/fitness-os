@@ -132,6 +132,7 @@ const STEPS = [
   ['hiệu ứng thu lại', 'node', ['tools/retract.mjs']],
   ['gốc cử chỉ', 'node', ['tools/gesture-root.mjs']],
   ['hero khi cuộn', 'node', ['tools/hero-scroll.mjs']],
+  ['database của edge function', 'node', ['tools/edge-db.mjs']],
   ['dữ liệu truy vấn', 'node', ['tools/persisted-query.mjs']],
   ['mép lớp nền', 'node', ['tools/aura-edge.mjs']],
   ['số thật của buổi tập', 'node', ['tools/plan-actuals.mjs']],

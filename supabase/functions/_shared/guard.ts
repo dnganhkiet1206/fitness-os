@@ -23,6 +23,37 @@
 
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+/**
+ * Database nằm ở đâu — cho một function có thể KHÔNG được deploy cạnh nó.
+ *
+ * ── vì sao cần ba biến này ──
+ *
+ * Sáu function AI gọi `ai.gateway.lovable.dev`, và khoá của gateway đó nằm sẵn
+ * dưới dạng secret trong project Lovable cũ. Lovable không cho xem lại khoá, nên
+ * deploy chúng sang project mới là không làm được: sẽ không có gì để đặt vào
+ * LOVABLE_API_KEY.
+ *
+ * Đường còn lại là để chúng ở project cũ và trỏ vào database MỚI. Nhưng
+ * `SUPABASE_URL`, `SUPABASE_ANON_KEY` và `SUPABASE_SERVICE_ROLE_KEY` do nền tảng
+ * tự tiêm và luôn trỏ về project chứa function — không đặt đè được, và cũng
+ * không nên: chúng là danh tính của chính runtime đó.
+ *
+ * Nên ba tên riêng, mỗi cái có FALLBACK về biến nền tảng. Không đặt gì thì mọi
+ * thứ chạy y như cũ; đặt vào thì function đọc database khác. Ngày các function
+ * này về được project mới, xoá secret là xong, không phải sửa một dòng code.
+ *
+ * ── và vì sao cả BA, không phải chỉ URL ──
+ *
+ * `requireUser` bên dưới xác thực token của người gọi bằng chính client này.
+ * Token do project MỚI cấp, nên nó chỉ verify được ở project mới. Dời địa chỉ
+ * mà giữ khoá cũ thì mọi request đều 401 — xác thực và truy vấn phải dời cùng
+ * nhau hoặc không dời gì cả.
+ */
+const env = (own: string, platform: string) => Deno.env.get(own) ?? Deno.env.get(platform)!;
+export const dbUrl = () => env("ASCND_DB_URL", "SUPABASE_URL");
+export const dbAnonKey = () => env("ASCND_DB_ANON_KEY", "SUPABASE_ANON_KEY");
+export const dbServiceKey = () => env("ASCND_DB_SERVICE_KEY", "SUPABASE_SERVICE_ROLE_KEY");
+
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -53,8 +84,8 @@ export async function requireUser(req: Request): Promise<Caller | Response> {
   if (!authHeader?.startsWith("Bearer ")) return json({ error: "Missing auth" }, 401);
 
   const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
+    dbUrl(),
+    dbAnonKey(),
     { global: { headers: { Authorization: authHeader } } },
   );
 

@@ -99,7 +99,13 @@ const sql = readdirSync(path.join(REPO, 'supabase', 'migrations'))
   if (!/\[\\n\\r\]/.test(code)) {
     problems.push(`${EXTRACTOR}: không chặn xuống dòng trong fact — nhiều dòng là một đoạn chỉ dẫn, không phải một dữ kiện`);
   }
-  if (!/SUPABASE_SERVICE_ROLE_KEY/.test(code)) {
+  /* Khoá service role, dù đọc bằng tên nào.
+
+     Luật này từng khớp chuỗi `SUPABASE_SERVICE_ROLE_KEY` nguyên văn. File đó nay
+     lấy khoá qua `dbServiceKey()` — một phép phân giải có fallback đúng về biến
+     ấy, để function chạy được ở project khác với database nó ghi. Hành vi không
+     đổi một chút nào, mà luật vẫn đỏ: nó đang canh cách viết một cái tên. */
+  if (!/SUPABASE_SERVICE_ROLE_KEY|dbServiceKey\(\)/.test(code)) {
     problems.push(`${EXTRACTOR}: không dùng service role — bảng không có policy INSERT nên ghi bằng token người dùng sẽ hỏng`);
   }
   if (!/claimCall\(supabase, "ai-coach-memory"\)/.test(code)) {

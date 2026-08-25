@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { claimCall, corsHeaders, json, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { claimCall, corsHeaders, dbServiceKey, dbUrl, json, quotaExceeded, requireUser } from "../_shared/guard.ts";
 
 /**
  * What the coach should still know next week.
@@ -330,9 +330,11 @@ serve(async (req) => {
     /* The service role, because `coach_memory` has no INSERT policy for user
        tokens — these rows go into a system prompt and a client that could write
        them could rewrite the coach's instructions. */
+    /* Cùng cách phân giải với `requireUser` — xem ghi chú ở `_shared/guard.ts`:
+       function này có thể đang chạy ở một project khác với database nó ghi. */
     const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      dbUrl(),
+      dbServiceKey(),
     );
 
     const now = new Date().toISOString();
