@@ -1,3 +1,4 @@
+import { aiKey, aiUrl, aiModel } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -55,7 +56,7 @@ import { claimCall, corsHeaders, dbServiceKey, dbUrl, json, quotaExceeded, requi
  * the reply is small no matter how much is on file.
  */
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const AI_KEY = aiKey();
 
 /** A conversation is not an essay, and neither is the part we pay to read. */
 const MAX_TURNS = 24;
@@ -250,7 +251,7 @@ serve(async (req) => {
     if (caller instanceof Response) return caller;
     const { userId, supabase } = caller;
 
-    if (!LOVABLE_API_KEY) return json({ error: "AI not configured" }, 500);
+    if (!AI_KEY) return json({ error: "AI not configured" }, 500);
 
     const body = await req.json();
     const turns = userTurns(body?.messages);
@@ -279,11 +280,11 @@ serve(async (req) => {
       .limit(MAX_FACTS);
     const onFile = (existing ?? []) as { id: string; kind: string; fact: string }[];
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch(aiUrl(), {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${AI_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: aiModel(),
         messages: [
           { role: "system", content: PROMPT },
           {

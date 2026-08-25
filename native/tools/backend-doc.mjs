@@ -41,12 +41,20 @@ const problems = [];
     sentence reads better for it. */
 const VN = { một: 1, hai: 2, ba: 3, bốn: 4, năm: 5, sáu: 6, bảy: 7, tám: 8, chín: 9, mười: 10 };
 
-/** How many edge functions actually call the Lovable AI gateway. */
+/**
+ * Bao nhiêu edge function thật sự gọi cổng AI.
+ *
+ * Đếm theo `aiUrl()`, không theo tên miền viết cứng. Nhà cung cấp nay nằm một
+ * chỗ (`_shared/ai.ts`) vì Lovable chỉ là dàn xếp cho giai đoạn phát triển —
+ * khi publish, khoá là của người dùng tự mua. Đếm theo tên miền nghĩa là con số
+ * này về 0 đúng lúc việc gom lại thành công, và tài liệu sẽ bị báo sai vì một
+ * bản refactor đúng.
+ */
 const aiCount = readdirSync(path.join(ROOT, 'supabase/functions'))
   .filter((f) => f !== '_shared' && statSync(path.join(ROOT, 'supabase/functions', f)).isDirectory())
   .filter((f) => {
     try {
-      return /ai\.gateway\.lovable\.dev/.test(readFileSync(path.join(ROOT, 'supabase/functions', f, 'index.ts'), 'utf8'));
+      return /aiUrl\(\)|ai\.gateway\.lovable\.dev/.test(readFileSync(path.join(ROOT, 'supabase/functions', f, 'index.ts'), 'utf8'));
     } catch {
       return false;
     }

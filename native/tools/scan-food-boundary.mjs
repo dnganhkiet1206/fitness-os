@@ -75,6 +75,9 @@ try {
   mkdirSync(fnDir, { recursive: true });
   copyFileSync(path.join(REPO, 'supabase/functions/scan-food/index.ts'), path.join(fnDir, 'scan-food.ts'));
   copyFileSync(path.join(REPO, 'supabase/functions/_shared/guard.ts'), path.join(fnDir, 'guard.ts'));
+  /* `_shared/ai.ts` — nhà cung cấp AI nay nằm một chỗ, nên bản dựng thử cũng
+     phải mang nó theo. */
+  copyFileSync(path.join(REPO, 'supabase/functions/_shared/ai.ts'), path.join(fnDir, 'ai.ts'));
   for (const f of ['scan-food.ts', 'guard.ts']) {
     const p = path.join(fnDir, f);
     writeFileSync(
@@ -82,7 +85,8 @@ try {
       readFileSync(p, 'utf8')
         .replace('https://deno.land/std@0.168.0/http/server.ts', './shim-serve.js')
         .replace('https://esm.sh/@supabase/supabase-js@2', './shim-sb.js')
-        .replaceAll('"../_shared/guard.ts"', '"./guard.ts"'),
+        .replaceAll('"../_shared/guard.ts"', '"./guard.ts"')
+        .replaceAll('"../_shared/ai.ts"', '"./ai.ts"'),
     );
   }
   writeFileSync(

@@ -98,13 +98,18 @@ try {
     js,
     readFileSync(js, 'utf8')
       .replace(/require\("https:\/\/deno\.land\/[^"]+"\)/g, 'require("../serve.cjs")')
-      .replace(/require\("\.\.\/_shared\/guard\.ts"\)/g, 'require("../guard.cjs")'),
+      .replace(/require\("\.\.\/_shared\/guard\.ts"\)/g, 'require("../guard.cjs")')
+      .replace(/require\("\.\.\/_shared\/ai\.ts"\)/g, 'require("../ai.cjs")'),
   );
   writeFileSync(path.join(out, 'serve.cjs'), 'module.exports = { serve: () => {} };');
   writeFileSync(
     path.join(out, 'guard.cjs'),
     'module.exports = { corsHeaders: {}, json: () => {}, requireUser: async () => ({}), claimCall: async () => true, quotaExceeded: () => {} };',
   );
+  /* `_shared/ai.ts` — nhà cung cấp AI nay nằm một chỗ, nên bản dựng thử
+     cũng phải biết tới nó. */
+  writeFileSync(path.join(out, 'ai.cjs'), 'module.exports = { aiUrl: () => "https://ai.example/v1/chat/completions", aiKey: () => "k", aiModel: () => "m", aiVisionModel: () => "mv" };');
+
 
   const drive = path.join(out, 'drive.cjs');
   writeFileSync(

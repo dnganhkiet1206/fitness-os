@@ -1,3 +1,4 @@
+import { aiKey, aiUrl, aiVisionModel } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import {
@@ -134,9 +135,9 @@ serve(async (req) => {
 
     if (!(await claimCall(supabase, "scan-food"))) return quotaExceeded();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const AI_KEY = aiKey();
+    if (!AI_KEY) {
+      throw new Error("AI key not configured — set ASCND_AI_KEY or LOVABLE_API_KEY");
     }
 
     const modeInstructions: Record<string, string> = {
@@ -220,15 +221,15 @@ ${
     };
 
     const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      aiUrl(),
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: `Bearer ${AI_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: aiVisionModel(),
           messages: [
             { role: "system", content: systemPrompt },
             {

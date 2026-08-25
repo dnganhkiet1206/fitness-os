@@ -164,6 +164,12 @@ const sql = readdirSync(path.join(REPO, 'supabase', 'migrations'))
   const out = mkdtempSync(path.join(tmpdir(), 'memory-'));
   const src =
     'const Deno = { env: { get: (_k: string): string | undefined => undefined } };\n' +
+    /* Các import bị cắt bỏ ở dòng dưới, nên mọi thứ chúng mang vào phải được
+       khai lại ở đây — `aiKey()` được gọi ở phạm vi module nên thiếu nó là tsc
+       hỏng ngay, chứ không phải hỏng lúc chạy. */
+    'const aiKey = (): string | undefined => undefined;\n' +
+    'const dbUrl = (): string => "";\n' +
+    'const dbServiceKey = (): string => "";\n' +
     read(EXTRACTOR)
       .replace(/^import .*$/gm, '')
       .replace(/^serve\(async[\s\S]*$/m, '');

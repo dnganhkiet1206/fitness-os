@@ -80,6 +80,52 @@ const problems = [];
   }
 }
 
+/* ── 3. nhà cung cấp AI chỉ được biết ở MỘT chỗ ──
+
+   Endpoint, khoá và tên model từng viết cứng trong sáu function. Cái giá không
+   phải hôm nay mà là ngày đổi nhà cung cấp — Lovable chỉ là dàn xếp cho giai
+   đoạn phát triển, khoá thật sẽ là khoá người dùng tự mua. Sáu bản sao nghĩa là
+   sửa sáu file và tin rằng mình không sót cái nào, mà cái sót thì KHÔNG lỗi: nó
+   lặng lẽ tiếp tục gọi và tính tiền vào tài khoản cũ. */
+{
+  const ai = strip(read('_shared/ai.ts'));
+  for (const fn of ['aiUrl', 'aiKey', 'aiModel', 'aiVisionModel']) {
+    if (!new RegExp(`export const ${fn} = `).test(ai)) {
+      problems.push(`_shared/ai.ts: thiếu ${fn}()`);
+    }
+  }
+  /* Mặc định phải là bản đang chạy. Một bản gom lại không được đổi hành vi hôm
+     nay để đổi lấy sự tiện lợi ngày mai. */
+  if (!/ai\.gateway\.lovable\.dev/.test(ai)) {
+    problems.push('_shared/ai.ts: endpoint mặc định không còn là gateway đang dùng — bản gom lại đã đổi hành vi');
+  }
+
+  for (const d of readdirSync(DIR)) {
+    if (d === '_shared') continue;
+    let code;
+    try {
+      code = strip(read(`${d}/index.ts`));
+    } catch {
+      continue;
+    }
+    if (/lovable\.dev/.test(code)) {
+      problems.push(`${d}/index.ts: viết cứng endpoint nhà cung cấp — dùng aiUrl() trong _shared/ai.ts`);
+    }
+    if (/Deno\.env\.get\("LOVABLE_API_KEY"\)/.test(code)) {
+      problems.push(`${d}/index.ts: đọc thẳng LOVABLE_API_KEY — dùng aiKey(), thứ nhận cả khoá thay thế`);
+    }
+    /* Chỉ trong THÂN request gửi đi, và chỉ khi nó là một chuỗi.
+
+       Bản đầu của luật này bắt `model:\s*"` ở bất kỳ đâu, và phá thử cho thấy
+       nó lọt: sau khi gom lại, tên model nằm trong một template literal
+       (`"model": "${aiModel()}"`), nên dấu nháy sau `model:` vẫn còn và luật
+       vẫn thấy đúng thứ nó tìm. Nó đang khớp dấu câu chứ không khớp giá trị. */
+    if (/["']?model["']?\s*:\s*["'][a-z0-9][^"'$]*["']/i.test(code)) {
+      problems.push(`${d}/index.ts: viết cứng tên model — dùng aiModel() hoặc aiVisionModel()`);
+    }
+  }
+}
+
 if (problems.length) {
   console.log('database của edge function CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);
