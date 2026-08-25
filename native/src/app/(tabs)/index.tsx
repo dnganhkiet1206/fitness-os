@@ -27,7 +27,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import Animated, {
+  runOnJS,
+  useAnimatedScrollHandler,
   FadeIn,
   FadeInDown,
   FadeOut,
@@ -240,6 +243,29 @@ export default function TodayScreen() {
    * State nằm ở đây chứ không trong thẻ, vì thứ nó điều khiển nằm ở đây.
    */
   const [heroOpen, setHeroOpen] = useState(false);
+
+  /**
+   * Trang đã cuộn được bao xa, đọc trên UI thread.
+   *
+   * Cần nó để phần dưới TRƯỢT ĐÈ lên hero thay vì hai thứ cùng đi lên một tốc
+   * độ. `onScroll` thường của React Native trả về ở JS thread, và một hiệu ứng
+   * bám ngón tay chạy qua đó thì trễ đúng một nhịp — thấy được, và đúng thứ
+   * `swipe-row.tsx` đã ghi: một chỉ báo tường thuật KẾT QUẢ của cử chỉ là một
+   * cảm giác khác hẳn với một chỉ báo tường thuật CỬ CHỈ.
+   */
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+    /* Thanh tab vẫn cần con số này ở JS thread — nó ẩn/hiện bằng state React. */
+    runOnJS(handleTabScroll)(e.contentOffset.y);
+  });
+
+  /* Hero đi xuống bằng NỬA tốc độ trang đi lên, nên tấm nội dung bò lên che dần
+     nó. Một tỉ lệ, không phải một khoảng cách: mọi chiều cao màn hình đều cho
+     ra cùng một cảm giác. */
+  const heroSlide = useAnimatedStyle(() => ({
+    transform: [{ translateY: scrollY.value * 0.5 }],
+  }));
   const toggleHero = useCallback(() => {
     Haptics.selectionAsync();
     setHeroOpen((v) => !v);
@@ -562,7 +588,7 @@ export default function TodayScreen() {
       ) : (
         <ReadinessAura status={readinessScore != null ? readinessStatus : null} />
       )}
-      <ScrollView
+      <Animated.ScrollView
       // Transparent, not `styles.root` as before. The wrapper already paints
       // the page colour; painting it again here would paint straight over the
       // light and this change would do nothing at all.
@@ -604,7 +630,7 @@ export default function TodayScreen() {
           progressViewOffset={insets.top + 12}
         />
       }
-      onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}
+      onScroll={onScroll}
       scrollEventThrottle={16}
       contentInsetAdjustmentBehavior="never">
       {/* Greeting + actions (web Index header) */}
@@ -704,7 +730,7 @@ export default function TodayScreen() {
           ) : null}
           {dayPending || dayFailed || config.heroWidgets.length === 0 ? null : (
             <Animated.View
-              style={styles.heroFull}
+              style={[styles.heroFull, heroSlide]}
               onLayout={(e) => recordHeight(HERO_DECK, e.nativeEvent.layout.height)}
               entering={FadeInDown.springify().damping(26).stiffness(180)}>
               <CardDeck progress={deckAt}>
@@ -723,6 +749,27 @@ export default function TodayScreen() {
             dashboard bên dưới vòng tròn. Hiệu ứng ra/vào lo phần chuyển động;
             việc gỡ khỏi cây lo phần chiều cao.
           */}
+          {/*
+            Tấm nội dung, trượt ĐÈ lên hero.
+
+            Hero đi xuống bằng nửa tốc độ trang đi lên, nên khi bạn vuốt, tấm
+            này bò lên và phủ dần vòng tròn. Mép trên bo tròn và một lề âm cho
+            nó bắt đầu ở TRONG hero — nếu nó bắt đầu ở ngay dưới, thì lúc đứng
+            yên vẫn có một đường ranh giới, và cả việc này sinh ra là để không
+            còn đường nào.
+
+            Nền là BLUR, không phải một lớp phủ đục. Thứ nằm sau tấm này là vòng
+            tròn và lớp aura có màu; một lớp phủ đục sẽ xoá chúng, còn blur giữ
+            lại hình và màu ở dạng đã nhoè — nên chữ trên tấm đọc được mà vẫn
+            thấy mình đang nằm TRÊN cái gì. Đó đúng là "để thông tin không bị lẫn
+            với thẻ".
+
+            `liquid-glass.tsx` đã ghi vì sao không dùng một lớp fill trắng ở đây:
+            "a flat white fill over moving colour is a sheet of tracing paper:
+            the light goes under it and nothing comes through."
+          */}
+          <View style={styles.sheet}>
+            <BlurView intensity={26} tint="dark" style={StyleSheet.absoluteFill} />
           {!heroOpen ? (
             <Animated.View
               style={styles.rest}
@@ -851,6 +898,7 @@ export default function TodayScreen() {
               ))}
             </View>
           ))}
+          </View>
         </>
       )}
 
@@ -960,7 +1008,7 @@ export default function TodayScreen() {
           </PressScale>
         </>
       )}
-      </ScrollView>
+      </Animated.ScrollView>
       {/*
         Last child, after the scroll view: siblings stack in source order, so a
         strip written above it would be painted underneath and cover nothing.
@@ -1035,10 +1083,43 @@ const styles = StyleSheet.create({
   /* Cancels the page's own horizontal padding so the deck reaches both edges.
      Tied to the same token the padding uses, not a second copy of the number —
      change `content` and this follows it. */
-  heroFull: { marginHorizontal: -spacing.md },
+  heroFull: {
+    marginHorizontal: -spacing.md,
+    /*
+      Chỗ cho tấm nội dung đè lên, và nó phải là KHOẢNG TRỐNG chứ không phải
+      hàng pip.
+
+      Tấm bắt đầu ở trong hero bằng một lề âm. Không có phần đệm này thì thứ nó
+      đè lên đầu tiên là hàng chấm chỉ trang — đo trên ảnh: pip bị cắt còn một
+      chấm mờ. Đệm đúng bằng độ chồng lấn thì hàng pip bị đẩy lên khỏi vùng bị
+      che, và tấm ăn vào nền chứ không ăn vào điều khiển.
+    */
+    paddingBottom: spacing.xl,
+  },
   /* Cùng khoảng cách dọc mà `content` cấp, vì khối này thay chỗ cho các con
      trực tiếp của nó chứ không thêm một tầng bố cục mới. */
   rest: { gap: spacing.md },
+  /*
+    Mép trên bo tròn, và một lề ÂM để nó bắt đầu ở trong hero.
+
+    `overflow: 'hidden'` là bắt buộc chứ không phải để cho gọn: không có nó thì
+    lớp blur tràn ra ngoài bốn góc bo và cái bo tròn không còn nghĩa gì.
+
+    Lề ngang âm cho tấm chạm hai mép màn hình giống hero — một tấm hẹp hơn thứ
+    nó đang đè lên sẽ để lộ hai dải hero ở hai bên và thành ba đường thẳng đứng
+    thay vì một mặt phẳng.
+  */
+  sheet: {
+    marginHorizontal: -spacing.md,
+    marginTop: -spacing.xl,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.md,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    overflow: 'hidden',
+  },
 
   // Header (web: date 13px muted / greeting 22px bold, name silver)
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
