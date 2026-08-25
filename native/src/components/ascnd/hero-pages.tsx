@@ -61,7 +61,7 @@ export function NutritionHero({
           pct={kcal / target}
           from={colors.readinessGreen}
           to={colors.metricOrange}
-          value={String(Math.round(kcal))}
+          value={Math.round(kcal)}
           /* Còn lại, không phải mục tiêu. Mục tiêu là con số bạn đã biết; số
              còn lại là con số quyết định bữa tới ăn gì. */
           caption={`${left} ${i18n.nKcalLeft}`}
@@ -114,7 +114,10 @@ export function WaterHero({
           pct={ml / target}
           from={colors.metricBlue}
           to={colors.metricCyan}
-          value={`${displayVolume(ml, unit)}`}
+          value={displayVolume(ml, unit)}
+          /* `displayVolume` làm tròn ml về số nguyên và oz về một chữ số thập
+             phân — nên số lẻ chỉ tồn tại ở oz. */
+          decimals={unit === 'oz' ? 1 : 0}
           caption={volumeLabel(unit)}
           captionColor={colors.mutedForeground}
         />

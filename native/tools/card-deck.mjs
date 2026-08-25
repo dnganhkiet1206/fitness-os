@@ -76,6 +76,26 @@ const num = (name) => {
   }
 }
 
+/* ── 1b. trang không được vay chiều cao của sân khấu ──
+
+   Đặt cả `top` lẫn `bottom` trên trang làm chiều cao trang lấy từ sân khấu,
+   trong khi chiều cao sân khấu lại đo từ nội dung trang. Vòng lặp chết: sân
+   khấu 0 → trang 0 → đo ra 0 → sân khấu vẫn 0. Trên máy thật nó ra một khoảng
+   trống với mấy cái pip nằm dưới, và tsc sạch, và bộ chạy web báo OK vì màn
+   không TRẮNG — nó chỉ rỗng ở đúng một chỗ.
+
+   Các trang bằng nhau vì chúng dùng chung một vỏ (`hero-panel.tsx`), không vì
+   một ràng buộc bố cục. */
+{
+  const page = src.match(/page:\s*\{([^}]*)\}/);
+  if (page && /\bbottom:/.test(page[1])) {
+    problems.push(
+      `${DECK}: style \`page\` đặt bottom cùng với top — chiều cao trang sẽ lấy từ sân khấu, mà sân ` +
+        'khấu lại đo từ trang. Deck sẽ không vẽ ra gì. Các trang bằng nhau nhờ hero-panel.tsx',
+    );
+  }
+}
+
 /* ── 2. màu nền chạy theo cùng một giá trị với các trang ── */
 {
   if (!/progress\?:\s*SharedValue<number>/.test(src)) {

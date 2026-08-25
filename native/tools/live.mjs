@@ -275,9 +275,38 @@ async function openPage(chromium, route, mode, settleMs = 9000) {
   return { browser, page, errors };
 }
 
+/**
+ * Everything on the page a person can read — including what `innerText` cannot.
+ *
+ * ── the blind spot this closes ──
+ *
+ * `AnimatedNumber` renders a `TextInput`, because a number that counts up has
+ * to be written on the UI thread and a `<Text>` cannot be. On web that is an
+ * `<input>`, and an input's value is an ATTRIBUTE, not text content — so
+ * `body.innerText` has never contained a single one of this app's headline
+ * figures. Readiness 74, today's calories, the water total: all invisible to
+ * the harness, all perfectly visible to a person.
+ *
+ * That is not only why the canary started failing. It means `BAD_TEXT` — the
+ * scan for NaN, undefined, [object Object] — was never able to see the numbers
+ * most likely to become NaN. A whole class of the bug this runner exists to
+ * catch was outside its reach.
+ */
+async function readable(page) {
+  const body = await page.locator('body').innerText().catch(() => '');
+  const fields = await page
+    .evaluate(() =>
+      [...document.querySelectorAll('input, textarea')]
+        .map((el) => (el.value ?? '').toString().trim())
+        .filter(Boolean),
+    )
+    .catch(() => []);
+  return fields.length ? `${body}\n${fields.join('\n')}` : body;
+}
+
 async function boot(chromium, route, mode, settleMs = 9000) {
   const { browser, page, errors } = await openPage(chromium, route, mode, settleMs);
-  const text = await page.locator('body').innerText().catch(() => '');
+  const text = await readable(page);
   const rootLen = await page.evaluate(() => document.getElementById('root')?.innerHTML?.length ?? 0);
   if (wantShots) {
     mkdirSync(path.join(SHOTS, mode), { recursive: true });
@@ -301,7 +330,15 @@ async function snapshot(page) {
   return page.evaluate(() => ({
     url: location.pathname,
     len: document.getElementById('root')?.innerHTML?.length ?? 0,
-    text: (document.body.innerText || '').replace(/\s+/g, ' ').slice(0, 4000),
+    /* Cùng lý do như `readable` ở trên: giá trị của một input không nằm trong
+       innerText, mà mọi con số lớn trên app này đều là input. */
+    text: [
+      document.body.innerText || '',
+      ...[...document.querySelectorAll('input, textarea')].map((el) => (el.value ?? '').toString()),
+    ]
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .slice(0, 4000),
     focus: document.activeElement?.tagName ?? '',
   }));
 }
@@ -566,10 +603,10 @@ const SCENARIOS = [
     name: 'màn đăng nhập: đổi ngôn ngữ đổi chữ trên màn hình',
     route: '/', mode: 'signedout',
     async run(page) {
-      const before = await page.locator('body').innerText();
+      const before = await readable(page);
       await page.getByText('VI', { exact: true }).click();
       await page.waitForTimeout(900);
-      const after = await page.locator('body').innerText();
+      const after = await readable(page);
       if (before === after) return 'bấm VI mà không chữ nào đổi';
       if (!/Đăng nhập/.test(after)) return `đã đổi sang VI nhưng không thấy tiếng Việt: ${after.slice(0, 80)}`;
       return null;
@@ -591,12 +628,12 @@ const SCENARIOS = [
     name: 'Tiến trình: đổi tab đổi nội dung',
     route: '/progress', mode: 'full',
     async run(page) {
-      const before = await page.locator('body').innerText();
+      const before = await readable(page);
       const tab = page.getByText(/Measurements|Số đo/).first();
       if ((await tab.count()) === 0) return 'không tìm thấy tab số đo';
       await tab.click();
       await page.waitForTimeout(1500);
-      if ((await page.locator('body').innerText()) === before) return 'bấm tab mà nội dung không đổi';
+      if ((await readable(page)) === before) return 'bấm tab mà nội dung không đổi';
       return null;
     },
   },

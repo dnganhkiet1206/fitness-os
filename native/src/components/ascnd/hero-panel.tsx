@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
+import { AnimatedNumber } from '@/components/ascnd/animated-number';
 import { Expander } from '@/components/ascnd/expander';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -112,11 +113,17 @@ export function HeroPanel({
  * parameter of this could express without becoming a second implementation
  * wearing one name.
  */
+/* Cùng nhịp mà `readiness-gauge.tsx` dùng, vì hai vòng nằm cạnh nhau trong một
+   deck: hai tốc độ đếm khác nhau trên hai trang của một thứ đọc ra là hai app. */
+const RING_DELAY = 300;
+const RING_MS = 1600;
+
 export function HeroRing({
   pct,
   from,
   to,
   value,
+  decimals = 0,
   caption,
   captionColor,
 }: {
@@ -124,7 +131,21 @@ export function HeroRing({
   pct: number;
   from: string;
   to: string;
-  value: string;
+  /**
+   * Số, không phải chuỗi — và đó là một bản sửa chứ không phải một sở thích.
+   *
+   * Bản đầu nhận `string` và chỗ gọi truyền `String(Math.round(kcal))`, tức là
+   * `1680`. Thẻ cũ in `1.680`. Canary của `live.mjs` neo vào đúng con số đó và
+   * bắt được — nó tìm `/1[,.]680/` và không thấy, rồi từ chối tin toàn bộ lượt
+   * chạy. Đúng việc nó sinh ra để làm, và ở đây nó bắt một hồi quy thật: bốn
+   * chữ số không dấu phân cách khó đọc hơn hẳn.
+   *
+   * `AnimatedNumber` đã lo dấu phân cách theo ngôn ngữ, và kèm theo là cú đếm
+   * lên khớp với nét quét của vòng tròn — hai nửa của một số đọc tới nơi cùng
+   * lúc thay vì con số xong trước khi vòng bắt đầu.
+   */
+  value: number;
+  decimals?: number;
   caption: string;
   captionColor: string;
 }) {
@@ -161,7 +182,13 @@ export function HeroRing({
         />
       </Svg>
       <View style={styles.ringCenter} pointerEvents="none">
-        <Text style={styles.value} numberOfLines={1}>{value}</Text>
+        <AnimatedNumber
+          value={value}
+          decimals={decimals}
+          delay={RING_DELAY}
+          duration={RING_MS}
+          style={[styles.value, styles.valueBox]}
+        />
         <Text style={[styles.caption, { color: captionColor }]} numberOfLines={1}>{caption}</Text>
       </View>
     </View>
@@ -194,5 +221,9 @@ const styles = StyleSheet.create({
   ringWrap: { alignItems: 'center', justifyContent: 'center' },
   ringCenter: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   value: { ...type.largeTitle, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  /* `AnimatedNumber` là một TextInput bên dưới, thứ không tự co theo nội dung —
+     không có hai dòng này thì con số trôi khỏi tâm vòng tròn. Cùng bản sửa mà
+     readiness-gauge.tsx đã ghi. */
+  valueBox: { alignSelf: 'stretch', textAlign: 'center' },
   caption: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
 });

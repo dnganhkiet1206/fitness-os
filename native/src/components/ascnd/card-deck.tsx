@@ -230,18 +230,21 @@ const styles = StyleSheet.create({
      no card has to paint over another and none of them has to be solid. */
   stage: { position: 'relative', overflow: 'hidden' },
   /*
-    Mọi trang đều đúng bằng kích thước của sân khấu.
+    Neo TRÊN, không neo dưới — và việc thiếu chữ "dưới" đó là một lỗi tôi đã tạo
+    ra rồi phải gỡ.
 
-    `bottom: 0` là cả bản sửa cho "tất cả thẻ phải cùng kích thước". Trước đó
-    mỗi trang cao bằng nội dung của nó, nên hai vòng tròn khác cỡ và hai khối
-    chữ khác độ dài cho ra hai trang khác chiều cao — và cách duy nhất để chúng
-    khớp là chỉnh tay padding của từng thẻ cho tới khi hai con số tình cờ bằng
-    nhau, thứ sẽ lệch lại ngay lần đầu một thẻ thêm một dòng.
+    Bản trước đặt cả `top: 0` lẫn `bottom: 0` để mọi trang bằng đúng kích thước
+    sân khấu. Nó bằng thật, và nó không vẽ ra gì cả: chiều cao trang khi đó lấy
+    từ sân khấu, còn chiều cao sân khấu lấy từ nội dung trang đo được. Vòng lặp
+    chết — sân khấu 0 → trang 0 → đo ra 0 → sân khấu vẫn 0. Trên máy thật là bốn
+    cái pip nằm dưới một khoảng trống.
 
-    Neo cả trên lẫn dưới thì chúng bằng nhau THEO CẤU TRÚC: sân khấu cao bằng
-    trang cao nhất, và mọi trang cao bằng sân khấu.
+    Thứ THẬT SỰ làm các trang bằng nhau là `hero-panel.tsx`: bốn trang cùng một
+    vỏ, cùng một cỡ vòng, cùng một bộ đệm. Kích thước bằng nhau đến từ việc nội
+    dung giống nhau, không đến từ một ràng buộc bố cục vay chiều cao của chính
+    thứ nó đang định nghĩa.
   */
-  page: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  page: { position: 'absolute', left: 0, right: 0, top: 0 },
   pips: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, paddingTop: 12 },
   pip: { width: DOT, height: DOT, borderRadius: radius.full, backgroundColor: colors.foreground },
 });
