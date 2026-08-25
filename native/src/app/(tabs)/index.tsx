@@ -323,26 +323,25 @@ export default function TodayScreen() {
     return {
     transform: [
       /*
-        Đứng yên nghĩa là dịch NGƯỢC LẠI đúng bằng quãng đã cuộn — hệ số 1, không
-        phải 0.
+        Hero đi cùng trang, và MỜ là toàn bộ chuyển động của nó.
 
-        Tôi để 0 và gọi đó là "đứng yên". Sai: hero nằm TRONG ScrollView, nên 0
-        nghĩa là nó đi lên cùng trang như mọi thứ khác — đúng cái ngược lại. Các
-        hệ số 0.5 rồi 0.12 trước đó chỉ là làm nó đi CHẬM hơn trang, chưa bao giờ
-        là dừng.
+        ── ba lần tôi làm hỏng chỗ này ──
 
-        Ở hệ số 1 nó bù trừ hoàn toàn: trang đi lên 100pt thì nó đi xuống 100pt,
-        và trên màn hình nó không nhúc nhích. Tấm nội dung vẫn đi lên bình thường
-        và phủ dần lên nó — đó mới là thứ chuyển động.
+        Đầu tiên là 0.5: hero trôi ngược lại nửa tốc độ, và người dùng nói nó
+        chạy quá nhiều. Rồi 0.12, rồi 0.05 — vẫn là trôi, chỉ chậm hơn. Rồi tôi
+        đọc "đứng yên" theo nghĩa đen và đặt hệ số 1 để ghim cứng nó vào màn
+        hình; nó ghim thật, và nó sai cảm giác.
 
-        Thứ tự vẽ lo phần còn lại: hero đứng trước tấm trong cây, nên tấm vẽ đè
-        lên, không cần zIndex.
+        Bản người dùng khen là bản KHÔNG có hệ số nào cả: hero cuộn đi như mọi
+        thứ khác trên trang, và thứ duy nhất xảy ra với nó là mờ dần rồi biến
+        mất. Không có gì trôi ngược, không có gì bị ghim — chỉ có một trang cuộn
+        bình thường và một thứ tan đi đúng lúc nó không còn cần thiết.
+
+        `translateY` giữ nguyên trong mảng chứ không bỏ, vì `scale` cũng ở đây và
+        một mảng transform lúc có lúc không cùng một khoá là cách nhanh nhất để
+        Reanimated nội suy nhầm.
       */
-      { translateY: scrollY.value },
-      /* Và lùi lại một chút khi mờ đi. Chỉ mờ thôi thì vòng tròn tan ra tại
-         chỗ, còn co nhẹ cùng lúc thì nó ĐI RA XA — mắt đọc hai tín hiệu đó
-         thành một chuyển động, và đó là phần "mượt". 4% là gần hết mức thấy
-         được mà chưa thành một cú thu nhỏ. */
+      { translateY: 0 },
       { scale: interpolate(scrollY.value, [HERO_HOLD, gone], [1, 0.97], 'clamp') },
     ],
     opacity: interpolate(scrollY.value, [HERO_HOLD, gone], [1, 0], 'clamp'),
