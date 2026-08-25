@@ -1,9 +1,6 @@
-import MaskedView from '@react-native-masked-view/masked-view';
-import { useCallback, useId, useState } from 'react';
-import { BlurView } from 'expo-blur';
-import { Platform, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { useCallback, useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import Animated, {
   runOnJS,
   interpolate,
@@ -87,44 +84,6 @@ const ADJUST = [
   { name: 'decrement' as const, label: 'previous' },
 ];
 
-/**
- * Kính của hero KÉO XUỐNG qua mép dưới của nó, mờ dần đến hết.
- *
- * ── vì sao phải có ──
- *
- * Trang hero là một `BlurView` phẳng phủ kín trang, và nó DỪNG ở đúng hàng
- * pixel cuối cùng của trang: bên trên là aura đã được làm mờ, ngay bên dưới là
- * aura sắc nét, cách nhau một hàng. Đó là một đường kẻ ngang chạy hết bề rộng
- * màn hình mà không có gì vẽ nó — thứ `status-scrim.tsx` gọi đúng tên khi bỏ
- * cái hairline của nó đi: "một cái kết không được đánh dấu là một vết nhoè mà
- * mắt cứ cố lấy nét vào".
- *
- * Cách chữa ở đó cũng là cách chữa ở đây, và là cùng một cơ chế: một
- * `MaskedView` trên một `BlurView`, mask là một gradient dọc. Blur là bộ lọc
- * nền nên nó SỐNG SÓT qua việc bị mask — status-scrim đã trả giá một vòng cho
- * kết luận đó rồi, khi mang một nhận định về `UIGlassEffect` áp nhầm sang
- * `UIBlurEffect` và xếp bốn tấm chồng lên nhau.
- *
- * ── vì sao nó nằm ở ĐÂY, giữa sân khấu và hàng pip ──
- *
- * `BlurView` làm mờ những gì được vẽ TRƯỚC nó. Đặt sau `stage` thì thứ nó lấy
- * mẫu là lớp aura; đặt trước hàng pip thì pip — và toàn bộ dashboard bên dưới,
- * vốn là anh em vẽ sau ở component cha — nằm ĐÈ LÊN nó và không bị mờ. Một
- * dải blur trôi nổi trên nội dung là một dải làm mờ nội dung.
- *
- * Nó cũng xếp tuyệt đối và `pointerEvents="none"`: không chiếm một điểm chiều
- * cao nào, không ăn một cú chạm nào. Mốc `top` là chiều cao trang cao nhất, nên
- * khi mở phần chi tiết ra thì dải kính đi theo mép dưới mới.
- */
-const TRAIL = 72;
-
-/**
- * Blur chỉ có trên iOS, đúng lý do `status-scrim.tsx` đã ghi: trên Android
- * `BlurView` cần `blurMethod` cộng một `BlurTargetView` bọc quanh thứ đang bị
- * làm mờ, còn để mặc định nó vẽ ra "một view có nền bán trong suốt" — tức là
- * một dải xám, đúng thứ mà đoạn này sinh ra để KHÔNG phải là.
- */
-const NATIVE_BLUR = Platform.OS === 'ios';
 
 export function CardDeck({
   children,
@@ -156,13 +115,6 @@ export function CardDeck({
   const pages = children.filter(Boolean);
   const [w, setW] = useState(0);
   const [heights, setHeights] = useState<number[]>([]);
-
-  /* Id của gradient là TOÀN CỤC trên native, không cục bộ trong `<Svg>` khai
-     ra nó — hai deck cùng mounted (một trang được push nằm trên tab bên dưới)
-     sẽ cùng dùng cái đăng ký sau cùng. `status-scrim.tsx` nói repo này đã dính
-     ba lần; `useId` là luật. */
-  const uid = useId();
-  const mid = `deckTrailMask-${uid}`;
 
   const own = useSharedValue(0);
   const at = progress ?? own;
@@ -336,37 +288,6 @@ export function CardDeck({
         </View>
       </GestureDetector>
 
-      {/* Kính của thẻ kéo dài xuống dưới mép và tắt dần — xem ghi chú ở TRAIL. */}
-      {NATIVE_BLUR && shown > 0 ? (
-        <View pointerEvents="none" style={[styles.trail, { top: shown, height: TRAIL }]}>
-          <MaskedView
-            style={StyleSheet.absoluteFill}
-            maskElement={
-              /*
-                Bốn chặng chứ không phải hai. Một dốc thẳng chạm 0 ở một hàng
-                xác định và mắt tìm ra đúng hàng đó — cùng lập luận, cùng hình
-                dạng với mask của `status-scrim.tsx`, chỉ khác là ở đây nó bắt
-                đầu từ chỗ kính của thẻ vừa hết chứ không phải từ mép trên màn
-                hình.
-              */
-              <Svg style={StyleSheet.absoluteFill}>
-                <Defs>
-                  <LinearGradient id={mid} x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0" stopColor="#fff" stopOpacity="1" />
-                    <Stop offset="0.45" stopColor="#fff" stopOpacity="0.6" />
-                    <Stop offset="0.78" stopColor="#fff" stopOpacity="0.18" />
-                    <Stop offset="1" stopColor="#fff" stopOpacity="0" />
-                  </LinearGradient>
-                </Defs>
-                <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${mid})`} />
-              </Svg>
-            }>
-            {/* Cùng cường độ với kính của trang: nếu khác thì chỗ nối giữa hai
-                lớp lại thành đúng cái đường kẻ vừa xoá đi. */}
-            <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
-          </MaskedView>
-        </View>
-      ) : null}
 
       {/*
         Hàng chấm KHÔNG được đọc lên.
@@ -477,7 +398,6 @@ const styles = StyleSheet.create({
   page: { position: 'absolute', left: 0, right: 0, top: 0 },
   /* Xếp tuyệt đối để không cộng một điểm nào vào chiều cao deck: nó là phần
      ĐUÔI của thẻ, không phải một hàng nữa dưới thẻ. */
-  trail: { position: 'absolute', left: 0, right: 0 },
   pips: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, paddingTop: spacing.sm },
   pip: { width: DOT, height: DOT, borderRadius: radius.full, backgroundColor: colors.foreground },
 });

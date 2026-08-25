@@ -230,6 +230,46 @@ const num = (name) => {
   }
 }
 
+/*
+  Không lớp mờ nào được có mép NGANG bên trong deck.
+
+  ── lỗi ──
+
+  Deck từng mang một `TRAIL`: dải blur cao 72 điểm vẽ giữa sân khấu và hàng
+  chấm, sinh ra để nối dài KÍNH CỦA THẺ xuống dưới mép thẻ rồi tắt dần. Mask của
+  nó chạy từ độ đục 1 ở mép TRÊN xuống 0 ở đáy — nghĩa là mép trên nó là một
+  đường ngang đầy đủ cường độ vắt qua màn hình.
+
+  Rồi kính của thẻ bị bỏ đi ("hero không được phép có mép — nó là phần trên cùng
+  của trang, không phải một tấm đặt lên trang"). Dải nối đuôi thì ở lại, và mép
+  trên đầy đủ cường độ của nó từ đó đâm thẳng vào nền trần. Chú thích của chính
+  nó vẫn nói "cùng cường độ với kính của trang" — với một tấm kính không còn tồn
+  tại.
+
+  ── vì sao luật này cần thiết ──
+
+  Nó nằm sau `Platform.OS === 'ios'`, nên harness web KHÔNG BAO GIỜ vẽ nó. Mọi
+  phép quét điểm ảnh chạy trên harness đều báo "không có vết cắt" trong khi trên
+  máy thật vết cắt vẫn ở đó — công cụ mù đúng cái thứ đang bị báo lỗi, và lỗi
+  này vì thế sống sót qua nhiều vòng sửa.
+
+  Luật đọc CẤU TRÚC chứ không đọc điểm ảnh: trong deck không được có lớp phủ nào
+  neo bằng `top:` một chiều cao đo được. Một lớp như thế bắt đầu ở một hàng xác
+  định, và một hàng xác định là một đường kẻ.
+*/
+{
+  if (/\btop: shown\b/.test(src)) {
+    problems.push(
+      'card-deck.tsx: có lớp phủ neo tại `top: shown` — nó bắt đầu ở một hàng xác định, và đó là một đường kẻ ngang dưới vòng tròn',
+    );
+  }
+  for (const tag of ['BlurView', 'MaskedView']) {
+    if (new RegExp(`<${tag}\\b`).test(src)) {
+      problems.push(`card-deck.tsx: deck lại dựng <${tag}> — hero không có thẻ, nên không có kính nào để nối đuôi`);
+    }
+  }
+}
+
 if (problems.length) {
   console.log('deck thẻ CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);
