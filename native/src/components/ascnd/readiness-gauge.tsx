@@ -24,7 +24,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
 import { readinessConfidence } from '@/lib/readiness-engine';
-import { colors, glass, HERO_RING, radius, spacing, type } from '@/constants/ascnd';
+import { colors, HERO_RING, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
@@ -72,9 +72,6 @@ interface Props {
    numbers. Left as literals they would drift apart the first time one was
    tuned, and a number that finishes before its ring is the specific thing this
    pairing exists to fix. */
-/** Bốn phép đo sẽ có mặt ở đó, dùng làm nhãn cho khối chờ. */
-const PENDING_TILES = ['RHR', 'SLEEP', 'LOAD', 'ACWR'] as const;
-
 const RING_DELAY = 300;
 const RING_MS = 1600;
 
@@ -144,10 +141,39 @@ export function ReadinessGauge({
     already claimed the count came from "the same string the tiles are drawn
     from"; now it does.
   */
+  /*
+    ── một chiều chưa đo được phải NÓI ra, chứ không biến mất ──
+
+    Hàng này từng chỉ vẽ những chiều đo được, nên một chiều thiếu đơn giản là
+    không có mặt — và không có mặt thì không đọc ra được. Người ta thấy hai ô
+    và không có cách nào biết còn ba thứ nữa tồn tại, càng không biết phải làm
+    gì để có chúng: đeo đồng hồ, ghi giấc ngủ, ghi một buổi tập.
+
+    Thiếu là một TRẠNG THÁI, không phải một khoảng trống. Nên MỌI chiều đều có
+    ô của nó; chiều chưa đo được mang dấu "—", chữ số xám thay vì màu vùng, và
+    dòng đơn vị nói thẳng ra là chưa có dữ liệu. Dòng độ tin cậy bên dưới vẫn
+    đếm CHỈ những chiều đo được — hai câu khác nhau về cùng một ngày, và cả hai
+    đều đúng.
+
+    Nó thay cho khối `PENDING_TILES` trước đây, vốn chỉ đúng ở ca TẤT CẢ đều
+    trống: đo được hai trên năm thì ba chiều kia vẫn biến mất không dấu vết.
+    Cùng một lập luận, áp cho từng chiều một thay vì cho cả hàng.
+
+    Và mỗi chiều được viết ra ở ĐÚNG chỗ của nó trong hàng, chứ không phải các
+    ô đo được dồn lên trước rồi các ô trống xếp sau. Thứ tự cố định là thứ làm
+    hàng này đọc được: cùng một vị trí nói về cùng một chỉ số mỗi sáng, nên hôm
+    nay ghi được giấc ngủ thì ô SLEEP sáng lên TẠI CHỖ chứ không nhảy lên đầu
+    hàng.
+  */
+  const none = { value: '—', color: colors.mutedForeground, unit: vi ? 'chưa có dữ liệu' : 'no data yet' };
   if (subs.hrv != null) tiles.push({ label: 'HRV', value: String(subs.hrv), color: subColor(subs.hrv), unit: '/100' });
+  else tiles.push({ label: 'HRV', ...none });
   if (subs.rhr != null) tiles.push({ label: 'RHR', value: String(subs.rhr), color: subColor(subs.rhr), unit: '/100' });
+  else tiles.push({ label: 'RHR', ...none });
   if (subs.sleep != null) tiles.push({ label: 'SLEEP', value: String(subs.sleep), color: subColor(subs.sleep), unit: '/100' });
+  else tiles.push({ label: 'SLEEP', ...none });
   if (subs.load != null) tiles.push({ label: 'LOAD', value: String(subs.load), color: subColor(subs.load), unit: '/100' });
+  else tiles.push({ label: 'LOAD', ...none });
   /* ACWR là một TỈ SỐ, không phải điểm 0–100, nên mẫu số "/100" sẽ là một câu
      sai về chính con số đó. */
   if (acwr != null && acwr > 0)
@@ -161,6 +187,7 @@ export function ReadinessGauge({
          N bản" mà repo này đã gặp sáu lần. Đơn vị nói ĐƠN VỊ; màu đã nói vùng. */
       unit: vi ? 'tỉ số' : 'ratio',
     });
+  else tiles.push({ label: 'ACWR', ...none });
 
   /*
     ── how much of this number is actually measured ──
@@ -392,6 +419,12 @@ export function ReadinessGauge({
           onToggleDetail?.();
         }}
         style={styles.moreBtn}>
+        {/* Chữ đi kèm mũi tên: một mũi tên đơn độc là một lời mời mà người ta
+            phải đoán ra. Nó đổi theo trạng thái, nên nhãn luôn nói việc CHẠM
+            sẽ làm gì chứ không nói cái đang có. */}
+        <Text style={styles.tapHint}>
+          {detailOpen ? (vi ? 'Thu gọn' : 'Tap to close') : (vi ? 'Chạm để xem chi tiết' : 'Tap for details')}
+        </Text>
         <Animated.View style={chevron}>
           <Icon icon={ChevronDown} size={20} color={colors.mutedForeground} strokeWidth={2.5} />
         </Animated.View>
@@ -433,20 +466,11 @@ export function ReadinessGauge({
         gần như không có gì là một câu trả lời tệ hơn cả việc không có mũi tên:
         nó nói rằng tính năng hỏng, chứ không nói rằng dữ liệu chưa tới.
 
-        Bốn nhãn vẫn hiện, giá trị là một khối đang thở. Người đọc biết cái gì
-        sắp có ở đó và vì sao nó chưa có.
+        Năm nhãn luôn hiện, và chiều nào chưa đo được thì tự nói ra ở ngay ô của
+        nó — xem chỗ dựng `tiles` bên trên. Người đọc biết cái gì sắp có ở đó và
+        vì sao nó chưa có, kể cả khi chỉ THIẾU MỘT chiều chứ không phải cả năm.
       */}
-      <HeroTiles
-        tiles={
-          tiles.length > 0
-            ? tiles.map((t) => ({ label: t.label, value: t.value, unit: t.unit, color: t.color }))
-            : PENDING_TILES.map((label) => ({
-                label,
-                value: '—',
-                unit: vi ? 'chờ dữ liệu' : 'waiting',
-              }))
-        }
-      />
+      <HeroTiles tiles={tiles} />
 
       {/* Explain + recommendation */}
       {explainText ? <Text style={styles.explain}>{explainText}</Text> : null}
@@ -533,7 +557,20 @@ const styles = StyleSheet.create({
   helpBtn: { alignSelf: 'flex-end' },
   /* 44pt là sàn của Apple cho vùng chạm, và `tools/tap-targets.mjs` đo chứ
      không ước lượng. Icon 20pt nằm giữa một ô 44 là đủ. */
-  moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  moreBtn: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    alignSelf: 'stretch',
+  },
+  /* Chữ đi cùng mũi tên. Tên riêng chứ không dùng chung `moreLabel` bên dưới:
+     cái kia là nhãn của HÀNG đi sâu ở cuối phần chi tiết, đậm bằng chữ nội
+     dung, còn cái này là một lời mời nhạt đứng cạnh một icon. Chúng trùng tên
+     một lần khi hai nhánh gặp nhau, và một `StyleSheet` có hai khoá cùng tên
+     thì khoá sau lặng lẽ nuốt khoá trước. */
+  tapHint: { fontSize: 12, color: colors.mutedForeground, letterSpacing: 0.2 },
   detail: { gap: spacing.lg, alignItems: 'center', alignSelf: 'stretch' },
   moreRow: {
     flexDirection: 'row',
@@ -576,19 +613,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.card,
   },
-  /* Two per row, however many there are. Five tiles come out 2-2-1, and the odd
-     one keeps its siblings' width instead of stretching to fill the row — a
-     tile twice as wide as the rest reads as the important one. */
-  /*
-    Một ô của lưới 2×2, theo đúng ảnh tham chiếu: NHÃN nhỏ, SỐ to, ĐƠN VỊ nhỏ.
-
-    Ba dòng chứ không phải hai, và thứ tự đó có lý do: nhãn nói đang đo cái gì,
-    số là thứ mắt dừng lại, đơn vị trả lời "50 cái gì". Bỏ dòng cuối thì "90" và
-    "1.46" trông như hai đại lượng cùng loại.
-
-    Bề rộng 47% cho hai ô một hàng với khoảng thở ở giữa; `space-between` giữ
-    hàng cuối lẻ nằm bên trái thay vì bị kéo giãn.
-  */
+  /* Lưới ô số không còn ở tệp này — nó là `HeroTiles` trong `hero-panel.tsx`,
+     dùng chung cho cả bốn trang hero, và các số đo của một ô (nhãn nhỏ, số to,
+     đơn vị nhỏ; bề rộng 47%) sống ở đó. Ghi lại ở đây vì hai khối chú thích
+     mô tả `grid`/`tile` từng đứng đúng chỗ này, và một chú thích tả một style
+     đã đi nơi khác là thứ người đọc sau sẽ tin. */
   confidence: {
     fontSize: 11,
     color: colors.mutedForeground,
