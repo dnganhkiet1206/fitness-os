@@ -79,6 +79,16 @@ interface Translations {
   authNewPassword: string;
   authUpdatePassword: string;
   authPasswordUpdated: string;
+  authPhone: string;
+  authPhonePlaceholder: string;
+  authSendCode: string;
+  authVerifyCode: string;
+  authOtpCode: string;
+  authPhoneSubtitle: string;
+  authOtpSent: string;
+  authContinueWithPhone: string;
+  authInvalidCode: string;
+
 
   // Sidebar / Nav
   navToday: string;
@@ -793,6 +803,16 @@ const vi: Translations = {
   authNewPassword: 'Mật khẩu mới',
   authUpdatePassword: 'Cập nhật mật khẩu',
   authPasswordUpdated: 'Mật khẩu đã được cập nhật!',
+  authPhone: 'Số điện thoại',
+  authPhonePlaceholder: '+84 901 234 567',
+  authSendCode: 'Gửi mã',
+  authVerifyCode: 'Xác nhận',
+  authOtpCode: 'Mã xác nhận',
+  authPhoneSubtitle: 'Nhập số điện thoại để nhận mã OTP',
+  authOtpSent: 'Đã gửi mã OTP đến số điện thoại của bạn!',
+  authContinueWithPhone: 'Đăng nhập bằng số điện thoại',
+  authInvalidCode: 'Mã xác nhận không đúng',
+
 
   navToday: 'Today',
   navNutrition: 'Dinh dưỡng',
@@ -1473,6 +1493,16 @@ const en: Translations = {
   authNewPassword: 'New password',
   authUpdatePassword: 'Update password',
   authPasswordUpdated: 'Password updated successfully!',
+  authPhone: 'Phone number',
+  authPhonePlaceholder: '+1 555 123 4567',
+  authSendCode: 'Send code',
+  authVerifyCode: 'Verify',
+  authOtpCode: 'Verification code',
+  authPhoneSubtitle: 'Enter your phone number to receive an OTP code',
+  authOtpSent: 'OTP code sent to your phone!',
+  authContinueWithPhone: 'Continue with phone',
+  authInvalidCode: 'Invalid verification code',
+
 
   navToday: 'Today',
   navNutrition: 'Nutrition',
