@@ -323,15 +323,22 @@ export default function TodayScreen() {
     return {
     transform: [
       /*
-        Đứng YÊN. Không phải 0.05, không phải 0.12.
+        Đứng yên nghĩa là dịch NGƯỢC LẠI đúng bằng quãng đã cuộn — hệ số 1, không
+        phải 0.
 
-        Mọi mức dịch đều đọc ra là vòng tròn đang chuyển động, và thứ cần chuyển
-        động là TẤM. Giữ transform ở đây thay vì bỏ hẳn chỉ vì `scale` bên dưới
-        cũng nằm trong mảng này, và một mảng transform trộn giữa có và không có
-        cùng một khoá giữa các lần render là cách nhanh nhất để Reanimated nội
-        suy nhầm.
+        Tôi để 0 và gọi đó là "đứng yên". Sai: hero nằm TRONG ScrollView, nên 0
+        nghĩa là nó đi lên cùng trang như mọi thứ khác — đúng cái ngược lại. Các
+        hệ số 0.5 rồi 0.12 trước đó chỉ là làm nó đi CHẬM hơn trang, chưa bao giờ
+        là dừng.
+
+        Ở hệ số 1 nó bù trừ hoàn toàn: trang đi lên 100pt thì nó đi xuống 100pt,
+        và trên màn hình nó không nhúc nhích. Tấm nội dung vẫn đi lên bình thường
+        và phủ dần lên nó — đó mới là thứ chuyển động.
+
+        Thứ tự vẽ lo phần còn lại: hero đứng trước tấm trong cây, nên tấm vẽ đè
+        lên, không cần zIndex.
       */
-      { translateY: 0 },
+      { translateY: scrollY.value },
       /* Và lùi lại một chút khi mờ đi. Chỉ mờ thôi thì vòng tròn tan ra tại
          chỗ, còn co nhẹ cùng lúc thì nó ĐI RA XA — mắt đọc hai tín hiệu đó
          thành một chuyển động, và đó là phần "mượt". 4% là gần hết mức thấy
