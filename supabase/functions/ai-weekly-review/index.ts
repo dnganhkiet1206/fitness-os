@@ -1,4 +1,4 @@
-import { aiKey, aiUrl, aiModel } from "../_shared/ai.ts";
+import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { claimCall, corsHeaders, json, localDate, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
@@ -11,8 +11,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const AI_KEY = aiKey();
-    if (!AI_KEY) throw new Error("AI key not configured — set ASCND_AI_KEY or LOVABLE_API_KEY");
 
     const caller = await requireUser(req);
     if (caller instanceof Response) return caller;
@@ -127,14 +125,7 @@ serve(async (req) => {
       month_context: { total_logs: allLogs.length, avg_volume_28d: allLogs.reduce((s: number, l: any) => s + (Number(l.volume_load) || 0), 0) / Math.max(allLogs.length, 1) },
     };
 
-    const response = await fetch(aiUrl(), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${AI_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: aiModel(),
+    const response = await callAI({
         max_tokens: MAX_TOKENS,
         messages: [
           {
@@ -219,8 +210,12 @@ Trả về insights (quan sát từ dữ liệu) và recommendations (hành đ�
           },
         ],
         tool_choice: { type: "function", function: { name: "weekly_analysis" } },
-      }),
     });
+
+    /* `null` nghĩa là KHÔNG CÓ nhà cung cấp nào được cấu hình — khác hẳn với
+       "bên nào đó trả lỗi". Cổng cũ hỏi `if (!AI_KEY)`, và câu đó nay sai: thiếu
+       khoá CHÍNH không còn nghĩa là thiếu AI, vì bên dự phòng có thể đã có. */
+    if (!response) return opaque(new Error("no ai provider configured"), "ai_unavailable");
 
     if (!response.ok) {
       if (response.status === 429) {

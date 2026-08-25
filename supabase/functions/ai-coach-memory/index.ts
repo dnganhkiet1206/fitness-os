@@ -1,4 +1,4 @@
-import { aiKey, aiUrl, aiModel } from "../_shared/ai.ts";
+import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -56,7 +56,6 @@ import { claimCall, corsHeaders, dbServiceKey, dbUrl, json, opaque, quotaExceede
  * the reply is small no matter how much is on file.
  */
 
-const AI_KEY = aiKey();
 
 /** A conversation is not an essay, and neither is the part we pay to read. */
 const MAX_TURNS = 24;
@@ -251,8 +250,6 @@ serve(async (req) => {
     if (caller instanceof Response) return caller;
     const { userId, supabase } = caller;
 
-    if (!AI_KEY) return json({ error: "ai_unavailable" }, 500);
-
     const body = await req.json();
     const turns = userTurns(body?.messages);
     /* One line is not a relationship. Below this there is nothing durable to
@@ -280,11 +277,7 @@ serve(async (req) => {
       .limit(MAX_FACTS);
     const onFile = (existing ?? []) as { id: string; kind: string; fact: string }[];
 
-    const res = await fetch(aiUrl(), {
-      method: "POST",
-      headers: { Authorization: `Bearer ${AI_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: aiModel(),
+    const res = await callAI({
         messages: [
           { role: "system", content: PROMPT },
           {
@@ -303,7 +296,6 @@ serve(async (req) => {
            reply truncated, the JSON failed to parse, and memory quietly stopped
            updating somewhere around the tenth fact. */
         max_tokens: 1200,
-      }),
     });
 
     if (!res.ok) {
@@ -337,6 +329,11 @@ serve(async (req) => {
       dbUrl(),
       dbServiceKey(),
     );
+
+    /* `null` nghĩa là KHÔNG CÓ nhà cung cấp nào được cấu hình — khác hẳn với
+       "bên nào đó trả lỗi". Cổng cũ hỏi `if (!AI_KEY)`, và câu đó nay sai: thiếu
+       khoá CHÍNH không còn nghĩa là thiếu AI, vì bên dự phòng có thể đã có. */
+    if (!res) return opaque(new Error("no ai provider configured"), "ai_unavailable");
 
     const now = new Date().toISOString();
 

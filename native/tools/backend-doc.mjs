@@ -44,7 +44,15 @@ const VN = { một: 1, hai: 2, ba: 3, bốn: 4, năm: 5, sáu: 6, bảy: 7, tám
 /**
  * Bao nhiêu edge function thật sự gọi cổng AI.
  *
- * Đếm theo `aiUrl()`, không theo tên miền viết cứng. Nhà cung cấp nay nằm một
+ * Đếm theo IMPORT từ `_shared/ai.ts`, không theo tên miền và không theo tên hàm.
+ *
+ * Con số này đã sai hai lần rồi, mỗi lần vì một bản refactor ĐÚNG: lần đầu nó
+ * đếm tên miền, và về 0 khi nhà cung cấp được gom về một chỗ; lần hai nó đếm
+ * `aiUrl()`, và về 0 khi các function chuyển sang `callAI()`. Cả hai lần tài
+ * liệu bị báo sai vì code được dọn cho gọn hơn.
+ *
+ * "Function này có gọi AI không" thì tương đương với "nó có nhập từ module AI
+ * không", và câu đó không đổi khi bên trong module đổi. Nhà cung cấp nay nằm một
  * chỗ (`_shared/ai.ts`) vì Lovable chỉ là dàn xếp cho giai đoạn phát triển —
  * khi publish, khoá là của người dùng tự mua. Đếm theo tên miền nghĩa là con số
  * này về 0 đúng lúc việc gom lại thành công, và tài liệu sẽ bị báo sai vì một
@@ -54,7 +62,7 @@ const aiCount = readdirSync(path.join(ROOT, 'supabase/functions'))
   .filter((f) => f !== '_shared' && statSync(path.join(ROOT, 'supabase/functions', f)).isDirectory())
   .filter((f) => {
     try {
-      return /aiUrl\(\)|ai\.gateway\.lovable\.dev/.test(readFileSync(path.join(ROOT, 'supabase/functions', f, 'index.ts'), 'utf8'));
+      return /_shared\/ai\.ts/.test(readFileSync(path.join(ROOT, 'supabase/functions', f, 'index.ts'), 'utf8'));
     } catch {
       return false;
     }

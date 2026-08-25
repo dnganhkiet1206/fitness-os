@@ -126,6 +126,48 @@ const problems = [];
   }
 }
 
+/* ── 4. dự phòng nhà cung cấp ──
+
+   Người dùng nói rõ: không phụ thuộc bất kỳ bên nào. Điều đó chỉ có nghĩa nếu
+   phép chuyển bên biết KHI NÀO nên chuyển. */
+{
+  const ai = strip(read('_shared/ai.ts'));
+  if (!/export async function callAI/.test(ai)) problems.push('_shared/ai.ts: thiếu callAI()');
+  if (!/export function providers/.test(ai)) problems.push('_shared/ai.ts: thiếu danh sách nhà cung cấp');
+
+  /* 402 và 429 là lỗi CỦA BÊN ĐÓ — hết credit, quá tải — nên chúng phải chuyển
+     bên. Bỏ chúng ra khỏi danh sách là biến đúng hai tình huống mà dự phòng sinh
+     ra để cứu thành hai lần trả lỗi cho người dùng. */
+  const fault = ai.match(/const providerFault = [^;]*;/s)?.[0] ?? '';
+  for (const code of ['402', '429', '408']) {
+    if (!fault.includes(code)) {
+      problems.push(`_shared/ai.ts: providerFault không tính ${code} — đó là lỗi CỦA nhà cung cấp, đúng lúc phải chuyển bên`);
+    }
+  }
+  if (!/status >= 500/.test(fault)) problems.push('_shared/ai.ts: providerFault không tính 5xx');
+
+  /* Và 400 thì KHÔNG được chuyển: gửi lại đúng cái yêu cầu sai sang bên thứ hai
+     thì nó cũng từ chối, và ta vừa tiêu hai lượt để nhận hai lần cùng một câu. */
+  if (/status === 400|status >= 400/.test(fault)) {
+    problems.push('_shared/ai.ts: providerFault tính cả 400 — một yêu cầu sai thì bên nào cũng từ chối, chuyển bên chỉ tiêu thêm một lượt');
+  }
+
+  /* Không function nào được tự gọi fetch nữa: một chỗ tự gọi là một chỗ không có
+     dự phòng, và nó không lỗi — nó chỉ hỏng vào đúng ngày bên kia hỏng. */
+  for (const d of readdirSync(DIR)) {
+    if (d === '_shared') continue;
+    let code;
+    try { code = strip(read(`${d}/index.ts`)); } catch { continue; }
+    if (!/_shared\/ai\.ts/.test(code)) continue;
+    if (/await fetch\(\s*aiUrl\(\)/.test(code) || /Bearer \$\{AI_KEY\}/.test(code)) {
+      problems.push(`${d}/index.ts: tự gọi fetch tới nhà cung cấp — bỏ qua lớp dự phòng`);
+    }
+    if (!/if \(!\w+\) return opaque\(/.test(code)) {
+      problems.push(`${d}/index.ts: không xử lý callAI trả null — "không có bên nào" khác với "một bên trả lỗi"`);
+    }
+  }
+}
+
 if (problems.length) {
   console.log('database của edge function CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);

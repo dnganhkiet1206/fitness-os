@@ -1,4 +1,4 @@
-import { aiKey, aiUrl, aiVisionModel } from "../_shared/ai.ts";
+import { aiKey, aiUrl, aiVisionModel, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { claimCall, corsHeaders, json, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
@@ -129,11 +129,6 @@ serve(async (req) => {
 
     if (!(await claimCall(supabase, "scan-food"))) return quotaExceeded();
 
-    const AI_KEY = aiKey();
-    if (!AI_KEY) {
-      throw new Error("AI key not configured — set ASCND_AI_KEY or LOVABLE_API_KEY");
-    }
-
     const modeInstructions: Record<string, string> = {
       food: `You are a professional nutrition analyst with expertise in food & beverage identification.
 Analyze the image and identify ALL food items AND beverages/drinks visible.
@@ -214,16 +209,8 @@ ${
       label: "Read the nutrition facts label in this image. Extract the exact nutritional values shown.",
     };
 
-    const response = await fetch(
-      aiUrl(),
+    const response = await callAI(
       {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${AI_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: aiVisionModel(),
           messages: [
             { role: "system", content: systemPrompt },
             {
@@ -308,9 +295,14 @@ ${
             function: { name: "analyze_food" },
           },
           max_tokens: MAX_TOKENS,
-        }),
-      }
+      },
+      { vision: true },
     );
+
+    /* `null` nghĩa là KHÔNG CÓ nhà cung cấp nào được cấu hình — khác hẳn với
+       "bên nào đó trả lỗi". Cổng cũ hỏi `if (!AI_KEY)`, và câu đó nay sai: thiếu
+       khoá CHÍNH không còn nghĩa là thiếu AI, vì bên dự phòng có thể đã có. */
+    if (!response) return opaque(new Error("no ai provider configured"), "ai_unavailable");
 
     if (!response.ok) {
       if (response.status === 429) {

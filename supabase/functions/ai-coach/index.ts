@@ -1,5 +1,5 @@
 import { looksHostile, refusalStream, scopeRule } from "../_shared/scope.ts";
-import { aiKey, aiUrl, aiModel } from "../_shared/ai.ts";
+import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { claimCall, corsHeaders, json, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
@@ -46,8 +46,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const AI_KEY = aiKey();
-    if (!AI_KEY) throw new Error("AI key not configured — set ASCND_AI_KEY or LOVABLE_API_KEY");
 
     const caller = await requireUser(req);
     if (caller instanceof Response) return caller;
@@ -272,22 +270,19 @@ NGUYÊN TẮC QUAN TRỌNG:
 - Sử dụng markdown formatting cho rõ ràng
 - Luôn kết thúc với nhắc nhở: nếu có vấn đề sức khoẻ hãy gặp bác sĩ`;
 
-    const response = await fetch(aiUrl(), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${AI_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: aiModel(),
+    const response = await callAI({
         messages: [
           { role: "system", content: systemPrompt + scopeRule(lang) },
           ...messages,
         ],
         max_tokens: MAX_TOKENS,
         stream: true,
-      }),
     });
+
+    /* `null` nghĩa là KHÔNG CÓ nhà cung cấp nào được cấu hình — khác hẳn với
+       "bên nào đó trả lỗi". Cổng cũ hỏi `if (!AI_KEY)`, và câu đó nay sai: thiếu
+       khoá CHÍNH không còn nghĩa là thiếu AI, vì bên dự phòng có thể đã có. */
+    if (!response) return opaque(new Error("no ai provider configured"), "ai_unavailable");
 
     if (!response.ok) {
       const status = response.status;
