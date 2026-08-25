@@ -100,6 +100,48 @@ const problems = [];
   }
 }
 
+/* ── 5. deck phải tới được bằng screen reader ──
+
+   Cách duy nhất đổi trang là vuốt ngang, mà VoiceOver chiếm đúng cử chỉ đó để
+   đi giữa các phần tử. Không có `adjustable`, người dùng screen reader bị khoá
+   ở trang đầu: năm trong sáu chỉ số của họ không có đường nào tới — không lỗi,
+   không cảnh báo, chỉ là năm màn hình biến mất với một nhóm người. */
+{
+  if (!/accessibilityRole="adjustable"/.test(deck)) {
+    problems.push(`${DECK}: deck không phải "adjustable" — VoiceOver không có cách nào đổi trang`);
+  }
+  if (!/accessibilityActions=\{ADJUST\}/.test(deck) || !/onAccessibilityAction=/.test(deck)) {
+    problems.push(`${DECK}: khai adjustable mà không nhận increment/decrement — nói được là điều chỉnh được rồi không làm gì`);
+  }
+  /* Vị trí phải nói bằng LỜI. Hàng chấm là thông tin thị giác thuần. */
+  if (!/accessibilityValue=\{\{ min: 1, max: pages\.length, now: page \+ 1 \}\}/.test(deck)) {
+    problems.push(`${DECK}: không nói vị trí trang qua accessibilityValue — hàng chấm không nói được điều đó`);
+  }
+  /* Và hàng chấm thì phải câm: sáu phần tử rỗng chắn đường tới nội dung. */
+  const pipBlock = deck.match(/<View\s+style=\{styles\.pips\}[\s\S]{0,200}?>/)?.[0] ?? '';
+  if (!/accessibilityElementsHidden/.test(pipBlock)) {
+    problems.push(`${DECK}: hàng chấm không bị ẩn khỏi screen reader — sáu phần tử rỗng phải lướt qua trước khi tới nội dung`);
+  }
+}
+
+/* ── 6. nhãn nói VIỆC, không nói lại tên ──
+
+   Nhãn của mũi tên từng là chính tên chỉ số, nên screen reader đọc "Nước, nút"
+   — một câu không cho biết bấm vào thì được gì. */
+{
+  const panel = strip(read('src/components/ascnd/hero-panel.tsx'));
+  if (/accessibilityLabel=\{a11yDetail\}/.test(panel)) {
+    problems.push('hero-panel.tsx: nhãn mũi tên lặp lại tên chỉ số — phải nói bước tiếp theo');
+  }
+  if (!/nHeroDetails/.test(panel)) {
+    problems.push('hero-panel.tsx: nhãn mũi tên không dùng chuỗi hành động dùng chung');
+  }
+  /* Trạng thái đã nói bằng `expanded`; nói lại trong nhãn là VoiceOver đọc hai lần. */
+  if (!/accessibilityState=\{\{ expanded: detailOpen \}\}/.test(panel)) {
+    problems.push('hero-panel.tsx: mũi tên không khai accessibilityState.expanded — screen reader không biết nó đang mở hay đóng');
+  }
+}
+
 if (problems.length) {
   console.log('hai chế độ của deck CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);

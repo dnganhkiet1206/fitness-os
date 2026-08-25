@@ -11,6 +11,7 @@ import { Icon } from '@/components/ascnd/icon';
 import type { LucideIcon } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { colors, HERO_RING, radius, spacing, type } from '@/constants/ascnd';
+import { useI18n } from '@/hooks/use-app-settings';
 import { duration } from '@/constants/motion';
 
 /**
@@ -40,7 +41,6 @@ export function HeroPanel({
   dot,
   detailOpen = false,
   onToggleDetail,
-  a11yDetail,
   ring,
   more,
   children,
@@ -50,7 +50,6 @@ export function HeroPanel({
   dot?: string;
   detailOpen?: boolean;
   onToggleDetail?: () => void;
-  a11yDetail: string;
   ring: React.ReactNode;
   /**
    * Đường đi sâu hơn, đặt ở CUỐI phần chi tiết — không phải trên cả tấm thẻ.
@@ -73,6 +72,7 @@ export function HeroPanel({
   /** the detail, revealed by the chevron */
   children?: React.ReactNode;
 }) {
+  const i18n = useI18n();
   const spin = useSharedValue(0);
   useEffect(() => {
     spin.value = withTiming(detailOpen ? 1 : 0, { duration: duration.toggle });
@@ -106,7 +106,16 @@ export function HeroPanel({
           inGesture
         accessibilityRole="button"
         accessibilityState={{ expanded: detailOpen }}
-        accessibilityLabel={a11yDetail}
+        /*
+           Nhãn nói VIỆC, không nói lại tên.
+
+           Nó từng là chính tên chỉ số, nên screen reader đọc "Nước, nút" — một
+           câu không cho biết bấm vào thì được gì. Cùng lỗi với dòng đi sâu đã
+           sửa trước đó: nhãn lặp lại chỗ mình đang đứng thay vì nói bước tiếp.
+
+           Không tự thêm "mở"/"đóng": `accessibilityState.expanded` ngay bên trên
+           đã nói trạng thái, và nói hai lần thì VoiceOver đọc hai lần. */
+        accessibilityLabel={i18n.nHeroDetails.replace('{n}', title)}
         hitSlop={14}
         onPress={() => {
           Haptics.selectionAsync();
@@ -280,7 +289,9 @@ export function HeroTiles({
     <View style={styles.grid}>
       {tiles.map((t) => (
         <View key={t.label} style={styles.tile}>
-          <Text style={styles.tileLabel}>{t.label}</Text>
+          {/* Nhãn cũng giới hạn một dòng: một nhãn dài trong ô rộng 47% sẽ
+              xuống dòng và đẩy số xuống, làm ba ô cùng hàng cao khác nhau. */}
+          <Text style={styles.tileLabel} numberOfLines={1}>{t.label}</Text>
           <Text style={[styles.tileValue, t.color ? { color: t.color } : null]} numberOfLines={1}>
             {t.value}
           </Text>

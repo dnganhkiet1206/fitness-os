@@ -58,7 +58,6 @@ export function NutritionHero({
       title={i18n.nKcalToday}
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
-      a11yDetail={i18n.nKcalToday}
       more={onOpenDetail ? { label: i18n.nHeroMore, onPress: onOpenDetail } : undefined}
       ring={
         <HeroRing
@@ -121,7 +120,6 @@ export function WaterHero({
       title={i18n.nWater}
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
-      a11yDetail={i18n.nWater}
       more={onOpenDetail ? { label: i18n.nHeroMore, onPress: onOpenDetail } : undefined}
       ring={
         <HeroRing
@@ -207,7 +205,6 @@ export function SleepHero({
       title={i18n.nSleep}
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
-      a11yDetail={i18n.nSleep}
       more={onOpenDetail ? { label: i18n.nHeroMore, onPress: onOpenDetail } : undefined}
       ring={
         <HeroRing
@@ -282,7 +279,6 @@ export function EmptyHero({
       title={title}
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
-      a11yDetail={title}
       more={onOpenDetail ? { label: i18n.nHeroMore, onPress: onOpenDetail } : undefined}
       ring={
         <HeroRing

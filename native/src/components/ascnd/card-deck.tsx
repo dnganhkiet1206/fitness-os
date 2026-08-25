@@ -79,6 +79,14 @@ const GIVE_UP_Y = 24;
 
 const DOT = 6;
 
+/** Cùng một nhịp cho cú vuốt và cho phím trợ năng — hai cửa vào, một cảm giác. */
+const SNAP = { damping: 22, stiffness: 190, mass: 0.7 };
+
+const ADJUST = [
+  { name: 'increment' as const, label: 'next' },
+  { name: 'decrement' as const, label: 'previous' },
+];
+
 /**
  * Kính của hero KÉO XUỐNG qua mép dưới của nó, mờ dần đến hết.
  *
@@ -123,6 +131,7 @@ export function CardDeck({
   progress,
   expandedAt = null,
   onPageChange,
+  a11yLabel,
 }: {
   children: React.ReactNode[];
   /** Where the deck is, as a float index. Pass one in to drive something else
@@ -141,6 +150,8 @@ export function CardDeck({
   expandedAt?: number | null;
   /** Gọi khi cú vuốt dừng ở một trang KHÁC. Today dùng nó để đóng chi tiết. */
   onPageChange?: (index: number) => void;
+  /** Deck này là gì, cho screen reader — hàng chấm không nói được điều đó. */
+  a11yLabel?: string;
 }) {
   const pages = children.filter(Boolean);
   const [w, setW] = useState(0);
@@ -215,7 +226,7 @@ export function CardDeck({
          dùng tín hiệu này để đóng chi tiết và đưa trang về đầu, và làm hai việc
          đó giữa cú vuốt là làm chúng nhiều lần. */
       if (target !== Math.round(from.value)) runOnJS(settle)(target);
-      at.value = withSpring(target, { damping: 22, stiffness: 190, mass: 0.7 });
+      at.value = withSpring(target, SNAP);
     });
 
   const measureW = (e: LayoutChangeEvent) => {
@@ -265,7 +276,35 @@ export function CardDeck({
   return (
     <View onLayout={measureW}>
       <GestureDetector gesture={pan}>
-        <View style={[styles.stage, shown > 0 ? { height: shown } : null]}>
+        {/*
+          `adjustable` — và không có nó thì năm trang kia KHÔNG TỒN TẠI với
+          VoiceOver.
+
+          Cách duy nhất đổi trang là vuốt ngang, mà VoiceOver chiếm đúng cử chỉ
+          đó để đi giữa các phần tử. Người dùng screen reader vì thế bị khoá ở
+          trang đầu: năm trong sáu chỉ số của họ không có đường nào tới. Không
+          lỗi, không cảnh báo — chỉ là năm màn hình biến mất với một nhóm người.
+
+          `adjustable` là câu trả lời của nền tảng: VoiceOver đọc "điều chỉnh
+          được", rồi vuốt LÊN/XUỐNG gọi increment/decrement. Cùng deck, cùng
+          trạng thái, một cửa vào khác.
+
+          Nhãn nói vị trí bằng LỜI, vì hàng chấm là thông tin thị giác thuần.
+        */}
+        <View
+          accessible
+          accessibilityRole="adjustable"
+          accessibilityLabel={a11yLabel}
+          accessibilityValue={{ min: 1, max: pages.length, now: page + 1 }}
+          accessibilityActions={ADJUST}
+          onAccessibilityAction={(e) => {
+            const d = e.nativeEvent.actionName === 'increment' ? 1 : -1;
+            const next = Math.min(last, Math.max(0, page + d));
+            if (next === page) return;
+            at.value = withSpring(next, SNAP);
+            settle(next);
+          }}
+          style={[styles.stage, shown > 0 ? { height: shown } : null]}>
           {pages.map((node, i) => (
             <Page key={i} index={i} at={at} width={w} onHeight={measure(i)}>
               {node}
@@ -306,7 +345,19 @@ export function CardDeck({
         </View>
       ) : null}
 
-      <View style={styles.pips}>
+      {/*
+        Hàng chấm KHÔNG được đọc lên.
+
+        Sáu chấm không có nội dung: chúng nói vị trí bằng hình. Với screen reader
+        chúng thành sáu phần tử rỗng phải lướt qua — nhiễu thuần tuý. Thông tin
+        ấy đã nằm ở `accessibilityValue` của deck ("2 trên 6"), nơi nó là một câu
+        chứ không phải sáu chấm. `skeleton.tsx` lập luận đúng như vậy khi ẩn các
+        khối bóng.
+      */}
+      <View
+        style={styles.pips}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants">
         {pages.map((_, i) => (
           <Pip key={i} index={i} at={at} />
         ))}

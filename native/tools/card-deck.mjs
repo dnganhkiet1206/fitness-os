@@ -105,7 +105,12 @@ const num = (name) => {
     problems.push(`${DECK}: không dùng giá trị được truyền vào — deck và nền sẽ đi theo hai con số khác nhau`);
   }
   const today = code(read('src/app/(tabs)/index.tsx'));
-  if (!/<CardDeck progress=\{deckAt\}/.test(today)) {
+  /* Cho phép xuống dòng giữa thẻ và thuộc tính.
+
+     Luật này khớp `<CardDeck progress={deckAt}` nguyên văn, nên nó đỏ ngay khi
+     lời gọi được xuống dòng cho dễ đọc — một thay đổi không chạm tới hành vi.
+     Lần thứ mười một trong repo này. */
+  if (!/<CardDeck[\s\S]{0,200}?progress=\{deckAt\}/.test(today)) {
     problems.push('index.tsx: không truyền deckAt vào CardDeck — nền sẽ đứng yên khi vuốt');
   }
   const auraBlock = today.slice(today.indexOf('heroTints.length > 1'), today.indexOf('heroTints.length > 1') + 400);

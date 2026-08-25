@@ -949,7 +949,11 @@ export default function TodayScreen() {
               style={[styles.heroFull, heroSlide]}
               onLayout={(e) => recordHeight(HERO_DECK, e.nativeEvent.layout.height)}
               entering={FadeInDown.springify().damping(26).stiffness(180)}>
-              <CardDeck progress={deckAt} expandedAt={expandedAt} onPageChange={onHeroPageChange}>
+              <CardDeck
+                progress={deckAt}
+                expandedAt={expandedAt}
+                onPageChange={onHeroPageChange}
+                a11yLabel={lang === 'vi' ? 'Chỉ số hôm nay' : "Today's metrics"}>
                 {config.heroWidgets.map((key) => (
                   <View key={key}>{withPeek(key, renderWidget(key))}</View>
                 ))}
