@@ -72,7 +72,10 @@ import { HERO_RING, colors, radius, spacing, type } from '@/constants/ascnd';
 
 /** Độ đậm của lớp phủ dưới hero. Đủ để kéo tương phản về một mức, chưa đủ để
  *  giấu nền — vẫn phải nhìn xuyên qua thấy màu của vòng tròn phía trên. */
-const SCRIM = 0.42;
+const SCRIM = 0.62;
+/** Độ mờ của lớp phủ khi tấm còn nằm dưới hero, nhân với `SCRIM` — cho ra 0.42,
+ *  đúng mức cũ. Xem ghi chú ở `scrimFade` về vì sao nó phải đổi theo cuộn. */
+const SCRIM_REST = 0.68;
 /** Chiều cao dải chuyển ở mép trên lớp phủ. Cùng con số với `TRAIL` của
  *  `card-deck.tsx`: hai lớp mờ gặp nhau ở đúng vùng này nên chúng tắt dần trên
  *  cùng một quãng, nếu lệch thì chỗ chồng nhau lộ ra thành một dải đậm hơn. */
@@ -406,12 +409,33 @@ export default function TodayScreen() {
   /* Và tấm đục dần lên theo đúng quãng đó: lúc đứng yên nó gần như trong suốt
      để thấy được mình đang nằm trên cái gì, cuộn hết thì nó là một mặt phẳng
      để chữ không phải cạnh tranh với bất cứ thứ gì. */
+  /**
+   * Lớp phủ đậm dần theo đúng lúc tấm trượt lên đè hero.
+   *
+   * ── vì sao không để một mức cố định ──
+   *
+   * Blur làm mất NÉT, không làm giảm SÁNG. Vòng tròn là một nét dày, bão hoà,
+   * phát sáng; làm mờ nó xong vẫn còn nguyên một vệt xanh chói nằm sau các nút
+   * ghi, và đó là cái "thông tin bị lẫn" — không phải chữ đọc không ra, mà là
+   * hai thứ sáng ngang nhau tranh nhau cùng một chỗ. Thứ giết được vệt sáng đó
+   * là một lớp TỐI, không phải thêm blur.
+   *
+   * Nhưng một lớp tối cố định ở mức đó thì lúc chưa cuộn lại thành một hộp đen
+   * đặt trên nền — vì lúc đó phía sau chẳng có gì sáng để dập cả. Nên nó chạy
+   * theo CÙNG quãng với blur và với phép mờ của hero: cả ba là một chuyển động.
+   */
+  const scrimFade = useAnimatedStyle(() => {
+    if (focusSV.value === 1) return { opacity: SCRIM_REST };
+    return {
+      opacity: interpolate(scrollY.value, [HERO_HOLD, cover], [SCRIM_REST, 1], 'clamp'),
+    };
+  });
   const sheetBlur = useAnimatedProps(() => {
     if (focusSV.value === 1) return { intensity: 12 };
     return {
     /* Tấm đục dần theo ĐÚNG quãng hero mờ, nên hai thứ là một chuyển động chứ
        không phải hai cái chạy lệch nhau. */
-    intensity: interpolate(scrollY.value, [HERO_HOLD, cover], [12, 44], 'clamp'),
+    intensity: interpolate(scrollY.value, [HERO_HOLD, cover], [12, 80], 'clamp'),
     };
   });
   /**
@@ -1065,7 +1089,8 @@ export default function TodayScreen() {
               Bốn chặng, cùng lập luận với `status-scrim.tsx`: một dốc thẳng
               chạm đáy ở một hàng xác định và mắt tìm ra đúng hàng đó.
             */}
-            <View pointerEvents="none" style={styles.scrimBand}>
+            <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, scrimFade]}>
+            <View style={styles.scrimBand}>
               <Svg width="100%" height="100%">
                 <Defs>
                   <SvgGradient id="sheetScrim" x1="0" y1="0" x2="0" y2="1">
@@ -1078,8 +1103,12 @@ export default function TodayScreen() {
                 <Rect x="0" y="0" width="100%" height="100%" fill="url(#sheetScrim)" />
               </Svg>
             </View>
-            {/* Chồng lên một điểm để hai lớp không để lộ sợi tóc sáng ở chỗ nối. */}
-            <View pointerEvents="none" style={styles.scrimBody} />
+            {/* Kề sát chứ KHÔNG chồng lên nhau: hai lớp giờ nằm chung một khối
+                có độ mờ riêng, mà độ mờ áp lên từng lớp con — chồng một điểm là
+                một hàng bị nhân đôi độ tối, tức đúng cái vệt nó sinh ra để
+                tránh. Cả hai đều là số nguyên nên kề sát là kín. */}
+            <View style={styles.scrimBody} />
+            </Animated.View>
             <View style={styles.rest}>
               <Mascot />
 
@@ -1424,7 +1453,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: SCRIM_FADE - 1,
+    top: SCRIM_FADE,
     bottom: 0,
     backgroundColor: `rgba(0, 0, 0, ${SCRIM})`,
   },

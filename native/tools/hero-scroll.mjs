@@ -130,11 +130,54 @@ const num = (src, name) => {
 */
 {
   const fade = /scrimBand:[^}]*height: (SCRIM_FADE|\d+)/.exec(today);
-  const body = /scrimBody:\s*\{[\s\S]*?top: SCRIM_FADE - 1,[\s\S]*?bottom: 0,/.exec(today);
+  const body = /scrimBody:\s*\{[\s\S]*?top: SCRIM_FADE,[\s\S]*?bottom: 0,/.exec(today);
   if (!fade) problems.push(`${TODAY}: lớp phủ không có dải chuyển cao cố định ở mép trên`);
   if (!body) problems.push(`${TODAY}: phần đặc của lớp phủ không nối liền ngay dưới dải chuyển`);
   if (/scrimBand:[^}]*height: '\d+%'/.test(today)) {
     problems.push(`${TODAY}: dải chuyển tính theo phần trăm — độ dốc sẽ đổi theo số thẻ người dùng bật`);
+  }
+
+  /*
+    Lớp phủ phải đậm dần theo CÙNG quãng với blur và với phép mờ của hero.
+
+    Blur làm mất NÉT, không làm giảm SÁNG: vòng tròn là một nét dày, bão hoà,
+    phát sáng, và làm mờ nó xong vẫn còn nguyên một vệt xanh chói nằm sau các nút
+    ghi. Thứ giết được vệt đó là một lớp TỐI, không phải thêm blur. Nhưng một lớp
+    tối ở mức đó lúc chưa cuộn thì thành hộp đen đặt trên nền, vì lúc đó phía sau
+    chẳng có gì sáng để dập.
+
+    Ba thứ phải đi trên cùng một quãng [HERO_HOLD, cover]; lệch nhau thì hero mờ
+    xong mà lớp phủ vẫn nhạt, và người dùng thấy hai chuyển động rời nhau.
+  */
+  /* Cắt ĐÚNG thân `scrimFade` rồi mới soi, chứ không quét một cửa sổ ký tự sau
+     tên nó: `sheetBlur` nằm ngay dưới và cũng nội suy trên cùng quãng đó, nên
+     một cửa sổ rộng sẽ bắt được câu của hàng xóm và báo xanh cả khi hàm này đã
+     bị đổi sang quãng khác. Đó là luật đọc CHỮ chứ không đọc hành vi. */
+  const fadeBody = (() => {
+    const at = today.indexOf('const scrimFade');
+    if (at < 0) return '';
+    const end = today.indexOf('const sheetBlur', at);
+    return today.slice(at, end < 0 ? at + 600 : end);
+  })();
+  if (!/opacity: interpolate\(\s*scrollY\.value,\s*\[HERO_HOLD, cover\]/.test(fadeBody)) {
+    problems.push(
+      `${TODAY}: lớp phủ không đậm dần theo quãng [HERO_HOLD, cover] — blur một mình không dập được vệt sáng của vòng tròn`,
+    );
+  }
+  /* Và nó phải được ĐEO VÀO khối phủ, không chỉ tồn tại.
+
+     Gỡ `scrimFade` khỏi JSX thì TypeScript im lặng — một biến không dùng không
+     phải lỗi kiểu — và luật ở trên vẫn xanh vì hàm vẫn còn nguyên đó, nội suy
+     đúng quãng, và không điều khiển cái gì cả. Một luật chứng minh thứ gì đó
+     TỒN TẠI chứ không chứng minh nó được DÙNG là một luật đọc chữ. */
+  if (!/style=\{\[StyleSheet\.absoluteFill, scrimFade\]\}/.test(today)) {
+    problems.push(`${TODAY}: scrimFade không được đeo vào khối phủ — lớp phủ đứng yên một mức`);
+  }
+  /* Hai lớp nằm chung một khối có độ mờ riêng, mà độ mờ áp lên TỪNG lớp con —
+     chồng một điểm là một hàng bị nhân đôi độ tối, đúng cái vệt nó sinh ra để
+     tránh. Cả hai đều là số nguyên nên kề sát là kín. */
+  if (/top: SCRIM_FADE - \d/.test(today)) {
+    problems.push(`${TODAY}: hai lớp phủ chồng lên nhau trong một khối có độ mờ chung — hàng chồng bị nhân đôi độ tối`);
   }
 }
 
