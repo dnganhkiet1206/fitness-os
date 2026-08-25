@@ -166,6 +166,124 @@ export async function requireUser(req: Request): Promise<Caller | Response> {
  * So: no quota counter, no AI. If this ever starts returning 503 in production,
  * the fix is to apply `20260729120000_ai_usage_quota.sql`, not to soften this.
  */
+/** Ba trạng thái của một lượt gọi: trong hạn mức, vượt-nhưng-có-ví, hoặc hết. */
+export type Gate = "ok" | "overage" | "denied";
+
+/**
+ * Cổng gọi AI, và nó ĐẾM — gọi đúng một lần cho mỗi lượt.
+ *
+ * `claimCall` cũ trả boolean, và boolean không diễn tả được ba trạng thái. Nó
+ * vẫn còn và vẫn đúng, nhưng nó gọi cùng một hàm SQL, nên gọi cả hai trong một
+ * lượt là đếm lượt đó hai lần.
+ *
+ * Lỗi RPC thì TỪ CHỐI, không thả. Một bộ đếm hỏng nghĩa là không ai biết ai đã
+ * tiêu gì; cho đi qua lúc đó là chọn "cứ tiêu tiền" thay vì "dừng lại".
+ */
+export async function aiGate(supabase: SupabaseClient, kind: string): Promise<Gate> {
+  const { data, error } = await supabase.rpc("ai_gate", { p_kind: kind });
+  if (error) {
+    console.error(`ai_gate failed (${error.message}) — refusing ${kind}`);
+    return "denied";
+  }
+  return data === "ok" || data === "overage" ? data : "denied";
+}
+
+/**
+ * Ghi lại token đã tiêu.
+ *
+ * ── vì sao lỗi ở đây KHÔNG chặn câu trả lời ──
+ *
+ * Nó chạy SAU khi nhà cung cấp đã trả lời và người dùng đã có thứ họ hỏi. Tiền
+ * đã tiêu rồi; ném lỗi ở đây chỉ biến một lượt đã thành công thành một màn báo
+ * hỏng, mà con số vẫn không được ghi.
+ *
+ * Nên nó nuốt lỗi và ghi log. Đó là một đánh đổi có ý thức về phía bất lợi cho
+ * mình: ghi sót thì mình chịu, còn báo hỏng thì người dùng chịu.
+ */
+export async function recordTokens(
+  supabase: SupabaseClient,
+  kind: string,
+  tokens: number,
+  overage: boolean,
+): Promise<void> {
+  if (!Number.isFinite(tokens) || tokens <= 0) return;
+  const { error } = await supabase.rpc("spend_ai_tokens", {
+    p_kind: kind,
+    p_tokens: Math.round(tokens),
+    p_overage: overage,
+  });
+  if (error) console.error(`spend_ai_tokens failed (${error.message}) — ${kind} ${tokens}`);
+}
+
+/**
+ * Số token của một response, nếu nhà cung cấp có nói.
+ *
+ * Chuẩn OpenAI đặt nó ở `usage.total_tokens`. Không phải bên nào cũng gửi, và
+ * một bên không gửi thì lượt đó không tính tiền được — đó là mất mát về phía
+ * mình, không phải về phía người dùng, nên nó im lặng trả 0.
+ */
+export function tokensOf(payload: unknown): number {
+  const u = (payload as { usage?: { total_tokens?: unknown } })?.usage;
+  const n = Number(u?.total_tokens);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+/**
+ * Đọc con số token ra khỏi một dòng SSE, ở nền.
+ *
+ * ── vì sao nó không được `await` ──
+ *
+ * Người dùng đã có câu trả lời của họ; phép ghi sổ này chạy sau. Bắt response
+ * chờ nó là bắt người ta chờ một việc không liên quan đến thứ họ hỏi.
+ *
+ * ── vì sao nó nuốt mọi lỗi ──
+ *
+ * Cùng lý do với `recordTokens`: tiền đã tiêu rồi. Một dòng đứt giữa chừng, một
+ * chunk không parse được, một `usage` không bao giờ tới — tất cả đều nghĩa là
+ * mình không tính được lượt đó, và mình chịu. Không cái nào là lý do để làm
+ * hỏng một câu trả lời đã thành công.
+ *
+ * Chỉ giữ số CUỐI CÙNG đọc được: chuẩn OpenAI gửi `usage` một lần ở chunk cuối,
+ * nhưng một bên khác có thể gửi tổng luỹ tiến qua từng chunk, và trong cả hai
+ * cách thì con số cuối là con số đúng.
+ */
+export function meterStream(
+  supabase: SupabaseClient,
+  kind: string,
+  stream: ReadableStream<Uint8Array>,
+  overage: boolean,
+): void {
+  (async () => {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let total = 0;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const body = line.slice(6).trim();
+          if (body === "[DONE]") continue;
+          try {
+            const n = tokensOf(JSON.parse(body));
+            if (n > 0) total = n;
+          } catch {
+            /* Một chunk không parse được là một chunk, không phải một lỗi. */
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`meterStream ${kind}`, e);
+    }
+    if (total > 0) await recordTokens(supabase, kind, total, overage);
+  })();
+}
+
 export async function claimCall(supabase: SupabaseClient, kind: string): Promise<boolean> {
   const { data, error } = await supabase.rpc("claim_ai_call", { p_kind: kind });
   if (error) {

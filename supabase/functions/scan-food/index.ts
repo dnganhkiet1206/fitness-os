@@ -1,7 +1,7 @@
 import { aiKey, aiUrl, aiVisionModel, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, json, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, json, opaque, quotaExceeded, recordTokens, requireUser, tokensOf } from "../_shared/guard.ts";
 
 /** Output ceiling — the reply is a small JSON object, never prose. */
 const MAX_TOKENS = 1500;
@@ -127,7 +127,8 @@ serve(async (req) => {
       return json({ error: "Ảnh quá lớn. Vui lòng chụp lại." }, 413);
     }
 
-    if (!(await claimCall(supabase, "scan-food"))) return quotaExceeded();
+    const gate = await aiGate(supabase, "scan-food");
+    if (gate === "denied") return quotaExceeded();
 
     const modeInstructions: Record<string, string> = {
       food: `You are a professional nutrition analyst with expertise in food & beverage identification.
@@ -323,6 +324,9 @@ ${
     }
 
     const data = await response.json();
+    /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
+       lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
+    await recordTokens(supabase, "scan-food", tokensOf(data), gate === "overage");
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
 
     if (!toolCall) {

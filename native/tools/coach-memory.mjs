@@ -108,7 +108,8 @@ const sql = readdirSync(path.join(REPO, 'supabase', 'migrations'))
   if (!/SUPABASE_SERVICE_ROLE_KEY|dbServiceKey\(\)/.test(code)) {
     problems.push(`${EXTRACTOR}: không dùng service role — bảng không có policy INSERT nên ghi bằng token người dùng sẽ hỏng`);
   }
-  if (!/claimCall\(supabase, "ai-coach-memory"\)/.test(code)) {
+  /* `claimCall` hoặc `aiGate` — cùng một hàm SQL, cùng một bộ đếm. */
+  if (!/(claimCall|aiGate)\(supabase, "ai-coach-memory"\)/.test(code)) {
     problems.push(`${EXTRACTOR}: không trừ hạn mức — đây là một lời gọi model, và nó do client kích hoạt`);
   }
   if (!/turns\.length < 2/.test(code)) {

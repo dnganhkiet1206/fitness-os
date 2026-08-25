@@ -1,7 +1,7 @@
 import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, json, localDate, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, json, localDate, opaque, quotaExceeded, recordTokens, requireUser, tokensOf } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 
 /** Output ceiling — the reply is a structured review, not an essay. */
@@ -36,7 +36,8 @@ serve(async (req) => {
       return json({ error: "week_start must be YYYY-MM-DD" }, 400);
     }
 
-    if (!(await claimCall(supabase, "ai-weekly-review"))) return quotaExceeded();
+    const gate = await aiGate(supabase, "ai-weekly-review");
+    if (gate === "denied") return quotaExceeded();
 
     const weekEnd = new Date(week_start);
     weekEnd.setDate(weekEnd.getDate() + 6);
@@ -230,6 +231,9 @@ Trả về insights (quan sát từ dữ liệu) và recommendations (hành đ�
     }
 
     const result = await response.json();
+    /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
+       lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
+    await recordTokens(supabase, "ai-weekly-review", tokensOf(result), gate === "overage");
     const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
     let analysis = { summary: "", score: 0, insights: [], recommendations: [] };
 

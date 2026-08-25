@@ -2,7 +2,7 @@ import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { claimCall, corsHeaders, dbServiceKey, dbUrl, json, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, dbServiceKey, dbUrl, json, opaque, quotaExceeded, recordTokens, requireUser, tokensOf } from "../_shared/guard.ts";
 
 /**
  * What the coach should still know next week.
@@ -264,7 +264,8 @@ serve(async (req) => {
       so with the claim first, closing a one-line chat twenty times spent
       twenty of the day's calls on twenty requests that never left the server.
     */
-    if (!(await claimCall(supabase, "ai-coach-memory"))) return quotaExceeded();
+    const gate = await aiGate(supabase, "ai-coach-memory");
+    if (gate === "denied") return quotaExceeded();
 
     /* Read with the caller's token — the SELECT policy is theirs. `id` travels
        with it because deletion below is by primary key, not by matching the
@@ -304,6 +305,9 @@ serve(async (req) => {
     }
 
     const data = await res.json();
+    /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
+       lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
+    await recordTokens(supabase, "ai-coach-memory", tokensOf(data), gate === "overage");
     const { add, confirm, drop } = parseResult(data?.choices?.[0]?.message?.content ?? "");
 
     /*

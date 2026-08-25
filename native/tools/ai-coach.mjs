@@ -104,7 +104,7 @@ try {
   writeFileSync(path.join(out, 'serve.cjs'), 'module.exports = { serve: () => {} };');
   writeFileSync(
     path.join(out, 'guard.cjs'),
-    'module.exports = { corsHeaders: {}, json: () => {}, requireUser: async () => ({}), claimCall: async () => true, quotaExceeded: () => {} };',
+    'module.exports = { corsHeaders: {}, json: () => {}, opaque: () => {}, requireUser: async () => ({}), claimCall: async () => true, aiGate: async () => "ok", recordTokens: async () => {}, tokensOf: () => 0, meterStream: () => {}, quotaExceeded: () => {} };',
   );
   /* `_shared/ai.ts` — nhà cung cấp AI nay nằm một chỗ, nên bản dựng thử
      cũng phải biết tới nó. */
@@ -230,7 +230,12 @@ for (const [name, kind] of AI) {
         'nên cổng duy nhất là cái function tự dựng, và ở đây thì không có',
     );
   }
-  if (!new RegExp(`claimCall\\(supabase, "${kind}"\\)`).test(src)) {
+  /* `claimCall` HOẶC `aiGate` — cả hai gọi cùng một hàm SQL và cùng đếm.
+
+     Luật này khớp `claimCall` nguyên văn. Cổng đổi sang `aiGate` để diễn tả ba
+     trạng thái (trong hạn mức / vượt-nhưng-có-ví / hết) thay vì hai, và luật đỏ
+     dù việc đếm không đổi một chút nào. Lần thứ mười trong repo này. */
+  if (!new RegExp(`(claimCall|aiGate)\\(supabase, "${kind}"\\)`).test(src)) {
     problems.push(`${name}: không trừ hạn mức dưới đúng tên '${kind}' — một lời gọi không đếm là một hoá đơn không trần`);
   }
   /* The caller comes from the token. A user id in the body is a user id
@@ -305,7 +310,12 @@ for (const [name, kind] of AI) {
     execFileSync('sh', ['-c', `cat ${path.join(ROOT, 'supabase/migrations')}/*.sql`], { encoding: 'utf8' }),
   );
   /* Migrations run in filename order, so the last definition is the live one. */
-  const defs = [...sql.matchAll(/CREATE OR REPLACE FUNCTION public\.claim_ai_call[\s\S]*?\$\$;/g)];
+  /* Bộ đếm nay nằm trong `ai_gate`; `claim_ai_call` chỉ là một lớp mỏng gọi nó,
+     vì boolean không diễn tả được ba trạng thái. Luật vẫn canh đúng một thứ —
+     cộng và đọc phải nằm trong MỘT câu lệnh — chỉ là câu đó đã dọn sang tên
+     khác, nên tìm cả hai và lấy bản mới nhất có thân thật. */
+  const defs = [...sql.matchAll(/CREATE OR REPLACE FUNCTION public\.(ai_gate|claim_ai_call)[\s\S]*?\$\$;/g)]
+    .filter((m) => /INSERT INTO public\.ai_usage/.test(m[0]));
   const body = defs.length ? defs[defs.length - 1][0] : '';
   if (!body) {
     problems.push('không tìm thấy claim_ai_call trong migrations — luật này đã lạc mục tiêu');
@@ -317,7 +327,9 @@ for (const [name, kind] of AI) {
           '(đo thật: 40 lời gọi đồng thời / hạn mức 10 → đúng 10 lần cho phép)',
       );
     }
-    if (!/auth\.uid\(\)/.test(body) || !/v_uid IS NULL[\s\S]{0,60}RETURN false/.test(body)) {
+    /* `RETURN false` hoặc `RETURN 'denied'` — hai cách viết cùng một câu trả
+       lời, vì hàm nay trả TEXT ba trạng thái thay vì boolean hai. */
+    if (!/auth\.uid\(\)/.test(body) || !/v_uid IS NULL[\s\S]{0,60}RETURN (false|'denied')/.test(body)) {
       problems.push('claim_ai_call không từ chối khi chưa đăng nhập');
     }
     if (!/p_kind !~|p_kind ~/.test(body)) {

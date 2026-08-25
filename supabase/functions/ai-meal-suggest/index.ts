@@ -1,7 +1,7 @@
 import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, localDate, oneOf, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, localDate, oneOf, opaque, quotaExceeded, recordTokens, requireUser, tokensOf } from "../_shared/guard.ts";
 import { localHour } from "../_shared/sleep.ts";
 
 /** Output ceiling — the reply is a short list of meals. */
@@ -36,7 +36,8 @@ serve(async (req) => {
     */
     const mealType = oneOf(meal_type, MEAL_TYPES);
 
-    if (!(await claimCall(supabase, "ai-meal-suggest"))) return quotaExceeded();
+    const gate = await aiGate(supabase, "ai-meal-suggest");
+    if (gate === "denied") return quotaExceeded();
     /* Validated for the same reason `ai-smart-nudges` is — see `localDate`. */
     const today = localDate(date) ?? new Date().toISOString().split("T")[0];
 
@@ -190,6 +191,9 @@ NGUYÊN TẮC:
     }
 
     const result = await response.json();
+    /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
+       lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
+    await recordTokens(supabase, "ai-meal-suggest", tokensOf(result), gate === "overage");
     const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
     let suggestions: any[] = [];
 

@@ -2,7 +2,7 @@ import { looksHostile, refusalStream, scopeRule } from "../_shared/scope.ts";
 import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, json, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, json, meterStream, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
 
@@ -86,7 +86,8 @@ serve(async (req) => {
       return refusalStream(lang, corsHeaders);
     }
 
-    if (!(await claimCall(supabase, "ai-coach"))) return quotaExceeded();
+    const gate = await aiGate(supabase, "ai-coach");
+    if (gate === "denied") return quotaExceeded();
     /*
       ── the server does not know what day it is for this person ──
 
@@ -277,6 +278,10 @@ NGUYÊN TẮC QUAN TRỌNG:
         ],
         max_tokens: MAX_TOKENS,
         stream: true,
+        /* Xin bản tổng kết ở cuối dòng. Chuẩn OpenAI gửi một chunk cuối chứa
+           `usage` khi có cờ này; không có nó thì một cuộc trò chuyện dài không
+           bao giờ được tính, và đó đúng là những cuộc tốn nhất. */
+        stream_options: { include_usage: true },
     });
 
     /* `null` nghĩa là KHÔNG CÓ nhà cung cấp nào được cấu hình — khác hẳn với
@@ -303,7 +308,26 @@ NGUYÊN TẮC QUAN TRỌNG:
       });
     }
 
-    return new Response(response.body, {
+    /*
+      Tách đôi dòng: một nửa đi tới người dùng, một nửa ở lại để đếm.
+
+      ── vì sao phải tee ──
+
+      Con số token nằm ở CHUNK CUỐI của dòng, và dòng thì chảy thẳng ra client.
+      Đọc nó ở đây nghĩa là tiêu mất dòng; chuyển tiếp mà không đọc nghĩa là mọi
+      cuộc trò chuyện đều không tính được tiền — và cuộc dài là cuộc tốn nhất.
+
+      `tee()` cho hai dòng độc lập từ một nguồn, nên client không chờ thêm một
+      nhịp nào: nửa của nó chảy đúng như trước, còn nửa kia được đọc song song
+      và bỏ đi sau khi lấy con số.
+
+      Không `await` nhánh đếm. Nó chạy sau khi response đã trả về, và bắt nó chờ
+      nghĩa là bắt người dùng chờ một phép ghi sổ.
+    */
+    const [toClient, toMeter] = response.body!.tee();
+    meterStream(supabase, "ai-coach", toMeter, gate === "overage");
+
+    return new Response(toClient, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {

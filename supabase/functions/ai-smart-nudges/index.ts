@@ -1,7 +1,7 @@
 import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { claimCall, corsHeaders, localDate, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, localDate, opaque, quotaExceeded, recordTokens, requireUser, tokensOf } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes, localHour, SLEEP_COLUMNS } from "../_shared/sleep.ts";
 
@@ -24,7 +24,8 @@ serve(async (req) => {
     */
     const { lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
 
-    if (!(await claimCall(supabase, "ai-smart-nudges"))) return quotaExceeded();
+    const gate = await aiGate(supabase, "ai-smart-nudges");
+    if (gate === "denied") return quotaExceeded();
     /* Prefer the client's local calendar date; fall back to server UTC.
        Validated, because the arithmetic two lines down is `new Date(...)` and
        an unusable string makes an Invalid Date whose `toISOString()` throws —
@@ -208,6 +209,9 @@ NGUYÊN TẮC QUAN TRỌNG:
     }
 
     const result = await response.json();
+    /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
+       lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
+    await recordTokens(supabase, "ai-smart-nudges", tokensOf(result), gate === "overage");
     const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
     let nudges = [];
 

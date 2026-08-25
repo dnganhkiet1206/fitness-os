@@ -114,6 +114,55 @@ const problems = [];
   }
 }
 
+/* ── 4. đo TOKEN, không đo lượt gọi ──
+
+   Hạn mức đếm lượt và nó đúng cho việc chặn lạm dụng. Nó không tính được tiền:
+   hai lượt cùng loại chênh nhau hai bậc — một câu "hôm nay tập gì" và một câu
+   kèm bảy ngày dữ liệu cùng tính là `calls = 1`. "Dùng bao nhiêu trả bấy nhiêu"
+   cần một con số tỉ lệ với cái đã tiêu. */
+{
+  const fns = ['ai-coach', 'ai-coach-memory', 'ai-meal-suggest', 'ai-smart-nudges', 'ai-weekly-review', 'scan-food'];
+  for (const f of fns) {
+    const code = strip(read(`${f}/index.ts`));
+    if (!/aiGate\(supabase, "/.test(code)) {
+      problems.push(`${f}/index.ts: không đi qua aiGate — cổng hai trạng thái không phân biệt được "hết hạn mức" với "vượt nhưng có ví"`);
+    }
+    const meters = /recordTokens\(|meterStream\(/.test(code);
+    if (!meters) problems.push(`${f}/index.ts: không ghi token nào — lượt gọi này không bao giờ tính được tiền`);
+    /* Và phần vượt phải được ĐÁNH DẤU. Ghi token mà không nói lượt nào là
+       overage thì có số liệu mà không có hoá đơn. */
+    if (meters && !/gate === "overage"/.test(code)) {
+      problems.push(`${f}/index.ts: ghi token nhưng không đánh dấu phần vượt hạn mức`);
+    }
+  }
+
+  const coach = strip(read('ai-coach/index.ts'));
+  /* Dòng stream: con số nằm ở chunk CUỐI và dòng thì chảy thẳng ra client. Đọc
+     nó nghĩa là tiêu mất dòng; chuyển tiếp mà không đọc nghĩa là mọi cuộc trò
+     chuyện đều không tính được — và cuộc dài là cuộc tốn nhất. */
+  if (!/\.tee\(\)/.test(coach)) {
+    problems.push('ai-coach/index.ts: không tee dòng stream — usage nằm ở chunk cuối, không đọc được nếu chỉ chuyển tiếp');
+  }
+  if (!/include_usage: true/.test(coach)) {
+    problems.push('ai-coach/index.ts: không xin include_usage — nhà cung cấp sẽ không gửi bản tổng kết ở cuối dòng');
+  }
+  if (/await meterStream\(/.test(coach)) {
+    problems.push('ai-coach/index.ts: await meterStream — người dùng phải chờ một phép ghi sổ sau khi đã có câu trả lời');
+  }
+
+  const guard = strip(read('_shared/guard.ts'));
+  /* Phải TRẢ VỀ "denied" trong nhánh lỗi, không chỉ ghi log ở đó.
+
+     Bản đầu chấp nhận "hoặc có câu log ai_gate failed" — và phá thử lọt ngay:
+     đổi `return "denied"` thành `return "ok"` mà vẫn giữ dòng log thì luật vẫn
+     xanh. Một nhánh `||` nới ra để "chắc chắn không báo nhầm" là một nhánh làm
+     luật thôi canh. */
+  const errBranch = guard.match(/if \(error\) \{[\s\S]{0,200}?\n  \}/)?.[0] ?? '';
+  if (!/ai_gate failed/.test(errBranch) || !/return "denied"/.test(errBranch)) {
+    problems.push('_shared/guard.ts: aiGate không TỪ CHỐI khi RPC hỏng — một bộ đếm hỏng mà vẫn cho đi qua là chọn "cứ tiêu tiền"');
+  }
+}
+
 if (problems.length) {
   console.log('ranh giới AI CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);

@@ -99,7 +99,11 @@ try {
      module.exports = {
        createClient: (u, k, o) => ({
          from: () => ({ select: () => ({ eq: () => ({ single: async () => ({ data: null, error: null }) }) }) }),
-         rpc: async (n) => { db.calls.push({ rpc: n }); return { data: true, error: null }; },
+         rpc: async (n) => {
+           db.calls.push({ rpc: n });
+           if (n === 'ai_gate') return { data: 'ok', error: null };
+           return { data: true, error: null };
+         },
          auth: { async getClaims(t) { const c = T[t]; return c ? { data: { claims: c }, error: null } : { data: null, error: { message: 'bad' } }; } },
        }),
        __db: db, __addToken: (t, c) => { T[t] = c; }, __reset: () => { db.calls = []; },
