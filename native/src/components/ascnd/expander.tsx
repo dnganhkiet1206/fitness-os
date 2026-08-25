@@ -118,6 +118,22 @@ export function Expander({ open, children }: { open: boolean; children: React.Re
 }
 
 const styles = StyleSheet.create({
-  clip: { overflow: 'hidden' },
+  /*
+    `alignSelf: 'stretch'` — và việc thiếu nó là lý do KHÔNG thẻ hero nào mở ra
+    được.
+
+    Hộp này đo chiều cao bằng một con TUYỆT ĐỐI (`body` bên dưới). Trong một cột
+    căn trái/phải thì hộp vẫn rộng bằng cha, nên con tuyệt đối có bề rộng và đo
+    ra một chiều cao thật. Trong một cột `alignItems: 'center'` — thứ mà cả bốn
+    trang hero là — hộp co theo NỘI DUNG, nội dung duy nhất của nó là con tuyệt
+    đối, và một con tuyệt đối không đóng góp gì vào kích thước cha. Bề rộng 0,
+    chữ xuống dòng thành không có gì, chiều cao đo ra 0 — và `Expander` coi 0 là
+    "chưa đo được" nên nó không bao giờ chuyển sang trạng thái mở.
+
+    Không có lỗi nào, không có cảnh báo nào: mũi tên xoay, và bên dưới không có
+    gì. Neo bề rộng ở đây thay vì bắt từng chỗ gọi nhớ, vì chỗ gọi không có cách
+    nào biết điều này trừ khi đã gặp.
+  */
+  clip: { overflow: 'hidden', alignSelf: 'stretch' },
   body: { position: 'absolute', left: 0, right: 0, top: 0 },
 });

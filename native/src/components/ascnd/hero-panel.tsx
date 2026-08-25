@@ -8,6 +8,7 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { AnimatedNumber } from '@/components/ascnd/animated-number';
 import { Expander } from '@/components/ascnd/expander';
 import { Icon } from '@/components/ascnd/icon';
+import type { LucideIcon } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { colors, HERO_RING, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
@@ -126,6 +127,8 @@ export function HeroRing({
   decimals = 0,
   caption,
   captionColor,
+  icon,
+  iconColor,
 }: {
   /** 0–1 */
   pct: number;
@@ -148,6 +151,20 @@ export function HeroRing({
   decimals?: number;
   caption: string;
   captionColor: string;
+  /**
+   * Biểu tượng của phép đo, đặt TRONG vòng tròn.
+   *
+   * Bốn trang trông giống nhau là điều đúng cho một deck, và cũng là rủi ro của
+   * nó: vuốt tới trang thứ ba rồi nhìn một con số bốn chữ số trong một vòng
+   * tròn thì không có gì nói đó là calo hay là mililít. Nhãn ở trên có nói,
+   * nhưng nhãn là chữ và chữ phải đọc; hình thì nhận ra được trước khi đọc.
+   *
+   * Readiness và activity không có: chúng KHÔNG cần, vì một vòng có ba vòng
+   * đồng tâm và một vòng có nhãn trạng thái ở giữa đã tự nhận diện. Thêm icon
+   * cho đủ bộ là thêm mực cho một câu đã nói xong.
+   */
+  icon?: LucideIcon;
+  iconColor?: string;
 }) {
   /* SVG ids are document-global on native, so four of these on one deck would
      all paint whichever gradient registered last. `status-scrim.tsx`: "this has
@@ -182,6 +199,9 @@ export function HeroRing({
         />
       </Svg>
       <View style={styles.ringCenter} pointerEvents="none">
+        {icon ? (
+          <Icon icon={icon} size={20} color={iconColor ?? colors.mutedForeground} />
+        ) : null}
         <AnimatedNumber
           value={value}
           decimals={decimals}
@@ -219,7 +239,7 @@ const styles = StyleSheet.create({
   moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   detail: { gap: spacing.md, alignSelf: 'stretch' },
   ringWrap: { alignItems: 'center', justifyContent: 'center' },
-  ringCenter: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+  ringCenter: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 2 },
   value: { ...type.largeTitle, color: colors.foreground, fontVariant: ['tabular-nums'] },
   /* `AnimatedNumber` là một TextInput bên dưới, thứ không tự co theo nội dung —
      không có hai dòng này thì con số trôi khỏi tâm vòng tròn. Cùng bản sửa mà

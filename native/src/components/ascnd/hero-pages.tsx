@@ -1,3 +1,4 @@
+import { Droplets, Flame } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { HeroPanel, HeroRing } from '@/components/ascnd/hero-panel';
@@ -61,6 +62,10 @@ export function NutritionHero({
           pct={kcal / target}
           from={colors.readinessGreen}
           to={colors.metricOrange}
+          /* Ngọn lửa cam — đúng biểu tượng và đúng màu mà thẻ dinh dưỡng cũ
+             dùng, để cùng một phép đo không đổi mặt khi nó đổi chỗ. */
+          icon={Flame}
+          iconColor={colors.metricOrange}
           value={Math.round(kcal)}
           /* Còn lại, không phải mục tiêu. Mục tiêu là con số bạn đã biết; số
              còn lại là con số quyết định bữa tới ăn gì. */
@@ -114,6 +119,9 @@ export function WaterHero({
           pct={ml / target}
           from={colors.metricBlue}
           to={colors.metricCyan}
+          /* Giọt nước xanh #3ba6ff — cùng icon và cùng màu thẻ nước cũ. */
+          icon={Droplets}
+          iconColor={colors.metricBlue}
           value={displayVolume(ml, unit)}
           /* `displayVolume` làm tròn ml về số nguyên và oz về một chữ số thập
              phân — nên số lẻ chỉ tồn tại ở oz. */
