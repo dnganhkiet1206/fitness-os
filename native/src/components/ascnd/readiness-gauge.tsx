@@ -583,22 +583,43 @@ const styles = StyleSheet.create({
   /* Two per row, however many there are. Five tiles come out 2-2-1, and the odd
      one keeps its siblings' width instead of stretching to fill the row — a
      tile twice as wide as the rest reads as the important one. */
-  grid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  grid: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  /*
+    Một ô của lưới 2×2, theo đúng ảnh tham chiếu: NHÃN nhỏ, SỐ to, ĐƠN VỊ nhỏ.
+
+    Ba dòng chứ không phải hai, và thứ tự đó có lý do: nhãn nói đang đo cái gì,
+    số là thứ mắt dừng lại, đơn vị trả lời "50 cái gì". Bỏ dòng cuối thì "90" và
+    "1.46" trông như hai đại lượng cùng loại.
+
+    Bề rộng 47% cho hai ô một hàng với khoảng thở ở giữa; `space-between` giữ
+    hàng cuối lẻ nằm bên trái thay vì bị kéo giãn.
+  */
   tile: {
     width: '47%',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: glass.bg,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.sm + 2,
+    gap: 2,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
     borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    borderColor: 'rgba(255,255,255,0.07)',
   },
-  tileLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground },
-  tileValue: { fontSize: 26, fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
+  tileLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
+  /* Phông hệ thống, không phải Menlo. Mono là đúng cho một CỘT số cần thẳng
+     hàng theo chiều dọc; ở đây mỗi ô có đúng một số, và phông hệ thống ở cỡ
+     lớn thì đọc rõ hơn hẳn. `tabular-nums` vẫn giữ cho các chữ số cùng bề
+     rộng, nên số đổi không làm ô nhảy. */
+  tileValue: { fontSize: 30, fontWeight: '700', letterSpacing: -0.5, color: colors.foreground, fontVariant: ['tabular-nums'] },
   /* Dòng thứ ba của ô, như trong ảnh tham chiếu: nhãn, số, rồi đơn vị. Không có
      nó thì "90" và "1.46" trông như hai đại lượng cùng loại. */
-  tileUnit: { fontSize: 11, color: colors.mutedForeground },
+  tileUnit: { fontSize: 12, color: colors.mutedForeground },
   tileGhost: { width: 44, borderRadius: radius.sm },
   confidence: {
     fontSize: 11,

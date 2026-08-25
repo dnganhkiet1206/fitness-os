@@ -18,15 +18,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, {
   runOnJS,
@@ -121,7 +113,18 @@ const HERO_FADE = HERO_RING;
  * không phải trước.
  */
 const HERO_HOLD = HERO_RING * 0.34;
-const HERO_GONE = HERO_RING * 1.15;
+
+/**
+ * Quãng cuộn mà hero mờ hết trong đó: hai phần ba màn hình.
+ *
+ * Neo vào CHIỀU CAO MÀN HÌNH chứ không vào đường kính vòng tròn, và đó là một
+ * đổi ý có lý do. Vòng tròn cùng cỡ trên mọi máy, nên lấy nó làm đơn vị thì trên
+ * một máy nhỏ hero tắt sau khi đã cuộn gần hết trang, còn trên máy lớn nó tắt
+ * khi mới đi được một phần tư — cùng một con số, hai cảm giác khác nhau.
+ *
+ * "Hai phần ba những gì đang nhìn thấy" thì giống nhau ở mọi máy.
+ */
+const HERO_GONE_FRACTION = 0.66;
 
 /* `intensity` là một prop chứ không phải một style, nên nó phải đi qua
    `animatedProps`; `useAnimatedStyle` không chạm tới được. */
@@ -284,6 +287,9 @@ export default function TodayScreen() {
    * cảm giác khác hẳn với một chỉ báo tường thuật CỬ CHỈ.
    */
   const scrollY = useSharedValue(0);
+  /* Đọc một lần ở JS, dùng trong worklet như một hằng số — không phải shared
+     value, vì chiều cao màn hình không đổi giữa hai frame. */
+  const gone = useWindowDimensions().height * HERO_GONE_FRACTION;
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
     /* Thanh tab vẫn cần con số này ở JS thread — nó ẩn/hiện bằng state React. */
@@ -316,17 +322,23 @@ export default function TodayScreen() {
     if (focusSV.value === 1) return { transform: [{ translateY: 0 }, { scale: 1 }], opacity: 1 };
     return {
     transform: [
-      /* 0.05, không phải 0.12. Ở 0.12 vòng tròn đi được 30pt trong một cú vuốt
-         ngắn, đủ để đọc ra là NÓ đang chuyển động chứ không phải trang. Cái cần
-         chuyển động là tấm. */
-      { translateY: scrollY.value * 0.05 },
+      /*
+        Đứng YÊN. Không phải 0.05, không phải 0.12.
+
+        Mọi mức dịch đều đọc ra là vòng tròn đang chuyển động, và thứ cần chuyển
+        động là TẤM. Giữ transform ở đây thay vì bỏ hẳn chỉ vì `scale` bên dưới
+        cũng nằm trong mảng này, và một mảng transform trộn giữa có và không có
+        cùng một khoá giữa các lần render là cách nhanh nhất để Reanimated nội
+        suy nhầm.
+      */
+      { translateY: 0 },
       /* Và lùi lại một chút khi mờ đi. Chỉ mờ thôi thì vòng tròn tan ra tại
          chỗ, còn co nhẹ cùng lúc thì nó ĐI RA XA — mắt đọc hai tín hiệu đó
          thành một chuyển động, và đó là phần "mượt". 4% là gần hết mức thấy
          được mà chưa thành một cú thu nhỏ. */
-      { scale: interpolate(scrollY.value, [HERO_HOLD, HERO_GONE], [1, 0.97], 'clamp') },
+      { scale: interpolate(scrollY.value, [HERO_HOLD, gone], [1, 0.97], 'clamp') },
     ],
-    opacity: interpolate(scrollY.value, [HERO_HOLD, HERO_GONE], [1, 0], 'clamp'),
+    opacity: interpolate(scrollY.value, [HERO_HOLD, gone], [1, 0], 'clamp'),
     };
   });
 
@@ -338,7 +350,7 @@ export default function TodayScreen() {
     return {
     /* Tấm đục dần theo ĐÚNG quãng hero mờ, nên hai thứ là một chuyển động chứ
        không phải hai cái chạy lệch nhau. */
-    intensity: interpolate(scrollY.value, [HERO_HOLD, HERO_GONE], [12, 44], 'clamp'),
+    intensity: interpolate(scrollY.value, [HERO_HOLD, gone], [12, 44], 'clamp'),
     };
   });
   const toggleHero = useCallback(() => {

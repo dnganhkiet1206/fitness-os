@@ -1,5 +1,26 @@
 import * as Haptics from 'expo-haptics';
-import { Pressable, StyleSheet, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+/*
+  `Pressable` của gesture-handler, không phải của React Native.
+
+  ── lỗi nó sửa ──
+
+  Deck ở đầu Today nằm trong một `GestureDetector`. Mọi `Pressable` của React
+  Native bên trong đó ĐUA với hệ cử chỉ chứ không hợp tác: hai hệ chạm khác nhau
+  cùng đòi một cú chạm, và cú chạm đầu tiên bị nuốt. Trên máy thật là phải bấm
+  hai lần mới đi được — rồi cả hai lần cũng không đi.
+
+  Tôi đã thử sửa bằng cách bỏ Pressable bọc cả thẻ. Nó không sửa được gì, vì
+  mũi tên và dòng "xem chi tiết" cũng là Pressable nằm trong đúng cái
+  GestureDetector đó — tôi chỉ DỜI chỗ của lỗi.
+
+  Tài liệu RNGH nói thẳng: `Pressable` của họ là bản thay thế drop-in dành cho
+  app đã bọc `GestureHandlerRootView`, và app này đã bọc từ vòng sửa
+  `gesture-root.mjs`. Đổi ở ĐÂY chứ không ở từng chỗ gọi, vì gần ba trăm chỗ
+  trong app đi qua component này và không chỗ nào trong số đó nên phải biết về
+  chuyện này.
+*/
+import { Pressable, type PressableProps } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { press } from '@/constants/motion';
