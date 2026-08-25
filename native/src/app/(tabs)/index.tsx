@@ -108,6 +108,21 @@ import { handleTabScroll } from '@/lib/tab-bar-visibility';
  */
 const HERO_FADE = HERO_RING;
 
+/**
+ * Hero giữ nguyên độ đậm trong quãng đầu này trước khi bắt đầu mờ.
+ *
+ * Bản trước mờ ngay từ pixel cuộn đầu tiên và tắt hẳn ở 216 — tức là chỉ cần
+ * nhích ngón tay là con số đang đọc đã nhạt đi. Một cú cuộn nhỏ thường không
+ * phải "tôi xong với cái này rồi", nó là "tôi muốn xem có gì bên dưới"; thứ
+ * đang nhìn không nên phản ứng với ý định đó.
+ *
+ * Nên nó đứng nguyên cho tới khi bạn đã cuộn qua một phần ba vòng tròn, rồi mới
+ * mờ, và mờ hết ở NGOÀI chiều cao vòng tròn — sau lúc tấm đã che xong, chứ
+ * không phải trước.
+ */
+const HERO_HOLD = HERO_RING * 0.34;
+const HERO_GONE = HERO_RING * 1.15;
+
 /* `intensity` là một prop chứ không phải một style, nên nó phải đi qua
    `animatedProps`; `useAnimatedStyle` không chạm tới được. */
 const ABlurView = Animated.createAnimatedComponent(BlurView);
@@ -289,24 +304,26 @@ export default function TodayScreen() {
    */
   const heroSlide = useAnimatedStyle(() => ({
     transform: [
-      { translateY: scrollY.value * 0.12 },
+      /* 0.05, không phải 0.12. Ở 0.12 vòng tròn đi được 30pt trong một cú vuốt
+         ngắn, đủ để đọc ra là NÓ đang chuyển động chứ không phải trang. Cái cần
+         chuyển động là tấm. */
+      { translateY: scrollY.value * 0.05 },
       /* Và lùi lại một chút khi mờ đi. Chỉ mờ thôi thì vòng tròn tan ra tại
          chỗ, còn co nhẹ cùng lúc thì nó ĐI RA XA — mắt đọc hai tín hiệu đó
          thành một chuyển động, và đó là phần "mượt". 4% là gần hết mức thấy
          được mà chưa thành một cú thu nhỏ. */
-      { scale: interpolate(scrollY.value, [0, HERO_FADE], [1, 0.96], 'clamp') },
+      { scale: interpolate(scrollY.value, [HERO_HOLD, HERO_GONE], [1, 0.97], 'clamp') },
     ],
-    /* Tắt trước khi tấm phủ tới, không phải cùng lúc: `easing`-kiểu bằng cách
-       cho quãng mờ ngắn hơn quãng phủ (0.82) nên không có khoảnh khắc nào một
-       vòng tròn mờ nằm sau chữ. */
-    opacity: interpolate(scrollY.value, [0, HERO_FADE * 0.82], [1, 0], 'clamp'),
+    opacity: interpolate(scrollY.value, [HERO_HOLD, HERO_GONE], [1, 0], 'clamp'),
   }));
 
   /* Và tấm đục dần lên theo đúng quãng đó: lúc đứng yên nó gần như trong suốt
      để thấy được mình đang nằm trên cái gì, cuộn hết thì nó là một mặt phẳng
      để chữ không phải cạnh tranh với bất cứ thứ gì. */
   const sheetBlur = useAnimatedProps(() => ({
-    intensity: interpolate(scrollY.value, [0, HERO_FADE], [12, 44], 'clamp'),
+    /* Tấm đục dần theo ĐÚNG quãng hero mờ, nên hai thứ là một chuyển động chứ
+       không phải hai cái chạy lệch nhau. */
+    intensity: interpolate(scrollY.value, [HERO_HOLD, HERO_GONE], [12, 44], 'clamp'),
   }));
   const toggleHero = useCallback(() => {
     Haptics.selectionAsync();
