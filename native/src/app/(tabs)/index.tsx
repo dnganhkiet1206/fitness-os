@@ -358,7 +358,18 @@ export default function TodayScreen() {
 
         Nên 15% cuối của quãng phủ mới là chỗ nó tắt.
       */
-      opacity: interpolate(scrollY.value, [cover * 0.85, cover], [1, 0], 'clamp'),
+      /*
+        Mờ NHẸ ngay từ pixel đầu, rồi tắt hẳn về cuối.
+
+        Ba mốc chứ không hai: từ 1 xuống 0.72 trong nửa đầu quãng phủ, rồi từ
+        0.72 xuống 0 trong nửa sau. Dốc thoải trước, dốc đứng sau.
+
+        Một mốc duy nhất ở 15% cuối thì suốt 85% đầu vòng tròn đứng đó y nguyên
+        và cú cuộn không có phản hồi nào; mờ đều từ đầu tới cuối thì nó nhạt quá
+        sớm để còn đọc được. Hai đoạn cho cả hai: có phản hồi ngay, mà con số
+        vẫn đọc được cho tới khi tấm che tới nơi.
+      */
+      opacity: interpolate(scrollY.value, [0, cover * 0.5, cover], [1, 0.72, 0], 'clamp'),
     };
   });
 
@@ -373,9 +384,42 @@ export default function TodayScreen() {
     intensity: interpolate(scrollY.value, [HERO_HOLD, cover], [12, 44], 'clamp'),
     };
   });
+  /**
+   * Bật/tắt chế độ tập trung, và đưa trang về đầu.
+   *
+   * ── lỗi việc đưa về đầu sửa ──
+   *
+   * Mở chi tiết, cuộn xuống, rồi bấm thu lại: màn hình tự cuộn theo. Đó không
+   * phải một hiệu ứng — đó là ScrollView đang KẸP vị trí cuộn. Thu lại gỡ cả
+   * dashboard ra khỏi cây cùng lúc, chiều cao nội dung co lại đột ngột, và
+   * offset cũ không còn tồn tại nên nó bị kéo về mốc gần nhất còn hợp lệ. Người
+   * dùng thấy một cú trôi mà mình không ra lệnh.
+   *
+   * `scrollTo(0)` có animation làm cùng việc đó nhưng NÓI RA: bạn vừa đổi trạng
+   * thái của trang, nên trang về chỗ bắt đầu của trạng thái mới. Cả hai chiều —
+   * mở ra cũng về đầu, vì phần chi tiết chính là thứ bạn vừa xin xem.
+   */
+  /**
+   * Hàng nút trên đầu: tan đi khi rời đỉnh, hiện lại khi về đỉnh.
+   *
+   * Nó vốn đã cuộn khỏi màn hình vì nằm trong trang — nhưng "cuộn đi" và "tan
+   * đi" là hai cảm giác khác nhau: cái đầu là ba cái nút bị đẩy ra ngoài mép,
+   * cái sau là ba cái nút thôi cần thiết. Ở đỉnh trang chúng là điều khiển của
+   * trang; cuộn xuống rồi thì thứ bạn đang xem mới là trang.
+   *
+   * 56pt là quãng ngắn — chúng biến mất gần như ngay khi bạn bắt đầu, đúng như
+   * thanh điều khiển của Apple Music, chứ không nấn ná nửa màn hình.
+   */
+  const topBar = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 56], [1, 0], 'clamp'),
+    transform: [{ translateY: interpolate(scrollY.value, [0, 56], [0, -10], 'clamp') }],
+  }));
+
+  const scroller = useRef<ScrollView>(null);
   const toggleHero = useCallback(() => {
     Haptics.selectionAsync();
     setHeroOpen((v) => !v);
+    scroller.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
   /*
@@ -728,6 +772,7 @@ export default function TodayScreen() {
         <ReadinessAura status={readinessScore != null ? readinessStatus : null} />
       )}
       <Animated.ScrollView
+      ref={scroller}
       // Transparent, not `styles.root` as before. The wrapper already paints
       // the page colour; painting it again here would paint straight over the
       // light and this change would do nothing at all.
@@ -773,7 +818,7 @@ export default function TodayScreen() {
       scrollEventThrottle={16}
       contentInsetAdjustmentBehavior="never">
       {/* Greeting + actions (web Index header) */}
-      <View style={styles.headerRow}>
+      <Animated.View style={[styles.headerRow, topBar]}>
         {/*
           Ngày và lời chào đều đã bỏ.
 
@@ -845,7 +890,7 @@ export default function TodayScreen() {
             </>
           )}
         </View>
-      </View>
+      </Animated.View>
 
       {!editMode && (
         <>
@@ -907,6 +952,17 @@ export default function TodayScreen() {
             "a flat white fill over moving colour is a sheet of tracing paper:
             the light goes under it and nothing comes through."
           */}
+          {/*
+            Ở chế độ tập trung KHÔNG vẽ tấm.
+
+            Mọi thứ bên trong nó đã bị ẩn, nhưng bản thân tấm thì vẫn vẽ: vẫn
+            blur, vẫn bo góc trên, vẫn padding. Kết quả là một tấm kính rỗng
+            ruột nằm dưới vòng tròn — trông đúng như "một mảnh của màn hình
+            khác lọt vào".
+
+            Một hộp chứa không có gì để chứa thì không phải một hộp chứa.
+          */}
+          {!heroOpen ? (
           <View style={styles.sheet}>
             <ABlurView animatedProps={sheetBlur} tint="dark" style={StyleSheet.absoluteFill} />
           {!heroOpen ? (
@@ -1042,6 +1098,7 @@ export default function TodayScreen() {
             </View>
           ))}
           </View>
+          ) : null}
         </>
       )}
 

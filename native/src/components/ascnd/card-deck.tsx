@@ -60,6 +60,20 @@ const COMMIT = 0.28;
 /** Sideways travel before the pan takes the gesture from the page's scroll. */
 const HYSTERESIS = 12;
 
+/**
+ * Và bao nhiêu độ lệch DỌC thì cú vuốt ngang bị bỏ hẳn.
+ *
+ * Từng bằng đúng HYSTERESIS, và đó là lý do "mở chi tiết ra thì không vuốt sang
+ * trang khác được": `failOffsetY` làm pan thất bại VĨNH VIỄN cho cú chạm đó,
+ * không phải tạm hoãn. Khi phần chi tiết mở, tấm cao hơn hẳn và ngón tay đi
+ * ngang trên một vùng cao thì gần như luôn lệch vài pixel dọc trước — lệch 13px
+ * là mất luôn cú vuốt, và người dùng phải thử lại mà không hiểu vì sao.
+ *
+ * Gấp đôi thì cú cuộn dọc thật vẫn thắng (nó đi thẳng xuống, qua 24px trước khi
+ * đi ngang 12px), còn một cú vuốt ngang hơi xiên thì không còn bị giết.
+ */
+const GIVE_UP_Y = 24;
+
 const DOT = 6;
 
 export function CardDeck({
@@ -84,7 +98,7 @@ export function CardDeck({
 
   const pan = Gesture.Pan()
     .activeOffsetX([-HYSTERESIS, HYSTERESIS])
-    .failOffsetY([-HYSTERESIS, HYSTERESIS])
+    .failOffsetY([-GIVE_UP_Y, GIVE_UP_Y])
     .onBegin(() => {
       from.value = at.value;
     })
