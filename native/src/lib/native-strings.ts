@@ -84,6 +84,7 @@ const en = {
   // Log Sleep sheet
   nLogSleepTitle: 'Log Sleep',
   nBedtime: 'Bedtime',
+  nWaketime: 'Wake',
   nWakeUp: 'Wake up',
   nDuration: 'Duration',
   nHowSleep: 'How did you sleep?',
@@ -839,6 +840,7 @@ const vi: typeof en = {
 
   nLogSleepTitle: 'Ghi giấc ngủ',
   nBedtime: 'Giờ đi ngủ',
+  nWaketime: 'Giờ dậy',
   nWakeUp: 'Giờ dậy',
   nDuration: 'Thời lượng',
   nHowSleep: 'Bạn ngủ thế nào?',

@@ -1,7 +1,7 @@
 import { Droplets, Flame, Moon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { HeroPanel, HeroRing } from '@/components/ascnd/hero-panel';
+import { HeroPanel, HeroRing, HeroTiles } from '@/components/ascnd/hero-panel';
 import { colors, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -76,11 +76,14 @@ export function NutritionHero({
           captionColor={colors.mutedForeground}
         />
       }>
-      <View style={styles.macros}>
-        <Macro label={i18n.nProtein} grams={protein} tint={colors.metricBlue} />
-        <Macro label={i18n.nCarbs} grams={carbs} tint={colors.metricOrange} />
-        <Macro label={i18n.nFat} grams={fat} tint={colors.metricPurple} />
-      </View>
+      <HeroTiles
+        tiles={[
+          { label: i18n.nProtein, value: String(Math.round(protein)), unit: 'g', color: colors.metricBlue },
+          { label: i18n.nCarbs, value: String(Math.round(carbs)), unit: 'g', color: colors.metricOrange },
+          { label: i18n.nFat, value: String(Math.round(fat)), unit: 'g', color: colors.metricPurple },
+          { label: i18n.nKcalToday, value: String(Math.round(kcal)), unit: `/ ${Math.round(target)}` },
+        ]}
+      />
     </HeroPanel>
   );
 }
@@ -136,23 +139,33 @@ export function WaterHero({
           captionColor={colors.mutedForeground}
         />
       }>
-      {/* Chỉ một dòng: đã uống, mục tiêu, phần trăm. Không dựng một hàng giả
-          cho có ba dòng như trang dinh dưỡng — nước có ĐÚNG một phép đo, và
-          bịa thêm hai ô rỗng để cho cân đối là nói rằng có thứ chưa đo được. */}
-      <Text style={styles.waterLine}>
-        {displayVolume(ml, unit)} / {displayVolume(targetMl, unit)} {volumeLabel(unit)} · {pct}%
-      </Text>
+      {/*
+        Hai ô, không phải bốn.
+
+        Nước có đúng một phép đo và một mục tiêu. Bịa thêm hai ô cho cân đối với
+        trang dinh dưỡng là nói rằng có thứ chưa đo được — lưới này co theo số
+        phép đo có thật, và hàng lẻ nằm bên trái chứ không bị kéo giãn.
+      */}
+      <HeroTiles
+        tiles={[
+          {
+            label: i18n.nWater,
+            value: String(displayVolume(ml, unit)),
+            unit: `/ ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`,
+            color: colors.metricBlue,
+          },
+          { label: '%', value: String(pct), unit: `/ 100`, color: colors.metricCyan },
+        ]}
+      />
     </HeroPanel>
   );
 }
 
 const styles = StyleSheet.create({
-  macros: { gap: spacing.sm },
   macro: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   macroDot: { width: 7, height: 7, borderRadius: 4 },
   macroLabel: { ...type.footnote, color: colors.mutedForeground, flex: 1 },
   macroValue: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  waterLine: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
 });
 
 
@@ -208,13 +221,16 @@ export function SleepHero({
           iconColor={colors.metricPurple}
         />
       }>
-      {/* Không dựng một hàng Macro giả cho có ba dòng — giấc ngủ có giờ đi ngủ,
-          giờ dậy và một điểm, và cả ba nằm gọn trong một dòng. Cùng lý do đã
-          viết ở trang nước. */}
-      <Text style={styles.waterLine}>
-        {clock(bedtime)} → {clock(waketime)}
-        {quality != null ? ` · ${Math.round(quality)}/100` : ''}
-      </Text>
+      <HeroTiles
+        tiles={[
+          { label: i18n.nSleep, value: String(hours), unit: `/ ${targetHours} h`, color: colors.metricPurple },
+          ...(quality != null
+            ? [{ label: i18n.nQuality, value: String(Math.round(quality)), unit: '/100', color: colors.metricBlue }]
+            : []),
+          { label: i18n.nBedtime, value: clock(bedtime), unit: '' },
+          { label: i18n.nWaketime, value: clock(waketime), unit: '' },
+        ]}
+      />
     </HeroPanel>
   );
 }

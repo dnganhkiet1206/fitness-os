@@ -17,8 +17,8 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { AnimatedNumber } from '@/components/ascnd/animated-number';
-import { SkeletonBlock } from '@/components/ascnd/skeleton';
 import { Expander } from '@/components/ascnd/expander';
+import { HeroTiles } from '@/components/ascnd/hero-panel';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
@@ -435,23 +435,17 @@ export function ReadinessGauge({
         Bốn nhãn vẫn hiện, giá trị là một khối đang thở. Người đọc biết cái gì
         sắp có ở đó và vì sao nó chưa có.
       */}
-      <View style={styles.grid}>
-        {tiles.length > 0
-          ? tiles.map((t) => (
-              <View key={t.label} style={styles.tile}>
-                <Text style={styles.tileLabel}>{t.label}</Text>
-                <Text style={[styles.tileValue, { color: t.color }]}>{t.value}</Text>
-                <Text style={styles.tileUnit}>{t.unit}</Text>
-              </View>
-            ))
-          : PENDING_TILES.map((label) => (
-              <View key={label} style={styles.tile}>
-                <Text style={styles.tileLabel}>{label}</Text>
-                <SkeletonBlock height={22} style={styles.tileGhost} />
-                <Text style={styles.tileUnit}>{vi ? 'chờ dữ liệu' : 'waiting'}</Text>
-              </View>
-            ))}
-      </View>
+      <HeroTiles
+        tiles={
+          tiles.length > 0
+            ? tiles.map((t) => ({ label: t.label, value: t.value, unit: t.unit, color: t.color }))
+            : PENDING_TILES.map((label) => ({
+                label,
+                value: '—',
+                unit: vi ? 'chờ dữ liệu' : 'waiting',
+              }))
+        }
+      />
 
       {/* Explain + recommendation */}
       {explainText ? <Text style={styles.explain}>{explainText}</Text> : null}
@@ -583,13 +577,6 @@ const styles = StyleSheet.create({
   /* Two per row, however many there are. Five tiles come out 2-2-1, and the odd
      one keeps its siblings' width instead of stretching to fill the row — a
      tile twice as wide as the rest reads as the important one. */
-  grid: {
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
   /*
     Một ô của lưới 2×2, theo đúng ảnh tham chiếu: NHÃN nhỏ, SỐ to, ĐƠN VỊ nhỏ.
 
@@ -600,27 +587,6 @@ const styles = StyleSheet.create({
     Bề rộng 47% cho hai ô một hàng với khoảng thở ở giữa; `space-between` giữ
     hàng cuối lẻ nằm bên trái thay vì bị kéo giãn.
   */
-  tile: {
-    width: '47%',
-    alignItems: 'center',
-    gap: 2,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    borderWidth: glass.borderWidth,
-    borderColor: 'rgba(255,255,255,0.07)',
-  },
-  tileLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
-  /* Phông hệ thống, không phải Menlo. Mono là đúng cho một CỘT số cần thẳng
-     hàng theo chiều dọc; ở đây mỗi ô có đúng một số, và phông hệ thống ở cỡ
-     lớn thì đọc rõ hơn hẳn. `tabular-nums` vẫn giữ cho các chữ số cùng bề
-     rộng, nên số đổi không làm ô nhảy. */
-  tileValue: { fontSize: 30, fontWeight: '700', letterSpacing: -0.5, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  /* Dòng thứ ba của ô, như trong ảnh tham chiếu: nhãn, số, rồi đơn vị. Không có
-     nó thì "90" và "1.46" trông như hai đại lượng cùng loại. */
-  tileUnit: { fontSize: 12, color: colors.mutedForeground },
-  tileGhost: { width: 44, borderRadius: radius.sm },
   confidence: {
     fontSize: 11,
     color: colors.mutedForeground,

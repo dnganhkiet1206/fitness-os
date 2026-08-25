@@ -249,7 +249,82 @@ export function HeroRing({
   );
 }
 
+/**
+ * Lưới chỉ số phụ, dùng chung cho cả năm trang hero.
+ *
+ * ── ba dòng, và thứ tự đó có lý do ──
+ *
+ * NHÃN nói đang đo cái gì, SỐ là chỗ mắt dừng lại, ĐƠN VỊ trả lời "50 cái gì".
+ * Bỏ dòng cuối thì "90" và "1.46" trông như hai đại lượng cùng loại.
+ *
+ * ── vì sao ở đây chứ không chép vào từng trang ──
+ *
+ * Năm trang, một hình dạng. Chép năm bản thì chúng trôi ra khỏi nhau ở lần đầu
+ * một trang được chỉnh, và trên một deck vuốt ngang thì hai lưới khác cỡ đọc ra
+ * là hai màn hình chứ không phải hai trang của một thứ. Repo này đã bắt "một
+ * luật, N bản" sáu lần.
+ *
+ * Phông hệ thống, không phải mono: mono đúng cho một CỘT số cần thẳng hàng dọc,
+ * còn ở đây mỗi ô có đúng một số. `tabular-nums` vẫn giữ chữ số cùng bề rộng
+ * nên số đổi không làm ô nhảy.
+ */
+export function HeroTiles({
+  tiles,
+}: {
+  tiles: { label: string; value: string; unit: string; color?: string }[];
+}) {
+  if (tiles.length === 0) return null;
+  return (
+    <View style={styles.grid}>
+      {tiles.map((t) => (
+        <View key={t.label} style={styles.tile}>
+          <Text style={styles.tileLabel}>{t.label}</Text>
+          <Text style={[styles.tileValue, t.color ? { color: t.color } : null]} numberOfLines={1}>
+            {t.value}
+          </Text>
+          <Text style={styles.tileUnit} numberOfLines={1}>{t.unit}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  grid: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  /* 47% cho hai ô một hàng có khoảng thở; `space-between` giữ hàng cuối lẻ nằm
+     bên trái thay vì bị kéo giãn ra. */
+  tile: {
+    width: '47%',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.07)',
+  },
+  tileLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    color: colors.mutedForeground,
+  },
+  tileValue: {
+    fontSize: 30,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
+  },
+  tileUnit: { fontSize: 12, color: colors.mutedForeground },
   /* One set of paddings for all four pages. Written per card, four numbers
      would agree today and drift the first time one page gained a line. */
   panel: {

@@ -13,6 +13,7 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { Expander } from '@/components/ascnd/expander';
+import { HeroTiles } from '@/components/ascnd/hero-panel';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, HERO_RING, radius, spacing } from '@/constants/ascnd';
@@ -310,9 +311,18 @@ export function ActivityRingsCard({
 
       <Expander open={detailOpen}>
         <View style={styles.detail}>
-          {rings.map((r) => (
-            <Row key={r.key} ring={r} label={label[r.key]} unit={unit[r.key]} />
-          ))}
+          {/* Cùng lưới ô với bốn trang hero còn lại — xem `HeroTiles`. Ba hàng
+              chữ trước đây đúng cho một thẻ nằm trong danh sách; ở đây chúng là
+              trang thứ hai của một deck, và hai lưới khác hình đọc ra là hai màn
+              hình. */}
+          <HeroTiles
+            tiles={rings.map((r) => ({
+              label: label[r.key],
+              value: String(Math.round(r.current)),
+              unit: `/ ${Math.round(r.target)} ${unit[r.key]}`,
+              color: RING_COLORS[r.key][0],
+            }))}
+          />
           {estimated ? <Text style={styles.note}>{i18n.dcActivityEstimated}</Text> : null}
         </View>
       </Expander>
