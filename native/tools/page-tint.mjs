@@ -102,7 +102,24 @@ for (const [f, key] of WIRED) {
    báo: `aura` vẫn được truyền, vẫn hợp kiểu, và không tới đâu cả. */
 const screen = read('src/components/ascnd/screen.tsx');
 const branches = (screen.match(/<AmbientLight \/>/g) ?? []).length;
-const drawn = (screen.match(/\{aura \? <ReadinessAura/g) ?? []).length;
+const drawn = (screen.match(/\{aura \? <PageAura/g) ?? []).length;
+/*
+  Nền màu phải đi kèm lớp dập, và hai thứ phải viết ở MỘT chỗ.
+
+  Thẻ ở app này là kính: `glass.bg` là trắng 6%, nên 94% thứ sau lưng nó đi
+  xuyên qua. Trên nền đen đó là kính hơi sáng; trên một dải tím-cam thì chính
+  tấm kính đó nhuốm tím-cam, và mọi thẻ trên trang cùng ngả một tông — màu riêng
+  của từng thẻ không còn đọc ra được.
+
+  `PageAura` gói cả hai lại nên không nhánh nào có thể vẽ nền mà quên lớp dập.
+*/
+if (!/const AURA_DIM = /.test(screen)) {
+  problems.push('screen.tsx: nền màu không có lớp dập — wash sẽ nhuốm màu mọi tấm kính trên trang');
+}
+if (/<ReadinessAura[\s\S]{0,200}?\/>\s*\n\s*(?!<View)/.test(screen) && !/function PageAura/.test(screen)) {
+  problems.push('screen.tsx: ReadinessAura được vẽ ngoài PageAura — nền và lớp dập tách rời thì sẽ lệch');
+}
+
 if (branches === 0) {
   problems.push('screen.tsx: không tìm thấy nhánh nào');
 } else if (drawn !== branches) {

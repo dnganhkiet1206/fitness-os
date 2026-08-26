@@ -192,6 +192,42 @@ function ScrollFrame({ on, children }: { on: boolean; children: React.ReactNode 
   );
 }
 
+/**
+ * Nền màu của trang, ĐÃ được dập xuống.
+ *
+ * ── vì sao có lớp phủ ──
+ *
+ * Thẻ ở app này là kính: `glass.bg` là trắng 6%, tức 94% những gì nằm sau nó đi
+ * xuyên qua. Đặt lên một nền đen thì đó là một tấm kính hơi sáng; đặt lên một
+ * dải tím-cam thì chính tấm kính đó NHUỐM tím-cam, và mọi thẻ trên trang cùng
+ * ngả một tông. Màu riêng của từng thẻ — cam của protein, lơ của carb, đỏ của
+ * nhóm cơ — không còn đọc ra được, vì chúng đang cạnh tranh với một lớp màu phủ
+ * đều lên tất cả.
+ *
+ * Lớp phủ nằm giữa nền màu và nội dung, nên nó dập WASH chứ không dập thẻ. Thẻ
+ * vẫn lấy mẫu thứ sau lưng nó, chỉ là thứ đó giờ tối và trung tính hơn.
+ *
+ * ── vì sao con số này ──
+ *
+ * Đủ để màu của trang còn nhận ra được nhưng không còn đủ sức nhuộm một tấm
+ * kính 6%. Đo lại góc trên sau khi thêm: sắc màu vẫn phân biệt được giữa ba
+ * trang, chỉ nhạt đi — nếu nó dập tới mức ba trang đọc ra giống nhau thì lớp
+ * phủ đã ăn mất chính thứ nó được đặt ở đây để bảo vệ.
+ *
+ * Viết một chỗ vì cả BA nhánh return của `Screen` đều dùng: hai câu rời nhau sẽ
+ * lệch ngay lần đầu ai đó chỉnh một bên.
+ */
+const AURA_DIM = 0.55;
+
+function PageAura({ tint }: { tint: readonly [string, string] }) {
+  return (
+    <>
+      <ReadinessAura status={null} tint={tint[0]} tint2={tint[1]} />
+      <View pointerEvents="none" style={styles.auraDim} />
+    </>
+  );
+}
+
 export function Screen({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
@@ -272,7 +308,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
       return (
         <View style={styles.root}>
           <AmbientLight />
-          {aura ? <ReadinessAura status={null} tint={aura[0]} tint2={aura[1]} /> : null}
+          {aura ? <PageAura tint={aura} /> : null}
           <ScrollFrame on={keyboardAware}>
             <ScrollView
               ref={scroller}
@@ -314,7 +350,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
     return (
       <View style={styles.root}>
         <AmbientLight />
-        {aura ? <ReadinessAura status={null} tint={aura[0]} tint2={aura[1]} /> : null}
+        {aura ? <PageAura tint={aura} /> : null}
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
         <View style={[styles.pageHeader, { paddingTop: insets.top }]}>{headerBar}</View>
         <ScrollFrame on={keyboardAware}>
@@ -348,7 +384,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
   return (
     <View style={styles.root}>
       <AmbientLight />
-      {aura ? <ReadinessAura status={null} tint={aura[0]} tint2={aura[1]} /> : null}
+      {aura ? <PageAura tint={aura} /> : null}
       <ScrollFrame on={keyboardAware}>
         <ScrollView
           ref={scroller}
@@ -381,6 +417,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
 }
 
 const styles = StyleSheet.create({
+  auraDim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: `rgba(0, 0, 0, ${AURA_DIM})` },
   root: { flex: 1, backgroundColor: colors.background },
   /**
    * Transparent, not `colors.background`.
