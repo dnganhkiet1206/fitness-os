@@ -388,6 +388,9 @@ export default function TodayScreen() {
    * `null` = không thẻ nào mở. Số = đúng thẻ đó, và chỉ thẻ đó.
    */
   const [expandedAt, setExpandedAt] = useState<number | null>(null);
+  /* Trang hero đang xem. Chỉ dùng để quyết định dựng lớp aura nào — xem chỗ
+     vẽ `AuraLayer`. Deck báo về khi cú vuốt đã CHỐT, không phải mỗi khung. */
+  const [heroPage, setHeroPage] = useState(0);
   /* Câu hỏi "có thẻ nào đang mở không" — thứ mà tấm nội dung và hiệu ứng cuộn
      cần biết. Chúng không cần biết là thẻ NÀO. */
   const heroOpen = expandedAt !== null;
@@ -683,8 +686,11 @@ export default function TodayScreen() {
    * ra. Và vị trí cuộn của thẻ cũ là vị trí trong NỘI DUNG của thẻ cũ; mang nó
    * sang thẻ khác thì nó không còn nghĩa gì.
    */
-  const onHeroPageChange = useCallback(() => {
+  const onHeroPageChange = useCallback((index: number) => {
     setExpandedAt(null);
+    /* Trang đang xem, để chỉ dựng lớp aura quanh nó — xem chỗ vẽ `AuraLayer`.
+       React bỏ qua khi giá trị không đổi, nên một lần vuốt hụt không tốn gì. */
+    setHeroPage(index);
     scroller.current?.scrollTo({ y: 0, animated: false });
   }, []);
 
@@ -1035,12 +1041,36 @@ export default function TodayScreen() {
         cách sau phải animate thuộc tính của SVG trên UI thread; cách này chỉ
         là opacity, thứ đã chạy ở đó sẵn.
       */}
+      {/*
+        Chỉ dựng lớp aura của trang ĐANG XEM và hai trang kề.
+
+        ── vì sao không dựng cả năm ──
+
+        Mỗi `ReadinessAura` là một `<Svg>` phủ kín màn hình với vài gradient
+        toả. Cả năm đều mounted nghĩa là năm lớp toàn màn nằm SAU tấm kính của
+        tấm nội dung — và mỗi khung hình cuộn, `UIVisualEffectView` phải lấy
+        mẫu lại đúng chồng lớp ấy. Bốn trong năm lớp ở opacity 0, tức là bốn
+        lớp không vẽ ra gì mà vẫn nằm trong cây.
+
+        ── vì sao ±1 chứ không phải đúng một lớp ──
+
+        Vì phép chồng-mờ chạy theo NGÓN TAY: `AuraLayer` nội suy opacity từ
+        `deckAt`, nên lúc vuốt được nửa đường thì trang kề phải ĐANG hiện một
+        nửa. Chỉ giữ trang hiện tại là nền nhảy màu khi cú vuốt chốt, đúng thứ
+        chú thích ngay trên đây nói ra để tránh.
+
+        Một lần render mỗi lần CHỐT trang, không phải mỗi khung hình: deck báo
+        `onPageChange` khi cú vuốt đã dừng (xem `card-deck.tsx`, `settle`), nên
+        đường cuộn của Today vẫn không ghi state lần nào.
+      */}
       {heroTints.length > 1 ? (
-        heroTints.map((t, i) => (
-          <AuraLayer key={t.key} index={i} at={deckAt}>
-            <ReadinessAura status={t.status} tint={t.tint} tint2={t.tint2} />
-          </AuraLayer>
-        ))
+        heroTints.map((t, i) =>
+          Math.abs(i - heroPage) <= 1 ? (
+            <AuraLayer key={t.key} index={i} at={deckAt}>
+              <ReadinessAura status={t.status} tint={t.tint} tint2={t.tint2} />
+            </AuraLayer>
+          ) : null,
+        )
       ) : (
         <ReadinessAura status={readinessScore != null ? readinessStatus : null} />
       )}
