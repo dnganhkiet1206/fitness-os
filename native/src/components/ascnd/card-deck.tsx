@@ -63,6 +63,46 @@ const HYSTERESIS = 12;
 
 const DOT = 6;
 
+/**
+ * Chấm của trang đang xem vẽ TO HƠN hộp bố cục của nó.
+ *
+ * `Pip` phóng to bằng `transform: scale`, và một transform không đụng tới bố
+ * cục: hộp vẫn là `DOT × DOT`, chỉ những gì vẽ ra mới lớn hơn. Đó là điều
+ * đúng — `tools/motion.mjs` cấm animate thuộc tính bố cục — nhưng nó có một
+ * cái giá phải trả ở đúng một chỗ, xem `PIP_BLEED`.
+ */
+const PIP_LIT = 1.25;
+
+/**
+ * Phần chấm sáng TRÀN ra ngoài hộp của nó, mỗi phía, tính bằng điểm.
+ *
+ * ── lỗi nó sửa ──
+ *
+ * Đã bị báo kèm ảnh: "nút khi sáng lên vẫn bị che một chút" — và chỉ cái đang
+ * sáng, chỉ một chút. Đó chính là hình dạng của lỗi này.
+ *
+ * Hàng chấm nằm trong `Expander`, và `Expander` chạy chiều cao thật để mở/đóng
+ * nên hộp của nó là `overflow: 'hidden'` cao ĐÚNG bằng chiều cao ĐO ĐƯỢC của
+ * nội dung. Đo được là con số của bố cục: `paddingTop` 8 cộng `DOT` 6, bằng
+ * 14. Nhưng chấm đang sáng vẽ ở 1,25 lần quanh tâm của nó, nên nó trải từ 7,25
+ * xuống 14,75 — và 0,75 điểm cuối rơi ra ngoài hộp 14 điểm ấy.
+ *
+ * Bốn chấm mờ vẽ đúng trong hộp của chúng nên không sao. Chỉ chấm sáng bị cắt,
+ * và cắt ở ĐÁY — phía trên nó còn nguyên 8 điểm padding để nở vào.
+ *
+ * Trên màn 3× thì 0,75 điểm là hơn hai hàng pixel trên một chấm cao 22,5 —
+ * khoảng một phần mười của nó, đủ để hình tròn đọc ra là bị vạt phẳng.
+ *
+ * ── vì sao là một phép TÍNH chứ không phải số 1 ──
+ *
+ * Vì con số này không phải một lựa chọn thẩm mỹ, nó là hệ quả của hai con số
+ * khác. Ai đó chỉnh `PIP_LIT` lên 1,4 mà đây là hằng số gõ tay thì lỗi quay
+ * lại y nguyên, im lặng như lần đầu. `Math.ceil` để rơi vào một điểm chẵn:
+ * làm tròn nửa pixel của bố cục không được phép là thứ quyết định một hình
+ * tròn có tròn hay không.
+ */
+const PIP_BLEED = Math.ceil((DOT * (PIP_LIT - 1)) / 2);
+
 /** Cùng một nhịp cho cú vuốt và cho phím trợ năng — hai cửa vào, một cảm giác. */
 const SNAP = { damping: 22, stiffness: 190, mass: 0.7 };
 
@@ -463,7 +503,7 @@ function Pip({ index, at }: { index: number; at: SharedValue<number> }) {
     const t = Math.min(1, Math.abs(at.value - index));
     return {
       opacity: interpolate(t, [0, 1], [1, 0.28]),
-      transform: [{ scale: interpolate(t, [0, 1], [1.25, 1]) }],
+      transform: [{ scale: interpolate(t, [0, 1], [PIP_LIT, 1]) }],
     };
   });
   return <Animated.View style={[styles.pip, style]} />;
@@ -492,6 +532,16 @@ const styles = StyleSheet.create({
   page: { position: 'absolute', left: 0, right: 0, top: 0 },
   /* Xếp tuyệt đối để không cộng một điểm nào vào chiều cao deck: nó là phần
      ĐUÔI của thẻ, không phải một hàng nữa dưới thẻ. */
-  pips: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, paddingTop: spacing.sm },
+  /* `paddingBottom` là chỗ cho chấm SÁNG nở ra — xem `PIP_BLEED`. Phía trên đã
+     có 8 điểm padding nên chỉ đáy mới thiếu, và hộp cắt của `Expander` cao
+     đúng bằng con số đo được ở đây. */
+  pips: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 5,
+    paddingTop: spacing.sm,
+    paddingBottom: PIP_BLEED,
+  },
   pip: { width: DOT, height: DOT, borderRadius: radius.full, backgroundColor: colors.foreground },
 });
