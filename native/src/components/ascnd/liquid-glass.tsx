@@ -125,23 +125,35 @@ export function LiquidGlass({
   return (
     <View style={[styles.wrap, { borderRadius: r }, style]}>
       <BlurView intensity={intensity} tint="dark" style={StyleSheet.absoluteFill} />
-      {/* Ở chế độ `blur`, lớp wash theo màu vẫn còn — nó là thứ cho mỗi viên
-          pill màu riêng của nó, và đó là ngôn ngữ thiết kế chứ không phải chất
-          liệu. Chỉ khác là nó được tô phẳng thay vì qua một RadialGradient, nên
-          không cần SVG và không cần đo. */}
-      {material === 'blur' && tint ? (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: tint, opacity: 0.14 }]} pointerEvents="none" />
-      ) : null}
       {/*
         The lit face, same diagonal as every other card in the app: bright at
         the top-left where `AmbientLight` puts the key, dark at the bottom
         right. Two rects each fading to fully transparent rather than one
         white→black, which would drag a grey haze through the middle.
       */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={material === 'glass' ? measure : undefined}>
-        {material === 'glass' && size ? (
+      {/*
+        Mặt kính vẽ ở CẢ HAI chế độ, và chỉ ba lớp "thấu kính" là bị tắt.
+
+        ── vì sao lớp wash phải ở lại ──
+
+        Bản đầu của chế độ `blur` bỏ luôn cả SVG và thay lớp wash bằng một mảng
+        màu phẳng 14% phủ kín viên pill. Đó là ĐỔI NGÔN NGỮ THIẾT KẾ, không phải
+        đổi chất liệu — và nó đã bị bắt ngay: "style thẻ không còn giống như cũ".
+
+        Lớp wash gốc là một radial neo ở góc trên-trái, 0.16 → 0.07 → 0, tức là
+        màu ĐI RA TỪ cái glyph ngồi đúng chỗ đó rồi tắt dần. Một mảng phẳng cùng
+        cường độ thì đậm hơn ở mọi nơi trừ đúng góc ấy, và nó phẳng — mất luôn
+        cái hướng vốn là thứ gắn màu với biểu tượng.
+
+        Thứ `blur` thật sự bỏ là ba dấu hiệu của một THẤU KÍNH: mặt sáng chéo,
+        bóng đổ chéo, và vệt sáng specular trên mép. Đó mới là chất liệu.
+      */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={measure}>
+        {size ? (
       <Svg width={size.w} height={size.h}>
         <Defs>
+          {/* Định nghĩa cũng chỉ dựng khi cần — ở chế độ `blur` không có Rect
+              nào tham chiếu tới ba cái này. */}
           <LinearGradient id={lit} x1="0" y1="0" x2="0.9" y2="1">
             <Stop offset="0" stopColor="#ffffff" stopOpacity={0.10} />
             <Stop offset="0.55" stopColor="#ffffff" stopOpacity={0} />
@@ -166,8 +178,14 @@ export function LiquidGlass({
           ) : null}
         </Defs>
         {tint ? <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${wash})`} /> : null}
-        <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${lit})`} />
-        <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${shade})`} />
+        {/* Ba lớp dưới đây LÀ chất liệu thấu kính — mặt sáng, bóng đổ, vệt
+            specular. Chế độ `blur` bỏ đúng chúng và giữ mọi thứ khác. */}
+        {material === 'glass' ? (
+          <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${lit})`} />
+        ) : null}
+        {material === 'glass' ? (
+          <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${shade})`} />
+        ) : null}
         {/*
           The specular edge — a 1pt line along the top, bright at the left and
           gone by two-thirds across.
@@ -177,7 +195,9 @@ export function LiquidGlass({
           the light comes from; a border that is the same value all the way
           round reads as a drawn outline, which is what the hairline alone was.
         */}
-        <Rect x="0" y="0" width={size.w} height={1} fill={`url(#${edge})`} />
+        {material === 'glass' ? (
+          <Rect x="0" y="0" width={size.w} height={1} fill={`url(#${edge})`} />
+        ) : null}
       </Svg>
         ) : null}
       </View>

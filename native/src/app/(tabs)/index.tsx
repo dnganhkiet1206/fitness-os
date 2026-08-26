@@ -988,7 +988,26 @@ export default function TodayScreen() {
         />
       }
       onScroll={onScroll}
-      scrollEventThrottle={16}
+      /*
+        1, không phải 16 — và đây là chỗ ring bị giật khi vuốt mạnh.
+
+        Hero được GHIM bằng `translateY: min(scrollY, cover)`, nghĩa là nó chỉ
+        đứng yên đúng bằng mức `scrollY` được cập nhật. `scrollEventThrottle`
+        16 nghĩa là nhiều nhất một sự kiện mỗi 16ms — khoảng 62 lần một giây —
+        trong khi màn ProMotion cuộn nội dung ở 120. Nên trang đi 120 bước một
+        giây còn vòng tròn đi 62: nó KHÔNG trôi theo, nó nhảy từng nấc so với
+        thứ nó phải đứng yên cùng.
+
+        Vuốt nhẹ thì mỗi nấc chỉ vài điểm và mắt không thấy. Vuốt mạnh thì cùng
+        8ms ấy là vài chục điểm, và đó đúng là "vuốt mạnh xuống thì ring bị
+        giật, vuốt lên cũng giật".
+
+        Đắt hơn thì không: `onScroll` ở đây là worklet của `useAnimatedScrollHandler`,
+        chạy trên luồng UI, nên tăng nhịp không thêm một chuyến qua cầu nào.
+        Con số 16 là mặc định cho một `onScroll` chạy bằng JS — chỗ mà mỗi sự
+        kiện LÀ một chuyến qua cầu — và nó bị chép sang đây cùng cái tên.
+      */
+      scrollEventThrottle={1}
       contentInsetAdjustmentBehavior="never">
 
       {!editMode && (
@@ -1045,6 +1064,7 @@ export default function TodayScreen() {
               */}
               <Animated.View entering={FadeInDown.springify().damping(26).stiffness(180)}>
               <CardDeck
+                scrollRef={scroller}
                 progress={deckAt}
                 expandedAt={expandedAt}
                 onPageChange={onHeroPageChange}

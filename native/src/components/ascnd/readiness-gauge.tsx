@@ -543,20 +543,21 @@ const styles = StyleSheet.create({
     */
     paddingTop: spacing.lg,
     /*
-      0, cùng con số với `hero-panel.tsx` — và việc nó KHÁC là lỗi đã bị báo:
-      "3 thẻ cuối không cùng kích thước với 2 thẻ đầu".
+      `spacing.sm`, và cả năm trang hero dùng CÙNG con số này.
 
-      Năm trang hero dùng chung một vỏ, nhưng hai trang này (sẵn sàng, hoạt
-      động) có vỏ riêng, còn ba trang kia đi qua `HeroPanel`. Mọi con số dọc
-      trùng nhau trừ đúng dòng này: 8 ở đây, 0 ở đó. Deck lấy chiều cao của
-      TRANG ĐANG XEM, nên 8 điểm ấy làm cả hàng chấm và tấm nội dung bên dưới
-      nhảy mỗi lần vuốt qua trang thứ ba.
+      Hai lần sửa trước đều đúng một nửa. Ban đầu thẻ sẵn sàng và thẻ hoạt động
+      có 8 còn `HeroPanel` có 0, nên ba trang cuối thấp hơn hai trang đầu 8 điểm
+      — deck lấy chiều cao của trang đang xem, nên hàng chấm và cả tấm bên dưới
+      nhảy mỗi lần vuốt qua trang thứ ba. Rồi tôi cào bằng XUỐNG 0, và thứ đó
+      sửa được kích thước nhưng đổi mất chính cái thẻ người dùng nhìn đầu tiên:
+      "style thẻ không còn giống như cũ".
 
-      Lập luận của `HeroPanel` áp đúng vào đây: thứ cuối cùng trong tấm là nút
-      mũi tên cao 44 điểm quanh một dòng chữ, nên nó đã tự mang sẵn khoảng trống
-      dưới chữ vì lý do tiếp chạm. Thêm đệm ở đây là cộng vào một khoảng đã có.
+      Cào bằng LÊN 8 thì được cả hai: năm trang bằng nhau, và hai thẻ vòng tròn
+      trở lại đúng như trước. Lập luận "nút 44 điểm đã tự mang khoảng trống" của
+      `HeroPanel` vẫn đúng, nó chỉ không đủ để đòi con số phải là 0 — mà giữa
+      "bằng nhau ở 0" và "bằng nhau ở 8" thì cái người dùng nhận ra là 8.
     */
-    paddingBottom: 0,
+    paddingBottom: spacing.sm,
     paddingHorizontal: spacing.card,
     gap: spacing.md,
   },

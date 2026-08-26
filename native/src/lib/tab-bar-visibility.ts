@@ -50,6 +50,22 @@ const lastScrollAt = makeMutable(0);
  */
 const lastYUI = makeMutable(0);
 
+/**
+ * Thanh tab ĐANG hướng tới đâu: 1 hiện, 0 ẩn.
+ *
+ * ── vì sao cần nhớ đích, chứ không chỉ đọc điều kiện ──
+ *
+ * Luật hướng đúng ở mức từng khung hình, nhưng trong một cú vuốt MẠNH thì
+ * `delta > THRESHOLD` đúng ở rất nhiều khung hình liên tiếp. Không nhớ đích thì
+ * mỗi khung hình ấy lại `withSpring(0)` một lần nữa — lò xo bị khởi động lại
+ * liên tục, không bao giờ chạy hết, nên thứ nó điều khiển (thanh tab, và độ mờ
+ * của Koa qua `koa-companion`) rung theo ngón tay thay vì trôi một nhịp.
+ *
+ * Nhớ đích thì một cú vuốt mạnh sinh ĐÚNG MỘT lò xo, và cú nhảy sang JS để lên
+ * dây hẹn giờ cũng chỉ xảy ra một lần thay vì mỗi khung hình.
+ */
+const target = makeMutable(1);
+
 /** The direction rule, shared by both callers so it cannot exist twice. */
 function decide(y: number, delta: number): 0 | 1 | null {
   'worklet';
@@ -82,6 +98,7 @@ export function armTabBarRestore() {
       return;
     }
     idleTimer = undefined;
+    target.value = 1;
     tabBarVisible.value = withSpring(1, SPRING);
   };
   idleTimer = setTimeout(tick, IDLE_MS);
@@ -110,7 +127,9 @@ export function tabScrollFrame(y: number, now: number): boolean {
   const next = decide(y, y - lastYUI.value);
   lastYUI.value = y;
   lastScrollAt.value = now;
-  if (next === null) return false;
+  /* Chỉ khi ĐÍCH thật sự đổi — xem ghi chú ở `target`. */
+  if (next === null || next === target.value) return false;
+  target.value = next;
   tabBarVisible.value = withSpring(next, SPRING);
   return next === 0;
 }
@@ -126,7 +145,10 @@ export function handleTabScroll(y: number) {
   const next = decide(y, y - lastY);
   lastY = y;
   lastScrollAt.value = Date.now();
-  if (next !== null) tabBarVisible.value = withSpring(next, SPRING);
+  if (next !== null && next !== target.value) {
+    target.value = next;
+    tabBarVisible.value = withSpring(next, SPRING);
+  }
   armTabBarRestore();
 }
 
@@ -134,5 +156,6 @@ export function handleTabScroll(y: number) {
 export function resetTabBar() {
   lastY = 0;
   lastYUI.value = 0;
+  target.value = 1;
   tabBarVisible.value = withSpring(1, SPRING);
 }

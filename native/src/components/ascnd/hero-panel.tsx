@@ -344,18 +344,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: spacing.lg,
     /*
-      Không có đệm dưới, và đó không phải cắt cho chật.
+      `spacing.sm`, và cả năm trang hero dùng CÙNG con số này.
 
-      Thứ cuối cùng trong tấm là nút mũi tên, mà nút đó cao 44 điểm quanh một
-      dòng chữ 15 — nó đã tự mang sẵn ~14 điểm khoảng trống dưới chữ, vì lý do
-      tiếp chạm chứ không vì lý do thị giác. Cộng thêm đệm ở đây là cộng vào một
-      khoảng trống đã có, và tổng lại đủ lớn để hàng chấm đọc ra như một DẢI
-      RIÊNG nằm dưới thẻ thay vì phần đuôi của chính thẻ — đúng cái "trang thừa
-      của màn cũ" đã bị bắt lỗi.
+      Hai lần sửa trước đều đúng một nửa. Ban đầu thẻ sẵn sàng và thẻ hoạt động
+      có 8 còn `HeroPanel` có 0, nên ba trang cuối thấp hơn hai trang đầu 8 điểm
+      — deck lấy chiều cao của trang đang xem, nên hàng chấm và cả tấm bên dưới
+      nhảy mỗi lần vuốt qua trang thứ ba. Rồi tôi cào bằng XUỐNG 0, và thứ đó
+      sửa được kích thước nhưng đổi mất chính cái thẻ người dùng nhìn đầu tiên:
+      "style thẻ không còn giống như cũ".
 
-      Khoảng cách vẫn còn nguyên; chỉ là nó đến từ vùng chạm đã phải có sẵn.
+      Cào bằng LÊN 8 thì được cả hai: năm trang bằng nhau, và hai thẻ vòng tròn
+      trở lại đúng như trước. Lập luận "nút 44 điểm đã tự mang khoảng trống" của
+      `HeroPanel` vẫn đúng, nó chỉ không đủ để đòi con số phải là 0 — mà giữa
+      "bằng nhau ở 0" và "bằng nhau ở 8" thì cái người dùng nhận ra là 8.
     */
-    paddingBottom: 0,
+    paddingBottom: spacing.sm,
     paddingHorizontal: spacing.card,
     gap: spacing.md,
   },

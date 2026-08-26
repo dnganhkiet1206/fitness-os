@@ -78,6 +78,7 @@ export function CardDeck({
   expandedAt = null,
   onPageChange,
   a11yLabel,
+  scrollRef,
 }: {
   children: React.ReactNode[];
   /** Where the deck is, as a float index. Pass one in to drive something else
@@ -98,6 +99,32 @@ export function CardDeck({
   onPageChange?: (index: number) => void;
   /** Deck này là gì, cho screen reader — hàng chấm không nói được điều đó. */
   a11yLabel?: string;
+  /**
+   * ScrollView của trang, để cú kéo DỌC không bị deck nuốt mất.
+   *
+   * ── lỗi nó sửa ──
+   *
+   * Pan ở đây kích hoạt trên CẢ HAI trục (`activeOffsetX` + `activeOffsetY`),
+   * và đó là chủ ý: một cú vuốt ngang của người thật võng xuống, nên ngưỡng chỉ
+   * đặt trên trục ngang sẽ để thua cú vuốt ấy cho ScrollView. Trục được chốt
+   * một lần rồi `onUpdate`/`onEnd` bỏ qua mọi cú dọc.
+   *
+   * Nhưng "bỏ qua" không có nghĩa là "trả lại". Một Pan KÍCH HOẠT bên trong một
+   * ScrollView sẽ HUỶ cú cuộn của ScrollView đó — đấy là quan hệ mặc định của
+   * gesture-handler, và cũng chính là thứ làm `activeOffsetX` trở thành khuôn
+   * mẫu cho carousel ngang. Nên một cú vuốt dọc MẠNH bắt đầu trên vòng tròn:
+   * trang cuộn được đúng 12 điểm cho tới lúc pan vượt ngưỡng, rồi đứng khựng.
+   *
+   * Đó là cú giật đã bị báo — "vuốt mạnh xuống thì ring bị giật, vuốt lên cũng
+   * bị giật" — và nó xảy ra ở cả hai chiều vì ngưỡng đối xứng.
+   *
+   * Khai đồng thời thì ScrollView không bị huỷ nữa: cú dọc cuộn trang như bình
+   * thường trong khi deck đứng yên, vì trục đã chốt là dọc và không có gì đọc
+   * `translationX` nữa. Đánh đổi: một cú vuốt NGANG cũng để ScrollView thấy phần
+   * dọc của nó, nên trang có thể trôi vài điểm — nhỏ hơn hẳn một cú khựng giữa
+   * đà, và `activeOffsetY` vẫn giữ nguyên lý do nó được thêm vào.
+   */
+  scrollRef?: React.RefObject<unknown>;
 }) {
   const pages = children.filter(Boolean);
   const [w, setW] = useState(0);
@@ -144,7 +171,7 @@ export function CardDeck({
   /** Trục của cú chạm hiện tại: 0 chưa chốt, 1 ngang, 2 dọc. */
   const axis = useSharedValue(0);
 
-  const pan = Gesture.Pan()
+  let pan = Gesture.Pan()
     .enabled(!locked)
     /*
       Deck NUỐT cả cú dọc khi đang thu lại, và đó là điều kiện để vuốt ngang
@@ -226,6 +253,10 @@ export function CardDeck({
       if (target !== Math.round(from.value)) runOnJS(settle)(target);
       at.value = withSpring(target, SNAP);
     });
+
+  /* Xem ghi chú ở `scrollRef`: không khai thì một cú kéo dọc trên deck sẽ huỷ
+     cú cuộn của trang giữa đà. */
+  if (scrollRef) pan = pan.simultaneousWithExternalGesture(scrollRef as never);
 
   /* Ổn định như `onHeight`, và vì đúng một lý do — xem ghi chú ở đó. */
   const measureW = useCallback((e: LayoutChangeEvent) => {

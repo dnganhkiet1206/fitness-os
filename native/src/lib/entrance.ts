@@ -8,7 +8,33 @@ import { FadeInDown } from 'react-native-reanimated';
  * iOS). The delay is capped so long lists don't leave late cards lagging.
  */
 export const rise = (i: number) =>
-  FadeInDown.springify().damping(26).stiffness(180).delay(Math.min(i, 10) * 60);
+  FadeInDown.springify()
+    .damping(26)
+    .stiffness(180)
+    .delay(Math.min(i, 10) * 60)
+    /*
+      Bắt đầu ở chỗ ĐỌC ĐƯỢC, không phải ở số 0.
+
+      ── vì sao ──
+
+      `FadeInDown` theo định nghĩa bắt đầu ở opacity 0. Cộng với `.delay()`, một
+      thẻ có thể nằm trong cây tới 600ms ở trạng thái hoàn toàn vô hình trước
+      khi lò xo được phép chạy. Khung hình trong quãng đó bị bỏ lỡ thì thứ CÒN
+      LẠI trên màn hình là đúng giá trị đầu ấy: thẻ đã dựng, đã chiếm chỗ, và
+      không nhìn thấy.
+
+      `useRise` bên dưới bỏ hiệu ứng ở lần vẽ đầu, và như thế là chưa đủ: một
+      thẻ chỉ xuất hiện KHI DỮ LIỆU VỀ thì nó mount sau lần vẽ đầu, nên nó vẫn
+      đi qua đường này. Đó chính là ca đã bị báo lại — Progress và Nutrition vẫn
+      còn mờ sau lần sửa trước.
+
+      Nên chỗ bắt đầu được nâng lên 0.9. Chuyển động vẫn còn — 12 điểm dịch lên
+      và một chút đậm dần — nhưng chế độ hỏng của nó không còn là "vô hình" mà
+      là "nhạt đi một phần mười", thứ không ai gọi là mất nội dung. Đúng lập
+      luận `settle.tsx` đã dùng cho cùng vấn đề: một hiệu ứng bắt đầu từ trang
+      NHƯ NÓ ĐANG CÓ, không phải từ hư không.
+    */
+    .withInitialValues({ opacity: 0.9, transform: [{ translateY: 12 }] });
 
 /**
  * The same cascade, except it does not run on the screen's FIRST paint.

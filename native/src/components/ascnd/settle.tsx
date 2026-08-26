@@ -1,5 +1,5 @@
 import { useIsFocused } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -86,13 +86,28 @@ export function Settle({
   */
   const t = useSharedValue(1);
 
+  /*
+    Đã từng được focus hay chưa.
+
+    Khởi tạo `t` bằng 1 mới chỉ bịt được nửa lỗ. Nhánh `else` vẫn ghi 0 mỗi lần
+    `focused` là false — kể cả ở lần chạy ĐẦU TIÊN trên một màn đang hiển thị,
+    khi `useIsFocused()` chưa kịp trả về true. Hiệu ứng chạy, ghi 0, và màn hình
+    mờ đúng như đã báo lại.
+
+    Nhánh ấy tồn tại để màn hình RỜI đi được đặt lại, cho lần quay về còn có cái
+    để settle. Nó chỉ có nghĩa với một màn ĐÃ từng được focus; với một màn chưa
+    từng, "đặt lại" là một câu vô nghĩa và cái giá của nó là nội dung mờ.
+  */
+  const wasFocused = useRef(false);
+
   useEffect(() => {
     if (focused) {
+      wasFocused.current = true;
       t.value = withDelay(
         index * 30,
         withTiming(1, { duration: 220, easing: Easing.out(Easing.cubic) }),
       );
-    } else {
+    } else if (wasFocused.current) {
       // instant, not animated: this runs on a screen that is off-view, and an
       // animation nobody sees is a timer nobody needed
       t.value = 0;
