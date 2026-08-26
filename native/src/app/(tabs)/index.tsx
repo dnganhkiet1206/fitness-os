@@ -17,8 +17,9 @@ import {
   Trash2,
   type LucideIcon,
 } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import Animated, {
   runOnJS,
@@ -209,6 +210,10 @@ export default function TodayScreen() {
   const [refreshing, setRefreshing] = useState(false);
   /** Đã qua lần dựng đầu chưa — xem ghi chú ở `styles.sheet` về vì sao hiệu ứng
    *  vào phải im lặng ở lần đầu tiên. */
+  /* Id của gradient là TOÀN CỤC trên native, không cục bộ trong `<Svg>` khai ra
+     nó — hai màn hình cùng mounted sẽ dùng chung cái đăng ký sau cùng.
+     `status-scrim.tsx` ghi repo này đã dính ba lần; `useId` là luật. */
+  const sheetMask = `sheetBlurMask-${useId()}`;
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const onRefresh = useCallback(async () => {
@@ -1066,7 +1071,44 @@ export default function TodayScreen() {
             style={styles.sheet}
             entering={mounted ? FadeIn.duration(duration.appear) : undefined}
             exiting={FadeOut.duration(duration.toggle)}>
-            <ABlurView animatedProps={sheetBlur} tint="dark" style={StyleSheet.absoluteFill} />
+            {/*
+              Blur cũng phải tắt dần ở mép trên, không chỉ lớp phủ.
+
+              Bỏ hai góc bo là bỏ được hình dạng cái thẻ, nhưng mép ngang thì vẫn
+              còn: `BlurView` là `absoluteFill`, nên chỗ nó bắt đầu là một hàng
+              mà phía trên sắc nét và phía dưới nhoè — một đường kẻ vắt qua màn
+              hình dù không có một điểm ảnh viền nào được vẽ ra.
+
+              Mặt nạ dùng ĐÚNG `SCRIM_FADE` với lớp phủ. Một hằng số chi phối cả
+              hai nên chúng không thể lệch nhau; hai con số riêng thì hôm nay
+              trùng và lệch ngay lần đầu ai đó chỉnh một bên.
+
+              Dựng mặt nạ bằng hai lớp CỐ ĐỊNH theo điểm, không phải một gradient
+              phần trăm: tấm cao bao nhiêu là tuỳ số thẻ người dùng bật, và một
+              dốc theo phần trăm sẽ mềm hay gắt khác nhau tuỳ cấu hình dashboard.
+            */}
+            <MaskedView
+              style={StyleSheet.absoluteFill}
+              maskElement={
+                <View style={StyleSheet.absoluteFill}>
+                  <View style={styles.scrimBand}>
+                    <Svg width="100%" height="100%">
+                      <Defs>
+                        <SvgGradient id={sheetMask} x1="0" y1="0" x2="0" y2="1">
+                          <Stop offset="0" stopColor="#fff" stopOpacity="0" />
+                          <Stop offset="0.3" stopColor="#fff" stopOpacity="0.22" />
+                          <Stop offset="0.65" stopColor="#fff" stopOpacity="0.62" />
+                          <Stop offset="1" stopColor="#fff" stopOpacity="1" />
+                        </SvgGradient>
+                      </Defs>
+                      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${sheetMask})`} />
+                    </Svg>
+                  </View>
+                  <View style={styles.maskBody} />
+                </View>
+              }>
+              <ABlurView animatedProps={sheetBlur} tint="dark" style={StyleSheet.absoluteFill} />
+            </MaskedView>
             {/*
               Lớp phủ tối, và nó phải TỐI DẦN chứ không bắt đầu ở mức đầy.
 
@@ -1449,6 +1491,9 @@ const styles = StyleSheet.create({
     thay vì một mặt phẳng.
   */
   scrimBand: { position: 'absolute', left: 0, right: 0, top: 0, height: SCRIM_FADE },
+  /* Trắng đặc = giữ nguyên; cùng mốc với `scrimBody` nên blur và lớp phủ kết
+     thúc dải chuyển ở đúng một hàng. */
+  maskBody: { position: 'absolute', left: 0, right: 0, top: SCRIM_FADE, bottom: 0, backgroundColor: '#fff' },
   scrimBody: {
     position: 'absolute',
     left: 0,
@@ -1464,8 +1509,17 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     gap: spacing.md,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
+    /*
+      KHÔNG bo góc trên, và không có nó thì tấm này thôi là một cái thẻ.
+
+      Hai góc bo cộng một mép ngang là ba cạnh của một hình chữ nhật, và mắt tự
+      khép cạnh thứ tư: người xem thấy một TẤM đặt lên hero chứ không thấy trang
+      tiếp tục chảy xuống. Vuốt qua lại thì cái tấm đó đứng im trong khi nội dung
+      dưới nó đổi, và chỗ nối đọc ra như hai màn hình ghép lại.
+
+      `overflow: 'hidden'` thì giữ, nhưng vì lý do khác lý do cũ: lớp blur và lớp
+      phủ đều là `absoluteFill`, nên không cắt thì chúng tràn ra ngoài hộp.
+    */
     overflow: 'hidden',
   },
 

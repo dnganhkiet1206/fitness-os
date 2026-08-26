@@ -164,6 +164,30 @@ const num = (src, name) => {
       `${TODAY}: lớp phủ không đậm dần theo quãng [HERO_HOLD, cover] — blur một mình không dập được vệt sáng của vòng tròn`,
     );
   }
+  /*
+    Tấm nội dung KHÔNG được đọc ra như một cái thẻ.
+
+    Hai góc bo cộng một mép ngang là ba cạnh của một hình chữ nhật, và mắt tự
+    khép cạnh thứ tư: người xem thấy một TẤM đặt lên hero chứ không thấy trang
+    tiếp tục chảy xuống. Vuốt qua lại thì tấm đó đứng im trong khi nội dung dưới
+    nó đổi, và chỗ nối đọc ra như hai màn hình ghép lại.
+
+    Mép ngang thì không cần một điểm ảnh viền nào để tồn tại: `BlurView` là
+    `absoluteFill`, nên chỗ nó bắt đầu là một hàng mà phía trên sắc nét và phía
+    dưới nhoè. Nó phải được che bằng ĐÚNG `SCRIM_FADE` mà lớp phủ dùng — một
+    hằng số chi phối cả hai thì chúng không thể lệch nhau.
+  */
+  if (/sheet:\s*\{[\s\S]*?borderTop(Left|Right)Radius/.test(today)) {
+    problems.push(`${TODAY}: tấm nội dung bo góc trên — cộng với mép ngang là ba cạnh của một cái thẻ`);
+  }
+  const masked = /<MaskedView[\s\S]{0,1400}?<ABlurView[\s\S]{0,200}?sheetBlur/.test(today);
+  if (!masked) {
+    problems.push(`${TODAY}: blur của tấm không được che mép trên — chỗ nó bắt đầu là một đường kẻ ngang`);
+  }
+  if (!/maskBody: \{[^}]*top: SCRIM_FADE,/.test(today)) {
+    problems.push(`${TODAY}: mặt nạ blur không kết thúc ở SCRIM_FADE — blur và lớp phủ tắt dần trên hai quãng khác nhau`);
+  }
+
   /* Và nó phải được ĐEO VÀO khối phủ, không chỉ tồn tại.
 
      Gỡ `scrimFade` khỏi JSX thì TypeScript im lặng — một biến không dùng không
