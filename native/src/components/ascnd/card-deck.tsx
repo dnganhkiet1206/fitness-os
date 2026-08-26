@@ -10,6 +10,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { Expander } from '@/components/ascnd/expander';
 import { colors, radius, spacing } from '@/constants/ascnd';
 
 /**
@@ -298,14 +299,31 @@ export function CardDeck({
         chứ không phải sáu chấm. `skeleton.tsx` lập luận đúng như vậy khi ẩn các
         khối bóng.
       */}
-      <View
-        style={styles.pips}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants">
-        {pages.map((_, i) => (
-          <Pip key={i} index={i} at={at} />
-        ))}
-      </View>
+      {/*
+        Hàng chấm biến mất khi mở chi tiết.
+
+        Nó nói "còn trang nữa, vuốt đi". Mở chi tiết ra thì vuốt bị khoá
+        (`pan.enabled(!locked)`), nên hàng chấm đang quảng cáo một thao tác
+        không dùng được — nó không sai một chút, nó sai hoàn toàn: người dùng
+        vuốt, không có gì xảy ra, và họ kết luận app hỏng chứ không kết luận
+        rằng chế độ đã đổi.
+
+        Đi qua `Expander` chứ không phải một câu điều kiện, vì hai lý do. Một:
+        biến mất tức thì là một hàng 18 điểm bốc hơi giữa lúc thẻ đang mở ra, và
+        mắt đọc cú giật đó là một lỗi vẽ. Hai: `Expander` chạy chiều cao VÀ độ
+        mờ trên cùng một shared value, nên hàng chấm mờ đi đúng lúc nó co lại —
+        hai thứ rời nhau sẽ cho ra một hàng chấm mờ vẫn còn chiếm chỗ.
+      */}
+      <Expander open={!locked}>
+        <View
+          style={styles.pips}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants">
+          {pages.map((_, i) => (
+            <Pip key={i} index={i} at={at} />
+          ))}
+        </View>
+      </Expander>
     </View>
   );
 }

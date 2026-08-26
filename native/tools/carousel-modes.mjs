@@ -142,6 +142,40 @@ const problems = [];
   }
 }
 
+/*
+  Hàng chấm phải biến mất khi mở chi tiết, và phải biến mất CÓ CHUYỂN ĐỘNG.
+
+  ── vì sao nó phải biến mất ──
+
+  Hàng chấm nói "còn trang nữa, vuốt đi". Mở chi tiết thì vuốt bị khoá, nên nó
+  đang quảng cáo một thao tác không dùng được — và đó không phải sai một chút:
+  người dùng vuốt, không có gì xảy ra, và họ kết luận app hỏng chứ không kết
+  luận rằng chế độ đã đổi.
+
+  ── vì sao phải qua Expander, không phải một câu điều kiện ──
+
+  Biến mất tức thì là một hàng 18 điểm bốc hơi ngay giữa lúc thẻ đang mở ra, và
+  mắt đọc cú giật đó là một lỗi vẽ. `Expander` chạy chiều cao VÀ độ mờ trên cùng
+  một shared value, nên hàng chấm mờ đi đúng lúc nó co lại — hai thứ rời nhau
+  cho ra một hàng chấm mờ vẫn còn chiếm chỗ.
+
+  Luật đọc HÀNH VI: không đủ khi `Expander` chỉ có mặt trong tệp, nó phải bọc
+  đúng hàng chấm và mở theo đúng `!locked` — cùng biến điều khiển `pan.enabled`,
+  nên khoá vuốt và ẩn chấm không thể lệch nhau.
+*/
+{
+  const m = /<Expander open=\{([^}]*)\}>\s*\n\s*<View\s*\n\s*style=\{styles\.pips\}/.exec(deck);
+  if (!m) {
+    problems.push(
+      'card-deck.tsx: hàng chấm không đi qua <Expander> — nó biến mất tức thì, hoặc tệ hơn, ở lại quảng cáo một cú vuốt đã bị khoá',
+    );
+  } else if (m[1].trim() !== '!locked') {
+    problems.push(
+      `card-deck.tsx: hàng chấm mở theo \`${m[1].trim()}\` chứ không phải \`!locked\` — khoá vuốt và ẩn chấm sẽ lệch nhau`,
+    );
+  }
+}
+
 if (problems.length) {
   console.log('hai chế độ của deck CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);
