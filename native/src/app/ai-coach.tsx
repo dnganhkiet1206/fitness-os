@@ -251,9 +251,12 @@ export default function AiCoachScreen() {
                     accessibilityLabel={vi ? s.question.vi : s.question.en}
                     onPress={() => submit(vi ? s.question.vi : s.question.en)}>
                     <LiquidGlass
-                      style={[styles.promptChip, tintBorder(litBy(s.glyph))]}
+                      /* Chip gợi ý là một LỐI ĐI, không phải một giá trị —
+                         xem luật màu ở `index.tsx`, hàng quick-log. Màu ở lại
+                         trong glyph, nơi nó phân biệt các câu hỏi. */
+                      style={styles.promptChip}
                       radius={radius.full}
-                      tint={litBy(s.glyph)} material="blur">
+                      tint={colors.primary} material="blur">
                       <View style={styles.promptInner}>
                         <Glyph name={s.glyph} size={15} />
                         <Text style={styles.promptText}>{vi ? s.label.vi : s.label.en}</Text>
@@ -299,9 +302,12 @@ export default function AiCoachScreen() {
                   ) : null}
                   {m.role === 'assistant' ? (
                     <LiquidGlass
-                      style={[styles.bubble, tintBorder(litBy('spark'))]}
-                      radius={radius.lg}
-                      tint={litBy('spark')}>
+                      /* Bong bóng trả lời không phải một chỉ số. Tô tím mọi
+                         câu trả lời trong một cuộc trò chuyện dài là rất nhiều
+                         tím cho một thông tin đã có avatar nói rồi. */
+                      style={styles.bubble}
+                      tint={colors.primary}
+                      radius={radius.lg}>
                       <View style={styles.bubbleInner}>
                         <MarkdownLite text={m.content} mutedColor={colors.glassMuted} />
                       </View>
@@ -326,9 +332,10 @@ export default function AiCoachScreen() {
                     <Glyph name="spark" size={14} />
                   </View>
                   <LiquidGlass
-                    style={[styles.bubble, tintBorder(litBy('spark'))]}
-                    radius={radius.lg}
-                    tint={litBy('spark')}>
+                    /* Cùng luật với bong bóng ở trên. */
+                    style={styles.bubble}
+                    tint={colors.primary}
+                    radius={radius.lg}>
                     <View style={styles.bubbleInner}>
                       <ActivityIndicator size="small" color={colors.glassMuted} />
                     </View>

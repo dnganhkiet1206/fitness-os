@@ -8,7 +8,7 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
 import { StaggerItem } from '@/components/ascnd/stagger-item';
 import { toast } from '@/lib/toast';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { colors, spacing, type, radius } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
   useInitWeeklyChallenges,
@@ -108,7 +108,7 @@ export default function ChallengesScreen() {
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  iconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  iconWrap: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, minWidth: 0, gap: 2 },
   title: { ...type.headline, color: colors.foreground },
   hint: { ...type.footnote, color: colors.mutedForeground },

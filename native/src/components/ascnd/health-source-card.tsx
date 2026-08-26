@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.card,
   },
-  icon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  icon: { width: 38, height: 38, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 2 },
   title: { ...type.headline, color: colors.foreground },
   /* `glassMuted`, not `mutedForeground`. This sits on glass over the aura,

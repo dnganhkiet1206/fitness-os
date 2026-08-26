@@ -1416,7 +1416,41 @@ export default function TodayScreen() {
                   the top-left — where the glyph sits. The pill is lit by the
                   thing it contains.
                 */}
-                <LiquidGlass style={styles.quickChip} radius={radius.full} tint={GLYPH_TINT[a.glyph][1]} material="blur">
+                {/*
+                  Viên pill KHÔNG còn mang màu của glyph.
+
+                  ── luật, và nó áp cho cả app ──
+
+                  Màu dành cho GIÁ TRỊ, không dành cho LỐI ĐI. Vòng tròn, điểm
+                  số, macro, biểu đồ — những thứ mà màu NÓI RA một điều gì đó —
+                  giữ nguyên. Chip, nút, viền, ô icon điều hướng thì về đơn sắc.
+
+                  Chú thích trước đây ở đây lập luận "viên pill được thắp bằng
+                  chính thứ nó chứa". Câu ấy đẹp và nó là THẨM MỸ, không phải một
+                  phép đo — và cái giá của nó đọc được ngay trên hàng này: bốn
+                  viên cạnh nhau, bốn hue khác nhau, cho bốn thứ mà cái NHÃN đã
+                  nói rõ là gì. Màu ở đó không thêm thông tin nào, chỉ tiêu mất
+                  sự kiềm chế.
+
+                  Màu không biến mất — nó DỜI vào glyph, nơi nó phân biệt bốn
+                  hành động. Bề mặt thôi tranh phần với thứ nó chứa.
+
+                  ── nhưng `tint` KHÔNG bị gỡ, và đó là chỗ `tools/raised-pill.mjs`
+                     đúng một nửa ──
+
+                  Luật ấy đòi mỗi pill có `tint` với lý do "kính không màu là
+                  kính xám". Nửa ấy là THẬT ở đây: pill này là `material="blur"`,
+                  thứ vốn đã bỏ mép sáng và bóng đổ trong lòng kính, nên lớp
+                  wash theo tint là NGUỒN SÁNG CUỐI CÙNG còn lại. Gỡ nó đi là
+                  trả pill về nằm bẹt trên trang #070708 — đúng chế độ hỏng mà
+                  luật ấy được đo để chặn.
+
+                  Nửa còn lại — "tint phải là màu của glyph" — mới là thứ đổi.
+                  Nên: giữ nguyên một nguồn sáng, nhưng là MỘT nguồn duy nhất và
+                  trung tính. `colors.primary` là bạc của chính thương hiệu, nên
+                  wash đọc ra là ÁNH SÁNG chứ không phải một màu.
+                */}
+                <LiquidGlass style={styles.quickChip} radius={radius.full} tint={colors.primary} material="blur">
                   <View style={styles.quickChipInner}>
                     <Glyph name={a.glyph} size={16} />
                     <Text style={styles.quickChipText}>{a.label}</Text>

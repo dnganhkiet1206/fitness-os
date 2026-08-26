@@ -143,6 +143,6 @@ const styles = StyleSheet.create({
   /* 66pt tall, well past Apple's 44pt floor, and each tile is a quarter of the
      card — the whole width is live, not just the glyph in the middle of it. */
   tile: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: spacing.xs, borderRadius: radius.md },
-  chip: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  chip: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   label: { ...type.caption, color: colors.foreground },
 });

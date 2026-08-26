@@ -37,14 +37,38 @@ const read = (rel) => readFileSync(path.join(NATIVE, rel), 'utf8');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const problems = [];
 
-/** Every screen with pills, and how many glass ones it should have. */
+/**
+ * Every screen with pills: bao nhiêu pill kính, và nguồn sáng của chúng là gì.
+ *
+ * ── vì sao cột thứ ba tồn tại ──
+ *
+ * Luật này từng đòi mọi pill "được thắp bằng chính thứ nó chứa: màu glyph của
+ * nó". Nửa đầu của câu ấy — **phải có một `tint`** — là thật, và nó là nửa
+ * được ĐO: pill dùng `material="blur"`, thứ đã bỏ mép sáng và bóng đổ trong
+ * lòng kính, nên lớp wash theo tint là nguồn sáng CUỐI CÙNG nhấc nó khỏi trang
+ * `#070708`. Gỡ tint là trả pill về nằm bẹt — đúng chế độ hỏng mà phép đo ảnh
+ * chụp ([9,9,9]) được làm ra để chặn.
+ *
+ * Nửa sau — "tint phải là màu của glyph" — là một khẳng định thẩm mỹ, không
+ * kèm số nào, và cái giá của nó đọc được ngay trên một hàng: bốn viên cạnh
+ * nhau, bốn hue khác nhau, cho bốn thứ mà cái NHÃN đã nói rõ là gì.
+ *
+ * Luật mới do đó CHẶT HƠN bản cũ: pill vẫn phải có nguồn sáng, VÀ pill điều
+ * hướng phải dùng đúng MỘT nguồn trung tính. Bản cũ cho phép bốn hue; bản này
+ * không.
+ *
+ * `music-launch` được miễn có tên: màu ở đó là màu của DỊCH VỤ (Apple Music,
+ * Spotify), tức là danh tính chứ không phải trang trí — nó nói cho người dùng
+ * biết nút mở cái gì trước khi họ đọc chữ.
+ */
+const NEUTRAL = 'colors.primary';
 const USERS = [
-  ['src/app/(tabs)/index.tsx', 1, 'bốn nút log trên Today (một chỗ render, lặp qua danh sách)'],
-  ['src/app/(tabs)/workouts.tsx', 3, 'lịch tập tuần, bài tập, ghi buổi tập'],
-  ['src/components/ascnd/music-launch.tsx', 1, 'hai chip nhạc (một chỗ render)'],
+  ['src/app/(tabs)/index.tsx', 1, 'bốn nút log trên Today (một chỗ render, lặp qua danh sách)', NEUTRAL],
+  ['src/app/(tabs)/workouts.tsx', 3, 'lịch tập tuần, bài tập, ghi buổi tập', NEUTRAL],
+  ['src/components/ascnd/music-launch.tsx', 1, 'hai chip nhạc (một chỗ render)', null],
 ];
 
-for (const [file, want, what] of USERS) {
+for (const [file, want, what, neutral] of USERS) {
   const code = strip(read(file));
 
   /* ── 1. it is made of the material, not of a fill and a border ── */
@@ -61,9 +85,23 @@ for (const [file, want, what] of USERS) {
   const tinted = [...code.matchAll(/<LiquidGlass[^>]*\btint=/g)].length;
   if (glasses > 0 && tinted < glasses) {
     problems.push(
-      `${file}: ${glasses - tinted} pill kính không truyền \`tint\`. Kính không màu là kính xám — mỗi ` +
-        'pill phải được thắp bằng chính thứ nó chứa: màu glyph của nó, hoặc màu dịch vụ nó mở',
+      `${file}: ${glasses - tinted} pill kính không truyền \`tint\`. \`material="blur"\` đã bỏ mép sáng ` +
+        'và bóng đổ trong lòng kính, nên lớp wash theo tint là nguồn sáng CUỐI CÙNG nhấc pill khỏi trang ' +
+        '#070708 — gỡ nó là trả pill về nằm bẹt',
     );
+  }
+
+  /* ── 2b. và pill ĐIỀU HƯỚNG dùng đúng MỘT nguồn sáng trung tính ── */
+  if (neutral) {
+    const hues = [...code.matchAll(/<LiquidGlass[^>]*\btint=\{([^}]+)\}/g)].map((m) => m[1].trim());
+    const stray = hues.filter((h) => h !== neutral);
+    if (stray.length) {
+      problems.push(
+        `${file}: ${stray.length} pill điều hướng lấy hue riêng (${[...new Set(stray)].join(', ')}) thay vì ` +
+          `\`${neutral}\`. Màu dành cho GIÁ TRỊ, không dành cho LỐI ĐI — cái nhãn đã nói pill đó là gì, ` +
+          'nên hue ở bề mặt không thêm thông tin nào; nó chỉ tiêu mất sự kiềm chế. Màu ở lại trong glyph',
+      );
+    }
   }
 
   /* ── 3. nobody bolts a shadow back on ── */
@@ -102,8 +140,10 @@ if (problems.length) {
 const total = USERS.reduce((n, u) => n + u[1], 0);
 console.log(
   `pill nổi OK — ${total} pill trên ${USERS.length} màn đều dùng <LiquidGlass>, cùng chất liệu với pill ` +
-    '"đang chờ dữ liệu hôm nay" bên trợ lý: blur tối, mép trên sáng, bóng đổ về góc dưới-phải. Mỗi cái ' +
-    'truyền `tint` nên được thắp bằng chính thứ nó chứa — màu glyph, hoặc màu dịch vụ với hai chip nhạc. ' +
+    '"đang chờ dữ liệu hôm nay" bên trợ lý. Mỗi cái vẫn truyền `tint`, vì material="blur" đã bỏ mép sáng ' +
+    'nên lớp wash là nguồn sáng cuối cùng nhấc pill khỏi nền — nhưng pill ĐIỀU HƯỚNG nay dùng đúng MỘT ' +
+    'nguồn trung tính (colors.primary) thay vì mỗi cái một hue: màu dành cho giá trị, không dành cho lối ' +
+    'đi, và màu ở lại trong glyph. Hai chip nhạc được miễn có tên vì màu ở đó là danh tính dịch vụ. ' +
     'Không pill nào gắn thêm bóng đổ: đo trên ảnh chụp thì bóng đen dưới pill tối trên trang #070708 vẽ ' +
     'ra đúng không gì (điểm ảnh ngay ngoài pill là [9,9,9], y hệt nền), nên chiều sâu ở đây là việc của ' +
     'chất liệu chứ không phải của shadow',

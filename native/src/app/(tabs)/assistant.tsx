@@ -593,9 +593,12 @@ export default function AssistantScreen() {
             ) : null}
           </View>
           <LiquidGlass
-            style={[styles.insight, tintBorder(litBy('spark'))]}
+            /* Thẻ nhận định không phải một chỉ số — xem luật màu ở
+               `index.tsx`, hàng quick-log. Bốn thẻ chỉ số ngay bên trên VẪN giữ
+               màu, vì chúng hiện một GIÁ TRỊ; thẻ này hiện một câu văn. */
+            style={styles.insight}
             radius={radius.lg}
-            tint={litBy('spark')} material="blur">
+            tint={colors.primary} material="blur">
             <View style={styles.insightInner}>
               {insight.isPending ? (
                 <View style={styles.insightRow}>
@@ -773,9 +776,10 @@ export default function AssistantScreen() {
           accessibilityLabel={vi ? 'Mở AI Coach' : 'Open AI Coach'}
           onPress={() => askCoach()}>
           <LiquidGlass
-            style={[styles.coachCard, tintBorder(litBy('spark'))]}
+            /* Thẻ mở AI Coach là một LỐI ĐI. Màu ở lại trong glyph. */
+            style={styles.coachCard}
             radius={radius.xl}
-            tint={litBy('spark')} material="blur">
+            tint={colors.primary} material="blur">
             <View style={styles.coachInner}>
               <View style={styles.coachHead}>
                 <View style={styles.coachIcon}>
@@ -828,7 +832,8 @@ export default function AssistantScreen() {
                          does. */
                       accessibilityLabel={vi ? s.question.vi : s.question.en}
                       onPress={() => askCoach(vi ? s.question.vi : s.question.en)}>
-                      <View style={[styles.chip, { borderColor: `${litBy(s.glyph)}3d` }]}>
+                      {/* Chip hỏi nhanh là một lối đi — viền về màu chung. */}
+                      <View style={styles.chip}>
                         <Glyph name={s.glyph} size={14} />
                         <Text style={styles.chipText}>{vi ? s.label.vi : s.label.en}</Text>
                       </View>
@@ -870,10 +875,14 @@ export default function AssistantScreen() {
                 onPress={() => go(t.route)}
                 style={styles.toolWrap}>
                 <LiquidGlass
-                  style={[styles.tool, tintBorder(litBy(t.glyph))]}
+                  /* Lưới công cụ gọi thẳng `go(t.route)` — mỗi ô là một LỐI
+                     ĐI, và cả lưới cạnh nhau là nhiều hue nhất trên một màn
+                     hình của app. Bề mặt, viền và hốc icon đều về màu chung;
+                     màu ở lại trong glyph, nơi nó phân biệt các công cụ. */
+                  style={styles.tool}
                   radius={radius.lg}
-                  tint={litBy(t.glyph)} material="blur">
-                  <View style={[styles.toolIcon, { backgroundColor: `${litBy(t.glyph)}1f` }]}>
+                  tint={colors.primary} material="blur">
+                  <View style={styles.toolIcon}>
                     <Glyph name={t.glyph} size={19} />
                   </View>
                   <Text style={styles.toolLabel} numberOfLines={1}>
@@ -1005,6 +1014,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
+    /* Viền chung, không còn lấy từ glyph — xem luật màu ở `index.tsx`. */
+    borderColor: glass.border,
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
   chipText: { ...type.caption, color: colors.foreground },
@@ -1014,7 +1025,16 @@ const styles = StyleSheet.create({
      rather than assuming a 390pt screen. */
   toolWrap: { width: '48.4%' },
   tool: { padding: spacing.md, gap: 5, minHeight: 118 },
-  toolIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', marginBottom: 3 },
+  toolIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 3,
+    /* Một hốc chung cho mọi công cụ; màu ở lại trong glyph. */
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
   toolLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground },
   toolHint: { ...type.caption, color: colors.glassMuted, lineHeight: 15 },
 
