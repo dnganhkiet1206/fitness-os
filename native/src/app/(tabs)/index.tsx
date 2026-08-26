@@ -127,7 +127,28 @@ import { HERO_RING, PAGE_TINT, colors, radius, spacing, type } from '@/constants
  */
 const SHEET_BLUR = 36;
 
-const TOP_BAR_FADE = 56;
+/**
+ * Quãng cuộn để hàng nút trên đầu tan đi.
+ *
+ * ── vì sao 56 đọc ra là CẮT PHỤT chứ không phải tan ──
+ *
+ * Hiệu ứng vốn đã có: opacity 1→0 cộng nhấc 10 điểm, chạy trên luồng UI theo
+ * `scrollY`. Nhưng 56 điểm là quãng mà một cú vuốt bình thường vượt qua trong
+ * khoảng hai khung hình — nên thứ người ta thấy là ba cái nút biến mất, không
+ * phải ba cái nút tan đi. Đã bị báo lại kèm ảnh.
+ *
+ * 96 điểm cho mắt kịp đọc ra đó là một chuyển động. Vẫn ngắn hơn nửa màn hình
+ * rất nhiều, nên hàng nút vẫn "thôi cần thiết ngay khi bạn bắt đầu đọc" đúng
+ * như ý ban đầu — nó chỉ không còn biến mất giữa hai khung hình.
+ *
+ * ── và nó KHÔNG tốn thêm gì ──
+ *
+ * Đây là đổi CON SỐ trong đúng `useAnimatedStyle` đang chạy. Không thêm lớp,
+ * không thêm state, không thêm một phép tính nào mỗi khung hình — cùng một
+ * worklet, cùng một lần ghi style. Vòng trước vừa gỡ React ra khỏi đường cuộn
+ * của màn này; chỗ này không đưa nó trở lại.
+ */
+const TOP_BAR_FADE = 96;
 
 /**
  * Chiều cao hàng nút, tức chỗ nó từng chiếm khi còn nằm trong dòng chảy.
@@ -647,15 +668,36 @@ export default function TodayScreen() {
    * thanh điều khiển của Apple Music, chứ không nấn ná nửa màn hình.
    */
   const topBar = useAnimatedStyle(() => {
-    const shown = interpolate(scrollY.value, [0, TOP_BAR_FADE], [1, 0], 'clamp');
+    /*
+      Ba chặng chứ không hai, và độ cong là cả điểm khác biệt.
+
+      Một đường thẳng từ 1 xuống 0 dành nửa quãng đầu cho vùng 1.0→0.5, nơi mắt
+      gần như không phân biệt được — rồi rơi hết phần còn lại ở cuối. Giữ 0.72 ở
+      giữa quãng nghĩa là hàng nút NẤN NÁ trong lúc bạn mới bắt đầu cuộn, rồi
+      mới tan nhanh. Đó là hình dạng của một thứ rời đi, chứ không phải của một
+      thứ bị tắt công tắc.
+    */
+    const shown = interpolate(
+      scrollY.value,
+      [0, TOP_BAR_FADE * 0.5, TOP_BAR_FADE],
+      [1, 0.72, 0],
+      'clamp',
+    );
     return {
       opacity: shown,
       /* Mờ hẳn thì thôi nhận chạm — xem ghi chú ở chỗ `barGone` từng đứng. */
       pointerEvents: shown < 0.02 ? ('none' as const) : ('box-none' as const),
-    /* Nhấc nhẹ tại CHỖ. Trước đây hàng này còn trôi theo nội dung nữa, nên
-       10 điểm này là chuyển động thứ hai chồng lên một chuyển động lớn hơn.
-       Bây giờ nó là chuyển động duy nhất, và đó là thứ làm nó ra dáng Apple. */
-      transform: [{ translateY: interpolate(scrollY.value, [0, TOP_BAR_FADE], [0, -10], 'clamp') }],
+      transform: [
+        /* Nhấc nhẹ tại CHỖ. Trước đây hàng này còn trôi theo nội dung nữa, nên
+           10 điểm này là chuyển động thứ hai chồng lên một chuyển động lớn hơn.
+           Bây giờ nó là chuyển động duy nhất, và đó là thứ làm nó ra dáng Apple. */
+        { translateY: interpolate(scrollY.value, [0, TOP_BAR_FADE], [0, -10], 'clamp') },
+        /* Và lùi lại một chút khi đi. Sáu phần trăm là đủ để đọc ra "nó ra xa"
+           chứ không đọc ra "nó co lại" — cùng cách iOS tiễn một thanh điều khiển
+           đi. Nằm trong CÙNG mảng transform nên nó không thêm một lần ghi style
+           nào; ba giá trị, một lần ghi. */
+        { scale: interpolate(scrollY.value, [0, TOP_BAR_FADE], [1, 0.94], 'clamp') },
+      ],
     };
   });
 

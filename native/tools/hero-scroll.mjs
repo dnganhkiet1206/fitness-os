@@ -364,7 +364,38 @@ const num = (src, name) => {
        Đường mới chứng minh được nhiều hơn "hai ngưỡng bằng nhau": nó chứng minh
        chỉ có MỘT. Độ mờ và cổng chạm phải đọc cùng một biến cục bộ trong cùng
        worklet, nên không có hai con số để mà lệch. */
-    const named = /const (\w+) = interpolate\(scrollY\.value, \[0, [A-Z_0-9]+\], \[1, 0\]/.exec(topBarBlock);
+    /*
+      ── luật này được CHUYỂN HƯỚNG, không nới ──
+
+      Nó từng đòi đúng một hình dạng: `interpolate(scrollY.value, [0, HẰNG_SỐ],
+      [1, 0]` — hai chặng, một dòng. Hàng nút nay tan theo BA chặng
+      (`[0, FADE*0.5, FADE] → [1, 0.72, 0]`) để chuyển động có độ cong, và phép
+      nội suy ấy xuống dòng — nên luật cũ ĐỎ trên một thay đổi không hề đụng tới
+      bất biến của nó.
+
+      Bất biến thật, chính chú thích ngay trên đây nói ra: độ mờ và cổng chạm
+      phải đọc CÙNG MỘT biến cục bộ, để không có hai con số mà lệch. Bao nhiêu
+      chặng, viết mấy dòng, đường cong ra sao — không liên quan.
+
+      Nên phép so bây giờ chỉ đòi: một `const` trong khối `topBar`, giá trị đến
+      từ `interpolate(scrollY.value, …)`, và dải ra KẾT THÚC ở 0 (nếu không thì
+      hàng nút không bao giờ tắt hẳn và cổng chạm không có gì để đóng lại).
+    */
+    const call = /const (\w+) = interpolate\(\s*scrollY\.value,\s*\[([^\]]*)\],\s*\[([^\]]*)\]/.exec(topBarBlock);
+    /*
+      Dải RA phải kết thúc ở đúng 0, và điều đó được đọc từ chính mảng chứ không
+      dò chuỗi: bản đầu của luật mới này khớp `[1, 0.72, 0.3]` vì "0.72" cũng
+      chứa một số 0, nên nó cho qua một hàng nút KHÔNG BAO GIỜ tắt hẳn — và khi
+      đó cổng chạm không có gì để đóng lại. Phép thử ngược bắt được, và luật
+      được siết chứ không phải phép thử được nới.
+    */
+    const named = call && Number(call[3].split(',').pop().trim()) === 0 ? call : null;
+    if (call && !named) {
+      problems.push(
+        `${TODAY}: phép mờ hàng nút không kết thúc ở 0 (dải ra \`[${call[3].trim()}]\`) — hàng nút không ` +
+          'bao giờ tắt hẳn, nên cổng chạm không có ngưỡng nào để đóng lại và nó vẫn ăn chạm trên vòng tròn',
+      );
+    }
     if (!named) {
       problems.push(
         `${TODAY}: cổng chạm nằm trong style động nhưng phép mờ không đặt tên cho giá trị — không có gì để hai bên cùng đọc`,
