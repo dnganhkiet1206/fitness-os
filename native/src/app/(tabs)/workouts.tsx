@@ -15,7 +15,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { PAGE_TINT, colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useExercises, useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
@@ -294,7 +294,7 @@ export default function WorkoutsScreen() {
     navigation because a list did not arrive would be a second problem.
   */
   return (
-    <Screen title={i18n.workoutsTitle}>
+    <Screen title={i18n.workoutsTitle} aura={PAGE_TINT.activity}>
       {/*
         The two ways in, with no label of their own.
 

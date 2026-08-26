@@ -21,7 +21,7 @@ import { useGroceryItems } from '@/hooks/use-extras';
 import { Screen } from '@/components/ascnd/screen';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodayMeals } from '@/components/ascnd/today-meals';
-import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { PAGE_TINT, colors, glass, radius, spacing } from '@/constants/ascnd';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -398,7 +398,7 @@ export default function NutritionScreen() {
         shopping list among the foods. See `shortcut-row.tsx` for why the
         state, not the label, is the point.
       */}
-      <Screen title={i18n.nutritionTitle}>
+      <Screen title={i18n.nutritionTitle} aura={PAGE_TINT.nutrition}>
         {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
         <Segmented
           value={tab}

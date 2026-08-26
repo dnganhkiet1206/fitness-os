@@ -69,7 +69,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { duration } from '@/constants/motion';
 import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 
-import { HERO_RING, colors, radius, spacing, type } from '@/constants/ascnd';
+import { HERO_RING, PAGE_TINT, colors, radius, spacing, type } from '@/constants/ascnd';
 
 /** Độ đậm của lớp phủ dưới hero. Đủ để kéo tương phản về một mức, chưa đủ để
  *  giấu nền — vẫn phải nhìn xuyên qua thấy màu của vòng tròn phía trên. */
@@ -607,12 +607,9 @@ export default function TodayScreen() {
   const heroTints = useMemo(
     () =>
       config.heroWidgets.map((key) => {
-        const pair: Partial<Record<WidgetKey, [string, string]>> = {
-          activity: [colors.metricOrange, colors.metricPurple],
-          nutrition: [colors.readinessGreen, colors.metricOrange],
-          water: [colors.metricBlue, colors.metricCyan],
-        };
-        const own = pair[key];
+        /* Bảng ở `constants/ascnd.ts`, không ở đây: trang dinh dưỡng và trang
+           tập luyện đọc CÙNG cặp màu, nên một bản sao là một lời hứa sẽ lệch. */
+        const own = (PAGE_TINT as Partial<Record<WidgetKey, readonly [string, string]>>)[key];
         return {
           key,
           status: own ? null : readinessScore != null ? readinessStatus : null,

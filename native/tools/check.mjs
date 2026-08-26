@@ -132,6 +132,7 @@ const STEPS = [
   ['hiệu ứng thu lại', 'node', ['tools/retract.mjs']],
   ['gốc cử chỉ', 'node', ['tools/gesture-root.mjs']],
   ['hero khi cuộn', 'node', ['tools/hero-scroll.mjs']],
+  ['màu của trang', 'node', ['tools/page-tint.mjs']],
   ['hai chế độ của deck', 'node', ['tools/carousel-modes.mjs']],
   ['database của edge function', 'node', ['tools/edge-db.mjs']],
   ['ranh giới AI', 'node', ['tools/ai-boundary.mjs']],

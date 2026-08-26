@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { AmbientLight } from '@/components/ascnd/ambient-light';
+import { ReadinessAura } from '@/components/ascnd/readiness-aura';
 import { Icon } from '@/components/ascnd/icon';
 import { StatusScrim } from '@/components/ascnd/status-scrim';
 import { BottomTabInset } from '@/constants/expo-template-theme';
@@ -101,6 +102,20 @@ interface ScreenProps extends ViewProps {
    * legibility. Requires `back`.
    */
   transparentHeader?: boolean;
+  /**
+   * Cặp màu nền của trang, lấy từ `PAGE_TINT`.
+   *
+   * Dashboard đổi nền theo thẻ bạn đang vuốt tới; một trang thì đứng yên ở một
+   * mặt, nên nó nhận thẳng cặp màu của mặt đó. Trang dinh dưỡng mang đúng màu
+   * thẻ dinh dưỡng, trang tập luyện mang màu thẻ vận động — mở một thẻ ra xem
+   * thì màu đi theo, và người dùng biết mình vẫn ở trong cùng một thứ.
+   *
+   * Cả BA nhánh return của component này đều phải vẽ nó. Thiếu một nhánh thì
+   * trang nào đi qua nhánh đó sẽ mất nền mà không có lỗi nào báo.
+   *
+   * Không truyền thì trang không có nền màu, đúng như trước.
+   */
+  aura?: readonly [string, string];
   /** report the header height (insets.top + 44) so content can offset under it */
   onHeaderHeight?: (h: number) => void;
   /**
@@ -177,7 +192,7 @@ function ScrollFrame({ on, children }: { on: boolean; children: React.ReactNode 
   );
 }
 
-export function Screen({ title, eyebrow, headerRight, back, transparentHeader, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, children, style, ...props }: ScreenProps) {
+export function Screen({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
 
@@ -257,6 +272,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
       return (
         <View style={styles.root}>
           <AmbientLight />
+          {aura ? <ReadinessAura status={null} tint={aura[0]} tint2={aura[1]} /> : null}
           <ScrollFrame on={keyboardAware}>
             <ScrollView
               ref={scroller}
@@ -298,6 +314,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
     return (
       <View style={styles.root}>
         <AmbientLight />
+        {aura ? <ReadinessAura status={null} tint={aura[0]} tint2={aura[1]} /> : null}
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
         <View style={[styles.pageHeader, { paddingTop: insets.top }]}>{headerBar}</View>
         <ScrollFrame on={keyboardAware}>
@@ -331,6 +348,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, o
   return (
     <View style={styles.root}>
       <AmbientLight />
+      {aura ? <ReadinessAura status={null} tint={aura[0]} tint2={aura[1]} /> : null}
       <ScrollFrame on={keyboardAware}>
         <ScrollView
           ref={scroller}

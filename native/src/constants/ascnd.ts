@@ -202,3 +202,36 @@ export const type = {
  * thứ.
  */
 export const HERO_RING = 264;
+
+/**
+ * Cặp màu nền của mỗi mặt của app, ở MỘT chỗ.
+ *
+ * ── vì sao nó ở đây chứ không ở màn hình dùng nó ──
+ *
+ * Bảng này từng nằm cục bộ trong `(tabs)/index.tsx`, đủ dùng khi chỉ dashboard
+ * đổi màu theo thẻ đang vuốt tới. Giờ trang dinh dưỡng phải mang đúng màu của
+ * thẻ dinh dưỡng và trang tập luyện mang màu thẻ vận động — nghĩa là cùng một
+ * quyết định được đọc ở bốn tệp. Chép nó ra là bảo đảm rằng một ngày nào đó thẻ
+ * và trang của cùng một thứ sẽ nói hai màu khác nhau, và không có gì bắt được.
+ *
+ * ── chọn theo NGHĨA, không theo khẩu vị ──
+ *
+ * Vận động lấy màu vòng Move, dinh dưỡng lấy màu thẻ của nó, nước lấy xanh
+ * dương. Nền và con số không được phép nói hai chuyện khác nhau.
+ *
+ * `progress` là cặp duy nhất không kề nhau trên vòng màu, và đó là lý do nó
+ * được chọn: tiến trình là trang DUY NHẤT nói về tất cả các trang còn lại — nó
+ * tổng hợp chứ không đo một thứ — nên một dải quét rộng nhất bảng màu là câu
+ * đúng nghĩa. Nó cũng là cặp duy nhất không dùng lại tông ĐẦU của cặp nào khác.
+ *
+ * Không cặp nào được dùng ba màu trạng thái sẵn sàng làm tông riêng: xanh lá,
+ * vàng, đỏ ở app này CÓ NGHĨA là trạng thái sẵn sàng. Dinh dưỡng dùng
+ * `readinessGreen` là ngoại lệ có chủ ý và đã có từ trước — đó là màu vòng tròn
+ * của chính nó, nên nền và vòng vẫn nói cùng một chuyện.
+ */
+export const PAGE_TINT = {
+  activity: [colors.metricOrange, colors.metricPurple],
+  nutrition: [colors.readinessGreen, colors.metricOrange],
+  water: [colors.metricBlue, colors.metricCyan],
+  progress: [colors.metricPurple, colors.metricCyan],
+} as const satisfies Record<string, readonly [string, string]>;

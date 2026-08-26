@@ -21,7 +21,7 @@ import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { PAGE_TINT, colors, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { rise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -371,6 +371,7 @@ export default function ProgressScreen() {
 
   return (
     <Screen
+      aura={PAGE_TINT.progress}
       contentScrollEnabled={!scrubbing}
       title={i18n.progressTitle}
       /*
