@@ -223,6 +223,56 @@ const num = (src, name) => {
   }
 }
 
+/*
+  Hàng nút trên đầu phải GHIM, và ghim thì kéo theo ba nghĩa vụ.
+
+  ── vì sao ghim ──
+
+  Nó từng là con đầu của ScrollView, nên nó vừa mờ đi vừa TRÔI LÊN cùng nội
+  dung — hai chuyển động cho một thứ, và cái trôi là cái mắt bám. Kiểu của Apple
+  (Music, Settings) là bar đứng yên rồi tự mờ tại chỗ.
+
+  ── ba nghĩa vụ ──
+
+  1. Chỗ nó từng chiếm phải được trả lại bằng `paddingTop`, không thì vòng tròn
+     chui lên nằm dưới các nút.
+
+  2. `opacity: 0` KHÔNG tắt cảm ứng. Một nút vô hình vẫn nuốt cú bấm, và ở đây
+     nó nằm đúng trên vòng tròn — người dùng bấm vào ring, không có gì xảy ra,
+     và không có gì trên màn hình giải thích được. Phải có cổng `pointerEvents`.
+
+  3. Phép mờ và cổng chạm phải đọc CÙNG một ngưỡng. Hai con số riêng thì có một
+     dải cuộn mà hàng nút đã vô hình nhưng vẫn ăn chạm — đúng lỗi ở (2), chỉ
+     hẹp hơn nên khó tìm hơn.
+*/
+{
+  if (!/styles\.headerBar/.test(today)) {
+    problems.push(`${TODAY}: hàng nút trên đầu không ghim — nó sẽ trôi theo trang thay vì mờ tại chỗ`);
+  }
+  if (!/headerBar:\s*\{[^}]*position: 'absolute'/.test(today)) {
+    problems.push(`${TODAY}: headerBar không phải absolute — nó vẫn chiếm chỗ trong dòng chảy`);
+  }
+  if (!/pointerEvents=\{barGone \? 'none' :/.test(today)) {
+    problems.push(
+      `${TODAY}: hàng nút mờ đi mà không tắt cảm ứng — một nút vô hình nằm đúng trên vòng tròn vẫn nuốt cú bấm`,
+    );
+  }
+  if (!/paddingTop: insets\.top \+ 12 \+ TOP_BAR_H/.test(today)) {
+    problems.push(`${TODAY}: không bù lại chỗ hàng nút từng chiếm — nội dung sẽ chui lên nằm dưới các nút`);
+  }
+  /* Cùng một ngưỡng cho phép mờ và cho cổng chạm. */
+  const fades = [...today.matchAll(/interpolate\(scrollY\.value, \[0, ([A-Z_0-9]+)\], \[1, 0\]/g)].map((m) => m[1]);
+  const gate = /contentOffset\.y >= ([A-Z_0-9]+)/.exec(today);
+  if (!gate) {
+    problems.push(`${TODAY}: cổng chạm không đọc ngưỡng nào`);
+  } else if (!fades.includes(gate[1])) {
+    problems.push(
+      `${TODAY}: cổng chạm dùng ngưỡng \`${gate[1]}\` khác ngưỡng của phép mờ (${fades.join(', ') || 'không đọc được'}) — ` +
+        'sẽ có một dải cuộn mà hàng nút đã vô hình nhưng vẫn ăn chạm',
+    );
+  }
+}
+
 if (problems.length) {
   console.log('hero khi cuộn CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);

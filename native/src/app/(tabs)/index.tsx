@@ -73,6 +73,25 @@ import { HERO_RING, PAGE_TINT, colors, radius, spacing, type } from '@/constants
 
 /** Độ đậm của lớp phủ dưới hero. Đủ để kéo tương phản về một mức, chưa đủ để
  *  giấu nền — vẫn phải nhìn xuyên qua thấy màu của vòng tròn phía trên. */
+/**
+ * Quãng cuộn để hàng nút trên đầu tắt hẳn.
+ *
+ * MỘT con số cho cả phép mờ lẫn cổng chạm. Hai con số riêng thì có một dải cuộn
+ * mà hàng nút đã vô hình nhưng vẫn ăn cú chạm — một nút không nhìn thấy nuốt
+ * mất cú bấm vào vòng tròn phía dưới, và không có gì trên màn hình giải thích
+ * được chuyện đó.
+ */
+const TOP_BAR_FADE = 56;
+
+/**
+ * Chiều cao hàng nút, tức chỗ nó từng chiếm khi còn nằm trong dòng chảy.
+ *
+ * Ghim nó ra khỏi vùng cuộn là lấy mất chiều cao đó khỏi bố cục, nên nội dung
+ * bị kéo lên nằm dưới hàng nút. Cộng lại vào `paddingTop` là trả đúng chỗ cũ.
+ * Bằng đúng cạnh của `squareBtn` — hàng chỉ cao bằng nút cao nhất trong nó.
+ */
+const TOP_BAR_H = 44;
+
 const SCRIM = 0.62;
 /** Độ mờ của lớp phủ khi tấm còn nằm dưới hero, nhân với `SCRIM` — cho ra 0.42,
  *  đúng mức cũ. Xem ghi chú ở `scrimFade` về vì sao nó phải đổi theo cuộn. */
@@ -333,6 +352,11 @@ export default function TodayScreen() {
   const cover = useWindowDimensions().height * HERO_COVER_FRACTION;
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
+    const gone = e.contentOffset.y >= TOP_BAR_FADE;
+    if (gone !== barGoneSV.value) {
+      barGoneSV.value = gone;
+      runOnJS(setBarGone)(gone);
+    }
     /* Thanh tab vẫn cần con số này ở JS thread — nó ẩn/hiện bằng state React. */
     runOnJS(handleTabScroll)(e.contentOffset.y);
   });
@@ -470,9 +494,26 @@ export default function TodayScreen() {
    * thanh điều khiển của Apple Music, chứ không nấn ná nửa màn hình.
    */
   const topBar = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, 56], [1, 0], 'clamp'),
-    transform: [{ translateY: interpolate(scrollY.value, [0, 56], [0, -10], 'clamp') }],
+    opacity: interpolate(scrollY.value, [0, TOP_BAR_FADE], [1, 0], 'clamp'),
+    /* Nhấc nhẹ tại CHỖ. Trước đây hàng này còn trôi theo nội dung nữa, nên
+       10 điểm này là chuyển động thứ hai chồng lên một chuyển động lớn hơn.
+       Bây giờ nó là chuyển động duy nhất, và đó là thứ làm nó ra dáng Apple. */
+    transform: [{ translateY: interpolate(scrollY.value, [0, TOP_BAR_FADE], [0, -10], 'clamp') }],
   }));
+
+  /**
+   * Đã mờ hẳn thì phải thôi ăn cú chạm.
+   *
+   * `opacity: 0` không tắt cảm ứng — một nút vô hình vẫn nuốt cú bấm, và ở đây
+   * nó nằm đúng trên vòng tròn. Reanimated không nội suy `pointerEvents`, nên
+   * ngưỡng phải đi qua state React.
+   *
+   * Chỉ gọi setState ở đúng lúc VƯỢT ngưỡng, không phải mỗi khung hình cuộn:
+   * shared value giữ trạng thái trước đó, và một lần render mỗi lần đổi chiều
+   * là đủ.
+   */
+  const [barGone, setBarGone] = useState(false);
+  const barGoneSV = useSharedValue(false);
 
   const scroller = useRef<ScrollView>(null);
   const toggleHero = useCallback((index: number) => {
@@ -855,7 +896,14 @@ export default function TodayScreen() {
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[
         styles.content,
-        { paddingTop: insets.top + 12, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
+        {
+          /* `TOP_BAR_H` + một khoảng cách: chỗ hàng nút từng chiếm khi nó còn là
+             con đầu của vùng cuộn. Thiếu nó thì vòng tròn chui lên nằm dưới các
+             nút. Cùng token `gap` mà `content` dùng, không phải một số thứ hai
+             chọn cho vừa mắt. */
+          paddingTop: insets.top + 12 + TOP_BAR_H + spacing.md,
+          paddingBottom: BottomTabInset + insets.bottom + spacing.lg,
+        },
       ]}
       /*
         Pull to refresh, and where its spinner is drawn.
@@ -889,80 +937,6 @@ export default function TodayScreen() {
       onScroll={onScroll}
       scrollEventThrottle={16}
       contentInsetAdjustmentBehavior="never">
-      {/* Greeting + actions (web Index header) */}
-      <Animated.View style={[styles.headerRow, topBar]}>
-        {/*
-          Ngày và lời chào đều đã bỏ.
-
-          Ngày nói lại thứ thanh trạng thái ngay phía trên đã nói. Lời chào nói
-          tên bạn cho chính bạn nghe. Cả hai từng là hai dòng ĐẦU TIÊN của
-          trang, tức nửa giây đầu tiên tiêu vào hai câu không đổi được quyết
-          định nào. Chỗ đó giờ là chỉ số sẵn sàng, và hàng này chỉ còn các nút.
-        */}
-        <View style={styles.headerText} />
-        <View style={styles.headerButtons}>
-          {/* The streak sits before the buttons because it is a *reading*, not
-              an action — and it is only ever here, in the bar you land on. */}
-          {!editMode && <StreakChip />}
-          <PressScale
-            accessibilityRole="button"
-            accessibilityLabel={editMode ? i18n.a11yDoneEditing : i18n.a11yEditLayout}
-            accessibilityState={{ selected: editMode }}
-            style={[styles.squareBtn, editMode && styles.squareBtnActive]}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setEditMode(!editMode);
-              setNewGroupName('');
-            }}>
-            <Icon
-              icon={editMode ? Check : Pencil}
-              size={editMode ? 20 : 17}
-              color={editMode ? colors.primary : 'rgba(237,237,237,0.7)'}
-            />
-          </PressScale>
-          {!editMode && (
-            <>
-              {/*
-                ── the AI button that used to sit here is gone ──
-
-                It was a `Sparkles` that pushed `/ai-coach`, and it was the only
-                path in the app that jumped *past* the Health Assistant into a
-                bare chat. Every other route is assistant → coach, which is the
-                flow the two screens were built around: the hub first, the
-                conversation after, with today's questions already in hand.
-
-                Its destination had also become the worse one. Since the coach
-                stopped raising the keyboard on arrival, that button landed you
-                on an empty transcript with the burden of thinking of a
-                question — while one tap on the assistant's coach card asks
-                something specific about today's numbers.
-
-                And the tab bar's search island is on screen at that exact
-                moment, a thumb away, going somewhere better. Two AI buttons on
-                one screen pointing at two different screens is the confusion
-                this app has already spent a day removing once.
-
-                What is lost: the one-tap route for somebody who just wants to
-                type. That is now two taps through the assistant, and the same
-                two taps ask a better question.
-              */}
-              {/* Settings, back where it was. It is also the fifth tab now, so
-                  this is a second way in rather than the only one — kept
-                  because it is where the hand already goes on this page. */}
-              <PressScale
-                accessibilityRole="button"
-                accessibilityLabel={i18n.a11ySettings}
-                style={styles.squareBtn}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  router.push('/settings');
-                }}>
-                <Icon icon={Settings} size={20} color="rgba(237,237,237,0.7)" />
-              </PressScale>
-            </>
-          )}
-        </View>
-      </Animated.View>
 
       {!editMode && (
         <>
@@ -1388,6 +1362,95 @@ export default function TodayScreen() {
       )}
       </Animated.ScrollView>
       {/*
+        Hàng nút GHIM, không cuộn theo trang.
+
+        Nó từng là con đầu của ScrollView, nên nó vừa mờ đi vừa TRÔI LÊN cùng nội
+        dung — hai chuyển động cho một thứ, và cái trôi là cái mắt bám. Kiểu của
+        Apple (Music, Settings) là bar đứng yên rồi tự mờ tại chỗ: chuyển động duy
+        nhất là chuyển động của chính nó.
+
+        Ra khỏi vùng cuộn thì phải trả lại ba thứ:
+          • chỗ nó từng chiếm trong dòng chảy — `TOP_BAR_H` cộng vào paddingTop
+          • quyền chạm khi đã mờ — xem `barGone` bên dưới
+          • thứ tự vẽ — nó là con SAU ScrollView, vì anh em xếp theo thứ tự nguồn
+
+        `pointerEvents="box-none"` để vùng trống hai bên không nuốt cú chạm rơi
+        xuống hero phía dưới.
+      */}
+      <Animated.View pointerEvents={barGone ? 'none' : 'box-none'} style={[styles.headerBar, { top: insets.top + 12 }, topBar]}>
+        {/*
+          Ngày và lời chào đều đã bỏ.
+
+          Ngày nói lại thứ thanh trạng thái ngay phía trên đã nói. Lời chào nói
+          tên bạn cho chính bạn nghe. Cả hai từng là hai dòng ĐẦU TIÊN của
+          trang, tức nửa giây đầu tiên tiêu vào hai câu không đổi được quyết
+          định nào. Chỗ đó giờ là chỉ số sẵn sàng, và hàng này chỉ còn các nút.
+        */}
+        <View style={styles.headerText} />
+        <View style={styles.headerButtons}>
+          {/* The streak sits before the buttons because it is a *reading*, not
+              an action — and it is only ever here, in the bar you land on. */}
+          {!editMode && <StreakChip />}
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={editMode ? i18n.a11yDoneEditing : i18n.a11yEditLayout}
+            accessibilityState={{ selected: editMode }}
+            style={[styles.squareBtn, editMode && styles.squareBtnActive]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setEditMode(!editMode);
+              setNewGroupName('');
+            }}>
+            <Icon
+              icon={editMode ? Check : Pencil}
+              size={editMode ? 20 : 17}
+              color={editMode ? colors.primary : 'rgba(237,237,237,0.7)'}
+            />
+          </PressScale>
+          {!editMode && (
+            <>
+              {/*
+                ── the AI button that used to sit here is gone ──
+
+                It was a `Sparkles` that pushed `/ai-coach`, and it was the only
+                path in the app that jumped *past* the Health Assistant into a
+                bare chat. Every other route is assistant → coach, which is the
+                flow the two screens were built around: the hub first, the
+                conversation after, with today's questions already in hand.
+
+                Its destination had also become the worse one. Since the coach
+                stopped raising the keyboard on arrival, that button landed you
+                on an empty transcript with the burden of thinking of a
+                question — while one tap on the assistant's coach card asks
+                something specific about today's numbers.
+
+                And the tab bar's search island is on screen at that exact
+                moment, a thumb away, going somewhere better. Two AI buttons on
+                one screen pointing at two different screens is the confusion
+                this app has already spent a day removing once.
+
+                What is lost: the one-tap route for somebody who just wants to
+                type. That is now two taps through the assistant, and the same
+                two taps ask a better question.
+              */}
+              {/* Settings, back where it was. It is also the fifth tab now, so
+                  this is a second way in rather than the only one — kept
+                  because it is where the hand already goes on this page. */}
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel={i18n.a11ySettings}
+                style={styles.squareBtn}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push('/settings');
+                }}>
+                <Icon icon={Settings} size={20} color="rgba(237,237,237,0.7)" />
+              </PressScale>
+            </>
+          )}
+        </View>
+      </Animated.View>
+      {/*
         Last child, after the scroll view: siblings stack in source order, so a
         strip written above it would be painted underneath and cover nothing.
       */}
@@ -1521,14 +1584,26 @@ const styles = StyleSheet.create({
   },
 
   // Header (web: date 13px muted / greeting 22px bold, name silver)
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
+  /* Ghim: cùng lề ngang với `content` nên các nút thẳng hàng với nội dung bên
+     dưới, và `top` là cùng con số `paddingTop` của content dùng. */
+  headerBar: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   headerText: { flex: 1, minWidth: 0 },
   greeting: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, color: colors.foreground, marginTop: 2 },
   greetingName: { color: colors.primary },
   headerButtons: { flexDirection: 'row', gap: spacing.sm },
   squareBtn: {
-    width: 44,
-    height: 44,
+    /* Cùng con số với `TOP_BAR_H`: hàng cao bằng nút, và phần đệm bù cho chỗ
+       hàng từng chiếm được tính từ đó. Hai bản sao sẽ lệch. */
+    width: TOP_BAR_H,
+    height: TOP_BAR_H,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(43,43,49,0.3)',
