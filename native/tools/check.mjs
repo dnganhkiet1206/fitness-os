@@ -136,6 +136,7 @@ const STEPS = [
   ['đồng hồ Koa khi cuộn', 'node', ['tools/koa-scroll-pause.mjs']],
   ['chấm chỉ trang', 'node', ['tools/pip-bleed.mjs']],
   ['câu chữ thẻ sẵn sàng', 'node', ['tools/readiness-copy.mjs']],
+  ['ghi lại là sửa', 'node', ['tools/same-day-entry.mjs']],
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],

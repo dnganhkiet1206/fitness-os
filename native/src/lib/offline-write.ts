@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { biometricRowToReplace, sleepRowToReplace } from './same-day-entry';
 import { localDateStr } from '@/lib/local-date';
 import { syncProfileWeight } from '@/lib/weight-sync';
 
@@ -562,9 +563,19 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
       return;
     }
     case 'sleep': {
+      /*
+        Phát lại một lần ghi cũng đi qua cùng luật "ghi lại là SỬA" như đường
+        online — xem `lib/same-day-entry.ts`. Nếu không, một lần ghi soạn lúc
+        offline sẽ luôn đẻ ra hàng mới, và người dùng sửa một đêm trong lúc
+        mất mạng vẫn nhận về hai hàng cho đêm đó.
+
+        Thay `rowId` bằng id của hàng cần sửa vẫn giữ nguyên tính idempotent
+        của phép phát lại: `upsert` theo id, và id ấy cố định cho mỗi lần ghi.
+      */
+      const replaceId = await sleepRowToReplace(w.userId, w.bedtime, w.waketime);
       const { error } = await supabase.from('sleep_logs').upsert(
         {
-          id: w.rowId,
+          id: replaceId ?? w.rowId,
           user_id: w.userId,
           bedtime: w.bedtime,
           waketime: w.waketime,
@@ -591,9 +602,16 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
       return;
     }
     case 'biometrics': {
+      /*
+        Cùng luật, và ở đây không có ca giấc-trưa nào: một bộ số sinh trắc là
+        ảnh chụp của buổi sáng hôm đó, nên nhập lại trong ngày là sửa ảnh chụp.
+        Hàng thừa không chỉ là một dòng dư — nó làm lệch median và MAD của nền
+        28 ngày, tức là nền mà chính điểm HRV/nhịp nghỉ được chấm so với nó.
+      */
+      const replaceId = await biometricRowToReplace(w.userId, w.dateTime);
       const { error } = await supabase.from('biometric_samples').upsert(
         {
-          id: w.rowId,
+          id: replaceId ?? w.rowId,
           user_id: w.userId,
           source: 'manual',
           confidence: 0.7,

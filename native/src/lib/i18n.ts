@@ -107,6 +107,7 @@ interface Translations {
   dashReadiness: string;
   dashReadinessMsg: string;
   logBioBaselineNote: string;
+  logSleepReplaceGone: string;
   dashTrend: string;
   dashTrendMsg: string;
   dashActivity: string;
@@ -869,6 +870,8 @@ const vi: Translations = {
   dashLogSleep: 'Ghi giấc ngủ',
   dashLogBiometrics: 'Nhập sinh trắc',
   dashReadiness: 'Sẵn Sàng',
+  logSleepReplaceGone:
+    'Không sửa được đêm này — có thể nó đã bị xoá ở thiết bị khác. Hãy đóng rồi ghi lại.',
   logBioBaselineNote:
     'Nhịp tim nghỉ và HRV được chấm so với nền của chính bạn, nên cần 5 lần đo trong 28 ngày mới hiện lên thẻ điểm sẵn sàng. Nhập tay tính y như Apple Health — không cần đồng hồ.',
   /*
@@ -1624,6 +1627,8 @@ const en: Translations = {
   dashLogSleep: 'Log sleep',
   dashLogBiometrics: 'Log biometrics',
   dashReadiness: 'Readiness',
+  logSleepReplaceGone:
+    'Could not update this night — it may have been deleted on another device. Close and log it again.',
   logBioBaselineNote:
     'Resting HR and HRV are scored against your own baseline, so it takes 5 readings within 28 days before they appear on the readiness card. Entering them by hand counts exactly like Apple Health — no watch needed.',
   /* See the Vietnamese entry for why "3+ days" was three wrong claims in one

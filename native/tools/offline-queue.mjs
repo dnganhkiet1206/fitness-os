@@ -56,7 +56,7 @@
  * with 42501. Rule E only checks that the client does not knowingly try.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -85,15 +85,25 @@ try {
        The requires are rewritten to the doubles just below. */
   }
 
-  const js = path.join(out, 'offline-write.js');
-  writeFileSync(
-    js,
-    readFileSync(js, 'utf8')
-      .replace('require("@/integrations/supabase/client")', 'require("./supabase.cjs")')
-      .replace('require("@/lib/daily-log-service")', 'require("./noop.cjs")')
-      .replace('require("@/lib/local-date")', 'require("./localdate.cjs")')
-      .replace('require("@/lib/weight-sync")', 'require("./noop.cjs")'),
-  );
+  /*
+    Mọi tệp emit ra đều được thay require, không chỉ `offline-write.js`.
+
+    Trước đây chỉ đúng một tệp được vá, nên một dependency MỚI của offline-write
+    tự import `@/integrations/supabase/client` sẽ làm cả phép thử chết bằng
+    MODULE_NOT_FOUND — đọc y như bộ công cụ hỏng, và chẳng liên quan gì tới thứ
+    luật này kiểm. `same-day-entry.ts` đã làm đúng thế.
+  */
+  for (const f of readdirSync(out).filter((n) => n.endsWith('.js'))) {
+    const js = path.join(out, f);
+    writeFileSync(
+      js,
+      readFileSync(js, 'utf8')
+        .replaceAll('require("@/integrations/supabase/client")', 'require("./supabase.cjs")')
+        .replaceAll('require("@/lib/daily-log-service")', 'require("./noop.cjs")')
+        .replaceAll('require("@/lib/local-date")', 'require("./localdate.cjs")')
+        .replaceAll('require("@/lib/weight-sync")', 'require("./noop.cjs")'),
+    );
+  }
 
   /*
     A supabase double that records the statements and can be told how to fail.
@@ -313,7 +323,21 @@ try {
           'một lệnh ghi không được bảo vệ là một lần phát lại nhân đôi dữ liệu',
       );
     }
-    if (!/\bid: w\.(rowId|entryId)\b/.test(body) && !/id: it\.id|\.\.\.it\b/.test(body)) {
+    /*
+      ── luật này được CHUYỂN HƯỚNG, không nới ──
+
+      Nó đòi đúng chuỗi `id: w.rowId`. Hai nhánh nay ghi
+      `id: replaceId ?? w.rowId` — luật "ghi lại là SỬA" của
+      `lib/same-day-entry.ts` — và cách viết ấy VẪN giữ nguyên bất biến: id do
+      client sinh là chốt cuối, còn `replaceId` được suy ra từ chính database
+      một cách xác định. Phát lại lần hai thì hàng vừa ghi CHỒNG LẤN chính nó,
+      nên hàm trả về đúng `w.rowId` và `upsert` chạm lại đúng hàng đó — vẫn là
+      no-op, đúng thứ luật này canh.
+
+      Nên phép so là "biểu thức id có CHỨA id do client sinh", chứ không phải
+      "biểu thức id BẰNG id do client sinh". Một nhánh bỏ hẳn `w.rowId` vẫn đỏ.
+    */
+    if (!/\bid: [^,\n]*\bw\.(rowId|entryId)\b/.test(body) && !/id: it\.id|\.\.\.it\b/.test(body)) {
       problems.push(
         `applyOfflineWrite '${kind}': không cấp id do client sinh — ` +
           'không có khoá thì ON CONFLICT không có gì để bám, và mỗi lần gửi lại là một dòng mới',

@@ -31,6 +31,8 @@ import { localDateStr } from '@/lib/local-date';
 import { BOUNDS, plausible, plausibleText } from '@/lib/plausible';
 import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
+import { sleepRowToReplace } from '@/lib/same-day-entry';
+import { confirmWrite } from '@/lib/write-result';
 import { sleepSpan } from '@/lib/sleep-window';
 
 // Face picks map onto the web's 1–10 quality scale (SleepCard shows
@@ -112,7 +114,23 @@ export default function LogSleepSheet() {
   const save = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
-      const { error } = await supabase.from('sleep_logs').insert({
+      /*
+        Ghi lại cùng một giấc là SỬA, không phải ghi thêm — xem
+        `lib/same-day-entry.ts` cho luật và cho lý do nó so bằng CHỒNG LẤN thời
+        gian chứ không bằng ngày lịch (nếu không, ghi một giấc trưa sẽ xoá mất
+        đêm hôm đó).
+
+        Dòng này từng là `insert` thuần, và `sleep_logs` không có ràng buộc duy
+        nhất nào cho hàng nhập tay: ghi nhầm rồi ghi lại là hai hàng cho một
+        đêm, và `sleepDebt7d` chia cho SỐ HÀNG nên sai lệch đi theo suốt bảy
+        ngày mà không có gì trên màn hình nói ra.
+      */
+      const replaceId = await sleepRowToReplace(
+        user.id,
+        bedDate.toISOString(),
+        wakeDate.toISOString(),
+      );
+      const row = {
         user_id: user.id,
         bedtime: bedDate.toISOString(),
         waketime: wakeDate.toISOString(),
@@ -120,8 +138,25 @@ export default function LogSleepSheet() {
         deep_min: Number(deepMin) || 0,
         rem_min: Number(remMin) || 0,
         light_min: Number(lightMin) || 0,
-      });
-      if (error) throw error;
+      };
+      if (replaceId) {
+        /*
+          `.update()` phải NÓI ra được là nó có chạm dòng nào không.
+
+          PostgREST trả `error: null` y hệt nhau cho "sửa 1 dòng" và "không
+          khớp dòng nào", nên nếu hàng ấy vừa bị xoá ở một thiết bị khác giữa
+          lúc tra và lúc ghi, màn hình sẽ đóng lại kèm chữ "đã lưu" và không có
+          gì được lưu cả. `confirmWrite` thêm `.select('id')` rồi ném khi danh
+          sách rỗng — cùng chốt chặn mà sáu màn xoá trong app đã dùng.
+        */
+        await confirmWrite(
+          supabase.from('sleep_logs').update(row).eq('id', replaceId).eq('user_id', user.id),
+          i18n.logSleepReplaceGone,
+        );
+      } else {
+        const { error } = await supabase.from('sleep_logs').insert(row);
+        if (error) throw error;
+      }
       await recomputeDailyLog(user.id, localDateStr());
     },
     onSuccess: () => {

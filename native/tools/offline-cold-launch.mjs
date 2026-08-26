@@ -68,7 +68,7 @@
  * has not been launched on an iPhone, and no process was really killed.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -90,15 +90,25 @@ try {
   } catch {
     /* `@/` is unmapped without the project tsconfig — TS2307, emitted anyway. */
   }
-  const ow = path.join(out, 'offline-write.js');
-  writeFileSync(
-    ow,
-    readFileSync(ow, 'utf8')
-      .replace('require("@/integrations/supabase/client")', 'require("./shim-supabase.js")')
-      .replace('require("@/lib/daily-log-service")', 'require("./shim-daily.js")')
-      .replace('require("@/lib/local-date")', 'require("./local-date.js")')
-      .replace('require("@/lib/weight-sync")', 'require("./shim-weight.js")'),
-  );
+  /*
+    Mọi tệp emit ra, không chỉ `offline-write.js`.
+
+    Vá đúng một tệp thì một dependency MỚI của nó tự import
+    `@/integrations/supabase/client` sẽ giết cả phép thử bằng MODULE_NOT_FOUND —
+    đọc y như bộ công cụ hỏng, và chẳng liên quan gì tới thứ luật này kiểm.
+    `same-day-entry.ts` đã làm đúng thế.
+  */
+  for (const f of readdirSync(out).filter((n) => n.endsWith('.js'))) {
+    const ow = path.join(out, f);
+    writeFileSync(
+      ow,
+      readFileSync(ow, 'utf8')
+        .replaceAll('require("@/integrations/supabase/client")', 'require("./shim-supabase.js")')
+        .replaceAll('require("@/lib/daily-log-service")', 'require("./shim-daily.js")')
+        .replaceAll('require("@/lib/local-date")', 'require("./local-date.js")')
+        .replaceAll('require("@/lib/weight-sync")', 'require("./shim-weight.js")'),
+    );
+  }
 
   /* A stand-in Supabase whose auth timing the test controls, and whose
      PostgREST surface records every statement that left the client. */
