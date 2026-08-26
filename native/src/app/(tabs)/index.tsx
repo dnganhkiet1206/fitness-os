@@ -99,7 +99,33 @@ import { HERO_RING, PAGE_TINT, colors, radius, spacing, type } from '@/constants
  * Giữ ở mức mạnh vì đó là điều đã yêu cầu: kính phải đủ dày để vệt sáng của
  * vòng tròn thôi lẫn vào các nút.
  */
-const SHEET_BLUR = 70;
+/**
+ * Độ mờ của lớp kính tấm nội dung.
+ *
+ * ── 70 chính là "đường kẻ" đã bị báo ba lần ──
+ *
+ * `expo-blur` cài `intensity` bằng cách giữ một `UIViewPropertyAnimator` ở
+ * `fractionComplete`, thứ scale CẢ bán kính blur LẪN sắc của vật liệu. Nên một
+ * con số lớn không phải là kính dày hơn — nó là một phần lớn hơn của một tấm
+ * kính đục. Trên một trang gần như đen, vật liệu ấy LÀM SÁNG nền lên thành một
+ * dải xám.
+ *
+ * Đo trên ảnh chụp thật của harness, cột dọc ngay dưới hàng chấm: nền đi từ
+ * (7,7,8) lên (72,72,73) trong ba mươi dòng. Không có bước nhảy nào — nhưng một
+ * dải sáng dần rồi tối lại thì vẫn có MÉP, và mắt đọc mép đó là một đường kẻ
+ * cắt ngang ngay dưới mấy cái chấm. Ba lần sửa hình học trước đó không chạm
+ * được vào nó, vì nó không phải chuyện bố cục.
+ *
+ * `status-scrim.tsx` đã trả giá cho đúng con số này và ghi lại: "Fifty is the
+ * default and far too much. The numbers people reach for when they want the
+ * effect to be obvious — 60, 80, 100 — are what make a backdrop read as an
+ * overlay." Nó dùng 30. Đây là mặt lớn hơn nên 36, nhưng cùng một phía của lằn
+ * ranh ấy.
+ *
+ * Và nó cũng rẻ hơn: bán kính nhỏ hơn là ít việc hơn cho mỗi điểm ảnh, trên
+ * đúng lớp đắt nhất của đường cuộn.
+ */
+const SHEET_BLUR = 36;
 
 const TOP_BAR_FADE = 56;
 
@@ -385,25 +411,36 @@ export default function TodayScreen() {
      Khai báo TRƯỚC `onScroll`, và thứ tự đó là bắt buộc chứ không phải cho gọn.
 
      `useAnimatedScrollHandler` dựng worklet NGAY lúc gọi và bắt các biến nó
-     tham chiếu. Đặt `barGoneSV` bên dưới thì lúc worklet được dựng, biến còn
-     trong vùng chết tạm thời — `ReferenceError` ngay trong render, và cả trang
-     ra trắng.
+     tham chiếu. Đặt một biến nó đọc ở BÊN DƯỚI thì lúc worklet được dựng, biến
+     còn trong vùng chết tạm thời — `ReferenceError` ngay trong render, và cả
+     trang ra trắng. (Ca cụ thể hồi đó là `barGoneSV`, thứ đã bỏ hẳn cùng React
+     state của nó; `cover` ngay trên đây vẫn nằm dưới cùng một luật.)
 
      TypeScript không bắt được: tham chiếu nằm trong một callback, nên nó không
      chứng minh được callback chạy lúc nào. Bản đầu của thay đổi này đã đi qua
      `tsc` sạch và tám guard xanh, rồi dựng ra một cây DOM rỗng — canary của
      `live.mjs` là thứ duy nhất thấy.
   */
-  const [barGone, setBarGone] = useState(false);
-  const barGoneSV = useSharedValue(false);
+  /*
+    ── `barGone` từng là React state, và đó là cú giật còn lại ──
+
+    Nó chỉ dùng cho MỘT việc: đặt `pointerEvents` của hàng nút trên đầu, để khi
+    hàng đã mờ hẳn thì nó thôi ăn chạm. Nhưng nó là state, và nó được ghi TỪ
+    trình xử lý cuộn — nên mỗi lần vượt mốc `TOP_BAR_FADE` là một lần dựng lại
+    TOÀN BỘ màn Today: cả deck, cả năm trang hero, cả dashboard.
+
+    Mốc ấy bị vượt ở CẢ HAI CHIỀU — kéo xuống qua 56, rồi cuộn ngược lên qua 56
+    — nên cú dựng lại rơi đúng vào giữa đà, đúng hai lúc đã bị báo: "giật khi
+    cuộn thông tin từ dưới lên và khi kéo mạnh xuống".
+
+    `pointerEvents` là một thuộc tính STYLE từ React Native 0.71, nên nó đi được
+    vào chính worklet đang tính độ mờ của hàng ấy. Cùng một giá trị, cùng một
+    nơi, không còn React ở giữa: đường cuộn của Today giờ không ghi state lần
+    nào nữa.
+  */
 
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
-    const gone = e.contentOffset.y >= TOP_BAR_FADE;
-    if (gone !== barGoneSV.value) {
-      barGoneSV.value = gone;
-      runOnJS(setBarGone)(gone);
-    }
     /*
       Thanh tab: quyết định và ghi NGAY TẠI ĐÂY, trên luồng UI.
 
@@ -548,13 +585,18 @@ export default function TodayScreen() {
    * 56pt là quãng ngắn — chúng biến mất gần như ngay khi bạn bắt đầu, đúng như
    * thanh điều khiển của Apple Music, chứ không nấn ná nửa màn hình.
    */
-  const topBar = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, TOP_BAR_FADE], [1, 0], 'clamp'),
+  const topBar = useAnimatedStyle(() => {
+    const shown = interpolate(scrollY.value, [0, TOP_BAR_FADE], [1, 0], 'clamp');
+    return {
+      opacity: shown,
+      /* Mờ hẳn thì thôi nhận chạm — xem ghi chú ở chỗ `barGone` từng đứng. */
+      pointerEvents: shown < 0.02 ? ('none' as const) : ('box-none' as const),
     /* Nhấc nhẹ tại CHỖ. Trước đây hàng này còn trôi theo nội dung nữa, nên
        10 điểm này là chuyển động thứ hai chồng lên một chuyển động lớn hơn.
        Bây giờ nó là chuyển động duy nhất, và đó là thứ làm nó ra dáng Apple. */
-    transform: [{ translateY: interpolate(scrollY.value, [0, TOP_BAR_FADE], [0, -10], 'clamp') }],
-  }));
+      transform: [{ translateY: interpolate(scrollY.value, [0, TOP_BAR_FADE], [0, -10], 'clamp') }],
+    };
+  });
 
   /**
    * Đã mờ hẳn thì phải thôi ăn cú chạm.
@@ -1531,13 +1573,13 @@ export default function TodayScreen() {
 
         Ra khỏi vùng cuộn thì phải trả lại ba thứ:
           • chỗ nó từng chiếm trong dòng chảy — `TOP_BAR_H` cộng vào paddingTop
-          • quyền chạm khi đã mờ — xem `barGone` bên dưới
+          • quyền chạm khi đã mờ — `pointerEvents` nằm trong chính `topBar`
           • thứ tự vẽ — nó là con SAU ScrollView, vì anh em xếp theo thứ tự nguồn
 
         `pointerEvents="box-none"` để vùng trống hai bên không nuốt cú chạm rơi
         xuống hero phía dưới.
       */}
-      <Animated.View pointerEvents={barGone ? 'none' : 'box-none'} style={[styles.headerBar, { top: insets.top + 12 }, topBar]}>
+      <Animated.View style={[styles.headerBar, { top: insets.top + 12 }, topBar]}>
         {/*
           Ngày và lời chào đều đã bỏ.
 

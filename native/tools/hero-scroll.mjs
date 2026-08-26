@@ -308,7 +308,28 @@ const num = (src, name) => {
   if (!/headerBar:\s*\{[^}]*position: 'absolute'/.test(today)) {
     problems.push(`${TODAY}: headerBar không phải absolute — nó vẫn chiếm chỗ trong dòng chảy`);
   }
-  if (!/pointerEvents=\{barGone \? 'none' :/.test(today)) {
+  /*
+     Cổng chạm: hỏi TÍNH CHẤT, không hỏi cơ chế.
+
+     Bản trước ghim đúng một hình dạng — `pointerEvents={barGone ? 'none' : …}`,
+     tức một prop JSX lái bằng React state. Nó đỏ lên khi cổng ấy được chuyển
+     vào chính worklet đang tính độ mờ, một thay đổi làm bất biến CHẶT HƠN chứ
+     không lỏng đi: `barGone` là state, và ghi state từ trình xử lý cuộn nghĩa
+     là dựng lại cả màn Today mỗi lần vượt ngưỡng — ở cả hai chiều, giữa đà cuộn.
+
+     Đó là lần thứ mười bốn ở repo này một luật đo cách viết thay vì đo điều
+     muốn nói. Nên giờ nó nhận cả hai đường, và với đường mới nó đòi thêm được
+     một điều mà đường cũ không chứng minh nổi: cổng chạm và độ mờ phải sinh ra
+     từ CÙNG MỘT giá trị. */
+  const topBarBlock = (() => {
+    const i = today.indexOf('const topBar = useAnimatedStyle(');
+    if (i === -1) return '';
+    const j = today.indexOf('\n  });', i);
+    return j === -1 ? today.slice(i) : today.slice(i, j);
+  })();
+  const gateByProp = /pointerEvents=\{barGone \? 'none' :/.test(today);
+  const gateByStyle = /pointerEvents:/.test(topBarBlock);
+  if (!gateByProp && !gateByStyle) {
     problems.push(
       `${TODAY}: hàng nút mờ đi mà không tắt cảm ứng — một nút vô hình nằm đúng trên vòng tròn vẫn nuốt cú bấm`,
     );
@@ -338,14 +359,37 @@ const num = (src, name) => {
 
   /* Cùng một ngưỡng cho phép mờ và cho cổng chạm. */
   const fades = [...today.matchAll(/interpolate\(scrollY\.value, \[0, ([A-Z_0-9]+)\], \[1, 0\]/g)].map((m) => m[1]);
-  const gate = /contentOffset\.y >= ([A-Z_0-9]+)/.exec(today);
-  if (!gate) {
-    problems.push(`${TODAY}: cổng chạm không đọc ngưỡng nào`);
-  } else if (!fades.includes(gate[1])) {
-    problems.push(
-      `${TODAY}: cổng chạm dùng ngưỡng \`${gate[1]}\` khác ngưỡng của phép mờ (${fades.join(', ') || 'không đọc được'}) — ` +
-        'sẽ có một dải cuộn mà hàng nút đã vô hình nhưng vẫn ăn chạm',
-    );
+  if (gateByStyle) {
+    /*
+       Đường mới chứng minh được nhiều hơn "hai ngưỡng bằng nhau": nó chứng minh
+       chỉ có MỘT. Độ mờ và cổng chạm phải đọc cùng một biến cục bộ trong cùng
+       worklet, nên không có hai con số để mà lệch. */
+    const named = /const (\w+) = interpolate\(scrollY\.value, \[0, [A-Z_0-9]+\], \[1, 0\]/.exec(topBarBlock);
+    if (!named) {
+      problems.push(
+        `${TODAY}: cổng chạm nằm trong style động nhưng phép mờ không đặt tên cho giá trị — không có gì để hai bên cùng đọc`,
+      );
+    } else {
+      const v = named[1];
+      const usedByOpacity = new RegExp('opacity: ' + v + '\\b').test(topBarBlock);
+      const usedByGate = new RegExp('pointerEvents: [^\\n]*\\b' + v + '\\b').test(topBarBlock);
+      if (!usedByOpacity || !usedByGate) {
+        problems.push(
+          `${TODAY}: độ mờ và cổng chạm không cùng đọc \`${v}\` — hai phép tính riêng thì có một dải cuộn ` +
+            'mà hàng nút đã vô hình nhưng vẫn ăn chạm',
+        );
+      }
+    }
+  } else {
+    const gate = /contentOffset\.y >= ([A-Z_0-9]+)/.exec(today);
+    if (!gate) {
+      problems.push(`${TODAY}: cổng chạm không đọc ngưỡng nào`);
+    } else if (!fades.includes(gate[1])) {
+      problems.push(
+        `${TODAY}: cổng chạm dùng ngưỡng \`${gate[1]}\` khác ngưỡng của phép mờ (${fades.join(', ') || 'không đọc được'}) — ` +
+          'sẽ có một dải cuộn mà hàng nút đã vô hình nhưng vẫn ăn chạm',
+      );
+    }
   }
 }
 

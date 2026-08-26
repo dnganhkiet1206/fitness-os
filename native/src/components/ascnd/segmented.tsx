@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -154,7 +155,28 @@ const styles = StyleSheet.create({
  * the panel here genuinely is not on screen yet. Nothing is being un-drawn,
  * because what it replaces is already gone.
  */
-export const SEGMENT_SWAP = FadeIn.duration(duration.appear);
+export const SEGMENT_SWAP = FadeIn.duration(duration.appear)
+  /*
+    ── và lập luận trên đúng cho một cú ĐỔI, không đúng cho lần đầu ──
+
+    "Panel ở đây thật sự chưa có trên màn hình" là thật khi người dùng vừa bấm
+    sang segment khác. Nó KHÔNG thật ở lần mount đầu tiên: lúc đó panel chính là
+    nội dung khởi đầu của màn hình, và `screen.tsx` ghi rằng một
+    `UITabBarController` mount MỌI tab một lần rồi giữ — nên lần mount ấy rơi
+    đúng vào lúc app đang khởi động và mọi thứ khác cũng đang dựng.
+
+    Khung hình trong quãng đó bị bỏ lỡ thì thứ còn lại là giá trị đầu của
+    `FadeIn`, tức opacity 0. Đã bị báo từ máy thật, và đúng ở SEGMENT ĐẦU TIÊN
+    của cả hai màn dùng nó: "today bên nutrition bị tối khi mới mở app, weight
+    bên progress cũng tương tự".
+
+    `SegmentPanel` bên dưới bỏ hiệu ứng ở lần đầu, và đây là sàn cho mọi lần
+    còn lại: bắt đầu ở 0.9 thì chế độ hỏng tệ nhất là "nhạt đi một phần mười",
+    không phải "mất nội dung". Cùng luật `lib/entrance.ts` và `settle.tsx` đã
+    phải học — một hiệu ứng vào là trang trí, nên nó không bao giờ được là thứ
+    quyết định nội dung có nhìn thấy hay không.
+  */
+  .withInitialValues({ opacity: 0.9 });
 
 /**
  * Wraps a segmented control's panel so it fades when the segment changes.
@@ -194,8 +216,24 @@ export function SegmentPanel({
    */
   gap?: number;
 }) {
+  /*
+    Lần đầu thì hiện ngay, mọi lần ĐỔI mới có hiệu ứng.
+
+    `key={segment}` ép mount lại phần bên trong mỗi lần đổi segment — đó là cơ
+    chế, và nó cũng làm `entering` chạy ở lần dựng ĐẦU. Ref này sống ở
+    `SegmentPanel`, thứ KHÔNG bị `key` mount lại, nên nó phân biệt được "lần đầu
+    của cả panel" với "một cú đổi segment thật".
+  */
+  const swapped = useRef(false);
+  useEffect(() => {
+    swapped.current = true;
+  }, [segment]);
+
   return (
-    <Animated.View key={segment} entering={SEGMENT_SWAP} style={{ gap }}>
+    <Animated.View
+      key={segment}
+      entering={swapped.current ? SEGMENT_SWAP : undefined}
+      style={{ gap }}>
       {children}
     </Animated.View>
   );
