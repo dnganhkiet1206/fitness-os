@@ -8,7 +8,7 @@ trên cả bản hỏng lẫn bản sửa.
 **Luật của sổ:** không mục nào được ghi vào đây vì "code có thể tốt hơn". Mỗi
 mục phải nói được: gõ gì thì hỏng, đáng lẽ ra sao, thực tế ra sao.
 
-Bộ kiểm: `node tools/check.mjs` (117 bước). Ngày rà: 2026-08-20.
+Bộ kiểm: `node tools/check.mjs` (161 bước). Ngày rà: 2026-08-26.
 
 ---
 
@@ -10062,6 +10062,440 @@ toàn bộ migration, **SQLSTATE của chúng được hỏi chính PostgreSQL**
 | **TYPESCRIPT** | sạch |
 | **REAL iOS / thiết bị** | **KHÔNG** — chưa ai thấy toast mới trên máy thật |
 | **PRODUCTION** | **KHÔNG** |
+
+
+## Chain AN — BUG-106 đóng lại: điểm của một NGÀY phải được chấm bằng lịch sử tính đến ngày đó
+
+BUG-106 được ghi ở Vòng trước là **PRODUCT DECISION REQUIRED** và cố ý không
+sửa. Quyết định đã có, và nó được người dùng nói ra thành lời:
+
+> Readiness là giá trị **khả năng tập của một NGÀY**. Với ngày đích D: các hàng
+> nguồn của ngày D vẫn neo ở D; mọi cửa sổ lịch sử phải là trạng thái lịch sử
+> **TÍNH ĐẾN D**; không hàng nguồn nào có ngày sau D được ảnh hưởng tới điểm
+> của D; ACWR vẫn là chỉ số cuộn, nhưng là ACWR **tính đến D**.
+
+### BUG-106 (P2). Cửa sổ lịch sử neo ở `new Date()` — `READINESS-WINDOWS-ANCHORED-AT-NOW` · **ĐÃ SỬA**
+
+**TRIGGER** — Sửa hoặc xoá một bản ghi của một ngày trong quá khứ, bất kỳ ngày
+nào có `recomputeDailyLog` chạy lại.
+
+**EXPECTED** — Dựng lại ngày D cho ra đúng hàng mà D đã có, vì nguồn của D không
+đổi.
+
+**ACTUAL** — Bốn truy vấn lịch sử (`bioHistory`, `load7d`, `load28d`,
+`sleepLogs7d`) lấy cửa sổ từ đồng hồ lúc chạy, không từ D. Dựng lại một ngày cũ
+vì thế đọc cả những gì xảy ra **sau** nó. Đo trên PostgreSQL 16.13 dựng từ toàn
+bộ migration, ở sáu múi giờ: một ngày `55 · vàng · acwr 0.09` biến thành
+`48 · đỏ · acwr 1.73` kèm lời khuyên *"chỉ phục hồi tích cực"* — cho một ngày mà
+HRV, nhịp tim nghỉ và giấc ngủ **y hệt**.
+
+**ROOT CAUSE** — `recomputeDailyLog(userId, date)` nhận `date` rồi dùng nó cho
+các hàng nguồn của ngày, nhưng các cửa sổ lịch sử vẫn gọi `new Date()`.
+
+**BẢN SỬA** — `localWindowISO(endDate, days)` trong `lib/local-date.ts` dựng cửa
+sổ từ chính `date`, và cả bốn truy vấn nhận thêm chốt trên (`.lt(...end)`), thứ
+trước đây không có. Cửa sổ lùi theo **NGÀY LỊCH** (`shiftLocalDate`) chứ không
+theo `86_400_000` ms: mỗi năm có một ngày 23 giờ và một ngày 25 giờ, và một cửa
+sổ tính bằng mili-giây sẽ bắt đầu lệch một tiếng ở đó.
+
+**VERIFICATION** — `node tools/readiness-anchor.mjs`. Cấu trúc: writer không còn
+gọi `new Date()` lần nào; không cửa sổ nào hở đầu trên; helper đếm ngày chứ
+không đếm ms. Hành vi, chạy thật trên PostgreSQL 16.13 ở 6 múi giờ: dựng lại một
+ngày trong một thế giới đã **cắt** ở cuối ngày đó ra đúng hàng cũ, và đổ cả một
+tuần nặng vào **sau** ngày đó cũng không lay được nó. Răng của luật: sửa chính
+đêm **của** ngày đó **vẫn** đổi được hàng — nếu không, một writer bỏ qua tất cả
+cũng sẽ xanh. Và luật tự chứng minh mình biết đỏ: một bản dựng cố tình khôi phục
+cửa sổ cũ được biên dịch cạnh bản thật, và cả hai luật hành vi đều ĐỎ trên nó.
+
+**CỐ Ý KHÔNG LÀM** — không backfill, không migration. Dữ liệu cũ giữ nguyên
+những con số đã chấm bằng cửa sổ sai; chính sách di trú vẫn là
+**PRODUCT DECISION REQUIRED** (A: backfill toàn bộ · B: giới hạn 28 ngày ·
+C: cắt mốc, không backfill). Bằng chứng nghiêng về B nhưng không có dữ liệu tài
+khoản thật để quyết.
+
+**Hệ quả còn treo, ghi ra để không ai quên:** dưới ngữ nghĩa mới, sửa một ngày
+trong quá khứ khiến tối đa 27 ngày **giữa** ngày đó và hôm nay trở nên cũ một
+cách chính đáng. Chưa có cơ chế nào dựng lại chúng.
+
+---
+
+## Chain AP — dashboard giật khi cuộn, bốn nguyên nhân độc lập
+
+**Người dùng báo:** *"hiện tại ở dashboard đang giật lag"*, rồi sau mỗi vòng
+sửa: *"thì thoảng cuộn vẫn còn hơi giật nhẹ nhưng đã tốt hơn rất nhiều"*.
+
+### BUG-121 (P2). Nhân vật thở trên bốn tab bạn không mở — `MASCOT-ANIMATES-UNFOCUSED` · **ĐÃ SỬA**
+
+`vector-mascot.tsx` chạy ba vòng `setTimeout` tự lên lịch (thở, nghiêng người,
+chớp mắt) chỉ gác trên prop `animated`. `UITabBarController` giữ mọi tab mounted,
+nên nhân vật thở trên cả bốn tab người dùng không nhìn. Cùng lúc,
+`use-mascot-emotion.tsx` chạy `setInterval(60_000)` ép dựng lại **toàn bộ**
+`Mascot` sáu mươi lần một giờ, cho một giá trị chỉ đổi khi sang giờ mới.
+
+**Bản sửa** — cả ba vòng gác thêm `useIsFocused()`; đồng hồ 60 giây chuyển sang
+so **giờ** và React bỏ qua khi không đổi. `tools/motion.mjs` đã ghi luật này từ
+trước (*"nothing animates while nobody is looking at it"*), và ba vòng ấy lọt
+qua vì chúng không dùng `withRepeat`.
+
+### BUG-122 (P2). Đồng hồ 36 vòng của Koa chạy hết công suất suốt cú cuộn — `KOA-CLOCK-DURING-SCROLL` · **ĐÃ SỬA**
+
+`KoaFigure` chạy một `useFrameCallback` nuôi 36 vòng chuyển động ở nhịp màn hình
+— tới 120 khung hình một giây. Chú thích của chính nó gọi đó là *"cost driver
+của cả nhân vật"* và nói rõ cổng duy nhất là prop `animated`, **do chỗ gọi chịu
+trách nhiệm**. Dashboard truyền `animated={focused}`: đúng cho việc chuyển tab,
+vô nghĩa trong lúc cuộn.
+
+Chi phí của nó **không đều** — 36 vòng có chu kỳ khác nhau nên vài khung hình
+đắt hơn hẳn — nên nó đọc ra là *"thỉnh thoảng giật nhẹ"* chứ không phải chậm
+đều. Đó chính là hình dạng người dùng mô tả.
+
+**Bản sửa** — `mascot-room.tsx` đã gặp và ghi lại đúng lỗi này (*"một cú cuộn
+(bắt đầu và dừng) là phần còn lại của cú giật"*); cơ chế `scrollPause` ra đời từ
+đó và xuyên sẵn qua `MascotFigure` xuống `KoaFigure`. **Thứ duy nhất còn thiếu
+suốt từ đó là dây nối ở dashboard.**
+
+Ở đây không cần hẹn giờ như màn kia: bộ xử lý cuộn là worklet, nên bốn sự kiện
+biên của `UIScrollView` đọc thẳng trên luồng UI. Không một chuyến sang JS.
+
+Cặp `onEndDrag`→thả / `onMomentumBegin`→giữ lại là **có chủ ý**: một cú kéo chậm
+rồi thả tay **không sinh đà**, nên nó không bao giờ nhận `onMomentumEnd`. Một
+bản chỉ nghe hai sự kiện đà sẽ đúng với mọi cú vuốt mạnh — tức mọi lần thử tay —
+và hỏng đúng ở cú kéo chậm, để lại **một nhân vật thôi thở vĩnh viễn**.
+
+**VERIFICATION** — `node tools/koa-scroll-pause.mjs`. Máy trạng thái được TRÍCH
+ra khỏi chính `index.tsx` (không chép) rồi lái qua 5 chuỗi sự kiện thật của
+`UIScrollView`. Mỗi chuỗi đòi hai điều: **đông cứng trong lúc cuộn** (răng của
+luật — thiếu vế này thì bản đã ship cũng xanh) **và trở lại chạy khi dừng** (chế
+độ hỏng tệ hơn chính lỗi được sửa).
+
+### BUG-123 (P3). Chế độ `blur` dựng ba gradient không hình nào tham chiếu — `GLASS-BUILDS-UNUSED-DEFS` · **ĐÃ SỬA**
+
+`liquid-glass.tsx` gate ba `<Rect>` thấu kính sau `material === 'glass'` nhưng
+dựng ba `<LinearGradient>` định nghĩa chúng **vô điều kiện**. Ở chế độ `blur`
+không `<Rect>` nào tham chiếu tới chúng, nhưng `react-native-svg` vẫn tạo ba đối
+tượng gradient native cộng sáu `<Stop>` cho **mỗi tấm**. Chú thích ngay trên
+chúng ghi *"định nghĩa cũng chỉ dựng khi cần"* — một câu mô tả thứ mã không làm.
+
+Lỗ thứ hai: `blur` **không** `tint` loại cả bốn hình, nhưng cái vỏ đo vẫn dựng —
+một `<View onLayout>` gọi `setState` mỗi tấm, cộng một `<Svg>` rỗng, để vẽ ra
+không một điểm ảnh nào.
+
+**Đo được:** Today 12 node gradient, Health Assistant 18 cộng cả mặt kính của
+viên trạng thái. Không thay đổi hình ảnh nào — thứ bị gỡ vốn đã không vẽ gì.
+
+**VERIFICATION** — `node tools/glass-material.mjs` **dựng thật** component ở cả
+bốn tổ hợp (glass/blur × có/không tint) và **đếm node sinh ra**, chứ không dò
+chữ: một luật ghim cách viết sẽ xanh với bất kỳ bản nào tình cờ viết giống thế.
+
+### BUG-124 (P3). Chấm chỉ trang đang sáng bị cắt mất đáy — `PIP-CLIPPED-BY-EXPANDER` · **ĐÃ SỬA**
+
+**Người dùng báo kèm ảnh:** *"nút khi sáng lên vẫn bị che một chút"* — chỉ cái
+đang sáng, chỉ một chút.
+
+Hàng chấm cao **14pt** (`paddingTop` 8 + `DOT` 6). Chấm của trang đang xem phóng
+**1,25×** quanh tâm, nên nó trải **7,25 → 14,75**. Hàng chấm nằm trong
+`Expander`, thứ chạy chiều cao thật để mở/đóng nên hộp của nó là
+`overflow: 'hidden'` cao **đúng chiều cao đo được** — mà đo được là con số của
+*bố cục*, còn `transform: scale` theo định nghĩa không đụng tới bố cục.
+
+Ba phần tư điểm cuối bị cắt. Bốn chấm mờ vẽ vừa hộp nên không sao; phía trên còn
+8pt padding nên chỉ đáy mới thiếu. Đúng ba đặc điểm người dùng mô tả.
+
+**Bản sửa** — dành đúng phần tràn ra, bằng một **phép tính**:
+`PIP_BLEED = ceil(DOT · (PIP_LIT − 1) / 2)`. Một số gõ tay sẽ im lặng hỏng lại
+ngay lần đầu ai đó nâng độ phóng to cho chấm rõ hơn.
+
+**VERIFICATION** — `node tools/pip-bleed.mjs` giữ **bất biến hình học**, không
+giữ cách viết: nó lấy `DOT`, độ phóng to (đọc từ chính phép `interpolate` của
+`Pip`, phòng khi hai thứ rời nhau) và hai padding kể cả khi là biểu thức, rồi
+tính hai mép. Luật được neo vào **chính chỗ cắt**, nên nếu `Expander` thôi cắt
+thì nó đòi xem lại chứ không âm thầm thừa ra.
+
+### Chain AP — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **DỰNG THẬT** | `LiquidGlass` ở 4 tổ hợp, đếm node; máy trạng thái cuộn trích từ `index.tsx` |
+| **HÌNH HỌC** | hằng số lấy ngược ra khỏi `card-deck.tsx`, hai mép tính lại |
+| **BREAK-TESTS** | 2 + 2 + 2 đỏ đúng ô dự đoán |
+| **REGRESSION** | `node tools/check.mjs` xanh |
+| **REAL iOS / thiết bị** | **KHÔNG** — không đo được từ container này |
+| **PROFILE HIỆU NĂNG** | **KHÔNG.** Phần còn lại trên đường cuộn là sáu `UIVisualEffectView` (dải trên đỉnh cố định + kính của tấm + bốn viên quick-log). Muốn biết nó chiếm bao nhiêu thì cần một lần chạy Instruments *Animation Hitches* trên máy thật. **Harness web không thay được:** đã đo — hạ `SHEET_BLUR` làm dải web sáng **ngược** lại (đỉnh 94 so với 72), vì fallback web của `expo-blur` là cơ chế khác hẳn iOS |
+
+---
+
+## Chain AQ — thẻ điểm sẵn sàng nói sai bốn chuyện cùng lúc
+
+**Người dùng báo:** *"Thẻ điểm sẵn sàng báo cần dữ liệu 3+ ngày để tính mà tôi
+log 1 ngày 1 bữa ăn nó tính rồi"*, *"thay vì ghi chữ tập luyện … người dùng đọc
+không hiểu gì cả"*, *"thẻ sẵn sàng có dùng dữ liệu log từ việc ăn uống để tính
+không"*, *"mọi thứ ghi ra phải chính xác chứ không ghi bừa ghi sai"*.
+
+**Chạy thật `readiness-engine.ts`, đây là các con số:**
+
+```
+chỉ ghi ăn uống, không gì khác        → KHÔNG có điểm (null)
+1 buổi tập, load=50,   lịch sử 1 ngày →  80/100 green  "load:80"  conf=low
+1 buổi tập, load=2000, lịch sử 1 ngày →  80/100 green  "load:80"  conf=low
+3 lần đo sinh trắc (đúng bằng cổng)   → KHÔNG có điểm (null)
+5 lần đo sinh trắc                    →  50/100 yellow "hrv:50|rhr:50"
+```
+
+### BUG-125 (P2). Câu trạng thái rỗng hứa ba thứ, và cả ba đều sai — `READINESS-EMPTY-COPY-LIES` · **ĐÃ SỬA**
+
+*"Cần 3+ ngày dữ liệu để tính điểm sẵn sàng."* Cổng thật là một phép **HOẶC** và
+không có số hạng nào về **NGÀY**: ≥3 lần đo sinh trắc, HOẶC ≥3 đêm ngủ trong 7
+ngày, HOẶC bất kỳ buổi tập nào có set trong 28 ngày. Một buổi tập duy nhất là có
+điểm ngay — đúng điều người dùng báo.
+
+Tệ hơn: qua cổng bằng 3 lần đo sinh trắc thì **vẫn không ra điểm**, vì
+`computeHRVScore`/`computeRHRScore` trả `null` dưới **5** lần đo. Câu ấy hứa 3;
+sự thật là 5.
+
+### BUG-126 (P3). Nhãn dưới con số là tên hạng mục, không phải phán quyết — `READINESS-LABEL-IS-A-NOUN` · **ĐÃ SỬA**
+
+`TẬP LUYỆN` / `VỪA PHẢI` / `PHỤC HỒI` đặt tên cho **hoạt động**, nên chúng đứng
+trôi dưới bất kỳ con số nào — kể cả số đỏ. Thẻ không phân loại gì; nó trả lời
+*"hôm nay cơ thể bạn chịu được bao nhiêu"*. Nay:
+`SẴN SÀNG TẬP` / `TẬP VỪA PHẢI` / `NÊN PHỤC HỒI`.
+
+### BUG-127 (P2). Cùng một ACWR, ba màn hình, ba bảng màu — `ACWR-TINT-FORKED` · **ĐÃ SỬA**
+
+Chú thích đầu `lib/training-card.ts` liệt kê luật ba nhánh này là lỗi **đã gỡ**
+khỏi thẻ tập luyện, kèm ví dụ 1.7 và 0.7. Nó vẫn sống nguyên trong
+`readiness-gauge.tsx`:
+
+| ACWR | thẻ tập luyện | thẻ sẵn sàng |
+| --- | --- | --- |
+| 2.0 (> 1.6, nguy cơ quá tải) | **ĐỎ** | VÀNG |
+| 0.7 (0.65–0.8, tập hơi thưa) | VÀNG | **ĐỎ** |
+
+Băng đầu **sai về phía nguy hiểm**: một cú tăng tải rủi ro được tô thành "để ý
+một chút". Sheet giải thích là bản thứ ba: liệt kê **4** băng trong khi
+`acwrZone` chấm theo **5** — ai có tỉ số 0.72 tra bảng không thấy mình ở đâu —
+và tô `< 0.65` vàng trong khi bảng chuẩn là đỏ.
+
+Nay cả ba đọc một bảng: `acwrZone` + `ACWR_BANDS` ở `lib/`, `ACWR_TINT` ở
+`components/ascnd/acwr-tint.ts`.
+
+### BUG-128 (P3). Ô ACWR đọc một giá trị thật thành "chưa có dữ liệu" — `ACWR-ZERO-READ-AS-MISSING` · **ĐÃ SỬA**
+
+Ô lọc `acwr != null && acwr > 0`. Engine **cố ý** phân biệt hai thứ và ghi hẳn lý
+do: `null` = chưa có nền để làm tỉ số; `0` = **CÓ** nền, và tuần này không tập
+gì. Ô gộp cả hai thành *"chưa ghi buổi tập"* — nói với người vừa tập suốt bốn
+tuần rằng họ chưa ghi buổi tập nào. Engine giữ được phân biệt ấy tới tận cột
+database rồi màn hình đánh mất nó ở dòng cuối.
+
+### BUG-129 (P3). Ô trống nói SAI với đúng người vừa gõ số vào — `TILE-SAYS-NO-DATA-WHEN-THERE-IS` · **ĐÃ SỬA**
+
+Cả bốn ô dùng chung dòng *"chưa có dữ liệu"*. Với HRV/RHR đó là một câu **sai**:
+baseline cần 5 lần đo, nên lần nhập 1–4 được lưu **đầy đủ** vào
+`biometric_samples` rồi hiện ra là một ô trống. Bốn lần một người tự tay ghi số
+và được app trả lời rằng họ chưa ghi gì.
+
+Kèm theo: màn nhập sinh trắc **không có một chữ nào** nói vì sao số vừa nhập
+chưa hiện, nên trải nghiệm là *gõ số, bấm lưu, không có gì xảy ra, bốn lần
+liền*. Và nó dập luôn hiểu nhầm đã bị hỏi thẳng — nhập tay ghi vào **đúng bảng,
+đúng cột** mà Apple Health ghi, không cần đồng hồ.
+
+**VERIFICATION cho cả Chain AQ** — `node tools/readiness-copy.mjs`. Nó không
+chấm văn: nó **chạy engine** để dựng lại hai ca người dùng gặp, lấy ngưỡng
+baseline ra khỏi `computeHRVScore`, lấy cấu trúc cổng ra khỏi
+`daily-log-service`, đọc `ReadinessInput` để chắc không trường dinh dưỡng nào
+lọt vào, và đòi con số 80 trong sheet phải là con số engine **vừa trả về**.
+
+### Chain AQ — sai sót của chính bộ kiểm, ghi rõ
+
+1. **Luật nhãn đầu tiên chỉ đếm từ.** Nó bắt được `TRAIN` và **không** bắt được
+   `TẬP LUYỆN` — tức đúng cái nhãn đã bị báo vẫn lọt. Một luật xanh trên chính
+   lỗi nó sinh ra để chặn thì tệ hơn không có luật. Siết vào bất biến thật: thẻ
+   tên là *Điểm Sẵn Sàng*, nên nhãn vùng xanh phải nói ra chữ *"sẵn sàng"*.
+2. **`ACWR_TINT` đặt vào `lib/` làm hỏng 16 bước.** Chúng biên dịch từng
+   `lib/*.ts` một mình bằng `tsc --ignoreConfig`, nơi alias `@/` không phân giải.
+   Grep trước khi sửa cho thấy **không** lib nào import `@/constants` — tôi đọc
+   con số 0 đó là *"chưa ai cần"* và nó thật ra là *"không được"*. Bảng màu
+   chuyển sang tầng component, lý do ghi cạnh bảng.
+3. **`readiness-confidence.mjs` đòi bốn chuỗi dải gõ tay.** Sheet nay vẽ từ
+   `ACWR_BANDS` nên các chuỗi biến mất, và luật đỏ trên một thay đổi làm nó
+   **đúng hơn**. **Chuyển hướng, không nới**: luật mới đi hai chặng — sheet phải
+   vẽ từ `ACWR_BANDS`, và `ACWR_BANDS` phải mang đủ năm mốc — chặt hơn bản cũ,
+   vốn không hề kiểm bảng mà giao diện thật sự vẽ.
+
+---
+
+## Chain AR — ghi lại một số đo là SỬA, và "đêm qua" là giấc nào
+
+**Người dùng quyết định, nói bằng lời của họ:** *"nếu chưa qua ngày mới thì dữ
+liệu nhập lại sẽ thay thế cho dữ liệu nhập trước đó trong cùng một ngày"*, và
+với `sleep_min_lastnight`: phương án **A — giấc DÀI NHẤT trong ngày**.
+
+### BUG-130 (P2). Ghi lại một đêm tạo hàng thứ hai, và nợ ngủ chia cho số HÀNG — `SLEEP-RELOG-DUPLICATES` · **ĐÃ SỬA**
+
+`sleep_logs` không có ràng buộc duy nhất nào cho hàng nhập tay và màn ghi làm
+một `INSERT` thuần. Hậu quả không dừng ở một dòng thừa:
+
+```
+sleepDebt7d = mục tiêu − (tổng phút / SỐ HÀNG)
+```
+
+Đêm sai ghi hai lần kéo trung bình bảy ngày xuống **gấp đôi** mức đáng lẽ, im
+lặng, suốt một tuần. Với sinh trắc, hàng thừa làm lệch median và MAD của nền 28
+ngày — chính cái nền mà điểm HRV/nhịp nghỉ được chấm so với nó.
+
+**Bản sửa KHÔNG phải "mỗi ngày một hàng".** `sleep_logs` cố ý cho hai hàng trong
+một ngày vì giấc trưa có thật, và một luật cùng-ngày sẽ khiến ghi giấc trưa
+**xoá mất đêm** hôm đó — mất dữ liệu, tệ hơn hẳn cái nó sửa. Phép so là **chồng
+lấn thời gian**: đó đúng là ranh giới giữa *"tôi gõ nhầm"* và *"tôi ngủ thêm"*.
+
+Sinh trắc chỉ thay hàng **nhập tay**: số đo đồng bộ từ Apple Health thuộc về
+thiết bị, và ghi đè nó bằng một con số gõ tay là làm mất dữ liệu không ai xin
+xoá.
+
+**VERIFICATION** — `node tools/same-day-entry.mjs` chạy thật hai hàm quyết định
+qua một shim hình dạng PostgREST **áp bộ lọc thật**: 6 ca giấc ngủ, 5 ca sinh
+trắc. Truy vấn tra hỏng thì ghi như hàng mới — một lỗi mạng không được phép ghi
+đè dữ liệu.
+
+### BUG-131 (P1). Ghi một giấc trưa làm app bảo bạn nên nghỉ — `NAP-DISPLACES-THE-NIGHT` · **ĐÃ SỬA**
+
+Truy vấn lấy giấc ngủ của một ngày là `.order('waketime', desc).limit(1)` — giấc
+**kết thúc muộn nhất**. Một giấc trưa dậy 16:00 muộn hơn một đêm dậy 07:00, nên
+nó thắng, và cả `sleep_duration_min` lẫn `sleep_quality` của ngày đó đều lấy từ
+giấc trưa.
+
+**Đo trên engine, cùng ngày, cùng buổi tập:**
+
+```
+ngủ đêm 8h, KHÔNG ghi giấc trưa       →  86/100 xanh
+… rồi ghi thêm giấc trưa 14:00–16:00  →  40/100 ĐỎ
+… sau bản sửa                         →  86/100 xanh
+```
+
+120 phút bị chấm như cả đêm, tỉ lệ 0,25 so với mục tiêu, và trần *"ngủ dưới 4
+tiếng"* nổ.
+
+Nửa thứ hai của cùng lỗi im lặng hơn: một đêm 8 tiếng cộng một giấc trưa 90 phút
+ra *"trung bình một đêm 285 phút"* — **bịa ra 195 phút nợ** cho người ngủ đủ. Đo
+được: 195 → 0.
+
+Cả hai nửa phải **đồng ý với nhau về "đêm" là gì**; nếu không, điểm của hôm nay
+và nợ của tuần đang nói về hai thứ khác nhau.
+
+Phép tính nợ ngủ được **tách thành hàm thuần** `sleepDebtFrom`: nằm giữa thân
+`recomputeDailyLog` thì nó chỉ kiểm được bằng mắt.
+
+Bằng nhau thì lấy giấc kết thúc muộn hơn — không phải cho có, mà để dựng lại một
+ngày cho ra cùng kết quả ở mọi lần chạy.
+
+**VERIFICATION** — `node tools/main-sleep.mjs`: 7 ca chọn giấc + 6 ca nợ ngủ,
+chạy thật, và hậu quả đo **qua engine** chứ không suy. Răng của luật: một ngày
+chỉ ngủ 2 tiếng **vẫn phải** bị chấm thấp hơn hẳn — thiếu vế này thì một hàm trả
+về hằng số cũng xanh.
+
+### BUG-132 (P3). Chất lượng giấc ngủ là một ô nhập CHẾT — `SLEEP-QUALITY-NEVER-READ` · **ĐÃ SỬA**
+
+Ô chọn mặt cười 1–10 được lưu vào `sleep_logs.quality`, chiếu sang
+`daily_logs.sleep_quality`, rồi **không nơi nào đọc** — quét cả `src/` chỉ ra ba
+dòng, cả ba là type sinh tự động của Supabase. Người dùng trả lời một câu hỏi
+mỗi sáng và app không bao giờ dùng câu trả lời.
+
+**Quyết định sản phẩm:** *"không cần tính bất kì chỉ số gì mà chỉ dựa vào đó để
+đưa ra nhận xét hoặc lời khuyên có cơ sở"*. Nên nó **không** vào công thức.
+
+Nhận xét là một **phép SO**, không phải phép đọc: nói lại con số người ta vừa tự
+chấm thì không thêm gì. Thứ họ chưa biết là chỗ cảm giác và phép đo **không
+khớp** — *đủ giờ mà vẫn mệt* (thời lượng không phải thứ duy nhất), *thiếu giờ mà
+thấy khoẻ* (điểm thấp là do **giờ**, không phải do bạn). Hai câu ấy có cơ sở vì
+mỗi câu đứng trên **hai** con số cùng lúc. Mặt ở giữa không sinh nhận xét nào.
+
+**VERIFICATION** — `node tools/sleep-note.mjs`, 17 ca. Nó canh **cả hai** vế, và
+vế thứ hai là vế dễ mất: một hằng số nhỏ thêm vào `computeSleepScore` sẽ không
+làm gãy gì cả, không đổi một ảnh chụp nào, và sẽ biến **mọi** dòng chữ trong bản
+này thành lời nói dối. Nên luật đòi engine không nhắc tới `quality`,
+`ReadinessInput` không nhận trường nào cho nó, và chữ ký `computeSleepScore` vẫn
+đúng ba tham số.
+
+### Chain AR — sai sót của chính bộ kiểm, ghi rõ
+
+1. **`lệnh ghi xác nhận` bắt một bug THẬT trong bản sửa của tôi.** `.update()`
+   không kiểm có dòng nào bị chạm không. PostgREST trả `error: null` y hệt cho
+   *"sửa 1 dòng"* và *"không khớp dòng nào"*, nên nếu hàng vừa bị xoá ở thiết bị
+   khác thì màn hình đóng lại kèm chữ *"đã lưu"* và không lưu gì. Đã bọc
+   `confirmWrite`.
+2. **`hàng đợi ngoại tuyến` đòi `id: w.rowId` đúng chữ.** Code mới ghi
+   `id: replaceId ?? w.rowId`, vẫn giữ nguyên bất biến — phát lại lần hai thì
+   hàng vừa ghi **chồng lấn chính nó** nên hàm trả về đúng `w.rowId`. Chuyển
+   hướng sang *"biểu thức id có CHỨA id do client sinh"*.
+3. **Hai harness offline chỉ vá `require` cho đúng `offline-write.js`.** Một
+   dependency mới của nó chết bằng `MODULE_NOT_FOUND` — đọc y như bộ công cụ
+   hỏng, và chẳng liên quan gì tới thứ luật ấy kiểm. Nay vá mọi tệp emit.
+4. **Hai luật cấu trúc của tôi trong `main-sleep.mjs` đỏ NHẦM trên mã đúng:**
+   bắt phải `.limit(1)` của truy vấn **sinh trắc** cách đó hai mươi dòng, và bắt
+   phải `sleepLogs7d.length >= 3` vốn là **cổng mở** chứ không phải phép chia nợ
+   ngủ. Đã khoanh đúng một truy vấn và bóc chú thích trước khi so.
+
+---
+
+## Chain AS — hai thẻ hero không giải thích được chính mình
+
+**Người dùng yêu cầu:** *"viết giải thích cho thẻ hoạt động và thẻ dinh dưỡng ở
+dashboard"*.
+
+### BUG-133 (P3). Thẻ ba vòng không có sheet giải thích nào — `ACTIVITY-CARD-UNEXPLAINED` · **ĐÃ SỬA**
+
+Nó vẽ ba vòng và ba con số, không con số nào tự nói ra mình đến từ đâu. Ba câu
+không đoán được từ hình vẽ:
+
+- **Hai trong ba vòng chỉ Apple Health mới lấp được.** Không đeo đồng hồ thì
+  MOVE và STEPS đứng ở 0 cả ngày, kể cả hôm vừa tập hai tiếng. Số 0 ở đó nghĩa
+  là *"chưa ai đo"*, và nó trông y hệt *"bạn không vận động"*.
+- **Vòng EXERCISE đổi NGUỒN.** Health có số thì lấy số đo; Health báo 0 thì
+  chuyển sang ước lượng từ set đã ghi.
+- **Hai trong ba mục tiêu là hằng số của app** (300 kcal, 30 phút), không phải
+  mục tiêu người dùng đặt. Chỉ STEPS là của họ.
+
+Hai con số ấy được **import** từ `lib/activity.ts` chứ không gõ lại.
+
+### BUG-134 (P3). Sheet dinh dưỡng đã tồn tại nhưng hero không mở được nó — `NUTRITION-SHEET-UNREACHABLE-FROM-HERO` · **ĐÃ SỬA**
+
+Sheet giải thích vì sao **tập xong mục tiêu calo KHÔNG tăng lên** (hệ số vận
+động đã bao gồm việc tập; cộng buổi tập vào nữa là tính cùng một giờ hai lần —
+*"đó là cách ăn vượt vài trăm calo mỗi ngày mà vẫn tưởng mình đúng kế hoạch"*).
+Chỉ thẻ dạng danh sách mở được nó; trang hero — thứ phần lớn người dùng thật sự
+nhìn thấy — không có lối vào nào. Nay cả hai mở chung một sheet và đếm lượt nhắc
+chung một khoá.
+
+**VERIFICATION** — `node tools/activity-explainer.mjs`. Chú thích trong sheet
+viện dẫn tên tệp này, và `readiness-explainer.tsx` đã ghi lại chuyện repo từng
+có một chú thích viện dẫn `tools/readiness-doc.mjs` — **một tệp chưa từng tồn
+tại**. Luật mạnh nhất là *"phải IMPORT, không được gõ lại"*, đúng cả với những
+con số chưa ai đổi. Nó cũng kiểm ngược lời khẳng định lớn nhất của sheet vào mã:
+`ReadinessInput` không nhận bước chân hay calo hoạt động, nên câu *"ba vòng này
+không tính vào điểm sẵn sàng"* vẫn đúng.
+
+### Chain AS — sai sót của chính bộ kiểm, ghi rõ
+
+1. **Tôi GHI ĐÈ `nutrition-explainer.tsx`** vì tưởng nó chưa tồn tại. Bản gốc có
+   đoạn calo-không-được-cộng-lại mà bản của tôi không có — đoạn có giá trị nhất
+   trong tệp. **`tsc` là thứ phát hiện** (`dashboard-cards.tsx` đã import nó với
+   prop khác). Đã khôi phục nguyên vẹn từ `HEAD`; `git diff` với tệp đó trống.
+2. **Hai giả định khác cũng sai và đã bỏ:** rằng `ActivityRingsCard` dùng
+   `HeroPanel` (nó tự dựng panel), và rằng ba sheet dùng chung một ngôn ngữ hình
+   (sheet dinh dưỡng dùng kiểu term/body, không dùng tag). Tôi đã dựng một "vỏ
+   dùng chung" trên giả định thứ hai rồi xoá đi.
+
+### Chain AN / AQ / AR / AS — trạng thái xác minh, nói cho rõ
+
+| loại | đã làm gì |
+| --- | --- |
+| **ENGINE THẬT** | `computeReadiness`, `mainSleep`, `sleepDebtFrom`, `sleepNote`, `sleepRowToReplace`, `biometricRowToReplace` — biên dịch và chạy |
+| **POSTGRES** | Chain AN: cluster THẬT 16.13 từ mọi migration, 6 múi giờ gồm Lord Howe (DST nửa giờ) |
+| **BREAK-TESTS** | mọi bộ dò mới đều có, và mỗi phép phá đòi ĐỎ **đúng ô đã dự đoán** chứ không chỉ đỏ |
+| **REGRESSION** | `node tools/check.mjs` **161/161 xanh** |
+| **TYPESCRIPT** | sạch |
+| **REAL iOS / thiết bị** | **KHÔNG** — chưa ai thấy các thẻ mới trên máy thật |
+| **PRODUCTION** | **KHÔNG** |
+| **DỮ LIỆU THẬT** | **KHÔNG** — không có tài khoản thật nào được đọc; mọi con số ở trên là fixture |
 
 
 ## Cách dùng sổ này
