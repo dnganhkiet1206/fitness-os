@@ -106,6 +106,7 @@ interface Translations {
   dashLogBiometrics: string;
   dashReadiness: string;
   dashReadinessMsg: string;
+  logBioBaselineNote: string;
   dashTrend: string;
   dashTrendMsg: string;
   dashActivity: string;
@@ -868,6 +869,8 @@ const vi: Translations = {
   dashLogSleep: 'Ghi giấc ngủ',
   dashLogBiometrics: 'Nhập sinh trắc',
   dashReadiness: 'Sẵn Sàng',
+  logBioBaselineNote:
+    'Nhịp tim nghỉ và HRV được chấm so với nền của chính bạn, nên cần 5 lần đo trong 28 ngày mới hiện lên thẻ điểm sẵn sàng. Nhập tay tính y như Apple Health — không cần đồng hồ.',
   /*
     Câu này từng ghi "Cần 3+ ngày dữ liệu", và đó là ba câu sai trong một dòng.
 
@@ -1621,6 +1624,8 @@ const en: Translations = {
   dashLogSleep: 'Log sleep',
   dashLogBiometrics: 'Log biometrics',
   dashReadiness: 'Readiness',
+  logBioBaselineNote:
+    'Resting HR and HRV are scored against your own baseline, so it takes 5 readings within 28 days before they appear on the readiness card. Entering them by hand counts exactly like Apple Health — no watch needed.',
   /* See the Vietnamese entry for why "3+ days" was three wrong claims in one
      line. Same three doors, same numbers, checked by `tools/readiness-copy.mjs`
      against the engine and the gate themselves. */

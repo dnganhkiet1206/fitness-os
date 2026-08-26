@@ -249,6 +249,95 @@ for (const [a, b, lang] of [[viTrain, viMod, 'vi'], [viMod, viRec, 'vi'], [enTra
 void viMod;
 void enMod;
 
+/* ── 6. một tỉ số ACWR, một bảng màu, ba màn hình ───────────────────────── */
+const GAUGE = 'src/components/ascnd/readiness-gauge.tsx';
+const CHART = 'src/components/ascnd/today-widgets-2.tsx';
+/* Bảng màu sống ở tầng component, không ở lib/ — xem chú thích trong tệp đó:
+   16 bước của suite biên dịch lib/*.ts một mình, nơi alias `@/` không phân giải. */
+const CARD = 'src/components/ascnd/acwr-tint.ts';
+const gauge = read(GAUGE);
+const card = read(CARD);
+
+/*
+  Chú thích đầu `training-card.ts` liệt kê luật ba nhánh này là lỗi ĐÃ GỠ khỏi
+  thẻ tập luyện. Nó vẫn sống trong readiness-gauge suốt từ đó, nên ACWR 2.0
+  ("nguy cơ quá tải") tô VÀNG ở thẻ này và ĐỎ ở thẻ kia. Luật dưới đây cấm bất
+  kỳ màn nào tự quyết màu của một tỉ số ACWR.
+*/
+for (const [file, src] of [[GAUGE, gauge], [CHART, read(CHART)], [SHEET, sheet]]) {
+  if (/readiness(Green|Yellow|Red)/.test(src) && /acwr/i.test(src)) {
+    const handTyped = /acwr[\w.]*\s*(>=|>|<=|<)\s*[\d.]+[\s\S]{0,120}?colors\.readiness/i.exec(src);
+    if (handTyped) {
+      problems.push(
+        `${file}: tự quyết màu của một tỉ số ACWR ("${handTyped[0].split('\n')[0].trim().slice(0, 60)}…") — ` +
+          'màu phải đọc ACWR_TINT[acwrZone(x)] trong lib/training-card.ts, nếu không hai thẻ vẽ cùng một ' +
+          'con số bằng hai màu và băng > 1.6 bị tô nhẹ đi',
+      );
+    }
+  }
+}
+if (!/ACWR_TINT\[acwrZone\(/.test(gauge)) {
+  problems.push(`${GAUGE}: ô ACWR không đọc bảng màu chung ACWR_TINT[acwrZone(...)]`);
+}
+/* Bảng năm băng phải được ĐỌC, không gõ lại — bản gõ tay thiếu hẳn `low`. */
+if (!/ACWR_BANDS\.map/.test(sheet)) {
+  problems.push(
+    `${SHEET}: bảng băng ACWR không đọc ACWR_BANDS — bản gõ tay trước đây liệt kê 4 băng ` +
+      'trong khi acwrZone chấm theo 5, nên ai có tỉ số 0.65–0.8 tra bảng không thấy mình ở đâu',
+  );
+}
+const zoneKeys = [...card.matchAll(/^\s{2}(\w+): colors\.readiness/gm)].map((m) => m[1]);
+if (zoneKeys.length !== 5) {
+  problems.push(`${CARD}: ACWR_TINT phải có đủ 5 băng, thấy ${zoneKeys.length}`);
+}
+for (const k of zoneKeys) {
+  if (!new RegExp(`\\b${k}\\b`).test(sheet)) {
+    problems.push(`${SHEET}: băng "${k}" không có tên hiển thị — ZONE_WHAT phải phủ đủ ACWR_BANDS`);
+  }
+}
+
+/*
+  `acwr === 0` là một GIÁ TRỊ THẬT, không phải thiếu dữ liệu.
+
+  Engine ghi rõ: null = chưa có nền để làm tỉ số; 0 = CÓ nền, và tuần này không
+  tập gì. Ô nào lọc bằng `> 0` sẽ nói với người vừa tập suốt bốn tuần rằng họ
+  chưa ghi buổi tập nào.
+*/
+if (/acwr\s*!=\s*null\s*&&\s*acwr\s*>\s*0/.test(gauge)) {
+  problems.push(
+    `${GAUGE}: ô ACWR lọc bằng \`> 0\`, nên tỉ số 0 — một tuần nghỉ trên một cái nền CÓ THẬT — ` +
+      'bị hiện thành "chưa ghi buổi tập"; engine giữ được phân biệt null/0 tới tận cột database',
+  );
+}
+
+/* ── 7. ô trống nói ĐIỀU GÌ SẼ LẤP NÓ ───────────────────────────────────── */
+if (/'chưa có dữ liệu'/.test(gauge)) {
+  problems.push(
+    `${GAUGE}: ô trống vẫn nói "chưa có dữ liệu" — với HRV/RHR đó là câu SAI với người vừa gõ số vào: ` +
+      `4 lần nhập đầu được lưu đủ nhưng chưa đủ ${N} để dựng nền`,
+  );
+}
+if (N !== null && !new RegExp(`cần ${N} lần đo`).test(gauge)) {
+  problems.push(`${GAUGE}: ô HRV/RHR trống không nói cần ${N} lần đo`);
+}
+/* Và màn NHẬP phải nói cùng con số, ở cả hai ngôn ngữ — đó là chỗ người ta
+   đang gõ số vào và tự hỏi vì sao không thấy gì. */
+const notes = [...i18n.matchAll(/logBioBaselineNote:\s*\n?\s*'((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]);
+if (notes.length !== 2) {
+  problems.push(`${I18N}: cần đúng 2 bản dịch của logBioBaselineNote, thấy ${notes.length}`);
+}
+for (const note of notes) {
+  if (N !== null && !new RegExp(`\\b${N}\\b`).test(note)) {
+    problems.push(`${I18N}: ghi chú màn nhập sinh trắc không nói con số ${N}`);
+  }
+  if (!/(Apple Health|đồng hồ|watch)/i.test(note)) {
+    problems.push(
+      `${I18N}: ghi chú màn nhập sinh trắc không dập hiểu nhầm "cần Apple Watch" — ` +
+        'nhập tay ghi vào đúng bảng, đúng cột mà Apple Health ghi, và câu hỏi đã bị hỏi thẳng',
+    );
+  }
+}
+
 rmSync(OUT, { recursive: true, force: true });
 
 if (problems.length) {
@@ -266,5 +355,10 @@ console.log(
     'baseline thật, thứ câu cũ hứa là 3 nên qua cổng mà vẫn không ra điểm — và có trả lời thẳng câu hỏi về ăn uống; ' +
     'sheet giải thích có mục nói ăn uống không tính, ở cả hai ngôn ngữ; ' +
     'ReadinessInput không nhận một trường dinh dưỡng/cân nặng/bước chân nào; ' +
-    'và cả 6 nhãn trạng thái đều là phán quyết nhiều từ chứ không phải một danh từ đọc ra thành tên hạng mục',
+    'và cả 6 nhãn trạng thái đều là phán quyết nhiều từ chứ không phải một danh từ đọc ra thành tên hạng mục; ' +
+    'không màn nào tự quyết màu của một tỉ số ACWR — cả ba đọc ACWR_TINT[acwrZone(x)], nên băng > 1.6 ' +
+    'không còn được tô nhẹ đi ở thẻ sẵn sàng trong khi thẻ tập luyện tô đỏ; sheet đọc đủ 5 băng từ ACWR_BANDS ' +
+    '(bản gõ tay thiếu hẳn băng 0.65–0.8); ô ACWR nhận tỉ số 0 là giá trị thật chứ không phải thiếu dữ liệu; ' +
+    `và ô trống nói ĐIỀU GÌ SẼ LẤP NÓ — HRV/RHR nói "cần ${N} lần đo" thay vì "chưa có dữ liệu", con số ấy ` +
+    'lấy từ engine, và màn nhập sinh trắc nói cùng con số cộng một câu dập hiểu nhầm "cần Apple Watch"',
 );

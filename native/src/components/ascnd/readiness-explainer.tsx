@@ -2,7 +2,19 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { FormSheet } from '@/components/ascnd/form-sheet';
 import { colors, radius, spacing } from '@/constants/ascnd';
+import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
+import { ACWR_BANDS, type AcwrZoneKey } from '@/lib/training-card';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+
+/** Tên ngắn của từng băng ACWR. Cặp với `ACWR_BANDS`, nên năm băng có đủ năm
+ *  tên — bản gõ tay trước đây thiếu hẳn `low`. */
+const ZONE_WHAT: Record<AcwrZoneKey, { vi: string; en: string }> = {
+  detraining: { vi: 'tập quá thưa', en: 'undertrained' },
+  low: { vi: 'nhẹ hơn thường lệ', en: 'lighter than usual' },
+  optimal: { vi: 'vùng an toàn', en: 'safe band' },
+  elevated: { vi: 'tăng hơi nhanh', en: 'ramping fast' },
+  spike: { vi: 'nguy cơ quá tải', en: 'overreaching risk' },
+};
 
 /**
  * What the readiness card is actually saying.
@@ -107,18 +119,29 @@ export function ReadinessExplainer({ visible, onClose }: { visible: boolean; onC
             ? 'Khối lượng trung bình mỗi ngày trong 7 ngày qua, chia cho trung bình mỗi ngày trong 28 ngày qua. Nói cách khác: tuần này bạn tập nặng hơn hay nhẹ hơn thói quen của chính mình.'
             : 'Your average daily volume over the last 7 days, divided by your average daily volume over the last 28. Put plainly: is this week heavier or lighter than your own habit?'}
         </Text>
-        {/* The bands the engine actually scores against, in its own order. */}
+        {/*
+          Các băng ĐỌC từ `lib/training-card.ts`, không gõ lại.
+
+          ── hai lỗi của bản gõ tay ──
+
+          Nó liệt kê BỐN băng trong khi `acwrZone` chấm theo NĂM: khoảng
+          0.65–0.8 ("nhẹ hơn thường lệ", engine cho 65 điểm) không có mặt, nên
+          một người có ACWR 0.72 tra bảng này và không thấy mình ở đâu cả.
+
+          Và nó tô `< 0.65` màu VÀNG trong khi bảng chuẩn — thứ thẻ tập luyện
+          vẽ theo — là ĐỎ. Cùng một tỉ số, hai màn hình, hai màu; đúng cái lỗi
+          mà chú thích đầu `training-card.ts` ghi lại là đã phải gỡ một lần.
+
+          Thứ tự ở đây là thứ tự của thang đo (thấp → cao), không phải thứ tự
+          các nhánh trong engine — đây là một cái bảng để tra, và một cái bảng
+          tra không sắp theo thang thì không tra được.
+        */}
         <View style={styles.bands}>
-          {[
-            { range: '0.8 – 1.3', tint: colors.readinessGreen, what: vi ? 'vùng an toàn' : 'safe band' },
-            { range: '1.3 – 1.6', tint: colors.readinessYellow, what: vi ? 'tăng hơi nhanh' : 'ramping fast' },
-            { range: '> 1.6', tint: colors.readinessRed, what: vi ? 'nguy cơ quá tải' : 'overreaching risk' },
-            { range: '< 0.65', tint: colors.readinessYellow, what: vi ? 'tập quá thưa' : 'undertrained' },
-          ].map((b) => (
-            <View key={b.range} style={styles.band}>
-              <View style={[styles.bandDot, { backgroundColor: b.tint }]} />
-              <Text style={styles.bandRange}>{b.range}</Text>
-              <Text style={styles.bandWhat}>{b.what}</Text>
+          {ACWR_BANDS.map((b) => (
+            <View key={b.key} style={styles.band}>
+              <View style={[styles.bandDot, { backgroundColor: ACWR_TINT[b.key] }]} />
+              <Text style={styles.bandRange}>{b.label}</Text>
+              <Text style={styles.bandWhat}>{ZONE_WHAT[b.key][vi ? 'vi' : 'en']}</Text>
             </View>
           ))}
         </View>

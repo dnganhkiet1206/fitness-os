@@ -120,6 +120,25 @@ export default function LogBiometricsSheet() {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>{i18n.logBioTitle}</Text>
+        {/*
+          Vì sao số vừa nhập chưa hiện lên thẻ điểm sẵn sàng.
+
+          ── lỗi nó sửa ──
+
+          Nhịp tim nghỉ và HRV được chấm so với NỀN CỦA CHÍNH BẠN, và
+          `computeHRVScore`/`computeRHRScore` trả `null` khi lịch sử dưới 5 lần
+          đo — một median cộng MAD dựng từ bốn điểm thì không phải một cái nền.
+
+          Nên bốn lần nhập đầu tiên được lưu đầy đủ vào `biometric_samples` rồi
+          hiện ra trên dashboard là một ô trống. Màn hình này không có một chữ
+          nào nói điều đó, nên trải nghiệm là: gõ số, bấm lưu, không có gì xảy
+          ra, bốn lần liền.
+
+          Câu này cũng dập luôn một hiểu nhầm đã được hỏi thẳng — rằng hai chỉ
+          số ấy đòi Apple Watch. Không: nhập tay ghi vào ĐÚNG bảng, ĐÚNG cột mà
+          Apple Health ghi, và được chấm y hệt.
+        */}
+        <Text style={styles.baselineNote}>{i18n.logBioBaselineNote}</Text>
 
         <Field label={i18n.logBioHR} placeholder="60" unit="bpm" value={hr} onChange={setHr} error={errors.hr} />
         <Field label={i18n.logBioHRV} placeholder="62" unit="ms" value={hrv} onChange={setHrv} error={errors.hrv} />
@@ -193,6 +212,12 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.card },
   content: { padding: spacing.lg, gap: spacing.md },
   title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
+  baselineNote: {
+    ...type.footnote,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
   field: { gap: 6 },
   fieldLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
   inputWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background, paddingRight: spacing.md },

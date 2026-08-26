@@ -1054,9 +1054,25 @@ try {
     want(zones != null, 'không đọc được ba vùng màu ra khỏi help sheet');
     want(/const status = score >= 75 \? 'green' : score >= 50 \? 'yellow' : 'red';/.test(engineSrc),
       'ngưỡng vùng màu trong engine đã đổi — help sheet vẫn in 75 / 50');
-    /* and the ACWR bands it prints */
-    for (const band of ["0.8 – 1.3", "1.3 – 1.6", "> 1.6", "< 0.65"]) {
-      want(sheet.includes(band), `help sheet không còn in dải ACWR ${band}`);
+    /*
+      ── luật này được CHUYỂN HƯỚNG, không nới ──
+
+      Nó từng đòi help sheet chứa bốn chuỗi dải gõ tay. Sheet nay dựng bảng ấy
+      bằng `ACWR_BANDS.map(...)` — đọc từ `lib/training-card.ts`, cùng bảng mà
+      `acwrZone` chấm theo — nên các chuỗi literal biến mất và luật cũ đỏ trên
+      một thay đổi làm nó ĐÚNG HƠN: bản gõ tay chỉ có bốn dải, thiếu hẳn
+      0.65–0.8, nên ai có tỉ số 0.72 tra bảng không thấy mình ở đâu.
+
+      Bất biến thật không phải "sheet chứa chuỗi X". Nó là: người dùng đọc được
+      ĐÚNG các mốc mà engine chấm. Nên luật giờ đi hai chặng — sheet phải vẽ từ
+      ACWR_BANDS, và ACWR_BANDS phải mang đúng các mốc của engine. Chặt hơn bản
+      cũ, vì bản cũ không hề kiểm bảng mà giao diện thật sự vẽ.
+    */
+    want(/ACWR_BANDS\.map/.test(sheet),
+      'help sheet không còn vẽ dải ACWR từ ACWR_BANDS — một bảng gõ tay sẽ trôi khỏi acwrZone');
+    const cardSrc = readFileSync(path.join(NATIVE, 'src/lib/training-card.ts'), 'utf8');
+    for (const band of ["< 0.65", "0.65 – 0.8", "0.8 – 1.3", "1.3 – 1.6", "> 1.6"]) {
+      want(cardSrc.includes(band), `ACWR_BANDS không còn dải ${band} — help sheet vẽ từ bảng này`);
     }
     const card = strip(readFileSync(path.join(NATIVE, 'src/lib/training-card.ts'), 'utf8'));
     want(/acwr >= 0\.8 && acwr <= 1\.3/.test(card) && /acwr < 0\.65/.test(card) && /acwr > 1\.3 && acwr <= 1\.6/.test(card),
@@ -1224,7 +1240,7 @@ try {
       'ba định nghĩa readiness là khả năng tập ở CẢ hai ngôn ngữ, và không cái nào được dạy lại lối tắt ' +
       '"readiness thấp thì nghỉ". ' +
       'Mọi con số trong help sheet (30/20/30/20 và hàng không-HRV, trần 4 tiếng, dải 0.8–1.3 được 80 điểm, ' +
-      'ba vùng 75/50, bốn mốc ACWR) được đọc NGƯỢC ra khỏi chính tệp đó và so với engine; và mọi tools/*.mjs ' +
+      'ba vùng 75/50) được đọc NGƯỢC ra khỏi chính tệp đó và so với engine; bảng dải ACWR thì kiểm hai chặng — sheet phải vẽ từ ACWR_BANDS, và ACWR_BANDS phải mang đủ NĂM mốc (bản gõ tay cũ chỉ có bốn, thiếu 0.65–0.8); và mọi tools/*.mjs ' +
       'mà tệp đó nhắc tên đều phải tồn tại thật. Trên ' +
       'PostgreSQL 16.13 dựng từ toàn bộ migration, ở SÁU múi giờ gồm Australia/Lord_Howe (bước DST nửa giờ): ' +
       'ma trận tám tổ hợp cộng 1000 trạng thái ngẫu nhiên mỗi múi giờ, chuỗi explain luôn ghi đúng những gì ' +

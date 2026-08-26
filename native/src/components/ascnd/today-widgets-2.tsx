@@ -31,6 +31,7 @@ import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-but
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { TrainingExplainer } from '@/components/ascnd/training-explainer';
+import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
@@ -251,14 +252,16 @@ interface PainFlag {
  */
 const TREND_H = 72;
 
-/** The chart's zone colours, keyed by the one table in `lib/training-card.ts`. */
-const ZONE_TINT: Record<AcwrZoneKey, string> = {
-  detraining: colors.readinessRed,
-  low: colors.readinessYellow,
-  optimal: colors.readinessGreen,
-  elevated: colors.readinessYellow,
-  spike: colors.readinessRed,
-};
+/*
+  Bảng màu vùng giờ nằm CẠNH luật, ở `lib/training-card.ts`.
+
+  Nó từng là một bản cục bộ ở đây, và chú thích của chính nó nói "keyed by the
+  one table in lib/training-card.ts" — nhưng nó KHÔNG đọc bảng nào cả, nó là
+  một bảng thứ hai gõ tay tình cờ đúng. Bản thứ ba, trong readiness-gauge.tsx,
+  không đúng: nó vẫn giữ luật ba nhánh mà chú thích đầu training-card.ts liệt
+  kê là lỗi đã gỡ.
+*/
+const ZONE_TINT = ACWR_TINT;
 
 /**
  * What each band means, as a thing to do rather than a thing to know.

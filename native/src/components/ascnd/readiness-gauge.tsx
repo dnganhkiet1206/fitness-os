@@ -24,6 +24,8 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
 import { readinessConfidence } from '@/lib/readiness-engine';
+import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
+import { acwrZone } from '@/lib/training-card';
 import { colors, HERO_RING, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -122,8 +124,23 @@ export function ReadinessGauge({
   const subs = readinessSubscores(explain);
   const subColor = (v: number) =>
     v >= 70 ? colors.readinessGreen : v >= 40 ? colors.readinessYellow : colors.readinessRed;
-  const acwrColor =
-    acwr == null ? colors.mutedForeground : acwr >= 0.8 && acwr <= 1.3 ? colors.readinessGreen : acwr > 1.3 ? colors.readinessYellow : colors.readinessRed;
+  /*
+    Màu của ô ACWR đọc CÙNG bảng mà thẻ tập luyện đọc.
+
+    ── lỗi nó sửa ──
+
+    Dòng này từng là một luật ba nhánh gõ tay: `0.8–1.3` xanh, `> 1.3` vàng,
+    còn lại đỏ. Chú thích đầu `lib/training-card.ts` liệt kê ĐÚNG luật ấy như
+    lỗi đã được gỡ khỏi thẻ tập luyện — và nó vẫn sống ở đây, nên hai thẻ vẽ
+    cùng một con số bằng hai màu:
+
+        ACWR 2.0  (> 1.6, "nguy cơ quá tải")  thẻ tập luyện ĐỎ  · ô này VÀNG
+        ACWR 0.7  (0.65–0.8, "tập hơi thưa")  thẻ tập luyện VÀNG · ô này ĐỎ
+
+    Băng thứ nhất sai về phía nguy hiểm: một cú tăng tải thật sự rủi ro được tô
+    thành "để ý một chút". Người dùng đọc cả hai thẻ trong cùng một lần mở app.
+  */
+  const acwrColor = acwr == null ? colors.mutedForeground : ACWR_TINT[acwrZone(acwr)];
   const tiles: { label: string; value: string; color: string; unit: string }[] = [];
   /*
     ── the chip counted a tile that was never drawn ──
@@ -165,18 +182,63 @@ export function ReadinessGauge({
     nay ghi được giấc ngủ thì ô SLEEP sáng lên TẠI CHỖ chứ không nhảy lên đầu
     hàng.
   */
-  const none = { value: '—', color: colors.mutedForeground, unit: vi ? 'chưa có dữ liệu' : 'no data yet' };
+  /*
+    Ô trống nói ĐIỀU GÌ SẼ LẤP NÓ, không nói "không có gì".
+
+    ── lỗi nó sửa ──
+
+    Cả bốn ô dùng chung một dòng "chưa có dữ liệu", và với HRV/RHR đó là một
+    câu SAI với đúng người vừa gõ số vào: `computeHRVScore` và `computeRHRScore`
+    trả `null` khi lịch sử dưới 5 lần đo, nên nhập tay lần 1, 2, 3, 4 đều được
+    lưu đầy đủ vào `biometric_samples` — cùng bảng, cùng cột mà Apple Health ghi
+    — rồi hiện ra là "chưa có dữ liệu".
+
+    Đo được: nhập tay tích dần, ô vẫn trắng tới lần thứ 5 rồi mới ra số. Bốn
+    lần một người tự tay ghi số và được app trả lời rằng họ chưa ghi gì.
+
+    Lý do cần 5 là thật và đáng nói: hai chỉ số này chấm bạn so với NỀN CỦA
+    CHÍNH BẠN, mà một median cộng MAD dựng từ bốn điểm thì không phải một cái
+    nền. Nên câu đúng không phải "chưa có dữ liệu" mà là "cần 5 lần đo" — nó
+    đúng ở cả 0 lẫn 4 lần, và nó nói ra việc phải làm.
+
+    Giấc ngủ và tải tập thì một lần ghi là đủ, nên chúng nói đúng việc ấy.
+  */
+  const empty = (unit: string) => ({ value: '—', color: colors.mutedForeground, unit });
+  const NEED = {
+    /* Con số 5 là ngưỡng baseline trong `readiness-engine.ts`; `tools/readiness-copy.mjs`
+       đọc nó ra khỏi engine rồi so với các dòng chữ này. */
+    reading: vi ? 'cần 5 lần đo' : 'needs 5 readings',
+    night: vi ? 'chưa ghi đêm qua' : 'no night logged',
+    session: vi ? 'chưa ghi buổi tập' : 'no workout logged',
+  };
   if (subs.hrv != null) tiles.push({ label: 'HRV', value: String(subs.hrv), color: subColor(subs.hrv), unit: '/100' });
-  else tiles.push({ label: 'HRV', ...none });
+  else tiles.push({ label: 'HRV', ...empty(NEED.reading) });
   if (subs.rhr != null) tiles.push({ label: 'RHR', value: String(subs.rhr), color: subColor(subs.rhr), unit: '/100' });
-  else tiles.push({ label: 'RHR', ...none });
+  else tiles.push({ label: 'RHR', ...empty(NEED.reading) });
   if (subs.sleep != null) tiles.push({ label: 'SLEEP', value: String(subs.sleep), color: subColor(subs.sleep), unit: '/100' });
-  else tiles.push({ label: 'SLEEP', ...none });
+  else tiles.push({ label: 'SLEEP', ...empty(NEED.night) });
   if (subs.load != null) tiles.push({ label: 'LOAD', value: String(subs.load), color: subColor(subs.load), unit: '/100' });
-  else tiles.push({ label: 'LOAD', ...none });
+  else tiles.push({ label: 'LOAD', ...empty(NEED.session) });
   /* ACWR là một TỈ SỐ, không phải điểm 0–100, nên mẫu số "/100" sẽ là một câu
      sai về chính con số đó. */
-  if (acwr != null && acwr > 0)
+  /*
+    `!= null`, KHÔNG phải `> 0` — và cái `> 0` là một lỗi.
+
+    Engine phân biệt hai thứ này có chủ ý, và ghi hẳn lý do ra:
+
+        "Zero keeps its real meaning — a week with no training against a
+         baseline that does exist — which is a fact worth having and worth
+         distinguishing from an empty account."
+
+    `null` = chưa có nền nào để làm tỉ số. `0` = CÓ nền, và tuần này bạn không
+    tập gì. Đó là hai câu khác hẳn nhau, và câu thứ hai là một thông tin thật:
+    nó là tuần nghỉ sau một tháng tập nặng.
+
+    Ô này gộp cả hai thành "chưa ghi buổi tập" — tức là nói với người vừa tập
+    suốt bốn tuần rằng họ chưa ghi buổi tập nào. Engine giữ được sự phân biệt
+    ấy qua tận cột `acwr` trong database rồi màn hình đánh mất nó ở dòng cuối.
+  */
+  if (acwr != null)
     tiles.push({
       label: 'ACWR',
       value: String(acwr),
@@ -187,7 +249,7 @@ export function ReadinessGauge({
          N bản" mà repo này đã gặp sáu lần. Đơn vị nói ĐƠN VỊ; màu đã nói vùng. */
       unit: vi ? 'tỉ số' : 'ratio',
     });
-  else tiles.push({ label: 'ACWR', ...none });
+  else tiles.push({ label: 'ACWR', ...empty(NEED.session) });
 
   /*
     ── how much of this number is actually measured ──
