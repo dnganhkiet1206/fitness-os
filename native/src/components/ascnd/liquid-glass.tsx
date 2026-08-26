@@ -101,9 +101,18 @@ export function LiquidGlass({
    * đổi. Đó là cách Apple Music làm những viên pill của nó: kính mờ phẳng, màu
    * đi từ nội dung, không có specular.
    *
-   * Nó cũng rẻ hơn hẳn: không SVG, nên không `onLayout` → `setState` cho mỗi
-   * tấm, và không bốn `<Rect>` phải trộn lại mỗi lần trang cuộn. Trên một hàng
-   * bốn viên pill thì đó là bốn mặt phẳng gradient biến mất khỏi đường cuộn.
+   * ── nó rẻ hơn BAO NHIÊU, nói cho đúng ──
+   *
+   * Chỗ này từng ghi "không SVG, nên không `onLayout` → `setState` cho mỗi tấm,
+   * và không bốn `<Rect>` phải trộn lại mỗi lần trang cuộn". Câu đó đúng với
+   * bản `blur` ĐẦU TIÊN — bản đã thay lớp wash bằng một mảng màu phẳng và bị
+   * bắt lỗi ngay ("style thẻ không còn giống như cũ"). Khi lớp wash được trả về
+   * cho đúng, mặt SVG quay lại cùng nó, và câu ấy thành sai: `blur` có tint vẫn
+   * đo, vẫn `setState`, vẫn một `<Rect>` trên đường cuộn.
+   *
+   * Sự thật là: `blur` bỏ được BA trong bốn `<Rect>`, và bỏ được cả mặt SVG khi
+   * không có `tint` — vì lúc đó nó không còn hình nào để vẽ. Đó là con số thật,
+   * và `tools/glass-material.mjs` giữ cho nó không tụt lại.
    */
   material?: 'glass' | 'blur';
 }) {
@@ -114,6 +123,23 @@ export function LiquidGlass({
   const shade = `lgShade-${uid}`;
   const wash = `lgWash-${uid}`;
   const edge = `lgEdge-${uid}`;
+  /** Chất liệu thấu kính: mặt sáng chéo, bóng đổ chéo, vệt specular. */
+  const lens = material === 'glass';
+  /*
+    Mặt SVG có gì để vẽ hay không.
+
+    ── lỗi nó sửa ──
+
+    Mặt này vẽ đúng bốn hình: wash (khi có `tint`) và ba lớp thấu kính (khi
+    `glass`). Ở chế độ `blur` KHÔNG tint thì cả bốn đều bị loại — và cái vỏ vẫn
+    dựng: một `<View onLayout>` gọi `setState` cho mỗi tấm, cộng một `<Svg>`
+    rỗng. Một phép đo, một lần render lại, và một view nữa trong cây, để vẽ ra
+    không một điểm ảnh nào.
+
+    Không phải giả thuyết: viên trạng thái của Assistant và ô soạn tin của
+    Health Assistant đều là `blur` không tint, và cả hai nằm trên đường cuộn.
+  */
+  const face = lens || !!tint;
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const measure = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -148,25 +174,40 @@ export function LiquidGlass({
         Thứ `blur` thật sự bỏ là ba dấu hiệu của một THẤU KÍNH: mặt sáng chéo,
         bóng đổ chéo, và vệt sáng specular trên mép. Đó mới là chất liệu.
       */}
+      {face ? (
       <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={measure}>
         {size ? (
       <Svg width={size.w} height={size.h}>
         <Defs>
-          {/* Định nghĩa cũng chỉ dựng khi cần — ở chế độ `blur` không có Rect
-              nào tham chiếu tới ba cái này. */}
-          <LinearGradient id={lit} x1="0" y1="0" x2="0.9" y2="1">
-            <Stop offset="0" stopColor="#ffffff" stopOpacity={0.10} />
-            <Stop offset="0.55" stopColor="#ffffff" stopOpacity={0} />
-          </LinearGradient>
-          <LinearGradient id={shade} x1="0" y1="0" x2="0.9" y2="1">
-            <Stop offset="0.45" stopColor="#000000" stopOpacity={0} />
-            <Stop offset="1" stopColor="#000000" stopOpacity={0.16} />
-          </LinearGradient>
-          <LinearGradient id={edge} x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor="#ffffff" stopOpacity={0.34} />
-            <Stop offset="0.38" stopColor="#ffffff" stopOpacity={0.14} />
-            <Stop offset="0.7" stopColor="#ffffff" stopOpacity={0} />
-          </LinearGradient>
+          {/*
+            Định nghĩa chỉ dựng khi CÓ hình tham chiếu tới nó.
+
+            Câu đó từng đứng ở đây trong khi ba `<LinearGradient>` bên dưới vẫn
+            dựng vô điều kiện — một chú thích mô tả thứ mã không làm. Ở chế độ
+            `blur` không có `<Rect>` nào tham chiếu tới chúng, nhưng
+            `react-native-svg` vẫn tạo ba đối tượng gradient native cộng sáu
+            `<Stop>` cho MỖI tấm. Trên một màn có tám tấm, đó là hai mươi bốn
+            node dựng ra rồi giữ lại để không ai dùng.
+          */}
+          {lens ? (
+            <LinearGradient id={lit} x1="0" y1="0" x2="0.9" y2="1">
+              <Stop offset="0" stopColor="#ffffff" stopOpacity={0.10} />
+              <Stop offset="0.55" stopColor="#ffffff" stopOpacity={0} />
+            </LinearGradient>
+          ) : null}
+          {lens ? (
+            <LinearGradient id={shade} x1="0" y1="0" x2="0.9" y2="1">
+              <Stop offset="0.45" stopColor="#000000" stopOpacity={0} />
+              <Stop offset="1" stopColor="#000000" stopOpacity={0.16} />
+            </LinearGradient>
+          ) : null}
+          {lens ? (
+            <LinearGradient id={edge} x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor="#ffffff" stopOpacity={0.34} />
+              <Stop offset="0.38" stopColor="#ffffff" stopOpacity={0.14} />
+              <Stop offset="0.7" stopColor="#ffffff" stopOpacity={0} />
+            </LinearGradient>
+          ) : null}
           {tint ? (
             /* Anchored at the top-left, which is where the glyph sits on every
                card that passes a tint — the wash reads as coming *from* it. */
@@ -180,10 +221,10 @@ export function LiquidGlass({
         {tint ? <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${wash})`} /> : null}
         {/* Ba lớp dưới đây LÀ chất liệu thấu kính — mặt sáng, bóng đổ, vệt
             specular. Chế độ `blur` bỏ đúng chúng và giữ mọi thứ khác. */}
-        {material === 'glass' ? (
+        {lens ? (
           <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${lit})`} />
         ) : null}
-        {material === 'glass' ? (
+        {lens ? (
           <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${shade})`} />
         ) : null}
         {/*
@@ -195,12 +236,13 @@ export function LiquidGlass({
           the light comes from; a border that is the same value all the way
           round reads as a drawn outline, which is what the hairline alone was.
         */}
-        {material === 'glass' ? (
+        {lens ? (
           <Rect x="0" y="0" width={size.w} height={1} fill={`url(#${edge})`} />
         ) : null}
       </Svg>
         ) : null}
       </View>
+      ) : null}
       {children}
     </View>
   );
