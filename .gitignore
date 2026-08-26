@@ -38,3 +38,7 @@ ios/**/xcuserdata
 .env
 .env.*
 !.env.example
+
+.claude/worktrees/
+
+.claude/worktrees/
