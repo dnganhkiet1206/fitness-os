@@ -80,10 +80,29 @@ export function useMascotEmotion(): MascotEmotion {
     triggerMascotAction('wave');
   }, []);
 
-  // Tick so hour-based emotions (sleep) update while the screen stays open.
-  const [, force] = useState(0);
+  /*
+    Nhịp cho các cảm xúc theo GIỜ (ngủ) cập nhật khi màn hình mở lâu.
+
+    ── nó từng dựng lại nhân vật mỗi phút, không phải mỗi giờ ──
+
+    `force((n) => n + 1)` mỗi 60 giây là một lần render lại `Mascot` — và
+    `Mascot` vẽ cả bộ rig SVG của nhân vật, cộng `resolveEmotion` chạy lại trên
+    bốn truy vấn. Sáu mươi lần mỗi giờ, cho một giá trị chỉ đổi khi kim giờ nhảy.
+
+    Rơi đúng vào giữa một cú cuộn thì đó là một khung hình bị bỏ lỡ, và nó rơi ở
+    những lúc không đoán được — đúng cái "thỉnh thoảng cuộn vẫn còn hơi giật
+    nhẹ" đã được báo.
+
+    Vẫn hỏi mỗi phút (rẻ, và một cái hẹn giờ đúng tầm giờ thì trôi), nhưng chỉ
+    GHI khi giờ thật sự đổi. React bỏ qua một `setState` cùng giá trị, nên sáu
+    mươi lần dựng lại mỗi giờ thành một.
+  */
+  const [, setHour] = useState(() => new Date().getHours());
   useEffect(() => {
-    const id = setInterval(() => force((n) => n + 1), 60_000);
+    const id = setInterval(() => {
+      const h = new Date().getHours();
+      setHour((prev) => (prev === h ? prev : h));
+    }, 60_000);
     return () => clearInterval(id);
   }, []);
 

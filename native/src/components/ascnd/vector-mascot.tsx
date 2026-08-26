@@ -7,6 +7,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useIsFocused } from 'expo-router';
 import Svg, { ClipPath, Defs, Ellipse, G, Path, Rect } from 'react-native-svg';
 
 import type { MascotMood } from '@/hooks/use-mascot';
@@ -162,6 +163,26 @@ export function VectorMascot({
   const showEyes = !equippedOutfits.has('sunglasses');
   const eyeScreenY = (88 + headTy) * scale;
 
+  /*
+    Chuyển động nhàn rỗi DỪNG khi màn hình không được nhìn.
+
+    Ba vòng dưới đây tự lên lịch bằng `setTimeout` trên luồng JS — thở, lắc
+    người, chớp mắt — và chúng chỉ khoá theo prop `animated`. Nhưng một
+    `UITabBarController` mount mọi tab một lần rồi GIỮ, nên "đang mount" không
+    có nghĩa là "đang được nhìn": nhân vật vẫn thở đều trên bốn tab bạn không
+    mở, suốt cả phiên.
+
+    `readiness-gauge.tsx` đã ghi đúng luật này cho nhịp đập của nó: "this sits
+    on the home tab, which stays mounted for the whole session — an ungated
+    repeat here is a loop that never stops running." Cùng một câu, cùng một
+    chỗ phải áp.
+
+    Đây là việc chạy liên tục, nên nó là pin và là nhiệt; và một callback JS rơi
+    vào giữa cú cuộn là một khung hình bị bỏ lỡ.
+  */
+  const focused = useIsFocused();
+  const idle = animated && focused;
+
   // ── quiet motion, tuned per companion: breath + blink + weight-shift ──
   const breath = useSharedValue(0);
   const sway = useSharedValue(0.5);
@@ -173,7 +194,7 @@ export function VectorMascot({
   // cheap re-scheduling is JS. Breath and sway run on separate timers so
   // they drift out of sync (layered idle).
   useEffect(() => {
-    if (!animated) return;
+    if (!idle) return;
     const jit = (v: number) => v * (0.9 + Math.random() * 0.2);
     let alive = true;
     let bt: ReturnType<typeof setTimeout>;
@@ -202,12 +223,12 @@ export function VectorMascot({
       clearTimeout(bt);
       clearTimeout(st);
     };
-  }, [animated, tired, a.p.bin, a.p.bout, a.p.swayDur, breath, sway]);
+  }, [idle, tired, a.p.bin, a.p.bout, a.p.swayDur, breath, sway]);
 
   useEffect(() => {
     const rest = tired ? 0.4 : 0;
     lid.value = withTiming(rest, { duration: 300 });
-    if (!animated) return;
+    if (!idle) return;
     let alive = true;
     let t: ReturnType<typeof setTimeout>;
     const loop = () => {
@@ -225,7 +246,7 @@ export function VectorMascot({
       alive = false;
       clearTimeout(t);
     };
-  }, [animated, tired, a.p.blink, lid]);
+  }, [idle, animated, tired, a.p.blink, lid]);
 
   // Evolution: higher level = steadier, more grounded stance (less sway)
   const steady = Math.max(0.7, 1 - Math.max(0, level - 1) * 0.025);
