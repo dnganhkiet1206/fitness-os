@@ -228,7 +228,11 @@ const num = (src, name) => {
   if (/sheet:\s*\{[\s\S]*?borderTop(Left|Right)Radius/.test(today)) {
     problems.push(`${TODAY}: tấm nội dung bo góc trên — cộng với mép ngang là ba cạnh của một cái thẻ`);
   }
-  const masked = /<MaskedView[\s\S]{0,1400}?<ABlurView[\s\S]{0,200}?sheetBlur/.test(today);
+  /* Đọc HÀNH VI: có một `BlurView` nằm trong `MaskedView` hay không. Bản đầu
+     của luật này khớp tên biến `sheetBlur`, nên nó đỏ ngay khi độ mờ kính thôi
+     chạy theo cuộn — một thay đổi không hề đụng tới việc che mép. Lần thứ mười
+     hai trong repo này. */
+  const masked = /<MaskedView[\s\S]{0,1600}?<A?BlurView[^>]*intensity=/.test(today);
   if (!masked) {
     problems.push(`${TODAY}: blur của tấm không được che mép trên — chỗ nó bắt đầu là một đường kẻ ngang`);
   }
@@ -290,6 +294,26 @@ const num = (src, name) => {
   if (!/paddingTop: insets\.top \+ 12 \+ TOP_BAR_H/.test(today)) {
     problems.push(`${TODAY}: không bù lại chỗ hàng nút từng chiếm — nội dung sẽ chui lên nằm dưới các nút`);
   }
+  /*
+    Độ mờ kính KHÔNG được chạy theo cuộn.
+
+    `intensity` không phải một prop native animate được: mỗi khung hình
+    Reanimated phải cấu hình lại `UIVisualEffectView` bên dưới, và ở đây nó còn
+    nằm trong một `MaskedView` nên mặt nạ phải trộn lại theo. Sáu mươi lần một
+    giây trong suốt cú cuộn — người dùng báo "cuộn hơi giật nhẹ".
+
+    Cảm giác "càng cuộn càng dày" do LỚP PHỦ kể, và độ mờ của một lớp màu gần
+    như miễn phí so với việc dựng lại một hiệu ứng kính.
+  */
+  if (/intensity: interpolate\(/.test(today)) {
+    problems.push(
+      `${TODAY}: độ mờ kính chạy theo cuộn — mỗi khung hình phải dựng lại UIVisualEffectView, đó là thứ đắt nhất trên đường cuộn`,
+    );
+  }
+  if (!/const SHEET_BLUR = \d+;/.test(today)) {
+    problems.push(`${TODAY}: không có hằng số độ mờ kính — nó phải là MỘT con số, không phải một phép nội suy`);
+  }
+
   /* Cùng một ngưỡng cho phép mờ và cho cổng chạm. */
   const fades = [...today.matchAll(/interpolate\(scrollY\.value, \[0, ([A-Z_0-9]+)\], \[1, 0\]/g)].map((m) => m[1]);
   const gate = /contentOffset\.y >= ([A-Z_0-9]+)/.exec(today);

@@ -81,6 +81,26 @@ import { HERO_RING, PAGE_TINT, colors, radius, spacing, type } from '@/constants
  * mất cú bấm vào vòng tròn phía dưới, và không có gì trên màn hình giải thích
  * được chuyện đó.
  */
+/**
+ * Độ mờ kính của tấm nội dung. MỘT con số, không phải một phép nội suy.
+ *
+ * ── vì sao nó thôi chạy theo cuộn ──
+ *
+ * `intensity` không phải một prop native animate được: mỗi khung hình
+ * Reanimated phải cấu hình lại `UIVisualEffectView` bên dưới, và ở đây nó còn
+ * nằm trong một `MaskedView` nên mặt nạ phải trộn lại theo. Đó là thứ đắt nhất
+ * trên đường cuộn, và nó chạy 60 lần một giây trong suốt cú cuộn — đọc ra là
+ * "cuộn hơi giật nhẹ".
+ *
+ * Cảm giác "càng cuộn càng dày" thì KHÔNG mất: lớp phủ vẫn đậm dần trên đúng
+ * quãng cũ, và độ mờ của một lớp màu gần như miễn phí so với việc dựng lại một
+ * hiệu ứng kính. Cùng một câu chuyện, kể bằng thứ rẻ hơn.
+ *
+ * Giữ ở mức mạnh vì đó là điều đã yêu cầu: kính phải đủ dày để vệt sáng của
+ * vòng tròn thôi lẫn vào các nút.
+ */
+const SHEET_BLUR = 70;
+
 const TOP_BAR_FADE = 56;
 
 /**
@@ -162,7 +182,6 @@ const HERO_COVER_FRACTION = 0.66;
 
 /* `intensity` là một prop chứ không phải một style, nên nó phải đi qua
    `animatedProps`; `useAnimatedStyle` không chạm tới được. */
-const ABlurView = Animated.createAnimatedComponent(BlurView);
 
 const GROUP_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   '❤️': { icon: Heart, color: '#ff4d6d' },
@@ -475,14 +494,7 @@ export default function TodayScreen() {
       opacity: interpolate(scrollY.value, [HERO_HOLD, cover], [SCRIM_REST, 1], 'clamp'),
     };
   });
-  const sheetBlur = useAnimatedProps(() => {
-    if (focusSV.value === 1) return { intensity: 12 };
-    return {
-    /* Tấm đục dần theo ĐÚNG quãng hero mờ, nên hai thứ là một chuyển động chứ
-       không phải hai cái chạy lệch nhau. */
-    intensity: interpolate(scrollY.value, [HERO_HOLD, cover], [12, 80], 'clamp'),
-    };
-  });
+
   /**
    * Bật/tắt chế độ tập trung, và đưa trang về đầu.
    *
@@ -1121,7 +1133,7 @@ export default function TodayScreen() {
                   <View style={styles.maskBody} />
                 </View>
               }>
-              <ABlurView animatedProps={sheetBlur} tint="dark" style={StyleSheet.absoluteFill} />
+              <BlurView intensity={SHEET_BLUR} tint="dark" style={StyleSheet.absoluteFill} />
             </MaskedView>
             {/*
               Lớp phủ tối, và nó phải TỐI DẦN chứ không bắt đầu ở mức đầy.
