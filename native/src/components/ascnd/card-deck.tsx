@@ -141,6 +141,9 @@ export function CardDeck({
     onPageChange?.(index);
   };
 
+  /** Trục của cú chạm hiện tại: 0 chưa chốt, 1 ngang, 2 dọc. */
+  const axis = useSharedValue(0);
+
   const pan = Gesture.Pan()
     .enabled(!locked)
     /*
@@ -156,8 +159,21 @@ export function CardDeck({
       cử chỉ, và người dùng thua ván này thắng ván kia mà không hiểu vì sao.
 
       Đặt ngưỡng kích hoạt trên CẢ HAI trục thì mọi cú kéo trong vùng deck đều
-      thuộc về pan. Đi ngang thì đổi trang; đi dọc thì không có gì xảy ra, vì
-      chỗ này chỉ đọc `translationX`. Cú vuốt ngang không còn phải cạnh tranh.
+      thuộc về pan. Cú vuốt ngang không còn phải cạnh tranh.
+
+      ── và "đi dọc thì không có gì xảy ra" KHÔNG tự đúng ──
+
+      Câu đó từng đứng ở đây, kèm lý do "chỗ này chỉ đọc `translationX`". Sai:
+      một cú kéo dọc của người thật vẫn có `translationX` khác 0 — bàn tay rung.
+      `onUpdate` dịch cả deck theo từng điểm ngang đó, nên vòng tròn RUNG theo
+      ngón tay. Đo được trên harness: kéo dọc 14 bước, x của ring nhảy 69 → 67
+      → 68. Đó đúng là cú "giật giật" đã bị báo, và nó do chính thay đổi này
+      sinh ra.
+
+      Nên trục được CHỐT một lần lúc cú chạm bắt đầu di chuyển, rồi giữ nguyên
+      cho tới khi nhấc tay — đúng cách `UIScrollView` khoá hướng. Đây không phải
+      phép đoán góc theo từng khung hình (thứ đã bị cấm ở đây, và đúng là nên
+      cấm): quyết định xảy ra MỘT lần, và sau đó không có gì đo lại nữa.
 
       `failOffsetY` bỏ hẳn chứ không chỉnh: nó TỒN TẠI để nhường, mà nhường là
       đúng cái phải chấm dứt. Giữ lại một con số nhường lớn hơn chỉ là dời chỗ
@@ -177,8 +193,18 @@ export function CardDeck({
     .activeOffsetY([-HYSTERESIS, HYSTERESIS])
     .onBegin(() => {
       from.value = at.value;
+      axis.value = 0;
     })
     .onUpdate((e) => {
+      /* Chốt trục ở khung hình đầu tiên có di chuyển thật, rồi thôi. */
+      if (axis.value === 0) {
+        const dx = Math.abs(e.translationX);
+        const dy = Math.abs(e.translationY);
+        if (dx < 1 && dy < 1) return;
+        axis.value = dx >= dy ? 1 : 2;
+      }
+      /* Trục dọc: nuốt cú chạm để trang không cuộn, nhưng KHÔNG dịch deck. */
+      if (axis.value === 2) return;
       const span = w > 0 ? w : 1;
       const next = from.value - e.translationX / span;
       /* Soft past either end: the page still moves, a third as far, so the deck
@@ -186,6 +212,9 @@ export function CardDeck({
       at.value = next < 0 ? next / 3 : next > last ? last + (next - last) / 3 : next;
     })
     .onEnd((e) => {
+      /* Cú dọc không chọn trang: nó chưa từng dịch deck thì cũng không được
+         quyết định deck dừng ở đâu. */
+      if (axis.value !== 1) return;
       const span = w > 0 ? w : 1;
       const moved = -e.translationX / span;
       const flung = Math.abs(e.velocityX) > 550;

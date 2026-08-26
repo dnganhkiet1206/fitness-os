@@ -52,6 +52,36 @@ const num = (src, name) => {
         'và muộn ở trục kia, tức là vẫn còn một khe cho ScrollView chen vào',
     );
   }
+  /*
+    Nuốt cú dọc KHÔNG có nghĩa là để nó dịch deck.
+
+    Câu "đi dọc thì không có gì xảy ra, vì chỗ này chỉ đọc translationX" từng
+    được viết ra ở đây như một lẽ hiển nhiên. Nó sai: một cú kéo dọc của người
+    thật vẫn có `translationX` khác 0 — bàn tay rung — nên `onUpdate` dịch cả
+    deck theo từng điểm ngang đó và vòng tròn RUNG theo ngón tay. Đo được: kéo
+    dọc 14 bước, x của ring nhảy 69 → 67 → 68. Người dùng báo "ring cứ giật
+    giật", và nó do đúng thay đổi đã bỏ `failOffsetY` sinh ra.
+
+    Nên trục phải được CHỐT một lần rồi giữ: `axis` chốt ở khung hình đầu tiên
+    có di chuyển thật, `onUpdate` thoát sớm khi trục là dọc, và `onEnd` không
+    cho một cú dọc quyết định deck dừng ở trang nào.
+
+    Đây không phải phép đoán góc theo từng khung hình — quyết định xảy ra MỘT
+    lần, giống hệt cách UIScrollView khoá hướng.
+  */
+  if (!/const axis = useSharedValue\(0\)/.test(deck)) {
+    problems.push(`${DECK}: không chốt trục cú chạm — rung tay ngang khi kéo dọc sẽ dịch cả deck`);
+  }
+  if (!/if \(axis\.value === 2\) return;/.test(deck)) {
+    problems.push(`${DECK}: onUpdate không thoát sớm khi trục là dọc — vòng tròn rung theo ngón tay`);
+  }
+  if (!/if \(axis\.value !== 1\) return;/.test(deck)) {
+    problems.push(`${DECK}: onEnd không loại cú dọc — một cú kéo dọc vẫn quyết định deck dừng ở trang nào`);
+  }
+  if (!/axis\.value = 0;/.test(deck)) {
+    problems.push(`${DECK}: không đặt lại trục ở onBegin — cú chạm sau thừa hưởng trục của cú trước`);
+  }
+
   /* Và khoá chỉ được áp khi thu lại: mở chi tiết ra thì tấm cao hơn cả màn hình
      và không cuộn được là không đọc được. */
   if (!/\.enabled\(!locked\)/.test(deck)) {
