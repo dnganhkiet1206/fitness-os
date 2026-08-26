@@ -14,6 +14,7 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -60,7 +61,34 @@ import { useI18n } from '@/hooks/use-app-settings';
  * `withTiming`/`withSpring`/`withRepeat` below already honours the accessibility
  * setting without being told to.
  */
-export function Mascot() {
+export function Mascot({
+  /**
+   * Đông cứng đồng hồ của nhân vật trong lúc trang đang cuộn.
+   *
+   * ── vì sao nó phải tới từ BÊN NGOÀI ──
+   *
+   * `KoaFigure` chạy một `useFrameCallback` nuôi 36 vòng chuyển động, ở nhịp
+   * của màn hình (tới 120 khung hình một giây), và chú thích của chính nó gọi
+   * đó là "cost driver của cả nhân vật: mọi lớp có hiệu ứng đều tính lại khi nó
+   * nhích". Cổng duy nhất của đồng hồ ấy là `animated`, mà `animated` ở đây là
+   * `focused` — đúng, nhưng đang xem dashboard thì luôn true. Nên suốt mỗi cú
+   * cuộn, cái rig ấy vẫn chạy hết công suất trên đúng luồng UI đang phải trộn
+   * lại sáu lớp kính mờ và ba `useAnimatedStyle`.
+   *
+   * `mascot-room.tsx` đã gặp và đã sửa đúng lỗi này, và ghi lại bằng một câu:
+   * *"một cú cuộn (bắt đầu và dừng) là phần còn lại của cú giật"*. Cơ chế có
+   * sẵn từ đó — `scrollPause` xuyên qua `MascotFigure` xuống `KoaFigure`, đọc
+   * trên luồng UI nên nhân vật đứng hình ngay ở khung hình cú kéo bắt đầu, và
+   * đồng hồ là bộ tích luỹ nên lúc chạy tiếp không nhảy. Thứ duy nhất còn
+   * thiếu là chưa ai nối nó ở dashboard.
+   *
+   * Không bắt buộc: các màn không cuộn (ô trống, màn ăn mừng) bỏ qua và nhân
+   * vật thở như cũ.
+   */
+  scrollPause,
+}: {
+  scrollPause?: SharedValue<boolean>;
+} = {}) {
   const i18n = useI18n();
   const focused = useIsFocused();
   const { enabled, mascot, message, messageGap, messageIsReaction, mood } = useMascot();
@@ -309,6 +337,7 @@ export function Mascot() {
               level={level}
               equippedOutfits={equippedOutfits}
               animated={focused}
+              scrollPause={scrollPause}
             />
           </Animated.View>
         </View>

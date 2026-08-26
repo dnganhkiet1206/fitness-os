@@ -439,8 +439,65 @@ export default function TodayScreen() {
     nào nữa.
   */
 
-  const onScroll = useAnimatedScrollHandler((e) => {
-    scrollY.value = e.contentOffset.y;
+  /**
+   * Nhân vật đứng hình trong lúc trang đang cuộn.
+   *
+   * ── cú giật còn lại, và nó đã được chẩn đoán ở một màn khác ──
+   *
+   * Koa trên dashboard là một `KoaFigure`, và `KoaFigure` chạy một
+   * `useFrameCallback` nuôi 36 vòng chuyển động ở nhịp của màn hình — tới 120
+   * khung hình một giây. Chú thích của chính nó gọi đó là "cost driver của cả
+   * nhân vật: mọi lớp có hiệu ứng đều tính lại khi nó nhích", và nói rõ cổng
+   * duy nhất là `animated`, do CHỖ GỌI chịu trách nhiệm.
+   *
+   * Chỗ gọi ở đây truyền `animated={focused}` — đúng cho việc chuyển tab, và
+   * vô nghĩa trong lúc cuộn: đang xem dashboard thì `focused` luôn true. Nên
+   * suốt mỗi cú vuốt, cái rig ấy vẫn chạy hết công suất trên đúng luồng UI
+   * đang phải trộn lại lớp kính của tấm, bốn viên quick-log, dải trên đỉnh, và
+   * ba `useAnimatedStyle`.
+   *
+   * Chi phí của nó KHÔNG đều: 36 vòng có chu kỳ khác nhau (chớp mắt, nhịp thở,
+   * nghiêng người, đưa mắt), nên có những khung hình nhiều lớp cùng động và
+   * đắt hơn hẳn những khung hình khác. Đó đúng là hình dạng của "thỉnh thoảng
+   * cuộn vẫn còn hơi giật nhẹ" — một cú hụt lác đác chứ không phải chậm đều.
+   *
+   * `mascot-room.tsx` đã gặp đúng lỗi này và ghi lại: *"một cú cuộn (bắt đầu
+   * và dừng) là phần còn lại của cú giật"*. Cơ chế có từ đó; ở dashboard chưa
+   * ai nối nó.
+   *
+   * ── vì sao ở đây không cần hẹn giờ như mascot-room ──
+   *
+   * Màn đó cuộn bằng `onScroll` của JS và phải dùng một `setTimeout` 120ms để
+   * biết lúc nào đà đã hết. Ở đây bộ xử lý cuộn là worklet, nên bốn sự kiện
+   * biên của `UIScrollView` đọc được thẳng trên luồng UI: kéo bắt đầu, kéo
+   * kết thúc, đà bắt đầu, đà kết thúc. Không một chuyến sang JS nào, và không
+   * một hẹn giờ nào — đúng hướng mà cả đường cuộn của màn này đã đi trong
+   * phiên này.
+   *
+   * Cặp `onEndDrag` → thả / `onMomentumBegin` → giữ lại là CÓ CHỦ Ý chứ không
+   * phải thừa: một cú kéo chậm rồi thả tay KHÔNG sinh đà, nên nó không bao giờ
+   * nhận `onMomentumEnd`, và nếu chỉ dựa vào đà thì nhân vật sẽ đứng hình vĩnh
+   * viễn. Thả ở `onEndDrag` khiến trường hợp xấu nhất là nhân vật chạy sớm một
+   * khung hình, chứ không phải một nhân vật thôi thở.
+   */
+  const scrollPause = useSharedValue(false);
+
+  const onScroll = useAnimatedScrollHandler({
+    onBeginDrag: () => {
+      scrollPause.value = true;
+    },
+    /* Thả ngay khi nhấc tay. Nếu có đà thì `onMomentumBegin` giữ lại ở khung
+       hình kế — xem ghi chú ở `scrollPause`. */
+    onEndDrag: () => {
+      scrollPause.value = false;
+    },
+    onMomentumBegin: () => {
+      scrollPause.value = true;
+    },
+    onMomentumEnd: () => {
+      scrollPause.value = false;
+    },
+    onScroll: (e) => {
     /*
       Thanh tab: quyết định và ghi NGAY TẠI ĐÂY, trên luồng UI.
 
@@ -457,7 +514,8 @@ export default function TodayScreen() {
       nên trường hợp thường không cần JS chút nào. JS chỉ còn cần cho cái hẹn
       giờ, và nó được lên dây MỘT lần mỗi lần thanh ẩn đi.
     */
-    if (tabScrollFrame(e.contentOffset.y, Date.now())) runOnJS(armTabBarRestore)();
+      if (tabScrollFrame(e.contentOffset.y, Date.now())) runOnJS(armTabBarRestore)();
+    },
   });
 
   /**
@@ -1325,7 +1383,7 @@ export default function TodayScreen() {
             <View style={styles.scrimBody} />
             </Animated.View>
             <View style={styles.rest}>
-              <Mascot />
+              <Mascot scrollPause={scrollPause} />
 
           {/* Quick log actions (web chips row) */}
           <View style={styles.quickRow}>
