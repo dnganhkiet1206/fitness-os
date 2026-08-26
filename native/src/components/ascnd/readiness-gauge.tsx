@@ -519,7 +519,21 @@ export function ReadinessGauge({
         </Animated.View>
       </PressScale>
 
-      <Expander open={detailOpen}>
+      {/*
+        `reveal="clip"` — phần chi tiết mở ra bằng chính mép cắt, không bằng một
+        lớp mờ dần.
+
+        Đây là khối lớn nhất trong app đi qua `Expander`: năm ô đo, một nhận xét
+        về đêm qua, nút `?`, và cả phần giải thích. Chạy `opacity` lên cả nhóm
+        ấy buộc iOS gộp toàn bộ ra một bề mặt ngoài màn rồi pha lại, MỖI khung
+        hình của cú mở — trên đúng màn hình mà cả tuần vừa rồi là chuyện gỡ tải
+        khỏi đường cuộn. Và nó không mua gì: nội dung ở đây không xuất hiện từ
+        chỗ khác tới, nó vốn đã ở đó sau một mép đóng.
+
+        Xem `expander.tsx` cho vế thứ hai — vì sao `'clip'` đi kèm một đường
+        cong khác, và vì sao đó là một prop chứ không phải hai.
+      */}
+      <Expander open={detailOpen} reveal="clip">
       <View style={styles.detail}>
       {/*
         Nút `?` và lời nhắc của nó đi CÙNG phần chi tiết.

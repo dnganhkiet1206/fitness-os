@@ -44,6 +44,47 @@ import { duration } from '@/constants/motion';
 const OPEN_EASE = Easing.out(Easing.cubic);
 
 /**
+ * Điều gì CHỞ cú mở ra: một lớp mờ dần, hay chính mép cắt.
+ *
+ * ── vì sao đây là một lựa chọn chứ không phải một mặc định ──
+ *
+ * `'fade'` chạy chiều cao VÀ độ mờ trên cùng một shared value. Đó là điều
+ * `card-deck.tsx` cần và nó nói ra ở chỗ gọi: hàng chấm phải mờ đi ĐÚNG LÚC nó
+ * co lại, vì một hàng chấm cao 8 điểm co lại mà vẫn đậm màu thì mắt đọc ra là
+ * một cú giật vẽ chứ không phải một cú đóng.
+ *
+ * `'clip'` chỉ chạy chiều cao. Hai hệ quả, và cả hai đều là lý do nó tồn tại:
+ *
+ *   1. **Không còn lượt vẽ ngoài màn.** `opacity` đặt trên một view NHIỀU CON
+ *      buộc iOS gộp cả nhóm ra một bề mặt riêng rồi mới pha vào — mỗi khung
+ *      hình, suốt cả cú mở. Với hàng chấm thì nhóm ấy là vài chấm; với phần chi
+ *      tiết của thẻ sẵn sàng thì nhóm ấy là năm ô, một nhận xét và cả khối giải
+ *      thích. Đó là lượt vẽ đắt nhất trong cả cú chạm, và nó không mua gì.
+ *
+ *   2. **Hết cảnh chữ đã đậm mà vẫn bị cắt ngang.** Độ mờ đi theo cùng đường
+ *      cong với chiều cao, mà `out(cubic)` dốc ở đầu: quá nửa thời gian thì chữ
+ *      đã gần đậm hẳn trong khi mép dưới vẫn đang xén ngang dòng. Mắt đọc ra
+ *      một tấm đã vẽ xong bị một con dao chạy qua.
+ *
+ * ── và vì sao `'clip'` đổi luôn đường cong ──
+ *
+ * Vì nó vừa lấy mất tín hiệu kia. Ở `'fade'` mép cắt chỉ là một nửa của cú mở;
+ * ở `'clip'` nó là TẤT CẢ. `out(cubic)` xuất phát ở tốc độ gấp ba tốc độ trung
+ * bình — trên hàng chấm 8 điểm thì đó là 0,1 điểm mỗi mili giây, không ai thấy;
+ * trên khối chi tiết cao khoảng 400 điểm thì đó là 5 điểm mỗi mili giây ngay ở
+ * khung hình đầu, và một mép duy nhất bật ra từ vận tốc đó đọc ra là "bung"
+ * chứ không phải "mở". `inOut(cubic)` xuất phát từ ĐỨNG YÊN và đỉnh chỉ gấp
+ * đôi, nên cú mở có chỗ để bắt đầu.
+ *
+ * Một prop chứ không phải hai, vì đây là một quyết định: cái gì chở cú mở. Tách
+ * ra thành `fade` và `ease` là mời người sau chọn `fade={false}` mà quên đường
+ * cong, rồi tự hỏi vì sao nó bung.
+ */
+const CLIP_EASE = Easing.inOut(Easing.cubic);
+
+export type Reveal = 'fade' | 'clip';
+
+/**
  * The moving part, mounted only once the body has been measured.
  *
  * ── it is a separate component for the reason `tools/measured-worklet.mjs`
@@ -64,15 +105,18 @@ const OPEN_EASE = Easing.out(Easing.cubic);
 function Grow({
   open,
   height,
+  reveal,
   children,
 }: {
   open: boolean;
   height: number;
+  reveal: Reveal;
   children: React.ReactNode;
 }) {
   const reduceMotion = useReducedMotion();
   const grow = useSharedValue(open ? 1 : 0);
   const h = useSharedValue(height);
+  const fade = reveal === 'fade';
 
   useEffect(() => {
     h.value = height;
@@ -80,15 +124,31 @@ function Grow({
 
   useEffect(() => {
     const to = open ? 1 : 0;
-    grow.value = reduceMotion ? to : withTiming(to, { duration: duration.move, easing: OPEN_EASE });
-  }, [open, reduceMotion, grow]);
+    const easing = fade ? OPEN_EASE : CLIP_EASE;
+    grow.value = reduceMotion ? to : withTiming(to, { duration: duration.move, easing });
+  }, [open, reduceMotion, grow, fade]);
 
-  const body = useAnimatedStyle(() => ({ height: grow.value * h.value, opacity: grow.value }));
+  /*
+    Hai worklet chứ không phải một worklet có `if`, vì `reveal` không đổi trong
+    đời một chỗ gọi — chỗ gọi viết ra hằng số. Nhánh nào không dùng thì không có
+    mặt trong style chút nào, nên ở `'clip'` không có khoá `opacity` nào để iOS
+    nhìn thấy mà gộp nhóm.
+  */
+  const faded = useAnimatedStyle(() => ({ height: grow.value * h.value, opacity: grow.value }));
+  const clipped = useAnimatedStyle(() => ({ height: grow.value * h.value }));
 
-  return <Animated.View style={[styles.clip, body]}>{children}</Animated.View>;
+  return <Animated.View style={[styles.clip, fade ? faded : clipped]}>{children}</Animated.View>;
 }
 
-export function Expander({ open, children }: { open: boolean; children: React.ReactNode }) {
+export function Expander({
+  open,
+  reveal = 'fade',
+  children,
+}: {
+  open: boolean;
+  reveal?: Reveal;
+  children: React.ReactNode;
+}) {
   const [bodyH, setBodyH] = useState(0);
 
   const measure = (e: LayoutChangeEvent) => {
@@ -111,7 +171,7 @@ export function Expander({ open, children }: { open: boolean; children: React.Re
   if (bodyH <= 0) return <View style={styles.clip}>{body}</View>;
 
   return (
-    <Grow open={open} height={bodyH}>
+    <Grow open={open} height={bodyH} reveal={reveal}>
       {body}
     </Grow>
   );
