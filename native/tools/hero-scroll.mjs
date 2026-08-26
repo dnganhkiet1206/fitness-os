@@ -23,21 +23,39 @@ const num = (src, name) => {
   return m ? Number(m[1]) : null;
 };
 
-/* ── 1. một cú vuốt hơi xiên không được bị giết ──
+/* ── 1. deck phải NUỐT cú dọc khi đang thu lại ──
 
-   `failOffsetY` làm pan thất bại VĨNH VIỄN cho cú chạm đó. Đặt nó bằng ngưỡng
-   ngang nghĩa là lệch dọc 13px trong lúc đi ngang 12px là mất cú vuốt — và khi
-   phần chi tiết mở, tấm cao hơn hẳn nên tay ai cũng lệch. Người dùng báo: "mở
-   thẻ phụ thì không vuốt sang thẻ khác được". */
+   Lịch sử: chỗ này từng có `failOffsetY` để nhường cú cuộn dọc thật cho trang,
+   và một vòng chỉnh số để cú vuốt hơi xiên không bị giết ("mở thẻ phụ thì không
+   vuốt sang thẻ khác được"). Cả hai đều là chữa triệu chứng: chừng nào còn một
+   ngưỡng nhường thì "vuốt sang thẻ" và "cuộn trang" vẫn tranh nhau cùng một cử
+   chỉ, và một cú vuốt ngang của người thật thì luôn võng xuống.
+
+   Bất biến bây giờ: ngưỡng kích hoạt trên CẢ HAI trục, không có ngưỡng nhường
+   nào. Mọi cú kéo trong vùng deck thuộc về pan — ngang thì đổi trang, dọc thì
+   không có gì xảy ra. Khoá này chỉ áp khi thu lại; `enabled(!locked)` trả mọi
+   cử chỉ về ScrollView khi chi tiết mở, nên tấm chi tiết vẫn cuộn được. */
 {
-  const x = num(deck, 'HYSTERESIS');
-  const y = num(deck, 'GIVE_UP_Y');
-  if (x === null || y === null) problems.push(`${DECK}: không đọc được HYSTERESIS/GIVE_UP_Y`);
-  else if (y <= x) {
+  if (/\.failOffsetY\(/.test(deck)) {
     problems.push(
-      `${DECK}: GIVE_UP_Y (${y}) không lớn hơn HYSTERESIS (${x}) — một cú vuốt ngang hơi xiên sẽ bị ` +
-        'bỏ hẳn trước khi kịp giành quyền, và pan thất bại là VĨNH VIỄN cho cú chạm đó',
+      `${DECK}: deck còn nhường cú dọc bằng failOffsetY — "vuốt sang thẻ" và "cuộn trang" lại tranh nhau ` +
+        'cùng một cử chỉ, và một cú vuốt ngang của người thật thì luôn võng xuống',
     );
+  }
+  const ax = /\.activeOffsetX\(\[-(\w+), \1\]\)/.exec(deck);
+  const ay = /\.activeOffsetY\(\[-(\w+), \1\]\)/.exec(deck);
+  if (!ax || !ay) {
+    problems.push(`${DECK}: thiếu ngưỡng kích hoạt trên cả hai trục — cú kéo dọc sẽ lọt xuống ScrollView`);
+  } else if (ax[1] !== ay[1]) {
+    problems.push(
+      `${DECK}: hai trục dùng hai ngưỡng khác nhau (${ax[1]} / ${ay[1]}) — deck sẽ giành quyền sớm ở trục này ` +
+        'và muộn ở trục kia, tức là vẫn còn một khe cho ScrollView chen vào',
+    );
+  }
+  /* Và khoá chỉ được áp khi thu lại: mở chi tiết ra thì tấm cao hơn cả màn hình
+     và không cuộn được là không đọc được. */
+  if (!/\.enabled\(!locked\)/.test(deck)) {
+    problems.push(`${DECK}: pan không tắt theo !locked — mở chi tiết ra sẽ không cuộn xuống đọc được`);
   }
 }
 

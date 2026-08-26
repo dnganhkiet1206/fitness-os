@@ -119,14 +119,22 @@ const num = (name) => {
   }
 }
 
-/* ── 3. the pan is earned, not taken ── */
+/* ── 3. ngưỡng của pan ──
+
+   Luật "pan phải có failOffsetY" từng ở đây và đã bị GỠ, không phải nới lỏng.
+
+   Nó ra đời để deck không cướp cú cuộn dọc của cả trang. Nhưng nhường cú dọc
+   chính là thứ làm "vuốt sang thẻ" và "cuộn trang" tranh nhau cùng một cử chỉ,
+   và một cú vuốt ngang của người thật thì luôn võng xuống — nên deck bây giờ
+   NUỐT cả cú dọc khi đang thu lại, có chủ ý. Thông điệp cũ của luật này mô tả
+   đúng hành vi hiện tại, chỉ là nó gọi đó là lỗi.
+
+   Nửa an toàn thì vẫn còn và đã chuyển sang `hero-scroll.mjs`: khoá chỉ được áp
+   khi thu lại, `enabled(!locked)` phải trả mọi cử chỉ về ScrollView khi chi
+   tiết mở. Một bất biến, một chỗ canh — hai chỗ canh cùng một thứ là hai chỗ sẽ
+   bất đồng, và lần này chúng đã bất đồng thật.
+*/
 {
-  if (!/activeOffsetX/.test(src) || !/failOffsetY/.test(src)) {
-    problems.push(
-      `${DECK}: Pan thiếu activeOffsetX/failOffsetY — nó sẽ giành mọi cú vuốt bắt đầu trên thẻ, ` +
-        'kể cả cú cuộn dọc của cả trang',
-    );
-  }
   const hys = num('HYSTERESIS');
   if (hys !== null && (hys < 8 || hys > 24)) {
     problems.push(`${DECK}: HYSTERESIS = ${hys} nằm ngoài khoảng dùng được (8–24)`);

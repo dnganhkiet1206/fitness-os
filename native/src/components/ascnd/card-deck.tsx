@@ -61,20 +61,6 @@ const COMMIT = 0.28;
 /** Sideways travel before the pan takes the gesture from the page's scroll. */
 const HYSTERESIS = 12;
 
-/**
- * Và bao nhiêu độ lệch DỌC thì cú vuốt ngang bị bỏ hẳn.
- *
- * Từng bằng đúng HYSTERESIS, và đó là lý do "mở chi tiết ra thì không vuốt sang
- * trang khác được": `failOffsetY` làm pan thất bại VĨNH VIỄN cho cú chạm đó,
- * không phải tạm hoãn. Khi phần chi tiết mở, tấm cao hơn hẳn và ngón tay đi
- * ngang trên một vùng cao thì gần như luôn lệch vài pixel dọc trước — lệch 13px
- * là mất luôn cú vuốt, và người dùng phải thử lại mà không hiểu vì sao.
- *
- * Gấp đôi thì cú cuộn dọc thật vẫn thắng (nó đi thẳng xuống, qua 24px trước khi
- * đi ngang 12px), còn một cú vuốt ngang hơi xiên thì không còn bị giết.
- */
-const GIVE_UP_Y = 24;
-
 const DOT = 6;
 
 /** Cùng một nhịp cho cú vuốt và cho phím trợ năng — hai cửa vào, một cảm giác. */
@@ -157,8 +143,38 @@ export function CardDeck({
 
   const pan = Gesture.Pan()
     .enabled(!locked)
+    /*
+      Deck NUỐT cả cú dọc khi đang thu lại, và đó là điều kiện để vuốt ngang
+      sạch.
+
+      ── lỗi nó sửa ──
+
+      Trước đây `failOffsetY` cho cú cuộn dọc thật thắng: ngón tay đi lệch quá
+      24 điểm dọc thì pan bỏ cuộc và ScrollView nhận tiếp. Nhưng một cú vuốt
+      ngang của người thật gần như không bao giờ nằm ngang tuyệt đối — nó võng
+      xuống — nên "vuốt sang thẻ khác" và "cuộn trang xuống" tranh nhau cùng một
+      cử chỉ, và người dùng thua ván này thắng ván kia mà không hiểu vì sao.
+
+      Đặt ngưỡng kích hoạt trên CẢ HAI trục thì mọi cú kéo trong vùng deck đều
+      thuộc về pan. Đi ngang thì đổi trang; đi dọc thì không có gì xảy ra, vì
+      chỗ này chỉ đọc `translationX`. Cú vuốt ngang không còn phải cạnh tranh.
+
+      `failOffsetY` bỏ hẳn chứ không chỉnh: nó TỒN TẠI để nhường, mà nhường là
+      đúng cái phải chấm dứt. Giữ lại một con số nhường lớn hơn chỉ là dời chỗ
+      lỗi ra xa hơn chứ không bỏ nó.
+
+      ── vì sao khoá này an toàn ──
+
+      Nó chỉ áp khi thu lại. Mở chi tiết ra thì `enabled(!locked)` tắt pan, mọi
+      cử chỉ về lại ScrollView, và tấm chi tiết — cao hơn cả màn hình — cuộn
+      được bình thường. Đúng hai chế độ đã đặt ra: thu lại thì vuốt ngang, mở ra
+      thì cuộn dọc.
+
+      Đánh đổi: khi thu lại, người dùng không cuộn trang được bằng cách kéo TRÊN
+      deck; họ kéo ở phần dưới (Koa, các nút ghi). Đó là chủ ý, không phải sót.
+    */
     .activeOffsetX([-HYSTERESIS, HYSTERESIS])
-    .failOffsetY([-GIVE_UP_Y, GIVE_UP_Y])
+    .activeOffsetY([-HYSTERESIS, HYSTERESIS])
     .onBegin(() => {
       from.value = at.value;
     })
