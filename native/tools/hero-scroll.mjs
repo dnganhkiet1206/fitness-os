@@ -231,8 +231,30 @@ const num = (src, name) => {
   /* Đọc HÀNH VI: có một `BlurView` nằm trong `MaskedView` hay không. Bản đầu
      của luật này khớp tên biến `sheetBlur`, nên nó đỏ ngay khi độ mờ kính thôi
      chạy theo cuộn — một thay đổi không hề đụng tới việc che mép. Lần thứ mười
-     hai trong repo này. */
-  const masked = /<MaskedView[\s\S]{0,1600}?<A?BlurView[^>]*intensity=/.test(today);
+     hai trong repo này.
+
+     Và bản thứ hai vẫn còn một con số: nó tìm `BlurView` trong 1600 ký tự kể từ
+     `<MaskedView`. Đó là một NGÂN SÁCH KÝ TỰ, không phải một quan hệ — thêm một
+     dải tắt ở đáy mặt nạ là đủ đẩy `BlurView` ra khỏi cửa sổ, và luật đỏ lên vì
+     một thay đổi cũng không hề đụng tới việc che mép. Cùng một lỗi, đo bằng một
+     cái thước khác.
+
+     Nên giờ nó đọc đúng cái nó muốn nói: cắt ra từng khối `<MaskedView>` …
+     `</MaskedView>` và hỏi có khối nào CHỨA một `BlurView` có `intensity` hay
+     không. Không có số nào để vượt qua, và nó còn chặt hơn bản cũ — một
+     `BlurView` tình cờ nằm sau một `MaskedView` không liên quan không còn tính
+     là đã được che. */
+  const masked = (() => {
+    let from = 0;
+    for (;;) {
+      const open = today.indexOf('<MaskedView', from);
+      if (open === -1) return false;
+      const close = today.indexOf('</MaskedView>', open);
+      if (close === -1) return false;
+      if (/<A?BlurView[^>]*intensity=/.test(today.slice(open, close))) return true;
+      from = close + 1;
+    }
+  })();
   if (!masked) {
     problems.push(`${TODAY}: blur của tấm không được che mép trên — chỗ nó bắt đầu là một đường kẻ ngang`);
   }

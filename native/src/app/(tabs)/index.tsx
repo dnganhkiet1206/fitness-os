@@ -120,6 +120,15 @@ const SCRIM_REST = 0.68;
  *  `card-deck.tsx`: hai lớp mờ gặp nhau ở đúng vùng này nên chúng tắt dần trên
  *  cùng một quãng, nếu lệch thì chỗ chồng nhau lộ ra thành một dải đậm hơn. */
 const SCRIM_FADE = 72;
+/**
+ * Quãng lớp kính tắt dần ở đáy.
+ *
+ * Cộng THÊM vào dưới quãng đang dùng chứ không cắt vào nó, nên nó không đổi một
+ * điểm nào của vùng phủ. Dài hơn dải trên (72) vì dải trên còn phải nhường chỗ
+ * cho chữ ngay bên dưới nó, còn dưới đáy thì chỉ có nền — mà một dốc dài thì
+ * không có hàng nào lệch với hàng bên cạnh đủ để nhìn ra.
+ */
+const GLASS_TAIL = 96;
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useReminderSync } from '@/hooks/use-reminders';
@@ -252,6 +261,9 @@ export default function TodayScreen() {
      nó — hai màn hình cùng mounted sẽ dùng chung cái đăng ký sau cùng.
      `status-scrim.tsx` ghi repo này đã dính ba lần; `useId` là luật. */
   const sheetMask = `sheetBlurMask-${useId()}`;
+  /* Id riêng cho dải tắt ở đáy. Id của gradient là TOÀN CỤC trên native, nên
+     hai gradient dùng chung một tên thì cái đăng ký sau vẽ cho cả hai. */
+  const sheetTail = `sheetBlurTail-${useId()}`;
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const onRefresh = useCallback(async () => {
@@ -1154,7 +1166,7 @@ export default function TodayScreen() {
               phải của blur — và lớp phủ vẫn `absoluteFill` như cũ.
             */}
             <MaskedView
-              style={[styles.sheetGlass, { height: SCRIM_FADE + cover }]}
+              style={[styles.sheetGlass, { height: SCRIM_FADE + cover + GLASS_TAIL }]}
               maskElement={
                 <View style={StyleSheet.absoluteFill}>
                   <View style={styles.scrimBand}>
@@ -1171,6 +1183,39 @@ export default function TodayScreen() {
                     </Svg>
                   </View>
                   <View style={styles.maskBody} />
+                  {/*
+                    Và nó TẮT DẦN ở đáy chứ không dừng.
+
+                    Cắt chiều cao lớp kính là thứ gỡ được phần lớn chi phí mỗi
+                    khung hình, nhưng chỗ nó kết thúc vẫn là một hàng: bên trên
+                    nhoè, bên dưới sắc nét. Đó đúng là lỗi mà `status-scrim.tsx`
+                    đã gọi tên khi bỏ cái hairline của nó — "một cái kết không
+                    được đánh dấu là một vết nhoè mà mắt cứ cố lấy nét vào" — và
+                    đúng cái đã bị báo ở hai chỗ khác trên màn này.
+
+                    Dải tắt được CỘNG THÊM vào dưới, không cắt vào phần đang
+                    dùng: hộp cao hơn đúng `GLASS_TAIL`, nên quãng blur đầy đủ
+                    vẫn là `SCRIM_FADE + cover` như trước. Không mất vùng phủ
+                    nào, chỉ thêm một quãng nhạt dần ở nơi phía sau vốn đã chỉ
+                    còn wash gradient.
+
+                    Bốn chặng chứ không hai, cùng hình dạng với dải trên và với
+                    mặt nạ của `status-scrim.tsx`: một dốc thẳng chạm 0 ở một
+                    hàng xác định, và mắt tìm ra đúng hàng đó.
+                  */}
+                  <View style={styles.maskTail}>
+                    <Svg width="100%" height="100%">
+                      <Defs>
+                        <SvgGradient id={sheetTail} x1="0" y1="0" x2="0" y2="1">
+                          <Stop offset="0" stopColor="#fff" stopOpacity="1" />
+                          <Stop offset="0.35" stopColor="#fff" stopOpacity="0.62" />
+                          <Stop offset="0.7" stopColor="#fff" stopOpacity="0.18" />
+                          <Stop offset="1" stopColor="#fff" stopOpacity="0" />
+                        </SvgGradient>
+                      </Defs>
+                      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${sheetTail})`} />
+                    </Svg>
+                  </View>
                 </View>
               }>
               <BlurView intensity={SHEET_BLUR} tint="dark" style={StyleSheet.absoluteFill} />
@@ -1662,7 +1707,10 @@ const styles = StyleSheet.create({
   scrimBand: { position: 'absolute', left: 0, right: 0, top: 0, height: SCRIM_FADE },
   /* Trắng đặc = giữ nguyên; cùng mốc với `scrimBody` nên blur và lớp phủ kết
      thúc dải chuyển ở đúng một hàng. */
-  maskBody: { position: 'absolute', left: 0, right: 0, top: SCRIM_FADE, bottom: 0, backgroundColor: '#fff' },
+  /* Dừng trên dải tắt, không chạm đáy hộp — nếu nó còn `bottom: 0` thì trắng
+     đặc sẽ đè lên chính dải đang làm việc tắt dần. */
+  maskBody: { position: 'absolute', left: 0, right: 0, top: SCRIM_FADE, bottom: GLASS_TAIL, backgroundColor: '#fff' },
+  maskTail: { position: 'absolute', left: 0, right: 0, bottom: 0, height: GLASS_TAIL },
   scrimBody: {
     position: 'absolute',
     left: 0,
