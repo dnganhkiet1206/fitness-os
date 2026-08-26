@@ -7,6 +7,7 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { AnimatedNumber } from '@/components/ascnd/animated-number';
 import { Expander } from '@/components/ascnd/expander';
+import { HelpButton } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
 import type { LucideIcon } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -43,6 +44,7 @@ export function HeroPanel({
   onToggleDetail,
   ring,
   more,
+  help,
   children,
 }: {
   title: string;
@@ -51,6 +53,18 @@ export function HeroPanel({
   detailOpen?: boolean;
   onToggleDetail?: () => void;
   ring: React.ReactNode;
+  /**
+   * Nút "?" ở cuối hàng tiêu đề, và sheet mà nó mở.
+   *
+   * Ở ĐÂY chứ không ở từng trang hero, vì hàng tiêu đề là của tấm này: ba trang
+   * tự đặt một nút vào góc là ba chỗ quyết định lại cùng một khoảng cách, và
+   * chúng sẽ lệch nhau ngay lần đầu ai đó chỉnh một cái.
+   *
+   * Không bắt buộc. Trang nào mọi con số đều tự nói ra được thì không cần một
+   * nút trả lời câu chưa ai hỏi — `readiness-gauge.tsx` đã ghi đúng lập luận
+   * ấy khi nó GIẤU nút của mình ở trạng thái đóng.
+   */
+  help?: { label: string; onPress: () => void };
   /**
    * Đường đi sâu hơn, đặt ở CUỐI phần chi tiết — không phải trên cả tấm thẻ.
    *
@@ -84,6 +98,7 @@ export function HeroPanel({
       <View style={styles.titleRow}>
         {dot ? <View style={[styles.dot, { backgroundColor: dot }]} /> : null}
         <Text style={styles.title}>{title}</Text>
+        {help ? <HelpButton label={help.label} onPress={help.onPress} style={styles.help} /> : null}
       </View>
 
       {ring}
@@ -363,6 +378,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  /* Đẩy sang mép phải của hàng tiêu đề; `marginLeft: 'auto'` thay vì một
+     `flex: 1` trên tiêu đề, để tiêu đề vẫn co theo chữ của chính nó. */
+  help: { marginLeft: 'auto' },
   dot: { width: 7, height: 7, borderRadius: 4 },
   title: {
     fontSize: 12,

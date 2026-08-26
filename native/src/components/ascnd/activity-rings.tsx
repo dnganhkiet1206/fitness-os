@@ -15,10 +15,12 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Expander } from '@/components/ascnd/expander';
 import { HeroTiles } from '@/components/ascnd/hero-panel';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { ActivityExplainer } from '@/components/ascnd/activity-explainer';
+import { HelpButton, useHelpTopic } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, HERO_RING, radius, spacing } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { activityModel, type ActivityInput, type RingKey, type RingModel } from '@/lib/activity';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -141,6 +143,9 @@ interface Props extends ActivityInput {
  * card saying where it came from. See `lib/activity.ts` for why the
  * measurement always wins when there is one.
  */
+/** Khoá lưu lượt nhắc — hằng số vì nút và lời nhắc phải đếm chung một tên. */
+const HELP_TOPIC = 'activity';
+
 export function ActivityRingsCard({
   /* Cùng lý do vòng tròn sẵn sàng to lên: hero chiếm phần trên cùng của trang,
      và 110 là kích thước của một thẻ nằm trong danh sách thẻ. */
@@ -152,6 +157,10 @@ export function ActivityRingsCard({
 }: Props) {
   const i18n = useI18n();
   const { rings, hasAny } = activityModel(input);
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
+  /* Cùng cơ chế đếm lượt nhắc với thẻ sẵn sàng — xem `help-nudge.ts`. */
+  const help = useHelpTopic(HELP_TOPIC);
 
   const spin = useSharedValue(0);
   useEffect(() => {
@@ -220,7 +229,22 @@ export function ActivityRingsCard({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>{i18n.dcActivity}</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>{i18n.dcActivity}</Text>
+        {/*
+          Nút "?" chỉ hiện khi chi tiết đang MỞ — cùng lập luận `readiness-gauge`
+          đã ghi cho nút của nó: ở trạng thái đóng, ba chữ MOVE/EXERCISE/STEPS
+          không có mặt trên màn hình, nên đó là một nút trả lời câu chưa ai hỏi,
+          đứng chiếm chỗ ở góc của thứ đang cần yên tĩnh nhất trên trang.
+        */}
+        {detailOpen ? (
+          <HelpButton
+            label={vi ? 'Giải thích ba vòng hoạt động' : 'Explain the three activity rings'}
+            onPress={help.openHelp}
+            style={styles.helpBtn}
+          />
+        ) : null}
+      </View>
 
       <View style={styles.ringOnly}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -291,6 +315,8 @@ export function ActivityRingsCard({
           {estimated ? <Text style={styles.note}>{i18n.dcActivityEstimated}</Text> : null}
         </View>
       </Expander>
+
+      <ActivityExplainer visible={help.open} onClose={help.close} stepsTarget={input.stepsTarget} />
     </View>
   );
 }
@@ -350,6 +376,8 @@ const styles = StyleSheet.create({
   ringOnly: { alignItems: 'center' },
   moreBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   detail: { gap: spacing.md, alignSelf: 'stretch' },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
+  helpBtn: { marginLeft: 'auto' },
   title: {
     fontSize: 12,
     fontWeight: '600',

@@ -2,10 +2,16 @@ import { Droplets, Flame, Moon, type LucideIcon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { HeroPanel, HeroRing, HeroTiles } from '@/components/ascnd/hero-panel';
+import { useHelpTopic } from '@/components/ascnd/help-button';
+import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
 import { colors, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { displayVolume, volumeLabel } from '@/lib/units';
+
+/** Cùng khoá với thẻ dinh dưỡng dạng danh sách: nút ở hai chỗ phải đếm lượt
+ *  nhắc chung một tên, nếu không một chỗ im còn chỗ kia nhắc mãi. */
+const NUTRITION_HELP_TOPIC = 'nutrition';
 
 /**
  * Nutrition and water, as pages of the hero deck.
@@ -50,14 +56,33 @@ export function NutritionHero({
   onOpenDetail?: () => void;
 }) {
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const target = calorieTarget > 0 ? calorieTarget : 1;
   const left = Math.max(0, Math.round(target - kcal));
+  /*
+    Sheet giải thích ĐÃ CÓ, và cho tới giờ chỉ thẻ dạng danh sách mở được nó —
+    trang hero, thứ phần lớn người dùng thật sự nhìn thấy, thì không có lối vào
+    nào. Cùng một sheet, cùng khoá đếm lượt nhắc, hai chỗ mở.
+
+    Nó trả lời đúng câu hỏi mà một vòng calo không tự trả lời được: vì sao tập
+    xong con số này KHÔNG tăng lên (hệ số vận động đã bao gồm việc tập, cộng
+    thêm buổi tập là tính cùng một giờ hai lần).
+  */
+  const help = useHelpTopic(NUTRITION_HELP_TOPIC);
 
   return (
     <HeroPanel
       title={i18n.nKcalToday}
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
+      help={
+        detailOpen
+          ? {
+              label: lang === 'vi' ? 'Giải thích mục tiêu calo' : 'Explain the calorie target',
+              onPress: help.openHelp,
+            }
+          : undefined
+      }
       more={onOpenDetail ? { label: i18n.nHeroMore, onPress: onOpenDetail } : undefined}
       ring={
         <HeroRing
@@ -83,6 +108,7 @@ export function NutritionHero({
           { label: i18n.nKcalToday, value: String(Math.round(kcal)), unit: `/ ${Math.round(target)}` },
         ]}
       />
+      <NutritionExplainer visible={help.open} onClose={help.close} />
     </HeroPanel>
   );
 }
