@@ -194,6 +194,36 @@ export const type = {
 } as const;
 
 /**
+ * Trần phóng chữ cho số ĐỌC TRONG MỘT HÌNH.
+ *
+ * ── vì sao có trần, khi mọi chữ khác thì không ──
+ *
+ * `<Text>` của React Native mặc định `allowFontScaling` là true, và app này
+ * không tắt nó ở đâu cả — nên toàn bộ chữ đã đi theo cỡ chữ hệ thống từ trước,
+ * đúng như HIG đòi. Đó là hành vi đúng và không đụng vào.
+ *
+ * Trừ một chỗ. Con số ở giữa vòng tròn không phải chữ trong một bố cục biết co
+ * giãn: nó là một hình vẽ có chữ số bên trong, nằm trong hộp cứng theo ĐƯỜNG
+ * KÍNH của vòng. Ở cỡ chữ trợ năng lớn nhất của iOS, số 60 điểm vượt cả lỗ
+ * trong của vòng 264 điểm và đè lên chính nét vòng — chữ không to ra thì đọc
+ * được hơn, nó chỉ chồng lên đồ hoạ.
+ *
+ * `tools/type-scale.mjs` đã ghi đúng ngoại lệ này cho sàn 11 điểm: *"numerals
+ * drawn inside a shape — graphics with a glyph in them, not text in a layout.
+ * Raising those does not improve legibility, it overflows the circle they sit
+ * in."* Trần này là cùng một lập luận, nhìn từ đầu kia của thang.
+ *
+ * 1.6 chứ không phải 1.0: người đặt cỡ chữ lớn VẪN được một con số lớn hơn —
+ * 60 thành 96 điểm — chỉ là nó dừng trước khi tràn khỏi hình. Tắt hẳn scale
+ * (`allowFontScaling={false}`) mới là thứ bỏ rơi họ, và đó là lý do dùng trần
+ * chứ không dùng cờ tắt.
+ *
+ * CHƯA ĐO trên máy thật: con số 1.6 chọn theo hình học của vòng (lỗ trong
+ * ~238 điểm), không theo một lần chụp màn hình ở AX5.
+ */
+export const RING_TEXT_MAX_SCALE = 1.6;
+
+/**
  * Đường kính vòng tròn ở hero, dùng chung cho mọi trang của deck.
  *
  * Một con số, hai thẻ. Viết riêng ở mỗi file thì hai vòng tròn lệch nhau ngay

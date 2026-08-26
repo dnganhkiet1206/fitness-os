@@ -11,7 +11,7 @@ import { HelpButton } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
 import type { LucideIcon } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, HERO_RING, radius, spacing, type } from '@/constants/ascnd';
+import { colors, HERO_RING, radius, spacing, type, RING_TEXT_MAX_SCALE } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { duration } from '@/constants/motion';
 
@@ -268,8 +268,16 @@ export function HeroRing({
           delay={RING_DELAY}
           duration={RING_MS}
           style={[styles.value, styles.valueBox]}
+          /* Số nằm trong một hình, hộp cứng theo đường kính vòng — xem
+             `RING_TEXT_MAX_SCALE`. Bốn trang hero còn lại dùng chung chỗ này. */
+          maxFontSizeMultiplier={RING_TEXT_MAX_SCALE}
         />
-        <Text style={[styles.caption, { color: captionColor }]} numberOfLines={1}>{caption}</Text>
+        <Text
+          maxFontSizeMultiplier={RING_TEXT_MAX_SCALE}
+          style={[styles.caption, { color: captionColor }]}
+          numberOfLines={1}>
+          {caption}
+        </Text>
       </View>
     </View>
   );

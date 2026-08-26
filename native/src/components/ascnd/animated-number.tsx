@@ -64,6 +64,7 @@ export function AnimatedNumber({
   style,
   prefix = '',
   suffix = '',
+  maxFontSizeMultiplier,
 }: {
   value: number;
   decimals?: number;
@@ -77,6 +78,8 @@ export function AnimatedNumber({
    */
   duration?: number;
   style?: StyleProp<TextStyle>;
+  /** trần phóng chữ, cho số nằm trong một hình — xem `RING_TEXT_MAX_SCALE` */
+  maxFontSizeMultiplier?: number;
   prefix?: string;
   suffix?: string;
 }) {
@@ -110,6 +113,9 @@ export function AnimatedNumber({
          value rather than a zero, so a screen that mounts without animating
          (Reduce Motion, or a re-mount mid-scroll) never shows a bare 0. */
       defaultValue={prefix + settled + suffix}
+      /* Số trong một hình có trần phóng chữ — xem `RING_TEXT_MAX_SCALE`. Không
+         truyền thì component này scale tự do như mọi chữ khác, đúng mặc định. */
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
       style={[styles.base, style]}
     />
   );

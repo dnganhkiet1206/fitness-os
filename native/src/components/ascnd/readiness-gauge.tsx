@@ -27,7 +27,7 @@ import { readinessConfidence } from '@/lib/readiness-engine';
 import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
 import { sleepNote, type SleepNoteKey } from '@/lib/sleep-note';
 import { acwrZone } from '@/lib/training-card';
-import { colors, HERO_RING, radius, spacing, type } from '@/constants/ascnd';
+import { colors, HERO_RING, radius, RING_TEXT_MAX_SCALE, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
@@ -477,8 +477,9 @@ export function ReadinessGauge({
             delay={RING_DELAY}
             duration={RING_MS}
             style={[styles.score, { color, alignSelf: 'stretch', textAlign: 'center' }]}
+            maxFontSizeMultiplier={RING_TEXT_MAX_SCALE}
           />
-          <Text style={[styles.statusLabel, { color }]}>{statusLabel}</Text>
+          <Text maxFontSizeMultiplier={RING_TEXT_MAX_SCALE} style={[styles.statusLabel, { color }]}>{statusLabel}</Text>
         </View>
       </View>
 
