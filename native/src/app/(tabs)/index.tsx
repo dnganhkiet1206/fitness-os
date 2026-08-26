@@ -975,8 +975,36 @@ export default function TodayScreen() {
           {dayPending || dayFailed || config.heroWidgets.length === 0 ? null : (
             <Animated.View
               style={[styles.heroFull, heroSlide]}
-              onLayout={(e) => recordHeight(HERO_DECK, e.nativeEvent.layout.height)}
-              entering={FadeInDown.springify().damping(26).stiffness(180)}>
+              onLayout={(e) => recordHeight(HERO_DECK, e.nativeEvent.layout.height)}>
+              {/*
+                Hiệu ứng vào nằm ở lớp TRONG, và việc tách hai lớp là bản sửa cho
+                "ring cứ giật giật ngay khi mở app".
+
+                ── lỗi ──
+
+                Trước đây một view mang cả hai: `heroSlide` (một
+                `useAnimatedStyle` ghi `transform: [{ translateY }]`) và
+                `entering={FadeInDown.springify()}` (một layout animation cũng
+                ghi `translateY`). Cả hai chạy trên luồng UI và cùng ghi ĐÚNG một
+                thuộc tính của ĐÚNG một view, mỗi khung hình đè lên nhau. Suốt
+                thời gian lò xo chạy, deck nhảy qua lại giữa hai giá trị.
+
+                Đó là rung do tranh chấp, không phải do đo đạc — nên mọi phép đo
+                chiều cao đều sạch trong khi mắt vẫn thấy nó giật.
+
+                ── vì sao harness không thấy ──
+
+                Reanimated không chạy layout animation trên web như trên máy.
+                Trace 489 khung hình từ lúc khởi động báo vị trí ring không đổi
+                lần nào. Đây là lỗi thứ BA trong phiên này truy về `entering`, và
+                cả ba đều vô hình với harness.
+
+                ── cách sửa ──
+
+                Hai view, hai việc: lớp ngoài giữ `heroSlide` và phép đo, lớp
+                trong giữ hiệu ứng vào. Không thuộc tính nào bị hai bên cùng ghi.
+              */}
+              <Animated.View entering={FadeInDown.springify().damping(26).stiffness(180)}>
               <CardDeck
                 progress={deckAt}
                 expandedAt={expandedAt}
@@ -986,6 +1014,7 @@ export default function TodayScreen() {
                   <View key={key}>{withPeek(key, renderWidget(key))}</View>
                 ))}
               </CardDeck>
+              </Animated.View>
             </Animated.View>
           )}
 
