@@ -23,7 +23,7 @@ import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
 import { PAGE_TINT, colors, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
-import { rise } from '@/lib/entrance';
+import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBodyMeasurements, useDeleteBodyMeasurement, useWeightHistory } from '@/hooks/use-fitness-data';
 import { useProgressPhotos } from '@/hooks/use-progress-photos';
@@ -206,6 +206,10 @@ function bmiCategory(v: number, vi: boolean) {
 }
 
 export default function ProgressScreen() {
+  /* Không chạy ở lần vẽ ĐẦU — xem `useRise`. Màn này xếp tầng mười hai khối,
+     và khi khung hình bị bỏ lỡ thì thứ còn lại trên màn hình là giá trị đầu của
+     hiệu ứng: nội dung đã dựng, đã chiếm chỗ, và vô hình. */
+  const rise = useRise();
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';

@@ -253,7 +253,7 @@ export default function AiCoachScreen() {
                     <LiquidGlass
                       style={[styles.promptChip, tintBorder(litBy(s.glyph))]}
                       radius={radius.full}
-                      tint={litBy(s.glyph)}>
+                      tint={litBy(s.glyph)} material="blur">
                       <View style={styles.promptInner}>
                         <Glyph name={s.glyph} size={15} />
                         <Text style={styles.promptText}>{vi ? s.label.vi : s.label.en}</Text>
@@ -348,7 +348,7 @@ export default function AiCoachScreen() {
           straight seam across the room and paint out the light beneath.
         */}
         <View style={[styles.composerWrap, { paddingBottom: insets.bottom + spacing.sm }]}>
-          <LiquidGlass style={styles.composer} radius={radius.full} intensity={30}>
+          <LiquidGlass style={styles.composer} radius={radius.full} intensity={30} material="blur">
             <View style={styles.composerInner}>
               <View style={styles.composerSpark}>
                 <Glyph name="spark" size={16} />

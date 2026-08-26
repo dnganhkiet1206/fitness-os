@@ -511,7 +511,7 @@ export default function AssistantScreen() {
                 </Text>
               ))}
             </View>
-            <LiquidGlass style={styles.statePill} radius={radius.full}>
+            <LiquidGlass style={styles.statePill} radius={radius.full} material="blur">
               <View style={styles.stateInner}>
                 <View
                   style={[
@@ -595,7 +595,7 @@ export default function AssistantScreen() {
           <LiquidGlass
             style={[styles.insight, tintBorder(litBy('spark'))]}
             radius={radius.lg}
-            tint={litBy('spark')}>
+            tint={litBy('spark')} material="blur">
             <View style={styles.insightInner}>
               {insight.isPending ? (
                 <View style={styles.insightRow}>
@@ -690,7 +690,7 @@ export default function AssistantScreen() {
                   selected === m.kind && { borderColor: litBy(m.glyph), borderWidth: 1 },
                 ]}
                 radius={radius.lg}
-                tint={litBy(m.glyph)}>
+                tint={litBy(m.glyph)} material="blur">
                 <View style={[styles.metricIcon, { backgroundColor: `${litBy(m.glyph)}1f` }]}>
                   <Glyph name={m.glyph} size={19} />
                 </View>
@@ -729,7 +729,7 @@ export default function AssistantScreen() {
         <LiquidGlass
           style={[styles.panel, tintBorder(selectedTint)]}
           radius={radius.lg}
-          tint={selectedTint}>
+          tint={selectedTint} material="blur">
           <MetricPanel
             analysis={analysis}
             tint={selectedTint}
@@ -775,7 +775,7 @@ export default function AssistantScreen() {
           <LiquidGlass
             style={[styles.coachCard, tintBorder(litBy('spark'))]}
             radius={radius.xl}
-            tint={litBy('spark')}>
+            tint={litBy('spark')} material="blur">
             <View style={styles.coachInner}>
               <View style={styles.coachHead}>
                 <View style={styles.coachIcon}>
@@ -872,7 +872,7 @@ export default function AssistantScreen() {
                 <LiquidGlass
                   style={[styles.tool, tintBorder(litBy(t.glyph))]}
                   radius={radius.lg}
-                  tint={litBy(t.glyph)}>
+                  tint={litBy(t.glyph)} material="blur">
                   <View style={[styles.toolIcon, { backgroundColor: `${litBy(t.glyph)}1f` }]}>
                     <Glyph name={t.glyph} size={19} />
                   </View>

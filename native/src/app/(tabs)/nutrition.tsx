@@ -22,7 +22,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodayMeals } from '@/components/ascnd/today-meals';
 import { PAGE_TINT, colors, glass, radius, spacing } from '@/constants/ascnd';
-import { rise } from '@/lib/entrance';
+import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useMealPlans } from '@/hooks/use-library';
@@ -82,6 +82,8 @@ type Tab = 'today' | 'foods' | 'plans';
  * them only that they have not done a thing they may not have a name for.
  */
 function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boolean }) {
+  /* Lần vẽ đầu thì hiện ngay — xem `useRise`. */
+  const rise = useRise();
   const { data: plans, isPending } = useMealPlans();
   const [creating, setCreating] = useState(false);
 

@@ -542,7 +542,21 @@ const styles = StyleSheet.create({
       một mũi tên vốn đã là thứ cuối cùng nhìn thấy được.
     */
     paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
+    /*
+      0, cùng con số với `hero-panel.tsx` — và việc nó KHÁC là lỗi đã bị báo:
+      "3 thẻ cuối không cùng kích thước với 2 thẻ đầu".
+
+      Năm trang hero dùng chung một vỏ, nhưng hai trang này (sẵn sàng, hoạt
+      động) có vỏ riêng, còn ba trang kia đi qua `HeroPanel`. Mọi con số dọc
+      trùng nhau trừ đúng dòng này: 8 ở đây, 0 ở đó. Deck lấy chiều cao của
+      TRANG ĐANG XEM, nên 8 điểm ấy làm cả hàng chấm và tấm nội dung bên dưới
+      nhảy mỗi lần vuốt qua trang thứ ba.
+
+      Lập luận của `HeroPanel` áp đúng vào đây: thứ cuối cùng trong tấm là nút
+      mũi tên cao 44 điểm quanh một dòng chữ, nên nó đã tự mang sẵn khoảng trống
+      dưới chữ vì lý do tiếp chạm. Thêm đệm ở đây là cộng vào một khoảng đã có.
+    */
+    paddingBottom: 0,
     paddingHorizontal: spacing.card,
     gap: spacing.md,
   },

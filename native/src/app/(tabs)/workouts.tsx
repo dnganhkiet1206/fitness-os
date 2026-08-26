@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp, Dumbbell, Plus } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { rise } from '@/lib/entrance';
+import { useRise } from '@/lib/entrance';
 
 import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
@@ -214,6 +214,8 @@ function MuscleGrid({
  * and the Weekly Plan link at the bottom.
  */
 export default function WorkoutsScreen() {
+  /* Lần vẽ đầu thì hiện ngay — xem `useRise`. */
+  const rise = useRise();
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { weight: wUnit } = useUnits();
@@ -326,7 +328,7 @@ export default function WorkoutsScreen() {
             Haptics.selectionAsync();
             router.push('/routine');
           }}>
-          <LiquidGlass style={styles.pill} radius={radius.full} tint={GLYPH_TINT.calendar[1]}>
+          <LiquidGlass style={styles.pill} radius={radius.full} tint={GLYPH_TINT.calendar[1]} material="blur">
             <View style={styles.pillInner}>
               <Glyph name="calendar" size={16} />
               <Text style={styles.outlineBtnText}>{i18n.workoutsWeeklyPlan}</Text>
@@ -348,7 +350,7 @@ export default function WorkoutsScreen() {
             Haptics.selectionAsync();
             router.push('/exercise-insight');
           }}>
-          <LiquidGlass style={styles.pill} radius={radius.full} tint={GLYPH_TINT.gauge[1]}>
+          <LiquidGlass style={styles.pill} radius={radius.full} tint={GLYPH_TINT.gauge[1]} material="blur">
             <View style={styles.pillInner}>
               <Glyph name="gauge" size={16} />
               <Text style={styles.outlineBtnText}>{i18n.nXiOpen}</Text>
@@ -362,7 +364,7 @@ export default function WorkoutsScreen() {
               Haptics.selectionAsync();
               router.push('/exercises');
             }}>
-            <LiquidGlass style={styles.pill} radius={radius.full} tint={GLYPH_TINT.dumbbell[1]}>
+            <LiquidGlass style={styles.pill} radius={radius.full} tint={GLYPH_TINT.dumbbell[1]} material="blur">
               <View style={styles.pillInner}>
                 <Glyph name="dumbbell" size={16} />
                 <Text style={styles.outlineBtnText}>{i18n.workoutsExercises}</Text>
@@ -394,7 +396,7 @@ export default function WorkoutsScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/log-workout');
         }}>
-        <LiquidGlass style={styles.logChip} radius={radius.full} tint={GLYPH_TINT.pulse[1]}>
+        <LiquidGlass style={styles.logChip} radius={radius.full} tint={GLYPH_TINT.pulse[1]} material="blur">
           <View style={styles.logChipInner}>
             <Glyph name="pulse" size={17} />
             <Text style={styles.logChipText}>{i18n.nLogWorkoutBtn}</Text>

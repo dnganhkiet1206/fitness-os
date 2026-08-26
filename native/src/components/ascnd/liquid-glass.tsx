@@ -81,6 +81,7 @@ export function LiquidGlass({
   radius: r = glass.radius,
   intensity = 22,
   tint,
+  material = 'glass',
 }: {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -88,6 +89,23 @@ export function LiquidGlass({
   intensity?: number;
   /** the colour of whatever this panel holds — washed across the glass */
   tint?: string;
+  /**
+   * Chất liệu: thấu kính, hay chỉ là kính mờ.
+   *
+   * `glass` là bản gốc — blur, cộng mặt sáng chéo, cộng bóng đổ chéo, cộng một
+   * vệt sáng trên mép. Bốn gradient SVG cho mỗi tấm; đó là thứ làm nó ra dáng
+   * một THẤU KÍNH chứ không phải một hình chữ nhật trong suốt.
+   *
+   * `blur` bỏ đúng ba lớp sheen ấy và giữ lại phần còn lại: blur thật, lớp wash
+   * theo màu, bo góc, viền — nên ngôn ngữ thiết kế không đổi, chỉ chất liệu
+   * đổi. Đó là cách Apple Music làm những viên pill của nó: kính mờ phẳng, màu
+   * đi từ nội dung, không có specular.
+   *
+   * Nó cũng rẻ hơn hẳn: không SVG, nên không `onLayout` → `setState` cho mỗi
+   * tấm, và không bốn `<Rect>` phải trộn lại mỗi lần trang cuộn. Trên một hàng
+   * bốn viên pill thì đó là bốn mặt phẳng gradient biến mất khỏi đường cuộn.
+   */
+  material?: 'glass' | 'blur';
 }) {
   /* Document-global ids on native. Eight of these render on one screen, so a
      hardcoded id would have the first card's gradient painting all of them. */
@@ -107,14 +125,21 @@ export function LiquidGlass({
   return (
     <View style={[styles.wrap, { borderRadius: r }, style]}>
       <BlurView intensity={intensity} tint="dark" style={StyleSheet.absoluteFill} />
+      {/* Ở chế độ `blur`, lớp wash theo màu vẫn còn — nó là thứ cho mỗi viên
+          pill màu riêng của nó, và đó là ngôn ngữ thiết kế chứ không phải chất
+          liệu. Chỉ khác là nó được tô phẳng thay vì qua một RadialGradient, nên
+          không cần SVG và không cần đo. */}
+      {material === 'blur' && tint ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: tint, opacity: 0.14 }]} pointerEvents="none" />
+      ) : null}
       {/*
         The lit face, same diagonal as every other card in the app: bright at
         the top-left where `AmbientLight` puts the key, dark at the bottom
         right. Two rects each fading to fully transparent rather than one
         white→black, which would drag a grey haze through the middle.
       */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={measure}>
-        {size ? (
+      <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={material === 'glass' ? measure : undefined}>
+        {material === 'glass' && size ? (
       <Svg width={size.w} height={size.h}>
         <Defs>
           <LinearGradient id={lit} x1="0" y1="0" x2="0.9" y2="1">

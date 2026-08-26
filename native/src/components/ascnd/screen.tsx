@@ -217,7 +217,18 @@ function ScrollFrame({ on, children }: { on: boolean; children: React.ReactNode 
  * Viết một chỗ vì cả BA nhánh return của `Screen` đều dùng: hai câu rời nhau sẽ
  * lệch ngay lần đầu ai đó chỉnh một bên.
  */
-const AURA_DIM = 0.55;
+/*
+  Nhẹ đi một bậc: 0.55 → 0.44.
+
+  Đã được yêu cầu trực tiếp sau khi nhìn máy thật — Nutrition, Workouts và
+  Progress đọc ra tối hơn mức cần. Today không dùng `Screen` nên không đụng tới,
+  đúng như đã dặn.
+
+  Vẫn nằm trong lằn ranh mà đoạn trên đặt ra: đủ để dập cái wash khỏi nhuộm một
+  tấm kính 6%, chưa tới mức ba trang mất luôn màu riêng. Nếu còn hạ nữa thì thứ
+  bắt đầu hỏng là màu của thẻ, không phải độ sáng của trang.
+*/
+const AURA_DIM = 0.44;
 
 function PageAura({ tint }: { tint: readonly [string, string] }) {
   return (

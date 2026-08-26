@@ -75,7 +75,7 @@ export function MusicLaunch() {
           }}>
           {/* Same material as every other pill — and tinted by the service, the
               one colour these two unambiguously own. */}
-          <LiquidGlass style={styles.chip} radius={radius.full} tint={a.tint}>
+          <LiquidGlass style={styles.chip} radius={radius.full} tint={a.tint} material="blur">
             <View style={styles.chipInner}>
               <Text style={styles.chipText}>{a.label}</Text>
             </View>

@@ -137,7 +137,7 @@ import { CardDeck } from '@/components/ascnd/card-deck';
 import { EmptyHero, NutritionHero, SleepHero, WaterHero } from '@/components/ascnd/hero-pages';
 import { HERO_DECK, recordHeight } from '@/lib/widget-heights';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
-import { handleTabScroll } from '@/lib/tab-bar-visibility';
+import { armTabBarRestore, tabScrollFrame } from '@/lib/tab-bar-visibility';
 
 /**
  * Stored group icons are emoji strings (persisted configs) — map them to
@@ -392,8 +392,23 @@ export default function TodayScreen() {
       barGoneSV.value = gone;
       runOnJS(setBarGone)(gone);
     }
-    /* Thanh tab vẫn cần con số này ở JS thread — nó ẩn/hiện bằng state React. */
-    runOnJS(handleTabScroll)(e.contentOffset.y);
+    /*
+      Thanh tab: quyết định và ghi NGAY TẠI ĐÂY, trên luồng UI.
+
+      Trước đây dòng này là `runOnJS(handleTabScroll)(y)` — một cú nhảy UI→JS
+      mỗi khung hình của mỗi cú cuộn, và bên kia mỗi lần lại huỷ một timer rồi
+      dựng một timer mới. Sáu mươi lần một giây, cho một việc chỉ cần xảy ra một
+      lần sau khi ngón tay đã rời màn hình.
+
+      Và nó rơi đúng vào luồng React đang dựng: đó là luồng mà khi bỏ lỡ khung
+      hình sẽ để một `entering` mắc kẹt ở giá trị đầu — màn hình trắng/mờ đã bị
+      báo ở Progress và Nutrition. Cùng một vấn đề nhìn từ hai phía.
+
+      `tabBarVisible` là shared value và `withSpring` chạy được trong worklet,
+      nên trường hợp thường không cần JS chút nào. JS chỉ còn cần cho cái hẹn
+      giờ, và nó được lên dây MỘT lần mỗi lần thanh ẩn đi.
+    */
+    if (tabScrollFrame(e.contentOffset.y, Date.now())) runOnJS(armTabBarRestore)();
   });
 
   /**
@@ -1113,8 +1128,33 @@ export default function TodayScreen() {
               phần trăm: tấm cao bao nhiêu là tuỳ số thẻ người dùng bật, và một
               dốc theo phần trăm sẽ mềm hay gắt khác nhau tuỳ cấu hình dashboard.
             */}
+            {/*
+              Kính CHỈ CAO bằng quãng mà nó còn việc để làm.
+
+              ── vì sao ──
+
+              `MaskedView` này từng là `absoluteFill`, nghĩa là một
+              `UIVisualEffectView` cao bằng CẢ dashboard — thường hai tới ba
+              màn hình — nằm bên trong ScrollView. Nó trôi theo từng khung hình
+              cuộn, nên vùng nền nó lấy mẫu đổi mỗi khung hình, nên nó phải
+              blur lại toàn bộ diện tích ấy mỗi khung hình. Đó là món đắt nhất
+              còn lại trên đường cuộn sau khi `intensity` thôi chạy theo cuộn.
+
+              ── vì sao cắt được mà không mất gì ──
+
+              Thứ duy nhất SẮC NÉT có thể nằm sau tấm này là hero, và hero bị
+              ghim: `translateY = min(scrollY, cover)`, mờ hẳn ở `cover`. Nên
+              tính theo hệ toạ độ của chính tấm, hero không bao giờ đi sâu quá
+              `cover` điểm kể từ mép trên. Dưới mốc đó, thứ nằm sau tấm chỉ còn
+              lớp aura — một wash gradient. `card-deck.tsx` đã ghi đúng lập
+              luận này khi bỏ blur của từng trang: "làm mờ một wash gradient thì
+              cho ra đúng cái wash đó".
+
+              Phần tương phản cho chữ ở khúc dưới vốn dĩ là của LỚP PHỦ, không
+              phải của blur — và lớp phủ vẫn `absoluteFill` như cũ.
+            */}
             <MaskedView
-              style={StyleSheet.absoluteFill}
+              style={[styles.sheetGlass, { height: SCRIM_FADE + cover }]}
               maskElement={
                 <View style={StyleSheet.absoluteFill}>
                   <View style={styles.scrimBand}>
@@ -1204,7 +1244,7 @@ export default function TodayScreen() {
                   the top-left — where the glyph sits. The pill is lit by the
                   thing it contains.
                 */}
-                <LiquidGlass style={styles.quickChip} radius={radius.full} tint={GLYPH_TINT[a.glyph][1]}>
+                <LiquidGlass style={styles.quickChip} radius={radius.full} tint={GLYPH_TINT[a.glyph][1]} material="blur">
                   <View style={styles.quickChipInner}>
                     <Glyph name={a.glyph} size={16} />
                     <Text style={styles.quickChipText}>{a.label}</Text>
@@ -1589,8 +1629,19 @@ const styles = StyleSheet.create({
       đè lên đầu tiên là hàng chấm chỉ trang — đo trên ảnh: pip bị cắt còn một
       chấm mờ. Đệm đúng bằng độ chồng lấn thì hàng pip bị đẩy lên khỏi vùng bị
       che, và tấm ăn vào nền chứ không ăn vào điều khiển.
+
+      ── và "đúng bằng" là KHÔNG đủ ──
+
+      Đệm bằng đúng `spacing.xl` thì mép trên của tấm rơi vào ĐÚNG hàng pixel
+      cuối cùng của hàng chấm: không chồng lên, nhưng cũng không chừa một điểm
+      nào. Mà mép ấy là chỗ lớp phủ tối bắt đầu — ở trạng thái nghỉ nó đã đậm
+      `SCRIM_REST` rồi — nên các chấm ngồi ngay trên một vùng tối đặc và đọc ra
+      là "bị một đường kẻ đen cắt qua", đúng như đã báo kèm ảnh.
+
+      Nên đệm là độ chồng lấn CỘNG một khoảng thở cho chính hàng chấm. Cái
+      trước cho tấm chỗ để ăn vào; cái sau giữ hàng chấm ở ngoài mép đó.
     */
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + spacing.md,
   },
   /* Cùng khoảng cách dọc mà `content` cấp, vì khối này thay chỗ cho các con
      trực tiếp của nó chứ không thêm một tầng bố cục mới. */
@@ -1605,6 +1656,9 @@ const styles = StyleSheet.create({
     nó đang đè lên sẽ để lộ hai dải hero ở hai bên và thành ba đường thẳng đứng
     thay vì một mặt phẳng.
   */
+  /* Hộp của lớp kính: neo TRÊN, cao theo `SCRIM_FADE + cover` — xem ghi chú ở
+     chỗ dùng. Không `bottom`, vì chiều cao ở đây là cả điểm của thay đổi. */
+  sheetGlass: { position: 'absolute', left: 0, right: 0, top: 0 },
   scrimBand: { position: 'absolute', left: 0, right: 0, top: 0, height: SCRIM_FADE },
   /* Trắng đặc = giữ nguyên; cùng mốc với `scrimBody` nên blur và lớp phủ kết
      thúc dải chuyển ở đúng một hàng. */

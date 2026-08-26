@@ -60,7 +60,31 @@ export function Settle({
   children: React.ReactNode;
 }) {
   const focused = useIsFocused();
-  const t = useSharedValue(0);
+  /*
+    Bắt đầu ở TRẠNG THÁI XONG, không phải ở đầu hiệu ứng.
+
+    ── lỗi nó sửa ──
+
+    Đã bị báo từ máy thật, kèm ảnh: chữ trên Health Assistant — lời chào, hai
+    dòng tóm tắt, viên trạng thái — hiện ra MỜ, và phải sang tab khác rồi quay
+    lại mới bình thường.
+
+    `t` khởi tạo bằng 0, và 0 nghĩa là `opacity 0.86` cộng `translateY 12`. Nó
+    chỉ rời khỏi đó khi effect chạy VÀ `focused` đúng lúc ấy là true. Ở lần dựng
+    đầu tiên của một màn hình vừa được đẩy vào, hai điều đó không phải lúc nào
+    cũng gặp nhau: `useIsFocused` còn false trong lần render đầu, effect ghi 0
+    một lần nữa, và nếu khung hình sau đó bị bỏ lỡ thì thứ còn lại trên màn hình
+    là đúng giá trị đầu ấy. Nội dung đã dựng, đã chiếm chỗ, và mờ.
+
+    Sang tab khác rồi quay lại thì sửa được, vì lần đó `focused` đổi từ false
+    sang true trên một luồng đã rảnh — đúng như đã báo.
+
+    Nguyên tắc thì `lib/entrance.ts` vừa viết ra cho đúng lớp lỗi này: một hiệu
+    ứng vào là TRANG TRÍ, nên nó không bao giờ được là thứ quyết định nội dung
+    có đọc được hay không. Nên mặc định là 1 — trang hiện đủ — và chỉ khi RỜI
+    tab mới lùi về 0 để lần quay lại còn có cái để settle.
+  */
+  const t = useSharedValue(1);
 
   useEffect(() => {
     if (focused) {
