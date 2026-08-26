@@ -350,6 +350,22 @@ export default function TodayScreen() {
   /* Quãng cuộn đủ để tấm phủ kín hero. Neo vào chiều cao màn hình vì đó là thứ
      quyết định tấm phải đi bao xa mới che hết phần đang nhìn thấy. */
   const cover = useWindowDimensions().height * HERO_COVER_FRACTION;
+  /*
+     Khai báo TRƯỚC `onScroll`, và thứ tự đó là bắt buộc chứ không phải cho gọn.
+
+     `useAnimatedScrollHandler` dựng worklet NGAY lúc gọi và bắt các biến nó
+     tham chiếu. Đặt `barGoneSV` bên dưới thì lúc worklet được dựng, biến còn
+     trong vùng chết tạm thời — `ReferenceError` ngay trong render, và cả trang
+     ra trắng.
+
+     TypeScript không bắt được: tham chiếu nằm trong một callback, nên nó không
+     chứng minh được callback chạy lúc nào. Bản đầu của thay đổi này đã đi qua
+     `tsc` sạch và tám guard xanh, rồi dựng ra một cây DOM rỗng — canary của
+     `live.mjs` là thứ duy nhất thấy.
+  */
+  const [barGone, setBarGone] = useState(false);
+  const barGoneSV = useSharedValue(false);
+
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
     const gone = e.contentOffset.y >= TOP_BAR_FADE;
@@ -512,8 +528,6 @@ export default function TodayScreen() {
    * shared value giữ trạng thái trước đó, và một lần render mỗi lần đổi chiều
    * là đủ.
    */
-  const [barGone, setBarGone] = useState(false);
-  const barGoneSV = useSharedValue(false);
 
   const scroller = useRef<ScrollView>(null);
   const toggleHero = useCallback((index: number) => {
