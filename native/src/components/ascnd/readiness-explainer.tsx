@@ -124,6 +124,45 @@ export function ReadinessExplainer({ visible, onClose }: { visible: boolean; onC
         </View>
       </View>
 
+      {/*
+        ── hai mục dưới đây tồn tại vì hai câu hỏi đã bị hỏi thẳng ──
+
+        "Thẻ sẵn sàng có dùng dữ liệu log từ việc ăn uống để tính không?" và
+        "tôi chỉ log ăn 100kcal mà đã tính tôi được 80/100 điểm… bấm vào mục xem
+        giải thích cách tính cũng không thấy ghi đồ ăn được tính vào".
+
+        Câu thứ hai là chẩn đoán của chính người dùng về câu thứ nhất: sheet này
+        liệt kê bốn nguồn và im lặng về mọi thứ khác, mà im lặng thì không phải
+        một câu trả lời. Ai đó ghi bữa ăn rồi thấy con số đổi sẽ kết luận điều
+        duy nhất còn lại có thể kết luận.
+
+        Đo được trên chính engine: bỏ vào đúng bữa ăn và không gì khác thì
+        `computeReadiness` trả `null` — không có điểm nào cả. Con số 80 đến từ
+        một buổi tập đã ghi trước đó, và mục thứ hai nói ra vì sao nó luôn là
+        đúng 80.
+      */}
+      <View style={styles.part}>
+        <Text style={styles.partTitle}>
+          {vi ? 'Những gì KHÔNG tính vào điểm này' : 'What this score does NOT use'}
+        </Text>
+        <Text style={styles.body}>
+          {vi
+            ? 'Bữa ăn, calo và macro không tham gia tính điểm sẵn sàng — ghi ăn uống không làm điểm tăng hay giảm một đơn vị nào. Cân nặng, nước uống và số bước cũng vậy. Điểm này chỉ đọc bốn nguồn ở trên.\n\nMột buổi tập nhập từ đồng hồ mà không có set nào (ví dụ một lần chạy bộ) được đếm vào số buổi tập, nhưng không vào tải tập — vì không có set thì không tính ra được khối lượng.'
+            : 'Meals, calories and macros play no part in readiness — logging food does not move this number by a single point. Nor do weight, water or step count. This score reads the four sources above and nothing else.\n\nA workout imported from a watch with no sets in it (a run, say) counts toward your session count but not toward training load: with no sets there is no volume to compute.'}
+        </Text>
+      </View>
+
+      <View style={styles.part}>
+        <Text style={styles.partTitle}>
+          {vi ? 'Khi mới chỉ có một nguồn' : 'When only one source exists'}
+        </Text>
+        <Text style={styles.body}>
+          {vi
+            ? 'Thiếu nguồn nào thì trọng số của nguồn đó được chia lại cho những nguồn còn lại, nên điểm vẫn ra một con số đầy đủ 0–100 dù mới đo được một thứ. Viên chữ dưới vòng tròn nói bạn đang đứng trên mấy chỉ số — hãy đọc nó cùng với con số.\n\nCa hay gặp nhất: buổi tập ĐẦU TIÊN luôn ra đúng 80 điểm, dù nặng hay nhẹ. ACWR so trung bình 7 ngày với trung bình 28 ngày; khi lịch sử mới có một ngày thì hai vế là cùng một con số, tỉ số bằng 1.0, rơi vào vùng an toàn và được 80. Đó là câu "chưa thể vọt lên trên một cái nền chưa tồn tại", không phải câu "cơ thể bạn đã sẵn sàng 80%".'
+            : 'When a source is missing its weight is shared out among the ones that remain, so the score still comes out as a full 0–100 even when only one thing was measured. The chip under the ring says how many it rests on — read it together with the number.\n\nThe common case: your FIRST workout always scores exactly 80, heavy or light. ACWR compares your 7-day average against your 28-day average, and with one day of history those are the same number — ratio 1.0, safe band, 80 points. That says "you cannot spike above a baseline that does not exist yet", not "your body is 80% ready".'}
+        </Text>
+      </View>
+
       <View style={styles.part}>
         <Text style={styles.partTitle}>{vi ? 'Ba vùng màu' : 'The three zones'}</Text>
         <View style={styles.bands}>

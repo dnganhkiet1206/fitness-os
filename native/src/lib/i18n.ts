@@ -868,7 +868,28 @@ const vi: Translations = {
   dashLogSleep: 'Ghi giấc ngủ',
   dashLogBiometrics: 'Nhập sinh trắc',
   dashReadiness: 'Sẵn Sàng',
-  dashReadinessMsg: 'Cần 3+ ngày dữ liệu để tính điểm sẵn sàng. Hãy ghi log giấc ngủ, sinh trắc và buổi tập.',
+  /*
+    Câu này từng ghi "Cần 3+ ngày dữ liệu", và đó là ba câu sai trong một dòng.
+
+    Cổng thật nằm ở `daily-log-service.ts` và là một phép HOẶC, không phải một
+    yêu cầu về số ngày: ≥3 lần đo sinh trắc, HOẶC ≥3 đêm ngủ trong 7 ngày, HOẶC
+    bất kỳ buổi tập nào có ghi set trong 28 ngày. Một buổi tập duy nhất, ghi
+    xong là có điểm ngay — đo được: điểm ra 80/100.
+
+    Và qua được cổng KHÔNG có nghĩa là có điểm: HRV/nhịp nghỉ cần 5 lần đo mới
+    dựng nổi baseline (`computeHRVScore`/`computeRHRScore` trả null dưới 5), nên
+    đúng 3 lần đo là qua cổng mà vẫn không ra số nào. Câu cũ hứa 3 và sự thật là
+    5.
+
+    Nên câu này nói thứ NGƯỜI DÙNG LÀM ĐƯỢC: ba lối vào, mỗi lối một mình đã đủ.
+    `tools/readiness-copy.mjs` lấy các con số này ra khỏi chính engine và cổng
+    rồi so, nên nó không thể lệch lại lần nữa.
+
+    Câu cuối trả lời đúng câu đã bị hỏi thẳng: bữa ăn không nằm trong
+    `ReadinessInput`, nên nó không tính vào điểm này.
+  */
+  dashReadinessMsg:
+    'Chưa đủ dữ liệu để tính điểm sẵn sàng. Chỉ cần MỘT trong ba: một buổi tập có ghi set, một đêm ngủ được ghi, hoặc 5 lần đo nhịp tim nghỉ/HRV trong 28 ngày. Bữa ăn và calo không được tính vào điểm này.',
   dashTrend: 'Xu Hướng',
   dashTrendMsg: 'Chưa có dữ liệu xu hướng sẵn sàng.',
   dashActivity: 'Hoạt Động',
@@ -1451,9 +1472,21 @@ const vi: Translations = {
   dcBioFallback: 'Dự phòng',
   dcBioEstimate: 'ước tính',
   dcReadinessTitle: 'Điểm Sẵn Sàng',
-  dcReadinessTrain: 'TẬP LUYỆN',
-  dcReadinessModerate: 'VỪA PHẢI',
-  dcReadinessRecover: 'PHỤC HỒI',
+  /*
+    Ba nhãn này là PHÁN QUYẾT của thẻ, không phải tên ba hạng mục.
+
+    Chúng từng là 'TẬP LUYỆN' / 'VỪA PHẢI' / 'PHỤC HỒI', và đã bị báo là đọc
+    không hiểu — đúng, vì chúng đứng ngay dưới một con số trong một cái vòng và
+    ở vị trí đó một danh từ đọc ra là "đây là mục Tập Luyện". Thẻ này không phân
+    loại gì cả; nó trả lời một câu: hôm nay cơ thể bạn chịu được bao nhiêu.
+
+    Nên nhãn phải là câu trả lời của câu ấy. Cùng ba nhãn được dùng ở ba chỗ —
+    vòng tròn, hàng chú giải, và bảng ba vùng trong sheet giải thích — nên viết
+    thành một mệnh đề thì cả ba chỗ đều đọc thành câu.
+  */
+  dcReadinessTrain: 'SẴN SÀNG TẬP',
+  dcReadinessModerate: 'TẬP VỪA PHẢI',
+  dcReadinessRecover: 'NÊN PHỤC HỒI',
   dcReadinessTrend: 'Sẵn Sàng 7 Ngày',
   dcReadinessTrendDesc: 'Mức độ sẵn sàng tập luyện của bạn trong tuần qua',
   dcReadinessAvg: 'TB',
@@ -1588,7 +1621,11 @@ const en: Translations = {
   dashLogSleep: 'Log sleep',
   dashLogBiometrics: 'Log biometrics',
   dashReadiness: 'Readiness',
-  dashReadinessMsg: 'Need 3+ days of data to calculate readiness. Log sleep, biometrics and workouts.',
+  /* See the Vietnamese entry for why "3+ days" was three wrong claims in one
+     line. Same three doors, same numbers, checked by `tools/readiness-copy.mjs`
+     against the engine and the gate themselves. */
+  dashReadinessMsg:
+    'Not enough data yet. Any ONE of these gives you a score: one workout with sets logged, one night of sleep logged, or 5 resting-HR/HRV readings within 28 days. Meals and calories are not part of this score.',
   dashTrend: 'Trend',
   dashTrendMsg: 'No readiness trend data yet.',
   dashActivity: 'Activity',
@@ -2171,9 +2208,10 @@ const en: Translations = {
   dcBioFallback: 'Fallback',
   dcBioEstimate: 'est.',
   dcReadinessTitle: 'Readiness Score',
-  dcReadinessTrain: 'TRAIN',
-  dcReadinessModerate: 'MODERATE',
-  dcReadinessRecover: 'RECOVER',
+  /* A verdict, not a category name — see the Vietnamese entries. */
+  dcReadinessTrain: 'READY TO TRAIN',
+  dcReadinessModerate: 'TRAIN MODERATELY',
+  dcReadinessRecover: 'RECOVER TODAY',
   dcReadinessTrend: '7-Day Readiness',
   dcReadinessTrendDesc: 'Your training readiness over the past week',
   dcReadinessAvg: 'AVG',

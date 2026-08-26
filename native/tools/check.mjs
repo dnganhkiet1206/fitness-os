@@ -135,6 +135,7 @@ const STEPS = [
   ['chất liệu kính', 'node', ['tools/glass-material.mjs']],
   ['đồng hồ Koa khi cuộn', 'node', ['tools/koa-scroll-pause.mjs']],
   ['chấm chỉ trang', 'node', ['tools/pip-bleed.mjs']],
+  ['câu chữ thẻ sẵn sàng', 'node', ['tools/readiness-copy.mjs']],
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
