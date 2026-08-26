@@ -25,6 +25,7 @@ import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-but
 import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
 import { readinessConfidence } from '@/lib/readiness-engine';
 import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
+import { sleepNote, type SleepNoteKey } from '@/lib/sleep-note';
 import { acwrZone } from '@/lib/training-card';
 import { colors, HERO_RING, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
@@ -58,6 +59,17 @@ interface Props {
   recommendation?: string | null;
   acwr?: number | null;
   /**
+   * Đêm qua, cho phần NHẬN XÉT — không cho phần tính điểm.
+   *
+   * Ba số này không đi vào một phép tính nào ở đây; chúng chỉ nuôi
+   * `sleepNote`, thứ so cảm giác tự chấm với thời lượng đo được. Điểm trong
+   * vòng tròn đã được `computeReadiness` chấm xong từ trước và không đọc chất
+   * lượng — xem `lib/sleep-note.ts`.
+   */
+  sleepQuality?: number | null;
+  sleepMin?: number | null;
+  sleepTargetMin?: number | null;
+  /**
    * Chi tiết có đang mở không — và vì sao state này KHÔNG nằm trong file này.
    *
    * Mở chi tiết không chỉ bung một khối bên dưới vòng tròn: nó ẩn luôn phần
@@ -89,6 +101,9 @@ export function ReadinessGauge({
   explain,
   recommendation,
   acwr,
+  sleepQuality,
+  sleepMin,
+  sleepTargetMin,
   detailOpen = false,
   onToggleDetail,
   onOpenDetail,
@@ -121,6 +136,17 @@ export function ReadinessGauge({
   const color = STATUS_COLOR[status] ?? colors.readinessYellow;
 
   // Sub-score tiles: HRV / RHR / Sleep / Load (0–100) + the ACWR ratio
+  /* Nhận xét về đêm qua — xem `lib/sleep-note.ts` cho luật và cho lý do nó là
+     một phép SO chứ không phải đọc lại con số người dùng vừa tự chấm. */
+  const note = sleepNote({ quality: sleepQuality, durationMin: sleepMin, targetMin: sleepTargetMin });
+  const noteText = (k: SleepNoteKey) =>
+    ({
+      aligned_good: i18n.sleepNoteAlignedGood,
+      aligned_poor: i18n.sleepNoteAlignedPoor,
+      felt_worse_than_clock: i18n.sleepNoteFeltWorse,
+      felt_better_than_clock: i18n.sleepNoteFeltBetter,
+    })[k];
+
   const subs = readinessSubscores(explain);
   const subColor = (v: number) =>
     v >= 70 ? colors.readinessGreen : v >= 40 ? colors.readinessYellow : colors.readinessRed;
@@ -534,6 +560,28 @@ export function ReadinessGauge({
       */}
       <HeroTiles tiles={tiles} />
 
+      {/*
+        Nhận xét về đêm qua, đặt NGAY DƯỚI hàng ô và trên phần giải thích.
+
+        Chỗ này chứ không phải cạnh viên lời khuyên: viên ấy là câu trả lời
+        cho "hôm nay nên tập thế nào", và đặt hai lời khuyên cạnh nhau là hai
+        câu tranh nhau một chỗ — chính điều mà thẻ này đã tự cấm ("trang trả
+        lời đúng một câu tại một thời điểm"). Nhận xét này giải thích một Ô,
+        nên nó thuộc về hàng ô.
+
+        Dòng thứ hai là điều kiện để dòng thứ nhất trung thực: chất lượng tự
+        chấm KHÔNG vào công thức, nên nhận xét không được đọc ra thành "cảm
+        giác của bạn đã làm điểm đổi".
+      */}
+      {note ? (
+        <View style={styles.sleepNote}>
+          <Text style={styles.sleepNoteText}>
+            {noteText(note.key).replace('{short}', String(note.shortBy))}
+          </Text>
+          <Text style={styles.sleepNoteCaveat}>{i18n.sleepNoteScoreIsDuration}</Text>
+        </View>
+      ) : null}
+
       {/* Explain + recommendation */}
       {explainText ? <Text style={styles.explain}>{explainText}</Text> : null}
       {/* Said plainly rather than as a badge: a coloured chip reading "LOW"
@@ -683,6 +731,9 @@ const styles = StyleSheet.create({
   ringCenter: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   score: { fontSize: 60, fontWeight: '700', fontFamily: 'Menlo', fontVariant: ['tabular-nums'] },
   statusLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2.4, marginTop: 6 },
+  sleepNote: { gap: 3, paddingHorizontal: spacing.card },
+  sleepNoteText: { ...type.footnote, color: colors.foreground, lineHeight: 18 },
+  sleepNoteCaveat: { ...type.footnote, color: colors.mutedForeground, opacity: 0.8 },
   readRow: {
     flexDirection: 'row',
     alignItems: 'center',

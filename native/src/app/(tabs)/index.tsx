@@ -836,6 +836,13 @@ export default function TodayScreen() {
               explain={dailyLog?.readiness_explain}
               recommendation={dailyLog?.readiness_recommendation}
               acwr={dailyLog?.acwr != null ? Number(dailyLog.acwr) : null}
+              /* Ba số cho phần NHẬN XÉT, không cho phần tính điểm — điểm đã
+                 chấm xong ở `computeReadiness`, thứ không đọc chất lượng.
+                 `sleep_quality` khởi tạo bằng 0 khi chưa có đêm nào, và
+                 `sleepNote` coi 0 là "chưa chấm" vì thang bắt đầu từ 1. */
+              sleepQuality={dailyLog?.sleep_quality != null ? Number(dailyLog.sleep_quality) : null}
+              sleepMin={Number(dailyLog?.sleep_duration_min) || 0}
+              sleepTargetMin={sleepTargetHours * 60}
             />
         ) : inHero(key) ? (
           /* Trạng thái rỗng phải mang đúng hình dạng của trạng thái đầy — xem

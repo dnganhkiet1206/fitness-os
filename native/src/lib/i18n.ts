@@ -108,6 +108,11 @@ interface Translations {
   dashReadinessMsg: string;
   logBioBaselineNote: string;
   logSleepReplaceGone: string;
+  sleepNoteAlignedGood: string;
+  sleepNoteAlignedPoor: string;
+  sleepNoteFeltWorse: string;
+  sleepNoteFeltBetter: string;
+  sleepNoteScoreIsDuration: string;
   dashTrend: string;
   dashTrendMsg: string;
   dashActivity: string;
@@ -870,6 +875,26 @@ const vi: Translations = {
   dashLogSleep: 'Ghi giấc ngủ',
   dashLogBiometrics: 'Nhập sinh trắc',
   dashReadiness: 'Sẵn Sàng',
+  /*
+    Bốn nhận xét về đêm qua, và cả bốn đều đứng trên HAI con số cùng lúc: chất
+    lượng bạn tự chấm, và số giờ đo được. Nói lại một mình con số tự chấm thì
+    không thêm gì — người dùng vừa gõ nó xong.
+
+    Hai câu ở giữa là hai ca hai con số KHÔNG khớp nhau, và đó mới là thông tin.
+    Không câu nào chẩn đoán: "đủ giờ mà vẫn mệt" là quan sát về hai con số, còn
+    một cái tên bệnh là câu app không có cơ sở để nói.
+  */
+  sleepNoteAlignedGood: 'Đủ giờ và bạn thấy khoẻ — cảm giác khớp với số đo.',
+  sleepNoteAlignedPoor:
+    'Thiếu {short} phút so với mục tiêu, và bạn cũng thấy mệt — hai thứ khớp nhau. Ưu tiên đi ngủ sớm hơn tối nay.',
+  sleepNoteFeltWorse:
+    'Đủ giờ nhưng bạn thấy mệt. Thời lượng không phải thứ duy nhất quyết định một đêm; nếu lặp lại vài đêm liền thì đáng để ý.',
+  sleepNoteFeltBetter:
+    'Bạn thấy khoẻ, dù đêm qua thiếu {short} phút so với mục tiêu. Điểm ngủ chấm theo THỜI LƯỢNG nên nó thấp hơn cảm giác của bạn.',
+  /* Câu này đứng cạnh mọi nhận xét, và nó là điều kiện để phần trên trung
+     thực: chất lượng tự chấm KHÔNG vào công thức, nên nhận xét không được đọc
+     ra thành "cảm giác của bạn đã làm điểm đổi". */
+  sleepNoteScoreIsDuration: 'Chất lượng bạn tự chấm không tính vào điểm — nó chỉ dùng cho nhận xét này.',
   logSleepReplaceGone:
     'Không sửa được đêm này — có thể nó đã bị xoá ở thiết bị khác. Hãy đóng rồi ghi lại.',
   logBioBaselineNote:
@@ -1627,6 +1652,16 @@ const en: Translations = {
   dashLogSleep: 'Log sleep',
   dashLogBiometrics: 'Log biometrics',
   dashReadiness: 'Readiness',
+  /* Four remarks, each standing on TWO numbers at once — see the Vietnamese
+     entries. None of them diagnoses anything. */
+  sleepNoteAlignedGood: 'Enough hours, and you felt good — the two agree.',
+  sleepNoteAlignedPoor:
+    '{short} minutes short of your target, and you felt it — the two agree. Get to bed earlier tonight.',
+  sleepNoteFeltWorse:
+    'Enough hours, but you still felt tired. Duration is not the only thing that makes a night; worth noticing if it repeats.',
+  sleepNoteFeltBetter:
+    'You felt good, even though last night was {short} minutes short. The sleep score is scored on DURATION, so it reads lower than you feel.',
+  sleepNoteScoreIsDuration: 'Your own quality rating is not part of the score — it only drives this remark.',
   logSleepReplaceGone:
     'Could not update this night — it may have been deleted on another device. Close and log it again.',
   logBioBaselineNote:

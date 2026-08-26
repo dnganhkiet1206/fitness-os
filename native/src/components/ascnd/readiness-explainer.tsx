@@ -71,8 +71,8 @@ export function ReadinessExplainer({ visible, onClose }: { visible: boolean; onC
       title: vi ? 'Giấc ngủ' : 'Sleep',
       weight: vi ? '30% (45% nếu không có HRV)' : '30% (45% without HRV)',
       body: vi
-        ? 'Đêm qua so với mục tiêu của bạn, cộng thêm phần nợ tích lại trong 7 ngày. Ngủ dưới 4 tiếng thì điểm tổng bị chặn ở 40 dù mọi thứ khác đều tốt — đó là một mức trần cứng, không phải trừ điểm.'
-        : 'Last night against your own target, plus the debt accumulated over seven days. Under four hours caps the whole score at 40 however good everything else looks — that is a hard ceiling, not a deduction.',
+        ? 'Đêm qua so với mục tiêu của bạn, cộng thêm phần nợ tích lại trong 7 ngày. Ngủ dưới 4 tiếng thì điểm tổng bị chặn ở 40 dù mọi thứ khác đều tốt — đó là một mức trần cứng, không phải trừ điểm.\n\nChỉ THỜI LƯỢNG được chấm. Mức chất lượng bạn tự chọn (mặt cười) không cộng hay trừ một điểm nào — nó dùng để đối chiếu cảm giác của bạn với số giờ đo được, và kết quả đối chiếu đó hiện thành một dòng nhận xét ngay dưới hàng ô.'
+        : 'Last night against your own target, plus the debt accumulated over seven days. Under four hours caps the whole score at 40 however good everything else looks — that is a hard ceiling, not a deduction.\n\nOnly DURATION is scored. The quality face you pick adds and subtracts nothing — it is used to compare how you felt against the hours measured, and that comparison appears as a remark under the tiles.',
     },
     {
       tag: 'LOAD',
