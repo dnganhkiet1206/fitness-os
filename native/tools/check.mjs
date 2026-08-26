@@ -138,6 +138,7 @@ const STEPS = [
   ['câu chữ thẻ sẵn sàng', 'node', ['tools/readiness-copy.mjs']],
   ['ghi lại là sửa', 'node', ['tools/same-day-entry.mjs']],
   ['nhận xét giấc ngủ', 'node', ['tools/sleep-note.mjs']],
+  ['giấc chính của ngày', 'node', ['tools/main-sleep.mjs']],
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],

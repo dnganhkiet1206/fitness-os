@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { localDayRangeISO, localWindowISO } from './local-date';
+import { localDateStr, localDayRangeISO, localWindowISO } from './local-date';
 import { chronicDays } from './training-card';
 import { loadWindow, sessionLoad, type LoadSession } from './session-load';
 import { computeReadiness } from './readiness-engine';
@@ -71,6 +71,93 @@ export class DailyLogRebuildError extends Error {
     super(message);
     this.name = 'DailyLogRebuildError';
   }
+}
+
+/**
+ * Giấc CHÍNH của một ngày: giấc DÀI NHẤT trong số các giấc kết thúc trong ngày.
+ *
+ * ── lỗi nó sửa ──
+ *
+ * Truy vấn lấy giấc ngủ của một ngày từng là `.order('waketime', desc).limit(1)`
+ * — tức là giấc KẾT THÚC MUỘN NHẤT. Một giấc trưa dậy lúc 16:00 muộn hơn một
+ * đêm dậy lúc 07:00, nên nó thắng, và cả `sleep_duration_min` lẫn
+ * `sleep_quality` của ngày hôm đó đều lấy từ giấc trưa.
+ *
+ * Đo được trên chính engine, cùng một ngày, cùng một buổi tập:
+ *
+ *     ngủ đêm 8h, KHÔNG ghi giấc trưa       →  86/100 xanh
+ *     … rồi ghi thêm giấc trưa 14:00–16:00  →  40/100 ĐỎ
+ *
+ * 120 phút được chấm như thể đó là cả đêm, tỉ lệ 0.25 so với mục tiêu, và trần
+ * "ngủ dưới 4 tiếng" nổ. Ghi một giấc trưa làm app bảo bạn nên nghỉ.
+ *
+ * ── vì sao DÀI NHẤT ──
+ *
+ * Vì trường này tên là `sleep_min_lastnight` và được chấm so với
+ * `sleep_target_min`, một mục tiêu ĐÊM (mặc định 480 phút). Nó vốn đã tuyên bố
+ * mình là giấc chính; "dài nhất" chỉ làm nó đúng với tên nó đang mang. Cộng
+ * mọi giấc lại sẽ là một chỉ số KHÁC ("ngủ được bao nhiêu hôm nay") và sẽ làm
+ * mục tiêu 480 mang một nghĩa khác.
+ *
+ * Bằng nhau thì lấy giấc kết thúc MUỘN hơn — không phải để cho có, mà để phép
+ * dựng lại một ngày cho ra cùng một kết quả ở mọi lần chạy; `tools/projection.mjs`
+ * dựng lại bốn lần và so.
+ */
+export function mainSleep<T extends { bedtime: string; waketime: string; asleep_min?: number | null }>(
+  rows: readonly T[] | null | undefined,
+): T | null {
+  let best: T | null = null;
+  let bestMin = -1;
+  for (const r of rows ?? []) {
+    const m = asleepMinutes(r);
+    if (m > bestMin || (m === bestMin && best !== null && String(r.waketime) > String(best.waketime))) {
+      best = r;
+      bestMin = m;
+    }
+  }
+  return best;
+}
+
+/**
+ * Nợ ngủ trung bình trong một cửa sổ, tính bằng phút.
+ *
+ * ── vì sao mẫu số là số NGÀY, không phải số HÀNG ──
+ *
+ * Nợ ngủ so trung bình ĐÊM với một mục tiêu ĐÊM (mặc định 480 phút), nên mẫu
+ * số phải là số đêm. Dòng này từng chia cho số HÀNG, và hai hàng trong một
+ * ngày là chuyện bình thường: một giấc trưa 90 phút bên cạnh một đêm 8 tiếng
+ * kéo "trung bình một đêm" xuống 285 phút, tức bịa ra 195 phút nợ ngủ cho một
+ * người ngủ đủ — đo được. Và sai lệch ấy đi theo suốt bảy ngày.
+ *
+ * Cùng một luật với `sleep_min_lastnight`: mỗi ngày một giấc chính, và giấc
+ * chính là giấc DÀI NHẤT — xem `mainSleep`. Hai nửa của số hạng giấc ngủ phải
+ * đồng ý với nhau về "đêm" là gì, nếu không điểm của hôm nay và nợ của tuần
+ * đang nói về hai thứ khác nhau.
+ *
+ * Hàm thuần và được export vì `tools/main-sleep.mjs` chạy nó thật; một phép
+ * tính nằm giữa thân `recomputeDailyLog` thì chỉ kiểm được bằng mắt.
+ */
+export function sleepDebtFrom(
+  rows: readonly { bedtime: string; waketime: string; asleep_min?: number | null }[] | null | undefined,
+  targetMin: number,
+): number {
+  type Row = { bedtime: string; waketime: string; asleep_min?: number | null };
+  const byDay = new Map<string, Row[]>();
+  for (const sl of rows ?? []) {
+    /* Gom theo ngày ĐỊA PHƯƠNG của lúc thức dậy — cùng cách `daily_logs` gom
+       giấc ngủ về một ngày, nên hai chỗ không thể xếp một đêm vào hai ngày. */
+    const key = localDateStr(new Date(String(sl.waketime)));
+    const list = byDay.get(key);
+    if (list) list.push(sl);
+    else byDay.set(key, [sl]);
+  }
+  if (byDay.size === 0) return 0;
+  let total = 0;
+  for (const day of byDay.values()) {
+    const night = mainSleep(day);
+    if (night) total += asleepMinutes(night);
+  }
+  return Math.max(0, targetMin - total / byDay.size);
 }
 
 export function asleepMinutes(sleep: {
@@ -284,7 +371,8 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
       .eq('user_id', userId)
       .gte('waketime', day.start)
       .lt('waketime', day.end)
-      .limit(1)
+      /* KHÔNG `.limit(1)`: ngày có thể có nhiều giấc, và giấc chính là giấc
+         DÀI NHẤT chứ không phải giấc kết thúc muộn nhất — xem `mainSleep`. */
       .order('waketime', { ascending: false }),
     // 4. Supplements adherence — planned, then taken
     supabase.from('supplements').select('id').eq('user_id', userId),
@@ -411,7 +499,7 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
   const workout_count = workouts?.length ?? 0;
   const volume_load = workouts?.reduce((s, w) => s + Number(w.volume_load), 0) ?? 0;
 
-  const sleep = sleeps?.[0];
+  const sleep = mainSleep(sleeps) ?? undefined;
   let sleep_duration_min = 0;
   let sleep_quality = 0;
   if (sleep) {
@@ -479,12 +567,18 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
   const trainingLoad7d = loadWindow((load7d ?? []) as LoadSession[]);
   const trainingLoad28d = loadWindow((load28d ?? []) as LoadSession[]);
 
-  let sleepDebt7d = 0;
-  if (sleepLogs7d && sleepLogs7d.length > 0) {
-    const totalSleep = sleepLogs7d.reduce((s, sl) => s + asleepMinutes(sl), 0);
-    const avgSleep = totalSleep / sleepLogs7d.length;
-    sleepDebt7d = Math.max(0, sleepTargetMin - avgSleep);
-  }
+  /*
+    Nợ ngủ so trung bình ĐÊM với mục tiêu ĐÊM, nên mẫu số phải là số NGÀY.
+
+    Dòng này từng chia cho số HÀNG, và hai hàng trong một ngày là chuyện bình
+    thường: một giấc trưa 90 phút bên cạnh một đêm 8 tiếng kéo "trung bình một
+    đêm" xuống 285 phút, tức là bịa ra gần ba tiếng nợ ngủ cho một người ngủ
+    đủ. Sai lệch ấy đi theo suốt bảy ngày.
+
+    Cùng một luật với `sleep_duration_min` ở trên: mỗi ngày một giấc chính, và
+    giấc chính là giấc dài nhất — xem `mainSleep`.
+  */
+  const sleepDebt7d = sleepDebtFrom(sleepLogs7d, sleepTargetMin);
 
   /*
     ── the gate and the calculator have to mean the same thing (BUG-107) ──
