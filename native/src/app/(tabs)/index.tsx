@@ -8,7 +8,6 @@ import {
   ChevronUp,
   Dumbbell,
   Heart,
-  Pencil,
   Pin,
   Plus,
   RotateCcw,
@@ -44,7 +43,6 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PeekHost } from '@/components/ascnd/card-peek';
 import { AccountAvatar } from '@/components/ascnd/account-avatar';
-import { ToolReveal } from '@/components/ascnd/tool-reveal';
 import { StreakChip } from '@/components/ascnd/streak-chip';
 import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessAura } from '@/components/ascnd/readiness-aura';
@@ -258,13 +256,74 @@ function GroupIconBadge({ iconKey }: { iconKey: string }) {
   );
 }
 
-/** Section header — web WidgetGroupSection: icon chip + semibold title */
-function GroupHeader({ icon, title }: { icon: string; title: string }) {
+/**
+ * Section header — web WidgetGroupSection: icon chip + semibold title.
+ *
+ * `action` là chỗ cho nút Sửa, và nó chỉ được truyền cho mục ĐẦU TIÊN — xem
+ * chỗ dựng danh sách mục. Ô này nhận một `ReactNode` chứ không nhận một cờ
+ * `showEdit`: hàng tiêu đề không cần biết cái nút ấy làm gì.
+ */
+function GroupHeader({
+  icon,
+  title,
+  action,
+}: {
+  icon: string;
+  title: string;
+  action?: React.ReactNode;
+}) {
   return (
     <View style={styles.groupHeader}>
       <GroupIconBadge iconKey={icon} />
+      {/* `flex: 1` nằm trên CHỮ, không phải một ô đệm riêng: tiêu đề dài thì nó
+          xuống dòng trong phần bề rộng còn lại thay vì đẩy nút Sửa ra khỏi mép. */}
       <Text style={styles.groupTitle}>{title}</Text>
+      {action}
     </View>
+  );
+}
+
+/**
+ * Nút Sửa bố cục — một nút CHỮ, không phải một ô vuông có icon.
+ *
+ * ── vì sao đổi hình dạng khi đổi chỗ ──
+ *
+ * Ở góc trên nó là một ô 44×44 có viền, đứng cạnh hai ô 44×44 khác — nó là một
+ * trong ba thứ ngang hàng nhau. Ở hàng tiêu đề mục thì không còn gì ngang hàng
+ * với nó cả: bên trái là một cái huy hiệu 22 điểm và một dòng chữ 14 điểm. Bê
+ * nguyên cái ô có viền xuống đây là đặt một vật nặng gấp đôi mọi thứ quanh nó
+ * lên một hàng vốn chỉ để đọc lướt.
+ *
+ * Nút chữ phẳng là cách iOS làm ở đúng vị trí này (Danh sách, Nhắc nhở,
+ * Wallet): cùng cỡ chữ với hàng, không viền, không nền — nó đọc ra là "một
+ * việc bạn có thể làm với mục này" chứ không phải "một nút nữa".
+ *
+ * ── vùng chạm vẫn 44 ──
+ *
+ * Chữ chỉ cao 18 điểm. `hitSlop` bù phần còn thiếu ra bốn phía, nên vùng chạm
+ * đủ sàn của Apple mà không phải độn `padding` — độn sẽ đẩy hàng tiêu đề cao
+ * lên và làm hỏng nhịp dọc của cả trang. `tools/tap-targets.mjs` đo cái này.
+ */
+function EditLayoutButton({
+  label,
+  a11yLabel,
+  onPress,
+}: {
+  label: string;
+  /* Nhãn HIỆN là "Sửa" — đủ trong ngữ cảnh của hàng, vì mắt thấy cả tiêu đề
+     mục ngay bên trái. Trình đọc màn hình đọc từng phần tử rời nhau, nên nó
+     cần câu đầy đủ: "Sắp xếp lại bảng điều khiển". */
+  a11yLabel: string;
+  onPress: () => void;
+}) {
+  return (
+    <PressScale
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      hitSlop={{ top: 13, bottom: 13, left: 12, right: 12 }}
+      onPress={onPress}>
+      <Text style={styles.groupAction}>{label}</Text>
+    </PressScale>
   );
 }
 
@@ -421,15 +480,6 @@ export default function TodayScreen() {
   /* Câu hỏi "có thẻ nào đang mở không" — thứ mà tấm nội dung và hiệu ứng cuộn
      cần biết. Chúng không cần biết là thẻ NÀO. */
   const heroOpen = expandedAt !== null;
-
-  /**
-   * Nút chỉnh sửa đã được mở ra bên cạnh nút cài đặt chưa.
-   *
-   * Đóng lại khi vào chế độ chỉnh sửa: lúc ấy cả hàng đổi thành đúng một nút
-   * Xong, nên để cờ ở trạng thái mở là để dành sẵn một cú bấm hụt cho lần
-   * người dùng thoát ra.
-   */
-  const [toolsOpen, setToolsOpen] = useState(false);
 
   /**
    * Cascade thẻ thông tin chạy ĐÚNG MỘT LẦN — lần app dựng chúng đầu tiên.
@@ -1679,7 +1729,32 @@ export default function TodayScreen() {
           {/* Grouped widgets, user-configurable order */}
           {dayPending || dayFailed || heroOpen ? null : config.groups.map((group, gi) => (
             <View key={group.id} style={styles.group}>
-              <GroupHeader icon={group.icon} title={group.title[lang] ?? group.title.en} />
+              {/*
+                Nút Sửa neo vào VỊ TRÍ, không vào một mục cụ thể.
+
+                `gi === 0` chứ không phải `group.id === 'health'`: người dùng
+                đổi thứ tự mục, đổi tên mục, xoá mục, thêm mục mới — và cái nút
+                phải ở nguyên một chỗ qua tất cả những lần ấy. Neo theo id là
+                neo vào một thứ người dùng có quyền làm biến mất, và hôm đó nút
+                Sửa cũng biến mất theo, không kèm lỗi nào.
+              */}
+              <GroupHeader
+                icon={group.icon}
+                title={group.title[lang] ?? group.title.en}
+                action={
+                  gi === 0 ? (
+                    <EditLayoutButton
+                      label={i18n.editLayout}
+                      a11yLabel={i18n.a11yEditLayout}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setEditMode(true);
+                        setNewGroupName('');
+                      }}
+                    />
+                  ) : undefined
+                }
+              />
               {group.widgets.map((key, wi) => (
                 <Animated.View
                   key={key}
@@ -1841,47 +1916,6 @@ export default function TodayScreen() {
           {/* The streak sits before the buttons because it is a *reading*, not
               an action — and it is only ever here, in the bar you land on. */}
           {!editMode && <StreakChip />}
-          {/*
-            Nút chỉnh sửa GỘP vào nút cài đặt: nó nằm sau nút kia cho tới khi
-            người dùng hỏi tới.
-
-            ── vì sao nó giấu được mà không mất gì ──
-
-            Sắp xếp lại dashboard là việc làm một lần rồi thôi. Nó chiếm một
-            trong ba ô ở góc trên suốt mọi ngày còn lại, cạnh một con số người
-            ta thật sự đọc mỗi ngày (chuỗi ngày) và một lối đi người ta dùng
-            thường xuyên. Ba thứ ngang hàng nhau trong khi tần suất dùng của
-            chúng chênh nhau hàng chục lần.
-
-            ── vì sao KHÔNG bọc trong `Expander` ──
-
-            `Expander` chạy chiều CAO. Ở đây phải là chiều rộng, và phải mọc ra
-            bên TRÁI để nút bánh răng đứng yên — xem `tool-reveal.tsx`.
-
-            `TOP_BAR_H` chứ không phải một con số gõ tay: đây đúng là cạnh của
-            `squareBtn`, và hai bản sao sẽ lệch ngay lần đầu ai đó chỉnh một
-            bên. Khoảng cách 8 điểm hai bên do `gap` của hàng lo; lúc đóng còn
-            lại hai `gap` cạnh một hộp rộng 0, tức 16 điểm giữa viên chuỗi ngày
-            và nút bánh răng thay vì 8 — chênh lệch ấy đứng cạnh một vùng trống
-            chiếm hơn nửa bề ngang, nên nó rẻ hơn nhiều so với một lề âm để
-            triệt tiêu đúng một cái `gap`.
-          */}
-          {!editMode && (
-            <ToolReveal open={toolsOpen} width={TOP_BAR_H}>
-              <PressScale
-                accessibilityRole="button"
-                accessibilityLabel={i18n.a11yEditLayout}
-                style={styles.squareBtn}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setToolsOpen(false);
-                  setEditMode(true);
-                  setNewGroupName('');
-                }}>
-                <Icon icon={Pencil} size={17} color="rgba(237,237,237,0.7)" />
-              </PressScale>
-            </ToolReveal>
-          )}
           {editMode && (
           <PressScale
             accessibilityRole="button"
@@ -1944,40 +1978,24 @@ export default function TodayScreen() {
                 mất hẳn màn hình. `tools/tool-merge.mjs` canh đúng điều đó.
               */}
               {/*
-                Một nút, hai việc — và nó chỉ đọc được vì việc thứ hai KHÔNG
-                mất đi.
+                Avatar: một chạm, vào Cài đặt.
 
-                Chạm lần đầu: mở nút chỉnh sửa ra. Chạm tiếp: vào Cài đặt.
+                Nó từng mang hai việc — chạm một mở nút chỉnh sửa ra, chạm hai
+                mới đi — hồi nút chỉnh sửa còn nấp sau nó. Nút ấy nay nằm ở
+                hàng tiêu đề mục đầu tiên, nên ở đây không còn gì để mở ra, và
+                một nút hai việc mà việc thứ nhất đã biến mất chỉ còn là một
+                cú chạm thừa.
 
-                Cái giá là vào Cài đặt tốn hai chạm, và nó ĐẮT hơn tôi tưởng
-                lúc đề xuất: đây là lối vào duy nhất trong cả app — xem chú
-                thích ngay dưới. Tôi đã đọc một câu chú thích cũ nói rằng
-                Settings còn là một tab, tin nó, và đưa nó cho người dùng như
-                một dữ kiện khi hỏi họ chọn kiểu gộp nào.
-
-                Điều đỡ cho nó: Cài đặt là một tiện ích mở thi thoảng, và
-                `app-tabs.tsx` lập luận đúng như vậy khi bỏ nó khỏi thanh tab
-                ("settings is a utility"). Một chạm thêm trên một màn hình mở
-                thi thoảng là cái giá nhỏ. Nhưng đó là một cái giá, không phải
-                số không, và người quyết định phải được biết đúng con số.
-
-                `accessibilityState.expanded` cộng nhãn đổi theo trạng thái là
-                phần bắt buộc: mắt đọc được nút chỉnh sửa vừa hiện ra, còn
-                trình đọc màn hình thì không — nó chỉ có cái nhãn.
+                Gỡ nó cũng trả lại thứ đã mất: Cài đặt KHÔNG có lối vào nào
+                khác — `app-tabs.tsx` chỉ dựng bốn Trigger — nên hai chạm ở đây
+                là hai chạm trong cả app.
               */}
               <PressScale
                 accessibilityRole="button"
-                accessibilityLabel={
-                  toolsOpen ? i18n.a11ySettings : lang === 'vi' ? 'Tuỳ chọn' : 'More options'
-                }
-                accessibilityState={{ expanded: toolsOpen }}
+                accessibilityLabel={i18n.a11ySettings}
                 style={styles.avatarBtn}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  if (!toolsOpen) {
-                    setToolsOpen(true);
-                    return;
-                  }
                   router.push('/settings');
                 }}>
                 <AccountAvatar name={profile?.name} email={user?.email} />
@@ -2233,7 +2251,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  groupTitle: { fontSize: 14, fontWeight: '600', color: 'rgba(237,237,237,0.8)' },
+  groupTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: 'rgba(237,237,237,0.8)' },
+  /* Nút Sửa. Nhạt hơn tiêu đề một bậc và KHÔNG mang màu nhấn — cùng luật đã áp
+     cho các viên chip và cho avatar: màu dành cho GIÁ TRỊ, không dành cho LỐI
+     ĐI. Cỡ 13 để nó ngồi dưới tiêu đề 14 trong cùng một hàng chứ không tranh
+     chỗ với nó. */
+  groupAction: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground, paddingHorizontal: 4 },
 
   // Empty states (web EmptyState)
   emptyCard: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },

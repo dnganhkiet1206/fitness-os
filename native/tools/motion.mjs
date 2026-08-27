@@ -134,12 +134,6 @@ const BOUNDED_LAYOUT = {
     'mở một mục bằng height thật, vì đó chính là cơ chế: chỉ có height mới đẩy được ' +
     'phần bên dưới xuống theo từng frame — today-meals.tsx đã đo LinearTransition và ' +
     'nó để lại khoảng hở 94px',
-  'src/components/ascnd/tool-reveal.tsx':
-    'mở một nút bằng width thật, cùng lập luận với expander.tsx nhưng trên trục ngang: ' +
-    'hàng nút góc trên căn PHẢI, nên chỗ trống phải mọc ra bên trái để nút bánh răng ' +
-    'đứng yên giữa hai cú chạm liên tiếp (chạm một mở ra, chạm hai vào Cài đặt) — ' +
-    'translateX rẻ hơn và không đẩy được viên chuỗi ngày sang trái, nên nó hoặc đè lên ' +
-    'viên ấy hoặc bắt để sẵn một cái hố rộng bằng một nút suốt lúc đóng',
   'src/components/ascnd/chart-bar.tsx':
     'cột biểu đồ phải chạy mượt giữa hai giá trị khi đổi ô chỉ số; scaleY sẽ nhảy, ' +
     'còn translateY thì bị cắt mất đáy bo tròn vì metric-panel không clip còn steps thì có',
