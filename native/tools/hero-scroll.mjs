@@ -14,6 +14,8 @@ const strip = (t) =>
   t.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map((l) => l.replace(/(^|\s)\/\/.*$/, '$1')).join('\n');
 
 const TODAY = 'src/app/(tabs)/index.tsx';
+/* Luật hướng của chrome sống ở đây, và hàng nút trên đầu nay đọc chung nó. */
+const TABBAR = 'src/lib/tab-bar-visibility.ts';
 const DECK = 'src/components/ascnd/card-deck.tsx';
 const today = strip(read(TODAY));
 const deck = strip(read(DECK));
@@ -152,14 +154,35 @@ const num = (src, name) => {
   Một hiệu ứng vào là TRANG TRÍ. Ở lần dựng đầu không có chuyển cảnh nào để làm
   mềm, nên nó phải im lặng — chỉ chạy khi có thứ để làm mềm thật.
 */
+/*
+  ── luật này được CHUYỂN HƯỚNG, không nới ──
+
+  Nó từng đòi tấm nội dung PHẢI có một `entering`, và `entering` ấy phải có điều
+  kiện. Nhưng bất biến thật, chính đoạn trên vừa nói ra, là ở chiều phủ định:
+  nội dung không được phụ thuộc vào một hiệu ứng vào để nhìn thấy được.
+
+  Tấm nay KHÔNG còn `entering` nào cả — `heroOpen` chỉ đổi vì người dùng bấm,
+  nên hai hiệu ứng ấy chưa từng làm mềm một chuyển cảnh nào, chúng chỉ bắt nửa
+  dưới dashboard mờ đi rồi mờ lại mỗi lần chạm mũi tên. Không có hiệu ứng vào
+  thì không có giá trị đầu nào để mắc kẹt, tức là MẠNH HƠN bản có điều kiện.
+
+  Nên luật đọc đúng bất biến: không có `entering` là đạt; có thì phải có điều
+  kiện. Bản cũ sẽ ĐỎ trên một thay đổi an toàn hơn chính thứ nó bảo vệ.
+*/
 {
   const m = /style=\{styles\.sheet\}\s*\n\s*entering=\{([^}]*)\}/.exec(today);
-  if (!m) {
-    problems.push(`${TODAY}: không đọc được hiệu ứng vào của tấm nội dung`);
-  } else if (!/\?/.test(m[1])) {
+  if (m && !/\?/.test(m[1])) {
     problems.push(
       `${TODAY}: tấm nội dung chạy entering ngay lần dựng đầu — nếu khung hình đầu bị bỏ lỡ thì nội dung ` +
         'đứng lại ở opacity 0 và Koa không bao giờ hiện ra',
+    );
+  }
+  /* Và cái vỏ phải là một `View` thuần khi đã không còn hiệu ứng nào: một
+     `Animated.View` không mang entering/exiting/style động là một node thừa
+     đúng ở nhóm lớn nhất trên màn hình. */
+  if (!m && /\{!heroOpen \? \(\s*\n\s*<Animated\.View style=\{styles\.sheet\}/.test(today)) {
+    problems.push(
+      `${TODAY}: tấm nội dung vẫn là Animated.View dù không còn hiệu ứng nào — trả nó về <View>`,
     );
   }
 }
@@ -381,7 +404,71 @@ const num = (src, name) => {
       từ `interpolate(scrollY.value, …)`, và dải ra KẾT THÚC ở 0 (nếu không thì
       hàng nút không bao giờ tắt hẳn và cổng chạm không có gì để đóng lại).
     */
-    const call = /const (\w+) = interpolate\(\s*scrollY\.value,\s*\[([^\]]*)\],\s*\[([^\]]*)\]/.exec(topBarBlock);
+    /*
+      ── chuyển hướng lần hai, và lần này là đổi CƠ CHẾ chứ không đổi con số ──
+
+      Luật này đã hai lần ghim nguồn của phép mờ là `interpolate(scrollY.value,
+      …)`. Nhưng buộc hàng nút vào VỊ TRÍ cuộn chính là thứ người dùng bác bỏ
+      hai lần liền: mờ theo offset thì cuộn lên phải về tận đỉnh trang mới lấy
+      lại được các nút, và không đường cong nào chữa được điều đó.
+
+      Hàng nút nay đọc `tabBarVisible` — cùng shared value điều khiển thanh tab,
+      chạy theo HƯỚNG cuộn. Bất biến của luật này chưa bao giờ là "nguồn phải là
+      scrollY"; nó là câu ngay trên đây: độ mờ và cổng chạm phải đọc CÙNG MỘT
+      biến cục bộ, để không có hai con số mà lệch.
+
+      Nên phép so đòi một `const` trong khối `topBar` mà cả `opacity` lẫn
+      `pointerEvents` cùng đọc, và giá trị ấy phải đến từ MỘT shared value (`.value`)
+      — không phải một hằng số, thứ sẽ làm hàng nút đứng yên vĩnh viễn.
+    */
+    const interp = /const (\w+) = interpolate\(\s*scrollY\.value,\s*\[([^\]]*)\],\s*\[([^\]]*)\]/.exec(topBarBlock);
+    const shared = /const (\w+) = [^\n;]*?\b(\w+)\.value\b[^\n;]*;/.exec(topBarBlock);
+    let name = null;
+    if (interp) {
+      /*
+        Dải RA phải kết thúc ở đúng 0, và điều đó được đọc từ chính mảng chứ
+        không dò chuỗi: bản đầu của luật này khớp `[1, 0.72, 0.3]` vì "0.72"
+        cũng chứa một số 0, nên nó cho qua một hàng nút KHÔNG BAO GIỜ tắt hẳn.
+      */
+      if (Number(interp[3].split(',').pop().trim()) !== 0) {
+        problems.push(
+          `${TODAY}: phép mờ hàng nút không kết thúc ở 0 (dải ra \`[${interp[3].trim()}]\`) — hàng nút không ` +
+            'bao giờ tắt hẳn, nên cổng chạm không có ngưỡng nào để đóng lại và nó vẫn ăn chạm trên vòng tròn',
+        );
+      } else {
+        name = interp[1];
+      }
+    } else if (shared) {
+      name = shared[1];
+      /*
+        Nguồn phải là shared value mà THANH TAB đang dùng.
+
+        Đây là bất biến MỚI, và nó mạnh hơn thứ luật này từng canh. Chrome trên
+        và chrome dưới trả lời cùng một câu hỏi — "người dùng đang đọc hay đang
+        điều hướng" — nên hai bộ đếm hướng riêng là hai luật sẽ lệch nhau, và
+        hai đầu màn hình rời đi vào hai lúc khác nhau là thứ đọc ra ngay.
+
+        Và nó thay đúng chỗ mà "dải ra kết thúc ở 0" từng đứng: cổng chạm cần
+        một trạng thái 0 có thật để đóng lại, nên luật đi đọc chính tệp nguồn và
+        đòi luật hướng ở đó vẫn trả về 0.
+      */
+      const sv = shared[2];
+      if (sv !== 'tabBarVisible') {
+        problems.push(
+          `${TODAY}: hàng nút đọc \`${sv}\` chứ không phải \`tabBarVisible\` — thanh tab dưới đáy đã chạy ` +
+            'luật hướng ấy rồi, và một bộ đếm hướng thứ hai là hai luật cho một câu hỏi',
+        );
+        name = null;
+      } else if (!/return 0;/.test(read(TABBAR)) || !/tabBarVisible\.value = withSpring/.test(read(TABBAR))) {
+        problems.push(
+          `${TABBAR}: luật hướng không còn đưa được \`tabBarVisible\` về 0 — hàng nút sẽ không bao giờ tắt ` +
+            'hẳn, nên cổng chạm không có ngưỡng nào để đóng lại và nó vẫn ăn chạm trên vòng tròn',
+        );
+        name = null;
+      }
+    }
+    const named = name ? [null, name] : null;
+    const call = interp ?? shared;
     /*
       Dải RA phải kết thúc ở đúng 0, và điều đó được đọc từ chính mảng chứ không
       dò chuỗi: bản đầu của luật mới này khớp `[1, 0.72, 0.3]` vì "0.72" cũng
@@ -389,18 +476,11 @@ const num = (src, name) => {
       đó cổng chạm không có gì để đóng lại. Phép thử ngược bắt được, và luật
       được siết chứ không phải phép thử được nới.
     */
-    const named = call && Number(call[3].split(',').pop().trim()) === 0 ? call : null;
-    if (call && !named) {
-      problems.push(
-        `${TODAY}: phép mờ hàng nút không kết thúc ở 0 (dải ra \`[${call[3].trim()}]\`) — hàng nút không ` +
-          'bao giờ tắt hẳn, nên cổng chạm không có ngưỡng nào để đóng lại và nó vẫn ăn chạm trên vòng tròn',
-      );
-    }
-    if (!named) {
+    if (!named && !call) {
       problems.push(
         `${TODAY}: cổng chạm nằm trong style động nhưng phép mờ không đặt tên cho giá trị — không có gì để hai bên cùng đọc`,
       );
-    } else {
+    } else if (named) {
       const v = named[1];
       const usedByOpacity = new RegExp('opacity: ' + v + '\\b').test(topBarBlock);
       const usedByGate = new RegExp('pointerEvents: [^\\n]*\\b' + v + '\\b').test(topBarBlock);

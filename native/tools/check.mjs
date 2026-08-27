@@ -143,6 +143,7 @@ const STEPS = [
   ['cửa sổ lớp aura', 'node', ['tools/aura-window.mjs']],
   ['Dynamic Type', 'node', ['tools/dynamic-type.mjs']],
   ['cách Expander mở ra', 'node', ['tools/reveal-clip.mjs']],
+  ['hiệu ứng vào', 'node', ['tools/entrance-once.mjs']],
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],

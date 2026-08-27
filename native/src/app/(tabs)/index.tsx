@@ -25,9 +25,7 @@ import Animated, {
   runOnJS,
   useAnimatedProps,
   useAnimatedScrollHandler,
-  FadeIn,
   FadeInDown,
-  FadeOut,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -128,28 +126,14 @@ import { HERO_RING, PAGE_TINT, colors, radius, spacing, type } from '@/constants
 const SHEET_BLUR = 36;
 
 /**
- * Quãng cuộn để hàng nút trên đầu tan đi.
+ * Quãng hàng nút đi lên khi nó rời đi.
  *
- * ── vì sao 56 đọc ra là CẮT PHỤT chứ không phải tan ──
+ * ── vì sao bằng đúng chiều cao của chính nó cộng lề ──
  *
- * Hiệu ứng vốn đã có: opacity 1→0 cộng nhấc 10 điểm, chạy trên luồng UI theo
- * `scrollY`. Nhưng 56 điểm là quãng mà một cú vuốt bình thường vượt qua trong
- * khoảng hai khung hình — nên thứ người ta thấy là ba cái nút biến mất, không
- * phải ba cái nút tan đi. Đã bị báo lại kèm ảnh.
- *
- * 96 điểm cho mắt kịp đọc ra đó là một chuyển động. Vẫn ngắn hơn nửa màn hình
- * rất nhiều, nên hàng nút vẫn "thôi cần thiết ngay khi bạn bắt đầu đọc" đúng
- * như ý ban đầu — nó chỉ không còn biến mất giữa hai khung hình.
- *
- * ── và nó KHÔNG tốn thêm gì ──
- *
- * Đây là đổi CON SỐ trong đúng `useAnimatedStyle` đang chạy. Không thêm lớp,
- * không thêm state, không thêm một phép tính nào mỗi khung hình — cùng một
- * worklet, cùng một lần ghi style. Vòng trước vừa gỡ React ra khỏi đường cuộn
- * của màn này; chỗ này không đưa nó trở lại.
+ * Nó phải ra HẲN khỏi mép trên, không phải nhích lên rồi mờ tại chỗ. Một thứ
+ * mờ tại chỗ đọc ra là bị tắt; một thứ đi ra khỏi mép đọc ra là rời đi. Đó là
+ * cả khác biệt mà hai vòng trước tôi đã không tạo ra được.
  */
-const TOP_BAR_FADE = 96;
-
 /**
  * Chiều cao hàng nút, tức chỗ nó từng chiếm khi còn nằm trong dòng chảy.
  *
@@ -158,6 +142,21 @@ const TOP_BAR_FADE = 96;
  * Bằng đúng cạnh của `squareBtn` — hàng chỉ cao bằng nút cao nhất trong nó.
  */
 const TOP_BAR_H = 44;
+
+/**
+ * Quãng hàng nút đi lên khi nó rời đi.
+ *
+ * ── vì sao bằng đúng chiều cao của chính nó cộng lề ──
+ *
+ * Nó phải ra HẲN khỏi mép trên, không phải nhích lên rồi mờ tại chỗ. Một thứ
+ * mờ tại chỗ đọc ra là bị tắt; một thứ đi ra khỏi mép đọc ra là rời đi. Đó là
+ * cả khác biệt mà hai vòng trước tôi đã không tạo ra được.
+ *
+ * Khai SAU `TOP_BAR_H` chứ không trước: một hằng số module đọc một hằng số nằm
+ * dưới nó là ReferenceError ngay lúc nạp tệp, và bản nháp đầu của dòng này đã
+ * đúng như vậy.
+ */
+const TOP_BAR_LIFT = TOP_BAR_H + spacing.sm;
 
 const SCRIM = 0.62;
 /** Độ mờ của lớp phủ khi tấm còn nằm dưới hero, nhân với `SCRIM` — cho ra 0.42,
@@ -193,7 +192,7 @@ import { CardDeck } from '@/components/ascnd/card-deck';
 import { EmptyHero, NutritionHero, SleepHero, WaterHero } from '@/components/ascnd/hero-pages';
 import { HERO_DECK, recordHeight } from '@/lib/widget-heights';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
-import { armTabBarRestore, tabScrollFrame } from '@/lib/tab-bar-visibility';
+import { armTabBarRestore, tabBarVisible, tabScrollFrame } from '@/lib/tab-bar-visibility';
 
 /**
  * Stored group icons are emoji strings (persisted configs) — map them to
@@ -286,6 +285,10 @@ export default function TodayScreen() {
    * this is false on the first render.
    */
   const { data: dailyLog, isPending: dayPending, isError: dayFailed } = useDailyLog();
+  /* Cùng biểu thức mà JSX dùng để quyết định có dựng các thẻ nhóm hay không —
+     một chỗ, để cờ `cascaded` không thể nói về một điều kiện khác với thứ nó
+     đang đếm. */
+  const groupsUp = !dayPending && !dayFailed;
   const { data: sleep } = useTodaySleep();
   const { data: waterMl } = useTodayWater();
   const { available: healthAvailable, sync: healthSync } = useHealthSync();
@@ -415,6 +418,36 @@ export default function TodayScreen() {
   /* Câu hỏi "có thẻ nào đang mở không" — thứ mà tấm nội dung và hiệu ứng cuộn
      cần biết. Chúng không cần biết là thẻ NÀO. */
   const heroOpen = expandedAt !== null;
+
+  /**
+   * Cascade thẻ thông tin chạy ĐÚNG MỘT LẦN — lần app dựng chúng đầu tiên.
+   *
+   * ── lỗi ──
+   *
+   * Các thẻ nhóm bị tháo khỏi cây khi `heroOpen`, và mỗi thẻ mang
+   * `entering={FadeInDown.springify().delay((heroWidgets.length + gi + wi) * 70)}`.
+   * Nên mỗi lần ĐÓNG thẻ chỉ số, cả dashboard dựng lại và toàn bộ cascade chạy
+   * lại: từng thẻ thông tin bay lên từ dưới, lệch nhau 70ms, kéo dài quá nửa
+   * giây. Người dùng bấm mũi tên để quay về thứ họ vừa rời khỏi, và thứ họ nhận
+   * là cả trang diễn lại màn chào.
+   *
+   * Một hiệu ứng vào kể chuyện "cái này vừa tới". Đúng ở lần mở app — lúc ấy nó
+   * vừa tới thật. Sai ở mọi lần sau, vì nó chưa đi đâu cả; nó chỉ bị che.
+   *
+   * ── vì sao là state chứ không phải `mounted` ──
+   *
+   * `mounted` thành true ngay sau lần commit đầu, mà lần commit đầu thường là
+   * lúc `dayPending` còn true — các thẻ nhóm CHƯA có mặt. Gắn vào `mounted` sẽ
+   * giết luôn cascade ở lần mở app, tức bỏ mất đúng cái lần duy nhất nó đúng.
+   *
+   * Nên cờ này bám vào chính sự kiện cần đếm: các thẻ nhóm đã hiện ra lần nào
+   * chưa. Ghi trong `useEffect` chứ không ghi thẳng trong thân render, để lần
+   * render đang dựng chúng vẫn còn đọc được `false`.
+   */
+  const [cascaded, setCascaded] = useState(false);
+  useEffect(() => {
+    if (groupsUp && !heroOpen) setCascaded(true);
+  }, [groupsUp, heroOpen]);
 
   /**
    * Trang đã cuộn được bao xa, đọc trên UI thread.
@@ -669,34 +702,55 @@ export default function TodayScreen() {
    */
   const topBar = useAnimatedStyle(() => {
     /*
-      Ba chặng chứ không hai, và độ cong là cả điểm khác biệt.
+      ── vì sao nó đọc `tabBarVisible` chứ không đọc `scrollY` ──
 
-      Một đường thẳng từ 1 xuống 0 dành nửa quãng đầu cho vùng 1.0→0.5, nơi mắt
-      gần như không phân biệt được — rồi rơi hết phần còn lại ở cuối. Giữ 0.72 ở
-      giữa quãng nghĩa là hàng nút NẤN NÁ trong lúc bạn mới bắt đầu cuộn, rồi
-      mới tan nhanh. Đó là hình dạng của một thứ rời đi, chứ không phải của một
-      thứ bị tắt công tắc.
+      Hai vòng trước tôi buộc hàng nút vào VỊ TRÍ cuộn: mờ dần theo 96 điểm đầu,
+      rồi nằm im ở 0 cho tới khi bạn về lại đỉnh trang. Người dùng báo lại hai
+      lần rằng "không có gì thay đổi", và họ đúng — bản trước cũng buộc vào vị
+      trí, chỉ khác con số. Đổi một hằng số trong cùng một cơ chế thì cơ chế vẫn
+      thế.
+
+      Thứ làm nên "cách Apple đã làm" không phải đường cong, mà là HƯỚNG. Ở
+      Safari, Photos, Mail: chrome đi khi bạn cuộn XUỐNG và quay lại NGAY khi
+      bạn cuộn LÊN, ở bất kỳ đâu trong trang — bạn không phải cuộn hết về đỉnh
+      để lấy lại các nút. Buộc vào vị trí thì không bao giờ ra được cảm giác đó,
+      dù đường cong có đẹp đến mấy.
+
+      ── và vì sao dùng LẠI tín hiệu của thanh tab ──
+
+      `lib/tab-bar-visibility.ts` đã có đúng luật ấy, đã chạy trên luồng UI, đã
+      nhớ ĐÍCH nên một cú vuốt mạnh chỉ sinh một lò xo, và đã có hẹn giờ trả
+      thanh về khi cuộn dừng hẳn. Nó đang điều khiển thanh tab dưới đáy.
+
+      Viết một bộ đếm hướng thứ hai ở đây là hai luật cho một câu hỏi, và chúng
+      sẽ lệch nhau ở lần đầu ai đó chỉnh một bên — chrome trên và chrome dưới
+      rời màn hình vào hai lúc khác nhau là thứ đọc ra ngay. Đọc chung một
+      shared value thì chúng KHÔNG THỂ lệch, và cái đồng bộ trên–dưới ấy tự nó
+      là phần "ra dáng iOS" nhất của thay đổi này.
+
+      Chi phí mỗi khung hình: bằng 0. Quyết định đã được tính sẵn ở `onScroll`
+      cho thanh tab; ở đây chỉ đọc kết quả.
     */
-    const shown = interpolate(
-      scrollY.value,
-      [0, TOP_BAR_FADE * 0.5, TOP_BAR_FADE],
-      [1, 0.72, 0],
-      'clamp',
-    );
+    /* Lò xo vọt qua 1 một chút, và `scale`/`opacity` không nên đi theo cú vọt
+       đó — kẹp lại rẻ hơn đổi sang timing, vì lò xo mới là thứ cho thanh tab
+       cảm giác của nó. */
+    const shown = Math.min(Math.max(tabBarVisible.value, 0), 1);
     return {
       opacity: shown,
-      /* Mờ hẳn thì thôi nhận chạm — xem ghi chú ở chỗ `barGone` từng đứng. */
+      /* Mờ hẳn thì thôi nhận chạm: `opacity: 0` KHÔNG tắt cảm ứng, và hàng này
+         nằm đúng trên vòng tròn — bấm vào ring mà không có gì xảy ra thì không
+         có gì trên màn hình giải thích được. Đọc CHÍNH `shown`, không tính lại
+         từ đầu: hai phép tính riêng là hai thứ sẽ lệch. */
       pointerEvents: shown < 0.02 ? ('none' as const) : ('box-none' as const),
       transform: [
-        /* Nhấc nhẹ tại CHỖ. Trước đây hàng này còn trôi theo nội dung nữa, nên
-           10 điểm này là chuyển động thứ hai chồng lên một chuyển động lớn hơn.
-           Bây giờ nó là chuyển động duy nhất, và đó là thứ làm nó ra dáng Apple. */
-        { translateY: interpolate(scrollY.value, [0, TOP_BAR_FADE], [0, -10], 'clamp') },
-        /* Và lùi lại một chút khi đi. Sáu phần trăm là đủ để đọc ra "nó ra xa"
-           chứ không đọc ra "nó co lại" — cùng cách iOS tiễn một thanh điều khiển
-           đi. Nằm trong CÙNG mảng transform nên nó không thêm một lần ghi style
-           nào; ba giá trị, một lần ghi. */
-        { scale: interpolate(scrollY.value, [0, TOP_BAR_FADE], [1, 0.94], 'clamp') },
+        /* Ra HẲN khỏi mép trên. Bản trước nhấc 10 điểm rồi mờ tại chỗ — 10 điểm
+           trên một hàng cao 44 là một cái nhích, và mắt đọc cái nhích ấy là
+           "bị tắt" chứ không phải "rời đi". */
+        { translateY: (shown - 1) * TOP_BAR_LIFT },
+        /* Và lùi lại một chút khi đi. Sáu phần trăm đủ để đọc ra "nó ra xa" chứ
+           không đọc ra "nó co lại". Nằm trong CÙNG mảng transform nên hai giá
+           trị chỉ tốn một lần ghi style. */
+        { scale: 0.94 + shown * 0.06 },
       ],
     };
   });
@@ -1294,35 +1348,40 @@ export default function TodayScreen() {
             Một hộp chứa không có gì để chứa thì không phải một hộp chứa.
           */}
           {/*
-            `entering` chỉ chạy TỪ LẦN THỨ HAI, và đó là bản sửa cho "Koa và các
-            nút ghi không hiện ra khi mới vào app".
+            ── không còn `entering`/`exiting` ở đây ──
 
-            ── vì sao ──
+            Chỗ này từng mang `entering={mounted ? FadeIn : undefined}` cộng một
+            `exiting={FadeOut}`, và cả một đoạn dài giải thích vì sao `entering`
+            phải im ở lần dựng đầu: nếu khung hình bắt đầu bị bỏ lỡ thì cái CÒN
+            LẠI là giá trị đầu (opacity 0), và Koa cùng các nút ghi nằm đó,
+            chiếm chỗ, vô hình.
 
-            Tấm này mọc ngay ở lần render đầu (`heroOpen` khởi tạo là false), nên
-            `FadeIn` chạy đúng lúc luồng JS đang nghẹt nhất: sáu trang hero cùng
-            đo, dữ liệu ngày vừa về, vòng tròn bắt đầu đếm. Một layout animation
-            của Reanimated đặt giá trị đầu (opacity 0) ở luồng UI rồi mới chạy;
-            nếu khung hình bắt đầu bị bỏ lỡ thì cái CÒN LẠI là giá trị đầu. Nội
-            dung đã dựng, đã chiếm chỗ, và vô hình.
+            Lập luận ấy đúng, và nó dẫn xa hơn một bước so với chỗ nó dừng lại:
+            nếu hiệu ứng vào phải im ở lần dựng đầu, thì lần nào nó KHÔNG im?
+            `heroOpen` chỉ đổi vì người dùng bấm vào thẻ chỉ số — nên câu trả
+            lời là "mỗi lần mở và mỗi lần đóng thẻ", và không lần nào trong số
+            đó là một chuyển cảnh cần làm mềm.
 
-            Đúng như đã báo: mở thẻ chỉ số rồi đóng lại thì Koa hiện ra — vì lần
-            đó là tháo ra dựng lại, `FadeIn` chạy trên một luồng đã rảnh.
+            `heroOpen` chỉ đổi vì người dùng BẤM vào thẻ chỉ số. Nên hai hiệu
+            ứng này không bao giờ chạy lúc mở app; chúng chạy đúng vào mỗi lần
+            mở và mỗi lần đóng thẻ — tức là toàn bộ nửa dưới dashboard mờ đi rồi
+            mờ lại, mỗi lần bạn chạm một cái mũi tên.
 
-            Nguyên tắc rút ra rộng hơn một màn hình: một hiệu ứng vào là TRANG
-            TRÍ, nên nó không bao giờ được là thứ quyết định nội dung có nhìn
-            thấy hay không. Ở lần dựng đầu không có chuyển cảnh nào để làm mềm cả
-            — người dùng vừa mở app, họ chưa từng thấy trạng thái trước đó. Chỉ
-            khi bật/tắt chế độ tập trung thì mới có cái để làm mềm.
+            Nó không nói gì cả. Người dùng vừa bấm; họ đã biết trạng thái vừa
+            đổi, và cái họ muốn xem là phần chi tiết chứ không phải phần đang
+            biến mất. `FadeIn` ở đây làm chậm chính thứ vừa được xin.
 
-            `exiting` thì giữ nguyên: nó chỉ chạy lúc tháo, mà tháo chỉ xảy ra do
-            người dùng bấm — không bao giờ ở lần dựng đầu.
+            Và nó đắt đúng ở chỗ đắt nhất: nhóm này chứa `BlurView` +
+            `MaskedView` phủ kín, cộng mọi thẻ thông tin. Một `opacity` trên cả
+            nhóm ấy buộc iOS gộp toàn bộ ra một bề mặt ngoài màn rồi pha lại,
+            mỗi khung hình, suốt 200ms. Đây là lượt gộp lớn nhất trong app —
+            lớn hơn nhiều lần cái vừa được gỡ khỏi khối chi tiết thẻ sẵn sàng.
+
+            Tháo/dựng vẫn giữ nguyên: chiều cao phải mất đi thật, nếu không thì
+            dưới vòng tròn có một vùng trống bằng cả dashboard.
           */}
           {!heroOpen ? (
-          <Animated.View
-            style={styles.sheet}
-            entering={mounted ? FadeIn.duration(duration.appear) : undefined}
-            exiting={FadeOut.duration(duration.toggle)}>
+          <View style={styles.sheet}>
             {/*
               Blur cũng phải tắt dần ở mép trên, không chỉ lớp phủ.
 
@@ -1613,16 +1672,22 @@ export default function TodayScreen() {
                 <Animated.View
                   key={key}
                   onLayout={(e) => recordHeight(key, e.nativeEvent.layout.height)}
-                  entering={FadeInDown.springify()
-                    .damping(26)
-                    .stiffness(180)
-                    .delay((config.heroWidgets.length + gi + wi) * 70)}>
+                  /* Xem `cascaded`: hiệu ứng vào kể chuyện "cái này vừa tới",
+                     đúng ở lần mở app và sai ở mỗi lần đóng thẻ chỉ số. */
+                  entering={
+                    cascaded
+                      ? undefined
+                      : FadeInDown.springify()
+                          .damping(26)
+                          .stiffness(180)
+                          .delay((config.heroWidgets.length + gi + wi) * 70)
+                  }>
                   {withPeek(key, renderWidget(key))}
                 </Animated.View>
               ))}
             </View>
           ))}
-          </Animated.View>
+          </View>
           ) : null}
         </>
       )}
