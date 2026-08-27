@@ -45,6 +45,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PeekHost } from '@/components/ascnd/card-peek';
 import { AccountAvatar } from '@/components/ascnd/account-avatar';
+import { DragReorder } from '@/components/ascnd/drag-reorder';
 import { StreakChip } from '@/components/ascnd/streak-chip';
 import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessAura } from '@/components/ascnd/readiness-aura';
@@ -373,7 +374,7 @@ export default function TodayScreen() {
   const { user } = useAuth();
   const i18n = useI18n();
   const queryClient = useQueryClient();
-  const { config, editMode, setEditMode, moveWidget, moveGroup, removeGroup, addGroup, resetConfig } =
+  const { config, editMode, setEditMode, moveWidget, moveGroup, moveGroupTo, removeGroup, addGroup, resetConfig } =
     useWidgetConfig();
   const { goal: stepsGoal } = useStepsGoal();
   // Reminders are dated one-shots, so the schedule has to be rebuilt as the day
@@ -1837,8 +1838,24 @@ export default function TodayScreen() {
               ? 'Sắp xếp lại widget và nhóm theo ý bạn'
               : 'Rearrange widgets and groups to your liking'}
           </Text>
-          {config.groups.map((group, gi) => (
-            <GlassCard key={group.id} style={styles.editGroup}>
+          {/*
+            Nhấn giữ một thẻ nhóm rồi kéo để đổi thứ tự — và thứ tự ấy CHÍNH LÀ
+            thứ tự trên dashboard, vì cả hai đọc cùng `config.groups`. Không có
+            bước "lưu": `setConfig` ghi thẳng, nên thoát chế độ sửa là thấy
+            ngay.
+
+            Hai cái nút mũi tên vẫn ở nguyên đó. Một cú kéo là vô hình với
+            trình đọc màn hình — VoiceOver không có "nhấn giữ rồi trượt lên 120
+            điểm" — nên chúng là đường duy nhất cho người dùng ấy. Kéo-thả là
+            lối NHANH, không phải lối thay thế.
+          */}
+          <DragReorder
+            gap={spacing.md}
+            onMove={moveGroupTo}
+            items={config.groups.map((group, gi) => ({
+              key: group.id,
+              node: (
+            <GlassCard style={styles.editGroup}>
               <View style={styles.editGroupHeader}>
                 <GroupIconBadge iconKey={group.icon} />
                 <Text style={styles.editGroupTitle}>{group.title[lang] ?? group.title.en}</Text>
@@ -1887,7 +1904,9 @@ export default function TodayScreen() {
                 ))
               )}
             </GlassCard>
-          ))}
+              ),
+            }))}
+          />
 
           {/* Add group (web AddGroupInline) */}
           {/*

@@ -271,6 +271,32 @@ export function useWidgetConfig() {
     [setConfig],
   );
 
+  /**
+   * Dời một nhóm tới VỊ TRÍ bất kỳ, không phải hoán đổi với ô liền kề.
+   *
+   * `moveGroup` ở trên là cho hai cái nút mũi tên: mỗi lần bấm là một bước. Kéo
+   * thả thì ngón tay có thể đi qua ba ô trong một cử chỉ, và gọi `moveGroup` ba
+   * lần liên tiếp là ba lần `setConfig` — ba lần ghi vào bộ nhớ và ba lần dựng
+   * lại cây, cho một thao tác người dùng coi là MỘT.
+   *
+   * Cắt-rồi-chèn chứ không hoán đổi: hoán đổi A với D thì B và C đứng yên, còn
+   * kéo D lên đầu thì B, C phải dịch xuống một ô — đó mới là thứ mắt vừa nhìn
+   * thấy trong lúc kéo.
+   */
+  const moveGroupTo = useCallback(
+    (from: number, to: number) => {
+      setConfig((prev) => {
+        if (from === to) return prev;
+        if (from < 0 || to < 0 || from >= prev.groups.length || to >= prev.groups.length) return prev;
+        const groups = [...prev.groups];
+        const [moved] = groups.splice(from, 1);
+        groups.splice(to, 0, moved);
+        return { ...prev, groups };
+      });
+    },
+    [setConfig],
+  );
+
   /** Remove a group; its widgets fold into the last remaining group (web behavior) */
   const removeGroup = useCallback(
     (groupId: string) => {
@@ -310,5 +336,5 @@ export function useWidgetConfig() {
     setConfigState(DEFAULT_CONFIG);
   }, []);
 
-  return { config, editMode, setEditMode, moveWidget, moveGroup, removeGroup, addGroup, resetConfig };
+  return { config, editMode, setEditMode, moveWidget, moveGroup, moveGroupTo, removeGroup, addGroup, resetConfig };
 }

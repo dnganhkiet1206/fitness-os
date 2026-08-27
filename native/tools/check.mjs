@@ -146,6 +146,7 @@ const STEPS = [
   ['hiệu ứng vào', 'node', ['tools/entrance-once.mjs']],
   ['avatar tài khoản', 'node', ['tools/account-avatar.mjs']],
   ['lối vào sắp xếp', 'node', ['tools/edit-entry.mjs']],
+  ['kéo thả đổi thứ tự', 'node', ['tools/drag-reorder.mjs']],
   ['hàng nút góc trên', 'node', ['tools/top-chrome.mjs']],
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
