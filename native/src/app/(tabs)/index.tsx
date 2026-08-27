@@ -12,7 +12,6 @@ import {
   Pin,
   Plus,
   RotateCcw,
-  Settings,
   Sparkles,
   Trash2,
   type LucideIcon,
@@ -44,6 +43,7 @@ import {
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PeekHost } from '@/components/ascnd/card-peek';
+import { AccountAvatar } from '@/components/ascnd/account-avatar';
 import { ToolReveal } from '@/components/ascnd/tool-reveal';
 import { StreakChip } from '@/components/ascnd/streak-chip';
 import { Mascot } from '@/components/ascnd/mascot';
@@ -177,6 +177,7 @@ const SCRIM_FADE = 72;
  */
 const GLASS_TAIL = 96;
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { useAuth } from '@/hooks/use-auth';
 import { useHealthSync } from '@/hooks/use-health-sync';
 import { useReminderSync } from '@/hooks/use-reminders';
 import { LoadFailed } from '@/components/ascnd/load-failed';
@@ -294,6 +295,7 @@ export default function TodayScreen() {
   const { data: waterMl } = useTodayWater();
   const { available: healthAvailable, sync: healthSync } = useHealthSync();
   const { lang } = useAppSettings();
+  const { user } = useAuth();
   const i18n = useI18n();
   const queryClient = useQueryClient();
   const { config, editMode, setEditMode, moveWidget, moveGroup, removeGroup, addGroup, resetConfig } =
@@ -1969,7 +1971,7 @@ export default function TodayScreen() {
                   toolsOpen ? i18n.a11ySettings : lang === 'vi' ? 'Tuỳ chọn' : 'More options'
                 }
                 accessibilityState={{ expanded: toolsOpen }}
-                style={styles.squareBtn}
+                style={styles.avatarBtn}
                 onPress={() => {
                   Haptics.selectionAsync();
                   if (!toolsOpen) {
@@ -1978,7 +1980,7 @@ export default function TodayScreen() {
                   }
                   router.push('/settings');
                 }}>
-                <Icon icon={Settings} size={20} color="rgba(237,237,237,0.7)" />
+                <AccountAvatar name={profile?.name} email={user?.email} />
               </PressScale>
             </>
           )}
@@ -2162,6 +2164,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /* Cùng dấu chân với `squareBtn` — vùng chạm và chiều cao hàng vẫn do
+     `TOP_BAR_H` quyết định — nhưng KHÔNG viền, KHÔNG nền, KHÔNG bo góc: mặt
+     tròn do `AccountAvatar` tự vẽ, và một ô bo 16 nằm sau một vòng tròn là hai
+     hình chồng nhau. */
+  avatarBtn: { width: TOP_BAR_H, height: TOP_BAR_H, alignItems: 'center', justifyContent: 'center' },
   squareBtnActive: { backgroundColor: 'rgba(168,175,189,0.2)', borderColor: 'rgba(168,175,189,0.4)' },
 
   // Quick chips (web: rounded-xl bordered secondary/20)
