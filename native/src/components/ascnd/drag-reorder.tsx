@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useRef } from 'react';
-import { View, type LayoutChangeEvent } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -9,6 +9,7 @@ import Animated, {
   useDerivedValue,
   useFrameCallback,
   useSharedValue,
+  withDelay,
   withSpring,
   withTiming,
   type AnimatedRef,
@@ -41,6 +42,26 @@ const LIFT = { damping: 18, stiffness: 260 };
  * một tấm thẻ đầy widget, không phải cái vật vừa được nhấc lên.
  */
 const GAP_SPRING = { damping: 20, stiffness: 180 };
+
+/**
+ * Tay nắm TRƯỢT VÀO TỪ PHẢI khi vào chế độ sắp xếp.
+ *
+ * ── vì sao cái này thay cho một lượt mờ cả trang ──
+ *
+ * Bản trước cho cả trang sắp xếp `FadeIn` một lượt. Người dùng gọi nó là "hơi
+ * kì", và đúng: mờ cả trang đọc ra như trang vừa được TẢI LẠI, trong khi thứ
+ * vừa xảy ra là bạn đổi chế độ của một trang vẫn đang ở đó.
+ *
+ * Apple Music (và Danh sách, Nhắc nhở) làm ngược lại: trang đứng yên, và những
+ * điều khiển MỚI trượt vào từ mép phải, lệch nhau một nhịp ngắn. Chuyển động
+ * chỉ nằm ở thứ vừa xuất hiện, nên nó nói đúng một điều — "đây là những nút
+ * bạn vừa mở ra" — thay vì nói "mọi thứ trên trang này vừa mới tới".
+ *
+ * Lệch 40ms mỗi thẻ: đủ để đọc ra là một hàng chứ không phải một khối, và đủ
+ * ngắn để thẻ cuối không phải chờ. Bốn nhóm là 120ms cho cả cụm.
+ */
+const HANDLE_IN = { damping: 22, stiffness: 240 };
+const HANDLE_STAGGER = 40;
 
 /** Quãng tính từ mép khung nhìn mà tự-cuộn bắt đầu chạy. */
 const EDGE = 96;
@@ -383,11 +404,48 @@ function Row({
     return { transform: [{ translateY: offset.value }, { scale: 1 }], zIndex: 0 };
   });
 
+  /* Trượt vào từ phải, lệch nhịp theo vị trí — xem `HANDLE_IN`. */
+  const handleIn = useSharedValue(0);
+  useEffect(() => {
+    handleIn.value = withDelay(index * HANDLE_STAGGER, withSpring(1, HANDLE_IN));
+  }, [handleIn, index]);
+  const handle = useAnimatedStyle(() => ({
+    opacity: handleIn.value,
+    transform: [{ translateX: (1 - handleIn.value) * 24 }],
+  }));
+
   return (
     <GestureDetector gesture={pan}>
       <Animated.View style={style} onLayout={(e) => onMeasure(index, e)}>
         {children}
+        {/*
+          Tay nắm nằm TUYỆT ĐỐI chứ không chen vào hàng tiêu đề của thẻ: thẻ
+          nhóm là nội dung của chỗ gọi, và `DragReorder` không được quyền đổi bố
+          cục bên trong nó. Nó cũng phải nằm ngoài dòng chảy để hiệu ứng trượt
+          không đẩy cái gì.
+
+          `pointerEvents="none"`: cả tấm thẻ đã là vùng kéo rồi. Cái này là DẤU
+          HIỆU — thứ nói cho người ta biết có thể kéo — chứ không phải một vùng
+          chạm thứ hai chỉ rộng 24 điểm.
+        */}
+        <Animated.View style={[styles.handle, handle]} pointerEvents="none">
+          <View style={styles.grip} />
+          <View style={styles.grip} />
+          <View style={styles.grip} />
+        </Animated.View>
       </Animated.View>
     </GestureDetector>
   );
 }
+
+const styles = StyleSheet.create({
+  /* Neo vào mép phải của thẻ, canh giữa theo chiều dọc của HÀNG TIÊU ĐỀ chứ
+     không của cả thẻ: thẻ cao theo số widget, còn tay nắm phải nằm ngang tầm
+     cái tên nhóm — đó là chỗ mắt đi tìm nó. 22 điểm là nửa chiều cao hàng ấy
+     cộng padding trên của GlassCard. */
+  handle: { position: 'absolute', right: 16, top: 22, gap: 3, alignItems: 'flex-end' },
+  /* Ba vạch 14×1.5. Mảnh hơn icon vì nó không phải một nút — nó là kết cấu,
+     cùng cách iOS vẽ tay nắm sắp xếp: đủ để nhận ra, nhạt để không tranh chỗ
+     với tên nhóm ngay bên trái. */
+  grip: { width: 14, height: 1.5, borderRadius: 1, backgroundColor: 'rgba(237,237,237,0.32)' },
+});

@@ -126,11 +126,17 @@ if (anchor >= 0 && (!argSrc || !argSrc.includes('onBeginDrag'))) {
 function machine(src) {
   const pause = { value: false };
   const scrollY = { value: 0 };
+  /* Bộ xử lý cuộn cũng ghi số đo khung nhìn cho phần tự-cuộn-khi-kéo. Chúng chỉ
+     cần TỒN TẠI ở đây: tệp này kiểm một máy trạng thái, và một `ReferenceError`
+     từ một shared value không liên quan đọc ra y hệt máy trạng thái hỏng — đúng
+     điều đã xảy ra khi hai dòng ấy được thêm vào. */
+  const viewportH = { value: 0 };
+  const maxScroll = { value: 0 };
   const make = new Function(
-    'scrollPause', 'scrollY', 'tabScrollFrame', 'runOnJS', 'armTabBarRestore', 'Date',
+    'scrollPause', 'scrollY', 'viewportH', 'maxScroll', 'tabScrollFrame', 'runOnJS', 'armTabBarRestore', 'Date',
     `return ${src.replace(/^\(/, '').replace(/\)$/, '')};`,
   );
-  const h = make(pause, scrollY, () => false, () => () => {}, () => {}, Date);
+  const h = make(pause, scrollY, viewportH, maxScroll, () => false, () => () => {}, () => {}, Date);
   return { pause, h };
 }
 

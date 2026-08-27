@@ -1811,23 +1811,46 @@ export default function TodayScreen() {
                   ) : undefined
                 }
               />
-              {group.widgets.map((key, wi) => (
-                <Animated.View
-                  key={key}
-                  onLayout={(e) => recordHeight(key, e.nativeEvent.layout.height)}
-                  /* Xem `cascaded`: hiệu ứng vào kể chuyện "cái này vừa tới",
-                     đúng ở lần mở app và sai ở mỗi lần đóng thẻ chỉ số. */
-                  entering={
-                    cascaded
-                      ? undefined
-                      : FadeInDown.springify()
-                          .damping(26)
-                          .stiffness(180)
-                          .delay((config.heroWidgets.length + gi + wi) * 70)
-                  }>
-                  {withPeek(key, renderWidget(key))}
-                </Animated.View>
-              ))}
+              {group.widgets.map((key, wi) =>
+                /*
+                  Sau khi cascade đã chạy, đây là `View` THUẦN — không phải một
+                  `Animated.View` mang `entering={undefined}`.
+
+                  ── lỗi nó sửa ──
+
+                  Đổi thứ tự nhóm xong, tiêu đề nhóm đi tới chỗ mới còn các
+                  widget của nó vẫn vẽ ở chỗ cũ: chúng chồng lên thẻ của nhóm
+                  khác, và chỗ của chúng ở nhóm mới là một khoảng trống cao
+                  bằng đúng chúng. Header và widget là hai con của CÙNG một
+                  `<View key={group.id}>`, nên chúng chỉ tách rời được nếu
+                  widget mang một `transform` còn kẹt lại.
+
+                  `FadeInDown` là nguồn transform duy nhất ở đây. Một node của
+                  Reanimated từng khai layout animation vẫn tham gia vào lượt
+                  sắp xếp lại của thư viện kể cả khi prop đã là `undefined` —
+                  và `lib/entrance.ts` đã ghi ba lỗi khác nhau trong repo này
+                  truy về đúng `entering`, cả ba đều vô hình với bộ kiểm.
+
+                  Một node thôi hoạt hoạ thì thôi là node hoạt hoạ. Sau lần
+                  arrival đầu tiên, cây này không còn cần Reanimated chạm vào
+                  nữa — nên nó không được là `Animated.View`.
+                */
+                cascaded ? (
+                  <View key={key} onLayout={(e) => recordHeight(key, e.nativeEvent.layout.height)}>
+                    {withPeek(key, renderWidget(key))}
+                  </View>
+                ) : (
+                  <Animated.View
+                    key={key}
+                    onLayout={(e) => recordHeight(key, e.nativeEvent.layout.height)}
+                    entering={FadeInDown.springify()
+                      .damping(26)
+                      .stiffness(180)
+                      .delay((config.heroWidgets.length + gi + wi) * 70)}>
+                    {withPeek(key, renderWidget(key))}
+                  </Animated.View>
+                ),
+              )}
             </View>
           ))}
           </View>
@@ -1857,7 +1880,7 @@ export default function TodayScreen() {
           giãn ấy thành một.
       */}
       {editMode && (
-        <Animated.View style={styles.editWrap} entering={FadeIn.duration(duration.appear)}>
+        <View style={styles.editWrap}>
           <Text style={styles.editHint}>
             {lang === 'vi'
               ? 'Sắp xếp lại widget và nhóm theo ý bạn'
@@ -1981,7 +2004,7 @@ export default function TodayScreen() {
               {lang === 'vi' ? 'Khôi phục mặc định' : 'Reset to default'}
             </Text>
           </PressScale>
-        </Animated.View>
+        </View>
       )}
       </Animated.ScrollView>
       {/*

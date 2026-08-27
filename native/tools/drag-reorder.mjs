@@ -206,6 +206,38 @@ if (!/if \(f < 0 \|\| f === index\) return 0;/.test(dragCode)) {
       'chỗ, và một lò xo lúc này là hoạt hoạ cho một chuyển động đã xảy ra rồi',
   );
 }
+/* ── 5b. tay nắm 3 gạch, và nó TRƯỢT VÀO như Apple Music ────────────────── */
+/*
+  Người dùng yêu cầu cả hai, và chúng là một: bản trước cho cả trang sắp xếp
+  `FadeIn` một lượt — mờ cả trang đọc ra như trang vừa được TẢI LẠI, trong khi
+  thứ vừa xảy ra là bạn đổi chế độ của một trang vẫn đang ở đó. Apple Music làm
+  ngược: trang đứng yên, và những điều khiển MỚI trượt vào từ mép phải.
+
+  Nên luật canh cả hai vế — có tay nắm, và trang KHÔNG mờ cả lượt.
+*/
+if (!/styles\.handle/.test(dragCode) || !/styles\.grip/.test(dragCode)) {
+  problems.push(`${DRAG}: mất tay nắm ba vạch — không có gì nói cho người dùng biết thẻ này kéo được`);
+}
+if (!/withDelay\(index \* HANDLE_STAGGER, withSpring\(1, HANDLE_IN\)\)/.test(dragCode)) {
+  problems.push(
+    `${DRAG}: tay nắm không trượt vào theo nhịp lệch — hiện thẳng ra thì nó đọc như một phần vốn có của ` +
+      'thẻ, chứ không phải thứ vừa mở ra cùng chế độ sắp xếp',
+  );
+}
+if (!/pointerEvents="none"/.test(dragCode)) {
+  problems.push(
+    `${DRAG}: tay nắm ăn chạm — cả tấm thẻ đã là vùng kéo, nên nó là DẤU HIỆU chứ không phải một vùng chạm ` +
+      'thứ hai rộng 24 điểm',
+  );
+}
+const todaySrc = read(TODAY);
+if (/styles\.editWrap\}\s*entering=/.test(todaySrc) || /<Animated\.View style=\{styles\.editWrap\}/.test(todaySrc)) {
+  problems.push(
+    `${TODAY}: trang sắp xếp vẫn mờ cả lượt khi vào chế độ — chuyển động phải nằm ở thứ vừa XUẤT HIỆN (tay ` +
+      'nắm), không ở cả trang vốn đã ở đó',
+  );
+}
+
 /* Không bóng đổ và không opacity trên thẻ đang kéo — hai thứ đã được đo và ghi
    lại ở nơi khác trong repo này. */
 if (/shadowOpacity|shadowRadius/.test(dragCode)) {
@@ -253,6 +285,14 @@ const SELF = [
       return got >= 4 ? ['vượt quá cuối danh sách'] : [];
     },
     expect: /vượt quá cuối/,
+  },
+  {
+    name: 'tay nắm hiện thẳng, không trượt vào',
+    src: drag,
+    build: (x) => x,
+    mutate: (x) => x.replace('withDelay(index * HANDLE_STAGGER, withSpring(1, HANDLE_IN))', '1'),
+    check: (x) => (/withDelay\(index \* HANDLE_STAGGER/.test(x) ? [] : ['tay nắm không trượt vào theo nhịp lệch']),
+    expect: /không trượt vào/,
   },
   {
     name: 'khe trống nhảy thẳng thay vì giãn bằng lò xo',

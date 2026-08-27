@@ -56,12 +56,25 @@ const problems = [];
 function model(src) {
   const bad = [];
 
-  /* ── biểu thức `entering` của thẻ nhóm ──────────────────────────────────── */
-  const ent = /entering=\{\s*(\w+)\s*\n?\s*\?\s*undefined\s*\n?\s*:\s*([\s\S]*?)\n\s*\}>/.exec(src);
+  /*
+    ── cổng nay nằm ở LOẠI NODE, không ở giá trị prop ──
+
+    Bản trước viết `entering={cascaded ? undefined : …}` trên một
+    `Animated.View`. Nó đúng về hoạt hoạ và vẫn để lại một lỗi: một node của
+    Reanimated từng khai layout animation vẫn tham gia lượt sắp xếp lại của thư
+    viện kể cả khi prop đã là `undefined`. Đổi thứ tự nhóm xong, tiêu đề đi tới
+    chỗ mới còn widget vẫn vẽ ở chỗ cũ — chúng chồng lên thẻ của nhóm khác.
+
+    Nên hình dạng đúng là: cascade xong thì dựng `View` THUẦN. Luật này đọc
+    đúng điều đó, và nó mạnh hơn luật cũ — `entering={undefined}` không còn
+    lọt qua.
+  */
+  const ent = /\n\s*(\w+) \? \(\s*\n\s*<View key=\{key\}[\s\S]*?\) : \(\s*\n\s*<Animated\.View[\s\S]*?entering=\{([\s\S]*?)\}>/.exec(src);
   if (!ent) {
     bad.push(
-      'không tìm thấy `entering` có cổng ở thẻ nhóm — cascade đang chạy vô điều kiện, tức là mỗi lần ' +
-        'đóng thẻ chỉ số cả dashboard diễn lại màn chào',
+      'thẻ nhóm không còn cổng "cascade xong thì dựng View thuần" — hoặc cascade chạy vô điều kiện (mỗi lần ' +
+        'đóng thẻ chỉ số cả dashboard diễn lại màn chào), hoặc nó vẫn là Animated.View sau khi đã xong, và ' +
+        'node ấy vẫn tham gia lượt sắp xếp lại của Reanimated: đổi thứ tự nhóm thì widget kẹt lại chỗ cũ',
     );
     return { bad };
   }
@@ -248,9 +261,9 @@ const mascot = read(MASCOT);
 /* ── phép tự kiểm ─────────────────────────────────────────────────────────── */
 const SELF = [
   {
-    name: 'gỡ cổng (bản đã ship: cascade chạy mỗi lần đóng thẻ)',
-    mutate: (s) => s.replace(/entering=\{\s*cascaded\s*\n?\s*\?\s*undefined\s*\n?\s*:\s*/, 'entering={'),
-    expect: /không tìm thấy `entering` có cổng/,
+    name: 'giữ Animated.View sau khi cascade xong (widget kẹt lại chỗ cũ khi đổi thứ tự)',
+    mutate: (s) => s.replace('cascaded ? (\n                  <View key={key}', 'cascaded ? (\n                  <Animated.View key={key}'),
+    expect: /không còn cổng "cascade xong thì dựng View thuần"/,
   },
   {
     name: 'gắn cờ vào `mounted` (giết cascade ở lần mở app)',
