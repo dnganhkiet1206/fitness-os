@@ -44,6 +44,7 @@ import {
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PeekHost } from '@/components/ascnd/card-peek';
+import { ToolReveal } from '@/components/ascnd/tool-reveal';
 import { StreakChip } from '@/components/ascnd/streak-chip';
 import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessAura } from '@/components/ascnd/readiness-aura';
@@ -418,6 +419,15 @@ export default function TodayScreen() {
   /* Câu hỏi "có thẻ nào đang mở không" — thứ mà tấm nội dung và hiệu ứng cuộn
      cần biết. Chúng không cần biết là thẻ NÀO. */
   const heroOpen = expandedAt !== null;
+
+  /**
+   * Nút chỉnh sửa đã được mở ra bên cạnh nút cài đặt chưa.
+   *
+   * Đóng lại khi vào chế độ chỉnh sửa: lúc ấy cả hàng đổi thành đúng một nút
+   * Xong, nên để cờ ở trạng thái mở là để dành sẵn một cú bấm hụt cho lần
+   * người dùng thoát ra.
+   */
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   /**
    * Cascade thẻ thông tin chạy ĐÚNG MỘT LẦN — lần app dựng chúng đầu tiên.
@@ -1829,22 +1839,61 @@ export default function TodayScreen() {
           {/* The streak sits before the buttons because it is a *reading*, not
               an action — and it is only ever here, in the bar you land on. */}
           {!editMode && <StreakChip />}
+          {/*
+            Nút chỉnh sửa GỘP vào nút cài đặt: nó nằm sau nút kia cho tới khi
+            người dùng hỏi tới.
+
+            ── vì sao nó giấu được mà không mất gì ──
+
+            Sắp xếp lại dashboard là việc làm một lần rồi thôi. Nó chiếm một
+            trong ba ô ở góc trên suốt mọi ngày còn lại, cạnh một con số người
+            ta thật sự đọc mỗi ngày (chuỗi ngày) và một lối đi người ta dùng
+            thường xuyên. Ba thứ ngang hàng nhau trong khi tần suất dùng của
+            chúng chênh nhau hàng chục lần.
+
+            ── vì sao KHÔNG bọc trong `Expander` ──
+
+            `Expander` chạy chiều CAO. Ở đây phải là chiều rộng, và phải mọc ra
+            bên TRÁI để nút bánh răng đứng yên — xem `tool-reveal.tsx`.
+
+            `TOP_BAR_H` chứ không phải một con số gõ tay: đây đúng là cạnh của
+            `squareBtn`, và hai bản sao sẽ lệch ngay lần đầu ai đó chỉnh một
+            bên. Khoảng cách 8 điểm hai bên do `gap` của hàng lo; lúc đóng còn
+            lại hai `gap` cạnh một hộp rộng 0, tức 16 điểm giữa viên chuỗi ngày
+            và nút bánh răng thay vì 8 — chênh lệch ấy đứng cạnh một vùng trống
+            chiếm hơn nửa bề ngang, nên nó rẻ hơn nhiều so với một lề âm để
+            triệt tiêu đúng một cái `gap`.
+          */}
+          {!editMode && (
+            <ToolReveal open={toolsOpen} width={TOP_BAR_H}>
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel={i18n.a11yEditLayout}
+                style={styles.squareBtn}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setToolsOpen(false);
+                  setEditMode(true);
+                  setNewGroupName('');
+                }}>
+                <Icon icon={Pencil} size={17} color="rgba(237,237,237,0.7)" />
+              </PressScale>
+            </ToolReveal>
+          )}
+          {editMode && (
           <PressScale
             accessibilityRole="button"
-            accessibilityLabel={editMode ? i18n.a11yDoneEditing : i18n.a11yEditLayout}
-            accessibilityState={{ selected: editMode }}
-            style={[styles.squareBtn, editMode && styles.squareBtnActive]}
+            accessibilityLabel={i18n.a11yDoneEditing}
+            accessibilityState={{ selected: true }}
+            style={[styles.squareBtn, styles.squareBtnActive]}
             onPress={() => {
               Haptics.selectionAsync();
-              setEditMode(!editMode);
+              setEditMode(false);
               setNewGroupName('');
             }}>
-            <Icon
-              icon={editMode ? Check : Pencil}
-              size={editMode ? 20 : 17}
-              color={editMode ? colors.primary : 'rgba(237,237,237,0.7)'}
-            />
+            <Icon icon={Check} size={20} color={colors.primary} />
           </PressScale>
+          )}
           {!editMode && (
             <>
               {/*
@@ -1871,15 +1920,62 @@ export default function TodayScreen() {
                 type. That is now two taps through the assistant, and the same
                 two taps ask a better question.
               */}
-              {/* Settings, back where it was. It is also the fifth tab now, so
-                  this is a second way in rather than the only one — kept
-                  because it is where the hand already goes on this page. */}
+              {/*
+                Settings, và đây là lối vào DUY NHẤT.
+
+                Chú thích trước đây ở đúng chỗ này ghi: *"It is also the fifth
+                tab now, so this is a second way in rather than the only one"*.
+                Câu ấy đã thôi đúng và không ai sửa. `app-tabs.tsx` nói ngược
+                lại, bằng chữ: *"four tabs, and Settings is not one of them…
+                It is reached from the Today header, where its button had
+                always been."*
+
+                Ghi lại ở đây vì tôi đã tin câu cũ và đưa nó cho người dùng như
+                một dữ kiện khi hỏi họ nên gộp kiểu nào — tức là một chú thích
+                lệch khỏi mã đã trực tiếp lái một quyết định sản phẩm. Đó đúng
+                là chế độ hỏng mà repo này đi săn, và lần này nó bắt được chính
+                tôi.
+
+                Hệ quả cho cái gộp bên dưới: chạm thứ hai vào bánh răng là
+                đường duy nhất tới Cài đặt trong cả app, nên nhánh
+                `router.push('/settings')` không phải một tiện ích — mất nó là
+                mất hẳn màn hình. `tools/tool-merge.mjs` canh đúng điều đó.
+              */}
+              {/*
+                Một nút, hai việc — và nó chỉ đọc được vì việc thứ hai KHÔNG
+                mất đi.
+
+                Chạm lần đầu: mở nút chỉnh sửa ra. Chạm tiếp: vào Cài đặt.
+
+                Cái giá là vào Cài đặt tốn hai chạm, và nó ĐẮT hơn tôi tưởng
+                lúc đề xuất: đây là lối vào duy nhất trong cả app — xem chú
+                thích ngay dưới. Tôi đã đọc một câu chú thích cũ nói rằng
+                Settings còn là một tab, tin nó, và đưa nó cho người dùng như
+                một dữ kiện khi hỏi họ chọn kiểu gộp nào.
+
+                Điều đỡ cho nó: Cài đặt là một tiện ích mở thi thoảng, và
+                `app-tabs.tsx` lập luận đúng như vậy khi bỏ nó khỏi thanh tab
+                ("settings is a utility"). Một chạm thêm trên một màn hình mở
+                thi thoảng là cái giá nhỏ. Nhưng đó là một cái giá, không phải
+                số không, và người quyết định phải được biết đúng con số.
+
+                `accessibilityState.expanded` cộng nhãn đổi theo trạng thái là
+                phần bắt buộc: mắt đọc được nút chỉnh sửa vừa hiện ra, còn
+                trình đọc màn hình thì không — nó chỉ có cái nhãn.
+              */}
               <PressScale
                 accessibilityRole="button"
-                accessibilityLabel={i18n.a11ySettings}
+                accessibilityLabel={
+                  toolsOpen ? i18n.a11ySettings : lang === 'vi' ? 'Tuỳ chọn' : 'More options'
+                }
+                accessibilityState={{ expanded: toolsOpen }}
                 style={styles.squareBtn}
                 onPress={() => {
                   Haptics.selectionAsync();
+                  if (!toolsOpen) {
+                    setToolsOpen(true);
+                    return;
+                  }
                   router.push('/settings');
                 }}>
                 <Icon icon={Settings} size={20} color="rgba(237,237,237,0.7)" />
