@@ -62,13 +62,27 @@ export const topChromeVisible = makeMutable(1);
  * `4` điểm: gần như "trang vừa nhúc nhích". Hàng nút nằm ngay đỉnh nên chính
  * việc nội dung bắt đầu trôi dưới nó đã là tín hiệu; không cần chờ thêm.
  *
- * Ẩn ở `2`, hiện lại ở `8` — hai con số khác nhau CÓ CHỦ ĐÍCH. Nhạy hai chiều
- * như nhau thì một rung tay nhỏ lúc cuộn xuống cũng đủ nhá hàng nút hiện lại,
- * và cái nhấp nháy đó tệ hơn hẳn việc ẩn chậm.
+ * ── và đường về chỉ có MỘT ──
+ *
+ * Hàng nút quay lại khi người dùng cuộn về ĐẦU TRANG, không quay lại vì một
+ * lý do nào khác. Đây là bản sửa thứ hai của cùng một câu hỏi, nên cả hai bản
+ * bị loại đều đáng ghi lại:
+ *
+ *   · **Ngừng cuộn thì hiện lại** (thừa hưởng hẹn giờ nghỉ 800ms của thanh
+ *     tab). Đọc ra là: dừng lại đọc một tấm thẻ giữa trang thì ba cái nút tự
+ *     bò vào góc, đè lên nội dung, không ai gọi chúng. Với thanh tab thì hẹn
+ *     giờ ấy đúng — điều hướng phải luôn với tới được — nhưng ba cái nút này
+ *     không phải điều hướng.
+ *
+ *   · **Cuộn lên một chút thì hiện lại.** Gần đúng, và vẫn không phải thứ
+ *     Apple làm: tiêu đề lớn của iOS chỉ nở lại khi bạn về tới đỉnh, chứ không
+ *     nở ra mỗi lần bạn nhích ngược lại vài dòng để đọc lại một câu.
+ *
+ * Nên `decideTop` chỉ còn hai vế: đi khi trang trôi xuống, về khi trang chạm
+ * đỉnh. Không có vế thứ ba, và không có hẹn giờ nào chạm vào nó.
  */
 const TOP_AT = 4;
 const TOP_HIDE_DELTA = 2;
-const TOP_SHOW_DELTA = 8;
 /** Nhịp `toggle` — hàng nút cao 44 điểm, đi hết 52 điểm; quãng ngắn, nhịp ngắn. */
 const TOP_MS = 180;
 /** `out` nên nó XUẤT PHÁT ở tốc độ cao nhất: cú đi bắt đầu ngay ở khung hình
@@ -80,7 +94,9 @@ const topTarget = makeMutable(1);
 function decideTop(y: number, delta: number): 0 | 1 | null {
   'worklet';
   if (delta > TOP_HIDE_DELTA && y > TOP_AT) return 0;
-  if (delta < -TOP_SHOW_DELTA || y <= TOP_AT) return 1;
+  /* Đường về DUY NHẤT — xem `topChromeVisible`. Không có nhánh cuộn-lên, và
+     không hẹn giờ nào gọi tới hàm này. */
+  if (y <= TOP_AT) return 1;
   return null;
 }
 
@@ -166,11 +182,12 @@ export function armTabBarRestore() {
     idleTimer = undefined;
     target.value = 1;
     tabBarVisible.value = withSpring(1, SPRING);
-    /* Hàng nút đỉnh về theo cùng nhịp nghỉ ấy. Nếu quên nó ở đây thì có một
-       trạng thái không lối ra: cuộn xuống một chút rồi dừng, thanh tab về mà
-       hàng nút ở lại — và cách duy nhất lấy lại các nút là cuộn lên. */
-    topTarget.value = 1;
-    topChromeVisible.value = withTiming(1, { duration: TOP_MS, easing: TOP_EASE });
+    /* Hàng nút đỉnh KHÔNG về theo nhịp nghỉ này, và đó là điểm khác nhau giữa
+       hai tầng chrome. Thanh tab là điều hướng: nó phải luôn với tới được, nên
+       ngừng cuộn 800ms là nó quay lại. Ba cái nút ở góc trên không phải điều
+       hướng — chúng chỉ có một đường về, là đỉnh trang. Bản trước gọi cả hai ở
+       đây, và đọc ra là: dừng lại đọc một tấm thẻ giữa trang thì ba cái nút tự
+       bò vào góc đè lên nội dung. */
   };
   idleTimer = setTimeout(tick, IDLE_MS);
 }
