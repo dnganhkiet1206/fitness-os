@@ -4,12 +4,48 @@ import { View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
+  scrollTo,
   useAnimatedStyle,
+  useDerivedValue,
+  useFrameCallback,
   useSharedValue,
+  withSpring,
   withTiming,
+  type AnimatedRef,
+  type SharedValue,
 } from 'react-native-reanimated';
 
 import { duration } from '@/constants/motion';
+
+/**
+ * Cú NHẤC, và vì sao nó là lò xo chứ không phải một giá trị đặt thẳng.
+ *
+ * iOS nhấc một hàng lên khỏi danh sách trước khi cho bạn kéo nó: nó phình ra
+ * một chút, và các hàng khác GIÃN RA nhường chỗ. Cả hai đều chạy bằng lò xo, và
+ * chính cái nảy nhẹ ấy là thứ làm cử chỉ đọc ra như nhặt một vật lên chứ không
+ * phải như một ô trong bảng đổi giá trị.
+ *
+ * Bản đầu đặt `scale: 1.02` thẳng và dịch hàng bên cạnh thẳng tới chỗ mới —
+ * đúng về vị trí, và không có gì ở đó cả.
+ *
+ * `damping: 18, stiffness: 260` — mềm hơn `press.spring` (20/400) có chủ đích:
+ * viên `press` trả lời một cú chạm trong chưa tới 120ms vì ngón tay sắp nhấc
+ * lên; ở đây ngón tay còn ở lại suốt cú kéo, nên cú nhấc có chỗ để nảy.
+ */
+const LIFT = { damping: 18, stiffness: 260 };
+
+/**
+ * Chỗ trống mở ra dưới hàng đang kéo.
+ *
+ * Chậm hơn cú nhấc một bậc: hàng bên cạnh là thứ PHẢN ỨNG, và nó nặng hơn —
+ * một tấm thẻ đầy widget, không phải cái vật vừa được nhấc lên.
+ */
+const GAP_SPRING = { damping: 20, stiffness: 180 };
+
+/** Quãng tính từ mép khung nhìn mà tự-cuộn bắt đầu chạy. */
+const EDGE = 96;
+/** Điểm cuộn mỗi khung hình khi ngón tay ở sát mép nhất. */
+const EDGE_SPEED = 12;
 
 /**
  * Nhấn giữ rồi kéo để đổi thứ tự — cho những thẻ CAO KHÁC NHAU.
@@ -49,11 +85,20 @@ export function DragReorder({
   items,
   gap,
   onMove,
+  scrollRef,
+  scrollY,
+  viewportH,
+  maxScroll,
 }: {
   items: { key: string; node: React.ReactNode }[];
   /** Khoảng cách dọc giữa hai hàng, để một "bước" tính đúng. */
   gap: number;
   onMove: (from: number, to: number) => void;
+  scrollRef: AnimatedRef<Animated.ScrollView>;
+  /** Vị trí cuộn hiện tại — trang đã theo dõi sẵn cho những việc khác. */
+  scrollY: SharedValue<number>;
+  viewportH: SharedValue<number>;
+  maxScroll: SharedValue<number>;
 }) {
   const n = items.length;
   /* Số đo sống ở shared value vì worklet đọc nó mỗi khung hình; bản ref là để
@@ -63,6 +108,39 @@ export function DragReorder({
   const from = useSharedValue(-1);
   const to = useSharedValue(-1);
   const dy = useSharedValue(0);
+  const lift = useSharedValue(0);
+  /** Vị trí ngón tay trên MÀN HÌNH, để biết nó đã tới mép chưa. */
+  const fingerY = useSharedValue(0);
+  /** Mức cuộn lúc bắt đầu kéo — xem `shift` ở `Row`. */
+  const startScroll = useSharedValue(0);
+
+  /*
+    ── tự cuộn khi kéo tới mép ──
+
+    Phải là một ĐỒNG HỒ KHUNG HÌNH, không phải một phép tính trong `onUpdate`.
+    `onUpdate` chỉ bắn khi ngón tay DI CHUYỂN; giữ nguyên ngón tay ở sát mép
+    dưới là trạng thái phổ biến nhất của thao tác này, và ở đó không có sự kiện
+    nào cả — trang sẽ đứng im đúng lúc người dùng đang chờ nó chạy.
+
+    `setActive` tắt hẳn đồng hồ khi không ai kéo, nên nó không tồn tại ngoài
+    quãng vài giây có một ngón tay trên màn hình. `tools/motion.mjs` miễn cho
+    tệp này luật Reduce Motion vì đóng băng cú cuộn là gỡ mất tính năng, và nó
+    đổi lại bằng cách ĐÒI cái cổng này.
+  */
+  const autoScroll = useFrameCallback(() => {
+    if (from.value < 0 || viewportH.value <= 0) return;
+    const top = fingerY.value;
+    const bottom = viewportH.value - fingerY.value;
+    let v = 0;
+    if (top < EDGE) v = -EDGE_SPEED * (1 - Math.max(top, 0) / EDGE);
+    else if (bottom < EDGE) v = EDGE_SPEED * (1 - Math.max(bottom, 0) / EDGE);
+    if (v === 0) return;
+    const next = Math.min(Math.max(scrollY.value + v, 0), maxScroll.value);
+    if (next === scrollY.value) return;
+    /* Cuộn KHÔNG animate: đồng hồ này đã chạy mỗi khung hình rồi, nên một
+       animation chồng lên nó là hai thứ cùng lái một giá trị. */
+    scrollTo(scrollRef, 0, next, false);
+  }, false);
 
   const measure = useCallback(
     (i: number, e: LayoutChangeEvent) => {
@@ -85,6 +163,13 @@ export function DragReorder({
     Haptics.selectionAsync();
   }, []);
 
+  const setScrolling = useCallback(
+    (on: boolean) => {
+      autoScroll.setActive(on);
+    },
+    [autoScroll],
+  );
+
   return (
     <View style={{ gap }}>
       {items.map((item, i) => (
@@ -97,9 +182,14 @@ export function DragReorder({
           from={from}
           to={to}
           dy={dy}
+          lift={lift}
+          fingerY={fingerY}
+          startScroll={startScroll}
+          scrollY={scrollY}
           onMeasure={measure}
           onCommit={commit}
-          onTick={tick}>
+          onTick={tick}
+          onScrolling={setScrolling}>
           {item.node}
         </Row>
       ))}
@@ -121,21 +211,31 @@ function Row({
   from,
   to,
   dy,
+  lift,
+  fingerY,
+  startScroll,
+  scrollY,
   onMeasure,
   onCommit,
   onTick,
+  onScrolling,
   children,
 }: {
   index: number;
   count: number;
   gap: number;
-  heights: ReturnType<typeof useSharedValue<number[]>>;
-  from: ReturnType<typeof useSharedValue<number>>;
-  to: ReturnType<typeof useSharedValue<number>>;
-  dy: ReturnType<typeof useSharedValue<number>>;
+  heights: SharedValue<number[]>;
+  from: SharedValue<number>;
+  to: SharedValue<number>;
+  dy: SharedValue<number>;
+  lift: SharedValue<number>;
+  fingerY: SharedValue<number>;
+  startScroll: SharedValue<number>;
+  scrollY: SharedValue<number>;
   onMeasure: (i: number, e: LayoutChangeEvent) => void;
   onCommit: (f: number, t: number) => void;
   onTick: () => void;
+  onScrolling: (on: boolean) => void;
   children: React.ReactNode;
 }) {
   /**
@@ -176,15 +276,30 @@ function Row({
        trọn cử chỉ. Không cần `blocksExternalGesture`, thứ sẽ chặn cuộn ngay từ
        lúc ngón tay chạm xuống. */
     .activateAfterLongPress(260)
-    .onStart(() => {
+    .onStart((e) => {
       from.value = index;
       to.value = index;
       dy.value = 0;
+      startScroll.value = scrollY.value;
+      fingerY.value = e.absoluteY;
+      /* Cú nhấc — lò xo, không phải một giá trị đặt thẳng. Xem `LIFT`. */
+      lift.value = withSpring(1, LIFT);
       runOnJS(onTick)();
+      runOnJS(onScrolling)(true);
     })
     .onUpdate((e) => {
       dy.value = e.translationY;
-      const t = target(index, e.translationY, heights.value);
+      fingerY.value = e.absoluteY;
+      /*
+        Quãng dịch tính trong HỆ TOẠ ĐỘ NỘI DUNG, không phải màn hình.
+
+        `translationY` đo theo màn hình. Khi tự-cuộn chạy, nội dung trôi dưới
+        ngón tay — ngón tay đứng yên mà hàng đang kéo phải đi tiếp. Cộng thêm
+        phần trang đã cuộn kể từ lúc nhấc lên là thứ giữ cho thẻ dính vào ngón
+        tay, và cũng là thứ giữ cho vị trí đích tính đúng.
+      */
+      const shift = e.translationY + (scrollY.value - startScroll.value);
+      const t = target(index, shift, heights.value);
       if (t !== to.value) {
         to.value = t;
         /* Rung MỘT lần mỗi khi vị trí đích đổi, không phải mỗi khung hình. */
@@ -192,45 +307,80 @@ function Row({
       }
     })
     .onEnd(() => {
+      runOnJS(onScrolling)(false);
       runOnJS(onCommit)(from.value, to.value);
       /* Trả về 0 ngay, không animate: cây sắp được dựng lại theo thứ tự MỚI,
          nên hàng này đã ở đúng chỗ của nó. Animate về 0 là chạy một hiệu ứng
          trên một hàng vừa đổi nghĩa. */
       dy.value = 0;
+      lift.value = withSpring(0, LIFT);
       from.value = -1;
       to.value = -1;
     })
     .onFinalize(() => {
+      runOnJS(onScrolling)(false);
       /* Cử chỉ bị huỷ (gọi điện tới, chuyển app) cũng phải trả trạng thái về,
          nếu không hàng kẹt ở giữa chừng và không gì đưa nó về. */
       if (from.value !== -1) {
         dy.value = withTiming(0, { duration: duration.move });
+        lift.value = withSpring(0, LIFT);
         from.value = -1;
         to.value = -1;
       }
     });
 
-  const style = useAnimatedStyle(() => {
+  /**
+   * Chỗ hàng này phải đứng trong lúc có người kéo — đi tới bằng LÒ XO.
+   *
+   * Bản đầu trả thẳng `±step`, nên hàng bên cạnh NHẢY tới chỗ mới ở đúng khung
+   * hình vị trí đích đổi. Đúng về vị trí và không đọc ra như iOS: ở đó khe
+   * trống GIÃN RA, và cái giãn ấy mới là thứ nói rằng danh sách đang nhường chỗ
+   * chứ không phải đang chớp sang một trạng thái khác.
+   *
+   * ── và vì sao nó SNAP khi thả ──
+   *
+   * `from.value < 0` trả về 0 THẲNG, không qua lò xo. Lúc thả, cây được dựng
+   * lại theo thứ tự mới, nên hàng này đã nằm đúng chỗ do layout đặt. Cho nó
+   * chạy lò xo từ `±step` về 0 lúc ấy là bắt nó nhảy xuống rồi bò ngược lên —
+   * một hoạt hoạ cho một chuyển động đã xảy ra rồi.
+   */
+  const offset = useDerivedValue(() => {
     const f = from.value;
-    if (f < 0) return { transform: [{ translateY: 0 }, { scale: 1 }], zIndex: 0, opacity: 1 };
-    if (f === index) {
-      return {
-        transform: [{ translateY: dy.value }, { scale: 1.02 }],
-        /* Lên trên các hàng khác trong lúc kéo, nếu không nó chui xuống dưới
-           cái hàng nó vừa đi qua. `zIndex` không phải thuộc tính layout — nó
-           chỉ đổi thứ tự vẽ. */
-        zIndex: 10,
-        opacity: 0.96,
-      };
-    }
+    if (f < 0 || f === index) return 0;
     const h = heights.value;
     const step = (h[f] ?? 0) + gap;
     const t = to.value;
     /* Các hàng nằm GIỮA chỗ cũ và chỗ mới dịch đúng một bước, ngược chiều kéo.
        Hàng ngoài khoảng đó không nhúc nhích. */
-    if (f < index && index <= t) return { transform: [{ translateY: -step }, { scale: 1 }], zIndex: 0, opacity: 1 };
-    if (t <= index && index < f) return { transform: [{ translateY: step }, { scale: 1 }], zIndex: 0, opacity: 1 };
-    return { transform: [{ translateY: 0 }, { scale: 1 }], zIndex: 0, opacity: 1 };
+    const want = f < index && index <= t ? -step : t <= index && index < f ? step : 0;
+    return withSpring(want, GAP_SPRING);
+  });
+
+  const style = useAnimatedStyle(() => {
+    if (from.value === index) {
+      return {
+        transform: [
+          { translateY: dy.value + (scrollY.value - startScroll.value) },
+          /*
+            Phình 4% khi nhấc lên. KHÔNG kèm bóng đổ: `liquid-glass.tsx` đã đo
+            và ghi lại rằng trên nền #070708 thì "#070708 dưới #070708 là không
+            có gì" — một cái bóng ở đây tốn một lượt vẽ để đổi lấy không pixel
+            nào. Thứ kể chuyện "vật này đã rời khỏi mặt phẳng" là cỡ của nó
+            cộng với khe trống đang giãn ra bên dưới.
+
+            Cũng KHÔNG kèm `opacity`: cả phiên này là chuyện gỡ những lượt gộp
+            ngoài màn ra khỏi màn hình này, và một tấm thẻ đầy widget là đúng
+            loại nhóm nhiều con mà `opacity` bắt iOS gộp lại.
+          */
+          { scale: 1 + lift.value * 0.04 },
+        ],
+        /* Lên trên các hàng khác trong lúc kéo, nếu không nó chui xuống dưới
+           cái hàng nó vừa đi qua. `zIndex` không phải thuộc tính layout — nó
+           chỉ đổi thứ tự vẽ. */
+        zIndex: 10,
+      };
+    }
+    return { transform: [{ translateY: offset.value }, { scale: 1 }], zIndex: 0 };
   });
 
   return (

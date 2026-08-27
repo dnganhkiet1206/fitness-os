@@ -241,15 +241,52 @@ for (const f of files) {
  * persistent motion — the mascot breathing, the studio loop — so the hole is
  * exactly where it matters.
  */
+/**
+ * Ngoại lệ, và vì sao chúng phải có tên.
+ *
+ * Luật trên đúng cho MOTION: thứ chuyển động để trông đẹp. Nó sai cho một
+ * frame clock đang làm một việc CHỨC NĂNG mà người dùng đang trực tiếp điều
+ * khiển — ở đó "đóng băng" không phải là một sự nhường nhịn, nó là gỡ mất tính
+ * năng, tức đổi một sự loại trừ này lấy một sự loại trừ khác. Chính tệp
+ * `use-reduced-motion.ts` nói ra nguyên tắc ấy khi từ chối giấu Koa đi.
+ *
+ * Nên ngoại lệ được liệt kê kèm lý do, và kèm một điều kiện MẠNH HƠN vế nó
+ * miễn: đồng hồ phải có cổng bật/tắt (`setActive`). Một frame clock chạy suốt
+ * đời màn hình không được núp sau danh sách này.
+ */
+const FRAME_CLOCK_EXEMPT = {
+  'src/components/ascnd/drag-reorder.tsx':
+    'đồng hồ này chỉ chạy trong lúc một ngón tay đang giữ một thẻ, và việc duy nhất nó làm là CUỘN ' +
+    'trang khi ngón tay tới mép — đóng băng nó là làm người bật Reduce Motion không kéo được thẻ ra ' +
+    'khỏi vùng nhìn thấy, tức gỡ mất tính năng chứ không phải giảm chuyển động',
+};
+
 for (const f of files) {
   const code = strip(read(f));
   if (!/useFrameCallback/.test(code)) continue;
   if (f.endsWith('use-reduced-motion.ts')) continue;
+  if (FRAME_CLOCK_EXEMPT[f]) {
+    /* Vế đánh đổi: được miễn đọc Reduce Motion, nhưng KHÔNG được chạy tự do. */
+    if (!/\.setActive\(/.test(code)) {
+      problems.push(
+        `${f}: được miễn luật Reduce Motion vì "${FRAME_CLOCK_EXEMPT[f]}", nhưng đồng hồ không có cổng ` +
+          '`setActive` — một frame clock chạy suốt đời màn hình không được núp sau ngoại lệ đó',
+      );
+    }
+    continue;
+  }
   if (!/reduceMotionSV/.test(code)) {
     problems.push(
       `${f}: dùng useFrameCallback nhưng không đọc reduceMotionSV — ` +
         'Reanimated không tự áp Reduce Motion cho frame callback, chỗ này phải tự kiểm tra',
     );
+  }
+}
+
+/* Một lý do để lại cho mã không còn làm việc đó tệ hơn không có lý do. */
+for (const f of Object.keys(FRAME_CLOCK_EXEMPT)) {
+  if (!/useFrameCallback/.test(strip(read(f)))) {
+    problems.push(`${f}: nằm trong FRAME_CLOCK_EXEMPT nhưng không còn frame clock nào — gỡ khỏi danh sách`);
   }
 }
 

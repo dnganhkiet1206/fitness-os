@@ -21,6 +21,7 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextIn
 import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import Animated, {
+  useAnimatedRef,
   runOnJS,
   useAnimatedProps,
   useAnimatedScrollHandler,
@@ -538,6 +539,20 @@ export default function TodayScreen() {
    * cảm giác khác hẳn với một chỉ báo tường thuật CỬ CHỈ.
    */
   const scrollY = useSharedValue(0);
+
+  /*
+    Chiều cao khung nhìn và mức cuộn tối đa, để tự-cuộn khi kéo biết mép ở đâu
+    và biết lúc nào phải dừng. Đọc từ chính sự kiện cuộn — `layoutMeasurement`
+    và `contentSize` đi kèm mỗi sự kiện — nên không tốn thêm phép đo nào.
+
+    Khai ở ĐÂY, cạnh `scrollY`, chứ không ở chỗ dùng: worklet cuộn bên dưới đọc
+    chúng, và một worklet bắt biến nó tham chiếu ngay lúc hook được gọi — khai
+    xuống dưới là vùng chết tạm thời và app ra trắng trước khi vẽ. Bản nháp đầu
+    của đúng hai dòng này khai ở dòng 866 trong khi worklet dựng ở dòng 622;
+    `tools/worklet-tdz.mjs` bắt được.
+  */
+  const viewportH = useSharedValue(0);
+  const maxScroll = useSharedValue(0);
   /* Đọc một lần ở JS, dùng trong worklet như một hằng số — không phải shared
      value, vì chiều cao màn hình không đổi giữa hai frame. */
   /* Quãng cuộn đủ để tấm phủ kín hero. Neo vào chiều cao màn hình vì đó là thứ
@@ -634,6 +649,8 @@ export default function TodayScreen() {
       scrollPause.value = false;
     },
     onScroll: (e) => {
+      viewportH.value = e.layoutMeasurement.height;
+      maxScroll.value = Math.max(0, e.contentSize.height - e.layoutMeasurement.height);
     /*
       Thanh tab: quyết định và ghi NGAY TẠI ĐÂY, trên luồng UI.
 
@@ -846,7 +863,15 @@ export default function TodayScreen() {
    * là đủ.
    */
 
-  const scroller = useRef<ScrollView>(null);
+  /*
+    `useAnimatedRef` chứ không phải `useRef`: `scrollTo` của Reanimated chỉ nhận
+    một animated ref, và tự-cuộn-khi-kéo phải chạy trên luồng UI — ngón tay
+    đang giữ một thẻ, nên một chuyến sang JS mỗi khung hình là đúng chỗ không
+    được phép có. `.current` vẫn là chính component, nên mọi lời gọi
+    `scroller.current?.scrollTo({...})` ở luồng JS không đổi gì.
+  */
+  const scroller = useAnimatedRef<Animated.ScrollView>();
+
 
   /**
    * Vào/ra chế độ sắp xếp, và LUÔN đưa trang về đầu.
@@ -1852,6 +1877,10 @@ export default function TodayScreen() {
           <DragReorder
             gap={spacing.md}
             onMove={moveGroupTo}
+            scrollRef={scroller}
+            scrollY={scrollY}
+            viewportH={viewportH}
+            maxScroll={maxScroll}
             items={config.groups.map((group, gi) => ({
               key: group.id,
               node: (

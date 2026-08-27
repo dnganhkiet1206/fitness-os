@@ -144,6 +144,77 @@ if (/blocksExternalGesture/.test(dragCode)) {
       'giờ định kéo thứ gì',
   );
 }
+/* ── 4. tự cuộn khi kéo tới mép ─────────────────────────────────────────── */
+/*
+  Phải là một ĐỒNG HỒ KHUNG HÌNH. `onUpdate` của pan chỉ bắn khi ngón tay DI
+  CHUYỂN, mà "giữ nguyên ngón tay ở sát mép dưới" là trạng thái phổ biến nhất
+  của thao tác này — ở đó không có sự kiện nào, nên trang đứng im đúng lúc
+  người dùng đang chờ nó chạy.
+
+  Và nó phải có CỔNG: `tools/motion.mjs` miễn cho tệp này luật Reduce Motion
+  (đóng băng cú cuộn là gỡ mất tính năng, không phải giảm chuyển động) và đổi
+  lại bằng việc đòi đồng hồ tắt được. Luật ở đây canh vế còn lại: cổng ấy phải
+  thật sự được bật/tắt theo cử chỉ.
+*/
+if (!/useFrameCallback\(/.test(dragCode)) {
+  problems.push(
+    `${DRAG}: tự-cuộn không chạy trên đồng hồ khung hình — \`onUpdate\` chỉ bắn khi ngón tay di chuyển, nên ` +
+      'giữ yên ngón tay ở mép dưới sẽ không cuộn gì cả, đúng lúc người dùng đang chờ nó cuộn',
+  );
+}
+for (const [what, re] of [
+  ['bật khi bắt đầu kéo', /onScrolling\)\(true\)/],
+  ['tắt khi thả', /onScrolling\)\(false\)/],
+  ['gọi scrollTo', /scrollTo\(scrollRef, 0, next, false\)/],
+  ['kẹp trong khoảng cuộn hợp lệ', /Math\.min\(Math\.max\(scrollY\.value \+ v, 0\), maxScroll\.value\)/],
+]) {
+  if (!re.test(dragCode)) problems.push(`${DRAG}: tự-cuộn mất mảnh "${what}"`);
+}
+/*
+  Và quãng dịch phải tính trong HỆ TOẠ ĐỘ NỘI DUNG. `translationY` đo theo màn
+  hình; khi tự-cuộn chạy, nội dung trôi dưới ngón tay đang đứng yên — không
+  cộng phần đã cuộn thì thẻ tụt lại phía sau ngón tay và vị trí đích tính sai
+  đúng bằng quãng đã cuộn.
+*/
+if (!/scrollY\.value - startScroll\.value/.test(dragCode)) {
+  problems.push(
+    `${DRAG}: quãng dịch không cộng phần trang đã cuộn — trong lúc tự-cuộn, thẻ sẽ tụt lại sau ngón tay và ` +
+      'vị trí đích lệch đúng bằng quãng đã cuộn',
+  );
+}
+
+/* ── 5. cú nhấc và khe trống đều là LÒ XO ────────────────────────────────── */
+/*
+  iOS nhấc một hàng lên trước khi cho kéo, và các hàng khác GIÃN RA nhường chỗ.
+  Đặt thẳng `scale` và dịch thẳng hàng bên cạnh thì đúng vị trí và không đọc ra
+  như nhặt một vật lên — nó đọc ra như một ô trong bảng đổi giá trị.
+*/
+if (!/lift\.value = withSpring\(1,/.test(dragCode) || !/lift\.value = withSpring\(0,/.test(dragCode)) {
+  problems.push(`${DRAG}: cú nhấc không chạy bằng lò xo ở cả hai chiều`);
+}
+if (!/return withSpring\(want, GAP_SPRING\);/.test(dragCode)) {
+  problems.push(
+    `${DRAG}: khe trống không giãn bằng lò xo — hàng bên cạnh sẽ NHẢY tới chỗ mới ở đúng khung hình vị trí ` +
+      'đích đổi, và cái nhảy đó là khác biệt giữa "danh sách nhường chỗ" với "danh sách chớp sang trạng thái khác"',
+  );
+}
+/* Nhưng khi THẢ thì phải snap: cây vừa dựng lại theo thứ tự mới, nên hàng đã ở
+   đúng chỗ layout đặt. Chạy lò xo lúc ấy là bắt nó nhảy xuống rồi bò ngược lên. */
+if (!/if \(f < 0 \|\| f === index\) return 0;/.test(dragCode)) {
+  problems.push(
+    `${DRAG}: khi thả, độ dịch không trả về 0 THẲNG — cây đã dựng lại theo thứ tự mới nên hàng đang ở đúng ` +
+      'chỗ, và một lò xo lúc này là hoạt hoạ cho một chuyển động đã xảy ra rồi',
+  );
+}
+/* Không bóng đổ và không opacity trên thẻ đang kéo — hai thứ đã được đo và ghi
+   lại ở nơi khác trong repo này. */
+if (/shadowOpacity|shadowRadius/.test(dragCode)) {
+  problems.push(
+    `${DRAG}: thẻ đang kéo mang bóng đổ — liquid-glass.tsx đã đo: trên nền #070708 thì "#070708 dưới ` +
+      '#070708 là không có gì", tức một lượt vẽ đổi lấy không pixel nào',
+  );
+}
+
 const today = read(TODAY);
 if (!/onMove=\{moveGroupTo\}/.test(today)) {
   problems.push(
@@ -182,6 +253,30 @@ const SELF = [
       return got >= 4 ? ['vượt quá cuối danh sách'] : [];
     },
     expect: /vượt quá cuối/,
+  },
+  {
+    name: 'khe trống nhảy thẳng thay vì giãn bằng lò xo',
+    src: drag,
+    build: (x) => x,
+    mutate: (x) => x.replace('return withSpring(want, GAP_SPRING);', 'return want;'),
+    check: (x) => (/return withSpring\(want, GAP_SPRING\);/.test(x) ? [] : ['khe trống không giãn bằng lò xo']),
+    expect: /khe trống không giãn/,
+  },
+  {
+    name: 'bỏ đồng hồ khung hình (giữ yên ngón tay ở mép thì không cuộn)',
+    src: drag,
+    build: (x) => x,
+    mutate: (x) => x.replace('useFrameCallback(', 'notAFrameClock('),
+    check: (x) => (/useFrameCallback\(/.test(x) ? [] : ['tự-cuộn không chạy trên đồng hồ khung hình']),
+    expect: /đồng hồ khung hình/,
+  },
+  {
+    name: 'quên cộng phần trang đã cuộn vào quãng dịch',
+    src: drag,
+    build: (x) => x,
+    mutate: (x) => x.replace(/scrollY\.value - startScroll\.value/g, '0'),
+    check: (x) => (/scrollY\.value - startScroll\.value/.test(x) ? [] : ['quãng dịch không cộng phần đã cuộn']),
+    expect: /không cộng phần đã cuộn/,
   },
   {
     name: 'ghi thứ tự bằng HOÁN ĐỔI thay vì cắt-chèn',
