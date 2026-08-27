@@ -64,7 +64,7 @@ function judge(today) {
   }
 
   /* ── 2. đúng MỘT lối vào ──────────────────────────────────────────────── */
-  const entries = [...today.matchAll(/setEditMode\(true\)/g)].length;
+  const entries = [...today.matchAll(/toggleEdit\(true\)/g)].length;
   if (entries !== 1) {
     bad.push(
       `có ${entries} chỗ bật chế độ sắp xếp, phải đúng 1 — hai nút giống nhau ở hai chỗ xa nhau (một trong ` +
@@ -99,6 +99,41 @@ function judge(today) {
   } else if (18 + Number(slop[1]) + Number(slop[2]) < 44) {
     bad.push(
       `hitSlop dọc của nút Sửa chỉ đưa vùng chạm lên ${18 + Number(slop[1]) + Number(slop[2])} điểm, cần ≥44`,
+    );
+  }
+
+  /* ── 4b. icon đi CÙNG chữ ─────────────────────────────────────────────── */
+  /*
+    Bản đầu chỉ có chữ, và người dùng bác: "vẫn phải có icon bên cạnh chữ sửa
+    để người ta hiểu". Lý do nằm ở chính chỗ nó đứng — hàng này đã có một huy
+    hiệu icon ở đầu, nên một chữ đơn độc ở cuối hàng đọc ra là NHÃN, cùng loại
+    với tiêu đề mục bên trái, chỉ nhạt hơn. Cái icon là thứ nói rằng đây là một
+    nút, trước cả khi người ta đọc chữ.
+  */
+  const btn = /function EditLayoutButton\(([\s\S]*?)\n\}\n/.exec(today);
+  if (!btn) {
+    bad.push('không đọc được EditLayoutButton');
+  } else if (!/<Icon icon=\{Pencil\}/.test(btn[1])) {
+    bad.push(
+      'nút Sửa không còn icon cạnh chữ — hàng tiêu đề đã có một huy hiệu icon ở đầu, nên một chữ đơn độc ở ' +
+        'cuối hàng đọc ra là NHÃN chứ không phải nút',
+    );
+  }
+
+  /* ── 4c. đổi chế độ thì đưa trang về ĐẦU ─────────────────────────────── */
+  /*
+    Cùng lý do mà `toggleHero` có nó và `tools/hero-scroll.mjs` giữ luật cho
+    nó: cả nội dung trang bị thay, chiều cao đổi đột ngột, và ScrollView tự kẹp
+    vị trí cuộn về mốc gần nhất còn hợp lệ — người dùng thấy một cú trôi mình
+    không ra lệnh.
+  */
+  const tog = /const toggleEdit = useCallback\(([\s\S]*?)\n  \);/.exec(today);
+  if (!tog) {
+    bad.push('không đọc được toggleEdit — vào/ra chế độ sắp xếp phải đi qua MỘT chỗ, nếu không lối vào sau sẽ quên đưa trang về đầu');
+  } else if (!/scrollTo\(\{ y: 0, animated: true \}\)/.test(tog[1])) {
+    bad.push(
+      'đổi chế độ sắp xếp không đưa trang về đầu — chiều cao nội dung đổi đột ngột thì ScrollView tự kẹp vị ' +
+        'trí cuộn, và cú trôi đó đọc ra như một lỗi',
     );
   }
 
@@ -154,8 +189,19 @@ const SELF = [
     expect: /không có hitSlop/,
   },
   {
+    name: 'bỏ icon, chỉ còn chữ (bản người dùng đã bác)',
+    mutate: (s) => s.replace('<Icon icon={Pencil} size={14} color={colors.mutedForeground} />\n        ', ''),
+    expect: /không còn icon cạnh chữ/,
+  },
+  {
+    name: 'đổi chế độ mà không đưa trang về đầu',
+    mutate: (s) => s.replace("      scroller.current?.scrollTo({ y: 0, animated: true });\n      setNewGroupName", '      setNewGroupName')
+      .replace(/(const toggleEdit = useCallback\([\s\S]*?)\n      scroller\.current\?\.scrollTo\(\{ y: 0, animated: true \}\);/, '$1'),
+    expect: /không đưa trang về đầu/,
+  },
+  {
     name: 'thêm một lối vào thứ hai',
-    mutate: (s) => s.replace('setEditMode(true);', 'setEditMode(true); setEditMode(true);'),
+    mutate: (s) => s.replace('onPress={() => toggleEdit(true)}', 'onPress={() => { toggleEdit(true); toggleEdit(true); }}'),
     expect: /chỗ bật chế độ sắp xếp, phải đúng 1/,
   },
 ];

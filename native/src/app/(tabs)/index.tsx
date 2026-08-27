@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import {
   Apple,
   Check,
+  Pencil,
   ChevronDown,
   ChevronUp,
   Dumbbell,
@@ -23,6 +24,7 @@ import Animated, {
   runOnJS,
   useAnimatedProps,
   useAnimatedScrollHandler,
+  FadeIn,
   FadeInDown,
   interpolate,
   useAnimatedStyle,
@@ -284,7 +286,7 @@ function GroupHeader({
 }
 
 /**
- * Nút Sửa bố cục — một nút CHỮ, không phải một ô vuông có icon.
+ * Nút Sửa bố cục — icon cộng chữ, phẳng, không viền không nền.
  *
  * ── vì sao đổi hình dạng khi đổi chỗ ──
  *
@@ -294,9 +296,20 @@ function GroupHeader({
  * nguyên cái ô có viền xuống đây là đặt một vật nặng gấp đôi mọi thứ quanh nó
  * lên một hàng vốn chỉ để đọc lướt.
  *
- * Nút chữ phẳng là cách iOS làm ở đúng vị trí này (Danh sách, Nhắc nhở,
- * Wallet): cùng cỡ chữ với hàng, không viền, không nền — nó đọc ra là "một
- * việc bạn có thể làm với mục này" chứ không phải "một nút nữa".
+ * Cái đi xuống là VIỀN và NỀN, không phải cái icon. Phẳng là cách iOS làm ở
+ * đúng vị trí này (Danh sách, Nhắc nhở, Wallet) — nó đọc ra là "một việc bạn
+ * có thể làm với mục này" chứ không phải "một nút nữa".
+ *
+ * ── và vì sao vẫn có icon ──
+ *
+ * Bản đầu chỉ có chữ, và người dùng bác: *"vẫn phải có icon bên cạnh chữ sửa
+ * để người ta hiểu"*. Họ đúng, và lý do nằm ở chính chỗ nó đứng. Hàng này có
+ * một huy hiệu icon ở đầu, nên một chữ đơn độc ở cuối hàng đọc ra là NHÃN —
+ * cùng loại với chữ "Sức khoẻ" bên trái, chỉ nhạt hơn. Cái icon là thứ nói
+ * rằng đây là một nút, trước cả khi người ta đọc chữ.
+ *
+ * 14 điểm cạnh chữ 13: nhỉnh hơn chiều cao chữ hoa một chút, nên hai thứ nằm
+ * trên cùng một đường và cái icon không đọc ra như một dấu chấm câu.
  *
  * ── vùng chạm vẫn 44 ──
  *
@@ -322,7 +335,10 @@ function EditLayoutButton({
       accessibilityLabel={a11yLabel}
       hitSlop={{ top: 13, bottom: 13, left: 12, right: 12 }}
       onPress={onPress}>
-      <Text style={styles.groupAction}>{label}</Text>
+      <View style={styles.groupActionRow}>
+        <Icon icon={Pencil} size={14} color={colors.mutedForeground} />
+        <Text style={styles.groupAction}>{label}</Text>
+      </View>
     </PressScale>
   );
 }
@@ -830,6 +846,24 @@ export default function TodayScreen() {
    */
 
   const scroller = useRef<ScrollView>(null);
+
+  /**
+   * Vào/ra chế độ sắp xếp, và LUÔN đưa trang về đầu.
+   *
+   * Một hàm chứ không phải hai lời gọi `setEditMode` rời nhau: cú đưa-về-đầu là
+   * phần BẮT BUỘC của việc đổi chế độ, không phải một tiện ích của riêng cái
+   * nút bấm nó. Để rời thì lối vào thứ hai — hoặc một lối vào thêm sau này —
+   * sẽ quên nó, và người dùng nhận một cú trôi mình không ra lệnh.
+   */
+  const toggleEdit = useCallback(
+    (on: boolean) => {
+      Haptics.selectionAsync();
+      setEditMode(on);
+      setNewGroupName('');
+      scroller.current?.scrollTo({ y: 0, animated: true });
+    },
+    [setEditMode],
+  );
   const toggleHero = useCallback((index: number) => {
     Haptics.selectionAsync();
     setExpandedAt((v) => (v === index ? null : index));
@@ -1746,11 +1780,7 @@ export default function TodayScreen() {
                     <EditLayoutButton
                       label={i18n.editLayout}
                       a11yLabel={i18n.a11yEditLayout}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setEditMode(true);
-                        setNewGroupName('');
-                      }}
+                      onPress={() => toggleEdit(true)}
                     />
                   ) : undefined
                 }
@@ -1780,8 +1810,28 @@ export default function TodayScreen() {
       )}
 
       {/* Edit mode — reorder widgets/groups, add/remove groups (web edit mode) */}
+      {/*
+          Trang sắp xếp hiện ra bằng một lượt mờ NHẸ, và trang được đưa về đầu.
+
+          Hai thứ khác nhau, cùng một lý do: đây là một lần ĐỔI CHẾ ĐỘ. Cả nội
+          dung của trang bị thay, chiều cao đổi đột ngột, và ScrollView sẽ tự
+          kẹp vị trí cuộn về mốc gần nhất còn hợp lệ — người dùng thấy một cú
+          trôi mình không ra lệnh. `toggleHero` đã gặp và đã sửa đúng chuyện
+          này; `tools/hero-scroll.mjs` giữ luật cho nó.
+
+          Và KHÁC với hai hiệu ứng vừa bị gỡ ở vòng trước (tấm nội dung mờ
+          đi/mờ lại mỗi lần chạm thẻ chỉ số, cascade thẻ chạy lại mỗi lần đóng):
+          ở đó không có chuyển cảnh nào để làm mềm, nội dung chỉ bị che rồi
+          hiện lại. Ở đây có thật — bạn vừa rời khỏi dashboard và sang một màn
+          khác hẳn. `entrance.ts` nói đúng ranh giới ấy: hiệu ứng vào là để làm
+          mềm một chuyển cảnh, và nó chỉ sai khi không có chuyển cảnh nào.
+
+          `gap` lặp lại trên vỏ vì `content` của trang dùng `gap` để giãn các
+          con TRỰC TIẾP của nó; gộp mấy đứa con này vào một vỏ là gộp mấy khe
+          giãn ấy thành một.
+      */}
       {editMode && (
-        <>
+        <Animated.View style={styles.editWrap} entering={FadeIn.duration(duration.appear)}>
           <Text style={styles.editHint}>
             {lang === 'vi'
               ? 'Sắp xếp lại widget và nhóm theo ý bạn'
@@ -1883,7 +1933,7 @@ export default function TodayScreen() {
               {lang === 'vi' ? 'Khôi phục mặc định' : 'Reset to default'}
             </Text>
           </PressScale>
-        </>
+        </Animated.View>
       )}
       </Animated.ScrollView>
       {/*
@@ -1922,11 +1972,7 @@ export default function TodayScreen() {
             accessibilityLabel={i18n.a11yDoneEditing}
             accessibilityState={{ selected: true }}
             style={[styles.squareBtn, styles.squareBtnActive]}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setEditMode(false);
-              setNewGroupName('');
-            }}>
+            onPress={() => toggleEdit(false)}>
             <Icon icon={Check} size={20} color={colors.primary} />
           </PressScale>
           )}
@@ -2256,7 +2302,11 @@ const styles = StyleSheet.create({
      cho các viên chip và cho avatar: màu dành cho GIÁ TRỊ, không dành cho LỐI
      ĐI. Cỡ 13 để nó ngồi dưới tiêu đề 14 trong cùng một hàng chứ không tranh
      chỗ với nó. */
-  groupAction: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground, paddingHorizontal: 4 },
+  groupAction: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground },
+  /* `xs` (4 điểm) chứ không phải `sm`: icon và chữ ở đây là MỘT nhãn, không
+     phải hai thứ cạnh nhau. Rộng hơn thì chúng rời ra và cái icon đọc ra như
+     của mục bên trái. */
+  groupActionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: 4 },
 
   // Empty states (web EmptyState)
   emptyCard: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
@@ -2267,6 +2317,9 @@ const styles = StyleSheet.create({
   // Edit mode (web widget-group edit)
   editHint: { fontSize: 13, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
   editGroup: { gap: spacing.sm },
+  /* Lặp `gap` của `content`: gộp mấy đứa con vào một vỏ là gộp mấy khe giãn
+     mà `content` vốn đặt giữa chúng thành một. */
+  editWrap: { gap: spacing.md },
   editGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   editGroupTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.foreground },
   editEmpty: { fontSize: 12, color: colors.mutedForeground, fontStyle: 'italic', paddingVertical: 4 },
