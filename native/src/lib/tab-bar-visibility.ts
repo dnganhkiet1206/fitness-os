@@ -1,4 +1,4 @@
-import { makeMutable, withSpring } from 'react-native-reanimated';
+import { Easing, makeMutable, withSpring, withTiming } from 'react-native-reanimated';
 
 /**
  * Scroll-aware tab-bar visibility — port of the web BottomTabBar behavior:
@@ -26,6 +26,72 @@ const IDLE_MS = 800;
 
 /** 1 = visible, 0 = hidden */
 export const tabBarVisible = makeMutable(1);
+
+/**
+ * Chrome ở ĐỈNH màn hình — hàng nút của Today. Cùng luật hướng, khác độ nhạy.
+ *
+ * ── vì sao không dùng thẳng `tabBarVisible` ──
+ *
+ * Đã thử, và người dùng báo lại: "ẩn hơi chậm, nó phải ẩn lập tức sau khi
+ * người dùng cuộn". Ba nguồn trễ, và cả ba đều đúng cho thanh tab:
+ *
+ *   1. `y > 80` — phải cuộn 80 điểm rồi thanh mới được phép ẩn. Với thanh tab
+ *      ở đáy thì hợp lý: nó là điều hướng, không nên biến mất vì một cú chạm
+ *      hụt. Với hàng nút ở ĐỈNH thì 80 điểm là quãng người ta đã đọc xong hai
+ *      dòng, và suốt quãng ấy ba cái nút vẫn nằm nguyên trên nội dung.
+ *   2. `THRESHOLD = 16` điểm MỖI KHUNG HÌNH. Một cú cuộn chậm không bao giờ
+ *      vượt 16 điểm trong 16ms, nên nó không bao giờ ẩn được hàng nút.
+ *   3. Lò xo ζ≈0.8 — nó *tới nơi* đúng lúc, nhưng nó rời đi thong thả.
+ *
+ * ── và vì sao đây KHÔNG phải bộ đếm hướng thứ hai ──
+ *
+ * Đó là điều luật ở `tools/hero-scroll.mjs` cấm, và cấm đúng: hai luật hướng
+ * riêng sẽ lệch nhau, rồi chrome trên và chrome dưới rời màn hình vào hai lúc
+ * khác nhau.
+ *
+ * Ở đây chỉ có MỘT phép đo hướng: cùng một khung hình, cùng một `delta`, tính
+ * đúng một lần ở `tabScrollFrame`. Hai hàm `decide` chỉ khác NGƯỠNG — tức khác
+ * mức nhạy, không khác chiều. Chúng không thể bất đồng về việc người dùng đang
+ * đi lên hay đi xuống, vì chúng đọc chung một con số.
+ */
+export const topChromeVisible = makeMutable(1);
+
+/**
+ * Ngưỡng riêng của hàng nút đỉnh.
+ *
+ * `4` điểm: gần như "trang vừa nhúc nhích". Hàng nút nằm ngay đỉnh nên chính
+ * việc nội dung bắt đầu trôi dưới nó đã là tín hiệu; không cần chờ thêm.
+ *
+ * Ẩn ở `2`, hiện lại ở `8` — hai con số khác nhau CÓ CHỦ ĐÍCH. Nhạy hai chiều
+ * như nhau thì một rung tay nhỏ lúc cuộn xuống cũng đủ nhá hàng nút hiện lại,
+ * và cái nhấp nháy đó tệ hơn hẳn việc ẩn chậm.
+ */
+const TOP_AT = 4;
+const TOP_HIDE_DELTA = 2;
+const TOP_SHOW_DELTA = 8;
+/** Nhịp `toggle` — hàng nút cao 44 điểm, đi hết 52 điểm; quãng ngắn, nhịp ngắn. */
+const TOP_MS = 180;
+/** `out` nên nó XUẤT PHÁT ở tốc độ cao nhất: cú đi bắt đầu ngay ở khung hình
+ *  đầu, thứ mà "ẩn lập tức" thật sự đang nói tới. */
+const TOP_EASE = Easing.out(Easing.cubic);
+
+const topTarget = makeMutable(1);
+
+function decideTop(y: number, delta: number): 0 | 1 | null {
+  'worklet';
+  if (delta > TOP_HIDE_DELTA && y > TOP_AT) return 0;
+  if (delta < -TOP_SHOW_DELTA || y <= TOP_AT) return 1;
+  return null;
+}
+
+/** Áp đích mới cho hàng nút đỉnh; trả về true nếu nó vừa ẩn đi. */
+function applyTop(next: 0 | 1 | null): boolean {
+  'worklet';
+  if (next === null || next === topTarget.value) return false;
+  topTarget.value = next;
+  topChromeVisible.value = withTiming(next, { duration: TOP_MS, easing: TOP_EASE });
+  return next === 0;
+}
 
 let lastY = 0;
 let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -100,6 +166,11 @@ export function armTabBarRestore() {
     idleTimer = undefined;
     target.value = 1;
     tabBarVisible.value = withSpring(1, SPRING);
+    /* Hàng nút đỉnh về theo cùng nhịp nghỉ ấy. Nếu quên nó ở đây thì có một
+       trạng thái không lối ra: cuộn xuống một chút rồi dừng, thanh tab về mà
+       hàng nút ở lại — và cách duy nhất lấy lại các nút là cuộn lên. */
+    topTarget.value = 1;
+    topChromeVisible.value = withTiming(1, { duration: TOP_MS, easing: TOP_EASE });
   };
   idleTimer = setTimeout(tick, IDLE_MS);
 }
@@ -124,14 +195,21 @@ export function armTabBarRestore() {
  */
 export function tabScrollFrame(y: number, now: number): boolean {
   'worklet';
-  const next = decide(y, y - lastYUI.value);
+  /* MỘT `delta`, đọc một lần, cho cả hai quyết định. Đây là chỗ bảo đảm hai
+     tầng chrome không bao giờ bất đồng về CHIỀU — chúng chỉ khác ngưỡng. */
+  const delta = y - lastYUI.value;
+  const next = decide(y, delta);
+  const nextTop = decideTop(y, delta);
   lastYUI.value = y;
   lastScrollAt.value = now;
+  /* Hàng nút đỉnh trước, vì nó nhạy hơn: nó thường ẩn ở khung hình mà thanh
+     tab còn chưa quyết định gì. */
+  const topHid = applyTop(nextTop);
   /* Chỉ khi ĐÍCH thật sự đổi — xem ghi chú ở `target`. */
-  if (next === null || next === target.value) return false;
+  if (next === null || next === target.value) return topHid;
   target.value = next;
   tabBarVisible.value = withSpring(next, SPRING);
-  return next === 0;
+  return next === 0 || topHid;
 }
 
 /**
@@ -142,13 +220,18 @@ export function tabScrollFrame(y: number, now: number): boolean {
  * which is fine at the rate a non-worklet `onScroll` actually fires.
  */
 export function handleTabScroll(y: number) {
-  const next = decide(y, y - lastY);
+  const delta = y - lastY;
+  const next = decide(y, delta);
   lastY = y;
   lastScrollAt.value = Date.now();
   if (next !== null && next !== target.value) {
     target.value = next;
     tabBarVisible.value = withSpring(next, SPRING);
   }
+  /* Cùng `delta`, cùng một lần đo — xem `topChromeVisible`. Màn nào cuộn ở
+     luồng JS cũng phải nuôi cả hai tầng chrome, nếu không thì rời Today rồi
+     quay lại, hàng nút có thể kẹt ở trạng thái của màn khác. */
+  applyTop(decideTop(y, delta));
   armTabBarRestore();
 }
 
@@ -158,4 +241,6 @@ export function resetTabBar() {
   lastYUI.value = 0;
   target.value = 1;
   tabBarVisible.value = withSpring(1, SPRING);
+  topTarget.value = 1;
+  topChromeVisible.value = withTiming(1, { duration: TOP_MS, easing: TOP_EASE });
 }

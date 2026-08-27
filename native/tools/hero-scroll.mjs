@@ -453,18 +453,61 @@ const num = (src, name) => {
         đòi luật hướng ở đó vẫn trả về 0.
       */
       const sv = shared[2];
-      if (sv !== 'tabBarVisible') {
+      const bar = read(TABBAR);
+      if (!new RegExp(`export const ${sv} = makeMutable`).test(bar)) {
         problems.push(
-          `${TODAY}: hàng nút đọc \`${sv}\` chứ không phải \`tabBarVisible\` — thanh tab dưới đáy đã chạy ` +
-            'luật hướng ấy rồi, và một bộ đếm hướng thứ hai là hai luật cho một câu hỏi',
+          `${TODAY}: hàng nút đọc \`${sv}\`, thứ không do ${TABBAR} phát ra — thanh tab dưới đáy đã chạy luật ` +
+            'hướng ấy rồi, và một bộ đếm hướng thứ hai là hai luật cho một câu hỏi',
         );
         name = null;
-      } else if (!/return 0;/.test(read(TABBAR)) || !/tabBarVisible\.value = withSpring/.test(read(TABBAR))) {
+      } else if (!new RegExp(`${sv}\\.value = with\\w+\\(next`).test(bar) || !/return 0;/.test(bar)) {
         problems.push(
-          `${TABBAR}: luật hướng không còn đưa được \`tabBarVisible\` về 0 — hàng nút sẽ không bao giờ tắt ` +
-            'hẳn, nên cổng chạm không có ngưỡng nào để đóng lại và nó vẫn ăn chạm trên vòng tròn',
+          `${TABBAR}: luật hướng không còn đưa được \`${sv}\` về 0 — hàng nút sẽ không bao giờ tắt hẳn, nên ` +
+            'cổng chạm không có ngưỡng nào để đóng lại và nó vẫn ăn chạm trên vòng tròn',
         );
         name = null;
+      } else {
+        /*
+          ── vế mới, và nó là vế thật ──
+
+          Người dùng báo hàng nút "ẩn hơi chậm, phải ẩn lập tức". Nguyên nhân là
+          ngưỡng của THANH TAB: `y > 80` cộng `delta > 16` mỗi khung hình — đúng
+          cho một thanh điều hướng ở đáy, quá điếc cho ba cái nút ở đỉnh.
+
+          Nên hai tầng chrome nay có hai NGƯỠNG. Điều phải giữ không phải là
+          "một shared value", mà là điều luật này vẫn luôn nói: **một phép đo
+          hướng**. Hai `decide` đọc chung một `delta`, tính đúng một lần, trong
+          cùng một khung hình — thì chúng không thể bất đồng về CHIỀU, chỉ khác
+          mức nhạy.
+
+          Bản hỏng mà luật này phải bắt: ai đó tính `delta` lần thứ hai. Lúc ấy
+          hai tầng có hai `lastY`, chúng lệch nhau đúng một khung hình, và
+          chrome trên với chrome dưới rời màn hình vào hai lúc khác nhau.
+        */
+        const frame = /export function tabScrollFrame\(([\s\S]*?)\n\}/.exec(bar);
+        if (!frame) {
+          problems.push(`${TABBAR}: không đọc được tabScrollFrame`);
+          name = null;
+        } else {
+          const deltas = [...frame[1].matchAll(/y - lastYUI\.value/g)].length;
+          if (deltas > 1) {
+            problems.push(
+              `${TABBAR}: tabScrollFrame tính \`delta\` ${deltas} lần — hai tầng chrome phải đọc CHUNG một ` +
+                'phép đo hướng, nếu không chúng lệch nhau một khung hình và rời màn hình vào hai lúc khác nhau',
+            );
+            name = null;
+          }
+          /* Và cả hai tầng phải thật sự được nuôi trong khung hình đó. */
+          for (const fed of ['decide(y, delta)', 'decideTop(y, delta)']) {
+            if (!frame[1].includes(fed)) {
+              problems.push(
+                `${TABBAR}: tabScrollFrame không gọi \`${fed}\` — một tầng chrome không được nuôi thì nó kẹt ` +
+                  'ở trạng thái cuối cùng ai đó để lại',
+              );
+              name = null;
+            }
+          }
+        }
       }
     }
     const named = name ? [null, name] : null;

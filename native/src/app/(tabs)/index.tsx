@@ -192,7 +192,7 @@ import { CardDeck } from '@/components/ascnd/card-deck';
 import { EmptyHero, NutritionHero, SleepHero, WaterHero } from '@/components/ascnd/hero-pages';
 import { HERO_DECK, recordHeight } from '@/lib/widget-heights';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
-import { armTabBarRestore, tabBarVisible, tabScrollFrame } from '@/lib/tab-bar-visibility';
+import { armTabBarRestore, topChromeVisible, tabScrollFrame } from '@/lib/tab-bar-visibility';
 
 /**
  * Stored group icons are emoji strings (persisted configs) — map them to
@@ -734,7 +734,7 @@ export default function TodayScreen() {
     /* Lò xo vọt qua 1 một chút, và `scale`/`opacity` không nên đi theo cú vọt
        đó — kẹp lại rẻ hơn đổi sang timing, vì lò xo mới là thứ cho thanh tab
        cảm giác của nó. */
-    const shown = Math.min(Math.max(tabBarVisible.value, 0), 1);
+    const shown = Math.min(Math.max(topChromeVisible.value, 0), 1);
     return {
       opacity: shown,
       /* Mờ hẳn thì thôi nhận chạm: `opacity: 0` KHÔNG tắt cảm ứng, và hàng này
