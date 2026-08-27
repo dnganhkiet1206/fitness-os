@@ -28,11 +28,29 @@ import { useKoaContext, refreshKoaContext } from '@/hooks/use-koa-context';
 import { noticeAmplitude, presenceMotion } from '@/lib/koa-idle';
 import { emitKoa } from '@/lib/koa-stage';
 import { localDateStr } from '@/lib/local-date';
+import { onUserScopedReset } from '@/lib/user-scoped-reset';
 import type { MascotEmotion } from '@/lib/mascot-emotion';
 import { noteAsked, notePraised } from '@/lib/personal-model';
 import { useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
 import { levelFromXp } from '@/lib/mascot-room';
 import { useI18n } from '@/hooks/use-app-settings';
+
+/**
+ * Koa đã tới nơi trong phiên này chưa.
+ *
+ * Ở phạm vi module vì component bị THÁO mỗi lần người dùng mở thẻ chỉ số —
+ * state của nó chết theo, nên nó không nhớ được gì. Xem lập luận đầy đủ ở chỗ
+ * dùng, trong `useEffect` "tới nơi".
+ *
+ * Đặt lại khi đổi tài khoản: máy khác người dùng thì đây là một Koa khác, và
+ * họ xứng đáng được thấy nó tới nơi. `tools/*` có luật đòi mọi state phạm vi
+ * module phải đăng ký ở đây, và luật ấy đúng cả với một thứ chỉ mang tính
+ * trang trí như cờ này.
+ */
+let arrived = false;
+onUserScopedReset(() => {
+  arrived = false;
+});
 
 /**
  * The companion on the home screen — present according to the day, not on a
@@ -135,7 +153,8 @@ export function Mascot({
     the macro bars that sat full on an empty day.
   */
   const travel = useSharedValue(0);
-  const entrance = useSharedValue(0); // 0..1
+  /* 0..1 — bắt đầu ở 1 nếu Koa đã tới nơi rồi trong phiên này. Xem `arrived`. */
+  const entrance = useSharedValue(arrived ? 1 : 0);
   const nod = useSharedValue(0); // deg rotateX
   const droop = useSharedValue(0); // deg — forward slump, from the state
   const spin = useSharedValue(0); // deg rotateY for flips
@@ -143,8 +162,38 @@ export function Mascot({
   const squashY = useSharedValue(1);
   const bubble = useSharedValue(0);
 
-  // Arrival, once.
+  /*
+    Tới nơi MỘT LẦN mỗi phiên, không phải mỗi lần được dựng lại.
+
+    ── lỗi ──
+
+    `useEffect(…, [])` đọc ra là "một lần", nhưng nó là một lần MỖI LẦN MOUNT.
+    Trên Today, `<Mascot>` nằm trong tấm nội dung, mà tấm ấy bị tháo khỏi cây
+    khi người dùng mở thẻ chỉ số. Nên mỗi lần ĐÓNG thẻ, Koa dựng lại và diễn
+    lại màn tới nơi: `entrance` về 0 — thứ nhân vào `scale` bên dưới — nên nó
+    biến mất HẲN trong 350ms rồi mới bung lò xo trở lại.
+
+    Người dùng báo đúng chỗ này sau khi hai hiệu ứng kia đã được gỡ: "nửa dưới
+    dashboard fade in/out mỗi lần chạm thì hiện tại vẫn còn bị ở chỗ koa".
+
+    ── vì sao là biến ở phạm vi module ──
+
+    Cùng lập luận với `cascaded` ở Today: một hiệu ứng vào kể chuyện "cái này
+    vừa tới", đúng ở lần mở app và sai ở mọi lần sau, vì nó chưa đi đâu cả — nó
+    chỉ bị che. Nhưng ở đây cái cờ không thể là state của chính component:
+    component ấy bị THÁO, nên state của nó chết theo.
+
+    `<Mascot>` có đúng MỘT chỗ gọi (`app/(tabs)/index.tsx`), nên "một lần mỗi
+    phiên" và "một lần cho chỗ gọi này" là cùng một câu — biến module không mơ
+    hồ ở đây như nó sẽ mơ hồ nếu có hai chỗ dựng.
+
+    Và `entrance` phải khởi tạo bằng 1 chứ không phải chạy một animation về 1:
+    `useAnimatedStyle` lấy style đầu từ giá trị lúc dựng, nên khởi tạo bằng 0
+    rồi mới sửa là một khung hình Koa ở scale 0 — đúng cái nháy đang phải bỏ.
+  */
   useEffect(() => {
+    if (arrived) return;
+    arrived = true;
     entrance.value = withDelay(350, withSpring(1, { stiffness: 200, damping: 13 }));
   }, [entrance]);
 

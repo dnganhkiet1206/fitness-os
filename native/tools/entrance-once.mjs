@@ -196,6 +196,55 @@ if (!sheet) {
   }
 }
 
+/* ── 3. Koa cũng tới nơi một lần, và đây là lỗi THỨ BA cùng loại ─────────── */
+/*
+  `<Mascot>` nằm TRONG tấm nội dung, nên nó bị tháo cùng tấm mỗi lần người dùng
+  mở thẻ chỉ số. Nó có `entrance` riêng — `useSharedValue(0)` cộng
+  `withDelay(350, withSpring(1))` trên `[]` — và giá trị ấy nhân vào `scale`.
+  Nên mỗi lần ĐÓNG thẻ, Koa biến mất hẳn 350ms rồi mới bung trở lại.
+
+  Người dùng báo đúng chỗ này SAU KHI hai hiệu ứng kia đã được gỡ, nên luật
+  phải nói được điều chung: `useEffect(…, [])` đọc ra là "một lần" nhưng nó là
+  một lần MỖI LẦN MOUNT, và với một component bị tháo theo thao tác của người
+  dùng thì hai câu ấy khác nhau hoàn toàn.
+
+  Cờ phải ở phạm vi MODULE, không phải state của component: component bị tháo
+  thì state của nó chết theo. Và nó phải đăng ký `onUserScopedReset` — người
+  dùng khác thì đây là một Koa khác.
+*/
+const MASCOT = 'src/components/ascnd/mascot.tsx';
+const mascot = read(MASCOT);
+{
+  const flag = /const entrance = useSharedValue\((\w+) \? 1 : 0\)/.exec(mascot);
+  if (!flag) {
+    problems.push(
+      `${MASCOT}: \`entrance\` khởi tạo vô điều kiện — mỗi lần Koa được dựng lại nó về 0, mà giá trị ấy nhân ` +
+        'vào `scale`, nên Koa biến mất hẳn rồi mới bung trở lại. Trên Today, "dựng lại" nghĩa là mỗi lần ' +
+        'người dùng đóng thẻ chỉ số',
+    );
+  } else {
+    const f = flag[1];
+    if (!new RegExp(`^let ${f} = false;`, 'm').test(mascot)) {
+      problems.push(
+        `${MASCOT}: \`${f}\` không phải biến ở phạm vi module — component này BỊ THÁO, nên state của nó chết ` +
+          'theo và không nhớ được gì giữa hai lần dựng',
+      );
+    }
+    const guard = /useEffect\(\(\) => \{\s*if \((\w+)\) return;\s*(\w+) = true;\s*entrance\.value = withDelay/.exec(mascot);
+    if (!guard || guard[1] !== f || guard[2] !== f) {
+      problems.push(
+        `${MASCOT}: hiệu ứng tới nơi không được canh bằng \`${f}\` — nó sẽ chạy lại ở mỗi lần dựng`,
+      );
+    }
+    if (!new RegExp(`onUserScopedReset\\(\\(\\) => \\{\\s*${f} = false;`).test(mascot)) {
+      problems.push(
+        `${MASCOT}: \`${f}\` không đăng ký onUserScopedReset — đăng nhập tài khoản khác trên cùng máy thì ` +
+          'đó là một Koa khác, và nó phải được thấy tới nơi',
+      );
+    }
+  }
+}
+
 /* ── phép tự kiểm ─────────────────────────────────────────────────────────── */
 const SELF = [
   {
