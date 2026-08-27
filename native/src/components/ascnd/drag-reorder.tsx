@@ -9,13 +9,13 @@ import Animated, {
   useDerivedValue,
   useFrameCallback,
   useSharedValue,
-  withDelay,
   withSpring,
   withTiming,
   type AnimatedRef,
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { colors, glass } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 
 /**
@@ -44,24 +44,27 @@ const LIFT = { damping: 18, stiffness: 260 };
 const GAP_SPRING = { damping: 20, stiffness: 180 };
 
 /**
- * Tay nắm TRƯỢT VÀO TỪ PHẢI khi vào chế độ sắp xếp.
+ * Tấm ĐỤC luồn xuống dưới thẻ đang được nhấc lên.
  *
- * ── vì sao cái này thay cho một lượt mờ cả trang ──
+ * ── vì sao cần nó ──
  *
- * Bản trước cho cả trang sắp xếp `FadeIn` một lượt. Người dùng gọi nó là "hơi
- * kì", và đúng: mờ cả trang đọc ra như trang vừa được TẢI LẠI, trong khi thứ
- * vừa xảy ra là bạn đổi chế độ của một trang vẫn đang ở đó.
+ * `GlassCard` là kính: nó cho thấy thứ nằm sau. Đứng yên trong danh sách thì
+ * thứ nằm sau là nền trang, và đó đúng là hiệu ứng muốn có. Nhưng lúc bị nhấc
+ * lên và kéo đi, thứ nằm sau nó là MỘT TẤM THẺ KHÁC — nên người dùng đọc được
+ * chữ của thẻ dưới xuyên qua thẻ đang cầm trên tay. iOS không bao giờ để thế:
+ * vật được nhấc lên nhận một chất liệu ĐẶC, chính vì lý do ấy.
  *
- * Apple Music (và Danh sách, Nhắc nhở) làm ngược lại: trang đứng yên, và những
- * điều khiển MỚI trượt vào từ mép phải, lệch nhau một nhịp ngắn. Chuyển động
- * chỉ nằm ở thứ vừa xuất hiện, nên nó nói đúng một điều — "đây là những nút
- * bạn vừa mở ra" — thay vì nói "mọi thứ trên trang này vừa mới tới".
+ * ── vì sao là một lớp riêng chứ không sửa `GlassCard` ──
  *
- * Lệch 40ms mỗi thẻ: đủ để đọc ra là một hàng chứ không phải một khối, và đủ
- * ngắn để thẻ cuối không phải chờ. Bốn nhóm là 120ms cho cả cụm.
+ * Một prop `opaque` trên `GlassCard` là một trạng thái mới cho mọi chỗ dùng nó
+ * trong app, để phục vụ đúng một cử chỉ ở đúng một màn hình. Một tấm nền luồn
+ * xuống dưới thì chỉ tồn tại trong lúc có ngón tay trên màn hình, và nó không
+ * biết gì về cái thẻ nó đang đỡ.
+ *
+ * `colors.card` là chính màu nền thẻ của hệ thiết kế — nên khi lớp này đục
+ * hoàn toàn, thẻ trông đúng như một thẻ, không phải như một hình chữ nhật đen.
  */
-const HANDLE_IN = { damping: 22, stiffness: 240 };
-const HANDLE_STAGGER = 40;
+const SOLID_RADIUS = glass.radius;
 
 /** Quãng tính từ mép khung nhìn mà tự-cuộn bắt đầu chạy. */
 const EDGE = 96;
@@ -404,48 +407,45 @@ function Row({
     return { transform: [{ translateY: offset.value }, { scale: 1 }], zIndex: 0 };
   });
 
-  /* Trượt vào từ phải, lệch nhịp theo vị trí — xem `HANDLE_IN`. */
-  const handleIn = useSharedValue(0);
-  useEffect(() => {
-    handleIn.value = withDelay(index * HANDLE_STAGGER, withSpring(1, HANDLE_IN));
-  }, [handleIn, index]);
-  const handle = useAnimatedStyle(() => ({
-    opacity: handleIn.value,
-    transform: [{ translateX: (1 - handleIn.value) * 24 }],
+  /* Chỉ hàng ĐANG được nhấc mới cần tấm đục. Các hàng khác vẫn là kính. */
+  const solid = useAnimatedStyle(() => ({
+    opacity: from.value === index ? lift.value : 0,
   }));
 
   return (
     <GestureDetector gesture={pan}>
       <Animated.View style={style} onLayout={(e) => onMeasure(index, e)}>
-        {children}
         {/*
-          Tay nắm nằm TUYỆT ĐỐI chứ không chen vào hàng tiêu đề của thẻ: thẻ
-          nhóm là nội dung của chỗ gọi, và `DragReorder` không được quyền đổi bố
-          cục bên trong nó. Nó cũng phải nằm ngoài dòng chảy để hiệu ứng trượt
-          không đẩy cái gì.
-
-          `pointerEvents="none"`: cả tấm thẻ đã là vùng kéo rồi. Cái này là DẤU
-          HIỆU — thứ nói cho người ta biết có thể kéo — chứ không phải một vùng
-          chạm thứ hai chỉ rộng 24 điểm.
+          Tấm đục nằm DƯỚI nội dung (trước nó trong nguồn), và mờ dần theo đúng
+          `lift` — nên nó đặc lại cùng nhịp với cú nhấc thay vì bật ra.
         */}
-        <Animated.View style={[styles.handle, handle]} pointerEvents="none">
-          <View style={styles.grip} />
-          <View style={styles.grip} />
-          <View style={styles.grip} />
-        </Animated.View>
+        <Animated.View style={[styles.solid, solid]} pointerEvents="none" />
+        {/*
+          Tay nắm ba vạch KHÔNG vẽ ở đây, và đó là một ranh giới chứ không phải
+          một thiếu sót: thẻ nhóm là nội dung của chỗ gọi, và `DragReorder`
+          không được quyền chen UI vào bố cục bên trong nó — bản đầu neo tay nắm
+          tuyệt đối ở `right: 16` và nó vẽ đè lên nút thùng rác.
+
+          Chỗ gọi dựng tay nắm trong chính hàng tiêu đề, cạnh nút xoá, và cho cả
+          cụm trượt vào cùng nhau.
+        */}
+        {children}
       </Animated.View>
     </GestureDetector>
   );
 }
 
+
 const styles = StyleSheet.create({
-  /* Neo vào mép phải của thẻ, canh giữa theo chiều dọc của HÀNG TIÊU ĐỀ chứ
-     không của cả thẻ: thẻ cao theo số widget, còn tay nắm phải nằm ngang tầm
-     cái tên nhóm — đó là chỗ mắt đi tìm nó. 22 điểm là nửa chiều cao hàng ấy
-     cộng padding trên của GlassCard. */
-  handle: { position: 'absolute', right: 16, top: 22, gap: 3, alignItems: 'flex-end' },
-  /* Ba vạch 14×1.5. Mảnh hơn icon vì nó không phải một nút — nó là kết cấu,
-     cùng cách iOS vẽ tay nắm sắp xếp: đủ để nhận ra, nhạt để không tranh chỗ
-     với tên nhóm ngay bên trái. */
-  grip: { width: 14, height: 1.5, borderRadius: 1, backgroundColor: 'rgba(237,237,237,0.32)' },
+  /* Phủ kín thẻ và bo cùng bán kính với `GlassCard`, nếu không thì bốn góc lộ
+     ra một mảng vuông đặc dưới góc bo của kính. */
+  solid: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: SOLID_RADIUS,
+    backgroundColor: colors.card,
+  },
 });

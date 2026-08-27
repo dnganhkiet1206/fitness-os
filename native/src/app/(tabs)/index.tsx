@@ -22,6 +22,8 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import Animated, {
   useAnimatedRef,
+  withDelay,
+  withSpring,
   runOnJS,
   useAnimatedProps,
   useAnimatedScrollHandler,
@@ -1907,28 +1909,51 @@ export default function TodayScreen() {
             items={config.groups.map((group, gi) => ({
               key: group.id,
               node: (
-            <GlassCard style={styles.editGroup}>
+            <GlassCard
+              style={styles.editGroup}
+              accessibilityLabel={group.title[lang] ?? group.title.en}
+              accessibilityActions={[
+                { name: 'moveUp', label: i18n.a11yMoveUp },
+                { name: 'moveDown', label: i18n.a11yMoveDown },
+              ]}
+              onAccessibilityAction={(e) => {
+                if (e.nativeEvent.actionName === 'moveUp') moveGroup(gi, -1);
+                if (e.nativeEvent.actionName === 'moveDown') moveGroup(gi, 1);
+              }}>
               <View style={styles.editGroupHeader}>
                 <GroupIconBadge iconKey={group.icon} />
                 <Text style={styles.editGroupTitle}>{group.title[lang] ?? group.title.en}</Text>
-                <ArrowBtn
-                  icon={ChevronUp}
-                  label={i18n.a11yMoveUp}
-                  disabled={gi === 0}
-                  onPress={() => moveGroup(gi, -1)}
-                />
-                <ArrowBtn
-                  icon={ChevronDown}
-                  label={i18n.a11yMoveDown}
-                  disabled={gi === config.groups.length - 1}
-                  onPress={() => moveGroup(gi, 1)}
-                />
-                <ArrowBtn
-                  icon={Trash2}
-                  label={i18n.a11yDelete}
-                  disabled={config.groups.length <= 1}
-                  onPress={() => removeGroup(group.id)}
-                />
+                {/*
+                  ── hai mũi tên đã đi, và tay nắm thay chỗ chúng ──
+
+                  Apple Music không có mũi tên lên/xuống ở chế độ sửa: một tay
+                  nắm `≡` ở mép phải, và thế thôi. Ba nút cạnh nhau cho hai
+                  việc (dời, xoá) là chỗ mà hàng này vừa hỏng theo đúng nghĩa
+                  đen — tay nắm mới vẽ đè lên nút thùng rác.
+
+                  Người dùng VoiceOver KHÔNG mất gì: "dời lên"/"dời xuống" nay
+                  là accessibility ACTION trên chính tấm thẻ — đúng cách iOS
+                  làm cho một hàng kéo được — nên chúng vẫn đọc được và vẫn bấm
+                  được, chỉ là không còn chiếm hai ô trên màn hình của mọi
+                  người.
+
+                  Cả cụm điều khiển trượt vào CÙNG NHAU. Bản trước cho tay nắm
+                  trượt vào trong khi thùng rác hiện thẳng — hai thứ cạnh nhau
+                  chạy hai kiểu, và đó là phần "kì cục".
+                */}
+                <EditControls index={gi}>
+                  <ArrowBtn
+                    icon={Trash2}
+                    label={i18n.a11yDelete}
+                    disabled={config.groups.length <= 1}
+                    onPress={() => removeGroup(group.id)}
+                  />
+                  <View style={styles.grip} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                    <View style={styles.gripLine} />
+                    <View style={styles.gripLine} />
+                    <View style={styles.gripLine} />
+                  </View>
+                </EditControls>
               </View>
               {group.widgets.length === 0 ? (
                 <Text style={styles.editEmpty}>
@@ -2127,6 +2152,40 @@ export default function TodayScreen() {
       */}
       <StatusScrim />
     </View>
+  );
+}
+
+/**
+ * Cụm điều khiển của chế độ sửa, trượt vào từ mép phải.
+ *
+ * ── vì sao trượt, và vì sao CẢ CỤM ──
+ *
+ * Bản trước cho cả trang sắp xếp một lượt `FadeIn`. Người dùng gọi nó là "kì",
+ * và đúng: mờ cả trang đọc ra như trang vừa được TẢI LẠI, trong khi thứ vừa
+ * xảy ra là bạn đổi chế độ của một trang vẫn đang ở đó.
+ *
+ * Apple Music làm ngược lại: trang đứng yên, và những điều khiển MỚI trượt vào
+ * từ mép phải, lệch nhau một nhịp ngắn. Chuyển động chỉ nằm ở thứ vừa xuất
+ * hiện, nên nó nói đúng một điều — "đây là những nút bạn vừa mở ra".
+ *
+ * Bản sau đó cho riêng tay nắm trượt vào trong khi thùng rác hiện thẳng: hai
+ * thứ cạnh nhau chạy hai kiểu, và đó là phần kì cục thứ hai. Nên cái trượt
+ * phải là CẢ CỤM.
+ *
+ * Lệch 40ms mỗi nhóm: đủ để đọc ra một hàng chứ không phải một khối, đủ ngắn
+ * để nhóm cuối không phải chờ. Bốn nhóm là 120ms cho toàn bộ.
+ */
+function EditControls({ index, children }: { index: number; children: React.ReactNode }) {
+  const enter = useSharedValue(0);
+  useEffect(() => {
+    enter.value = withDelay(index * 40, withSpring(1, { damping: 22, stiffness: 240 }));
+  }, [enter, index]);
+  const style = useAnimatedStyle(() => ({
+    opacity: enter.value,
+    transform: [{ translateX: (1 - enter.value) * 28 }],
+  }));
+  return (
+    <Animated.View style={[styles.editControls, style]}>{children}</Animated.View>
   );
 }
 
@@ -2391,6 +2450,14 @@ const styles = StyleSheet.create({
   /* Lặp `gap` của `content`: gộp mấy đứa con vào một vỏ là gộp mấy khe giãn
      mà `content` vốn đặt giữa chúng thành một. */
   editWrap: { gap: spacing.md },
+  /* Cụm nút bên phải hàng tiêu đề nhóm. `gap` bằng đúng `gap` của hàng, nên
+     việc gom chúng vào một vỏ không đổi khoảng cách nào. */
+  editControls: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /* Tay nắm ba vạch. Cùng dấu chân với `arrowBtn` (30pt) để hàng không lệch
+     nhịp, nhưng KHÔNG viền không nền: nó là kết cấu chứ không phải một nút —
+     cả tấm thẻ mới là vùng kéo. */
+  grip: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', gap: 3 },
+  gripLine: { width: 15, height: 1.5, borderRadius: 1, backgroundColor: 'rgba(237,237,237,0.34)' },
   editGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   editGroupTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.foreground },
   editEmpty: { fontSize: 12, color: colors.mutedForeground, fontStyle: 'italic', paddingVertical: 4 },

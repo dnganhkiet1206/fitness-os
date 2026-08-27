@@ -215,27 +215,67 @@ if (!/if \(f < 0 \|\| f === index\) return 0;/.test(dragCode)) {
 
   Nên luật canh cả hai vế — có tay nắm, và trang KHÔNG mờ cả lượt.
 */
-if (!/styles\.handle/.test(dragCode) || !/styles\.grip/.test(dragCode)) {
-  problems.push(`${DRAG}: mất tay nắm ba vạch — không có gì nói cho người dùng biết thẻ này kéo được`);
-}
-if (!/withDelay\(index \* HANDLE_STAGGER, withSpring\(1, HANDLE_IN\)\)/.test(dragCode)) {
-  problems.push(
-    `${DRAG}: tay nắm không trượt vào theo nhịp lệch — hiện thẳng ra thì nó đọc như một phần vốn có của ` +
-      'thẻ, chứ không phải thứ vừa mở ra cùng chế độ sắp xếp',
-  );
-}
-if (!/pointerEvents="none"/.test(dragCode)) {
-  problems.push(
-    `${DRAG}: tay nắm ăn chạm — cả tấm thẻ đã là vùng kéo, nên nó là DẤU HIỆU chứ không phải một vùng chạm ` +
-      'thứ hai rộng 24 điểm',
-  );
-}
 const todaySrc = read(TODAY);
+/* Tay nắm sống ở CHỖ GỌI, trong chính hàng tiêu đề, cạnh nút xoá. Bản đầu neo
+   nó tuyệt đối ở `right: 16` từ bên trong DragReorder và nó vẽ ĐÈ lên nút thùng
+   rác — một component không được chen UI vào bố cục của thẻ nó đang bọc. */
+if (/styles\.handle|position: 'absolute', right:/.test(dragCode)) {
+  problems.push(
+    `${DRAG}: DragReorder lại vẽ tay nắm vào bên trong thẻ — thẻ là nội dung của chỗ gọi, và neo tuyệt đối ` +
+      'vào mép phải của nó đã một lần vẽ đè lên nút thùng rác',
+  );
+}
+if (!/styles\.grip\b/.test(todaySrc) || !/styles\.gripLine/.test(todaySrc)) {
+  problems.push(`${TODAY}: mất tay nắm ba vạch — không có gì nói cho người dùng biết thẻ này kéo được`);
+}
+/* Cả CỤM trượt vào cùng nhau. Bản trước cho riêng tay nắm trượt trong khi thùng
+   rác hiện thẳng — hai thứ cạnh nhau chạy hai kiểu. */
+if (!/<EditControls index=\{gi\}>/.test(todaySrc)) {
+  problems.push(
+    `${TODAY}: cụm điều khiển chế độ sửa không trượt vào cùng nhau — cho riêng tay nắm trượt trong khi nút ` +
+      'xoá hiện thẳng là hai thứ cạnh nhau chạy hai kiểu',
+  );
+}
 if (/styles\.editWrap\}\s*entering=/.test(todaySrc) || /<Animated\.View style=\{styles\.editWrap\}/.test(todaySrc)) {
   problems.push(
-    `${TODAY}: trang sắp xếp vẫn mờ cả lượt khi vào chế độ — chuyển động phải nằm ở thứ vừa XUẤT HIỆN (tay ` +
-      'nắm), không ở cả trang vốn đã ở đó',
+    `${TODAY}: trang sắp xếp vẫn mờ cả lượt khi vào chế độ — chuyển động phải nằm ở thứ vừa XUẤT HIỆN, ` +
+      'không ở cả trang vốn đã ở đó',
   );
+}
+/* Hai mũi tên lên/xuống của NHÓM đã đi (Apple Music không có chúng), nên đường
+   cho VoiceOver phải chuyển sang accessibility action — nếu không thì người
+   dùng ấy mất hẳn khả năng đổi thứ tự nhóm. */
+if (!/name: 'moveUp'/.test(todaySrc) || !/name: 'moveDown'/.test(todaySrc)) {
+  problems.push(
+    `${TODAY}: thẻ nhóm không còn accessibility action dời lên/xuống — hai mũi tên đã bị gỡ khỏi hàng tiêu ` +
+      'đề, nên đây là đường DUY NHẤT còn lại cho người dùng VoiceOver',
+  );
+}
+if (!/onAccessibilityAction=/.test(todaySrc)) {
+  problems.push(`${TODAY}: khai action mà không xử lý — VoiceOver đọc ra một việc rồi bấm vào không có gì xảy ra`);
+}
+
+/* ── 5c. lớp kính ĐỤC lại khi nhấc lên ──────────────────────────────────── */
+/*
+  `GlassCard` cho thấy thứ nằm sau. Đứng yên thì thứ nằm sau là nền trang —
+  đúng ý đồ. Lúc bị nhấc lên và kéo đi thì thứ nằm sau là MỘT TẤM THẺ KHÁC, và
+  người dùng đọc được chữ của thẻ dưới xuyên qua thẻ đang cầm. iOS không bao
+  giờ để thế: vật được nhấc lên nhận một chất liệu ĐẶC.
+*/
+if (!/styles\.solid/.test(dragCode)) {
+  problems.push(
+    `${DRAG}: thẻ đang kéo không có tấm đục luồn dưới — kính sẽ cho thấy chữ của thẻ nằm dưới nó xuyên qua ` +
+      'thẻ đang cầm trên tay',
+  );
+}
+if (!/opacity: from\.value === index \? lift\.value : 0/.test(dragCode)) {
+  problems.push(
+    `${DRAG}: tấm đục không đi theo \`lift\` — nó phải đặc lại CÙNG NHỊP với cú nhấc, và chỉ ở hàng đang ` +
+      'được nhấc; bật ra tức thì hoặc áp cho mọi hàng đều đọc ra là một lỗi vẽ',
+  );
+}
+if (!/borderRadius: SOLID_RADIUS/.test(dragCode)) {
+  problems.push(`${DRAG}: tấm đục không bo cùng bán kính với thẻ — bốn góc lộ ra một mảng vuông đặc`);
 }
 
 /* Không bóng đổ và không opacity trên thẻ đang kéo — hai thứ đã được đo và ghi
@@ -287,12 +327,20 @@ const SELF = [
     expect: /vượt quá cuối/,
   },
   {
-    name: 'tay nắm hiện thẳng, không trượt vào',
+    name: 'tấm đục bật ra tức thì thay vì đặc lại theo cú nhấc',
     src: drag,
     build: (x) => x,
-    mutate: (x) => x.replace('withDelay(index * HANDLE_STAGGER, withSpring(1, HANDLE_IN))', '1'),
-    check: (x) => (/withDelay\(index \* HANDLE_STAGGER/.test(x) ? [] : ['tay nắm không trượt vào theo nhịp lệch']),
-    expect: /không trượt vào/,
+    mutate: (x) => x.replace('opacity: from.value === index ? lift.value : 0,', 'opacity: 1,'),
+    check: (x) => (/opacity: from\.value === index \? lift\.value : 0/.test(x) ? [] : ['tấm đục không đi theo lift']),
+    expect: /không đi theo lift/,
+  },
+  {
+    name: 'gỡ tấm đục (nhìn xuyên thấy chữ của thẻ dưới)',
+    src: drag,
+    build: (x) => x,
+    mutate: (x) => x.replace(/styles\.solid/g, 'styles.gone'),
+    check: (x) => (/styles\.solid/.test(x) ? [] : ['thẻ đang kéo không có tấm đục luồn dưới']),
+    expect: /không có tấm đục/,
   },
   {
     name: 'khe trống nhảy thẳng thay vì giãn bằng lò xo',
