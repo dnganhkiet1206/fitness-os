@@ -188,6 +188,21 @@ async function probe(js) {
       return arr.find((s) => s && typeof s === 'object' && 'height' in s) ?? {};
     };
 
+    /*
+      Cú trượt nằm trên một view CON bên trong hộp cắt, nên phải đi xuống một
+      tầng để đọc. Trả về null khi không có con nào mang `transform` — và
+      "không có" chính là một câu trả lời mà luật bên dưới đọc được.
+    */
+    const slideOf = (node) => {
+      const kid = node.children?.[0];
+      if (!kid || typeof kid !== 'object' || !kid.props) return null;
+      const arr = Array.isArray(kid.props.style) ? kid.props.style : [kid.props.style];
+      const t = arr.find((s) => s && typeof s === 'object' && Array.isArray(s.transform));
+      if (!t) return null;
+      const ty = t.transform.find((x) => x && typeof x.translateY === 'number');
+      return ty ? ty.translateY : null;
+    };
+
     const ease = openCfg?.easing;
     /* Vận tốc lúc xuất phát, tính theo BỘI SỐ của vận tốc trung bình. Một
        đường cong tuyến tính cho 1; `out(cubic)` cho ~2,94. */
@@ -198,6 +213,8 @@ async function probe(js) {
     out[reveal] = {
       open: styleOf(opened),
       closed: styleOf(closed),
+      slideOpen: slideOf(opened),
+      slideClosed: slideOf(closed),
       duration: openCfg?.duration ?? null,
       v0,
     };
@@ -240,6 +257,48 @@ function judge(p) {
     if (p[k].duration === null) bad.push(`chế độ '${k}': không đưa nhịp nào vào withTiming`);
   }
 
+  /* ── 3b. `'clip'` phải TRƯỢT, và trượt đúng chiều ──────────────────────── */
+  /*
+    Gỡ lớp mờ ra rồi thì nếu không có gì thay chỗ nó, `'clip'` là một tấm rèm
+    kéo lên: nội dung đứng im tuyệt đối, chỉ có cái lỗ lớn dần — nó nói "thứ này
+    vừa hết bị che", không nói "thứ này vừa tới". Cú trượt là phần bù, nên nó
+    phải có mặt và luật phải biết đỏ khi ai đó lặng lẽ bỏ nó đi.
+  */
+  if (p.clip.slideOpen === null || p.clip.slideClosed === null) {
+    bad.push(
+      "chế độ 'clip' không còn trượt — bỏ cả lớp mờ LẪN cú trượt thì cú mở thành một tấm rèm kéo lên: " +
+        'nội dung đứng im tuyệt đối, chỉ cái lỗ lớn dần, và mắt đọc ra là "vừa hết bị che" chứ không phải "vừa tới"',
+    );
+  } else {
+    if (p.clip.slideOpen !== 0) {
+      bad.push(
+        `chế độ 'clip': mở hết rồi mà nội dung vẫn lệch ${p.clip.slideOpen} điểm — trạng thái nghỉ phải là 0, ` +
+          'nếu không thì phần chi tiết sống vĩnh viễn ở sai chỗ',
+      );
+    }
+    if (!(p.clip.slideClosed < 0)) {
+      bad.push(
+        `chế độ 'clip': lúc đóng nội dung ở ${p.clip.slideClosed} — phải ÂM, tức nằm cao hơn chỗ nghỉ, để nó ` +
+          'trượt XUỐNG vào chỗ. Số dương là nội dung dâng lên từ dưới, ngược chiều với một cú mở đi xuống',
+      );
+    }
+    const span = Math.abs(p.clip.slideClosed);
+    if (span > 24) {
+      bad.push(
+        `chế độ 'clip': quãng trượt ${span} điểm quá dài — nó phải NGẮN hơn hàng nội dung đầu tiên (hàng ô đo ` +
+          'cao hơn 40 điểm), nếu không thì giữa cú mở người ta đọc phải một dòng bị cắt mất đầu',
+      );
+    }
+  }
+
+  /* ── 3c. `'fade'` KHÔNG được trượt ─────────────────────────────────────── */
+  if (p.fade.slideClosed !== null) {
+    bad.push(
+      `chế độ 'fade' cũng trượt (${p.fade.slideClosed} điểm) — hàng chấm của card-deck cao 18 điểm, nên một cú ` +
+        'trượt cỡ này là gần cả chiều cao của chính nó và cú mở đọc ra như một lỗi vẽ',
+    );
+  }
+
   /* ── 4. mép cắt đơn độc không được xuất phát ở vận tốc tối đa ──────────── */
   if (p.clip.v0 === null) {
     bad.push("chế độ 'clip': không đọc được đường cong");
@@ -280,6 +339,67 @@ if (/<Expander open=\{!locked\}[^>]*reveal=/.test(deck)) {
       'là một hàng chấm mờ vẫn còn chiếm chỗ — ở kích thước ấy lượt gộp không đáng gì, còn cú co thì thấy rõ',
   );
 }
+/* ── 6. nhãn dưới mũi tên chồng mờ, và hộp của nó không đổi bề rộng ──────── */
+/*
+  Hai chỗ gợn của chính cú chạm, và một thay đổi gỡ cả hai: nhãn đổi TỨC THÌ
+  cạnh một cú mở 240ms, và vì hai chuỗi dài ngắn khác nhau nên mũi tên NHẢY
+  NGANG mỗi lần bấm.
+
+  Luật này CHẠY hai biểu thức opacity chứ không đọc chữ: trích thân worklet ra
+  và gọi nó với ba giá trị `spin`. Đó là bất biến — tổng phải luôn bằng 1, nên
+  không có khoảnh khắc nào cả hai cùng mờ (một lỗ tối) hay cùng đậm (hai dòng
+  chữ chồng lên nhau đọc thành cháo).
+*/
+const evalOpacity = (name) => {
+  const m = new RegExp(`const ${name} = useAnimatedStyle\\(\\(\\) => \\(([\\s\\S]*?)\\)\\);`).exec(gauge);
+  if (!m) return null;
+  try {
+    const fn = new Function('spin', `return (${m[1]});`);
+    return (t) => fn({ value: t }).opacity;
+  } catch {
+    return null;
+  }
+};
+const fClosed = evalOpacity('hintClosedStyle');
+const fOpen = evalOpacity('hintOpenStyle');
+if (!fClosed || !fOpen) {
+  problems.push(
+    `${GAUGE}: không còn hai biểu thức độ mờ cho nhãn dưới mũi tên — nhãn quay lại đổi TỨC THÌ cạnh một cú mở ` +
+      '240ms và một mũi tên quay 180ms, tức một khung hình nhảy giữa những thứ đang trôi',
+  );
+} else {
+  for (const [t, wantClosed] of [[0, 1], [0.5, 0.5], [1, 0]]) {
+    const c = fClosed(t);
+    const o = fOpen(t);
+    if (Math.abs(c - wantClosed) > 1e-9 || Math.abs(o - (1 - wantClosed)) > 1e-9) {
+      problems.push(
+        `${GAUGE}: ở spin=${t} nhãn đóng/mở là ${c}/${o}, phải là ${wantClosed}/${1 - wantClosed} — hai bản ` +
+          'phải chồng mờ theo cùng một shared value với mũi tên, nếu không chúng rời nhau khỏi cú quay',
+      );
+    }
+    if (Math.abs(c + o - 1) > 1e-9) {
+      problems.push(
+        `${GAUGE}: ở spin=${t} tổng độ mờ là ${c + o} — phải luôn bằng 1, nếu không có khoảnh khắc cả hai cùng ` +
+          'mờ (một lỗ tối giữa hàng) hoặc cùng đậm (hai dòng chữ chồng lên nhau)',
+      );
+    }
+  }
+}
+/* Bản ghost giữ bề rộng phải chọn theo ĐỘ DÀI, không gõ cứng một chuỗi: hai
+   ngôn ngữ có hai chuỗi dài khác nhau, nên chọn tay là chọn đúng một nửa số
+   người dùng. */
+if (!/const hintGhost = hint\w+\.length >= hint\w+\.length \? hint\w+ : hint\w+;/.test(gauge)) {
+  problems.push(
+    `${GAUGE}: bề rộng hộp nhãn không còn lấy theo chuỗi DÀI HƠN. Nếu nó co theo nhãn đang hiện thì mũi tên ` +
+      'bên cạnh nhảy ngang mỗi lần bấm — ngay chỗ ngón tay vừa chạm xong',
+  );
+}
+/* Và cách viết cũ — một `<Text>` đổi nội dung bằng `detailOpen ? … : …` — phải
+   biến mất, nếu không thì hai cơ chế cùng chạy và cái nhảy vẫn còn. */
+if (/<Text[^>]*>\s*\{detailOpen \?/.test(gauge)) {
+  problems.push(`${GAUGE}: vẫn còn một <Text> đổi nội dung tức thì theo \`detailOpen\``);
+}
+
 /* Và mặc định phải còn là 'fade', nếu không thì ba chỗ gọi còn lại đổi im lặng. */
 const def = (await import(`file://${path.join(CACHE, 'real', 'components/ascnd/expander.js')}?d=${Math.random()}`))
   .Expander({ open: true, children: null }).props.reveal;
@@ -321,6 +441,21 @@ const SELF = [
     name: 'đứng yên hẳn (chiều cao thôi chạy)',
     mutate: (s) => s.replace(/grow\.value \* h\.value/g, 'h.value'),
     expect: /chiều cao mở\/đóng là/,
+  },
+  {
+    name: "bỏ cú trượt của 'clip' (cú mở thành một tấm rèm kéo lên)",
+    mutate: (s) => s.replace('fade ? children :', 'true ? children :'),
+    expect: /không còn trượt/,
+  },
+  {
+    name: 'trượt ngược chiều (nội dung dâng lên từ dưới)',
+    mutate: (s) => s.replace('(grow.value - 1) * CLIP_SLIDE', '(1 - grow.value) * CLIP_SLIDE'),
+    expect: /phải ÂM/,
+  },
+  {
+    name: 'trượt quá dài (nuốt trọn hàng ô đo đầu tiên)',
+    mutate: (s) => s.replace(/CLIP_SLIDE = \d+;/, 'CLIP_SLIDE = 60;'),
+    expect: /quãng trượt \d+ điểm quá dài/,
   },
 ];
 
@@ -368,7 +503,12 @@ console.log(
     'mà vẫn đậm màu là thứ chú thích ở chỗ gọi ấy đã nói ra để tránh), và ba chỗ gọi không nói gì thì không đổi. ' +
     `Đường cong được ĐO chứ không đọc tên: 'fade' xuất phát ở ${real.fade.v0.toFixed(2)}× vận tốc trung bình ` +
     `(được phép — lớp mờ chở nửa cú mở), 'clip' ở ${real.clip.v0.toFixed(2)}× (phải ≤1: ở đó mép cắt là tín ` +
-    `hiệu duy nhất, nên nó phải xuất phát từ đứng yên). ${SELF.length} phép thử ngược đều đỏ đúng chỗ đã dự ` +
-    'đoán và tất cả xanh trên bản thật. CHƯA ĐO trên máy: lập luận về lượt gộp ngoài màn là từ cách iOS xử lý ' +
-    'group opacity, không từ một lần đo Instruments',
+    `hiệu duy nhất, nên nó phải xuất phát từ đứng yên). Và vì lớp mờ đã đi, phải có thứ thay chỗ nó: nội dung ` +
+    `TRƯỢT ${Math.abs(real.clip.slideClosed)} điểm xuống chỗ nghỉ (âm khi đóng, đúng 0 khi mở, ngắn hơn hàng ô ` +
+    "đo đầu tiên) — 'fade' thì KHÔNG trượt, vì 14 điểm trên một hàng chấm cao 18 là gần cả chiều cao của nó. " +
+    'Nhãn dưới mũi tên chồng mờ theo cùng shared value với cú quay, và hai biểu thức opacity được CHẠY ở ' +
+    'spin 0/0.5/1: tổng luôn bằng 1, nên không có khung hình nào cả hai cùng mờ hay cùng đậm; hộp của nó lấy ' +
+    `bề rộng theo chuỗi DÀI HƠN nên mũi tên không nhảy ngang mỗi lần bấm. ${SELF.length} phép thử ngược đều ` +
+    'đỏ đúng chỗ đã dự đoán và tất cả xanh trên bản thật. CHƯA ĐO trên máy: lập luận về lượt gộp ngoài màn là ' +
+    'từ cách iOS xử lý group opacity, không từ một lần đo Instruments',
 );

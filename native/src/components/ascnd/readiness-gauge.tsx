@@ -129,6 +129,38 @@ export function ReadinessGauge({
   }, [detailOpen, spin]);
   const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 180}deg` }] }));
 
+  /*
+    Nhãn dưới mũi tên CHỒNG MỜ, và hộp của nó rộng cố định.
+
+    ── hai chỗ gợn mà một thay đổi gỡ được cả hai ──
+
+    Một: nhãn đổi TỨC THÌ cạnh một cú mở 240ms và một mũi tên quay 180ms. Cả
+    hàng đang chuyển động mượt, riêng chữ thì nhảy — và một khung hình nhảy
+    giữa những thứ đang trôi là thứ mắt bắt được ngay cả khi không gọi tên
+    được.
+
+    Hai: "Chạm để xem chi tiết" dài hơn "Thu gọn" khá nhiều, nên mỗi lần bấm là
+    mũi tên NHẢY NGANG một quãng — hàng này căn giữa, chữ ngắn lại thì cả cặp
+    co vào. Người ta vừa chạm đúng chỗ ấy xong thì nó dịch đi.
+
+    ── cách làm, và vì sao nó không kéo layout ──
+
+    Ba `<Text>` chồng lên nhau trong một hộp: một bản GHOST trong dòng chảy giữ
+    bề rộng (luôn là chuỗi dài hơn, nên bề rộng không bao giờ đổi), và hai bản
+    thật nằm tuyệt đối, mỗi bản một `opacity` chạy theo cùng `spin` với mũi
+    tên. `opacity` trên một `<Text>` LÁ không buộc gộp nhóm — đó là điều vừa
+    được gỡ khỏi khối chi tiết, và lý do gỡ ở đó là nhóm có năm ô con.
+
+    Ghost lấy chuỗi dài hơn bằng cách ĐO ĐỘ DÀI chứ không gõ cứng tên biến: hai
+    ngôn ngữ có hai chuỗi dài khác nhau ("Chạm để xem chi tiết" vs "Tap for
+    details"), nên chọn tay là chọn đúng một nửa số người dùng.
+  */
+  const hintClosed = vi ? 'Chạm để xem chi tiết' : 'Tap for details';
+  const hintOpen = vi ? 'Thu gọn' : 'Tap to close';
+  const hintGhost = hintClosed.length >= hintOpen.length ? hintClosed : hintOpen;
+  const hintClosedStyle = useAnimatedStyle(() => ({ opacity: 1 - spin.value }));
+  const hintOpenStyle = useAnimatedStyle(() => ({ opacity: spin.value }));
+
   // Stored values are language-neutral tokens (legacy rows may hold prose);
   // localize here so the copy follows the active language.
   const explainText = readinessExplainText(explain, lang);
@@ -510,10 +542,19 @@ export function ReadinessGauge({
         style={styles.moreBtn}>
         {/* Chữ đi kèm mũi tên: một mũi tên đơn độc là một lời mời mà người ta
             phải đoán ra. Nó đổi theo trạng thái, nên nhãn luôn nói việc CHẠM
-            sẽ làm gì chứ không nói cái đang có. */}
-        <Text style={styles.tapHint}>
-          {detailOpen ? (vi ? 'Thu gọn' : 'Tap to close') : (vi ? 'Chạm để xem chi tiết' : 'Tap for details')}
-        </Text>
+            sẽ làm gì chứ không nói cái đang có.
+
+            Hộp chồng mờ — xem chỗ dựng `hintGhost` bên trên. Cả cụm ẩn với
+            trình đọc màn hình vì chính nút đã mang nhãn và `expanded` của nó;
+            đọc thêm hai chuỗi chồng nhau là đọc ra một câu vô nghĩa. */}
+        <View
+          style={styles.hintBox}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants">
+          <Text style={[styles.tapHint, styles.hintGhost]}>{hintGhost}</Text>
+          <Animated.Text style={[styles.tapHint, styles.hintFace, hintClosedStyle]}>{hintClosed}</Animated.Text>
+          <Animated.Text style={[styles.tapHint, styles.hintFace, hintOpenStyle]}>{hintOpen}</Animated.Text>
+        </View>
         <Animated.View style={chevron}>
           <Icon icon={ChevronDown} size={20} color={colors.mutedForeground} strokeWidth={2.5} />
         </Animated.View>
@@ -711,6 +752,15 @@ const styles = StyleSheet.create({
      một lần khi hai nhánh gặp nhau, và một `StyleSheet` có hai khoá cùng tên
      thì khoá sau lặng lẽ nuốt khoá trước. */
   tapHint: { fontSize: 12, color: colors.mutedForeground, letterSpacing: 0.2 },
+  hintBox: { justifyContent: 'center' },
+  /* Trong dòng chảy nhưng vô hình: nó không vẽ gì, việc của nó là giữ bề rộng
+     bằng chuỗi DÀI HƠN để mũi tên bên cạnh đứng yên khi nhãn đổi. `opacity: 0`
+     chứ không phải `display: none` — thứ không chiếm chỗ thì không giữ được chỗ. */
+  hintGhost: { opacity: 0 },
+  /* `left/right: 0` chứ không chỉ `top`: hai bản thật phải xuống dòng GIỐNG HỆT
+     bản ghost, nếu không thì ở cỡ chữ trợ năng lớn chúng tự đo lấy bề rộng và
+     tràn ra ngoài hộp. */
+  hintFace: { position: 'absolute', top: 0, left: 0, right: 0, textAlign: 'center' },
   detail: { gap: spacing.lg, alignItems: 'center', alignSelf: 'stretch' },
   moreRow: {
     flexDirection: 'row',

@@ -82,6 +82,38 @@ const OPEN_EASE = Easing.out(Easing.cubic);
  */
 const CLIP_EASE = Easing.inOut(Easing.cubic);
 
+/**
+ * Nội dung TRƯỢT xuống chỗ của nó, không chỉ bị vén ra.
+ *
+ * ── vì sao thiếu nó thì cú mở vẫn chưa xong ──
+ *
+ * Bỏ lớp mờ đi rồi thì `'clip'` là một tấm rèm kéo lên: nội dung đứng im tuyệt
+ * đối, chỉ có cái lỗ lớn dần. Đúng về mặt tải máy, nhưng nó không nói rằng nội
+ * dung ĐẾN — nó nói rằng nội dung vốn ở đấy và ta vừa thôi che.
+ *
+ * Cú mở của iOS thì khác: phần vừa lộ ra trượt xuống từ dưới mép trên, nên mắt
+ * đọc ra là "thứ này vừa tới" chứ không phải "thứ này vừa hết bị che". Đó là cả
+ * khác biệt giữa một cú mở và một cú hiện.
+ *
+ * ── 14 điểm, và vì sao không nhiều hơn ──
+ *
+ * Quãng trượt phải NGẮN hơn hàng nội dung đầu tiên, nếu không thì ở giữa cú mở
+ * người ta đọc phải một hàng bị cắt mất đầu. Hàng ô đo đầu tiên của thẻ sẵn
+ * sàng cao hơn 40 điểm, nên 14 là quãng thấy được mà không bao giờ nuốt trọn
+ * một dòng chữ nào.
+ *
+ * ── vì sao nó không thêm gì vào đường cuộn ──
+ *
+ * `translateY` là thuộc tính hợp thành: nó chạy trên luồng UI cùng lượt với
+ * chiều cao, không gọi lại layout, và không buộc gộp nhóm như `opacity` — chính
+ * thứ vừa được gỡ ra khỏi đây. Và lúc không ai chạm thì `grow` đứng yên, nên
+ * worklet không chạy lại lần nào.
+ *
+ * Chỉ `'clip'` có. Hàng chấm của `card-deck.tsx` cao 18 điểm — trượt 14 điểm ở
+ * đó là gần cả chiều cao của chính nó, và cú mở sẽ đọc ra như một lỗi vẽ.
+ */
+const CLIP_SLIDE = 14;
+
 export type Reveal = 'fade' | 'clip';
 
 /**
@@ -136,8 +168,16 @@ function Grow({
   */
   const faded = useAnimatedStyle(() => ({ height: grow.value * h.value, opacity: grow.value }));
   const clipped = useAnimatedStyle(() => ({ height: grow.value * h.value }));
+  /* Trượt nằm trên một view RIÊNG bên trong hộp cắt, không nằm trên chính hộp:
+     dịch hộp là dịch cả mép trên, tức là dời cái cửa sổ thay vì dời thứ đi qua
+     nó — và cú mở sẽ trông như cả khối bị đẩy đi. */
+  const slide = useAnimatedStyle(() => ({ transform: [{ translateY: (grow.value - 1) * CLIP_SLIDE }] }));
 
-  return <Animated.View style={[styles.clip, fade ? faded : clipped]}>{children}</Animated.View>;
+  return (
+    <Animated.View style={[styles.clip, fade ? faded : clipped]}>
+      {fade ? children : <Animated.View style={[styles.slider, slide]}>{children}</Animated.View>}
+    </Animated.View>
+  );
 }
 
 export function Expander({
@@ -195,5 +235,9 @@ const styles = StyleSheet.create({
     nào biết điều này trừ khi đã gặp.
   */
   clip: { overflow: 'hidden', alignSelf: 'stretch' },
+  /* Cùng lý do với `clip` ở trên: `body` là một con TUYỆT ĐỐI, nên nếu view chở
+     cú trượt co theo nội dung thì nó rộng 0 và con tuyệt đối không có bề rộng
+     để xuống dòng. Neo bề rộng ở đây, đúng một lần. */
+  slider: { alignSelf: 'stretch' },
   body: { position: 'absolute', left: 0, right: 0, top: 0 },
 });
