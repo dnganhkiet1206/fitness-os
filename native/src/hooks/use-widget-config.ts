@@ -106,6 +106,33 @@ export const DEFAULT_CONFIG: WidgetConfig = {
 
 const STORAGE_KEY = 'ascnd-widget-config';
 
+/**
+ * Nhóm nào là của app, nhóm nào là của người dùng.
+ *
+ * ── vì sao nhóm mặc định không xoá được ──
+ *
+ * Xoá một nhóm KHÔNG xoá widget của nó — chúng dồn vào nhóm cuối (xem
+ * `removeGroup`). Nên xoá "Sức khoẻ" không mất dữ liệu, nhưng nó phá cấu trúc
+ * mà cả app dựa vào để nói chuyện với người dùng: mọi câu chữ, mọi sheet giải
+ * thích, mọi lời khuyên đều nói về "sức khoẻ", "dinh dưỡng", "tập luyện". Và
+ * không có đường nào dựng lại chúng — chế độ sắp xếp chỉ tạo được nhóm RỖNG
+ * với một cái tên tự gõ, và nó không có "thêm widget" nào cả.
+ *
+ * `resetConfig` là lối về duy nhất, và nó ném đi mọi sắp xếp người dùng đã làm.
+ * Một nút xoá mà lối hoàn tác là "vứt hết đi làm lại" không phải một nút xoá.
+ *
+ * Suy từ id chứ không thêm một cờ `removable` vào cấu hình đã lưu: cờ ấy nằm
+ * trong storage của mọi tài khoản hiện có với giá trị `undefined`, nên nó cần
+ * một bước migrate để nói đúng — trong khi id thì đã ở đó rồi và chưa bao giờ
+ * đổi. `addGroup` đóng dấu `grp-<thời điểm>`, còn bốn nhóm gốc mang tên riêng.
+ */
+const DEFAULT_GROUP_IDS: ReadonlySet<string> = new Set(DEFAULT_CONFIG.groups.map((g) => g.id));
+
+/** Nhóm này do người dùng tạo, nên họ xoá được. */
+export function isCustomGroup(id: string): boolean {
+  return !DEFAULT_GROUP_IDS.has(id);
+}
+
 export const WIDGET_META: Record<WidgetKey, { label: { en: string; vi: string } }> = {
   readiness: { label: { en: 'Readiness', vi: 'Mức sẵn sàng' } },
   activity: { label: { en: 'Activity', vi: 'Hoạt động' } },

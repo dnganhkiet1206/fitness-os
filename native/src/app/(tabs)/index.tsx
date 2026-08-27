@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import {
   Apple,
   Check,
+  CircleMinus,
   Pencil,
   ChevronDown,
   ChevronUp,
@@ -13,7 +14,6 @@ import {
   Plus,
   RotateCcw,
   Sparkles,
-  Trash2,
   type LucideIcon,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -49,6 +49,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { PeekHost } from '@/components/ascnd/card-peek';
 import { AccountAvatar } from '@/components/ascnd/account-avatar';
 import { DragReorder } from '@/components/ascnd/drag-reorder';
+import { SwipeRow } from '@/components/ascnd/swipe-row';
 import { StreakChip } from '@/components/ascnd/streak-chip';
 import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessAura } from '@/components/ascnd/readiness-aura';
@@ -193,7 +194,7 @@ import { useStepsGoal } from '@/hooks/use-steps-goal';
 import type { QuestKey } from '@/lib/mascot-room';
 import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
-import { useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
+import { isCustomGroup, useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { CardDeck } from '@/components/ascnd/card-deck';
 import { EmptyHero, NutritionHero, SleepHero, WaterHero } from '@/components/ascnd/hero-pages';
 import { HERO_DECK, recordHeight } from '@/lib/widget-heights';
@@ -1909,16 +1910,24 @@ export default function TodayScreen() {
             items={config.groups.map((group, gi) => ({
               key: group.id,
               node: (
+            <MaybeRemovable
+              removable={isCustomGroup(group.id)}
+              label={i18n.a11yDelete}
+              onRemove={() => removeGroup(group.id)}>
             <GlassCard
               style={styles.editGroup}
               accessibilityLabel={group.title[lang] ?? group.title.en}
               accessibilityActions={[
                 { name: 'moveUp', label: i18n.a11yMoveUp },
                 { name: 'moveDown', label: i18n.a11yMoveDown },
+                /* Cú vuốt là vô hình với VoiceOver, y như cú kéo. Nhóm mặc định
+                   không có action này vì nó không xoá được. */
+                ...(isCustomGroup(group.id) ? [{ name: 'delete', label: i18n.a11yDelete }] : []),
               ]}
               onAccessibilityAction={(e) => {
                 if (e.nativeEvent.actionName === 'moveUp') moveGroup(gi, -1);
                 if (e.nativeEvent.actionName === 'moveDown') moveGroup(gi, 1);
+                if (e.nativeEvent.actionName === 'delete') removeGroup(group.id);
               }}>
               <View style={styles.editGroupHeader}>
                 <GroupIconBadge iconKey={group.icon} />
@@ -1942,12 +1951,6 @@ export default function TodayScreen() {
                   chạy hai kiểu, và đó là phần "kì cục".
                 */}
                 <EditControls index={gi}>
-                  <ArrowBtn
-                    icon={Trash2}
-                    label={i18n.a11yDelete}
-                    disabled={config.groups.length <= 1}
-                    onPress={() => removeGroup(group.id)}
-                  />
                   <View style={styles.grip} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                     <View style={styles.gripLine} />
                     <View style={styles.gripLine} />
@@ -1981,6 +1984,7 @@ export default function TodayScreen() {
                 ))
               )}
             </GlassCard>
+            </MaybeRemovable>
               ),
             }))}
           />
@@ -2175,6 +2179,46 @@ export default function TodayScreen() {
  * Lệch 40ms mỗi nhóm: đủ để đọc ra một hàng chứ không phải một khối, đủ ngắn
  * để nhóm cuối không phải chờ. Bốn nhóm là 120ms cho toàn bộ.
  */
+/**
+ * Nhóm do người dùng tạo thì vuốt được để xoá; nhóm mặc định thì không bọc gì.
+ *
+ * ── vì sao vuốt chứ không phải một nút ──
+ *
+ * Một nút xoá đứng thường trực cạnh tên nhóm là một thao tác không hoàn tác
+ * được, đặt ngang hàng với hai thao tác vô hại (dời, đổi tên), trên một hàng
+ * người ta lướt qua. iOS đặt xoá sau một cú vuốt đúng vì lý do ấy: nó đòi một
+ * cử chỉ có chủ đích, và nó cho người ta thấy hậu quả (viên đỏ) trước khi buông
+ * tay.
+ *
+ * Mở được từ CẢ HAI mép, vì ở đây cú vuốt là đường DUY NHẤT — không còn nút xoá
+ * nào trên màn hình — và một đường duy nhất thì không nên bắt người dùng đoán
+ * đúng chiều.
+ *
+ * ── vì sao KHÔNG bọc nhóm mặc định ──
+ *
+ * Không phải để "vô hiệu hoá": bọc rồi chặn ở `onAction` vẫn cho thẻ trượt
+ * theo ngón tay và vẫn hiện viên đỏ, tức vẫn hứa một việc rồi nuốt lời. Không
+ * bọc thì không có gì để trượt, và câu trả lời là im lặng ngay từ đầu.
+ */
+function MaybeRemovable({
+  removable,
+  label,
+  onRemove,
+  children,
+}: {
+  removable: boolean;
+  label: string;
+  onRemove: () => void;
+  children: React.ReactNode;
+}) {
+  if (!removable) return <>{children}</>;
+  return (
+    <SwipeRow bothEdges icon={CircleMinus} label={label} onAction={onRemove}>
+      {children}
+    </SwipeRow>
+  );
+}
+
 function EditControls({ index, children }: { index: number; children: React.ReactNode }) {
   const enter = useSharedValue(0);
   useEffect(() => {

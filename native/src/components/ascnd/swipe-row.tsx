@@ -107,12 +107,25 @@ export function SwipeRow({
   label,
   tint = colors.readinessRed,
   onAction,
+  bothEdges = false,
 }: {
   children: React.ReactNode;
   icon: LucideIcon;
   label: string;
   tint?: string;
   onAction: () => void;
+  /**
+   * Mở được từ CẢ HAI mép, không chỉ mép phải.
+   *
+   * Mặc định là false vì hàng bữa ăn và hàng buổi tập đã sống một thời gian với
+   * đúng một chiều, và đổi thói quen của một cử chỉ đang dùng được là một cái
+   * giá không ai xin.
+   *
+   * Thẻ NHÓM ở chế độ sắp xếp thì bật: ở đó không có nút xoá nào trên màn hình
+   * cả, nên cú vuốt là đường DUY NHẤT — và một đường duy nhất thì không nên bắt
+   * người ta đoán đúng chiều.
+   */
+  bothEdges?: boolean;
 }) {
   /* One tick, when the row crosses into "letting go will open this". Fired from
      the will-open callback rather than from a progress watcher so it cannot
@@ -125,6 +138,16 @@ export function SwipeRow({
       rightThreshold={COMMIT}
       dragOffsetFromRightEdge={HYSTERESIS}
       overshootRight={false}
+      {...(bothEdges
+        ? {
+            leftThreshold: COMMIT,
+            dragOffsetFromLeftEdge: HYSTERESIS,
+            overshootLeft: false,
+            renderLeftActions: (progress: SharedValue<number>) => (
+              <Action progress={progress} icon={icon} label={label} tint={tint} onPress={onAction} />
+            ),
+          }
+        : null)}
       onSwipeableWillOpen={() => {
         if (buzzed.current) return;
         buzzed.current = true;

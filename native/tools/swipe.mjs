@@ -97,8 +97,14 @@ const problems = [];
     const body = readFileSync(file, 'utf8');
     if (!/<SwipeRow/.test(body)) continue;
 
-    /* What the swipe calls. */
-    const m = body.match(/<SwipeRow[\s\S]*?onAction=\{\(\) => (\w+)\(/);
+    /*
+      What the swipe calls — gọi thẳng `onAction={() => fn(…)}` hoặc trao tham
+      chiếu `onAction={fn}`. Bản đầu chỉ đọc dạng thứ nhất và báo "không đọc
+      được hàm nó gọi" trên một chỗ dùng hoàn toàn hợp lệ.
+    */
+    const m =
+      body.match(/<SwipeRow[\s\S]*?onAction=\{\(\) => (\w+)\(/) ??
+      body.match(/<SwipeRow[\s\S]*?onAction=\{(\w+)\}/);
     if (!m) {
       problems.push(`${rel} dùng <SwipeRow> nhưng không đọc được hàm nó gọi`);
       continue;
@@ -121,10 +127,34 @@ const problems = [];
     const rest = body
       .replace(swipeBlock, '')
       .replace(new RegExp(`(const|function) ${fn}\\b`), '__decl__');
-    if (!new RegExp(`\\b${fn}\\b`).test(rest)) {
+    /*
+      ── luật này được CHUYỂN HƯỚNG, không nới ──
+
+      Bất biến thật là: một cú vuốt là VÔ HÌNH, nên hành động phải còn một lối
+      khác. Bản đầu cài nó thành "phải còn một nút nhìn thấy được", và đó là
+      MỘT cách thoả, không phải bất biến.
+
+      Chế độ sắp xếp dashboard bỏ hẳn nút xoá — đúng cách iOS làm ở Mail và Nhắc
+      nhở: xoá đứng thường trực cạnh tên, ngang hàng với hai thao tác vô hại,
+      trên một hàng người ta lướt qua, là một thao tác không hoàn tác được đặt
+      sai chỗ. Lối khác ở đó là một accessibility ACTION, và đó chính là thứ
+      VoiceOver dùng — nó không bao giờ "thấy" cái nút kia.
+
+      Nên luật nhận CẢ HAI, và vẫn đỏ khi không có lối nào: một nút khác gọi tới
+      cùng hàm, hoặc một action khai `accessibilityActions` kèm
+      `onAccessibilityAction` xử lý nó. Khai mà không xử lý thì không tính —
+      VoiceOver đọc ra một việc rồi bấm vào không có gì xảy ra.
+    */
+    const viaButton = new RegExp(`\\b${fn}\\b`).test(rest);
+    const viaA11y =
+      /accessibilityActions=\{/.test(body) &&
+      /onAccessibilityAction=\{/.test(body) &&
+      new RegExp(`actionName === '(\\w+)'\\)\\s*${fn}\\(|name: '(\\w+)', label:`).test(body);
+    if (!viaButton && !viaA11y) {
       problems.push(
-        `${rel}: \`${fn}\` chỉ được gọi từ cú vuốt — today-meals.tsx đã ghi vì sao điều đó không đủ: ` +
-          '"cả hai đều vô hình cho tới khi đoán ra". Hành động phải còn một lối nhìn thấy được',
+        `${rel}: \`${fn}\` chỉ tới được bằng cú vuốt — today-meals.tsx đã ghi vì sao điều đó không đủ: ` +
+          '"cả hai đều vô hình cho tới khi đoán ra". Phải còn một lối khác: một nút nhìn thấy được, hoặc ' +
+          'một accessibility action có khai VÀ có xử lý',
       );
     }
   }
@@ -141,6 +171,9 @@ console.log(
     'với cuộn; nút hành động đọc THẲNG `progress.value` của cú kéo nên nó bám ngón tay từng khung ' +
     'hình chứ không "chạy tới trạng thái khi thả"; có ngưỡng cam kết nằm trong khoảng mở (để có ' +
     'khoảnh khắc nhãn kịp hiện trước khi thả), có độ trễ để cuộn dọc hơi lệch không bóc hàng ra, và ' +
-    'haptic nổ đúng lúc cam kết với chốt một-lần; và mọi hành động vuốt được đều còn một lối NHÌN ' +
-    'THẤY ĐƯỢC — today-meals.tsx đã ghi vì sao: "cả hai đều vô hình cho tới khi đoán ra"',
+    'haptic nổ đúng lúc cam kết với chốt một-lần; và mọi hành động vuốt được đều còn một LỐI KHÁC — ' +
+    'today-meals.tsx đã ghi vì sao: "cả hai đều vô hình cho tới khi đoán ra". Lối ấy là một nút nhìn thấy ' +
+    'được, HOẶC một accessibility action có khai và có xử lý: chế độ sắp xếp dashboard bỏ hẳn nút xoá — ' +
+    'đúng cách iOS làm ở Mail và Nhắc nhở, vì một thao tác không hoàn tác được không nên đứng thường trực ' +
+    'ngang hàng với hai thao tác vô hại — và ở đó VoiceOver vốn không bao giờ "thấy" cái nút kia',
 );

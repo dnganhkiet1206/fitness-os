@@ -36,6 +36,7 @@ const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
 
 const TODAY = 'src/app/(tabs)/index.tsx';
 const TABS_IMPL = 'src/components/app-tabs.tsx';
+const CONFIG = 'src/hooks/use-widget-config.ts';
 
 /** Đọc biểu thức quyết định mục nào được nút Sửa. */
 function gate(src) {
@@ -164,6 +165,65 @@ if (!settingsIsTab && /(fifth tab|tab thứ năm|second way in)/.test(claims)) {
     `${TODAY}: vẫn còn khẳng định Settings là một tab, trong khi ${TABS_IMPL} chỉ dựng bốn Trigger. Câu ấy ` +
       'đã một lần được tin và dùng làm căn cứ cho một quyết định thiết kế',
   );
+}
+
+/* ── 7. nhóm MẶC ĐỊNH không xoá được, nhóm người dùng tạo thì có ─────────── */
+/*
+  ── vì sao đây là một luật chứ không phải một tuỳ chọn ──
+
+  Xoá một nhóm KHÔNG xoá widget của nó — chúng dồn vào nhóm cuối. Nên xoá "Sức
+  khoẻ" không mất dữ liệu, nhưng nó phá cấu trúc mà cả app dựa vào để nói
+  chuyện: mọi câu chữ, mọi sheet giải thích, mọi lời khuyên đều nói về "sức
+  khoẻ", "dinh dưỡng", "tập luyện". Và không có đường nào dựng lại chúng — chế
+  độ sắp xếp chỉ tạo được nhóm RỖNG với tên tự gõ, nó không có "thêm widget".
+
+  `resetConfig` là lối về duy nhất, và nó ném đi mọi sắp xếp người dùng đã làm.
+  Một nút xoá mà lối hoàn tác là "vứt hết đi làm lại" không phải một nút xoá.
+
+  Luật CHẠY THẬT `isCustomGroup` trên id của bốn nhóm gốc đọc ngược từ
+  DEFAULT_CONFIG, chứ không gõ lại danh sách ấy: thêm nhóm gốc thứ năm mà quên
+  chỗ này thì phép so vẫn đúng.
+*/
+{
+  const cfg = read(CONFIG);
+  const ids = [...cfg.matchAll(/^      id: '([\w-]+)',$/gm)].map((m) => m[1]);
+  if (ids.length < 4) {
+    problems.push(`${CONFIG}: không đọc được id các nhóm mặc định (thấy ${ids.length})`);
+  }
+  const fn = /export function isCustomGroup\(id: string\): boolean \{([\s\S]*?)\n\}/.exec(cfg);
+  const defaults = /const DEFAULT_GROUP_IDS[^=]*= new Set\(DEFAULT_CONFIG\.groups\.map\(\(g\) => g\.id\)\)/.test(cfg);
+  if (!fn) {
+    problems.push(`${CONFIG}: không còn \`isCustomGroup\``);
+  } else if (!defaults) {
+    problems.push(
+      `${CONFIG}: danh sách nhóm mặc định không suy từ DEFAULT_CONFIG — gõ lại nó là một bản sao sẽ lệch ` +
+        'ngày ai đó thêm nhóm gốc thứ năm, và hôm đó nhóm mới ấy xoá được',
+    );
+  } else {
+    const isCustom = new Function('id', 'DEFAULT', 'return !new Set(DEFAULT).has(id);');
+    for (const id of ids) {
+      if (isCustom(id, ids)) problems.push(`${CONFIG}: nhóm mặc định "${id}" lại xoá được`);
+    }
+    if (!isCustom('grp-1730000000000', ids)) {
+      problems.push(`${CONFIG}: nhóm do người dùng tạo lại KHÔNG xoá được`);
+    }
+  }
+  /* Và dây nối: chỉ nhóm xoá được mới bọc trong lối vuốt. */
+  if (!/removable=\{isCustomGroup\(group\.id\)\}/.test(today)) {
+    problems.push(`${TODAY}: lối vuốt-để-xoá không gắn với \`isCustomGroup\``);
+  }
+  if (/icon=\{Trash2\}/.test(today)) {
+    problems.push(
+      `${TODAY}: nút thùng rác vẫn còn — xoá là thao tác không hoàn tác được, nó không đứng thường trực ` +
+        'ngang hàng với hai thao tác vô hại trên một hàng người ta lướt qua',
+    );
+  }
+  if (!/name: 'delete', label: i18n\.a11yDelete/.test(today)) {
+    problems.push(
+      `${TODAY}: không có accessibility action xoá — cú vuốt là vô hình với VoiceOver, y như cú kéo, và nút ` +
+        'thùng rác đã đi rồi',
+    );
+  }
 }
 
 /* ── phép tự kiểm ─────────────────────────────────────────────────────────── */
