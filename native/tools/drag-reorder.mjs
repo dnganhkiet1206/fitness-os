@@ -294,8 +294,9 @@ if (!/onMove=\{moveGroupTo\}/.test(today)) {
       'kết quả sẽ không khớp với hoạt hoạ người dùng vừa nhìn thấy',
   );
 }
-/* Hai nút mũi tên là đường DUY NHẤT cho trình đọc màn hình: một cú kéo không
-   có tương đương nào trong VoiceOver. */
+/* Mũi tên của từng WIDGET còn nguyên — widget không kéo được, nên chúng vẫn là
+   đường duy nhất ở đó. Mũi tên của NHÓM đã đi; đường của nhóm là accessibility
+   action, và luật cho nó nằm ở `edit-entry.mjs`. */
 for (const label of ['a11yMoveUp', 'a11yMoveDown']) {
   if (!new RegExp(`label=\\{i18n\\.${label}\\}`).test(today)) {
     problems.push(

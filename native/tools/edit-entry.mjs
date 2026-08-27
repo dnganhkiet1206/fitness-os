@@ -226,6 +226,50 @@ if (!settingsIsTab && /(fifth tab|tab thứ năm|second way in)/.test(claims)) {
   }
 }
 
+/* ── 8. không chú thích nào được nói rằng mũi tên của NHÓM vẫn còn ───────── */
+/*
+  ── vì sao luật này tồn tại, và vì sao nó là luật thứ hai cùng loại ──
+
+  Mũi tên lên/xuống của nhóm bị gỡ khi hàng tiêu đề được dựng lại theo kiểu
+  Apple Music. Ba tệp vẫn ghi rằng chúng còn đó và rằng chúng là "đường duy
+  nhất cho người dùng VoiceOver" — một câu vừa sai vừa nguy hiểm, vì nó bảo
+  người đọc sau rằng đường trợ năng đã được lo, trong khi thứ thật sự lo nó là
+  accessibility action.
+
+  Đây là lần thứ hai trong cùng một phiên: lần trước là câu "Settings là tab
+  thứ năm", và câu ấy đã được đưa cho người dùng như một dữ kiện để họ chọn
+  thiết kế. Một chú thích lệch khỏi mã tệ hơn không có chú thích, đúng vì nó
+  được tin.
+
+  Luật suy trạng thái từ MÃ (nhóm còn nút mũi tên không?) rồi mới đi soi chữ,
+  nên nó tự tắt nếu ngày nào đó mũi tên quay lại.
+*/
+{
+  const groupArrows = /<ArrowBtn\s+icon=\{Chevron(Up|Down)\}\s+label=\{i18n\.a11yMove(Up|Down)\}\s+disabled=\{gi /.test(today);
+  if (!groupArrows) {
+    /* Bóc trích dẫn `*"…"*`: một chú thích sửa sai được phép trích lại câu cũ. */
+    const strip = (x) => x.replace(/\*"[\s\S]*?"\*/g, '');
+    const CLAIMS = [
+      /hai cái nút mũi tên KHÔNG bị gỡ/i,
+      /[Hh]ai cái nút mũi tên vẫn/,
+      /[Hh]ai cái nút là đường duy nhất/,
+      /[Hh]ai nút mũi tên vẫn còn/,
+    ];
+    for (const f of [TODAY, 'src/components/ascnd/drag-reorder.tsx', 'tools/drag-reorder.mjs']) {
+      const src = strip(read(f));
+      for (const re of CLAIMS) {
+        if (re.test(src)) {
+          problems.push(
+            `${f}: còn khẳng định hai nút mũi tên của NHÓM vẫn ở đó, trong khi mã đã gỡ chúng. Câu ấy bảo ` +
+              'người đọc sau rằng đường trợ năng đã được lo — thứ lo nó bây giờ là accessibility action',
+          );
+          break;
+        }
+      }
+    }
+  }
+}
+
 /* ── phép tự kiểm ─────────────────────────────────────────────────────────── */
 const SELF = [
   {

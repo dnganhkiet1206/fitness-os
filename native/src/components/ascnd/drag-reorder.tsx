@@ -98,12 +98,20 @@ const EDGE_SPEED = 12;
  * (rung), và thả ra (ghi thứ tự mới). Đó là ba lần trong một cử chỉ, thay vì
  * sáu mươi lần một giây — cùng nguyên tắc mà `tab-bar-visibility.ts` đã ghi.
  *
- * ── và vì sao hai cái nút mũi tên KHÔNG bị gỡ ──
+ * ── một cú kéo là VÔ HÌNH, nên nó không được là đường duy nhất ──
  *
- * Một cú kéo là vô hình với trình đọc màn hình: VoiceOver không có "nhấn giữ
- * rồi trượt lên 120 điểm". Hai cái nút là đường duy nhất cho người dùng ấy, và
- * chúng cũng là đường cho bất kỳ ai không giữ máy đủ vững. Kéo-thả là lối
- * NHANH, không phải lối thay thế.
+ * VoiceOver không có "nhấn giữ rồi trượt lên 120 điểm". Chỗ gọi trả lời điều
+ * đó bằng accessibility ACTION trên chính tấm thẻ — "dời lên", "dời xuống" —
+ * đúng cách iOS làm cho một hàng kéo được.
+ *
+ * Đoạn này TỪNG ghi rằng hai cái nút mũi tên còn đó và là đường duy nhất ấy.
+ * Câu đó thôi đúng ở lần hàng tiêu đề được dựng lại theo kiểu Apple Music: ba
+ * nút cạnh nhau cho hai việc là chỗ nó vừa hỏng theo đúng nghĩa đen — tay nắm
+ * mới vẽ đè lên nút xoá — nên hai mũi tên đi và action thay chỗ.
+ *
+ * Ghi lại vì đây là lần thứ hai trong cùng một phiên một chú thích sống lâu
+ * hơn thứ nó mô tả, và lần trước câu sai ấy đã được đưa cho người dùng như một
+ * dữ kiện. `tools/drag-reorder.mjs` nay canh chính điều này.
  */
 export function DragReorder({
   items,

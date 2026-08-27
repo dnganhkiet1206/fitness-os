@@ -1895,10 +1895,11 @@ export default function TodayScreen() {
             bước "lưu": `setConfig` ghi thẳng, nên thoát chế độ sửa là thấy
             ngay.
 
-            Hai cái nút mũi tên vẫn ở nguyên đó. Một cú kéo là vô hình với
-            trình đọc màn hình — VoiceOver không có "nhấn giữ rồi trượt lên 120
-            điểm" — nên chúng là đường duy nhất cho người dùng ấy. Kéo-thả là
-            lối NHANH, không phải lối thay thế.
+            Một cú kéo là vô hình với trình đọc màn hình — VoiceOver không có
+            "nhấn giữ rồi trượt lên 120 điểm" — nên đường của người dùng ấy là
+            accessibility action trên chính tấm thẻ, khai ngay bên dưới. Hai
+            nút mũi tên của NHÓM đã đi cùng lúc nút xoá đi; mũi tên của từng
+            WIDGET thì còn, vì widget không kéo được.
           */}
           <DragReorder
             gap={spacing.md}
