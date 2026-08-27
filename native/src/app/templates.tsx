@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Dumbbell, Plus, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -68,7 +68,7 @@ export default function TemplatesScreen() {
   };
 
   return (
-    <Screen title={vi ? 'Danh sách buổi tập' : 'Workout list'}>
+    <Screen refreshable title={vi ? 'Danh sách buổi tập' : 'Workout list'}>
       {/*
         The search box is only drawn once there is enough to search. On four
         routines it is a control that costs a tap to dismiss and finds nothing
@@ -127,7 +127,7 @@ export default function TemplatesScreen() {
           action={
             search.trim()
               ? undefined
-              : { label: i18n.workoutsCreateNew, onPress: () => router.push('/workout-builder') }
+              : { label: i18n.workoutsCreateNew, onPress: () => nav.push('/workout-builder') }
           }
         />
       )}
@@ -137,7 +137,7 @@ export default function TemplatesScreen() {
         style={styles.createBtn}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/workout-builder');
+          nav.push('/workout-builder');
         }}>
         <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
         <Text style={styles.createText}>{i18n.workoutsCreateNew}</Text>

@@ -122,7 +122,7 @@ export default function ExercisesScreen() {
   };
 
   return (
-    <Screen back title={i18n.nExercises}>
+    <Screen refreshable back title={i18n.nExercises}>
       <View style={styles.topRow}>
         <TextInput
           style={styles.search}

@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { ChevronRight, Minus, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
@@ -136,7 +136,7 @@ export function ExerciseProgress({
       onPress={() => {
         if (!key) return;
         Haptics.selectionAsync();
-        router.push(insightHref(key));
+        nav.push(insightHref(key));
       }}>
       <View style={styles.strip}>
         <Icon icon={ICON[trend]} size={13} color={tint} />

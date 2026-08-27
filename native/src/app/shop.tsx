@@ -284,7 +284,7 @@ export default function ShopScreen() {
   const sceneW = Dimensions.get('window').width;
 
   return (
-    <Screen
+    <Screen refreshable
       title={i18n.nRoomDressing}
       back
       // The header floats over the scene rather than sitting above it, so the

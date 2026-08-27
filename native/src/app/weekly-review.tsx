@@ -480,7 +480,7 @@ export default function WeeklyReviewScreen() {
     .map((c) => ({ date: c.date, value: c.readiness }));
 
   return (
-    <Screen back title={i18n.weeklyReviewTitle}>
+    <Screen refreshable back title={i18n.weeklyReviewTitle}>
       {/* Week navigation (web) */}
       <View style={styles.weekNav}>
         <PressScale

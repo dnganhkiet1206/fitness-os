@@ -1,5 +1,6 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import {
@@ -211,7 +212,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   const openAiItem = (route: (typeof AI_ITEMS)[number]['route']) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setAiOpen(false);
-    setTimeout(() => router.push(route), 120);
+    setTimeout(() => nav.push(route), 120);
   };
 
   return (

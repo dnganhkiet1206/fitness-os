@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import {
   Activity,
@@ -194,7 +194,7 @@ export function BiometricsCard() {
   if (metrics.length === 0) return null;
 
   return (
-    <PressScale onPress={() => { Haptics.selectionAsync(); router.push('/biometrics'); }}>
+    <PressScale onPress={() => { Haptics.selectionAsync(); nav.push('/biometrics'); }}>
       <GlassCard style={styles.stackCard}>
         <View style={styles.headRow}>
           <MicroTitle>{i18n.dcBioTitle}</MicroTitle>
@@ -736,7 +736,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
         accessibilityLabel={vi ? 'Xem tất cả buổi tập đã ghi' : 'See all logged workouts'}
         onPress={() => {
           Haptics.selectionAsync();
-          router.push('/sessions');
+          nav.push('/sessions');
         }}
         style={styles.latestRow}>
         <View style={styles.latestIcon}>
@@ -865,7 +865,7 @@ export function RecentAwardsCard() {
         <Pressable
           hitSlop={8}
           style={styles.viewAll}
-          onPress={() => { Haptics.selectionAsync(); router.push('/awards'); }}>
+          onPress={() => { Haptics.selectionAsync(); nav.push('/awards'); }}>
           <Text style={styles.viewAllText}>{i18n.dcViewAll}</Text>
           <Icon icon={ChevronRight} size={12} color={colors.primary} />
         </Pressable>

@@ -46,7 +46,7 @@ export default function PlanScreen() {
   const day = weekDayParam(useLocalSearchParams().day);
 
   return (
-    <Screen back keyboardAware title={i18n.nPlan} aura={PAGE_TINT.activity}>
+    <Screen refreshable back keyboardAware title={i18n.nPlan} aura={PAGE_TINT.activity}>
       <WeekPlan initialDay={day} />
     </Screen>
   );

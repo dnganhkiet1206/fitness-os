@@ -61,7 +61,7 @@ export default function ChallengesScreen() {
   }, [challenges]);
 
   return (
-    <Screen back title={i18n.nChallenges}>
+    <Screen refreshable back title={i18n.nChallenges}>
       {challenges && challenges.length > 0 ? (
         challenges.map((c, i) => {
           const target = Number(c.target_value) || 1;

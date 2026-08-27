@@ -99,7 +99,7 @@ export default function CoachMemoryScreen() {
   const rows = memories.data ?? [];
 
   return (
-    <Screen back title={vi ? 'Coach nhớ gì' : "What the coach remembers"}>
+    <Screen refreshable back title={vi ? 'Coach nhớ gì' : "What the coach remembers"}>
       <Text style={styles.intro}>
         {vi
           ? 'Những điều bạn đã kể trong các cuộc trò chuyện, để coach không hỏi lại. Số liệu hằng ngày không nằm ở đây — app đã có sẵn.'

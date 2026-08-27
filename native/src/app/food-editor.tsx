@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Check, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
@@ -94,7 +95,7 @@ export default function FoodEditorSheet() {
     const opts = {
       onSuccess: () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.back();
+        nav.back();
         toast.success(isEdit ? i18n.foodUpdated : i18n.foodAdded);
       },
       onError: (e: Error) => toast.fail(e),
@@ -114,7 +115,7 @@ export default function FoodEditorSheet() {
           remove.mutate(id, {
             onSuccess: () => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.back();
+              nav.back();
               toast.success(i18n.foodDeleted);
             },
             onError: (e: Error) => toast.fail(e),

@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Lightbulb, Moon, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
@@ -137,7 +137,7 @@ export default function SleepInsightsScreen() {
   const maxH = Math.max(8, ...nights.map((n) => n.total_h));
 
   return (
-    <Screen back title={i18n.sleepTitle}>
+    <Screen refreshable back title={i18n.sleepTitle}>
       {/* A failed read is not an empty history. `data` comes back undefined, the
         zero branch below renders, and the screen tells somebody they have
         never recorded anything — a statement about their account, not about
@@ -153,7 +153,7 @@ export default function SleepInsightsScreen() {
             icon={Moon}
             title={i18n.sleepNoData}
             hint={i18n.sleepNoDataMsg}
-            action={{ label: i18n.nLogSleepTitle, onPress: () => router.push('/log-sleep') }}
+            action={{ label: i18n.nLogSleepTitle, onPress: () => nav.push('/log-sleep') }}
           />
         </GlassCard>
       ) : (

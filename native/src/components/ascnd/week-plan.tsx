@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { CheckCircle2, ChevronLeft, ChevronRight, Dumbbell, Moon, Plus } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
@@ -351,7 +351,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                   if (day === null) return;
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setPicking(null);
-                  router.push({ pathname: '/workout-builder', params: { assignDay: String(day) } });
+                  nav.push({ pathname: '/workout-builder', params: { assignDay: String(day) } });
                 }}>
                 <View style={styles.pickerRowInner}>
                   <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />

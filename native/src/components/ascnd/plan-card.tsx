@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { ChevronRight } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
@@ -81,7 +81,7 @@ export function PlanCard() {
 
   const open = (day: number) => {
     Haptics.selectionAsync();
-    router.push({ pathname: '/workouts/plan', params: { day: String(day) } });
+    nav.push({ pathname: '/workouts/plan', params: { day: String(day) } });
   };
 
   const todayTpl = (() => {

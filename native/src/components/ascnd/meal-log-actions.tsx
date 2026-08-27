@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Barcode, Camera, Pencil, Search } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -115,7 +115,7 @@ export function MealLogActions({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
             style={styles.tile}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push(w.route as never);
+              nav.push(w.route as never);
             }}>
             <View style={[styles.chip, { backgroundColor: `${w.color}1f` }]}>
               <Icon icon={w.icon} size={20} color={w.color} />

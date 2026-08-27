@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { CalendarDays, Check, Plus, X } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as Crypto from 'expo-crypto';
@@ -530,7 +530,7 @@ export default function LogWorkoutSheet() {
        call would pop the screen behind it as well. */
     if (leaving.current) return;
     leaving.current = true;
-    router.back();
+    nav.back();
     toast.success(message);
   };
 
@@ -632,10 +632,10 @@ export default function LogWorkoutSheet() {
     mutation, whose state nothing here read. So the guard that exists to stop a
     second submit was watching the one path that was not taken.
 
-    `router.back()` starts an animation; the sheet stays mounted and hit-testable
+    `nav.back()` starts an animation; the sheet stays mounted and hit-testable
     while it plays, and offline the button changes in no way at all — no spinner,
     no tick, the same label — which is the shape that *invites* the second tap.
-    `finish()`'s own latch stopped the second `router.back()`, so what came of it
+    `finish()`'s own latch stopped the second `nav.back()`, so what came of it
     was silent: two `kind: 'workout'` intentions in the durable queue, two
     inserts on reconnect, and one workout recorded twice.
 

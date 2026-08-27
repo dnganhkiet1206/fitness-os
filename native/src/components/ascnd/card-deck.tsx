@@ -397,11 +397,39 @@ export function CardDeck({
             settle(next);
           }}
           style={[styles.stage, shown > 0 ? { height: shown } : null]}>
-          {pages.map((node, i) => (
-            <Page key={i} index={i} at={at} width={w} onHeight={onHeight}>
-              {node}
-            </Page>
-          ))}
+          {/*
+            Không dựng trang nào trước khi ĐO XONG bề rộng.
+
+            Đây là điều kiện mà `tools/measured-worklet.mjs` đặt tên: "đưa
+            worklet vào một component con CHỈ MOUNT KHI đã đo xong". Bản trước
+            dựng cả năm trang ngay ở lần render đầu, lúc `w` còn 0, nên style
+            đóng băng của mỗi trang là `(index - at) * (0 || 1)` — năm trang
+            nằm cách nhau ĐÚNG MỘT ĐIỂM.
+
+            Đã ĐO trên harness bản đã ship: ở mốc 200ms năm trang ở x = 0, 1,
+            2, 3, 4, mỗi trang vẫn rộng đủ 402 (chúng lấy bề rộng từ cha qua
+            `left/right: 0`, nên nội dung không bị bóp — nó chỉ chồng lên
+            nhau). Đó chính xác là ảnh người dùng gửi: năm vòng tròn lồng vào
+            nhau, năm dòng tiêu đề đè lên nhau, năm con số cùng một chỗ.
+
+            Bình thường mapper chạy ngay sau đó và sửa lại, nên nó chỉ là một
+            khung hình. Nhưng "chỉ một khung hình" là điều kiện, không phải bảo
+            đảm: bất cứ lúc nào style React được áp lại mà mapper KHÔNG chạy
+            (số đo chưa về, view vừa gắn lại sau khi màn khác phủ lên), màn
+            hình đứng nguyên ở trạng thái chồng ấy. Kéo-để-tải-lại không cứu
+            được vì nó nạp lại DỮ LIỆU, còn cái hỏng là BỐ CỤC.
+          */}
+          {w > 0 ? (
+            <Track at={at} page={page} width={w}>
+              {pages.map((node, i) => (
+                <View key={i} style={[styles.page, { left: i * w, width: w }]}>
+                  <Measure index={i} onHeight={onHeight}>
+                    {node}
+                  </Measure>
+                </View>
+              ))}
+            </Track>
+          ) : null}
         </View>
       </GestureDetector>
 
@@ -444,23 +472,67 @@ export function CardDeck({
   );
 }
 
-/** One page, parked a full deck-width away for every step it is from the front. */
-function Page({
-  index,
+/**
+ * Cả hàng trang, trượt như một khối — và phần NGHỈ của vị trí ấy nằm ở React,
+ * không nằm trong worklet.
+ *
+ * ── vì sao chia đôi như vậy ──
+ *
+ * Trước đây mỗi trang tự dịch bằng `(index - at.value) * width` trong worklet
+ * của riêng nó. Nghĩa là TOÀN BỘ vị trí nghỉ của deck — trang nào đang xem,
+ * bốn trang kia nằm ở đâu — là đầu ra của worklet. Mà `useAnimatedStyle` đóng
+ * băng lần chạy đầu tiên và áp lại giá trị đóng băng ấy ở mọi lần render sau;
+ * thứ duy nhất ghi đè là mapper. Khi mapper không chạy, không còn gì nói cho
+ * năm trang biết chúng phải nằm cách nhau một bề rộng màn hình.
+ *
+ * Nay React giữ phần nghỉ và worklet chỉ giữ phần ĐANG BAY:
+ *
+ *   trang i nằm ở  left = i * w          (bố cục thật, do React đặt)
+ *   cả hàng lệch   left = -page * w      (trang đang xem, state của React)
+ *   worklet thêm   -(at - page) * w      (phần lẻ giữa hai trang, đang chạy lò xo)
+ *
+ * Cộng lại vẫn đúng bằng `(i - at) * w` như cũ, từng khung hình một. Khác biệt
+ * duy nhất là lúc ĐỨNG YÊN: `at === page`, nên phần worklet bằng 0. Giá trị
+ * đóng băng của nó cũng là 0. Mất mapper thì deck vẫn hiện đúng trang, các
+ * trang vẫn cách nhau đúng một bề rộng — không còn trạng thái nào mà năm trang
+ * chồng lên nhau.
+ *
+ * Đây đúng là hình dạng mà `tools/measured-worklet.mjs` gọi là an toàn ở hai
+ * tệp nó miễn: "giá trị worklet tính ra khi số đo còn 0 trùng đúng với vị trí
+ * nghỉ đúng". Ở đây nó đúng vì cấu trúc, không phải vì trùng hợp số học.
+ *
+ * Một worklet cho cả hàng thay vì một cho mỗi trang: cả năm trang vốn luôn
+ * dịch cùng một lượng, nên năm mapper chạy song song là bốn cái thừa.
+ */
+function Track({
   at,
+  page,
   width,
+  children,
+}: {
+  at: SharedValue<number>;
+  page: number;
+  width: number;
+  children: React.ReactNode;
+}) {
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateX: -(at.value - page) * width }],
+  }));
+  return (
+    <Animated.View style={[styles.track, { left: -page * width }, style]}>{children}</Animated.View>
+  );
+}
+
+/** Đo chiều cao thật của một trang, bằng một handler ổn định. */
+function Measure({
+  index,
   onHeight,
   children,
 }: {
   index: number;
-  at: SharedValue<number>;
-  width: number;
   onHeight: (index: number, height: number) => void;
   children: React.ReactNode;
 }) {
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: (index - at.value) * (width || 1) }],
-  }));
   /* Ổn định theo `index` — xem ghi chú ở `onHeight` về vì sao một handler đổi
      danh tính mỗi render là một vòng lặp layout. */
   const measure = useCallback(
@@ -468,7 +540,7 @@ function Page({
     [index, onHeight],
   );
   return (
-    <Animated.View style={[styles.page, style]}>
+    <>
       {/*
         Không có dải kính nào ở đây, và việc bỏ nó đi là bản sửa cho "thẻ bị cắt
         ngang".
@@ -484,7 +556,7 @@ function Page({
         mất màu; giờ không có thẻ nào cả, nên nó không còn việc gì để làm.
       */}
       <View onLayout={measure}>{children}</View>
-    </Animated.View>
+    </>
   );
 }
 
@@ -529,7 +601,19 @@ const styles = StyleSheet.create({
     dung giống nhau, không đến từ một ràng buộc bố cục vay chiều cao của chính
     thứ nó đang định nghĩa.
   */
-  page: { position: 'absolute', left: 0, right: 0, top: 0 },
+  /* Cả hàng, neo trên-trái. `left` thật do React đặt theo trang đang xem, xem
+     `Track`. Tuyệt đối nên nó không cộng một điểm nào vào chiều cao sân khấu —
+     chiều cao ấy đến từ phép đo, giống hệt như trước. */
+  track: { position: 'absolute', top: 0 },
+  /*
+    Trang đặt bằng `left` + `width` THẬT, không bằng `left/right: 0`.
+
+    Bản cũ để cả năm trang trùng khít lên nhau rồi trông cậy hoàn toàn vào
+    worklet để tách chúng ra. Đó là lý do trạng thái hỏng trông "đúng kích
+    thước mà chồng lên nhau": bố cục nói năm trang cùng một chỗ, và chỉ có
+    transform mới nói khác. Nay bố cục tự nó đã trải chúng ra.
+  */
+  page: { position: 'absolute', top: 0 },
   /* Xếp tuyệt đối để không cộng một điểm nào vào chiều cao deck: nó là phần
      ĐUÔI của thẻ, không phải một hàng nữa dưới thẻ. */
   /* `paddingBottom` là chỗ cho chấm SÁNG nở ra — xem `PIP_BLEED`. Phía trên đã

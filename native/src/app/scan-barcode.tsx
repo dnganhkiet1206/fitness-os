@@ -1,6 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { router, useRootNavigationState } from 'expo-router';
+import { useRootNavigationState } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -60,8 +61,8 @@ export default function ScanBarcodeScreen() {
       /* Same rule as the photo scanner: the destination is worked out, not
          passed in. This screen never took a parameter at all, so every barcode
          scanned from the Nutrition tab was written to the bridge and dropped. */
-      if (stackHasMealSheet(navState)) router.back();
-      else router.replace('/log-meal');
+      if (stackHasMealSheet(navState)) nav.back();
+      else nav.replace('/log-meal');
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       setStatus('not-found');
@@ -82,7 +83,7 @@ export default function ScanBarcodeScreen() {
         <PressScale style={styles.permBtn} onPress={requestPermission}>
           <Text style={styles.permBtnText}>{i18n.nAllowCamera}</Text>
         </PressScale>
-        <Pressable onPress={() => router.back()}>
+        <Pressable onPress={() => nav.back()}>
           <Text style={styles.cancelText}>{i18n.nCancel}</Text>
         </Pressable>
       </View>
@@ -115,7 +116,7 @@ export default function ScanBarcodeScreen() {
         accessibilityLabel={i18n.a11yClose}
         style={[styles.closeBtn, { top: insets.top + spacing.sm }]}
         hitSlop={8}
-        onPress={() => router.back()}>
+        onPress={() => nav.back()}>
         <Icon icon={X} size={16} color="#fff" />
       </Pressable>
     </View>

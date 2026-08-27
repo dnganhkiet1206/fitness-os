@@ -1,6 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { router, useRootNavigationState } from 'expo-router';
+import { useRootNavigationState } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
@@ -136,8 +137,8 @@ export default function ScanFoodScreen() {
       Asking the navigation state removes the class: a caller cannot forget a
       flag it is never asked for.
     */
-    if (stackHasMealSheet(navState)) router.back();
-    else router.replace('/log-meal');
+    if (stackHasMealSheet(navState)) nav.back();
+    else nav.replace('/log-meal');
   };
 
   if (!permission) return <View style={styles.root} />;
@@ -152,7 +153,7 @@ export default function ScanFoodScreen() {
           onPress={requestPermission}>
           <Text style={styles.permBtnText}>{i18n.nAllowCamera}</Text>
         </PressScale>
-        <Pressable onPress={() => router.back()}>
+        <Pressable onPress={() => nav.back()}>
           <Text style={styles.cancelText}>{i18n.nCancel}</Text>
         </Pressable>
       </View>
@@ -171,7 +172,7 @@ export default function ScanFoodScreen() {
           accessibilityLabel={i18n.a11yClose}
           style={[styles.closeBtn, { top: insets.top + spacing.sm }]}
           hitSlop={8}
-          onPress={() => router.back()}>
+          onPress={() => nav.back()}>
           <Icon icon={X} size={18} color="#fff" />
         </Pressable>
 
@@ -271,7 +272,7 @@ export default function ScanFoodScreen() {
         accessibilityLabel={i18n.a11yClose}
         style={[styles.closeBtn, { top: insets.top + spacing.sm }]}
         hitSlop={8}
-        onPress={() => router.back()}>
+        onPress={() => nav.back()}>
         <Icon icon={X} size={18} color="#fff" />
       </Pressable>
 

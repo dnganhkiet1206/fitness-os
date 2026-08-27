@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -198,7 +199,7 @@ export default function AiCoachScreen() {
             hitSlop={10}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.back();
+              nav.back();
             }}
             style={styles.headerBtn}>
             <Glyph name="chevron" size={17} />

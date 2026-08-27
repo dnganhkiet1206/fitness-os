@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { Droplets, Flame, Footprints, Moon, Star, Sunrise, Target, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useId, useState } from 'react';
@@ -1081,7 +1081,7 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
       label={labels.title}
       valueText={`${displayVolume(ml, unit)} / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
       pct={pct}
-      onPress={() => router.push('/water')}
+      onPress={() => nav.push('/water')}
     />
   );
 }
@@ -1096,7 +1096,7 @@ export function StepsWidget({ steps, target, labels }: { steps: number; target: 
       label={labels.title}
       valueText={`${steps.toLocaleString()} / ${target.toLocaleString()}`}
       pct={pct}
-      onPress={() => router.push('/steps')}
+      onPress={() => nav.push('/steps')}
     />
   );
 }

@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -202,7 +202,7 @@ export default function AssistantScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const to = question ? `/ai-coach?q=${encodeURIComponent(question)}` : '/ai-coach';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push(to as any);
+    nav.push(to as any);
   };
 
   /*
@@ -386,7 +386,7 @@ export default function AssistantScreen() {
   const go = (route: string) => {
     Haptics.selectionAsync();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push(route as any);
+    nav.push(route as any);
   };
 
   return (
@@ -465,7 +465,7 @@ export default function AssistantScreen() {
             hitSlop={10}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.navigate('/');
+              nav.navigate('/');
             }}
             style={styles.iconBtn}>
             <Glyph name="home" size={21} />

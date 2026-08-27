@@ -143,7 +143,11 @@ if (!callers.some((c) => c.file === DOOR && c.arg === 'false')) {
 // ── the door leads somewhere, and no longer computes ──
 {
   const door = strip(read(DOOR));
-  if (!/router\.push\('\/assistant'\)/.test(door)) {
+  /* `(?:router|nav)` chứ không phải một cái tên: điều hướng của app đi qua
+     `lib/nav.ts` từ khi có chốt bấm dồn (`tools/nav-guard.mjs`). Luật này nói về
+     ĐÍCH ĐẾN, không về cách đánh vần bộ điều hướng — nên nó được dời theo, không
+     phải nới ra: một cánh cửa mất đích vẫn đỏ y như trước. */
+  if (!/(?:router|nav)\.push\('\/assistant'\)/.test(door)) {
     problems.push(`${DOOR}: thẻ không còn dẫn sang /assistant — nó là cánh cửa, cửa phải mở ra chỗ nào đó`);
   }
   /*

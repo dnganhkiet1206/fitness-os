@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { ArrowLeft, Check, ChevronRight, Plus, Search, X } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -340,7 +341,7 @@ export default function WorkoutBuilderSheet() {
    */
   const openLibrary = () => {
     Haptics.selectionAsync();
-    router.push({ pathname: '/exercises', params: { create: search.trim() } });
+    nav.push({ pathname: '/exercises', params: { create: search.trim() } });
   };
 
   /**
@@ -371,7 +372,7 @@ export default function WorkoutBuilderSheet() {
       {
         onSuccess: (id) => {
           if (planDay === null) {
-            router.back();
+            nav.back();
             return;
           }
           upsertDay.mutate(
@@ -382,7 +383,7 @@ export default function WorkoutBuilderSheet() {
               onError: (e: Error) => toast.fail(e),
             },
           );
-          router.back();
+          nav.back();
         },
         onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
       },
@@ -417,7 +418,7 @@ export default function WorkoutBuilderSheet() {
     Haptics.selectionAsync();
     if (mode === 'edit-set') setEditing(null);
     else if (mode === 'review') setStep(1);
-    else router.back();
+    else nav.back();
   };
 
   const subtitle =

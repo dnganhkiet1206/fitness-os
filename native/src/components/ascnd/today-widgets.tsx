@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Check, PartyPopper, Sparkles } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -383,7 +383,7 @@ export function SmartTipsCard() {
         style={styles.tipsBtn}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/assistant');
+          nav.push('/assistant');
         }}>
         <Text style={styles.tipsBtnText}>
           {count != null && count > 0

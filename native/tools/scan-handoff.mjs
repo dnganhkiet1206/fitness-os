@@ -141,7 +141,11 @@ const food = (name) => ({
     /* Every path out of the scanner has to land the food somewhere. A bare
        `router.back()` with no `replace` beside it is the branch that dropped
        it. */
-    if (src.includes('setPendingScan(') && !src.includes("router.replace('/log-meal')")) {
+    /* `(?:router|nav)` chứ không phải một cái tên: điều hướng của app đi qua
+       `lib/nav.ts` từ khi có chốt bấm dồn (`tools/nav-guard.mjs`). Luật này nói về
+       ĐÍCH ĐẾN, không về cách đánh vần bộ điều hướng — nên nó được dời theo, không
+       phải nới ra: một cánh cửa mất đích vẫn đỏ y như trước. */
+    if (src.includes('setPendingScan(') && !/(?:router|nav)\.replace\('\/log-meal'\)/.test(src)) {
       problems.push(`${file}: có ghi vào bridge nhưng không có đường mở /log-meal — thức ăn vẫn có thể rơi`);
     }
   }

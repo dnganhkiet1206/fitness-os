@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { ChevronRight, UtensilsCrossed } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -54,7 +54,7 @@ export default function MealPlansScreen() {
     g === 'bulk' ? i18n.goalBulk : g === 'cut' ? i18n.goalCut : g === 'maintain' ? i18n.goalMaintain : null;
 
   return (
-    <Screen back title={i18n.nMealPlans}>
+    <Screen refreshable back title={i18n.nMealPlans}>
       {/* A failed read is not an empty list. `data` comes back undefined, the
         zero branch below renders, and the screen tells somebody they have
         nothing — which is a statement about their account, not about the
@@ -74,7 +74,7 @@ export default function MealPlansScreen() {
                 accessibilityLabel={p.name}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  router.push({ pathname: '/meal-plan', params: { plan: p.id } });
+                  nav.push({ pathname: '/meal-plan', params: { plan: p.id } });
                 }}
                 style={styles.row}>
                 <View style={styles.text}>

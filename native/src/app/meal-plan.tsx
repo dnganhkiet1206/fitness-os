@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Check, Plus, Trash2, UtensilsCrossed, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -151,7 +152,7 @@ export default function MealPlanScreen() {
         onPress: () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           deletePlan.mutate(plan.id, {
-            onSuccess: () => router.back(),
+            onSuccess: () => nav.back(),
             onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
           });
         },
@@ -162,7 +163,7 @@ export default function MealPlanScreen() {
   const meals = MEAL_ORDER.filter((m) => today.items.some((it) => it.meal_type === m));
 
   return (
-    <Screen
+    <Screen refreshable
       back
       title={plan?.name ?? i18n.nMealPlans}
       headerRight={

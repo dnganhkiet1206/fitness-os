@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Plus, Star } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -51,7 +51,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
       style={styles.row}
       onPress={() => {
         Haptics.selectionAsync();
-        router.push({ pathname: '/food-editor', params: { id: f.id } });
+        nav.push({ pathname: '/food-editor', params: { id: f.id } });
       }}>
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>

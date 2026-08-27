@@ -2,7 +2,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Check, RefreshCw } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
@@ -277,7 +277,7 @@ export default function EditProfileSheet() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      nav.back();
     },
     onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
   });
@@ -310,7 +310,7 @@ export default function EditProfileSheet() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Pressable hitSlop={8} onPress={() => router.back()}>
+        <Pressable hitSlop={8} onPress={() => nav.back()}>
           <Text style={styles.headerCancel}>{i18n.nCancel}</Text>
         </Pressable>
         <Text style={styles.headerTitle}>{i18n.settingsPersonalInfo}</Text>

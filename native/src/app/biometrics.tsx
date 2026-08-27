@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { Plus, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
@@ -103,7 +103,7 @@ export default function BiometricsScreen() {
   const rows = useMemo(() => [...(history ?? [])].reverse(), [history]);
 
   return (
-    <Screen back
+    <Screen refreshable back
       title={i18n.biometricsTitle}
       headerRight={
         <PressScale
@@ -113,7 +113,7 @@ export default function BiometricsScreen() {
           style={styles.logBtn}
           onPress={() => {
             Haptics.selectionAsync();
-            router.push('/log-biometrics');
+            nav.push('/log-biometrics');
           }}>
           <Icon icon={Plus} size={22} color={colors.primary} />
         </PressScale>
@@ -132,7 +132,7 @@ export default function BiometricsScreen() {
             <Text style={styles.emptyMsg}>{i18n.biometricsNoDataMsg}</Text>
             <PressScale
               style={styles.emptyBtn}
-              onPress={() => router.push('/log-biometrics')}>
+              onPress={() => nav.push('/log-biometrics')}>
               <Text style={styles.emptyBtnText}>{i18n.biometricsManual}</Text>
             </PressScale>
           </View>

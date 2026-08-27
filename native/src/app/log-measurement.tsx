@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -107,7 +107,7 @@ export default function LogMeasurementSheet() {
     Cheapest of the three, and included anyway: `body_measurements` is upserted
     on `(user_id, date)`, so a second queued write lands on the same row and the
     data is safe. What is not safe is the navigation — the offline branch calls
-    `router.back()` inline, so a second tap during the dismiss animation pops
+    `nav.back()` inline, so a second tap during the dismiss animation pops
     the screen behind this sheet and drops the user somewhere they did not ask
     to be, with two "will sync" toasts to explain it.
   */
@@ -135,7 +135,7 @@ export default function LogMeasurementSheet() {
        so a replay updates the same row rather than making a second one. */
     if (offlineNow() && user) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      nav.back();
       toast.success(i18n.logMealQueued);
       queue.mutate({
         kind: 'measurement',
@@ -150,7 +150,7 @@ export default function LogMeasurementSheet() {
     upsert.mutate(payload, {
       onSuccess: () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.back();
+        nav.back();
         toast.success(i18n.progressSaved);
       },
       onError: (e: Error) => toast.fail(e),

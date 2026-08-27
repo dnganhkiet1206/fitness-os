@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { nav } from '@/lib/nav';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -25,7 +26,7 @@ import { displayWeight, weightLabel, type WeightUnit } from '@/lib/units';
  * ── why the sheet stops instead of closing ──
  *
  * Saving a workout used to do three things in one frame: a haptic, a
- * `router.back()`, and a toast reading "Đã lưu buổi tập". That is the right
+ * `nav.back()`, and a toast reading "Đã lưu buổi tập". That is the right
  * amount of ceremony for the ordinary case and it is the wrong amount for the
  * rare one. A personal record is the largest thing that happens in a strength
  * app — it is the reason people keep a log at all — and it was landing in the

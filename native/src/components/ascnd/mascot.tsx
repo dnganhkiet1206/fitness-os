@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { router, useIsFocused } from 'expo-router';
+import { useIsFocused } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Coins, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -369,7 +370,7 @@ export function Mascot({
     );
     setBubbleVisible(true);
     // A tap now leads into the buddy's gym room (quests, coins, shop)
-    setTimeout(() => router.push('/mascot-room'), 320);
+    setTimeout(() => nav.push('/mascot-room'), 320);
   };
 
   return (

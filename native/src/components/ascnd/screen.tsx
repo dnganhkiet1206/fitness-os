@@ -1,10 +1,13 @@
-import { router, useFocusEffect } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { useFocusEffect } from 'expo-router';
+import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { ChevronLeft } from 'lucide-react-native';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -155,6 +158,25 @@ interface ScreenProps extends ViewProps {
    */
   contentScrollEnabled?: boolean;
   /**
+   * Kéo xuống để tải lại.
+   *
+   * ── vì sao nó ở ĐÂY chứ không ở từng màn ──
+   *
+   * Trước bản này, đúng MỘT màn trong cả app có kéo-để-tải-lại: Today. Ba mươi
+   * màn còn lại đọc dữ liệu server và không màn nào phản ứng với cú kéo.
+   *
+   * Không màn nào NÓI DỐI — không có vòng xoay giả nào quay rồi không làm gì —
+   * nhưng "không có gì xảy ra" và "đã tải lại xong, không có gì mới" trông y
+   * hệt nhau, nên người dùng không có cách nào biết cử chỉ ấy có tồn tại hay
+   * không. Họ kéo, không thấy gì, và kết luận app treo. Đó chính là điều đã xảy
+   * ra khi màn Today hỏng bố cục: cú kéo có chạy thật, dữ liệu có về thật, và
+   * nó không sửa được gì vì thứ hỏng là BỐ CỤC chứ không phải dữ liệu.
+   *
+   * Đặt ở scaffold thì một màn bật nó bằng một từ, và `tools/refreshable.mjs`
+   * bắt được màn nào đọc dữ liệu server mà quên bật.
+   */
+  refreshable?: boolean;
+  /**
    * Forwarded to the page's ScrollView, along with `scrollEventThrottle`.
    *
    * `ViewProps` does not carry these, and they already reach the ScrollView
@@ -239,8 +261,55 @@ function PageAura({ tint }: { tint: readonly [string, string] }) {
   );
 }
 
-export function Screen({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, children, style, ...props }: ScreenProps) {
+export function Screen({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, refreshable = false, children, style, ...props }: ScreenProps) {
   const insets = useSafeAreaInsets();
+
+  /**
+   * Một cú kéo, và nó tải lại THẬT.
+   *
+   * `invalidateQueries()` không tham số: đánh dấu mọi truy vấn là cũ và fetch
+   * lại những cái đang được dùng. Đó đúng là việc người ta muốn — họ không kéo
+   * để làm mới một bảng, họ kéo vì màn hình có vẻ cũ.
+   *
+   * `finally` chứ không phải hai dòng gán: nếu lời hứa kia hỏng, vòng xoay sẽ
+   * quay mãi mãi trên một màn không còn tải gì. Một vòng xoay không bao giờ
+   * dừng là một lời nói dối lâu hơn cả một cú kéo không làm gì.
+   *
+   * Rung ngay khi cú kéo ĂN, không đợi dữ liệu về: cử chỉ này không có nút nào
+   * để nhấn, nên phản hồi duy nhất xác nhận nó đã được nhận là cái rung ấy.
+   */
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
+  /**
+   * Vòng xoay vẽ ở đâu.
+   *
+   * iOS vẽ nó ở đỉnh KHUNG của scroll view. Ở hai bố cục chạy sát mép trên màn
+   * hình, khung ấy bắt đầu dưới Dynamic Island, nên vòng xoay hiện ra sau đồng
+   * hồ và dưới lớp mờ của status scrim: cú kéo có tải lại, chỉ là không nhìn
+   * thấy gì — không phân biệt được với một trang không có cử chỉ này.
+   *
+   * `(tabs)/index.tsx` đã dính đúng lỗi đó và ghi lại nguyên nhân. Con số ở đây
+   * lấy từ CÙNG một chỗ với phần đệm trên của nội dung, chứ không phải một số
+   * thứ hai chọn cho vừa mắt.
+   */
+  const refresher = (offset: number) =>
+    refreshable ? (
+      <RefreshControl
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        tintColor={colors.mutedForeground}
+        progressViewOffset={offset}
+      />
+    ) : undefined;
   const i18n = useI18n();
 
   /**
@@ -303,7 +372,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
           style={styles.backBtn}
           onPress={() => {
             Haptics.selectionAsync();
-            router.back();
+            nav.back();
           }}>
           <Icon icon={ChevronLeft} size={22} color={transparentHeader ? '#fff' : colors.primary} />
         </PressScale>
@@ -325,6 +394,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
               ref={scroller}
               style={styles.scroller}
               contentContainerStyle={[styles.subContentFlush, { paddingBottom: insets.bottom + spacing.xl }, style]}
+              refreshControl={refresher(insets.top + 12)}
               contentInsetAdjustmentBehavior="never"
               scrollEnabled={contentScrollEnabled}
               keyboardShouldPersistTaps="handled"
@@ -369,6 +439,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
             ref={scroller}
             style={styles.scroller}
             contentContainerStyle={[styles.subContent, { paddingBottom: insets.bottom + spacing.xl }, style]}
+            refreshControl={refresher(12)}
             contentInsetAdjustmentBehavior="never"
             scrollEnabled={contentScrollEnabled}
             keyboardShouldPersistTaps="handled"
@@ -405,6 +476,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
             { paddingTop: insets.top + spacing.sm, paddingBottom: BottomTabInset + insets.bottom + spacing.lg },
             style,
           ]}
+          refreshControl={refresher(insets.top + 12)}
           contentInsetAdjustmentBehavior="never"
           scrollEnabled={contentScrollEnabled}
           keyboardShouldPersistTaps="handled"

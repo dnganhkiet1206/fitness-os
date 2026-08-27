@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 
@@ -173,7 +173,7 @@ export default function KoaDebugScreen() {
           accessibilityRole="button"
           accessibilityLabel="Mở phòng Koa"
           style={[styles.btn, styles.wide]}
-          onPress={() => router.push('/mascot-room')}>
+          onPress={() => nav.push('/mascot-room')}>
           <Text style={styles.btnText}>Xem Koa phản ứng trong phòng</Text>
         </PressScale>
       </ScrollView>

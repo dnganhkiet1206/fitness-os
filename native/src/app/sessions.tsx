@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Dumbbell, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
@@ -111,7 +111,7 @@ export default function SessionsScreen() {
   }, [sessions, lang]);
 
   return (
-    <Screen back title={vi ? 'Buổi tập đã ghi' : 'Logged workouts'}>
+    <Screen refreshable back title={vi ? 'Buổi tập đã ghi' : 'Logged workouts'}>
       {/*
         A failed read is not an empty history.
 
@@ -134,7 +134,7 @@ export default function SessionsScreen() {
              companion is not offered on the empties that only time can fill. */
           companion
           title={vi ? 'Chưa có buổi tập nào trong 90 ngày qua' : 'No workouts in the last 90 days'}
-          action={{ label: i18n.nLogWorkoutBtn, onPress: () => router.push('/log-workout') }}
+          action={{ label: i18n.nLogWorkoutBtn, onPress: () => nav.push('/log-workout') }}
         />
       ) : (
         months.map((m, mi) => {

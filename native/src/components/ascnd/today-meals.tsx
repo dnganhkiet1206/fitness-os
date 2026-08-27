@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { ChevronDown, Minus, Pencil, Plus, Trash2, UtensilsCrossed } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -184,7 +184,7 @@ export function TodayMeals({
       <PressScale
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/log-meal');
+          nav.push('/log-meal');
         }}>
         <GlassCard style={styles.empty}>
           <Icon icon={UtensilsCrossed} size={20} />

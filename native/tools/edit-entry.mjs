@@ -145,14 +145,30 @@ function judge(today) {
         'làm và nó chỉ còn là một cú chạm thừa trước Cài đặt',
     );
   }
-  if (!/router\.push\('\/settings'\)/.test(today)) {
-    bad.push("avatar không còn `router.push('/settings')`");
+  /* `(?:router|nav)` chứ không phải một cái tên: điều hướng của app đi qua
+     `lib/nav.ts` từ khi có chốt bấm dồn (`tools/nav-guard.mjs`). Luật này nói về
+     ĐÍCH ĐẾN, không về cách đánh vần bộ điều hướng — nên nó được dời theo, không
+     phải nới ra: một cánh cửa mất đích vẫn đỏ y như trước. */
+  if (!/(?:router|nav)\.push\('\/settings'\)/.test(today)) {
+    bad.push("avatar không còn đường sang '/settings'");
   }
 
   return bad;
 }
 
-const today = read(TODAY);
+/*
+  Chú thích bị BÓC trước khi so.
+
+  Bắt được lúc thử phá luật này: `(tabs)/index.tsx` nhắc `nav.push('/settings')`
+  trong một đoạn văn giải thích vì sao cánh cửa ấy quan trọng, ngay phía trên
+  cánh cửa thật. Bỏ cánh cửa đi mà giữ đoạn văn thì luật vẫn xanh — nó đang đọc
+  lời KỂ về mã chứ không đọc mã. Đó đúng là "một chú thích sống lâu hơn thứ nó
+  mô tả", thứ repo này đã dính vài lần, và lần này chính lời giải thích của tôi
+  là thứ giữ cho luật xanh.
+*/
+const noComments = (x) =>
+  x.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const today = noComments(read(TODAY));
 const problems = judge(today);
 
 /* ── 6. Cài đặt vẫn không có lối vào nào khác, và mã đừng nói ngược lại ─── */

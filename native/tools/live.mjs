@@ -533,6 +533,93 @@ async function pressEverything(page, label, problems) {
 const SCENARIOS = [
   {
     /*
+      Năm thẻ hero chồng khít lên nhau, và không có luật tĩnh nào thấy được.
+
+      ── lỗi ──
+
+      `CardDeck` đặt từng trang bằng `translateX: (index - at.value) * (width ||
+      1)` trong một worklet, với `width` là `useState` do `onLayout` ghi. Ở lần
+      render đầu `width` còn 0, nên `width || 1` cho ra MỘT ĐIỂM: năm trang nằm
+      ở x = 0, 1, 2, 3, 4, mỗi trang vẫn rộng đủ màn hình vì chúng lấy bề rộng
+      từ cha. Năm vòng tròn lồng nhau, năm dòng tiêu đề đè lên nhau, năm con số
+      cùng một chỗ.
+
+      `useAnimatedStyle` đóng băng lần chạy đầu và chỉ mapper mới ghi đè. Bình
+      thường mapper chạy ngay sau đó nên đó chỉ là một khung hình — nhưng "chỉ
+      một khung hình" là điều kiện chứ không phải bảo đảm. Người dùng báo màn
+      Today kẹt ở đúng trạng thái ấy sau khi vào Cài đặt rồi thoát ra, và kéo để
+      tải lại không cứu được: thứ hỏng là BỐ CỤC, không phải dữ liệu.
+
+      ── vì sao là ở đây ──
+
+      `tools/measured-worklet.mjs` đọc mã và bỏ sót ca này, vì phép đo đi qua
+      RANH GIỚI component dưới dạng prop — hình dạng mà chính nó gọi là bản sửa.
+      Đúng, nhưng chỉ khi component con KHÔNG ĐƯỢC MOUNT trước lúc đo xong, và
+      điều kiện đó thì đọc mã không thấy. Cái thấy được là vị trí thật của năm
+      cái hộp, trên một trang đang chạy, ở khung hình đầu tiên chúng tồn tại.
+
+      Đã đo trên bản đã ship: mốc 200ms → x = 0,1,2,3,4. Sau bản sửa: trang chỉ
+      xuất hiện khi đã đo xong, và lần đầu thấy chúng là ở 0,402,804,1206,1608.
+    */
+    name: 'deck hero: năm trang không bao giờ chồng lên nhau',
+    route: '/', mode: 'full',
+    async run(page) {
+      /* Sân khấu là hộp bị cắt; các trang là con tuyệt đối của nó. Neo vào
+         `overflow: hidden` để các lớp aura/scrim — cũng tuyệt đối — không bị
+         nhầm là trang. */
+      const deck = () =>
+        page.evaluate(() => {
+          const stages = [...document.querySelectorAll('*')].filter((d) => {
+            const s = getComputedStyle(d);
+            return s.overflow === 'hidden' || s.overflowX === 'hidden';
+          });
+          let best = [];
+          for (const st of stages) {
+            let kids = [...st.children].filter((c) => getComputedStyle(c).position === 'absolute');
+            /* các trang nằm trong một "đường ray" trượt chung */
+            if (kids.length === 1) kids = [...kids[0].children];
+            if (kids.length > best.length) best = kids;
+          }
+          return best.map((e) => Math.round(e.getBoundingClientRect().x));
+        });
+
+      /*
+        TẢI LẠI trước khi đo, và đây là chỗ bản đầu của phép kiểm này tự lừa
+        mình: `openPage` đã đợi 9 giây cho trang yên rồi mới gọi `run`, mà trạng
+        thái hỏng chỉ sống trong khoảng 250ms ĐẦU TIÊN sau khi deck mount. Bản
+        ấy chạy XANH trên chính bản mã đã hỏng. Một phép kiểm nhìn muộn hơn lỗi
+        thì không đo gì cả.
+
+        Nên nó tự dựng lại trang và lấy mẫu ngay từ khung hình đầu. Nhịp 60ms:
+        deck xuất hiện rồi sửa lại trong vòng vài trăm mili giây, nên lấy mẫu
+        thưa hơn là bỏ lỡ.
+      */
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      let seen = 0;
+      let worst = null;
+      for (let i = 0; i < 150; i++) {
+        const xs = await deck();
+        if (xs.length >= 3) {
+          seen++;
+          const gaps = xs.slice(1).map((x, k) => Math.abs(x - xs[k]));
+          const min = Math.min(...gaps);
+          if (worst === null || min < worst.min) worst = { min, xs: xs.join(',') };
+        }
+        await page.waitForTimeout(60);
+      }
+      if (seen === 0) return 'không tìm thấy deck hero trên trang — phép đo này không đo gì cả';
+      /* Một bề rộng màn hình là 402 ở khung nhìn này; bất cứ khoảng cách nào
+         dưới một nửa số đó nghĩa là các trang đang đè lên nhau. */
+      if (worst.min < 150) {
+        return `năm trang hero chồng lên nhau: x = ${worst.xs} (khoảng cách nhỏ nhất ${worst.min}px). ` +
+          'Đó là `width || 1` chạy khi số đo còn 0 — mỗi trang lệch nhau đúng một điểm, ' +
+          'vẫn rộng đủ màn hình, nên chúng vẽ chồng khít';
+      }
+      return null;
+    },
+  },
+  {
+    /*
       An animation is the one thing a screenshot cannot answer.
 
       Every rule about the segmented control reads the source: it says

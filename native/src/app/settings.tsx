@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Bell, ChevronRight, KeyRound, Lock, Trash2, Upload } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
@@ -218,7 +218,7 @@ export default function SettingsScreen() {
           // must go with it, or the next launch reads a dead user out of the
           // persisted cache and shows their meals to whoever signs in next.
           await signOut();
-          router.dismissAll();
+          nav.dismissAll();
           Alert.alert('ASCND', i18n.nDeleteAccountDone);
         },
       },
@@ -234,19 +234,19 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           await signOut();
-          router.dismissAll();
+          nav.dismissAll();
         },
       },
     ]);
   };
 
   return (
-    <Screen back title={i18n.settingsTitle}>
+    <Screen refreshable back title={i18n.settingsTitle}>
       <Animated.View entering={rise(0)}>
       <PressScale
         onPress={() => {
           Haptics.selectionAsync();
-          router.push('/edit-profile');
+          nav.push('/edit-profile');
         }}>
         <GlassCard>
           <View style={styles.cardHeaderRow}>
@@ -329,7 +329,7 @@ export default function SettingsScreen() {
         <PressScale
           onPress={() => {
             Haptics.selectionAsync();
-            router.push('/mascot-room');
+            nav.push('/mascot-room');
           }}>
           <View style={styles.roomRow}>
             <Text style={styles.roomLabel}>{i18n.nMascotRoomTitle}</Text>
@@ -450,7 +450,7 @@ export default function SettingsScreen() {
       <PressScale
         onPress={() => {
           Haptics.selectionAsync();
-          router.push('/reminders');
+          nav.push('/reminders');
         }}>
         <GlassCard>
           <View style={styles.cardHeaderRow}>
@@ -498,7 +498,7 @@ export default function SettingsScreen() {
       <PressScale
         onPress={() => {
           Haptics.selectionAsync();
-          router.push('/change-password');
+          nav.push('/change-password');
         }}>
         <GlassCard>
           <View style={styles.cardHeaderRow}>
@@ -542,7 +542,7 @@ export default function SettingsScreen() {
       <PressScale
         onPress={() => {
           Haptics.selectionAsync();
-          router.push('/legal');
+          nav.push('/legal');
         }}>
         <GlassCard>
           <View style={styles.cardHeaderRow}>

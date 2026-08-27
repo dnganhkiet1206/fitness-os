@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Camera, Check, ChevronDown, ChevronRight, Clock, Minus, PencilLine, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -445,7 +446,7 @@ export default function LogMealSheet() {
     onMutate: () => {
       if (!offlineNow()) return;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      nav.back();
       toast.success(i18n.logMealQueued);
     },
     onSuccess: () => {
@@ -454,7 +455,7 @@ export default function LogMealSheet() {
       queryClient.invalidateQueries({ queryKey: ['recent_foods', user?.id] });
       if (offlineNow()) return; // already acknowledged in onMutate
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      nav.back();
       toast.success(i18n.logMealSaved);
     },
     onError: (e: Error) => {
@@ -619,7 +620,7 @@ export default function LogMealSheet() {
             style={styles.iconBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/scan-food');
+              nav.push('/scan-food');
             }}>
             <Icon icon={Camera} size={20} color={colors.foreground} />
           </PressScale>
@@ -629,7 +630,7 @@ export default function LogMealSheet() {
             style={styles.iconBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/scan-barcode');
+              nav.push('/scan-barcode');
             }}>
             <Icon icon={ScanBarcode} size={20} color={colors.foreground} />
           </PressScale>

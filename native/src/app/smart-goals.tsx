@@ -231,7 +231,7 @@ export default function SmartGoalsScreen() {
   const day = lang === 'vi' ? 'ngày' : 'day';
 
   return (
-    <Screen back title={i18n.smartGoalsTitle}>
+    <Screen refreshable back title={i18n.smartGoalsTitle}>
       {/* Weight trend */}
       <GlassCard>
         <View style={styles.cardHead}>

@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { router, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import {
   Apple,
@@ -404,8 +405,15 @@ export default function TodayScreen() {
     // here: the pull is confirmed the moment it takes, not when data lands.
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
-    await queryClient.invalidateQueries();
-    setRefreshing(false);
+    /* `finally`, không phải hai dòng gán: lời hứa kia hỏng thì vòng xoay quay
+       mãi trên một trang không còn tải gì — một vòng xoay không bao giờ dừng
+       là lời nói dối lâu hơn cả một cú kéo không làm gì. Cùng luật với
+       `screen.tsx`, nơi ba mươi màn còn lại lấy cú kéo của chúng. */
+    try {
+      await queryClient.invalidateQueries();
+    } finally {
+      setRefreshing(false);
+    }
   }, [queryClient]);
 
   // Auto-grant awards once per session (web Index does this on mount)
@@ -1057,7 +1065,7 @@ export default function TodayScreen() {
             <ReadinessGauge
               detailOpen={expandedAt === heroIndex(key)}
               onToggleDetail={() => toggleHero(heroIndex(key))}
-              onOpenDetail={() => router.push('/biometrics')}
+              onOpenDetail={() => nav.push('/biometrics')}
               score={readinessScore}
               status={readinessStatus}
               explain={dailyLog?.readiness_explain}
@@ -1082,7 +1090,7 @@ export default function TodayScreen() {
             icon={Heart}
             detailOpen={expandedAt === heroIndex(key)}
             onToggleDetail={() => toggleHero(heroIndex(key))}
-            onOpenDetail={() => router.push('/biometrics')}
+            onOpenDetail={() => nav.push('/biometrics')}
           />
         ) : (
           <GlassCard style={styles.emptyCard}>
@@ -1111,7 +1119,7 @@ export default function TodayScreen() {
               vòng tròn này. Để cả hai là hai nút cùng một việc ở hai chỗ, và
               cái nằm trên hero thì dính vào một trang mà nó không thuộc về.
             */
-            onLogWorkout={() => router.push('/log-workout')}
+            onLogWorkout={() => nav.push('/log-workout')}
           />
         );
       case 'biometrics':
@@ -1127,12 +1135,12 @@ export default function TodayScreen() {
               waketime={sleep?.waketime}
               detailOpen={expandedAt === heroIndex(key)}
               onToggleDetail={() => toggleHero(heroIndex(key))}
-              onOpenDetail={() => router.push('/sleep-insights')}
+              onOpenDetail={() => nav.push('/sleep-insights')}
             />
           );
         }
         return sleepTotalMin > 0 ? (
-          <PressScale onPress={() => { Haptics.selectionAsync(); router.push('/sleep-insights'); }}>
+          <PressScale onPress={() => { Haptics.selectionAsync(); nav.push('/sleep-insights'); }}>
             <SleepCard
               totalMin={sleepTotalMin}
               targetHours={sleepTargetHours}
@@ -1143,7 +1151,7 @@ export default function TodayScreen() {
             />
           </PressScale>
         ) : (
-          <PressScale onPress={() => router.push('/log-sleep')}>
+          <PressScale onPress={() => nav.push('/log-sleep')}>
             <GlassCard style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>{i18n.dashSleep}</Text>
               <Text style={styles.emptyMsg}>{i18n.dashSleepMsg}</Text>
@@ -1160,7 +1168,7 @@ export default function TodayScreen() {
         if (inHero(key)) {
           return (
             <NutritionHero
-              onOpenDetail={() => router.push('/nutrition')}
+              onOpenDetail={() => nav.push('/nutrition')}
               kcal={kcal}
               calorieTarget={calorieTarget}
               protein={Number(dailyLog?.protein_g) || 0}
@@ -1177,7 +1185,7 @@ export default function TodayScreen() {
         // shortcut to `/log-meal` only when it was empty, which is backwards:
         // the moment you want more detail is the moment there *is* detail.
         return (
-          <PressScale onPress={() => { Haptics.selectionAsync(); router.push('/nutrition'); }}>
+          <PressScale onPress={() => { Haptics.selectionAsync(); nav.push('/nutrition'); }}>
             {kcal > 0 ? (
               <NutritionCard
                 kcal={kcal}
@@ -1199,7 +1207,7 @@ export default function TodayScreen() {
         if (inHero(key)) {
           return (
             <WaterHero
-              onOpenDetail={() => router.push('/water')}
+              onOpenDetail={() => nav.push('/water')}
               ml={waterMl ?? 0}
               targetMl={waterTarget}
               detailOpen={expandedAt === heroIndex(key)}
@@ -1657,7 +1665,7 @@ export default function TodayScreen() {
                 accessibilityLabel={a.label}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push(a.route);
+                  nav.push(a.route);
                 }}>
                 {/*
                   The same material as the assistant's state pill — blurred
@@ -2121,7 +2129,7 @@ export default function TodayScreen() {
 
                 Hệ quả cho cái gộp bên dưới: chạm thứ hai vào bánh răng là
                 đường duy nhất tới Cài đặt trong cả app, nên nhánh
-                `router.push('/settings')` không phải một tiện ích — mất nó là
+                `nav.push('/settings')` không phải một tiện ích — mất nó là
                 mất hẳn màn hình. `tools/tool-merge.mjs` canh đúng điều đó.
               */}
               {/*
@@ -2143,7 +2151,7 @@ export default function TodayScreen() {
                 style={styles.avatarBtn}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  router.push('/settings');
+                  nav.push('/settings');
                 }}>
                 <AccountAvatar name={profile?.name} email={user?.email} />
               </PressScale>

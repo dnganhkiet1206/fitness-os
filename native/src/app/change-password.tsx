@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -45,7 +45,7 @@ export default function ChangePasswordScreen() {
       if (error) throw error;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSaved(true);
-      router.back();
+      nav.back();
       toast.success(i18n.settingsPasswordChanged);
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);

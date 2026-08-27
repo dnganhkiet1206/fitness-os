@@ -42,7 +42,7 @@ export default function StepsScreen() {
   const maxWeek = Math.max(GOAL, ...stats.last7.map((d) => d.steps));
 
   return (
-    <Screen back title={i18n.nStepsTitle}>
+    <Screen refreshable back title={i18n.nStepsTitle}>
       <GlassCard>
         <View style={styles.summaryRow}>
           <View>

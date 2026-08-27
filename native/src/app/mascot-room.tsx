@@ -25,7 +25,8 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { router, useIsFocused } from 'expo-router';
+import { useIsFocused } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
@@ -519,7 +520,7 @@ export default function MascotRoomScreen() {
             hitSlop={9}
             onPress={() => {
               Haptics.selectionAsync();
-              router.push('/koa-sheet');
+              nav.push('/koa-sheet');
             }}
             style={styles.devChip}>
             <Text style={styles.devChipText}>spec sheet →</Text>
@@ -530,7 +531,7 @@ export default function MascotRoomScreen() {
             hitSlop={9}
             onPress={() => {
               Haptics.selectionAsync();
-              router.push('/koa-debug');
+              nav.push('/koa-debug');
             }}
             style={styles.devChip}>
             <Text style={styles.devChipText}>koa debug →</Text>
@@ -606,7 +607,7 @@ export default function MascotRoomScreen() {
           color={colors.metricPurple}
           onPress={() => {
             Haptics.selectionAsync();
-            router.push('/shop');
+            nav.push('/shop');
           }}
         />
         <ActionChip
@@ -615,7 +616,7 @@ export default function MascotRoomScreen() {
           color={colors.metricOrange}
           onPress={() => {
             Haptics.selectionAsync();
-            router.push('/settings');
+            nav.push('/settings');
           }}
         />
       </View>
@@ -919,13 +920,13 @@ export default function MascotRoomScreen() {
           value={challenges && challenges.length > 0
             ? `${challenges.filter((c) => c.completed).length}/${challenges.length}`
             : null}
-          onPress={() => router.push('/challenges')}
+          onPress={() => nav.push('/challenges')}
         />
         <ShortcutRow
           icon={Medal}
           label={i18n.nAwards}
           value={awards && awards.length > 0 ? String(awards.length) : null}
-          onPress={() => router.push('/awards')}
+          onPress={() => nav.push('/awards')}
         />
       </View>
 

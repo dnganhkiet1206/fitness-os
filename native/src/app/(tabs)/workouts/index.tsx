@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { ChevronDown, ChevronUp, Dumbbell, Plus } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -151,7 +151,7 @@ function MuscleGrid({
           hitSlop={8}
           onPress={() => {
             Haptics.selectionAsync();
-            router.push('/exercises');
+            nav.push('/exercises');
           }}>
           <Text style={styles.libAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
         </Pressable>
@@ -172,7 +172,7 @@ function MuscleGrid({
                 // The art key, not the caption: the caption is a display string
                 // and the library has to match against every spelling of the
                 // group, which is what the key stands for.
-                router.push({ pathname: '/exercises', params: { group: t.key } });
+                nav.push({ pathname: '/exercises', params: { group: t.key } });
               }}>
               <MuscleArt group={t.key} size={64} />
               <Text style={styles.libName} numberOfLines={1}>{vi ? t.vi : t.en}</Text>
@@ -317,7 +317,7 @@ export default function WorkoutsScreen() {
     navigation because a list did not arrive would be a second problem.
   */
   return (
-    <Screen title={i18n.workoutsTitle} aura={PAGE_TINT.activity}>
+    <Screen refreshable title={i18n.workoutsTitle} aura={PAGE_TINT.activity}>
       {/*
         Plan, first, and answering its own question.
 
@@ -362,7 +362,7 @@ export default function WorkoutsScreen() {
           accessibilityLabel={i18n.nXiOpen}
           onPress={() => {
             Haptics.selectionAsync();
-            router.push('/exercise-insight');
+            nav.push('/exercise-insight');
           }}>
           <LiquidGlass style={styles.pill} radius={radius.full} tint={colors.primary} material="blur">
             <View style={styles.pillInner}>
@@ -376,7 +376,7 @@ export default function WorkoutsScreen() {
             accessibilityLabel={i18n.workoutsExercises}
             onPress={() => {
               Haptics.selectionAsync();
-              router.push('/exercises');
+              nav.push('/exercises');
             }}>
             <LiquidGlass style={styles.pill} radius={radius.full} tint={colors.primary} material="blur">
               <View style={styles.pillInner}>
@@ -389,7 +389,7 @@ export default function WorkoutsScreen() {
             style={styles.primaryBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/workout-builder');
+              nav.push('/workout-builder');
             }}>
             <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
             <Text style={styles.primaryBtnText}>{i18n.workoutsCreateNew}</Text>
@@ -408,7 +408,7 @@ export default function WorkoutsScreen() {
         accessibilityLabel={i18n.nLogWorkoutBtn}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/log-workout');
+          nav.push('/log-workout');
         }}>
         <LiquidGlass style={styles.logChip} radius={radius.full} tint={colors.primary} material="blur">
           <View style={styles.logChipInner}>
@@ -451,7 +451,7 @@ export default function WorkoutsScreen() {
               hitSlop={8}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push('/templates');
+                nav.push('/templates');
               }}>
               <Text style={styles.libAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
             </Pressable>
@@ -475,7 +475,7 @@ export default function WorkoutsScreen() {
           icon={Dumbbell}
           companion
           title={i18n.workoutsNoTemplates}
-          action={{ label: i18n.workoutsCreateNew, onPress: () => router.push('/workout-builder') }}
+          action={{ label: i18n.workoutsCreateNew, onPress: () => nav.push('/workout-builder') }}
         />
       )}
 
@@ -503,7 +503,7 @@ export default function WorkoutsScreen() {
               hitSlop={8}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push('/sessions');
+                nav.push('/sessions');
               }}>
               <Text style={styles.libAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
             </Pressable>

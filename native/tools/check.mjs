@@ -172,6 +172,8 @@ const STEPS = [
   ['nghỉ/gắng sức', 'node', ['tools/prescription.mjs']],
   ['tuần tập', 'node', ['tools/week.mjs']],
   ['kế hoạch tuần', 'node', ['tools/plan-week.mjs']],
+  ['chốt bấm dồn', 'node', ['tools/nav-guard.mjs']],
+  ['kéo để tải lại', 'node', ['tools/refreshable.mjs']],
   ['bố cục Today', 'node', ['tools/widgets.mjs']],
   ['khẩu phần', 'node', ['tools/servings.mjs']],
   ['ăn lại bữa', 'node', ['tools/repeat-meal.mjs']],

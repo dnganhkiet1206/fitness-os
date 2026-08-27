@@ -1,4 +1,5 @@
-import { router, usePathname } from 'expo-router';
+import { usePathname } from 'expo-router';
+import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
@@ -335,7 +336,7 @@ export function KoaCompanion() {
             accessibilityLabel={mascot.name}
             onPress={() => {
               Haptics.selectionAsync();
-              router.push('/mascot-room');
+              nav.push('/mascot-room');
             }}>
             {/* No outfits here: the wardrobe lives behind `useMascotInventory`,
                 which is a query, and this figure is on every screen. The room

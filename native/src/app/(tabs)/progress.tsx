@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { Camera, ChevronRight, Plus, Ruler, Scale, Target, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useId, useState } from 'react';
@@ -374,7 +374,7 @@ export default function ProgressScreen() {
   ];
 
   return (
-    <Screen
+    <Screen refreshable
       aura={PAGE_TINT.progress}
       contentScrollEnabled={!scrubbing}
       title={i18n.progressTitle}
@@ -698,7 +698,7 @@ export default function ProgressScreen() {
               accessibilityLabel={`${i18n.navSmartGoals} — ${i18n.nCalibrateHint}`}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push('/smart-goals');
+                nav.push('/smart-goals');
               }}>
               <GlassCard style={styles.calCard}>
                 <View style={styles.calHead}>
@@ -737,7 +737,7 @@ export default function ProgressScreen() {
           {/* Web: right-aligned "Add measurement" button opening the input dialog */}
           <PressScale
             style={styles.addBtn}
-            onPress={() => { Haptics.selectionAsync(); router.push('/log-measurement'); }}>
+            onPress={() => { Haptics.selectionAsync(); nav.push('/log-measurement'); }}>
             <Icon icon={Plus} size={13} color={colors.primaryForeground} strokeWidth={2.5} />
             <Text style={styles.addBtnText}>{i18n.progressAddMeasurement}</Text>
           </PressScale>
@@ -778,7 +778,7 @@ export default function ProgressScreen() {
                 title={i18n.progressNoMeasurements}
                 action={{
                   label: i18n.progressAddMeasurement,
-                  onPress: () => router.push('/log-measurement'),
+                  onPress: () => nav.push('/log-measurement'),
                 }}
               />
             </GlassCard>
@@ -878,7 +878,7 @@ export default function ProgressScreen() {
         <>
           <PressScale
             style={styles.photoCta}
-            onPress={() => { Haptics.selectionAsync(); router.push('/progress-photos'); }}>
+            onPress={() => { Haptics.selectionAsync(); nav.push('/progress-photos'); }}>
             <Icon icon={Camera} size={14} color={colors.primaryForeground} />
             <Text style={styles.photoCtaText}>{i18n.nPhotoAdd}</Text>
           </PressScale>

@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Plus, Search } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
@@ -102,7 +103,7 @@ export default function FoodListScreen() {
   ];
 
   return (
-    <Screen back title={vi ? 'Thực phẩm' : 'Foods'}>
+    <Screen refreshable back title={vi ? 'Thực phẩm' : 'Foods'}>
       <PickRow
         value={seg}
         fill={colors.accent}
@@ -148,7 +149,7 @@ export default function FoodListScreen() {
             style={styles.addBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/food-editor');
+              nav.push('/food-editor');
             }}>
             <Icon icon={Plus} size={16} color={colors.primaryForeground} strokeWidth={2.5} />
           </PressScale>

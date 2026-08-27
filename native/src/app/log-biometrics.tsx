@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -102,14 +102,14 @@ export default function LogBiometricsSheet() {
     if (offlineNow()) {
       log.mutate(values());
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      nav.back();
       toast.success(i18n.logMealQueued);
       return;
     }
     log.mutate(values(), {
       onSuccess: () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.back();
+        nav.back();
         toast.success(i18n.logBioSaved);
       },
       onError: (e: Error) => toast.fail(e),

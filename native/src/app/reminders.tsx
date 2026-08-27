@@ -78,7 +78,7 @@ export default function RemindersScreen() {
   const showPermHint = available && !permission && Object.values(prefs).some((r) => r.enabled);
 
   return (
-    <Screen back title={i18n.nRemindersTitle}>
+    <Screen refreshable back title={i18n.nRemindersTitle}>
       <View style={styles.intro}>
         <Icon icon={Bell} size={18} color={colors.primary} />
         <Text style={styles.introText}>{i18n.nRemindersDesc}</Text>

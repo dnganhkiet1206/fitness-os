@@ -75,7 +75,7 @@ export default function SupplementsScreen() {
   };
 
   return (
-    <Screen
+    <Screen refreshable
       back
       title={i18n.nSupplements}
       headerRight={

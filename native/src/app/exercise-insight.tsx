@@ -376,7 +376,7 @@ export default function ExerciseInsightScreen() {
   };
 
   return (
-    <Screen back title={i18n.nXiTitle}>
+    <Screen refreshable back title={i18n.nXiTitle}>
       {failed ? (
         <LoadFailed i18n={i18n} />
       ) : loading ? null : insights.length === 0 ? (

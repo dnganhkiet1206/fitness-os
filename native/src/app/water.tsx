@@ -111,7 +111,7 @@ export default function WaterScreen() {
   const targetLabel = vUnit === 'oz' ? `${displayVolume(target, 'oz')} oz` : `${(target / 1000).toFixed(1)}L`;
 
   return (
-    <Screen back title={i18n.nWaterTitle}>
+    <Screen refreshable back title={i18n.nWaterTitle}>
       {/* Today ring/summary */}
       <GlassCard>
         <View style={styles.summaryRow}>

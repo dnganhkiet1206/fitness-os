@@ -59,7 +59,7 @@ export default function ProgressPhotosScreen() {
   };
 
   return (
-    <Screen back
+    <Screen refreshable back
       title={i18n.progressPhotos}
       headerRight={
         <PressScale

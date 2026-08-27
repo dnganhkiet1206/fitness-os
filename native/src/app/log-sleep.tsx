@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Angry, Check, Frown, Laugh, Meh, Smile, type LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import * as Crypto from 'expo-crypto';
@@ -164,7 +164,7 @@ export default function LogSleepSheet() {
       // Sleep Insights screen reads its own multi-night history key
       queryClient.invalidateQueries({ queryKey: ['sleep_history', user?.id] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      nav.back();
       toast.success(i18n.logSleepSaved);
     },
     onError: (e: Error) => toast.fail(e),
@@ -288,7 +288,7 @@ export default function LogSleepSheet() {
           The guard read `save`, and offline the tap goes to `queue` — a
           different mutation, so the button stayed live through the dismiss
           animation with nothing on it changed. Two taps therefore ran the whole
-          offline branch twice: `router.back()` twice, which pops the screen
+          offline branch twice: `nav.back()` twice, which pops the screen
           *behind* this sheet as well, two "will sync" toasts, and two
           `kind: 'sleep'` rows for one night.
 
@@ -316,7 +316,7 @@ export default function LogSleepSheet() {
              and the paused mutation was dropped on the next launch. */
           if (offlineNow() && user) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.back();
+            nav.back();
             toast.success(i18n.logMealQueued);
             queue.mutate({
               kind: 'sleep',

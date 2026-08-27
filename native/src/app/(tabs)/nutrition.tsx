@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { nav } from '@/lib/nav';
 import { Barcode, ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -150,7 +150,7 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
             hitSlop={8}
             onPress={() => {
               Haptics.selectionAsync();
-              router.push('/meal-plans');
+              nav.push('/meal-plans');
             }}>
             <Text style={styles.planAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
           </Pressable>
@@ -165,7 +165,7 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
               accessibilityLabel={`${p.name} — ${i18n.nMealPlanOpen}`}
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push({ pathname: '/meal-plan', params: { plan: p.id } });
+                nav.push({ pathname: '/meal-plan', params: { plan: p.id } });
               }}>
               <GlassCard style={styles.planCard}>
                 <View style={styles.planText}>
@@ -283,7 +283,7 @@ export default function NutritionScreen() {
   */
   const seeMore = (tab: 'mine' | 'recent') => {
     Haptics.selectionAsync();
-    router.push({ pathname: '/food-list', params: { tab } });
+    nav.push({ pathname: '/food-list', params: { tab } });
   };
   /**
    * A set of foods as one inset group.
@@ -361,7 +361,7 @@ export default function NutritionScreen() {
           hitSlop={10}
           onPress={() => {
             Haptics.selectionAsync();
-            router.push({ pathname: '/food-editor', params: { id: f.id } });
+            nav.push({ pathname: '/food-editor', params: { id: f.id } });
           }}>
           <Icon icon={Pencil} size={15} color={colors.mutedForeground} />
         </Pressable>
@@ -400,7 +400,7 @@ export default function NutritionScreen() {
         shopping list among the foods. See `shortcut-row.tsx` for why the
         state, not the label, is the point.
       */}
-      <Screen title={i18n.nutritionTitle} aura={PAGE_TINT.nutrition}>
+      <Screen refreshable title={i18n.nutritionTitle} aura={PAGE_TINT.nutrition}>
         {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
         <Segmented
           value={tab}
@@ -486,7 +486,7 @@ export default function NutritionScreen() {
               value={supplements && supplements.length > 0
                 ? `${supplements.filter((x) => x.taken).length}/${supplements.length} ${i18n.nTakenToday}`
                 : null}
-              onPress={() => router.push('/supplements')}
+              onPress={() => nav.push('/supplements')}
             />
 
             {/*
@@ -539,7 +539,7 @@ export default function NutritionScreen() {
                   style={styles.scanBtn}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push('/scan-barcode');
+                    nav.push('/scan-barcode');
                   }}>
                   <Icon icon={Barcode} size={17} color={colors.mutedForeground} />
                 </PressScale>
@@ -548,7 +548,7 @@ export default function NutritionScreen() {
                 style={styles.addFoodBtn}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/food-editor');
+                  nav.push('/food-editor');
                 }}>
                 <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
                 <Text style={styles.addFoodText}>{i18n.foodAddCustom}</Text>
@@ -582,7 +582,7 @@ export default function NutritionScreen() {
               value={grocery && grocery.length > 0
                 ? i18n.nGroceryLeft.replace('{n}', String(grocery.filter((g) => !g.checked).length))
                 : null}
-              onPress={() => router.push('/grocery')}
+              onPress={() => nav.push('/grocery')}
             />
 
             {debounced.length >= 2 && results ? (
