@@ -3,12 +3,13 @@
  *
  * ── what changed, and what it put at risk ──
  *
- * The training week was `/routine`: one screen, one week, the week you are in.
- * It is now `<WeekPlan />` — the first section of the training tab — with an
- * arrow on each side of the date label. Four of the things that screen could
- * take for granted stopped being true the moment those arrows existed, and not
- * one of them announces itself. Every failure below renders a coherent,
- * plausible, wrong week.
+ * The training week was `/routine`: one root-level screen, one week, the week
+ * you are in. It is now `/workouts/plan` — a page of its own *inside* the
+ * training tab, reached from a card at the top of it — with an arrow on each
+ * side of the date label. Five of the things that screen could take for granted
+ * stopped being true, and not one of them announces itself. Every failure below
+ * renders a coherent, plausible, wrong week, or a page that is quietly in the
+ * wrong place.
  *
  *   1. THE QUERY WINDOW NO LONGER COVERS THE WEEK ON SCREEN.
  *      `useWorkoutSessions(days)` asks for sessions newer than `today - days`.
@@ -36,22 +37,32 @@
  *      to say where it came from.
  *
  *   4. A ROUTE PARAM REACHES `routine_days.day_of_week`.
- *      Plan's day sheet opens the builder with `assignDay`, and the builder
- *      writes it. Route params are strings from outside the file; a coerced
- *      `NaN` or a `7` would go into the database as a weekday slot that does
- *      not exist and would never draw on any of the seven cells.
+ *      Two screens take a weekday through a route param now — the builder is
+ *      opened from Plan carrying the day to schedule onto, and Plan is opened
+ *      from the tab's card carrying the day to show — and the builder writes
+ *      its one to the database. Route params are strings from outside the file;
+ *      a coerced `NaN` or a `7` would go in as a weekday slot that does not
+ *      exist and would never draw on any of the seven cells.
+ *
+ *   5. PLAN LEAVES THE TAB WITHOUT ANYTHING SAYING SO.
+ *      `src/app/plan.tsx` and `src/app/(tabs)/workouts/plan.tsx` are the same
+ *      screen. They compile the same, they look identical in a diff, and they
+ *      differ by whether the tab bar is on screen while you read your week:
+ *      `NativeTabs` mounts a real `UITabBarController` and a root-level push
+ *      covers it. Move the file up one directory and the only symptom is that
+ *      Plan stops being *in* Tập luyện in the one sense a person can see.
  *
  * ── how it is checked ──
  *
  * By running what ships. The window arithmetic, the panel's key, the finish
- * guard and the param parser are all read out of the two components and the
- * builder and executed here — not restated. The one substitution is the clock:
+ * guard and the param parser are all read out of the components, the page and
+ * the lib, and executed here — not restated. The one substitution is the clock:
  * the anchor block's `new Date()` becomes a supplied instant so the sweep can
  * stand on every weekday of two years in eleven timezones, and the substitution
  * is asserted to have happened rather than assumed.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -61,6 +72,10 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLAN = 'src/components/ascnd/week-plan.tsx';
 const PANEL = 'src/components/ascnd/day-plan.tsx';
 const BUILDER = 'src/app/workout-builder.tsx';
+const WEEKDAY = 'src/lib/week-day.ts';
+const TAB = 'src/app/(tabs)/workouts/index.tsx';
+const PAGE = 'src/app/(tabs)/workouts/plan.tsx';
+const CARD = 'src/components/ascnd/plan-card.tsx';
 const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
 
 const problems = [];
@@ -106,7 +121,6 @@ function fnOf(src, name) {
 
 const plan = read(PLAN);
 const panel = read(PANEL);
-const builder = read(BUILDER);
 
 const num = (src, name) => {
   const m = new RegExp(`const ${name} = (\\d+);`).exec(src);
@@ -132,8 +146,69 @@ const futureSrc = /const future = ([^;]+);/.exec(panel)?.[1];
 const canFinishSrc = /const canFinish = ([^;]+);/.exec(panel)?.[1];
 if (!futureSrc || !canFinishSrc) fatal(`${PANEL}: không đọc được \`future\` hoặc \`canFinish\``);
 
-const assignSrc = fnOf(builder, 'assignDayParam');
-if (!assignSrc) fatal(`${BUILDER}: không tìm thấy export assignDayParam`);
+/* Moved out of the builder when Plan grew a second caller: the page reads the
+   day it was opened on through the same param. One parser for one column. */
+const assignSrc = fnOf(read(WEEKDAY), 'weekDayParam');
+if (!assignSrc) fatal(`${WEEKDAY}: không tìm thấy export weekDayParam`);
+
+// ── 1. Plan is a page INSIDE the tab, not a page over the tabs ───────────
+/*
+  First, because everything below reads those files: a rule that crashes with a
+  Node stack trace where it meant to print a sentence is a rule nobody can act
+  on. This one names what moved, and then the rest of the file runs.
+*/
+/*
+  The distinction this whole route exists for, and the one nothing else here
+  would notice going.
+
+  `NativeTabs` mounts a real `UITabBarController`, and a push on the ROOT
+  stack covers it — bar and all. So `src/app/plan.tsx` and
+  `src/app/(tabs)/workouts/plan.tsx` are the same screen, compile the same,
+  look identical in a diff, and differ by whether the tab bar is on screen
+  while you are reading your week and whether Tập luyện is still lit. Move the
+  file up one directory and the only symptom is that Plan stops being *in* the
+  training tab in the one sense a person can see.
+
+  Three things have to hold together, and any one of them alone is a rule with
+  a hole in it: the page is under the tab's directory, the tab's directory has
+  a `_layout` (without it the folder is not a stack and the nesting does
+  nothing), and nothing pushes a root-level `/plan`.
+*/
+{
+  const layout = 'src/app/(tabs)/workouts/_layout.tsx';
+  if (!existsSync(path.join(NATIVE, PAGE))) {
+    problems.push(
+      `${PAGE} không tồn tại — Plan phải là route CON của tab Tập luyện. Đặt ở gốc src/app thì nó ` +
+        'được đẩy lên TRÊN cả UITabBarController: thanh tab biến mất, tab Tập luyện thôi sáng, và ' +
+        '"trang riêng TRONG tab" thành "trang phủ lên các tab"',
+    );
+  }
+  if (!existsSync(path.join(NATIVE, layout))) {
+    problems.push(
+      `${layout} không tồn tại — không có _layout thì thư mục không phải một Stack, và route con ` +
+        'không lồng vào tab được',
+    );
+  } else if (!/<Stack\b/.test(read(layout))) {
+    problems.push(`${layout} không render <Stack> — tab không có navigator riêng để đẩy Plan vào`);
+  }
+  if (existsSync(path.join(NATIVE, 'src/app/plan.tsx'))) {
+    problems.push('src/app/plan.tsx tồn tại — đó là route gốc, tức là phủ lên thanh tab');
+  }
+  /* And the way in points at the nested path. A `/plan` that type-checks is a
+     `/plan` that exists, so this is only ever wrong when the file moved. */
+  for (const f of [CARD, TAB]) {
+    const code = read(f);
+    if (/['"`]\/plan['"`]/.test(code)) {
+      problems.push(`${f}: đẩy tới '/plan' (route gốc) thay vì '/workouts/plan'`);
+    }
+  }
+  if (!/['"`]\/workouts\/plan['"`]/.test(read(CARD))) {
+    problems.push(
+      `${CARD}: không còn đường nào mở Plan. Thẻ trên tab là lối vào DUY NHẤT tới trang đó — ` +
+        'không có nó thì Plan vẫn biên dịch, vẫn qua mọi luật khác, và chỉ đơn giản là không tới được',
+    );
+  }
+}
 
 // ── the real calendar helpers, compiled from source ───────────────────────
 
@@ -234,7 +309,7 @@ try {
     }
   }
 
-  // ── 2. the day panel cannot be reused across two weeks ───────────────────
+  // ── 3. the day panel cannot be reused across two weeks ───────────────────
   {
     const key = propOf(dayPlanEl, 'key');
     const dateProp = propOf(dayPlanEl, 'dateStr');
@@ -255,7 +330,7 @@ try {
     }
   }
 
-  // ── 3. no session is written for a day that has not happened ─────────────
+  // ── 4. no session is written for a day that has not happened ─────────────
   {
     const futureFn = new Function('dateStr', 'localDateStr', `return (${futureSrc});`);
     const finishFn = new Function(
@@ -307,7 +382,7 @@ try {
     if (flipped('2026-09-24', clock) !== false) fatal('bản đảo dấu đáng lẽ phải sai ở ngày tương lai');
   }
 
-  // ── 4. a route param never becomes a weekday slot ────────────────────────
+  // ── 5. a route param never becomes a weekday slot ────────────────────────
   {
     /*
       Compiled, not string-stripped.
@@ -320,12 +395,27 @@ try {
       function. `tsc` is already a dependency of this repository and it is the
       same compiler the app is built with.
     */
-    const loose = assignSrc.replace('/^[0-6]$/', '/^\\d+$/').replace('assignDayParam', 'looseParam');
+    const loose = assignSrc.replace('/^[0-6]$/', '/^\\d+$/').replace('weekDayParam', 'looseParam');
     writeFileSync(path.join(out, 'assign.ts'), `export ${assignSrc}\nexport ${loose}\n`);
     execFileSync('npx', ['tsc', path.join(out, 'assign.ts'), '--ignoreConfig', '--outDir', out,
       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
-    const { assignDayParam, looseParam } = createRequire(import.meta.url)(path.join(out, 'assign.js'));
+    const { weekDayParam, looseParam } = createRequire(import.meta.url)(path.join(out, 'assign.js'));
+
+    /* And BOTH callers must go through it. A screen that reads the param with
+       `Number(...)` of its own is the rule not applying where it matters. */
+    for (const [f, param] of [[BUILDER, 'assignDay'], [PAGE, 'day']]) {
+      /* Rule 1 has already said if the page is not where it belongs; this one
+         is about how it reads its param, so a missing file is not its news. */
+      if (!existsSync(path.join(NATIVE, f))) continue;
+      const code = read(f);
+      if (!/\bweekDayParam\(/.test(code)) {
+        problems.push(
+          `${f}: đọc param \`${param}\` mà không qua weekDayParam — mọi chỗ ép kiểu riêng đều là một ` +
+            'đường vòng quanh chốt chặn, và giá trị này đi vào routine_days.day_of_week',
+        );
+      }
+    }
     const cases = [
       ['3', 3], ['0', 0], ['6', 6],
       ['7', null], ['-1', null], ['06', null], [' 3', null], ['3.0', null],
@@ -336,14 +426,14 @@ try {
     for (const [raw, want] of cases) {
       let got;
       try {
-        got = assignDayParam(raw);
+        got = weekDayParam(raw);
       } catch (e) {
-        problems.push(`${BUILDER}: assignDayParam(${JSON.stringify(raw)}) ném ${e.message}`);
+        problems.push(`${WEEKDAY}: weekDayParam(${JSON.stringify(raw)}) ném ${e.message}`);
         continue;
       }
       if (got !== want) {
         problems.push(
-          `${BUILDER}: assignDayParam(${JSON.stringify(raw)}) ra ${JSON.stringify(got)}, phải là ${JSON.stringify(want)} — ` +
+          `${WEEKDAY}: weekDayParam(${JSON.stringify(raw)}) ra ${JSON.stringify(got)}, phải là ${JSON.stringify(want)} — ` +
             'giá trị này đi thẳng vào routine_days.day_of_week, cột chỉ nhận 0–6 và được vẽ bởi bảy ô của dải ngày',
         );
       }
@@ -354,7 +444,7 @@ try {
     if (looseParam('7') !== 7) fatal('bản nới lỏng đáng lẽ phải nhận "7"');
   }
 
-  // ── 5. the arrows have a wall on both sides ──────────────────────────────
+  // ── 6. the arrows have a wall on both sides ──────────────────────────────
   {
     const stepSrc = /setWeekOffset\(\(o\) => ([^)]*\)*)\);/.exec(plan)?.[1] ?? '';
     if (!/WEEKS_BACK/.test(stepSrc) || !/WEEKS_FORWARD/.test(stepSrc)) {
@@ -373,6 +463,7 @@ try {
       }
     }
   }
+
 } finally {
   rmSync(out, { recursive: true, force: true });
 }
@@ -390,7 +481,9 @@ console.log(
     'chứ không chỉ khác rỗng. <DayPlan /> khoá theo NGÀY chứ không theo thứ, nên thứ Hai tuần này và thứ ' +
     'Hai tuần trước không dùng chung một panel đang gắn. Nút hoàn thành chết ở ngày chưa tới và sống ở ' +
     'hôm nay — một buổi tập ghi cho ngày mai là một dòng thật trong workout_sessions, đi thẳng vào điểm ' +
-    'sẵn sàng và ACWR mà không màn nào nói nó từ đâu ra. Và assignDayParam từ chối 7, -1, "06", " 3", ' +
+    'sẵn sàng và ACWR mà không màn nào nói nó từ đâu ra. Và weekDayParam từ chối 7, -1, "06", " 3", ' +
     '"0x3", "٣", mảng rỗng và mọi thứ không phải một trong bảy ô, vì giá trị đó đi vào ' +
-    'routine_days.day_of_week',
+    'routine_days.day_of_week — và CẢ HAI màn đọc param đều đi qua nó. Cộng với chỗ ở: Plan nằm ở ' +
+    'src/app/(tabs)/workouts/plan.tsx dưới một _layout Stack, không phải route gốc — cùng một màn, ' +
+    'cùng một diff, khác nhau ở chỗ thanh tab còn hay mất khi bạn đang đọc tuần của mình',
 );

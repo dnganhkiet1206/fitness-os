@@ -3,7 +3,7 @@
  *
  * ── the invariant the screen rests on ──
  *
- * `week-plan.tsx` — Plan, the first section of the training tab — draws a strip
+ * `week-plan.tsx` — Plan, a page of its own inside the training tab — draws a strip
  * of seven cells from `routine_days`, indexed 0–6 with Monday as 0, and puts
  * `weekDates()[idx]` on cell `idx`. Everything else on the screen follows from
  * that pairing: which cell is ringed as today, which date is looked up in the
@@ -180,8 +180,8 @@ try {
     week's volume is double — which nobody checks against anything.
   */
   const dayPlan = readFileSync(path.join(NATIVE, 'src/components/ascnd/day-plan.tsx'), 'utf8');
-  /* Từng là `src/app/routine.tsx`; Plan bây giờ là <WeekPlan /> trong tab Tập
-     luyện. Dời tên file, giữ nguyên luật. */
+  /* Từng là `src/app/routine.tsx`; Plan bây giờ là <WeekPlan />, dựng bởi
+     `(tabs)/workouts/plan.tsx`. Dời tên file, giữ nguyên luật. */
   const routine = readFileSync(path.join(NATIVE, 'src/components/ascnd/week-plan.tsx'), 'utf8');
 
   const guard = (src) => {

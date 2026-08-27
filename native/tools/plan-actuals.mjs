@@ -215,11 +215,11 @@ const slice = (from, to) => {
    near the bottom is simply underneath the keyboard, with no way to reach it —
    and nothing about that shows up in a screenshot, a type check or a unit
    test, because none of them have a keyboard. */
-/* Luật này từng ghi thẳng `src/app/routine.tsx`, hồi panel còn là một màn
-   riêng. Bây giờ nó là <WeekPlan /> nằm trong tab Tập luyện, và nó còn có thể
-   dọn nhà lần nữa — nên chỗ phải bật `keyboardAware` được TÌM từ nơi thật sự
-   gắn panel, chứ không phải chép lại một cái tên file. Ghim đúng bất biến:
-   scaffold nào chứa panel thì scaffold đó phải tránh bàn phím. */
+/* Luật này từng ghi thẳng `src/app/routine.tsx`. Panel đã dọn nhà hai lần kể
+   từ đó — thành một mục trong tab Tập luyện, rồi thành trang riêng
+   `(tabs)/workouts/plan.tsx` — nên chỗ phải bật `keyboardAware` được TÌM từ
+   nơi thật sự gắn panel, chứ không phải chép lại một cái tên file. Ghim đúng
+   bất biến: scaffold nào chứa panel thì scaffold đó phải tránh bàn phím. */
 {
   if (/<TextInput/.test(src)) {
     const hosts = walk(path.join(NATIVE, 'src')).filter((f) =>

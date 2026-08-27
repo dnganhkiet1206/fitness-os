@@ -73,7 +73,7 @@ if (!block) {
 const SCREENS = [
   'src/app/(tabs)/index.tsx',
   'src/app/(tabs)/nutrition.tsx',
-  'src/app/(tabs)/workouts.tsx',
+  'src/app/(tabs)/workouts/index.tsx',
   'src/app/(tabs)/progress.tsx',
   'src/components/ascnd/screen.tsx',
 ];
@@ -88,7 +88,7 @@ for (const f of SCREENS) {
 /* ── ba trang phải THỰC SỰ nhận nền, không chỉ import ── */
 const WIRED = [
   ['src/app/(tabs)/nutrition.tsx', 'nutrition'],
-  ['src/app/(tabs)/workouts.tsx', 'activity'],
+  ['src/app/(tabs)/workouts/index.tsx', 'activity'],
   ['src/app/(tabs)/progress.tsx', 'progress'],
 ];
 for (const [f, key] of WIRED) {

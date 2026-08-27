@@ -147,7 +147,7 @@ const ALLOWED_SWALLOW = 'src/lib/offline-write.ts';
     ['src/app/sleep-insights.tsx', 'remove.mutate('],
     ['src/app/(tabs)/progress.tsx', 'removeMeasurement.mutate('],
     ['src/app/sessions.tsx', 'del.mutate('],
-    ['src/app/(tabs)/workouts.tsx', 'delSession.mutate('],
+    ['src/app/(tabs)/workouts/index.tsx', 'delSession.mutate('],
     ['src/components/ascnd/today-meals.tsx', 'del.mutate('],
   ];
   for (const [file, call] of MUST_REPORT) {

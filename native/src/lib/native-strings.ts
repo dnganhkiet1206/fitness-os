@@ -247,6 +247,7 @@ const en = {
      for it in `tools/i18n.mjs`. */
   nPlan: 'Plan',
   nPlanNewWorkout: 'Create a new workout',
+  nPlanNothingToday: 'Nothing planned today',
   nPlanAdded: 'Added to Plan · {d}',
   nRest: 'Rest',
   nDeload: 'Deload',
@@ -999,6 +1000,7 @@ const vi: typeof en = {
   nRoutine: 'Lịch tập tuần',
   nPlan: 'Plan',
   nPlanNewWorkout: 'Tạo buổi tập mới',
+  nPlanNothingToday: 'Hôm nay chưa có kế hoạch',
   nPlanAdded: 'Đã thêm vào Plan · {d}',
   nRest: 'Nghỉ',
   nDeload: 'Deload',

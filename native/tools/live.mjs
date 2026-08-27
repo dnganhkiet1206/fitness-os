@@ -142,13 +142,12 @@ const ROUTES = [
   */
   '/log-workout',
   /*
-    The panel people tick sets off on while they are training used to be
-    `/routine`, and it was listed here for the same reason `/log-workout` is.
-    It is not a route any more: Plan is the first section of `/workouts`, which
-    is already the second entry in this list, so the screenshots that used to
-    come from `/routine` now come from there. Nothing was dropped from the
-    harness — the route was, and its drawing moved.
+    The panel people tick sets off on while they are training. It was
+    `/routine`, a root-level screen; it is `/workouts/plan` now — a page inside
+    the training tab rather than one pushed over the whole tab bar. Same
+    drawing, same reason for being in this list, new path.
   */
+  '/workouts/plan',
   /*
     And the room itself. Two things are drawn nowhere else in the app — the
     segmented energy ring and the level bar — so for as long as this list did

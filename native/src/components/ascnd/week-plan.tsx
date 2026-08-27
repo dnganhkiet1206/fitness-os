@@ -1,14 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import {
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  CircleDashed,
-  Dumbbell,
-  Moon,
-  Plus,
-} from 'lucide-react-native';
+import { CheckCircle2, ChevronLeft, ChevronRight, Dumbbell, Moon, Plus } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -16,6 +8,15 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { MusicLaunch } from '@/components/ascnd/music-launch';
 import { Icon } from '@/components/ascnd/icon';
 import { DayPlan } from '@/components/ascnd/day-plan';
+import {
+  DAY_LONG_EN,
+  DAY_LONG_VI,
+  DAY_SHORT_EN,
+  DAY_SHORT_VI,
+  STATE_STYLE,
+  WeekStrip,
+  dayStateOf,
+} from '@/components/ascnd/week-strip';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
@@ -24,7 +25,7 @@ import { getLocale } from '@/lib/i18n';
 import { localDateStr, routineIndex, weekDates } from '@/lib/local-date';
 
 /**
- * The training week — Plan.
+ * Plan — the training week, in full.
  *
  * ── what it used to be, and why that was not enough ──
  *
@@ -60,15 +61,13 @@ import { localDateStr, routineIndex, weekDates } from '@/lib/local-date';
  * to tick it off — and the strip carries the week: today ringed, the selected
  * day filled, and a dot under each day saying where it stands.
  *
- * Nothing is stacked on anything. The strip selects, the panel below shows, and
- * neither is a second way to do what the other does.
- *
  * ── the states ──
  *
  * Done, to do, not trained, rest. "Not trained" is deliberately flat — a past
  * training day with no session is a fact and the app does not get to have an
  * opinion about it, so no red and no warning glyph, the same muted grey as
- * everything else that is simply over.
+ * everything else that is simply over. The rule itself lives in `week-strip`,
+ * with the drawing that both this page and the training tab's card share.
  *
  * ── nothing was taken away ──
  *
@@ -77,23 +76,18 @@ import { localDateStr, routineIndex, weekDates } from '@/lib/local-date';
  * seven controls to read past, and deload is a thing you set once a month; on
  * the day it is now a badge, which is what a rarely-changed state looks like.
  *
- * ── why it is a component and not a screen ──
+ * ── where it lives ──
  *
- * It was `/routine`, pushed from a pill at the top of the training tab, and it
- * was the one thing on that tab somebody opens daily sitting one navigation
- * behind three things they open occasionally. Plan is what the training tab is
- * *for*, so it is the first thing on it rather than a door out of it.
+ * `/workouts/plan` — a page of its own, inside the training tab rather than on
+ * the root stack. That distinction is the whole point and it is visible: a root
+ * push covers the `UITabBarController` entirely, so Plan would leave the tab
+ * bar behind and stop being *in* the tab in any sense a person can see. Nested,
+ * the bar stays, Tập luyện stays lit, and back returns to the tab's own page.
  *
- * That is why this file has no `<Screen>` of its own. The tab already is one,
- * and two scaffolds nested would give the page two scroll views and two safe
- * areas. The one thing the tab had to take on is `keyboardAware`, which this
- * panel needs and `plan-actuals.mjs` checks for by name.
+ * It has no `<Screen>` of its own for the same reason it is not a section: the
+ * page that mounts it is the scaffold, and two nested would give the route two
+ * scroll views and two safe areas.
  */
-
-const DAY_LONG_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const DAY_LONG_VI = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-const DAY_SHORT_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const DAY_SHORT_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
 /**
  * How far the arrows go, and why there is a wall at all.
@@ -114,35 +108,7 @@ const DAY_SHORT_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const WEEKS_BACK = 4;
 const WEEKS_FORWARD = 4;
 
-/**
- * Where a day stands.
- *
- * Four states and no fifth. A rest day is not "done" when it passes — there was
- * nothing to do — so it keeps saying rest, today and afterwards.
- */
-type DayState = 'rest' | 'done' | 'todo' | 'missed';
-
-const STATE_STYLE: Record<DayState, { icon: typeof CheckCircle2; tint: string; wash: string }> = {
-  done: { icon: CheckCircle2, tint: colors.readinessGreen, wash: 'rgba(63,185,80,0.14)' },
-  /* Silver, not yellow. A training day that has not happened yet is not a
-     warning about anything — it is Thursday. Yellow is what this app uses for
-     "approaching a limit", and spending it here would leave nothing to say
-     that with. */
-  todo: { icon: CircleDashed, tint: colors.primary, wash: 'rgba(168,175,189,0.14)' },
-  missed: { icon: CircleDashed, tint: colors.mutedForeground, wash: 'rgba(255,255,255,0.06)' },
-  /*
-    Rest is purple, and it is the only state here that is a *choice*.
-
-    Done, to do and not-trained are all reports on a training day — they are
-    the app telling you where you got to. A rest day is something you decided,
-    and it earns a colour of its own for that: neon purple, the app's own, so a
-    week reads as a shape at a glance. Grey said "nothing here", which is the
-    one thing a planned rest day is not.
-  */
-  rest: { icon: Moon, tint: colors.metricPurple, wash: 'rgba(180,92,255,0.14)' },
-};
-
-export function WeekPlan() {
+export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
   const { data: days } = useRoutineDays();
   const { data: templates, isError: templatesFailed } = useWorkoutTemplates();
   const { lang } = useAppSettings();
@@ -150,11 +116,16 @@ export function WeekPlan() {
   const upsert = useUpsertRoutineDay();
   const [picking, setPicking] = useState<number | null>(null);
   /*
-    Opens on today, which is the day you came here for on six days out of seven.
-    `routineIndex` rather than a stored preference: the right default changes
-    every midnight, and a remembered one would be wrong by morning.
+    The day the page was opened on.
+
+    `initialDay` is what the training tab's card passes when you tap a cell on
+    it — tapping Thursday there and landing on today would be the card lying
+    about what it does. With nothing passed it opens on today, which is the day
+    you came here for on six days out of seven. `routineIndex` rather than a
+    stored preference: the right default changes every midnight, and a
+    remembered one would be wrong by morning.
   */
-  const [selected, setSelected] = useState(() => routineIndex(new Date()));
+  const [selected, setSelected] = useState(() => initialDay ?? routineIndex(new Date()));
   /** 0 is the week you are in. Negative is behind you. */
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -200,6 +171,10 @@ export function WeekPlan() {
   const byDay = new Map((days ?? []).map((d) => [d.day_of_week, d]));
   const templateFor = (id: string | null | undefined) =>
     id ? templates?.find((t) => t.id === id) ?? null : null;
+  const hasWork = Array.from({ length: 7 }, (_, i) => {
+    const d = byDay.get(i);
+    return !!d?.template_id && !d?.is_rest;
+  });
 
   const assign = (dayOfWeek: number, templateId: string | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -230,8 +205,22 @@ export function WeekPlan() {
     setWeekOffset((o) => Math.max(-WEEKS_BACK, Math.min(WEEKS_FORWARD, o + by)));
   };
 
+  const dStr = localDateStr(dates[selected]);
+  const openDay = byDay.get(selected);
+  const openTpl = templateFor(openDay?.template_id);
+  const state = dayStateOf(!!openTpl && !openDay?.is_rest, dStr, todayStr, trained);
+  const look = STATE_STYLE[state];
+  const stateLabel =
+    state === 'rest'
+      ? i18n.nRoutineRestDay
+      : state === 'done'
+        ? i18n.nRoutineDone
+        : state === 'missed'
+          ? i18n.nRoutineMissed
+          : i18n.nRoutineTodo;
+
   return (
-    <View style={styles.wrap}>
+    <>
       {/*
         Which week, and the way through them.
 
@@ -261,94 +250,30 @@ export function WeekPlan() {
         </PressScale>
       </View>
 
-      {/*
-        The week, and the control that moves you through it.
+      <WeekStrip
+        dates={dates}
+        hasWork={hasWork}
+        selected={selected}
+        todayStr={todayStr}
+        trained={trained}
+        longNames={longNames}
+        shortNames={shortNames}
+        onPick={setSelected}
+      />
 
-        Each cell is a button: the weekday, the date, and a dot underneath in
-        the colour of where that day stands. The dot is the whole week's status
-        in seven pixels — green behind you, silver ahead, nothing on a rest day
-        — which is what the seven cards used to spend a screen and a half
-        saying.
-
-        Today is ringed and the open day is filled. They are usually the same
-        cell and they are different marks, because the one time it matters is
-        the one time they are not: looking at Saturday's plan on a Tuesday, you
-        need to see both which day you are reading and which day it is. On any
-        week but this one, the ring is simply absent — today is not in it.
-      */}
-      <View style={styles.weekRow}>
-        {dates.map((d, idx) => {
-          const day = byDay.get(idx);
-          const dStr = localDateStr(d);
-          const isToday = dStr === todayStr;
-          const isOpen = idx === selected;
-          const hasWork = !!day?.template_id && !day?.is_rest;
-          const state: DayState = !hasWork
-            ? 'rest'
-            : trained.has(dStr)
-              ? 'done'
-              : dStr < todayStr
-                ? 'missed'
-                : 'todo';
-          return (
-            <PressScale
-              key={idx}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isOpen }}
-              accessibilityLabel={`${longNames[idx]} ${d.getDate()}`}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setSelected(idx);
-              }}
-              style={styles.weekCell}>
-              <Text style={[styles.weekName, isOpen && styles.weekNameOn]}>{shortNames[idx]}</Text>
-              <View style={[styles.weekDate, isToday && styles.weekDateToday, isOpen && styles.weekDateOn]}>
-                <Text style={[styles.weekNum, isOpen && styles.weekNumOn]}>{d.getDate()}</Text>
-              </View>
-              {/* The dot is the week's shape in seven marks: green behind
-                  you, silver ahead, purple where you chose to rest. */}
-              <View style={[styles.weekDot, { backgroundColor: STATE_STYLE[state].tint }]} />
-            </PressScale>
-          );
-        })}
-      </View>
-
-      {(() => {
-        const day = byDay.get(selected);
-        const tpl = templateFor(day?.template_id);
-        const dStr = localDateStr(dates[selected]);
-        const state: DayState = !tpl || day?.is_rest
-          ? 'rest'
-          : trained.has(dStr)
-            ? 'done'
-            : dStr < todayStr
-              ? 'missed'
-              : 'todo';
-        const look = STATE_STYLE[state];
-        const stateLabel =
-          state === 'rest'
-            ? i18n.nRoutineRestDay
-            : state === 'done'
-              ? i18n.nRoutineDone
-              : state === 'missed'
-                ? i18n.nRoutineMissed
-                : i18n.nRoutineTodo;
-        return (
-          <View style={styles.dayHead}>
-            <Text style={styles.dayName}>{longNames[selected]}</Text>
-            {day?.is_deload ? (
-              <View style={styles.deloadBadge}>
-                <Text style={styles.deloadText}>{i18n.nDeload}</Text>
-              </View>
-            ) : null}
-            <View style={styles.headSpacer} />
-            <View style={[styles.statePill, { backgroundColor: look.wash }]}>
-              <Icon icon={look.icon} size={12} color={look.tint} />
-              <Text style={[styles.stateText, { color: look.tint }]}>{stateLabel}</Text>
-            </View>
+      <View style={styles.dayHead}>
+        <Text style={styles.dayName}>{longNames[selected]}</Text>
+        {openDay?.is_deload ? (
+          <View style={styles.deloadBadge}>
+            <Text style={styles.deloadText}>{i18n.nDeload}</Text>
           </View>
-        );
-      })()}
+        ) : null}
+        <View style={styles.headSpacer} />
+        <View style={[styles.statePill, { backgroundColor: look.wash }]}>
+          <Icon icon={look.icon} size={12} color={look.tint} />
+          <Text style={[styles.stateText, { color: look.tint }]}>{stateLabel}</Text>
+        </View>
+      </View>
 
       {/*
         The shortcut out to music, on the screen where somebody is actually
@@ -363,7 +288,7 @@ export function WeekPlan() {
         Only on a day that has work in it. A music row under a rest day is
         offering to soundtrack nothing.
       */}
-      {!byDay.get(selected)?.is_rest && byDay.get(selected)?.template_id ? <MusicLaunch /> : null}
+      {!openDay?.is_rest && openDay?.template_id ? <MusicLaunch /> : null}
 
       {/*
         Keyed by the date, not by the weekday.
@@ -382,11 +307,11 @@ export function WeekPlan() {
         week the arrows can reach.
       */}
       <DayPlan
-        key={localDateStr(dates[selected])}
-        dateStr={localDateStr(dates[selected])}
-        template={templateFor(byDay.get(selected)?.template_id)}
-        isRest={!!byDay.get(selected)?.is_rest}
-        sessions={(sessions ?? []).filter((sn) => localDateStr(new Date(sn.date_time)) === localDateStr(dates[selected]))}
+        key={dStr}
+        dateStr={dStr}
+        template={openTpl}
+        isRest={!!openDay?.is_rest}
+        sessions={(sessions ?? []).filter((sn) => localDateStr(new Date(sn.date_time)) === dStr)}
         i18n={i18n}
         onEdit={() => setPicking(selected)}
       />
@@ -496,15 +421,11 @@ export function WeekPlan() {
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  /* The tab's own scaffold spaces its children; this is one child, so it
-     carries the spacing between its own parts and nothing else. */
-  wrap: { gap: spacing.sm },
-
   // ── which week ──
   weekNav: {
     flexDirection: 'row',
@@ -524,32 +445,6 @@ const styles = StyleSheet.create({
      of the range takes the label with it as the row re-centres. */
   navBtnOff: { opacity: 0.3 },
   weekLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground, minWidth: 130, textAlign: 'center' },
-
-  // ── the week strip ──
-  weekRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
-  weekCell: { alignItems: 'center', gap: 6, flex: 1, paddingVertical: 4 },
-  weekName: { ...type.caption, color: colors.mutedForeground },
-  weekNameOn: { color: colors.foreground, fontWeight: '700' },
-  weekDate: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  /* Today is a ring, the open day is a fill. Usually the same cell, and two
-     marks rather than one because the time it matters is the time they differ:
-     reading Saturday's plan on a Tuesday, you need both. */
-  weekDateToday: { borderColor: colors.primary },
-  weekDateOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  weekNum: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  weekNumOn: { color: colors.primaryForeground, fontWeight: '700' },
-  /* Always drawn, transparent when the day is empty — a dot that appears and
-     disappears would shift the row's height by three points as the week is
-     edited. */
-  weekDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'transparent' },
 
   // ── the open day ──
   dayHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },

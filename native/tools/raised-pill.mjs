@@ -64,7 +64,7 @@ const problems = [];
 const NEUTRAL = 'colors.primary';
 const USERS = [
   ['src/app/(tabs)/index.tsx', 1, 'bốn nút log trên Today (một chỗ render, lặp qua danh sách)', NEUTRAL],
-  ['src/app/(tabs)/workouts.tsx', 3, 'lịch tập tuần, bài tập, ghi buổi tập', NEUTRAL],
+  ['src/app/(tabs)/workouts/index.tsx', 3, 'tiến bộ từng bài, thư viện bài tập, ghi buổi tập', NEUTRAL],
   ['src/components/ascnd/music-launch.tsx', 1, 'hai chip nhạc (một chỗ render)', null],
 ];
 

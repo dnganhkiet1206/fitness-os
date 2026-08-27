@@ -150,9 +150,10 @@ const app = JSON.parse(read('app.json')).expo;
    second one would miss the person who opens the log first; only on the first,
    the person following a plan.
 
-   Cái thứ hai từng là `src/app/routine.tsx`. Nó không còn là màn riêng nữa —
-   Plan bây giờ là <WeekPlan /> nằm trong tab Tập luyện — nên tên file được
-   dời theo, KHÔNG phải bỏ luật đi: chỗ ở đổi, còn lý do thì không. */
+   Cái thứ hai từng là `src/app/routine.tsx`. Màn đó không còn: Plan là
+   <WeekPlan />, dựng bởi `(tabs)/workouts/plan.tsx` — một trang riêng NẰM
+   TRONG tab Tập luyện thay vì một route gốc. Tên file được dời theo, KHÔNG
+   phải bỏ luật đi: chỗ ở đổi, còn lý do thì không. */
 {
   const WHERE = [
     ['src/app/log-workout.tsx', 'màn ghi buổi tập'],

@@ -27,7 +27,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
-import { WeekPlan } from '@/components/ascnd/week-plan';
+import { PlanCard } from '@/components/ascnd/plan-card';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 
 /**
@@ -218,11 +218,21 @@ function MuscleGrid({
  * behind the things they open occasionally — first as a footer, then as a pill,
  * always one navigation away.
  *
- * Plan is the tab's first section now, drawn whole. What follows it are the
- * things you reach *from* training rather than the training itself: log a
- * session, ask how one lift is going, browse the exercise library, build a new
- * workout, and the two lists — the workouts you have saved and the sessions you
- * have done.
+ * Plan is a card at the top now, and a page of its own — `/workouts/plan`,
+ * nested under this tab so the tab bar stays while you are in it. The card
+ * answers the question the tab gets asked in passing (is today a training day,
+ * which one) and the page holds everything that does not fit on a line.
+ *
+ * It was embedded here whole for one commit, which was worse than both: a
+ * single scroll carrying a week strip, a state pill, a music row and a day
+ * panel of number boxes *and* a button row, a muscle grid, a workout list and a
+ * session list is a page with two subjects, where everything below the fold
+ * belongs to whichever one you were not looking for.
+ *
+ * What follows the card are the things you reach *from* training rather than
+ * the training itself: log a session, ask how one lift is going, browse the
+ * exercise library, build a new workout, and the two lists — the workouts you
+ * have saved and the sessions you have done.
  */
 export default function WorkoutsScreen() {
   /* Lần vẽ đầu thì hiện ngay — xem `useRise`. */
@@ -307,25 +317,22 @@ export default function WorkoutsScreen() {
     navigation because a list did not arrive would be a second problem.
   */
   return (
-    /* `keyboardAware` came with Plan. Every set in its day panel carries a
-       weight box and a rep box, and a twelve-set day runs them well past the
-       fold — the one condition `screen.tsx` names for turning this on, and the
-       thing `plan-actuals.mjs` checks for by name on whichever scaffold the
-       panel is mounted under. */
-    <Screen keyboardAware title={i18n.workoutsTitle} aura={PAGE_TINT.activity}>
+    <Screen title={i18n.workoutsTitle} aura={PAGE_TINT.activity}>
       {/*
-        Plan, first and whole.
+        Plan, first, and answering its own question.
 
-        It was `/routine`, behind a pill at the top of this tab: the one thing
-        on the page somebody opens daily, sitting one navigation *behind* three
-        things they open occasionally. The pill is gone with the route — this
-        is the tab's first section now, which is what "Plan is where training
-        starts" has to mean if it is going to mean anything.
+        It was `/routine` behind a pill, then a section embedded in this scroll.
+        Neither was right. A pill is a *link* — to find out whether today is a
+        training day you had to navigate — and the embedded version put two
+        subjects on one page, so everything below the fold belonged to whichever
+        one you were not looking for.
+
+        The card answers the daily question here and opens `/workouts/plan` for
+        everything that does not fit on a line. That route is nested under this
+        tab rather than on the root stack, which is what keeps the tab bar
+        present while you are in it — see `(tabs)/workouts/_layout.tsx`.
       */}
-      <View style={styles.planSection}>
-        <Text style={styles.sectionLabel}>{i18n.nPlan}</Text>
-        <WeekPlan />
-      </View>
+      <PlanCard />
 
       {/*
         The three ways out of this tab, with no label of their own.
@@ -543,9 +550,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   sectionLabel: { fontSize: 14, fontWeight: '600', color: colors.foreground },
-  /* Headed like the library and the workout list below it, so the tab reads as
-     sections of one page rather than as a panel with a page bolted under it. */
-  planSection: { gap: spacing.sm },
   /*
     Pills, and 44 points tall.
 

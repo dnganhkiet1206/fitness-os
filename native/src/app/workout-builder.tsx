@@ -36,21 +36,7 @@ import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { displayWeight, weightLabel } from '@/lib/units';
 import { errorText } from '@/lib/error-copy';
 import { toast } from '@/lib/toast';
-
-/**
- * The day this builder was opened for, if it was opened from Plan.
- *
- * Route params are strings and they arrive from outside this file, so the
- * number is not trusted: anything that is not one of the seven weekday slots
- * `routine_days.day_of_week` accepts comes back as "no day", and the builder
- * behaves exactly as it did before Plan existed. A silently coerced `NaN` or a
- * `7` would be written to the database by the upsert below.
- */
-export function assignDayParam(raw: string | string[] | undefined): number | null {
-  const s = Array.isArray(raw) ? raw[0] : raw;
-  if (typeof s !== 'string' || !/^[0-6]$/.test(s)) return null;
-  return Number(s);
-}
+import { weekDayParam } from '@/lib/week-day';
 
 /** Monday first, the order `routine_days.day_of_week` is stored in. */
 const DAY_LONG = {
@@ -208,7 +194,7 @@ export default function WorkoutBuilderSheet() {
   const { data: exercises, isLoading, isError, refetch, isRefetching } = useExercises();
   const addTemplate = useAddWorkoutTemplate();
   /* Set when Plan opened this screen for one of its days — see `save`. */
-  const planDay = assignDayParam(useLocalSearchParams().assignDay);
+  const planDay = weekDayParam(useLocalSearchParams().assignDay);
   const upsertDay = useUpsertRoutineDay();
 
   const [step, setStep] = useState<1 | 2>(1);
