@@ -27,6 +27,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
+import { WeekPlan } from '@/components/ascnd/week-plan';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 
 /**
@@ -209,9 +210,19 @@ function MuscleGrid({
 }
 
 /**
- * Workouts tab — faithful port of the web /workouts page
- * (WorkoutBuilder): template manager with Exercises + Create actions
- * and the Weekly Plan link at the bottom.
+ * The training tab, Plan first.
+ *
+ * It began as a faithful port of the web `/workouts` page: a template manager,
+ * with Exercises and Create beside it and a "Weekly Plan" link at the bottom.
+ * That order was the web page's, and it put the thing somebody opens daily
+ * behind the things they open occasionally — first as a footer, then as a pill,
+ * always one navigation away.
+ *
+ * Plan is the tab's first section now, drawn whole. What follows it are the
+ * things you reach *from* training rather than the training itself: log a
+ * session, ask how one lift is going, browse the exercise library, build a new
+ * workout, and the two lists — the workouts you have saved and the sessions you
+ * have done.
  */
 export default function WorkoutsScreen() {
   /* Lần vẽ đầu thì hiện ngay — xem `useRise`. */
@@ -296,56 +307,48 @@ export default function WorkoutsScreen() {
     navigation because a list did not arrive would be a second problem.
   */
   return (
-    <Screen title={i18n.workoutsTitle} aura={PAGE_TINT.activity}>
+    /* `keyboardAware` came with Plan. Every set in its day panel carries a
+       weight box and a rep box, and a twelve-set day runs them well past the
+       fold — the one condition `screen.tsx` names for turning this on, and the
+       thing `plan-actuals.mjs` checks for by name on whichever scaffold the
+       panel is mounted under. */
+    <Screen keyboardAware title={i18n.workoutsTitle} aura={PAGE_TINT.activity}>
       {/*
-        The two ways in, with no label of their own.
+        Plan, first and whole.
+
+        It was `/routine`, behind a pill at the top of this tab: the one thing
+        on the page somebody opens daily, sitting one navigation *behind* three
+        things they open occasionally. The pill is gone with the route — this
+        is the tab's first section now, which is what "Plan is where training
+        starts" has to mean if it is going to mean anything.
+      */}
+      <View style={styles.planSection}>
+        <Text style={styles.sectionLabel}>{i18n.nPlan}</Text>
+        <WeekPlan />
+      </View>
+
+      {/*
+        The three ways out of this tab, with no label of their own.
 
         This row used to be captioned "Templates (N)", which is now the heading
         of the workout list further down — and a screen that says the same thing
         twice makes you read both to find out they are the same thing. The
         buttons are self-describing, so the caption was the part to drop.
+
+        There were four. The first was the week, pointing at `/routine`; both
+        are gone, because the week is the section above and drawn in full. A
+        pill that scrolled you a hundred points up the same page would be a
+        second route to something already on screen — the exact thing the day
+        strip inside Plan was rebuilt to stop being.
       */}
       <View style={styles.actionsRow}>
         {/*
-          The week, first and on the left.
-
-          It used to be a full-width bar at the very bottom of the page, under
-          the workout list and the recent sessions — the last thing on a screen
-          you have to scroll to reach, for the one thing on it you look at
-          daily. Its size was the giveaway: nothing else on this page is 44pt
-          tall and the width of the screen, so it read as a footer rather than
-          as one of the ways in.
-
-          It is one of them, so it sits with the other two, at the same height
-          and in the same shapes. On the left because it is where you go before
-          training rather than to build something — the row now reads plan,
-          browse, create.
-        */}
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={i18n.workoutsWeeklyPlan}
-          onPress={() => {
-            Haptics.selectionAsync();
-            router.push('/routine');
-          }}>
-          {/* Một nguồn sáng trung tính cho mọi pill điều hướng — xem luật màu
-              ở `(tabs)/index.tsx`, hàng quick-log: màu dành cho GIÁ TRỊ, không
-              dành cho LỐI ĐI. `tint` vẫn còn vì `material="blur"` đã bỏ mép
-              sáng, nên lớp wash là nguồn sáng cuối cùng nhấc pill khỏi nền. */}
-          <LiquidGlass style={styles.pill} radius={radius.full} tint={colors.primary} material="blur">
-            <View style={styles.pillInner}>
-              <Glyph name="calendar" size={16} />
-              <Text style={styles.outlineBtnText}>{i18n.workoutsWeeklyPlan}</Text>
-            </View>
-          </LiquidGlass>
-        </PressScale>
-        {/*
           The door to Exercise Intelligence.
 
-          Beside the weekly plan and the library rather than inside Progress,
-          because the question it answers — "how is my bench going" — is asked
-          while looking at training, and `entry-points.mjs` exists because this
-          app has previously built a room with only vanishing doors.
+          Here rather than inside Progress, because the question it answers —
+          "how is my bench going" — is asked while looking at training, and
+          `entry-points.mjs` exists because this app has previously built a room
+          with only vanishing doors.
         */}
         <PressScale
           accessibilityRole="button"
@@ -520,19 +523,18 @@ export default function WorkoutsScreen() {
 }
 
 const styles = StyleSheet.create({
-  /* Three buttons now, and they no longer hug the right.
+  /* They no longer hug the right.
      `flex-end` was right while the row was "browse" and "create" — a pair of
-     tools belonging to the list below them. With the week in front, the row is
-     the page's three doorways and reads left to right like one, so it starts
-     at the left margin and wraps from there. */
+     tools belonging to the list below them. It is the page's set of doorways
+     now and reads left to right like one, so it starts at the left margin and
+     wraps from there. */
   /*
-    Three siblings, wrapping on their own.
+    Flat siblings, wrapping on their own.
 
     Two of them used to sit inside a grouping `<View>`, which has no styling of
     its own and one visible effect: the group is a single flex item, so it wraps
     as a block. With the pills at 44pt that put one button on the first row and
-    two on the second, leaving a long empty gap at the top of the tab. Flat,
-    they pack — two, then one.
+    two on the second, leaving a long empty gap. Flat, they pack.
   */
   actionsRow: {
     flexDirection: 'row',
@@ -541,6 +543,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   sectionLabel: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+  /* Headed like the library and the workout list below it, so the tab reads as
+     sections of one page rather than as a panel with a page bolted under it. */
+  planSection: { gap: spacing.sm },
   /*
     Pills, and 44 points tall.
 

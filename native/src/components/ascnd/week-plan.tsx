@@ -1,22 +1,30 @@
 import * as Haptics from 'expo-haptics';
-import { CheckCircle2, CircleDashed, Dumbbell, Moon } from 'lucide-react-native';
+import { router } from 'expo-router';
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  CircleDashed,
+  Dumbbell,
+  Moon,
+  Plus,
+} from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
-import { GlassCard } from '@/components/ascnd/glass-card';
 import { MusicLaunch } from '@/components/ascnd/music-launch';
 import { Icon } from '@/components/ascnd/icon';
-import { Screen } from '@/components/ascnd/screen';
 import { DayPlan } from '@/components/ascnd/day-plan';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useRoutineDays, useUpsertRoutineDay, useWorkoutTemplates } from '@/hooks/use-library';
+import { getLocale } from '@/lib/i18n';
 import { localDateStr, routineIndex, weekDates } from '@/lib/local-date';
 
 /**
- * The training week.
+ * The training week — Plan.
  *
  * ── what it used to be, and why that was not enough ──
  *
@@ -64,16 +72,47 @@ import { localDateStr, routineIndex, weekDates } from '@/lib/local-date';
  *
  * ── nothing was taken away ──
  *
- * Assigning a template, marking a day as rest and toggling deload are all still
+ * Assigning a workout, marking a day as rest and toggling deload are all still
  * here, in the sheet behind the pencil. Seven `Switch`es down the screen were
  * seven controls to read past, and deload is a thing you set once a month; on
  * the day it is now a badge, which is what a rarely-changed state looks like.
+ *
+ * ── why it is a component and not a screen ──
+ *
+ * It was `/routine`, pushed from a pill at the top of the training tab, and it
+ * was the one thing on that tab somebody opens daily sitting one navigation
+ * behind three things they open occasionally. Plan is what the training tab is
+ * *for*, so it is the first thing on it rather than a door out of it.
+ *
+ * That is why this file has no `<Screen>` of its own. The tab already is one,
+ * and two scaffolds nested would give the page two scroll views and two safe
+ * areas. The one thing the tab had to take on is `keyboardAware`, which this
+ * panel needs and `plan-actuals.mjs` checks for by name.
  */
 
 const DAY_LONG_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAY_LONG_VI = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
 const DAY_SHORT_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_SHORT_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+/**
+ * How far the arrows go, and why there is a wall at all.
+ *
+ * `routine_days` is `UNIQUE(user_id, day_of_week)` — seven rows, no date
+ * column. The plan is a *repeating weekly pattern*, so stepping back a week
+ * does not show you the plan you were following then; it shows today's plan
+ * laid over that week's dates, with the real sessions underneath it. That is
+ * useful for a week or a month — it is how you see what you actually did
+ * against what you intend to do — and it gets steadily less true the further
+ * back it goes, because the further back you go the more likely it is the plan
+ * has changed since.
+ *
+ * Four weeks each way is the range where the reading is worth having. It is
+ * also what bounds the query: the sessions window below is widened to reach the
+ * oldest visible date, and an unbounded arrow would be an unbounded fetch.
+ */
+const WEEKS_BACK = 4;
+const WEEKS_FORWARD = 4;
 
 /**
  * Where a day stands.
@@ -103,16 +142,9 @@ const STATE_STYLE: Record<DayState, { icon: typeof CheckCircle2; tint: string; w
   rest: { icon: Moon, tint: colors.metricPurple, wash: 'rgba(180,92,255,0.14)' },
 };
 
-export default function RoutineScreen() {
+export function WeekPlan() {
   const { data: days } = useRoutineDays();
   const { data: templates, isError: templatesFailed } = useWorkoutTemplates();
-  /*
-    Fourteen days back covers the current week from any day inside it — Sunday
-    is six days from Monday — with a week of slack, and it is the window every
-    other screen already asks for, so this reuses a cache that is usually warm
-    rather than opening a second query for the same table.
-  */
-  const { data: sessions } = useWorkoutSessions(14);
   const { lang } = useAppSettings();
   const i18n = useI18n();
   const upsert = useUpsertRoutineDay();
@@ -123,14 +155,47 @@ export default function RoutineScreen() {
     every midnight, and a remembered one would be wrong by morning.
   */
   const [selected, setSelected] = useState(() => routineIndex(new Date()));
+  /** 0 is the week you are in. Negative is behind you. */
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const anchor = new Date();
+  anchor.setDate(anchor.getDate() + weekOffset * 7);
+  const dates = weekDates(anchor);
+
+  /*
+    The window follows the arrows.
+
+    Fourteen days covers the current week from any day inside it — Sunday is six
+    days from Monday — with a week of slack, and it is the window every other
+    screen already asks for, so at rest this reuses a cache that is usually
+    warm. Step back and it has to reach further or the week you are looking at
+    comes back with no sessions in it at all, which the strip would draw as
+    seven "not trained" dots: a claim about your training built out of a query
+    bound that did not move.
+
+    `7 * (1 - weekOffset)` is the distance to the Monday of the oldest visible
+    week from *today*, worst case (today is Sunday), rounded up to whole weeks.
+  */
+  const { data: sessions } = useWorkoutSessions(Math.max(14, 7 * (1 - weekOffset)));
 
   const vi = lang === 'vi';
   const longNames = vi ? DAY_LONG_VI : DAY_LONG_EN;
   const shortNames = vi ? DAY_SHORT_VI : DAY_SHORT_EN;
 
-  const dates = weekDates();
   const todayStr = localDateStr();
   const trained = new Set((sessions ?? []).map((s) => localDateStr(new Date(s.date_time))));
+
+  const locale = getLocale(lang);
+  /* The week you are in says so; every other week is named by its dates,
+     because "3 weeks ago" is arithmetic the reader has to do to find out
+     whether it is the week they mean. */
+  const rangeLabel =
+    weekOffset === 0
+      ? i18n.nThisWeek
+      : `${dates[0].toLocaleDateString(locale, { day: 'numeric', month: 'short' })} – ${dates[6].toLocaleDateString(
+          locale,
+          { day: 'numeric', month: 'short' },
+        )}`;
 
   const byDay = new Map((days ?? []).map((d) => [d.day_of_week, d]));
   const templateFor = (id: string | null | undefined) =>
@@ -160,11 +225,42 @@ export default function RoutineScreen() {
     });
   };
 
+  const step = (by: number) => {
+    Haptics.selectionAsync();
+    setWeekOffset((o) => Math.max(-WEEKS_BACK, Math.min(WEEKS_FORWARD, o + by)));
+  };
+
   return (
-    /* Every set on this page carries a weight box and a rep box, and a
-       twelve-set day runs them well past the fold — the one condition
-       `screen.tsx` names for turning this on. */
-    <Screen back keyboardAware title={i18n.nRoutine}>
+    <View style={styles.wrap}>
+      {/*
+        Which week, and the way through them.
+
+        The same shape the weekly review already uses for the same job — two
+        32pt buttons around a centred label — so somebody who has moved through
+        weeks on one screen already knows how on this one.
+      */}
+      <View style={styles.weekNav}>
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yPrevWeek}
+          hitSlop={8}
+          disabled={weekOffset <= -WEEKS_BACK}
+          style={[styles.navBtn, weekOffset <= -WEEKS_BACK && styles.navBtnOff]}
+          onPress={() => step(-1)}>
+          <Icon icon={ChevronLeft} size={16} color={colors.mutedForeground} />
+        </PressScale>
+        <Text style={styles.weekLabel}>{rangeLabel}</Text>
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yNextWeek}
+          hitSlop={8}
+          disabled={weekOffset >= WEEKS_FORWARD}
+          style={[styles.navBtn, weekOffset >= WEEKS_FORWARD && styles.navBtnOff]}
+          onPress={() => step(1)}>
+          <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+        </PressScale>
+      </View>
+
       {/*
         The week, and the control that moves you through it.
 
@@ -177,7 +273,8 @@ export default function RoutineScreen() {
         Today is ringed and the open day is filled. They are usually the same
         cell and they are different marks, because the one time it matters is
         the one time they are not: looking at Saturday's plan on a Tuesday, you
-        need to see both which day you are reading and which day it is.
+        need to see both which day you are reading and which day it is. On any
+        week but this one, the ring is simply absent — today is not in it.
       */}
       <View style={styles.weekRow}>
         {dates.map((d, idx) => {
@@ -269,17 +366,23 @@ export default function RoutineScreen() {
       {!byDay.get(selected)?.is_rest && byDay.get(selected)?.template_id ? <MusicLaunch /> : null}
 
       {/*
-        Keyed by the day.
+        Keyed by the date, not by the weekday.
 
         The panel keeps live state — which sets are ticked, what rest each one
         is on — and reads a stored resume point for the day it is showing.
-        Without the key, moving from Monday to Tuesday would reuse the mounted
+        Without a key, moving from Monday to Tuesday would reuse the mounted
         instance and its ticks, and the storage read would land a moment later
         on top of a panel that had already shown somebody else's workout as
         half done.
+
+        It was the weekday index, which was enough while there was one week. It
+        is not now: this Monday and last Monday are both `0`, so stepping back a
+        week would have kept the mounted panel and shown one Monday's ticks
+        against the other Monday's date. The date string is unique across every
+        week the arrows can reach.
       */}
       <DayPlan
-        key={selected}
+        key={localDateStr(dates[selected])}
         dateStr={localDateStr(dates[selected])}
         template={templateFor(byDay.get(selected)?.template_id)}
         isRest={!!byDay.get(selected)?.is_rest}
@@ -305,6 +408,34 @@ export default function RoutineScreen() {
             <Text style={styles.pickerTitle}>{picking !== null ? longNames[picking] : ''}</Text>
 
             <ScrollView style={styles.pickerScroll} keyboardShouldPersistTaps="handled">
+              {/*
+                Build one, from here.
+
+                This sheet used to offer the workouts you had already saved and
+                nothing else, so an empty account met "Chưa lưu buổi tập nào —
+                tạo một cái trước đã": a dead end that names the thing to do and
+                gives you no way to do it. The builder is one row up now, and it
+                carries the day with it — `assignDay` — so saving lands the
+                workout on the day you were looking at instead of dropping you
+                back here to pick it a second time.
+              */}
+              <Pressable
+                style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
+                onPress={() => {
+                  const day = picking;
+                  if (day === null) return;
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setPicking(null);
+                  router.push({ pathname: '/workout-builder', params: { assignDay: String(day) } });
+                }}>
+                <View style={styles.pickerRowInner}>
+                  <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
+                  <Text style={styles.pickerNew}>{i18n.nPlanNewWorkout}</Text>
+                </View>
+              </Pressable>
+
+              <View style={styles.pickerSep} />
+
               <Pressable
                 style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
                 onPress={() => picking !== null && assign(picking, null)}>
@@ -333,7 +464,7 @@ export default function RoutineScreen() {
               ))}
 
               {/*
-                A failed read is not "you have no templates".
+                A failed read is not "you have no workouts".
 
                 This is a picker inside a sheet, so the full failure card would
                 not fit and would be the wrong shape anyway — one line of text
@@ -365,11 +496,35 @@ export default function RoutineScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  /* The tab's own scaffold spaces its children; this is one child, so it
+     carries the spacing between its own parts and nothing else. */
+  wrap: { gap: spacing.sm },
+
+  // ── which week ──
+  weekNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  navBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  /* Still drawn, still 32pt, just faded — a button that disappears at the end
+     of the range takes the label with it as the row re-centres. */
+  navBtnOff: { opacity: 0.3 },
+  weekLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground, minWidth: 130, textAlign: 'center' },
+
   // ── the week strip ──
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
   weekCell: { alignItems: 'center', gap: 6, flex: 1, paddingVertical: 4 },
@@ -458,6 +613,15 @@ const styles = StyleSheet.create({
   },
   pickerRowPressed: { backgroundColor: colors.secondary },
   pickerRowInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 },
+  /* Making a workout and choosing one are two different acts, so a line
+     between them rather than a fourth row that looks like the other three. */
+  pickerSep: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.sm,
+    marginVertical: 2,
+  },
+  pickerNew: { ...type.body, color: colors.primary, fontWeight: '600' },
   pickerRest: { ...type.body, color: colors.mutedForeground },
   pickerName: { ...type.body, color: colors.foreground, flexShrink: 1 },
   pickerEmpty: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', padding: spacing.md },

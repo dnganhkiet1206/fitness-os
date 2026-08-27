@@ -141,10 +141,14 @@ const ROUTES = [
     screen it sits on.
   */
   '/log-workout',
-  /* And the panel people tick sets off on while they are training — the other
-     screen the music shortcut lives on, and the one a plan is actually read
-     from. It was missing for the same reason `/log-workout` was. */
-  '/routine',
+  /*
+    The panel people tick sets off on while they are training used to be
+    `/routine`, and it was listed here for the same reason `/log-workout` is.
+    It is not a route any more: Plan is the first section of `/workouts`, which
+    is already the second entry in this list, so the screenshots that used to
+    come from `/routine` now come from there. Nothing was dropped from the
+    harness — the route was, and its drawing moved.
+  */
   /*
     And the room itself. Two things are drawn nowhere else in the app — the
     segmented energy ring and the level bar — so for as long as this list did

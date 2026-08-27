@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Check, ChevronRight, Plus, Search, X } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -25,11 +25,38 @@ import { WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
 import { DEFAULT_REST, estimatedMinutes, restLabel } from '@/lib/prescription';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useAddWorkoutTemplate, useExercises, type TemplateExercise } from '@/hooks/use-library';
+import {
+  useAddWorkoutTemplate,
+  useExercises,
+  useUpsertRoutineDay,
+  type TemplateExercise,
+} from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { displayWeight, weightLabel } from '@/lib/units';
 import { errorText } from '@/lib/error-copy';
+import { toast } from '@/lib/toast';
+
+/**
+ * The day this builder was opened for, if it was opened from Plan.
+ *
+ * Route params are strings and they arrive from outside this file, so the
+ * number is not trusted: anything that is not one of the seven weekday slots
+ * `routine_days.day_of_week` accepts comes back as "no day", and the builder
+ * behaves exactly as it did before Plan existed. A silently coerced `NaN` or a
+ * `7` would be written to the database by the upsert below.
+ */
+export function assignDayParam(raw: string | string[] | undefined): number | null {
+  const s = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof s !== 'string' || !/^[0-6]$/.test(s)) return null;
+  return Number(s);
+}
+
+/** Monday first, the order `routine_days.day_of_week` is stored in. */
+const DAY_LONG = {
+  en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+  vi: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'],
+} as const;
 
 /**
  * Building a workout template, in two steps: pick the exercises, then say how
@@ -180,6 +207,9 @@ export default function WorkoutBuilderSheet() {
   const wl = weightLabel(wUnit);
   const { data: exercises, isLoading, isError, refetch, isRefetching } = useExercises();
   const addTemplate = useAddWorkoutTemplate();
+  /* Set when Plan opened this screen for one of its days — see `save`. */
+  const planDay = assignDayParam(useLocalSearchParams().assignDay);
+  const upsertDay = useUpsertRoutineDay();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [items, setItems] = useState<TemplateExercise[]>([]);
@@ -327,12 +357,47 @@ export default function WorkoutBuilderSheet() {
     router.push({ pathname: '/exercises', params: { create: search.trim() } });
   };
 
+  /**
+   * Save, and — when Plan sent you here — put the workout on the day it sent
+   * you for.
+   *
+   * ── why the day travels with the push ──
+   *
+   * Plan's day sheet used to offer the workouts you had already saved and
+   * nothing else, so an empty account met "Chưa lưu buổi tập nào — tạo một cái
+   * trước đã": a dead end that names the thing to do and does not let you do
+   * it. The way out is not a prompt after saving; it is that the day is already
+   * known, because the sheet you came from was open on one.
+   *
+   * ── what happens when the second write fails ──
+   *
+   * The workout exists — the insert returned an id, and the query it
+   * invalidated has already put it in the list. So this leaves regardless: a
+   * builder that stayed open would be a builder whose Save button creates a
+   * *second* workout when pressed again. The failure is carried out on a toast
+   * instead, and the day can be assigned from Plan's sheet in one tap, which is
+   * where the workout now is.
+   */
   const save = () => {
     const finalName = shownName.trim() || suggestedName;
     addTemplate.mutate(
       { name: finalName, type: tType, exercises: items },
       {
-        onSuccess: () => router.back(),
+        onSuccess: (id) => {
+          if (planDay === null) {
+            router.back();
+            return;
+          }
+          upsertDay.mutate(
+            { day_of_week: planDay, template_id: id, is_rest: false, is_deload: false },
+            {
+              onSuccess: () =>
+                toast.success(i18n.nPlanAdded.replace('{d}', DAY_LONG[vi ? 'vi' : 'en'][planDay])),
+              onError: (e: Error) => toast.fail(e),
+            },
+          );
+          router.back();
+        },
         onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
       },
     );

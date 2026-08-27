@@ -702,7 +702,27 @@ export function DayPlan({
     hours is a button that writes the session a second time when it lands.
   */
   const logged = sessions.length > 0 || log.isSuccess || queue.isPending || queue.isSuccess;
-  const canFinish = doneRows.length > 0 && !log.isPending && !logged;
+  /*
+    A session is something that happened.
+
+    `finish` writes `date_time` at local noon of the day being looked at, which
+    is right for yesterday and is a fabrication for next Thursday. It was
+    unreachable while the week strip could only show the week you are in — the
+    furthest ahead you could get was Sunday — and it stopped being unreachable
+    the moment Plan grew arrows: four weeks forward is a session dated a month
+    out, sitting in `workout_sessions` as a real row.
+
+    Nothing would have errored. Readiness, ACWR and the training-load windows
+    all read that table by date, so the damage is a load figure that includes
+    work nobody has done yet, on a screen that gives no hint where it came
+    from.
+
+    Ticking stays live on a future day — reading Thursday's plan and marking off
+    what you intend to do is the panel working — it is only the write that
+    waits until the day arrives.
+  */
+  const future = dateStr > localDateStr();
+  const canFinish = doneRows.length > 0 && !log.isPending && !logged && !future;
   /* What was lifted, not what was written down for you to lift. */
   const volume = doneRows.reduce((s, r) => {
     const p = performed(r);
@@ -1263,8 +1283,12 @@ export function DayPlan({
           color={logged ? colors.readinessGreen : colors.primaryForeground}
           strokeWidth={2.5}
         />
+        {/* A dimmed button with the same words on it is a button that looks
+            broken. On a day that has not happened the label says which of the
+            three things is true, the same way it already does for one that has
+            been logged. */}
         <Text style={[styles.finishText, logged && styles.finishTextDone]}>
-          {logged ? i18n.nRdAlready : i18n.nRdFinish}
+          {logged ? i18n.nRdAlready : future ? i18n.nRdFuture : i18n.nRdFinish}
         </Text>
       </PressScale>
 

@@ -28,11 +28,22 @@
  * Not about a control existing. A box you can type in that is then ignored on
  * submit is the same bug wearing a keyboard.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+/** every .ts/.tsx under a directory */
+function walk(dir) {
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const p = path.join(dir, name);
+    if (statSync(p).isDirectory()) out.push(...walk(p));
+    else if (/\.tsx?$/.test(name)) out.push(p);
+  }
+  return out;
+}
 const F = 'src/components/ascnd/day-plan.tsx';
 const src = readFileSync(path.join(NATIVE, F), 'utf8');
 const problems = [];
@@ -204,16 +215,33 @@ const slice = (from, to) => {
    near the bottom is simply underneath the keyboard, with no way to reach it —
    and nothing about that shows up in a screenshot, a type check or a unit
    test, because none of them have a keyboard. */
+/* Luật này từng ghi thẳng `src/app/routine.tsx`, hồi panel còn là một màn
+   riêng. Bây giờ nó là <WeekPlan /> nằm trong tab Tập luyện, và nó còn có thể
+   dọn nhà lần nữa — nên chỗ phải bật `keyboardAware` được TÌM từ nơi thật sự
+   gắn panel, chứ không phải chép lại một cái tên file. Ghim đúng bất biến:
+   scaffold nào chứa panel thì scaffold đó phải tránh bàn phím. */
 {
   if (/<TextInput/.test(src)) {
-    const routine = readFileSync(path.join(NATIVE, 'src/app/routine.tsx'), 'utf8');
-    const tag = routine.match(/<Screen\b[^>]*>/);
-    if (!tag) problems.push('src/app/routine.tsx: không tìm thấy <Screen>');
-    else if (!/\bkeyboardAware\b/.test(tag[0])) {
+    const hosts = walk(path.join(NATIVE, 'src')).filter((f) =>
+      /<WeekPlan\b/.test(readFileSync(f, 'utf8')),
+    );
+    if (hosts.length === 0) {
       problems.push(
-        'src/app/routine.tsx: panel có ô nhập chạy dài quá màn mà <Screen> không bật keyboardAware — ' +
-          'ô ở cuối danh sách sẽ nằm dưới bàn phím và không cách nào với tới',
+        'không file nào gắn <WeekPlan /> — panel kế hoạch tuần đã biến mất khỏi ứng dụng, ' +
+          'hoặc luật này đang ghim một cái tên không còn tồn tại',
       );
+    }
+    for (const host of hosts) {
+      const rel = path.relative(NATIVE, host);
+      const code = readFileSync(host, 'utf8');
+      const tag = code.match(/<Screen\b[^>]*>/);
+      if (!tag) problems.push(`${rel}: gắn <WeekPlan /> mà không tìm thấy <Screen>`);
+      else if (!/\bkeyboardAware\b/.test(tag[0])) {
+        problems.push(
+          `${rel}: panel có ô nhập chạy dài quá màn mà <Screen> không bật keyboardAware — ` +
+            'ô ở cuối danh sách sẽ nằm dưới bàn phím và không cách nào với tới',
+        );
+      }
     }
   }
   /* And the wrap has to be worn by every branch, not just the one that was

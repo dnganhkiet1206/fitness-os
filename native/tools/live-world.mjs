@@ -230,7 +230,7 @@ export const FIXTURES = {
   /*
     A routine, so the week's day panel actually draws exercise rows.
 
-    Every screenshot of `/routine` in this repository has been of a REST DAY:
+    Every screenshot of Plan's day panel in this repository has been of a REST DAY:
     with no `routine_days` and no `workout_templates` in the fixture, the panel
     renders "this day has no workout on it" and the rows underneath — the set
     ticks, the effort chips, and now the trend chip beside each exercise name —

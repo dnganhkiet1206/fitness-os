@@ -551,7 +551,7 @@ const PRESS_CALLBACK = /style=\{\(\{\s*pressed\s*\}\)|\{\(\{\s*pressed\s*\}\)\s*
 const AD_HOC_OK = {
   'src/components/app-tabs.web.tsx': 'thanh tab bản web, không dùng chung với native',
   'src/components/ascnd/liquid-tab-bar.tsx': 'hàng trong menu sáng nền — thu nhỏ cả hàng ngang đọc ra sai',
-  'src/app/routine.tsx': 'hàng chọn template sáng nền, giống hàng trong bảng',
+  'src/components/ascnd/week-plan.tsx': 'hàng chọn buổi tập sáng nền, giống hàng trong bảng',
   'src/components/ascnd/press-scale.tsx': 'chính nó, và đoạn mã cũ nằm trong doc-comment',
 };
 for (const f of files) {

@@ -204,14 +204,31 @@ export function useAddWorkoutTemplate() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
+    /*
+      Returns the new row's id.
+
+      It used to return nothing, which was enough for as long as the only thing
+      anybody did after saving a workout was leave the screen. The builder can
+      now be opened *from* Plan, carrying the day it was opened for, and putting
+      the workout on that day means writing `routine_days.template_id` — an id
+      that does not exist until this insert has run and which nothing else on
+      the client can work out. Reading it back by name would be a guess: two
+      workouts are allowed to share a name, and the second one would silently
+      schedule the first.
+    */
     mutationFn: async (tpl: { name: string; type: string; exercises: TemplateExercise[] }) => {
-      const { error } = await supabase.from('workout_templates').insert({
-        user_id: user!.id,
-        name: tpl.name,
-        type: tpl.type || 'custom',
-        exercises: tpl.exercises as unknown as Json,
-      });
+      const { data, error } = await supabase
+        .from('workout_templates')
+        .insert({
+          user_id: user!.id,
+          name: tpl.name,
+          type: tpl.type || 'custom',
+          exercises: tpl.exercises as unknown as Json,
+        })
+        .select('id')
+        .single();
       if (error) throw error;
+      return data.id as string;
     },
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

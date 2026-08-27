@@ -144,15 +144,19 @@ const app = JSON.parse(read('app.json')).expo;
    calls, which is why this is about *which* screens rather than merely one.
 
    Two, and they are different moments. `/log-workout` is where a session gets
-   recorded, which for many people is afterwards. `/routine` is the panel you
-   tick sets off on while you are in the middle of it — the screen where "put
-   something on" is a live thought. A shortcut that only existed on the second
-   one would miss the person who opens the log first; only on the first, the
-   person following a plan. */
+   recorded, which for many people is afterwards. Plan's day panel is the one
+   you tick sets off on while you are in the middle of it — the screen where
+   "put something on" is a live thought. A shortcut that only existed on the
+   second one would miss the person who opens the log first; only on the first,
+   the person following a plan.
+
+   Cái thứ hai từng là `src/app/routine.tsx`. Nó không còn là màn riêng nữa —
+   Plan bây giờ là <WeekPlan /> nằm trong tab Tập luyện — nên tên file được
+   dời theo, KHÔNG phải bỏ luật đi: chỗ ở đổi, còn lý do thì không. */
 {
   const WHERE = [
     ['src/app/log-workout.tsx', 'màn ghi buổi tập'],
-    ['src/app/routine.tsx', 'màn tick set trong lúc tập'],
+    ['src/components/ascnd/week-plan.tsx', 'panel tick set trong lúc tập'],
   ];
   for (const [file, what] of WHERE) {
     if (!/<MusicLaunch\b/.test(strip(read(file)))) {

@@ -52,6 +52,16 @@ const KEPT = new Set([
   'muscleCardio',
   'nWbTypeCardio',
   'nDeload',                 // gym loan word
+  /*
+    The name of a destination, chosen as a name rather than as a description.
+
+    The training week used to be captioned "Lịch tập tuần" — a description of
+    what is on the screen, which is why it read as a feature inside the workouts
+    tab rather than as one of the places the app has. It is "Plan" in both
+    languages for the same reason "Koa" is Koa in both: it is what the thing is
+    called, and translating it would give the app two words for one place.
+  */
+  'nPlan',
   'nEmail',
   'nReps',                   // "reps" is what the gym says in Vietnamese too
   'nRdSet',                  // "Set {n}"

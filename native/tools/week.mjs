@@ -3,11 +3,16 @@
  *
  * ── the invariant the screen rests on ──
  *
- * `routine.tsx` draws seven cards from `routine_days`, indexed 0–6 with Monday
- * as 0, and puts `weekDates()[idx]` on card `idx`. Everything else on the
- * screen follows from that pairing: which card is highlighted as today, which
- * date is looked up in the set of logged sessions, and therefore whether a day
- * reads "done", "to do" or "not trained".
+ * `week-plan.tsx` — Plan, the first section of the training tab — draws a strip
+ * of seven cells from `routine_days`, indexed 0–6 with Monday as 0, and puts
+ * `weekDates()[idx]` on cell `idx`. Everything else on the screen follows from
+ * that pairing: which cell is ringed as today, which date is looked up in the
+ * set of logged sessions, and therefore whether a day reads "done", "to do" or
+ * "not trained".
+ *
+ * It was `src/app/routine.tsx` and seven cards when this was written. The file
+ * moved and the cards became a strip and a day panel; the pairing did not
+ * change, which is why this rule moved with it rather than being retired.
  *
  * So the invariant is exactly one line — `weekDates(d)[routineIndex(d)]` is the
  * same calendar day as `d` — and if it ever fails, the screen does not break.
@@ -175,7 +180,9 @@ try {
     week's volume is double — which nobody checks against anything.
   */
   const dayPlan = readFileSync(path.join(NATIVE, 'src/components/ascnd/day-plan.tsx'), 'utf8');
-  const routine = readFileSync(path.join(NATIVE, 'src/app/routine.tsx'), 'utf8');
+  /* Từng là `src/app/routine.tsx`; Plan bây giờ là <WeekPlan /> trong tab Tập
+     luyện. Dời tên file, giữ nguyên luật. */
+  const routine = readFileSync(path.join(NATIVE, 'src/components/ascnd/week-plan.tsx'), 'utf8');
 
   const guard = (src) => {
     const bad = [];
@@ -191,7 +198,7 @@ try {
   };
   problems.push(...guard(dayPlan));
   if (!/<DayPlan[\s\S]*?sessions=\{/.test(routine)) {
-    problems.push('routine: không truyền sessions xuống DayPlan — panel sẽ không biết ngày đã tập rồi');
+    problems.push('week-plan: không truyền sessions xuống DayPlan — panel sẽ không biết ngày đã tập rồi');
   }
 
   // the version that only knew about its own save
