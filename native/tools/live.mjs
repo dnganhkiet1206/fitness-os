@@ -148,6 +148,10 @@ const ROUTES = [
     drawing, same reason for being in this list, new path.
   */
   '/workouts/plan',
+  /* Trang "thư viện & lịch sử" — nhóm TRA CỨU tách ra khỏi gốc tab. Nó mang một
+     danh sách, một trạng thái rỗng và một lưới ô, tức là ba thứ có thể trắng ở
+     ba lý do khác nhau. */
+  '/workouts/library',
   /*
     And the room itself. Two things are drawn nowhere else in the app — the
     segmented energy ring and the level bar — so for as long as this list did

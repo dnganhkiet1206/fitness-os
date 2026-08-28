@@ -165,17 +165,42 @@ export function TodayTraining() {
         không có gì phải sáng lên.
       */}
       {unknown ? null : planned && !done ? (
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={i18n.nStartWorkout}
-          style={styles.primary}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
-          }}>
-          <Icon icon={Play} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
-          <Text style={styles.primaryText}>{i18n.nStartWorkout}</Text>
-        </PressScale>
+        /*
+          HAI nút, không phải một.
+
+          Bản trước thay nút "Ghi buổi tập" bằng "Bắt đầu buổi tập" ở trạng thái
+          này — và thế là vào một ngày có kế hoạch, tức là hầu hết các ngày tập,
+          KHÔNG còn đường nào ghi một buổi tự do trên cả tab. Người dùng báo
+          "mất luôn một số thẻ rồi", và đó chính là nó.
+
+          Hai việc ấy không thay thế nhau: một cái là làm theo kế hoạch, một cái
+          là ghi lại thứ bạn vừa tập ngoài kế hoạch. Nút đặc dành cho cái thứ
+          nhất vì hôm nay nó đang chờ bạn; nút thứ hai đứng cạnh, nhạt hơn, và
+          không bao giờ biến mất.
+        */
+        <View style={styles.actions}>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.nStartWorkout}
+            style={styles.primary}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
+            }}>
+            <Icon icon={Play} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
+            <Text style={styles.primaryText}>{i18n.nStartWorkout}</Text>
+          </PressScale>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.nLogFree}
+            style={styles.secondary}
+            onPress={() => {
+              Haptics.selectionAsync();
+              nav.push('/log-workout');
+            }}>
+            <Icon icon={Plus} size={17} color={colors.foreground} strokeWidth={2.5} />
+          </PressScale>
+        </View>
       ) : (
         <PressScale
           accessibilityRole="button"
@@ -214,15 +239,6 @@ export function TodayTraining() {
         onPick={openPlan}
       />
 
-      <PressScale
-        accessibilityRole="button"
-        accessibilityLabel={i18n.nSeePlan}
-        hitSlop={8}
-        style={styles.planLink}
-        onPress={() => openPlan(today)}>
-        <Text style={styles.planLinkText}>{i18n.nSeePlan}</Text>
-        <Icon icon={ChevronRight} size={14} color={colors.primary} />
-      </PressScale>
     </GlassCard>
   );
 }
@@ -244,6 +260,7 @@ const styles = StyleSheet.create({
   /* Nút đặc, cao 48 — nó là hành động chính của cả tab, không phải một pill
      trong một hàng pill. */
   primary: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -266,6 +283,15 @@ const styles = StyleSheet.create({
   },
   quietText: { ...type.headline, fontWeight: '600', color: colors.foreground },
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginTop: 2 },
-  planLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 },
-  planLinkText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
+  /* Nút chính và nút phụ nằm cùng một hàng: nút phụ chỉ là một ô vuông mang dấu
+     cộng, vì việc của nó đã được nói bằng nhãn trợ năng và bằng chỗ đứng. */
+  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: 2 },
+  secondary: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
 });
