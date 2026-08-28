@@ -561,7 +561,7 @@ const SCENARIOS = [
       Đã đo trên bản đã ship: mốc 200ms → x = 0,1,2,3,4. Sau bản sửa: trang chỉ
       xuất hiện khi đã đo xong, và lần đầu thấy chúng là ở 0,402,804,1206,1608.
     */
-    name: 'deck hero: năm trang không bao giờ chồng lên nhau',
+    name: 'deck hero: trang không chồng nhau, và cú vuốt không nhảy',
     route: '/', mode: 'full',
     async run(page) {
       /* Sân khấu là hộp bị cắt; các trang là con tuyệt đối của nó. Neo vào
@@ -614,6 +614,58 @@ const SCENARIOS = [
         return `năm trang hero chồng lên nhau: x = ${worst.xs} (khoảng cách nhỏ nhất ${worst.min}px). ` +
           'Đó là `width || 1` chạy khi số đo còn 0 — mỗi trang lệch nhau đúng một điểm, ' +
           'vẫn rộng đủ màn hình, nên chúng vẽ chồng khít';
+      }
+
+      /*
+        ── và cú vuốt ──
+
+        Bản sửa ĐẦU TIÊN cho lỗi chồng trang ở trên đã tự đẻ ra một lỗi thứ hai,
+        và nó chỉ lộ ra khi vuốt. Nó bọc các trang trong một "đường ray" mang
+        `left: -page * width` (state React) rồi để worklet tính phần lẻ. Cộng
+        lại đúng, nhưng cùng một `page` khi đó nằm ở HAI đường ống không đồng bộ
+        — commit của React và luồng UI của Reanimated — nên ngay lúc cú vuốt
+        dừng, có những khung hình lệch nguyên một bề rộng màn hình.
+
+        Nên phép đo này vuốt thật rồi theo dõi từng mẫu: khoảng cách giữa các
+        trang phải GIỮ NGUYÊN suốt cú vuốt (không thì bố cục đang trôi), và deck
+        không được NHẢY (không thì hai nguồn đang cãi nhau). Cuối cùng nó phải
+        thật sự sang trang mới — một deck đứng im cũng thoả hai điều kiện trên.
+      */
+      const before = await deck();
+      const gap = before[1] - before[0];
+      const y = 430;
+      await page.mouse.move(320, y);
+      await page.mouse.down();
+      for (const x of [300, 270, 240, 210, 180, 150, 120]) {
+        await page.mouse.move(x, y);
+        await page.waitForTimeout(16);
+      }
+      await page.mouse.up();
+
+      const trace = [];
+      for (let i = 0; i < 60; i++) {
+        trace.push(await deck());
+        await page.waitForTimeout(16);
+      }
+      for (const xs of trace) {
+        if (xs.length < 3) continue;
+        const gaps = xs.slice(1).map((x, k) => x - xs[k]);
+        const off = gaps.find((g) => Math.abs(g - gap) > 2);
+        if (off !== undefined) {
+          return `giữa cú vuốt, khoảng cách giữa hai trang là ${off} thay vì ${gap} — ` +
+            'bố cục của deck đang trôi trong lúc nó trượt';
+        }
+      }
+      const head = trace.map((xs) => xs[0]);
+      for (let i = 1; i < head.length; i++) {
+        if (Math.abs(head[i] - head[i - 1]) > gap / 2) {
+          return `deck NHẢY giữa cú vuốt: ${head[i - 1]} → ${head[i]} trong một khung hình ` +
+            `(nửa bề rộng là ${gap / 2}). Hai nguồn đang cùng đặt vị trí và chúng lệch pha`;
+        }
+      }
+      if (Math.abs(head[head.length - 1] - (before[0] - gap)) > 4) {
+        return `vuốt sang trái mà deck không dừng ở trang kế: x của trang đầu là ` +
+          `${head[head.length - 1]}, chờ ${before[0] - gap}`;
       }
       return null;
     },

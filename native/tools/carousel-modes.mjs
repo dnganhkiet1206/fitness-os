@@ -176,6 +176,72 @@ const problems = [];
   }
 }
 
+/* ── 4. vị trí của một trang có ĐÚNG MỘT nguồn ──
+
+   Hai lỗi đã ship từ chỗ này, cách nhau một commit, và không lỗi nào bộ chạy
+   web thấy được — nên luật phải đọc mã.
+
+   MỘT: cả vị trí, kể cả lúc đứng yên, nằm trong worklet —
+   `(index - at.value) * (width || 1)`. `useAnimatedStyle` đóng băng lần chạy
+   đầu, lúc `width` còn 0, nên `width || 1` cho ra một điểm và năm trang chồng
+   khít lên nhau. Đó là lỗi người dùng gửi ảnh.
+
+   HAI: bản sửa cho nó chia đôi vị trí thành `left: -page * width` (state React)
+   cộng `-(at - page) * width` (worklet). Cộng lại đúng, nhưng cùng một `page`
+   khi đó đi qua HAI đường ống không đồng bộ — vòng commit của React và luồng UI
+   của Reanimated. Ngay lúc cú vuốt dừng, có những khung hình lệch nguyên một bề
+   rộng màn hình. Trên web hai đường ống ấy gộp làm một, nên harness chạy XANH
+   trên cả bản hỏng — đã thử.
+
+   Luật vì thế nói cả hai phía cùng lúc: bố cục đặt trang bằng `index` và
+   `width` THẬT, và worklet chỉ được đọc `at`. */
+{
+  const m = /const style = useAnimatedStyle\(\(\) => \(\{\s*transform: \[\{ translateX: ([^}]*) \}\],/.exec(deck);
+  if (!m) {
+    problems.push('card-deck.tsx: không tìm thấy style trượt của một trang');
+  } else {
+    const expr = m[1];
+    if (!/\bat\.value\b/.test(expr)) {
+      problems.push(`card-deck.tsx: style trượt không đọc \`at.value\` — deck sẽ không nhúc nhích`);
+    }
+    /* Bất cứ thứ gì KHÁC `at` trong biểu thức này đều là một nguồn thứ hai. */
+    const names = [...expr.matchAll(/[A-Za-z_$][\w$]*/g)].map((x) => x[0]);
+    const stray = names.filter((n) => !['at', 'value', 'width', 'Math'].includes(n));
+    if (stray.length) {
+      problems.push(
+        `card-deck.tsx: style trượt còn đọc \`${[...new Set(stray)].join(', ')}\` ngoài \`at\`. ` +
+          'Vị trí một trang phải có ĐÚNG MỘT nguồn: thêm một biến của React vào đây là đưa cùng ' +
+          'một con số qua hai đường ống không đồng bộ, và giữa cú vuốt chúng lệch nhau nguyên một ' +
+          'bề rộng màn hình. Trên web hai đường ống gộp làm một nên bộ chạy KHÔNG thấy',
+      );
+    }
+  }
+  /* Và bố cục phải tự nó trải các trang ra: `left` theo `index`, `width` thật.
+     Không có nó thì các trang trùng khít và chỉ transform mới tách được chúng —
+     đúng trạng thái hỏng trong ảnh. */
+  if (!/style=\{\[styles\.page, \{ left: index \* width, width \}, style\]\}/.test(deck)) {
+    problems.push(
+      'card-deck.tsx: trang không còn được đặt bằng `left: index * width` với `width` thật. ' +
+        'Bố cục phải TỰ NÓ trải năm trang ra; nếu chỉ có transform làm việc đó thì mọi khung hình ' +
+        'mà mapper chưa chạy là một khung hình năm trang chồng lên nhau',
+    );
+  }
+  /* Và không có lớp bọc nào giữa sân khấu và các trang.
+     Bản sửa hỏng bọc chúng trong một view `position: 'absolute'` không width
+     không height, mà con tuyệt đối thì không đóng góp kích thước cho cha trong
+     Yoga — khung của nó là 0 × 0. Trên iOS `hitTest:` không trả về subview nằm
+     ngoài `bounds` của cha, nên mọi cú chạm vào thẻ hero rơi vào hư không.
+     `react-native-web` không cắt hit-test như vậy, nên harness cũng mù ca này. */
+  if (!/\{w > 0\s*\n?\s*\?\s*pages\.map\(/.test(deck)) {
+    problems.push(
+      'card-deck.tsx: các trang không còn là con TRỰC TIẾP của sân khấu. Một lớp bọc tuyệt đối ' +
+        'không kích thước có khung 0 × 0 (con tuyệt đối không đóng góp kích thước cho cha), và ' +
+        'trên iOS hitTest: không trả về subview nằm ngoài bounds của cha — mọi cú chạm vào thẻ ' +
+        'hero sẽ rơi vào hư không, trong khi web vẫn chạy bình thường',
+    );
+  }
+}
+
 if (problems.length) {
   console.log('hai chế độ của deck CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);
@@ -189,5 +255,10 @@ console.log(
     'là mở sáu — khoảng trống dọc và rò rỉ trạng thái là cùng một lỗi nhìn từ hai phía. Mở chi tiết ' +
     'thì pan bị TẮT hẳn theo trạng thái, không theo ngưỡng góc, vì một ngưỡng góc vẫn để lọt cú vuốt ' +
     'hơi lệch đúng lúc người ta đang cuộn đọc. Và vuốt sang thẻ khác thì thẻ mới bắt đầu ở mặc định: ' +
-    'chi tiết đóng, cuộn về đầu, báo một lần khi cú vuốt DỪNG chứ không mỗi frame',
+    'chi tiết đóng, cuộn về đầu, báo một lần khi cú vuốt DỪNG chứ không mỗi frame. Và vị trí một ' +
+    'trang có ĐÚNG MỘT nguồn: bố cục trải các trang ra bằng `left: index * width` với width thật, ' +
+    'worklet chỉ đọc `at`, và không có lớp bọc nào giữa sân khấu và các trang. Hai lỗi đã ship từ ' +
+    'đúng chỗ này cách nhau một commit — năm trang chồng khít (width||1 chạy khi số đo còn 0) và ' +
+    'deck nhảy giữa cú vuốt (cùng một `page` đi qua hai đường ống không đồng bộ) — và bộ chạy web ' +
+    'MÙ với cả hai, nên luật này đọc mã',
 );

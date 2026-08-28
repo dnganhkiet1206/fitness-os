@@ -419,17 +419,13 @@ export function CardDeck({
             hình đứng nguyên ở trạng thái chồng ấy. Kéo-để-tải-lại không cứu
             được vì nó nạp lại DỮ LIỆU, còn cái hỏng là BỐ CỤC.
           */}
-          {w > 0 ? (
-            <Track at={at} page={page} width={w}>
-              {pages.map((node, i) => (
-                <View key={i} style={[styles.page, { left: i * w, width: w }]}>
-                  <Measure index={i} onHeight={onHeight}>
-                    {node}
-                  </Measure>
-                </View>
-              ))}
-            </Track>
-          ) : null}
+          {w > 0
+            ? pages.map((node, i) => (
+                <Page key={i} index={i} at={at} width={w} onHeight={onHeight}>
+                  {node}
+                </Page>
+              ))
+            : null}
         </View>
       </GestureDetector>
 
@@ -473,53 +469,72 @@ export function CardDeck({
 }
 
 /**
- * Cả hàng trang, trượt như một khối — và phần NGHỈ của vị trí ấy nằm ở React,
- * không nằm trong worklet.
+ * Một trang, đặt bằng BỐ CỤC và trượt bằng transform.
  *
- * ── vì sao chia đôi như vậy ──
+ * ── hai nguồn sự thật, và vì sao chỉ được có một ──
  *
- * Trước đây mỗi trang tự dịch bằng `(index - at.value) * width` trong worklet
- * của riêng nó. Nghĩa là TOÀN BỘ vị trí nghỉ của deck — trang nào đang xem,
- * bốn trang kia nằm ở đâu — là đầu ra của worklet. Mà `useAnimatedStyle` đóng
- * băng lần chạy đầu tiên và áp lại giá trị đóng băng ấy ở mọi lần render sau;
- * thứ duy nhất ghi đè là mapper. Khi mapper không chạy, không còn gì nói cho
- * năm trang biết chúng phải nằm cách nhau một bề rộng màn hình.
+ * Bản đã ship đặt trang bằng `(index - at.value) * (width || 1)` — toàn bộ vị
+ * trí, kể cả lúc đứng yên, là đầu ra của worklet. `useAnimatedStyle` đóng băng
+ * lần chạy ĐẦU TIÊN và áp lại giá trị đó ở mọi lần render sau; chỉ mapper mới
+ * ghi đè. Ở lần render đầu `width` còn 0, nên `width || 1` cho ra một điểm và
+ * năm trang chồng khít lên nhau. Đó là lỗi người dùng gửi ảnh.
  *
- * Nay React giữ phần nghỉ và worklet chỉ giữ phần ĐANG BAY:
+ * Bản sửa đầu tiên của tôi cho việc đó SAI THEO KIỂU KHÁC, và nó làm hỏng cú
+ * vuốt. Nó bọc các trang trong một "đường ray" mang `left: -page * width` (state
+ * React) rồi để worklet chỉ tính phần lẻ `-(at - page) * width`. Cộng lại đúng,
+ * nhưng cùng một con số `page` khi đó nằm ở HAI đường ống khác nhau: `left` đi
+ * qua vòng commit của React, transform đi thẳng xuống luồng UI của Reanimated.
+ * Hai đường ống ấy không đồng bộ với nhau. Đúng lúc `settle()` chạy, có những
+ * khung hình mà `left` đã nhảy sang trang mới còn transform vẫn ở trang cũ —
+ * lệch nguyên MỘT BỀ RỘNG MÀN HÌNH, ngay giữa cú vuốt.
  *
- *   trang i nằm ở  left = i * w          (bố cục thật, do React đặt)
- *   cả hàng lệch   left = -page * w      (trang đang xem, state của React)
- *   worklet thêm   -(at - page) * w      (phần lẻ giữa hai trang, đang chạy lò xo)
+ * Và đường ray ấy còn một lỗi thứ hai, nặng hơn: `position: 'absolute'` không
+ * width không height, với TOÀN BỘ con cũng tuyệt đối — Yoga cho con tuyệt đối
+ * không đóng góp gì vào kích thước cha, nên khung của nó là 0 × 0. Trên iOS
+ * `hitTest:` không trả về subview nằm ngoài `bounds` của cha, nên mọi cú chạm
+ * vào thẻ hero đều rơi vào hư không. `react-native-web` không cắt hit-test theo
+ * cách đó, nên harness không thấy gì — đúng loại chênh lệch nền tảng mà
+ * `live.mjs` đã cảnh báo sẵn ở đầu tệp.
  *
- * Cộng lại vẫn đúng bằng `(i - at) * w` như cũ, từng khung hình một. Khác biệt
- * duy nhất là lúc ĐỨNG YÊN: `at === page`, nên phần worklet bằng 0. Giá trị
- * đóng băng của nó cũng là 0. Mất mapper thì deck vẫn hiện đúng trang, các
- * trang vẫn cách nhau đúng một bề rộng — không còn trạng thái nào mà năm trang
- * chồng lên nhau.
+ * ── hình dạng đúng ──
  *
- * Đây đúng là hình dạng mà `tools/measured-worklet.mjs` gọi là an toàn ở hai
- * tệp nó miễn: "giá trị worklet tính ra khi số đo còn 0 trùng đúng với vị trí
- * nghỉ đúng". Ở đây nó đúng vì cấu trúc, không phải vì trùng hợp số học.
+ * Một nguồn cho chuyển động, một nguồn cho bố cục, và chúng không dùng chung
+ * biến nào:
  *
- * Một worklet cho cả hàng thay vì một cho mỗi trang: cả năm trang vốn luôn
- * dịch cùng một lượng, nên năm mapper chạy song song là bốn cái thừa.
+ *   left = index * width      bố cục thật của React — các trang KHÔNG BAO GIỜ
+ *                             nằm chồng nhau, kể cả khi worklet chưa từng chạy
+ *   translateX = -at * width  cả deck trượt, chỉ đọc `at`
+ *
+ * Cộng lại đúng bằng `(index - at) * width` như bản gốc, từng khung hình một.
+ * Không có `page` trong style nên không có gì để lệch pha. Trang là con TRỰC
+ * TIẾP của sân khấu như trước, nên hit-test không đổi.
+ *
+ * Trang chỉ được dựng khi `width > 0` (xem chỗ gọi), nên lần chạy bị đóng băng
+ * kia đã có số đo thật — chính điều kiện mà `tools/measured-worklet.mjs` đặt
+ * tên: "đưa worklet vào một component con CHỈ MOUNT KHI đã đo xong".
  */
-function Track({
+function Page({
+  index,
   at,
-  page,
   width,
+  onHeight,
   children,
 }: {
+  index: number;
   at: SharedValue<number>;
-  page: number;
   width: number;
+  onHeight: (index: number, height: number) => void;
   children: React.ReactNode;
 }) {
   const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: -(at.value - page) * width }],
+    transform: [{ translateX: -at.value * width }],
   }));
   return (
-    <Animated.View style={[styles.track, { left: -page * width }, style]}>{children}</Animated.View>
+    <Animated.View style={[styles.page, { left: index * width, width }, style]}>
+      <Measure index={index} onHeight={onHeight}>
+        {children}
+      </Measure>
+    </Animated.View>
   );
 }
 
@@ -601,10 +616,6 @@ const styles = StyleSheet.create({
     dung giống nhau, không đến từ một ràng buộc bố cục vay chiều cao của chính
     thứ nó đang định nghĩa.
   */
-  /* Cả hàng, neo trên-trái. `left` thật do React đặt theo trang đang xem, xem
-     `Track`. Tuyệt đối nên nó không cộng một điểm nào vào chiều cao sân khấu —
-     chiều cao ấy đến từ phép đo, giống hệt như trước. */
-  track: { position: 'absolute', top: 0 },
   /*
     Trang đặt bằng `left` + `width` THẬT, không bằng `left/right: 0`.
 
