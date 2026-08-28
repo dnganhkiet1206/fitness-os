@@ -59,7 +59,23 @@ function walk(dir) {
  * bar itself rather than against the whole source tree — a tab that loses its
  * trigger is exactly as lost as a route that loses its button.
  */
-const TAB_FILES = ['index.tsx', 'nutrition.tsx', 'workouts.tsx', 'progress.tsx', 'assistant.tsx'];
+/*
+  Tên ĐẦY ĐỦ dưới `(tabs)`, không phải basename.
+
+  Trước đây danh sách này là basename ('workouts.tsx'), và nó đã mù một lần:
+  tab Tập luyện thành thư mục `workouts/` khi Plan trở thành trang con, nên
+  basename của nó là `index.tsx` — vốn CÓ trong danh sách, vì đó là tên tệp của
+  tab Hôm nay. Kết quả: tab Tập luyện được đem so với trigger tên "index" và đi
+  qua, còn trigger "workouts" thì không ai kiểm nữa. Gỡ nó khỏi thanh tab sẽ
+  không làm hỏng bước nào.
+*/
+const TAB_ROUTES = new Map([
+  ['index.tsx', 'index'],
+  ['nutrition.tsx', 'nutrition'],
+  ['workouts/index.tsx', 'workouts'],
+  ['progress.tsx', 'progress'],
+  ['assistant.tsx', 'assistant'],
+]);
 
 const problems = [];
 
@@ -75,14 +91,14 @@ const tabBar = readFileSync(path.join(SRC, 'components', 'app-tabs.tsx'), 'utf8'
 let checked = 0;
 for (const file of files) {
   const rel = path.relative(SRC, file);
-  const base = path.basename(file);
-  const isTab = rel.includes('(tabs)') && TAB_FILES.includes(base);
+  /* Đường dẫn dưới `(tabs)`, dùng dấu / trên mọi hệ điều hành. */
+  const underTabs = rel.replace(/\\/g, '/').split('(tabs)/')[1];
+  const trigger = rel.includes('(tabs)') ? TAB_ROUTES.get(underTabs) : undefined;
 
-  if (isTab) {
+  if (trigger) {
     checked++;
-    const name = base.replace(/\.tsx$/, '');
-    if (!new RegExp(`name=["']${name}["']`).test(tabBar)) {
-      problems.push(`${rel}: là một tab nhưng app-tabs.tsx không còn trigger nào tên "${name}"`);
+    if (!new RegExp(`name=["']${trigger}["']`).test(tabBar)) {
+      problems.push(`${rel}: là một tab nhưng app-tabs.tsx không còn trigger nào tên "${trigger}"`);
     }
     continue;
   }
@@ -141,6 +157,6 @@ if (problems.length) {
 
 console.log(
   `lối vào OK — ${checked} màn hình đều còn ít nhất một chỗ mở được: ` +
-    `${TAB_FILES.length} tab có trigger trong app-tabs.tsx, còn lại được push từ đâu đó trong app ` +
+    `${TAB_ROUTES.size} tab có trigger trong app-tabs.tsx, còn lại được push từ đâu đó trong app ` +
     '(chuỗi trần, object có pathname, kèm query, hay qua mảng { route } được map — đều tính)',
 );

@@ -75,7 +75,10 @@ const BUILDER = 'src/app/workout-builder.tsx';
 const WEEKDAY = 'src/lib/week-day.ts';
 const TAB = 'src/app/(tabs)/workouts/index.tsx';
 const PAGE = 'src/app/(tabs)/workouts/plan.tsx';
-const CARD = 'src/components/ascnd/plan-card.tsx';
+/* Thẻ vào Plan từng là `plan-card.tsx`. Nó bị gộp vào khối "Hôm nay" khi tab
+   được dọn lại: một khối, một hành động chính, thay cho năm đích ngang hàng.
+   Dời tên tệp, giữ nguyên luật — lối vào Plan vẫn phải tồn tại. */
+const CARD = 'src/components/ascnd/today-training.tsx';
 const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
 
 const problems = [];

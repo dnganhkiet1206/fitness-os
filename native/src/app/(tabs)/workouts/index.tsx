@@ -2,14 +2,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { ChevronDown, ChevronUp, Dumbbell, Plus } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, ChevronUp, Dumbbell, Plus } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { useRise } from '@/lib/entrance';
 
 import { Glyph } from '@/components/ascnd/assistant-icons';
-import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -27,7 +26,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
-import { PlanCard } from '@/components/ascnd/plan-card';
+import { TodayTraining } from '@/components/ascnd/today-training';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 
 /**
@@ -121,6 +120,7 @@ function MuscleGrid({
   failed: boolean;
   vi: boolean;
 }) {
+  const i18n = useI18n();
   const [open, setOpen] = useState(false);
   /*
     Grouped by *art*, not by stored name.
@@ -145,7 +145,7 @@ function MuscleGrid({
   return (
     <View style={styles.libSection}>
       <View style={styles.libHead}>
-        <Text style={styles.sectionLabel}>{vi ? 'Thư viện bài tập' : 'Exercise library'}</Text>
+        <Text style={styles.sectionLabel}>{i18n.nToolsExercises}</Text>
         <Pressable
           accessibilityRole="button"
           hitSlop={8}
@@ -319,106 +319,20 @@ export default function WorkoutsScreen() {
   return (
     <Screen refreshable title={i18n.workoutsTitle} aura={PAGE_TINT.activity}>
       {/*
-        Plan, first, and answering its own question.
+        Hôm nay, và cái nút.
 
-        It was `/routine` behind a pill, then a section embedded in this scroll.
-        Neither was right. A pill is a *link* — to find out whether today is a
-        training day you had to navigate — and the embedded version put two
-        subjects on one page, so everything below the fold belonged to whichever
-        one you were not looking for.
+        Tab này từng mở ra với NĂM đích đến ngang hàng nhau — thẻ Plan, ba pill
+        (tiến bộ, thư viện, tạo mới) và một thanh "Ghi buổi tập" — và không cái
+        nào nói cho bạn biết nên bấm cái nào. Đó là một BẢNG CHỌN, không phải
+        một luồng. Việc hằng ngày, bắt đầu buổi tập của hôm nay, không hề có nút
+        riêng: bạn phải tự biết rằng đường vào nó là chạm thẻ Plan, tìm đúng
+        ngày, rồi cuộn xuống panel.
 
-        The card answers the daily question here and opens `/workouts/plan` for
-        everything that does not fit on a line. That route is nested under this
-        tab rather than on the root stack, which is what keeps the tab bar
-        present while you are in it — see `(tabs)/workouts/_layout.tsx`.
+        Một khối, một hành động chính, bốn trạng thái nói bốn câu khác nhau —
+        xem `today-training.tsx`. Thanh "Ghi buổi tập" không biến mất: nó là
+        hành động của khối này ở những ngày không có kế hoạch.
       */}
-      <PlanCard />
-
-      {/*
-        The three ways out of this tab, with no label of their own.
-
-        This row used to be captioned "Templates (N)", which is now the heading
-        of the workout list further down — and a screen that says the same thing
-        twice makes you read both to find out they are the same thing. The
-        buttons are self-describing, so the caption was the part to drop.
-
-        There were four. The first was the week, pointing at `/routine`; both
-        are gone, because the week is the section above and drawn in full. A
-        pill that scrolled you a hundred points up the same page would be a
-        second route to something already on screen — the exact thing the day
-        strip inside Plan was rebuilt to stop being.
-      */}
-      <View style={styles.actionsRow}>
-        {/*
-          The door to Exercise Intelligence.
-
-          Here rather than inside Progress, because the question it answers —
-          "how is my bench going" — is asked while looking at training, and
-          `entry-points.mjs` exists because this app has previously built a room
-          with only vanishing doors.
-        */}
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={i18n.nXiOpen}
-          onPress={() => {
-            Haptics.selectionAsync();
-            nav.push('/exercise-insight');
-          }}>
-          <LiquidGlass style={styles.pill} radius={radius.full} tint={colors.primary} material="blur">
-            <View style={styles.pillInner}>
-              <Glyph name="gauge" size={16} />
-              <Text style={styles.outlineBtnText}>{i18n.nXiOpen}</Text>
-            </View>
-          </LiquidGlass>
-        </PressScale>
-        <PressScale
-            accessibilityRole="button"
-            accessibilityLabel={i18n.workoutsExercises}
-            onPress={() => {
-              Haptics.selectionAsync();
-              nav.push('/exercises');
-            }}>
-            <LiquidGlass style={styles.pill} radius={radius.full} tint={colors.primary} material="blur">
-              <View style={styles.pillInner}>
-                <Glyph name="dumbbell" size={16} />
-                <Text style={styles.outlineBtnText}>{i18n.workoutsExercises}</Text>
-              </View>
-            </LiquidGlass>
-          </PressScale>
-          <PressScale
-            style={styles.primaryBtn}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              nav.push('/workout-builder');
-            }}>
-            <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
-            <Text style={styles.primaryBtnText}>{i18n.workoutsCreateNew}</Text>
-          </PressScale>
-      </View>
-
-      {/* Log workout — native carries this next to templates for daily use */}
-      {/*
-        The one people press daily, and it looked like the least important
-        thing on the page: a grey `+` on a full-width bar with no colour in it
-        at all. It carries the same `pulse` mark that "Log workout" carries on
-        Today, so the two are recognisably the same act on two screens.
-      */}
-      <PressScale
-        accessibilityRole="button"
-        accessibilityLabel={i18n.nLogWorkoutBtn}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          nav.push('/log-workout');
-        }}>
-        <LiquidGlass style={styles.logChip} radius={radius.full} tint={colors.primary} material="blur">
-          <View style={styles.logChipInner}>
-            <Glyph name="pulse" size={17} />
-            <Text style={styles.logChipText}>{i18n.nLogWorkoutBtn}</Text>
-          </View>
-        </LiquidGlass>
-      </PressScale>
-
-      <MuscleGrid exercises={exercises ?? []} failed={exercisesFailed} vi={vi} />
+      <TodayTraining />
 
       {/*
         The workout list — its own section, headed like the library above it.
@@ -444,7 +358,7 @@ export default function WorkoutsScreen() {
                 something, so it can never print the "(0)" that would be a claim
                 about a list that simply did not arrive. */}
             <Text style={styles.sectionLabel}>
-              {vi ? 'Danh sách buổi tập' : 'Workout list'} ({templates.length})
+              {i18n.nYourWorkouts} ({templates.length})
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -464,6 +378,28 @@ export default function WorkoutsScreen() {
             i18n={i18n}
             onDelete={confirmDelete}
           />
+
+          {/*
+            "Tạo mới" thuộc về DANH SÁCH nó tạo vào, không thuộc về một hàng
+            pill ở đầu trang.
+
+            Nó từng là nút đặc duy nhất trên tab, đứng cạnh hai pill điều hướng
+            ở ngay dưới tiêu đề — tức là thứ nổi bật nhất màn hình lại là việc
+            người ta làm vài tuần một lần. Đặt nó ở cuối danh sách buổi tập thì
+            nó ở đúng chỗ bạn nhận ra mình thiếu một buổi, và nút đặc trên tab
+            còn lại đúng MỘT cái: bắt đầu buổi tập của hôm nay.
+          */}
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.workoutsCreateNew}
+            style={styles.addRow}
+            onPress={() => {
+              Haptics.selectionAsync();
+              nav.push('/workout-builder');
+            }}>
+            <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
+            <Text style={styles.addRowText}>{i18n.workoutsCreateNew}</Text>
+          </PressScale>
         </View>
       ) : templatesFailed ? (
         <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
@@ -496,7 +432,7 @@ export default function WorkoutsScreen() {
         <Animated.View style={styles.sessionsWrap} entering={rise(templates?.length ?? 0)}>
           <View style={styles.libHead}>
             <Text style={styles.sectionLabel}>
-              {vi ? 'Buổi tập gần đây' : 'Recent sessions'} ({sessions.length})
+              {i18n.nHistory} ({sessions.length})
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -525,6 +461,41 @@ export default function WorkoutsScreen() {
         </Animated.View>
       )}
 
+      {/*
+        Hai cánh cửa, ở cuối, và mỗi cánh chỉ còn MỘT.
+
+        Thư viện bài tập từng có BA lối vào trên cùng một trang: một pill ở hàng
+        đầu, một tiêu đề mục "Thư viện bài tập" kèm "Xem tất cả", và mười ô cơ
+        thể — cả ba nằm trong vòng hai trăm điểm của nhau. Chú thích của chính
+        lưới ô đã thừa nhận: "This is a second door to the same room."
+
+        Lưới ô là một ý hay và nó vẫn ở đây, nhưng nó là một CÁNH CỬA chứ không
+        phải nội dung: mười ô, mỗi ô một hình 64 điểm trên hai dòng chữ, là thứ
+        cao nhất trên tab, cho một thư viện người ta mở thỉnh thoảng. Nên nó
+        xuống cuối, sau hai thứ bạn thật sự tới đây để làm, và pill trùng lặp ở
+        đầu trang thì bỏ.
+
+        "Tiến bộ từng bài" xuống cùng, vì nó là PHÂN TÍCH chứ không phải tập:
+        câu hỏi "bench của tôi đang thế nào" được hỏi sau buổi tập, không phải
+        trước. Nó vẫn ở tab này chứ không sang Tiến trình, vì câu hỏi ấy được
+        hỏi trong lúc nhìn vào việc tập — và `entry-points.mjs` tồn tại vì app
+        này từng dựng một căn phòng chỉ có cửa biến mất.
+      */}
+      <MuscleGrid exercises={exercises ?? []} failed={exercisesFailed} vi={vi} />
+
+      <PressScale
+        accessibilityRole="button"
+        accessibilityLabel={i18n.nToolsInsight}
+        style={styles.toolRow}
+        onPress={() => {
+          Haptics.selectionAsync();
+          nav.push('/exercise-insight');
+        }}>
+        <Glyph name="gauge" size={17} />
+        <Text style={styles.toolRowText}>{i18n.nToolsInsight}</Text>
+        <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+      </PressScale>
+
     </Screen>
   );
 }
@@ -543,13 +514,40 @@ const styles = StyleSheet.create({
     as a block. With the pills at 44pt that put one button on the first row and
     two on the second, leaving a long empty gap. Flat, they pack.
   */
-  actionsRow: {
+  sectionLabel: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+  /* Hàng "tạo mới" ở cuối danh sách.
+
+     KHÔNG dùng viền đứt nét: `tools/training-card.mjs` đã ghi lại rằng trên
+     iOS `borderStyle: 'dashed'` bị từ chối khi bốn cạnh khác màu, và nó không
+     vẽ nét liền thay thế — nó không vẽ gì cả. Bản đầu của hàng này đúng là như
+     vậy, và luật bắt được. Viền liền cùng chất với các thẻ khác, còn việc "đây
+     là chỗ để THÊM" do dấu cộng và màu chữ nói. */
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 44,
+    borderRadius: radius.md,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    backgroundColor: glass.bg,
+  },
+  addRowText: { ...type.footnote, fontWeight: '600', color: colors.primary },
+  /* Hàng công cụ ở đáy trang: hình dạng của một hàng Cài đặt, vì đó đúng là
+     việc nó làm — dẫn đi chỗ khác, không mang nội dung nào của riêng nó. */
+  toolRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    flexWrap: 'wrap',
+    height: 52,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
   },
-  sectionLabel: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+  toolRowText: { ...type.body, color: colors.foreground, flex: 1 },
   /*
     Pills, and 44 points tall.
 
@@ -563,70 +561,13 @@ const styles = StyleSheet.create({
   */
   /* The glass carries the shape; padding lives inside — the split the
      assistant's state pill uses. */
-  pill: {
-    borderRadius: radius.full,
-  /* A firmer edge than a card's.
-
-     `glass.border` is 12% white at half a point, and that is right for a large
-     panel sitting in the aura on the assistant screen, where there is light
-     behind the glass for the edge to catch. Today has `AmbientLight`, which is
-     much quieter, and a pill is a fraction of a card's area — the same hairline
-     that outlines a whole panel disappears around something this small. So the
-     edge is carried here, where the surface is little and the light behind it
-     is low. */
-  borderColor: 'rgba(255,255,255,0.22)',
-  borderWidth: 1,
-  },
-  pillInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    height: 44,
-    paddingHorizontal: spacing.md,
-  },
-  outlineBtnText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
   /* The filled one keeps its fill — it is the only button on the page that
      makes something new — but takes the same pill and the same height, so the
      row reads as three of a kind with one of them emphasised. */
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    height: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    /* The one filled control on the page keeps its fill rather than becoming
-       glass: it is the only button here that makes something new, and glass
-       over glass would flatten it into the two beside it. */
-    backgroundColor: colors.primary,
-  },
-  primaryBtnText: { ...type.footnote, fontWeight: '600', color: colors.primaryForeground },
   /* Full width, 52 tall, and a shade more border than the pills above it.
      It is the thing this tab is for, and it had been the flattest control on
      the page. */
-  logChip: {
-    borderRadius: radius.full,
-  /* A firmer edge than a card's.
-
-     `glass.border` is 12% white at half a point, and that is right for a large
-     panel sitting in the aura on the assistant screen, where there is light
-     behind the glass for the edge to catch. Today has `AmbientLight`, which is
-     much quieter, and a pill is a fraction of a card's area — the same hairline
-     that outlines a whole panel disappears around something this small. So the
-     edge is carried here, where the surface is little and the light behind it
-     is low. */
-  borderColor: 'rgba(255,255,255,0.22)',
-  borderWidth: 1,
-  },
   /* Taller than the pills above it — it is what this tab is for. */
-  logChipInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 52,
-  },
-  logChipText: { ...type.headline, fontWeight: '600', color: colors.foreground },
   libSection: { gap: spacing.sm },
   libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   libAll: { ...type.footnote, color: colors.primary },

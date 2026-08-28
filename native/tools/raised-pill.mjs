@@ -64,7 +64,20 @@ const problems = [];
 const NEUTRAL = 'colors.primary';
 const USERS = [
   ['src/app/(tabs)/index.tsx', 1, 'bốn nút log trên Today (một chỗ render, lặp qua danh sách)', NEUTRAL],
-  ['src/app/(tabs)/workouts/index.tsx', 3, 'tiến bộ từng bài, thư viện bài tập, ghi buổi tập', NEUTRAL],
+  /*
+    Tab Tập luyện không còn pill kính nào, và đó là chủ ý.
+
+    Ba pill ở đây (tiến bộ, thư viện, ghi buổi tập) là một phần của cái đã bị
+    gỡ: năm đích đến ngang hàng nhau ở một phần ba trên của trang, không cái
+    nào nói nên bấm cái nào. Nay tab có đúng MỘT nút đặc — "Bắt đầu buổi tập"
+    trong khối Hôm nay — còn hai cánh cửa còn lại là hàng kiểu Cài đặt ở đáy
+    trang. Một pill kính là để NHẤC một nút khỏi nền; ở cuối trang, sau hai
+    danh sách, không có gì cần nhấc.
+
+    Luật vẫn giữ nguyên hiệu lực ở hai tệp còn lại. Gỡ mục này ra là một quyết
+    định, không phải một lần nới lỏng — nếu tab mọc lại pill kính, nó phải quay
+    vào danh sách này.
+  */
   ['src/components/ascnd/music-launch.tsx', 1, 'hai chip nhạc (một chỗ render)', null],
 ];
 
