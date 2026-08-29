@@ -37,8 +37,10 @@ const HELP_TOPIC = 'readiness';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-/** Track color used by every web ring: hsl(230 10% 10%) */
-const TRACK = '#17171c';
+/* Rãnh của mọi vòng tròn, lấy từ bảng màu chứ không gõ lại ở đây — xem
+   `colors.ringTrack`. Con số cũ nằm trong tệp này kèm câu "used by every web
+   ring", và đồng hồ nghỉ đã vẽ rãnh của nó bằng một giá trị khác. */
+const TRACK = colors.ringTrack;
 
 const GRADIENTS: Record<string, [string, string]> = {
   green: ['#2bf5a8', '#3dff7a'],

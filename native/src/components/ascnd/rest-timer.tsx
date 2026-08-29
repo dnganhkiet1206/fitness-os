@@ -163,7 +163,7 @@ export function RestTimer({
 
           <View style={styles.ringWrap}>
             <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-              <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke="#1c1c21" strokeWidth={W} />
+              <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={colors.ringTrack} strokeWidth={W} />
 
               {/*
                 One ring, in the app's own silver.
@@ -260,17 +260,34 @@ const styles = StyleSheet.create({
     /* 0.55, from 0.86 by way of 0.68. The room dims; it does not go out. What
        is behind this is the list of sets you are working through, and keeping
        it faintly readable is what makes the countdown feel like a moment inside
-       the workout rather than a screen you were sent to. */
+       the workout rather than a screen you were sent to.
+
+       Màu là `colors.background` viết dưới dạng rgba vì cần alpha — cùng một
+       màu nền của trang, không phải một màu đen thứ hai. */
     backgroundColor: 'rgba(7,7,8,0.55)',
   },
+  /*
+    Cùng mặt phẳng với mọi tấm nổi khác của app, không phải một màu tự chọn.
+
+    Bản cũ là `rgba(18,18,22,0.96)` bo 26 — cả hai đều là số gõ tay. App có ba
+    nền tối (`card` #0e0e11, `muted` #161618, `secondary` #18181b) và cái này là
+    cái thứ TƯ, lệch khỏi cả ba vừa đủ để không ai chỉ ra được, chỉ thấy thẻ như
+    dán từ chỗ khác vào. Lưới ô cơ thể từng dính đúng lỗi ấy và ghi lại nguyên
+    câu chẩn đoán: "a fourth dark in a screen that already has three, and it is
+    what made the section read as pasted in from somewhere else."
+
+    `colors.card` + `radius.xl` + viền hairline là vốn từ sẵn có cho một tấm
+    NỔI: sheet chọn ngày trong `week-plan.tsx` đã dùng đúng bộ ấy. Hai tấm nổi,
+    một cách làm.
+  */
   card: {
     alignItems: 'center',
     minWidth: 268,
     gap: spacing.sm + 2,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    borderRadius: 26,
-    backgroundColor: 'rgba(18,18,22,0.96)',
+    borderRadius: radius.xl,
+    backgroundColor: colors.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
@@ -347,9 +364,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
+    /* `secondary` là một BẬC thật trong bảng màu, không phải một lớp trắng gõ
+       tay: hai nút ±15 là kính trên nền thẻ, cái này đặc hơn hẳn chúng một bậc.
+       Đủ để mắt biết đâu là đường ra mà không cần tô bạc đặc — xem ghi chú ở
+       trên về vì sao nó vẫn không tô. */
+    backgroundColor: colors.secondary,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
   },
   skipText: { ...type.body, color: colors.foreground, fontWeight: '700' },
 });

@@ -15,6 +15,18 @@ export const colors = {
   accent: '#1d1d20',
   border: '#2b2b31',
   input: '#303036',
+  /**
+   * Rãnh chưa chạy của MỌI vòng tròn tiến trình.
+   *
+   * Nó vốn là một hằng số cục bộ trong `readiness-gauge.tsx`, kèm câu "track
+   * color used by every web ring" — một lời khẳng định về toàn app viết trong
+   * một tệp, nên không gì giữ nó đúng. Đồng hồ nghỉ vẽ rãnh của nó bằng
+   * `#1c1c21`, lệch một chút, đủ để hai vòng tròn cạnh nhau trong cùng một app
+   * đọc ra là hai thứ khác nhau mà không ai chỉ được ra vì sao.
+   *
+   * Đưa lên đây thì câu ấy có một chỗ để đúng.
+   */
+  ringTrack: '#17171c',
 
   // Text
   foreground: '#ededed',
