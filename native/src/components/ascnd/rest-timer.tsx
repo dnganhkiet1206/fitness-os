@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Minus, Plus } from 'lucide-react-native';
 import { useEffect } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -71,6 +71,7 @@ const CIRC = 2 * Math.PI * R;
 export function RestTimer({
   left,
   total,
+  next,
   i18n,
   onAdjust,
   onSkip,
@@ -79,6 +80,8 @@ export function RestTimer({
   left: number | null;
   /** what the rest started at — the ring is the ratio of the two */
   total: number;
+  /** the set this rest is waiting for, or null at the end of the workout */
+  next: { name: string; ordinal: number; of: number } | null;
   i18n: ReturnType<typeof useI18n>;
   onAdjust: (delta: number) => void;
   onSkip: () => void;
@@ -140,12 +143,21 @@ export function RestTimer({
   return (
     <Modal visible={left !== null} transparent animationType="none" statusBarTranslucent onRequestClose={onSkip}>
       <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(160)} style={styles.backdrop}>
-        {/* Tapping the dark ends the rest — the set you are about to do is a
-            better authority on whether you are ready than the clock is, and
-            reaching for a small button to say so is friction in the one place
-            this screen should have none. */}
-        <Pressable style={StyleSheet.absoluteFill} accessibilityLabel={i18n.nRdSkip} onPress={onSkip} />
+        {/*
+          Chạm ra ngoài KHÔNG kết thúc nghỉ.
 
+          Trước đây có một `Pressable` phủ kín màn hình gọi thẳng `onSkip`, kèm
+          lập luận rằng với tay tới một nút nhỏ là ma sát thừa. Lập luận ấy tính
+          nhầm cái giá của việc bấm nhầm: nghỉ là một khoảng THỜI GIAN, và thứ
+          duy nhất phá được nó là kết thúc sớm. Điện thoại nằm trên ghế băng
+          giữa hai set, tay còn dính magie — chạm phải màn hình là chuyện
+          thường, và ở bản cũ mỗi lần chạm phải là mất luôn quãng nghỉ, không
+          hoàn tác được.
+
+          Một cử chỉ vô tình không được phép làm việc mà chỉ một quyết định mới
+          được làm. Nay chỉ nút "Bỏ qua" kết thúc nghỉ — và vì nó thành lối ra
+          DUY NHẤT, nó cũng phải trông ra thế (xem `styles.skip`).
+        */}
         <Animated.View entering={FadeIn.duration(200)} style={[styles.card, card]}>
           <Text style={styles.label}>{i18n.nRdResting}</Text>
 
@@ -184,13 +196,36 @@ export function RestTimer({
             </View>
           </View>
 
+          {/*
+            Một đồng hồ đếm ngược không nói nó đếm để làm gì thì chỉ là một con số.
+
+            Bản cũ có đúng "NGHỈ" và 1:27 — bạn vẫn phải tự nhớ mình vừa xong
+            set mấy và sắp làm gì. Hai dòng này biến chỗ CHỜ thành chỗ CHUẨN BỊ,
+            và chúng là thứ khiến thẻ đọc ra như một phần của buổi tập chứ không
+            phải một hộp thoại chen ngang.
+
+            Vắng mặt ở set cuối: lúc đó không có gì kế tiếp, và bịa một dòng cho
+            nó là nói sai về một buổi tập đã xong.
+          */}
+          {next ? (
+            <View style={styles.nextWrap}>
+              <View style={styles.rule} />
+              <Text style={styles.nextLabel}>{i18n.nRestNext}</Text>
+              <Text style={styles.nextName} numberOfLines={1}>{next.name}</Text>
+              <Text style={styles.nextSet}>
+                {i18n.nRestSetOf.replace('{n}', String(next.ordinal)).replace('{t}', String(next.of))}
+              </Text>
+            </View>
+          ) : null}
+
           <View style={styles.controls}>
             <PressScale
               accessibilityRole="button"
               accessibilityLabel={`${i18n.nRdResting} −15`}
               onPress={() => bump(-15)}
               style={styles.round}>
-              <Icon icon={Minus} size={20} color={colors.foreground} strokeWidth={2.5} />
+              <Icon icon={Minus} size={14} color={colors.foreground} strokeWidth={2.5} />
+              <Text style={styles.roundText}>15</Text>
             </PressScale>
 
             <PressScale
@@ -206,7 +241,8 @@ export function RestTimer({
               accessibilityLabel={`${i18n.nRdResting} +15`}
               onPress={() => bump(15)}
               style={styles.round}>
-              <Icon icon={Plus} size={20} color={colors.foreground} strokeWidth={2.5} />
+              <Icon icon={Plus} size={14} color={colors.foreground} strokeWidth={2.5} />
+              <Text style={styles.roundText}>15</Text>
             </PressScale>
           </View>
         </Animated.View>
@@ -229,6 +265,7 @@ const styles = StyleSheet.create({
   },
   card: {
     alignItems: 'center',
+    minWidth: 268,
     gap: spacing.sm + 2,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -251,30 +288,68 @@ const styles = StyleSheet.create({
      louder. */
   clock: { fontSize: 34, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
   total: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
+  /* Khối "tiếp theo", ngăn với đồng hồ bằng một đường mảnh. Căn giữa như mọi
+     thứ khác trong thẻ: đây là một tấm thẻ đọc từ xa, không phải một hàng dữ
+     liệu để dò bằng mắt. */
+  nextWrap: { alignItems: 'center', alignSelf: 'stretch', gap: 2 },
+  rule: {
+    height: StyleSheet.hairlineWidth,
+    alignSelf: 'stretch',
+    backgroundColor: colors.border,
+    marginBottom: spacing.sm,
+  },
+  nextLabel: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    fontWeight: '600',
+  },
+  nextName: { ...type.headline, color: colors.foreground, textAlign: 'center' },
+  nextSet: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+
   controls: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
+  /* Nút ±15 NÓI RA con số.
+
+     Trước đây chúng chỉ có dấu cộng và dấu trừ, và "cộng bao nhiêu" chỉ tồn tại
+     trong nhãn trợ năng — tức là người nhìn thấy nút thì không biết, còn người
+     không nhìn thấy nút thì biết. Đó là ngược. */
   round: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 1,
+    width: 56,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: glass.bg,
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
   },
-  /* Outlined, not filled. A solid silver bar next to a silver ring made two
-     bright things competing in a card whose whole point is that nothing in it
-     is urgent — and skipping a rest is not the main action here, waiting is. */
+  roundText: { ...type.footnote, color: colors.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  /*
+    Vẫn KHÔNG tô đặc, nhưng đã sáng hơn hẳn hai nút bên cạnh.
+
+    Ghi chú cũ ở đây nói "outlined, not filled", vì một thanh bạc đặc cạnh một
+    vòng bạc là hai mảng sáng tranh nhau trong một tấm thẻ mà cả ý đồ là không
+    có gì gấp. Lập luận ấy vẫn đúng và nền vẫn không tô.
+
+    Nhưng tiền đề của nó đã đổi: hồi ấy chạm ra ngoài cũng thoát được, nên "Bỏ
+    qua" chỉ là một trong hai lối ra. Nay nó là lối ra DUY NHẤT, và một lối ra
+    duy nhất trông y hệt hai nút chỉnh giờ bên cạnh là một lối ra người ta phải
+    đi tìm. Viền sáng lên và chữ nặng hơn: đủ để mắt biết đâu là đường ra, chưa
+    đủ để thành mảng sáng thứ hai.
+  */
   skip: {
     height: 48,
-    minWidth: 104,
+    minWidth: 116,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
   },
-  skipText: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
+  skipText: { ...type.body, color: colors.foreground, fontWeight: '700' },
 });

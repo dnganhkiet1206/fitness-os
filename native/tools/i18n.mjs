@@ -65,6 +65,7 @@ const KEPT = new Set([
   'nEmail',
   'nReps',                   // "reps" is what the gym says in Vietnamese too
   'nRdSet',                  // "Set {n}"
+  'nRestSetOf',              // "Set {n}/{t}" — cùng lý do với nRdSet ngay trên
   'onboardingDietHalal',     // proper noun
   'nQuickProtein',           // only reachable from an unreferenced component
   /*

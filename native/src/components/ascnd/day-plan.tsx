@@ -437,7 +437,17 @@ export function DayPlan({
    * moment somebody adds thirty seconds mid-rest — the ring would sit past
    * full and then jump.
    */
-  const [resting, setResting] = useState<{ left: number; total: number } | null>(null);
+  /**
+   * Nghỉ đang chạy — và SET KẾ TIẾP mà nó đang chờ.
+   *
+   * `next` không phải trang trí. Một đồng hồ đếm ngược không nói nó đếm để làm
+   * gì thì nó chỉ là một con số: bạn nhìn 1:27 rồi vẫn phải nhớ trong đầu mình
+   * vừa xong set mấy và sắp làm gì. Mang theo tên bài và set thứ mấy biến chỗ
+   * chờ thành chỗ chuẩn bị.
+   */
+  const [resting, setResting] = useState<
+    { left: number; total: number; next: { name: string; ordinal: number; of: number } | null } | null
+  >(null);
 
   /*
     Read back once, and only once.
@@ -665,10 +675,25 @@ export function DayPlan({
       // ticked and the tap would do visibly nothing.
       const next = !shown[row.key];
       setDone((prev) => ({ ...prev, [row.key]: next }));
+      /* Hàng NGAY SAU trong danh sách đã dựng, chứ không phải `ordinal + 1`:
+         set cuối của một bài thì set kế tiếp thuộc bài khác, và chỉ danh sách
+         mới biết bài nào. Hết danh sách thì không có gì kế tiếp — đồng hồ vẫn
+         chạy, nó chỉ không hứa hẹn gì. */
+      const after = rows[rows.findIndex((r) => r.key === row.key) + 1];
       // Rest belongs to finishing a set, not to changing your mind about one.
-      setResting(next && secs > 0 ? { left: secs, total: secs } : null);
+      setResting(
+        next && secs > 0
+          ? {
+              left: secs,
+              total: secs,
+              next: after
+                ? { name: after.exerciseName, ordinal: after.ordinal, of: after.of }
+                : null,
+            }
+          : null,
+      );
     },
-    [rest, shown],
+    [rest, rows, shown],
   );
 
   const bumpRest = (row: SetRow, by: number) => {
@@ -1304,6 +1329,7 @@ export function DayPlan({
       <RestTimer
         left={resting?.left ?? null}
         total={resting?.total ?? 0}
+        next={resting?.next ?? null}
         i18n={i18n}
         onSkip={() => {
           Haptics.selectionAsync();
@@ -1317,7 +1343,7 @@ export function DayPlan({
             // stays a fraction of something rather than trying to be more than
             // whole. Taking time off leaves the total alone: the rest really
             // was cut short, and the ring showing that is the honest reading.
-            return { left, total: Math.max(s.total, left) };
+            return { ...s, left, total: Math.max(s.total, left) };
           })
         }
       />

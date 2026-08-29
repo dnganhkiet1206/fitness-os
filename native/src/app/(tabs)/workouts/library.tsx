@@ -39,9 +39,17 @@ import { toast } from '@/lib/toast';
  *
  * ── thứ tự bên trong ──
  *
- * Lịch sử trước, thư viện sau. Lịch sử là dữ liệu CỦA BẠN và thay đổi mỗi buổi
- * tập; thư viện gần như không đổi và là dữ liệu dùng chung. Cái nào mới hơn thì
- * đứng trước.
+ * Thư viện trước, lịch sử sau.
+ *
+ * Bản đầu xếp ngược lại, với lý do "lịch sử là dữ liệu của bạn và đổi mỗi buổi
+ * tập, còn thư viện gần như không đổi". Lý do ấy nghe được nhưng nó trả lời sai
+ * câu hỏi: thứ tự trên một trang không đo bằng cái gì THAY ĐỔI nhiều hơn, mà
+ * bằng cái gì người ta MỞ TRANG NÀY ĐỂ LÀM.
+ *
+ * Thư viện là phần dùng được: chạm một nhóm cơ để tìm bài, và đó là lý do người
+ * ta vào đây. Lịch sử là một bản ghi để liếc qua — nó không dẫn đi đâu ngoài
+ * `/sessions`. Tiêu đề trang cũng đã đọc theo thứ tự ấy ("Thư viện & lịch sử"),
+ * nên bản cũ bắt mắt đi ngược lại chính dòng chữ ngay phía trên nó.
  */
 /**
  * Bao nhiêu buổi hiện ở đây trước khi `/sessions` nhận việc.
@@ -101,6 +109,8 @@ export default function WorkoutLibraryScreen() {
 
   return (
     <Screen refreshable back title={i18n.nLibraryHistory} aura={PAGE_TINT.activity}>
+      <MuscleGrid exercises={exercises ?? []} failed={exercisesFailed} vi={vi} />
+
       {/*
         Lịch sử: mười buổi gần nhất, phần còn lại ở `/sessions`.
 
@@ -148,8 +158,6 @@ export default function WorkoutLibraryScreen() {
           <EmptyState icon={Dumbbell} title={i18n.nNoWorkouts} />
         )}
       </View>
-
-      <MuscleGrid exercises={exercises ?? []} failed={exercisesFailed} vi={vi} />
     </Screen>
   );
 }
