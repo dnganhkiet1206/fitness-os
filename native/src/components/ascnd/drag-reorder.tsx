@@ -16,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { colors, glass } from '@/constants/ascnd';
+import { BOUNCE, spring } from '@/constants/motion';
 
 /**
  * Cú NHẤC, và vì sao nó là lò xo chứ không phải một giá trị đặt thẳng.
@@ -28,19 +29,40 @@ import { colors, glass } from '@/constants/ascnd';
  * Bản đầu đặt `scale: 1.02` thẳng và dịch hàng bên cạnh thẳng tới chỗ mới —
  * đúng về vị trí, và không có gì ở đó cả.
  *
- * `damping: 18, stiffness: 260` — mềm hơn `press.spring` (20/400) có chủ đích:
- * viên `press` trả lời một cú chạm trong chưa tới 120ms vì ngón tay sắp nhấc
- * lên; ở đây ngón tay còn ở lại suốt cú kéo, nên cú nhấc có chỗ để nảy.
+ * ── và vì sao con số đổi ──
+ *
+ * Bản trước là `{ damping: 18, stiffness: 260 }`, hai số gõ tay. Quy ra thang
+ * của Apple thì đó là **bounce 0,44** — nảy hơn cả `.bouncy`, preset nảy nhất
+ * mà iOS ship, và nảy gấp ba `.snappy`. Không ai chọn 0,44; nó rơi ra từ hai
+ * con số không nói được mình sẽ nảy bao nhiêu. Đó chính là chỗ cử chỉ đọc ra
+ * như đồ chơi, và nó chạy ở BỐN nơi: nhấc lên, giữ xuống, thả ra, huỷ giữa
+ * chừng.
+ *
+ * `snappy` (bounce 0,15) giữ nguyên ý ban đầu — vẫn có cái nảy để đọc ra là
+ * "nhặt một vật lên" — nhưng ở mức hệ điều hành này coi là còn nghiêm túc.
+ * `duration` 0,34 nhanh hơn 0,5 mặc định của Apple vì ngón tay đang chờ nó
+ * xong để bắt đầu kéo.
  */
-const LIFT = { damping: 18, stiffness: 260 };
+const LIFT = spring(0.34, BOUNCE.snappy);
 
 /**
  * Chỗ trống mở ra dưới hàng đang kéo.
  *
- * Chậm hơn cú nhấc một bậc: hàng bên cạnh là thứ PHẢN ỨNG, và nó nặng hơn —
- * một tấm thẻ đầy widget, không phải cái vật vừa được nhấc lên.
+ * Chậm hơn cú nhấc một bậc (0,46 so với 0,34): hàng bên cạnh là thứ PHẢN ỨNG,
+ * và nó nặng hơn — một tấm thẻ đầy widget, không phải cái vật vừa được nhấc
+ * lên.
+ *
+ * ── và KHÔNG nảy, khác bản trước ──
+ *
+ * Bản trước là bounce 0,26: hàng đang tránh đường vượt QUÁ ô mới rồi bò ngược
+ * lại. Nó đọc ra là mất ổn định chứ không phải mềm mại — danh sách trông như
+ * đang lún, trong khi việc nó đang làm là dọn chỗ. Một vật nhường đường thì
+ * dừng ở chỗ nó nhường tới.
+ *
+ * `smooth` là tắt dần TỚI HẠN: nhanh nhất có thể mà không vượt qua đích lấy
+ * một chút. Đây đúng là ô Apple dành cho loại chuyển động này.
  */
-const GAP_SPRING = { damping: 20, stiffness: 180 };
+const GAP_SPRING = spring(0.46, BOUNCE.smooth);
 
 /**
  * Cú ĐÁP khi thả tay — và cái lỗi nó sửa.
@@ -77,12 +99,17 @@ const GAP_SPRING = { damping: 20, stiffness: 180 };
  * hai được phát trong CÙNG một nhịp JS (xem `commit`). Không còn khe hở nào để
  * nhìn thấy.
  *
- * `damping: 30, stiffness: 300` — tỉ số tắt dần ≈ 0.87, tức là dưới tới hạn một
- * chút: đủ để có cảm giác vật chất, không đủ để nảy. Nhanh hơn `LIFT` vì cú
- * nhấc diễn ra khi ngón tay còn trên màn hình và có chỗ để nảy, còn cú đáp thì
- * ngón tay đã rời đi — một vật đã buông mà còn dùng dằng thì đọc ra là chậm.
+ * `snappy` (bounce 0,15) — đúng ô Apple dành cho thứ người dùng VỪA BUÔNG: một
+ * vật rơi vào chỗ của nó, có sức nặng, không nghịch ngợm. Bản trước là
+ * `{ damping: 30, stiffness: 300 }`, quy ra bounce 0,13 — gần như y hệt, nên ở
+ * đây con số không đổi mấy; cái đổi là giờ nó có TÊN, và cái tên nói ra mức
+ * nảy thay vì bắt người đọc tự tính.
+ *
+ * `duration` 0,4 chậm hơn `LIFT` một chút chứ không nhanh hơn: quãng đường cú
+ * đáp phải đi dài hơn nhiều (cả một ô, có khi vài ô) so với quãng phình 4% của
+ * cú nhấc, và mắt muốn thời gian khớp với quãng đường.
  */
-const RELEASE = { damping: 30, stiffness: 300 };
+const RELEASE = spring(0.4, BOUNCE.snappy);
 
 /**
  * Trần vận tốc đưa vào cú đáp, điểm/giây.

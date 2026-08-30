@@ -71,7 +71,7 @@ import {
 import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { duration } from '@/constants/motion';
+import { BOUNCE, duration, spring } from '@/constants/motion';
 import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 
 import { HERO_RING, PAGE_TINT, colors, radius, spacing, type } from '@/constants/ascnd';
@@ -2228,10 +2228,22 @@ function MaybeRemovable({
   );
 }
 
+/**
+ * Cụm nút của một nhóm, trượt vào từ phải khi chế độ sắp xếp mở.
+ *
+ * Lò xo từng là `{ damping: 22, stiffness: 240 }` — quy ra bounce 0,29, sát
+ * trần `.bouncy` của iOS. Với `translateX` 28 điểm thì cái nảy ấy đưa cụm nút
+ * VƯỢT QUA chỗ của nó khoảng 8 điểm rồi kéo ngược lại. Một cái điều khiển đang
+ * đi vào chỗ cố định của nó thì dừng ở chỗ ấy; nảy qua rồi về đọc ra là nó
+ * chưa biết mình đứng đâu.
+ *
+ * `snappy` giữ lại chút sức nặng — đây vẫn là một cú trượt vào, không phải một
+ * cú hiện ra — nhưng vượt quá chỉ còn ~4 điểm.
+ */
 function EditControls({ index, children }: { index: number; children: React.ReactNode }) {
   const enter = useSharedValue(0);
   useEffect(() => {
-    enter.value = withDelay(index * 40, withSpring(1, { damping: 22, stiffness: 240 }));
+    enter.value = withDelay(index * 40, withSpring(1, spring(0.4, BOUNCE.snappy)));
   }, [enter, index]);
   const style = useAnimatedStyle(() => ({
     opacity: enter.value,

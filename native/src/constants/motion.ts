@@ -51,6 +51,74 @@ export const duration = {
 } as const;
 
 /**
+ * Lò xo, viết theo hai con số người ta CẢM được thay vì ba con số vật lý.
+ *
+ * ── vì sao đổi cách viết ──
+ *
+ * `{ damping: 18, stiffness: 260 }` không nói cho ai biết nó sẽ nảy bao nhiêu.
+ * Muốn biết thì phải tự tính tỉ số tắt dần, và không ai tính — nên các con số
+ * được chọn bằng cách thử, và mỗi lò xo mới trong app lại là một lần thử khác.
+ * Đo lại toàn bộ lò xo của trình sắp xếp widget thì ra:
+ *
+ *     LIFT        bounce 0.44   ← nảy hơn cả preset nảy nhất Apple ship
+ *     GAP_SPRING  bounce 0.26   ← thứ "nhường chỗ" mà lại nảy
+ *     RELEASE     bounce 0.13
+ *
+ * Không ai chọn 0.44. Nó là thứ rơi ra từ hai con số gõ tay.
+ *
+ * ── cách Apple viết, và vì sao mượn đúng cách ấy ──
+ *
+ * Từ iOS 17, SwiftUI tham số hoá lò xo bằng `Spring(duration:bounce:)`:
+ * `duration` là chu kỳ cảm nhận được, `bounce` là mức nảy trong khoảng
+ * −1…1 (0 = tắt dần tới hạn, không vượt quá đích một chút nào).
+ *
+ * Quy đổi sang mô hình khối-lò-xo-giảm-chấn mà Reanimated dùng — CÙNG mô hình
+ * vật lý, chỉ khác tên gọi:
+ *
+ *     mass      = 1
+ *     stiffness = (2π / duration)²
+ *     damping   = 4π(1 − bounce) / duration          (bounce ≥ 0)
+ *     damping   = 4π / (duration × (1 + bounce))     (bounce < 0)
+ *
+ * Đây là bản ĐÃ SỬA. Công thức chiếu trong WWDC23 session 10158 sai ở vế
+ * damping (`1 − 4π × bounce ÷ duration`), và Apple đính chính trên diễn đàn
+ * nhà phát triển. Bản dưới đây tương đương với định nghĩa sạch hơn qua tỉ số
+ * tắt dần: `ζ = 1 − bounce`, `damping = 2ζ√(stiffness × mass)` — và
+ * `tools/spring-model.mjs` kiểm chính đẳng thức ấy chứ không tin lời tệp này.
+ *
+ * Nguồn: developer.apple.com/videos/play/wwdc2023/10158 và đính chính ở
+ * developer.apple.com/forums/thread/739811.
+ */
+export function spring(duration: number, bounce: number) {
+  const stiffness = (2 * Math.PI) / duration;
+  return {
+    mass: 1,
+    stiffness: stiffness * stiffness,
+    damping:
+      bounce >= 0
+        ? (4 * Math.PI * (1 - bounce)) / duration
+        : (4 * Math.PI) / (duration * (1 + bounce)),
+  };
+}
+
+/**
+ * Ba hình dạng lò xo Apple ship, ở đúng `duration` mặc định 0,5 giây.
+ *
+ * Chúng không phải để dùng nguyên xi ở mọi chỗ — `duration` là thứ mỗi chuyển
+ * động tự chọn. Chúng ở đây để làm THANG ĐO: `bounce` của app không được vượt
+ * quá `bouncy`, vì đó là mức nảy nhất mà hệ điều hành này cho là còn nghiêm
+ * túc. Ra ngoài nó thì giao diện thôi đọc như một công cụ.
+ *
+ *   · `smooth` — tắt dần tới hạn, không vượt đích. Cho thứ NHƯỜNG CHỖ: một
+ *     hàng đang tránh đường mà vượt quá ô rồi bò ngược lại thì đọc ra là mất
+ *     ổn định, không phải là mềm mại.
+ *   · `snappy` — nảy vừa đủ để có cảm giác vật chất. Cho thứ NGƯỜI DÙNG VỪA
+ *     BUÔNG: một vật rơi vào chỗ của nó.
+ *   · `bouncy` — trần. Chưa chỗ nào trong app cần tới đây.
+ */
+export const BOUNCE = { smooth: 0, snappy: 0.15, bouncy: 0.3 } as const;
+
+/**
  * How a press answers.
  *
  * ── the depth ──
