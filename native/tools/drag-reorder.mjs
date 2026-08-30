@@ -426,7 +426,8 @@ console.log(
     'CẮT-CHÈN chứ không hoán đổi: kéo hàng đầu xuống cuối ra "bcda" — hoán đổi sẽ ra "dbca" và để hai hàng ' +
     'giữa đứng yên, tức kết quả không khớp với hoạt hoạ người dùng vừa nhìn thấy — và nó không sửa thẳng vào ' +
     'object cũ. Chốt chặn còn nguyên: pan chờ nhấn giữ (không thì nó cướp mọi cú cuộn đi qua thẻ nhóm), ' +
-    'không chặn cử chỉ ngoài, dashboard đọc cùng `config.groups` nên thứ tự mới hiện ngay, và hai nút mũi ' +
-    'tên vẫn còn vì một cú kéo là vô hình với VoiceOver. ' +
+    'không chặn cử chỉ ngoài, dashboard đọc cùng `config.groups` nên thứ tự mới hiện ngay, và vì một cú ' +
+    'kéo là VÔ HÌNH với VoiceOver nên accessibility action dời lên/xuống phải còn — hai mũi tên của ' +
+    'nhóm đã bị gỡ khỏi hàng tiêu đề, nên action là đường duy nhất còn lại. ' +
     `${SELF.length} phép thử ngược đều đỏ đúng chỗ đã dự đoán và tất cả xanh trên bản thật`,
 );

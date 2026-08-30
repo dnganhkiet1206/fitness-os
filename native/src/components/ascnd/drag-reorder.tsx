@@ -9,14 +9,13 @@ import Animated, {
   useDerivedValue,
   useFrameCallback,
   useSharedValue,
+  withDelay,
   withSpring,
-  withTiming,
   type AnimatedRef,
   type SharedValue,
 } from 'react-native-reanimated';
 
 import { colors, glass } from '@/constants/ascnd';
-import { duration } from '@/constants/motion';
 
 /**
  * Cú NHẤC, và vì sao nó là lò xo chứ không phải một giá trị đặt thẳng.
@@ -42,6 +41,88 @@ const LIFT = { damping: 18, stiffness: 260 };
  * một tấm thẻ đầy widget, không phải cái vật vừa được nhấc lên.
  */
 const GAP_SPRING = { damping: 20, stiffness: 180 };
+
+/**
+ * Cú ĐÁP khi thả tay — và cái lỗi nó sửa.
+ *
+ * ── bản cũ làm gì ──
+ *
+ *     .onEnd(() => {
+ *       runOnJS(onCommit)(from.value, to.value);
+ *       dy.value = 0;          // ← đặt thẳng, ngay trên luồng UI
+ *       from.value = -1;
+ *     })
+ *
+ * Chú thích cạnh nó lập luận rằng cây sắp được dựng lại theo thứ tự mới nên
+ * hàng đã ở đúng chỗ. Điều đó ĐÚNG cho các hàng khác — độ dịch của chúng bằng
+ * đúng độ đổi layout, nên về 0 là liên tục — và SAI cho hàng đang kéo: `dy` là
+ * vị trí NGÓN TAY, không phải vị trí ô đích.
+ *
+ * Tệ hơn, hai vế ấy chạy trên hai luồng khác nhau. `dy.value = 0` xong ngay
+ * khung hình đó; `onCommit` đi qua `runOnJS` → setState → JSON.stringify →
+ * AsyncStorage → dựng lại cây, tức là vài khung hình sau. Trong khoảng ấy màn
+ * hình hiện thứ tự CŨ với mọi thứ đã về chỗ cũ. Người dùng thấy:
+ *
+ *     thả tay → thẻ bật NGƯỢC về chỗ xuất phát → thẻ nhảy TỚI ô đích
+ *
+ * Hai cú nhảy, mỗi cú bằng cả quãng vừa kéo.
+ *
+ * ── cách sửa, và vì sao nó không còn phụ thuộc vào khung hình nào ──
+ *
+ * Phần dư — khoảng cách từ chỗ ngón tay thả tới tâm ô đích — được tách ra một
+ * giá trị riêng (`settleY`) khoá theo ID CỦA THẺ chứ không theo chỉ số. ID sống
+ * sót qua việc sắp lại, nên giá trị ấy KHÔNG đổi ở ranh giới commit: trước và
+ * sau đều là cùng một con số trên cùng một tấm thẻ. Hai thứ đổi ở ranh giới —
+ * `dy` về 0 và layout dịch đi `restY` — triệt tiêu nhau đúng bằng nhau, và cả
+ * hai được phát trong CÙNG một nhịp JS (xem `commit`). Không còn khe hở nào để
+ * nhìn thấy.
+ *
+ * `damping: 30, stiffness: 300` — tỉ số tắt dần ≈ 0.87, tức là dưới tới hạn một
+ * chút: đủ để có cảm giác vật chất, không đủ để nảy. Nhanh hơn `LIFT` vì cú
+ * nhấc diễn ra khi ngón tay còn trên màn hình và có chỗ để nảy, còn cú đáp thì
+ * ngón tay đã rời đi — một vật đã buông mà còn dùng dằng thì đọc ra là chậm.
+ */
+const RELEASE = { damping: 30, stiffness: 300 };
+
+/**
+ * Trần vận tốc đưa vào cú đáp, điểm/giây.
+ *
+ * Vận tốc PHẢI có ảnh hưởng — vẩy nhanh và đẩy chậm mà đáp giống hệt nhau thì
+ * cử chỉ mất hẳn cảm giác quán tính. Nhưng nó không được quyết định ĐI ĐÂU: ô
+ * đích đã chốt theo vị trí, và để vận tốc kéo thẻ đi tiếp là để một cú vẩy đổi
+ * thứ tự ngoài ý muốn. Nên vận tốc chỉ nắn HÌNH DẠNG của cú đáp, và bị chặn ở
+ * đây để một cú vẩy thật mạnh không làm thẻ vọt qua ô rồi bò ngược lại.
+ */
+const MAX_RELEASE_V = 2400;
+
+/**
+ * Cú chạm xuống, trước khi cử chỉ kịp kích hoạt.
+ *
+ * `activateAfterLongPress(260)` nghĩa là suốt 260ms đầu tấm thẻ hoàn toàn im —
+ * người dùng đã đặt ngón tay xuống và giữ, và không gì nói cho họ biết máy có
+ * nhận hay không. iOS trả lời cú giữ ngay khi nó bắt đầu nhận ra.
+ *
+ * Hoãn 140ms là chỗ then chốt: một cú CUỘN bắt đầu bằng ngón tay chạm rồi trượt
+ * trong vòng vài chục mili giây, nên nó không bao giờ thấy phản hồi này. Chỉ
+ * một cú GIỮ thật mới sống qua được 140ms, và lúc đó thẻ khẽ dày lên — rồi tới
+ * 260ms thì nhấc hẳn. Hai bậc, đúng thứ tự người dùng trải qua.
+ */
+const PRESS_DELAY = 140;
+/** Bao nhiêu phần của cú nhấc mà một cú giữ (chưa kéo) được hưởng. */
+const PRESS_LIFT = 0.3;
+
+/**
+ * Kéo quá đầu hoặc quá cuối danh sách thì NẶNG dần, không phải tự do.
+ *
+ * Không chặn cứng: một cái phanh đột ngột đọc ra như cử chỉ bị hỏng. Không thả
+ * tự do: bản cũ cho kéo thẻ đầu tiên lên tám trăm điểm phía trên danh sách, và
+ * ở đó tấm thẻ chỉ còn là một hình chữ nhật trôi giữa màn hình, không còn quan
+ * hệ gì với chỗ nó sẽ đáp.
+ *
+ * 0.22 nghĩa là mỗi điểm kéo thêm ngoài biên chỉ còn được khoảng một phần năm:
+ * thẻ vẫn theo tay, nhưng tay biết là nó đang chạm đáy.
+ */
+const RUBBER = 0.22;
 
 /**
  * Tấm ĐỤC luồn xuống dưới thẻ đang được nhấc lên.
@@ -145,6 +226,16 @@ export function DragReorder({
   const fingerY = useSharedValue(0);
   /** Mức cuộn lúc bắt đầu kéo — xem `shift` ở `Row`. */
   const startScroll = useSharedValue(0);
+  /*
+    Phần dư của cú đáp, và tấm thẻ nó thuộc về.
+
+    Khoá theo ID chứ không theo chỉ số, và đó là toàn bộ lý do nó tồn tại: chỉ
+    số của thẻ ĐỔI ở đúng khoảnh khắc thứ tự được ghi, còn ID thì không. Nhờ thế
+    `settleY` mang cùng một con số trước và sau ranh giới ấy, nên cú đáp chạy
+    xuyên qua việc sắp lại mà không hề biết nó vừa xảy ra. Xem `RELEASE`.
+  */
+  const settleKey = useSharedValue('');
+  const settleY = useSharedValue(0);
 
   /*
     ── tự cuộn khi kéo tới mép ──
@@ -184,11 +275,35 @@ export function DragReorder({
     [heights],
   );
 
+  /**
+   * Ghi thứ tự mới VÀ dọn trạng thái kéo, trong cùng một nhịp.
+   *
+   * Đây là nửa còn lại của bản sửa mô tả ở `RELEASE`. Bản cũ dọn `dy`/`from`
+   * trong worklet — tức là trên luồng UI, ngay lập tức — rồi mới nhờ `runOnJS`
+   * mang lệnh ghi sang luồng JS. Hai việc phải xảy ra CÙNG LÚC thì bị tách ra
+   * hai luồng và cách nhau vài khung hình, và cái khe ấy chính là chỗ tấm thẻ
+   * bật ngược về chỗ cũ.
+   *
+   * Gộp lại thì cả `setState` lẫn các lệnh ghi shared value đều được phát trong
+   * một nhịp JS, nên React và Reanimated cùng đổ xuống một lượt cập nhật của
+   * luồng UI: layout dịch đi `restY` đúng lúc `dy` về 0, và hai cái triệt tiêu
+   * nhau. Không có khung hình nào ở giữa để nhìn thấy.
+   *
+   * Thứ tự trong hàm này có ý nghĩa: ghi trước, dọn sau. Nếu `onMove` ném thì
+   * trạng thái kéo vẫn phải được trả về, nếu không hàng kẹt lơ lửng — nên nó
+   * nằm trong `finally`.
+   */
   const commit = useCallback(
     (f: number, t: number) => {
-      if (f !== t) onMove(f, t);
+      try {
+        if (f !== t) onMove(f, t);
+      } finally {
+        from.value = -1;
+        to.value = -1;
+        dy.value = 0;
+      }
     },
-    [onMove],
+    [onMove, from, to, dy],
   );
 
   const tick = useCallback(() => {
@@ -207,6 +322,7 @@ export function DragReorder({
       {items.map((item, i) => (
         <Row
           key={item.key}
+          itemKey={item.key}
           index={i}
           count={n}
           gap={gap}
@@ -215,6 +331,8 @@ export function DragReorder({
           to={to}
           dy={dy}
           lift={lift}
+          settleKey={settleKey}
+          settleY={settleY}
           fingerY={fingerY}
           startScroll={startScroll}
           scrollY={scrollY}
@@ -236,6 +354,7 @@ export function DragReorder({
  * và hook thì không gọi được trong một vòng lặp bên trong một component khác.
  */
 function Row({
+  itemKey,
   index,
   count,
   gap,
@@ -244,6 +363,8 @@ function Row({
   to,
   dy,
   lift,
+  settleKey,
+  settleY,
   fingerY,
   startScroll,
   scrollY,
@@ -253,6 +374,7 @@ function Row({
   onScrolling,
   children,
 }: {
+  itemKey: string;
   index: number;
   count: number;
   gap: number;
@@ -261,6 +383,8 @@ function Row({
   to: SharedValue<number>;
   dy: SharedValue<number>;
   lift: SharedValue<number>;
+  settleKey: SharedValue<string>;
+  settleY: SharedValue<number>;
   fingerY: SharedValue<number>;
   startScroll: SharedValue<number>;
   scrollY: SharedValue<number>;
@@ -302,16 +426,85 @@ function Row({
     [count, gap],
   );
 
+  /**
+   * Layout dịch đi bao nhiêu khi hàng `f` về chỗ `t`.
+   *
+   * Đúng bằng tổng các bước nó đi qua, tính trên mảng chiều cao CŨ — vì đó là
+   * bố cục nó đang đứng trong đó. Đây là con số mà `dy` phải bằng lúc thứ tự
+   * được ghi, để hai bên triệt tiêu nhau; xem `RELEASE`.
+   */
+  const restFor = useCallback(
+    (f: number, t: number, h: number[]) => {
+      'worklet';
+      const step = (k: number) => (h[k] ?? 0) + gap;
+      let acc = 0;
+      if (t > f) for (let k = f + 1; k <= t; k++) acc += step(k);
+      else for (let k = t; k < f; k++) acc -= step(k);
+      return acc;
+    },
+    [gap],
+  );
+
+  /**
+   * Biên của cú kéo, trong hệ toạ độ nội dung.
+   *
+   * Hàng không được đi cao hơn ô đầu tiên hay thấp hơn ô cuối cùng — quá đó thì
+   * không còn ô nào để đáp xuống. Ngoài biên, cử chỉ nặng dần thay vì dừng
+   * khựng; xem `RUBBER`.
+   */
+  const clampShift = useCallback(
+    (f: number, shift: number, h: number[]) => {
+      'worklet';
+      const lo = restFor(f, 0, h);
+      const hi = restFor(f, count - 1, h);
+      if (shift < lo) return lo + (shift - lo) * RUBBER;
+      if (shift > hi) return hi + (shift - hi) * RUBBER;
+      return shift;
+    },
+    [restFor, count],
+  );
+
+  /**
+   * Cú giữ, trước khi cử chỉ kích hoạt.
+   *
+   * Của riêng hàng này, không dùng chung như `lift`: chỉ tấm thẻ đang bị ngón
+   * tay đè mới được phản ứng, còn `lift` thì cả danh sách cùng đọc để biết có
+   * ai đang được nhấc hay không.
+   */
+  const press = useSharedValue(0);
+
   const pan = Gesture.Pan()
+    .maxPointers(1)
+    /* Ngón tay vừa chạm xuống. Chưa có gì được quyết định ở đây — cú cuộn cũng
+       bắt đầu y hệt — nên phản hồi bị hoãn lại đủ lâu để một cú cuộn không bao
+       giờ chạm tới nó. Xem `PRESS_DELAY`. */
+    .onBegin(() => {
+      press.value = withDelay(PRESS_DELAY, withSpring(PRESS_LIFT, LIFT));
+    })
     /* Nhấn giữ rồi mới kéo. Đây là thứ giữ cho cú CUỘN bình thường không bị
        cướp: trước khi giữ đủ lâu, pan chưa kích hoạt nên ScrollView vẫn nhận
        trọn cử chỉ. Không cần `blocksExternalGesture`, thứ sẽ chặn cuộn ngay từ
        lúc ngón tay chạm xuống. */
     .activateAfterLongPress(260)
     .onStart((e) => {
+      /* Một cử chỉ tại một thời điểm.
+
+         Mỗi hàng có `GestureDetector` riêng nhưng `from`/`to`/`dy` là dùng
+         chung, nên hai ngón tay giữ hai thẻ khác nhau sẽ cùng ghi vào một bộ
+         giá trị: hàng thứ hai đè `from`, và khi hàng thứ nhất thả ra nó ghi
+         thứ tự bằng một chỉ số không phải của nó. Thứ tự lưu trên máy khác thứ
+         tự trên màn hình, và không có gì đỏ. */
+      if (from.value !== -1) return;
       from.value = index;
       to.value = index;
       dy.value = 0;
+      /* Thẻ này vừa được cầm lên, nên phần dư của cú đáp TRƯỚC đó — nếu còn
+         đang chạy — thôi thuộc về nó. Không xoá thì cú kéo mới bắt đầu bằng
+         một khoảng lệch thừa hưởng từ cú kéo cũ. */
+      if (settleKey.value === itemKey) {
+        settleKey.value = '';
+        settleY.value = 0;
+      }
       startScroll.value = scrollY.value;
       fingerY.value = e.absoluteY;
       /* Cú nhấc — lò xo, không phải một giá trị đặt thẳng. Xem `LIFT`. */
@@ -320,7 +513,15 @@ function Row({
       runOnJS(onScrolling)(true);
     })
     .onUpdate((e) => {
-      dy.value = e.translationY;
+      /* Cùng chốt với `onStart`, và nó KHÔNG thừa.
+
+         `onStart` từ chối ngón thứ hai bằng một `return`, nhưng cử chỉ ấy vẫn
+         sống: `onUpdate` của nó tiếp tục bắn theo mỗi lần ngón tay nhúc nhích,
+         và nếu không chặn ở đây thì nó ghi đè `dy` và `to` của cú kéo ĐANG diễn
+         ra. Tấm thẻ trên tay người dùng nhảy theo một ngón tay khác, và thứ tự
+         được ghi là thứ tự ngón kia vừa vẽ ra. Từ chối một cử chỉ nghĩa là từ
+         chối cả ba giai đoạn của nó, không phải chỉ giai đoạn đầu. */
+      if (from.value !== index) return;
       fingerY.value = e.absoluteY;
       /*
         Quãng dịch tính trong HỆ TOẠ ĐỘ NỘI DUNG, không phải màn hình.
@@ -330,7 +531,11 @@ function Row({
         phần trang đã cuộn kể từ lúc nhấc lên là thứ giữ cho thẻ dính vào ngón
         tay, và cũng là thứ giữ cho vị trí đích tính đúng.
       */
-      const shift = e.translationY + (scrollY.value - startScroll.value);
+      const shift = clampShift(index, e.translationY + (scrollY.value - startScroll.value), heights.value);
+      /* `dy` mang đúng giá trị ĐÃ KẸP, trừ đi phần cuộn — nếu thẻ vẽ theo
+         `translationY` thô trong khi đích tính theo bản đã kẹp thì hai bên nói
+         về hai vị trí khác nhau, và ngoài biên chúng rời nhau ra. */
+      dy.value = shift - (scrollY.value - startScroll.value);
       const t = target(index, shift, heights.value);
       if (t !== to.value) {
         to.value = t;
@@ -338,23 +543,61 @@ function Row({
         runOnJS(onTick)();
       }
     })
-    .onEnd(() => {
+    .onEnd((e) => {
+      if (from.value !== index) return;
       runOnJS(onScrolling)(false);
-      runOnJS(onCommit)(from.value, to.value);
-      /* Trả về 0 ngay, không animate: cây sắp được dựng lại theo thứ tự MỚI,
-         nên hàng này đã ở đúng chỗ của nó. Animate về 0 là chạy một hiệu ứng
-         trên một hàng vừa đổi nghĩa. */
-      dy.value = 0;
+      const f = from.value;
+      const t = to.value;
+      const h = heights.value;
+      /* Vị trí thật của thẻ lúc buông, tính từ ô gốc của nó. */
+      const visual = dy.value + (scrollY.value - startScroll.value);
+      /* Chỗ layout sắp đặt nó xuống. */
+      const rest = restFor(f, t, h);
+
+      /*
+        Phần dư đi ra một giá trị KHÁC, khoá theo ID thẻ.
+
+        Đặt trước khi ghi thứ tự, và không đổi ở ranh giới ấy. Ngay lúc này ảnh
+        không nhúc nhích: hàng đang kéo vẽ ở `dy + settleY` = `rest + (visual −
+        rest)` = `visual`, đúng chỗ ngón tay vừa rời. Nhưng khi thứ tự được ghi
+        thì `dy` về 0 và layout dịch đi `rest` — hai cái triệt tiêu — còn
+        `settleY` vẫn nguyên và tiếp tục chạy lò xo về 0. Cú đáp đi xuyên qua
+        việc sắp lại mà không biết nó vừa xảy ra. Xem `RELEASE`.
+      */
+      settleKey.value = itemKey;
+      settleY.value = visual - rest;
+      dy.value = rest;
+      settleY.value = withSpring(0, {
+        ...RELEASE,
+        /* Vận tốc chỉ nắn hình dạng cú đáp, không đổi ô đích — xem
+           `MAX_RELEASE_V`. Dấu giữ nguyên: thẻ đang đi xuống thì đáp xuống. */
+        velocity: Math.max(-MAX_RELEASE_V, Math.min(MAX_RELEASE_V, e.velocityY)),
+      });
+
       lift.value = withSpring(0, LIFT);
-      from.value = -1;
-      to.value = -1;
+      press.value = withSpring(0, LIFT);
+      /* `commit` ghi thứ tự VÀ dọn `from`/`to`/`dy` trong cùng một nhịp JS —
+         đó là điều kiện để hai vế triệt tiêu nhau. Không dọn ở đây. */
+      runOnJS(onCommit)(f, t);
     })
     .onFinalize(() => {
+      /* Chạy sau MỌI kết cục, kể cả cú chạm chưa bao giờ kích hoạt thành kéo —
+         nên cú giữ phải được thu về ở đây, không phải ở `onEnd`. Một cú cuộn
+         đi qua đúng đường này. */
+      press.value = withSpring(0, LIFT);
       runOnJS(onScrolling)(false);
       /* Cử chỉ bị huỷ (gọi điện tới, chuyển app) cũng phải trả trạng thái về,
-         nếu không hàng kẹt ở giữa chừng và không gì đưa nó về. */
-      if (from.value !== -1) {
-        dy.value = withTiming(0, { duration: duration.move });
+         nếu không hàng kẹt ở giữa chừng và không gì đưa nó về.
+
+         `onEnd` đã dọn `from` qua `commit`, nên tới đây mà `from` vẫn là hàng
+         này thì đúng nghĩa là cử chỉ bị cắt ngang giữa chừng: không có thứ tự
+         nào để ghi, và thẻ chỉ việc trôi về ô cũ. Lò xo chứ không phải timing —
+         một cú huỷ cũng là một cú buông, và nó phải đáp giống hệt. */
+      if (from.value === index) {
+        settleKey.value = itemKey;
+        settleY.value = dy.value + (scrollY.value - startScroll.value);
+        settleY.value = withSpring(0, RELEASE);
+        dy.value = 0;
         lift.value = withSpring(0, LIFT);
         from.value = -1;
         to.value = -1;
@@ -388,11 +631,20 @@ function Row({
     return withSpring(want, GAP_SPRING);
   });
 
+  /**
+   * Phần dư của cú đáp, nếu tấm thẻ NÀY là thẻ vừa được thả.
+   *
+   * So bằng ID chứ không bằng chỉ số, và đó là cả cái mẹo: sau khi thứ tự được
+   * ghi, chỉ số của thẻ đã khác, còn ID thì vẫn thế. Nhờ vậy cú đáp bám theo
+   * đúng tấm thẻ đi qua việc sắp lại.
+   */
+  const settle = useDerivedValue(() => (settleKey.value === itemKey ? settleY.value : 0));
+
   const style = useAnimatedStyle(() => {
     if (from.value === index) {
       return {
         transform: [
-          { translateY: dy.value + (scrollY.value - startScroll.value) },
+          { translateY: dy.value + (scrollY.value - startScroll.value) + settle.value },
           /*
             Phình 4% khi nhấc lên. KHÔNG kèm bóng đổ: `liquid-glass.tsx` đã đo
             và ghi lại rằng trên nền #070708 thì "#070708 dưới #070708 là không
@@ -404,7 +656,7 @@ function Row({
             ngoài màn ra khỏi màn hình này, và một tấm thẻ đầy widget là đúng
             loại nhóm nhiều con mà `opacity` bắt iOS gộp lại.
           */
-          { scale: 1 + lift.value * 0.04 },
+          { scale: 1 + Math.max(lift.value, press.value) * 0.04 },
         ],
         /* Lên trên các hàng khác trong lúc kéo, nếu không nó chui xuống dưới
            cái hàng nó vừa đi qua. `zIndex` không phải thuộc tính layout — nó
@@ -412,7 +664,20 @@ function Row({
         zIndex: 10,
       };
     }
-    return { transform: [{ translateY: offset.value }, { scale: 1 }], zIndex: 0 };
+    /*
+      Hàng không bị kéo — nhưng nó vẫn có thể là hàng VỪA ĐƯỢC THẢ, đang đáp
+      xuống sau khi thứ tự đã ghi. Lúc ấy `from` đã là -1 nên nhánh trên không
+      chạy nữa, và cú đáp sống tiếp ở đây qua `settle`.
+
+      `zIndex` phải ở trên trong lúc còn đáp: thẻ đang trên đường về ô của nó và
+      vẫn có thể phủ lên hàng bên cạnh; để nó chui xuống dưới giữa chừng là làm
+      lộ ra rằng vừa có một lượt dựng lại cây.
+    */
+    const s = settle.value;
+    return {
+      transform: [{ translateY: offset.value + s }, { scale: 1 + press.value * 0.04 }],
+      zIndex: s !== 0 ? 10 : 0,
+    };
   });
 
   /* Chỉ hàng ĐANG được nhấc mới cần tấm đục. Các hàng khác vẫn là kính. */
