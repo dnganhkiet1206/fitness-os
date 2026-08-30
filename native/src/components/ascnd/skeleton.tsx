@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, type ReactNode } from 'react';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -12,7 +12,13 @@ import Animated, {
 
 import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { HERO_DECK, heightFor, hydrateWidgetHeights, useWidgetHeightsVersion } from '@/lib/widget-heights';
+import {
+  HERO_DECK,
+  heightFor,
+  hydrateWidgetHeights,
+  recordHeight,
+  useWidgetHeightsVersion,
+} from '@/lib/widget-heights';
 
 /**
  * The shape of the page, while the page is still arriving.
@@ -62,6 +68,73 @@ export function SkeletonBlock({ height, style }: { height: number; style?: objec
   const opacity = useBreath();
   const anim = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return <Animated.View style={[styles.block, { height }, anim, style]} />;
+}
+
+/**
+ * Cùng một khối, nhưng ở chiều cao mà chính khối thật ĐÃ ĐO được lần trước.
+ *
+ * Cặp đôi với `<Measured id>` ngay dưới. Hai thứ phải dùng chung một `id`, và
+ * đó là toàn bộ hợp đồng: cái thật báo nó cao bao nhiêu, cái bóng vẽ đúng bấy
+ * nhiêu.
+ */
+export function SkeletonFor({ id, style }: { id: string; style?: object }) {
+  return <SkeletonBlock height={heightFor(id)} style={style} />;
+}
+
+/**
+ * Bọc quanh một khối THẬT để nó tự khai chiều cao.
+ *
+ * ── vì sao không gõ thẳng con số ──
+ *
+ * `widget-heights.ts` đã viết sẵn lập luận và tôi không định viết lại nó tệ
+ * hơn: "Writing them down as constants means fifteen numbers that are right the
+ * day they are typed and wrong the first time a card gains a row — and wrong
+ * here means the exact page-jump the hiding was introduced to prevent."
+ *
+ * Một hằng số gõ tay đúng đúng một lần, vào ngày gõ. Thẻ thêm một dòng, đổi cỡ
+ * chữ, đổi ngôn ngữ sang tiếng Anh dài hơn — con số ấy sai, và sai theo kiểu
+ * không ai thấy cho tới khi trang giật dưới ngón tay. Cơ chế đo tự nó không
+ * bao giờ lệch quá một lần dựng.
+ *
+ * Kho đo là kho có sẵn của Today, không phải kho thứ hai: `recordHeight` nhận
+ * khoá bất kỳ, `HERO_DECK` chỉ là một khoá trong đó. Hai hệ thống đo chiều cao
+ * trong một app là cách để chúng bắt đầu bất đồng.
+ */
+export function Measured({
+  id,
+  children,
+  style,
+}: {
+  id: string;
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View style={style} onLayout={(e) => recordHeight(id, e.nativeEvent.layout.height)}>
+      {children}
+    </View>
+  );
+}
+
+/**
+ * Khung ngoài cho mọi bóng của một trang.
+ *
+ * Gom hai thứ mà mỗi chỗ dùng đều phải nhớ và sẽ có chỗ quên: kéo chiều cao đã
+ * đo từ bộ nhớ lên, và giấu cả khối khỏi trình đọc màn hình. Lý do giấu nằm
+ * nguyên trong `TodaySkeleton` bên dưới — một bóng là phát biểu về việc DỰNG
+ * HÌNH, không phải về nội dung, và VoiceOver đọc mười hai cái hộp rỗng thì tệ
+ * hơn là nó không đọc gì rồi đọc trang thật.
+ */
+export function SkeletonPage({ children }: { children: ReactNode }) {
+  useWidgetHeightsVersion();
+  useEffect(() => {
+    hydrateWidgetHeights();
+  }, []);
+  return (
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      {children}
+    </View>
+  );
 }
 
 /**
@@ -122,6 +195,86 @@ export function TodaySkeleton({
         </View>
       ))}
     </View>
+  );
+}
+
+/**
+ * Khoá đo của ba tab còn lại.
+ *
+ * Ở một chỗ, và cả bóng lẫn khối thật đều đọc từ đây. Gõ chuỗi thẳng vào hai
+ * nơi là cách để một bên đổi tên còn bên kia lặng lẽ rơi về `FALLBACK_HEIGHT` —
+ * bóng vẫn vẽ, không có gì đỏ, chỉ là nó vẽ sai cỡ. Một hằng số chung thì hỏng
+ * ở chỗ biên dịch chứ không hỏng trên màn hình người dùng.
+ */
+export const SK = {
+  nutritionRing: 'nutrition:ring',
+  workoutTemplates: 'workouts:templates',
+  progressWeight: 'progress:weight',
+  progressMeasurements: 'progress:measurements',
+  progressPhotos: 'progress:photos',
+} as const;
+
+/**
+ * Tab Dinh dưỡng, phần đang chờ `daily_logs`.
+ *
+ * ── cái nó thay ──
+ *
+ * Vòng calo được vẽ từ `Math.round(Number(dailyLog?.kcal) || 0)`. Lúc đang tải
+ * `dailyLog` là `undefined`, nên nó ra **0**, và thẻ lớn nhất màn hình hiện
+ * "0 kcal / 2.200" — giống hệt một ngày chưa ăn gì.
+ *
+ * Lập luận vì sao thế là không được đã nằm sẵn trong `nutrition.tsx`, ngay trên
+ * thẻ ấy, viết cho nhánh LỖI: "A wrong number with a warning beside it is still
+ * a wrong number, and this one is the largest thing on the screen." Câu ấy đúng
+ * y như vậy cho nhánh ĐANG TẢI, và nhánh đang tải thì chạy ở mọi lần mở app
+ * nguội chứ không phải chỉ khi có sự cố.
+ */
+export function NutritionSkeleton() {
+  /* MỘT khối, vì đúng một thẻ bị giữ lại.
+     Mọi thứ dưới nó — bốn nút ghi, thẻ nước, danh sách bữa — không chờ
+     `useDailyLog` và vẫn dựng bình thường. Vẽ bóng cho chúng là vẽ chỗ trống
+     cho những thứ đang có mặt, và trang sẽ dài ra rồi co lại khi dữ liệu về. */
+  return (
+    <SkeletonPage>
+      <SkeletonFor id={SK.nutritionRing} />
+    </SkeletonPage>
+  );
+}
+
+/**
+ * Tab Tập luyện, phần đang chờ danh sách mẫu tập.
+ *
+ * Thay cho `EmptyState` "chưa có mẫu tập nào" kèm nút "Tạo mới" — lời mời dựng
+ * lại những buổi tập đang có sẵn trên máy chủ, chỉ là chưa về tới.
+ */
+export function WorkoutsSkeleton() {
+  return (
+    <SkeletonPage>
+      <View style={styles.group}>
+        <SkeletonBlock height={18} style={styles.header} />
+        <SkeletonFor id={SK.workoutTemplates} />
+      </View>
+    </SkeletonPage>
+  );
+}
+
+/**
+ * Tab Tiến trình — một bóng cho mỗi tab con, vì mỗi tab con chờ một truy vấn
+ * riêng và chỉ một cái trong ba hiện ra mỗi lúc.
+ *
+ * Đây là chỗ lời nói dối nặng nhất: `photos && photos.length > 0 ? … : "chưa có
+ * ảnh"` và `measurement` null → "Chưa có số đo" kèm nút "Thêm số đo". Có cổng
+ * `isError` nhưng không có cổng `isPending`, nên trạng thái đang tải rơi thẳng
+ * vào nhánh nói rằng người dùng KHÔNG CÓ dữ liệu — về đúng những thứ họ đã bỏ
+ * công nhập.
+ */
+export function ProgressSkeleton({ tab }: { tab: 'weight' | 'measurements' | 'photos' }) {
+  const id =
+    tab === 'weight' ? SK.progressWeight : tab === 'measurements' ? SK.progressMeasurements : SK.progressPhotos;
+  return (
+    <SkeletonPage>
+      <SkeletonFor id={id} />
+    </SkeletonPage>
   );
 }
 

@@ -19,6 +19,7 @@ import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 import { useSupplementChecklist } from '@/hooks/use-library';
 import { useGroceryItems } from '@/hooks/use-extras';
 import { Screen } from '@/components/ascnd/screen';
+import { Measured, NutritionSkeleton, SK } from '@/components/ascnd/skeleton';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodayMeals } from '@/components/ascnd/today-meals';
 import { PAGE_TINT, colors, glass, radius, spacing } from '@/constants/ascnd';
@@ -216,7 +217,9 @@ export default function NutritionScreen() {
   const [debounced, setDebounced] = useState('');
 
   const { data: today, isError: diaryFailed } = useTodayLog();
-  const { data: dailyLog, isError: dayFailed } = useDailyLog();
+  /* `isPending` — xem chú thích ở thẻ NutritionCard bên dưới. Không có nó
+     thì "đang tải" và "hôm nay chưa ăn gì" là cùng một bức tranh. */
+  const { data: dailyLog, isError: dayFailed, isPending: dayPending } = useDailyLog();
   const { data: profile } = useProfile();
   /* Both rows below show state rather than only a name — see `shortcut-row`.
      Neither read blocks the page: a shortcut with nothing to report simply
@@ -424,7 +427,21 @@ export default function NutritionScreen() {
             */}
             {todayFailed ? <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} /> : null}
 
-            {dayFailed ? null : (
+            {/*
+              Đang tải là một trạng thái RIÊNG, không phải một ngày chưa ăn gì.
+
+              `kcal` là `Math.round(Number(dailyLog?.kcal) || 0)`, nên trước khi
+              truy vấn về nó bằng 0 và thẻ này vẽ một vòng "0 / 2.200" đầy tự
+              tin. Lập luận vì sao thế là không được đã nằm ngay trên đây, viết
+              cho nhánh LỖI — "A wrong number with a warning beside it is still
+              a wrong number, and this one is the largest thing on the screen."
+              Nhánh đang tải cũng vẽ đúng con số sai ấy, mà lại chạy ở MỌI lần
+              mở app nguội chứ không phải chỉ khi có sự cố.
+            */}
+            {dayPending ? (
+              <NutritionSkeleton />
+            ) : dayFailed ? null : (
+            <Measured id={SK.nutritionRing}>
             <NutritionCard
               interactive
               kcal={kcal}
@@ -434,6 +451,7 @@ export default function NutritionScreen() {
               fat={{ current: Number(dailyLog?.fat_g) || 0, target: macros.fat }}
               fiber={{ current: Number(dailyLog?.fiber_g) || 0, target: macros.fiber }}
             />
+            </Measured>
             )}
 
             {/*

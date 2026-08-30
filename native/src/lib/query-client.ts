@@ -3,6 +3,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
 
+import { isUsable, registerBusyProbe, startNetWatch } from '@/lib/net-status';
 import { registerOfflineWrites } from '@/lib/offline-write';
 import { resetPersonalModel } from '@/lib/personal-model';
 import { runUserScopedResets } from '@/lib/user-scoped-reset';
@@ -17,10 +18,18 @@ import { runUserScopedResets } from '@/lib/user-scoped-reset';
  *   the last-seen data is shown instantly on launch and while offline.
  */
 
-// Report real device connectivity to React Query
+/*
+  Có mạng hay không được quyết định ở MỘT chỗ: `isUsable` trong `net-status.ts`.
+
+  Dòng cũ ở đây là `setOnline(state.isConnected !== false)`, và nó bỏ qua hẳn
+  `isInternetReachable` — nên Wi-Fi quán cà phê chưa bấm đồng ý điều khoản đọc
+  ra là ONLINE. Xem đoạn dài trong `net-status.ts` về vì sao đó không phải ca
+  hiếm mà là dạng mất mạng phổ biến nhất trên điện thoại, và vì sao nó làm
+  `offlineNow()` cho phép app vẽ ra những con số chưa hề được gửi đi.
+*/
 onlineManager.setEventListener((setOnline) =>
   NetInfo.addEventListener((state) => {
-    setOnline(state.isConnected !== false);
+    setOnline(isUsable(state));
   }),
 );
 
@@ -45,6 +54,17 @@ export const queryClient = new QueryClient({
   whose losing side looks like a write that was never made.
 */
 registerOfflineWrites(queryClient);
+
+/*
+  Cùng lý do module-scope như dòng ngay trên, và phải nằm SAU `queryClient`:
+  hai lệnh này đọc nó thật.
+
+  Chiều phụ thuộc chỉ có một — query-client → net-status. Chiều ngược lại là
+  hàm được ĐƯA VÀO chứ không phải import, nên "đã tải xong phần đã lỡ chưa" trả
+  lời được mà không sinh ra một vòng import ở tầng chạy.
+*/
+registerBusyProbe(() => queryClient.isFetching() > 0);
+startNetWatch();
 
 export const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,

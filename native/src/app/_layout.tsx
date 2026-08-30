@@ -13,7 +13,7 @@ import { KoaCompanion } from '@/components/ascnd/koa-companion';
 import { QuestAutoClaim } from '@/components/ascnd/quest-autoclaim';
 import { MascotUnlockCelebration } from '@/components/ascnd/mascot-unlock';
 import { NeonToastHost } from '@/components/ascnd/neon-toast';
-import { OfflineBanner } from '@/components/ascnd/offline-banner';
+import { ConnectionBanner } from '@/components/ascnd/connection-banner';
 import { useReducedMotionSync } from '@/hooks/use-reduced-motion';
 import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { colors } from '@/constants/ascnd';
@@ -208,7 +208,7 @@ function LockedApp() {
       <CoachChatProvider>
         <Gate />
       </CoachChatProvider>
-      <OfflineBanner />
+      <ConnectionBanner />
       <NeonToastHost />
       <AppLockGate />
     </AppLockProvider>

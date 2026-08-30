@@ -14,6 +14,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
+import { Measured, SK, WorkoutsSkeleton } from '@/components/ascnd/skeleton';
 import { PAGE_TINT, colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
@@ -97,7 +98,10 @@ export default function WorkoutsScreen() {
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
   const vi = lang === 'vi';
-  const { data: templates, isError: templatesFailed } = useWorkoutTemplates();
+  /* `isPending` là trạng thái thứ BA mà khối bên dưới trước đây không có. Nếu
+     chỉ hỏi `isError` thì "đang tải" và "đã tải xong, không có gì" thành cùng
+     một nhánh, và nhánh ấy nói rằng người dùng chưa từng lưu buổi tập nào. */
+  const { data: templates, isError: templatesFailed, isPending: templatesPending } = useWorkoutTemplates();
   // The library already loads on the Exercises screen and is cached under the
   // same key, so the grid costs a read only the first time either is opened.
   const { data: exercises, isError: exercisesFailed } = useExercises();
@@ -205,8 +209,10 @@ export default function WorkoutsScreen() {
         what keeps it from being the chevron-that-does-nothing this list was
         rebuilt to get rid of.
       */}
-      {templates && templates.length > 0 ? (
-        <View style={styles.tplSection}>
+      {templatesPending ? (
+        <WorkoutsSkeleton />
+      ) : templates && templates.length > 0 ? (
+        <Measured id={SK.workoutTemplates} style={styles.tplSection}>
           <View style={styles.libHead}>
             {/* The count is safe here in a way it was not in the old header:
                 this block only renders when the read succeeded and returned
@@ -255,7 +261,7 @@ export default function WorkoutsScreen() {
             <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
             <Text style={styles.addRowText}>{i18n.workoutsCreateNew}</Text>
           </PressScale>
-        </View>
+        </Measured>
       ) : templatesFailed ? (
         <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
       ) : (

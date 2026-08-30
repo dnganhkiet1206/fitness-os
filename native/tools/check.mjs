@@ -175,6 +175,8 @@ const STEPS = [
   ['chốt bấm dồn', 'node', ['tools/nav-guard.mjs']],
   ['kéo để tải lại', 'node', ['tools/refreshable.mjs']],
   ['đồng hồ nghỉ', 'node', ['tools/rest-timer.mjs']],
+  ['trạng thái mạng', 'node', ['tools/net-status.mjs']],
+  ['bóng khi tải', 'node', ['tools/skeleton.mjs']],
   ['bố cục Today', 'node', ['tools/widgets.mjs']],
   ['khẩu phần', 'node', ['tools/servings.mjs']],
   ['ăn lại bữa', 'node', ['tools/repeat-meal.mjs']],

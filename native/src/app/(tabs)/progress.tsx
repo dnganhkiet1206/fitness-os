@@ -15,6 +15,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { EmptyState } from '@/components/ascnd/empty-state';
+import { Measured, ProgressSkeleton, SK } from '@/components/ascnd/skeleton';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
@@ -232,7 +233,7 @@ export default function ProgressScreen() {
     await queryClient.invalidateQueries();
     setRetrying(false);
   }, [queryClient]);
-  const { data: weight, isError: weightFailed } = useWeightHistory(90);
+  const { data: weight, isError: weightFailed, isPending: weightPending } = useWeightHistory(90);
   /**
    * Every weigh-in, for the changes card's "All Time" row and its 90-day one.
    *
@@ -241,12 +242,12 @@ export default function ProgressScreen() {
    * change what it shows and cost more to draw. Cached under its own key.
    */
   const { data: weightAll } = useWeightHistory(3650);
-  const { data: photos, isError: photosFailed } = useProgressPhotos();
+  const { data: photos, isError: photosFailed, isPending: photosPending } = useProgressPhotos();
   /* Both rows below carry state rather than only a name — see `shortcut-row`. */
   /* `useAwards` and `useWeeklyChallenges` used to be read here, for the counts
      on two rows that have moved to Koa's room. Two queries a tab about weight
      was making on every visit for two numbers it no longer shows. */
-  const { data: measurements, isError: measurementsFailed } = useBodyMeasurements();
+  const { data: measurements, isError: measurementsFailed, isPending: measurementsPending } = useBodyMeasurements();
   const removeMeasurement = useDeleteBodyMeasurement();
 
   const { weight: wUnit, height: lHUnit } = useUnits();
@@ -423,7 +424,23 @@ export default function ProgressScreen() {
       {tab === 'weight' && weightFailed && (
         <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
       )}
-      {tab === 'weight' && !weightFailed && (
+      {/*
+        Cân nặng: đang tải cũng là một trạng thái, không phải "không đủ dữ liệu".
+
+        Khối dưới vẽ ba ô thống kê là `—`, thẻ BMI là "Cần cân nặng và chiều
+        cao", và biểu đồ là `nNotEnoughData`. Cả ba đều đúng khi người dùng chưa
+        cân bao giờ, và đều SAI khi truy vấn còn đang chạy — mà nhánh sau mới là
+        nhánh chạy ở mọi lần mở app nguội.
+      */}
+      {tab === 'weight' && !weightFailed && weightPending && (
+        <ProgressSkeleton tab="weight" />
+      )}
+      {tab === 'weight' && !weightFailed && !weightPending && (
+        /* `gap` lặp lại ở đây có chủ đích. `Screen` giãn các con TRỰC TIẾP của
+           nó bằng `spacing.stack`; gói chúng vào một View để đo thì cả nhóm
+           thành MỘT con, và nhịp giãn bên trong biến mất. Cùng một `gap` trên
+           lớp bọc trả lại đúng nhịp ấy. */
+        <Measured id={SK.progressWeight} style={{ gap: spacing.stack }}>
         <>
           {/* Stat tiles: current / change / records */}
           <Animated.View style={styles.tileRow} entering={rise(0)}>
@@ -727,6 +744,7 @@ export default function ProgressScreen() {
             <WeightLogList points={weightData} unit={wl} i18n={i18n} lang={lang} />
           </Animated.View>
         </>
+        </Measured>
       )}
 
       {tab === 'measurements' && measurementsFailed && (
@@ -753,6 +771,7 @@ export default function ProgressScreen() {
           )}
 
           {measurement ? (
+            <Measured id={SK.progressMeasurements}>
             <Animated.View entering={rise(1)}>
             <GlassCard style={styles.chartCard}>
               <Text style={styles.microTitle}>{i18n.progressMeasurements}</Text>
@@ -770,6 +789,18 @@ export default function ProgressScreen() {
               </View>
             </GlassCard>
             </Animated.View>
+            </Measured>
+          ) : measurementsPending ? (
+            /*
+              Đang tải KHÁC với chưa có.
+
+              Nhánh dưới nói "Chưa có số đo" và mời bấm "Thêm số đo". Khi truy
+              vấn còn đang chạy thì `measurements` là `undefined`, và app rơi
+              thẳng vào đó — nói sai về dữ liệu người dùng đã bỏ công nhập, rồi
+              mời họ nhập lại. Có cổng `isError` ở trên, chưa từng có cổng
+              `isPending`, nên lời nói dối này chạy ở mọi lần mở app nguội.
+            */
+            <ProgressSkeleton tab="measurements" />
           ) : (
             <Animated.View entering={rise(1)}>
             <GlassCard style={styles.chartCard}>
@@ -883,6 +914,7 @@ export default function ProgressScreen() {
             <Text style={styles.photoCtaText}>{i18n.nPhotoAdd}</Text>
           </PressScale>
           {photos && photos.length > 0 ? (
+            <Measured id={SK.progressPhotos}>
             <Animated.View style={styles.photoGrid} entering={rise(0)}>
               {photos.slice(0, 12).map((p) => (
                 <View key={p.id} style={styles.photoCell}>
@@ -890,6 +922,11 @@ export default function ProgressScreen() {
                 </View>
               ))}
             </Animated.View>
+            </Measured>
+          ) : photosPending ? (
+            /* Cùng lý do với khối số đo ở trên: `photos` là `undefined` lúc
+               đang tải, và nhánh dưới tuyên bố người dùng chưa có tấm ảnh nào. */
+            <ProgressSkeleton tab="photos" />
           ) : (
             <Animated.View entering={rise(0)}>
             <GlassCard style={styles.chartCard}>

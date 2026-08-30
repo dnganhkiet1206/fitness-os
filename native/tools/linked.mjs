@@ -75,6 +75,12 @@ const KNOWN = {
   'components/ascnd/liquid-tab-bar.tsx: LiquidTabBar': 'thanh tab cũ, đã thay bằng NativeTabs',
   'components/ascnd/quick-stats.tsx: QuickStats': 'dải chỉ số nhanh, chưa gắn vào màn nào',
   'components/ascnd/studio/plants-live.tsx: SwayingPlants': 'lớp cây động của studio, chưa bật',
+  /* Chỉ `tools/net-status.mjs` gọi, và phải là export vì tệp ấy nạp module đã
+     bundle chứ không đọc chữ. Máy trạng thái mạng có state ở phạm vi module
+     cộng hai hẹn giờ; không đặt lại được giữa các ca thì mỗi ca kế thừa trạng
+     thái của ca trước, và một bảng chuỗi sự kiện phụ thuộc thứ tự chạy là một
+     bảng chỉ đúng cho tới lần ai đó chèn thêm một ca vào giữa. */
+  'lib/net-status.ts: __resetNetStatusForTest': 'đặt lại máy trạng thái giữa các ca, chỉ tools/net-status.mjs gọi',
   'components/ascnd/koa/koa-gaze.ts: headMat': 'ma trận nhìn, chỉ tool dựng hình gọi',
   'components/ascnd/koa/koa-gaze.ts: eyeMat': 'như trên',
   'components/ascnd/koa/koa-gaze.ts: lookK': 'như trên',

@@ -671,6 +671,8 @@ const en = {
 
   // Offline
   nOffline: 'Offline — showing saved data',
+  nReconnecting: 'Reconnecting — catching up',
+  nLoadingData: 'Loading your data',
   nHealthSynced: 'Apple Health synced!',
 
   // Mascot room
@@ -1430,6 +1432,8 @@ const vi: typeof en = {
 
   // Offline
   nOffline: 'Ngoại tuyến — đang hiển thị dữ liệu đã lưu',
+  nReconnecting: 'Đang kết nối lại — app đang tải phần đã lỡ',
+  nLoadingData: 'Đang tải dữ liệu của bạn',
   nHealthSynced: 'Đã đồng bộ Apple Health!',
 
   // Mascot room
