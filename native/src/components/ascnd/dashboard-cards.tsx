@@ -1,6 +1,6 @@
 import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
-import { Beef, Droplets, Flame, Footprints, Moon, Nut, Sprout, Star, Sunrise, Target, Wheat, type LucideIcon } from 'lucide-react-native';
+import { Beef, Droplets, Flame, Footprints, Milk, Moon, Salad, Star, Sunrise, Target, Wheat, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useId, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -650,21 +650,34 @@ export function NutritionCard({
     Chọn theo hai điều kiện, và cả hai đều kiểm bằng mắt ở 14 điểm mật độ 3x —
     kích thước và mật độ chúng thật sự được dùng:
 
-      thịt   khối gọn có MỘT CHẤM       — và trùng với `quick-stats.tsx`, nơi
-                                          protein đã là `Beef`; app thôi có hai
-                                          glyph cho một khái niệm
-      lúa    dải CHÉO có vân            — hình duy nhất nằm nghiêng
-      hạt    quả sồi ĐỐI XỨNG đứng      — mũ và thân, không nhầm với khối nào
-      mầm    có VẠCH NGANG dưới chân    — hình duy nhất có chân đế
+      thịt   khối gọn có MỘT CHẤM   — và trùng `quick-stats.tsx`, nơi protein đã
+                                      là `Beef`; app thôi có hai glyph cho một
+                                      khái niệm
+      lúa    dải CHÉO có vân        — hình duy nhất nằm nghiêng
+      sữa    chai ĐỨNG, cạnh thẳng  — hình duy nhất là hình chữ nhật
+      xà lách bát RỘNG, đáy bằng    — hình duy nhất nằm ngang
+
+    `Droplet` đúng nghĩa hơn cho chất béo — một giọt dầu. Nhưng màn dinh dưỡng
+    có luôn thẻ Nước, và nước dùng `Droplets`: một giọt nằm cách hai giọt vài
+    trăm điểm là đúng cái bẫy tác giả bộ cũ đã ghi lại. Chai sữa không đụng ai.
+
+    ── một chỗ chồng màu đã biết ──
+
+    Chất béo giờ mang `metricBlue`, và thẻ Nước ở cuối tệp này cũng vẽ icon bằng
+    đúng `#3ba6ff`. Hai thứ cùng nằm trên màn dinh dưỡng.
+
+    Để nguyên vì đây là màu được yêu cầu, và vì hai chỗ đó khác hình (chai đứng
+    so với hai giọt) lẫn khác ngữ cảnh (một ô macro trong thẻ dinh dưỡng so với
+    một hàng riêng phía dưới). Nếu đọc ra vẫn lẫn thì `metricCyan` là một từ.
 
     Bốn bóng khác nhau, nên chúng phân biệt được cả khi nhỏ tới mức chỉ còn bóng.
   */
   const macros = [
-    { label: 'Protein', ...protein, icon: Beef, color: colors.primary, bar: ['#f59e0b', '#ecc94b'] as [string, string] },
-    { label: 'Carbs', ...carbs, icon: Wheat, color: colors.metricBlue, bar: ['#3ba6ff', '#b45cff'] as [string, string] },
-    { label: 'Fat', ...fat, icon: Nut, color: colors.metricOrange, bar: ['#ff9130', '#ff3b5c'] as [string, string] },
+    { label: 'Protein', ...protein, icon: Beef, color: colors.metricRose, bar: ['#e6485c', '#ff8095'] as [string, string] },
+    { label: 'Carbs', ...carbs, icon: Wheat, color: colors.metricOrange, bar: ['#ff9130', '#ffd93d'] as [string, string] },
+    { label: 'Fat', ...fat, icon: Milk, color: colors.metricBlue, bar: ['#3ba6ff', '#22e3ff'] as [string, string] },
     ...(fiber
-      ? [{ label: 'Fiber', ...fiber, icon: Sprout, color: colors.readinessGreen, bar: ['#3ecf8e', '#2f9e6b'] as [string, string] }]
+      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: colors.readinessGreen, bar: ['#3ecf8e', '#2f9e6b'] as [string, string] }]
       : []),
   ];
 

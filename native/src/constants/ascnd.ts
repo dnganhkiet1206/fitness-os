@@ -115,6 +115,18 @@ export const colors = {
   metricCyan: '#22e3ff',
   metricOrange: '#ff9130',
   /**
+   * Đỏ hồng của thịt — màu của protein.
+   *
+   * KHÔNG dùng `readinessRed` cho việc này dù hai màu gần nhau: xanh lá, vàng
+   * và đỏ ở app này CÓ NGHĨA là trạng thái sẵn sàng, nên mượn một trong ba cho
+   * một macro là để hai chuyện khác nhau nói bằng cùng một màu.
+   *
+   * Giá trị lấy đúng con số `quick-stats.tsx` đã dùng cho protein — nó vốn là
+   * một mã màu viết thẳng ở đó, tức cùng một quyết định nằm ở hai chỗ. Giờ một
+   * chỗ.
+   */
+  metricRose: '#e6485c',
+  /**
    * Neon beige — the weight history's line.
    *
    * The only warm colour in the metrics. It is here because the weight chart

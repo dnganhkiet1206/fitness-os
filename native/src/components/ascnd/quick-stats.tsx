@@ -75,7 +75,7 @@ export function QuickStats({
     {
       key: 'protein',
       icon: Beef,
-      color: '#e6485c',
+      color: colors.metricRose,
       label: i18n.nQuickProtein,
       value: Math.round(protein),
       target: proteinTarget,
