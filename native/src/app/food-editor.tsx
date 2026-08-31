@@ -19,7 +19,7 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { duration } from '@/constants/motion';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { MACRO_TINT, colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { toast } from '@/lib/toast';
 import {
@@ -30,11 +30,30 @@ import {
   type FoodFormData,
 } from '@/hooks/use-nutrition';
 
-const MACRO_COLORS = {
-  protein: colors.readinessYellow,
-  carbs: colors.metricBlue,
-  fat: colors.metricOrange,
+/**
+ * Chỉ chữ số, và không giữ số 0 thừa ở đầu.
+ *
+ * ── lỗi ──
+ *
+ * Các ô số ở đây nối thẳng `onChangeText` vào `setState`, tức lưu nguyên chuỗi
+ * bàn phím gõ ra. Gõ vào một ô đang rỗng rồi lỡ chạm 0 vài lần thì được
+ * "00040" — đúng thứ đã bị chụp lại. Nó không sai về giá trị (`Number('00040')`
+ * vẫn là 40) nhưng nó SAI VỀ THỨ NGƯỜI DÙNG ĐỌC, và một ô số hiện ra số mà họ
+ * không gõ thì họ không tin ô đó nữa.
+ *
+ * Cũng lọc luôn ký tự không phải chữ số: `number-pad` trên iOS vẫn cho dán, và
+ * bàn phím một số vùng có dấu phân cách.
+ *
+ * Giữ chuỗi rỗng là rỗng — không biến nó thành "0", vì "0" là một câu trả lời
+ * còn rỗng là chưa trả lời, và chỗ lưu phân biệt hai thứ đó.
+ */
+const digits = (v: string) => {
+  const only = v.replace(/[^0-9]/g, '');
+  const trimmed = only.replace(/^0+(?=\d)/, '');
+  return trimmed;
 };
+
+const MACRO_COLORS = MACRO_TINT;
 
 /** Add/edit custom food — mirrors the web FoodItemDialog */
 export default function FoodEditorSheet() {
@@ -139,7 +158,7 @@ export default function FoodEditorSheet() {
               style={styles.servingInput}
               keyboardType="number-pad"
               value={serving}
-              onChangeText={setServing}
+              onChangeText={(v) => setServing(digits(v))}
             />
             <Text style={styles.unit}>g</Text>
           </View>
@@ -156,7 +175,7 @@ export default function FoodEditorSheet() {
                 placeholder="0"
                 placeholderTextColor={colors.mutedForeground}
                 value={kcal}
-                onChangeText={setKcal}
+                onChangeText={(v) => setKcal(digits(v))}
               />
               <Text style={styles.unit}>kcal</Text>
             </View>
@@ -193,7 +212,7 @@ export default function FoodEditorSheet() {
                 placeholder="0"
                 placeholderTextColor={colors.mutedForeground}
                 value={fiber}
-                onChangeText={setFiber}
+                onChangeText={(v) => setFiber(digits(v))}
               />
               <Text style={styles.unit}>g</Text>
             </View>
@@ -266,7 +285,7 @@ function MacroField({
         placeholder="0"
         placeholderTextColor={colors.mutedForeground}
         value={value}
-        onChangeText={onChange}
+        onChangeText={(v) => onChange(digits(v))}
       />
       <View style={styles.macroMetaRow}>
         <Text style={styles.macroMeta}>g</Text>

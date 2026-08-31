@@ -283,6 +283,36 @@ export const HERO_RING = 264;
  * `readinessGreen` là ngoại lệ có chủ ý và đã có từ trước — đó là màu vòng tròn
  * của chính nó, nên nền và vòng vẫn nói cùng một chuyện.
  */
+/**
+ * Màu của bốn chất, ở MỘT chỗ.
+ *
+ * ── vì sao ──
+ *
+ * Quyết định này từng nằm ở BA nơi: một bảng trong `dashboard-cards.tsx`, một
+ * mã màu viết thẳng trong `quick-stats.tsx`, và một bảng nữa trong
+ * `food-editor.tsx` — nơi đạm là VÀNG trong khi hai màn kia đã là đỏ hồng.
+ *
+ * Ba bản sao thì không cái nào sai một mình; chúng chỉ đơn giản không đồng ý với
+ * nhau, và người dùng thấy cùng một chất mang hai màu ở hai màn cách nhau một
+ * cú chạm.
+ *
+ * ── chọn màu ──
+ *
+ * Đạm là đỏ hồng của thịt. Tinh bột vàng cam như bông lúa. Chất béo xanh dương.
+ * Chất xơ xanh lá.
+ *
+ * Không mượn `readinessYellow`/`readinessRed` làm màu chất: ba màu trạng thái
+ * sẵn sàng ở app này CÓ NGHĨA, và dùng lại một trong ba cho một chất là để hai
+ * chuyện khác nhau nói bằng cùng một màu. `readinessGreen` cho chất xơ là ngoại
+ * lệ có sẵn từ trước — nó cũng là màu của chính tab Dinh dưỡng.
+ */
+export const MACRO_TINT = {
+  protein: colors.metricRose,
+  carbs: colors.metricOrange,
+  fat: colors.metricBlue,
+  fiber: colors.readinessGreen,
+} as const;
+
 export const PAGE_TINT = {
   activity: [colors.metricOrange, colors.metricPurple],
   nutrition: [colors.readinessGreen, colors.metricOrange],

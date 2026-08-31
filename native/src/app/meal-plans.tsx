@@ -10,10 +10,11 @@ import { EmptyState } from '@/components/ascnd/empty-state';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { PlanRow } from '@/components/ascnd/plan-row';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
-import { useMealPlans } from '@/hooks/use-library';
+import { useMealPlanFill, useMealPlans } from '@/hooks/use-library';
 import { useRise } from '@/lib/entrance';
 
 /**
@@ -54,6 +55,9 @@ export default function MealPlansScreen() {
   const rise = useRise();
   const i18n = useI18n();
   const { data: plans, isError, refetch, isRefetching } = useMealPlans();
+  /* Trang này liệt kê TẤT CẢ, nên nó hỏi cho tất cả — khác bản xem trước ở tab
+     Dinh dưỡng, nơi chỉ ba kế hoạch được vẽ. */
+  const { data: fill } = useMealPlanFill((plans ?? []).map((p) => p.id));
   const [creating, setCreating] = useState(false);
 
   const goalLabel = (g: string | null) =>
@@ -75,24 +79,21 @@ export default function MealPlansScreen() {
                   inset the rule moves the whole row, and every chevron after
                   the first ends up 16pt off the one above it. */}
               {i > 0 ? <View style={styles.sep} /> : null}
-              <PressScale
-                accessibilityRole="button"
-                accessibilityLabel={p.name}
+              <PlanRow
+                name={p.name}
+                goalText={[
+                  goalLabel(p.goal),
+                  p.meals_per_day ? `${p.meals_per_day} ${i18n.nMealsPerDay}` : null,
+                ]
+                  .filter(Boolean)
+                  .join('  ·  ')}
+                perDay={p.meals_per_day ?? 3}
+                days={fill?.[p.id]}
                 onPress={() => {
                   Haptics.selectionAsync();
                   nav.push({ pathname: '/meal-plan', params: { plan: p.id } });
                 }}
-                style={styles.row}>
-                <View style={styles.text}>
-                  <Text style={styles.name} numberOfLines={1}>{p.name}</Text>
-                  <Text style={styles.meta} numberOfLines={1}>
-                    {[goalLabel(p.goal), p.meals_per_day ? `${p.meals_per_day} ${i18n.nMealsPerDay}` : null]
-                      .filter(Boolean)
-                      .join('  ·  ')}
-                  </Text>
-                </View>
-                <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-              </PressScale>
+              />
             </Animated.View>
           ))}
         </View>

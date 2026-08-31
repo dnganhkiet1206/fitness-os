@@ -286,7 +286,11 @@ export function useWorkoutTemplateNames() {
         .select('id, name')
         .eq('user_id', user!.id);
       if (error) throw error;
-      return new Map((data ?? []).map((t) => [t.id, t.name]));
+      /* Object thuần, không phải `Map`. Cache của app này được persist qua
+         JSON.stringify, thứ biến `Map` thành `{}` — và `.get(...)` ở lần khởi
+         động sau là một cú ném. Lỗi này nằm im từ lâu vì hook hiện KHÔNG được
+         dùng ở đâu; nó sẽ nổ vào ngày ai đó nối nó vào. */
+      return Object.fromEntries((data ?? []).map((t) => [t.id, t.name] as const));
     },
   });
 }
@@ -369,8 +373,19 @@ export function useMealPlans() {
  * calo và bốn macro về để rồi đếm là trả tiền băng thông cho dữ liệu bị vứt đi
  * ngay dòng sau.
  *
- * Trả về `Map<planId, Map<dayIndex, số ô đã lấp>>` — đúng hình dạng mà một
- * bảng bảy ngày cần để vẽ, nên chỗ gọi không phải gom lại lần nữa.
+ * ── vì sao KHÔNG trả về Map ──
+ *
+ * Cache của app này được persist xuống AsyncStorage qua `JSON.stringify`, và
+ * `JSON.stringify(new Map())` cho ra `{}`. Lần khởi động sau, `.get(...)` trên
+ * nó là "undefined is not a function".
+ *
+ * Lỗi đó đã xảy ra một lần trong repo này với một `Set`, và bản đầu của chính
+ * hàm này mắc lại y hệt — `tools/persisted-query.mjs` không bắt được vì nó chỉ
+ * soi những `return {` dạng object literal, tức chỉ bắt đúng hình dạng của lần
+ * đầu. Luật đã được sửa cùng lúc với hàm này.
+ *
+ * Nên: object thuần, thứ đi qua JSON và về nguyên vẹn. Tra cứu bằng `?.[]` chứ
+ * không phải `.get()`.
  */
 export function useMealPlanFill(planIds: string[]) {
   const { user } = useAuth();
@@ -384,11 +399,10 @@ export function useMealPlanFill(planIds: string[]) {
         .select('meal_plan_id, day_index')
         .in('meal_plan_id', planIds);
       if (error) throw error;
-      const out = new Map<string, Map<number, number>>();
+      const out: Record<string, Record<number, number>> = {};
       for (const row of data ?? []) {
-        const days = out.get(row.meal_plan_id) ?? new Map<number, number>();
-        days.set(row.day_index, (days.get(row.day_index) ?? 0) + 1);
-        out.set(row.meal_plan_id, days);
+        const days = (out[row.meal_plan_id] ??= {});
+        days[row.day_index] = (days[row.day_index] ?? 0) + 1;
       }
       return out;
     },
@@ -491,6 +505,11 @@ export function useAddMealPlanItem() {
     onSuccess: (_data, item) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       queryClient.invalidateQueries({ queryKey: ['meal_plan_items', item.meal_plan_id] });
+      /* `meal_plan_fill` cũng phải hết hiệu lực, không thì ô ngày trên danh
+         sách thực đơn chỉ sáng lên sau khi tải lại trang — đã bị báo đúng như
+         vậy. Không truyền id: khoá của nó chứa danh sách plan đang xem, mà chỗ
+         này không biết danh sách đó. */
+      queryClient.invalidateQueries({ queryKey: ['meal_plan_fill'] });
     },
   });
 }
@@ -506,6 +525,11 @@ export function useDeleteMealPlanItem() {
     },
     onSuccess: (_data, { planId }) => {
       queryClient.invalidateQueries({ queryKey: ['meal_plan_items', planId] });
+      /* `meal_plan_fill` cũng phải hết hiệu lực, không thì ô ngày trên danh
+         sách thực đơn chỉ sáng lên sau khi tải lại trang — đã bị báo đúng như
+         vậy. Không truyền id: khoá của nó chứa danh sách plan đang xem, mà chỗ
+         này không biết danh sách đó. */
+      queryClient.invalidateQueries({ queryKey: ['meal_plan_fill'] });
     },
   });
 }

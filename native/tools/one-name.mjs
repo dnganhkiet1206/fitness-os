@@ -57,11 +57,23 @@ const vùngVi = (src) => {
   return [mở, đóng];
 };
 
-/* Từ tiếng Anh KHÔNG được xuất hiện trong bảng tiếng Việt, kèm từ thay thế. */
+/*
+  Từ KHÔNG được xuất hiện trong bảng tiếng Việt, kèm từ thay thế.
+
+  ── từ chuẩn đã đổi một lần, và ghi lại ở đây ──
+
+  Vòng đầu chọn "thực đơn" vì nó là nhãn của tab và là từ trong câu định nghĩa.
+  Chủ sản phẩm đổi lại thành "kế hoạch ăn", và lý do đúng: thứ này là BẢY NGÀY
+  có ô bữa, tức một kế hoạch — còn "thực đơn" là danh sách món của một bữa hoặc
+  một quán. Cái tên phải mô tả thứ nó làm.
+
+  Luật không quan tâm từ nào được chọn; nó chỉ ép rằng chỉ có MỘT từ. Đổi từ
+  chuẩn là sửa hai dòng dưới đây, và luật sẽ chỉ ra mọi chỗ còn sót.
+*/
 const CẤM = [
-  [/\bmeal plans?\b/i, 'thực đơn'],
+  [/\bmeal plans?\b/i, 'kế hoạch ăn'],
   [/\bshopping list\b/i, 'danh sách đi chợ'],
-  [/\bkế hoạch ăn\b/i, 'thực đơn'],
+  [/\bthực đơn\b/i, 'kế hoạch ăn'],
 ];
 
 for (const f of ['src/lib/i18n.ts', 'src/lib/native-strings.ts']) {
@@ -92,7 +104,7 @@ if (problems.length) {
 }
 
 console.log(
-  'một khái niệm một tên OK — trong BẢNG tiếng Việt không chuỗi nào còn gọi thực đơn là "meal plan" hay ' +
-    '"kế hoạch ăn", và không chuỗi nào gọi danh sách đi chợ là "shopping list". Bảng tiếng Anh không bị ' +
+  'một khái niệm một tên OK — trong BẢNG tiếng Việt không chuỗi nào còn gọi kế hoạch ăn là "meal plan" hay ' +
+    '"thực đơn", và không chuỗi nào gọi danh sách đi chợ là "shopping list". Bảng tiếng Anh không bị ' +
     'đụng tới: luật khoanh vùng theo `const vi` chứ không theo dấu, nên nó thấy cả một chuỗi TOÀN tiếng Anh nằm nhầm bảng',
 );

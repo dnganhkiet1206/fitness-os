@@ -79,23 +79,67 @@ for (const abs of walk(path.join(NATIVE, 'src'))) {
     /* From the queryFn to the end of the hook call. Bounded by the closing
        `});` at the same indentation, which is how every one of these is
        written in this repository. */
-    const rest = code.slice(m.index);
-    const end = rest.search(/\n\s{0,4}\}\);/);
-    const body = end < 0 ? rest : rest.slice(0, end);
+    /*
+      Biên thân hàm bằng cách ĐẾM NGOẶC, không phải đoán theo thụt lề.
 
-    const ret = body.lastIndexOf('return {');
-    if (ret < 0) continue;
-    const returned = body.slice(ret);
-    BAD.lastIndex = 0;
+      Bản trước cắt tại `\n  });` đầu tiên, thứ trùng với cả `useMutation` nằm
+      sau đó — nên thân "queryFn" trôi qua cả một hàm khác và luật tố một
+      `new Map(` trong một mutation không liên quan. Một biên đoán bằng hình
+      thức là một biên sai ngay khi ai đó định dạng lại tệp.
+    */
+    const rest = code.slice(m.index);
+    const open = rest.indexOf('{');
+    let depth = 0;
+    let close = -1;
+    for (let k = open; k >= 0 && k < rest.length; k++) {
+      if (rest[k] === '{') depth++;
+      else if (rest[k] === '}') { depth--; if (depth === 0) { close = k; break; } }
+    }
+    if (open < 0 || close < 0) continue;
+    const body = rest.slice(open, close + 1);
+
+    /*
+      Bám thứ được TRẢ VỀ, không phải mọi thứ trong thân hàm.
+
+      ── hai lần sai của chính luật này ──
+
+      Bản đầu chỉ soi từ `return {` trở đi, tức chỉ bắt đúng hình dạng của lần
+      đầu tiên (`return { claimed: new Set(...) }`). Một hàm dựng
+      `const out = new Map()` rồi `return out` đi lọt hoàn toàn — và đó chính là
+      thứ đã lọt.
+
+      Bản sửa vội soi CẢ thân, và lập tức tố hai chỗ vô tội: một `Set` dùng nội
+      bộ để `.has()` rồi trả về mảng, và một `new Map(` nằm ngoài queryFn do
+      biên thân hàm bị vượt. Một luật báo nhầm là một luật sắp bị tắt.
+
+      Đúng là: tìm câu `return`, rồi hỏi giá trị ĐÓ có phải Set/Map không —
+      trực tiếp, hoặc qua một biến được gán `new Set/Map` trong cùng thân hàm.
+    */
+    const retM = [...body.matchAll(/\breturn\s+([\s\S]*?);/g)].pop();
+    if (!retM) continue;
+    const expr = retM[1];
     let hit = null;
-    for (const c of returned.matchAll(BAD)) {
-      if (!SAFE.test(returned.slice(Math.max(0, c.index - 14), c.index))) {
-        hit = c;
-        break;
+
+    /* (a) trả về thẳng, hoặc trong một object literal. */
+    BAD.lastIndex = 0;
+    for (const c of expr.matchAll(BAD)) {
+      if (!SAFE.test(expr.slice(Math.max(0, c.index - 14), c.index))) { hit = c; break; }
+    }
+
+    /* (b) trả về một BIẾN từng được gán `new Set/Map`. */
+    if (!hit) {
+      const bare = /^\s*([A-Za-z_$][\w$]*)\s*$/.exec(expr);
+      if (bare) {
+        const decl = new RegExp(`\\b(?:const|let|var)\\s+${bare[1]}\\b[^=]*=\\s*new\\s+(Set|Map)\\s*[(<]`).exec(body);
+        if (decl) hit = { 1: decl[1], index: decl.index };
       }
     }
+
     if (hit) {
-      const line = code.slice(0, m.index + ret + hit.index).split('\n').length;
+      /* `hit.index` tương đối với THÂN hàm, mà thân bắt đầu ở `m.index + open`
+         — cộng thẳng vào `m.index` cho ra một số dòng trỏ nhầm sang hàm khác,
+         và tôi suýt đi sửa một mutation vô can vì tin con số đó. */
+      const line = code.slice(0, m.index + open + hit.index).split('\n').length;
       problems.push(
         `${rel}:${line}: queryFn trả về \`new ${hit[1]}(\` — cache của app này được PERSIST xuống ` +
           'AsyncStorage, và JSON.stringify biến Set/Map thành `{}`. Lần khởi động sau, `.has(...)` ' +

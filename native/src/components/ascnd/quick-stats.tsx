@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { MACRO_TINT, colors, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
 
 /**
@@ -75,7 +75,7 @@ export function QuickStats({
     {
       key: 'protein',
       icon: Beef,
-      color: colors.metricRose,
+      color: MACRO_TINT.protein,
       label: i18n.nQuickProtein,
       value: Math.round(protein),
       target: proteinTarget,

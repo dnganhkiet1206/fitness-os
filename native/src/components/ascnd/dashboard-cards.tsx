@@ -19,7 +19,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { MACRO_TINT, colors, radius, spacing } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -673,11 +673,11 @@ export function NutritionCard({
     Bốn bóng khác nhau, nên chúng phân biệt được cả khi nhỏ tới mức chỉ còn bóng.
   */
   const macros = [
-    { label: 'Protein', ...protein, icon: Beef, color: colors.metricRose, bar: ['#e6485c', '#ff8095'] as [string, string] },
-    { label: 'Carbs', ...carbs, icon: Wheat, color: colors.metricOrange, bar: ['#ff9130', '#ffd93d'] as [string, string] },
-    { label: 'Fat', ...fat, icon: Milk, color: colors.metricBlue, bar: ['#3ba6ff', '#22e3ff'] as [string, string] },
+    { label: 'Protein', ...protein, icon: Beef, color: MACRO_TINT.protein, bar: ['#e6485c', '#ff8095'] as [string, string] },
+    { label: 'Carbs', ...carbs, icon: Wheat, color: MACRO_TINT.carbs, bar: ['#ff9130', '#ffd93d'] as [string, string] },
+    { label: 'Fat', ...fat, icon: Milk, color: MACRO_TINT.fat, bar: ['#3ba6ff', '#22e3ff'] as [string, string] },
     ...(fiber
-      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: colors.readinessGreen, bar: ['#3ecf8e', '#2f9e6b'] as [string, string] }]
+      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: MACRO_TINT.fiber, bar: ['#3ecf8e', '#2f9e6b'] as [string, string] }]
       : []),
   ];
 

@@ -27,7 +27,7 @@ import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useMealPlanFill, useMealPlans } from '@/hooks/use-library';
-import { PLAN_DAYS } from '@/lib/planned-meal';
+import { PlanRow } from '@/components/ascnd/plan-row';
 import { dedupeSeedShadows, useMyFoods, useMyFoodsSorted, useRecentFoods, useToggleFavoriteFood, useTodayLog, type FoodItemRow } from '@/hooks/use-nutrition';
 import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile } from '@/hooks/useTodayData';
@@ -97,32 +97,6 @@ type Tab = 'today' | 'plan';
  * is exactly the person looking at this screen, and "no meal plans yet" tells
  * them only that they have not done a thing they may not have a name for.
  */
-/**
- * Một tuần của một thực đơn: bảy cột, lấp từ dưới lên.
- *
- * Lấp từ ĐÁY chứ không phải từ đỉnh, và không phải chuyện thẩm mỹ: bảy cột lấp
- * từ đáy đọc ra là một biểu đồ cột, tức "ngày này nhiều hơn ngày kia" — đúng
- * chuyện nó đang kể. Lấp từ đỉnh xuống đọc ra là bảy thanh tiến trình rời rạc.
- *
- * Ngày chưa có gì vẫn vẽ ô rỗng: cái bảng phải có đủ bảy cột thì mới là một
- * tuần. Bỏ cột trống đi thì một thực đơn mới tạo trông như không có ngày nào.
- */
-function PlanWeek({ days, perDay }: { days?: Map<number, number>; perDay: number }) {
-  return (
-    <View style={styles.week} pointerEvents="none">
-      {PLAN_DAYS.map((d) => {
-        const got = days?.get(d) ?? 0;
-        const pct = perDay > 0 ? Math.min(1, got / perDay) : 0;
-        return (
-          <View key={d} style={styles.weekDay}>
-            {pct > 0 ? <View style={[styles.weekFill, { height: `${Math.round(pct * 100)}%` }]} /> : null}
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
 function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boolean }) {
   /* Lần vẽ đầu thì hiện ngay — xem `useRise`. */
   const rise = useRise();
@@ -228,49 +202,25 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
         {plans.slice(0, PREVIEW).map((p, i) => (
           <Animated.View key={p.id} entering={rise(i)}>
             {i > 0 ? <View style={foodListStyles.sep} /> : null}
-            <PressScale
-              accessibilityRole="button"
-              accessibilityLabel={`${p.name} — ${i18n.nMealPlanOpen}`}
-              style={styles.planRow}
+            <PlanRow
+              name={p.name}
+              goalText={[
+                goalLabel(p.goal),
+                /* `nutritionMeals` = "bữa", không phải `nutritionMealsPerDay` =
+                   "Số bữa/ngày". Khoá kia là NHÃN của một ô nhập, và ghép nó sau
+                   một con số cho ra "3 Số bữa/ngày". */
+                p.meals_per_day ? `${p.meals_per_day} ${i18n.nutritionMeals}` : null,
+              ]
+                .filter(Boolean)
+                .join('  ·  ')}
+              perDay={p.meals_per_day ?? 3}
+              days={fill?.[p.id]}
+              a11yLabel={`${p.name} — ${i18n.nMealPlanOpen}`}
               onPress={() => {
                 Haptics.selectionAsync();
                 nav.push({ pathname: '/meal-plan', params: { plan: p.id } });
-              }}>
-              <View style={styles.planText}>
-                <View style={styles.planTop}>
-                  <Text style={styles.planName} numberOfLines={1}>{p.name}</Text>
-                  <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-                </View>
-                <Text style={styles.planMeta} numberOfLines={1}>
-                  {[
-                    goalLabel(p.goal),
-                    /* `nutritionMeals` = "bữa", không phải `nutritionMealsPerDay`
-                       = "Số bữa/ngày". Khoá kia là NHÃN của một ô nhập, và ghép
-                       nó sau một con số cho ra "3 Số bữa/ngày". */
-                    p.meals_per_day ? `${p.meals_per_day} ${i18n.nutritionMeals}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join('  ·  ')}
-                </Text>
-                {/*
-                  Bảy ngày, vẽ ra.
-
-                  ── vì sao thêm ──
-
-                  Trước đây hàng này là "Tên · Duy trì · 3 bữa" — ba mẩu chữ.
-                  Nó nói thực đơn TÊN GÌ nhưng không nói thực đơn ĐÓ RA SAO, mà
-                  một thực đơn về bản chất là một cái bảng: bảy ngày, mỗi ngày
-                  mấy ô. Không nhìn thấy cái bảng thì không phân biệt được một
-                  thực đơn đã soạn xong với một thực đơn mới tạo còn rỗng —
-                  đúng câu hỏi người ta mở danh sách này để trả lời.
-
-                  Mỗi cột là một ngày, phần lấp là số ô đã có món trên tổng số
-                  bữa mỗi ngày. Dữ liệu thật, một truy vấn cho cả danh sách —
-                  xem `useMealPlanFill`.
-                */}
-                <PlanWeek days={fill?.get(p.id)} perDay={p.meals_per_day ?? 3} />
-              </View>
-            </PressScale>
+              }}
+            />
           </Animated.View>
         ))}
         <View style={foodListStyles.sep} />
