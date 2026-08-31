@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { FormSheet } from '@/components/ascnd/form-sheet';
 import { Icon } from '@/components/ascnd/icon';
+import { Segmented } from '@/components/ascnd/segmented';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -323,52 +324,65 @@ export function MealPlanWizard({
       }>
       {!plan ? (
             <>
-              <Text style={styles.stepHead}>{i18n.nutritionPlanName}</Text>
-              <Text style={styles.stepHint}>{i18n.nMpStepPlanHint}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={i18n.nMpPlanNameEg}
-                placeholderTextColor={colors.mutedForeground}
-                value={name}
-                onChangeText={setName}
-                returnKeyType="done"
-                onSubmitEditing={submitPlan}
-              />
+              {/*
+                Ba mục, mỗi mục một KHỐI — kiểu "inset grouped" của iOS.
 
-              <Text style={styles.stepHead}>{i18n.settingsGoal}</Text>
-              <View style={styles.chipRow}>
-                {[
-                  { key: 'bulk', label: i18n.goalBulk },
-                  { key: 'cut', label: i18n.goalCut },
-                  { key: 'maintain', label: i18n.goalMaintain },
-                ].map((g) => (
-                  <Chip
-                    key={g.key}
-                    label={g.label}
-                    on={goal === g.key}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setGoal(g.key);
-                    }}
-                  />
-                ))}
-              </View>
+                Trước đây cả ba trôi trên nền đen phẳng: nhãn đậm, rồi nội dung,
+                rồi nhãn đậm nữa. Không có gì khoanh vùng câu hỏi nào thuộc về
+                đâu, nên màn hình đọc ra như một biểu mẫu web chứ không phải một
+                tấm của iOS. Đây là idiom mà Cài đặt, Sức khoẻ và mọi biểu mẫu
+                hệ thống đều dùng: tiêu đề NHỎ, chữ hoa, màu phụ, đặt trên một
+                khối bo góc chứa câu trả lời.
+              */}
+              <Field label={i18n.nutritionPlanName} hint={i18n.nMpStepPlanHint}>
+                <TextInput
+                  style={styles.input}
+                  placeholder={i18n.nMpPlanNameEg}
+                  placeholderTextColor={colors.mutedForeground}
+                  value={name}
+                  onChangeText={setName}
+                  returnKeyType="done"
+                  onSubmitEditing={submitPlan}
+                />
+              </Field>
 
-              <Text style={styles.stepHead}>{i18n.nutritionMealsPerDay}</Text>
-              <Text style={styles.stepHint}>{i18n.nMpStepSlotsHint}</Text>
-              <View style={styles.chipRow}>
-                {MEALS_PER_DAY.map((n) => (
-                  <Chip
-                    key={n}
-                    label={`${n} ${i18n.nutritionMeals}`}
-                    on={mealsPerDay === n}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setMealsPerDay(n);
-                    }}
-                  />
-                ))}
-              </View>
+              {/*
+                `Segmented` chứ không phải chip rời, và đây là thứ app ĐÃ CÓ.
+
+                Ba lựa chọn loại trừ nhau là định nghĩa của một segmented
+                control; chip rời là thứ dùng cho lựa chọn nhiều-chọn hoặc cho
+                một danh sách dài. Đọc ra khác nhau: một khối liền nói "chọn một
+                trong đây", ba viên rời nói "bật/tắt từng cái".
+
+                Nó cũng mặc định cao 44 — đúng sàn của Apple — trong khi chip tự
+                dựng ở đây cao 31 cộng `hitSlop` 6+6, tức 43: thiếu ĐÚNG một
+                điểm, kiểu thiếu mà không ai nhìn ra được bằng mắt.
+              */}
+              <Field label={i18n.settingsGoal}>
+                <Segmented
+                  value={goal}
+                  onChange={(k) => {
+                    Haptics.selectionAsync();
+                    setGoal(k);
+                  }}
+                  options={[
+                    { key: 'bulk' as const, label: i18n.goalBulk },
+                    { key: 'cut' as const, label: i18n.goalCut },
+                    { key: 'maintain' as const, label: i18n.goalMaintain },
+                  ]}
+                />
+              </Field>
+
+              <Field label={i18n.nutritionMealsPerDay} hint={i18n.nMpStepSlotsHint}>
+                <Segmented
+                  value={String(mealsPerDay)}
+                  onChange={(k) => {
+                    Haptics.selectionAsync();
+                    setMealsPerDay(Number(k));
+                  }}
+                  options={MEALS_PER_DAY.map((n) => ({ key: String(n), label: String(n) }))}
+                />
+              </Field>
             </>
           ) : (
             <>
@@ -471,6 +485,29 @@ export function MealPlanWizard({
   );
 }
 
+/**
+ * Một câu hỏi và câu trả lời của nó, đóng thành một khối.
+ *
+ * Kiểu "inset grouped" của iOS: tiêu đề NHỎ, chữ hoa, màu phụ, đặt TRÊN một
+ * khối bo góc chứa nội dung. Nó khoanh vùng câu hỏi nào thuộc về đâu — thứ mà
+ * một dãy nhãn đậm trôi trên nền phẳng không làm được, và là lý do màn hình cũ
+ * đọc ra như biểu mẫu web.
+ *
+ * Câu gợi ý nằm TRONG khối, ngay trên câu trả lời, chứ không nằm dưới tiêu đề:
+ * nó giải thích câu trả lời chứ không giải thích cái tên.
+ */
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label.toUpperCase()}</Text>
+      <View style={styles.fieldBox}>
+        {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
+        {children}
+      </View>
+    </View>
+  );
+}
+
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   return (
     <Pressable
@@ -558,6 +595,31 @@ const styles = StyleSheet.create({
   /* The question, then what it means. A row of chips is only obviously a
      control once you know what it is choosing between. */
   stepHead: { ...type.footnote, color: colors.foreground, fontWeight: '700', marginTop: spacing.sm },
+
+  field: { gap: 7 },
+  /* Nhỏ, hoa, giãn chữ, màu phụ — cùng cách `MicroTitle` viết tiêu đề mục ở
+     phần còn lại của app, nên tấm này không mang một giọng riêng. */
+  fieldLabel: {
+    ...type.caption,
+    color: colors.mutedForeground,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginLeft: 2,
+  },
+  /*
+    KHÔNG có nền, và bản đầu có — đó là một tầng thừa tôi tự thêm rồi tự thấy.
+
+    Dựng ra xem thì ô nhập và đường ray của segmented BIẾN MẤT: cả hai đều tô
+    `colors.secondary`, và tôi vừa cho hộp bọc đúng màu đó. Cùng màu trên cùng
+    màu là không có gì.
+
+    Sửa đúng không phải đổi màu hộp mà là bỏ hộp. Trong biểu mẫu của iOS, một
+    segmented control TỰ NÓ là bề mặt của mục — không ai bọc thêm một khung
+    quanh nó. Thứ tạo ra cảm giác "inset grouped" là cái NHÃN nhỏ chữ hoa màu
+    phụ đặt trên, cộng khoảng thở giữa các mục; không phải một đường viền nữa.
+  */
+  fieldBox: { gap: spacing.sm },
+  fieldHint: { ...type.caption, color: colors.mutedForeground },
   stepHint: { ...type.caption, color: colors.mutedForeground, marginBottom: 2 },
 
   input: {
