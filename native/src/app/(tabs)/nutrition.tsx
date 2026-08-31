@@ -449,7 +449,24 @@ export default function NutritionScreen() {
       */}
       <Screen refreshable title={i18n.nutritionTitle} aura={PAGE_TINT.nutrition}>
         {/* Segmented tabs (web TabsList: Foods | Meal Plans) */}
+        {/*
+          Điều hướng MỤC của trang, không phải một ô điều khiển đặt lên trang.
+
+          Bản trước là một segmented control đầy đủ: đường ray có nền, viên
+          trượt lấp đầy nửa màn, chữ 11 điểm. Nó đọc ra như một component được
+          đặt vào màn hình — một thẻ nằm ngay trên các thẻ kính bên dưới, tức
+          "thẻ trong thẻ", và cái viên nửa màn nặng hơn hẳn thứ nó đang chỉ.
+
+          `underline` bỏ đường ray đi: chỉ còn hai nhãn căn trái và một gạch 3
+          điểm trượt dưới nhãn đang chọn, rộng đúng bằng nhãn đó. Thứ bậc do độ
+          mờ kể (42% cho mục chưa chọn), nên không thêm màu nào vào bảng.
+
+          Cơ chế trượt vẫn là `PickRow` — cùng một thứ mà viên trượt dùng, chỉ
+          khác chiều cao và chỗ neo. Không có thanh chỉ báo thứ hai nào được
+          viết ra.
+        */}
         <Segmented
+          variant="underline"
           value={tab}
           onChange={setTab}
           options={[

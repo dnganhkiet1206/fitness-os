@@ -157,6 +157,8 @@ export function PickRow({
   border,
   radius,
   height,
+  pillHeight,
+  pillAnchor = 'fill',
   gap = 8,
   scroll = false,
   style,
@@ -165,6 +167,20 @@ export function PickRow({
   /** the selected key; must match one `PickRow.Item`'s `itemKey` */
   value: string;
   children: React.ReactNode;
+  /**
+   * Chiều cao RIÊNG của viên trượt, khi nó không lấp đầy ô.
+   *
+   * Mặc định viên cao bằng ô — đó là hình dạng "segmented control". Cho nó một
+   * chiều cao nhỏ cùng `pillAnchor: 'bottom'` thì chính viên đó thành một GẠCH
+   * CHÂN, và cơ chế trượt không đổi một dòng nào.
+   *
+   * Đó là lý do nó là một prop ở đây chứ không phải một component thứ hai:
+   * chú thích đầu tệp này đã ghi "hai cơ chế cho một hành vi là lỗi repo này
+   * liên tục tìm thấy", và một thanh chỉ báo trượt tự viết sẽ là cơ chế thứ hai.
+   */
+  pillHeight?: number;
+  /** `fill` — cao bằng ô (mặc định); `bottom` — mỏng, neo mép dưới ô. */
+  pillAnchor?: 'fill' | 'bottom';
   /** an outline on the highlight, cut across the three pieces — see above */
   border?: { width: number; color: string };
   /**
@@ -241,19 +257,27 @@ export function PickRow({
     });
   };
 
-  const h = height ?? here?.h ?? 0;
+  const box = height ?? here?.h ?? 0;
+  /* `h` là chiều cao của VIÊN, `box` là của ô. Hai thứ chỉ khác nhau ở chế độ
+     gạch chân, nên bán kính cũng kẹp theo viên chứ không theo ô — một gạch cao
+     3 điểm với bán kính của một ô cao 44 sẽ là một hình chữ nhật vuông góc. */
+  const h = pillHeight ?? box;
   const r = Math.min(radius, h / 2);
+  /* Neo đáy: dịch xuống đúng phần chênh lệch. Đây là một hằng số theo layout,
+     không phải một giá trị animate — nó cộng vào `translateY` đã có sẵn nên
+     không thêm một thuộc tính nào cho worklet phải ghi. */
+  const dy = pillAnchor === 'bottom' ? box - h : 0;
 
   const left = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }, { translateY: y.value }],
+    transform: [{ translateX: x.value }, { translateY: y.value + dy }],
   }));
   const right = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value + w.value - r }, { translateY: y.value }],
+    transform: [{ translateX: x.value + w.value - r }, { translateY: y.value + dy }],
   }));
   const mid = useAnimatedStyle(() => ({
     transform: [
       { translateX: x.value + r },
-      { translateY: y.value },
+      { translateY: y.value + dy },
       { scaleX: Math.max(0, w.value - r * 2) },
     ],
   }));

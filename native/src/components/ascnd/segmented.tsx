@@ -63,6 +63,7 @@ export function Segmented<K extends string>({
   onChange,
   height = 44,
   compact = false,
+  variant = 'pill',
 }: {
   options: readonly SegmentOption<K>[];
   value: K;
@@ -71,18 +72,36 @@ export function Segmented<K extends string>({
   height?: number;
   /** the mascot room's row is a smaller control inside a card */
   compact?: boolean;
+  /**
+   * `pill` — viên trượt lấp đầy ô, trên một đường ray có nền. Mặc định, và là
+   * hình dạng đúng cho một control nằm TRONG một thẻ: đường ray nói "đây là một
+   * ô điều khiển", và nó cần nói thế khi xung quanh là chữ và số.
+   *
+   * `underline` — không đường ray, không nền; chỉ nhãn và một gạch mỏng trượt
+   * dưới nhãn đang chọn. Dùng cho điều hướng MỤC ở đầu màn, nơi thanh này không
+   * phải một ô điều khiển đặt lên trang mà là mục lục của chính trang đó.
+   *
+   * Cùng một cơ chế trượt cho cả hai: chỉ viên trượt đổi chiều cao và chỗ neo,
+   * không có thanh chỉ báo thứ hai được viết ra ở đâu cả.
+   */
+  variant?: 'pill' | 'underline';
 }) {
   const pad = 3;
   const r = compact ? radius.full : radius.sm;
+  const line = variant === 'underline';
 
   return (
     <PickRow
       value={value}
-      fill={colors.accent}
-      radius={compact ? radius.full : r - pad}
+      /* Gạch chân mang chính màu của chữ đang chọn, nên nó không phải một màu
+         mới phải học — nó là cùng một giọng, đọc thành "chỗ này". */
+      fill={line ? colors.foreground : colors.accent}
+      radius={line ? 2 : compact ? radius.full : r - pad}
       height={height}
-      gap={0}
-      style={[styles.row, { borderRadius: r, padding: pad }]}>
+      pillHeight={line ? 3 : undefined}
+      pillAnchor={line ? 'bottom' : 'fill'}
+      gap={line ? spacing.lg : 0}
+      style={line ? styles.lineRow : [styles.row, { borderRadius: r, padding: pad }]}>
       {options.map((o) => {
         const on = o.key === value;
         return (
@@ -90,16 +109,27 @@ export function Segmented<K extends string>({
             key={o.key}
             itemKey={o.key}
             accessibilityLabel={o.label}
-            style={[styles.seg, { height }]}
+            style={[line ? styles.lineSeg : styles.seg, { height }]}
             onPress={() => {
               if (on) return;
               Haptics.selectionAsync();
               onChange(o.key);
             }}>
             {o.icon ? (
-              <Icon icon={o.icon} size={13} color={on ? colors.foreground : colors.mutedForeground} />
+              <Icon
+                icon={o.icon}
+                size={line ? 15 : 13}
+                color={on ? colors.foreground : colors.mutedForeground}
+              />
             ) : null}
-            <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
+            <Text
+              style={[
+                styles.label,
+                line && styles.lineLabel,
+                on && styles.labelOn,
+                line && !on && styles.lineLabelOff,
+              ]}
+              numberOfLines={1}>
               {o.label}
             </Text>
           </PickRow.Item>
@@ -114,6 +144,22 @@ const styles = StyleSheet.create({
   seg: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   label: { ...type.caption, fontWeight: '600', color: colors.mutedForeground },
   labelOn: { color: colors.foreground },
+
+  /* ── biến thể gạch chân ── */
+  /* Không nền, không viền, không đệm: thanh này hoà vào trang chứ không đặt lên
+     trang. Căn TRÁI vì mục lục đọc từ trái, và vì hai mục căn giữa trên cả bề
+     rộng màn hình thì gạch chân phải dài bằng nửa màn — nặng hơn hẳn thứ nó
+     đang chỉ. */
+  lineRow: { flexDirection: 'row', justifyContent: 'flex-start' },
+  /* Không `flex: 1`: ô ôm sát chữ, nên gạch chân rộng đúng bằng nhãn nó đang
+     chỉ. Đó là khác biệt lớn nhất so với viên trượt, và là lý do thanh này nhẹ. */
+  lineSeg: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  /* 15 điểm, không phải 11 của viên trượt: đây là mục lục của trang chứ không
+     phải nhãn bên trong một ô điều khiển, và nó đứng ngay dưới tiêu đề màn. */
+  lineLabel: { ...type.body, fontWeight: '600' },
+  /* Mục chưa chọn mờ đi chứ không đổi màu: cùng một giọng ở hai mức, nên thứ
+     bậc đọc ra ngay mà không thêm một màu nào vào bảng. */
+  lineLabelOff: { color: colors.foreground, opacity: 0.42 },
 });
 
 /**
