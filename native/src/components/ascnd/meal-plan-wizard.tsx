@@ -239,6 +239,19 @@ export function MealPlanWizard({
     },
   ];
 
+  /**
+   * Bước đang đứng — và việc thiếu nó là lý do hàng này không nói gì ở bước một.
+   *
+   * Hàng chấm chỉ có hai trạng thái: `done` hoặc không. Ở bước đầu thì chưa có
+   * `plan`, nên cả BỐN `done` đều false và bốn chấm xám giống hệt nhau. Một
+   * thanh tiến trình chiếm bốn nhãn cùng một dải chiều cao rồi không trả lời
+   * được câu hỏi duy nhất nó sinh ra để trả lời: tôi đang ở đâu.
+   *
+   * Bước đang đứng là bước ĐẦU TIÊN chưa xong — không cần một biến trạng thái
+   * thứ hai, và vì thế nó không thể lệch với các dấu `done`.
+   */
+  const current = steps.findIndex((st) => !st.done);
+
   return (
     <FormSheet
       visible={visible}
@@ -258,14 +271,16 @@ export function MealPlanWizard({
             <View key={st.key} style={styles.step}>
               <View style={styles.stepTop}>
                 <View style={[styles.rail, i === 0 && styles.railClear, steps[i - 1]?.done && styles.railOn]} />
-                <View style={[styles.dot, st.done && styles.dotOn]}>
+                <View style={[styles.dot, i === current && styles.dotNow, st.done && styles.dotOn]}>
                   {st.done ? <Icon icon={Check} size={10} color={colors.primaryForeground} strokeWidth={3} /> : null}
                 </View>
                 <View
                   style={[styles.rail, i === steps.length - 1 && styles.railClear, st.done && styles.railOn]}
                 />
               </View>
-              <Text style={[styles.stepValue, st.done && styles.stepValueOn]} numberOfLines={1}>
+              <Text
+                style={[styles.stepValue, (st.done || i === current) && styles.stepValueOn]}
+                numberOfLines={1}>
                 {st.value}
               </Text>
             </View>
@@ -530,6 +545,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   dotOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  /* Viền chứ không phải nền: bước ĐANG đứng chưa xong, nên nó không được trông
+     giống một bước đã xong. Một vòng sáng đọc ra là "ở đây", một khối đặc đọc ra
+     là "rồi". */
+  dotNow: { borderColor: colors.primary, borderWidth: 2.5 },
   rail: { flex: 1, height: 2, backgroundColor: colors.border },
   railOn: { backgroundColor: colors.primary },
   railClear: { backgroundColor: 'transparent' },
