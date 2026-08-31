@@ -33,7 +33,21 @@ import { useDailyLog, useProfile } from '@/hooks/useTodayData';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { supabase } from '@/integrations/supabase/client';
 
-type Tab = 'today' | 'foods' | 'plans';
+/**
+ * Hai mục, không phải ba.
+ *
+ * "Thực phẩm" và "Thực đơn" từng là hai mục ngang hàng, và đó là cách sắp xếp
+ * theo NGUỒN DỮ LIỆU chứ không theo việc người dùng đang làm. Tìm một món ăn
+ * gần như luôn là để đưa nó vào một bữa nào đó — nó là PHƯƠNG TIỆN, còn kế
+ * hoạch mới là thứ người ta mở app để xem. Đặt hai thứ ngang hàng bắt người
+ * dùng chọn giữa mục đích và công cụ, và mỗi lần chuyển qua lại là một lần mất
+ * chỗ đang đứng.
+ *
+ * Gộp lại thì kế hoạch nằm TRÊN và thư viện nằm dưới nó trong cùng một trang:
+ * thứ quan trọng nhất là thứ nhìn thấy trước, và công cụ ở ngay bên dưới khi
+ * cần tới.
+ */
+type Tab = 'today' | 'plan';
 
 /**
  * Nutrition — a diary first, a library second.
@@ -410,8 +424,7 @@ export default function NutritionScreen() {
           onChange={setTab}
           options={[
             { key: 'today' as const, label: lang === 'vi' ? 'Hôm nay' : 'Today', icon: ClipboardList },
-            { key: 'foods' as const, label: i18n.nutritionFoods, icon: Search },
-            { key: 'plans' as const, label: i18n.nutritionMealPlan, icon: Utensils },
+            { key: 'plan' as const, label: i18n.nutritionMealPlan, icon: Utensils },
           ]}
         />
 
@@ -527,8 +540,23 @@ export default function NutritionScreen() {
               </>
             )}
           </>
-        ) : tab === 'foods' ? (
+        ) : (
           <>
+            {/*
+              Kế hoạch TRƯỚC, thư viện sau — thứ tự này là cả lý do gộp hai mục.
+              Người ta mở mục này để xem mình định ăn gì; tìm món là việc làm khi
+              đã biết mình cần thêm gì vào đó.
+            */}
+            <MealPlanTab i18n={i18n} vi={lang === 'vi'} />
+
+            {/* Cùng hàng tiêu đề mà các mục con của thư viện đang dùng, nên nửa
+                dưới đọc ra là một MỤC của trang chứ không phải một trang thứ hai
+                bị nối vào. */}
+            <View style={styles.sectionHeadRow}>
+              <Icon icon={Search} size={13} />
+              <Text style={styles.microTitle}>{i18n.nutritionFoods}</Text>
+            </View>
+
             {/* Search + add custom food (web: search flex-1 + Add button) */}
             <View style={styles.searchRow}>
               <View style={styles.searchWrap}>
@@ -674,8 +702,6 @@ export default function NutritionScreen() {
               </>
             )}
           </>
-        ) : (
-          <MealPlanTab i18n={i18n} vi={lang === 'vi'} />
         )}
         </SegmentPanel>
       </Screen>
