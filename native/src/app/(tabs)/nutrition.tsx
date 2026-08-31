@@ -26,7 +26,8 @@ import { PAGE_TINT, colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useMealPlans } from '@/hooks/use-library';
+import { useMealPlanFill, useMealPlans } from '@/hooks/use-library';
+import { PLAN_DAYS } from '@/lib/planned-meal';
 import { dedupeSeedShadows, useMyFoods, useMyFoodsSorted, useRecentFoods, useToggleFavoriteFood, useTodayLog, type FoodItemRow } from '@/hooks/use-nutrition';
 import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile } from '@/hooks/useTodayData';
@@ -96,10 +97,39 @@ type Tab = 'today' | 'plan';
  * is exactly the person looking at this screen, and "no meal plans yet" tells
  * them only that they have not done a thing they may not have a name for.
  */
+/**
+ * Một tuần của một thực đơn: bảy cột, lấp từ dưới lên.
+ *
+ * Lấp từ ĐÁY chứ không phải từ đỉnh, và không phải chuyện thẩm mỹ: bảy cột lấp
+ * từ đáy đọc ra là một biểu đồ cột, tức "ngày này nhiều hơn ngày kia" — đúng
+ * chuyện nó đang kể. Lấp từ đỉnh xuống đọc ra là bảy thanh tiến trình rời rạc.
+ *
+ * Ngày chưa có gì vẫn vẽ ô rỗng: cái bảng phải có đủ bảy cột thì mới là một
+ * tuần. Bỏ cột trống đi thì một thực đơn mới tạo trông như không có ngày nào.
+ */
+function PlanWeek({ days, perDay }: { days?: Map<number, number>; perDay: number }) {
+  return (
+    <View style={styles.week} pointerEvents="none">
+      {PLAN_DAYS.map((d) => {
+        const got = days?.get(d) ?? 0;
+        const pct = perDay > 0 ? Math.min(1, got / perDay) : 0;
+        return (
+          <View key={d} style={styles.weekDay}>
+            {pct > 0 ? <View style={[styles.weekFill, { height: `${Math.round(pct * 100)}%` }]} /> : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boolean }) {
   /* Lần vẽ đầu thì hiện ngay — xem `useRise`. */
   const rise = useRise();
   const { data: plans, isPending } = useMealPlans();
+  /* Chỉ hỏi cho những plan THẬT SỰ được vẽ. Hỏi cho cả danh sách rồi vứt đi
+     phần thừa là trả tiền băng thông cho dữ liệu không ai nhìn. */
+  const { data: fill } = useMealPlanFill((plans ?? []).slice(0, 3).map((p) => p.id));
   const [creating, setCreating] = useState(false);
 
   const goalLabel = (g: string | null) =>
@@ -172,42 +202,86 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
         ) : null}
       </View>
 
-      <View style={styles.planStack}>
+      {/*
+        MỘT khối, không phải bốn khối rời.
+
+        ── lỗi ──
+
+        Ba thực đơn là ba `GlassCard` riêng, cách nhau 10 điểm, rồi nút "Tạo
+        thực đơn" là một khối bo góc thứ tư nữa. Bốn hình chữ nhật rời nhau cho
+        cùng một danh sách: mắt phải tự ghép chúng lại thành "đây là các thực
+        đơn của tôi", và cái nút cuối trông như một thứ KHÁC loại chứ không phải
+        hàng cuối của chính danh sách đó.
+
+        ── cách iOS gom một danh sách ──
+
+        Một khối bo góc duy nhất, các hàng ngăn bằng vạch tóc thụt vào — và hàng
+        "thêm" nằm TRONG khối, ở cuối, đúng như Cài đặt đặt "Thêm tài khoản"
+        dưới danh sách tài khoản. Nó nói: đây là một danh sách, và đây là cách
+        làm nó dài thêm.
+
+        Không tự dựng lại: `foodListStyles.group` / `.sep` là đúng thứ mà nửa
+        dưới của chính trang này đã dùng cho danh sách thực phẩm. Hai danh sách
+        trên một trang phải trông như nhau.
+      */}
+      <View style={foodListStyles.group}>
         {plans.slice(0, PREVIEW).map((p, i) => (
           <Animated.View key={p.id} entering={rise(i)}>
+            {i > 0 ? <View style={foodListStyles.sep} /> : null}
             <PressScale
               accessibilityRole="button"
               accessibilityLabel={`${p.name} — ${i18n.nMealPlanOpen}`}
+              style={styles.planRow}
               onPress={() => {
                 Haptics.selectionAsync();
                 nav.push({ pathname: '/meal-plan', params: { plan: p.id } });
               }}>
-              <GlassCard style={styles.planCard}>
-                <View style={styles.planText}>
+              <View style={styles.planText}>
+                <View style={styles.planTop}>
                   <Text style={styles.planName} numberOfLines={1}>{p.name}</Text>
-                  <Text style={styles.planMeta} numberOfLines={1}>
-                    {[
-                      goalLabel(p.goal),
-                      p.meals_per_day ? `${p.meals_per_day} ${i18n.nutritionMealsPerDay}` : null,
-                    ]
-                      .filter(Boolean)
-                      .join('  ·  ')}
-                  </Text>
+                  <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
                 </View>
-                <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
-              </GlassCard>
+                <Text style={styles.planMeta} numberOfLines={1}>
+                  {[
+                    goalLabel(p.goal),
+                    /* `nutritionMeals` = "bữa", không phải `nutritionMealsPerDay`
+                       = "Số bữa/ngày". Khoá kia là NHÃN của một ô nhập, và ghép
+                       nó sau một con số cho ra "3 Số bữa/ngày". */
+                    p.meals_per_day ? `${p.meals_per_day} ${i18n.nutritionMeals}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join('  ·  ')}
+                </Text>
+                {/*
+                  Bảy ngày, vẽ ra.
+
+                  ── vì sao thêm ──
+
+                  Trước đây hàng này là "Tên · Duy trì · 3 bữa" — ba mẩu chữ.
+                  Nó nói thực đơn TÊN GÌ nhưng không nói thực đơn ĐÓ RA SAO, mà
+                  một thực đơn về bản chất là một cái bảng: bảy ngày, mỗi ngày
+                  mấy ô. Không nhìn thấy cái bảng thì không phân biệt được một
+                  thực đơn đã soạn xong với một thực đơn mới tạo còn rỗng —
+                  đúng câu hỏi người ta mở danh sách này để trả lời.
+
+                  Mỗi cột là một ngày, phần lấp là số ô đã có món trên tổng số
+                  bữa mỗi ngày. Dữ liệu thật, một truy vấn cho cả danh sách —
+                  xem `useMealPlanFill`.
+                */}
+                <PlanWeek days={fill?.get(p.id)} perDay={p.meals_per_day ?? 3} />
+              </View>
             </PressScale>
           </Animated.View>
         ))}
+        <View style={foodListStyles.sep} />
+        <PressScale
+          accessibilityRole="button"
+          onPress={open}
+          style={styles.planRow}>
+          <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
+          <Text style={styles.planAddText}>{i18n.nMealPlanNew}</Text>
+        </PressScale>
       </View>
-
-      <PressScale
-        accessibilityRole="button"
-        onPress={open}
-        style={styles.planAdd}>
-        <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
-        <Text style={styles.planAddText}>{i18n.nMealPlanNew}</Text>
-      </PressScale>
 
       {/*
         The whole flow, from naming the plan to putting food in it.
@@ -309,6 +383,7 @@ export default function NutritionScreen() {
    * `marginLeft` to inset a border moves the whole row, and the trailing column
    * stops lining up with the row above it.
    */
+
   const FoodGroup = ({ rows }: { rows: FoodItemRow[] }) => (
     <View style={foodListStyles.group}>
       {rows.map((f, i) => (
@@ -834,26 +909,37 @@ const styles = StyleSheet.create({
     reason.
   */
   planSection: { gap: spacing.sm + 4 },
-  planStack: { gap: spacing.sm + 2 },
   planHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   planAll: { fontSize: 13, fontWeight: '600', color: colors.primary },
-  planCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
-  planText: { flex: 1, minWidth: 0, gap: 2 },
-  planName: { fontSize: 15, fontWeight: '600', color: colors.foreground },
-  planMeta: { fontSize: 12, color: colors.mutedForeground },
-  /* Outlined and last, under the plans it adds to. The filled button belongs
-     to the empty state, where creating one is the only thing to do. */
-  planAdd: {
+  /* Một HÀNG trong khối, không phải một thẻ. Cao 56 để vượt sàn chạm 44 và để
+     hai dòng chữ có chỗ thở. */
+  planRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 44,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(24,24,27,0.2)',
+    gap: spacing.sm,
+    minHeight: 56,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
   },
+  planText: { flex: 1, minWidth: 0, gap: 5 },
+  /* Tên co giãn để mũi tên bị đẩy ra MÉP PHẢI. Không có `flex` thì mũi tên bám
+     sát cái tên, và một hàng có mũi tên ở giữa đọc ra như một phần của tên chứ
+     không phải dấu hiệu "hàng này mở ra được". */
+  planTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /* Bảy cột đều nhau, cao 22 — đủ để thấy phần lấp, không đủ để tranh chỗ với
+     cái tên. Khoảng cách 3 điểm: nhỏ hơn nữa thì bảy cột dính thành một dải. */
+  week: { flexDirection: 'row', gap: 3, marginTop: 1 },
+  weekDay: {
+    flex: 1,
+    height: 22,
+    borderRadius: 3,
+    backgroundColor: colors.accent,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  weekFill: { backgroundColor: colors.readinessGreen, borderRadius: 3 },
+  planName: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '600', color: colors.foreground },
+  planMeta: { fontSize: 12, color: colors.mutedForeground },
   planAddText: { fontSize: 13, fontWeight: '600', color: colors.primary },
   planEmpty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
   planEmptyTitle: { fontSize: 15, fontWeight: '600', color: colors.foreground },

@@ -85,6 +85,42 @@ export const FIXTURES = {
     source: 'apple_health', confidence: 0.9,
   }],
   water_logs: [{ id: 'w1', user_id: UID, amount_ml: 1750, date: dayStr(0), logged_at: day(0.3) }],
+
+  /*
+    Ba thực đơn với ĐỘ LẤP KHÁC NHAU, và sự khác nhau đó là cả lý do chúng ở đây.
+
+    Trước đây `FIXTURES` không có `meal_plans` nào, nên `live.mjs` luôn dựng ra
+    trạng thái RỖNG của tab Thực đơn — và bảng tuần của từng thực đơn không bao
+    giờ nhìn thấy được. Một công cụ mù đúng chỗ mình vừa sửa thì không kiểm được
+    gì cả.
+
+    "Tuần đầy" lấp gần hết, "Mới soạn" lấp hai ngày đầu, "Rỗng" không có món nào
+    — ba trạng thái mà bảng phải phân biệt được bằng mắt. Một dữ liệu mẫu chỉ có
+    một trạng thái thì không chứng minh được bảng đang kể chuyện gì.
+  */
+  meal_plans: [
+    { id: 'mp1', user_id: UID, name: 'Tuần đầy', goal: 'maintain', meals_per_day: 3, start_date: null, end_date: null, created_at: day(1) },
+    { id: 'mp2', user_id: UID, name: 'Mới soạn', goal: 'cut', meals_per_day: 4, start_date: null, end_date: null, created_at: day(4) },
+    { id: 'mp3', user_id: UID, name: 'Rỗng', goal: 'bulk', meals_per_day: 6, start_date: null, end_date: null, created_at: day(9) },
+  ],
+  meal_plan_items: [
+    /* mp1 — sáu ngày đầu đủ ba bữa, ngày cuối mới một bữa. */
+    ...[0, 1, 2, 3, 4, 5].flatMap((d) =>
+      ['breakfast', 'lunch', 'dinner'].map((m, k) => ({
+        id: `mi-${d}-${k}`, meal_plan_id: 'mp1', day_index: d, meal_type: m,
+        food_name: 'Cơm gà', serving_g: 300, kcal: 520, protein_g: 38, carbs_g: 55, fat_g: 14, food_item_id: null,
+      })),
+    ),
+    { id: 'mi-6-0', meal_plan_id: 'mp1', day_index: 6, meal_type: 'breakfast', food_name: 'Phở', serving_g: 350, kcal: 430, protein_g: 26, carbs_g: 58, fat_g: 9, food_item_id: null },
+    /* mp2 — hai ngày đầu, mỗi ngày hai trong bốn bữa. */
+    ...[0, 1].flatMap((d) =>
+      ['breakfast', 'lunch'].map((m, k) => ({
+        id: `mj-${d}-${k}`, meal_plan_id: 'mp2', day_index: d, meal_type: m,
+        food_name: 'Ức gà', serving_g: 200, kcal: 330, protein_g: 62, carbs_g: 0, fat_g: 7, food_item_id: null,
+      })),
+    ),
+    /* mp3 — cố ý không có món nào. */
+  ],
   weight_logs: [
     { id: 'g1', user_id: UID, weight_kg: 71.5, date: dayStr(0) },
     { id: 'g2', user_id: UID, weight_kg: 72.1, date: dayStr(7) },

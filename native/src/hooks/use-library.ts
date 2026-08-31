@@ -354,6 +354,47 @@ export function useMealPlans() {
   });
 }
 
+/**
+ * Mỗi thực đơn đã lấp được bao nhiêu ô, trong MỘT truy vấn.
+ *
+ * ── vì sao không dùng `useMealPlanItems` ──
+ *
+ * Hook kia lấy theo từng plan. Danh sách xem trước hiện ba plan, nên nó sẽ là
+ * ba truy vấn cho một khối duy nhất trên màn hình — và con số đó lớn dần theo
+ * số plan người dùng có.
+ *
+ * ── vì sao chỉ lấy hai cột ──
+ *
+ * Khối này chỉ cần biết Ô NÀO đã có món, không cần biết món gì. Kéo cả tên món,
+ * calo và bốn macro về để rồi đếm là trả tiền băng thông cho dữ liệu bị vứt đi
+ * ngay dòng sau.
+ *
+ * Trả về `Map<planId, Map<dayIndex, số ô đã lấp>>` — đúng hình dạng mà một
+ * bảng bảy ngày cần để vẽ, nên chỗ gọi không phải gom lại lần nữa.
+ */
+export function useMealPlanFill(planIds: string[]) {
+  const { user } = useAuth();
+  const key = planIds.slice().sort().join(',');
+  return useQuery({
+    queryKey: ['meal_plan_fill', user?.id, key],
+    enabled: !!user && planIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('meal_plan_items')
+        .select('meal_plan_id, day_index')
+        .in('meal_plan_id', planIds);
+      if (error) throw error;
+      const out = new Map<string, Map<number, number>>();
+      for (const row of data ?? []) {
+        const days = out.get(row.meal_plan_id) ?? new Map<number, number>();
+        days.set(row.day_index, (days.get(row.day_index) ?? 0) + 1);
+        out.set(row.meal_plan_id, days);
+      }
+      return out;
+    },
+  });
+}
+
 export function useCreateMealPlan() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
