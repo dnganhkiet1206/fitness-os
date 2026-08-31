@@ -383,6 +383,44 @@ export function MealPlanWizard({
                   options={MEALS_PER_DAY.map((n) => ({ key: String(n), label: String(n) }))}
                 />
               </Field>
+
+              {/*
+                Thứ sắp được tạo ra, hiện ngay khi đang chọn.
+
+                ── nó lấp chỗ nào ──
+
+                Đo trên bản dựng: gần một nửa màn hình dưới ba mục là khoảng đen.
+                Một tấm mà nửa dưới trống đọc ra là chưa làm xong, kể cả khi nút
+                chính đã ghim đúng chỗ.
+
+                ── và vì sao lấp bằng thứ NÀY ──
+
+                Không phải để cho kín. "4 bữa" là một con số không nói gì cho tới
+                khi biết bốn bữa đó TÊN GÌ — và câu trả lời đổi theo đúng cái
+                người dùng vừa chạm. Một khối tự đổi theo lựa chọn biến ba câu
+                hỏi rời rạc thành một thứ đang được lắp lại trước mắt.
+
+                Nó cũng trả lời một câu người dùng chưa kịp hỏi: kế hoạch dài bao
+                lâu. `PLAN_DAYS` là bảy ngày, và trước đây không chỗ nào trên màn
+                này nói ra điều đó.
+              */}
+              <Field label={i18n.nMpPreview}>
+                <View style={styles.preview}>
+                  <Text style={styles.previewSum}>
+                    {i18n.nMpPreviewSum
+                      .replace('{d}', String(PLAN_DAYS.length))
+                      .replace('{m}', String(mealsPerDay))
+                      .replace('{t}', String(PLAN_DAYS.length * mealsPerDay))}
+                  </Text>
+                  <View style={styles.previewSlots}>
+                    {MEAL_ORDER.slice(0, mealsPerDay).map((m) => (
+                      <View key={m} style={styles.previewSlot}>
+                        <Text style={styles.previewSlotText}>{mealLabel(m)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </Field>
             </>
           ) : (
             <>
@@ -619,6 +657,25 @@ const styles = StyleSheet.create({
     phụ đặt trên, cộng khoảng thở giữa các mục; không phải một đường viền nữa.
   */
   fieldBox: { gap: spacing.sm },
+
+  preview: {
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.secondary,
+  },
+  previewSum: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
+  /* Các bữa là NHÃN, không phải nút — chúng không bấm được, nên chúng không
+     được mang hình dạng của một thứ bấm được. Nền nhạt hơn nền khối chứa để
+     chúng nổi lên mà không cần viền. */
+  previewSlots: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  previewSlot: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent,
+  },
+  previewSlotText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
   fieldHint: { ...type.caption, color: colors.mutedForeground },
   stepHint: { ...type.caption, color: colors.mutedForeground, marginBottom: 2 },
 
