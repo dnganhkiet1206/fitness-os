@@ -34,7 +34,24 @@ import { useSyncExternalStore } from 'react';
 
 import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
-const STORAGE_KEY = 'ascnd-widget-heights';
+/**
+ * Khoá có PHIÊN BẢN, và số này phải tăng khi bố cục đổi.
+ *
+ * ── vì sao ──
+ *
+ * Chiều cao lưu ở đây sống sót qua cập nhật app. Sửa cách ĐO không xoá được số
+ * đã đo sai: người dùng vẫn thấy khung cũ ở lần mở tiếp theo, và họ không có
+ * cách nào tự dọn ngoài gỡ app.
+ *
+ * `v2` vì bản trước ghi chiều cao của deck ở BẤT KỲ trạng thái nào — kể cả một
+ * thẻ đang mở chi tiết cao gấp đôi — nên mọi máy đang chạy đều mang sẵn ít nhất
+ * một con số vô nghĩa.
+ *
+ * Cùng lập luận với `CACHE_BUSTER` ở `query-client.ts`, và cùng nghĩa vụ: đổi
+ * hình dạng của thứ được lưu thì phải đổi khoá, không thì dữ liệu cũ đội lốt dữ
+ * liệu mới.
+ */
+const STORAGE_KEY = 'ascnd-widget-heights-v2';
 
 /**
  * The hero slot's height key.

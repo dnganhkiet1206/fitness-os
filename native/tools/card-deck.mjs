@@ -278,6 +278,55 @@ const num = (name) => {
   }
 }
 
+/*
+  Bóng chờ chỉ được giữ chỗ cho trạng thái app SẼ MỞ RA.
+
+  ── lỗi ──
+
+  Deck từng cao bằng `Math.max` của mọi trang, tức một hằng số: ghi lúc nào cũng
+  ra cùng một số. Bản sửa "khoảng trống dọc" đổi nó thành chiều cao của đúng
+  trang đang xem — đúng cho hiển thị, và nó lặng lẽ làm con số này thôi là hằng
+  số.
+
+  Từ đó `recordHeight` lưu "deck lúc người dùng rời mắt khỏi nó": có thể là trang
+  nước, có thể là một thẻ đang mở chi tiết cao gấp đôi. Lần mở app sau, bóng chờ
+  dựng đúng khung ĐÓ rồi deck hiện ra ở trang đầu thu lại — người dùng báo "vẫn
+  bị hiện lại khung cũ".
+
+  Thứ sắp hiện ra luôn là trang đầu ở trạng thái đóng. Đó là chiều cao duy nhất
+  đáng lưu, và luật này ép phép ghi phải canh đúng hai điều kiện đó.
+*/
+{
+  const today = read('src/app/(tabs)/index.tsx');
+  const at = today.indexOf('recordHeight(HERO_DECK');
+  if (at < 0) {
+    problems.push('index.tsx: không ghi chiều cao deck dưới HERO_DECK');
+  } else {
+    /* Cửa canh phải nằm NGAY TRƯỚC lời gọi, trong cùng handler. */
+    const before = today.slice(Math.max(0, at - 260), at);
+    if (!/heroPage !== 0/.test(before) || !/expandedAt !== null/.test(before)) {
+      problems.push(
+        'index.tsx: ghi chiều cao deck mà không canh "trang đầu, chi tiết đóng" — ' +
+          'số lưu sẽ là deck lúc người dùng rời mắt, và bóng chờ lần sau dựng khung đó',
+      );
+    }
+  }
+  const heights = read('src/lib/widget-heights.ts');
+  const key = /const STORAGE_KEY = '([^']+)'/.exec(heights);
+  if (!key) problems.push('widget-heights.ts: không đọc được STORAGE_KEY');
+  else if (!/-v\d+$/.test(key[1])) {
+    problems.push(
+      `widget-heights.ts: STORAGE_KEY \`${key[1]}\` không có phiên bản — sửa cách ĐO không xoá được ` +
+        'số đã đo sai, và người dùng không có cách tự dọn ngoài gỡ app',
+    );
+  } else {
+    const qc = read('src/lib/query-client.ts');
+    if (!qc.includes(`'${key[1]}'`)) {
+      problems.push(`query-client.ts: đăng xuất không xoá \`${key[1]}\` — số đo của người này ở lại cho người sau`);
+    }
+  }
+}
+
 if (problems.length) {
   console.log('deck thẻ CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);

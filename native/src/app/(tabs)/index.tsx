@@ -1399,7 +1399,30 @@ export default function TodayScreen() {
           {dayPending || dayFailed || config.heroWidgets.length === 0 ? null : (
             <Animated.View
               style={[styles.heroFull, heroSlide]}
-              onLayout={(e) => recordHeight(HERO_DECK, e.nativeEvent.layout.height)}>
+              /*
+                Chỉ ghi chiều cao của trạng thái app SẼ MỞ RA — trang đầu, chi
+                tiết đóng.
+
+                ── vì sao lỗi này tồn tại ──
+
+                Deck từng cao bằng `Math.max` của mọi trang, tức một hằng số:
+                ghi lúc nào cũng ra cùng một số. Bản sửa "khoảng trống dọc" đổi
+                nó thành chiều cao của ĐÚNG trang đang xem — đúng cho việc hiển
+                thị, và nó lặng lẽ làm con số này thôi là hằng số.
+
+                Từ đó `recordHeight` lưu "deck lúc người dùng rời mắt khỏi nó":
+                có thể là trang nước, có thể là một thẻ đang mở chi tiết cao gấp
+                đôi. Lần mở app sau, bóng chờ dựng đúng khung ĐÓ rồi deck hiện
+                ra ở trang đầu thu lại — người dùng thấy "khung cũ".
+
+                Bóng chờ tồn tại để giữ chỗ cho thứ SẮP hiện ra. Thứ sắp hiện ra
+                luôn là trang đầu ở trạng thái đóng, nên đó là chiều cao duy
+                nhất đáng lưu.
+              */
+              onLayout={(e) => {
+                if (heroPage !== 0 || expandedAt !== null) return;
+                recordHeight(HERO_DECK, e.nativeEvent.layout.height);
+              }}>
               {/*
                 Hiệu ứng vào nằm ở lớp TRONG, và việc tách hai lớp là bản sửa cho
                 "ring cứ giật giật ngay khi mở app".
