@@ -313,6 +313,27 @@ export const MACRO_TINT = {
   fiber: colors.readinessGreen,
 } as const;
 
+/**
+ * Dải màu của thanh tiến độ từng chất.
+ *
+ * ── vì sao ở đây, cạnh `MACRO_TINT` ──
+ *
+ * Chặng ĐẦU của mỗi dải phải bằng đúng tint của chất đó — thanh và icon là hai
+ * cách vẽ cùng một thứ, và chúng lệch màu thì người dùng đọc ra hai thứ. Viết
+ * thẳng mã màu ở chỗ dùng thì đổi `MACRO_TINT` xong thanh vẫn giữ màu cũ, và
+ * không có gì báo: cả hai vẫn dựng, chỉ là chúng thôi đồng ý với nhau.
+ *
+ * Chặng SAU là một quyết định riêng — nó chỉ cần cùng họ với chặng đầu để dải
+ * đọc ra là một dải chứ không phải hai màu ghép. Nên nó là một giá trị viết ra,
+ * nhưng viết ra Ở ĐÂY, cạnh thứ nó phải hợp.
+ */
+export const MACRO_BAR = {
+  protein: [colors.metricRose, '#ff8095'],
+  carbs: [colors.metricOrange, '#ffd93d'],
+  fat: [colors.metricBlue, colors.metricCyan],
+  fiber: [colors.readinessGreen, '#2f9e6b'],
+} as const satisfies Record<string, readonly [string, string]>;
+
 export const PAGE_TINT = {
   activity: [colors.metricOrange, colors.metricPurple],
   nutrition: [colors.readinessGreen, colors.metricOrange],

@@ -19,7 +19,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
-import { MACRO_TINT, colors, radius, spacing } from '@/constants/ascnd';
+import { MACRO_BAR, MACRO_TINT, colors, radius, spacing } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -593,9 +593,9 @@ export function NutritionCard({
   const overPct = calorieTarget > 0 ? Math.min((Math.max(delta, 0) / calorieTarget) * 100, 100) : 0;
 
   const ringGradient: [string, string] = overBudget
-    ? ['#e6485c', colors.readinessRed]
+    ? [colors.metricRose, colors.readinessRed]
     : inBand
-      ? ['#ffc53d', '#ff9130']
+      ? ['#ffc53d', colors.metricOrange]
       : ['#eaf1fb', '#b9dcf0'];
   const ringIconColor = overBudget
     ? colors.readinessRed
@@ -673,11 +673,11 @@ export function NutritionCard({
     Bốn bóng khác nhau, nên chúng phân biệt được cả khi nhỏ tới mức chỉ còn bóng.
   */
   const macros = [
-    { label: 'Protein', ...protein, icon: Beef, color: MACRO_TINT.protein, bar: ['#e6485c', '#ff8095'] as [string, string] },
-    { label: 'Carbs', ...carbs, icon: Wheat, color: MACRO_TINT.carbs, bar: ['#ff9130', '#ffd93d'] as [string, string] },
-    { label: 'Fat', ...fat, icon: Milk, color: MACRO_TINT.fat, bar: ['#3ba6ff', '#22e3ff'] as [string, string] },
+    { label: 'Protein', ...protein, icon: Beef, color: MACRO_TINT.protein, bar: [...MACRO_BAR.protein] as [string, string] },
+    { label: 'Carbs', ...carbs, icon: Wheat, color: MACRO_TINT.carbs, bar: [...MACRO_BAR.carbs] as [string, string] },
+    { label: 'Fat', ...fat, icon: Milk, color: MACRO_TINT.fat, bar: [...MACRO_BAR.fat] as [string, string] },
     ...(fiber
-      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: MACRO_TINT.fiber, bar: ['#3ecf8e', '#2f9e6b'] as [string, string] }]
+      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: MACRO_TINT.fiber, bar: [...MACRO_BAR.fiber] as [string, string] }]
       : []),
   ];
 
@@ -1115,12 +1115,22 @@ function CompactWidget({
 export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: number; labels: { title: string } }) {
   const { unit } = useVolumeUnit();
   const pct = Math.min(100, Math.round((ml / (targetMl || 1)) * 100));
+  /*
+    Nước dùng cùng token với `MACRO_BAR.fat`, và sự trùng đó là CÓ THẬT chứ không
+    phải tình cờ: chất béo mang `metricBlue` theo yêu cầu, còn nước vốn đã là
+    xanh dương. Hai thứ nằm trên cùng một màn.
+
+    Để nguyên vì đây là màu được yêu cầu, và vì hai chỗ khác hình (chai đứng so
+    với hai giọt) lẫn khác ngữ cảnh. Nhưng viết bằng TOKEN chứ không phải mã chép
+    lại — nếu một ngày phải tách hai màu ra thì chỗ sửa là bảng màu, không phải
+    đi tìm `#3ba6ff` rải rác khắp nơi.
+  */
   return (
     <CompactWidget
       icon={Droplets}
-      iconColor="#3ba6ff"
+      iconColor={colors.metricBlue}
       iconBg="rgba(14,165,233,0.1)"
-      ring={['#3ba6ff', '#22e3ff']}
+      ring={[colors.metricBlue, colors.metricCyan]}
       label={labels.title}
       valueText={`${displayVolume(ml, unit)} / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
       pct={pct}

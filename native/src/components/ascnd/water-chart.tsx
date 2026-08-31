@@ -70,7 +70,9 @@ const BAR_TOP = '#8fe4ff';
 const BAR_BOTTOM = colors.metricBlue;
 
 /** the blue pool behind the plot — Health tints the area behind its bars */
-const WASH = '#3ba6ff';
+/* `colors.metricBlue`, không phải mã màu chép lại. Cùng con số, nhưng chép lại
+   thì đổi bảng màu xong chỗ này ở lại — và không có gì báo. */
+const WASH = colors.metricBlue;
 const WASH_PEAK = 0.1;
 
 /** shared falloff: steep, then a tail that never quite lands */

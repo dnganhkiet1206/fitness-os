@@ -84,6 +84,69 @@ if (/<Glyph[^>]*\b(cut|bg|surface)=/.test(card)) {
   problems.push(`${CARD}: truyền màu bề mặt vào icon — vết khoét giả sẽ sai ngay khi nền đổi`);
 }
 
+/*
+  Màu của bốn chất chỉ được viết ra ở MỘT chỗ.
+
+  ── lỗi ──
+
+  Quyết định này từng nằm ở ba nơi: một bảng trong `dashboard-cards.tsx`, một mã
+  màu viết thẳng trong `quick-stats.tsx`, và một bảng nữa trong `food-editor.tsx`
+  — nơi đạm là VÀNG trong khi hai màn kia đã là đỏ hồng.
+
+  Ba bản sao thì không cái nào sai một mình; chúng chỉ không đồng ý với nhau, và
+  người dùng thấy cùng một chất mang hai màu ở hai màn cách nhau một cú chạm.
+
+  ── và bản sao ẩn ──
+
+  Sau khi gộp, các dải gradient VẪN mở đầu bằng mã màu viết thẳng trùng đúng với
+  tint. Thanh và icon là hai cách vẽ cùng một thứ; đổi `MACRO_TINT` mà thanh
+  không đi theo thì chúng thôi đồng ý — và không có gì báo, vì cả hai vẫn dựng.
+*/
+{
+  const CONST = 'src/constants/ascnd.ts';
+  const consts = read(CONST);
+  const tint = /export const MACRO_TINT = \{([\s\S]*?)\n\} as const/.exec(consts);
+  const bars = /export const MACRO_BAR = \{([\s\S]*?)\n\} as const/.exec(consts);
+  if (!tint) problems.push(`${CONST}: không tìm thấy MACRO_TINT`);
+  if (!bars) problems.push(`${CONST}: không tìm thấy MACRO_BAR`);
+
+  /* Chặng ĐẦU của mỗi dải phải là chính tint của chất đó, không phải mã chép. */
+  if (tint && bars) {
+    const tintOf = Object.fromEntries(
+      [...tint[1].matchAll(/^\s*(\w+): (colors\.\w+),/gm)].map((m) => [m[1], m[2]]),
+    );
+    for (const m of bars[1].matchAll(/^\s*(\w+): \[([^,]+),/gm)) {
+      const [, macro, first] = m;
+      const want = tintOf[macro];
+      if (!want) problems.push(`${CONST}: MACRO_BAR.${macro} không có tint tương ứng`);
+      else if (first.trim() !== want) {
+        problems.push(
+          `${CONST}: MACRO_BAR.${macro} mở đầu bằng \`${first.trim()}\` chứ không phải \`${want}\` — ` +
+            'thanh và icon là hai cách vẽ cùng một chất, lệch màu là chúng thôi đồng ý',
+        );
+      }
+    }
+  }
+
+  /* Không màn nào được tự khai màu chất, dù bằng bảng hay bằng mã viết thẳng. */
+  const HEX = /'#[0-9a-fA-F]{6}'/g;
+  const tintHex = new Set(
+    [...consts.matchAll(/^\s*(metricRose|metricOrange|metricBlue|readinessGreen): '(#[0-9a-fA-F]{6})',/gm)]
+      .map((m) => m[2].toLowerCase()),
+  );
+  for (const f of ['src/components/ascnd/dashboard-cards.tsx', 'src/app/food-editor.tsx', 'src/components/ascnd/quick-stats.tsx']) {
+    const t = read(f);
+    if (/const MACRO_COLORS = \{/.test(t)) {
+      problems.push(`${f}: dựng bảng màu chất riêng — phải đọc MACRO_TINT`);
+    }
+    for (const m of t.matchAll(HEX)) {
+      if (tintHex.has(m[0].slice(1, -1).toLowerCase())) {
+        problems.push(`${f}: mã màu ${m[0]} chép lại một tint của chất — dùng token, không thì đổi bảng màu xong chỗ này ở lại`);
+      }
+    }
+  }
+}
+
 if (problems.length) {
   console.log('glyph macro CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);
