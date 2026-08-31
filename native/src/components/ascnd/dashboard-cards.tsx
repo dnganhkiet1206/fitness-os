@@ -1,6 +1,6 @@
 import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
-import { Droplets, Flame, Footprints, Moon, Star, Sunrise, Target, type LucideIcon } from 'lucide-react-native';
+import { Beef, Droplets, Flame, Footprints, Moon, Nut, Sprout, Star, Sunrise, Target, Wheat, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useId, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -15,7 +15,6 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
-import { CarbIcon, FatIcon, FiberIcon, ProteinIcon } from '@/components/ascnd/macro-icons';
 import { Icon } from '@/components/ascnd/icon';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
@@ -630,12 +629,42 @@ export function NutritionCard({
    */
   const [showLeft, setShowLeft] = useState(false);
 
+  /*
+    Bốn icon lấy thẳng từ `lucide`, không phải bốn hình tự vẽ.
+
+    ── vì sao bộ tự vẽ bị xoá ──
+
+    `macro-icons.tsx` mở đầu bằng "the set has no drumstick, no wheat ear and no
+    avocado". Câu đó SAI: lucide có `drumstick`, `wheat`, `beef`, `egg`, `nut`,
+    `leafy-green`, `salad`, `sprout`. Cả tệp — bốn hình tay, một công cụ xem
+    trước, một bộ luật giữ chúng khỏi lệch nhau — dựng trên một tiền đề chưa ai
+    kiểm.
+
+    Hậu quả không chỉ là công sức thừa. Hai lần vẽ tay đều đọc sai ở kích thước
+    thật: lần đầu ra một cái chìa khoá và một củ lạc có lỗ, lần sau ra một bầu
+    dục vô nghĩa và một cây thông. Bốn hình do người vẽ icon chuyên nghiệp làm
+    thì không cần vòng thứ ba.
+
+    ── vì sao ĐÚNG bốn cái này ──
+
+    Chọn theo hai điều kiện, và cả hai đều kiểm bằng mắt ở 14 điểm mật độ 3x —
+    kích thước và mật độ chúng thật sự được dùng:
+
+      thịt   khối gọn có MỘT CHẤM       — và trùng với `quick-stats.tsx`, nơi
+                                          protein đã là `Beef`; app thôi có hai
+                                          glyph cho một khái niệm
+      lúa    dải CHÉO có vân            — hình duy nhất nằm nghiêng
+      hạt    quả sồi ĐỐI XỨNG đứng      — mũ và thân, không nhầm với khối nào
+      mầm    có VẠCH NGANG dưới chân    — hình duy nhất có chân đế
+
+    Bốn bóng khác nhau, nên chúng phân biệt được cả khi nhỏ tới mức chỉ còn bóng.
+  */
   const macros = [
-    { label: 'Protein', ...protein, icon: ProteinIcon, color: colors.primary, bar: ['#f59e0b', '#ecc94b'] as [string, string] },
-    { label: 'Carbs', ...carbs, icon: CarbIcon, color: colors.metricBlue, bar: ['#3ba6ff', '#b45cff'] as [string, string] },
-    { label: 'Fat', ...fat, icon: FatIcon, color: colors.metricOrange, bar: ['#ff9130', '#ff3b5c'] as [string, string] },
+    { label: 'Protein', ...protein, icon: Beef, color: colors.primary, bar: ['#f59e0b', '#ecc94b'] as [string, string] },
+    { label: 'Carbs', ...carbs, icon: Wheat, color: colors.metricBlue, bar: ['#3ba6ff', '#b45cff'] as [string, string] },
+    { label: 'Fat', ...fat, icon: Nut, color: colors.metricOrange, bar: ['#ff9130', '#ff3b5c'] as [string, string] },
     ...(fiber
-      ? [{ label: 'Fiber', ...fiber, icon: FiberIcon, color: colors.readinessGreen, bar: ['#3ecf8e', '#2f9e6b'] as [string, string] }]
+      ? [{ label: 'Fiber', ...fiber, icon: Sprout, color: colors.readinessGreen, bar: ['#3ecf8e', '#2f9e6b'] as [string, string] }]
       : []),
   ];
 
@@ -767,9 +796,10 @@ export function NutritionCard({
               key={m.label}
               style={[styles.macroTile, { flexBasis: macros.length === 4 ? '47%' : 0 }]}>
               <View style={styles.macroHead}>
-                {/* the macro's own colour, on the tile's own background — see
-                    `macro-icons.tsx` for why the accent needs the second one */}
-                <Glyph size={14} color={m.color} />
+                {/* Màu riêng của từng macro. Không truyền màu nền vào nữa: bộ
+                    cũ vẽ vết khoét bằng chính màu nền, thứ chỉ đúng khi phía sau
+                    đúng bằng màu đó — mà trang dinh dưỡng giờ có gradient. */}
+                <Glyph size={14} color={m.color} strokeWidth={2} />
                 <Text style={styles.macroLabel}>{m.label}</Text>
               </View>
               <MacroSwap
