@@ -769,7 +769,7 @@ export function NutritionCard({
               <View style={styles.macroHead}>
                 {/* the macro's own colour, on the tile's own background — see
                     `macro-icons.tsx` for why the accent needs the second one */}
-                <Glyph size={14} color={m.color} cut={colors.background} />
+                <Glyph size={14} color={m.color} />
                 <Text style={styles.macroLabel}>{m.label}</Text>
               </View>
               <MacroSwap

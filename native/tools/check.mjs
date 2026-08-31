@@ -154,6 +154,7 @@ const STEPS = [
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
+  ['kiểu icon macro', 'node', ['tools/macro-icon-style.mjs']],
   ['hai chế độ của deck', 'node', ['tools/carousel-modes.mjs']],
   ['database của edge function', 'node', ['tools/edge-db.mjs']],
   ['ranh giới AI', 'node', ['tools/ai-boundary.mjs']],
