@@ -323,6 +323,11 @@ export default function NutritionScreen() {
   const SeeMore = ({ tab, rest }: { tab: 'mine' | 'recent'; rest: number }) => (
     <PressScale
       accessibilityRole="button"
+      /* Hàng cao 40 điểm, dưới sàn 44 của Apple. `hitSlop` đưa nó lên 56 khi
+         chạm mà không đổi một điểm ảnh nào khi nhìn — cùng cách `scanBtn` ở
+         cuối tệp này đã dùng cho nút quét mã. Nâng chiều cao thay vào đó sẽ
+         đẩy hàng ra khỏi nhịp của danh sách bên trên nó. */
+      hitSlop={8}
       style={styles.seeMore}
       onPress={() => seeMore(tab)}>
       {/* How many more, not just that there are more — the difference between
@@ -549,6 +554,42 @@ export default function NutritionScreen() {
             */}
             <MealPlanTab i18n={i18n} vi={lang === 'vi'} />
 
+            {/* Gợi ý bữa ăn sinh ra KẾ HOẠCH, nên nó đứng cùng kế hoạch chứ
+                không nằm dưới tiêu đề "Thực phẩm" — thư viện là món lẻ bạn đã
+                có, còn đây là đề xuất cho bữa bạn chưa nghĩ ra. */}
+            <AiMealSuggest />
+
+            {/*
+              ── đi chợ nằm với KẾ HOẠCH, không nằm trong thư viện ──
+
+              Chú thích trước viết "nó cùng chủ đề với mọi thứ trong mục này",
+              đúng khi mục này TÊN LÀ "Thực phẩm". Giờ mục này là Thực đơn, và
+              thư viện chỉ còn là nửa dưới của nó — nên câu đó không còn đúng
+              với chỗ nó đang đứng.
+
+              Danh sách đi chợ sinh ra TỪ kế hoạch: bạn biết tuần này định ăn
+              gì, rồi mới biết cần mua gì. Nó thuộc nửa trên.
+
+              Trước lần dời này nó nằm giữa ô tìm kiếm và danh sách thực phẩm —
+              tức chen ngang vào chính cái thư viện mà người dùng đang đọc.
+
+              It is named `nGrocery` = "Danh sách đi chợ" rather than the old
+              "Đi chợ": the old name is a verb phrase and reads as an action
+              the app is about to perform, when the screen is a list you keep.
+
+              The row carries `còn 6 món`, so the state is answered without the
+              tap, which is the whole reason it is a `ShortcutRow` and not an
+              icon in the header.
+            */}
+            <ShortcutRow
+              icon={ShoppingCart}
+              label={i18n.nGrocery}
+              value={grocery && grocery.length > 0
+                ? i18n.nGroceryLeft.replace('{n}', String(grocery.filter((g) => !g.checked).length))
+                : null}
+              onPress={() => nav.push('/grocery')}
+            />
+
             {/* Cùng hàng tiêu đề mà các mục con của thư viện đang dùng, nên nửa
                 dưới đọc ra là một MỤC của trang chứ không phải một trang thứ hai
                 bị nối vào. */}
@@ -601,35 +642,6 @@ export default function NutritionScreen() {
               </PressScale>
             </View>
 
-            {/* AI meal suggestions (web AiMealSuggestButton) */}
-            <AiMealSuggest />
-
-            {/*
-              ── the shopping list lives with the foods, not under the diary ──
-
-              It is the same subject as everything else in this segment — food
-              you do not have yet — and it is used at the same moment: you look
-              through your foods, notice what has run out, and the list is
-              already on the screen you are on. Under the diary it sat beside
-              *what you ate today*, which is a different question on a
-              different day.
-
-              It is named `nGrocery` = "Danh sách đi chợ" rather than the old
-              "Đi chợ": the old name is a verb phrase and reads as an action
-              the app is about to perform, when the screen is a list you keep.
-
-              The row carries `còn 6 món`, so the state is answered without the
-              tap, which is the whole reason it is a `ShortcutRow` and not an
-              icon in the header.
-            */}
-            <ShortcutRow
-              icon={ShoppingCart}
-              label={i18n.nGrocery}
-              value={grocery && grocery.length > 0
-                ? i18n.nGroceryLeft.replace('{n}', String(grocery.filter((g) => !g.checked).length))
-                : null}
-              onPress={() => nav.push('/grocery')}
-            />
 
             {debounced.length >= 2 && results ? (
               results.length > 0 ? (

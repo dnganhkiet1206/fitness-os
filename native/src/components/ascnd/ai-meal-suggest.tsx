@@ -163,7 +163,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 40,
+    /* 44, không phải 40. Đây là nút RỘNG HẾT HÀNG, nên chiều cao là chiều duy
+       nhất giới hạn vùng chạm — và nó không có `hitSlop` nào bù lại. Đo trên
+       trang dinh dưỡng: 370×40, tức thiếu bốn điểm so với ngưỡng của Apple.
+       44 cũng là chiều cao mà phần còn lại của app dùng nhiều nhất. */
+    height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(168,175,189,0.3)',
@@ -229,7 +233,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 38,
+    /* Cùng lý do với `suggestBtn`, và 38 còn thiếu nhiều hơn. */
+    height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
