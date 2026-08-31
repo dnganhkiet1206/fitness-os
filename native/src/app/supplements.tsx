@@ -11,7 +11,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { toast } from '@/lib/toast';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { rise } from '@/lib/entrance';
+import { useRise } from '@/lib/entrance';
 import { errorText } from '@/lib/error-copy';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
@@ -22,6 +22,12 @@ import {
 } from '@/hooks/use-library';
 
 export default function SupplementsScreen() {
+  /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
+     đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là một cái
+     lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
+     vấn; khung hình rơi trong quãng đó để lại đúng giá trị đầu, và giá trị
+     đầu của `FadeInDown` là chưa nhìn thấy. */
+  const rise = useRise();
   const { data: supplements } = useSupplementChecklist();
   const toggle = useToggleSupplement();
   const addSup = useAddSupplement();

@@ -144,6 +144,7 @@ const STEPS = [
   ['Dynamic Type', 'node', ['tools/dynamic-type.mjs']],
   ['cách Expander mở ra', 'node', ['tools/reveal-clip.mjs']],
   ['hiệu ứng vào', 'node', ['tools/entrance-once.mjs']],
+  ['hiệu ứng vào toàn app', 'node', ['tools/entrance-app.mjs']],
   ['avatar tài khoản', 'node', ['tools/account-avatar.mjs']],
   ['lối vào sắp xếp', 'node', ['tools/edit-entry.mjs']],
   ['kéo thả đổi thứ tự', 'node', ['tools/drag-reorder.mjs']],

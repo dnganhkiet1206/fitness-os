@@ -14,7 +14,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useMealPlans } from '@/hooks/use-library';
-import { rise } from '@/lib/entrance';
+import { useRise } from '@/lib/entrance';
 
 /**
  * Every meal plan you have, and nothing else.
@@ -46,6 +46,12 @@ import { rise } from '@/lib/entrance';
  * bordered cards is three times the edges for what a table view says with one.
  */
 export default function MealPlansScreen() {
+  /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
+     đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là một cái
+     lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
+     vấn; khung hình rơi trong quãng đó để lại đúng giá trị đầu, và giá trị
+     đầu của `FadeInDown` là chưa nhìn thấy. */
+  const rise = useRise();
   const i18n = useI18n();
   const { data: plans, isError, refetch, isRefetching } = useMealPlans();
   const [creating, setCreating] = useState(false);

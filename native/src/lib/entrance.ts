@@ -1,16 +1,34 @@
 import { useEffect, useState } from 'react';
 import { FadeInDown } from 'react-native-reanimated';
 
+import { BOUNCE, spring } from '@/constants/motion';
+
 /**
  * Standard card entrance — the same gentle cascade the Today dashboard
  * uses. Wrap each card in place with `<Animated.View entering={rise(i)}>`
  * (never via a Children.toArray helper, which disturbs the gap layout on
  * iOS). The delay is capped so long lists don't leave late cards lagging.
  */
+/*
+  Lò xo của cascade, viết bằng thang của Apple thay vì hai số rời.
+
+  `damping(26).stiffness(180)` quy ra bounce 0,031 và chu kỳ 0,468 giây — tức là
+  nó ĐÃ gần đúng `.smooth` (bounce 0) ở gần đúng `duration` mặc định 0,5 của
+  Apple. Ba phần trăm vượt đích trên một quãng dịch 12 điểm là 0,4 điểm: không
+  ai thấy. Nên đây không phải một cú đổi cảm giác, mà là đưa chuyển động hay
+  chạy nhất trong app vào cùng một hệ tên gọi với phần còn lại — xem
+  `constants/motion.ts`.
+
+  `smooth` là ô đúng cho một cú ĐẾN: nội dung xuất hiện thì dừng ở chỗ nó xuất
+  hiện, không nhún một cái rồi mới yên.
+*/
+const RISE = spring(0.47, BOUNCE.smooth);
+
 export const rise = (i: number) =>
   FadeInDown.springify()
-    .damping(26)
-    .stiffness(180)
+    .damping(RISE.damping)
+    .stiffness(RISE.stiffness)
+    .mass(RISE.mass)
     .delay(Math.min(i, 10) * 60)
     /*
       Bắt đầu ở chỗ ĐỌC ĐƯỢC, không phải ở số 0.

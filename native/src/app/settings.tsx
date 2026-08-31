@@ -13,7 +13,7 @@ import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { rise } from '@/lib/entrance';
+import { useRise } from '@/lib/entrance';
 import { useAppLock } from '@/hooks/use-app-lock';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascot } from '@/hooks/use-mascot';
@@ -80,6 +80,12 @@ const EXPORT_PAGE = 1000;
 const ITEMS_TABLE = 'meal_entry_items';
 
 export default function SettingsScreen() {
+  /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
+     đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là mười một cái
+     lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
+     vấn; khung hình rơi trong quãng đó để lại đúng giá trị đầu, và giá trị
+     đầu của `FadeInDown` là chưa nhìn thấy. */
+  const rise = useRise();
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
   const { lang, setLang } = useAppSettings();

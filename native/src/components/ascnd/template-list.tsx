@@ -15,7 +15,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
-import { rise } from '@/lib/entrance';
+import { useRise } from '@/lib/entrance';
 import { DEFAULT_REST, DEFAULT_RPE, restLabel, uniformValue } from '@/lib/prescription';
 import { displayWeight, type WeightUnit } from '@/lib/units';
 
@@ -169,6 +169,10 @@ export function TemplateRow({
   i18n: ReturnType<typeof useI18n>;
   onDelete: (id: string) => void;
 }) {
+  /* Lần vẽ đầu hiện NGAY — xem `useRise`. Hàng này nằm trong một danh sách có
+     thể dài, nên `rise(index)` hoãn tới 600ms; chạy quãng hoãn ấy ở lần vẽ đầu
+     là để lại một danh sách đã chiếm chỗ mà chưa nhìn thấy. */
+  const rise = useRise();
   const [open, setOpen] = useState(false);
   const raw = tpl.exercises;
   const exs: TplExercise[] = Array.isArray(raw) ? (raw as TplExercise[]) : [];

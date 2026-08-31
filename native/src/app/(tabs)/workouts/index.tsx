@@ -209,9 +209,24 @@ export default function WorkoutsScreen() {
         what keeps it from being the chevron-that-does-nothing this list was
         rebuilt to get rid of.
       */}
+      {/*
+        `rise` bắt đầu ĐƯỢC DÙNG ở đây.
+
+        `useRise()` được gọi từ lâu và kết quả không đi tới đâu — một hook chạy
+        mỗi lần vẽ để trả về một giá trị không ai đọc, kèm chú thích nói rằng
+        lần vẽ đầu hiện ngay, mô tả một cascade không tồn tại. Đúng cái bẫy repo
+        này ghi lại nhiều lần: chú thích sống lâu hơn thứ nó mô tả.
+
+        Chỗ nó thuộc về là đây. Khối này CHỜ dữ liệu — lúc đầu là bóng, rồi mới
+        thành danh sách — nên nó mount vào một màn hình đã ở đó, và đó chính là
+        ca `useRise` sinh ra để phục vụ. Ở lần vẽ đầu (`rise` trả về undefined)
+        không có gì chạy, nên cú trượt native của iOS vẫn là thứ duy nhất mang
+        màn hình vào.
+      */}
       {templatesPending ? (
         <WorkoutsSkeleton />
       ) : templates && templates.length > 0 ? (
+        <Animated.View entering={rise(0)}>
         <Measured id={SK.workoutTemplates} style={styles.tplSection}>
           <View style={styles.libHead}>
             {/* The count is safe here in a way it was not in the old header:
@@ -262,6 +277,7 @@ export default function WorkoutsScreen() {
             <Text style={styles.addRowText}>{i18n.workoutsCreateNew}</Text>
           </PressScale>
         </Measured>
+        </Animated.View>
       ) : templatesFailed ? (
         <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
       ) : (

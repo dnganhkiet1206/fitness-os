@@ -28,7 +28,7 @@ import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { errorText } from '@/lib/error-copy';
-import { rise } from '@/lib/entrance';
+import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { useAuth } from '@/hooks/use-auth';
@@ -123,6 +123,12 @@ function WeekBars({
 }
 
 export default function WeeklyReviewScreen() {
+  /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
+     đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là mười cái
+     lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
+     vấn; khung hình rơi trong quãng đó để lại đúng giá trị đầu, và giá trị
+     đầu của `FadeInDown` là chưa nhìn thấy. */
+  const rise = useRise();
   const { user, session } = useAuth();
   const { data: profile } = useProfile();
   const i18n = useI18n();
