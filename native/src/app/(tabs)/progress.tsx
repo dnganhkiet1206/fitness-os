@@ -3,7 +3,7 @@ import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { Camera, ChevronRight, Plus, Ruler, Scale, Target, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useId, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -20,6 +20,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
+import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
 import { PAGE_TINT, colors, radius, spacing, type } from '@/constants/ascnd';
@@ -38,7 +39,19 @@ import { toast } from '@/lib/toast';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { WeightLogList } from '@/components/ascnd/weight-log-list';
 
-type Tab = 'weight' | 'measurements' | 'photos';
+/**
+ * Hai mục, không phải ba.
+ *
+ * "Ảnh tiến trình" từng là một tab, và nội dung của nó là một BẢN SAO của trang
+ * `/progress-photos`: cùng lưới ảnh, và cái nút "Thêm ảnh" trong tab vốn đã đẩy
+ * sang chính trang đó. Hai chỗ vẽ cùng một thứ, và một trong hai luôn là cái
+ * kém hơn — ở đây là tab, vì nó chỉ hiện được mười hai ảnh đầu.
+ *
+ * Ảnh giờ là một HÀNG trong mục Số đo, mở ra trang đầy đủ. Cùng cách trang Dinh
+ * dưỡng đưa "Danh sách đi chợ" đi: thứ có trang riêng thì được trỏ tới, không
+ * được vẽ lại một nửa.
+ */
+type Tab = 'weight' | 'measurements';
 
 /**
  * How far back the weight chart reaches.
@@ -242,7 +255,9 @@ export default function ProgressScreen() {
    * change what it shows and cost more to draw. Cached under its own key.
    */
   const { data: weightAll } = useWeightHistory(3650);
-  const { data: photos, isError: photosFailed, isPending: photosPending } = useProgressPhotos();
+  /* Chỉ còn dùng để ĐẾM cho hàng dẫn sang trang ảnh — lưới ảnh đã về đúng chỗ
+     của nó ở `/progress-photos`. */
+  const { data: photos } = useProgressPhotos();
   /* Both rows below carry state rather than only a name — see `shortcut-row`. */
   /* `useAwards` and `useWeeklyChallenges` used to be read here, for the counts
      on two rows that have moved to Koa's room. Two queries a tab about weight
@@ -330,7 +345,6 @@ export default function ProgressScreen() {
   const tabs: { key: Tab; label: string; icon: typeof Scale }[] = [
     { key: 'weight', label: i18n.progressWeight, icon: Scale },
     { key: 'measurements', label: i18n.progressMeasurements, icon: Ruler },
-    { key: 'photos', label: i18n.progressPhotos, icon: Camera },
   ];
 
   // Circumference labels carry "(cm)"; swap to the user's length unit.
@@ -412,7 +426,15 @@ export default function ProgressScreen() {
         card, not under a heading called More.
       */>
       {/* Segmented tabs (web TabsList) */}
-      <Segmented value={tab} onChange={setTab} options={tabs} />
+      {/*
+        Cùng lý do với tab Dinh dưỡng: đây là MỤC LỤC của trang, không phải một ô
+        điều khiển đặt lên trang. Đường ray có nền đọc ra như "thẻ trong thẻ" khi
+        bên dưới toàn thẻ kính.
+
+        Hàng Tuần/Tháng/Năm ở giữa trang thì KHÔNG đổi — nó nằm bên trong một
+        thẻ và đúng là một bộ lọc, tức đúng thứ mà hình dạng viên trượt dành cho.
+      */}
+      <Segmented variant="underline" value={tab} onChange={setTab} options={tabs} />
 
       {/*
         `—` and `0 records` and "not enough data" are all true of an account
@@ -899,43 +921,28 @@ export default function ProgressScreen() {
             </GlassCard>
             </Animated.View>
           )}
+
+          {/*
+            Ảnh tiến trình: một HÀNG mở ra trang, không phải một tab vẽ lại lưới.
+
+            Nó đứng ở cuối mục Số đo vì cùng chủ đề — cả hai đều là "cơ thể tuần
+            này trông thế nào", chỉ khác một bên là con số và một bên là ảnh.
+
+            `ShortcutRow` chở luôn số ảnh, nên trạng thái được trả lời mà không
+            cần chạm — đúng lý do nó là một hàng chứ không phải một icon.
+          */}
+          <ShortcutRow
+            icon={Camera}
+            label={i18n.progressPhotos}
+            value={photos && photos.length > 0 ? String(photos.length) : null}
+            onPress={() => {
+              Haptics.selectionAsync();
+              nav.push('/progress-photos');
+            }}
+          />
         </>
       )}
 
-      {tab === 'photos' && photosFailed && (
-        <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
-      )}
-      {tab === 'photos' && !photosFailed && (
-        <>
-          <PressScale
-            style={styles.photoCta}
-            onPress={() => { Haptics.selectionAsync(); nav.push('/progress-photos'); }}>
-            <Icon icon={Camera} size={14} color={colors.primaryForeground} />
-            <Text style={styles.photoCtaText}>{i18n.nPhotoAdd}</Text>
-          </PressScale>
-          {photos && photos.length > 0 ? (
-            <Measured id={SK.progressPhotos}>
-            <Animated.View style={styles.photoGrid} entering={rise(0)}>
-              {photos.slice(0, 12).map((p) => (
-                <View key={p.id} style={styles.photoCell}>
-                  <Image source={{ uri: p.signedUrl }} style={styles.photo} />
-                </View>
-              ))}
-            </Animated.View>
-            </Measured>
-          ) : photosPending ? (
-            /* Cùng lý do với khối số đo ở trên: `photos` là `undefined` lúc
-               đang tải, và nhánh dưới tuyên bố người dùng chưa có tấm ảnh nào. */
-            <ProgressSkeleton tab="photos" />
-          ) : (
-            <Animated.View entering={rise(0)}>
-            <GlassCard style={styles.chartCard}>
-              <Text style={styles.emptyText}>{i18n.progressNoPhotos}</Text>
-            </GlassCard>
-            </Animated.View>
-          )}
-        </>
-      )}
 
       </SegmentPanel>
     </Screen>
@@ -1125,19 +1132,4 @@ const styles = StyleSheet.create({
   historyDelete: { width: 22, alignItems: 'flex-end', justifyContent: 'center' },
   historyDate: { fontSize: 11, color: colors.mutedForeground },
   historyValue: { fontSize: 11, fontFamily: 'Menlo', color: colors.foreground, textAlign: 'right', fontVariant: ['tabular-nums'] },
-
-  // Photos
-  photoCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 40,
-    borderRadius: radius.sm,
-    backgroundColor: colors.primary,
-  },
-  photoCtaText: { fontSize: 13, fontWeight: '600', color: colors.primaryForeground },
-  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  photoCell: { width: '31.5%', borderRadius: radius.sm, overflow: 'hidden' },
-  photo: { width: '100%', aspectRatio: 0.8, backgroundColor: colors.secondary },
 });

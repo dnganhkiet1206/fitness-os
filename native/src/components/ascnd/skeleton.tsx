@@ -268,9 +268,12 @@ export function WorkoutsSkeleton() {
  * vào nhánh nói rằng người dùng KHÔNG CÓ dữ liệu — về đúng những thứ họ đã bỏ
  * công nhập.
  */
-export function ProgressSkeleton({ tab }: { tab: 'weight' | 'measurements' | 'photos' }) {
+export function ProgressSkeleton({ tab }: { tab: 'weight' | 'measurements' }) {
   const id =
-    tab === 'weight' ? SK.progressWeight : tab === 'measurements' ? SK.progressMeasurements : SK.progressPhotos;
+    /* Hai nhánh, không phải ba: tab "Ảnh tiến trình" đã thành một hàng dẫn sang
+       `/progress-photos`, nên không còn chỗ nào dựng bóng chờ cho nó. Giữ lại
+       nhánh thứ ba là giữ một câu trả lời cho một câu hỏi không ai hỏi nữa. */
+    tab === 'weight' ? SK.progressWeight : SK.progressMeasurements;
   return (
     <SkeletonPage>
       <SkeletonFor id={id} />
