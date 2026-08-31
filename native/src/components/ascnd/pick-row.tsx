@@ -12,11 +12,12 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
-import { duration, press } from '@/constants/motion';
+import { duration, press, spring } from '@/constants/motion';
 
 /**
  * A row of choices where the highlight TRAVELS to the one you picked.
@@ -159,6 +160,8 @@ export function PickRow({
   height,
   pillHeight,
   pillAnchor = 'fill',
+  pillInset = 0,
+  travel = 'timing',
   gap = 8,
   scroll = false,
   style,
@@ -181,6 +184,36 @@ export function PickRow({
   pillHeight?: number;
   /** `fill` — cao bằng ô (mặc định); `bottom` — mỏng, neo mép dưới ô. */
   pillAnchor?: 'fill' | 'bottom';
+  /**
+   * Thu viên vào bao nhiêu điểm mỗi bên.
+   *
+   * Một gạch chân rộng đúng bằng ô sẽ chạm hai mép chữ, và ở đó nó thôi đọc ra
+   * là một dấu chỉ mà bắt đầu đọc ra là một đường kẻ. Thu vào vài điểm là đủ để
+   * nó tách khỏi chữ mà vẫn rõ đang chỉ vào đâu.
+   */
+  pillInset?: number;
+  /*
+    KHÔNG có prop quầng sáng, và đó là một ràng buộc của chính cấu trúc này.
+
+    Viên trượt là ba mảnh, và mảnh GIỮA là một view rộng 1 điểm bị `scaleX` kéo
+    ra. Bóng đổ bị kéo theo transform, nên một `shadowRadius` đặt ở đó sẽ nở ra
+    theo đúng hệ số co — thành một vệt nhoè, không phải một quầng.
+
+    Làm đúng thì cần một lớp thứ tư có BỀ RỘNG animate, mà `tools/motion.mjs`
+    tồn tại trong repo này để cấm đúng điều đó. Nên thứ làm cho viên bớt cứng ở
+    đây là MÀU, không phải bóng.
+  */
+  /**
+   * Cách viên đi tới chỗ mới.
+   *
+   * `timing` (mặc định) là 240ms ease-out — có tài liệu ở `TRAVEL_MS`, và là
+   * thứ mọi control dạng viên trong app đang dùng.
+   *
+   * `spring` dùng đúng thang của Apple ở `constants/motion.ts`: cùng thời lượng
+   * cảm nhận, độ nảy gần 0. Khác biệt nhỏ và cố ý nhỏ — một gạch chân mảnh
+   * "đuổi theo" lựa chọn thì hợp với lò xo hơn là một viên đặc trượt.
+   */
+  travel?: 'timing' | 'spring';
   /** an outline on the highlight, cut across the three pieces — see above */
   border?: { width: number; color: string };
   /**
@@ -235,7 +268,13 @@ export function PickRow({
     */
     const jump = !placed.current || reduceMotion;
     placed.current = true;
-    const go = (v: number) => withTiming(v, { duration: TRAVEL_MS, easing: TRAVEL_EASE });
+    /* Cùng THỜI LƯỢNG cảm nhận cho cả hai cách đi, nên đổi `travel` không đổi
+       nhịp của màn hình — chỉ đổi hình dạng của quãng đường. Độ nảy 0.02 là gần
+       như tắt hẳn: đủ để gạch chân "đuổi theo" chứ không nảy. */
+    const go = (v: number) =>
+      travel === 'spring'
+        ? withSpring(v, spring(TRAVEL_MS / 1000, 0.02))
+        : withTiming(v, { duration: TRAVEL_MS, easing: TRAVEL_EASE });
     x.value = jump ? here.x : go(here.x);
     y.value = jump ? here.y : go(here.y);
     w.value = jump ? here.w : go(here.w);
@@ -269,16 +308,16 @@ export function PickRow({
   const dy = pillAnchor === 'bottom' ? box - h : 0;
 
   const left = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }, { translateY: y.value + dy }],
+    transform: [{ translateX: x.value + pillInset }, { translateY: y.value + dy }],
   }));
   const right = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value + w.value - r }, { translateY: y.value + dy }],
+    transform: [{ translateX: x.value + w.value - pillInset - r }, { translateY: y.value + dy }],
   }));
   const mid = useAnimatedStyle(() => ({
     transform: [
-      { translateX: x.value + r },
+      { translateX: x.value + pillInset + r },
       { translateY: y.value + dy },
-      { scaleX: Math.max(0, w.value - r * 2) },
+      { scaleX: Math.max(0, w.value - pillInset * 2 - r * 2) },
     ],
   }));
 
@@ -329,6 +368,8 @@ export function PickRow({
               borderTopLeftRadius: r,
               borderBottomLeftRadius: r,
               backgroundColor: fill,
+            },
+            {
             },
             border && { borderWidth: border.width, borderColor: border.color, borderRightWidth: 0 },
             left,
