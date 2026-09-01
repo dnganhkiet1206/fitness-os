@@ -6,16 +6,17 @@
  * Ba tab dựng trạng thái rỗng của chúng từ dữ liệu chưa về, nên trong suốt lúc
  * tải chúng nói sai về dữ liệu của người dùng:
  *
- *   · `progress.tsx`  — `photos && photos.length > 0 ? … : "Chưa có ảnh"`.
- *     `photos` là `undefined` khi đang tải, nên nhánh "chưa có" chạy. Khối số
- *     đo còn tệ hơn: nó hiện `EmptyState` "Chưa có số đo" KÈM nút "Thêm số đo"
- *     — mời người ta nhập lại thứ họ đã nhập rồi, đang trên đường về.
+ *   · `progress.tsx`  — `measurement` null → `EmptyState` "Chưa có số đo" KÈM
+ *     nút "Thêm số đo": mời người ta nhập lại thứ họ đã nhập rồi, đang trên
+ *     đường về. Tab "Ảnh" từng có cùng lỗi (`photos && photos.length > 0 ? … :
+ *     "Chưa có ảnh"`); nó đã thành một hàng dẫn sang `/progress-photos` nên
+ *     không còn chỗ nào dựng được lỗi ấy.
  *   · `nutrition.tsx` — vòng calo vẽ từ `Number(dailyLog?.kcal) || 0`, ra 0, và
  *     thẻ lớn nhất màn hình hiện "0 / 2.200" y như một ngày chưa ăn gì.
  *   · `workouts/index.tsx` — `templates` chưa về → `EmptyState` "chưa có mẫu
  *     tập nào".
  *
- * Cả ba đều ĐÃ CÓ cổng `isError`, và không cái nào có cổng `isPending`. Tức là
+ * Cả ba tệp đều ĐÃ CÓ cổng `isError`, và không cái nào có cổng `isPending`. Tức là
  * người viết đã nghĩ tới chuyện "đọc hỏng thì đừng bịa", rồi bỏ sót đúng nhánh
  * chạy ở MỌI lần mở app nguội chứ không phải chỉ khi có sự cố.
  *
@@ -74,12 +75,6 @@ const TABS = [
     file: 'src/app/(tabs)/progress.tsx',
     label: 'Tiến trình',
     pending: 'measurementsPending',
-    shows: 'ProgressSkeleton',
-  },
-  {
-    file: 'src/app/(tabs)/progress.tsx',
-    label: 'Tiến trình (ảnh)',
-    pending: 'photosPending',
     shows: 'ProgressSkeleton',
   },
   {
@@ -183,7 +178,6 @@ function audit(W) {
 
 const ORDER = [
   { name: 'số đo', pending: 'measurementsPending', empty: 'progressNoMeasurements' },
-  { name: 'ảnh', pending: 'photosPending', empty: 'progressNoPhotos' },
   { name: 'cân nặng', pending: 'weightPending &&', empty: 'nNotEnoughData' },
 ];
 
@@ -248,17 +242,17 @@ problems.push(...audit(WORLD));
     rỗng → "nằm SAU", và đó mới là bản đã ship: ternary lấy nhánh khớp đầu
     tiên, nên một `isPending` đặt muộn thì không cứu được gì.
   */
-  broken('nhánh đang tải bị bỏ hẳn', PG, ') : photosPending ? (', ') : false ? (', /không tìm thấy cả hai nhánh/);
+  broken('nhánh đang tải bị bỏ hẳn', PG, ') : measurementsPending ? (', ') : false ? (', /không tìm thấy cả hai nhánh/);
   {
     const orig = WORLD.src(PG);
-    const moved = orig.replace(') : photosPending ? (', ') : false ? (') + '\nphotosPending ? null : null;\n';
+    const moved = orig.replace(') : measurementsPending ? (', ') : false ? (') + '\nmeasurementsPending ? null : null;\n';
     const W = { ...WORLD, src: (f) => (f === PG ? moved : WORLD.src(f)) };
     if (!audit(W).some((p) => /nằm SAU/.test(p))) {
       console.error('phép tự kiểm hỏng — thế giới "nhánh đang tải nằm sau nhánh rỗng" đáng lẽ phải bị bắt');
       process.exit(1);
     }
   }
-  broken('khoá được vẽ bóng mà không ai đo', PG, '<Measured id={SK.progressPhotos}>', '<View>', /không khối thật nào bọc/);
+  broken('khoá được vẽ bóng mà không ai đo', PG, '<Measured id={SK.progressMeasurements}>', '<View>', /không khối thật nào bọc/);
 
   /* Và luật 3 nhìn từ phía `SK`: thêm một khoá chưa ai đo phải đỏ ngay. */
   {
@@ -276,8 +270,8 @@ if (problems.length) {
 console.log(
   `bóng khi tải OK — ${TABS.length} cổng trên 4 tab: đang tải dựng BÓNG chứ không dựng trạng thái ` +
     'rỗng. Bản đã ship nói sai về dữ liệu người dùng ở mọi lần mở app nguội — "Chưa có số đo" kèm ' +
-    'nút mời nhập lại, "Chưa có ảnh", "chưa có mẫu tập nào", và một vòng calo "0 / 2.200" y như một ' +
-    'ngày chưa ăn gì — vì cả ba tab đều có cổng isError mà không có cổng isPending. Thứ tự nhánh ' +
+    'nút mời nhập lại, "chưa có mẫu tập nào", và một vòng calo "0 / 2.200" y như một ' +
+    'ngày chưa ăn gì — vì cả ba tệp đều có cổng isError mà không có cổng isPending. Thứ tự nhánh ' +
     'được kiểm chứ không chỉ sự tồn tại: một `isPending` đặt sau nhánh rỗng thì không cứu được gì. ' +
     'Mọi khoá được vẽ bóng đều có một khối thật ĐO nó, nên bóng đúng cỡ và trang không nhảy. Và bóng ' +
     'gác bằng `isPending` chứ không phải `isFetching`, nên nó không bao giờ che dữ liệu cache đang ' +

@@ -211,7 +211,6 @@ export const SK = {
   workoutTemplates: 'workouts:templates',
   progressWeight: 'progress:weight',
   progressMeasurements: 'progress:measurements',
-  progressPhotos: 'progress:photos',
 } as const;
 
 /**
@@ -260,13 +259,17 @@ export function WorkoutsSkeleton() {
 
 /**
  * Tab Tiến trình — một bóng cho mỗi tab con, vì mỗi tab con chờ một truy vấn
- * riêng và chỉ một cái trong ba hiện ra mỗi lúc.
+ * riêng và chỉ một trong hai hiện ra mỗi lúc.
  *
- * Đây là chỗ lời nói dối nặng nhất: `photos && photos.length > 0 ? … : "chưa có
- * ảnh"` và `measurement` null → "Chưa có số đo" kèm nút "Thêm số đo". Có cổng
- * `isError` nhưng không có cổng `isPending`, nên trạng thái đang tải rơi thẳng
- * vào nhánh nói rằng người dùng KHÔNG CÓ dữ liệu — về đúng những thứ họ đã bỏ
- * công nhập.
+ * Đây là chỗ lời nói dối nặng nhất: `measurement` null → "Chưa có số đo" kèm
+ * nút "Thêm số đo". Có cổng `isError` nhưng không có cổng `isPending`, nên
+ * trạng thái đang tải rơi thẳng vào nhánh nói rằng người dùng KHÔNG CÓ dữ liệu
+ * — về đúng những thứ họ đã bỏ công nhập.
+ *
+ * Đoạn này TỪNG kể thêm về tab "Ảnh" với cùng lỗi ấy. Tab đó đã thành một hàng
+ * dẫn sang `/progress-photos`, nên câu đó thôi đúng và đã được gỡ cùng khoá
+ * `progressPhotos` — một khoá không ai đo là một cái bẫy mang hình dạng một
+ * tính năng đang chạy.
  */
 export function ProgressSkeleton({ tab }: { tab: 'weight' | 'measurements' }) {
   const id =
