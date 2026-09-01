@@ -104,7 +104,7 @@ export function SheetHeader({
         <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.a11yClose}
-          hitSlop={12}
+          hitSlop={8}
           onPress={() => {
             Haptics.selectionAsync();
             onClose();
@@ -131,22 +131,48 @@ export function SheetHeader({
   );
 }
 
-/** Đường kính nút đóng, và cũng là bề rộng chỗ trống cân nó ở đầu kia. */
-const BTN = 34;
+/**
+ * Đường kính nút đóng, và cũng là bề rộng chỗ trống cân nó ở đầu kia.
+ *
+ * ── 44, và vì sao không phải 34 ──
+ *
+ * 44×44 điểm là sàn của Apple cho một vùng chạm, và nó là sàn cho vùng NHÌN
+ * THẤY chứ không chỉ cho vùng ăn chạm. Bản trước là một đĩa 34 điểm với
+ * `hitSlop={12}`, tức vùng chạm thật 58 điểm — vượt chuẩn về con số, và vẫn
+ * sai về cảm giác: `hitSlop` vô hình, nên người ta nhắm vào cái họ THẤY. Một
+ * nút 34 điểm đọc ra là nhỏ và bị bấm hụt ở rìa dù phần đệm quanh nó có rộng
+ * bao nhiêu.
+ *
+ * Đo trên ảnh tham chiếu (sheet chọn model của Claude Code, ảnh 920px cho màn
+ * 393pt → 2,341 px/pt, đã lọc bỏ nét khoanh đỏ bằng cách chỉ nhận điểm ảnh
+ * XÁM): đĩa của họ là 85×87px ≈ 36×37 điểm. Nó cũng dưới chuẩn. Ảnh tham chiếu
+ * là tham chiếu về HÌNH DẠNG — thanh kéo ở giữa, nút bên trái, tiêu đề căn
+ * giữa — không phải về kích thước vùng chạm, và ở chỗ hai thứ mâu thuẫn thì
+ * con số của Apple thắng.
+ *
+ * `hitSlop` giữ lại nhưng hạ xuống 8: ở 44 điểm nó không còn để cứu một nút
+ * nhỏ nữa, chỉ để tha thứ cho cú chạm trượt ở rìa.
+ *
+ * Nguồn: developer.apple.com/design/human-interface-guidelines — "maintain a
+ * minimum tappable area of 44x44 points for all controls".
+ */
+const BTN = 44;
 
 const styles = StyleSheet.create({
   root: { paddingTop: spacing.sm },
   /*
-   * 48 × 4, bo tròn hẳn.
+   * 52 × 4, bo tròn hẳn.
    *
-   * Đo trên ảnh tham chiếu (sheet chọn model của Claude Code, 921px cho một
-   * màn 393pt → 2,34 px/pt): thanh rộng 114px ≈ 48pt, cao 6px ≈ 2,5pt. Lấy 4
-   * chứ không lấy 2,5 vì đây là nền tối — một thanh 2,5pt màu #2b2b31 trên nền
-   * #0e0e11 gần như không đọc được, còn ảnh tham chiếu là một sheet nền xám
-   * sáng hơn hẳn.
+   * Đo trên ảnh tham chiếu bằng cách quét điểm ảnh chứ không ước lượng bằng
+   * mắt: 120×8px ở tỉ lệ 2,341 px/pt → 51,3 × 3,4 điểm. Con số 48 ở bản trước
+   * là ước lượng bằng mắt và nó lệch 3 điểm.
+   *
+   * Chiều cao lấy 4 chứ không lấy 3,4: đây là nền tối, và một thanh mảnh hơn
+   * màu #2b2b31 trên nền #0e0e11 gần như không đọc được, còn ảnh tham chiếu là
+   * một sheet có nền xám sáng hơn hẳn.
    */
   grabber: {
-    width: 48,
+    width: 52,
     height: 4,
     borderRadius: 2,
     backgroundColor: colors.border,

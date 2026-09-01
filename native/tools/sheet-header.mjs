@@ -92,6 +92,27 @@ if (header) {
   if (!/grabber \?.*pointerEvents="none"/s.test(header)) {
     problems.push(`${HEADER}: thanh kéo không có \`pointerEvents="none"\` — nó sẽ nuốt cú vuốt xuống`);
   }
+  /*
+    ── 5. nút đóng phải đạt sàn 44 điểm, ở phần NHÌN THẤY ──
+
+    44×44 là sàn của Apple cho một vùng chạm. Bản trước là đĩa 34 điểm với
+    `hitSlop={12}`: vùng chạm thật 58 điểm, tức vượt chuẩn nếu chỉ tính số —
+    và vẫn sai, vì `hitSlop` vô hình và người ta nhắm vào cái họ THẤY.
+
+    Nên luật đọc chính đường kính, không đọc tổng. Và nó đọc từ hằng số `BTN`,
+    thứ vừa là đường kính nút vừa là bề rộng chỗ trống cân tiêu đề ở đầu kia —
+    một con số, nên hai đầu không thể lệch nhau.
+  */
+  const btn = /\nconst BTN = (\d+);/.exec(header);
+  if (!btn) {
+    problems.push(`${HEADER}: không đọc được \`BTN\` — luật cỡ nút đang không kiểm gì`);
+  } else if (Number(btn[1]) < 44) {
+    problems.push(
+      `${HEADER}: nút đóng đường kính ${btn[1]} điểm, dưới sàn 44×44 của Apple. \`hitSlop\` không ` +
+        'cứu được: nó vô hình, nên người dùng nhắm vào cái họ THẤY và bấm hụt ở rìa',
+    );
+  }
+
   const spacer = /\n  spacer: \{([^}]*)\}/.exec(header);
   if (!spacer) problems.push(`${HEADER}: không đọc được style chỗ trống cân tiêu đề`);
   else if (/backgroundColor/.test(spacer[1])) {
@@ -210,7 +231,9 @@ console.log(
     '<SheetHeader> (2 màn camera được miễn CÓ GHI LÝ DO: toàn màn ngắm, không có nền để đặt hàng đầu lên), ' +
     'nên mọi sheet đều có thanh kéo ở giữa và một nút đóng nhìn thấy được — trước đây phần lớn chúng chỉ có ' +
     'một dòng tiêu đề và lối ra duy nhất là một cú vuốt không ai nói cho bạn biết. `onClose` là prop BẮT ' +
-    'BUỘC; thanh kéo không ăn chạm (nó quảng cáo cú vuốt nào thì không được nuốt cú vuốt ấy); và không tệp ' +
+    'BUỘC; nút đóng đạt sàn 44×44 của Apple ở phần NHÌN THẤY chứ không nhờ `hitSlop` (thứ vô hình, nên ' +
+    'nó không làm một nút 34 điểm bớt trông như một nút 34 điểm); thanh kéo không ăn chạm (nó quảng cáo cú ' +
+    'vuốt nào thì không được nuốt cú vuốt ấy); và không tệp ' +
     'nào còn một `<View>` rỗng mang nền — hình dạng của cái đĩa tròn giả mà weight-goal-dialog và ' +
     'workout-builder đã ĐỘC LẬP mắc phải, mỗi cái một đĩa xám ở góc phải trông y như nút và bấm không có gì',
 );
