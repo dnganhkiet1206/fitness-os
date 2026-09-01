@@ -434,7 +434,7 @@ export default function ProgressScreen() {
         Hàng Tuần/Tháng/Năm ở giữa trang thì KHÔNG đổi — nó nằm bên trong một
         thẻ và đúng là một bộ lọc, tức đúng thứ mà hình dạng viên trượt dành cho.
       */}
-      <Segmented variant="underline" value={tab} onChange={setTab} options={tabs} />
+      <Segmented variant="capsule" value={tab} onChange={setTab} options={tabs} />
 
       {/*
         `—` and `0 records` and "not enough data" are all true of an account

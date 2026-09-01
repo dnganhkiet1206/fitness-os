@@ -6,7 +6,7 @@ import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withTiming } from '
 import { Icon } from '@/components/ascnd/icon';
 import { duration } from '@/constants/motion';
 import { PickRow } from '@/components/ascnd/pick-row';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 
 /**
  * One segmented control, and the selection travels between segments.
@@ -57,33 +57,6 @@ export interface SegmentOption<K extends string> {
   icon?: React.ComponentProps<typeof Icon>['icon'];
 }
 
-/**
- * Chữ và icon của một mục, mờ đi CÙNG NHAU và có hiệu ứng.
- *
- * ── vì sao là một component riêng ──
- *
- * Độ mờ phải chạy qua một shared value, và shared value cần một hook. Gọi hook
- * trong `.map()` là đúng số lần chỉ khi danh sách không đổi độ dài — một ràng
- * buộc không ai thấy cho tới ngày nó gãy. Một component cho một mục thì mỗi
- * mục có hook của chính nó, và câu hỏi đó biến mất.
- *
- * ── vì sao phải có hiệu ứng ──
- *
- * Gạch chân trượt mượt trong khi hai nhãn đổi độ mờ giữa hai khung hình thì hai
- * nửa của cùng một chuyển động kể hai câu khác nhau. Cùng thời lượng với `toggle`
- * — ngắn hơn quãng trượt của gạch, nên chữ đã ổn định lúc gạch vừa tới nơi.
- */
-function Face({ on, line, children }: { on: boolean; line: boolean; children: React.ReactNode }) {
-  const lit = useSharedValue(on ? 1 : 0);
-  useEffect(() => {
-    lit.value = withTiming(on ? 1 : 0, { duration: duration.toggle });
-  }, [on, lit]);
-  const fade = useAnimatedStyle(() => ({
-    opacity: line ? 0.55 + lit.value * 0.45 : 1,
-  }));
-  return <Animated.View style={[styles.inner, line && styles.lineInner, fade]}>{children}</Animated.View>;
-}
-
 export function Segmented<K extends string>({
   options,
   value,
@@ -100,52 +73,39 @@ export function Segmented<K extends string>({
   /** the mascot room's row is a smaller control inside a card */
   compact?: boolean;
   /**
-   * `pill` — viên trượt lấp đầy ô, trên một đường ray có nền. Mặc định, và là
-   * hình dạng đúng cho một control nằm TRONG một thẻ: đường ray nói "đây là một
-   * ô điều khiển", và nó cần nói thế khi xung quanh là chữ và số.
+   * `pill` — nhỏ, chữ 11 điểm, thumb SÁNG hơn ray. Cho control nằm bên TRONG
+   * một thẻ, nơi nó phải nhỏ hơn nội dung quanh nó.
    *
-   * `underline` — không đường ray, không nền; chỉ nhãn và một gạch mỏng trượt
-   * dưới nhãn đang chọn. Dùng cho điều hướng MỤC ở đầu màn, nơi thanh này không
-   * phải một ô điều khiển đặt lên trang mà là mục lục của chính trang đó.
+   * `capsule` — dạng của iOS trên nền tối, dùng cho điều hướng mục ở đầu màn:
+   * ray là một viên nang rộng hết hàng, sáng hơn nền và có viền tóc; thumb thì
+   * TỐI bằng nền, cũng có viền tóc. Chữ 17 điểm, cả hai nhãn sáng đầy đủ.
    *
-   * Cùng một cơ chế trượt cho cả hai: chỉ viên trượt đổi chiều cao và chỗ neo,
-   * không có thanh chỉ báo thứ hai được viết ra ở đâu cả.
+   * Cùng một cơ chế trượt cho cả hai — chỉ khác kích thước và ai sáng hơn ai.
    */
-  variant?: 'pill' | 'underline';
+  variant?: 'pill' | 'capsule';
 }) {
   const pad = 3;
-  const r = compact ? radius.full : radius.sm;
-  const line = variant === 'underline';
+  const cap = variant === 'capsule';
+  const r = cap || compact ? radius.full : radius.sm;
 
   return (
     <PickRow
       value={value}
       /*
-        `primary` (#a8afbd) chứ không phải `foreground` (#ededed).
+        Thumb TỐI hơn ray, và đó là chỗ dễ làm ngược nhất.
 
-        Trắng đầy đủ trên nền gần đen là mức tương phản cao nhất mà bảng màu
-        này có, và một gạch ba điểm ở mức đó đọc ra như một ĐƯỜNG KẺ — nó tranh
-        chú ý với chính cái tên nó đang chỉ. Bạc thấp hơn một bậc: vẫn rõ ngay
-        lập tức, thôi hét.
-
-        Đây cũng là câu trả lời cho "gradient rất subtle": ở chiều cao ba điểm,
-        một chuyển màu dài 60 điểm không đọc ra được — nó chỉ tốn một lớp SVG.
-        Thứ làm gạch bớt cứng là hạ một bậc màu, không phải thêm một chuyển màu
-        không ai thấy.
+        Trên nền sáng, segmented control của iOS có thumb sáng hơn ray — nó nổi
+        lên. Trên nền TỐI thì đảo lại: ray sáng hơn nền, thumb tối bằng nền và
+        đeo một viền tóc, nên nó đọc ra là một ô LÕM ôm lấy mục đang chọn chứ
+        không phải một miếng dán lên. Đó là khác biệt giữa "giống Apple" và
+        "giống một segmented control mặc định".
       */
-      fill={line ? colors.primary : colors.accent}
-      radius={line ? 2 : compact ? radius.full : r - pad}
+      fill={cap ? colors.background : colors.accent}
+      border={cap ? { width: StyleSheet.hairlineWidth, color: glass.border } : undefined}
+      radius={cap ? radius.full : compact ? radius.full : r - pad}
       height={height}
-      pillHeight={line ? 3 : undefined}
-      pillAnchor={line ? 'bottom' : 'fill'}
-      /* Thu 4 điểm mỗi bên: gạch thôi chạm hai mép chữ, nên nó đọc ra là một
-         dấu chỉ chứ không phải một đường gạch dưới. */
-      pillInset={line ? 4 : 0}
-      /* Gạch mảnh "đuổi theo" lựa chọn thì hợp lò xo hơn là viên đặc trượt —
-         cùng thời lượng, độ nảy gần như tắt. */
-      travel={line ? 'spring' : 'timing'}
-      gap={line ? spacing.lg : 0}
-      style={line ? styles.lineRow : [styles.row, { borderRadius: r, padding: pad }]}>
+      gap={0}
+      style={[cap ? styles.capRow : styles.row, { borderRadius: r, padding: pad }]}>
       {options.map((o) => {
         const on = o.key === value;
         return (
@@ -153,34 +113,33 @@ export function Segmented<K extends string>({
             key={o.key}
             itemKey={o.key}
             accessibilityLabel={o.label}
-            style={[line ? styles.lineSeg : styles.seg, { height }]}
+            style={[styles.seg, { height }]}
             onPress={() => {
               if (on) return;
               Haptics.selectionAsync();
               onChange(o.key);
             }}>
             {/*
-              Ở biến thể gạch chân, icon và chữ mờ đi CÙNG NHAU và có hiệu ứng.
+              Viên nang: CẢ HAI nhãn sáng đầy đủ.
 
-              Đổi độ mờ đột ngột giữa hai khung hình thì gạch trượt mượt trong
-              khi hai nhãn nhấp nháy — hai nửa của một chuyển động kể hai câu
-              khác nhau. Bọc chung một lớp để chúng đi cùng một đường cong, và
-              để icon không phải mang một màu riêng.
+              Thứ bậc do VỊ TRÍ của thumb kể — nó là một ô lõm ôm lấy mục đang
+              chọn — nên làm mờ nhãn kia nữa là kể cùng một chuyện hai lần, và
+              làm cái ray trông như đang hỏng một nửa.
             */}
-            <Face on={on} line={line}>
+            <View style={styles.inner}>
               {o.icon ? (
                 <Icon
                   icon={o.icon}
-                  size={line ? 15 : 13}
-                  color={line ? colors.foreground : on ? colors.foreground : colors.mutedForeground}
+                  size={cap ? 15 : 13}
+                  color={cap || on ? colors.foreground : colors.mutedForeground}
                 />
               ) : null}
               <Text
-                style={[styles.label, line && styles.lineLabel, (on || line) && styles.labelOn]}
+                style={[styles.label, cap && styles.capLabel, (cap || on) && styles.labelOn]}
                 numberOfLines={1}>
                 {o.label}
               </Text>
-            </Face>
+            </View>
           </PickRow.Item>
         );
       })}
@@ -195,24 +154,18 @@ const styles = StyleSheet.create({
   labelOn: { color: colors.foreground },
   inner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
 
-  /* ── biến thể gạch chân ── */
-  /* Không nền, không viền, không đệm: thanh này hoà vào trang chứ không đặt lên
-     trang. Căn TRÁI vì mục lục đọc từ trái, và vì hai mục căn giữa trên cả bề
-     rộng màn hình thì gạch chân phải dài bằng nửa màn — nặng hơn hẳn thứ nó
-     đang chỉ. */
-  lineRow: { flexDirection: 'row', justifyContent: 'flex-start' },
-  /* Không `flex: 1`: ô ôm sát chữ, nên gạch chân rộng đúng bằng nhãn nó đang
-     chỉ. Đó là khác biệt lớn nhất so với viên trượt, và là lý do thanh này nhẹ. */
-  lineSeg: { flexDirection: 'row', alignItems: 'center' },
-  /* Khoảng icon → chữ: `spacing.sm`. Nằm trong khoảng 6–8 điểm và là một token
-     sẵn có, nên nó không phải một con số thứ ba chọn cho vừa mắt. */
-  /* Khoảng icon → chữ: `spacing.sm`. Trong khoảng 6–8 điểm và là token sẵn có,
-     nên nó không phải một con số thứ ba chọn cho vừa mắt. Độ mờ do `Face` chạy:
-     0.55 khi chưa chọn — đọc được, không chìm. */
-  lineInner: { gap: spacing.sm },
-  /* 15 điểm, không phải 11 của viên trượt: đây là mục lục của trang chứ không
-     phải nhãn bên trong một ô điều khiển, và nó đứng ngay dưới tiêu đề màn. */
-  lineLabel: { ...type.body, fontWeight: '600' },
+  /* ── biến thể viên nang ──
+     Ray SÁNG hơn nền (nền trang #070708, ray #18181b) và đeo một viền tóc, nên
+     bản thân cái ray đã đọc ra là một rãnh. Thumb thì tối bằng nền — xem ghi
+     chú ở `fill`, đó là chỗ dễ làm ngược nhất. */
+  capRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.secondary,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: glass.border,
+  },
+  /* 17 điểm: cỡ của một điều hướng mục, không phải nhãn bên trong một ô nhỏ. */
+  capLabel: { ...type.headline },
 
 });
 

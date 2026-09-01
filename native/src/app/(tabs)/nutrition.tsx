@@ -466,7 +466,7 @@ export default function NutritionScreen() {
           viết ra.
         */}
         <Segmented
-          variant="underline"
+          variant="capsule"
           value={tab}
           onChange={setTab}
           options={[
