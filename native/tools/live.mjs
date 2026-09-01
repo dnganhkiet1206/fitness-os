@@ -689,32 +689,86 @@ const SCENARIOS = [
     name: 'segmented: viên chọn ĐI sang mục mới chứ không nhảy cóc',
     route: '/nutrition', mode: 'full',
     async run(page) {
-      /* The pill is the one absolutely-positioned child of the row that is not
-         a segment — found by walking up from a label rather than by a test id,
-         so this keeps working if the markup is rearranged. */
-      const pillX = () =>
+      /*
+        Không gọi tên mục nào bằng chữ.
+
+        Bản trước bấm `getByRole('tab', { name: 'Foods' })` và neo hàng bằng
+        nhãn 'Today'. Nutrition sau đó tách nhóm TRA CỨU ra trang riêng, mục
+        'Foods' biến mất, và bước này chết ở `click: Timeout 30000ms` — 30 giây
+        chờ một thứ không còn tồn tại, nói đúng là nó hỏng nhưng không nói được
+        vì sao. Một chuỗi ký tự trong bài kiểm là một BẢN SAO của quyết định sản
+        phẩm, và bản sao thì mục ruỗng lặng lẽ.
+
+        Nên hàng và cả hai mục đều đọc ra từ DOM: hàng segmented là hàng có từ
+        hai `role="tab"` trở lên VÀ một con nằm tuyệt đối không phải tab — tức
+        viên trượt. Thanh tab dưới cùng có `role="tab"` nhưng capsule của nó nằm
+        TRONG mỗi tab chứ không phải anh em của chúng, nên nó không lọt. Nếu có
+        hơn một hàng thoả, bước này nói thẳng ra chứ không bốc đại một hàng.
+      */
+      const probe = () =>
         page.evaluate(() => {
-          const label = [...document.querySelectorAll('div')]
-            .find((d) => d.textContent?.trim() === 'Today' && d.getAttribute('role') === 'tab');
-          const row = label?.parentElement;
-          if (!row) return null;
-          const pill = [...row.children].find((c) => getComputedStyle(c).position === 'absolute');
-          return pill ? pill.getBoundingClientRect().x : null;
+          const rows = new Map();
+          for (const t of document.querySelectorAll('[role="tab"]')) {
+            const p = t.parentElement;
+            if (!p) continue;
+            if (!rows.has(p)) rows.set(p, []);
+            rows.get(p).push(t);
+          }
+          const found = [];
+          for (const [row, tabs] of rows) {
+            if (tabs.length < 2) continue;
+            const pill = [...row.children].find(
+              (c) => c.getAttribute('role') !== 'tab' && getComputedStyle(c).position === 'absolute',
+            );
+            if (!pill) continue;
+            found.push({
+              x: pill.getBoundingClientRect().x,
+              labels: tabs.map((t) => t.getAttribute('aria-label') ?? t.textContent?.trim() ?? ''),
+              on: tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true'),
+            });
+          }
+          return found;
         });
 
-      const start = await pillX();
-      if (start == null) return 'không tìm thấy viên chọn trong hàng segmented';
+      const first = await probe();
+      if (first.length === 0) return 'không tìm thấy hàng segmented nào có viên trượt';
+      if (first.length > 1) {
+        return `có ${first.length} hàng segmented trên màn — bước này không biết đang đo hàng nào`;
+      }
+      const { x: start, labels, on } = first[0];
+      /* `on` là -1 khi không mục nào khai aria-selected; mục 0 vẫn là mục đang
+         mở lúc mới vào màn, nên "mục khác" vẫn xác định được. */
+      const target = labels.find((_, i) => i !== (on < 0 ? 0 : on));
+      if (!target) return `hàng segmented chỉ có một mục (${labels.join(', ')}) — không có gì để đi sang`;
 
-      await page.getByRole('tab', { name: 'Foods' }).click();
-      /* Well inside the 220ms slide. If the control jumps, this already reads
-         the destination; if it travels, it is somewhere between. */
+      const pillX = async () => {
+        const rows = await probe();
+        return rows.length === 1 ? rows[0].x : null;
+      };
+
+      await page.getByRole('tab', { name: target, exact: true }).click();
+      /*
+        70ms, và con số này CỐ Ý không được lấy từ `pick-row.tsx`.
+
+        Quãng đi ở đó đã đổi ba lần trong ít commit gần đây — 220ms timing, rồi
+        240ms (`duration.move`), rồi `spring(0.25, 0)` — nên chép nó vào đây là
+        đặt thêm một bản sao nữa vào chỗ vừa mục ruỗng một lần. Bước này chỉ cần
+        một mốc NGẮN HƠN MỌI quãng đi mà bảng từ vựng chuyển động cho phép, và
+        70ms nằm dưới cả `duration.toggle`.
+
+        Nếu một ngày quãng đi bị rút xuống dưới 70ms thì bước này nói "viên chọn
+        NHẢY thẳng tới đích" — sai chẩn đoán nhưng đúng cảnh báo, và nó ồn chứ
+        không im. Đó là chiều hỏng đúng để chọn.
+      */
       await page.waitForTimeout(70);
       const mid = await pillX();
       await page.waitForTimeout(600);
       const end = await pillX();
 
       if (mid == null || end == null) return 'mất dấu viên chọn giữa chừng';
-      if (Math.abs(end - start) < 4) return `bấm sang Foods mà viên chọn không dịch (${start} → ${end})`;
+      if (Math.abs(end - start) < 4) {
+        return `bấm sang ${target} mà viên chọn không dịch (${start} → ${end})`;
+      }
       if (Math.abs(mid - end) < 2) {
         return `viên chọn NHẢY thẳng tới đích: sau 70ms đã ở ${mid}, đích là ${end} — không có chuyển động`;
       }
