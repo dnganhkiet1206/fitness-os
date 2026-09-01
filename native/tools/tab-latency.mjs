@@ -201,12 +201,51 @@ async function press(page, label) {
   const span = end - x0;
   if (!span) return null;
   const moved = s.filter((p) => p[0] >= down && p[1] !== null && Math.abs(p[1] - x0) > 1);
-  if (!moved.length) return { first: null, p50: null, p99: null };
+  if (!moved.length) return { first: null, p50: null, p99: null, jank: null };
   const hit = (f) => {
     const h = moved.find((p) => Math.abs(p[1] - x0) >= Math.abs(span) * f);
     return h ? Math.round(h[0] - down) : null;
   };
-  return { first: Math.round(moved[0][0] - down), p50: hit(0.5), p99: hit(0.99) };
+  return { first: Math.round(moved[0][0] - down), p50: hit(0.5), p99: hit(0.99), jank: jank(moved) };
+}
+
+/**
+ * Đếm số lần lò xo TĂNG TỐC LẠI giữa chuyến đi.
+ *
+ * ── vì sao cần con số này ──
+ *
+ * Hai bản vá độ trễ trước đều rút ngắn được cái trễ và đều bị người dùng báo
+ * "giật". Tôi không có cách nào nhìn thấy giật, nên mỗi lần chỉ biết mình sai
+ * sau khi người dùng bấm thử. Đo một nửa vấn đề rồi tối ưu theo nửa ấy là cách
+ * chắc chắn nhất để làm hỏng nửa kia.
+ *
+ * ── vì sao "tăng tốc lại" là đúng chữ ký cần tìm ──
+ *
+ * `spring(0.25, 0)` là lò xo tắt dần TỚI HẠN. Đường đi của nó có đúng một đỉnh
+ * vận tốc, và sau đỉnh ấy vận tốc giảm đơn điệu tới 0. Không có ngoại lệ; đó
+ * là tính chất của nghiệm chứ không phải chuyện tinh chỉnh tham số.
+ *
+ * Nên bất kỳ lần tăng tốc nào SAU đỉnh đều là một lò xo thứ hai được phát ra
+ * đè lên lò xo đang bay — `withSpring` mới đặt lại vận tốc về 0 rồi tăng tốc
+ * lại từ đầu. Đó chính xác là cú khựng, và nó đo được mà không cần biết trước
+ * nguyên nhân gây ra lò xo thứ hai.
+ *
+ * Ngưỡng 1,5× cộng 0,5px là để bỏ qua nhiễu thời gian khung hình: hai khung
+ * dài ngắn khác nhau cho ra hai vận tốc khác nhau dù chuyển động vẫn trơn.
+ */
+function jank(moved) {
+  const v = [];
+  for (let i = 1; i < moved.length; i++) {
+    const dt = moved[i][0] - moved[i - 1][0];
+    if (dt <= 0) continue;
+    v.push(Math.abs(moved[i][1] - moved[i - 1][1]) / dt);
+  }
+  if (v.length < 4) return 0;
+  let peak = 0;
+  for (let i = 1; i < v.length; i++) if (v[i] > v[peak]) peak = i;
+  let n = 0;
+  for (let i = peak + 2; i < v.length; i++) if (v[i] > v[i - 1] * 1.5 + 0.5) n++;
+  return n;
 }
 
 const SCREENS = [
@@ -225,7 +264,7 @@ for (const [worldName, world] of [['nhẹ', FIXTURES], ['nặng', heavyWorld()]]
     await page.goto(`http://localhost:${port}${s.route}`, { waitUntil: 'domcontentloaded', timeout: 90000 });
     await page.waitForTimeout(9000);
     const r = await press(page, s.label);
-    rows.push({ world: worldName, screen: s.name, ...(r ?? { first: null, p50: null, p99: null }) });
+    rows.push({ world: worldName, screen: s.name, ...(r ?? { first: null, p50: null, p99: null, jank: null }) });
     await browser.close();
   }
 }
@@ -233,11 +272,18 @@ server.close();
 
 const n = (v) => (v === null || v === undefined ? '—' : String(v) + 'ms');
 console.log(`\nthư viện thực phẩm: ${heavyN} món ở cột "nặng"\n`);
-console.log('dữ liệu  màn          nhúc nhích đầu   50%      99%');
+console.log('dữ liệu  màn          nhúc nhích đầu   50%      99%   tăng tốc lại');
 for (const r of rows) {
   console.log(
-    r.world.padEnd(8) + r.screen.padEnd(13) + n(r.first).padStart(11) + n(r.p50).padStart(11) + n(r.p99).padStart(9),
+    r.world.padEnd(8) + r.screen.padEnd(13) + n(r.first).padStart(11) + n(r.p50).padStart(11) +
+      n(r.p99).padStart(9) + String(r.jank ?? '—').padStart(11),
   );
+}
+const janky = rows.filter((r) => (r.jank ?? 0) > 0);
+if (janky.length) {
+  console.log('\nGIẬT: ' + janky.map((r) => `${r.screen}/${r.world} (${r.jank})`).join(', '));
+  console.log('Lò xo tắt dần tới hạn có đúng một đỉnh vận tốc. Tăng tốc sau đỉnh nghĩa là');
+  console.log('một lò xo thứ hai được phát ra đè lên lò xo đang bay.');
 }
 
 const pick = (w, s) => rows.find((r) => r.world === w && r.screen === s)?.first;
