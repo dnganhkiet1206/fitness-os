@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
-import { StyleSheet, TextInput, type StyleProp, type TextStyle } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, TextInput, type StyleProp, type TextStyle } from 'react-native';
 import Animated, {
+  runOnJS,
   Easing,
   useAnimatedProps,
   useSharedValue,
@@ -87,13 +88,51 @@ export function AnimatedNumber({
   const sep = lang === 'vi' ? '.' : ',';
   const dot = lang === 'vi' ? ',' : '.';
 
+  /*
+    Chỉ là TextInput KHI ĐANG ĐẾM. Xong thì thành `<Text>`.
+
+    ── vì sao ──
+
+    `<Text>` không có prop nào đổi được nội dung từ worklet, nên để đếm mượt thì
+    phải mượn `TextInput` — ghi chú ở đầu tệp giải thích chỗ đó. Nhưng bản trước
+    mượn VĨNH VIỄN: số đứng yên từ lâu vẫn còn là một `TextInput`.
+
+    Trên iOS mỗi cái là một `UITextField` thật. Deck ở Dashboard có ba thẻ dùng
+    `HeroPanel`, mỗi thẻ bốn con số — nên một cú vuốt kéo theo khoảng mười hai
+    text field native qua lại. `readiness-gauge` dùng hai, `activity-rings`
+    không dùng cái nào, và người dùng báo giật đúng ở ba thẻ HeroPanel còn hai
+    thẻ kia mượt. Thứ tự ấy khớp với số text field trên mỗi thẻ.
+
+    ── vì sao harness không thấy ──
+
+    `tools/deck-swipe.mjs` đo cả 8 cặp chuyển trang, 3 lượt mỗi cặp: 0 bậc chiều
+    cao, 0 khựng, 0 khung rớt. Trên web `TextInput` chỉ là một `<input>`, rẻ
+    như chữ thường, nên chi phí này KHÔNG tồn tại ở đó để mà đo. Đây là lý do
+    bản sửa này chỉ xác nhận được trên máy thật.
+
+    ── vì sao đổi qua lại không làm nhảy chữ ──
+
+    Style `base` bên dưới đã zero hoá padding, margin và viền của `TextInput`
+    đúng để nó "drop into a layout built for `<Text>` without moving anything" —
+    câu đó có sẵn từ trước, và giờ nó thành thứ được dùng theo cả hai chiều.
+  */
+  const [counting, setCounting] = useState(true);
+
   const n = useSharedValue(0);
   useEffect(() => {
+    setCounting(true);
     /* `withTiming` honours the system's Reduce Motion setting on its own — with
        it on this lands on the value immediately, which is the correct reading
        of "less motion" for a counter: the number is the point, the counting is
        not. */
-    n.value = withDelay(delay, withTiming(value, { duration, easing: EASE }));
+    n.value = withDelay(
+      delay,
+      withTiming(value, { duration, easing: EASE }, (done) => {
+        /* Chỉ hạ cờ khi hoạt ảnh CHẠY XONG, không phải khi nó bị cắt ngang bởi
+           một giá trị mới — cắt ngang thì lượt sau sẽ tự hạ. */
+        if (done) runOnJS(setCounting)(false);
+      }),
+    );
   }, [value, duration, delay, n]);
 
   const settled = format(value, decimals, group, sep, dot);
@@ -101,6 +140,18 @@ export function AnimatedNumber({
   const animatedProps = useAnimatedProps(() => {
     return { text: prefix + format(n.value, decimals, group, sep, dot) + suffix } as never;
   });
+
+  if (!counting) {
+    return (
+      <Text
+        accessible
+        accessibilityLabel={prefix + settled + suffix}
+        maxFontSizeMultiplier={maxFontSizeMultiplier}
+        style={[styles.base, style]}>
+        {prefix + settled + suffix}
+      </Text>
+    );
+  }
 
   return (
     <AnimatedTextInput
