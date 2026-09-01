@@ -149,6 +149,8 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
           <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
           <PressScale
             style={[styles.weightBtn, weightError ? styles.weightBtnOff : null]}
+            /* Mảng màu 36 điểm, vùng chạm 44+ — xem ghi chú ở `weightBtn`. */
+            hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}
             onPress={submit}
             /*
               ── the offline branch is a submit too ──
@@ -414,31 +416,74 @@ const styles = StyleSheet.create({
   cardHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
 
   // Weight
-  weightLogger: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  /*
+    ── một thẻ, một hình dạng ──
+
+    Thẻ này có hai trạng thái và trước đây chúng vẽ CÙNG một con số theo hai
+    cách khác nhau: đã ghi thì `weightValue` — 28 điểm, mono, màu đầy; chưa ghi
+    thì `fontSize: 18` nằm trong một cái hộp có viền và nền riêng. Nên mỗi ngày
+    một lần, đúng lúc bạn ghi cân, cả thẻ đổi hình.
+
+    Nay hai trạng thái dùng chung một bộ xương: số lớn mono bên trái, đơn vị
+    trên cùng đường chân chữ, hành động bên phải. Cái đổi giữa hai trạng thái
+    chỉ còn là gạch chân của ô nhập và viên chênh lệch — tức là thứ THẬT SỰ
+    khác nhau, chứ không phải toàn bộ bố cục.
+
+    ── vì sao bỏ hộp ──
+
+    Cái hộp (viền + nền + bo góc) là chrome của một cái FORM. Trên một trang
+    tổng quan, một ô nhập có hộp đọc ra như việc chưa làm xong. Số thì vẫn sửa
+    được, chỉ là nó thôi mặc đồng phục biểu mẫu: gạch chân mảnh nói "gõ được"
+    mà không dựng thêm một hình chữ nhật thứ hai bên trong thẻ.
+  */
+  weightLogger: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs, marginTop: spacing.sm },
   weightInput: {
-    width: 100,
-    height: 48,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
+    /*
+      Bề rộng CHỐT, không phải `minWidth`.
+
+      Với `minWidth` thì ô nhập giãn chiếm hết chỗ trống tới tận cái nút: gạch
+      chân kéo dài lê thê sau một con số ngắn, và "kg" bị đẩy văng sang phải,
+      dính vào nút, tách khỏi chính con số nó thuộc về. Đo được trên bản dựng:
+      số hết ở ~100px, vạch chạy tới ~285px.
+
+      104 là chỗ cho năm ký tự mono ở 28 điểm — "100.5", giá trị dài nhất hợp
+      lý ở cả kg lẫn lb — cộng chỗ cho con trỏ. Phần thừa sau số ngắn là có ý:
+      nó nói còn chỗ để gõ, đúng việc của một ô nhập.
+    */
+    width: 104,
+    paddingVertical: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
     color: colors.foreground,
-    fontSize: 18,
-    fontVariant: ['tabular-nums'],
+    ...type.largeTitle,
+    ...type.mono,
   },
   weightUnit: { ...type.body, color: colors.mutedForeground },
+  /*
+    Nút thôi là vật sáng nhất trên thẻ.
+
+    `colors.primary` là #a8afbd — bạc sáng — trên thẻ tối, nên ở 44 điểm với
+    đệm 24 nó là mảng tương phản mạnh nhất ở đây. Một thẻ nói về MỘT CON SỐ mà
+    thứ mắt bắt trước tiên lại là cái nút thì thứ bậc đang ngược.
+
+    Nhỏ lại còn 36 và chữ 13/600 thì nó đọc ra là một control cạnh con số, chứ
+    không phải một tấm biển. Vẫn nền đặc, vì đây vẫn là hành động chính duy
+    nhất của thẻ — hạ xuống viền rỗng là nói dối về vai trò của nó.
+
+    36 dưới sàn chạm 44 điểm, nên `hitSlop` bù lại: vùng chạm không đổi, chỉ
+    có mảng màu nhỏ đi.
+  */
   weightBtn: {
     marginLeft: 'auto',
-    height: 44,
-    paddingHorizontal: spacing.lg,
+    height: 36,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   weightBtnOff: { opacity: 0.4 },
-  weightBtnText: { ...type.headline, color: colors.primaryForeground },
+  weightBtnText: { ...type.footnote, fontWeight: '700', color: colors.primaryForeground },
   weightError: { ...type.footnote, color: colors.readinessRed, marginTop: 6 },
   weightDisplay: {
     flexDirection: 'row',
@@ -447,6 +492,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   weightValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
+  /* Cùng `gap` và cùng đường chân chữ như `weightLogger`, để hai trạng thái
+     đặt số và đơn vị vào đúng một chỗ. */
   weightValue: { ...type.largeTitle, ...type.mono, color: colors.foreground },
   diffPill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 4, borderRadius: radius.full },
   diffText: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
