@@ -143,19 +143,30 @@ import { press, spring } from '@/constants/motion';
  *
  * ── vì sao lò xo, và vì sao bounce 0 ──
  *
- * Lò xo tắt dần tới hạn tự có hình chữ S: chậm ở hai đầu, nhanh ở giữa. Cùng
- * quãng 181px, `spring(0.4, 0)` rải ra thành 13% / 41% / 71% / 91% ở
- * 40/90/160/260ms — mọi mốc mắt đều theo kịp.
+ * Lò xo tắt dần tới hạn tự có hình chữ S: chậm ở hai đầu, nhanh ở giữa.
+ *
+ * ── vì sao 0,25 giây chứ không phải 0,4 ──
+ *
+ * Bản đầu để 0,4 và người dùng báo bấm thấy trễ. Đo từ mốc `pointerdown` thật:
+ * nhúc nhích đầu 45ms (tốt, ~3 khung), 50% ở 140ms, 90% ở 273ms, 99% ở 456ms.
+ * Riêng đoạn 90% → 99% ngốn 183ms, và 183ms ấy mắt không thấy gì chuyển động
+ * cả — chỉ thấy control chưa chịu xong việc.
+ *
+ * Đuôi dài là cái giá của tắt dần tới hạn, và cái giá ấy tỉ lệ thẳng với
+ * `duration`. Nên rút `duration` chứ không đổi sang có nảy: nảy cắt được đuôi
+ * nhưng đánh đổi bằng việc vượt quá đích, mà lý do cấm vượt quá đích ở dưới
+ * vẫn còn nguyên.
  *
  * `bounce` phải là 0 chứ không phải một chút cho sinh động: thumb nằm TRONG
  * một cái ray và lấp gần kín một mục, nên vượt quá đích nghĩa là nó thò ra
  * ngoài mép mục rồi rụt lại. Với một control thì đó là lỗi, không phải nét
  * duyên. Đây đúng là `.smooth` của SwiftUI.
  *
- * 0,4 giây vẫn nằm trong dải 100–500ms mà lập luận cũ trích, và giờ là 0,4
- * giây nhìn thấy được thật chứ không phải 240ms trên giấy.
+ * 0,25 giây vẫn nằm trong dải 100–500ms mà lập luận cũ trích, và khác 240ms
+ * cũ ở chỗ nó là 0,25 giây NHÌN THẤY ĐƯỢC chứ không phải 240ms trên giấy với
+ * 87% quãng đường xong trong 90ms đầu.
  */
-const TRAVEL = spring(0.4, 0);
+const TRAVEL = spring(0.25, 0);
 
 /*
   `y` as well as `x`, because two of these rows wrap.

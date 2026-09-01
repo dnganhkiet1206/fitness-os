@@ -107,9 +107,16 @@ type Tab = 'today' | 'plan';
  * Cộng lại thì "Kế hoạch ăn" — mục chính của cả nửa trang — đọc ra nhỏ hơn
  * tên từng plan bên dưới nó.
  *
- * Giờ là 22pt/700, màu đầy, chữ thường. Đây là cỡ Apple dùng cho tiêu đề mục
- * ("Top Picks for You" trong Apple Music), và nó đứng dưới tiêu đề TRANG 28pt
- * đúng một bậc — đủ để phân cấp mà không tranh chỗ.
+ * Giờ là 18pt/700, màu đầy, chữ thường.
+ *
+ * KHÔNG phải 22, dù "Top Picks for You" của Apple Music đúng là 22. Thang của
+ * Apple là 34 / 28 / 22 / 20 / 17, và tiêu đề TRANG của Apple Music là 34 —
+ * tiêu đề mục của nó thấp hơn tiêu đề trang hai bậc. Tiêu đề trang ở đây là
+ * 28, nên bê thẳng số 22 sang thì khoảng cách chỉ còn 6 điểm: hai thứ đọc ra
+ * gần ngang hạng và cả trang thành ra gào lên. Cái phải mượn là KHOẢNG CÁCH
+ * trong thang, không phải con số tuyệt đối.
+ *
+ * 28 → 18 giữ đúng khoảng cách hai bậc ấy trong thang của app này.
  *
  * Bỏ icon vì ở cỡ này nó thành thừa: 22pt đậm đã tự tách mục ra khỏi nội dung
  * rồi, và một icon 13pt cạnh chữ 22pt thì lệch trọng lượng thấy rõ. Apple
@@ -792,7 +799,7 @@ export default function NutritionScreen() {
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: { ...type.title, color: colors.foreground },
+  sectionTitle: { ...type.title2, color: colors.foreground },
 
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
