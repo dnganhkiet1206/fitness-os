@@ -116,22 +116,33 @@ const source = walk(SRC)
 const problems = [];
 
 // ── 1: nothing rendered is still in English by accident ──
-const untranslated = [];
-for (const [key, value] of Object.entries(en)) {
-  if (key.startsWith('a11y')) continue;          // screen-reader text, English base
-  if (KEPT.has(key)) continue;
-  if (vi[key] !== value) continue;
+/**
+ * Luật 1, cho MỘT khoá — và luật 4 dưới kia hỏi nó chứ không chép lại nó.
+ *
+ * Một phép tự kiểm chép lại luật nó canh thì xoá luật đi vẫn xanh. Đây là dạng
+ * lỗi repo này đã bắt bốn lần trong một phiên, nên luật 1 sống ở đúng một chỗ
+ * và cả hai bên gọi vào nó.
+ *
+ * `viValue` là tham số chứ không đọc thẳng `vi[key]`: luật 4 cần hỏi "nếu cột
+ * tiếng Việt của khoá này là bản tiếng Anh thì sao", và đó là câu hỏi duy nhất
+ * chứng minh được luật 1 còn răng.
+ */
+function flagged(key, viValue) {
+  if (key.startsWith('a11y')) return false;      // screen-reader text, English base
+  if (KEPT.has(key)) return false;
+  if (viValue !== en[key]) return false;
   /* A value with no real word in it is not untranslated — "—", "1:30", "%".
      Placeholders are stripped first: `{win}` and `{gap}` are code identifiers
      that never reach a reader, so a template like `'{win} — {gap}'` is
      punctuation, and it is identical in both languages because a join is
      identical in both languages. Without this the rule reports the one string
      in the file that is *correct* to leave alone. */
-  if (!/[A-Za-z]{3,}/.test(value.replace(/\{[^}]*\}/g, ''))) continue;
-  if (!source.includes(`i18n.${key}`)) continue; // web-only keys are not this app's problem
-  untranslated.push(`${key}: '${value}'`);
+  if (!/[A-Za-z]{3,}/.test(en[key].replace(/\{[^}]*\}/g, ''))) return false;
+  return source.includes(`i18n.${key}`);         // web-only keys are not this app's problem
 }
-for (const u of untranslated) problems.push(`still English in Vietnamese — ${u}`);
+
+const untranslated = Object.keys(en).filter((k) => flagged(k, vi[k]));
+for (const u of untranslated) problems.push(`still English in Vietnamese — ${u}: '${en[u]}'`);
 
 // ── 2: the list earns its place ──
 for (const key of KEPT) {
@@ -146,14 +157,37 @@ for (const key of Object.keys(en)) {
   if (!(key in vi)) problems.push(`"${key}" has no Vietnamese at all`);
 }
 
-// ── 4: teeth. The tab bar's own label is the case that got through before, so
-//    a copy of the pre-fix dictionary has to be rejected by rule 1. ──
-const preFix = { ...vi, navToday: en.navToday, workoutsVolume: en.workoutsVolume };
-const wouldCatch = ['navToday', 'workoutsVolume'].filter(
-  (k) => preFix[k] === en[k] && !KEPT.has(k) && source.includes(`i18n.${k}`),
-);
-if (wouldCatch.length !== 2) {
-  problems.push('rule 1 would no longer catch the tab bar — this check proves nothing');
+/* ── 4: teeth ──
+ *
+ * Bản trước gọi tên HAI khoá làm nhân chứng: `navToday` và `workoutsVolume`.
+ * `workoutsVolume` thôi được render khi thẻ mẫu buổi tập bỏ dòng khối lượng, và
+ * phép tự kiểm chuyển sang đỏ với câu "this check proves nothing" — nó nói
+ * đúng, nhưng nó đỏ vì MẤT NHÂN CHỨNG chứ không phải vì luật 1 hỏng. Một tên gõ
+ * tay ở đây là một bản chép của "màn hình đang hiện những chữ nào", và màn hình
+ * thì đổi.
+ *
+ * Nên nhân chứng được ĐẾM ra từ chính hai từ điển: mọi khoá hiện đang SẠCH mà
+ * sẽ bị luật 1 bắt nếu cột tiếng Việt của nó bị thay bằng bản tiếng Anh. Đó
+ * đúng là tập hợp mà luật 1 đang bảo vệ, và nó rỗng khi và chỉ khi luật 1 không
+ * còn bắt được gì.
+ *
+ * `navToday` vẫn được gọi tên, nhưng như một ca hồi quy ĐÃ GHI chứ không phải
+ * như cơ chế: nhãn tab bar là chỗ lỗi này từng lọt qua, nên nếu nó rời khỏi tập
+ * nhân chứng thì bước này nói ra bằng câu riêng của nó thay vì lặng lẽ đo bằng
+ * một tập nhỏ hơn.
+ */
+const witnesses = Object.keys(en).filter((k) => !flagged(k, vi[k]) && flagged(k, en[k]));
+if (witnesses.length === 0) {
+  problems.push('luật 1 không bắt được MỘT khoá nào dù cột tiếng Việt bị thay bằng tiếng Anh — bước này không chứng minh gì');
+}
+/* Khoá đang BỊ luật 1 bắt thì đương nhiên không nằm trong tập "đang sạch", và
+   luật 1 đã nói về nó rồi. Kêu thêm ở đây sẽ chẩn đoán sai — "nó thôi được
+   render" trong khi thật ra nó đang sai chính tả ngôn ngữ. */
+if (!flagged('navToday', vi.navToday) && !witnesses.includes('navToday')) {
+  problems.push(
+    'nhãn tab bar (`navToday`) không còn nằm trong tầm của luật 1 — đó là ca hồi quy đã ghi của bước này, ' +
+      'nên hoặc nó thôi được render, hoặc nó đã vào KEPT: kiểm lại trước khi tin phần còn lại',
+  );
 }
 
 if (problems.length) {
@@ -165,5 +199,6 @@ if (problems.length) {
 console.log(
   `dịch thuật OK — ${Object.keys(en).length} khoá, ${Object.keys(en).filter((k) => source.includes(`i18n.${k}`)).length} khoá được dùng trong app; ` +
     `không khoá nào còn tiếng Anh ngoài ${KEPT.size} từ giữ nguyên có chủ đích; ` +
-    `bản trước khi sửa (tab bar + "Volume") vẫn bị bắt`,
+    `và luật 1 còn răng trên ${witnesses.length} khoá — mỗi khoá ấy bị BẮT nếu cột tiếng Việt của nó ` +
+    `bị thay bằng bản tiếng Anh, trong đó có nhãn tab bar (\`navToday\`), chỗ lỗi này từng lọt qua`,
 );
