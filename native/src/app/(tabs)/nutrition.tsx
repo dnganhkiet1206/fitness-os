@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Barcode, ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
-import { useCallback, useDeferredValue, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -249,39 +249,6 @@ export default function NutritionScreen() {
   const { lang } = useAppSettings();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('today');
-  /*
-    Thanh đi trước, nội dung đi sau.
-
-    ── vì sao trang này trễ hơn trang Tiến trình dù dùng chung một thanh ──
-
-    Lệnh cho vệt sáng chạy nằm trong một `useEffect` ở `pick-row`, tức là trên
-    LUỒNG JS. Nó phải xếp hàng sau lượt dựng lại mà chính cú bấm ấy gây ra.
-
-    Hai trang xếp hàng sau hai thứ rất khác nhau. Nửa Kế hoạch ăn dựng lên
-    `MealPlanTab` (hai truy vấn: danh sách plan và độ lấp đầy từng plan),
-    `AiMealSuggest`, rồi cả khối thư viện thực phẩm bên dưới (`useMyFoods`,
-    `useMyFoodsSorted`, `useRecentFoods`). Bên Tiến trình thì nhẹ hơn hẳn. Với
-    dữ liệu thật, quãng xếp hàng ấy là quãng ngón tay đã nhấc lên mà thanh còn
-    chưa nhúc nhích.
-
-    ── vì sao không đo được bằng harness ──
-
-    Đo trên bộ chạy web thì hai trang ra 52ms và 41ms — như nhau. Đúng, và
-    không nói lên điều gì: harness bơm dữ liệu giả, danh sách chỉ vài dòng,
-    nên nửa Kế hoạch ăn ở đó không nặng. Cái nó đo được là "khi panel nhẹ thì
-    không có độ trễ", chuyện vốn đã đúng.
-
-    ── cách sửa ──
-
-    `tab` là thứ KHẨN: nó quyết định vệt sáng ở đâu, và người bấm phải thấy
-    ngay. `shownTab` thì không: đó là nội dung, và chậm một nhịp thì không ai
-    mất gì. Tách hai vai ra thì React commit lượt khẩn trước — hiệu ứng khởi
-    động lò xo chạy trong lượt rẻ ấy — rồi mới dựng cái panel nặng.
-
-    Không phải mẹo: đây đúng là việc `useDeferredValue` sinh ra để làm. Và nó
-    tự vô hại khi panel vốn đã nhẹ — không có gì để hoãn thì không hoãn gì.
-  */
-  const shownTab = useDeferredValue(tab);
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
 
@@ -506,8 +473,8 @@ export default function NutritionScreen() {
           ]}
         />
 
-        <SegmentPanel segment={shownTab}>
-        {shownTab === 'today' ? (
+        <SegmentPanel segment={tab}>
+        {tab === 'today' ? (
           <>
             {/*
               The ring reads `daily_logs`. When that read fails the card draws a
