@@ -180,6 +180,8 @@ type Box = { x: number; y: number; w: number; h: number };
 type Ctx = {
   value: string;
   report: (key: string, box: Box) => void;
+  /** khởi động chuyến đi ngay trong lượt bấm — xem `travel` bên dưới */
+  travel: (key: string) => void;
 };
 const RowCtx = createContext<Ctx | null>(null);
 
@@ -242,8 +244,10 @@ export function PickRow({
   const w = useSharedValue(0);
   const placed = useRef(false);
 
-  useEffect(() => {
-    if (!here) return;
+  /* Ô cuối cùng đã được ghi vào shared value. Xem `travel`. */
+  const aimed = useRef<Box | null>(null);
+
+  const write = (box: Box) => {
     /*
       The first placement is not a movement.
 
@@ -253,10 +257,57 @@ export function PickRow({
     */
     const jump = !placed.current || reduceMotion;
     placed.current = true;
+    aimed.current = box;
     const go = (v: number) => withSpring(v, TRAVEL);
-    x.value = jump ? here.x : go(here.x);
-    y.value = jump ? here.y : go(here.y);
-    w.value = jump ? here.w : go(here.w);
+    x.value = jump ? box.x : go(box.x);
+    y.value = jump ? box.y : go(box.y);
+    w.value = jump ? box.w : go(box.w);
+  };
+
+  /*
+    Khởi động chuyến đi NGAY TRONG LƯỢT BẤM, không đợi lượt dựng lại.
+
+    ── vì sao cần ──
+
+    Trước đây chỉ có `useEffect` bên dưới lo việc này, mà effect chạy SAU khi
+    React đã dựng xong và commit cả cây. Cái cây ấy có thể rất nặng: bấm một
+    mục ở trang Dinh dưỡng làm nửa Kế hoạch ăn dựng lên MealPlanTab, hai truy
+    vấn, gợi ý AI và cả khối thư viện thực phẩm. Vệt sáng xếp hàng sau tất cả
+    những thứ đó, nên ngón tay nhấc lên rồi mà thanh còn chưa nhúc nhích.
+    Trang Tiến trình nhẹ hơn nên không thấy — đúng chênh lệch người dùng báo.
+
+    Ô đích thì KHÔNG phụ thuộc vào lượt dựng ấy: nó đã được đo từ lúc mount và
+    nằm sẵn trong `boxes`. Nên không có lý do gì phải đợi.
+
+    ── vì sao không phải `useDeferredValue` ──
+
+    Bản trước thử hoãn nội dung panel bằng `useDeferredValue`. Nó thêm một lượt
+    dựng nữa, mà `SegmentPanel` lại tháo/dựng theo `key` kèm hiệu ứng vào — nên
+    hiệu ứng vào khởi động lệch một nhịp so với lò xo đang chạy, và hai chuyển
+    động lệch pha đọc ra là giật. Đã gỡ. Đường này không thêm lượt dựng nào.
+
+    ── vì sao vẫn giữ effect ──
+
+    Không phải mọi `onPress` đều đổi `value` thật: có nơi nó mở hộp thoại, có
+    nơi bị chặn. Nếu bấm mà giá trị không đổi, effect vẫn chạy với `here` của
+    giá trị CŨ, không khớp `aimed`, nên nó kéo vệt sáng trở về. Tự sửa lấy.
+
+    Và effect vẫn cần cho những lần ô ĐỔI CHỖ mà không ai bấm — đo lại layout,
+    xoay máy. Vì thế điều kiện bỏ qua so từng toạ độ chứ không so khoá: khoá
+    không đổi nhưng ô dịch thì vẫn phải chạy.
+  */
+  const travel = (key: string) => {
+    if (key === value) return;
+    const box = boxes[key];
+    if (box) write(box);
+  };
+
+  useEffect(() => {
+    if (!here) return;
+    const a = aimed.current;
+    if (a && a.x === here.x && a.y === here.y && a.w === here.w) return;
+    write(here);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [here, reduceMotion, x, y, w]);
 
   const report = (key: string, box: Box) => {
@@ -397,14 +448,14 @@ export function PickRow({
         showsHorizontalScrollIndicator={false}
         style={style}
         contentContainerStyle={[styles.row, { gap }, contentStyle]}>
-        <RowCtx.Provider value={{ value, report }}>{inner}</RowCtx.Provider>
+        <RowCtx.Provider value={{ value, report, travel }}>{inner}</RowCtx.Provider>
       </ScrollView>
     );
   }
 
   return (
     <View style={[styles.row, { gap }, style]}>
-      <RowCtx.Provider value={{ value, report }}>{inner}</RowCtx.Provider>
+      <RowCtx.Provider value={{ value, report, travel }}>{inner}</RowCtx.Provider>
     </View>
   );
 }
@@ -462,7 +513,18 @@ function Item({
       accessibilityState={{ selected: on, disabled }}
       accessibilityLabel={accessibilityLabel}
       onLayout={measure}
-      onPress={onPress}
+      /*
+        `travel` TRƯỚC `onPress`, và đó là toàn bộ điểm của nó.
+
+        `onPress` của phía gọi thường là một `setState`, và React xử lý nó bằng
+        cách dựng lại cây — có thể là một cây rất nặng. Ghi vào shared value ở
+        đây thì việc ghi xảy ra trong chính lượt xử lý sự kiện, trước khi lượt
+        dựng ấy bắt đầu. Đảo thứ tự lại là mất đúng cái đang muốn.
+      */
+      onPress={() => {
+        ctx?.travel(itemKey);
+        onPress();
+      }}
       style={style}>
       {children}
     </PressScale>

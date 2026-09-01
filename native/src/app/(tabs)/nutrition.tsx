@@ -854,9 +854,12 @@ const styles = StyleSheet.create({
   */
   planSection: { gap: spacing.sm + 4 },
   planHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  /* 15, không phải 13 — cùng lý do như `libAll` bên Tập luyện: nó đứng cạnh
-     một tiêu đề 18pt trên cùng một hàng. */
-  planAll: { ...type.body, fontWeight: '600', color: colors.primary },
+  /* 13, và đây là vế thứ hai của một cặp — sửa một vế mà quên vế kia là đúng
+     cái đã xảy ra: 15 được chọn khi tiêu đề còn 22 (tỉ lệ 0,68), rồi tiêu đề
+     hạ xuống 18 mà số này ở nguyên, thành 0,83 — gần ngang hàng tiêu đề.
+     Không tìm được con số Apple công bố riêng cho "See All"; tỉ lệ đọc được
+     từ giao diện là khoảng 0,7, và 0,7 của 18 rơi đúng vào 13. */
+  planAll: { ...type.footnote, fontWeight: '600', color: colors.primary },
   /* Một HÀNG trong khối, không phải một thẻ. Cao 56 để vượt sàn chạm 44 và để
      hai dòng chữ có chỗ thở. */
   planRow: {

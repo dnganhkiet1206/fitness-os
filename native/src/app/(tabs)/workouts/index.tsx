@@ -361,9 +361,12 @@ export default function WorkoutsScreen() {
 const styles = StyleSheet.create({
   /* Tiêu đề mục và "Xem tất cả" của nó, một hàng. */
   libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  /* 15, không phải 13. Nó đứng cạnh một tiêu đề 18pt trên cùng một hàng; ở 13
-     nó đọc ra như chú thích của tiêu đề chứ không phải một nút bấm được. */
-  libAll: { ...type.body, fontWeight: '600', color: colors.primary },
+  /* 13, và đây là vế thứ hai của một cặp — sửa một vế mà quên vế kia là đúng
+     cái đã xảy ra: 15 được chọn khi tiêu đề còn 22 (tỉ lệ 0,68), rồi tiêu đề
+     hạ xuống 18 mà số này ở nguyên, thành 0,83 — gần ngang hàng tiêu đề.
+     Không tìm được con số Apple công bố riêng cho "See All"; tỉ lệ đọc được
+     từ giao diện là khoảng 0,7, và 0,7 của 18 rơi đúng vào 13. */
+  libAll: { ...type.footnote, fontWeight: '600', color: colors.primary },
   /* Hàng "tạo mới" ở cuối danh sách.
 
      KHÔNG dùng viền đứt nét: `tools/training-card.mjs` đã ghi lại rằng trên iOS
