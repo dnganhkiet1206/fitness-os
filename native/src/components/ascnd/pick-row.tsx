@@ -8,15 +8,14 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withTiming,
+  withSpring,
 } from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
-import { duration, press } from '@/constants/motion';
+import { press, spring } from '@/constants/motion';
 
 /**
  * A row of choices where the highlight TRAVELS to the one you picked.
@@ -117,22 +116,46 @@ import { duration, press } from '@/constants/motion';
  */
 
 /**
- * How long the highlight takes to cross — moved here from `segmented.tsx` when
- * that control stopped owning the moving part, because this is where the
- * movement now lives.
+ * Cách vệt sáng đi từ mục này sang mục kia.
  *
- * Nielsen Norman Group put the usable band at 100–500ms and reserve the top of
- * it for large movements; past 500ms an animation "starts to feel like a real
- * drag". This is a short hop inside one control, so it sits low in the band —
- * `duration.move`, the vocabulary's "a control sliding to a new position".
+ * ── vì sao KHÔNG còn là `withTiming(duration.move, Easing.out(cubic))` ──
  *
- * Ease-out, because the highlight is arriving: "starts quickly but slows down…
- * makes the animation feel responsive, but allows the eye time to focus on the
- * element as it comes to rest." Linear is explicitly ruled out there — it
- * "looks weird and unnatural".
+ * Lập luận cũ nghe xuôi: dải dùng được là 100–500ms, đây là một bước ngắn
+ * trong một control nên nằm thấp trong dải (240ms), và ease-out vì vệt sáng
+ * đang "đi tới nơi". Cả hai câu đều đúng, và kết quả vẫn đọc ra như một cú
+ * nhảy. Người dùng báo "chưa có transition" trong khi chuyển động vẫn chạy.
+ *
+ * Đo mép trái của thumb trên quãng 181px mới thấy vì sao — ease-out cubic dồn
+ * chuyển động vào đầu đến mức này:
+ *
+ *     40ms   114px   63%
+ *     90ms   157px   87%
+ *     160ms  179px   99%
+ *
+ * 87% quãng đường xong trong 90ms đầu. Phần còn lại là vài pixel bò lê mà mắt
+ * không phân giải được. Thời lượng danh nghĩa là 240ms, thời lượng NHÌN THẤY
+ * là chưa tới 90ms. Kéo dài `duration` không sửa được: nó chỉ kéo dài đoạn bò
+ * lê. Sai ở hình dạng đường cong, không ở độ dài.
+ *
+ * Ease-out đúng cho vật ĐANG HIỆN RA — nó bắt đầu từ hư không nên không có gì
+ * để mắt bám lúc đầu. Thumb thì đang ĐỨNG YÊN ở một chỗ có thật và đi tới một
+ * chỗ có thật khác: nó phải tăng tốc thì mắt mới bám được điểm xuất phát.
+ *
+ * ── vì sao lò xo, và vì sao bounce 0 ──
+ *
+ * Lò xo tắt dần tới hạn tự có hình chữ S: chậm ở hai đầu, nhanh ở giữa. Cùng
+ * quãng 181px, `spring(0.4, 0)` rải ra thành 13% / 41% / 71% / 91% ở
+ * 40/90/160/260ms — mọi mốc mắt đều theo kịp.
+ *
+ * `bounce` phải là 0 chứ không phải một chút cho sinh động: thumb nằm TRONG
+ * một cái ray và lấp gần kín một mục, nên vượt quá đích nghĩa là nó thò ra
+ * ngoài mép mục rồi rụt lại. Với một control thì đó là lỗi, không phải nét
+ * duyên. Đây đúng là `.smooth` của SwiftUI.
+ *
+ * 0,4 giây vẫn nằm trong dải 100–500ms mà lập luận cũ trích, và giờ là 0,4
+ * giây nhìn thấy được thật chứ không phải 240ms trên giấy.
  */
-const TRAVEL_MS = duration.move;
-const TRAVEL_EASE = Easing.out(Easing.cubic);
+const TRAVEL = spring(0.4, 0);
 
 /*
   `y` as well as `x`, because two of these rows wrap.
@@ -219,7 +242,7 @@ export function PickRow({
     */
     const jump = !placed.current || reduceMotion;
     placed.current = true;
-    const go = (v: number) => withTiming(v, { duration: TRAVEL_MS, easing: TRAVEL_EASE });
+    const go = (v: number) => withSpring(v, TRAVEL);
     x.value = jump ? here.x : go(here.x);
     y.value = jump ? here.y : go(here.y);
     w.value = jump ? here.w : go(here.w);

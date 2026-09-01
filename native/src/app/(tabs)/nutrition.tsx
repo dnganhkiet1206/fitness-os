@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Barcode, ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -22,7 +22,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { Measured, NutritionSkeleton, SK } from '@/components/ascnd/skeleton';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodayMeals } from '@/components/ascnd/today-meals';
-import { PAGE_TINT, colors, glass, radius, spacing } from '@/constants/ascnd';
+import { PAGE_TINT, colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -97,6 +97,31 @@ type Tab = 'today' | 'plan';
  * is exactly the person looking at this screen, and "no meal plans yet" tells
  * them only that they have not done a thing they may not have a name for.
  */
+/**
+ * Tiêu đề của một MỤC trên trang.
+ *
+ * Trước đây là icon 13pt + chữ 12pt IN HOA, giãn 2,4, màu mờ. Mỗi mảnh của
+ * công thức đó đều kéo tiêu đề xuống hạng phụ: in hoa giãn rộng là kiểu chữ
+ * của NHÃN (thứ dán lên một ô số, như "PROTEIN" trong thẻ macro), 12pt nhỏ
+ * hơn cả chữ thân bài nó đứng trên, và màu mờ nói "cái này không quan trọng".
+ * Cộng lại thì "Kế hoạch ăn" — mục chính của cả nửa trang — đọc ra nhỏ hơn
+ * tên từng plan bên dưới nó.
+ *
+ * Giờ là 22pt/700, màu đầy, chữ thường. Đây là cỡ Apple dùng cho tiêu đề mục
+ * ("Top Picks for You" trong Apple Music), và nó đứng dưới tiêu đề TRANG 28pt
+ * đúng một bậc — đủ để phân cấp mà không tranh chỗ.
+ *
+ * Bỏ icon vì ở cỡ này nó thành thừa: 22pt đậm đã tự tách mục ra khỏi nội dung
+ * rồi, và một icon 13pt cạnh chữ 22pt thì lệch trọng lượng thấy rõ. Apple
+ * không đặt icon cạnh tiêu đề mục ở bất kỳ màn nào trong ảnh tham chiếu.
+ *
+ * Gộp luôn `sectionHead` và `sectionHeadRow` — hai tên, cùng một khai báo, cho
+ * cùng một việc, ở năm chỗ.
+ */
+function SectionTitle({ children }: { children: ReactNode }) {
+  return <Text style={styles.sectionTitle}>{children}</Text>;
+}
+
 function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boolean }) {
   /* Lần vẽ đầu thì hiện ngay — xem `useRise`. */
   const rise = useRise();
@@ -154,12 +179,9 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
   return (
     <View style={styles.planSection}>
       <View style={styles.planHead}>
-        <View style={styles.sectionHead}>
-          <Icon icon={Utensils} size={13} />
-          <Text style={styles.microTitle}>
-            {i18n.nutritionMealPlan} ({plans.length})
-          </Text>
-        </View>
+        <SectionTitle>
+          {i18n.nutritionMealPlan} ({plans.length})
+        </SectionTitle>
         {/* Only when there is something the three cards below are hiding — a
             "see all" over a list that is already all of it is a control that
             does nothing, which is what this whole section used to be. */}
@@ -577,12 +599,9 @@ export default function NutritionScreen() {
             */}
             {diaryFailed ? null : (
               <>
-                <View style={styles.sectionHeadRow}>
-                  <Icon icon={Utensils} size={13} />
-                  <Text style={styles.microTitle}>
-                    {lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}
-                  </Text>
-                </View>
+                <SectionTitle>
+                  {lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}
+                </SectionTitle>
                 <TodayMeals meals={today ?? []} i18n={i18n} lang={lang} />
               </>
             )}
@@ -635,10 +654,7 @@ export default function NutritionScreen() {
             {/* Cùng hàng tiêu đề mà các mục con của thư viện đang dùng, nên nửa
                 dưới đọc ra là một MỤC của trang chứ không phải một trang thứ hai
                 bị nối vào. */}
-            <View style={styles.sectionHeadRow}>
-              <Icon icon={Search} size={13} />
-              <Text style={styles.microTitle}>{i18n.nutritionFoods}</Text>
-            </View>
+            <SectionTitle>{i18n.nutritionFoods}</SectionTitle>
 
             {/* Search + add custom food (web: search flex-1 + Add button) */}
             <View style={styles.searchRow}>
@@ -711,12 +727,9 @@ export default function NutritionScreen() {
                   same star you toggle them with.
                 */}
                 <View style={styles.foodSection}>
-                  <View style={styles.sectionHeadRow}>
-                    <Icon icon={Utensils} size={13} />
-                    <Text style={styles.microTitle}>
-                      {lang === 'vi' ? 'Thực phẩm của tôi' : 'My Foods'}
-                    </Text>
-                  </View>
+                  <SectionTitle>
+                    {lang === 'vi' ? 'Thực phẩm của tôi' : 'My Foods'}
+                  </SectionTitle>
                   {myFoodsSorted.length > 0 ? (
                     <>
                       <FoodGroup rows={myFoodsSorted.slice(0, 5)} />
@@ -738,10 +751,7 @@ export default function NutritionScreen() {
                 */}
                 {recents && recents.length > 0 ? (
                   <View style={styles.foodSection}>
-                    <View style={styles.sectionHeadRow}>
-                      <Icon icon={ClipboardList} size={13} color={colors.mutedForeground} />
-                      <Text style={styles.microTitle}>{i18n.nutritionRecent}</Text>
-                    </View>
+                    <SectionTitle>{i18n.nutritionRecent}</SectionTitle>
                     <View style={foodListStyles.group}>
                       {recents.slice(0, 4).map((r, i) => (
                         <View key={`${r.food_name}-${i}`}>
@@ -782,13 +792,7 @@ export default function NutritionScreen() {
 }
 
 const styles = StyleSheet.create({
-  microTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 2.4,
-    color: colors.mutedForeground,
-  },
+  sectionTitle: { ...type.title, color: colors.foreground },
 
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
@@ -824,13 +828,11 @@ const styles = StyleSheet.create({
   addFoodText: { fontSize: 12, fontWeight: '600', color: colors.primaryForeground },
   searchInput: { flex: 1, color: colors.foreground, fontSize: 15, height: '100%' },
 
-  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   /* The heading, its group and its "see all" are one thing 10 apart, not three
      children of the page 20 apart — 20 is the distance between *sections*, and
      a heading a full section-gap above its own list reads as a heading for the
      page rather than for the list. */
   foodSection: { gap: spacing.sm + 2 },
-  sectionHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   seeMore: {
     flexDirection: 'row',
     alignItems: 'center',
