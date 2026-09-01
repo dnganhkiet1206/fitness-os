@@ -14,8 +14,10 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing } from '@/constants/ascnd';
-import type { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, type useI18n } from '@/hooks/use-app-settings';
+import { useExercises } from '@/hooks/use-library';
 import { useRise } from '@/lib/entrance';
+import { MUSCLE_LABEL, muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { DEFAULT_REST, DEFAULT_RPE, restLabel, uniformValue } from '@/lib/prescription';
 import { displayWeight, type WeightUnit } from '@/lib/units';
 
@@ -159,6 +161,8 @@ export function TemplateRow({
   wUnit,
   wl,
   i18n,
+  groupOf,
+  vi,
   onDelete,
 }: {
   tpl: Template;
@@ -167,6 +171,9 @@ export function TemplateRow({
   wUnit: WeightUnit;
   wl: string;
   i18n: ReturnType<typeof useI18n>;
+  /** tên bài (thường hoá) → nhóm cơ, tra từ thư viện bài tập */
+  groupOf: Record<string, string>;
+  vi: boolean;
   onDelete: (id: string) => void;
 }) {
   /* Lần vẽ đầu hiện NGAY — xem `useRise`. Hàng này nằm trong một danh sách có
@@ -191,6 +198,37 @@ export function TemplateRow({
     one rest throughout and a heavier effort on the compound at the front.
   */
   const setCount = exs.reduce((n, e) => n + (e.sets ?? 0), 0);
+
+  /*
+    Buổi này đánh vào đâu.
+
+    Đây là câu hỏi người ta thật sự hỏi khi chọn một mẫu cho hôm nay, và trước
+    dòng này mặt thẻ không trả lời được — nó chỉ nói tên, số bài, và một tổng
+    kg vốn thuộc về nhật ký chứ không thuộc về kế hoạch.
+
+    Thứ tự theo lần xuất hiện đầu trong buổi, không phải theo bảng chữ cái:
+    bài đầu tiên của một buổi đẩy là bài ngực, và "Ngực · Vai · Tay sau" đọc ra
+    đúng hình dạng của buổi đó, trong khi "Ngực · Tay sau · Vai" thì không.
+
+    `TplExercise` không lưu nhóm cơ — nó chỉ có tên bài — nên phải tra ngược
+    qua thư viện. Bài tự đặt tên hoặc gõ tay sẽ tra không ra, và khi đó chúng
+    im lặng biến mất khỏi dòng này thay vì hiện ra thành "?" hay "Khác": một
+    dòng nói "Ngực · Vai" mà thiếu một bài chưa tra được vẫn đúng, còn một
+    dòng có "Khác" trong đó thì vừa xấu vừa không nói thêm điều gì.
+
+    Tra không ra CÁI NÀO thì cả dòng không hiện. Một buổi toàn bài tự tạo thì
+    thà không nói gì còn hơn nói sai.
+  */
+  const muscles: string[] = [];
+  const seen = new Set<MuscleArtKey>();
+  for (const e of exs) {
+    const g = e.exerciseName ? groupOf[e.exerciseName.trim().toLowerCase()] : undefined;
+    for (const k of muscleArtKeysFor(g)) {
+      if (seen.has(k)) continue;
+      seen.add(k);
+      muscles.push(vi ? MUSCLE_LABEL[k].vi : MUSCLE_LABEL[k].en);
+    }
+  }
 
   const oneRest = uniformValue(exs, (e) => e.restSeconds, DEFAULT_REST);
   const oneRpe = uniformValue(exs, (e) => e.rpe, DEFAULT_RPE);
@@ -253,6 +291,11 @@ export function TemplateRow({
               ở trong nếp gấp, theo từng bài, nơi nó là lời dặn chứ không phải
               thành tích.
             */}
+            {muscles.length > 0 ? (
+              <Text style={styles.tplMuscles} numberOfLines={1}>
+                {muscles.join('  ·  ')}
+              </Text>
+            ) : null}
             <Text style={styles.tplMeta}>
               {exs.length} {i18n.workoutsExercises} · {setCount} {i18n.nSetsShort}
             </Text>
@@ -367,6 +410,25 @@ export function TemplateList({
   i18n: ReturnType<typeof useI18n>;
   onDelete: (id: string) => void;
 }) {
+  /*
+    Tra một lần cho cả danh sách, không phải một lần mỗi hàng.
+
+    React Query có gộp lời gọi trùng, nên gọi trong từng hàng thì cũng chỉ một
+    request — nhưng vẫn là N lần dựng lại cùng một bảng tra. Trên `/templates`
+    N không phải ba.
+
+    Object thường chứ không phải `Map`: cùng lý do đã ghi ở `use-nutrition` —
+    thứ đi qua `JSON.stringify` thì `Map` hoá `{}`, và bảng này rất có thể sẽ
+    có ngày bị ai đó nhớ vào bộ nhớ đệm.
+  */
+  const { lang } = useAppSettings();
+  const vi = lang === 'vi';
+  const { data: exercises } = useExercises();
+  const groupOf: Record<string, string> = {};
+  for (const e of exercises ?? []) {
+    if (e.name && e.muscle_group) groupOf[e.name.trim().toLowerCase()] = e.muscle_group;
+  }
+
   return (
     <View style={styles.tplStack}>
       {templates.map((t, i) => (
@@ -377,6 +439,8 @@ export function TemplateList({
           wUnit={wUnit}
           wl={wl}
           i18n={i18n}
+          groupOf={groupOf}
+          vi={vi}
           onDelete={onDelete}
         />
       ))}
@@ -405,6 +469,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   typeText: { fontSize: 11, color: colors.mutedForeground, textTransform: 'capitalize' },
+  /* Sáng hơn `tplMeta` một bậc, vì nó trả lời câu hỏi quan trọng hơn: chọn mẫu
+     nào cho hôm nay là chọn theo NHÓM CƠ, còn số bài và số hiệp chỉ là cỡ của
+     việc. Cùng màu thì hai dòng thành một khối xám và mắt phải đọc cả hai. */
+  tplMuscles: { fontSize: 13, fontWeight: '600', color: colors.foreground },
   tplMeta: { fontSize: 12, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   tplActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
   /* The prescription on the face of the card, under the count and volume.

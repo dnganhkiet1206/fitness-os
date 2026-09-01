@@ -29,7 +29,7 @@ import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
 import { TodayTraining } from '@/components/ascnd/today-training';
-import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
+import { MUSCLE_LABEL, muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 
 /**
  * The tiles, in the order a body is worked rather than alphabetically.
@@ -43,22 +43,16 @@ import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
  * matching data already filed under it, and a tile caption has no such
  * obligation.
  */
-const MUSCLE_TILES: { key: MuscleArtKey; vi: string; en: string }[] = [
+const MUSCLE_TILES: { key: MuscleArtKey; vi: string; en: string }[] = (
   /* The first six are what the grid shows collapsed — two rows of three — so
      they are the six biggest movements rather than the first six alphabetically
      or the order they were typed in. Legs sat seventh and would have been
-     hidden behind Calves, which is a menu with the main course missing. */
-  { key: 'chest', vi: 'Ngực', en: 'Chest' },
-  { key: 'back', vi: 'Lưng', en: 'Back' },
-  { key: 'legs', vi: 'Chân', en: 'Legs' },
-  { key: 'shoulders', vi: 'Vai', en: 'Shoulders' },
-  { key: 'biceps', vi: 'Tay trước', en: 'Biceps' },
-  { key: 'triceps', vi: 'Tay sau', en: 'Triceps' },
-  { key: 'abs', vi: 'Bụng', en: 'Abs' },
-  { key: 'glutes', vi: 'Mông', en: 'Glutes' },
-  { key: 'calves', vi: 'Bắp chân', en: 'Calves' },
-  { key: 'cardio', vi: 'Tim mạch', en: 'Cardio' },
-];
+     hidden behind Calves, which is a menu with the main course missing.
+
+     Thứ tự ở đây, nhãn ở `MUSCLE_LABEL`. Thứ tự là quyết định của lưới này;
+     tên gọi thì không, và mặt thẻ mẫu tập cũng cần đúng những tên ấy. */
+  ['chest', 'back', 'legs', 'shoulders', 'biceps', 'triceps', 'abs', 'glutes', 'calves', 'cardio'] as MuscleArtKey[]
+).map((key) => ({ key, ...MUSCLE_LABEL[key] }));
 
 /** Two rows of three — what the library shows before you open it up. */
 const TILES_COLLAPSED = 6;

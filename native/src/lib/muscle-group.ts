@@ -166,3 +166,24 @@ export function muscleArtKeysFor(group: string | null | undefined): MuscleArtKey
 export function muscleArtFor(group: string | null | undefined): MuscleArtKey | null {
   return muscleArtKeysFor(group)[0] ?? null;
 }
+
+/**
+ * Tên tiếng người của mỗi nhóm cơ.
+ *
+ * Ở đây chứ không ở màn nào, vì hai chỗ cần nó: lưới cơ trên tab Tập luyện, và
+ * dòng "buổi này đánh vào đâu" trên mặt thẻ mẫu tập. Bảng nhãn đứng cạnh
+ * `MuscleArtKey` thì thêm một nhóm cơ là sửa một tệp; để nhãn trong màn thì
+ * thêm một nhóm là sửa hai tệp và quên một.
+ */
+export const MUSCLE_LABEL: Record<MuscleArtKey, { vi: string; en: string }> = {
+  chest: { vi: 'Ngực', en: 'Chest' },
+  back: { vi: 'Lưng', en: 'Back' },
+  legs: { vi: 'Chân', en: 'Legs' },
+  shoulders: { vi: 'Vai', en: 'Shoulders' },
+  biceps: { vi: 'Tay trước', en: 'Biceps' },
+  triceps: { vi: 'Tay sau', en: 'Triceps' },
+  abs: { vi: 'Bụng', en: 'Abs' },
+  glutes: { vi: 'Mông', en: 'Glutes' },
+  calves: { vi: 'Bắp chân', en: 'Calves' },
+  cardio: { vi: 'Tim mạch', en: 'Cardio' },
+};
