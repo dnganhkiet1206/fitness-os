@@ -63,6 +63,22 @@ const strip = (s) =>
  * These are the five modules that cache a `USER_KEYS` entry in module scope.
  * A sixth (`lib/personal-model.ts`) is covered by `signed-out.mjs` rule 6.
  */
+/**
+ * Khoá lưu chiều cao thẻ, lấy thẳng từ `widget-heights.ts`.
+ *
+ * Một bản chép ở đây là một lời hứa sẽ lệch — và nó đã lệch một lần: khoá được
+ * gắn phiên bản `-v2` còn phép thử vẫn ghi vào tên cũ.
+ */
+const HEIGHTS_KEY = (() => {
+  const src = readFileSync(path.join(NATIVE, 'src/lib/widget-heights.ts'), 'utf8');
+  const k = /const STORAGE_KEY = '([^']+)';/.exec(src)?.[1];
+  if (!k) {
+    console.error('không đọc được STORAGE_KEY của widget-heights.ts — phép thử dưới sẽ không kiểm gì');
+    process.exit(1);
+  }
+  return k;
+})();
+
 const STORES = [
   {
     file: 'src/hooks/use-steps-goal.ts',
@@ -86,7 +102,17 @@ const STORES = [
   {
     file: 'src/lib/widget-heights.ts',
     what: 'chiều cao thẻ Today',
-    set: `await store.setItem('ascnd-widget-heights', JSON.stringify({ steps: 480 })), await m.hydrateWidgetHeights()`,
+    /* Khoá ĐỌC TỪ NGUỒN, không gõ tay.
+
+       Bản trước gõ thẳng `'ascnd-widget-heights'`, rồi `widget-heights.ts` đổi
+       khoá thành `…-v2` để bỏ những số đo cũ đã sai. Phép thử vẫn ghi vào khoá
+       CŨ còn `hydrateWidgetHeights()` đọc khoá mới, nên nó không tìm thấy gì và
+       `heightFor` đứng ở 104 — đúng bằng giá trị nó mong đợi ở CUỐI bài. Bước
+       này tự bắt được mình ("phép thử này không kiểm gì cả"), và đó là lý do
+       nó có câu ấy.
+
+       Đọc từ nguồn thì lần đổi khoá tiếp theo không cần ai nhớ sửa chỗ này. */
+    set: `await store.setItem(${JSON.stringify(HEIGHTS_KEY)}, JSON.stringify({ steps: 480 })), await m.hydrateWidgetHeights()`,
     hydrate: `await m.hydrateWidgetHeights()`,
     get: `m.heightFor('steps')`,
     expected: 104,
